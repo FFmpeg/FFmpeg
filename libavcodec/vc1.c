@@ -1834,7 +1834,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     }
     /* DC Syntax */
     v->s.dc_table_index = get_bits(gb, 1);
-    if (v->s.pict_type == I_TYPE && v->dquant) {
+    if ((v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE) && v->dquant) {
         av_log(v->s.avctx, AV_LOG_DEBUG, "VOP DQuant info\n");
         vop_dquant_decoding(v);
     }
@@ -4083,9 +4083,12 @@ static void vc1_decode_blocks(VC1Context *v)
             vc1_decode_p_blocks(v);
         break;
     case B_TYPE:
-        if(v->bi_type)
-            vc1_decode_i_blocks(v);
-        else
+        if(v->bi_type){
+            if(v->profile == PROFILE_ADVANCED)
+                vc1_decode_i_blocks_adv(v);
+            else
+                vc1_decode_i_blocks(v);
+        }else
             vc1_decode_b_blocks(v);
         break;
     }
