@@ -51,6 +51,7 @@
 #include "bitstream.h"
 #include "dsputil.h"
 #include "common.h"
+#include "bytestream.h"
 
 #include "cookdata.h"
 
@@ -69,19 +70,6 @@ typedef struct {
     int     qidx_table2[8];
 } COOKgain;
 
-typedef struct __attribute__((__packed__)){
-    /* codec data start */
-    uint32_t cookversion;               //in network order, bigendian
-    uint16_t samples_per_frame;         //amount of samples per frame per channel, bigendian
-    uint16_t subbands;                  //amount of bands used in the frequency domain, bigendian
-    /* Mono extradata ends here. */
-    uint32_t unused;
-    uint16_t js_subband_start;          //bigendian
-    uint16_t js_vlc_bits;               //bigendian
-    /* Stereo extradata ends here. */
-} COOKextradata;
-
-
 typedef struct {
     GetBitContext       gb;
     /* stream data */
@@ -98,6 +86,7 @@ typedef struct {
     int                 total_subbands;
     int                 num_vectors;
     int                 bits_per_subpacket;
+    int                 cookversion;
     /* states */
     int                 random_state;
 
@@ -1083,15 +1072,15 @@ static int cook_decode_frame(AVCodecContext *avctx,
 }
 
 #ifdef COOKDEBUG
-static void dump_cook_context(COOKContext *q, COOKextradata *e)
+static void dump_cook_context(COOKContext *q)
 {
     //int i=0;
 #define PRINT(a,b) av_log(NULL,AV_LOG_ERROR," %s = %d\n", a, b);
     av_log(NULL,AV_LOG_ERROR,"COOKextradata\n");
-    av_log(NULL,AV_LOG_ERROR,"cookversion=%x\n",e->cookversion);
-    if (e->cookversion > STEREO) {
-        PRINT("js_subband_start",e->js_subband_start);
-        PRINT("js_vlc_bits",e->js_vlc_bits);
+    av_log(NULL,AV_LOG_ERROR,"cookversion=%x\n",q->cookversion);
+    if (q->cookversion > STEREO) {
+        PRINT("js_subband_start",q->js_subband_start);
+        PRINT("js_vlc_bits",q->js_vlc_bits);
     }
     av_log(NULL,AV_LOG_ERROR,"COOKContext\n");
     PRINT("nb_channels",q->nb_channels);
@@ -1117,8 +1106,8 @@ static void dump_cook_context(COOKContext *q, COOKextradata *e)
 
 static int cook_decode_init(AVCodecContext *avctx)
 {
-    COOKextradata *e = (COOKextradata *)avctx->extradata;
     COOKContext *q = avctx->priv_data;
+    uint8_t *edata_ptr = avctx->extradata;
 
     /* Take care of the codec specific extradata. */
     if (avctx->extradata_size <= 0) {
@@ -1129,13 +1118,14 @@ static int cook_decode_init(AVCodecContext *avctx)
            Swap to right endianness so we don't need to care later on. */
         av_log(avctx,AV_LOG_DEBUG,"codecdata_length=%d\n",avctx->extradata_size);
         if (avctx->extradata_size >= 8){
-            e->cookversion = be2me_32(e->cookversion);
-            e->samples_per_frame = be2me_16(e->samples_per_frame);
-            e->subbands = be2me_16(e->subbands);
+            q->cookversion = be2me_32(bytestream_get_le32(&edata_ptr));
+            q->samples_per_frame =  be2me_16(bytestream_get_le16(&edata_ptr));
+            q->subbands = be2me_16(bytestream_get_le16(&edata_ptr));
         }
         if (avctx->extradata_size >= 16){
-            e->js_subband_start = be2me_16(e->js_subband_start);
-            e->js_vlc_bits = be2me_16(e->js_vlc_bits);
+            bytestream_get_le32(&edata_ptr);    //Unknown unused
+            q->js_subband_start = be2me_16(bytestream_get_le16(&edata_ptr));
+            q->js_vlc_bits = be2me_16(bytestream_get_le16(&edata_ptr));
         }
     }
 
@@ -1148,20 +1138,17 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->random_state = 1;
 
     /* Initialize extradata related variables. */
-    q->samples_per_channel = e->samples_per_frame / q->nb_channels;
-    q->samples_per_frame = e->samples_per_frame;
-    q->subbands = e->subbands;
+    q->samples_per_channel = q->samples_per_frame / q->nb_channels;
     q->bits_per_subpacket = avctx->block_align * 8;
 
     /* Initialize default data states. */
-    q->js_subband_start = 0;
     q->log2_numvector_size = 5;
     q->total_subbands = q->subbands;
 
     /* Initialize version-dependent variables */
-    av_log(NULL,AV_LOG_DEBUG,"e->cookversion=%x\n",e->cookversion);
+    av_log(NULL,AV_LOG_DEBUG,"q->cookversion=%x\n",q->cookversion);
     q->joint_stereo = 0;
-    switch (e->cookversion) {
+    switch (q->cookversion) {
         case MONO:
             if (q->nb_channels != 1) {
                 av_log(avctx,AV_LOG_ERROR,"Container channels != 1, report sample!\n");
@@ -1182,10 +1169,8 @@ static int cook_decode_init(AVCodecContext *avctx)
             }
             av_log(avctx,AV_LOG_DEBUG,"JOINT_STEREO\n");
             if (avctx->extradata_size >= 16){
-                q->total_subbands = q->subbands + e->js_subband_start;
-                q->js_subband_start = e->js_subband_start;
+                q->total_subbands = q->subbands + q->js_subband_start;
                 q->joint_stereo = 1;
-                q->js_vlc_bits = e->js_vlc_bits;
             }
             if (q->samples_per_channel > 256) {
                 q->log2_numvector_size  = 6;
@@ -1262,7 +1247,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     }
 
 #ifdef COOKDEBUG
-    dump_cook_context(q,e);
+    dump_cook_context(q);
 #endif
     return 0;
 }
