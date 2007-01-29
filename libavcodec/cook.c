@@ -1245,6 +1245,10 @@ static int cook_decode_init(AVCodecContext *avctx)
         av_log(avctx,AV_LOG_ERROR,"unknown amount of samples_per_channel = %d, report sample!\n",q->samples_per_channel);
         return -1;
     }
+    if ((q->js_vlc_bits > 6) || (q->js_vlc_bits < 0)) {
+        av_log(avctx,AV_LOG_ERROR,"q->js_vlc_bits = %d, only >= 0 and <= 6 allowed!\n",q->js_vlc_bits);
+        return -1;
+    }
 
 #ifdef COOKDEBUG
     dump_cook_context(q);
