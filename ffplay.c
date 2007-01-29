@@ -782,7 +782,23 @@ static void video_audio_display(VideoState *s)
         delay -= s->width / 2;
         if (delay < s->width)
             delay = s->width;
-        i_start = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
+
+        i_start= x = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
+
+        h= INT_MIN;
+        for(i=0; i<1000; i+=channels){
+            int idx= (SAMPLE_ARRAY_SIZE + x - i) % SAMPLE_ARRAY_SIZE;
+            int a= s->sample_array[idx];
+            int b= s->sample_array[(idx + 4*channels)%SAMPLE_ARRAY_SIZE];
+            int c= s->sample_array[(idx + 5*channels)%SAMPLE_ARRAY_SIZE];
+            int d= s->sample_array[(idx + 9*channels)%SAMPLE_ARRAY_SIZE];
+            int score= a-d;
+            if(h<score && (b^c)<0){
+                h= score;
+                i_start= idx;
+            }
+        }
+
         s->last_i_start = i_start;
     } else {
         i_start = s->last_i_start;
