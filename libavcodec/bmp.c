@@ -158,6 +158,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    if(p->data[0])
+        avctx->release_buffer(avctx, p);
+
     p->reference = 0;
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
