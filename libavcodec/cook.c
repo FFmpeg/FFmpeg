@@ -303,7 +303,7 @@ static inline int decode_bytes(uint8_t* inbuffer, uint8_t* out, int bytes){
      *     (int64_t)out[i] = 0x37c511f237c511f2^be2me_64(int64_t)in[i]);
      * Buffer alignment needs to be checked. */
 
-    off = (uint32_t)inbuffer % 4;
+    off = (int)((long)inbuffer & 3);
     buf = (uint32_t*) (inbuffer - off);
     c = be2me_32((0x37c511f2 >> (off*8)) | (0x37c511f2 << (32-(off*8))));
     bytes += 3 + off;
