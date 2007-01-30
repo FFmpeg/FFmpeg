@@ -2521,16 +2521,16 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
     }
 }
 
-void ff_snow_inner_add_yblock(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
                               int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
     int y, x;
     DWTELEM * dst;
     for(y=0; y<b_h; y++){
         //FIXME ugly missue of obmc_stride
-        uint8_t *obmc1= obmc + y*obmc_stride;
-        uint8_t *obmc2= obmc1+ (obmc_stride>>1);
-        uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
-        uint8_t *obmc4= obmc3+ (obmc_stride>>1);
+        const uint8_t *obmc1= obmc + y*obmc_stride;
+        const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
+        const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
+        const uint8_t *obmc4= obmc3+ (obmc_stride>>1);
         dst = slice_buffer_get_line(sb, src_y + y);
         for(x=0; x<b_w; x++){
             int v=   obmc1[x] * block[3][x + y*src_stride]
@@ -2687,10 +2687,10 @@ assert(src_stride > 2*MB_SIZE + 5);
     }else
     for(y=0; y<b_h; y++){
         //FIXME ugly missue of obmc_stride
-        uint8_t *obmc1= obmc + y*obmc_stride;
-        uint8_t *obmc2= obmc1+ (obmc_stride>>1);
-        uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
-        uint8_t *obmc4= obmc3+ (obmc_stride>>1);
+        const uint8_t *obmc1= obmc + y*obmc_stride;
+        const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
+        const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
+        const uint8_t *obmc4= obmc3+ (obmc_stride>>1);
         for(x=0; x<b_w; x++){
             int v=   obmc1[x] * block[3][x + y*src_stride]
                     +obmc2[x] * block[2][x + y*src_stride]

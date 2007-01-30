@@ -708,7 +708,7 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
              "dec %2                         \n\t"\
              snow_inner_add_yblock_sse2_end_common2
 
-static void inner_add_yblock_bw_8_obmc_16_bh_even_sse2(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
+static void inner_add_yblock_bw_8_obmc_16_bh_even_sse2(const uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
                       int src_x, int src_y, long src_stride, slice_buffer * sb, int add, uint8_t * dst8){
 snow_inner_add_yblock_sse2_header
 snow_inner_add_yblock_sse2_start_8("xmm1", "xmm5", "3", "0")
@@ -756,7 +756,7 @@ snow_inner_add_yblock_sse2_accum_8("0", "136")
 snow_inner_add_yblock_sse2_end_8
 }
 
-static void inner_add_yblock_bw_16_obmc_32_sse2(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
+static void inner_add_yblock_bw_16_obmc_32_sse2(const uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
                       int src_x, int src_y, long src_stride, slice_buffer * sb, int add, uint8_t * dst8){
 snow_inner_add_yblock_sse2_header
 snow_inner_add_yblock_sse2_start_16("xmm1", "xmm5", "3", "0")
@@ -868,7 +868,7 @@ snow_inner_add_yblock_sse2_end_16
              "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"m"((long)src_stride):\
              "%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
-static void inner_add_yblock_bw_8_obmc_16_mmx(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
+static void inner_add_yblock_bw_8_obmc_16_mmx(const uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
                       int src_x, int src_y, long src_stride, slice_buffer * sb, int add, uint8_t * dst8){
 snow_inner_add_yblock_mmx_header
 snow_inner_add_yblock_mmx_start("mm1", "mm5", "3", "0", "0")
@@ -879,7 +879,7 @@ snow_inner_add_yblock_mmx_mix("0", "0")
 snow_inner_add_yblock_mmx_end("16")
 }
 
-static void inner_add_yblock_bw_16_obmc_32_mmx(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
+static void inner_add_yblock_bw_16_obmc_32_mmx(const uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
                       int src_x, int src_y, long src_stride, slice_buffer * sb, int add, uint8_t * dst8){
 snow_inner_add_yblock_mmx_header
 snow_inner_add_yblock_mmx_start("mm1", "mm5", "3", "0", "0")
@@ -896,7 +896,7 @@ snow_inner_add_yblock_mmx_mix("32", "8")
 snow_inner_add_yblock_mmx_end("32")
 }
 
-void ff_snow_inner_add_yblock_sse2(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
                            int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
 
     if (b_w == 16)
@@ -910,7 +910,7 @@ void ff_snow_inner_add_yblock_sse2(uint8_t *obmc, const int obmc_stride, uint8_t
          ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
 }
 
-void ff_snow_inner_add_yblock_mmx(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
                           int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
     if (b_w == 16)
         inner_add_yblock_bw_16_obmc_32_mmx(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
