@@ -136,6 +136,8 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             fill_buffer(s);
         s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
+        offset_t res = -EPIPE;
+
 #if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
         if (s->write_flag) {
             flush_buffer(s);
@@ -146,8 +148,8 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             s->buf_end = s->buffer;
         }
         s->buf_ptr = s->buffer;
-        if (!s->seek || s->seek(s->opaque, offset, SEEK_SET) == (offset_t)-EPIPE)
-            return -EPIPE;
+        if (!s->seek || (res = s->seek(s->opaque, offset, SEEK_SET)) < 0)
+            return res;
         s->pos = offset;
     }
     s->eof_reached = 0;
