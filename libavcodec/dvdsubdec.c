@@ -249,7 +249,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 sub_header->rects = av_mallocz(sizeof(AVSubtitleRect));
                 sub_header->num_rects = 1;
                 sub_header->rects[0].rgba_palette = av_malloc(4 * 4);
-                decode_rle(bitmap, w * 2, w, h / 2,
+                decode_rle(bitmap, w * 2, w, (h + 1) / 2,
                            buf, offset1 * 2, buf_size);
                 decode_rle(bitmap + w, w * 2, w, h / 2,
                            buf, offset2 * 2, buf_size);
