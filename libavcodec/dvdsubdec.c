@@ -27,11 +27,6 @@ static int dvdsub_init_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-static uint16_t getbe16(const uint8_t *p)
-{
-    return (p[0] << 8) | p[1];
-}
-
 static int get_nibble(const uint8_t *buf, int nibble_offset)
 {
     return (buf[nibble_offset >> 1] >> ((1 - (nibble_offset & 1)) << 2)) & 0xf;
@@ -142,10 +137,10 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
     sub_header->start_display_time = 0;
     sub_header->end_display_time = 0;
 
-    cmd_pos = getbe16(buf + 2);
+    cmd_pos = AV_RB16(buf + 2);
     while ((cmd_pos + 4) < buf_size) {
-        date = getbe16(buf + cmd_pos);
-        next_cmd_pos = getbe16(buf + cmd_pos + 2);
+        date = AV_RB16(buf + cmd_pos);
+        next_cmd_pos = AV_RB16(buf + cmd_pos + 2);
 #ifdef DEBUG
         av_log(NULL, AV_LOG_INFO, "cmd_pos=0x%04x next=0x%04x date=%d\n",
                cmd_pos, next_cmd_pos, date);
@@ -211,8 +206,8 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
             case 0x06:
                 if ((buf_size - pos) < 4)
                     goto fail;
-                offset1 = getbe16(buf + pos);
-                offset2 = getbe16(buf + pos + 2);
+                offset1 = AV_RB16(buf + pos);
+                offset2 = AV_RB16(buf + pos + 2);
 #ifdef DEBUG
                 av_log(NULL, AV_LOG_INFO, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
 #endif
@@ -438,7 +433,7 @@ static int dvdsub_parse(AVCodecParserContext *s,
     if (pc->packet_index == 0) {
         if (buf_size < 2)
             return 0;
-        pc->packet_len = (buf[0] << 8) | buf[1];
+        pc->packet_len = AV_RB16(buf);
         av_freep(&pc->packet);
         pc->packet = av_malloc(pc->packet_len);
     }
