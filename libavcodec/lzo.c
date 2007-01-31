@@ -87,11 +87,11 @@ static inline void copy(LZOContext *c, int cnt) {
     register uint8_t *src = c->in;
     register uint8_t *dst = c->out;
     if (cnt > c->in_end - src) {
-        cnt = c->in_end - src;
+        cnt = FFMAX(c->in_end - src, 0);
         c->error |= LZO_INPUT_DEPLETED;
     }
     if (cnt > c->out_end - dst) {
-        cnt = c->out_end - dst;
+        cnt = FFMAX(c->out_end - dst, 0);
         c->error |= LZO_OUTPUT_FULL;
     }
 #if defined(INBUF_PADDED) && defined(OUTBUF_PADDED)
@@ -122,7 +122,7 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
         return;
     }
     if (cnt > c->out_end - dst) {
-        cnt = c->out_end - dst;
+        cnt = FFMAX(c->out_end - dst, 0);
         c->error |= LZO_OUTPUT_FULL;
     }
     if (back == 1) {
