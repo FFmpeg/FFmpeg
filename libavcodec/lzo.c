@@ -168,7 +168,7 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
  * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes
  */
 int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
-    enum {COPY, BACKPTR} state = COPY;
+    int state= 0;
     int x;
     LZOContext c;
     c.in = in;
@@ -205,9 +205,7 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
                     break;
                 }
             }
-        } else
-        switch (state) {
-            case COPY:
+        } else if(!state){
                 cnt = get_len(&c, x, 15);
                 copy(&c, cnt + 3);
                 x = GETB(c);
@@ -219,15 +217,13 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
                     continue;
                 cnt = 1;
                 back = (1 << 11) + (GETB(c) << 2) + (x >> 2) + 1;
-                break;
-            case BACKPTR:
+        } else {
                 cnt = 0;
                 back = (GETB(c) << 2) + (x >> 2) + 1;
-                break;
         }
         copy_backptr(&c, back, cnt + 2);
+        state=
         cnt = x & 3;
-        state = cnt ? BACKPTR : COPY;
         if (cnt)
             copy(&c, cnt);
         x = GETB(c);
