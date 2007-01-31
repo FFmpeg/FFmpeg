@@ -67,6 +67,7 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, extended_content_header);
     else PRINT_IF_GUID(g, ext_stream_embed_stream_header);
     else PRINT_IF_GUID(g, ext_stream_audio_stream);
+    else PRINT_IF_GUID(g, metadata_header);
     else
         printf("(GUID: unknown) ");
     for(i=0;i<16;i++)
@@ -123,6 +124,16 @@ static int asf_probe(AVProbeData *pd)
         return 0;
 }
 
+static int get_value(ByteIOContext *pb, int type){
+    switch(type){
+        case 2: return get_le32(pb);
+        case 3: return get_le32(pb);
+        case 4: return get_le64(pb);
+        case 5: return get_le16(pb);
+        default:return INT_MIN;
+    }
+}
+
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ASFContext *asf = s->priv_data;
@@ -132,6 +143,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ASFStream *asf_st;
     int size, i;
     int64_t gsize;
+    AVRational dar[128];
+
+    memset(dar, 0, sizeof(dar));
 
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
@@ -353,14 +367,34 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         }
                         if ((value_type >= 2) && (value_type <= 5)) // boolean or DWORD or QWORD or WORD
                         {
-                                if (value_type==2) value_num = get_le32(pb);
-                                if (value_type==3) value_num = get_le32(pb);
-                                if (value_type==4) value_num = get_le64(pb);
-                                if (value_type==5) value_num = get_le16(pb);
+                                value_num= get_value(pb, value_type);
                                 if (!strcmp(name,"WM/Track"      )) s->track = value_num + 1;
                                 if (!strcmp(name,"WM/TrackNumber")) s->track = value_num;
                         }
                 }
+        } else if (!memcmp(&g, &metadata_header, sizeof(GUID))) {
+            int n, stream_num, name_len, value_len, value_type, value_num;
+            n = get_le16(pb);
+
+            for(i=0;i<n;i++) {
+                char name[1024];
+
+                get_le16(pb); //lang_list_index
+                stream_num= get_le16(pb);
+                name_len=   get_le16(pb);
+                value_type= get_le16(pb);
+                value_len=  get_le32(pb);
+
+                get_str16_nolen(pb, name_len, name, sizeof(name));
+//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
+                value_num= get_le16(pb);//we should use get_value() here but it doesnt work 2 is le16 here but le32 elsewhere
+                url_fskip(pb, value_len - 2);
+
+                if(stream_num<128){
+                    if     (!strcmp(name, "AspectRatioX")) dar[stream_num].num= value_num;
+                    else if(!strcmp(name, "AspectRatioY")) dar[stream_num].den= value_num;
+                }
+            }
         } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
             int ext_len, payload_ext_ct, stream_ct;
             uint32_t ext_d;
@@ -442,6 +476,20 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         goto fail;
     asf->data_offset = url_ftell(pb);
     asf->packet_size_left = 0;
+
+
+    for(i=0; i<128; i++){
+        int stream_num= asf->asfid2avid[i];
+        if(stream_num>=0 && dar[i].num>0 && dar[i].den>0){
+            AVCodecContext *codec= s->streams[stream_num]->codec;
+            codec->sample_aspect_ratio=
+                av_div_q(
+                    dar[i],
+                    (AVRational){codec->width, codec->height}
+                );
+//av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
+        }
+    }
 
     return 0;
 
