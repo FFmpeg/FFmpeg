@@ -187,7 +187,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     switch(depth){
     case 24:
         for(i = 0; i < avctx->height; i++){
-            memcpy(ptr, buf, n);
+            memcpy(ptr, buf, avctx->width*(depth>>3));
             buf += n;
             ptr += linesize;
         }
