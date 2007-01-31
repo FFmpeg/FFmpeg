@@ -184,11 +184,11 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     }
     while (!c.error) {
         int cnt, back;
-        if (x >> 4) {
-            if (x >> 6) {
+        if (x > 15) {
+            if (x > 63) {
                 cnt = (x >> 5) - 1;
                 back = (GETB(c) << 3) + ((x >> 2) & 7) + 1;
-            } else if (x >> 5) {
+            } else if (x > 31) {
                 cnt = get_len(&c, x, 31);
                 x = GETB(c);
                 back = (GETB(c) << 6) + (x >> 2) + 1;
