@@ -20,12 +20,8 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
-#include "bswap.h"
+#include "bytestream.h"
 #include "bmp.h"
-
-#define read16(bits) bswap_16(get_bits(bits, 16))
-#define read32(bits) bswap_32(get_bits_long(bits, 32))
 
 static int bmp_decode_init(AVCodecContext *avctx){
     BMPContext *s = avctx->priv_data;
@@ -43,7 +39,6 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     BMPContext *s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *p = &s->picture;
-    GetBitContext bits;
     unsigned int fsize, hsize;
     int width, height;
     unsigned int depth;
@@ -53,54 +48,54 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     uint32_t rgb[3];
     uint8_t *ptr;
     int dsize;
+    uint8_t *buf0 = buf;
 
     if(buf_size < 14){
         av_log(avctx, AV_LOG_ERROR, "buf size too small (%d)\n", buf_size);
         return -1;
     }
 
-    init_get_bits(&bits, buf, buf_size);
-
-    if(get_bits(&bits, 16) != 0x424d){ /* 'BM' */
+    if(bytestream_get_byte(&buf) != 'B' ||
+       bytestream_get_byte(&buf) != 'M') {
         av_log(avctx, AV_LOG_ERROR, "bad magic number\n");
         return -1;
     }
 
-    fsize = read32(&bits);
+    fsize = bytestream_get_le32(&buf);
     if(buf_size < fsize){
         av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
                buf_size, fsize);
         return -1;
     }
 
-    skip_bits(&bits, 16);       /* reserved1 */
-    skip_bits(&bits, 16);       /* reserved2 */
+    buf += 2; /* reserved1 */
+    buf += 2; /* reserved2 */
 
-    hsize = read32(&bits); /* header size */
+    hsize = bytestream_get_le32(&buf); /* header size */
     if(fsize <= hsize){
         av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
                fsize, hsize);
         return -1;
     }
 
-    ihsize = read32(&bits);       /* more header size */
+    ihsize = bytestream_get_le32(&buf);       /* more header size */
     if(ihsize + 14 > hsize){
         av_log(avctx, AV_LOG_ERROR, "invalid header size %d\n", hsize);
         return -1;
     }
 
-    width = read32(&bits);
-    height = read32(&bits);
+    width = bytestream_get_le32(&buf);
+    height = bytestream_get_le32(&buf);
 
-    if(read16(&bits) != 1){ /* planes */
+    if(bytestream_get_le16(&buf) != 1){ /* planes */
         av_log(avctx, AV_LOG_ERROR, "invalid BMP header\n");
         return -1;
     }
 
-    depth = read16(&bits);
+    depth = bytestream_get_le16(&buf);
 
     if(ihsize > 16)
-        comp = read32(&bits);
+        comp = bytestream_get_le32(&buf);
     else
         comp = BMP_RGB;
 
@@ -110,10 +105,10 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     if(comp == BMP_BITFIELDS){
-        skip_bits(&bits, 20 * 8);
-        rgb[0] = read32(&bits);
-        rgb[1] = read32(&bits);
-        rgb[2] = read32(&bits);
+        buf += 20;
+        rgb[0] = bytestream_get_le32(&buf);
+        rgb[1] = bytestream_get_le32(&buf);
+        rgb[2] = bytestream_get_le32(&buf);
     }
 
     avctx->codec_id = CODEC_ID_BMP;
@@ -169,7 +164,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
 
-    buf += hsize;
+    buf = buf0 + hsize;
     dsize = buf_size - hsize;
 
     /* Line size in file multiple of 4 */
