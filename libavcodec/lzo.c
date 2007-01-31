@@ -255,7 +255,13 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < 300; i++) {
 START_TIMER
         inlen = clen; outlen = MAXSZ;
+#ifdef LIBLZO
+        if (lzo1x_decompress_safe(comp, inlen, decomp, &outlen, NULL))
+#elif defined(LIBLZO_UNSAFE)
+        if (lzo1x_decompress(comp, inlen, decomp, &outlen, NULL))
+#else
         if (lzo1x_decode(decomp, &outlen, comp, &inlen))
+#endif
             av_log(NULL, AV_LOG_ERROR, "decompression error\n");
 STOP_TIMER("lzod")
     }
