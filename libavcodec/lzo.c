@@ -66,6 +66,19 @@ static inline int get_len(LZOContext *c, int x, int mask) {
     return cnt;
 }
 
+//#define UNALIGNED_LOADSTORE
+#define BUILTIN_MEMCPY
+#ifdef UNALIGNED_LOADSTORE
+#define COPY2(d, s) *(uint16_t *)(d) = *(uint16_t *)(s);
+#define COPY4(d, s) *(uint32_t *)(d) = *(uint32_t *)(s);
+#elif defined(BUILTIN_MEMCPY)
+#define COPY2(d, s) memcpy(d, s, 2);
+#define COPY4(d, s) memcpy(d, s, 4);
+#else
+#define COPY2(d, s) (d)[0] = (s)[0]; (d)[1] = (s)[1];
+#define COPY4(d, s) (d)[0] = (s)[0]; (d)[1] = (s)[1]; (d)[2] = (s)[2]; (d)[3] = (s)[3];
+#endif
+
 /**
  * \brief copy bytes from input to output buffer with checking
  * \param cnt number of bytes to copy, must be > 0
@@ -82,10 +95,7 @@ static inline void copy(LZOContext *c, int cnt) {
         c->error |= LZO_OUTPUT_FULL;
     }
 #if defined(INBUF_PADDED) && defined(OUTBUF_PADDED)
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-    dst[3] = src[3];
+    COPY4(dst, src);
     src += 4;
     dst += 4;
     cnt -= 4;
@@ -120,22 +130,16 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
         dst += cnt;
     } else {
 #ifdef OUTBUF_PADDED
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = src[3];
+        COPY2(dst, src);
+        COPY2(dst + 2, src + 2);
         src += 4;
         dst += 4;
         cnt -= 4;
         if (cnt > 0) {
-            dst[0] = src[0];
-            dst[1] = src[1];
-            dst[2] = src[2];
-            dst[3] = src[3];
-            dst[4] = src[4];
-            dst[5] = src[5];
-            dst[6] = src[6];
-            dst[7] = src[7];
+            COPY2(dst, src);
+            COPY2(dst + 2, src + 2);
+            COPY2(dst + 4, src + 4);
+            COPY2(dst + 6, src + 6);
             src += 8;
             dst += 8;
             cnt -= 8;
