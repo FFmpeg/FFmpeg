@@ -86,11 +86,11 @@ static inline int get_len(LZOContext *c, int x, int mask) {
 static inline void copy(LZOContext *c, int cnt) {
     register uint8_t *src = c->in;
     register uint8_t *dst = c->out;
-    if (src + cnt > c->in_end || src + cnt < src) {
+    if (cnt > c->in_end - src) {
         cnt = c->in_end - src;
         c->error |= LZO_INPUT_DEPLETED;
     }
-    if (dst + cnt > c->out_end || dst + cnt < dst) {
+    if (cnt > c->out_end - dst) {
         cnt = c->out_end - dst;
         c->error |= LZO_OUTPUT_FULL;
     }
@@ -121,7 +121,7 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
         c->error |= LZO_INVALID_BACKPTR;
         return;
     }
-    if (dst + cnt > c->out_end || dst +  cnt < dst) {
+    if (cnt > c->out_end - dst) {
         cnt = c->out_end - dst;
         c->error |= LZO_OUTPUT_FULL;
     }
