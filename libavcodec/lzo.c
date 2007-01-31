@@ -182,6 +182,8 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
         x = GETB(c);
         if (x < 16) c.error |= LZO_ERROR;
     }
+    if (c.in > c.in_end)
+        c.error |= LZO_INPUT_DEPLETED;
     while (!c.error) {
         int cnt, back;
         if (x > 15) {
@@ -209,6 +211,10 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
                 cnt = get_len(&c, x, 15);
                 copy(&c, cnt + 3);
                 x = GETB(c);
+                if (c.in > c.in_end) {
+                    c.error |= LZO_INPUT_DEPLETED;
+                    continue;
+                }
                 if (x >> 4)
                     continue;
                 cnt = 1;
