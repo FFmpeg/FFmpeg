@@ -90,6 +90,32 @@ w57:    .long W57
         .endm
 
 /*
+  Compute partial IDCT of half row.
+  shift = left-shift amount
+  a3 = row[2,0]
+  a4 = row[3,1]
+
+  Output in registers v1--v8
+*/
+        .macro idct_row4 shift
+        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
+        ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
+        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
+        mov    a2, #(1<<(\shift-1))
+        smlad  v1, a3, ip, a2
+        smlsd  v4, a3, ip, a2
+        ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
+        smlad  v2, a3, lr, a2
+        smlsd  v3, a3, lr, a2
+        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
+        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
+        pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
+        pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
+        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
+        smusdx v7, a4, a2            /* v7 = B2 = W5*row[1] - W1*row[3] */
+        .endm
+
+/*
   Compute final part of IDCT single row without shift.
   Input in registers v1--v8
   Output in registers ip, v1--v3, lr, v5--v7
@@ -167,10 +193,26 @@ w57:    .long W57
         .align
         .func idct_row_armv6
 idct_row_armv6:
-        stmfd  sp!, {a2, lr}
+        str    lr, [sp, #-4]!
+
+        ldr    lr, [a1, #12]         /* lr = row[7,5] */
+        ldr    ip, [a1, #4]          /* ip = row[6,4] */
+        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
+        ldr    a3, [a1]              /* a3 = row[2,0] */
+        orrs   lr, lr, ip
+        cmpeq  lr, a4
+        cmpeq  lr, a3, lsr #16
+        beq    1f
+        str    a2, [sp, #-4]!
+        cmp    lr, #0
+        beq    2f
 
         idct_row   ROW_SHIFT
-        ldr    a2, [sp], #4
+        b      3f
+
+2:      idct_row4  ROW_SHIFT
+
+3:      ldr    a2, [sp], #4
         idct_finish_shift ROW_SHIFT
 
         strh   v1, [a2]
@@ -182,6 +224,17 @@ idct_row_armv6:
         strh   v6, [a2, #(16*5)]
         strh   v5, [a2, #(16*7)]
 
+        ldr    pc, [sp], #4
+
+1:      mov    a3, a3, lsl #3
+        strh   a3, [a2]
+        strh   a3, [a2, #(16*2)]
+        strh   a3, [a2, #(16*4)]
+        strh   a3, [a2, #(16*6)]
+        strh   a3, [a2, #(16*1)]
+        strh   a3, [a2, #(16*3)]
+        strh   a3, [a2, #(16*5)]
+        strh   a3, [a2, #(16*7)]
         ldr    pc, [sp], #4
         .endfunc
 
