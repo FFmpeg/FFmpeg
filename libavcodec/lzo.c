@@ -213,7 +213,7 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
                     c.error |= LZO_INPUT_DEPLETED;
                     continue;
                 }
-                if (x >> 4)
+                if (x > 15)
                     continue;
                 cnt = 1;
                 back = (1 << 11) + (GETB(c) << 2) + (x >> 2) + 1;
