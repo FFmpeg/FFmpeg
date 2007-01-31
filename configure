@@ -686,6 +686,7 @@ liba52bin="no"
 libdts="no"
 libfaac="no"
 libfaad="no"
+libfaad2="no"
 libfaadbin="no"
 libgsm="no"
 libmp3lame="no"
@@ -1230,6 +1231,24 @@ if enabled libvorbis && disabled libogg; then
     die "libogg must be enabled to enable libvorbis."
 fi
 
+if enabled_any libfaad libfaadbin ; then
+    if check_header faad.h; then
+        check_cc << EOF
+#include <faad.h>
+#ifndef FAAD2_VERSION
+ok faad1
+#endif
+int main( void ) { return 0; }
+EOF
+        test $? = 0 && enable libfaad2
+    else
+        libfaad="no"
+        libfaadbin="no"
+        echo "FAAD test failed."
+    fi
+fi
+
+
 if disabled gpl ; then
     if enabled pp; then
         die "The Postprocessing code is under GPL and --enable-gpl is not specified."
@@ -1251,23 +1270,8 @@ if disabled gpl ; then
         die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
-    if enabled_any libfaad libfaadbin ; then
-        if check_header faad.h; then
-            check_cc << EOF
-                #include <faad.h>
-                #ifndef FAAD2_VERSION
-                ok faad1
-                #endif
-                int main( void ) { return 0; }
-EOF
-            if test $? = 0 ; then
-                die "FAAD2 is under GPL and --enable-gpl is not specified."
-            fi
-        else
-            libfaad="no"
-            libfaadbin="no"
-            echo "FAAD test failed."
-        fi
+    if enabled libfaad2; then
+        die "FAAD2 is under GPL and --enable-gpl is not specified."
     fi
 
     if enabled x11grab; then
