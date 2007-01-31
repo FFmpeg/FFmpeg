@@ -81,7 +81,7 @@ static inline int get_len(LZOContext *c, int x, int mask) {
 
 /**
  * \brief copy bytes from input to output buffer with checking
- * \param cnt number of bytes to copy, must be > 0
+ * \param cnt number of bytes to copy, must be >= 0
  */
 static inline void copy(LZOContext *c, int cnt) {
     register uint8_t *src = c->in;
@@ -109,7 +109,7 @@ static inline void copy(LZOContext *c, int cnt) {
 /**
  * \brief copy previously decoded bytes to current position
  * \param back how many bytes back we start
- * \param cnt number of bytes to copy, must be > 0
+ * \param cnt number of bytes to copy, must be >= 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.
