@@ -1242,9 +1242,7 @@ int main( void ) { return 0; }
 EOF
         test $? = 0 && enable libfaad2
     else
-        libfaad="no"
-        libfaadbin="no"
-        echo "FAAD test failed."
+        die "FAAD test failed."
     fi
 fi
 
