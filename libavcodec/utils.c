@@ -237,8 +237,14 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     InternalBuffer *buf;
     int *picture_number;
 
-    assert(pic->data[0]==NULL);
-    assert(INTERNAL_BUFFER_SIZE > s->internal_buffer_count);
+    if(pic->data[0]!=NULL) {
+        av_log(s, AV_LOG_ERROR, "pic->data[0]!=NULL in avcodec_default_get_buffer\n");
+        return -1;
+    }
+    if(s->internal_buffer_count >= INTERNAL_BUFFER_SIZE) {
+        av_log(s, AV_LOG_ERROR, "internal_buffer_count overflow (missing release_buffer?)\n");
+        return -1;
+    }
 
     if(avcodec_check_dimensions(s,w,h))
         return -1;
