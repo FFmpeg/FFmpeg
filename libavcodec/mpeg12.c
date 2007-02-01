@@ -234,11 +234,28 @@ static int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if(avctx->profile == FF_PROFILE_UNKNOWN)
-        avctx->profile = s->chroma_format == CHROMA_420 ? 4 : 0;
+    if(avctx->profile == FF_PROFILE_UNKNOWN){
+        if(avctx->level != FF_LEVEL_UNKNOWN){
+            av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
+            return -1;
+        }
+        avctx->profile = s->chroma_format == CHROMA_420 ? 4 : 0; /* Main or 4:2:2 */
+    }
 
-    if(avctx->level == FF_LEVEL_UNKNOWN)
-        avctx->level = s->chroma_format == CHROMA_420 ? 8 : 5;
+    if(avctx->level == FF_LEVEL_UNKNOWN){
+        if(avctx->profile == 0){ /* 4:2:2 */
+            if(avctx->width <= 720 && avctx->height <= 608) avctx->level = 5; /* Main */
+            else                                            avctx->level = 2; /* High */
+        }else{
+            if(avctx->profile != 1 && s->chroma_format != CHROMA_420){
+                av_log(avctx, AV_LOG_ERROR, "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
+                return -1;
+            }
+            if(avctx->width <= 720 && avctx->height <= 576) avctx->level = 8; /* Main */
+            else if(avctx->width <= 1440)                   avctx->level = 6; /* High 1440 */
+            else                                            avctx->level = 4; /* High */
+        }
+    }
 
     if((avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) && s->frame_rate_index != 4){
         av_log(avctx, AV_LOG_ERROR, "Drop frame time code only allowed with 1001/30000 fps\n");
@@ -333,7 +350,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 1); //seq ext
 
-                put_bits(&s->pb, 1, s->chroma_format == CHROMA_422); //escx
+                put_bits(&s->pb, 1, s->avctx->profile == 0); //escx 1 for 4:2:2 profile */
 
                 put_bits(&s->pb, 3, s->avctx->profile); //profile
                 put_bits(&s->pb, 4, s->avctx->level); //level
