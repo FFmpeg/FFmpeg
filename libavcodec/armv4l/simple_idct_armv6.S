@@ -51,14 +51,14 @@ w57:    .long W57
   Compute partial IDCT of single row.
   shift = left-shift amount
   a1 = source address
+  a3 = row[2,0]
+  a4 = row[3,1]
 
   Output in registers v1--v8
 */
         .macro idct_row shift
-        ldr    a3, [a1]              /* a3 = row[2,0] */
         ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
-        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
         mov    a2, #(1<<(\shift-1))
         smlad  v1, a3, ip, a2
         smlsd  v4, a3, ip, a2
@@ -248,6 +248,8 @@ idct_row_armv6:
 idct_col_armv6:
         stmfd  sp!, {a2, lr}
 
+        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
         idct_row COL_SHIFT
         ldr    a2, [sp], #4
         idct_finish_shift COL_SHIFT
@@ -275,6 +277,8 @@ idct_col_armv6:
 idct_col_put_armv6:
         stmfd  sp!, {a2, a3, lr}
 
+        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
         idct_row COL_SHIFT
         ldmfd  sp!, {a2, a3}
         idct_finish_shift_sat COL_SHIFT
@@ -304,6 +308,8 @@ idct_col_put_armv6:
 idct_col_add_armv6:
         stmfd  sp!, {a2, a3, lr}
 
+        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
         idct_row COL_SHIFT
         ldmfd  sp!, {a2, a3}
         idct_finish
