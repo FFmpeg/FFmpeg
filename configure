@@ -1248,37 +1248,19 @@ fi
 
 
 if disabled gpl ; then
-    if enabled pp; then
-        die "The Postprocessing code is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled_any liba52 liba52bin ; then
-        die "liba52 is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled xvid; then
-        die "libxvidcore is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled x264; then
-        die "x264 is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled libdts; then
-        die "libdts is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled libfaad2; then
-        die "FAAD2 is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled x11grab; then
-        die "The X11 grabber is under GPL and --enable-gpl is not specified."
-    fi
-
-    if enabled swscaler; then
-        die "The software scaler is under GPL and --enable-gpl is not specified."
-    fi
+    die_gpl_disabled(){
+        name=$1
+        shift
+        enabled_any $@ && die "$name is under GPL and --enable-gpl is not specified."
+    }
+    die_gpl_disabled "The Postprocessing code" pp
+    die_gpl_disabled "liba52"                  liba52 liba52bin
+    die_gpl_disabled "libxvidcore"             xvid
+    die_gpl_disabled "x264"                    x264
+    die_gpl_disabled "libdts"                  libdts
+    die_gpl_disabled "FAAD2"                   libfaad2
+    die_gpl_disabled "The X11 grabber"         x11grab
+    die_gpl_disabled "The software scaler"     swscaler
 fi
 
 # compute MMX state
