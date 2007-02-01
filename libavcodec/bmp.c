@@ -232,6 +232,16 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static int bmp_decode_end(AVCodecContext *avctx)
+{
+    BMPContext* c = avctx->priv_data;
+
+    if (c->picture.data[0])
+        avctx->release_buffer(avctx, &c->picture);
+
+    return 0;
+}
+
 AVCodec bmp_decoder = {
     "bmp",
     CODEC_TYPE_VIDEO,
@@ -239,6 +249,6 @@ AVCodec bmp_decoder = {
     sizeof(BMPContext),
     bmp_decode_init,
     NULL,
-    NULL,
+    bmp_decode_end,
     bmp_decode_frame
 };
