@@ -50,7 +50,6 @@ static const uint16_t table_mb_intra[64][2];
 //@{
 enum VC1Code{
     VC1_CODE_RES0       = 0x00000100,
-    VC1_CODE_ESCAPE     = 0x00000103,
     VC1_CODE_ENDOFSEQ   = 0x0000010A,
     VC1_CODE_SLICE,
     VC1_CODE_FIELD,
@@ -4107,7 +4106,7 @@ static void vc1_decode_blocks(VC1Context *v)
     }
 }
 
-#define IS_MARKER(x) ((((x) & ~0xFF) == VC1_CODE_RES0) && ((x) != VC1_CODE_ESCAPE))
+#define IS_MARKER(x) (((x) & ~0xFF) == VC1_CODE_RES0)
 
 /** Find VC-1 marker in buffer
  * @return position where next marker starts or end of buffer if no marker found
