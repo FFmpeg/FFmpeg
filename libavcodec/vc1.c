@@ -46,6 +46,19 @@ extern const uint16_t ff_msmp4_mb_i_table[64][2];
 #define AC_VLC_BITS 9
 static const uint16_t table_mb_intra[64][2];
 
+/** Markers used if VC-1 AP frame data */
+//@{
+enum VC1Code{
+    VC1_CODE_RES0       = 0x00000100,
+    VC1_CODE_ESCAPE     = 0x00000103,
+    VC1_CODE_ENDOFSEQ   = 0x0000010A,
+    VC1_CODE_SLICE,
+    VC1_CODE_FIELD,
+    VC1_CODE_FRAME,
+    VC1_CODE_ENTRYPOINT,
+    VC1_CODE_SEQHDR,
+};
+//@}
 
 /** Available Profiles */
 //@{
@@ -4094,6 +4107,42 @@ static void vc1_decode_blocks(VC1Context *v)
     }
 }
 
+#define IS_MARKER(x) ((((x) & ~0xFF) == VC1_CODE_RES0) && ((x) != VC1_CODE_ESCAPE))
+
+/** Find VC-1 marker in buffer
+ * @return position where next marker starts or end of buffer if no marker found
+ */
+static av_always_inline uint8_t* find_next_marker(uint8_t *src, uint8_t *end)
+{
+    uint32_t mrk = 0xFFFFFFFF;
+
+    if(end-src < 4) return end;
+    while(src < end){
+        mrk = (mrk << 8) | *src++;
+        if(IS_MARKER(mrk))
+            return src-4;
+    }
+    return end;
+}
+
+static av_always_inline int vc1_unescape_buffer(uint8_t *src, int size, uint8_t *dst)
+{
+    int dsize = 0, i;
+
+    if(size < 4){
+        for(dsize = 0; dsize < size; dsize++) *dst++ = *src++;
+        return size;
+    }
+    for(i = 0; i < size; i++, src++) {
+        if(src[0] == 3 && i >= 2 && !src[-1] && !src[-2] && i < size-1 && src[1] < 4) {
+            dst[dsize++] = src[1];
+            src++;
+            i++;
+        } else
+            dst[dsize++] = *src;
+    }
+    return dsize;
+}
 
 /** Initialize a VC1/WMV3 decoder
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
@@ -4145,44 +4194,47 @@ static int vc1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO, "Read %i bits in overflow\n", -count);
         }
     } else { // VC1/WVC1
-        int edata_size = avctx->extradata_size;
-        uint8_t *edata = avctx->extradata;
+        uint8_t *start = avctx->extradata, *end = avctx->extradata + avctx->extradata_size;
+        uint8_t *next; int size, buf2_size;
+        uint8_t *buf2 = NULL;
+        int seq_inited = 0, ep_inited = 0;
 
         if(avctx->extradata_size < 16) {
-            av_log(avctx, AV_LOG_ERROR, "Extradata size too small: %i\n", edata_size);
+            av_log(avctx, AV_LOG_ERROR, "Extradata size too small: %i\n", avctx->extradata_size);
             return -1;
         }
-        while(edata_size > 8) {
-            // test if we've found header
-            if(AV_RB32(edata) == 0x0000010F) {
-                edata += 4;
-                edata_size -= 4;
+
+        buf2 = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if(start[0]) start++; // in WVC1 extradata first byte is its size
+        next = start;
+        for(; next < end; start = next){
+            next = find_next_marker(start + 4, end);
+            size = next - start - 4;
+            if(size <= 0) continue;
+            buf2_size = vc1_unescape_buffer(start + 4, size, buf2);
+            init_get_bits(&gb, buf2, buf2_size * 8);
+            switch(AV_RB32(start)){
+            case VC1_CODE_SEQHDR:
+                if(decode_sequence_header(avctx, &gb) < 0){
+                    av_free(buf2);
+                    return -1;
+                }
+                seq_inited = 1;
+                break;
+            case VC1_CODE_ENTRYPOINT:
+                if(decode_entry_point(avctx, &gb) < 0){
+                    av_free(buf2);
+                    return -1;
+                }
+                ep_inited = 1;
                 break;
             }
-            edata_size--;
-            edata++;
         }
-
-        init_get_bits(&gb, edata, edata_size*8);
-
-        if (decode_sequence_header(avctx, &gb) < 0)
-          return -1;
-
-        while(edata_size > 8) {
-            // test if we've found entry point
-            if(AV_RB32(edata) == 0x0000010E) {
-                edata += 4;
-                edata_size -= 4;
-                break;
-            }
-            edata_size--;
-            edata++;
+        av_free(buf2);
+        if(!seq_inited || !ep_inited){
+            av_log(avctx, AV_LOG_ERROR, "Incomplete extradata\n");
+            return -1;
         }
-
-        init_get_bits(&gb, edata, edata_size*8);
-
-        if (decode_entry_point(avctx, &gb) < 0)
-          return -1;
     }
     avctx->has_b_frames= !!(avctx->max_b_frames);
     s->low_delay = !avctx->has_b_frames;
@@ -4246,17 +4298,49 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr= &s->picture[i];
     }
 
-    //for advanced profile we need to unescape buffer
+    //for advanced profile we may need to parse and unescape data
     if (avctx->codec_id == CODEC_ID_VC1) {
-        int i, buf_size2;
-        buf2 = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-        buf_size2 = 0;
-        for(i = 0; i < buf_size; i++) {
-            if(buf[i] == 3 && i >= 2 && !buf[i-1] && !buf[i-2] && i < buf_size-1 && buf[i+1] < 4) {
-                buf2[buf_size2++] = buf[i+1];
-                i++;
-            } else
-                buf2[buf_size2++] = buf[i];
+        int buf_size2 = 0;
+        buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+        if(IS_MARKER(AV_RB32(buf))){ /* frame starts with marker and needs to be parsed */
+            uint8_t *dst = buf2, *start, *end, *next;
+            int size;
+
+            next = buf;
+            for(start = buf, end = buf + buf_size; next < end; start = next){
+                next = find_next_marker(start + 4, end);
+                size = next - start - 4;
+                if(size <= 0) continue;
+                switch(AV_RB32(start)){
+                case VC1_CODE_FRAME:
+                    buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
+                    break;
+                case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
+                    buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
+                    init_get_bits(&s->gb, buf2, buf_size2*8);
+                    decode_entry_point(avctx, &s->gb);
+                    break;
+                case VC1_CODE_SLICE:
+                    av_log(avctx, AV_LOG_ERROR, "Sliced decoding is not implemented (yet)\n");
+                    av_free(buf2);
+                    return -1;
+                }
+            }
+        }else if(v->interlace && ((buf[0] & 0xC0) == 0xC0)){ /* WVC1 interlaced stores both fields divided by marker */
+            uint8_t *divider;
+
+            divider = find_next_marker(buf, buf + buf_size);
+            if((divider == (buf + buf_size)) || AV_RB32(divider) != VC1_CODE_FIELD){
+                av_log(avctx, AV_LOG_ERROR, "Error in WVC1 interlaced frame\n");
+                return -1;
+            }
+
+            buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
+            // TODO
+            av_free(buf2);return -1;
+        }else{
+            buf_size2 = vc1_unescape_buffer(buf, buf_size, buf2);
         }
         init_get_bits(&s->gb, buf2, buf_size2*8);
     } else
