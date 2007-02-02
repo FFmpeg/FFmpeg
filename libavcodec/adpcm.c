@@ -602,6 +602,10 @@ static int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMContext *c = avctx->priv_data;
 
+    if(avctx->channels > 2U){
+        return -1;
+    }
+
     c->channel = 0;
     c->status[0].predictor = c->status[1].predictor = 0;
     c->status[0].step_index = c->status[1].step_index = 0;
@@ -826,6 +830,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     int n, m, channel, i;
     int block_predictor[2];
     short *samples;
+    short *samples_end;
     uint8_t *src;
     int st; /* stereo */
 
@@ -847,7 +852,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     if (!buf_size)
         return 0;
 
+    //should protect all 4bit ADPCM variants
+    //8 is needed for CODEC_ID_ADPCM_IMA_WAV with 2 channels
+    //
+    if(*data_size/4 < buf_size + 8)
+        return -1;
+
     samples = data;
+    samples_end= samples + *data_size/2;
+    *data_size= 0;
     src = buf;
 
     st = avctx->channels == 2 ? 1 : 0;
@@ -1031,6 +1044,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
+        if(buf_size + 16 > (samples_end - samples)*3/8)
+            return -1;
+
         c->status[0].predictor = (int16_t)(src[10] | (src[11] << 8));
         c->status[1].predictor = (int16_t)(src[12] | (src[13] << 8));
         c->status[0].step_index = src[14];
@@ -1197,7 +1213,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 src++;
             }
         } else if (avctx->codec->id == CODEC_ID_ADPCM_SBPRO_3) {
-            while (src < buf + buf_size) {
+            while (src < buf + buf_size && samples + 2 < samples_end) {
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
                     (src[0] >> 5) & 0x07, 3, 0);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
@@ -1207,7 +1223,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 src++;
             }
         } else {
-            while (src < buf + buf_size) {
+            while (src < buf + buf_size && samples + 3 < samples_end) {
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
                     (src[0] >> 6) & 0x03, 2, 2);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
@@ -1229,6 +1245,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         init_get_bits(&gb, buf, size);
 
+//the following return -1 may be removed only after
+//1. correctly spliting the stream into packets at demuxer or parser level
+//2. checking array bounds when writing
+//3. moving the global nb_bits header into extradata
+return -1;
         // first frame, read bits & inital values
         if (!c->nb_bits)
         {
