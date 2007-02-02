@@ -70,6 +70,7 @@ typedef struct x11_grab_s
     XImage *image;           /**< X11 image holding the grab */
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
+    int mouse_warning_shown;
 } x11_grab_t;
 
 /**
@@ -237,6 +238,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     x11grab->y_off = y_off;
     x11grab->image = image;
     x11grab->use_shm = use_shm;
+    x11grab->mouse_warning_shown = 0;
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
@@ -268,7 +270,11 @@ get_pointer_coordinates(int *x, int *y, Display *dpy, AVFormatContext *s1)
     if (XQueryPointer(dpy, mrootwindow, &mrootwindow, &childwindow,
                       x, y, &dummy, &dummy, (unsigned int*)&dummy)) {
     } else {
-        av_log(s1, AV_LOG_INFO, "couldn't find mouse pointer\n");
+        x11_grab_t *s = s1->priv_data;
+        if (!s->mouse_warning_shown) {
+            av_log(s1, AV_LOG_INFO, "couldn't find mouse pointer\n");
+            s->mouse_warning_shown = 1;
+        }
         *x = -1;
         *y = -1;
     }
