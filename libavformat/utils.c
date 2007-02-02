@@ -2314,6 +2314,8 @@ static void truncate_ts(AVStream *st, AVPacket *pkt){
  * Write a packet to an output media file.
  *
  * The packet shall contain one audio or video frame.
+ * The packet must be correctly interleaved according to the container specification,
+ * if not then av_interleaved_write_frame must be used
  *
  * @param s media file handle
  * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
