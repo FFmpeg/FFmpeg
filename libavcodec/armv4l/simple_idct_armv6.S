@@ -94,11 +94,11 @@ w57:    .long W57
   shift = left-shift amount
   a3 = row[2,0]
   a4 = row[3,1]
+  ip = w42
 
   Output in registers v1--v8
 */
         .macro idct_row4 shift
-        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
         ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
         mov    a2, #(1<<(\shift-1))
