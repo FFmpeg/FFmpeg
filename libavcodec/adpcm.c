@@ -1245,7 +1245,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         init_get_bits(&gb, buf, size);
 
-//the following return -1 may be removed only after
+//FIXME the following return -1 may be removed only after
 //1. correctly spliting the stream into packets at demuxer or parser level
 //2. checking array bounds when writing
 //3. moving the global nb_bits header into extradata
