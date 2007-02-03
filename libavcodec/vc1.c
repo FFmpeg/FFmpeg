@@ -1305,8 +1305,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     if(get_bits1(gb)) { //Display Info - decoding is not affected by it
         int w, h, ar = 0;
         av_log(v->s.avctx, AV_LOG_INFO, "Display extended info:\n");
-        w = get_bits(gb, 14) + 1;
-        h = get_bits(gb, 14) + 1;
+        v->s.avctx->width  = v->s.width  = w = get_bits(gb, 14) + 1;
+        v->s.avctx->height = v->s.height = h = get_bits(gb, 14) + 1;
         av_log(v->s.avctx, AV_LOG_INFO, "Display dimensions: %ix%i\n", w, h);
         if(get_bits1(gb))
             ar = get_bits(gb, 4);
