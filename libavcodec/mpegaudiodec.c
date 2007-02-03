@@ -1747,9 +1747,9 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         s_index+=4;
     }
     /* skip extension bits */
-    bits_left = end_pos - get_bits_count(&s->gb);
+    bits_left = end_pos2 - get_bits_count(&s->gb);
 //av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
-    if (bits_left < 0 || bits_left > 500) {
+    if (bits_left < 0/* || bits_left > 500*/) {
         av_log(NULL, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
     }else if(bits_left > 0 && s->error_resilience >= FF_ER_AGGRESSIVE){
@@ -1758,6 +1758,14 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     }
     memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
     skip_bits_long(&s->gb, bits_left);
+
+    i= get_bits_count(&s->gb);
+    if(s->in_gb.buffer && i >= s->gb.size_in_bits){
+        s->gb= s->in_gb;
+        s->in_gb.buffer=NULL;
+        assert((get_bits_count(&s->gb) & 7) == 0);
+        skip_bits_long(&s->gb, i - end_pos);
+    }
 
     return 0;
 }
