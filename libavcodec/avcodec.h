@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(29<<8)+0)
-#define LIBAVCODEC_VERSION      51.29.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(30<<8)+0)
+#define LIBAVCODEC_VERSION      51.30.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2637,6 +2637,7 @@ extern AVCodecParser mpeg4video_parser;
 extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser mpegvideo_parser;
 extern AVCodecParser pnm_parser;
+extern AVCodecParser vc1_parser;
 
 
 typedef struct AVBitStreamFilterContext {

@@ -254,6 +254,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER (MPEGAUDIO, mpegaudio);
     REGISTER_PARSER (MPEGVIDEO, mpegvideo);
     REGISTER_PARSER (PNM, pnm);
+    REGISTER_PARSER (VC1, vc1);
 
     av_register_bitstream_filter(&dump_extradata_bsf);
     av_register_bitstream_filter(&remove_extradata_bsf);
