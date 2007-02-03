@@ -1592,6 +1592,19 @@ static inline int get_bitsz(GetBitContext *s, int n)
         return get_bits(s, n);
 }
 
+
+static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos, int *end_pos2){
+    if(s->in_gb.buffer && *pos >= s->gb.size_in_bits){
+        s->gb= s->in_gb;
+        s->in_gb.buffer=NULL;
+        assert((get_bits_count(&s->gb) & 7) == 0);
+        skip_bits_long(&s->gb, *pos - *end_pos);
+        *end_pos2=
+        *end_pos= *end_pos2 + get_bits_count(&s->gb) - *pos;
+        *pos= get_bits_count(&s->gb);
+    }
+}
+
 static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                           int16_t *exponents, int end_pos2)
 {
@@ -1627,15 +1640,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             if (pos >= end_pos){
 //                av_log(NULL, AV_LOG_ERROR, "pos: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
-                if(s->in_gb.buffer && pos >= s->gb.size_in_bits){
-                    s->gb= s->in_gb;
-                    s->in_gb.buffer=NULL;
-                    assert((get_bits_count(&s->gb) & 7) == 0);
-                    skip_bits_long(&s->gb, pos - end_pos);
-                    end_pos2=
-                    end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
-                    pos= get_bits_count(&s->gb);
-                }
+                switch_buffer(s, &pos, &end_pos, &end_pos2);
 //                av_log(NULL, AV_LOG_ERROR, "new pos: %d %d\n", pos, end_pos);
                 if(pos >= end_pos)
                     break;
@@ -1712,15 +1717,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 break;
             }
 //                av_log(NULL, AV_LOG_ERROR, "pos2: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
-            if(s->in_gb.buffer && pos >= s->gb.size_in_bits){
-                s->gb= s->in_gb;
-                s->in_gb.buffer=NULL;
-                assert((get_bits_count(&s->gb) & 7) == 0);
-                skip_bits_long(&s->gb, pos - end_pos);
-                end_pos2=
-                end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
-                pos= get_bits_count(&s->gb);
-            }
+            switch_buffer(s, &pos, &end_pos, &end_pos2);
 //                av_log(NULL, AV_LOG_ERROR, "new pos2: %d %d %d\n", pos, end_pos, s_index);
             if(pos >= end_pos)
                 break;
@@ -1760,12 +1757,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     skip_bits_long(&s->gb, bits_left);
 
     i= get_bits_count(&s->gb);
-    if(s->in_gb.buffer && i >= s->gb.size_in_bits){
-        s->gb= s->in_gb;
-        s->in_gb.buffer=NULL;
-        assert((get_bits_count(&s->gb) & 7) == 0);
-        skip_bits_long(&s->gb, i - end_pos);
-    }
+    switch_buffer(s, &i, &end_pos, &end_pos2);
 
     return 0;
 }
