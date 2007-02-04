@@ -1320,10 +1320,16 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
 
         if(get_bits1(gb)){ //framerate stuff
             if(get_bits1(gb)) {
-                get_bits(gb, 16);
+                v->s.avctx->time_base.num = 32;
+                v->s.avctx->time_base.den = get_bits(gb, 16) + 1;
             } else {
-                get_bits(gb, 8);
-                get_bits(gb, 4);
+                int nr, dr;
+                nr = get_bits(gb, 8);
+                dr = get_bits(gb, 4);
+                if(nr && nr < 8 && dr && dr < 3){
+                    v->s.avctx->time_base.num = fps_dr[dr - 1];
+                    v->s.avctx->time_base.den = fps_nr[nr - 1] * 1000;
+                }
             }
         }
 
