@@ -1616,14 +1616,13 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 
 static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 {
-    int fcm;
     int pqindex, lowquant;
     int status;
 
     v->p_frame_skipped = 0;
 
     if(v->interlace)
-        fcm = decode012(gb);
+        v->fcm = decode012(gb);
     switch(get_prefix(gb, 0, 4)) {
     case 0:
         v->s.pict_type = P_TYPE;
@@ -1646,10 +1645,10 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         get_bits(gb, 8);
     if(v->broadcast) {
         if(!v->interlace || v->panscanflag) {
-            get_bits(gb, 2);
+            v->rptfrm = get_bits(gb, 2);
         } else {
-            get_bits1(gb);
-            get_bits1(gb);
+            v->tff = get_bits1(gb);
+            v->rptfrm = get_bits1(gb);
         }
     }
     if(v->panscanflag) {
