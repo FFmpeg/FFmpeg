@@ -41,12 +41,8 @@
 #include "bitstream.h"
 
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include "network.h"
 #include <assert.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 
 #include "rtp_internal.h"
 #include "rtp_h264.h"

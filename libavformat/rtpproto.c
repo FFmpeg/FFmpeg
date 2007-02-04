@@ -22,11 +22,7 @@
 
 #include <unistd.h>
 #include <stdarg.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
+#include "network.h"
 #include <fcntl.h>
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
