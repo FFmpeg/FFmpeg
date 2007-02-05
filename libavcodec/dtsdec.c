@@ -19,19 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef HAVE_AV_CONFIG_H
-#undef HAVE_AV_CONFIG_H
-#endif
-
 #include "avcodec.h"
 #include <dts.h>
 
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 
 #define BUFFER_SIZE 18726
 #define HEADER_SIZE 14
