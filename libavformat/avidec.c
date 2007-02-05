@@ -626,17 +626,17 @@ resync:
             pkt->stream_index = avi->stream_index;
 
             if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-                    AVIndexEntry *e;
-                    int index;
+                AVIndexEntry *e;
+                int index;
                 assert(st->index_entries);
 
-                    index= av_index_search_timestamp(st, pkt->dts, 0);
-                    e= &st->index_entries[index];
+                index= av_index_search_timestamp(st, pkt->dts, 0);
+                e= &st->index_entries[index];
 
-                    if(index >= 0 && e->timestamp == ast->frame_offset){
-                        if (e->flags & AVINDEX_KEYFRAME)
-                            pkt->flags |= PKT_FLAG_KEY;
-                    }
+                if(index >= 0 && e->timestamp == ast->frame_offset){
+                    if (e->flags & AVINDEX_KEYFRAME)
+                        pkt->flags |= PKT_FLAG_KEY;
+                }
             } else {
                 pkt->flags |= PKT_FLAG_KEY;
             }
