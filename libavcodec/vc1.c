@@ -1278,6 +1278,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
 
     v->s.avctx->coded_width = (get_bits(gb, 12) + 1) << 1;
     v->s.avctx->coded_height = (get_bits(gb, 12) + 1) << 1;
+    v->s.avctx->width = v->s.avctx->coded_width;
+    v->s.avctx->height = v->s.avctx->coded_height;
     v->broadcast = get_bits1(gb);
     v->interlace = get_bits1(gb);
     if(v->interlace){
