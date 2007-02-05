@@ -943,10 +943,7 @@ if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
     show_help
 fi
 
-FFMPEG_CONFIGURATION=" "
-for opt do
-  FFMPEG_CONFIGURATION="$FFMPEG_CONFIGURATION""$opt "
-done
+FFMPEG_CONFIGURATION="$@"
 
 ENCODER_LIST=`sed -n 's/^[^#]*ENC.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
 DECODER_LIST=`sed -n 's/^[^#]*DEC.*, *\(.*\)).*/\1_decoder/p' "$source_path/libavcodec/allcodecs.c"`
