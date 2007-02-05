@@ -36,6 +36,13 @@
 #define CONVERT_BIAS 384
 #endif
 
+typedef struct DTSContext {
+    dts_state_t *state;
+    uint8_t buf[BUFFER_SIZE];
+    uint8_t *bufptr;
+    uint8_t *bufpos;
+} DTSContext;
+
 static inline int16_t
 convert(int32_t i)
 {
@@ -188,18 +195,15 @@ static int
 dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
                  uint8_t * buff, int buff_size)
 {
+    DTSContext *s = avctx->priv_data;
     uint8_t *start = buff;
     uint8_t *end = buff + buff_size;
-    static uint8_t buf[BUFFER_SIZE];
-    static uint8_t *bufptr = buf;
-    static uint8_t *bufpos = buf + HEADER_SIZE;
     int16_t *out_samples = data;
-    static int sample_rate;
-    static int frame_length;
-    static int flags;
+    int sample_rate;
+    int frame_length;
+    int flags;
     int bit_rate;
     int len;
-    dts_state_t *state = avctx->priv_data;
     level_t level;
     sample_t bias;
     int i;
@@ -212,25 +216,25 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         len = end - start;
         if(!len)
             break;
-        if(len > bufpos - bufptr)
-            len = bufpos - bufptr;
-        memcpy(bufptr, start, len);
-        bufptr += len;
+        if(len > s->bufpos - s->bufptr)
+            len = s->bufpos - s->bufptr;
+        memcpy(s->bufptr, start, len);
+        s->bufptr += len;
         start += len;
-        if(bufptr != bufpos)
+        if(s->bufptr != s->bufpos)
             return start - buff;
-        if(bufpos != buf + HEADER_SIZE)
+        if(s->bufpos != s->buf + HEADER_SIZE)
             break;
 
-        length = dts_syncinfo(state, buf, &flags, &sample_rate, &bit_rate,
-                              &frame_length);
+        length = dts_syncinfo(s->state, s->buf, &flags, &sample_rate,
+                              &bit_rate, &frame_length);
         if(!length) {
             av_log(NULL, AV_LOG_INFO, "skip\n");
-            for(bufptr = buf; bufptr < buf + HEADER_SIZE - 1; bufptr++)
-                bufptr[0] = bufptr[1];
+            for(s->bufptr = s->buf; s->bufptr < s->buf + HEADER_SIZE - 1; s->bufptr++)
+                s->bufptr[0] = s->bufptr[1];
             continue;
         }
-        bufpos = buf + length;
+        s->bufpos = s->buf + length;
     }
 
     flags = 2;              /* ???????????? */
@@ -238,7 +242,7 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     bias = CONVERT_BIAS;
 
     flags |= DTS_ADJUST_LEVEL;
-    if(dts_frame(state, buf, &flags, &level, bias)) {
+    if(dts_frame(s->state, s->buf, &flags, &level, bias)) {
         av_log(avctx, AV_LOG_ERROR, "dts_frame() failed\n");
         goto end;
     }
@@ -247,16 +251,16 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     avctx->channels = channels_multi(flags);
     avctx->bit_rate = bit_rate;
 
-    for(i = 0; i < dts_blocks_num(state); i++) {
+    for(i = 0; i < dts_blocks_num(s->state); i++) {
         int chans;
 
-        if(dts_block(state)) {
+        if(dts_block(s->state)) {
             av_log(avctx, AV_LOG_ERROR, "dts_block() failed\n");
             goto end;
         }
 
         chans = channels_multi(flags);
-        convert2s16_multi(dts_samples(state), out_samples,
+        convert2s16_multi(dts_samples(s->state), out_samples,
                           flags & (DTS_CHANNEL_MASK | DTS_LFE));
 
         out_samples += 256 * chans;
@@ -264,24 +268,29 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     }
 
 end:
-    bufptr = buf;
-    bufpos = buf + HEADER_SIZE;
+    s->bufptr = s->buf;
+    s->bufpos = s->buf + HEADER_SIZE;
     return start - buff;
 }
 
 static int
 dts_decode_init(AVCodecContext * avctx)
 {
-    avctx->priv_data = dts_init(0);
-    if(avctx->priv_data == NULL)
+    DTSContext *s = avctx->priv_data;
+    s->bufptr = s->buf;
+    s->bufpos = s->buf + HEADER_SIZE;
+    s->state = dts_init(0);
+    if(s->state == NULL)
         return -1;
 
     return 0;
 }
 
 static int
-dts_decode_end(AVCodecContext * s)
+dts_decode_end(AVCodecContext * avctx)
 {
+    DTSContext *s = avctx->priv_data;
+    dts_free(s->state);
     return 0;
 }
 
@@ -289,7 +298,7 @@ AVCodec dts_decoder = {
     "dts",
     CODEC_TYPE_AUDIO,
     CODEC_ID_DTS,
-    sizeof(dts_state_t *),
+    sizeof(DTSContext),
     dts_decode_init,
     NULL,
     dts_decode_end,
