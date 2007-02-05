@@ -3538,6 +3538,7 @@ static void opt_target(const char *arg)
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
+        audio_channels = 2;
 
         opt_default("packetsize", "2324");
         opt_default("muxrate", "1411200"); // 2352 * 75 * 8;
