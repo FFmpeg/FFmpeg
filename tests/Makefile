@@ -16,6 +16,8 @@ SERVER_REFFILE=$(SRC_DIR)/ffserver.regression.ref
 
 LIBAV_REFFILE=$(SRC_DIR)/libav.regression.ref
 
+SEEK_REFFILE=$(SRC_DIR)/seek.regression.ref
+
 all fulltest test: codectest libavtest
 
 test-server: vsynth1/00.pgm asynth1.sw
@@ -50,6 +52,9 @@ swscale_error:
 	@exit 1
 endif
 
+seektest: seek_test$(EXESUF)
+	@$(SRC_DIR)/seek_test.sh $(SEEK_REFFILE)
+
 # video generation
 
 vsynth1/00.pgm: videogen$(EXESUF)
@@ -76,6 +81,10 @@ audiogen$(EXESUF): audiogen.c
 
 tiny_psnr$(EXESUF): tiny_psnr.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
+
+#FIXME cleanup shit below
+seek_test$(EXESUF): seek_test.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat/ -I$(SRC_PATH)/libavcodec/ -I$(SRC_PATH)/libavutil/ -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
 
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
