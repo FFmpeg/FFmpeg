@@ -626,9 +626,9 @@ resync:
             pkt->stream_index = avi->stream_index;
 
             if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-                if(st->index_entries){
                     AVIndexEntry *e;
                     int index;
+                assert(st->index_entries);
 
                     index= av_index_search_timestamp(st, pkt->dts, 0);
                     e= &st->index_entries[index];
@@ -637,11 +637,6 @@ resync:
                         if (e->flags & AVINDEX_KEYFRAME)
                             pkt->flags |= PKT_FLAG_KEY;
                     }
-                } else {
-                    /* if no index, better to say that all frames
-                        are key frames */
-                    pkt->flags |= PKT_FLAG_KEY;
-                }
             } else {
                 pkt->flags |= PKT_FLAG_KEY;
             }
@@ -735,6 +730,13 @@ resync:
             avi->stream_index= n;
             ast->packet_size= size + 8;
             ast->remaining= size;
+
+            {
+                uint64_t pos= url_ftell(pb) - 8;
+                if(!st->index_entries || !st->nb_index_entries || st->index_entries[st->nb_index_entries - 1].pos < pos){
+                    av_add_index_entry(st, pos, ast->frame_offset / FFMAX(1, ast->sample_size), size, 0, AVINDEX_KEYFRAME);
+                }
+            }
             goto resync;
           }
         }
