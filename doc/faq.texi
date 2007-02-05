@@ -283,6 +283,10 @@ can link the resulting DLLs with any other Windows program. Read the
 @emph{Native Windows Compilation} and @emph{Visual C++ compatibility}
 sections in the FFmpeg documentation to find more information.
 
+To get help and instructions for using FFmpeg under Windows, check out
+the FFmpeg Windows Help Forum at
+@url{http://arrozcru.no-ip.org/ffmpeg/}.
+
 @section Can you add automake, libtool or autoconf support ?
 
 No. These tools are too bloated and they complicate the build.

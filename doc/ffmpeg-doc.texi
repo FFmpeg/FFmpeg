@@ -1108,6 +1108,10 @@ BSD make will not build FFmpeg, you need to install and use GNU Make
 
 @section Windows
 
+To get help and instructions for using FFmpeg under Windows, check out
+the FFmpeg Windows Help Forum at
+@url{http://arrozcru.no-ip.org/ffmpeg/}.
+
 @subsection Native Windows compilation
 
 @itemize
