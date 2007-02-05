@@ -788,6 +788,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->dts = st->parser->dts;
                     pkt->destruct = av_destruct_packet_nofree;
                     compute_pkt_fields(s, st, st->parser, pkt);
+
+                    if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & PKT_FLAG_KEY){
+                        av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
+                                           0, 0, AVINDEX_KEYFRAME);
+                    }
+
                     break;
                 }
             } else {
@@ -835,6 +841,10 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     st->need_parsing = 0;
                 }else if(st->need_parsing == 2){
                     st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+                }
+                if(st->parser && (s->iformat->flags & AVFMT_GENERIC_INDEX)){
+                    st->parser->last_frame_offset=
+                    st->parser->cur_offset= s->cur_pkt.pos;
                 }
             }
         }
@@ -1370,23 +1380,42 @@ static int av_seek_frame_generic(AVFormatContext *s,
     AVStream *st;
     AVIndexEntry *ie;
 
-    if (!s->index_built) {
-        if (is_raw_stream(s)) {
-            av_build_index_raw(s);
-        } else {
-            return -1;
-        }
-        s->index_built = 1;
-    }
-
     st = s->streams[stream_index];
+
     index = av_index_search_timestamp(st, timestamp, flags);
+
+    if(index < 0){
+        int i;
+        AVPacket pkt;
+
+        if(st->index_entries && st->nb_index_entries){
+            ie= &st->index_entries[st->nb_index_entries-1];
+            url_fseek(&s->pb, ie->pos, SEEK_SET);
+            av_update_cur_dts(s, st, ie->timestamp);
+        }else
+            url_fseek(&s->pb, 0, SEEK_SET);
+
+        for(i=0;; i++) {
+            int ret = av_read_frame(s, &pkt);
+            if(ret<0)
+                break;
+            av_free_packet(&pkt);
+            if(stream_index == pkt.stream_index){
+                if((pkt.flags & PKT_FLAG_KEY) && pkt.dts > timestamp)
+                    break;
+            }
+        }
+        index = av_index_search_timestamp(st, timestamp, flags);
+    }
     if (index < 0)
         return -1;
 
-    /* now we have found the index, we can seek */
-    ie = &st->index_entries[index];
     av_read_frame_flush(s);
+    if (s->iformat->read_seek){
+        if(s->iformat->read_seek(s, stream_index, timestamp, flags) >= 0)
+            return 0;
+    }
+    ie = &st->index_entries[index];
     url_fseek(&s->pb, ie->pos, SEEK_SET);
 
     av_update_cur_dts(s, st, ie->timestamp);

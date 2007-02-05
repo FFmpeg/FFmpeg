@@ -393,6 +393,7 @@ AVInputFormat mp3_demuxer = {
     mp3_read_header,
     mp3_read_packet,
     mp3_read_close,
+    .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mp2,mp3,m2a", /* XXX: use probe */
 };
 #endif

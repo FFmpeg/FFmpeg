@@ -188,13 +188,11 @@ static int wav_read_packet(AVFormatContext *s,
         size = (size / st->codec->block_align) * st->codec->block_align;
     }
     size= FFMIN(size, left);
-    if (av_new_packet(pkt, size))
+    ret= av_get_packet(&s->pb, pkt, size);
+    if (ret <= 0)
         return AVERROR_IO;
     pkt->stream_index = 0;
 
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
-    if (ret < 0)
-        av_free_packet(pkt);
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;
@@ -235,6 +233,7 @@ AVInputFormat wav_demuxer = {
     wav_read_packet,
     wav_read_close,
     wav_read_seek,
+    .flags= AVFMT_GENERIC_INDEX,
     .codec_tag= (const AVCodecTag*[]){codec_wav_tags, 0},
 };
 #endif
