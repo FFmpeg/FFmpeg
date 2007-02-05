@@ -103,7 +103,6 @@
 #undef time
 #include <sys/time.h>
 #include <time.h>
-#include <X11/Xlib.h>
 #include <Imlib2.h>
 #include "eval.h"
 
