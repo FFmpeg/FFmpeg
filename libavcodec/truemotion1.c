@@ -374,10 +374,15 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
 
     if (s->flags & FLAG_SPRITE) {
         av_log(s->avctx, AV_LOG_INFO, "SPRITE frame found, please report the sample to the developers\n");
+        /* FIXME header.width, height, xoffset and yoffset aren't initialized */
+#if 0
         s->w = header.width;
         s->h = header.height;
         s->x = header.xoffset;
         s->y = header.yoffset;
+#else
+        return -1;
+#endif
     } else {
         s->w = header.xsize;
         s->h = header.ysize;
