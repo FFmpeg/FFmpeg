@@ -208,10 +208,15 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     int bit_rate;
     int len;
     dts_state_t *state = avctx->priv_data;
+    level_t level;
+    sample_t bias;
+    int i;
 
     *data_size = 0;
 
     while(1) {
+        int length;
+
         len = end - start;
         if(!len)
             break;
@@ -225,60 +230,50 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         if(bufpos != buf + HEADER_SIZE)
             break;
 
-        {
-            int length;
-
-            length =
-                dts_syncinfo(state, buf, &flags, &sample_rate, &bit_rate,
-                             &frame_length);
-            if(!length) {
-                av_log(NULL, AV_LOG_INFO, "skip\n");
-                for(bufptr = buf; bufptr < buf + HEADER_SIZE - 1; bufptr++)
-                    bufptr[0] = bufptr[1];
-                continue;
-            }
-            bufpos = buf + length;
+        length = dts_syncinfo(state, buf, &flags, &sample_rate, &bit_rate,
+                              &frame_length);
+        if(!length) {
+            av_log(NULL, AV_LOG_INFO, "skip\n");
+            for(bufptr = buf; bufptr < buf + HEADER_SIZE - 1; bufptr++)
+                bufptr[0] = bufptr[1];
+            continue;
         }
+        bufpos = buf + length;
     }
 
-    {
-        level_t level;
-        sample_t bias;
-        int i;
+    flags = 2;              /* ???????????? */
+    level = CONVERT_LEVEL;
+    bias = CONVERT_BIAS;
 
-        flags = 2;              /* ???????????? */
-        level = CONVERT_LEVEL;
-        bias = CONVERT_BIAS;
-
-        flags |= DTS_ADJUST_LEVEL;
-        if(dts_frame(state, buf, &flags, &level, bias))
-            goto error;
-        avctx->sample_rate = sample_rate;
-        avctx->channels = channels_multi(flags);
-        avctx->bit_rate = bit_rate;
-        for(i = 0; i < dts_blocks_num(state); i++) {
-            if(dts_block(state))
-                goto error;
-            {
-                int chans;
-
-                chans = channels_multi(flags);
-                convert2s16_multi(dts_samples(state), out_samples,
-                                  flags & (DTS_CHANNEL_MASK | DTS_LFE));
-
-                out_samples += 256 * chans;
-                *data_size += 256 * sizeof(int16_t) * chans;
-            }
-        }
-        bufptr = buf;
-        bufpos = buf + HEADER_SIZE;
-        return start - buff;
-      error:
-        av_log(NULL, AV_LOG_ERROR, "error\n");
-        bufptr = buf;
-        bufpos = buf + HEADER_SIZE;
+    flags |= DTS_ADJUST_LEVEL;
+    if(dts_frame(state, buf, &flags, &level, bias)) {
+        av_log(avctx, AV_LOG_ERROR, "dts_frame() failed\n");
+        goto end;
     }
 
+    avctx->sample_rate = sample_rate;
+    avctx->channels = channels_multi(flags);
+    avctx->bit_rate = bit_rate;
+
+    for(i = 0; i < dts_blocks_num(state); i++) {
+        int chans;
+
+        if(dts_block(state)) {
+            av_log(avctx, AV_LOG_ERROR, "dts_block() failed\n");
+            goto end;
+        }
+
+        chans = channels_multi(flags);
+        convert2s16_multi(dts_samples(state), out_samples,
+                          flags & (DTS_CHANNEL_MASK | DTS_LFE));
+
+        out_samples += 256 * chans;
+        *data_size += 256 * sizeof(int16_t) * chans;
+    }
+
+end:
+    bufptr = buf;
+    bufpos = buf + HEADER_SIZE;
     return start - buff;
 }
 
