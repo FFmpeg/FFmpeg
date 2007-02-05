@@ -1558,7 +1558,7 @@ static void av_estimate_timings_from_bit_rate(AVFormatContext *ic)
 #define DURATION_MAX_READ_SIZE 250000
 
 /* only usable for MPEG-PS streams */
-static void av_estimate_timings_from_pts(AVFormatContext *ic)
+static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offset)
 {
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
@@ -1650,10 +1650,10 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
 
     fill_all_stream_timings(ic);
 
-    url_fseek(&ic->pb, 0, SEEK_SET);
+    url_fseek(&ic->pb, old_offset, SEEK_SET);
 }
 
-static void av_estimate_timings(AVFormatContext *ic)
+static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
 {
     int64_t file_size;
 
@@ -1671,7 +1671,7 @@ static void av_estimate_timings(AVFormatContext *ic)
          !strcmp(ic->iformat->name, "mpegts")) &&
         file_size && !ic->pb.is_streamed) {
         /* get accurate estimate from the PTSes */
-        av_estimate_timings_from_pts(ic);
+        av_estimate_timings_from_pts(ic, old_offset);
     } else if (av_has_timings(ic)) {
         /* at least one components has timings - we use them for all
            the components */
@@ -1765,10 +1765,12 @@ static int get_std_framerate(int i){
 }
 
 /**
- * Read the beginning of a media file to get stream information. This
+ * Read packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
- * function also compute the real frame rate in case of mpeg2 repeat
+ * function also computes the real frame rate in case of mpeg2 repeat
  * frame mode.
+ * The logical file position is not changed by this function;
+ * examined packets may be buffered for later processing.
  *
  * @param ic media file handle
  * @return >=0 if OK. AVERROR_xxx if error.
@@ -1783,6 +1785,7 @@ int av_find_stream_info(AVFormatContext *ic)
     int64_t last_dts[MAX_STREAMS];
     int duration_count[MAX_STREAMS]={0};
     double duration_error[MAX_STREAMS][MAX_STD_TIMEBASES]={{0}}; //FIXME malloc()?
+    offset_t old_offset = url_ftell(&ic->pb);
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -1989,7 +1992,7 @@ int av_find_stream_info(AVFormatContext *ic)
         }
     }
 
-    av_estimate_timings(ic);
+    av_estimate_timings(ic, old_offset);
 #if 0
     /* correct DTS for b frame streams with no timestamps */
     for(i=0;i<ic->nb_streams;i++) {
