@@ -1399,7 +1399,7 @@ int main(){
 EOF
 if test "$?" != 0; then
     echo "$cc is unable to create an executable file."
-    if test -z "$cross_prefix" -a "$cross_compile" = no; then
+    if test -z "$cross_prefix" && disabled cross_compile ; then
         echo "If $cc is a cross-compiler, use the --cross-compile option."
         echo "Only do this if you know what cross compiling means."
     fi
@@ -1648,7 +1648,7 @@ if enabled_any vhook liba52bin libfaadbin; then
     add_extralibs $ldl
 fi
 
-if test "$targetos" = "CYGWIN" -a "$lstatic" = "yes" ; then
+if test "$targetos" = "CYGWIN" && enabled lstatic ; then
     vhook="no"
     echo
     echo "At the moment vhooks don't work on Cygwin static builds."
