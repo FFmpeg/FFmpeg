@@ -47,19 +47,6 @@ w42n:   .long W42n
 w46:    .long W46
 w57:    .long W57
 
-        .macro idct_row_start shift
-        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
-        ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
-        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
-        mov    a2, #(1<<(\shift-1))
-        smlad  v1, a3, ip, a2
-        smlsd  v4, a3, ip, a2
-        ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
-        smlad  v2, a3, lr, a2
-        smlsd  v3, a3, lr, a2
-        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
-        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
-        .endm
 /*
   Compute partial IDCT of single row.
   shift = left-shift amount
@@ -71,6 +58,17 @@ w57:    .long W57
   Output in registers v1--v8
 */
         .macro idct_row shift
+        ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
+        mov    a2, #(1<<(\shift-1))
+        smlad  v1, a3, ip, a2
+        smlsd  v4, a3, ip, a2
+        ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
+        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
+        smlad  v2, a3, lr, a2
+        smlsd  v3, a3, lr, a2
+
+        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
+        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
         ldr    lr, [a1, #12]         /* lr = row[7,5] */
         pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
         pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
@@ -101,6 +99,16 @@ w57:    .long W57
   Output in registers v1--v8
 */
         .macro idct_row4 shift
+        ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
+        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
+        mov    a2, #(1<<(\shift-1))
+        smlad  v1, a3, ip, a2
+        smlsd  v4, a3, ip, a2
+        ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
+        smlad  v2, a3, lr, a2
+        smlsd  v3, a3, lr, a2
+        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
+        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
         pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
         pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
         smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
@@ -185,100 +193,28 @@ w57:    .long W57
         .align
         .func idct_row_armv6
 idct_row_armv6:
-        ldr    fp, [a1, #12]         /* fp = row[7,5] */
-        ldr    v7, [a1, #4]          /* v7 = row[6,4] */
+        str    lr, [sp, #-4]!
+
+        ldr    lr, [a1, #12]         /* lr = row[7,5] */
+        ldr    ip, [a1, #4]          /* ip = row[6,4] */
         ldr    a4, [a1, #8]          /* a4 = row[3,1] */
         ldr    a3, [a1]              /* a3 = row[2,0] */
-        mov    ip, #(1<<(ROW_SHIFT-1))
-        orrs   v5, fp, v7
-        cmpeq  v5, a4
-        cmpeq  v5, a3, lsr #16
+        orrs   lr, lr, ip
+        cmpeq  lr, a4
+        cmpeq  lr, a3, lsr #16
         beq    1f
-        cmp    v5, #0
-        stmfd  sp!, {a2, lr}
-        ldr    v5, [pc, #(w42-.-8)]  /* v5 = W4 | (W2 << 16) */
-        ldr    v6, [pc, #(w46-.-8)]  /* v6 = W4 | (W6 << 16) */
-        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
+        str    a2, [sp, #-4]!
+        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
+        cmp    lr, #0
+        beq    2f
 
-        smlad  v1, a3, v5, ip
-        smlsd  v4, a3, v5, ip
-        ldr    a2, [pc, #(w13-.-8)]  /* a2 = W1 | (W3 << 16) */
-        smlad  v2, a3, v6, ip
-        smlsd  v3, a3, v6, ip
-        smusdx lr, a4, v7            /* lr = B3 = W7*row[1] - W5*row[3] */
-        smuad  v5, a4, a2            /* v5 = B0 = W1*row[1] + W3*row[3] */
+        idct_row   ROW_SHIFT
+        b      3f
 
-        pkhtb  a3, a2, v7, asr #16   /* a3 = W7 | (W3 << 16) */
-        pkhbt  ip, a2, v7, lsl #16   /* ip = W1 | (W5 << 16) */
-        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
-        smusdx a4, a4, ip            /* v7 = B2 = W5*row[1] - W1*row[3] */
-        beq    3f
-
-        smlad  v5, fp, v7, v5        /* B0 += W5*row[5] + W7*row[7] */
-        smlad  v7, fp, a3, a4        /* B2 += W7*row[5] + W3*row[7] */
-        ldr    a4, [pc, #(w42n-.-8)] /* a4 = -W4 | (-W2 << 16) */
-        ldr    a3, [a1, #4]          /* a3 = row[6,4] */
-        smlsdx lr, fp, a2, lr        /* B3 += W3*row[5] - W1*row[7] */
-        ldr    a2, [pc, #(w46-.-8)]  /* a2 = W4 | (W6 << 16) */
-        smlad  v6, fp, ip, v6        /* B1 -= W1*row[5] + W5*row[7] */
-
-        smlad  v2, a3, a4, v2        /* A1 += -W4*row[4] - W2*row[6] */
-        smlsd  v3, a3, a4, v3        /* A2 += -W4*row[4] + W2*row[6] */
-        smlad  v1, a3, a2, v1        /* A0 += W4*row[4] + W6*row[6] */
-        smlsd  v4, a3, a2, v4        /* A3 += W4*row[4] - W6*row[6] */
-
-        ldr    a2, [sp], #4
-        add    a4, v1, v5            /* a4 = A0 + B0 */
-        sub    a3, v1, v5            /* a3 = A0 - B0 */
-        mov    v1, a4, asr #ROW_SHIFT
-        mov    v5, a3, asr #ROW_SHIFT
-
-        sub    a4, v2, v6            /* a4 = A1 + B1 */
-        add    a3, v2, v6            /* a3 = A1 - B1 */
-        mov    v2, a4, asr #ROW_SHIFT
-        mov    v6, a3, asr #ROW_SHIFT
-
-        add    a4, v3, v7            /* a4 = A2 + B2 */
-        sub    a3, v3, v7            /* a3 = A2 - B2 */
-        mov    v3, a4, asr #ROW_SHIFT
-        mov    v7, a3, asr #ROW_SHIFT
-
-        add    a4, v4, lr            /* a4 = A3 + B3 */
-        sub    a3, v4, lr            /* a3 = A3 - B3 */
-        mov    v4, a4, asr #ROW_SHIFT
-        mov    fp, a3, asr #ROW_SHIFT
-
-        strh   v1, [a2]
-        strh   v2, [a2, #(16*2)]
-        strh   v3, [a2, #(16*4)]
-        strh   v4, [a2, #(16*6)]
-        strh   fp, [a2, #(16*1)]
-        strh   v7, [a2, #(16*3)]
-        strh   v6, [a2, #(16*5)]
-        strh   v5, [a2, #(16*7)]
-
-        ldr    pc, [sp], #4
+2:      idct_row4  ROW_SHIFT
 
 3:      ldr    a2, [sp], #4
-        add    v7, v1, v5            /* v7 = A0 + B0 */
-        sub    a3, v1, v5            /* a3 = A0 - B0 */
-        mov    v1, v7, asr #ROW_SHIFT
-        mov    v5, a3, asr #ROW_SHIFT
-
-        sub    v7, v2, v6            /* v7 = A1 + B1 */
-        add    a3, v2, v6            /* a3 = A1 - B1 */
-        mov    v2, v7, asr #ROW_SHIFT
-        mov    v6, a3, asr #ROW_SHIFT
-
-        add    v7, v3, a4            /* v7 = A2 + B2 */
-        sub    a3, v3, a4            /* a3 = A2 - B2 */
-        mov    v3, v7, asr #ROW_SHIFT
-        mov    v7, a3, asr #ROW_SHIFT
-
-        add    a4, v4, lr            /* xx = A3 + B3 */
-        sub    a3, v4, lr            /* a3 = A3 - B3 */
-        mov    v4, a4, asr #ROW_SHIFT
-        mov    fp, a3, asr #ROW_SHIFT
+        idct_finish_shift ROW_SHIFT
 
         strh   v1, [a2]
         strh   v2, [a2, #(16*2)]
@@ -300,7 +236,7 @@ idct_row_armv6:
         strh   a3, [a2, #(16*3)]
         strh   a3, [a2, #(16*5)]
         strh   a3, [a2, #(16*7)]
-        mov    pc, lr
+        ldr    pc, [sp], #4
         .endfunc
 
 /*
@@ -314,8 +250,8 @@ idct_col_armv6:
         stmfd  sp!, {a2, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         ldr    a4, [a1, #8]          /* a4 = row[3,1] */
-        idct_row_start COL_SHIFT
         idct_row COL_SHIFT
         ldr    a2, [sp], #4
         idct_finish_shift COL_SHIFT
@@ -344,8 +280,8 @@ idct_col_put_armv6:
         stmfd  sp!, {a2, a3, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         ldr    a4, [a1, #8]          /* a4 = row[3,1] */
-        idct_row_start COL_SHIFT
         idct_row COL_SHIFT
         ldmfd  sp!, {a2, a3}
         idct_finish_shift_sat COL_SHIFT
@@ -376,8 +312,8 @@ idct_col_add_armv6:
         stmfd  sp!, {a2, a3, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         ldr    a4, [a1, #8]          /* a4 = row[3,1] */
-        idct_row_start COL_SHIFT
         idct_row COL_SHIFT
         ldmfd  sp!, {a2, a3}
         idct_finish
