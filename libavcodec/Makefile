@@ -55,6 +55,7 @@ OBJS-$(CONFIG_ASV2_DECODER)            += asv1.o
 OBJS-$(CONFIG_ASV2_ENCODER)            += asv1.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_BMP_DECODER)             += bmp.o
+OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o
 OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdsp.o
 OBJS-$(CONFIG_CINEPAK_DECODER)         += cinepak.o
 OBJS-$(CONFIG_CLJR_DECODER)            += cljr.o
