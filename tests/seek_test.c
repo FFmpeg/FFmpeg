@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         AVStream *st;
 
         memset(&pkt, 0, sizeof(pkt));
-
+        if(ret>=0){
         ret= av_read_frame(ic, &pkt);
         printf("ret:%2d", ret);
         if(ret>=0){
@@ -73,6 +73,7 @@ int main(int argc, char **argv)
             printf(" st:%2d dts:%f pts:%f pos:%Ld size:%d flags:%d", pkt.stream_index, pkt.dts*av_q2d(st->time_base), pkt.pts*av_q2d(st->time_base), pkt.pos, pkt.size, pkt.flags);
         }
         printf("\n");
+        }
 
         if(i>25) break;
 
