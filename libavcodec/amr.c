@@ -436,11 +436,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 
     /* av_log(NULL,AV_LOG_DEBUG,"amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",buf,buf_size,s->frameCount); */
 
-    if(buf_size==0) {
-        /* nothing to do */
-        return 0;
-    }
-
     dec_mode = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[dec_mode]+1;
 
