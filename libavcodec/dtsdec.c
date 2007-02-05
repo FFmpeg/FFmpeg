@@ -28,13 +28,8 @@
 #define BUFFER_SIZE 18726
 #define HEADER_SIZE 14
 
-#ifdef LIBDTS_FIXED
-#define CONVERT_LEVEL (1 << 26)
-#define CONVERT_BIAS 0
-#else
 #define CONVERT_LEVEL 1
-#define CONVERT_BIAS 384
-#endif
+#define CONVERT_BIAS 0
 
 typedef struct DTSContext {
     dts_state_t *state;
@@ -44,151 +39,120 @@ typedef struct DTSContext {
 } DTSContext;
 
 static inline int16_t
-convert(int32_t i)
+convert(sample_t s)
 {
-#ifdef LIBDTS_FIXED
-    i >>= 15;
-#else
-    i -= 0x43c00000;
-#endif
-    return (i > 32767) ? 32767 : ((i < -32768) ? -32768 : i);
+    return s * 0x7fff;
 }
 
 static void
-convert2s16_2(sample_t * _f, int16_t * s16)
+convert2s16_multi(sample_t *f, int16_t *s16, int flags)
 {
     int i;
-    int32_t *f = (int32_t *) _f;
 
-    for(i = 0; i < 256; i++) {
-        s16[2 * i] = convert(f[i]);
-        s16[2 * i + 1] = convert(f[i + 256]);
-    }
-}
-
-static void
-convert2s16_4(sample_t * _f, int16_t * s16)
-{
-    int i;
-    int32_t *f = (int32_t *) _f;
-
-    for(i = 0; i < 256; i++) {
-        s16[4 * i] = convert(f[i]);
-        s16[4 * i + 1] = convert(f[i + 256]);
-        s16[4 * i + 2] = convert(f[i + 512]);
-        s16[4 * i + 3] = convert(f[i + 768]);
-    }
-}
-
-static void
-convert2s16_5(sample_t * _f, int16_t * s16)
-{
-    int i;
-    int32_t *f = (int32_t *) _f;
-
-    for(i = 0; i < 256; i++) {
-        s16[5 * i] = convert(f[i]);
-        s16[5 * i + 1] = convert(f[i + 256]);
-        s16[5 * i + 2] = convert(f[i + 512]);
-        s16[5 * i + 3] = convert(f[i + 768]);
-        s16[5 * i + 4] = convert(f[i + 1024]);
-    }
-}
-
-static void
-convert2s16_multi(sample_t * _f, int16_t * s16, int flags)
-{
-    int i;
-    int32_t *f = (int32_t *) _f;
-
-    switch (flags) {
+    switch(flags & (DTS_CHANNEL_MASK | DTS_LFE)){
     case DTS_MONO:
-        for(i = 0; i < 256; i++) {
-            s16[5 * i] = s16[5 * i + 1] = s16[5 * i + 2] = s16[5 * i + 3] =
-                0;
-            s16[5 * i + 4] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[5*i] = s16[5*i+1] = s16[5*i+2] = s16[5*i+3] = 0;
+            s16[5*i+4] = convert(f[i]);
         }
-        break;
     case DTS_CHANNEL:
     case DTS_STEREO:
     case DTS_DOLBY:
-        convert2s16_2(_f, s16);
-        break;
+        for(i = 0; i < 256; i++){
+            s16[2*i] = convert(f[i]);
+            s16[2*i+1] = convert(f[i+256]);
+        }
     case DTS_3F:
-        for(i = 0; i < 256; i++) {
-            s16[5 * i] = convert(f[i]);
-            s16[5 * i + 1] = convert(f[i + 512]);
-            s16[5 * i + 2] = s16[5 * i + 3] = 0;
-            s16[5 * i + 4] = convert(f[i + 256]);
+        for(i = 0; i < 256; i++){
+            s16[5*i] = convert(f[i+256]);
+            s16[5*i+1] = convert(f[i+512]);
+            s16[5*i+2] = s16[5*i+3] = 0;
+            s16[5*i+4] = convert(f[i]);
         }
-        break;
     case DTS_2F2R:
-        convert2s16_4(_f, s16);
-        break;
-    case DTS_3F2R:
-        convert2s16_5(_f, s16);
-        break;
-    case DTS_MONO | DTS_LFE:
-        for(i = 0; i < 256; i++) {
-            s16[6 * i] = s16[6 * i + 1] = s16[6 * i + 2] = s16[6 * i + 3] =
-                0;
-            s16[6 * i + 4] = convert(f[i + 256]);
-            s16[6 * i + 5] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[4*i] = convert(f[i]);
+            s16[4*i+1] = convert(f[i+256]);
+            s16[4*i+2] = convert(f[i+512]);
+            s16[4*i+3] = convert(f[i+768]);
         }
-        break;
+    case DTS_3F2R:
+        for(i = 0; i < 256; i++){
+            s16[5*i] = convert(f[i+256]);
+            s16[5*i+1] = convert(f[i+512]);
+            s16[5*i+2] = convert(f[i+768]);
+            s16[5*i+3] = convert(f[i+1024]);
+            s16[5*i+4] = convert(f[i]);
+        }
+    case DTS_MONO | DTS_LFE:
+        for(i = 0; i < 256; i++){
+            s16[6*i] = s16[6*i+1] = s16[6*i+2] = s16[6*i+3] = 0;
+            s16[6*i+4] = convert(f[i]);
+            s16[6*i+5] = convert(f[i+256]);
+        }
     case DTS_CHANNEL | DTS_LFE:
     case DTS_STEREO | DTS_LFE:
     case DTS_DOLBY | DTS_LFE:
-        for(i = 0; i < 256; i++) {
-            s16[6 * i] = convert(f[i + 256]);
-            s16[6 * i + 1] = convert(f[i + 512]);
-            s16[6 * i + 2] = s16[6 * i + 3] = s16[6 * i + 4] = 0;
-            s16[6 * i + 5] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[6*i] = convert(f[i]);
+            s16[6*i+1] = convert(f[i+256]);
+            s16[6*i+2] = s16[6*i+3] = s16[6*i+4] = 0;
+            s16[6*i+5] = convert(f[i+512]);
         }
-        break;
     case DTS_3F | DTS_LFE:
-        for(i = 0; i < 256; i++) {
-            s16[6 * i] = convert(f[i + 256]);
-            s16[6 * i + 1] = convert(f[i + 768]);
-            s16[6 * i + 2] = s16[6 * i + 3] = 0;
-            s16[6 * i + 4] = convert(f[i + 512]);
-            s16[6 * i + 5] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[6*i] = convert(f[i+256]);
+            s16[6*i+1] = convert(f[i+512]);
+            s16[6*i+2] = s16[6*i+3] = 0;
+            s16[6*i+4] = convert(f[i]);
+            s16[6*i+5] = convert(f[i+768]);
         }
-        break;
     case DTS_2F2R | DTS_LFE:
-        for(i = 0; i < 256; i++) {
-            s16[6 * i] = convert(f[i + 256]);
-            s16[6 * i + 1] = convert(f[i + 512]);
-            s16[6 * i + 2] = convert(f[i + 768]);
-            s16[6 * i + 3] = convert(f[i + 1024]);
-            s16[6 * i + 4] = 0;
-            s16[6 * i + 5] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[6*i] = convert(f[i]);
+            s16[6*i+1] = convert(f[i+256]);
+            s16[6*i+2] = convert(f[i+512]);
+            s16[6*i+3] = convert(f[i+768]);
+            s16[6*i+4] = 0;
+            s16[6*i+5] = convert(f[i+1024]);
         }
-        break;
     case DTS_3F2R | DTS_LFE:
-        for(i = 0; i < 256; i++) {
-            s16[6 * i] = convert(f[i + 256]);
-            s16[6 * i + 1] = convert(f[i + 768]);
-            s16[6 * i + 2] = convert(f[i + 1024]);
-            s16[6 * i + 3] = convert(f[i + 1280]);
-            s16[6 * i + 4] = convert(f[i + 512]);
-            s16[6 * i + 5] = convert(f[i]);
+        for(i = 0; i < 256; i++){
+            s16[6*i] = convert(f[i+256]);
+            s16[6*i+1] = convert(f[i+512]);
+            s16[6*i+2] = convert(f[i+768]);
+            s16[6*i+3] = convert(f[i+1024]);
+            s16[6*i+4] = convert(f[i]);
+            s16[6*i+5] = convert(f[i+1280]);
         }
-        break;
     }
 }
 
 static int
 channels_multi(int flags)
 {
-    if(flags & DTS_LFE)
-        return 6;
-    else if(flags & 1)          /* center channel */
-        return 5;
-    else if((flags & DTS_CHANNEL_MASK) == DTS_2F2R)
-        return 4;
-    else
+    switch(flags & (DTS_CHANNEL_MASK | DTS_LFE)){
+    case DTS_CHANNEL:
+    case DTS_STEREO:
+    case DTS_DOLBY:
         return 2;
+    case DTS_2F2R:
+        return 4;
+    case DTS_MONO:
+    case DTS_3F:
+    case DTS_3F2R:
+        return 5;
+    case DTS_MONO | DTS_LFE:
+    case DTS_CHANNEL | DTS_LFE:
+    case DTS_STEREO | DTS_LFE:
+    case DTS_DOLBY | DTS_LFE:
+    case DTS_3F | DTS_LFE:
+    case DTS_2F2R | DTS_LFE:
+    case DTS_3F2R | DTS_LFE:
+        return 6;
+    }
+
+    return -1;
 }
 
 static int
@@ -206,6 +170,7 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     int len;
     level_t level;
     sample_t bias;
+    int nblocks;
     int i;
 
     *data_size = 0;
@@ -237,7 +202,6 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         s->bufpos = s->buf + length;
     }
 
-    flags = 2;              /* ???????????? */
     level = CONVERT_LEVEL;
     bias = CONVERT_BIAS;
 
@@ -251,20 +215,18 @@ dts_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     avctx->channels = channels_multi(flags);
     avctx->bit_rate = bit_rate;
 
-    for(i = 0; i < dts_blocks_num(s->state); i++) {
-        int chans;
+    nblocks = dts_blocks_num(s->state);
 
+    for(i = 0; i < nblocks; i++) {
         if(dts_block(s->state)) {
             av_log(avctx, AV_LOG_ERROR, "dts_block() failed\n");
             goto end;
         }
 
-        chans = channels_multi(flags);
-        convert2s16_multi(dts_samples(s->state), out_samples,
-                          flags & (DTS_CHANNEL_MASK | DTS_LFE));
+        convert2s16_multi(dts_samples(s->state), out_samples, flags);
 
-        out_samples += 256 * chans;
-        *data_size += 256 * sizeof(int16_t) * chans;
+        out_samples += 256 * avctx->channels;
+        *data_size += 256 * sizeof(int16_t) * avctx->channels;
     }
 
 end:
