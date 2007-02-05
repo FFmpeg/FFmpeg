@@ -63,6 +63,9 @@ int main(int argc, char **argv)
     for(i=0; ; i++){
         AVPacket pkt;
         AVStream *st;
+
+        memset(&pkt, 0, sizeof(pkt));
+
         ret= av_read_frame(ic, &pkt);
         printf("ret:%2d", ret);
         if(ret>=0){
