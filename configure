@@ -1220,12 +1220,9 @@ EOF
     exit 1;
 fi
 
-if enabled libtheora && disabled libogg; then
-    die "libogg must be enabled to enable libtheora."
-fi
-
-if enabled libvorbis && disabled libogg; then
-    die "libogg must be enabled to enable libvorbis."
+if disabled libogg; then
+    enabled libtheora && die "libogg must be enabled to enable libtheora."
+    enabled libvorbis && die "libogg must be enabled to enable libvorbis."
 fi
 
 if enabled_any libfaad libfaadbin ; then
