@@ -1,0 +1,149 @@
+/*
+ * WMA compatible codec
+ * Copyright (c) 2002-2007 The FFmpeg Project.
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef WMA_H
+#define WMA_H
+
+#include "bitstream.h"
+#include "dsputil.h"
+
+/* size of blocks */
+#define BLOCK_MIN_BITS 7
+#define BLOCK_MAX_BITS 11
+#define BLOCK_MAX_SIZE (1 << BLOCK_MAX_BITS)
+
+#define BLOCK_NB_SIZES (BLOCK_MAX_BITS - BLOCK_MIN_BITS + 1)
+
+/* XXX: find exact max size */
+#define HIGH_BAND_MAX_SIZE 16
+
+#define NB_LSP_COEFS 10
+
+/* XXX: is it a suitable value ? */
+#define MAX_CODED_SUPERFRAME_SIZE 16384
+
+#define MAX_CHANNELS 2
+
+#define NOISE_TAB_SIZE 8192
+
+#define LSP_POW_BITS 7
+
+//FIXME should be in wmadec
+#define VLCBITS 9
+#define VLCMAX ((22+VLCBITS-1)/VLCBITS)
+
+typedef struct CoefVLCTable {
+    int n; /* total number of codes */
+    int max_level;
+    const uint32_t *huffcodes; /* VLC bit values */
+    const uint8_t *huffbits;   /* VLC bit size */
+    const uint16_t *levels; /* table to build run/level tables */
+} CoefVLCTable;
+
+typedef struct WMADecodeContext {
+    GetBitContext gb;
+    PutBitContext pb;
+    int sample_rate;
+    int nb_channels;
+    int bit_rate;
+    int version; /* 1 = 0x160 (WMAV1), 2 = 0x161 (WMAV2) */
+    int block_align;
+    int use_bit_reservoir;
+    int use_variable_block_len;
+    int use_exp_vlc;  /* exponent coding: 0 = lsp, 1 = vlc + delta */
+    int use_noise_coding; /* true if perceptual noise is added */
+    int byte_offset_bits;
+    VLC exp_vlc;
+    int exponent_sizes[BLOCK_NB_SIZES];
+    uint16_t exponent_bands[BLOCK_NB_SIZES][25];
+    int high_band_start[BLOCK_NB_SIZES]; /* index of first coef in high band */
+    int coefs_start;               /* first coded coef */
+    int coefs_end[BLOCK_NB_SIZES]; /* max number of coded coefficients */
+    int exponent_high_sizes[BLOCK_NB_SIZES];
+    int exponent_high_bands[BLOCK_NB_SIZES][HIGH_BAND_MAX_SIZE];
+    VLC hgain_vlc;
+
+    /* coded values in high bands */
+    int high_band_coded[MAX_CHANNELS][HIGH_BAND_MAX_SIZE];
+    int high_band_values[MAX_CHANNELS][HIGH_BAND_MAX_SIZE];
+
+    /* there are two possible tables for spectral coefficients */
+//FIXME the following 3 tables should be shared between decoders
+    VLC coef_vlc[2];
+    uint16_t *run_table[2];
+    uint16_t *level_table[2];
+    uint16_t *int_table[2];
+    CoefVLCTable *coef_vlcs[2];
+    /* frame info */
+    int frame_len;       /* frame length in samples */
+    int frame_len_bits;  /* frame_len = 1 << frame_len_bits */
+    int nb_block_sizes;  /* number of block sizes */
+    /* block info */
+    int reset_block_lengths;
+    int block_len_bits; /* log2 of current block length */
+    int next_block_len_bits; /* log2 of next block length */
+    int prev_block_len_bits; /* log2 of prev block length */
+    int block_len; /* block length in samples */
+    int block_num; /* block number in current frame */
+    int block_pos; /* current position in frame */
+    uint8_t ms_stereo; /* true if mid/side stereo mode */
+    uint8_t channel_coded[MAX_CHANNELS]; /* true if channel is coded */
+    DECLARE_ALIGNED_16(float, exponents[MAX_CHANNELS][BLOCK_MAX_SIZE]);
+    float max_exponent[MAX_CHANNELS];
+    int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
+    DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
+    DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
+    DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
+    MDCTContext mdct_ctx[BLOCK_NB_SIZES];
+    float *windows[BLOCK_NB_SIZES];
+    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); /* temporary storage for imdct */
+    /* output buffer for one frame and the last for IMDCT windowing */
+    DECLARE_ALIGNED_16(float, frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2]);
+    /* last frame info */
+    uint8_t last_superframe[MAX_CODED_SUPERFRAME_SIZE + 4]; /* padding added */
+    int last_bitoffset;
+    int last_superframe_len;
+    float noise_table[NOISE_TAB_SIZE];
+    int noise_index;
+    float noise_mult; /* XXX: suppress that and integrate it in the noise array */
+    /* lsp_to_curve tables */
+    float lsp_cos_table[BLOCK_MAX_SIZE];
+    float lsp_pow_e_table[256];
+    float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
+    float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
+    DSPContext dsp;
+
+#ifdef TRACE
+    int frame_count;
+#endif
+} WMADecodeContext;
+
+extern const uint16_t ff_wma_hgain_huffcodes[37];
+extern const uint8_t ff_wma_hgain_huffbits[37];
+extern const float ff_wma_lsp_codebook[NB_LSP_COEFS][16];
+extern const uint32_t ff_wma_scale_huffcodes[121];
+extern const uint8_t ff_wma_scale_huffbits[121];
+
+int ff_wma_init(AVCodecContext * avctx, int flags2);
+int ff_wma_total_gain_to_bits(int total_gain);
+int ff_wma_end(AVCodecContext *avctx);
+
+#endif

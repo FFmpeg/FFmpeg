@@ -34,32 +34,10 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
-#include "dsputil.h"
+#include "wma.h"
 
-/* size of blocks */
-#define BLOCK_MIN_BITS 7
-#define BLOCK_MAX_BITS 11
-#define BLOCK_MAX_SIZE (1 << BLOCK_MAX_BITS)
-
-#define BLOCK_NB_SIZES (BLOCK_MAX_BITS - BLOCK_MIN_BITS + 1)
-
-/* XXX: find exact max size */
-#define HIGH_BAND_MAX_SIZE 16
-
-#define NB_LSP_COEFS 10
-
-/* XXX: is it a suitable value ? */
-#define MAX_CODED_SUPERFRAME_SIZE 16384
-
-#define MAX_CHANNELS 2
-
-#define NOISE_TAB_SIZE 8192
-
-#define LSP_POW_BITS 7
-
-#define VLCBITS 9
-#define VLCMAX ((22+VLCBITS-1)/VLCBITS)
+#undef NDEBUG
+#include <assert.h>
 
 #define EXPVLCBITS 8
 #define EXPMAX ((19+EXPVLCBITS-1)/EXPVLCBITS)
@@ -67,90 +45,7 @@
 #define HGAINVLCBITS 9
 #define HGAINMAX ((13+HGAINVLCBITS-1)/HGAINVLCBITS)
 
-typedef struct WMADecodeContext {
-    GetBitContext gb;
-    int sample_rate;
-    int nb_channels;
-    int bit_rate;
-    int version; /* 1 = 0x160 (WMAV1), 2 = 0x161 (WMAV2) */
-    int block_align;
-    int use_bit_reservoir;
-    int use_variable_block_len;
-    int use_exp_vlc;  /* exponent coding: 0 = lsp, 1 = vlc + delta */
-    int use_noise_coding; /* true if perceptual noise is added */
-    int byte_offset_bits;
-    VLC exp_vlc;
-    int exponent_sizes[BLOCK_NB_SIZES];
-    uint16_t exponent_bands[BLOCK_NB_SIZES][25];
-    int high_band_start[BLOCK_NB_SIZES]; /* index of first coef in high band */
-    int coefs_start;               /* first coded coef */
-    int coefs_end[BLOCK_NB_SIZES]; /* max number of coded coefficients */
-    int exponent_high_sizes[BLOCK_NB_SIZES];
-    int exponent_high_bands[BLOCK_NB_SIZES][HIGH_BAND_MAX_SIZE];
-    VLC hgain_vlc;
-
-    /* coded values in high bands */
-    int high_band_coded[MAX_CHANNELS][HIGH_BAND_MAX_SIZE];
-    int high_band_values[MAX_CHANNELS][HIGH_BAND_MAX_SIZE];
-
-    /* there are two possible tables for spectral coefficients */
-    VLC coef_vlc[2];
-    uint16_t *run_table[2];
-    uint16_t *level_table[2];
-    /* frame info */
-    int frame_len;       /* frame length in samples */
-    int frame_len_bits;  /* frame_len = 1 << frame_len_bits */
-    int nb_block_sizes;  /* number of block sizes */
-    /* block info */
-    int reset_block_lengths;
-    int block_len_bits; /* log2 of current block length */
-    int next_block_len_bits; /* log2 of next block length */
-    int prev_block_len_bits; /* log2 of prev block length */
-    int block_len; /* block length in samples */
-    int block_num; /* block number in current frame */
-    int block_pos; /* current position in frame */
-    uint8_t ms_stereo; /* true if mid/side stereo mode */
-    uint8_t channel_coded[MAX_CHANNELS]; /* true if channel is coded */
-    DECLARE_ALIGNED_16(float, exponents[MAX_CHANNELS][BLOCK_MAX_SIZE]);
-    float max_exponent[MAX_CHANNELS];
-    int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
-    DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
-    DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
-    DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
-    MDCTContext mdct_ctx[BLOCK_NB_SIZES];
-    float *windows[BLOCK_NB_SIZES];
-    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); /* temporary storage for imdct */
-    /* output buffer for one frame and the last for IMDCT windowing */
-    DECLARE_ALIGNED_16(float, frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2]);
-    /* last frame info */
-    uint8_t last_superframe[MAX_CODED_SUPERFRAME_SIZE + 4]; /* padding added */
-    int last_bitoffset;
-    int last_superframe_len;
-    float noise_table[NOISE_TAB_SIZE];
-    int noise_index;
-    float noise_mult; /* XXX: suppress that and integrate it in the noise array */
-    /* lsp_to_curve tables */
-    float lsp_cos_table[BLOCK_MAX_SIZE];
-    float lsp_pow_e_table[256];
-    float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
-    float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
-    DSPContext dsp;
-
-#ifdef TRACE
-    int frame_count;
-#endif
-} WMADecodeContext;
-
-typedef struct CoefVLCTable {
-    int n; /* total number of codes */
-    const uint32_t *huffcodes; /* VLC bit values */
-    const uint8_t *huffbits;   /* VLC bit size */
-    const uint16_t *levels; /* table to build run/level tables */
-} CoefVLCTable;
-
 static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len);
-
-#include "wmadata.h"
 
 #ifdef TRACE
 static void dump_shorts(const char *name, const short *tab, int n)
@@ -184,356 +79,51 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
 }
 #endif
 
-/* XXX: use same run/length optimization as mpeg decoders */
-static void init_coef_vlc(VLC *vlc,
-                          uint16_t **prun_table, uint16_t **plevel_table,
-                          const CoefVLCTable *vlc_table)
-{
-    int n = vlc_table->n;
-    const uint8_t *table_bits = vlc_table->huffbits;
-    const uint32_t *table_codes = vlc_table->huffcodes;
-    const uint16_t *levels_table = vlc_table->levels;
-    uint16_t *run_table, *level_table;
-    const uint16_t *p;
-    int i, l, j, level;
-
-    init_vlc(vlc, VLCBITS, n, table_bits, 1, 1, table_codes, 4, 4, 0);
-
-    run_table = av_malloc(n * sizeof(uint16_t));
-    level_table = av_malloc(n * sizeof(uint16_t));
-    p = levels_table;
-    i = 2;
-    level = 1;
-    while (i < n) {
-        l = *p++;
-        for(j=0;j<l;j++) {
-            run_table[i] = j;
-            level_table[i] = level;
-            i++;
-        }
-        level++;
-    }
-    *prun_table = run_table;
-    *plevel_table = level_table;
-}
-
 static int wma_decode_init(AVCodecContext * avctx)
 {
     WMADecodeContext *s = avctx->priv_data;
     int i, flags1, flags2;
-    float *window;
     uint8_t *extradata;
-    float bps1, high_freq;
-    volatile float bps;
-    int sample_rate1;
-    int coef_vlc_table;
-
-    s->sample_rate = avctx->sample_rate;
-    s->nb_channels = avctx->channels;
-    s->bit_rate = avctx->bit_rate;
-    s->block_align = avctx->block_align;
-
-    dsputil_init(&s->dsp, avctx);
-
-    if (avctx->codec->id == CODEC_ID_WMAV1) {
-        s->version = 1;
-    } else {
-        s->version = 2;
-    }
 
     /* extract flag infos */
     flags1 = 0;
     flags2 = 0;
     extradata = avctx->extradata;
-    if (s->version == 1 && avctx->extradata_size >= 4) {
+    if (avctx->codec->id == CODEC_ID_WMAV1 && avctx->extradata_size >= 4) {
         flags1 = extradata[0] | (extradata[1] << 8);
         flags2 = extradata[2] | (extradata[3] << 8);
-    } else if (s->version == 2 && avctx->extradata_size >= 6) {
+    } else if (avctx->codec->id == CODEC_ID_WMAV2 && avctx->extradata_size >= 6) {
         flags1 = extradata[0] | (extradata[1] << 8) |
             (extradata[2] << 16) | (extradata[3] << 24);
         flags2 = extradata[4] | (extradata[5] << 8);
     }
+for(i=0; i<avctx->extradata_size; i++)
+    av_log(NULL, AV_LOG_ERROR, "%02X ", extradata[i]);
+
     s->use_exp_vlc = flags2 & 0x0001;
     s->use_bit_reservoir = flags2 & 0x0002;
     s->use_variable_block_len = flags2 & 0x0004;
 
-    /* compute MDCT block size */
-    if (s->sample_rate <= 16000) {
-        s->frame_len_bits = 9;
-    } else if (s->sample_rate <= 22050 ||
-               (s->sample_rate <= 32000 && s->version == 1)) {
-        s->frame_len_bits = 10;
-    } else {
-        s->frame_len_bits = 11;
-    }
-    s->frame_len = 1 << s->frame_len_bits;
-    if (s->use_variable_block_len) {
-        int nb_max, nb;
-        nb = ((flags2 >> 3) & 3) + 1;
-        if ((s->bit_rate / s->nb_channels) >= 32000)
-            nb += 2;
-        nb_max = s->frame_len_bits - BLOCK_MIN_BITS;
-        if (nb > nb_max)
-            nb = nb_max;
-        s->nb_block_sizes = nb + 1;
-    } else {
-        s->nb_block_sizes = 1;
-    }
-
-    /* init rate dependant parameters */
-    s->use_noise_coding = 1;
-    high_freq = s->sample_rate * 0.5;
-
-    /* if version 2, then the rates are normalized */
-    sample_rate1 = s->sample_rate;
-    if (s->version == 2) {
-        if (sample_rate1 >= 44100)
-            sample_rate1 = 44100;
-        else if (sample_rate1 >= 22050)
-            sample_rate1 = 22050;
-        else if (sample_rate1 >= 16000)
-            sample_rate1 = 16000;
-        else if (sample_rate1 >= 11025)
-            sample_rate1 = 11025;
-        else if (sample_rate1 >= 8000)
-            sample_rate1 = 8000;
-    }
-
-    bps = (float)s->bit_rate / (float)(s->nb_channels * s->sample_rate);
-    s->byte_offset_bits = av_log2((int)(bps * s->frame_len / 8.0 + 0.5)) + 2;
-
-    /* compute high frequency value and choose if noise coding should
-       be activated */
-    bps1 = bps;
-    if (s->nb_channels == 2)
-        bps1 = bps * 1.6;
-    if (sample_rate1 == 44100) {
-        if (bps1 >= 0.61)
-            s->use_noise_coding = 0;
-        else
-            high_freq = high_freq * 0.4;
-    } else if (sample_rate1 == 22050) {
-        if (bps1 >= 1.16)
-            s->use_noise_coding = 0;
-        else if (bps1 >= 0.72)
-            high_freq = high_freq * 0.7;
-        else
-            high_freq = high_freq * 0.6;
-    } else if (sample_rate1 == 16000) {
-        if (bps > 0.5)
-            high_freq = high_freq * 0.5;
-        else
-            high_freq = high_freq * 0.3;
-    } else if (sample_rate1 == 11025) {
-        high_freq = high_freq * 0.7;
-    } else if (sample_rate1 == 8000) {
-        if (bps <= 0.625) {
-            high_freq = high_freq * 0.5;
-        } else if (bps > 0.75) {
-            s->use_noise_coding = 0;
-        } else {
-            high_freq = high_freq * 0.65;
-        }
-    } else {
-        if (bps >= 0.8) {
-            high_freq = high_freq * 0.75;
-        } else if (bps >= 0.6) {
-            high_freq = high_freq * 0.6;
-        } else {
-            high_freq = high_freq * 0.5;
-        }
-    }
-    dprintf("flags1=0x%x flags2=0x%x\n", flags1, flags2);
-    dprintf("version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
-           s->version, s->nb_channels, s->sample_rate, s->bit_rate,
-           s->block_align);
-    dprintf("bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
-           bps, bps1, high_freq, s->byte_offset_bits);
-    dprintf("use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
-           s->use_noise_coding, s->use_exp_vlc, s->nb_block_sizes);
-
-    /* compute the scale factor band sizes for each MDCT block size */
-    {
-        int a, b, pos, lpos, k, block_len, i, j, n;
-        const uint8_t *table;
-
-        if (s->version == 1) {
-            s->coefs_start = 3;
-        } else {
-            s->coefs_start = 0;
-        }
-        for(k = 0; k < s->nb_block_sizes; k++) {
-            block_len = s->frame_len >> k;
-
-            if (s->version == 1) {
-                lpos = 0;
-                for(i=0;i<25;i++) {
-                    a = wma_critical_freqs[i];
-                    b = s->sample_rate;
-                    pos = ((block_len * 2 * a)  + (b >> 1)) / b;
-                    if (pos > block_len)
-                        pos = block_len;
-                    s->exponent_bands[0][i] = pos - lpos;
-                    if (pos >= block_len) {
-                        i++;
-                        break;
-                    }
-                    lpos = pos;
-                }
-                s->exponent_sizes[0] = i;
-            } else {
-                /* hardcoded tables */
-                table = NULL;
-                a = s->frame_len_bits - BLOCK_MIN_BITS - k;
-                if (a < 3) {
-                    if (s->sample_rate >= 44100)
-                        table = exponent_band_44100[a];
-                    else if (s->sample_rate >= 32000)
-                        table = exponent_band_32000[a];
-                    else if (s->sample_rate >= 22050)
-                        table = exponent_band_22050[a];
-                }
-                if (table) {
-                    n = *table++;
-                    for(i=0;i<n;i++)
-                        s->exponent_bands[k][i] = table[i];
-                    s->exponent_sizes[k] = n;
-                } else {
-                    j = 0;
-                    lpos = 0;
-                    for(i=0;i<25;i++) {
-                        a = wma_critical_freqs[i];
-                        b = s->sample_rate;
-                        pos = ((block_len * 2 * a)  + (b << 1)) / (4 * b);
-                        pos <<= 2;
-                        if (pos > block_len)
-                            pos = block_len;
-                        if (pos > lpos)
-                            s->exponent_bands[k][j++] = pos - lpos;
-                        if (pos >= block_len)
-                            break;
-                        lpos = pos;
-                    }
-                    s->exponent_sizes[k] = j;
-                }
-            }
-
-            /* max number of coefs */
-            s->coefs_end[k] = (s->frame_len - ((s->frame_len * 9) / 100)) >> k;
-            /* high freq computation */
-            s->high_band_start[k] = (int)((block_len * 2 * high_freq) /
-                                          s->sample_rate + 0.5);
-            n = s->exponent_sizes[k];
-            j = 0;
-            pos = 0;
-            for(i=0;i<n;i++) {
-                int start, end;
-                start = pos;
-                pos += s->exponent_bands[k][i];
-                end = pos;
-                if (start < s->high_band_start[k])
-                    start = s->high_band_start[k];
-                if (end > s->coefs_end[k])
-                    end = s->coefs_end[k];
-                if (end > start)
-                    s->exponent_high_bands[k][j++] = end - start;
-            }
-            s->exponent_high_sizes[k] = j;
-#if 0
-            tprintf("%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
-                  s->frame_len >> k,
-                  s->coefs_end[k],
-                  s->high_band_start[k],
-                  s->exponent_high_sizes[k]);
-            for(j=0;j<s->exponent_high_sizes[k];j++)
-                tprintf(" %d", s->exponent_high_bands[k][j]);
-            tprintf("\n");
-#endif
-        }
-    }
-
-#ifdef TRACE
-    {
-        int i, j;
-        for(i = 0; i < s->nb_block_sizes; i++) {
-            tprintf("%5d: n=%2d:",
-                   s->frame_len >> i,
-                   s->exponent_sizes[i]);
-            for(j=0;j<s->exponent_sizes[i];j++)
-                tprintf(" %d", s->exponent_bands[i][j]);
-            tprintf("\n");
-        }
-    }
-#endif
+    ff_wma_init(avctx, flags2);
 
     /* init MDCT */
     for(i = 0; i < s->nb_block_sizes; i++)
         ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1);
 
-    /* init MDCT windows : simple sinus window */
-    for(i = 0; i < s->nb_block_sizes; i++) {
-        int n, j;
-        float alpha;
-        n = 1 << (s->frame_len_bits - i);
-        window = av_malloc(sizeof(float) * n);
-        alpha = M_PI / (2.0 * n);
-        for(j=0;j<n;j++) {
-            window[n - j - 1] = sin((j + 0.5) * alpha);
-        }
-        s->windows[i] = window;
-    }
-
-    s->reset_block_lengths = 1;
-
     if (s->use_noise_coding) {
-
-        /* init the noise generator */
-        if (s->use_exp_vlc)
-            s->noise_mult = 0.02;
-        else
-            s->noise_mult = 0.04;
-
-#ifdef TRACE
-        for(i=0;i<NOISE_TAB_SIZE;i++)
-            s->noise_table[i] = 1.0 * s->noise_mult;
-#else
-        {
-            unsigned int seed;
-            float norm;
-            seed = 1;
-            norm = (1.0 / (float)(1LL << 31)) * sqrt(3) * s->noise_mult;
-            for(i=0;i<NOISE_TAB_SIZE;i++) {
-                seed = seed * 314159 + 1;
-                s->noise_table[i] = (float)((int)seed) * norm;
-            }
-        }
-#endif
-        init_vlc(&s->hgain_vlc, HGAINVLCBITS, sizeof(hgain_huffbits),
-                 hgain_huffbits, 1, 1,
-                 hgain_huffcodes, 2, 2, 0);
+        init_vlc(&s->hgain_vlc, HGAINVLCBITS, sizeof(ff_wma_hgain_huffbits),
+                 ff_wma_hgain_huffbits, 1, 1,
+                 ff_wma_hgain_huffcodes, 2, 2, 0);
     }
 
     if (s->use_exp_vlc) {
-        init_vlc(&s->exp_vlc, EXPVLCBITS, sizeof(scale_huffbits),
-                 scale_huffbits, 1, 1,
-                 scale_huffcodes, 4, 4, 0);
+        init_vlc(&s->exp_vlc, EXPVLCBITS, sizeof(ff_wma_scale_huffbits), //FIXME move out of context
+                 ff_wma_scale_huffbits, 1, 1,
+                 ff_wma_scale_huffcodes, 4, 4, 0);
     } else {
         wma_lsp_to_curve_init(s, s->frame_len);
     }
 
-    /* choose the VLC tables for the coefficients */
-    coef_vlc_table = 2;
-    if (s->sample_rate >= 32000) {
-        if (bps1 < 0.72)
-            coef_vlc_table = 0;
-        else if (bps1 < 1.16)
-            coef_vlc_table = 1;
-    }
-
-    init_coef_vlc(&s->coef_vlc[0], &s->run_table[0], &s->level_table[0],
-                  &coef_vlcs[coef_vlc_table * 2]);
-    init_coef_vlc(&s->coef_vlc[1], &s->run_table[1], &s->level_table[1],
-                  &coef_vlcs[coef_vlc_table * 2 + 1]);
     return 0;
 }
 
@@ -664,7 +254,7 @@ static void decode_exp_lsp(WMADecodeContext *s, int ch)
             val = get_bits(&s->gb, 3);
         else
             val = get_bits(&s->gb, 4);
-        lsp_coefs[i] = lsp_codebook[i][val];
+        lsp_coefs[i] = ff_wma_lsp_codebook[i][val];
     }
 
     wma_lsp_to_curve(s, s->exponents[ch], &s->max_exponent[ch],
@@ -692,8 +282,9 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
         do {
             *q++ = v;
         } while (--n);
-    }
-    last_exp = 36;
+    }else
+        last_exp = 36;
+
     while (q < q_end) {
         code = get_vlc2(&s->gb, s->exp_vlc.table, EXPVLCBITS, EXPMAX);
         if (code < 0)
@@ -787,16 +378,7 @@ static int wma_decode_block(WMADecodeContext *s)
             break;
     }
 
-    if (total_gain < 15)
-        coef_nb_bits = 13;
-    else if (total_gain < 32)
-        coef_nb_bits = 12;
-    else if (total_gain < 40)
-        coef_nb_bits = 11;
-    else if (total_gain < 45)
-        coef_nb_bits = 10;
-    else
-        coef_nb_bits = 9;
+    coef_nb_bits= ff_wma_total_gain_to_bits(total_gain);
 
     /* compute number of coefficients */
     n = s->coefs_end[bsize] - s->coefs_start;
@@ -1279,37 +861,15 @@ static int wma_decode_superframe(AVCodecContext *avctx,
             goto fail;
         samples += s->nb_channels * s->frame_len;
     }
+
+//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d outbytes:%d eaten:%d\n", s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,        (int8_t *)samples - (int8_t *)data, s->block_align);
+
     *data_size = (int8_t *)samples - (int8_t *)data;
     return s->block_align;
  fail:
     /* when error, we reset the bit reservoir */
     s->last_superframe_len = 0;
     return -1;
-}
-
-static int wma_decode_end(AVCodecContext *avctx)
-{
-    WMADecodeContext *s = avctx->priv_data;
-    int i;
-
-    for(i = 0; i < s->nb_block_sizes; i++)
-        ff_mdct_end(&s->mdct_ctx[i]);
-    for(i = 0; i < s->nb_block_sizes; i++)
-        av_free(s->windows[i]);
-
-    if (s->use_exp_vlc) {
-        free_vlc(&s->exp_vlc);
-    }
-    if (s->use_noise_coding) {
-        free_vlc(&s->hgain_vlc);
-    }
-    for(i = 0;i < 2; i++) {
-        free_vlc(&s->coef_vlc[i]);
-        av_free(s->run_table[i]);
-        av_free(s->level_table[i]);
-    }
-
-    return 0;
 }
 
 AVCodec wmav1_decoder =
@@ -1320,7 +880,7 @@ AVCodec wmav1_decoder =
     sizeof(WMADecodeContext),
     wma_decode_init,
     NULL,
-    wma_decode_end,
+    ff_wma_end,
     wma_decode_superframe,
 };
 
@@ -1332,6 +892,6 @@ AVCodec wmav2_decoder =
     sizeof(WMADecodeContext),
     wma_decode_init,
     NULL,
-    wma_decode_end,
+    ff_wma_end,
     wma_decode_superframe,
 };

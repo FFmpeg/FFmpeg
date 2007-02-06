@@ -187,8 +187,8 @@ void avcodec_register_all(void)
     REGISTER_DECODER(VMDAUDIO, vmdaudio);
     REGISTER_ENCDEC (VORBIS, vorbis);
     REGISTER_DECODER(WAVPACK, wavpack);
-    REGISTER_DECODER(WMAV1, wmav1);
-    REGISTER_DECODER(WMAV2, wmav2);
+    REGISTER_ENCDEC(WMAV1, wmav1);
+    REGISTER_ENCDEC(WMAV2, wmav2);
     REGISTER_DECODER(WS_SND1, ws_snd1);
 
     /* pcm codecs */

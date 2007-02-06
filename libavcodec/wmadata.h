@@ -50,7 +50,7 @@ static const uint8_t exponent_band_44100[3][25] = {
     { 17,  4,   8,   8,   4,  12,  12,   8,   8,  24,  16,  20,  24,  32,  40,  60,  80, 152, },
 };
 
-static const uint16_t hgain_huffcodes[37] = {
+const uint16_t ff_wma_hgain_huffcodes[37] = {
  0x00003, 0x002e7, 0x00001, 0x005cd, 0x0005d, 0x005c9, 0x0005e, 0x00003,
  0x00016, 0x0000b, 0x00001, 0x00006, 0x00001, 0x00006, 0x00004, 0x00005,
  0x00004, 0x00007, 0x00003, 0x00007, 0x00004, 0x0000a, 0x0000a, 0x00002,
@@ -58,7 +58,7 @@ static const uint16_t hgain_huffcodes[37] = {
  0x005c8, 0x000b8, 0x005ca, 0x005cb, 0x005cc,
 };
 
-static const uint8_t hgain_huffbits[37] = {
+const uint8_t ff_wma_hgain_huffbits[37] = {
  10, 12, 10, 13,  9, 13,  9,  8,
   7,  5,  5,  4,  4,  3,  3,  3,
   4,  3,  4,  4,  5,  5,  6,  8,
@@ -66,7 +66,7 @@ static const uint8_t hgain_huffbits[37] = {
  13, 10, 13, 13, 13,
 };
 
-static const float lsp_codebook[NB_LSP_COEFS][16] = {
+const float ff_wma_lsp_codebook[NB_LSP_COEFS][16] = {
  { 1.98732877, 1.97944528, 1.97179088, 1.96260549, 1.95038374, 1.93336114, 1.90719232, 1.86191415, },
  { 1.97260000, 1.96083160, 1.94982586, 1.93806164, 1.92516608, 1.91010199, 1.89232331, 1.87149812,
    1.84564818, 1.81358067, 1.77620070, 1.73265264, 1.67907855, 1.60959081, 1.50829650, 1.33120330, },
@@ -86,7 +86,7 @@ static const float lsp_codebook[NB_LSP_COEFS][16] = {
  { -1.56144989, -1.65944032, -1.72689685, -1.77857740, -1.82203011, -1.86220079, -1.90283983, -1.94820479, },
 };
 
-static const uint32_t scale_huffcodes[121] = {
+const uint32_t ff_wma_scale_huffcodes[121] = {
  0x3ffe8, 0x3ffe6, 0x3ffe7, 0x3ffe5, 0x7fff5, 0x7fff1, 0x7ffed, 0x7fff6,
  0x7ffee, 0x7ffef, 0x7fff0, 0x7fffc, 0x7fffd, 0x7ffff, 0x7fffe, 0x7fff7,
  0x7fff8, 0x7fffb, 0x7fff9, 0x3ffe4, 0x7fffa, 0x3ffe3, 0x1ffef, 0x1fff0,
@@ -105,7 +105,7 @@ static const uint32_t scale_huffcodes[121] = {
  0x7fff3,
 };
 
-static const uint8_t scale_huffbits[121] = {
+const uint8_t ff_wma_scale_huffbits[121] = {
  18, 18, 18, 18, 19, 19, 19, 19,
  19, 19, 19, 19, 19, 19, 19, 19,
  19, 19, 19, 18, 19, 18, 17, 17,
@@ -1413,21 +1413,21 @@ static const uint16_t levels5[40] = {
 
 static const CoefVLCTable coef_vlcs[6] = {
     {
-        sizeof(coef0_huffbits), coef0_huffcodes, coef0_huffbits, levels0,
+        sizeof(coef0_huffbits), sizeof(levels0)/2, coef0_huffcodes, coef0_huffbits, levels0,
     },
     {
-        sizeof(coef1_huffbits), coef1_huffcodes, coef1_huffbits, levels1,
+        sizeof(coef1_huffbits), sizeof(levels1)/2, coef1_huffcodes, coef1_huffbits, levels1,
     },
     {
-        sizeof(coef2_huffbits), coef2_huffcodes, coef2_huffbits, levels2,
+        sizeof(coef2_huffbits), sizeof(levels2)/2, coef2_huffcodes, coef2_huffbits, levels2,
     },
     {
-        sizeof(coef3_huffbits), coef3_huffcodes, coef3_huffbits, levels3,
+        sizeof(coef3_huffbits), sizeof(levels3)/2, coef3_huffcodes, coef3_huffbits, levels3,
     },
     {
-        sizeof(coef4_huffbits), coef4_huffcodes, coef4_huffbits, levels4,
+        sizeof(coef4_huffbits), sizeof(levels4)/2, coef4_huffcodes, coef4_huffbits, levels4,
     },
     {
-        sizeof(coef5_huffbits), coef5_huffcodes, coef5_huffbits, levels5,
+        sizeof(coef5_huffbits), sizeof(levels5)/2, coef5_huffcodes, coef5_huffbits, levels5,
     },
 };
