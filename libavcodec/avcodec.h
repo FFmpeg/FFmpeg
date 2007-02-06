@@ -238,6 +238,7 @@ enum CodecID {
     CODEC_ID_DSICINAUDIO,
     CODEC_ID_IMC,
     CODEC_ID_MUSEPACK7,
+    CODEC_ID_MLP,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
