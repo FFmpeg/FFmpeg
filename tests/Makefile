@@ -110,5 +110,5 @@ distclean clean:
 	rm -rf vsynth1 vsynth2 data
 	rm -f asynth1.sw *~ audiogen$(EXESUF) videogen$(EXESUF) rotozoom$(EXESUF) tiny_psnr$(EXESUF)
 
-.PHONY: all fulltest test codectest libavtest test-server
+.PHONY: all fulltest test codectest libavtest test-server seektest
 .PHONY: mpeg4 mpeg ac3 snow snowll distclean clean
