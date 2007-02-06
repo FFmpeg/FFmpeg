@@ -609,6 +609,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     *picture = *p;
     *data_size = sizeof(AVPicture);
 
+    s->frames[VP56_FRAME_CURRENT].data[0] = NULL;
     return buf_size;
 }
 
