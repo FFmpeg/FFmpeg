@@ -1029,7 +1029,7 @@ following image formats are supported:
 @item AC3                    @tab  IX  @tab  IX
 @tab liba52 is used internally for decoding.
 @item Vorbis                 @tab  X   @tab  X
-@item WMA V1/V2              @tab      @tab X
+@item WMA V1/V2              @tab X    @tab X
 @item AAC                    @tab X    @tab X
 @tab Supported through the external library libfaac/libfaad.
 @item Microsoft ADPCM        @tab X    @tab X
