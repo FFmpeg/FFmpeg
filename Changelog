@@ -70,6 +70,7 @@ version <next>
 - Flash Screen Video encoder
 - Theora encoding via libtheora
 - BMP encoder
+- WMA encoder
 
 version 0.4.9-pre1:
 
