@@ -588,14 +588,19 @@ TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
+
 logging="yes"
 logfile="config.err"
+
+# installation paths
 PREFIX="/usr/local"
 libdir='${PREFIX}/lib'
 shlibdir="$libdir"
 incdir='${PREFIX}/include/ffmpeg'
 mandir='${PREFIX}/man'
 bindir='${PREFIX}/bin'
+
+# toolchain
 cross_prefix=""
 cross_compile="no"
 cc="gcc"
@@ -603,6 +608,9 @@ ar="ar"
 ranlib="ranlib"
 make="make"
 strip="strip"
+asmalign_pot="unknown"
+
+# machine
 arch=`uname -m`
 cpu="generic"
 powerpc_perf="no"
@@ -615,6 +623,8 @@ iwmmxt="default"
 altivec="default"
 dcbzl="no"
 mmi="default"
+bigendian="no"
+
 case "$arch" in
   i386|i486|i586|i686|i86pc|BePC)
     arch="x86_32"
@@ -669,24 +679,36 @@ case "$arch" in
     arch="unknown"
   ;;
 esac
-gprof="no"
-video4linux="yes"
-video4linux2="yes"
-bktr="no"
-audio_oss="yes"
+
+# OS
+beos_netserver="no"
+mingw32="no"
+os2="no"
+wince="no"
+
+# non-library system interfaces
 audio_beos="no"
-x11grab="no"
+audio_oss="yes"
+bktr="no"
 dv1394="yes"
+video4linux2="yes"
+video4linux="yes"
+
+# libraries
+amr_if2="no"
+amr_nb="no"
+amr_nb_fixed="no"
+amr_wb="no"
+avisynth="no"
 dc1394="no"
-network="yes"
-ipv6="yes"
-zlib="yes"
+dlfcn_h="no"
+dlopen="no"
 liba52="no"
 liba52bin="no"
 libdts="no"
 libfaac="no"
-libfaad="no"
 libfaad2="no"
+libfaad="no"
 libfaadbin="no"
 libgsm="no"
 libmp3lame="no"
@@ -694,32 +716,44 @@ libnut="no"
 libogg="no"
 libtheora="no"
 libvorbis="no"
-xvid="no"
+mlib="no"
+x11grab="no"
 x264="no"
-pp="no"
-mingw32="no"
-wince="no"
-os2="no"
-lstatic="yes"
-lshared="no"
-optimize="yes"
+xvid="no"
+zlib="yes"
+
+# configurable options
 debug="yes"
-extrawarnings="no"
 dostrip="yes"
-extralibs="-lm"
-bigendian="no"
-vhook="default"
-avisynth="no"
-dlfcn_h="no"
-dlopen="no"
+extrawarnings="no"
+ffmpeg="yes"
+ffplay="yes"
+ffserver="yes"
+gpl="no"
+gprof="no"
+ipv6="yes"
+lshared="no"
+lstatic="yes"
+memalign_hack="no"
 mpegaudio_hp="yes"
+network="yes"
+optimize="yes"
+pp="no"
+protocols="yes"
+swscaler="no"
+vhook="default"
+
+# threading
+beosthreads="no"
+os2threads="no"
+pthreads="no"
+w32threads="no"
+thread_type="no"
+
+# build settings
+extralibs="-lm"
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
-beos_netserver="no"
-protocols="yes"
-ffmpeg="yes"
-ffserver="yes"
-ffplay="yes"
 LIBOBJFLAGS=""
 FFLDFLAGS=-Wl,--warn-common
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
@@ -735,20 +769,6 @@ SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 EXESUF=""
 BUILDSUF=""
-amr_nb="no"
-amr_wb="no"
-amr_nb_fixed="no"
-amr_if2="no"
-mlib="no"
-beosthreads="no"
-os2threads="no"
-pthreads="no"
-w32threads="no"
-thread_type="no"
-swscaler="no"
-gpl="no"
-memalign_hack="no"
-asmalign_pot="unknown"
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
 
 # OS specific
