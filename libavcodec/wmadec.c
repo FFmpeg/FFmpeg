@@ -97,8 +97,8 @@ static int wma_decode_init(AVCodecContext * avctx)
             (extradata[2] << 16) | (extradata[3] << 24);
         flags2 = extradata[4] | (extradata[5] << 8);
     }
-for(i=0; i<avctx->extradata_size; i++)
-    av_log(NULL, AV_LOG_ERROR, "%02X ", extradata[i]);
+// for(i=0; i<avctx->extradata_size; i++)
+//     av_log(NULL, AV_LOG_ERROR, "%02X ", extradata[i]);
 
     s->use_exp_vlc = flags2 & 0x0001;
     s->use_bit_reservoir = flags2 & 0x0002;
