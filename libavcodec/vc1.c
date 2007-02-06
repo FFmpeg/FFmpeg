@@ -1646,7 +1646,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if(v->tfcntrflag)
         get_bits(gb, 8);
     if(v->broadcast) {
-        if(!v->interlace || v->panscanflag) {
+        if(!v->interlace || v->psf) {
             v->rptfrm = get_bits(gb, 2);
         } else {
             v->tff = get_bits1(gb);
