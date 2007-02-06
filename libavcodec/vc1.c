@@ -1282,10 +1282,6 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     v->s.avctx->height = v->s.avctx->coded_height;
     v->broadcast = get_bits1(gb);
     v->interlace = get_bits1(gb);
-    if(v->interlace){
-        av_log(v->s.avctx, AV_LOG_ERROR, "Interlaced mode not supported (yet)\n");
-        return -1;
-    }
     v->tfcntrflag = get_bits1(gb);
     v->finterpflag = get_bits1(gb);
     get_bits1(gb); // reserved
@@ -1624,8 +1620,10 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 
     v->p_frame_skipped = 0;
 
-    if(v->interlace)
+    if(v->interlace){
         v->fcm = decode012(gb);
+        if(v->fcm) return -1; // interlaced frames/fields are not implemented
+    }
     switch(get_prefix(gb, 0, 4)) {
     case 0:
         v->s.pict_type = P_TYPE;
