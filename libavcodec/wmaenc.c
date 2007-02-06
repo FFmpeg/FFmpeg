@@ -290,7 +290,7 @@ static int encode_block(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
                         put_bits(&s->pb, coef_nb_bits, abs_level);
                         put_bits(&s->pb, s->frame_len_bits, run);
                     }
-                    put_bits(&s->pb, 1, level > 0);
+                    put_bits(&s->pb, 1, level < 0); //FIXME the sign is fliped somewhere
                     run=0;
                 }else{
                     run++;
