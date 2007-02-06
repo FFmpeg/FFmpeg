@@ -22,62 +22,29 @@
 #ifndef FFMPEG_BYTESTREAM_H
 #define FFMPEG_BYTESTREAM_H
 
-static av_always_inline unsigned int bytestream_get_le32(uint8_t **b)
-{
-    (*b) += 4;
-    return AV_RL32(*b - 4);
-}
+#define DEF(name, bytes, read, write)\
+static av_always_inline unsigned int bytestream_get_ ## name(uint8_t **b){\
+    (*b) += bytes;\
+    return read(*b - bytes);\
+}\
+static av_always_inline void bytestream_put_ ##name(uint8_t **b, const unsigned int value){\
+    write(*b, value);\
+    (*b) += bytes;\
+};
 
-static av_always_inline unsigned int bytestream_get_le16(uint8_t **b)
-{
-    (*b) += 2;
-    return AV_RL16(*b - 2);
-}
+DEF(le32, 4, AV_RL32, AV_WL32)
+DEF(le16, 2, AV_RL16, AV_WL16)
+DEF(be32, 4, AV_RB32, AV_WB32)
+DEF(be16, 2, AV_RB16, AV_WB16)
+DEF(byte, 1, AV_RB8 , AV_WB8 )
 
-static av_always_inline unsigned int bytestream_get_byte(uint8_t **b)
-{
-    (*b)++;
-    return (*b)[-1];
-}
+#undef DEF
 
 static av_always_inline unsigned int bytestream_get_buffer(uint8_t **b, uint8_t *dst, unsigned int size)
 {
     memcpy(dst, *b, size);
     (*b) += size;
     return size;
-}
-
-static av_always_inline void bytestream_put_be32(uint8_t **b, const unsigned int value)
-{
-    *(*b)++ = value >> 24;
-    *(*b)++ = value >> 16;
-    *(*b)++ = value >> 8;
-    *(*b)++ = value;
-};
-
-static av_always_inline void bytestream_put_be16(uint8_t **b, const unsigned int value)
-{
-    *(*b)++ = value >> 8;
-    *(*b)++ = value;
-}
-
-static av_always_inline void bytestream_put_le32(uint8_t **b, const unsigned int value)
-{
-    *(*b)++ = value;
-    *(*b)++ = value >> 8;
-    *(*b)++ = value >> 16;
-    *(*b)++ = value >> 24;
-}
-
-static av_always_inline void bytestream_put_le16(uint8_t **b, const unsigned int value)
-{
-    *(*b)++ = value;
-    *(*b)++ = value >> 8;
-}
-
-static av_always_inline void bytestream_put_byte(uint8_t **b, const unsigned int value)
-{
-    *(*b)++ = value;
 }
 
 static av_always_inline void bytestream_put_buffer(uint8_t **b, const uint8_t *src, unsigned int size)
