@@ -179,7 +179,7 @@ static int encode_block(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
     }
 
     for(ch = 0; ch < s->nb_channels; ch++) {
-        if (s->channel_coded[ch]) {
+        if (s->channel_coded[ch]= 1) { //FIXME
             init_exp(s, ch, fixed_exp);
         }
     }
@@ -213,7 +213,7 @@ static int encode_block(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
 
     v = 0;
     for(ch = 0; ch < s->nb_channels; ch++) {
-        int a = s->channel_coded[ch]=1; //FIXME
+        int a = s->channel_coded[ch];
         put_bits(&s->pb, 1, a);
         v |= a;
     }
