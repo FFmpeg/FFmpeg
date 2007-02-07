@@ -984,8 +984,9 @@ static void stream_seek(VideoState *is, int64_t pos, int rel)
 static void stream_pause(VideoState *is)
 {
     is->paused = !is->paused;
-    if (is->paused) {
+    if (!is->paused) {
         is->video_current_pts = get_video_clock(is);
+        is->frame_timer += (av_gettime() - is->video_current_pts_time) / 1000000.0;
     }
 }
 
