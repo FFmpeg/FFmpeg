@@ -378,6 +378,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     url_fskip(pb, len);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        st->pts_wrap_bits = 32;
         if (main_timebase.num && main_timebase.den)
             st->time_base = main_timebase;
         else {
