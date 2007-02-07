@@ -533,7 +533,7 @@ static int put_payload_parsing_info(
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int ppi_size, i;
-    unsigned char *start_ppi_ptr = pb->buf_ptr;
+    int64_t start= url_ftell(pb);
 
     int iLengthTypeFlags = ASF_PPI_LENGTH_TYPE_FLAGS;
 
@@ -565,7 +565,7 @@ static int put_payload_parsing_info(
     if (asf->multi_payloads_present)
         put_byte(pb, nb_payloads | ASF_PAYLOAD_FLAGS);
 
-    ppi_size = pb->buf_ptr - start_ppi_ptr;
+    ppi_size = url_ftell(pb) - start;
 
     return ppi_size;
 }
