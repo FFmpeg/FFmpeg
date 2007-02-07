@@ -51,11 +51,11 @@
 #define VLCMAX ((22+VLCBITS-1)/VLCBITS)
 
 typedef struct CoefVLCTable {
-    int n; /* total number of codes */
+    int n;                      ///< total number of codes
     int max_level;
-    const uint32_t *huffcodes; /* VLC bit values */
-    const uint8_t *huffbits;   /* VLC bit size */
-    const uint16_t *levels; /* table to build run/level tables */
+    const uint32_t *huffcodes;  ///< VLC bit values
+    const uint8_t *huffbits;    ///< VLC bit size
+    const uint16_t *levels;     ///< table to build run/level tables
 } CoefVLCTable;
 
 typedef struct WMADecodeContext {
@@ -64,19 +64,19 @@ typedef struct WMADecodeContext {
     int sample_rate;
     int nb_channels;
     int bit_rate;
-    int version; /* 1 = 0x160 (WMAV1), 2 = 0x161 (WMAV2) */
+    int version;                            ///< 1 = 0x160 (WMAV1), 2 = 0x161 (WMAV2)
     int block_align;
     int use_bit_reservoir;
     int use_variable_block_len;
-    int use_exp_vlc;  /* exponent coding: 0 = lsp, 1 = vlc + delta */
-    int use_noise_coding; /* true if perceptual noise is added */
+    int use_exp_vlc;                        ///< exponent coding: 0 = lsp, 1 = vlc + delta
+    int use_noise_coding;                   ///< true if perceptual noise is added
     int byte_offset_bits;
     VLC exp_vlc;
     int exponent_sizes[BLOCK_NB_SIZES];
     uint16_t exponent_bands[BLOCK_NB_SIZES][25];
-    int high_band_start[BLOCK_NB_SIZES]; /* index of first coef in high band */
-    int coefs_start;               /* first coded coef */
-    int coefs_end[BLOCK_NB_SIZES]; /* max number of coded coefficients */
+    int high_band_start[BLOCK_NB_SIZES];    ///< index of first coef in high band
+    int coefs_start;                        ///< first coded coef
+    int coefs_end[BLOCK_NB_SIZES];          ///< max number of coded coefficients
     int exponent_high_sizes[BLOCK_NB_SIZES];
     int exponent_high_bands[BLOCK_NB_SIZES][HIGH_BAND_MAX_SIZE];
     VLC hgain_vlc;
@@ -93,19 +93,19 @@ typedef struct WMADecodeContext {
     uint16_t *int_table[2];
     CoefVLCTable *coef_vlcs[2];
     /* frame info */
-    int frame_len;       /* frame length in samples */
-    int frame_len_bits;  /* frame_len = 1 << frame_len_bits */
-    int nb_block_sizes;  /* number of block sizes */
+    int frame_len;                          ///< frame length in samples
+    int frame_len_bits;                     ///< frame_len = 1 << frame_len_bits
+    int nb_block_sizes;                     ///< number of block sizes
     /* block info */
     int reset_block_lengths;
-    int block_len_bits; /* log2 of current block length */
-    int next_block_len_bits; /* log2 of next block length */
-    int prev_block_len_bits; /* log2 of prev block length */
-    int block_len; /* block length in samples */
-    int block_num; /* block number in current frame */
-    int block_pos; /* current position in frame */
-    uint8_t ms_stereo; /* true if mid/side stereo mode */
-    uint8_t channel_coded[MAX_CHANNELS]; /* true if channel is coded */
+    int block_len_bits;                     ///< log2 of current block length
+    int next_block_len_bits;                ///< log2 of next block length
+    int prev_block_len_bits;                ///< log2 of prev block length
+    int block_len;                          ///< block length in samples
+    int block_num;                          ///< block number in current frame
+    int block_pos;                          ///< current position in frame
+    uint8_t ms_stereo;                      ///< true if mid/side stereo mode
+    uint8_t channel_coded[MAX_CHANNELS];    ///< true if channel is coded
     DECLARE_ALIGNED_16(float, exponents[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     float max_exponent[MAX_CHANNELS];
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
@@ -114,7 +114,7 @@ typedef struct WMADecodeContext {
     DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
     float *windows[BLOCK_NB_SIZES];
-    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); /* temporary storage for imdct */
+    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); ///< temporary storage for imdct
     /* output buffer for one frame and the last for IMDCT windowing */
     DECLARE_ALIGNED_16(float, frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2]);
     /* last frame info */

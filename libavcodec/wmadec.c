@@ -127,8 +127,10 @@ static int wma_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-/* interpolate values for a bigger or smaller block. The block must
-   have multiple sizes */
+/**
+ * interpolate values for a bigger or smaller block. The block must
+ * have multiple sizes
+ */
 static void interpolate_array(float *scale, int old_size, int new_size)
 {
     int i, j, jincr, k;
@@ -154,10 +156,12 @@ static void interpolate_array(float *scale, int old_size, int new_size)
     }
 }
 
-/* compute x^-0.25 with an exponent and mantissa table. We use linear
-   interpolation to reduce the mantissa table size at a small speed
-   expense (linear interpolation approximately doubles the number of
-   bits of precision). */
+/**
+ * compute x^-0.25 with an exponent and mantissa table. We use linear
+ * interpolation to reduce the mantissa table size at a small speed
+ * expense (linear interpolation approximately doubles the number of
+ * bits of precision).
+ */
 static inline float pow_m1_4(WMADecodeContext *s, float x)
 {
     union {
@@ -214,8 +218,10 @@ static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len)
 #endif
 }
 
-/* NOTE: We use the same code as Vorbis here */
-/* XXX: optimize it further with SSE/3Dnow */
+/**
+ * NOTE: We use the same code as Vorbis here
+ * @todo optimize it further with SSE/3Dnow
+ */
 static void wma_lsp_to_curve(WMADecodeContext *s,
                              float *out, float *val_max_ptr,
                              int n, float *lsp)
@@ -243,7 +249,9 @@ static void wma_lsp_to_curve(WMADecodeContext *s,
     *val_max_ptr = val_max;
 }
 
-/* decode exponents coded with LSP coefficients (same idea as Vorbis) */
+/**
+ * decode exponents coded with LSP coefficients (same idea as Vorbis)
+ */
 static void decode_exp_lsp(WMADecodeContext *s, int ch)
 {
     float lsp_coefs[NB_LSP_COEFS];
@@ -261,7 +269,9 @@ static void decode_exp_lsp(WMADecodeContext *s, int ch)
                      s->block_len, lsp_coefs);
 }
 
-/* decode exponents coded with VLC codes */
+/**
+ * decode exponents coded with VLC codes
+ */
 static int decode_exp_vlc(WMADecodeContext *s, int ch)
 {
     int last_exp, n, code;
@@ -304,8 +314,10 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
     return 0;
 }
 
-/* return 0 if OK. return 1 if last block of frame. return -1 if
-   unrecorrable error. */
+/**
+ * @return 0 if OK. 1 if last block of frame. return -1 if
+ * unrecorrable error.
+ */
 static int wma_decode_block(WMADecodeContext *s)
 {
     int n, v, a, ch, code, bsize;
