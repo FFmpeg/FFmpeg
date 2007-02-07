@@ -725,16 +725,8 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     //XXX /FIXME use duration from AVPacket (quick hack by)
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
-    if (pts == AV_NOPTS_VALUE) {
-        if (codec->codec_type == CODEC_TYPE_AUDIO) {
-            duration = (codec->frame_number * (int64_t)codec->frame_size * INT64_C(10000000)) /
-                codec->sample_rate;
-        } else {
-            duration = av_rescale(codec->frame_number * (int64_t)codec->time_base.num, 10000000, codec->time_base.den);
-        }
-    } else {
-        duration = pts * 10000;
-    }
+    assert(pts != AV_NOPTS_VALUE);
+    duration = pts * 10000;
     asf->duration= FFMAX(asf->duration, duration);
 
     packet_st = asf->nb_packets;
