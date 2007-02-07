@@ -198,3 +198,7 @@ stddev:2106.00 PSNR:29.85 bytes:1048576
 8d05d345bc14153f3d0da95fdf34e084 *./data/out.wav
 stddev:12255.92 PSNR:14.55 bytes:1056768
 stddev:2099.31 PSNR:29.88 bytes:1048576
+6a55c7b433fbe4cd1ca21d149aaeb525 *./data/a-vorbis.asf
+35686 ./data/a-vorbis.asf
+295d828df6167db030d0812ce1a8fd93 *./data/out.wav
+stddev:3882.46 PSNR:24.54 bytes:1056768

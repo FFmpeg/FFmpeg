@@ -70,6 +70,7 @@ else
     do_adpcm_ms=y
     do_flac=y
     do_wma=y
+    do_vorbis=y
     do_rc=y
     do_mpeg4adv=y
     do_mpeg4thread=y
@@ -554,6 +555,12 @@ do_audio_decoding
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 
+###################################
+if [ -n "$do_vorbis" ] ; then
+# vorbis
+do_audio_encoding vorbis.asf "-ar 44100" "-acodec vorbis"
+do_audio_decoding
+fi
 
 ###################################
 # libavformat testing
