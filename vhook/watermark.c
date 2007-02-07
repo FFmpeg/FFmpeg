@@ -208,18 +208,18 @@ static void Process0(void *ctx,
     int thrG = ci->thrG;
     int thrB = ci->thrB;
 
-    if (pix_fmt != PIX_FMT_RGBA32) {
+    if (pix_fmt != PIX_FMT_RGB32) {
         int size;
 
-        size = avpicture_get_size(PIX_FMT_RGBA32, src_width, src_height);
+        size = avpicture_get_size(PIX_FMT_RGB32, src_width, src_height);
         buf = av_malloc(size);
 
-        avpicture_fill(&picture1, buf, PIX_FMT_RGBA32, src_width, src_height);
+        avpicture_fill(&picture1, buf, PIX_FMT_RGB32, src_width, src_height);
 
         // if we already got a SWS context, let's realloc if is not re-useable
         ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
                                     src_width, src_height, pix_fmt,
-                                    src_width, src_height, PIX_FMT_RGBA32,
+                                    src_width, src_height, PIX_FMT_RGB32,
                                     sws_flags, NULL, NULL, NULL);
         if (ci->toRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
@@ -248,7 +248,7 @@ static void Process0(void *ctx,
     ym_size = ci->y_size;
 
     // I'll do the *4 => <<2 crap later. Most compilers understand that anyway.
-    // According to avcodec.h PIX_FMT_RGBA32 is handled in endian specific manner.
+    // According to avcodec.h PIX_FMT_RGB32 is handled in endian specific manner.
     for (y=0; y<src_height; y++) {
         offs = y * (src_width * 4);
         offsm = (((y * ym_size) / src_height) * 4) * xm_size; // offsm first in maskline. byteoffs!
@@ -291,9 +291,9 @@ static void Process0(void *ctx,
 
 
 
-    if (pix_fmt != PIX_FMT_RGBA32) {
+    if (pix_fmt != PIX_FMT_RGB32) {
         ci->fromRGB_convert_ctx = sws_getCachedContext(ci->fromRGB_convert_ctx,
-                                      src_width, src_height, PIX_FMT_RGBA32,
+                                      src_width, src_height, PIX_FMT_RGB32,
                                       src_width, src_height, pix_fmt,
                                       sws_flags, NULL, NULL, NULL);
         if (ci->fromRGB_convert_ctx == NULL) {
@@ -339,18 +339,18 @@ static void Process1(void *ctx,
     uint32_t pixel;
     uint32_t pixelm;
 
-    if (pix_fmt != PIX_FMT_RGBA32) {
+    if (pix_fmt != PIX_FMT_RGB32) {
         int size;
 
-        size = avpicture_get_size(PIX_FMT_RGBA32, src_width, src_height);
+        size = avpicture_get_size(PIX_FMT_RGB32, src_width, src_height);
         buf = av_malloc(size);
 
-        avpicture_fill(&picture1, buf, PIX_FMT_RGBA32, src_width, src_height);
+        avpicture_fill(&picture1, buf, PIX_FMT_RGB32, src_width, src_height);
 
         // if we already got a SWS context, let's realloc if is not re-useable
         ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
                                     src_width, src_height, pix_fmt,
-                                    src_width, src_height, PIX_FMT_RGBA32,
+                                    src_width, src_height, PIX_FMT_RGB32,
                                     sws_flags, NULL, NULL, NULL);
         if (ci->toRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
@@ -379,7 +379,7 @@ static void Process1(void *ctx,
     ym_size = ci->y_size;
 
     // I'll do the *4 => <<2 crap later. Most compilers understand that anyway.
-    // According to avcodec.h PIX_FMT_RGBA32 is handled in endian specific manner.
+    // According to avcodec.h PIX_FMT_RGB32 is handled in endian specific manner.
     for (y=0; y<src_height; y++) {
         offs = y * (src_width * 4);
         offsm = (((y * ym_size) / src_height) * 4) * xm_size; // offsm first in maskline. byteoffs!
@@ -402,9 +402,9 @@ static void Process1(void *ctx,
         } // foreach X
     } // foreach Y
 
-    if (pix_fmt != PIX_FMT_RGBA32) {
+    if (pix_fmt != PIX_FMT_RGB32) {
         ci->fromRGB_convert_ctx = sws_getCachedContext(ci->fromRGB_convert_ctx,
-                                      src_width, src_height, PIX_FMT_RGBA32,
+                                      src_width, src_height, PIX_FMT_RGB32,
                                       src_width, src_height, pix_fmt,
                                       sws_flags, NULL, NULL, NULL);
         if (ci->fromRGB_convert_ctx == NULL) {
@@ -577,12 +577,12 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
         }
 
         // Determine required buffer size and allocate buffer
-        ci->numBytes = avpicture_get_size(PIX_FMT_RGBA32, ci->pCodecCtx->width,
+        ci->numBytes = avpicture_get_size(PIX_FMT_RGB32, ci->pCodecCtx->width,
             ci->pCodecCtx->height);
         ci->buffer = av_malloc(ci->numBytes);
 
         // Assign appropriate parts of buffer to image planes in pFrameRGB
-        avpicture_fill((AVPicture *)ci->pFrameRGB, ci->buffer, PIX_FMT_RGBA32,
+        avpicture_fill((AVPicture *)ci->pFrameRGB, ci->buffer, PIX_FMT_RGB32,
             ci->pCodecCtx->width, ci->pCodecCtx->height);
     }
     // TODO loop, pingpong etc?
@@ -601,11 +601,11 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
                 // Did we get a video frame?
                 if(ci->frameFinished)
                 {
-                    // Convert the image from its native format to RGBA32
+                    // Convert the image from its native format to RGB32
                     ci->watermark_convert_ctx =
                         sws_getCachedContext(ci->watermark_convert_ctx,
                             ci->pCodecCtx->width, ci->pCodecCtx->height, ci->pCodecCtx->pix_fmt,
-                            ci->pCodecCtx->width, ci->pCodecCtx->height, PIX_FMT_RGBA32,
+                            ci->pCodecCtx->width, ci->pCodecCtx->height, PIX_FMT_RGB32,
                             sws_flags, NULL, NULL, NULL);
                     if (ci->watermark_convert_ctx == NULL) {
                         av_log(NULL, AV_LOG_ERROR,

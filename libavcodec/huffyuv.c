@@ -452,7 +452,7 @@ s->bgr32=1;
         break;
     case 16:
         if(s->yuy2){
-            avctx->pix_fmt = PIX_FMT_YUV422;
+            avctx->pix_fmt = PIX_FMT_YUYV422;
         }else{
             avctx->pix_fmt = PIX_FMT_YUV422P;
         }
@@ -460,7 +460,7 @@ s->bgr32=1;
     case 24:
     case 32:
         if(s->bgr32){
-            avctx->pix_fmt = PIX_FMT_RGBA32;
+            avctx->pix_fmt = PIX_FMT_RGB32;
         }else{
             avctx->pix_fmt = PIX_FMT_BGR24;
         }

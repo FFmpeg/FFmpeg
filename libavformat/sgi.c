@@ -101,7 +101,7 @@ static int read_uncompressed_sgi(const SGIInfo *si,
     for (z = 0; z < si->zsize; z++) {
 
 #ifndef WORDS_BIGENDIAN
-        /* rgba -> bgra for rgba32 on little endian cpus */
+        /* rgba -> bgra for rgb32 on little endian cpus */
         if (si->zsize == 4 && z != 3)
             chan_offset = 2 - z;
         else
@@ -130,7 +130,7 @@ static int expand_rle_row(ByteIOContext *f, unsigned char *optr,
     int length = 0;
 
 #ifndef WORDS_BIGENDIAN
-    /* rgba -> bgra for rgba32 on little endian cpus */
+    /* rgba -> bgra for rgb32 on little endian cpus */
     if (pixelstride == 4 && chan_offset != 3) {
        chan_offset = 2 - chan_offset;
     }
@@ -241,7 +241,7 @@ static int sgi_read(ByteIOContext *f,
     } else if (s->zsize == SGI_RGB) {
         info->pix_fmt = PIX_FMT_RGB24;
     } else if (s->zsize == SGI_RGBA) {
-        info->pix_fmt = PIX_FMT_RGBA32;
+        info->pix_fmt = PIX_FMT_RGB32;
     } else {
         return AVERROR_INVALIDDATA;
     }
@@ -386,7 +386,7 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
             si->dimension = SGI_MULTI_CHAN;
             si->zsize = SGI_RGB;
             break;
-         case PIX_FMT_RGBA32:
+         case PIX_FMT_RGB32:
             si->dimension = SGI_MULTI_CHAN;
             si->zsize = SGI_RGBA;
             break;
@@ -408,7 +408,7 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
     for (z = 0; z < si->zsize; z++) {
 
 #ifndef WORDS_BIGENDIAN
-        /* rgba -> bgra for rgba32 on little endian cpus */
+        /* rgba -> bgra for rgb32 on little endian cpus */
         if (si->zsize == 4 && z != 3)
             chan_offset = 2 - z;
         else
@@ -451,7 +451,7 @@ AVImageFormat sgi_image_format = {
     "sgi,rgb,rgba,bw",
     sgi_probe,
     sgi_read,
-    (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_RGBA32),
+    (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_RGB32),
 #ifdef CONFIG_MUXERS
     sgi_write,
 #else

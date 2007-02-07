@@ -74,7 +74,7 @@ static struct fmt_map fmt_conversion_table[] = {
         .v4l2_fmt = V4L2_PIX_FMT_YUV422P,
     },
     {
-        .ff_fmt = PIX_FMT_YUV422,
+        .ff_fmt = PIX_FMT_YUYV422,
         .v4l2_fmt = V4L2_PIX_FMT_YUYV,
     },
     {
@@ -99,7 +99,7 @@ static struct fmt_map fmt_conversion_table[] = {
     },
     /*
     {
-        .ff_fmt = PIX_FMT_RGBA32,
+        .ff_fmt = PIX_FMT_RGB32,
         .v4l2_fmt = V4L2_PIX_FMT_BGR32,
     },
     */

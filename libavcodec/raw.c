@@ -48,8 +48,8 @@ static const PixelFormatTag pixelFormatTags[] = {
     { PIX_FMT_GRAY8,   MKTAG(' ', ' ', 'Y', '8') },
 
 
-    { PIX_FMT_YUV422,  MKTAG('Y', 'U', 'Y', '2') }, /* Packed formats */
-    { PIX_FMT_YUV422,  MKTAG('Y', '4', '2', '2') },
+    { PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', '2') }, /* Packed formats */
+    { PIX_FMT_YUYV422, MKTAG('Y', '4', '2', '2') },
     { PIX_FMT_UYVY422, MKTAG('U', 'Y', 'V', 'Y') },
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
     { PIX_FMT_RGB555,  MKTAG('R', 'G', 'B', 15) },
@@ -99,7 +99,7 @@ static int raw_init_decoder(AVCodecContext *avctx)
         case 15: avctx->pix_fmt= PIX_FMT_RGB555; break;
         case 16: avctx->pix_fmt= PIX_FMT_RGB555; break;
         case 24: avctx->pix_fmt= PIX_FMT_BGR24 ; break;
-        case 32: avctx->pix_fmt= PIX_FMT_RGBA32; break;
+        case 32: avctx->pix_fmt= PIX_FMT_RGB32; break;
         }
     }
 

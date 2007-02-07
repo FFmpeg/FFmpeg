@@ -27,8 +27,8 @@
  *   http://www.pcisys.net/~melanson/codecs/
  *
  * Supports: PAL8 (RGB 8bpp, paletted)
- *         : BGR24 (RGB 24bpp) (can also output it as RGBA32)
- *         : RGBA32 (RGB 32bpp, 4th plane is probably alpha and it's ignored)
+ *         : BGR24 (RGB 24bpp) (can also output it as RGB32)
+ *         : RGB32 (RGB 32bpp, 4th plane is probably alpha and it's ignored)
  *
  */
 
@@ -39,7 +39,7 @@
 #include "avcodec.h"
 
 
-static const enum PixelFormat pixfmt_rgb24[] = {PIX_FMT_BGR24, PIX_FMT_RGBA32, -1};
+static const enum PixelFormat pixfmt_rgb24[] = {PIX_FMT_BGR24, PIX_FMT_RGB32, -1};
 
 /*
  * Decoder context
@@ -89,7 +89,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         if (planes == 4)
                 planes--;
 
-        px_inc = planes + (avctx->pix_fmt == PIX_FMT_RGBA32);
+        px_inc = planes + (avctx->pix_fmt == PIX_FMT_RGB32);
 
         for (p = 0; p < planes; p++) {
                 /* Lines length pointer for this plane */
@@ -181,7 +181,7 @@ static int decode_init(AVCodecContext *avctx)
                         c->planemap[2] = 0; // 3rd plane is blue
                         break;
                 case 32:
-                        avctx->pix_fmt = PIX_FMT_RGBA32;
+                        avctx->pix_fmt = PIX_FMT_RGB32;
                         c->planes = 4;
 #ifdef WORDS_BIGENDIAN
                         c->planemap[0] = 1; // 1st plane is red

@@ -262,7 +262,7 @@ static int decode_init(AVCodecContext *avctx){
         avctx->pix_fmt = PIX_FMT_YUV420P;
         break;
     case LOCO_CRGBA: case LOCO_RGBA:
-        avctx->pix_fmt = PIX_FMT_RGBA32;
+        avctx->pix_fmt = PIX_FMT_RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);

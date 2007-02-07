@@ -29,7 +29,7 @@
  * The QT RLE decoder has seven modes of operation:
  * 1, 2, 4, 8, 16, 24, and 32 bits per pixel. For modes 1, 2, 4, and 8
  * the decoder outputs PAL8 colorspace data. 16-bit data yields RGB555
- * data. 24-bit data is RGB24 and 32-bit data is RGBA32.
+ * data. 24-bit data is RGB24 and 32-bit data is RGB32.
  */
 
 #include <stdio.h>
@@ -515,7 +515,7 @@ static int qtrle_decode_init(AVCodecContext *avctx)
         break;
 
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGBA32;
+        avctx->pix_fmt = PIX_FMT_RGB32;
         break;
 
     default:

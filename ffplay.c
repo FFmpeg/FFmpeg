@@ -1174,7 +1174,7 @@ static void alloc_picture(void *opaque)
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV422:
+    case PIX_FMT_YUYV422:
     case PIX_FMT_YUV410P:
     case PIX_FMT_YUV411P:
         is_yuv = 1;

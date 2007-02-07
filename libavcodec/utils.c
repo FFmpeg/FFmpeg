@@ -172,7 +172,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
 
     switch(s->pix_fmt){
     case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422:
+    case PIX_FMT_YUYV422:
     case PIX_FMT_UYVY422:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV444P:
@@ -186,7 +186,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
         h_align= 16;
         break;
     case PIX_FMT_YUV411P:
-    case PIX_FMT_UYVY411:
+    case PIX_FMT_UYYVYY411:
         w_align=32;
         h_align=8;
         break;

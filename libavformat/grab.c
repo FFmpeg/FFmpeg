@@ -124,7 +124,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (ap->pix_fmt == PIX_FMT_YUV420P) {
         desired_palette = VIDEO_PALETTE_YUV420P;
         desired_depth = 12;
-    } else if (ap->pix_fmt == PIX_FMT_YUV422) {
+    } else if (ap->pix_fmt == PIX_FMT_YUYV422) {
         desired_palette = VIDEO_PALETTE_YUV422;
         desired_depth = 16;
     } else if (ap->pix_fmt == PIX_FMT_BGR24) {
@@ -260,7 +260,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         break;
     case VIDEO_PALETTE_YUV422:
         frame_size = width * height * 2;
-        st->codec->pix_fmt = PIX_FMT_YUV422;
+        st->codec->pix_fmt = PIX_FMT_YUYV422;
         break;
     case VIDEO_PALETTE_RGB24:
         frame_size = width * height * 3;

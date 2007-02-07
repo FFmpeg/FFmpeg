@@ -221,7 +221,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             return AVERROR_IO;
         }
 #endif
-        input_pixfmt = PIX_FMT_RGBA32;
+        input_pixfmt = PIX_FMT_RGB32;
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);

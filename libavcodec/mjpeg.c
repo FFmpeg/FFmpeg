@@ -441,7 +441,7 @@ void mjpeg_picture_header(MpegEncContext *s)
     }
 
     put_bits(&s->pb, 16, 17);
-    if(lossless && s->avctx->pix_fmt == PIX_FMT_RGBA32)
+    if(lossless && s->avctx->pix_fmt == PIX_FMT_RGB32)
         put_bits(&s->pb, 8, 9); /* 9 bits/component RCT */
     else
         put_bits(&s->pb, 8, 8); /* 8 bits/component */
@@ -700,7 +700,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_RGBA32){
+    if(avctx->pix_fmt == PIX_FMT_RGB32){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
@@ -1209,7 +1209,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     case 0x222222:
     case 0x111111:
         if(s->rgb){
-            s->avctx->pix_fmt = PIX_FMT_RGBA32;
+            s->avctx->pix_fmt = PIX_FMT_RGB32;
         }else if(s->nb_components==3)
             s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
         else

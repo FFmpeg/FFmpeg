@@ -3991,7 +3991,7 @@ static int encode_init(AVCodecContext *avctx)
 //    case PIX_FMT_YUV410P:
         s->colorspace_type= 0;
         break;
-/*    case PIX_FMT_RGBA32:
+/*    case PIX_FMT_RGB32:
         s->colorspace= 1;
         break;*/
     default:

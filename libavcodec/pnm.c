@@ -124,7 +124,7 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         } else if (depth == 3) {
             avctx->pix_fmt = PIX_FMT_RGB24;
         } else if (depth == 4) {
-            avctx->pix_fmt = PIX_FMT_RGBA32;
+            avctx->pix_fmt = PIX_FMT_RGB32;
         } else {
             return -1;
         }
@@ -240,7 +240,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
-    case PIX_FMT_RGBA32:
+    case PIX_FMT_RGB32:
         ptr = p->data[0];
         linesize = p->linesize[0];
         if(s->bytestream + avctx->width*avctx->height*4 > s->bytestream_end)
@@ -389,7 +389,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
         maxval = 255;
         tuple_type = "RGB";
         break;
-    case PIX_FMT_RGBA32:
+    case PIX_FMT_RGB32:
         n = w * 4;
         depth = 4;
         maxval = 255;
@@ -406,7 +406,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     ptr = p->data[0];
     linesize = p->linesize[0];
 
-    if (avctx->pix_fmt == PIX_FMT_RGBA32) {
+    if (avctx->pix_fmt == PIX_FMT_RGB32) {
         int j;
         unsigned int v;
 
@@ -601,6 +601,6 @@ AVCodec pam_encoder = {
     pam_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1},
 };
 #endif // CONFIG_PAM_ENCODER

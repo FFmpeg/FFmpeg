@@ -283,7 +283,7 @@ static int decode_init(AVCodecContext *avctx)
     case 24:
              avctx->pix_fmt = PIX_FMT_BGR24;
              break;
-    case 32: avctx->pix_fmt = PIX_FMT_RGBA32; break;
+    case 32: avctx->pix_fmt = PIX_FMT_RGB32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_sample);
              return -1;
     }

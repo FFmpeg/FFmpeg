@@ -340,12 +340,12 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     imlib_context_set_image(image);
     data = imlib_image_get_data();
 
-        avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGBA32, width, height);
+        avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGB32, width, height);
 
     // if we already got a SWS context, let's realloc if is not re-useable
     ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
                                 width, height, pix_fmt,
-                                width, height, PIX_FMT_RGBA32,
+                                width, height, PIX_FMT_RGB32,
                                 sws_flags, NULL, NULL, NULL);
     if (ci->toRGB_convert_ctx == NULL) {
         av_log(NULL, AV_LOG_ERROR,
@@ -430,7 +430,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     }
 
     ci->fromRGB_convert_ctx = sws_getCachedContext(ci->fromRGB_convert_ctx,
-                                    width, height, PIX_FMT_RGBA32,
+                                    width, height, PIX_FMT_RGB32,
                                     width, height, pix_fmt,
                                     sws_flags, NULL, NULL, NULL);
     if (ci->fromRGB_convert_ctx == NULL) {
