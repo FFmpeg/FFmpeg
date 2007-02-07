@@ -82,6 +82,9 @@ static int get_riff(AVIContext *avi, ByteIOContext *pb)
     avi->riff_end = get_le32(pb);   /* RIFF chunk size */
     avi->riff_end += url_ftell(pb); /* RIFF chunk end */
     tag = get_le32(pb);
+    if(tag == MKTAG('A', 'V', 'I', 0x19))
+        av_log(NULL, AV_LOG_INFO, "file has been generated with a totally broken muxer\n");
+    else
     if (tag != MKTAG('A', 'V', 'I', ' ') && tag != MKTAG('A', 'V', 'I', 'X'))
         return -1;
 
@@ -996,7 +999,7 @@ static int avi_probe(AVProbeData *p)
     if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
         p->buf[2] == 'F' && p->buf[3] == 'F' &&
         p->buf[8] == 'A' && p->buf[9] == 'V' &&
-        p->buf[10] == 'I' && p->buf[11] == ' ')
+        p->buf[10] == 'I' && (p->buf[11] == ' ' || p->buf[11] == 0x19))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
