@@ -906,7 +906,7 @@ static int apply_window_and_mdct(venc_context_t * venc, signed short * audio, in
             float * offset = venc->samples + channel*window_len*2 + window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = audio[j] / 32768. / n * win[window_len - i - 1];
+                offset[i] = -audio[j] / 32768. / n * win[window_len - i - 1]; //FIXME find out why the sign has to be fliped
         }
     } else {
         for (channel = 0; channel < venc->channels; channel++) {
@@ -923,7 +923,7 @@ static int apply_window_and_mdct(venc_context_t * venc, signed short * audio, in
             float * offset = venc->saved + channel*window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = audio[j] / 32768. / n * win[i];
+                offset[i] = -audio[j] / 32768. / n * win[i]; //FIXME find out why the sign has to be fliped
         }
         venc->have_saved = 1;
     } else {
