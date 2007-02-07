@@ -360,10 +360,11 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         }
     }
     if (pkt_type == PKT_UMF) {
-        if (len >= 9) {
+        if (len >= 0x39) {
             AVRational fps;
-            len -= 9;
-            url_fskip(pb, 5);
+            len -= 0x39;
+            url_fskip(pb, 5); // preamble
+            url_fskip(pb, 0x30); // payload description
             fps = fps_umf2avr(get_le32(pb));
             if (!main_timebase.num || !main_timebase.den) {
                 // this may not always be correct, but simply the best we can get
