@@ -82,7 +82,6 @@ typedef struct {
     /* packet filling */
     unsigned char multi_payloads_present;
     int packet_size_left;
-    int prev_packet_sent_time;
     int packet_timestamp_start;
     int packet_timestamp_end;
     unsigned int packet_nb_payloads;

@@ -505,7 +505,6 @@ static int asf_write_header(AVFormatContext *s)
     put_flush_packet(&s->pb);
 
     asf->packet_nb_payloads = 0;
-    asf->prev_packet_sent_time = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
     init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
@@ -596,7 +595,6 @@ static void flush_packet(AVFormatContext *s)
     put_flush_packet(&s->pb);
     asf->nb_packets++;
     asf->packet_nb_payloads = 0;
-    asf->prev_packet_sent_time = asf->packet_timestamp_start;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
     init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
@@ -667,19 +665,13 @@ static void put_frame(
                 asf->packet_size_left = PACKET_SIZE - PACKET_HEADER_MIN_SIZE;
                 frag_len1 = SINGLE_PAYLOAD_DATA_LENGTH;
             }
-            if (asf->prev_packet_sent_time > timestamp)
-                asf->packet_timestamp_start = asf->prev_packet_sent_time;
-            else
-                asf->packet_timestamp_start = timestamp;
+            asf->packet_timestamp_start = timestamp;
         }
         else {
             // multi payloads
             frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS;
 
-            if (asf->prev_packet_sent_time > timestamp)
-                asf->packet_timestamp_start = asf->prev_packet_sent_time;
-            else if (asf->packet_timestamp_start >= timestamp)
-                asf->packet_timestamp_start = timestamp;
+            asf->packet_timestamp_start = timestamp;
         }
         if (frag_len1 > 0) {
             if (payload_len > frag_len1)
@@ -730,7 +722,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     asf->duration= FFMAX(asf->duration, duration);
 
     packet_st = asf->nb_packets;
-    put_frame(s, stream, pkt->pts, pkt->data, pkt->size, pkt->flags);
+    put_frame(s, stream, pkt->dts, pkt->data, pkt->size, pkt->flags);
 
     /* check index */
     if ((!asf->is_streamed) && (codec->codec_type == CODEC_TYPE_VIDEO) && (pkt->flags & PKT_FLAG_KEY)) {
