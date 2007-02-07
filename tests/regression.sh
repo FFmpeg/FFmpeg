@@ -663,8 +663,8 @@ do_audio_only voc
 
 ####################
 # pix_fmt conversions
-conversions="yuv420p yuv422p yuv444p yuv422 yuv410p yuv411p yuvj420p \
-             yuvj422p yuvj444p rgb24 bgr24 rgba32 rgb565 rgb555 gray monow \
+conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
+             yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
              monob pal8"
 for pix_fmt in $conversions ; do
     file=${outfile}libav-${pix_fmt}.yuv
