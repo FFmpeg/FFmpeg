@@ -92,6 +92,8 @@ static int encode_init(AVCodecContext* avc_context)
     t_info.frame_height = avc_context->height;
     t_info.offset_x = 0;
     t_info.offset_y = 0;
+    /* Swap numerator and denominator as time_base in AVCodecContext gives the
+     * time period between frames, but theora_info needs the framerate.  */
     t_info.fps_numerator = avc_context->time_base.den;
     t_info.fps_denominator = avc_context->time_base.num;
     if (avc_context->sample_aspect_ratio.num != 0) {
