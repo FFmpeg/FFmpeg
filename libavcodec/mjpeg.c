@@ -2249,7 +2249,7 @@ read_header:
 
     skip_bits(&hgb, 32); /* reserved zeros */
 
-    if (get_bits_long(&hgb, 32) != be2me_32(ff_get_fourcc("mjpg")))
+    if (get_bits_long(&hgb, 32) != MKBETAG('m','j','p','g'))
     {
         dprintf("not mjpeg-b (bad fourcc)\n");
         return 0;
