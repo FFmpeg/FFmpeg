@@ -406,6 +406,22 @@ static int h261_probe(AVProbeData *p)
     return 0;
 }
 
+static int ac3_probe(AVProbeData *p)
+{
+    int score=0;
+
+    if(p->buf_size < 6)
+        return 0;
+
+    if((p->buf[0] == 0x0B) && (p->buf[1] == 0x77) &&    // sync word
+       ((p->buf[4] >> 6) != 3) &&                       // fscod
+       ((p->buf[5] >> 3) <= 16)) {                      // bsid
+        score = AVPROBE_SCORE_MAX / 2 + 10;
+    }
+
+    return score;
+}
+
 AVInputFormat shorten_demuxer = {
     "shn",
     "raw shorten",
@@ -450,7 +466,7 @@ AVInputFormat ac3_demuxer = {
     "ac3",
     "raw ac3",
     0,
-    NULL,
+    ac3_probe,
     ac3_read_header,
     raw_read_partial_packet,
     raw_read_close,
