@@ -2084,7 +2084,7 @@ static void opt_me_threshold(const char *arg)
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
-    av_log_set_level(atoi(arg));
+    av_log_level = atoi(arg);
 }
 
 static void opt_frame_rate(const char *arg)
@@ -3676,7 +3676,7 @@ static int opt_default(const char *opt, const char *arg){
 #endif
 
     if(avctx_opts->debug)
-        av_log_set_level(AV_LOG_DEBUG);
+        av_log_level = AV_LOG_DEBUG;
     return 0;
 }
 
