@@ -774,8 +774,8 @@ LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
 # OS specific
 targetos=`uname -s`
 case $targetos in
-  BeOS)
-    PREFIX="/boot/home/config"
+  BeOS|Haiku|Zeta)
+    PREFIX="$HOME/config"
     # helps building libavcodec
     add_cflags "-DPIC -fomit-frame-pointer"
     # 3 gcc releases known for BeOS, each with ugly bugs
@@ -788,6 +788,7 @@ case $targetos in
         add_cflags "-fno-expensive-optimizations"
         ;;
     esac
+    LDCONFIG="echo ignoring ldconfig"
     SHFLAGS=-nostart
     # disable Linux things
     audio_oss="no"
@@ -798,6 +799,7 @@ case $targetos in
     audio_beos="yes"
     # no need for libm, but the inet stuff
     # Check for BONE
+    # XXX: actually should check for NOT net_server
     if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
         extralibs="-lbind -lsocket"
     else
