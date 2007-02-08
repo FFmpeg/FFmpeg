@@ -376,14 +376,11 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     } else
         av_log(s, AV_LOG_INFO, "GXF: UMF packet missing\n");
     url_fskip(pb, len);
+    if (!main_timebase.num || !main_timebase.den)
+        main_timebase = (AVRational){1, 50}; // set some arbitrary fallback
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        st->pts_wrap_bits = 32;
-        if (main_timebase.num && main_timebase.den)
-            st->time_base = main_timebase;
-        else {
-            st->start_time = st->duration = AV_NOPTS_VALUE;
-        }
+        av_set_pts_info(st, 32, main_timebase.num, main_timebase.den);
     }
     return 0;
 }
