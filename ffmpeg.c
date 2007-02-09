@@ -1543,6 +1543,10 @@ static int av_encode(AVFormatContext **output_files,
                 codec->block_align= icodec->block_align;
                 break;
             case CODEC_TYPE_VIDEO:
+                if(using_vhook) {
+                    fprintf(stderr,"-vcodec copy and -vhook are incompatible (frames are not decoded)\n");
+                    exit(1);
+                }
                 codec->pix_fmt = icodec->pix_fmt;
                 codec->width = icodec->width;
                 codec->height = icodec->height;
