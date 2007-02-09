@@ -265,8 +265,9 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
 #ifdef H264_CHROMA_MC2_TMPL
 static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    int CD=((1<<16)-1)*x*y + 8*y;
-    int AB=((8<<16)-8)*x + 64 - CD;
+    int tmp = ((1<<16)-1)*x + 8;
+    int CD= tmp*y;
+    int AB= (tmp<<3) - CD;
     asm volatile(
         /* mm5 = {A,B,A,B} */
         /* mm6 = {C,D,C,D} */
