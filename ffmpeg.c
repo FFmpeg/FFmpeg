@@ -3807,7 +3807,7 @@ const OptionDef options[] = {
 
 static void show_banner(void)
 {
-    fprintf(stderr, "FFmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2006 Fabrice Bellard, et al.\n");
+    fprintf(stderr, "FFmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2007 Fabrice Bellard, et al.\n");
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
     fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
     fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
