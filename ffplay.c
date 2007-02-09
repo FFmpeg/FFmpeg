@@ -1866,6 +1866,10 @@ static int decode_thread(void *arg)
     ap->initial_pause = 1; /* we force a pause when starting an RTSP
                               stream */
 
+    ap->width = screen_width;
+    ap->height= screen_height;
+    ap->time_base= (AVRational){1, 25};
+
     err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
     if (err < 0) {
         print_error(is->filename, err);
