@@ -111,7 +111,6 @@ OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
 OBJS-$(CONFIG_NULL_MUXER)                += raw.o
 OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
-#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 OBJS-$(CONFIG_RM_DEMUXER)                += rm.o
 OBJS-$(CONFIG_RM_MUXER)                  += rm.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
