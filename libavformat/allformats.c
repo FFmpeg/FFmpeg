@@ -83,6 +83,8 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(IMAGE2PIPE, image2pipe);
     REGISTER_DEMUXER (INGENIENT, ingenient);
     REGISTER_DEMUXER (IPMOVIE, ipmovie);
+    if (!ENABLE_NUT_DEMUXER) REGISTER_DEMUXER (LIBNUT, libnut);
+    REGISTER_MUXER   (LIBNUT, libnut);
     REGISTER_MUXDEMUX(M4V, m4v);
     REGISTER_DEMUXER (MATROSKA, matroska);
     REGISTER_MUXDEMUX(MJPEG, mjpeg);
@@ -109,7 +111,6 @@ void av_register_all(void)
     REGISTER_DEMUXER (NSV, nsv);
     REGISTER_MUXER   (NULL, null);
     REGISTER_DEMUXER (NUT, nut);
-    REGISTER_MUXER   (NUT, nut);
     REGISTER_DEMUXER (NUV, nuv);
     REGISTER_DEMUXER (OGG, ogg);
     REGISTER_MUXER   (OGG, ogg);

@@ -165,13 +165,11 @@ OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o base64.o rtp_h264.o
 endif
 endif
 
-ifeq ($(CONFIG_LIBNUT),yes)
-OBJS-$(CONFIG_NUT_DEMUXER)               += libnut.o riff.o
-OBJS-$(CONFIG_NUT_MUXER)                 += libnut.o riff.o
-else
+OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
+OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
+
 OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
 #OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
-endif
 
 NAME=avformat
 ifeq ($(BUILD_SHARED),yes)
