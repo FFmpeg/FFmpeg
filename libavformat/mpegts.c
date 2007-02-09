@@ -503,6 +503,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         case STREAM_TYPE_VIDEO_MPEG2:
         case STREAM_TYPE_VIDEO_MPEG4:
         case STREAM_TYPE_VIDEO_H264:
+        case STREAM_TYPE_VIDEO_VC1:
         case STREAM_TYPE_AUDIO_AAC:
         case STREAM_TYPE_AUDIO_AC3:
         case STREAM_TYPE_AUDIO_DTS:
@@ -813,7 +814,7 @@ static void mpegts_push_data(void *opaque,
                     code = pes->header[3] | 0x100;
                     if (!((code >= 0x1c0 && code <= 0x1df) ||
                           (code >= 0x1e0 && code <= 0x1ef) ||
-                          (code == 0x1bd)))
+                          (code == 0x1bd) || (code == 0x1fd)))
                         goto skip;
                     if (!pes->st) {
                         /* allocate stream */
@@ -920,6 +921,10 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
     case STREAM_TYPE_VIDEO_H264:
         codec_type = CODEC_TYPE_VIDEO;
         codec_id = CODEC_ID_H264;
+        break;
+    case STREAM_TYPE_VIDEO_VC1:
+        codec_type = CODEC_TYPE_VIDEO;
+        codec_id = CODEC_ID_VC1;
         break;
     case STREAM_TYPE_AUDIO_AAC:
         codec_type = CODEC_TYPE_AUDIO;
