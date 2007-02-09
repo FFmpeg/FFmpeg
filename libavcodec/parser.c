@@ -657,7 +657,7 @@ static const int aac_channels[8] = {
 static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
                     int *bit_rate, int *samples)
 {
-    unsigned int fscod, frmsizecod, acmod, bsid, lfeon;
+    unsigned int fscod, frmsizecod, acmod, bsid, lfeon, halfratecod;
     unsigned int strmtyp, substreamid, frmsiz, fscod2, numblkscod;
     GetBitContext bits;
 
@@ -667,7 +667,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
         return 0;
 
     bsid = show_bits_long(&bits, 29) & 0x1f;
-    if(bsid <= 8) {             /* Normal AC-3 */
+    if(bsid <= 10) {             /* Normal AC-3 */
         skip_bits(&bits, 16);       /* crc */
         fscod = get_bits(&bits, 2);
         frmsizecod = get_bits(&bits, 6);
@@ -686,13 +686,14 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
             skip_bits(&bits, 2);    /* dsurmod */
         lfeon = get_bits1(&bits);
 
-        *sample_rate = ac3_sample_rates[fscod];
-        *bit_rate = ac3_bitrates[frmsizecod] * 1000;
+        halfratecod = FFMAX(bsid, 8) - 8;
+        *sample_rate = ac3_sample_rates[fscod] >> halfratecod;
+        *bit_rate = (ac3_bitrates[frmsizecod] * 1000) >> halfratecod;
         *channels = ac3_channels[acmod] + lfeon;
         *samples = 6 * 256;
 
         return ac3_frame_sizes[frmsizecod][fscod] * 2;
-    } else if (bsid >= 10 && bsid <= 16) { /* Enhanced AC-3 */
+    } else if (bsid > 10 && bsid <= 16) { /* Enhanced AC-3 */
         strmtyp = get_bits(&bits, 2);
         substreamid = get_bits(&bits, 3);
 
