@@ -110,6 +110,8 @@ OBJS-$(CONFIG_MJPEG_MUXER)               += raw.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
 OBJS-$(CONFIG_NULL_MUXER)                += raw.o
+OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
+#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 OBJS-$(CONFIG_RM_DEMUXER)                += rm.o
 OBJS-$(CONFIG_RM_MUXER)                  += rm.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
@@ -132,6 +134,10 @@ OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
 OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
+
+# external libraries
+OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
+OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
 OBJS+= framehook.o
 
@@ -164,12 +170,6 @@ ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o base64.o rtp_h264.o
 endif
 endif
-
-OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
-OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
-
-OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
-#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 
 NAME=avformat
 ifeq ($(BUILD_SHARED),yes)
