@@ -2593,6 +2593,10 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             break;
         }
     }
+    if(s->mb_x >= (unsigned)s->mb_width){
+        av_log(s->avctx, AV_LOG_ERROR, "initial skip overflow\n");
+        return -1;
+    }
 
     s->resync_mb_x= s->mb_x;
     s->resync_mb_y= s->mb_y= mb_y;
