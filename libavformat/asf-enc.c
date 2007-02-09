@@ -537,6 +537,11 @@ static int put_payload_parsing_info(
 
     int iLengthTypeFlags = ASF_PPI_LENGTH_TYPE_FLAGS;
 
+    padsize -= PACKET_HEADER_MIN_SIZE;
+    if(asf->multi_payloads_present)
+        padsize--;
+    assert(padsize>=0);
+
     put_byte(pb, ASF_PACKET_ERROR_CORRECTION_FLAGS);
     for (i = 0; i < ASF_PACKET_ERROR_CORRECTION_DATA_SIZE; i++){
         put_byte(pb, 0x0);
@@ -587,7 +592,8 @@ static void flush_packet(AVFormatContext *s)
                             asf->packet_size_left
                         );
 
-    packet_filled_size = PACKET_SIZE - packet_hdr_size - asf->packet_size_left;
+    packet_filled_size = PACKET_SIZE - asf->packet_size_left;
+    assert(packet_hdr_size <= asf->packet_size_left);
     memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
 
     put_buffer(&s->pb, asf->packet_buf, asf->packet_size - packet_hdr_size);
@@ -656,20 +662,18 @@ static void put_frame(
         if (asf->packet_timestamp_start == -1) {
             asf->multi_payloads_present = (payload_len < MULTI_PAYLOAD_CONSTANT);
 
+            asf->packet_size_left = PACKET_SIZE;
             if (asf->multi_payloads_present){
-                asf->packet_size_left = PACKET_SIZE; //For debug
-                asf->packet_size_left = PACKET_SIZE - PACKET_HEADER_MIN_SIZE - 1;
                 frag_len1 = MULTI_PAYLOAD_CONSTANT - 1;
             }
             else {
-                asf->packet_size_left = PACKET_SIZE - PACKET_HEADER_MIN_SIZE;
                 frag_len1 = SINGLE_PAYLOAD_DATA_LENGTH;
             }
             asf->packet_timestamp_start = timestamp;
         }
         else {
             // multi payloads
-            frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS;
+            frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS - PACKET_HEADER_MIN_SIZE - 1;
 
             asf->packet_timestamp_start = timestamp;
         }
@@ -697,7 +701,7 @@ static void put_frame(
 
         if (!asf->multi_payloads_present)
             flush_packet(s);
-        else if (asf->packet_size_left <= (PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS + 1))
+        else if (asf->packet_size_left <= (PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS + PACKET_HEADER_MIN_SIZE + 1))
             flush_packet(s);
     }
     stream->seq++;

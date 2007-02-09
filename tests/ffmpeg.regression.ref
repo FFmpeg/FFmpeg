@@ -188,17 +188,17 @@ c3382f03ce2efb5d475240d288a33898 *./data/a-flac.flac
 353368 ./data/a-flac.flac
 c4228df189aad9567a037727d0e763e4 *./data/out.wav
 stddev: 33.31 PSNR:65.87 bytes:1040384
-9fe59eb60481009f6f7d13d1b031975d *./data/a-wmav1.asf
+768305cec342e01b7a9d38e971ef0174 *./data/a-wmav1.asf
 99596 ./data/a-wmav1.asf
 2ab193df22bb473e61015e56ac11faf3 *./data/out.wav
 stddev:12251.50 PSNR:14.56 bytes:1056768
 stddev:2106.00 PSNR:29.85 bytes:1048576
-ff09659af56c931350db4dec737eea7f *./data/a-wmav2.asf
+c706c7cf9db10df7a7353a40feddcfdd *./data/a-wmav2.asf
 99602 ./data/a-wmav2.asf
 8d05d345bc14153f3d0da95fdf34e084 *./data/out.wav
 stddev:12255.92 PSNR:14.55 bytes:1056768
 stddev:2099.31 PSNR:29.88 bytes:1048576
-e56c2c60b025594eac3ba670ae3cc50d *./data/a-vorbis.asf
+ef725cb9c13b9437a41428eabadeba52 *./data/a-vorbis.asf
 35686 ./data/a-vorbis.asf
-295d828df6167db030d0812ce1a8fd93 *./data/out.wav
+e46368ef818f2ec3abcc3f8390d14df5 *./data/out.wav
 stddev:3882.46 PSNR:24.54 bytes:1056768
