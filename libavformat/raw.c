@@ -716,6 +716,18 @@ AVOutputFormat mjpeg_muxer = {
 };
 #endif //CONFIG_MUXERS
 
+AVInputFormat vc1_demuxer = {
+    "vc1",
+    "raw vc1",
+    0,
+    NULL /* vc1_probe */,
+    video_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .extensions = "vc1",
+    .value = CODEC_ID_VC1,
+};
+
 /* pcm formats */
 
 #define PCMINPUTDEF(name, long_name, ext, codec) \

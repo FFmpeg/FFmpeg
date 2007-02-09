@@ -154,6 +154,7 @@ extern AVInputFormat swf_demuxer;
 extern AVOutputFormat swf_muxer;
 extern AVInputFormat tta_demuxer;
 extern AVInputFormat v4l2_demuxer;
+extern AVInputFormat vc1_demuxer;
 extern AVInputFormat voc_demuxer;
 extern AVOutputFormat voc_muxer;
 extern AVInputFormat wav_demuxer;
