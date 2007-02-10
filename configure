@@ -793,8 +793,6 @@ case $targetos in
     SHFLAGS=-nostart
     # disable Linux things
     audio_oss="no"
-    video4linux="no"
-    video4linux2="no"
     dv1394="no"
     # enable BeOS things
     audio_beos="yes"
@@ -808,8 +806,6 @@ case $targetos in
         extralibs="-lnet"
     fi ;;
   SunOS)
-    video4linux="no"
-    video4linux2="no"
     audio_oss="no"
     dv1394="no"
     make="gmake"
@@ -819,8 +815,6 @@ case $targetos in
     add_extralibs "-lsocket -lnsl"
     ;;
   NetBSD)
-    video4linux="no"
-    video4linux2="no"
     bktr="yes"
     audio_oss="yes"
     dv1394="no"
@@ -828,8 +822,6 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   OpenBSD)
-    video4linux="no"
-    video4linux2="no"
     bktr="yes"
     audio_oss="yes"
     dv1394="no"
@@ -844,8 +836,6 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   FreeBSD)
-    video4linux="no"
-    video4linux2="no"
     bktr="yes"
     audio_oss="yes"
     dv1394="no"
@@ -854,16 +844,12 @@ case $targetos in
     add_cflags "-pthread"
     ;;
   GNU/kFreeBSD)
-    video4linux="no"
-    video4linux2="no"
     bktr="yes"
     audio_oss="yes"
     dv1394="no"
     add_cflags "-pthread"
     ;;
   BSD/OS)
-    video4linux="no"
-    video4linux2="no"
     bktr="yes"
     audio_oss="yes"
     dv1394="no"
@@ -873,8 +859,6 @@ case $targetos in
     ;;
   Darwin)
     cc="cc"
-    video4linux="no"
-    video4linux2="no"
     audio_oss="no"
     dv1394="no"
     need_memalign="no"
@@ -896,8 +880,6 @@ case $targetos in
   CYGWIN*)
     targetos=CYGWIN
     shlibdir="$bindir"
-    video4linux="no"
-    video4linux2="no"
     audio_oss="yes"
     dv1394="no"
     VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
@@ -916,8 +898,6 @@ case $targetos in
   IRIX*)
     targetos=IRIX
     ranlib="echo ignoring ranlib"
-    video4linux="no"
-    video4linux2="no"
     audio_oss="no"
     make="gmake"
     ;;
@@ -937,8 +917,6 @@ case $targetos in
     EXESUF=".exe"
     extralibs=""
     pkg_requires=""
-    video4linux="no"
-    video4linux2="no"
     audio_oss="no"
     dv1394="no"
     ffserver="no"
@@ -1203,8 +1181,6 @@ you do not need to pass additional options.
 EOF
         exit 1
     fi
-    video4linux="no"
-    video4linux2="no"
     audio_oss="no"
     dv1394="no"
     dc1394="no"
