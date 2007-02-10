@@ -285,7 +285,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
 
     asm volatile(
         "1:\n\t"
-        "addl %4, %1\n\t"
+        "add %4, %1\n\t"
         /* mm1 = A * src[0,1] + B * src[1,2] */
         "movq    %%mm0, %%mm1\n\t"
         "pmaddwd %%mm5, %%mm1\n\t"
