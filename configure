@@ -1711,13 +1711,7 @@ fi
 
 enabled sdl || ffplay=no
 
-##########################################
-# texi2html check
-
-texi2html=no
-if (texi2html -version) >/dev/null 2>&1; then
-texi2html=yes
-fi
+texi2html -version >/dev/null 2>&1 && enable texi2html || disable texi2html
 
 ##########################################
 # IPv6 check
