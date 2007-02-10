@@ -808,7 +808,6 @@ case $targetos in
     fi ;;
   SunOS)
     dv1394="no"
-    make="gmake"
     FFLDFLAGS=""
     FFSERVERLDFLAGS=""
     SHFLAGS="-shared -Wl,-h,\$@"
@@ -816,13 +815,11 @@ case $targetos in
     ;;
   NetBSD)
     dv1394="no"
-    make="gmake"
     add_extralibs "-lossaudio"
     ;;
   OpenBSD)
     dv1394="no"
     need_memalign="no"
-    make="gmake"
     LIBOBJFLAGS="\$(PIC)"
     LDCONFIG="ldconfig -m \$(shlibdir)"
     SHFLAGS='-shared'
@@ -833,7 +830,6 @@ case $targetos in
     ;;
   FreeBSD)
     dv1394="no"
-    make="gmake"
     need_memalign="no"
     add_cflags "-pthread"
     ;;
@@ -844,7 +840,6 @@ case $targetos in
   BSD/OS)
     dv1394="no"
     extralibs="-lpoll -lgnugetopt -lm"
-    make="gmake"
     strip="strip -d"
     ;;
   Darwin)
@@ -886,7 +881,6 @@ case $targetos in
   IRIX*)
     targetos=IRIX
     ranlib="echo ignoring ranlib"
-    make="gmake"
     ;;
   OS/2)
     TMPE=$TMPE".exe"
@@ -1355,6 +1349,14 @@ if test $cpu != "generic"; then
         echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
     esac
+fi
+
+gnu_make(){
+    $1 --version 2>&1 | grep -q GNU
+}
+
+if ! gnu_make $make; then
+    gnu_make gmake && make=gmake || die "GNU make not found."
 fi
 
 # make sure we can execute files in $TMPDIR
