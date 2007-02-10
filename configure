@@ -1289,40 +1289,37 @@ fi
 # Add processor-specific flags
 POWERPCMODE="32bits"
 if test $cpu != "generic"; then
-    warn_altivec_enabled(){
-        enabled altivec && echo "WARNING: Tuning for $1 but AltiVec enabled.";
-    }
-    warn_altivec_disabled(){
-        disabled altivec && echo "WARNING: Tuning for $1 but AltiVec disabled.";
+    warn_altivec(){
+        $1 altivec && echo "WARNING: Tuning for $2 but AltiVec $1.";
     }
     case $cpu in
         601|ppc601|PowerPC601)
             add_cflags "-mcpu=601"
-            warn_altivec_enabled PPC601
+            warn_altivec enabled PPC601
         ;;
         603*|ppc603*|PowerPC603*)
             add_cflags "-mcpu=603"
-            warn_altivec_enabled PPC603
+            warn_altivec enabled PPC603
         ;;
         604*|ppc604*|PowerPC604*)
             add_cflags "-mcpu=604"
-            warn_altivec_enabled PPC604
+            warn_altivec enabled PPC604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
             add_cflags "-mcpu=750 -mpowerpc-gfxopt"
-            warn_altivec_enabled PPC75x
+            warn_altivec enabled PPC75x
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
             add_cflags "-mcpu=7450 -mpowerpc-gfxopt"
-            warn_altivec_disabled PPC745x
+            warn_altivec disabled PPC745x
         ;;
         74*|ppc74*|PowerPC74*)
             add_cflags "-mcpu=7400 -mpowerpc-gfxopt"
-            warn_altivec_disabled PPC74xx
+            warn_altivec disabled PPC74xx
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
-            warn_altivec_disabled PPC970
+            warn_altivec disabled PPC970
             POWERPCMODE="64bits"
         ;;
         # targets that do NOT support conditional mov (cmov)
