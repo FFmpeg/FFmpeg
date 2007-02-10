@@ -263,7 +263,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
 }
 
 #ifdef H264_CHROMA_MC2_TMPL
-static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*/, long stride, int h, int x, int y)
 {
     int tmp = ((1<<16)-1)*x + 8;
     int CD= tmp*y;
@@ -306,8 +306,8 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
             * ok because partitions are processed from left to right. */
         H264_CHROMA_OP4((%0), %%mm1, %%mm3)
         "movd %%mm1, (%0)\n\t"
-        "addl %4, %0\n\t"
-        "subl $1, %2\n\t"
+        "add %4, %0\n\t"
+        "sub $1, %2\n\t"
         "jnz 1b\n\t"
         : "+r" (dst), "+r"(src), "+r"(h) : "m" (ff_pw_32), "r"(stride));
 
