@@ -692,7 +692,7 @@ wince="no"
 # non-library system interfaces
 audio_beos="no"
 audio_oss="yes"
-bktr="no"
+bktr="yes"
 dv1394="yes"
 video4linux2="yes"
 video4linux="yes"
@@ -815,13 +815,11 @@ case $targetos in
     add_extralibs "-lsocket -lnsl"
     ;;
   NetBSD)
-    bktr="yes"
     dv1394="no"
     make="gmake"
     add_extralibs "-lossaudio"
     ;;
   OpenBSD)
-    bktr="yes"
     dv1394="no"
     need_memalign="no"
     make="gmake"
@@ -834,19 +832,16 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   FreeBSD)
-    bktr="yes"
     dv1394="no"
     make="gmake"
     need_memalign="no"
     add_cflags "-pthread"
     ;;
   GNU/kFreeBSD)
-    bktr="yes"
     dv1394="no"
     add_cflags "-pthread"
     ;;
   BSD/OS)
-    bktr="yes"
     dv1394="no"
     extralibs="-lpoll -lgnugetopt -lm"
     make="gmake"
@@ -1746,16 +1741,14 @@ enabled video4linux2 && check_header linux/videodev2.h || disable video4linux2
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 if enabled bktr; then
-    check_header dev/bktr/ioctl_meteor.h
-    check_header dev/bktr/ioctl_bt848.h
-
-    check_header machine/ioctl_meteor.h
-    check_header machine/ioctl_bt848.h
-
-    check_header dev/video/meteor/ioctl_meteor.h
-    check_header dev/video/bktr/ioctl_bt848.h
-
-    check_header dev/ic/bt8xx.h
+    { check_header dev/bktr/ioctl_meteor.h &&
+      check_header dev/bktr/ioctl_bt848.h; } ||
+    { check_header machine/ioctl_meteor.h &&
+      check_header machine/ioctl_bt848.h; } ||
+    { check_header dev/video/meteor/ioctl_meteor.h &&
+      check_header dev/video/bktr/ioctl_bt848.h; } ||
+    check_header dev/ic/bt8xx.h ||
+    disable bktr
 fi
 
 enabled audio_oss &&
