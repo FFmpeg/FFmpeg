@@ -600,6 +600,7 @@ static int asf_read_frame_header(AVFormatContext *s){
     ByteIOContext *pb = &s->pb;
     int rsize = 1;
     int num = get_byte(pb);
+    int64_t ts0, ts1;
 
     asf->packet_segments--;
     asf->packet_key_frame = num >> 7;
@@ -616,7 +617,20 @@ static int asf_read_frame_header(AVFormatContext *s){
             return -1;
         }
         asf->packet_frag_timestamp = get_le32(pb); // timestamp
-        url_fskip(pb, asf->packet_replic_size - 8);
+        if(asf->packet_replic_size >= 8+38+4){
+//            for(i=0; i<asf->packet_replic_size-8; i++)
+//                av_log(s, AV_LOG_DEBUG, "%02X ",get_byte(pb));
+//            av_log(s, AV_LOG_DEBUG, "\n");
+            url_fskip(pb, 10);
+            ts0= get_le64(pb);
+            ts1= get_le64(pb);
+            url_fskip(pb, 12);
+            get_le32(pb);
+            url_fskip(pb, asf->packet_replic_size - 8 - 38 - 4);
+            if(ts0!= -1) asf->packet_frag_timestamp= ts0/10000;
+            else         asf->packet_frag_timestamp= AV_NOPTS_VALUE;
+        }else
+            url_fskip(pb, asf->packet_replic_size - 8);
         rsize += asf->packet_replic_size; // FIXME - check validity
     } else if (asf->packet_replic_size==1){
         // multipacket - frag_offset is begining timestamp

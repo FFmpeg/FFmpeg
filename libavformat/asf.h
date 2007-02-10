@@ -107,7 +107,7 @@ typedef struct {
     int packet_padsize;
     unsigned int packet_frag_offset;
     unsigned int packet_frag_size;
-    int packet_frag_timestamp;
+    int64_t packet_frag_timestamp;
     int packet_multi_size;
     int packet_obj_size;
     int packet_time_delta;
