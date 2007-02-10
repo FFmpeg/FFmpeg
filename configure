@@ -519,6 +519,8 @@ HAVE_LIST='
     pthreads
     sdl
     sdl_video_size
+    soundcard_h
+    sys_soundcard_h
     threads
     w32threads
 '
@@ -792,7 +794,6 @@ case $targetos in
     LDCONFIG="echo ignoring ldconfig"
     SHFLAGS=-nostart
     # disable Linux things
-    audio_oss="no"
     dv1394="no"
     # enable BeOS things
     audio_beos="yes"
@@ -806,7 +807,6 @@ case $targetos in
         extralibs="-lnet"
     fi ;;
   SunOS)
-    audio_oss="no"
     dv1394="no"
     make="gmake"
     FFLDFLAGS=""
@@ -816,14 +816,12 @@ case $targetos in
     ;;
   NetBSD)
     bktr="yes"
-    audio_oss="yes"
     dv1394="no"
     make="gmake"
     add_extralibs "-lossaudio"
     ;;
   OpenBSD)
     bktr="yes"
-    audio_oss="yes"
     dv1394="no"
     need_memalign="no"
     make="gmake"
@@ -837,7 +835,6 @@ case $targetos in
     ;;
   FreeBSD)
     bktr="yes"
-    audio_oss="yes"
     dv1394="no"
     make="gmake"
     need_memalign="no"
@@ -845,13 +842,11 @@ case $targetos in
     ;;
   GNU/kFreeBSD)
     bktr="yes"
-    audio_oss="yes"
     dv1394="no"
     add_cflags "-pthread"
     ;;
   BSD/OS)
     bktr="yes"
-    audio_oss="yes"
     dv1394="no"
     extralibs="-lpoll -lgnugetopt -lm"
     make="gmake"
@@ -859,7 +854,6 @@ case $targetos in
     ;;
   Darwin)
     cc="cc"
-    audio_oss="no"
     dv1394="no"
     need_memalign="no"
     SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
@@ -880,7 +874,6 @@ case $targetos in
   CYGWIN*)
     targetos=CYGWIN
     shlibdir="$bindir"
-    audio_oss="yes"
     dv1394="no"
     VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
     VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
@@ -898,7 +891,6 @@ case $targetos in
   IRIX*)
     targetos=IRIX
     ranlib="echo ignoring ranlib"
-    audio_oss="no"
     make="gmake"
     ;;
   OS/2)
@@ -917,7 +909,6 @@ case $targetos in
     EXESUF=".exe"
     extralibs=""
     pkg_requires=""
-    audio_oss="no"
     dv1394="no"
     ffserver="no"
     vhook="no"
@@ -1181,7 +1172,6 @@ you do not need to pass additional options.
 EOF
         exit 1
     fi
-    audio_oss="no"
     dv1394="no"
     dc1394="no"
     ffserver="no"
@@ -1767,6 +1757,11 @@ if enabled bktr; then
 
     check_header dev/ic/bt8xx.h
 fi
+
+enabled audio_oss &&
+    check_header sys/soundcard.h ||
+    check_header soundcard.h ||
+    disable audio_oss
 
 # Deal with the x11 frame grabber
 enabled x11grab                         &&
