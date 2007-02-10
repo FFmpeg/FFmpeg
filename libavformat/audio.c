@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef __OpenBSD__
+#ifdef HAVE_SOUNDCARD_H
 #include <soundcard.h>
 #else
 #include <sys/soundcard.h>
