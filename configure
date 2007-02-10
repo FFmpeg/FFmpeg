@@ -1775,6 +1775,7 @@ int main( void ) {
 }
 EOF
 
+enabled video4linux  && check_header linux/videodev.h  || disable video4linux
 enabled video4linux2 && check_header linux/videodev2.h || disable video4linux2
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
