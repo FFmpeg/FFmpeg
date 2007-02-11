@@ -1273,9 +1273,7 @@ if test $targetos = Darwin; then
     fi
 fi
 
-if ! disabled optimize ; then
-    add_cflags "-fomit-frame-pointer"
-fi
+disabled optimize || add_cflags -fomit-frame-pointer
 
 # Can only do AltiVec on PowerPC
 if test $altivec = "default"; then
@@ -1620,13 +1618,9 @@ elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
 
-if test "$vhook" = "default"; then
-    vhook="$dlopen"
-fi
+test "$vhook" = "default" && vhook="$dlopen"
 
-if enabled_any vhook liba52bin libfaadbin; then
-    add_extralibs $ldl
-fi
+enabled_any vhook liba52bin libfaadbin && add_extralibs $ldl
 
 if test "$targetos" = "CYGWIN" && enabled lstatic ; then
     vhook="no"
@@ -1641,9 +1635,7 @@ if enabled vhook; then
     check_ldflags -export-dynamic
 fi
 
-if enabled audio_beos; then
-    add_extralibs "-lmedia -lbe"
-fi
+enabled audio_beos && add_extralibs "-lmedia -lbe"
 
 ##########################################
 # imlib check
