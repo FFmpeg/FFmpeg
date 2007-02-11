@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(8<<8)+0)
-#define LIBAVFORMAT_VERSION     51.8.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(9<<8)+0)
+#define LIBAVFORMAT_VERSION     51.9.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -379,6 +379,9 @@ typedef struct AVFormatContext {
      * maximum duration in AV_TIME_BASE units over which the input should be analyzed in av_find_stream_info()
      */
     int max_analyze_duration;
+
+    const uint8_t *key;
+    int keylen;
 } AVFormatContext;
 
 typedef struct AVPacketList {
