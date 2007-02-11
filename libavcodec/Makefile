@@ -248,14 +248,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 # external codec libraries
-OBJS-$(CONFIG_LIBA52)                  += a52dec.o
-OBJS-$(CONFIG_LIBA52)$(CONFIG_LIBA52BIN)  += liba52/bit_allocate.o \
-                                             liba52/bitstream.o    \
-                                             liba52/downmix.o      \
-                                             liba52/imdct.o        \
-                                             liba52/parse.o        \
-                                             liba52/crc.o          \
-                                             liba52/resample.o
+OBJS-$(CONFIG_LIBA52BIN)               += a52dec.o
 OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
 OBJS-$(CONFIG_LIBFAAC)                 += faac.o
 OBJS-$(CONFIG_LIBFAAD)                 += faad.o
@@ -435,7 +428,6 @@ clean::
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
-	   liba52/*.o liba52/*~ \
 	   amr_float/*.o \
 	   apiexample $(TESTS)
 	-$(MAKE) -C amr clean

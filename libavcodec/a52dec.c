@@ -25,12 +25,9 @@
  */
 
 #include "avcodec.h"
-#include "liba52/a52.h"
-
-#ifdef CONFIG_LIBA52BIN
+#include <a52dec/a52.h>
 #include <dlfcn.h>
 static const char* liba52name = "liba52.so.0";
-#endif
 
 /**
  * liba52 - Copyright (C) Aaron Holtzman
@@ -70,7 +67,6 @@ typedef struct AC3DecodeState {
 
 } AC3DecodeState;
 
-#ifdef CONFIG_LIBA52BIN
 static void* dlsymm(void* handle, const char* symbol)
 {
     void* f = dlsym(handle, symbol);
@@ -78,13 +74,11 @@ static void* dlsymm(void* handle, const char* symbol)
         av_log( NULL, AV_LOG_ERROR, "A52 Decoder - function '%s' can't be resolved\n", symbol);
     return f;
 }
-#endif
 
 static int a52_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
 
-#ifdef CONFIG_LIBA52BIN
     s->handle = dlopen(liba52name, RTLD_LAZY);
     if (!s->handle)
     {
@@ -103,16 +97,6 @@ static int a52_decode_init(AVCodecContext *avctx)
         dlclose(s->handle);
         return -1;
     }
-#else
-    /* static linked version */
-    s->handle = 0;
-    s->a52_init = a52_init;
-    s->a52_samples = a52_samples;
-    s->a52_syncinfo = a52_syncinfo;
-    s->a52_frame = a52_frame;
-    s->a52_block = a52_block;
-    s->a52_free = a52_free;
-#endif
     s->state = s->a52_init(0); /* later use CPU flags */
     s->samples = s->a52_samples(s->state);
     s->inbuf_ptr = s->inbuf;
@@ -242,9 +226,7 @@ static int a52_decode_end(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
     s->a52_free(s->state);
-#ifdef CONFIG_LIBA52BIN
     dlclose(s->handle);
-#endif
     return 0;
 }
 
