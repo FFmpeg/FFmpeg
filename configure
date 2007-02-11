@@ -1666,21 +1666,17 @@ fi
 sdl_too_old=no
 sdl=no
 SDL_CONFIG="${cross_prefix}sdl-config"
-if ("${SDL_CONFIG}" --version) >/dev/null 2>&1 ; then
-    temp_cflags `"${SDL_CONFIG}" --cflags`
+if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
+    sdl_cflags=`"${SDL_CONFIG}" --cflags`
+    temp_cflags $sdl_cflags
     temp_extralibs `"${SDL_CONFIG}" --libs`
-    check_ld <<EOF
-#include <SDL.h>
-#undef main /* We don't want SDL to override our main() */
-int main( void ) { return SDL_Init (SDL_INIT_VIDEO); }
-EOF
-    if test $? = 0; then
+    if check_lib SDL.h SDL_Init; then
         _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
         if test "$_sdlversion" -lt 121 ; then
             sdl_too_old=yes
         else
             sdl=yes
-            check_cc <<EOF && sdl_video_size=yes || sdl_video_size=no
+            check_cc $sdl_cflags <<EOF && enable sdl_video_size
 #include <SDL.h>
 int main(void){
     const SDL_VideoInfo *vi = SDL_GetVideoInfo();
