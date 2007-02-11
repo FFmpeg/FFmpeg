@@ -46,6 +46,7 @@
 //#define DEBUG
 
 #include "avformat.h"
+#include "aes.h"
 
 typedef uint8_t UID[16];
 
@@ -60,7 +61,15 @@ enum MXFMetadataSetType {
     Descriptor,
     Track,
     EssenceContainerData,
+    CryptoContext,
 };
+
+typedef struct MXFCryptoContext {
+    UID uid;
+    enum MXFMetadataSetType type;
+    UID context_uid;
+    UID source_container_ul;
+} MXFCryptoContext;
 
 typedef struct MXFStructuralComponent {
     UID uid;
@@ -137,6 +146,7 @@ typedef struct MXFContext {
     int metadata_sets_count;
     const uint8_t *sync_key;
     AVFormatContext *fc;
+    struct AVAES *aesc;
 } MXFContext;
 
 typedef struct KLVPacket {
@@ -173,6 +183,7 @@ static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
 /* complete keys to match */
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
+static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -245,6 +256,63 @@ static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pk
     return 0;
 }
 
+static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv)
+{
+    static const uint8_t checkv[16] = {0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b};
+    MXFContext *mxf = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    offset_t end = url_ftell(pb) + klv->length;
+    uint64_t size;
+    uint64_t orig_size;
+    uint64_t plaintext_size;
+    uint8_t ivec[16];
+    uint8_t tmpbuf[16];
+    int index;
+
+    if (!mxf->aesc && s->key && s->keylen == 16) {
+        mxf->aesc = av_malloc(av_aes_size);
+        av_aes_init(mxf->aesc, s->key, 128, 1);
+    }
+    // crypto context
+    url_fskip(pb, klv_decode_ber_length(pb));
+    // plaintext offset
+    klv_decode_ber_length(pb);
+    plaintext_size = get_be64(pb);
+    // source klv key
+    klv_decode_ber_length(pb);
+    get_buffer(pb, klv->key, 16);
+    if (!IS_KLV_KEY(klv, mxf_essence_element_key)) goto err_out;
+    index = mxf_get_stream_index(s, klv);
+    if (index < 0) goto err_out;
+    // source size
+    klv_decode_ber_length(pb);
+    orig_size = get_be64(pb);
+    if (orig_size < plaintext_size) goto err_out;
+    // enc. code
+    size = klv_decode_ber_length(pb);
+    if (size < 32 || size - 32 < orig_size) goto err_out;
+    get_buffer(pb, ivec, 16);
+    get_buffer(pb, tmpbuf, 16);
+    if (mxf->aesc)
+        av_aes_crypt(mxf->aesc, tmpbuf, tmpbuf, 1, ivec, 1);
+    if (memcmp(tmpbuf, checkv, 16))
+        av_log(s, AV_LOG_ERROR, "probably incorrect decryption key\n");
+    size -= 32;
+    av_get_packet(pb, pkt, size);
+    size -= plaintext_size;
+    if (mxf->aesc)
+        av_aes_crypt(mxf->aesc, &pkt->data[plaintext_size],
+                     &pkt->data[plaintext_size], size >> 4, ivec, 1);
+    pkt->size = orig_size;
+    pkt->stream_index = index;
+    url_fskip(pb, end - url_ftell(pb));
+    return 0;
+
+err_out:
+    url_fskip(pb, end - url_ftell(pb));
+    return -1;
+}
+
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
@@ -259,9 +327,13 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         PRINT_KEY("read packet", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            int res = mxf_decrypt_triplet(s, pkt, &klv);
             mxf->sync_key = mxf_encrypted_triplet_key;
-            av_log(s, AV_LOG_ERROR, "encrypted triplet not supported\n");
-            return -1;
+            if (res < 0) {
+                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
+                return -1;
+            }
+            return 0;
         }
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
@@ -291,6 +363,19 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
+    return 0;
+}
+
+static int mxf_read_metadata_cryptographic_context(MXFCryptoContext *cryptocontext, ByteIOContext *pb, int tag)
+{
+    switch(tag) {
+    case 0xFFFE:
+        get_buffer(pb, cryptocontext->context_uid, 16);
+        break;
+    case 0xFFFD:
+        get_buffer(pb, cryptocontext->source_container_ul, 16);
+        break;
+    }
     return 0;
 }
 
@@ -601,6 +686,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         MXFTrack *temp_track = NULL;
         MXFDescriptor *descriptor = NULL;
         MXFStructuralComponent *component = NULL;
+        UID *essence_container_ul = NULL;
         const MXFCodecUL *codec_ul = NULL;
         const MXFCodecUL *container_ul = NULL;
         AVStream *st;
@@ -697,6 +783,19 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         PRINT_KEY("essence codec     ul", descriptor->essence_codec_ul);
         PRINT_KEY("essence container ul", descriptor->essence_container_ul);
 #endif
+        essence_container_ul = &descriptor->essence_container_ul;
+        /* HACK: replacing the original key with mxf_encrypted_essence_container
+         * is not allowed according to s429-6, try to find correct information anyway */
+        if (IS_KLV_KEY(essence_container_ul, mxf_encrypted_essence_container)) {
+            av_log(mxf->fc, AV_LOG_INFO, "broken encrypted mxf file\n");
+            for (k = 0; k < mxf->metadata_sets_count; k++) {
+                MXFMetadataSet *metadata = mxf->metadata_sets[k];
+                if (metadata->type == CryptoContext) {
+                    essence_container_ul = &((MXFCryptoContext *)metadata)->source_container_ul;
+                    break;
+                }
+            }
+        }
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = codec_ul->id;
@@ -705,7 +804,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->extradata_size = descriptor->extradata_size;
         }
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-            container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, &descriptor->essence_container_ul);
+            container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
             st->codec->width = descriptor->width;
@@ -713,7 +812,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->bits_per_sample = descriptor->bits_per_sample; /* Uncompressed */
             st->need_parsing = 2; /* only parse headers */
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, &descriptor->essence_container_ul);
+            container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
@@ -759,6 +858,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* AES3 */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_metadata_track, sizeof(MXFTrack), Track }, /* Static Track */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_metadata_track, sizeof(MXFTrack), Track }, /* Generic Track */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_metadata_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
 };
 
@@ -823,7 +923,8 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #ifdef DEBUG
         PRINT_KEY("read header", klv.key);
 #endif
-        if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
+        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
+            IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
             url_fseek(&s->pb, klv.offset, SEEK_SET);
             break;
@@ -868,6 +969,7 @@ static int mxf_read_close(AVFormatContext *s)
         av_freep(&mxf->metadata_sets[i]);
     }
     av_freep(&mxf->metadata_sets);
+    av_freep(&mxf->aesc);
     return 0;
 }
 
