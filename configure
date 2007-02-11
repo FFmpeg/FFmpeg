@@ -576,6 +576,7 @@ v4l2_demuxer_deps="video4linux2"
 video_grab_device_demuxer_deps_any="video4linux bktr"
 x11_grab_device_demuxer_deps="x11grab"
 
+ffplay_deps="sdl"
 ffserver_deps="network protocols muxers"
 
 # set temporary file name
@@ -1690,8 +1691,6 @@ EOF
     fi
     restore_flags
 fi
-
-enabled sdl || ffplay=no
 
 texi2html -version >/dev/null 2>&1 && enable texi2html || disable texi2html
 
