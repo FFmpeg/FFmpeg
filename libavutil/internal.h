@@ -118,10 +118,6 @@
 #    define PIC
 #endif
 
-#ifndef ENODATA
-#    define ENODATA  61
-#endif
-
 #include "intreadwrite.h"
 #include "bswap.h"
 
