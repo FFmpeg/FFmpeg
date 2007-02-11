@@ -484,6 +484,7 @@ CONFIG_LIST='
     ffplay
     ffserver
     gpl
+    gprof
     ipv6
     liba52bin
     libdts
@@ -530,7 +531,6 @@ HAVE_LIST='
     dlopen
     fast_cmov
     freetype2
-    gprof
     imlib2
     inet_aton
     iwmmxt
