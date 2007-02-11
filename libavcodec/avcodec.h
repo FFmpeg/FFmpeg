@@ -2378,8 +2378,8 @@ extern AVCodec rawvideo_decoder;
 extern AVCodec rawvideo_encoder;
 
 /* the following codecs use external GPL libs */
-extern AVCodec ac3_decoder;
 extern AVCodec dts_decoder;
+extern AVCodec liba52_decoder;
 
 /* subtitles */
 extern AVCodec dvbsub_decoder;

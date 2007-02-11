@@ -230,7 +230,7 @@ static int a52_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ac3_decoder = {
+AVCodec liba52_decoder = {
     "ac3",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AC3,
