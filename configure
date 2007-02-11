@@ -563,6 +563,16 @@ TARGET_LIST='
     mmx
 '
 
+CMDLINE_SELECT="
+    $CONFIG_LIST
+    $TARGET_LIST
+    debug
+    extra_warnings
+    mingw32
+    shared
+    static
+"
+
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
 mpeg_xvmc_decoder_deps="xvmc"
@@ -967,6 +977,12 @@ DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/li
 
 enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST
 
+die_unknown(){
+    echo "Unknown option \"$1\"."
+    echo "See $0 --help for available options."
+    exit 1
+}
+
 for opt do
   optval="${opt#*=}"
   case "$opt" in
@@ -1008,51 +1024,15 @@ for opt do
   ;;
   --powerpc-perf-enable) powerpc_perf="yes"
   ;;
-  --disable-mmx) mmx="no"
-  ;;
-  --disable-armv5te) armv5te="no"
-  ;;
-  --disable-armv6) armv6="no"
-  ;;
-  --disable-iwmmxt) iwmmxt="no"
-  ;;
-  --disable-altivec) altivec="no"
-  ;;
-  --enable-gprof) gprof="yes"
-  ;;
   --disable-v4l) video4linux="no"
   ;;
   --disable-v4l2) video4linux2="no"
-  ;;
-  --disable-bktr) bktr="no"
-  ;;
-  --disable-audio-oss) audio_oss="no"
-  ;;
-  --disable-audio-beos) audio_beos="no"
-  ;;
-  --disable-dv1394) dv1394="no"
-  ;;
-  --disable-network) network="no"
-  ;;
-  --disable-ipv6) ipv6="no"
-  ;;
-  --disable-zlib) zlib="no"
   ;;
   --enable-a52bin) liba52bin="yes"
   ;;
   --enable-dts) libdts="yes"
   ;;
-  --enable-pp) pp="yes"
-  ;;
-  --enable-libgsm) libgsm="yes"
-  ;;
   --enable-mp3lame) libmp3lame="yes"
-  ;;
-  --enable-libnut) libnut="yes"
-  ;;
-  --enable-libogg) libogg="yes"
-  ;;
-  --enable-libtheora) libtheora="yes"
   ;;
   --enable-vorbis) libvorbis="yes"
   ;;
@@ -1062,71 +1042,13 @@ for opt do
   ;;
   --enable-faac) libfaac="yes"
   ;;
-  --enable-xvid) xvid="yes"
-  ;;
-  --enable-x264) x264="yes"
-  ;;
-  --enable-avisynth) avisynth="yes"
-  ;;
-  --enable-x11grab) x11grab="yes"
-  ;;
-  --enable-dc1394) dc1394="yes"
-  ;;
-  --disable-vhook) vhook="no"
-  ;;
-  --enable-mingw32) mingw32="yes"
-  ;;
   --enable-mingwce) wince="yes"
-  ;;
-  --enable-static) static="yes"
-  ;;
-  --disable-static) static="no"
-  ;;
-  --enable-shared) shared="yes"
-  ;;
-  --disable-shared) shared="no"
-  ;;
-  --disable-debug) debug="no"
   ;;
   --disable-opts) optimize="no"
   ;;
-  --enable-extra-warnings) extra_warnings="yes"
-  ;;
-  --disable-mpegaudio-hp) mpegaudio_hp="no"
-  ;;
-  --disable-protocols) protocols="no"
-  ;;
-  --disable-ffmpeg) ffmpeg="no"
-  ;;
-  --disable-ffserver) ffserver="no"
-  ;;
-  --disable-ffplay) ffplay="no"
-  ;;
   --enable-small) optimize="small"
   ;;
-  --enable-amr_nb) amr_nb="yes"
-  ;;
-  --enable-amr_nb-fixed) amr_nb_fixed="yes"
-  ;;
-  --enable-amr_wb) amr_wb="yes"
-  ;;
-  --enable-amr_if2) amr_if2="yes"
-  ;;
   --enable-sunmlib) mlib="yes"
-  ;;
-  --enable-pthreads) pthreads="yes"
-  ;;
-  --enable-w32threads) w32threads="yes"
-  ;;
-  --enable-beosthreads) beosthreads="yes"
-  ;;
-  --enable-os2threads) os2threads="yes"
-  ;;
-  --enable-swscaler) swscaler="yes"
-  ;;
-  --enable-gpl) gpl="yes"
-  ;;
-  --enable-memalign-hack) memalign_hack="yes"
   ;;
   --disable-strip) dostrip="no"
   ;;
@@ -1160,12 +1082,15 @@ for opt do
   ;;
   --disable-parsers) disable $PARSER_LIST
   ;;
+  --enable-?*|--disable-?*)
+  eval `echo "${opt#-}" | sed 's/-/action=/;s/-/ option=/;s/-/_/g'`
+  echo "$CMDLINE_SELECT" | grep -q "^ *$option\$" || die_unknown $opt
+  $action $option
+  ;;
   --help) show_help
   ;;
   *)
-  echo "Unknown option \"$opt\"."
-  echo "See $0 --help for available options."
-  exit 1
+  die_unknown $opt
   ;;
   esac
 done
