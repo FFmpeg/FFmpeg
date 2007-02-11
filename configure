@@ -1008,7 +1008,7 @@ for opt do
   ;;
   --enable-a52) liba52="yes"
   ;;
-  --enable-a52bin) liba52bin="yes"
+  --enable-a52bin) liba52bin="yes";  liba52="yes"
   ;;
   --enable-dts) libdts="yes"
   ;;
