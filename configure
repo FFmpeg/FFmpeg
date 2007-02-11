@@ -1642,13 +1642,10 @@ enabled audio_beos && add_extralibs "-lmedia -lbe"
 # imlib check
 
 imlib2=no
-if (imlib2-config --version) >/dev/null 2>&1 ; then
+if imlib2-config --version >/dev/null 2>&1; then
     temp_cflags `imlib2-config --cflags`
     temp_extralibs `imlib2-config --libs`
-    check_ld <<EOF && imlib2=yes
-#include <Imlib2.h>
-int main( void ) { return (int) imlib_load_font("foo"); }
-EOF
+    check_lib Imlib2.h imlib_load_font && enable imlib2
     restore_flags
 fi
 
