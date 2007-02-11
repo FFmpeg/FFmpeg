@@ -1824,6 +1824,16 @@ if test $asmalign_pot = "unknown"; then
     echo 'asm (".align 3");' | check_cc && asmalign_pot="yes"
 fi
 
+enabled_any $ENCODER_LIST && enable encoders
+enabled_any $DECODER_LIST && enable decoders
+enabled_any $MUXER_LIST   && enable muxers
+enabled_any $DEMUXER_LIST && enable demuxers
+
+enabled_any pthreads beosthreads os2threads w32threads && enable threads
+
+check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
+    $DEMUXER_LIST $MUXER_LIST
+
 echo "install prefix            $PREFIX"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -2015,16 +2025,6 @@ if enabled lshared; then
 fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
-
-enabled_any $ENCODER_LIST && enable encoders
-enabled_any $DECODER_LIST && enable decoders
-enabled_any $MUXER_LIST   && enable muxers
-enabled_any $DEMUXER_LIST && enable demuxers
-
-enabled_any pthreads beosthreads os2threads w32threads && enable threads
-
-check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
-    $DEMUXER_LIST $MUXER_LIST
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
