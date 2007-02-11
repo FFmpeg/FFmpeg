@@ -291,6 +291,7 @@ save_flags(){
 }
 
 restore_flags(){
+    flags_saved || return
     CFLAGS="$SAVE_CFLAGS"
     LDFLAGS="$SAVE_LDFLAGS"
     extralibs="$SAVE_extralibs"
