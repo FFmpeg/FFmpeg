@@ -760,15 +760,15 @@ zlib="yes"
 # configurable options
 debug="yes"
 dostrip="yes"
-extrawarnings="no"
+extra_warnings="no"
 ffmpeg="yes"
 ffplay="yes"
 ffserver="yes"
 gpl="no"
 gprof="no"
 ipv6="yes"
-lshared="no"
-lstatic="yes"
+shared="no"
+static="yes"
 memalign_hack="no"
 mpegaudio_hp="yes"
 network="yes"
@@ -1081,19 +1081,19 @@ for opt do
   ;;
   --enable-mingwce) wince="yes"
   ;;
-  --enable-static) lstatic="yes"
+  --enable-static) static="yes"
   ;;
-  --disable-static) lstatic="no"
+  --disable-static) static="no"
   ;;
-  --enable-shared) lshared="yes"
+  --enable-shared) shared="yes"
   ;;
-  --disable-shared) lshared="no"
+  --disable-shared) shared="no"
   ;;
   --disable-debug) debug="no"
   ;;
   --disable-opts) optimize="no"
   ;;
-  --enable-extra-warnings) extrawarnings="yes"
+  --enable-extra-warnings) extra_warnings="yes"
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
@@ -1182,7 +1182,7 @@ else
 fi
 
 if enabled_any mingw32 wince; then
-    if enabled_all lshared lstatic; then
+    if enabled_all shared static; then
         cat <<EOF
 You can only build one library type at once on MinGW.
 Specify --disable-static --enable-shared to only build
@@ -1218,7 +1218,7 @@ ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
 # we need to build at least one lib type
-if disabled_all lstatic lshared; then
+if disabled_all static shared; then
     cat <<EOF
 At least one library type must be built.
 Specify --enable-static to build the static libraries or --enable-shared to
@@ -1289,13 +1289,13 @@ if test $targetos = Darwin; then
                 ;;
             *[34].*)
                 add_cflags "-no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
-                if disabled lshared; then
+                if disabled shared; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
             *)
                 add_cflags "-no-cpp-precomp -pipe"
-                if disabled lshared; then
+                if disabled shared; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
@@ -1652,7 +1652,7 @@ test "$vhook" = "default" && vhook="$dlopen"
 
 enabled_any vhook liba52bin libfaadbin && add_extralibs $ldl
 
-if test "$targetos" = "CYGWIN" && enabled lstatic ; then
+if test "$targetos" = "CYGWIN" && enabled static ; then
     vhook="no"
     echo
     echo "At the moment vhooks don't work on Cygwin static builds."
@@ -1778,7 +1778,7 @@ check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
 check_cflags -Wno-pointer-sign
-enabled extrawarnings && check_cflags -Winline
+enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
 check_ldflags $LDLATEFLAGS
@@ -1796,7 +1796,7 @@ if enabled optimize; then
 fi
 
 # PIC flags for shared library objects where they are needed
-if enabled lshared; then
+if enabled shared; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
         case "$arch" in
@@ -1860,8 +1860,8 @@ echo "gprof enabled             $gprof"
 echo "debug symbols             $debug"
 echo "strip symbols             $dostrip"
 echo "optimize                  $optimize"
-echo "static                    $lstatic"
-echo "shared                    $lshared"
+echo "static                    $static"
+echo "shared                    $shared"
 echo "postprocessing support    $pp"
 echo "software scaler enabled   $swscaler"
 echo "video hooking             $vhook"
@@ -1936,11 +1936,11 @@ echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
 echo "VHOOKLIBS=$VHOOKLIBS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
-echo "BUILD_STATIC=$lstatic" >> config.mak
+echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
-if enabled lstatic; then
+if enabled static; then
   echo "LIB=$LIB" >> config.mak
 else # Some Make complain if this variable does not exist.
   echo "LIB=" >> config.mak
@@ -1998,7 +1998,7 @@ lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h
 
 
 
-if enabled lshared; then
+if enabled shared; then
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
   echo "SPPMAJOR=${pp_version%%.*}" >> config.mak
