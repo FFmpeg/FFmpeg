@@ -216,6 +216,25 @@ set_all(){
     done
 }
 
+pushvar(){
+    for var in $*; do
+        eval level=\${${var}_level:=0}
+        eval ${var}_${level}="\$$var"
+        eval ${var}_level=$(($level+1))
+    done
+}
+
+popvar(){
+    for var in $*; do
+        eval level=\${${var}_level:-0}
+        test $level = 0 && continue
+        eval level=$(($level-1))
+        eval $var="\${${var}_${level}}"
+        eval ${var}_level=$level
+        eval unset ${var}_${level}
+    done
+}
+
 enable(){
     set_all yes $*
 }
@@ -258,10 +277,21 @@ disabled_any(){
 
 check_deps(){
     for cfg; do
+        enabled ${cfg}_checking && die "Circular dependency for $cfg."
+        disabled ${cfg}_checking && continue
+        enable ${cfg}_checking
+
         eval dep_all="\$${cfg}_deps"
         eval dep_any="\$${cfg}_deps_any"
+
+        pushvar cfg dep_all dep_any
+        check_deps $dep_all $dep_any
+        popvar cfg dep_all dep_any
+
         enabled_all $dep_all || disable $cfg
         enabled_any $dep_any || disable $cfg
+
+        disable ${cfg}_checking
     done
 }
 
