@@ -608,6 +608,7 @@ x11_grab_device_demuxer_deps="x11grab"
 
 ffplay_deps="sdl"
 ffserver_deps="network protocols muxers"
+network_deps="protocols"
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
@@ -1101,7 +1102,7 @@ for opt do
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
-  --disable-protocols) protocols="no"; network="no"
+  --disable-protocols) protocols="no"
   ;;
   --disable-ffmpeg) ffmpeg="no"
   ;;
