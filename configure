@@ -576,6 +576,8 @@ v4l2_demuxer_deps="video4linux2"
 video_grab_device_demuxer_deps_any="video4linux bktr"
 x11_grab_device_demuxer_deps="x11grab"
 
+ffserver_deps="network protocols muxers"
+
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
     TMPDIR1="${TMPDIR}"
@@ -1000,7 +1002,7 @@ for opt do
   ;;
   --disable-dv1394) dv1394="no"
   ;;
-  --disable-network) network="no"; ffserver="no"
+  --disable-network) network="no"
   ;;
   --disable-ipv6) ipv6="no"
   ;;
@@ -1068,7 +1070,7 @@ for opt do
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
-  --disable-protocols) protocols="no"; network="no"; ffserver="no"
+  --disable-protocols) protocols="no"; network="no"
   ;;
   --disable-ffmpeg) ffmpeg="no"
   ;;
@@ -1120,7 +1122,7 @@ for opt do
   ;;
   --disable-muxer=*) disable ${optval}_muxer
   ;;
-  --disable-muxers) disable $MUXER_LIST; ffserver="no"
+  --disable-muxers) disable $MUXER_LIST
   ;;
   --enable-demuxer=*) enable ${optval}_demuxer
   ;;
