@@ -1050,13 +1050,10 @@ for opt do
   --enable-libnut) libnut="yes"
   ;;
   --enable-libogg) libogg="yes"
-    pkg_requires="$pkg_requires ogg >= 1.1"
   ;;
   --enable-libtheora) libtheora="yes"
-    pkg_requires="$pkg_requires theora"
   ;;
   --enable-vorbis) libvorbis="yes"
-    pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
   --enable-faad) libfaad="yes"
   ;;
@@ -1073,7 +1070,6 @@ for opt do
   --enable-x11grab) x11grab="yes"
   ;;
   --enable-dc1394) dc1394="yes"
-    pkg_requires="$pkg_requires libraw1394"
   ;;
   --disable-vhook) vhook="no"
   ;;
@@ -1828,6 +1824,11 @@ enabled_any pthreads beosthreads os2threads w32threads && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
     $DEMUXER_LIST $MUXER_LIST
+
+enabled libogg    && append pkg_requires "ogg >= 1.1"
+enabled libtheora && append pkg_requires "theora"
+enabled libvorbis && append pkg_requires "vorbis vorbisenc"
+enabled dc1394    && append pkg_requires "libraw1394"
 
 echo "install prefix            $PREFIX"
 echo "source path               $source_path"
