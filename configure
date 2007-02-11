@@ -956,7 +956,7 @@ for opt do
   ;;
   --cross-prefix=*) cross_prefix="$optval"
   ;;
-  --cross-compile) cross_compile=yes
+  --cross-compile) cross_compile="yes"
   ;;
   --cc=*) cc="$optval"
   ;;
@@ -1002,7 +1002,7 @@ for opt do
   ;;
   --disable-network) network="no"; ffserver="no"
   ;;
-  --disable-ipv6) ipv6="no";
+  --disable-ipv6) ipv6="no"
   ;;
   --disable-zlib) zlib="no"
   ;;
@@ -1039,9 +1039,9 @@ for opt do
   ;;
   --enable-x264) x264="yes"
   ;;
-  --enable-avisynth) avisynth="yes";
+  --enable-avisynth) avisynth="yes"
   ;;
-  --enable-x11grab) x11grab="yes";
+  --enable-x11grab) x11grab="yes"
   ;;
   --enable-dc1394) dc1394="yes"
     pkg_requires="$pkg_requires libraw1394"
