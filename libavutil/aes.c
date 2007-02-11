@@ -120,7 +120,7 @@ static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *al
 }
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
-int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
+int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt) {
     int i, j, t, rconpointer = 0;
     uint8_t tk[8][4];
     int KC= key_bits>>5;

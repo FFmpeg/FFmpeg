@@ -30,7 +30,7 @@ struct AVAES;
  * @param key_bits 128, 192 or 256
  * @param decrypt 0 for encryption, 1 for decryption
  */
-int av_aes_init(struct AVAES *a, uint8_t *key, int key_bits, int decrypt);
+int av_aes_init(struct AVAES *a, const uint8_t *key, int key_bits, int decrypt);
 
 /**
  * encrypts / decrypts.
