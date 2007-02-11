@@ -1104,13 +1104,13 @@ for opt do
   ;;
   --enable-small) optimize="small"
   ;;
-  --enable-amr_nb) amr="yes"; amr_nb="yes"; amr_nb_fixed="no"
+  --enable-amr_nb) amr_nb="yes"
   ;;
-  --enable-amr_nb-fixed) amr="yes"; amr_nb_fixed="yes"; amr_nb="no"
+  --enable-amr_nb-fixed) amr_nb_fixed="yes"
   ;;
-  --enable-amr_wb) amr="yes"; amr_wb="yes"
+  --enable-amr_wb) amr_wb="yes"
   ;;
-  --enable-amr_if2) amr="yes"; amr_if2="yes"
+  --enable-amr_if2) amr_if2="yes"
   ;;
   --enable-sunmlib) mlib="yes"
   ;;
@@ -1559,6 +1559,10 @@ for thread in pthreads beosthreads os2threads w32threads; do
         fi
     fi
 done
+
+enabled_any amr_nb amr_nb_fixed amr_wb amr_if2 && enable amr
+enabled_all amr_nb amr_nb_fixed &&
+    die "Only one of amr_nb and amr_nb_fixed may be enabled."
 
 # these are off by default, so fail if requested and not available
 enabled libdts     && require libdts dts.h dts_init -ldts -lm
