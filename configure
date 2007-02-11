@@ -1657,13 +1657,10 @@ fi
 
 freetype2=no
 if test "x$targetos" != "xBeOS"; then
-  if (freetype-config --version) >/dev/null 2>&1 ; then
+  if freetype-config --version >/dev/null 2>&1; then
       temp_cflags `freetype-config --cflags`
       temp_extralibs `freetype-config --libs`
-      check_ld <<EOF && freetype2=yes
-#include <ft2build.h>
-int main( void ) { return (int) FT_Init_FreeType(0); }
-EOF
+      check_lib ft2build.h FT_Init_FreeType && enable freetype2
       restore_flags
   fi
 fi
