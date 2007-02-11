@@ -557,6 +557,7 @@ HAVE_LIST='
 TARGET_LIST='
     altivec
     armv5te
+    armv6
     iwmmxt
     mmi
     mmx
