@@ -314,7 +314,7 @@ tend= read_time();\
   static uint64_t tsum=0;\
   static int tcount=0;\
   static int tskip_count=0;\
-  if(tcount<2 || tend - tstart < 8*tsum/tcount){\
+  if(tcount<2 || tend - tstart < FFMAX(8*tsum/tcount, 2000)){\
       tsum+= tend - tstart;\
       tcount++;\
   }else\
