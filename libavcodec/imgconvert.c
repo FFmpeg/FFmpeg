@@ -802,7 +802,7 @@ void img_copy(AVPicture *dst, const AVPicture *src,
 
 /* XXX: totally non optimized */
 
-static void yuv422_to_yuv420p(AVPicture *dst, const AVPicture *src,
+static void yuyv422_to_yuv420p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     const uint8_t *p, *p1;
@@ -950,7 +950,7 @@ static void uyvy422_to_yuv422p(AVPicture *dst, const AVPicture *src,
 }
 
 
-static void yuv422_to_yuv422p(AVPicture *dst, const AVPicture *src,
+static void yuyv422_to_yuv422p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     const uint8_t *p, *p1;
@@ -983,7 +983,7 @@ static void yuv422_to_yuv422p(AVPicture *dst, const AVPicture *src,
     }
 }
 
-static void yuv422p_to_yuv422(AVPicture *dst, const AVPicture *src,
+static void yuv422p_to_yuyv422(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     uint8_t *p, *p1;
@@ -1085,7 +1085,7 @@ static void uyyvyy411_to_yuv411p(AVPicture *dst, const AVPicture *src,
 }
 
 
-static void yuv420p_to_yuv422(AVPicture *dst, const AVPicture *src,
+static void yuv420p_to_yuyv422(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     int w, h;
@@ -1943,7 +1943,7 @@ typedef struct ConvertEntry {
 static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
         [PIX_FMT_YUYV422] = {
-            .convert = yuv420p_to_yuv422,
+            .convert = yuv420p_to_yuyv422,
         },
         [PIX_FMT_RGB555] = {
             .convert = yuv420p_to_rgb555
@@ -1966,7 +1966,7 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV422P] = {
         [PIX_FMT_YUYV422] = {
-            .convert = yuv422p_to_yuv422,
+            .convert = yuv422p_to_yuyv422,
         },
         [PIX_FMT_UYVY422] = {
             .convert = yuv422p_to_uyvy422,
@@ -2001,10 +2001,10 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     },
     [PIX_FMT_YUYV422] = {
         [PIX_FMT_YUV420P] = {
-            .convert = yuv422_to_yuv420p,
+            .convert = yuyv422_to_yuv420p,
         },
         [PIX_FMT_YUV422P] = {
-            .convert = yuv422_to_yuv422p,
+            .convert = yuyv422_to_yuv422p,
         },
     },
     [PIX_FMT_UYVY422] = {
