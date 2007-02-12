@@ -136,6 +136,25 @@ do_ffmpeg()
     echo `cat $bench2` $f >> $benchfile
 }
 
+do_ffmpeg_nomd5()
+{
+    f="$1"
+    shift
+    echo $ffmpeg $FFMPEG_OPTS $*
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
+    rm -f /tmp/ffmpeg$$
+    if [ $f = $raw_dst ] ; then
+        $tiny_psnr $f $raw_ref >> $logfile
+    elif [ $f = $pcm_dst ] ; then
+        $tiny_psnr $f $pcm_ref 2 >> $logfile
+    else
+        wc -c $f >> $logfile
+    fi
+    expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
+    echo `cat $bench2` $f >> $benchfile
+}
+
 do_ffmpeg_crc()
 {
     f="$1"
@@ -547,11 +566,11 @@ fi
 if [ -n "$do_wma" ] ; then
 # wmav1
 do_audio_encoding wmav1.asf "-ar 44100" "-acodec wmav1"
-do_audio_decoding
+do_ffmpeg_nomd5 $pcm_dst -y -i $file -f wav $pcm_dst
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 # wmav2
 do_audio_encoding wmav2.asf "-ar 44100" "-acodec wmav2"
-do_audio_decoding
+do_ffmpeg_nomd5 $pcm_dst -y -i $file -f wav $pcm_dst
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 
