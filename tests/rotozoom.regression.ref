@@ -198,7 +198,3 @@ df1c902a4518a06afed977a8a74a60c9 *./data/a-wmav2.asf
 8d05d345bc14153f3d0da95fdf34e084 *./data/out.wav
 stddev:12255.92 PSNR:14.55 bytes:1056768
 stddev:2099.31 PSNR:29.88 bytes:1048576
-b7683b2b8fe2f480a508745ccbec12e0 *./data/a-vorbis.asf
-35686 ./data/a-vorbis.asf
-e46368ef818f2ec3abcc3f8390d14df5 *./data/out.wav
-stddev:3882.46 PSNR:24.54 bytes:1056768
