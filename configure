@@ -571,6 +571,10 @@ CMDLINE_SELECT="
     mingw32
     shared
     static
+    beosthreads
+    os2threads
+    pthreads
+    w32threads
 "
 
 flashsv_decoder_deps="zlib"
