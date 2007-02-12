@@ -411,10 +411,10 @@ static void glue(pal8_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
 }
 
 // RGB24 has optimised routines
-#if !defined(FMT_RGBA32) && !defined(FMT_RGB24)
+#if !defined(FMT_RGB32) && !defined(FMT_RGB24)
 /* alpha support */
 
-static void glue(rgba32_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
+static void glue(rgb32_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                       int width, int height)
 {
     const uint8_t *s;
@@ -451,7 +451,7 @@ static void glue(rgba32_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
     }
 }
 
-static void glue(RGB_NAME, _to_rgba32)(AVPicture *dst, const AVPicture *src,
+static void glue(RGB_NAME, _to_rgb32)(AVPicture *dst, const AVPicture *src,
                                        int width, int height)
 {
     const uint8_t *s;
@@ -485,7 +485,7 @@ static void glue(RGB_NAME, _to_rgba32)(AVPicture *dst, const AVPicture *src,
     }
 }
 
-#endif /* !defined(FMT_RGBA32) */
+#endif /* !defined(FMT_RGB32) */
 
 #ifndef FMT_RGB24
 
@@ -788,7 +788,7 @@ static void rgb24_to_yuvj444p(AVPicture *dst, const AVPicture *src,
 
 #endif /* FMT_RGB24 */
 
-#if defined(FMT_RGB24) || defined(FMT_RGBA32)
+#if defined(FMT_RGB24) || defined(FMT_RGB32)
 
 static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, const AVPicture *src,
                                      int width, int height)
@@ -834,7 +834,7 @@ static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, const AVPicture *src,
     build_rgb_palette(dst->data[1], has_alpha);
 }
 
-#endif /* defined(FMT_RGB24) || defined(FMT_RGBA32) */
+#endif /* defined(FMT_RGB24) || defined(FMT_RGB32) */
 
 #ifdef RGBA_IN
 
@@ -872,4 +872,4 @@ static int glue(get_alpha_info_, RGB_NAME)(const AVPicture *src,
 #undef BPP
 #undef RGB_NAME
 #undef FMT_RGB24
-#undef FMT_RGBA32
+#undef FMT_RGB32
