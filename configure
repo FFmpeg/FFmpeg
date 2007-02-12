@@ -78,6 +78,7 @@ show_help(){
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
   echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
   echo "                           and libraw1394 [default=no]"
+  echo "  --enable-a52             enable GPLed liba52 support [default=no]"
   echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
   echo "  --enable-dts             enable GPLed libdts support [default=no]"
@@ -486,6 +487,7 @@ CONFIG_LIST='
     gpl
     gprof
     ipv6
+    liba52
     liba52bin
     libdts
     libfaac
@@ -595,7 +597,7 @@ amr_wb_decoder_deps="amr_wb"
 amr_wb_encoder_deps="amr_wb"
 dts_decoder_deps="libdts"
 faac_encoder_deps="libfaac"
-liba52_decoder_deps="liba52bin"
+liba52_decoder_deps="liba52"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libtheora_encoder_deps="libtheora"
@@ -754,6 +756,7 @@ avisynth="no"
 dc1394="no"
 dlfcn_h="no"
 dlopen="no"
+liba52="no"
 liba52bin="no"
 libdts="no"
 libfaac="no"
@@ -1032,6 +1035,8 @@ for opt do
   ;;
   --disable-v4l2) video4linux2="no"
   ;;
+  --enable-a52) liba52="yes"
+  ;;
   --enable-a52bin) liba52bin="yes"
   ;;
   --enable-dts) libdts="yes"
@@ -1182,7 +1187,7 @@ if disabled gpl ; then
         enabled_any $@ && die "$name is under GPL and --enable-gpl is not specified."
     }
     die_gpl_disabled "The Postprocessing code" pp
-    die_gpl_disabled "liba52"                  liba52bin
+    die_gpl_disabled "liba52"                  liba52
     die_gpl_disabled "libxvidcore"             xvid
     die_gpl_disabled "x264"                    x264
     die_gpl_disabled "libdts"                  libdts
@@ -1494,6 +1499,7 @@ enabled_all amr_nb amr_nb_fixed &&
     die "Only one of amr_nb and amr_nb_fixed may be enabled."
 
 # these are off by default, so fail if requested and not available
+enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
 enabled libdts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
@@ -1815,6 +1821,7 @@ if enabled sdl_too_old; then
 fi
 echo "Sun medialib support      $mlib"
 echo "AVISynth enabled          $avisynth"
+echo "liba52 support            $liba52"
 echo "liba52 dlopened           $liba52bin"
 echo "libdts support            $libdts"
 echo "libfaac enabled           $libfaac"
