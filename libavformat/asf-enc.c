@@ -715,9 +715,13 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *codec;
     int64_t packet_st,pts;
     int start_sec,i;
+    int flags= pkt->flags;
 
     codec = s->streams[pkt->stream_index]->codec;
     stream = &asf->streams[pkt->stream_index];
+
+    if(codec->codec_type == CODEC_TYPE_AUDIO)
+        flags &= ~PKT_FLAG_KEY;
 
     //XXX /FIXME use duration from AVPacket (quick hack by)
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
@@ -726,10 +730,10 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     asf->duration= FFMAX(asf->duration, duration);
 
     packet_st = asf->nb_packets;
-    put_frame(s, stream, pkt->dts, pkt->data, pkt->size, pkt->flags);
+    put_frame(s, stream, pkt->dts, pkt->data, pkt->size, flags);
 
     /* check index */
-    if ((!asf->is_streamed) && (codec->codec_type == CODEC_TYPE_VIDEO) && (pkt->flags & PKT_FLAG_KEY)) {
+    if ((!asf->is_streamed) && (flags & PKT_FLAG_KEY)) {
         start_sec = (int)(duration / INT64_C(10000000));
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             for(i=asf->nb_index_count;i<start_sec;i++) {
