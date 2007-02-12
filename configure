@@ -114,8 +114,8 @@ show_help(){
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
   echo "  --build-suffix=SUFFIX    suffix for application specific build []"
   echo "  --arch=ARCH              select architecture  [$arch]"
-  echo "  --cpu=CPU                selects the minimum cpu required (affects
-                                   instruction selection, may crash on older CPUs)"
+  echo "  --cpu=CPU                selects the minimum cpu required (affects"
+  echo "                           instruction selection, may crash on older CPUs)"
   echo "  --powerpc-perf-enable    enable performance report on PPC"
   echo "                           (requires enabling PMC)"
   echo "  --disable-mmx            disable MMX usage"
