@@ -299,7 +299,7 @@ Set the number of video frames to record.
 @item -r fps
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s size
-Set frame size. The format is @samp{wxh} (default = 160x128).
+Set frame size. The format is @samp{wxh} (ffserver default = 160x128, ffmpeg default = same as source).
 The following abbreviations are recognized:
 @table @samp
 @item sqcif
