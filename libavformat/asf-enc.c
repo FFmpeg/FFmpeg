@@ -196,8 +196,6 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
 
 static int preroll_time = 3100;
 
-static const uint8_t error_spread_ADPCM_G726[] = { 0x01, 0x90, 0x01, 0x90, 0x01, 0x01, 0x00, 0x00 };
-
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
     assert(sizeof(*g) == 16);
@@ -345,8 +343,6 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     /* stream headers */
     for(n=0;n<s->nb_streams;n++) {
         int64_t es_pos;
-        const uint8_t *er_spr = NULL;
-        int er_spr_len = 0;
         //        ASFStream *stream = &asf->streams[n];
 
         enc = s->streams[n]->codec;
@@ -354,18 +350,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         asf->streams[n].seq = 0;
 
 
-        if (enc->codec_type == CODEC_TYPE_AUDIO) {
-            if (enc->codec_id == CODEC_ID_ADPCM_G726) {
-                er_spr     = error_spread_ADPCM_G726;
-                er_spr_len = sizeof(error_spread_ADPCM_G726);
-            }
-        }
-
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
             wav_extra_size = 0;
             extra_size = 18 + wav_extra_size;
-            extra_size2 = er_spr_len;
+            extra_size2 = 8;
             break;
         default:
         case CODEC_TYPE_VIDEO:
@@ -378,11 +367,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         hpos = put_header(pb, &stream_header);
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             put_guid(pb, &audio_stream);
-            if ((er_spr != NULL) && (er_spr_len != 0)) {
-                put_guid(pb, &audio_conceal_spread);
-            } else {
-                put_guid(pb, &video_conceal_none);
-            }
+            put_guid(pb, &audio_conceal_spread);
         } else {
             put_guid(pb, &video_stream);
             put_guid(pb, &video_conceal_none);
@@ -411,8 +396,16 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
                 url_fseek(pb, cur_pos, SEEK_SET);
             }
             /* ERROR Correction */
-            if ((er_spr != NULL) && (er_spr_len != 0))
-                put_buffer(pb, er_spr, er_spr_len);
+            put_byte(pb, 0x01);
+            if(enc->codec_id == CODEC_ID_ADPCM_G726 || !enc->block_align){
+                put_le16(pb, 0x0190);
+                put_le16(pb, 0x0190);
+            }else{
+                put_le16(pb, enc->block_align);
+                put_le16(pb, enc->block_align);
+            }
+            put_le16(pb, 0x01);
+            put_byte(pb, 0x00);
         } else {
             put_le32(pb, enc->width);
             put_le32(pb, enc->height);
