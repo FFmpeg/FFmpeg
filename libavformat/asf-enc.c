@@ -194,7 +194,7 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-static int preroll_time = 2000;
+static int preroll_time = 3100;
 
 static const uint8_t error_spread_ADPCM_G726[] = { 0x01, 0x90, 0x01, 0x90, 0x01, 0x01, 0x00, 0x00 };
 

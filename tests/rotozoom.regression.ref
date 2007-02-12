@@ -188,11 +188,11 @@ c3382f03ce2efb5d475240d288a33898 *./data/a-flac.flac
 353368 ./data/a-flac.flac
 c4228df189aad9567a037727d0e763e4 *./data/out.wav
 stddev: 33.31 PSNR:65.87 bytes:1040384
-a2176602cfebad51f5688f793ab5d59a *./data/a-wmav1.asf
+4c841e72ef8b92dfce0dce756cf16bf1 *./data/a-wmav1.asf
 99596 ./data/a-wmav1.asf
 stddev:12251.50 PSNR:14.56 bytes:1056768
 stddev:2106.00 PSNR:29.85 bytes:1048576
-df1c902a4518a06afed977a8a74a60c9 *./data/a-wmav2.asf
+e5881f5c778d4907a5d18fd115ad778d *./data/a-wmav2.asf
 99602 ./data/a-wmav2.asf
 stddev:12255.92 PSNR:14.55 bytes:1056768
 stddev:2099.31 PSNR:29.88 bytes:1048576
