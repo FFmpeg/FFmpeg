@@ -25,6 +25,9 @@
 typedef struct {
     offset_t data;
     offset_t data_end;
+    int64_t minpts;
+    int64_t maxpts;
+    int last_duration;
 } WAVContext;
 
 #ifdef CONFIG_MUXERS
@@ -32,7 +35,7 @@ static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    offset_t fmt;
+    offset_t fmt, fact;
 
     put_tag(pb, "RIFF");
     put_le32(pb, 0); /* file length */
@@ -46,7 +49,16 @@ static int wav_write_header(AVFormatContext *s)
     }
     end_tag(pb, fmt);
 
+    if(s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
+       && !url_is_streamed(&s->pb)) {
+        fact = start_tag(pb, "fact");
+        put_le32(pb, 0);
+        end_tag(pb, fact);
+    }
+
     av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    wav->maxpts = wav->last_duration = 0;
+    wav->minpts = INT64_MAX;
 
     /* data header */
     wav->data = start_tag(pb, "data");
@@ -59,7 +71,14 @@ static int wav_write_header(AVFormatContext *s)
 static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
+    WAVContext *wav = s->priv_data;
     put_buffer(pb, pkt->data, pkt->size);
+    if(pkt->pts != AV_NOPTS_VALUE) {
+        wav->minpts = FFMIN(wav->minpts, pkt->pts);
+        wav->maxpts = FFMAX(wav->maxpts, pkt->pts);
+        wav->last_duration = pkt->duration;
+    } else
+        av_log(s, AV_LOG_ERROR, "wav_write_packet: NOPTS\n");
     return 0;
 }
 
@@ -79,6 +98,18 @@ static int wav_write_trailer(AVFormatContext *s)
         url_fseek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
+
+        if(s->streams[0]->codec->codec_tag != 0x01) {
+            /* Update num_samps in fact chunk */
+            int number_of_samples;
+            number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
+                                           s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
+                                           s->streams[0]->time_base.den);
+            url_fseek(pb, wav->data-12, SEEK_SET);
+            put_le32(pb, number_of_samples);
+            url_fseek(pb, file_size, SEEK_SET);
+            put_flush_packet(pb);
+        }
     }
     return 0;
 }
