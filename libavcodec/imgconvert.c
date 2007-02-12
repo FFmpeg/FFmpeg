@@ -1049,7 +1049,7 @@ static void yuv422p_to_uyvy422(AVPicture *dst, const AVPicture *src,
     }
 }
 
-static void uyvy411_to_yuv411p(AVPicture *dst, const AVPicture *src,
+static void uyyvyy411_to_yuv411p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     const uint8_t *p, *p1;
@@ -2186,7 +2186,7 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     },
     [PIX_FMT_UYYVYY411] = {
         [PIX_FMT_YUV411P] = {
-            .convert = uyvy411_to_yuv411p,
+            .convert = uyyvyy411_to_yuv411p,
         },
     },
 
