@@ -155,8 +155,8 @@ static int ogg_write_trailer(AVFormatContext *avfcontext) {
 
 AVOutputFormat ogg_muxer = {
     "ogg",
-    "Ogg Vorbis",
-    "audio/x-vorbis",
+    "Ogg format",
+    "application/ogg",
     "ogg",
     sizeof(OggContext),
     CODEC_ID_VORBIS,
