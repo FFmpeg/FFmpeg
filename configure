@@ -78,20 +78,20 @@ show_help(){
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
   echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
   echo "                           and libraw1394 [default=no]"
-  echo "  --enable-a52             enable GPLed liba52 support [default=no]"
-  echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
+  echo "  --enable-liba52          enable GPLed liba52 support [default=no]"
+  echo "  --enable-liba52bin       open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
-  echo "  --enable-dts             enable GPLed libdts support [default=no]"
-  echo "  --enable-faac            enable FAAC support via libfaac [default=no]"
-  echo "  --enable-faad            enable FAAD support via libfaad [default=no]"
-  echo "  --enable-faadbin         build FAAD support with runtime linking [default=no]"
+  echo "  --enable-libdts          enable GPLed libdts support [default=no]"
+  echo "  --enable-libfaac         enable FAAC support via libfaac [default=no]"
+  echo "  --enable-libfaad         enable FAAD support via libfaad [default=no]"
+  echo "  --enable-libfaadbin      build FAAD support with runtime linking [default=no]"
   echo "  --enable-libgsm          enable GSM support via libgsm [default=no]"
-  echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
+  echo "  --enable-libmp3lame      enable MP3 encoding via libmp3lame [default=no]"
   echo "  --enable-libnut          enable NUT (de)muxing via libnut,"
   echo "                           native demuxer exists [default=no]"
   echo "  --enable-libogg          enable Ogg muxing via libogg [default=no]"
   echo "  --enable-libtheora       enable Theora encoding via libtheora [default=no]"
-  echo "  --enable-vorbis          enable Vorbis en/decoding via libvorbis,"
+  echo "  --enable-libvorbis       enable Vorbis en/decoding via libvorbis,"
   echo "                           native implementations exist [default=no]"
   echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
   echo "  --enable-xvid            enable Xvid encoding via xvidcore,"
@@ -1034,22 +1034,6 @@ for opt do
   --disable-v4l) video4linux="no"
   ;;
   --disable-v4l2) video4linux2="no"
-  ;;
-  --enable-a52) liba52="yes"
-  ;;
-  --enable-a52bin) liba52bin="yes"
-  ;;
-  --enable-dts) libdts="yes"
-  ;;
-  --enable-mp3lame) libmp3lame="yes"
-  ;;
-  --enable-vorbis) libvorbis="yes"
-  ;;
-  --enable-faad) libfaad="yes"
-  ;;
-  --enable-faadbin) libfaadbin="yes"
-  ;;
-  --enable-faac) libfaac="yes"
   ;;
   --enable-mingwce) wince="yes"
   ;;
