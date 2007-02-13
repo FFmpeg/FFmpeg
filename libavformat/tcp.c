@@ -62,7 +62,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     s = av_malloc(sizeof(TCPContext));
     if (!s)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     h->priv_data = s;
 
     if (port <= 0 || port >= 65536)
@@ -90,7 +90,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         /* wait until we are connected or until abort */
         for(;;) {
             if (url_interrupt_cb()) {
-                ret = -EINTR;
+                ret = AVERROR(EINTR);
                 goto fail1;
             }
             fd_max = fd;
@@ -130,7 +130,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 
     for (;;) {
         if (url_interrupt_cb())
-            return -EINTR;
+            return AVERROR(EINTR);
         fd_max = s->fd;
         FD_ZERO(&rfds);
         FD_SET(s->fd, &rfds);
@@ -141,11 +141,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
             len = recv(s->fd, buf, size, 0);
             if (len < 0) {
                 if (errno != EINTR && errno != EAGAIN)
-#ifdef __BEOS__
-                    return errno;
-#else
-                    return -errno;
-#endif
+                    return AVERROR(errno);
             } else return len;
         } else if (ret < 0) {
             return -1;
@@ -163,7 +159,7 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
     size1 = size;
     while (size > 0) {
         if (url_interrupt_cb())
-            return -EINTR;
+            return AVERROR(EINTR);
         fd_max = s->fd;
         FD_ZERO(&wfds);
         FD_SET(s->fd, &wfds);
@@ -173,13 +169,8 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
         if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
             len = send(s->fd, buf, size, 0);
             if (len < 0) {
-                if (errno != EINTR && errno != EAGAIN) {
-#ifdef __BEOS__
-                    return errno;
-#else
-                    return -errno;
-#endif
-                }
+                if (errno != EINTR && errno != EAGAIN)
+                    return AVERROR(errno);
                 continue;
             }
             size -= len;

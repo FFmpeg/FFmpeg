@@ -117,7 +117,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
     offset_t pos= s->pos - (s->write_flag ? 0 : (s->buf_end - s->buffer));
 
     if (whence != SEEK_CUR && whence != SEEK_SET)
-        return -EINVAL;
+        return AVERROR(EINVAL);
 
     if (whence == SEEK_CUR) {
         offset1 = pos + (s->buf_ptr - s->buffer);
@@ -136,7 +136,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             fill_buffer(s);
         s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
-        offset_t res = -EPIPE;
+        offset_t res = AVERROR(EPIPE);
 
 #if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
         if (s->write_flag) {
@@ -171,7 +171,7 @@ offset_t url_fsize(ByteIOContext *s)
     offset_t size;
 
     if (!s->seek)
-        return -EPIPE;
+        return AVERROR(EPIPE);
     size = s->seek(s->opaque, 0, AVSEEK_SIZE);
     if(size<0){
         if ((size = s->seek(s->opaque, -1, SEEK_END)) < 0)
@@ -511,7 +511,7 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
     }
     buffer = av_malloc(buffer_size);
     if (!buffer)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
 
     if (init_put_byte(s, buffer, buffer_size,
                       (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
@@ -530,7 +530,7 @@ int url_setbufsize(ByteIOContext *s, int buf_size)
     uint8_t *buffer;
     buffer = av_malloc(buf_size);
     if (!buffer)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
 
     av_free(s->buffer);
     s->buffer = buffer;

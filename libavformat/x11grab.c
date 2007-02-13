@@ -130,7 +130,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st = av_new_stream(s1, 0);
     if (!st) {
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
@@ -151,7 +151,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                                         IPC_CREAT|0777);
         if (x11grab->shminfo.shmid == -1) {
             av_log(s1, AV_LOG_ERROR, "Fatal: Can't get shared memory!\n");
-            return -ENOMEM;
+            return AVERROR(ENOMEM);
         }
         x11grab->shminfo.shmaddr = image->data = shmat(x11grab->shminfo.shmid, 0, 0);
         x11grab->shminfo.readOnly = False;

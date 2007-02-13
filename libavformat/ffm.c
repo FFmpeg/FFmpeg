@@ -579,7 +579,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
     switch(ffm->read_state) {
     case READ_HEADER:
         if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE)) {
-            return -EAGAIN;
+            return AVERROR(EAGAIN);
         }
 #if 0
         printf("pos=%08"PRIx64" spos=%"PRIx64", write_index=%"PRIx64" size=%"PRIx64"\n",
@@ -587,7 +587,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
-            return -EAGAIN;
+            return AVERROR(EAGAIN);
 #if 0
         {
             int i;
@@ -601,7 +601,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
     case READ_DATA:
         size = (ffm->header[2] << 16) | (ffm->header[3] << 8) | ffm->header[4];
         if (!ffm_is_avail_data(s, size)) {
-            return -EAGAIN;
+            return AVERROR(EAGAIN);
         }
 
         duration = (ffm->header[5] << 16) | (ffm->header[6] << 8) | ffm->header[7];
@@ -616,7 +616,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ffm_read_data(s, pkt->data, size, 0) != size) {
             /* bad case: desynchronized packet. we cancel all the packet loading */
             av_free_packet(pkt);
-            return -EAGAIN;
+            return AVERROR(EAGAIN);
         }
         if (ffm->first_frame_in_packet)
         {

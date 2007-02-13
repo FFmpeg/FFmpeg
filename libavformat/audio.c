@@ -224,7 +224,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st = av_new_stream(s1, 0);
     if (!st) {
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     }
     s->sample_rate = ap->sample_rate;
     s->channels = ap->channels;

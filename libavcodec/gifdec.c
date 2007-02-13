@@ -87,7 +87,7 @@ static int gif_read_image(GifState *s)
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
-        return -EINVAL;
+        return AVERROR(EINVAL);
 
     /* build the palette */
     n = (1 << bits_per_pixel);

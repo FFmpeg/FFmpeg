@@ -601,7 +601,7 @@ static int sonic_encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
     avctx->frame_size = s->block_align*s->downsampling;
 

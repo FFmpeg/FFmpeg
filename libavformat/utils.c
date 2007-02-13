@@ -478,7 +478,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             /* read probe data */
             pd->buf= av_realloc(pd->buf, probe_size);
             pd->buf_size = get_buffer(pb, pd->buf, probe_size);
-            if (url_fseek(pb, 0, SEEK_SET) == (offset_t)-EPIPE) {
+            if (url_fseek(pb, 0, SEEK_SET) == (offset_t)AVERROR(EPIPE)) {
                 url_fclose(pb);
                 if (url_fopen(pb, filename, URL_RDONLY) < 0) {
                     file_opened = 0;
@@ -805,7 +805,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             /* read next packet */
             ret = av_read_packet(s, &s->cur_pkt);
             if (ret < 0) {
-                if (ret == -EAGAIN)
+                if (ret == AVERROR(EAGAIN))
                     return ret;
                 /* return the last frames, if any */
                 for(i = 0; i < s->nb_streams; i++) {
@@ -916,7 +916,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             AVPacketList **plast_pktl= &s->packet_buffer;
             int ret= av_read_frame_internal(s, pkt);
             if(ret<0){
-                if(pktl && ret != -EAGAIN){
+                if(pktl && ret != AVERROR(EAGAIN)){
                     eof=1;
                     continue;
                 }else

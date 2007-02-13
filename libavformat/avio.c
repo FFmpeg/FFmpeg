@@ -67,12 +67,12 @@ int url_open(URLContext **puc, const char *filename, int flags)
             goto found;
         up = up->next;
     }
-    err = -ENOENT;
+    err = AVERROR(ENOENT);
     goto fail;
  found:
     uc = av_malloc(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
-        err = -ENOMEM;
+        err = AVERROR(ENOMEM);
         goto fail;
     }
 #if LIBAVFORMAT_VERSION_INT >= (52<<16)
@@ -124,7 +124,7 @@ offset_t url_seek(URLContext *h, offset_t pos, int whence)
     offset_t ret;
 
     if (!h->prot->url_seek)
-        return -EPIPE;
+        return AVERROR(EPIPE);
     ret = h->prot->url_seek(h, pos, whence);
     return ret;
 }
@@ -188,8 +188,8 @@ static int default_interrupt_cb(void)
 
 /**
  * The callback is called in blocking functions to test regulary if
- * asynchronous interruption is needed. -EINTR is returned in this
- * case by the interrupted function. 'NULL' means no interrupt
+ * asynchronous interruption is needed. AVERROR(EINTR) is returned
+ * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)

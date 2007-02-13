@@ -37,11 +37,7 @@
 #    include <string.h>
 #    include <ctype.h>
 #    include <limits.h>
-#    ifndef __BEOS__
-#        include <errno.h>
-#    else
-#        include "berrno.h"
-#    endif
+#    include <errno.h>
 #    include <math.h>
 #endif /* HAVE_AV_CONFIG_H */
 

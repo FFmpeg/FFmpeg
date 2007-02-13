@@ -113,7 +113,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     s = av_mallocz(sizeof(RTPContext));
     if (!s)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     h->priv_data = s;
 
     url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,

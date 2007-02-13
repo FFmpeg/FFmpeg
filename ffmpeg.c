@@ -1797,12 +1797,12 @@ static int av_encode(AVFormatContext **output_files,
         int in_file_index = meta_data_maps[i].in_file;
         if ( out_file_index < 0 || out_file_index >= nb_output_files ) {
             fprintf(stderr, "Invalid output file index %d map_meta_data(%d,%d)\n", out_file_index, out_file_index, in_file_index);
-            ret = -EINVAL;
+            ret = AVERROR(EINVAL);
             goto fail;
         }
         if ( in_file_index < 0 || in_file_index >= nb_input_files ) {
             fprintf(stderr, "Invalid input file index %d map_meta_data(%d,%d)\n", in_file_index, out_file_index, in_file_index);
-            ret = -EINVAL;
+            ret = AVERROR(EINVAL);
             goto fail;
         }
 
@@ -1824,7 +1824,7 @@ static int av_encode(AVFormatContext **output_files,
         os = output_files[i];
         if (av_write_header(os) < 0) {
             fprintf(stderr, "Could not write header for output file #%d (incorrect codec parameters ?)\n", i);
-            ret = -EINVAL;
+            ret = AVERROR(EINVAL);
             goto fail;
         }
     }
@@ -2027,7 +2027,7 @@ static int av_encode(AVFormatContext **output_files,
     }
     return ret;
  fail:
-    ret = -ENOMEM;
+    ret = AVERROR(ENOMEM);
     goto fail1;
 }
 

@@ -125,7 +125,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 
         dv_vlc_map = av_mallocz_static(DV_VLC_MAP_LEV_SIZE*DV_VLC_MAP_RUN_SIZE*sizeof(struct dv_vlc_pair));
         if (!dv_vlc_map)
-            return -ENOMEM;
+            return AVERROR(ENOMEM);
 
         /* dv_anchor lets each thread know its Id */
         for (i=0; i<DV_ANCHOR_SIZE; i++)
@@ -157,7 +157,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 
         dv_rl_vlc = av_mallocz_static(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
         if (!dv_rl_vlc)
-            return -ENOMEM;
+            return AVERROR(ENOMEM);
 
         for(i = 0; i < dv_vlc.table_size; i++){
             int code= dv_vlc.table[i][0];

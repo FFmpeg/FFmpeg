@@ -65,8 +65,8 @@ int url_get_max_packet_size(URLContext *h);
 void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /* the callback is called in blocking functions to test regulary if
-   asynchronous interruption is needed. -EINTR is returned in this
-   case by the interrupted function. 'NULL' means no interrupt
+   asynchronous interruption is needed. AVERROR(EINTR) is returned
+   in this case by the interrupted function. 'NULL' means no interrupt
    callback is given. */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 

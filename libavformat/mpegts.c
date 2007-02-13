@@ -1357,7 +1357,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
     uint8_t pcr_buf[12];
 
     if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     pkt->pos= url_ftell(&s->pb);
     ret = read_packet(&s->pb, pkt->data, ts->raw_packet_size);
     if (ret < 0) {

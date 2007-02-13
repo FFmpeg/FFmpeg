@@ -225,7 +225,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoData *s = s1->priv_data;
 
     if (av_new_packet(pkt, video_buf_size) < 0)
-        return -EIO;
+        return AVERROR(EIO);
 
     bktr_getframe(s->per_frame);
 
@@ -259,7 +259,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st = av_new_stream(s1, 0);
     if (!st)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
 
     s->width = width;
@@ -287,7 +287,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (bktr_init(video_device, width, height, format,
             &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0)
-        return -EIO;
+        return AVERROR(EIO);
 
     nsignals = 0;
     last_frame_time = 0;

@@ -45,7 +45,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 #endif
     fd = open(filename, access, 0666);
     if (fd < 0)
-        return -ENOENT;
+        return AVERROR(ENOENT);
     h->priv_data = (void *)(size_t)fd;
     return 0;
 }

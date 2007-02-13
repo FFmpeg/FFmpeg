@@ -305,13 +305,13 @@ static int gif_read_image(GifState *s)
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
-        return -EINVAL;
+        return AVERROR(EINVAL);
 
     /* build the palette */
     if (s->pix_fmt == PIX_FMT_RGB24) {
         line = av_malloc(width);
         if (!line)
-            return -ENOMEM;
+            return AVERROR(ENOMEM);
     } else {
         n = (1 << bits_per_pixel);
         spal = palette;
@@ -537,7 +537,7 @@ static int gif_read_header(AVFormatContext * s1,
     s->image_linesize = s->screen_width * 3;
     s->image_buf = av_malloc(s->screen_height * s->image_linesize);
     if (!s->image_buf)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     s->pix_fmt = PIX_FMT_RGB24;
     /* now we are ready: build format streams */
     st = av_new_stream(s1, 0);

@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(9<<8)+0)
-#define LIBAVFORMAT_VERSION     51.9.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(10<<8)+0)
+#define LIBAVFORMAT_VERSION     51.10.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -432,14 +432,6 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVFormatParameters *ap);
 /* no av_open for output, so applications will need this: */
 AVFormatContext *av_alloc_format_context(void);
-
-#define AVERROR_UNKNOWN     (-1)  /* unknown error */
-#define AVERROR_IO          (-2)  /* i/o error */
-#define AVERROR_NUMEXPECTED (-3)  /* number syntax expected in filename */
-#define AVERROR_INVALIDDATA (-4)  /* invalid data found */
-#define AVERROR_NOMEM       (-5)  /* not enough memory */
-#define AVERROR_NOFMT       (-6)  /* unknown format */
-#define AVERROR_NOTSUPP     (-7)  /* operation not supported */
 
 int av_find_stream_info(AVFormatContext *ic);
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);

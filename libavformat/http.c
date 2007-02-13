@@ -120,7 +120,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
 
     s = av_malloc(sizeof(HTTPContext));
     if (!s) {
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
     }
     h->priv_data = s;
     s->filesize = -1;

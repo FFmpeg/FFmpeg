@@ -513,7 +513,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     for(i=0;i<ctx->nb_streams;i++) {
         av_free(ctx->streams[i]->priv_data);
     }
-    return -ENOMEM;
+    return AVERROR(ENOMEM);
 }
 
 static inline void put_timestamp(ByteIOContext *pb, int id, int64_t timestamp)

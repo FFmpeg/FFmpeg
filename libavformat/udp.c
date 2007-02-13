@@ -295,7 +295,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     s = av_malloc(sizeof(UDPContext));
     if (!s)
-        return -ENOMEM;
+        return AVERROR(ENOMEM);
 
     h->priv_data = s;
     s->ttl = 16;
