@@ -166,7 +166,7 @@ OBJS+= avio.o aviobuf.o
 ifeq ($(CONFIG_PROTOCOLS),yes)
 OBJS+= file.o
 ifeq ($(CONFIG_NETWORK),yes)
-OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o base64.o rtp_h264.o
+OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o rtp_h264.o
 endif
 endif
 

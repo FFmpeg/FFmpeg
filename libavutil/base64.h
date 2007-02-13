@@ -19,6 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-int av_base64_decode(uint8_t * out, const char *in, int out_length);  // param order as strncpy()
-char *av_base64_encode(uint8_t * src, int len);       // src is not a string, it's data.
+/**
+ * decodes base64
+ * param order as strncpy()
+ */
+int av_base64_decode(uint8_t * out, const char *in, int out_length);
+
+/**
+ * encodes base64
+ * @param src data, not a string
+ */
+char *av_base64_encode(uint8_t * src, int len);
 
