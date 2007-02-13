@@ -1043,13 +1043,13 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s)
         /* only 8 bit precision handled */
         if (get_bits(&s->gb, 4) != 0)
         {
-            dprintf("dqt: 16bit precision\n");
+            av_log(s->avctx, AV_LOG_ERROR, "dqt: 16bit precision\n");
             return -1;
         }
         index = get_bits(&s->gb, 4);
         if (index >= 4)
             return -1;
-        dprintf("index=%d\n", index);
+        av_log(s->avctx, AV_LOG_DEBUG, "index=%d\n", index);
         /* read quant table */
         for(i=0;i<64;i++) {
             j = s->scantable.permutated[i];
@@ -1060,7 +1060,7 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s)
         s->qscale[index]= FFMAX(
             s->quant_matrixes[index][s->scantable.permutated[1]],
             s->quant_matrixes[index][s->scantable.permutated[8]]) >> 1;
-        dprintf("qscale[%d]: %d\n", index, s->qscale[index]);
+        av_log(s->avctx, AV_LOG_DEBUG, "qscale[%d]: %d\n", index, s->qscale[index]);
         len -= 65;
     }
 
@@ -1105,7 +1105,7 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s)
 
         /* build VLC and flush previous vlc if present */
         free_vlc(&s->vlcs[class][index]);
-        dprintf("class=%d index=%d nb_codes=%d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
         if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1, 0, class > 0) < 0){
             return -1;
@@ -1133,7 +1133,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
 
-    dprintf("sof0: picture: %dx%d\n", width, height);
+    av_log(s->avctx, AV_LOG_DEBUG, "sof0: picture: %dx%d\n", width, height);
     if(avcodec_check_dimensions(s->avctx, width, height))
         return -1;
 
@@ -1161,8 +1161,8 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
-        dprintf("component %d %d:%d id: %d quant:%d\n", i, s->h_count[i],
-            s->v_count[i], s->component_id[i], s->quant_index[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "component %d %d:%d id: %d quant:%d\n", i, s->h_count[i],
+               s->v_count[i], s->component_id[i], s->quant_index[i]);
     }
 
     if(s->ls && (s->h_max > 1 || s->v_max > 1)) {
@@ -1204,7 +1204,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     pix_fmt_id = (s->h_count[0] << 20) | (s->v_count[0] << 16) |
                  (s->h_count[1] << 12) | (s->v_count[1] <<  8) |
                  (s->h_count[2] <<  4) |  s->v_count[2];
-    dprintf("pix fmt id %x\n", pix_fmt_id);
+    av_log(s->avctx, AV_LOG_DEBUG, "pix fmt id %x\n", pix_fmt_id);
     switch(pix_fmt_id){
     case 0x222222:
     case 0x111111:
@@ -1252,7 +1252,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if (len != (8+(3*nb_components)))
     {
-        dprintf("decode_sof0: error, len(%d) mismatch\n", len);
+        av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
     }
 
     /* totally blank picture as progressive JPEG will only add details to it */
@@ -1270,8 +1270,8 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
     code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
     if (code < 0)
     {
-        dprintf("mjpeg_decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
-                &s->vlcs[0][dc_index]);
+        av_log(s->avctx, AV_LOG_WARNING, "mjpeg_decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
+               &s->vlcs[0][dc_index]);
         return 0xffff;
     }
 
@@ -1290,7 +1290,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
     if (val == 0xffff) {
-        dprintf("error dc\n");
+        av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return -1;
     }
     val = val * quant_matrix[0] + s->last_dc[component];
@@ -1326,7 +1326,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                     block[j] = level * quant_matrix[j];
                     break;
                 }
-                dprintf("error count: %d\n", i);
+                av_log(s->avctx, AV_LOG_ERROR, "error count: %d\n", i);
                 return -1;
             }
             j = s->scantable.permutated[i];
@@ -1349,7 +1349,7 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block,
     if(!ss){
         val = mjpeg_decode_dc(s, dc_index);
         if (val == 0xffff) {
-            dprintf("error dc\n");
+            av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
             return -1;
         }
         val = (val * quant_matrix[0] << Al) + s->last_dc[component];
@@ -1389,7 +1389,7 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block,
                     block[j] = level * quant_matrix[j] << Al;
                     break;
                 }
-                dprintf("error count: %d\n", i);
+                av_log(s->avctx, AV_LOG_ERROR, "error count: %d\n", i);
                 return -1;
             }
             j = s->scantable.permutated[i];
@@ -1590,16 +1590,16 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, i
                     if (!s->progressive && decode_block(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
                                      s->quant_matrixes[ s->quant_index[c] ]) < 0) {
-                        dprintf("error y=%d x=%d\n", mb_y, mb_x);
+                        av_log(s->avctx, AV_LOG_ERROR, "error y=%d x=%d\n", mb_y, mb_x);
                         return -1;
                     }
                     if (s->progressive && decode_block_progressive(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
                                      s->quant_matrixes[ s->quant_index[c] ], ss, se, Ah, Al, &EOBRUN) < 0) {
-                        dprintf("error y=%d x=%d\n", mb_y, mb_x);
+                        av_log(s->avctx, AV_LOG_ERROR, "error y=%d x=%d\n", mb_y, mb_x);
                         return -1;
                     }
-//                    dprintf("mb: %d %d processed\n", mb_y, mb_x);
+//                    av_log(s->avctx, AV_LOG_DEBUG, "mb: %d %d processed\n", mb_y, mb_x);
                     ptr = s->picture.data[c] +
                         (((s->linesize[c] * (v * mb_y + y) * 8) +
                         (h * mb_x + x) * 8) >> s->avctx->lowres);
@@ -1641,21 +1641,21 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     nb_components = get_bits(&s->gb, 8);
     if (len != 6+2*nb_components)
     {
-        dprintf("decode_sos: invalid len (%d)\n", len);
+        av_log(s->avctx, AV_LOG_ERROR, "decode_sos: invalid len (%d)\n", len);
         return -1;
     }
     vmax = 0;
     hmax = 0;
     for(i=0;i<nb_components;i++) {
         id = get_bits(&s->gb, 8) - 1;
-        dprintf("component: %d\n", id);
+        av_log(s->avctx, AV_LOG_DEBUG, "component: %d\n", id);
         /* find component index */
         for(index=0;index<s->nb_components;index++)
             if (id == s->component_id[index])
                 break;
         if (index == s->nb_components)
         {
-            dprintf("decode_sos: index(%d) out of components\n", index);
+            av_log(s->avctx, AV_LOG_ERROR, "decode_sos: index(%d) out of components\n", index);
             return -1;
         }
 
@@ -1745,7 +1745,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     emms_c();
     return 0;
  out_of_range:
-    dprintf("decode_sos: ac/dc index out of range\n");
+    av_log(s->avctx, AV_LOG_ERROR, "decode_sos: ac/dc index out of range\n");
     return -1;
 }
 
@@ -1755,7 +1755,7 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s)
         return -1;
     s->restart_interval = get_bits(&s->gb, 16);
     s->restart_count = 0;
-    dprintf("restart interval: %d\n", s->restart_interval);
+    av_log(s->avctx, AV_LOG_DEBUG, "restart interval: %d\n", s->restart_interval);
 
     return 0;
 }
@@ -1989,7 +1989,7 @@ static int find_marker(uint8_t **pbuf_ptr, uint8_t *buf_end)
     val = -1;
 found:
 #ifdef DEBUG
-    dprintf("find_marker skipped %d bytes\n", skipped);
+    av_log(NULL, AV_LOG_VERBOSE, "find_marker skipped %d bytes\n", skipped);
 #endif
     *pbuf_ptr = buf_ptr;
     return val;
@@ -2014,14 +2014,14 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
             if (start_code < 0) {
                 goto the_end;
             } else {
-                dprintf("marker=%x avail_size_in_buf=%d\n", start_code, buf_end - buf_ptr);
+                av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%d\n", start_code, buf_end - buf_ptr);
 
                 if ((buf_end - buf_ptr) > s->buffer_size)
                 {
                     av_free(s->buffer);
                     s->buffer_size = buf_end-buf_ptr;
                     s->buffer = av_malloc(s->buffer_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                    dprintf("buffer too small, expanding to %d bytes\n",
+                    av_log(avctx, AV_LOG_DEBUG, "buffer too small, expanding to %d bytes\n",
                         s->buffer_size);
                 }
 
@@ -2049,8 +2049,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     }
                     init_get_bits(&s->gb, s->buffer, (dst - s->buffer)*8);
 
-                    dprintf("escaping removed %d bytes\n",
-                        (buf_end - buf_ptr) - (dst - s->buffer));
+                    av_log(avctx, AV_LOG_DEBUG, "escaping removed %d bytes\n",
+                           (buf_end - buf_ptr) - (dst - s->buffer));
                 }
                 else if(start_code == SOS && s->ls){
                     uint8_t *src = buf_ptr;
@@ -2096,12 +2096,12 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 
                 s->start_code = start_code;
                 if(s->avctx->debug & FF_DEBUG_STARTCODE){
-                    av_log(s->avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
+                    av_log(avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
                 }
 
                 /* process markers */
                 if (start_code >= 0xd0 && start_code <= 0xd7) {
-                    dprintf("restart marker: %d\n", start_code&0x0f);
+                    av_log(avctx, AV_LOG_DEBUG, "restart marker: %d\n", start_code&0x0f);
                     /* APP fields */
                 } else if (start_code >= APP0 && start_code <= APP15) {
                     mjpeg_decode_app(s);
@@ -2122,7 +2122,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case DHT:
                     if(mjpeg_decode_dht(s) < 0){
-                        av_log(s->avctx, AV_LOG_ERROR, "huffman table decode error\n");
+                        av_log(avctx, AV_LOG_ERROR, "huffman table decode error\n");
                         return -1;
                     }
                     break;
@@ -2176,7 +2176,7 @@ eoi_parser:
                             picture->qscale_table= s->qscale_table;
                             memset(picture->qscale_table, picture->quality, (s->width+15)/16);
                             if(avctx->debug & FF_DEBUG_QP)
-                                av_log(s->avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
+                                av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
                             picture->quality*= FF_QP2LAMBDA;
                         }
 
@@ -2204,7 +2204,7 @@ eoi_parser:
                 case SOF14:
                 case SOF15:
                 case JPG:
-                    av_log(s->avctx, AV_LOG_ERROR, "mjpeg: unsupported coding type (%x)\n", start_code);
+                    av_log(avctx, AV_LOG_ERROR, "mjpeg: unsupported coding type (%x)\n", start_code);
                     break;
 //                default:
 //                    printf("mjpeg: unsupported marker (%x)\n", start_code);
@@ -2214,13 +2214,13 @@ eoi_parser:
 not_the_end:
                 /* eof process start code */
                 buf_ptr += (get_bits_count(&s->gb)+7)/8;
-                dprintf("marker parser used %d bytes (%d bits)\n",
-                    (get_bits_count(&s->gb)+7)/8, get_bits_count(&s->gb));
+                av_log(avctx, AV_LOG_DEBUG, "marker parser used %d bytes (%d bits)\n",
+                       (get_bits_count(&s->gb)+7)/8, get_bits_count(&s->gb));
             }
         }
     }
 the_end:
-    dprintf("mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
+    av_log(avctx, AV_LOG_DEBUG, "mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
     return buf_ptr - buf;
 }
@@ -2251,20 +2251,20 @@ read_header:
 
     if (get_bits_long(&hgb, 32) != MKBETAG('m','j','p','g'))
     {
-        dprintf("not mjpeg-b (bad fourcc)\n");
+        av_log(avctx, AV_LOG_WARNING, "not mjpeg-b (bad fourcc)\n");
         return 0;
     }
 
     field_size = get_bits_long(&hgb, 32); /* field size */
-    dprintf("field size: 0x%x\n", field_size);
+    av_log(avctx, AV_LOG_DEBUG, "field size: 0x%x\n", field_size);
     skip_bits(&hgb, 32); /* padded field size */
     second_field_offs = get_bits_long(&hgb, 32);
-    dprintf("second field offs: 0x%x\n", second_field_offs);
+    av_log(avctx, AV_LOG_DEBUG, "second field offs: 0x%x\n", second_field_offs);
     if (second_field_offs)
         s->interlaced = 1;
 
     dqt_offs = get_bits_long(&hgb, 32);
-    dprintf("dqt offs: 0x%x\n", dqt_offs);
+    av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%x\n", dqt_offs);
     if (dqt_offs)
     {
         init_get_bits(&s->gb, buf+dqt_offs, (buf_end - (buf+dqt_offs))*8);
@@ -2273,7 +2273,7 @@ read_header:
     }
 
     dht_offs = get_bits_long(&hgb, 32);
-    dprintf("dht offs: 0x%x\n", dht_offs);
+    av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%x\n", dht_offs);
     if (dht_offs)
     {
         init_get_bits(&s->gb, buf+dht_offs, (buf_end - (buf+dht_offs))*8);
@@ -2282,7 +2282,7 @@ read_header:
     }
 
     sof_offs = get_bits_long(&hgb, 32);
-    dprintf("sof offs: 0x%x\n", sof_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%x\n", sof_offs);
     if (sof_offs)
     {
         init_get_bits(&s->gb, buf+sof_offs, (buf_end - (buf+sof_offs))*8);
@@ -2292,9 +2292,9 @@ read_header:
     }
 
     sos_offs = get_bits_long(&hgb, 32);
-    dprintf("sos offs: 0x%x\n", sos_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sos offs: 0x%x\n", sos_offs);
     sod_offs = get_bits_long(&hgb, 32);
-    dprintf("sod offs: 0x%x\n", sod_offs);
+    av_log(avctx, AV_LOG_DEBUG, "sod offs: 0x%x\n", sod_offs);
     if (sos_offs)
     {
 //        init_get_bits(&s->gb, buf+sos_offs, (buf_end - (buf+sos_offs))*8);
