@@ -116,7 +116,7 @@ show_help(){
   echo "  --arch=ARCH              select architecture  [$arch]"
   echo "  --cpu=CPU                selects the minimum cpu required (affects"
   echo "                           instruction selection, may crash on older CPUs)"
-  echo "  --powerpc-perf-enable    enable performance report on PPC"
+  echo "  --enable-powerpc-perf    enable performance report on PPC"
   echo "                           (requires enabling PMC)"
   echo "  --disable-mmx            disable MMX usage"
   echo "  --disable-armv5te        disable armv5te usage"
@@ -502,6 +502,7 @@ CONFIG_LIST='
     memalign_hack
     mpegaudio_hp
     network
+    powerpc_perf
     pp
     protocols
     swscaler
@@ -1028,8 +1029,6 @@ for opt do
   --arch=*) arch="$optval"
   ;;
   --cpu=*) cpu="$optval"
-  ;;
-  --powerpc-perf-enable) powerpc_perf="yes"
   ;;
   --disable-v4l) video4linux="no"
   ;;
@@ -1889,9 +1888,6 @@ case "$arch" in
     powerpc)
         if test "$POWERPCMODE" = "64bits"; then
             echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
-        fi
-        if enabled powerpc_perf; then
-            echo "#define CONFIG_POWERPC_PERF 1" >> $TMPH
         fi
         ;;
     sparc64)
