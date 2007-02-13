@@ -216,7 +216,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint32_t tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size, nb_frames;
-    int i, n;
+    int i;
     AVStream *st;
     AVIStream *ast = NULL;
     char str_track[4];
@@ -269,10 +269,22 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             avi->non_interleaved |= get_le32(pb) & AVIF_MUSTUSEINDEX;
 
             url_fskip(pb, 2 * 4);
-            n = get_le32(pb);
-            for(i=0;i<n;i++) {
-                AVIStream *ast;
-                st = av_new_stream(s, i);
+            get_le32(pb);
+
+            url_fskip(pb, size - 7 * 4);
+            break;
+        case MKTAG('s', 't', 'r', 'h'):
+            /* stream header */
+
+            tag1 = get_le32(pb);
+            handler = get_le32(pb); /* codec tag */
+
+            if(tag1 == MKTAG('p', 'a', 'd', 's')){
+                url_fskip(pb, size - 8);
+                break;
+            }else{
+                stream_index++;
+                st = av_new_stream(s, stream_index);
                 if (!st)
                     goto fail;
 
@@ -281,13 +293,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     goto fail;
                 st->priv_data = ast;
             }
-            url_fskip(pb, size - 7 * 4);
-            break;
-        case MKTAG('s', 't', 'r', 'h'):
-            /* stream header */
-            stream_index++;
-            tag1 = get_le32(pb);
-            handler = get_le32(pb); /* codec tag */
+
 #ifdef DEBUG
             print_tag("strh", tag1, -1);
 #endif
@@ -336,15 +342,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             }
 
-            if (stream_index >= s->nb_streams) {
-                url_fskip(pb, size - 8);
-                /* ignore padding stream */
-                if (tag1 == MKTAG('p', 'a', 'd', 's'))
-                    stream_index--;
-                break;
-            }
-            st = s->streams[stream_index];
-            ast = st->priv_data;
+            assert(stream_index < s->nb_streams);
             st->codec->stream_codec_tag= handler;
 
             get_le32(pb); /* flags */
@@ -387,10 +385,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 //FIXME
                 codec_type = CODEC_TYPE_DATA; //CODEC_TYPE_SUB ?  FIXME
                 break;
-            case MKTAG('p', 'a', 'd', 's'):
-                codec_type = CODEC_TYPE_UNKNOWN;
-                stream_index--;
-                break;
             default:
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
@@ -400,7 +394,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (stream_index >= s->nb_streams || avi->dv_demux) {
+            if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 url_fskip(pb, size);
             } else {
                 st = s->streams[stream_index];
