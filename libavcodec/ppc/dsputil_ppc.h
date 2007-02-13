@@ -21,7 +21,7 @@
 #ifndef _DSPUTIL_PPC_
 #define _DSPUTIL_PPC_
 
-#ifdef POWERPC_PERFORMANCE_REPORT
+#ifdef CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void);
 /* the 604* have 2, the G3* have 4, the G4s have 6,
    and the G5 are completely different (they MUST use
@@ -145,11 +145,11 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
     }                             \
   }                               \
 } while (0)
-#else /* POWERPC_PERFORMANCE_REPORT */
+#else /* CONFIG_POWERPC_PERF */
 // those are needed to avoid empty statements.
 #define POWERPC_PERF_DECLARE(a, cond)        int altivec_placeholder __attribute__ ((unused))
 #define POWERPC_PERF_START_COUNT(a, cond)    do {} while (0)
 #define POWERPC_PERF_STOP_COUNT(a, cond)     do {} while (0)
-#endif /* POWERPC_PERFORMANCE_REPORT */
+#endif /* CONFIG_POWERPC_PERF */
 
 #endif /*  _DSPUTIL_PPC_ */

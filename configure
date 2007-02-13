@@ -1891,7 +1891,7 @@ case "$arch" in
             echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
         fi
         if enabled powerpc_perf; then
-            echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
+            echo "#define CONFIG_POWERPC_PERF 1" >> $TMPH
         fi
         ;;
     sparc64)

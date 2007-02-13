@@ -3963,10 +3963,10 @@ int main(int argc, char **argv)
     if(inter_matrix)
         av_free(inter_matrix);
 
-#ifdef POWERPC_PERFORMANCE_REPORT
+#ifdef CONFIG_POWERPC_PERF
     extern void powerpc_display_perf_report(void);
     powerpc_display_perf_report();
-#endif /* POWERPC_PERFORMANCE_REPORT */
+#endif /* CONFIG_POWERPC_PERF */
 
     if (received_sigterm) {
         fprintf(stderr,

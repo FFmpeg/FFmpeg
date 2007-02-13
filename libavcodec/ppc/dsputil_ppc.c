@@ -55,7 +55,7 @@ int mm_support(void)
     return result;
 }
 
-#ifdef POWERPC_PERFORMANCE_REPORT
+#ifdef CONFIG_POWERPC_PERF
 unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 /* list below must match enum in dsputil_ppc.h */
 static unsigned char* perfname[] = {
@@ -90,7 +90,7 @@ static unsigned char* perfname[] = {
 #include <stdio.h>
 #endif
 
-#ifdef POWERPC_PERFORMANCE_REPORT
+#ifdef CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void)
 {
   int i, j;
@@ -112,7 +112,7 @@ void powerpc_display_perf_report(void)
       }
   }
 }
-#endif /* POWERPC_PERFORMANCE_REPORT */
+#endif /* CONFIG_POWERPC_PERF */
 
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
 /*
@@ -305,7 +305,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         }
         }
 
-#ifdef POWERPC_PERFORMANCE_REPORT
+#ifdef CONFIG_POWERPC_PERF
         {
           int i, j;
           for (i = 0 ; i < powerpc_perf_total ; i++)
@@ -319,7 +319,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
               }
           }
         }
-#endif /* POWERPC_PERFORMANCE_REPORT */
+#endif /* CONFIG_POWERPC_PERF */
     }
 #endif /* HAVE_ALTIVEC */
 }
