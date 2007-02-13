@@ -1075,7 +1075,7 @@ for opt do
   --disable-parsers) disable $PARSER_LIST
   ;;
   --enable-?*|--disable-?*)
-  eval `echo "${opt#-}" | sed 's/-/action=/;s/-/ option=/;s/-/_/g'`
+  eval `echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g'`
   echo "$CMDLINE_SELECT" | grep -q "^ *$option\$" || die_unknown $opt
   $action $option
   ;;
