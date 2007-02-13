@@ -1684,6 +1684,8 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits(gb, 1);
 
+    if(v->s.pict_type == I_TYPE || v->s.pict_type == P_TYPE) v->use_ic = 0;
+
     switch(v->s.pict_type) {
     case I_TYPE:
     case BI_TYPE:
@@ -1741,6 +1743,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 v->luty[i] = clip_uint8((scale * i + shift + 32) >> 6);
                 v->lutuv[i] = clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
             }
+            v->use_ic = 1;
         }
         if(v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
             v->s.quarter_sample = 0;
