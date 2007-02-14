@@ -140,7 +140,7 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
 OBJS+= framehook.o
 
-ifeq ($(CONFIG_VIDEO4LINUX),yes)
+ifeq ($(CONFIG_V4L),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab.o
 endif
 

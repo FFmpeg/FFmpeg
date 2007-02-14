@@ -507,8 +507,8 @@ CONFIG_LIST='
     protocols
     swscaler
     vhook
-    video4linux
-    video4linux2
+    v4l
+    v4l2
     wince
     x11grab
     x264
@@ -618,8 +618,8 @@ redir_demuxer_deps="network"
 rtp_muxer_deps="network"
 rtsp_demuxer_deps="network"
 sdp_demuxer_deps="network"
-v4l2_demuxer_deps="video4linux2"
-video_grab_device_demuxer_deps_any="video4linux bktr"
+v4l2_demuxer_deps="v4l2"
+video_grab_device_demuxer_deps_any="v4l bktr"
 x11_grab_device_demuxer_deps="x11grab"
 
 ffplay_deps="sdl"
@@ -745,8 +745,8 @@ audio_beos="no"
 audio_oss="yes"
 bktr="yes"
 dv1394="yes"
-video4linux2="yes"
-video4linux="yes"
+v4l2="yes"
+v4l="yes"
 
 # libraries
 amr_if2="no"
@@ -1029,10 +1029,6 @@ for opt do
   --arch=*) arch="$optval"
   ;;
   --cpu=*) cpu="$optval"
-  ;;
-  --disable-v4l) video4linux="no"
-  ;;
-  --disable-v4l2) video4linux2="no"
   ;;
   --enable-mingwce) wince="yes"
   ;;
@@ -1643,8 +1639,8 @@ int main( void ) {
 }
 EOF
 
-enabled video4linux  && check_header linux/videodev.h  || disable video4linux
-enabled video4linux2 && check_header linux/videodev2.h || disable video4linux2
+enabled v4l  && check_header linux/videodev.h  || disable v4l
+enabled v4l2 && check_header linux/videodev2.h || disable v4l2
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 if enabled bktr; then
