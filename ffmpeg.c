@@ -181,22 +181,9 @@ static int video_global_header = 0;
 
 static int rate_emu = 0;
 
-#ifdef CONFIG_BKTR
-static const char *video_grab_format = "bktr";
-#else
-#ifdef CONFIG_VIDEO4LINUX2
-static const char *video_grab_format = "video4linux2";
-#else
-static const char *video_grab_format = "video4linux";
-#endif
-#endif
-static char *video_device = NULL;
-static char *grab_device = NULL;
 static int  video_channel = 0;
 static char *video_standard = "ntsc";
 
-static const char *audio_grab_format = "audio_device";
-static char *audio_device = NULL;
 static int audio_volume = 256;
 
 static int using_stdin = 0;
@@ -2357,16 +2344,6 @@ static void opt_audio_channels(const char *arg)
     audio_channels = atoi(arg);
 }
 
-static void opt_video_device(const char *arg)
-{
-    video_device = av_strdup(arg);
-}
-
-static void opt_grab_device(const char *arg)
-{
-    grab_device = av_strdup(arg);
-}
-
 static void opt_video_channel(const char *arg)
 {
     video_channel = strtol(arg, NULL, 0);
@@ -2375,11 +2352,6 @@ static void opt_video_channel(const char *arg)
 static void opt_video_standard(const char *arg)
 {
     video_standard = av_strdup(arg);
-}
-
-static void opt_audio_device(const char *arg)
-{
-    audio_device = av_strdup(arg);
 }
 
 static void opt_codec(int *pstream_copy, int *pcodec_id,
@@ -2573,7 +2545,6 @@ static void opt_input_file(const char *filename)
     ap->width = frame_width + frame_padleft + frame_padright;
     ap->height = frame_height + frame_padtop + frame_padbottom;
     ap->pix_fmt = frame_pix_fmt;
-    ap->device  = grab_device;
     ap->channel = video_channel;
     ap->standard = video_standard;
     ap->video_codec_id = video_codec_id;
@@ -2699,16 +2670,9 @@ static void opt_input_file(const char *filename)
     file_iformat = NULL;
     file_oformat = NULL;
 
-    grab_device = NULL;
     video_channel = 0;
 
     rate_emu = 0;
-}
-
-static void opt_grab(const char *arg)
-{
-    file_iformat = av_find_input_format(arg);
-    opt_input_file("");
 }
 
 static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
@@ -3177,107 +3141,6 @@ static void opt_output_file(const char *filename)
     /* reset some options */
     file_oformat = NULL;
     file_iformat = NULL;
-}
-
-/* prepare dummy protocols for grab */
-static void prepare_grab(void)
-{
-    int has_video, has_audio, i, j;
-    AVFormatContext *oc;
-    AVFormatContext *ic;
-    AVFormatParameters vp1, *vp = &vp1;
-    AVFormatParameters ap1, *ap = &ap1;
-
-    /* see if audio/video inputs are needed */
-    has_video = 0;
-    has_audio = 0;
-    memset(ap, 0, sizeof(*ap));
-    memset(vp, 0, sizeof(*vp));
-    vp->time_base.num= 1;
-    for(j=0;j<nb_output_files;j++) {
-        oc = output_files[j];
-        for(i=0;i<oc->nb_streams;i++) {
-            AVCodecContext *enc = oc->streams[i]->codec;
-            switch(enc->codec_type) {
-            case CODEC_TYPE_AUDIO:
-                if (enc->sample_rate > ap->sample_rate)
-                    ap->sample_rate = enc->sample_rate;
-                if (enc->channels > ap->channels)
-                    ap->channels = enc->channels;
-                has_audio = 1;
-                break;
-            case CODEC_TYPE_VIDEO:
-                if (enc->width > vp->width)
-                    vp->width = enc->width;
-                if (enc->height > vp->height)
-                    vp->height = enc->height;
-
-                if (vp->time_base.num*(int64_t)enc->time_base.den > enc->time_base.num*(int64_t)vp->time_base.den){
-                    vp->time_base = enc->time_base;
-                    vp->width += frame_leftBand + frame_rightBand;
-                    vp->width -= (frame_padleft + frame_padright);
-                    vp->height += frame_topBand + frame_bottomBand;
-                    vp->height -= (frame_padtop + frame_padbottom);
-                }
-                has_video = 1;
-                break;
-            default:
-                av_abort();
-            }
-        }
-    }
-
-    if (has_video == 0 && has_audio == 0) {
-        fprintf(stderr, "Output file must have at least one audio or video stream\n");
-        exit(1);
-    }
-
-    if (has_video) {
-        AVInputFormat *fmt1;
-#warning FIXME: find a better interface
-        if(video_device&&!strncmp(video_device,"x11:",4)) {
-            video_grab_format="x11grab";
-        }
-        fmt1 = av_find_input_format(video_grab_format);
-        vp->device  = video_device;
-        vp->channel = video_channel;
-        vp->standard = video_standard;
-        vp->pix_fmt = frame_pix_fmt;
-        if (av_open_input_file(&ic, "", fmt1, 0, vp) < 0) {
-            fprintf(stderr, "Could not find video grab device\n");
-            exit(1);
-        }
-        /* If not enough info to get the stream parameters, we decode the
-           first frames to get it. */
-        if ((ic->ctx_flags & AVFMTCTX_NOHEADER) && av_find_stream_info(ic) < 0) {
-            fprintf(stderr, "Could not find video grab parameters\n");
-            exit(1);
-        }
-        /* by now video grab has one stream */
-        ic->streams[0]->r_frame_rate.num = vp->time_base.den;
-        ic->streams[0]->r_frame_rate.den = vp->time_base.num;
-        input_files[nb_input_files] = ic;
-
-        if (verbose >= 0)
-            dump_format(ic, nb_input_files, "", 0);
-
-        nb_input_files++;
-    }
-    if (has_audio && audio_grab_format) {
-        AVInputFormat *fmt1;
-        fmt1 = av_find_input_format(audio_grab_format);
-        ap->device = audio_device;
-        if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
-            fprintf(stderr, "Could not find audio grab device\n");
-            exit(1);
-        }
-        input_files[nb_input_files] = ic;
-
-        if (verbose >= 0)
-            dump_format(ic, nb_input_files, "", 0);
-
-        nb_input_files++;
-    }
 }
 
 /* same option as mencoder */
@@ -3789,14 +3652,9 @@ const OptionDef options[] = {
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
 
     /* grab options */
-    { "vd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
     { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
-    { "ad", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_GRAB, {(void*)opt_audio_device}, "set audio device", "device" },
-
-    /* G.2 grab options */
-    { "grab", HAS_ARG | OPT_EXPERT | OPT_GRAB, {(void*)opt_grab}, "request grabbing using", "format" },
-    { "gd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_grab_device}, "set grab device", "device" },
+    { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },
 
     /* muxer options */
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
@@ -3928,8 +3786,8 @@ int main(int argc, char **argv)
     }
 
     if (nb_input_files == 0) {
-        input_sync = 1;
-        prepare_grab();
+        fprintf(stderr, "Must supply at least one input file\n");
+        exit(1);
     }
 
     ti = getutime();

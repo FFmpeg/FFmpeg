@@ -243,7 +243,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int frame_rate;
     int frame_rate_base;
     int format = -1;
-    const char *video_device;
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
         return -1;
@@ -252,10 +251,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     height = ap->height;
     frame_rate = ap->time_base.den;
     frame_rate_base = ap->time_base.num;
-
-    video_device = ap->device;
-    if (!video_device)
-        video_device = "/dev/bktr0";
 
     st = av_new_stream(s1, 0);
     if (!st)
@@ -285,7 +280,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             format = NTSC;
     }
 
-    if (bktr_init(video_device, width, height, format,
+    if (bktr_init(s1->filename, width, height, format,
             &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0)
         return AVERROR(EIO);
 

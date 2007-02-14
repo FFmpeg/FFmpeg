@@ -68,7 +68,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_tuner tuner;
     struct video_audio audio;
     struct video_picture pict;
-    const char *video_device;
     int j;
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
@@ -100,12 +99,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->frame_rate      = frame_rate;
     s->frame_rate_base = frame_rate_base;
 
-    video_device = ap->device;
-    if (!video_device)
-        video_device = "/dev/video";
-    video_fd = open(video_device, O_RDWR);
+    video_fd = open(s1->filename, O_RDWR);
     if (video_fd < 0) {
-        perror(video_device);
+        perror(s1->filename);
         goto fail;
     }
 

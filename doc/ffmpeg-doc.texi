@@ -26,11 +26,11 @@ video on the fly with a high quality polyphase filter.
 @c man begin EXAMPLES
 @section Video and Audio grabbing
 
-FFmpeg can use a video4linux compatible video source and any Open Sound
-System audio source:
+FFmpeg can grab video and audio from devices given that you specify the input
+format and device.
 
 @example
-ffmpeg /tmp/out.mpg
+ffmpeg -f audio_device -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
 @end example
 
 Note that you must activate the right video source and channel before
@@ -44,14 +44,14 @@ standard mixer.
 FFmpeg can grab the X11 display.
 
 @example
-ffmpeg -f x11grab -vd x11:0.0 /tmp/out.mpg
+ffmpeg -f x11grab -i :0.0 /tmp/out.mpg
 @end example
 
 0.0 is display.screen number of your X11 server, same as
 the DISPLAY environment variable.
 
 @example
-ffmpeg -f x11grab -vd x11:0.0+10,20 /tmp/out.mpg
+ffmpeg -f x11grab -i :0.0+10,20 /tmp/out.mpg
 @end example
 
 0.0 is display.screen number of your X11 server, same as the DISPLAY environment
@@ -154,8 +154,6 @@ ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{
 @c man end
 @end example
 @c man begin DESCRIPTION
-If no input file is given, audio/video grabbing is done.
-
 As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
@@ -609,20 +607,12 @@ Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @section Audio/Video grab options
 
 @table @option
-@item -vd device
-sEt video grab device (e.g. @file{/dev/video0}).
 @item -vc channel
 Set video grab channel (DV1394 only).
 @item -tvstd standard
 Set television standard (NTSC, PAL (SECAM)).
-@item -dv1394
-Set DV1394 grab.
-@item -ad device
-Set audio device (e.g. @file{/dev/dsp}).
-@item -grab format
-Request grabbing using.
-@item -gd device
-Set grab device.
+@item -isync
+Synchronize read on input.
 @end table
 
 @section Advanced options

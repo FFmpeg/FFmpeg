@@ -114,16 +114,16 @@ static struct fmt_map fmt_conversion_table[] = {
     },
 };
 
-static int device_open(AVFormatContext *ctx, const char *devname, uint32_t *capabilities)
+static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
 {
     struct v4l2_capability cap;
     int fd;
     int res;
 
-    fd = open(devname, O_RDWR /*| O_NONBLOCK*/, 0);
+    fd = open(ctx->filename, O_RDWR /*| O_NONBLOCK*/, 0);
     if (fd < 0) {
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
-                 devname, strerror(errno));
+                 ctx->filename, strerror(errno));
 
         return -1;
     }
@@ -429,7 +429,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width, height;
     int res, frame_rate, frame_rate_base;
     uint32_t desired_format, capabilities;
-    const char *video_device;
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "Missing/Wrong parameters\n");
@@ -459,12 +458,8 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->frame_rate      = frame_rate;
     s->frame_rate_base = frame_rate_base;
 
-    video_device = ap->device;
-    if (!video_device) {
-        video_device = "/dev/video";
-    }
     capabilities = 0;
-    s->fd = device_open(s1, video_device, &capabilities);
+    s->fd = device_open(s1, &capabilities);
     if (s->fd < 0) {
         av_free(st);
 

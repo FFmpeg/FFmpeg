@@ -97,25 +97,14 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int use_shm;
     char *param, *offset;
 
-    if (!ap->device) {
-        av_log(s1, AV_LOG_ERROR, "AVParameters don't specify any device. Use -vd.\n");
-        return AVERROR_IO;
-    }
-
-    param = strchr(ap->device, ':');
-    if (!param) {
-        av_free(st);
-        return AVERROR_IO;
-    }
-
-    param = av_strdup(param);
+    param = av_strdup(s1->filename);
     offset = strchr(param, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
         *offset= 0;
     }
 
-    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", ap->device, param, x_off, y_off, ap->width, ap->height);
+    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", s1->filename, param, x_off, y_off, ap->width, ap->height);
 
     dpy = XOpenDisplay(param);
     if(!dpy) {

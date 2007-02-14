@@ -83,7 +83,6 @@ static int dv1394_start(struct dv1394_data *dv)
 static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap)
 {
     struct dv1394_data *dv = context->priv_data;
-    const char *video_device;
 
     dv->dv_demux = dv_init_demux(context);
     if (!dv->dv_demux)
@@ -100,10 +99,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         dv->channel = DV1394_DEFAULT_CHANNEL;
 
     /* Open and initialize DV1394 device */
-    video_device = ap->device;
-    if (!video_device)
-        video_device = "/dev/dv1394/0";
-    dv->fd = open(video_device, O_RDONLY);
+    dv->fd = open(context->filename, O_RDONLY);
     if (dv->fd < 0) {
         perror("Failed to open DV interface");
         goto failed;
