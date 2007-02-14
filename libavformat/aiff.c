@@ -180,10 +180,10 @@ static int aiff_write_header(AVFormatContext *s)
     put_tag(pb, aifc ? "AIFC" : "AIFF");
 
     if (aifc) {
-    /* Version chunk */
-    put_tag(pb, "FVER");
-    put_be32(pb, 4);
-    put_be32(pb, 0xA2805140);
+        /* Version chunk */
+        put_tag(pb, "FVER");
+        put_be32(pb, 4);
+        put_be32(pb, 0xA2805140);
     }
 
     /* Common chunk */
@@ -209,8 +209,8 @@ static int aiff_write_header(AVFormatContext *s)
     put_buffer(pb, (uint8_t*)&sample_rate, sizeof(sample_rate));
 
     if (aifc) {
-    put_le32(pb, enc->codec_tag);
-    put_be16(pb, 0);
+        put_le32(pb, enc->codec_tag);
+        put_be16(pb, 0);
     }
 
     /* Sound data chunk */
