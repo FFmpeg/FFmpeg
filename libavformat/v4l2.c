@@ -59,6 +59,11 @@ struct video_data {
     unsigned int *buf_len;
 };
 
+struct buff_data {
+    int index;
+    int fd;
+};
+
 struct fmt_map {
     enum PixelFormat ff_fmt;
     int32_t v4l2_fmt;
@@ -293,10 +298,32 @@ static int read_init(AVFormatContext *ctx)
     return -1;
 }
 
-static int mmap_read_frame(AVFormatContext *ctx, void *frame, int64_t *ts)
+static void mmap_release_buffer(AVPacket *pkt)
+{
+    struct v4l2_buffer buf;
+    int res, fd;
+    struct buff_data *buf_descriptor = pkt->priv;
+
+    memset(&buf, 0, sizeof(struct v4l2_buffer));
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_MMAP;
+    buf.index = buf_descriptor->index;
+    fd = buf_descriptor->fd;
+    av_free(buf_descriptor);
+
+    res = ioctl (fd, VIDIOC_QBUF, &buf);
+    if (res < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+    }
+    pkt->data = NULL;
+    pkt->size = 0;
+}
+
+static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 {
     struct video_data *s = ctx->priv_data;
     struct v4l2_buffer buf;
+    struct buff_data *buf_descriptor;
     int res;
 
     memset(&buf, 0, sizeof(struct v4l2_buffer));
@@ -319,20 +346,28 @@ static int mmap_read_frame(AVFormatContext *ctx, void *frame, int64_t *ts)
     }
 
     /* Image is at s->buff_start[buf.index] */
-    memcpy(frame, s->buf_start[buf.index], buf.bytesused);
-    *ts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
-
-    res = ioctl (s->fd, VIDIOC_QBUF, &buf);
-    if (res < 0) {
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+    pkt->data= s->buf_start[buf.index];
+    pkt->size = buf.bytesused;
+    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
+    pkt->destruct = mmap_release_buffer;
+    buf_descriptor = av_malloc(sizeof(struct buff_data));
+    if (buf_descriptor == NULL) {
+        /* Something went wrong... Since av_malloc() failed, we cannot even
+         * allocate a buffer for memcopying into it
+         */
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
+        res = ioctl (s->fd, VIDIOC_QBUF, &buf);
 
         return -1;
     }
+    buf_descriptor->fd = s->fd;
+    buf_descriptor->index = buf.index;
+    pkt->priv = buf_descriptor;
 
     return s->buf_len[buf.index];
 }
 
-static int read_frame(AVFormatContext *ctx, void *frame, int64_t *ts)
+static int read_frame(AVFormatContext *ctx, AVPacket *pkt)
 {
     return -1;
 }
@@ -500,13 +535,14 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
     struct video_data *s = s1->priv_data;
     int res;
 
-    if (av_new_packet(pkt, s->frame_size) < 0)
-        return AVERROR_IO;
-
     if (s->io_method == io_mmap) {
-        res = mmap_read_frame(s1, pkt->data, &pkt->pts);
+        av_init_packet(pkt);
+        res = mmap_read_frame(s1, pkt);
     } else if (s->io_method == io_read) {
-        res = read_frame(s1, pkt->data, &pkt->pts);
+        if (av_new_packet(pkt, s->frame_size) < 0)
+            return AVERROR_IO;
+
+        res = read_frame(s1, pkt);
     } else {
         return AVERROR_IO;
     }
