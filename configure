@@ -1044,35 +1044,22 @@ for opt do
   ;;
   --disable-strip) dostrip="no"
   ;;
-  --enable-encoder=*) enable ${optval}_encoder
-  ;;
-  --enable-decoder=*) enable ${optval}_decoder
-  ;;
-  --disable-encoder=*) disable ${optval}_encoder
-  ;;
-  --disable-decoder=*) disable ${optval}_decoder
-  ;;
   --disable-encoders) disable $ENCODER_LIST
   ;;
   --disable-decoders) disable $DECODER_LIST
   ;;
-  --enable-muxer=*) enable ${optval}_muxer
-  ;;
-  --disable-muxer=*) disable ${optval}_muxer
-  ;;
   --disable-muxers) disable $MUXER_LIST
-  ;;
-  --enable-demuxer=*) enable ${optval}_demuxer
-  ;;
-  --disable-demuxer=*) disable ${optval}_demuxer
   ;;
   --disable-demuxers) disable $DEMUXER_LIST
   ;;
-  --enable-parser=*) enable ${optval}_parser
-  ;;
-  --disable-parser=*) disable ${optval}_parser
-  ;;
   --disable-parsers) disable $PARSER_LIST
+  ;;
+  --enable-*=*|--disable-*=*)
+  eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
+  case "$thing" in
+      encoder|decoder|muxer|demuxer|parser) $action ${optval}_${thing} ;;
+      *) die_unknown "$opt" ;;
+  esac
   ;;
   --enable-?*|--disable-?*)
   eval `echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g'`
