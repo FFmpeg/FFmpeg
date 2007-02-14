@@ -91,7 +91,7 @@ static void get_meta(ByteIOContext *pb, char * str, int strsize, int size)
     if (size & 1)
         size++;
     size -= res;
-    if (size);
+    if (size)
         url_fskip(pb, size);
 }
 
