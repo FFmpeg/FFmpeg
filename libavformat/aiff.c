@@ -163,26 +163,32 @@ static int aiff_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     AVExtFloat sample_rate;
+    int aifc = 0;
 
     /* First verify if format is ok */
     if (!enc->codec_tag) {
         return -1;
     }
 
+    if (enc->codec_tag != MKTAG('N','O','N','E'))
+        aifc = 1;
+
     /* FORM AIFF header */
     put_tag(pb, "FORM");
     aiff->form = url_ftell(pb);
     put_be32(pb, 0);                    /* file length */
-    put_tag(pb, "AIFC");
+    put_tag(pb, aifc ? "AIFC" : "AIFF");
 
+    if (aifc) {
     /* Version chunk */
     put_tag(pb, "FVER");
     put_be32(pb, 4);
     put_be32(pb, 0xA2805140);
+    }
 
     /* Common chunk */
     put_tag(pb, "COMM");
-    put_be32(pb, 24); /* size */
+    put_be32(pb, aifc ? 24 : 18); /* size */
     put_be16(pb, enc->channels);        /* Number of channels */
 
     aiff->frames = url_ftell(pb);
@@ -202,8 +208,10 @@ static int aiff_write_header(AVFormatContext *s)
     sample_rate = av_dbl2ext((double)enc->sample_rate);
     put_buffer(pb, (uint8_t*)&sample_rate, sizeof(sample_rate));
 
+    if (aifc) {
     put_le32(pb, enc->codec_tag);
     put_be16(pb, 0);
+    }
 
     /* Sound data chunk */
     put_tag(pb, "SSND");
