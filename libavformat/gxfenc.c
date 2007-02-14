@@ -572,6 +572,8 @@ static int gxf_write_umf_packet(ByteIOContext *pb, GXFContext *ctx)
     return updatePacketSize(pb, pos);
 }
 
+#define GXF_NODELAY -5000
+
 static int gxf_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
@@ -623,7 +625,8 @@ static int gxf_write_header(AVFormatContext *s)
                 gxf->flags |= 0x00000040;
             }
             gxf->sample_rate = sc->sample_rate;
-            av_set_pts_info(st, 64, 1, sc->sample_rate);
+            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
+            sc->dts_delay = GXF_NODELAY;
             if (gxf_find_lines_index(sc) < 0)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;
@@ -707,7 +710,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
 static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt, int size)
 {
     GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
-    int64_t dts = av_rescale(pkt->dts, ctx->sample_rate, sc->sample_rate);
+    int64_t dts = av_rescale(pkt->dts, ctx->sample_rate, sc->codec->time_base.den);
 
     put_byte(pb, sc->media_type);
     put_byte(pb, sc->index);
@@ -799,13 +802,9 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
                     break; /* add pkt right now into list */
                 }
             }
-        } else if (pkt) {
-            /* adjust dts if negative */
-            if (pkt->dts < 0 && !sc->dts_delay) {
-                /* XXX: rescale if codec time base is different from stream time base */
-                sc->dts_delay = av_rescale_q(pkt->dts, st->codec->time_base, st->time_base);
-                pkt->dts = sc->dts_delay; /* set to 0 */
-            }
+        } else if (pkt && pkt->stream_index == i) {
+            if (sc->dts_delay == GXF_NODELAY) /* adjust dts if needed */
+                sc->dts_delay = pkt->dts;
             pkt->dts -= sc->dts_delay;
         }
     }
