@@ -409,29 +409,25 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    check_cpp "$@" <<EOF
+    var=`echo $header | sed 's/[^A-Za-z0-9_]/_/g'`
+    disable $var
+    check_cpp "$@" <<EOF && enable $var
 #include <$header>
 int x;
 EOF
-    err=$?
-    var=`echo $header | sed 's/[^A-Za-z0-9_]/_/g'`
-    test "$err" = 0 && enable $var || disable $var
-    return $err
 }
 
 check_func(){
     log check_func "$@"
     func=$1
     shift
-    check_ld "$@" <<EOF
+    disable $func
+    check_ld "$@" <<EOF && enable $func
 extern int $func();
 int main(){
     $func();
 }
 EOF
-    err=$?
-    test "$err" = 0 && enable $func || disable $func
-    return $err
 }
 
 check_lib(){
