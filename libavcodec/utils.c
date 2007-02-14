@@ -860,6 +860,13 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return 0;
 }
 
+/**
+ * encode a frame.
+ * @param buf buffer for the bitstream of encoded frame
+ * @param buf_size the size of the buffer in bytes
+ * @param pict the input picture to encode, in avctx.pix_fmt
+ * @return -1 if error
+ */
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict)
 {
@@ -938,7 +945,7 @@ int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
     if(*frame_size_ptr < FF_MIN_BUFFER_SIZE ||
        *frame_size_ptr < avctx->channels * avctx->frame_size * sizeof(int16_t) ||
        *frame_size_ptr < buf_size){
-        av_log(avctx, AV_LOG_ERROR, "buffer too small\n");
+        av_log(avctx, AV_LOG_ERROR, "buffer %d too small\n", *frame_size_ptr);
         return -1;
     }
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || buf_size){
