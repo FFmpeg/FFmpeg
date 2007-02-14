@@ -480,7 +480,7 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
                 src += s->picture.linesize[0];
             }
         }else{
-            uint16_t *src = s->picture.data[0];
+            uint16_t *src = (uint16_t*) s->picture.data[0];
 
             for(i = 0; i < s->height; i++){
                 for(x = 0; x < w; x++){
