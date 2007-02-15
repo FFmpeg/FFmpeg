@@ -1572,6 +1572,8 @@ fi
 
 enabled audio_beos && add_extralibs "-lmedia -lbe"
 
+enabled mingw32 && add_extralibs -lws2_32
+
 ##########################################
 # imlib check
 

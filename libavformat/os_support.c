@@ -35,8 +35,13 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
+
 #ifndef HAVE_SYS_POLL_H
+#if defined(__MINGW32__)
+#include <winsock2.h>
+#else
 #include <sys/select.h>
+#endif
 #endif
 
 /**

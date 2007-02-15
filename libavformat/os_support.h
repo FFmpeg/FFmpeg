@@ -32,7 +32,7 @@
  * - floatf() (OS/2)
  * - strcasecmp() (OS/2)
  * - closesocket()
- * - poll() (BeOS)
+ * - poll() (BeOS, MinGW)
  */
 
 #if defined(__BEOS__) || defined(__INNOTEK_LIBC__)
@@ -45,11 +45,7 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #  define usleep(t)    Sleep((t) / 1000)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
-#endif
-
-/* XXX: check for Winsock here */
-#if 0
-#define HAVE_CLOSESOCKET 1
+#  define HAVE_CLOSESOCKET 1
 #endif
 
 #ifdef __BEOS__
