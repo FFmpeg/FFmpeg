@@ -849,7 +849,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const short *samples)
 {
     if(buf_size < FF_MIN_BUFFER_SIZE && 0){
-        av_log(avctx, AV_LOG_ERROR, "buffer smaller then minimum size\n");
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || samples){
@@ -871,7 +871,7 @@ int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict)
 {
     if(buf_size < FF_MIN_BUFFER_SIZE){
-        av_log(avctx, AV_LOG_ERROR, "buffer smaller then minimum size\n");
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
     if(avcodec_check_dimensions(avctx,avctx->width,avctx->height))
@@ -939,7 +939,7 @@ int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
 
     //FIXME remove the check below _after_ ensuring that all audio check that the available space is enough
     if(*frame_size_ptr < AVCODEC_MAX_AUDIO_FRAME_SIZE){
-        av_log(avctx, AV_LOG_ERROR, "buffer smaller then AVCODEC_MAX_AUDIO_FRAME_SIZE\n");
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller than AVCODEC_MAX_AUDIO_FRAME_SIZE\n");
         return -1;
     }
     if(*frame_size_ptr < FF_MIN_BUFFER_SIZE ||
