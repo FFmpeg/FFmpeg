@@ -75,6 +75,7 @@ static inline int strcasecmp(const char* s1, const char* s2) { return stricmp(s1
 #define closesocket close
 #endif
 
+#ifdef CONFIG_FFSERVER
 #ifndef HAVE_SYS_POLL_H
 typedef unsigned long nfds_t;
 
@@ -101,5 +102,6 @@ struct pollfd {
 
 extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_SYS_POLL_H */
+#endif /* CONFIG_FFSERVER */
 
 #endif /* _OS_SUPPORT_H */

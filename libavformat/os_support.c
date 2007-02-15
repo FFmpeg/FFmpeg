@@ -103,6 +103,7 @@ done:
 }
 #endif /* !defined(HAVE_INET_ATON) && defined(CONFIG_NETWORK) */
 
+#ifdef CONFIG_FFSERVER
 #ifndef HAVE_SYS_POLL_H
 int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 {
@@ -161,7 +162,6 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 
     return rc;
 }
-
-
 #endif /* HAVE_SYS_POLL_H */
+#endif /* CONFIG_FFSERVER */
 
