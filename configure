@@ -548,6 +548,7 @@ HAVE_LIST='
     sdl
     sdl_video_size
     soundcard_h
+    sys_poll_h
     sys_soundcard_h
     threads
     w32threads
@@ -1429,6 +1430,12 @@ check_header byteswap.h
 check_func inet_aton
 check_func localtime_r
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
+
+# ffserver uses poll(),
+# if it's not found we can emulate it using select().
+if enabled ffserver; then
+    check_header sys/poll.h
+fi
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads

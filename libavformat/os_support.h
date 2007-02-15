@@ -32,6 +32,7 @@
  * - floatf() (OS/2)
  * - strcasecmp() (OS/2)
  * - closesocket()
+ * - poll() (BeOS)
  */
 
 #if defined(__BEOS__) || defined(__INNOTEK_LIBC__)
@@ -77,5 +78,32 @@ static inline int strcasecmp(const char* s1, const char* s2) { return stricmp(s1
 #if HAVE_CLOSESOCKET != 1
 #define closesocket close
 #endif
+
+#ifndef HAVE_SYS_POLL_H
+typedef unsigned long nfds_t;
+
+struct pollfd {
+    int fd;
+    short events;  /* events to look for */
+    short revents; /* events that occured */
+};
+
+/* events & revents */
+#define POLLIN     0x0001  /* any readable data available */
+#define POLLOUT    0x0002  /* file descriptor is writeable */
+#define POLLRDNORM POLLIN
+#define POLLWRNORM POLLOUT
+#define POLLRDBAND 0x0008  /* priority readable data */
+#define POLLWRBAND 0x0010  /* priority data can be written */
+#define POLLPRI    0x0020  /* high priority readable data */
+
+/* revents only */
+#define POLLERR    0x0004  /* errors pending */
+#define POLLHUP    0x0080  /* disconnected */
+#define POLLNVAL   0x1000  /* invalid file descriptor */
+
+
+extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
+#endif /* HAVE_SYS_POLL_H */
 
 #endif /* _OS_SUPPORT_H */

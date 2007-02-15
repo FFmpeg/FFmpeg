@@ -25,7 +25,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#endif
 #include <errno.h>
 #include <sys/time.h>
 #undef time //needed because HAVE_AV_CONFIG_H is defined on top
