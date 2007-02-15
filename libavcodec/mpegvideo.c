@@ -182,7 +182,7 @@ static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[
         }
     }
     if(shift){
-        av_log(NULL, AV_LOG_INFO, "Warning, QMAT_SHIFT is larger then %d, overflows possible\n", QMAT_SHIFT - shift);
+        av_log(NULL, AV_LOG_INFO, "Warning, QMAT_SHIFT is larger than %d, overflows possible\n", QMAT_SHIFT - shift);
     }
 }
 
