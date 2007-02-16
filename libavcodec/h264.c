@@ -5328,88 +5328,91 @@ decode_intra_mb:
         int list, mx, my, i;
          //FIXME we should set ref_idx_l? to 0 if we use that later ...
         if(IS_16X16(mb_type)){
-            for(list=0; list<2; list++){
-                if(h->ref_count[list]>0){
+            for(list=0; list<h->list_count; list++){
+                    unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
-                        unsigned int val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                        val= get_te0_golomb(&s->gb, h->ref_count[list]);
                         if(val >= h->ref_count[list]){
                             av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                             return -1;
                         }
-                        fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
                     }else
-                        fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (LIST_NOT_USED&0xFF), 1);
-                }
+                        val= LIST_NOT_USED&0xFF;
+                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
             }
-            for(list=0; list<2; list++){
+            for(list=0; list<h->list_count; list++){
+                unsigned int val;
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&s->gb);
                     my += get_se_golomb(&s->gb);
                     tprintf("final mv:%d %d\n", mx, my);
 
-                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
+                    val= pack16to32(mx,my);
                 }else
-                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, 0, 4);
+                    val=0;
+                fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, val, 4);
             }
         }
         else if(IS_16X8(mb_type)){
-            for(list=0; list<2; list++){
-                if(h->ref_count[list]>0){
+            for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
+                        unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
-                            unsigned int val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                            val= get_te0_golomb(&s->gb, h->ref_count[list]);
                             if(val >= h->ref_count[list]){
                                 av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
                             }
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
                         }else
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (LIST_NOT_USED&0xFF), 1);
+                            val= LIST_NOT_USED&0xFF;
+                        fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
                     }
-                }
             }
-            for(list=0; list<2; list++){
+            for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
+                    unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_16x8_motion(h, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         mx += get_se_golomb(&s->gb);
                         my += get_se_golomb(&s->gb);
                         tprintf("final mv:%d %d\n", mx, my);
 
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
+                        val= pack16to32(mx,my);
                     }else
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
+                        val=0;
+                    fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 4);
                 }
             }
         }else{
             assert(IS_8X16(mb_type));
-            for(list=0; list<2; list++){
-                if(h->ref_count[list]>0){
+            for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
+                        unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            unsigned int val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                            val= get_te0_golomb(&s->gb, h->ref_count[list]);
                             if(val >= h->ref_count[list]){
                                 av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
                             }
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
                         }else
-                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (LIST_NOT_USED&0xFF), 1);
+                            val= LIST_NOT_USED&0xFF;
+                        fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
                     }
-                }
             }
-            for(list=0; list<2; list++){
+            for(list=0; list<h->list_count; list++){
                 for(i=0; i<2; i++){
+                    unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_8x16_motion(h, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         mx += get_se_golomb(&s->gb);
                         my += get_se_golomb(&s->gb);
                         tprintf("final mv:%d %d\n", mx, my);
 
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
+                        val= pack16to32(mx,my);
                     }else
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
+                        val=0;
+                    fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 4);
                 }
             }
         }
@@ -6475,16 +6478,14 @@ decode_intra_mb:
     } else {
         int list, mx, my, i, mpx, mpy;
         if(IS_16X16(mb_type)){
-            for(list=0; list<2; list++){
+            for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                    if(h->ref_count[list] > 0 ){
                         const int ref = h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 0 ) : 0;
                         fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
-                    }
                 }else
-                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (uint8_t)LIST_NOT_USED, 1);
+                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (uint8_t)LIST_NOT_USED, 1); //FIXME factorize and the other fill_rect below too
             }
-            for(list=0; list<2; list++){
+            for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mpx, &mpy);
 
