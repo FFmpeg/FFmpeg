@@ -1311,6 +1311,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc21_ ## MMX(uint8_t *dst, uint8_t *
     uint64_t temp[SIZE*(SIZE<8?12:24)/4 + SIZE*SIZE/8];\
     uint8_t * const halfHV= (uint8_t*)temp;\
     int16_t * const tmp= ((int16_t*)temp) + SIZE*SIZE/2;\
+    assert((int)temp & 7 == 0);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## h264_qpel ## SIZE ## _h_lowpass_l2_ ## MMX(dst, src, halfHV, stride, SIZE);\
 }\
@@ -1319,6 +1320,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc23_ ## MMX(uint8_t *dst, uint8_t *
     uint64_t temp[SIZE*(SIZE<8?12:24)/4 + SIZE*SIZE/8];\
     uint8_t * const halfHV= (uint8_t*)temp;\
     int16_t * const tmp= ((int16_t*)temp) + SIZE*SIZE/2;\
+    assert((int)temp & 7 == 0);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## h264_qpel ## SIZE ## _h_lowpass_l2_ ## MMX(dst, src+stride, halfHV, stride, SIZE);\
 }\
@@ -1327,6 +1329,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## MMX(uint8_t *dst, uint8_t *
     uint64_t temp[SIZE*(SIZE<8?12:24)/4 + SIZE*SIZE/8];\
     int16_t * const halfV= ((int16_t*)temp) + SIZE*SIZE/2;\
     uint8_t * const halfHV= ((uint8_t*)temp);\
+    assert((int)temp & 7 == 0);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, halfV, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_shift5_ ## MMX(dst, halfV+2, halfHV, stride, SIZE, SIZE);\
 }\
@@ -1335,6 +1338,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## MMX(uint8_t *dst, uint8_t *
     uint64_t temp[SIZE*(SIZE<8?12:24)/4 + SIZE*SIZE/8];\
     int16_t * const halfV= ((int16_t*)temp) + SIZE*SIZE/2;\
     uint8_t * const halfHV= ((uint8_t*)temp);\
+    assert((int)temp & 7 == 0);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, halfV, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_shift5_ ## MMX(dst, halfV+3, halfHV, stride, SIZE, SIZE);\
 }\
