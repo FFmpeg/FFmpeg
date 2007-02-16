@@ -7922,7 +7922,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     }
     pps->ref_count[0]= get_ue_golomb(&s->gb) + 1;
     pps->ref_count[1]= get_ue_golomb(&s->gb) + 1;
-    if(pps->ref_count[0] > 32 || pps->ref_count[1] > 32){
+    if(pps->ref_count[0]-1 > 32-1 || pps->ref_count[1]-1 > 32-1){
         av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow (pps)\n");
         pps->ref_count[0]= pps->ref_count[1]= 1;
         return -1;
