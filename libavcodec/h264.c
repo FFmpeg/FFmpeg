@@ -5299,21 +5299,19 @@ decode_intra_mb:
                         tprintf("final mv:%d %d\n", mx, my);
 
                         if(IS_SUB_8X8(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]=
+                            mv_cache[ 1 ][0]=
                             mv_cache[ 8 ][0]= mv_cache[ 9 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]=
+                            mv_cache[ 1 ][1]=
                             mv_cache[ 8 ][1]= mv_cache[ 9 ][1]= my;
                         }else if(IS_SUB_8X4(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]= my;
+                            mv_cache[ 1 ][0]= mx;
+                            mv_cache[ 1 ][1]= my;
                         }else if(IS_SUB_4X8(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 8 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 8 ][1]= my;
-                        }else{
-                            assert(IS_SUB_4X4(sub_mb_type));
-                            mv_cache[ 0 ][0]= mx;
-                            mv_cache[ 0 ][1]= my;
+                            mv_cache[ 8 ][0]= mx;
+                            mv_cache[ 8 ][1]= my;
                         }
+                        mv_cache[ 0 ][0]= mx;
+                        mv_cache[ 0 ][1]= my;
                     }
                 }else{
                     uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
@@ -6434,35 +6432,33 @@ decode_intra_mb:
                         tprintf("final mv:%d %d\n", mx, my);
 
                         if(IS_SUB_8X8(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]=
+                            mv_cache[ 1 ][0]=
                             mv_cache[ 8 ][0]= mv_cache[ 9 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]=
+                            mv_cache[ 1 ][1]=
                             mv_cache[ 8 ][1]= mv_cache[ 9 ][1]= my;
 
-                            mvd_cache[ 0 ][0]= mvd_cache[ 1 ][0]=
+                            mvd_cache[ 1 ][0]=
                             mvd_cache[ 8 ][0]= mvd_cache[ 9 ][0]= mx - mpx;
-                            mvd_cache[ 0 ][1]= mvd_cache[ 1 ][1]=
+                            mvd_cache[ 1 ][1]=
                             mvd_cache[ 8 ][1]= mvd_cache[ 9 ][1]= my - mpy;
                         }else if(IS_SUB_8X4(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]= my;
+                            mv_cache[ 1 ][0]= mx;
+                            mv_cache[ 1 ][1]= my;
 
-                            mvd_cache[ 0 ][0]= mvd_cache[ 1 ][0]= mx- mpx;
-                            mvd_cache[ 0 ][1]= mvd_cache[ 1 ][1]= my - mpy;
+                            mvd_cache[ 1 ][0]= mx - mpx;
+                            mvd_cache[ 1 ][1]= my - mpy;
                         }else if(IS_SUB_4X8(sub_mb_type)){
-                            mv_cache[ 0 ][0]= mv_cache[ 8 ][0]= mx;
-                            mv_cache[ 0 ][1]= mv_cache[ 8 ][1]= my;
+                            mv_cache[ 8 ][0]= mx;
+                            mv_cache[ 8 ][1]= my;
 
-                            mvd_cache[ 0 ][0]= mvd_cache[ 8 ][0]= mx - mpx;
-                            mvd_cache[ 0 ][1]= mvd_cache[ 8 ][1]= my - mpy;
-                        }else{
-                            assert(IS_SUB_4X4(sub_mb_type));
-                            mv_cache[ 0 ][0]= mx;
-                            mv_cache[ 0 ][1]= my;
-
-                            mvd_cache[ 0 ][0]= mx - mpx;
-                            mvd_cache[ 0 ][1]= my - mpy;
+                            mvd_cache[ 8 ][0]= mx - mpx;
+                            mvd_cache[ 8 ][1]= my - mpy;
                         }
+                        mv_cache[ 0 ][0]= mx;
+                        mv_cache[ 0 ][1]= my;
+
+                        mvd_cache[ 0 ][0]= mx - mpx;
+                        mvd_cache[ 0 ][1]= my - mpy;
                     }
                 }else{
                     uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
