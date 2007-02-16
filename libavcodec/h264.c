@@ -326,6 +326,7 @@ typedef struct H264Context{
      * num_ref_idx_l0/1_active_minus1 + 1
      */
     unsigned int ref_count[2];   ///< counts frames or fields, depending on current mb mode
+    unsigned int list_count;
     Picture *short_ref[32];
     Picture *long_ref[32];
     Picture default_ref_list[2][32];
@@ -4706,13 +4707,18 @@ static int decode_slice_header(H264Context *h){
             if(h->slice_type==B_TYPE)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
 
-            if(h->ref_count[0] > 32 || h->ref_count[1] > 32){
+            if(h->ref_count[0]-1 > 32-1 || h->ref_count[1]-1 > 32-1){
                 av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
                 h->ref_count[0]= h->ref_count[1]= 1;
                 return -1;
             }
         }
-    }
+        if(h->slice_type == B_TYPE)
+            h->list_count= 2;
+        else
+            h->list_count= 1;
+    }else
+        h->list_count= 0;
 
     if(!default_ref_list_done){
         fill_default_ref_list(h);
