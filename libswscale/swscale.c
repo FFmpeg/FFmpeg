@@ -22,7 +22,7 @@
  */
 
 /*
-  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
+  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09, PAL8
   supported output formats: YV12, I420/IYUV, YUY2, UYVY, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   {BGR,RGB}{1,4,8,15,16} support dithering
   
@@ -107,7 +107,8 @@ untested special converters
 			|| (x)==PIX_FMT_BGR32|| (x)==PIX_FMT_RGB24|| (x)==PIX_FMT_RGB565|| (x)==PIX_FMT_RGB555\
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P\
 			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
-			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P)
+			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
+			|| (x)==PIX_FMT_PAL8 || (x)==PIX_FMT_BGR8 || (x)==PIX_FMT_RGB8)
 #define isSupportedOut(x) ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
 			|| isRGB(x) || isBGR(x)\
