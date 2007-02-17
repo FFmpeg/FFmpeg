@@ -566,6 +566,7 @@ TARGET_LIST='
 CMDLINE_SELECT="
     $CONFIG_LIST
     $TARGET_LIST
+    amr_if2
     debug
     extra_warnings
     mingw32
