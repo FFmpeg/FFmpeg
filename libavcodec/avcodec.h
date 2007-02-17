@@ -2404,16 +2404,17 @@ int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consum
 void av_resample_compensate(struct AVResampleContext *c, int sample_delta, int compensation_distance);
 void av_resample_close(struct AVResampleContext *c);
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /* YUV420 format is assumed ! */
 
-struct ImgReSampleContext;
+struct ImgReSampleContext attribute_deprecated;
 
-typedef struct ImgReSampleContext ImgReSampleContext;
+typedef struct ImgReSampleContext ImgReSampleContext attribute_deprecated;
 
-ImgReSampleContext *img_resample_init(int output_width, int output_height,
+attribute_deprecated ImgReSampleContext *img_resample_init(int output_width, int output_height,
                                       int input_width, int input_height);
 
-ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
+attribute_deprecated ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int iwidth, int iheight,
                                       int topBand, int bottomBand,
                                       int leftBand, int rightBand,
@@ -2421,10 +2422,12 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int padleft, int padright);
 
 
-void img_resample(ImgReSampleContext *s,
+attribute_deprecated void img_resample(ImgReSampleContext *s,
                   AVPicture *output, const AVPicture *input);
 
-void img_resample_close(ImgReSampleContext *s);
+attribute_deprecated void img_resample_close(ImgReSampleContext *s);
+
+#endif
 
 /**
  * Allocate memory for a picture.  Call avpicture_free to free it.
@@ -2468,10 +2471,12 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
 int img_get_alpha_info(const AVPicture *src,
                        int pix_fmt, int width, int height);
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /* convert among pixel formats */
-int img_convert(AVPicture *dst, int dst_pix_fmt,
+attribute_deprecated int img_convert(AVPicture *dst, int dst_pix_fmt,
                 const AVPicture *src, int pix_fmt,
                 int width, int height);
+#endif
 
 /* deinterlace a picture */
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
