@@ -1,4 +1,4 @@
-#!/bin/sh
+,#!/bin/sh
 #
 # FFmpeg configure script
 #
@@ -107,6 +107,7 @@ show_help(){
   echo "  --source-path=PATH       path to source code [$source_path]"
   echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
   echo "  --cross-compile          assume a cross-compiler is used"
+  echo "  --target-os=OS           compiler targets OS [$targetos]"
   echo "  --cc=CC                  use C compiler CC [$cc]"
   echo "  --make=MAKE              use specified make [$make]"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
