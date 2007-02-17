@@ -178,6 +178,7 @@ static void inline idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
             t = mpc_rnd(c);
             *dst++ = ((t>>24)& 0xFF) + ((t>>16) & 0xFF) + ((t>>8) & 0xFF) + (t & 0xFF) - 510;
         }
+        break;
     case 1:
         i1 = get_bits1(gb);
         for(i = 0; i < SAMPLES_PER_BAND/3; i++){
