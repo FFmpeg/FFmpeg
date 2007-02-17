@@ -227,7 +227,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
 
     /* see if there are any pending packets */
     chunk_type = load_ipmovie_packet(s, pb, pkt);
-    if ((chunk_type == CHUNK_VIDEO) && (chunk_type != CHUNK_DONE))
+    if (chunk_type != CHUNK_DONE)
         return chunk_type;
 
     /* read the next chunk, wherever the file happens to be pointing */
@@ -601,8 +601,10 @@ static int ipmovie_read_packet(AVFormatContext *s,
         ret = AVERROR_IO;
     else if (ret == CHUNK_NOMEM)
         ret = AVERROR_NOMEM;
-    else
+    else if (ret == CHUNK_VIDEO)
         ret = 0;
+    else
+        ret = -1;
 
     return ret;
 }
