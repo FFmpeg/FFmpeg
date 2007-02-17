@@ -1019,9 +1019,30 @@ case $targetos in
     FFSERVERLDFLAGS=-Wl,-bind_at_load
     ;;
   MINGW32*)
-    # Note: the rest of the mingw32 config is done afterwards as mingw32
-    # can be forced on the command line for Linux cross compilation.
     mingw32="yes"
+    if enabled_all shared static; then
+        cat <<EOF
+You can only build one library type at once on MinGW.
+Specify --disable-static --enable-shared to only build
+the shared libraries. To build only the static libraries
+you do not need to pass additional options.
+EOF
+        exit 1
+    fi
+    dv1394="no"
+    ffserver="no"
+    network="no"
+    if enabled wince; then
+        protocols="no"
+    fi
+    SLIBPREF=""
+    SLIBSUF=".dll"
+    EXESUF=".exe"
+    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
+    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
+    SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(shlibdir)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
+    SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc"
     ;;
   CYGWIN*)
     targetos=CYGWIN
@@ -1078,33 +1099,6 @@ if ! disabled logging ; then
     set >>$logfile
 else
     logfile=/dev/null
-fi
-
-if enabled_any mingw32 wince; then
-    if enabled_all shared static; then
-        cat <<EOF
-You can only build one library type at once on MinGW.
-Specify --disable-static --enable-shared to only build
-the shared libraries. To build only the static libraries
-you do not need to pass additional options.
-EOF
-        exit 1
-    fi
-    dv1394="no"
-    dc1394="no"
-    ffserver="no"
-    network="no"
-    if enabled wince; then
-        protocols="no"
-    fi
-    SLIBPREF=""
-    SLIBSUF=".dll"
-    EXESUF=".exe"
-    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
-    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
-    SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(shlibdir)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
-    SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc"
 fi
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
