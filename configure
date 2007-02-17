@@ -733,13 +733,14 @@ case "$arch" in
 esac
 
 # OS
+targetos=`uname -s`
 beos_netserver="no"
 mingw32="no"
 os2="no"
 wince="no"
 
 # non-library system interfaces
-audio_beos="no"
+audio_beos="default"
 audio_oss="yes"
 bktr="yes"
 dv1394="yes"
@@ -803,7 +804,6 @@ w32threads="no"
 thread_type="no"
 
 # build settings
-extralibs="-lm"
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
 LIBOBJFLAGS=""
@@ -822,140 +822,6 @@ SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 EXESUF=""
 BUILDSUF=""
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
-
-# OS specific
-targetos=`uname -s`
-case $targetos in
-  BeOS|Haiku|Zeta)
-    PREFIX="$HOME/config"
-    # helps building libavcodec
-    add_cflags "-DPIC -fomit-frame-pointer"
-    # 3 gcc releases known for BeOS, each with ugly bugs
-    gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
-    case "$gcc_version" in
-      2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
-        mmx="no"
-        ;;
-      *20010315*) echo "BeBits gcc"
-        add_cflags "-fno-expensive-optimizations"
-        ;;
-    esac
-    LDCONFIG="echo ignoring ldconfig"
-    SHFLAGS=-nostart
-    # disable Linux things
-    dv1394="no"
-    # enable BeOS things
-    audio_beos="yes"
-    # no need for libm, but the inet stuff
-    # Check for BONE
-    # XXX: actually should check for NOT net_server
-    if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
-        extralibs="-lbind -lsocket"
-    else
-        beos_netserver="yes"
-        extralibs="-lnet"
-    fi ;;
-  SunOS)
-    dv1394="no"
-    FFLDFLAGS=""
-    FFSERVERLDFLAGS=""
-    SHFLAGS="-shared -Wl,-h,\$@"
-    add_extralibs "-lsocket -lnsl"
-    ;;
-  NetBSD)
-    dv1394="no"
-    add_extralibs "-lossaudio"
-    ;;
-  OpenBSD)
-    dv1394="no"
-    need_memalign="no"
-    LIBOBJFLAGS="\$(PIC)"
-    LDCONFIG="ldconfig -m \$(shlibdir)"
-    SHFLAGS='-shared'
-    SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF).$(LIBVERSION)'
-    SLIBNAME_WITH_VERSION='$(SLIBNAME)'
-    SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
-    add_extralibs "-lossaudio"
-    ;;
-  FreeBSD)
-    dv1394="no"
-    need_memalign="no"
-    add_cflags "-pthread"
-    ;;
-  GNU/kFreeBSD)
-    dv1394="no"
-    add_cflags "-pthread"
-    ;;
-  BSD/OS)
-    dv1394="no"
-    extralibs="-lpoll -lgnugetopt -lm"
-    strip="strip -d"
-    ;;
-  Darwin)
-    cc="cc"
-    dv1394="no"
-    need_memalign="no"
-    SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
-    VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
-    extralibs=""
-    strip="strip -x"
-    FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
-    SLIBSUF=".dylib"
-    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
-    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
-    FFSERVERLDFLAGS=-Wl,-bind_at_load
-    ;;
-  MINGW32*)
-    # Note: the rest of the mingw32 config is done afterwards as mingw32
-    # can be forced on the command line for Linux cross compilation.
-    mingw32="yes"
-    ;;
-  CYGWIN*)
-    targetos=CYGWIN
-    shlibdir="$bindir"
-    dv1394="no"
-    VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
-    VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
-    extralibs=""
-    EXESUF=".exe"
-    SLIBPREF="cyg"
-    SLIBSUF=".dll"
-    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
-    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-    SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
-    ;;
-  Linux)
-    LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
-    ;;
-  IRIX*)
-    targetos=IRIX
-    ranlib="echo ignoring ranlib"
-    ;;
-  OS/2)
-    TMPE=$TMPE".exe"
-    ar="emxomfar -p128"
-    ranlib="echo ignoring ranlib"
-    strip="echo ignoring strip"
-    add_cflags "-Zomf"
-    FFLDFLAGS="-Zomf -Zstack 16384 -s"
-    SHFLAGS="-Zdll -Zomf"
-    FFSERVERLDFLAGS=""
-    LIBPREF=""
-    LIBSUF=".lib"
-    SLIBPREF=""
-    SLIBSUF=".dll"
-    EXESUF=".exe"
-    extralibs=""
-    pkg_requires=""
-    dv1394="no"
-    ffserver="no"
-    vhook="no"
-    os2="yes"
-    ;;
-  *)
-    targetos="${targetos}-UNKNOWN"
-    ;;
-esac
 
 # find source path
 source_path="`dirname \"$0\"`"
@@ -1012,6 +878,8 @@ for opt do
   ;;
   --cross-compile) cross_compile="yes"
   ;;
+  --target-os=*) targetos="$optval"
+  ;;
   --cc=*) cc="$optval"
   ;;
   --make=*) make="$optval"
@@ -1067,6 +935,142 @@ for opt do
   ;;
   esac
 done
+
+# OS specific
+osextralibs="-lm"
+case $targetos in
+  BeOS|Haiku|Zeta)
+    PREFIX="$HOME/config"
+    # helps building libavcodec
+    add_cflags "-DPIC -fomit-frame-pointer"
+    # 3 gcc releases known for BeOS, each with ugly bugs
+    gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
+    case "$gcc_version" in
+      2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
+        mmx="no"
+        ;;
+      *20010315*) echo "BeBits gcc"
+        add_cflags "-fno-expensive-optimizations"
+        ;;
+    esac
+    LDCONFIG="echo ignoring ldconfig"
+    SHFLAGS=-nostart
+    # disable Linux things
+    dv1394="no"
+    # enable BeOS things
+    disabled audio_beos || enable_audio_beos
+    # no need for libm, but the inet stuff
+    # Check for BONE
+    # XXX: actually should check for NOT net_server
+    if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
+        osextralibs="-lbind -lsocket"
+    else
+        beos_netserver="yes"
+        osextralibs="-lnet"
+    fi ;;
+  SunOS)
+    dv1394="no"
+    FFLDFLAGS=""
+    FFSERVERLDFLAGS=""
+    SHFLAGS="-shared -Wl,-h,\$@"
+    add_extralibs "-lsocket -lnsl"
+    ;;
+  NetBSD)
+    dv1394="no"
+    add_extralibs "-lossaudio"
+    ;;
+  OpenBSD)
+    dv1394="no"
+    need_memalign="no"
+    LIBOBJFLAGS="\$(PIC)"
+    LDCONFIG="ldconfig -m \$(shlibdir)"
+    SHFLAGS='-shared'
+    SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF).$(LIBVERSION)'
+    SLIBNAME_WITH_VERSION='$(SLIBNAME)'
+    SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
+    add_extralibs "-lossaudio"
+    ;;
+  FreeBSD)
+    dv1394="no"
+    need_memalign="no"
+    add_cflags "-pthread"
+    ;;
+  GNU/kFreeBSD)
+    dv1394="no"
+    add_cflags "-pthread"
+    ;;
+  BSD/OS)
+    dv1394="no"
+    osextralibs="-lpoll -lgnugetopt -lm"
+    strip="strip -d"
+    ;;
+  Darwin)
+    cc="cc"
+    dv1394="no"
+    need_memalign="no"
+    SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
+    VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
+    osextralibs=""
+    strip="strip -x"
+    FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
+    SLIBSUF=".dylib"
+    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
+    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
+    FFSERVERLDFLAGS=-Wl,-bind_at_load
+    ;;
+  MINGW32*)
+    # Note: the rest of the mingw32 config is done afterwards as mingw32
+    # can be forced on the command line for Linux cross compilation.
+    mingw32="yes"
+    ;;
+  CYGWIN*)
+    targetos=CYGWIN
+    shlibdir="$bindir"
+    dv1394="no"
+    VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
+    VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
+    osextralibs=""
+    EXESUF=".exe"
+    SLIBPREF="cyg"
+    SLIBSUF=".dll"
+    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
+    SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
+    ;;
+  Linux)
+    LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
+    ;;
+  IRIX*)
+    targetos=IRIX
+    ranlib="echo ignoring ranlib"
+    ;;
+  OS/2)
+    TMPE=$TMPE".exe"
+    ar="emxomfar -p128"
+    ranlib="echo ignoring ranlib"
+    strip="echo ignoring strip"
+    add_cflags "-Zomf"
+    FFLDFLAGS="-Zomf -Zstack 16384 -s"
+    SHFLAGS="-Zdll -Zomf"
+    FFSERVERLDFLAGS=""
+    LIBPREF=""
+    LIBSUF=".lib"
+    SLIBPREF=""
+    SLIBSUF=".dll"
+    EXESUF=".exe"
+    osextralibs=""
+    pkg_requires=""
+    dv1394="no"
+    ffserver="no"
+    vhook="no"
+    os2="yes"
+    ;;
+  *)
+    targetos="${targetos}-UNKNOWN"
+    ;;
+esac
+
+add_extralibs $osextralibs
 
 if ! disabled logging ; then
     enabled logging || logfile="$logging"
