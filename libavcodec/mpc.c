@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
+#include "random.h"
 
 #ifdef CONFIG_MPEGAUDIO_HP
 #define USE_HIGHPRECISION
@@ -50,7 +51,7 @@ typedef struct {
     int IS, MSS, gapless;
     int lastframelen, bands;
     int oldDSCF[2][BANDS];
-    int rnd;
+    AVRandomState rnd;
     int frames_to_skip;
     /* for synthesis */
     DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512*2]);
@@ -81,7 +82,7 @@ static int mpc7_decode_init(AVCodecContext * avctx)
         return -1;
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
-    c->rnd = 0xDEADBEEF;
+    av_init_random(0xDEADBEEF, &c->rnd);
     dsputil_init(&c->dsp, avctx);
     c->dsp.bswap_buf(buf, avctx->extradata, 4);
     ff_mpa_synth_init(mpa_window);
@@ -135,13 +136,6 @@ static int mpc7_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-// XXX replace with something better
-static int av_always_inline mpc_rnd(MPCContext *c)
-{
-    c->rnd = c->rnd * 27 + 17;
-    return c->rnd;
-}
-
 /**
  * Process decoded Musepack data and produce PCM
  * @todo make it available for MPC8 and MPC6
@@ -175,8 +169,7 @@ static void inline idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     switch(idx){
     case -1:
         for(i = 0; i < SAMPLES_PER_BAND; i++){
-            t = mpc_rnd(c);
-            *dst++ = ((t>>24)& 0xFF) + ((t>>16) & 0xFF) + ((t>>8) & 0xFF) + (t & 0xFF) - 510;
+            *dst++ = (av_random(&c->rnd) & 0x3FC) - 510;
         }
         break;
     case 1:
