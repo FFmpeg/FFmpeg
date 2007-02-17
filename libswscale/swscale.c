@@ -108,7 +108,8 @@ untested special converters
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P\
 			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
-			|| (x)==PIX_FMT_PAL8 || (x)==PIX_FMT_BGR8 || (x)==PIX_FMT_RGB8)
+			|| (x)==PIX_FMT_PAL8 || (x)==PIX_FMT_BGR8 || (x)==PIX_FMT_RGB8\
+                        || (x)==PIX_FMT_BGR4_BYTE  || (x)==PIX_FMT_RGB4_BYTE)
 #define isSupportedOut(x) ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
 			|| isRGB(x) || isBGR(x)\

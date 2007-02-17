@@ -180,11 +180,11 @@ char *sws_format_name(int format);
 #define isGray16(x)    ((x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE)
 #define isRGB(x)       ((x)==PIX_FMT_BGR32 || (x)==PIX_FMT_RGB24	\
 			|| (x)==PIX_FMT_RGB565 || (x)==PIX_FMT_RGB555	\
-			|| (x)==PIX_FMT_RGB8 || (x)==PIX_FMT_RGB4	\
+			|| (x)==PIX_FMT_RGB8 || (x)==PIX_FMT_RGB4 || (x)==PIX_FMT_RGB4_BYTE	\
 			|| (x)==PIX_FMT_MONOBLACK)
 #define isBGR(x)       ((x)==PIX_FMT_RGB32 || (x)==PIX_FMT_BGR24	\
 			|| (x)==PIX_FMT_BGR565 || (x)==PIX_FMT_BGR555	\
-			|| (x)==PIX_FMT_BGR8 || (x)==PIX_FMT_BGR4	\
+			|| (x)==PIX_FMT_BGR8 || (x)==PIX_FMT_BGR4 || (x)==PIX_FMT_BGR4_BYTE	\
 			|| (x)==PIX_FMT_MONOBLACK)
 
 static inline int fmt_depth(int fmt)

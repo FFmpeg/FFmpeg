@@ -2551,7 +2551,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
 	RENAME(rgb15ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
-    else if(srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8)
+    else if(srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
     {
 	RENAME(palToY)(formatConvBuffer, src, srcW, pal);
 	src= formatConvBuffer;
@@ -2767,7 +2767,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
     {
     	return;
     }
-    else if(srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8)
+    else if(srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
     {
 	RENAME(palToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW, pal);
 	src1= formatConvBuffer;
