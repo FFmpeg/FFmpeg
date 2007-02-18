@@ -213,6 +213,10 @@ toupper(){
     echo "$@" | tr '[a-z]' '[A-Z]'
 }
 
+tolower(){
+    echo "$@" | tr '[A-Z]' '[a-z]'
+}
+
 set_all(){
     value=$1
     shift
@@ -943,8 +947,8 @@ esac
 
 # OS specific
 osextralibs="-lm"
-case $targetos in
-  BeOS|Haiku|Zeta)
+case `tolower $targetos` in
+  beos|haiku|zeta)
     PREFIX="$HOME/config"
     # helps building libavcodec
     add_cflags "-DPIC -fomit-frame-pointer"
@@ -973,18 +977,18 @@ case $targetos in
         beos_netserver="yes"
         osextralibs="-lnet"
     fi ;;
-  SunOS)
+  sunos)
     dv1394="no"
     FFLDFLAGS=""
     FFSERVERLDFLAGS=""
     SHFLAGS="-shared -Wl,-h,\$@"
     add_extralibs "-lsocket -lnsl"
     ;;
-  NetBSD)
+  netbsd)
     dv1394="no"
     add_extralibs "-lossaudio"
     ;;
-  OpenBSD)
+  openbsd)
     dv1394="no"
     need_memalign="no"
     LIBOBJFLAGS="\$(PIC)"
@@ -995,21 +999,21 @@ case $targetos in
     SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
     add_extralibs "-lossaudio"
     ;;
-  FreeBSD)
+  freebsd)
     dv1394="no"
     need_memalign="no"
     add_cflags "-pthread"
     ;;
-  GNU/kFreeBSD)
+  gnu/kfreebsd)
     dv1394="no"
     add_cflags "-pthread"
     ;;
-  BSD/OS)
+  bsd/os)
     dv1394="no"
     osextralibs="-lpoll -lgnugetopt -lm"
     strip="strip -d"
     ;;
-  Darwin)
+  darwin)
     cc="cc"
     dv1394="no"
     need_memalign="no"
@@ -1023,7 +1027,7 @@ case $targetos in
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
     FFSERVERLDFLAGS=-Wl,-bind_at_load
     ;;
-  MINGW32*)
+  mingw32*)
     mingw32="yes"
     if enabled_all shared static; then
         cat <<EOF
@@ -1049,7 +1053,7 @@ EOF
     SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(shlibdir)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
     SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc"
     ;;
-  CYGWIN*)
+  cygwin*)
     targetos=CYGWIN
     shlibdir="$bindir"
     dv1394="no"
@@ -1063,14 +1067,14 @@ EOF
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
     SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
     ;;
-  Linux)
+  linux)
     LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
     ;;
-  IRIX*)
+  irix*)
     targetos=IRIX
     ranlib="echo ignoring ranlib"
     ;;
-  OS/2)
+  os/2)
     TMPE=$TMPE".exe"
     ar="emxomfar -p128"
     ranlib="echo ignoring ranlib"
