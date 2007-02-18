@@ -66,8 +66,8 @@
 
 typedef struct {
     int     size;
-    int     qidx_table1[8];
-    int     qidx_table2[8];
+    int     loccode[8];
+    int     levcode[8];
 } COOKgain;
 
 typedef struct {
@@ -355,11 +355,11 @@ static void decode_gain_info(GetBitContext *gb, COOKgain* gaininfo) {
     if (get_bits_count(gb) - 1 <= 0) return;
 
     for (i=0 ; i<gaininfo->size ; i++){
-        gaininfo->qidx_table1[i] = get_bits(gb,3);
+        gaininfo->loccode[i] = get_bits(gb,3);
         if (get_bits1(gb)) {
-            gaininfo->qidx_table2[i] = get_bits(gb,4) - 7;  //convert to signed
+            gaininfo->levcode[i] = get_bits(gb,4) - 7;  //convert to signed
         } else {
-            gaininfo->qidx_table2[i] = -1;
+            gaininfo->levcode[i] = -1;
         }
     }
 }
@@ -802,8 +802,8 @@ static void gain_window(COOKContext *q, float* buffer, COOKgain* gain_now,
     gain_index[8]=0;
     index = gain_previous->size;
     for (i=7 ; i>=0 ; i--) {
-        if(index && gain_previous->qidx_table1[index-1]==i) {
-            gain_index[i] = gain_previous->qidx_table2[index-1];
+        if(index && gain_previous->loccode[index-1]==i) {
+            gain_index[i] = gain_previous->levcode[index-1];
             index--;
         } else {
             gain_index[i]=gain_index[i+1];
@@ -818,8 +818,8 @@ static void gain_window(COOKContext *q, float* buffer, COOKgain* gain_now,
     tmp_gain_index = gain_index[0];
     index = gain_now->size;
     for (i=7 ; i>=0 ; i--) {
-        if(index && gain_now->qidx_table1[index-1]==i) {
-            gain_index[i]= gain_now->qidx_table2[index-1];
+        if(index && gain_now->loccode[index-1]==i) {
+            gain_index[i]= gain_now->levcode[index-1];
             index--;
         } else {
             gain_index[i]=gain_index[i+1];
