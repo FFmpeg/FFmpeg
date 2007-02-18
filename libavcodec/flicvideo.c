@@ -355,8 +355,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
-                                       pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) at line %d\n",
+                                       pixel_countdown, lines);
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
@@ -366,8 +366,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
-                                       pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) at line %d\n",
+                                       pixel_countdown, lines);
                         }
                     }
                 }
@@ -563,8 +563,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
-                                       pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) (linea%d)\n",
+                                       pixel_countdown, lines);
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
@@ -574,8 +574,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
-                                       pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) at line %d\n",
+                                       pixel_countdown, lines);
                         }
                     }
                 }
