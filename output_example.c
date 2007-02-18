@@ -28,7 +28,7 @@
 #include <math.h>
 
 #ifndef M_PI
-#define M_PI 3.1415926535897931
+#define M_PI 3.14159265358979323846
 #endif
 
 #include "avformat.h"
