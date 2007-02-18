@@ -62,7 +62,6 @@ show_help(){
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
   echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
-  echo "  --enable-mingw32         enable MinGW native/cross Windows compile"
   echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
   echo "  --enable-static          build static libraries [default=yes]"
   echo "  --disable-static         do not build static libraries [default=no]"
@@ -578,7 +577,6 @@ CMDLINE_SELECT="
     amr_if2
     debug
     extra_warnings
-    mingw32
     shared
     static
     beosthreads
