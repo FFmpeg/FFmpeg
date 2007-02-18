@@ -1629,11 +1629,11 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
         /* one-to-one mv scaling */
 
         if(IS_16X16(*mb_type)){
+            int ref, mv0, mv1;
+
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, 0, 1);
             if(IS_INTRA(mb_type_col)){
-                fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
-                fill_rectangle(&h-> mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
-                fill_rectangle(&h-> mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
+                ref=mv0=mv1=0;
             }else{
                 const int ref0 = l1ref0[0] >= 0 ? map_col_to_list0[0][l1ref0[0]]
                                                 : map_col_to_list0[1][l1ref1[0]];
@@ -1642,10 +1642,13 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 int mv_l0[2];
                 mv_l0[0] = (scale * mv_col[0] + 128) >> 8;
                 mv_l0[1] = (scale * mv_col[1] + 128) >> 8;
-                fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref0, 1);
-                fill_rectangle(&h-> mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mv_l0[0],mv_l0[1]), 4);
-                fill_rectangle(&h-> mv_cache[1][scan8[0]], 4, 4, 8, pack16to32(mv_l0[0]-mv_col[0],mv_l0[1]-mv_col[1]), 4);
+                ref= ref0;
+                mv0= pack16to32(mv_l0[0],mv_l0[1]);
+                mv1= pack16to32(mv_l0[0]-mv_col[0],mv_l0[1]-mv_col[1]);
             }
+            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
+            fill_rectangle(&h-> mv_cache[0][scan8[0]], 4, 4, 8, mv0, 4);
+            fill_rectangle(&h-> mv_cache[1][scan8[0]], 4, 4, 8, mv1, 4);
         }else{
             for(i8=0; i8<4; i8++){
                 const int x8 = i8&1;
