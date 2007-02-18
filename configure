@@ -1867,7 +1867,6 @@ fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
-echo "TARGET_OS=$targetos" >> config.mak
 
 ucarch=`toupper $arch`
 echo "TARGET_ARCH_${ucarch}=yes" >> config.mak
