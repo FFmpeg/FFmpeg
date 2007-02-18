@@ -146,8 +146,10 @@ static int flic_read_header(AVFormatContext *s,
          *  therefore, the frame pts increment = n * 90
          */
         flic->frame_pts_inc = speed * 90;
-    } else
+    } else {
+        av_log(s, AV_LOG_INFO, "Invalid or unsupported magic chunk in file\n");
         return AVERROR_INVALIDDATA;
+    }
 
     if (flic->frame_pts_inc == 0)
         flic->frame_pts_inc = FLIC_DEFAULT_PTS_INC;
