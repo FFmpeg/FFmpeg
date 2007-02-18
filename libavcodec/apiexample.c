@@ -32,6 +32,8 @@
 #include <string.h>
 #include <math.h>
 
+#define PI 3.14159265358979323846
+
 #ifdef HAVE_AV_CONFIG_H
 #undef HAVE_AV_CONFIG_H
 #endif
@@ -89,7 +91,7 @@ void audio_encode_example(const char *filename)
 
     /* encode a single tone sound */
     t = 0;
-    tincr = 2 * M_PI * 440.0 / c->sample_rate;
+    tincr = 2 * PI * 440.0 / c->sample_rate;
     for(i=0;i<200;i++) {
         for(j=0;j<frame_size;j++) {
             samples[2*j] = (int)(sin(t) * 10000);
