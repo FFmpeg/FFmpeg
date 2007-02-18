@@ -92,7 +92,7 @@ typedef struct {
 
     /* transform data */
     FFTContext          fft_ctx;
-    FFTSample           mlt_tmp[1024] __attribute__((aligned(16))); /* temporary storage for imlt */
+    DECLARE_ALIGNED_16(FFTSample, mlt_tmp[1024]);  /* temporary storage for imlt */
     float*              mlt_window;
     float*              mlt_precos;
     float*              mlt_presin;
@@ -124,7 +124,7 @@ typedef struct {
     /* data buffers */
 
     uint8_t*            decoded_bytes_buffer;
-    float               mono_mdct_output[2048] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(float,mono_mdct_output[2048]);
     float               mono_previous_buffer1[1024];
     float               mono_previous_buffer2[1024];
     float               decode_buffer_1[1024];
@@ -1118,14 +1118,14 @@ static int cook_decode_init(AVCodecContext *avctx)
            Swap to right endianness so we don't need to care later on. */
         av_log(avctx,AV_LOG_DEBUG,"codecdata_length=%d\n",avctx->extradata_size);
         if (avctx->extradata_size >= 8){
-            q->cookversion = be2me_32(bytestream_get_le32(&edata_ptr));
-            q->samples_per_frame =  be2me_16(bytestream_get_le16(&edata_ptr));
-            q->subbands = be2me_16(bytestream_get_le16(&edata_ptr));
+            q->cookversion = bytestream_get_be32(&edata_ptr);
+            q->samples_per_frame =  bytestream_get_be16(&edata_ptr);
+            q->subbands = bytestream_get_be16(&edata_ptr);
         }
         if (avctx->extradata_size >= 16){
-            bytestream_get_le32(&edata_ptr);    //Unknown unused
-            q->js_subband_start = be2me_16(bytestream_get_le16(&edata_ptr));
-            q->js_vlc_bits = be2me_16(bytestream_get_le16(&edata_ptr));
+            bytestream_get_be32(&edata_ptr);    //Unknown unused
+            q->js_subband_start = bytestream_get_be16(&edata_ptr);
+            q->js_vlc_bits = bytestream_get_be16(&edata_ptr);
         }
     }
 
