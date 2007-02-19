@@ -296,7 +296,7 @@ No. These tools are too bloated and they complicate the build.
 ffmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
-read "Programming Religion" at (@url{http://lkml.org/faq/lkmlfaq-15.html}).
+read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
 
 @section Why are the ffmpeg programs devoid of debugging symbols ?
 
