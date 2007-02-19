@@ -491,7 +491,6 @@ static uint8_t *read_huffman_tables(FourXContext *f, uint8_t * const buf){
 
         for(i=start; i<=end; i++){
             frequency[i]= *ptr++;
-//            printf("%d %d %d\n", start, end, frequency[i]);
         }
         start= *ptr++;
         if(start==0) break;
@@ -501,9 +500,6 @@ static uint8_t *read_huffman_tables(FourXContext *f, uint8_t * const buf){
     frequency[256]=1;
 
     while((ptr - buf)&3) ptr++; // 4byte align
-
-//    for(j=0; j<16; j++)
-//        printf("%2X", ptr[j]);
 
     for(j=257; j<512; j++){
         int min_freq[2]= {256*256, 256*256};
@@ -692,12 +688,6 @@ static int decode_frame(AVCodecContext *avctx,
     }else{
         av_log(avctx, AV_LOG_ERROR, "ignoring unknown chunk length:%d\n", buf_size);
     }
-
-#if 0
-for(i=0; i<20; i++){
-    printf("%2X %c ", buf[i], clip(buf[i],16,126));
-}
-#endif
 
     p->key_frame= p->pict_type == I_TYPE;
 
