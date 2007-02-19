@@ -502,6 +502,23 @@ require2(){
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
+check_foo_config(){
+    cfg=$1
+    pkg=$2
+    header=$3
+    func=$4
+    shift 4
+    disable $cfg
+    check_cmd ${pkg}-config --version
+    err=$?
+    if test "$err" = 0; then
+        temp_cflags `${pkg}-config --cflags`
+        temp_extralibs `${pkg}-config --libs`
+        check_lib "$@" $header $func && enable $cfg
+    fi
+    return $err
+}
+
 apply(){
     file=$1
     shift
@@ -1575,27 +1592,8 @@ enabled audio_beos && add_extralibs "-lmedia -lbe"
 
 enabled mingw32 && add_extralibs -lws2_32
 
-##########################################
-# imlib check
-
-imlib2=no
-if imlib2-config --version >/dev/null 2>&1; then
-    temp_cflags `imlib2-config --cflags`
-    temp_extralibs `imlib2-config --libs`
-    check_lib Imlib2.h imlib_load_font && enable imlib2
-    restore_flags
-fi
-
-##########################################
-# FreeType check
-
-freetype2=no
-if freetype-config --version >/dev/null 2>&1; then
-    temp_cflags `freetype-config --cflags`
-    temp_extralibs `freetype-config --libs`
-    check_lib ft2build.h FT_Init_FreeType && enable freetype2
-    restore_flags
-fi
+check_foo_config imlib2 imlib2 Imlib2.h imlib_load_font
+check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
 
 ##########################################
 # SDL check
