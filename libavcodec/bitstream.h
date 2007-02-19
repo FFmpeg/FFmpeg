@@ -662,7 +662,7 @@ static inline int get_sbits(GetBitContext *s, int n){
 }
 
 /**
- * reads 0-17 bits.
+ * reads 1-17 bits.
  * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
  */
 static inline unsigned int get_bits(GetBitContext *s, int n){
@@ -676,7 +676,7 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 }
 
 /**
- * shows 0-17 bits.
+ * shows 1-17 bits.
  * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
  */
 static inline unsigned int show_bits(GetBitContext *s, int n){
