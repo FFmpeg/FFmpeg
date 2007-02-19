@@ -812,34 +812,21 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101;
             }
 
-            //FIXME unify cleanup or sth
-            if(USES_LIST(left_type[0], list)){
-                const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
-                const int b8_xy= h->mb2b8_xy[left_xy[0]] + 1;
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 0*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0]];
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[1]];
-                h->ref_cache[list][scan8[0] - 1 + 0*8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0]>>1)];
-                h->ref_cache[list][scan8[0] - 1 + 1*8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1]>>1)];
-            }else{
-                *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 0*8]=
-                *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 1*8]= 0;
-                h->ref_cache[list][scan8[0] - 1 + 0*8]=
-                h->ref_cache[list][scan8[0] - 1 + 1*8]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
-            }
-
-            if(USES_LIST(left_type[1], list)){
-                const int b_xy= h->mb2b_xy[left_xy[1]] + 3;
-                const int b8_xy= h->mb2b8_xy[left_xy[1]] + 1;
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 2*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[2]];
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 3*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[3]];
-                h->ref_cache[list][scan8[0] - 1 + 2*8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[2]>>1)];
-                h->ref_cache[list][scan8[0] - 1 + 3*8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[3]>>1)];
-            }else{
-                *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 2*8]=
-                *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 3*8]= 0;
-                h->ref_cache[list][scan8[0] - 1 + 2*8]=
-                h->ref_cache[list][scan8[0] - 1 + 3*8]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
-                assert((!left_type[0]) == (!left_type[1]));
+            for(i=0; i<2; i++){
+                int cache_idx = scan8[0] - 1 + i*2*8;
+                if(USES_LIST(left_type[i], list)){
+                    const int b_xy= h->mb2b_xy[left_xy[i]] + 3;
+                    const int b8_xy= h->mb2b8_xy[left_xy[i]] + 1;
+                    *(uint32_t*)h->mv_cache[list][cache_idx  ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0+i*2]];
+                    *(uint32_t*)h->mv_cache[list][cache_idx+8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[1+i*2]];
+                    h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)];
+                    h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)];
+                }else{
+                    *(uint32_t*)h->mv_cache [list][cache_idx  ]=
+                    *(uint32_t*)h->mv_cache [list][cache_idx+8]= 0;
+                    h->ref_cache[list][cache_idx  ]=
+                    h->ref_cache[list][cache_idx+8]= left_type[i] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                }
             }
 
             if((for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred)) && !FRAME_MBAFF)
@@ -3632,7 +3619,7 @@ static void hl_decode_mb(H264Context *h){
                             const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
                             const int nnz = h->non_zero_count_cache[ scan8[i] ];
                             h->pred8x8l[ dir ](ptr, (h->topleft_samples_available<<i)&0x8000,
-                                                   (h->topright_samples_available<<(i+1))&0x8000, linesize);
+                                                   (h->topright_samples_available<<i)&0x4000, linesize);
                             if(nnz){
                                 if(nnz == 1 && h->mb[i*16])
                                     idct_dc_add(ptr, h->mb + i*16, linesize);
