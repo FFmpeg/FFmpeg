@@ -443,7 +443,11 @@ check_lib(){
     header="$1"
     func="$2"
     shift 2
-    check_header $header && check_func $func "$@" && add_extralibs "$@"
+    temp_extralibs "$@"
+    check_header $header && check_func $func && add_extralibs "$@"
+    err=$?
+    restore_flags
+    return $err
 }
 
 check_exec(){
