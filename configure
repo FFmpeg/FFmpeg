@@ -438,6 +438,26 @@ int main(){
 EOF
 }
 
+check_func2(){
+    log check_func2 "$@"
+    headers=$1
+    func=$2
+    shift 2
+    disable $func
+    incs=""
+    for hdr in $headers; do
+        incs="$incs
+#include <$hdr>"
+    done
+    check_ld "$@" <<EOF && enable $func
+$incs
+int main(){
+    (void) $func;
+    return 0;
+}
+EOF
+}
+
 check_lib(){
     log check_lib "$@"
     header="$1"
@@ -445,6 +465,18 @@ check_lib(){
     shift 2
     temp_extralibs "$@"
     check_header $header && check_func $func && add_extralibs "$@"
+    err=$?
+    restore_flags
+    return $err
+}
+
+check_lib2(){
+    log check_lib2 "$@"
+    headers="$1"
+    func="$2"
+    shift 2
+    temp_extralibs "$@"
+    check_func2 "$headers" $func && add_extralibs "$@"
     err=$?
     restore_flags
     return $err
@@ -460,6 +492,14 @@ require(){
     func="$3"
     shift 3
     check_lib $header $func "$@" || die "ERROR: $name not found"
+}
+
+require2(){
+    name="$1"
+    headers="$2"
+    func="$3"
+    shift 3
+    check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
 apply(){
@@ -1486,54 +1526,9 @@ enabled xvid       && require XviD xvid.h xvid_global -lxvidcore
 enabled x264       && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394     && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
-
-# Ugh, libfaac uses stdcall calling convention on win32 so we can't use
-# the generic test functions
-if enabled libfaac; then
-    save_flags
-    temp_extralibs -lfaac
-    check_ld <<EOF && add_extralibs -lfaac || die "ERROR: libfaac not found"
-#include <stdint.h>
-#include <faac.h>
-int main(){
-    char *id, *cpr;
-    faacEncGetVersion(&id, &cpr);
-    return 0;
-}
-EOF
-    restore_flags
-fi
-
-# Ugh, recent faad2 versions have renamed all functions and #define the
-# old names in faad.h.  Generic tests won't work.
-if enabled libfaad; then
-    save_flags
-    temp_extralibs -lfaad
-    check_ld <<EOF && add_extralibs -lfaad || die "ERROR: libfaad not found"
-#include <faad.h>
-int main(){
-    faacDecOpen();
-    return 0;
-}
-EOF
-    restore_flags
-fi
-
-# Ugh, avisynth uses WINAPI calls. Generic tests won't work.
-if enabled avisynth; then
-    save_flags
-    temp_extralibs -lvfw32
-    check_ld <<EOF && add_extralibs -lvfw32 || die "ERROR: vfw32 not found"
-#include <windows.h>
-#include <vfw.h>
-int main(){
-    AVIFileInit();
-    return 0;
-}
-EOF
-    restore_flags
-fi
-
+enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
+enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
 
 # test for lrintf in math.h
 check_exec <<EOF && lrintf=yes || lrintf=no
