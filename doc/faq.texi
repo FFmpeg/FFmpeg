@@ -80,7 +80,7 @@ Use @file{-} as filename.
 The audio is AC3 (a.k.a. A/52). AC3 decoding is an optional component in ffmpeg
 as the component that handles AC3 decoding (liba52) is currently released under
 the GPL. If you have liba52 installed on your system, enable AC3 decoding
-with @code{./configure --enable-a52}. Take care: by
+with @code{./configure --enable-a52 --enable-gpl}. Take care: by
 enabling AC3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
