@@ -51,6 +51,20 @@ static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_defaul
 void (*av_vlog)(void*, int, const char*, va_list) = av_log_default_callback;
 #endif
 
+/**
+ * Send the specified message to the log if the level is less than or equal to
+ * the current av_log_level. By default, all logging messages are sent to
+ * stderr. This behavior can be altered by setting a different av_vlog callback
+ * function.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param fmt The format string (printf-compatible) that specifies how
+ * subsequent arguments are converted to output.
+ * @see av_vlog
+ */
 void av_log(void* avcl, int level, const char *fmt, ...)
 {
     va_list vl;
