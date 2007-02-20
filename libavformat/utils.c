@@ -2018,6 +2018,9 @@ int av_find_stream_info(AVFormatContext *ic)
                     st->r_frame_rate.den = st->time_base.num;
                 }
             }
+        }else if(st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if(!st->codec->bits_per_sample)
+                st->codec->bits_per_sample= av_get_bits_per_sample(st->codec->codec_id);
         }
     }
 
