@@ -76,6 +76,7 @@ typedef struct {
     int is_streamed;
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big
+    uint32_t stream_bitrates[128];       ///< max number of streams, bitrate for each (for streaming)
     /* non streamed additonnal info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration;                    ///< in 100ns units

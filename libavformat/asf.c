@@ -34,6 +34,9 @@ static const GUID index_guid = {
     0x90, 0x08, 0x00, 0x33, 0xb1, 0xe5, 0xcf, 0x11, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb
 };
 
+static const GUID stream_bitrate_guid = { /* (http://get.to/sdp) */
+    0xce, 0x75, 0xf8, 0x7b, 0x8d, 0x46, 0xd1, 0x11, 0x8d, 0x82, 0x00, 0x60, 0x97, 0xc9, 0xa2, 0xb2
+};
 /**********************************/
 /* decoding */
 
@@ -68,6 +71,7 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, ext_stream_embed_stream_header);
     else PRINT_IF_GUID(g, ext_stream_audio_stream);
     else PRINT_IF_GUID(g, metadata_header);
+    else PRINT_IF_GUID(g, stream_bitrate_guid);
     else
         printf("(GUID: unknown) ");
     for(i=0;i<16;i++)
@@ -345,6 +349,21 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str16_nolen(pb, len3, s->copyright, sizeof(s->copyright));
             get_str16_nolen(pb, len4, s->comment  , sizeof(s->comment));
             url_fskip(pb, len5);
+        } else if (!memcmp(&g, &stream_bitrate_guid, sizeof(GUID))) {
+            int stream_count = get_le16(pb);
+            int j;
+
+//            av_log(NULL, AV_LOG_ERROR, "stream bitrate properties\n");
+//            av_log(NULL, AV_LOG_ERROR, "streams %d\n", streams);
+            for(j = 0; j < stream_count; j++) {
+                int flags, bitrate, stream_id;
+
+                flags= get_le16(pb);
+                bitrate= get_le32(pb);
+                stream_id= (flags & 0x7f);
+//                av_log(NULL, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
+                asf->stream_bitrates[stream_id-1]= bitrate;
+            }
        } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
                 int desc_count, i;
 
