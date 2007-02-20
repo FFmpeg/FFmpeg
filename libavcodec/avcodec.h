@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(33<<8)+0)
-#define LIBAVCODEC_VERSION      51.33.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(34<<8)+0)
+#define LIBAVCODEC_VERSION      51.34.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -227,7 +227,7 @@ enum CodecID {
     CODEC_ID_SHORTEN,
     CODEC_ID_ALAC,
     CODEC_ID_WESTWOOD_SND1,
-    CODEC_ID_GSM,
+    CODEC_ID_GSM, /* As in Berlin toast format */
     CODEC_ID_QDM2,
     CODEC_ID_COOK,
     CODEC_ID_TRUESPEECH,
@@ -239,6 +239,7 @@ enum CodecID {
     CODEC_ID_IMC,
     CODEC_ID_MUSEPACK7,
     CODEC_ID_MLP,
+    CODEC_ID_GSM_MS, /* As found in WAV */
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -2165,6 +2166,7 @@ extern AVCodec h264_encoder;
 extern AVCodec huffyuv_encoder;
 extern AVCodec jpegls_encoder;
 extern AVCodec libgsm_encoder;
+extern AVCodec libgsm_ms_encoder;
 extern AVCodec libtheora_encoder;
 extern AVCodec ljpeg_encoder;
 extern AVCodec mdec_encoder;
@@ -2242,6 +2244,7 @@ extern AVCodec interplay_dpcm_decoder;
 extern AVCodec interplay_video_decoder;
 extern AVCodec kmvc_decoder;
 extern AVCodec libgsm_decoder;
+extern AVCodec libgsm_ms_decoder;
 extern AVCodec loco_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;

@@ -198,6 +198,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_TRUESPEECH, 0x22 },
     { CODEC_ID_FLAC, 0xF1AC },
     { CODEC_ID_IMC, 0x401 },
+    { CODEC_ID_GSM_MS, 0x31 },
 
     /* FIXME: All of the IDs below are not 16 bit and thus illegal. */
     // for NuppelVideo (nuv.c)
@@ -305,7 +306,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         enc->codec_id == CODEC_ID_PCM_ALAW ||
         enc->codec_id == CODEC_ID_PCM_MULAW) {
         bps = 8;
-    } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
+    } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
         bps = 4;
@@ -317,7 +318,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 16;
     }
 
-    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
+    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         blkalign = enc->frame_size; //this is wrong, but seems many demuxers dont work if this is set correctly
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->codec_id == CODEC_ID_ADPCM_G726) { //
@@ -356,6 +357,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, 16); /* fwHeadFlags */
         put_le32(pb, 0);  /* dwPTSLow */
         put_le32(pb, 0);  /* dwPTSHigh */
+    } else if (enc->codec_id == CODEC_ID_GSM_MS) {
+        put_le16(pb, 2); /* wav_extra_size */
+        hdrsize += 2;
+        put_le16(pb, enc->frame_size); /* wSamplesPerBlock */
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
         put_le16(pb, 2); /* wav_extra_size */
         hdrsize += 2;

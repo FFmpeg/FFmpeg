@@ -71,6 +71,7 @@ version <next>
 - Theora encoding via libtheora
 - BMP encoder
 - WMA encoder
+- GSM-MS encoder and decoder
 
 version 0.4.9-pre1:
 

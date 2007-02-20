@@ -133,6 +133,7 @@ Codecs:
   jpeg_ls.c                             Kostya Shishkov
   kmvc.c                                Kostya Shishkov
   lcl.c                                 Roberto Togni
+  libgsm.c                              Michel Bardiaux
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
