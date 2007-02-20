@@ -317,6 +317,9 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else {
         bps = 16;
     }
+    if(bps != enc->bits_per_sample){
+        av_log(enc, AV_LOG_WARNING, "requested bits_per_sample (%d) and actually stored (%d) differ\n", enc->bits_per_sample, bps);
+    }
 
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         blkalign = enc->frame_size; //this is wrong, but seems many demuxers dont work if this is set correctly
