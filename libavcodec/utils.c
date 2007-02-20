@@ -743,6 +743,11 @@ static const AVOption options[]={
 
 static AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options };
 
+/**
+ * Sets the fields of the given AVCodecContext to default values.
+ *
+ * @param s The AVCodecContext of which the fields should be set to default values.
+ */
 void avcodec_get_context_defaults(AVCodecContext *s){
     memset(s, 0, sizeof(AVCodecContext));
 
@@ -765,8 +770,11 @@ void avcodec_get_context_defaults(AVCodecContext *s){
 }
 
 /**
- * allocates a AVCodecContext and set it to defaults.
- * this can be deallocated by simply calling free()
+ * Allocates an AVCodecContext and sets its fields to default values.  The
+ * resulting struct can be deallocated by simply calling av_free().
+ *
+ * @return An AVCodecContext filled with default values or NULL on failure.
+ * @see avcodec_get_context_defaults
  */
 AVCodecContext *avcodec_alloc_context(void){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
@@ -778,6 +786,11 @@ AVCodecContext *avcodec_alloc_context(void){
     return avctx;
 }
 
+/**
+ * Sets its fields of the given AVFrame to default values.
+ *
+ * @param pic The AVFrame of which the fields should be set to default values.
+ */
 void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
@@ -786,8 +799,11 @@ void avcodec_get_frame_defaults(AVFrame *pic){
 }
 
 /**
- * allocates a AVPFrame and set it to defaults.
- * this can be deallocated by simply calling free()
+ * Allocates an AVFrame and sets its fields to default values.  The resulting
+ * struct can be deallocated by simply calling av_free().
+ *
+ * @return An AVFrame filled with default values or NULL on failure.
+ * @see avcodec_get_frame_defaults
  */
 AVFrame *avcodec_alloc_frame(void){
     AVFrame *pic= av_malloc(sizeof(AVFrame));
@@ -1004,6 +1020,12 @@ int avcodec_close(AVCodecContext *avctx)
     return 0;
 }
 
+/**
+ * Find an encoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested encoder.
+ * @return An encoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_encoder(enum CodecID id)
 {
     AVCodec *p;
@@ -1016,6 +1038,12 @@ AVCodec *avcodec_find_encoder(enum CodecID id)
     return NULL;
 }
 
+/**
+ * Find an encoder with the specified name.
+ *
+ * @param name Name of the requested encoder.
+ * @return An encoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_encoder_by_name(const char *name)
 {
     AVCodec *p;
@@ -1028,6 +1056,12 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
     return NULL;
 }
 
+/**
+ * Find a decoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested decoder.
+ * @return An decoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_decoder(enum CodecID id)
 {
     AVCodec *p;
@@ -1040,6 +1074,12 @@ AVCodec *avcodec_find_decoder(enum CodecID id)
     return NULL;
 }
 
+/**
+ * Find an decoder with the specified name.
+ *
+ * @param name Name of the requested decoder.
+ * @return An decoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_decoder_by_name(const char *name)
 {
     AVCodec *p;
