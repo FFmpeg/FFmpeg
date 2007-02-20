@@ -1,5 +1,5 @@
 /*
- * Utils for libavcodec
+ * Provides registration of all codecs, parsers and bitstream filters for libavcodec.
  * Copyright (c) 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file allcodecs.c
- * Utils for libavcodec.
+ * Provides registration of all codecs, parsers and bitstream filters for libavcodec.
  */
 
 #include "avcodec.h"
@@ -35,11 +35,15 @@
 #define REGISTER_PARSER(X,x) \
           if(ENABLE_##X##_PARSER)  av_register_codec_parser(&x##_parser)
 
-/* If you do not call this function, then you can select exactly which
-   formats you want to support */
-
 /**
- * simple call to register all the codecs.
+ * Register all the codecs, parsers and bitstream filters which were enabled at
+ * configuration time. If you do not call this function you can select exactly
+ * which formats you want to support, by using the individual registration
+ * functions.
+ *
+ * @see register_avcodec
+ * @see av_register_codec_parser
+ * @see av_register_bitstream_filter
  */
 void avcodec_register_all(void)
 {
