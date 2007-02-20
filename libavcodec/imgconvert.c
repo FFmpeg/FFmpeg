@@ -44,24 +44,24 @@
 #define xglue(x, y) x ## y
 #define glue(x, y) xglue(x, y)
 
-#define FF_COLOR_RGB      0 /* RGB color space */
-#define FF_COLOR_GRAY     1 /* gray color space */
-#define FF_COLOR_YUV      2 /* YUV color space. 16 <= Y <= 235, 16 <= U, V <= 240 */
-#define FF_COLOR_YUV_JPEG 3 /* YUV color space. 0 <= Y <= 255, 0 <= U, V <= 255 */
+#define FF_COLOR_RGB      0 /**< RGB color space */
+#define FF_COLOR_GRAY     1 /**< gray color space */
+#define FF_COLOR_YUV      2 /**< YUV color space. 16 <= Y <= 235, 16 <= U, V <= 240 */
+#define FF_COLOR_YUV_JPEG 3 /**< YUV color space. 0 <= Y <= 255, 0 <= U, V <= 255 */
 
-#define FF_PIXEL_PLANAR   0 /* each channel has one component in AVPicture */
-#define FF_PIXEL_PACKED   1 /* only one components containing all the channels */
-#define FF_PIXEL_PALETTE  2  /* one components containing indexes for a palette */
+#define FF_PIXEL_PLANAR   0 /**< each channel has one component in AVPicture */
+#define FF_PIXEL_PACKED   1 /**< only one components containing all the channels */
+#define FF_PIXEL_PALETTE  2  /**< one components containing indexes for a palette */
 
 typedef struct PixFmtInfo {
     const char *name;
-    uint8_t nb_channels;     /* number of channels (including alpha) */
-    uint8_t color_type;      /* color type (see FF_COLOR_xxx constants) */
-    uint8_t pixel_type;      /* pixel storage type (see FF_PIXEL_xxx constants) */
-    uint8_t is_alpha : 1;    /* true if alpha can be specified */
-    uint8_t x_chroma_shift;  /* X chroma subsampling factor is 2 ^ shift */
-    uint8_t y_chroma_shift;  /* Y chroma subsampling factor is 2 ^ shift */
-    uint8_t depth;           /* bit depth of the color components */
+    uint8_t nb_channels;     /**< number of channels (including alpha) */
+    uint8_t color_type;      /**< color type (see FF_COLOR_xxx constants) */
+    uint8_t pixel_type;      /**< pixel storage type (see FF_PIXEL_xxx constants) */
+    uint8_t is_alpha : 1;    /**< true if alpha can be specified */
+    uint8_t x_chroma_shift;  /**< X chroma subsampling factor is 2 ^ shift */
+    uint8_t y_chroma_shift;  /**< Y chroma subsampling factor is 2 ^ shift */
+    uint8_t depth;           /**< bit depth of the color components */
 } PixFmtInfo;
 
 /* this table gives more information about formats */
@@ -382,7 +382,22 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
     return i;
 }
 
-/* Picture field are filled with 'ptr' addresses. Also return size */
+/**
+ * Fill in AVPicture's fields.
+ * The fields of the given AVPicture are filled in by using the 'ptr' address
+ * which points to the image data buffer. Depending on the specified picture
+ * format, one or multiple image data pointers and line sizes will be set.
+ * If a planar format is specified, several pointers will be set pointing to
+ * the different picture planes and the line sizes of the different planes
+ * will be stored in the lines_sizes array.
+ *
+ * @param picture AVPicture who's fields are to be filled in
+ * @param ptr Buffer which will contain or contains the actual image data
+ * @param pix_fmt The format in which the picture data is stored
+ * @param width The width of the image in pixels
+ * @param height The height of the image in pixels
+ * @return Size of the image data in bytes.
+ */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height)
 {
@@ -560,6 +575,15 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
     return size;
 }
 
+/**
+ * Calculate the size in bytes that a picture of the given width and height
+ * would occupy if stored in the given picture format.
+ *
+ * @param pix_fmt The given picture format
+ * @param width The width of the image
+ * @param height The height of the image
+ * @return Image data size in bytes
+ */
 int avpicture_get_size(int pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
