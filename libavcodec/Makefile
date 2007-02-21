@@ -329,12 +329,8 @@ OBJS += i386/fdct_mmx.o \
         i386/fft_3dn2.o \
         i386/snowdsp_mmx.o \
 
-ifeq ($(CONFIG_GPL),yes)
-OBJS += i386/idct_mmx.o
-endif
-ifeq ($(CONFIG_CAVS_DECODER),yes)
-OBJS += i386/cavsdsp_mmx.o
-endif
+OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
+OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 endif
 
 # armv4l specific stuff
