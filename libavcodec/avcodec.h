@@ -2567,7 +2567,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx);
 
 void avcodec_default_free_buffers(AVCodecContext *s);
 
-/* misc usefull functions */
+/* misc useful functions */
 
 /**
  * returns a single letter to describe the picture type
