@@ -2128,18 +2128,21 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case SOF0:
                     s->lossless=0;
+                    s->ls=0;
                     s->progressive=0;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
                     break;
                 case SOF2:
                     s->lossless=0;
+                    s->ls=0;
                     s->progressive=1;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
                     break;
                 case SOF3:
                     s->lossless=1;
+                    s->ls=0;
                     s->progressive=0;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
