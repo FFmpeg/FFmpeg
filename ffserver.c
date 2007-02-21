@@ -45,6 +45,7 @@
 
 #include "version.h"
 #include "ffserver.h"
+#include "random.h"
 
 /* maximum number of simultaneous HTTP connections */
 #define HTTP_MAX_CONNECTIONS 2000
@@ -291,6 +292,8 @@ static int current_bandwidth;
 
 static long cur_time;           // Making this global saves on passing it around everywhere
 
+static AVRandomState random_state;
+
 static long gettime_ms(void)
 {
     struct timeval tv;
@@ -468,8 +471,8 @@ static void start_multicast(void)
     for(stream = first_stream; stream != NULL; stream = stream->next) {
         if (stream->is_multicast) {
             /* open the RTP connection */
-            snprintf(session_id, sizeof(session_id),
-                     "%08x%08x", (int)random(), (int)random());
+            snprintf(session_id, sizeof(session_id), "%08x%08x",
+                     av_random(&random_state), av_random(&random_state));
 
             /* choose a port if none given */
             if (stream->multicast_port == 0) {
@@ -1536,7 +1539,7 @@ static int http_parse_request(HTTPContext *c)
     if (!strcmp(c->stream->fmt->name,"asf_stream")) {
         /* Need to allocate a client id */
 
-        c->wmp_client_id = random() & 0x7fffffff;
+        c->wmp_client_id = av_random(&random_state) & 0x7fffffff;
 
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=%d\r\nPragma: features=\"broadcast\"\r\n", c->wmp_client_id);
     }
@@ -2826,8 +2829,8 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     /* generate session id if needed */
     if (h->session_id[0] == '\0') {
-        snprintf(h->session_id, sizeof(h->session_id),
-                 "%08x%08x", (int)random(), (int)random());
+        snprintf(h->session_id, sizeof(h->session_id), "%08x%08x",
+                 av_random(&random_state), av_random(&random_state));
     }
 
     /* find rtp session, and create it if none found */
@@ -4525,7 +4528,7 @@ int main(int argc, char **argv)
 
     putenv("http_proxy");               /* Kill the http_proxy */
 
-    srandom(gettime_ms() + (getpid() << 16));
+    av_init_random(gettime_ms() + (getpid() << 16), &random_state);
 
     /* address on which the server will handle HTTP connections */
     my_http_addr.sin_family = AF_INET;
