@@ -332,7 +332,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG_GMC    0x0020  ///< use GMC
 #define CODEC_FLAG_MV0    0x0040  ///< always try a MB with MV=<0,0>
 #define CODEC_FLAG_PART   0x0080  ///< use data partitioning
-/* parent program gurantees that the input for b-frame containing streams is not written to
+/* parent program guarantees that the input for b-frame containing streams is not written to
    for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
 #define CODEC_FLAG_PASS1 0x0200   ///< use internal 2pass ratecontrol in first  pass mode
@@ -400,7 +400,7 @@ typedef struct RcOverride{
 #define CODEC_CAP_HWACCEL         0x0010
 /**
  * codec has a non zero delay and needs to be feeded with NULL at the end to get the delayed data.
- * if this is not set, the codec is guranteed to never be feeded with NULL data
+ * if this is not set, the codec is guaranteed to never be feeded with NULL data
  */
 #define CODEC_CAP_DELAY           0x0020
 /**
