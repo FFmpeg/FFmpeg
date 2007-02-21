@@ -294,14 +294,6 @@ static long cur_time;           // Making this global saves on passing it around
 
 static AVRandomState random_state;
 
-static long gettime_ms(void)
-{
-    struct timeval tv;
-
-    gettimeofday(&tv,NULL);
-    return (long long)tv.tv_sec * 1000 + (tv.tv_usec / 1000);
-}
-
 static FILE *logfile = NULL;
 
 static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
@@ -605,7 +597,7 @@ static int http_server(void)
                 return -1;
         } while (ret <= 0);
 
-        cur_time = gettime_ms();
+        cur_time = (long)(av_gettime()/1000);
 
         if (need_to_start_children) {
             need_to_start_children = 0;
@@ -4528,7 +4520,7 @@ int main(int argc, char **argv)
 
     putenv("http_proxy");               /* Kill the http_proxy */
 
-    av_init_random(gettime_ms() + (getpid() << 16), &random_state);
+    av_init_random(av_gettime() + (getpid() << 16), &random_state);
 
     /* address on which the server will handle HTTP connections */
     my_http_addr.sin_family = AF_INET;
