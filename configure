@@ -1109,6 +1109,7 @@ EOF
     SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
     SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(shlibdir)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
     SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc"
+    add_extralibs -lws2_32
     ;;
   cygwin*)
     targetos=CYGWIN
@@ -1591,8 +1592,6 @@ if enabled vhook; then
 fi
 
 enabled audio_beos && add_extralibs "-lmedia -lbe"
-
-enabled mingw32 && add_extralibs -lws2_32
 
 check_foo_config imlib2 imlib2 Imlib2.h imlib_load_font
 check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
