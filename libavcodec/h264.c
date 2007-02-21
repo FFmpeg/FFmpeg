@@ -8244,6 +8244,26 @@ static int decode_frame(AVCodecContext *avctx,
 
    /* no supplementary picture */
     if (buf_size == 0) {
+        Picture *out;
+        int i, out_idx;
+
+//FIXME factorize this with the output code below
+        out = h->delayed_pic[0];
+        out_idx = 0;
+        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+            if(h->delayed_pic[i]->poc < out->poc){
+                out = h->delayed_pic[i];
+                out_idx = i;
+            }
+
+        for(i=out_idx; h->delayed_pic[i]; i++)
+            h->delayed_pic[i] = h->delayed_pic[i+1];
+
+        if(out){
+            *data_size = sizeof(AVFrame);
+            *pict= *(AVFrame*)out;
+        }
+
         return 0;
     }
 
