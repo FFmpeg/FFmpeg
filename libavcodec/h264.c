@@ -1952,8 +1952,8 @@ static inline int get_chroma_qp(int chroma_qp_index_offset, int qscale){
 }
 
 //FIXME need to check that this doesnt overflow signed 32 bit for low qp, i am not sure, it's very close
-//FIXME check that gcc inlines this (and optimizes intra & seperate_dc stuff away)
-static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int intra, int seperate_dc){
+//FIXME check that gcc inlines this (and optimizes intra & separate_dc stuff away)
+static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int intra, int separate_dc){
     int i;
     const int * const quant_table= quant_coeff[qscale];
     const int bias= intra ? (1<<QUANT_SHIFT)/3 : (1<<QUANT_SHIFT)/6;
@@ -1961,7 +1961,7 @@ static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int
     const unsigned int threshold2= (threshold1<<1);
     int last_non_zero;
 
-    if(seperate_dc){
+    if(separate_dc){
         if(qscale<=18){
             //avoid overflows
             const int dc_bias= intra ? (1<<(QUANT_SHIFT-2))/3 : (1<<(QUANT_SHIFT-2))/6;
