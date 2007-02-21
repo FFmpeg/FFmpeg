@@ -746,7 +746,6 @@ bigendian="no"
 # OS
 targetos=`uname -s`
 beos_netserver="no"
-mingw32="no"
 os2="no"
 wince="no"
 
@@ -1085,7 +1084,6 @@ case `tolower $targetos` in
     FFSERVERLDFLAGS=-Wl,-bind_at_load
     ;;
   mingw32*)
-    mingw32="yes"
     if enabled_all shared static; then
         cat <<EOF
 You can only build one library type at once on MinGW.
