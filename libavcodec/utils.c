@@ -333,7 +333,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
-    InternalBuffer *buf, *last, temp;
+    InternalBuffer *buf, *last;
 
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
     assert(s->internal_buffer_count);
@@ -348,9 +348,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     s->internal_buffer_count--;
     last = &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
 
-    temp= *buf;
-    *buf= *last;
-    *last= temp;
+    FFSWAP(InternalBuffer, *buf, *last);
 
     for(i=0; i<3; i++){
         pic->data[i]=NULL;
