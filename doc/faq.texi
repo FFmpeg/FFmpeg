@@ -148,7 +148,7 @@ Choose a different codec with the -vcodec command line option.
 
 @section ffmpeg does not work; What is wrong?
 
-Try a 'make distclean' in the ffmpeg source directory. If this does not help see
+Try a 'make distclean' in the ffmpeg source directory before the build. If this does not help see
 (@url{http://ffmpeg.org/bugreports.php}).
 
 @section How do I encode XviD or DivX video with ffmpeg?
