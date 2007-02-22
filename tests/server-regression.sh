@@ -10,26 +10,28 @@ fi
 # Make sure that the data directory exists
 mkdir -p data
 
-cp "$2" data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
-FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' data/test.conf | grep -v html`
+FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' test.conf | grep -v html`
 
-rm -f /tmp/feed.ffm
-../ffserver -d -f data/test.conf 2> /dev/null &
+rm -f feed1.ffm
+../ffserver -d -f test.conf 2> /dev/null &
 FFSERVER_PID=$!
-echo "Waiting for feeds to startup..."
 sleep 2
+echo "Waiting for feeds to startup..."
+../ffmpeg -loop_input -flags +bitexact -dct fastint -idct simple -y -f pgmyuv -i vsynth1/%02d.pgm http://localhost:9999/feed1.ffm 2> /dev/null &
+FFMPEG_PID=$!
+sleep 5
 (
     cd data || exit $?
     rm -f ff-*;
     WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
         if [ `expr $file : "a-*"` != 0 ]; then
-            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file &
+            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file
         else
-            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=100000 > ff-$file 2>/dev/null &
+            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=20000 > ff-$file 2>/dev/null
         fi
         MDFILES="$MDFILES ff-$file"
     done
@@ -37,6 +39,7 @@ sleep 2
     # the status page is always different
     md5sum $MDFILES > ffserver.regression
 )
+kill $FFMPEG_PID
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
 if $diff_cmd data/ffserver.regression "$1" ; then
