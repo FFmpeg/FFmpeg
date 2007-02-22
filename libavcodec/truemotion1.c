@@ -419,7 +419,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     if (compression_types[header.compression].algorithm == ALGO_RGB24H)
         s->avctx->pix_fmt = PIX_FMT_RGB32;
     else
-        s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported aswell
+        s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported as well
 
     if ((header.deltaset != s->last_deltaset) || (header.vectable != s->last_vectable))
     {

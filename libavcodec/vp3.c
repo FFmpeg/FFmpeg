@@ -2601,7 +2601,7 @@ static int theora_decode_init(AVCodecContext *avctx)
 //        return -1;
      }
 
-    // FIXME: check for this aswell
+    // FIXME: Check for this as well.
     skip_bits(&gb, 6*8); /* "theora" */
 
     switch(ptype)
