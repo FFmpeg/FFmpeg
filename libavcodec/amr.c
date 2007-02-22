@@ -18,41 +18,52 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- /*
-    This code implements amr-nb and amr-wb audio encoder/decoder through external reference
-    code from www.3gpp.org. The license of the code from 3gpp is unclear so you
-    have to download the code separately. Two versions exists: One fixed-point
-    and one with floats. For some reason the float-encoder is significant faster
-    at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
-    Both float and fixed point are supported for amr-nb, but only float for
-    amr-wb.
 
-    --AMR-NB--
-    The fixed-point (TS26.073) can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip
-    Extract the source into ffmpeg/libavcodec/amr
-    To use the fixed version run "./configure" with "--enable-amr_nb-fixed"
-
-    The float version (default) can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
-    Extract the source into ffmpeg/libavcodec/amr_float
-
-    The specification for amr-nb can be found in TS 26.071
-    (http://www.3gpp.org/ftp/Specs/html-info/26071.htm) and some other
-    info at http://www.3gpp.org/ftp/Specs/html-info/26-series.htm
-
-    --AMR-WB--
-    The reference code can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
-    It should be extracted to "libavcodec/amrwb_float". Enable it with
-    "--enable-amr_wb".
-
-    The specification for amr-wb can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip
-
-    If someone wants to use the fixed point version it can be downloaded
-    from: http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip
-
+ /** @file
+ * Adaptive Multi-Rate (AMR) Audio decoder stub.
+ *
+ * This code implements both an AMR-NarrowBand (AMR-NB) and an AMR-WideBand
+ * (AMR-WB) audio encoder/decoder through external reference code from
+ * http://www.3gpp.org/. The license of the code from 3gpp is unclear so you
+ * have to download the code separately. Two versions exists: One fixed-point
+ * and one with floats. For some reason the float-encoder is significant faster
+ * at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
+ * Both float and fixed point are supported for AMR-NB, but only float for
+ * AMR-WB.
+ *
+ * \section AMR-NB
+ *
+ * \subsection Float
+ * The float version (default) can be downloaded from:
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
+ * Extract the source into \c "ffmpeg/libavcodec/amr_float".
+ *
+ * \subsection Fixed-point
+ * The fixed-point (TS26.073) can be downloaded from:
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip.
+ * Extract the source into \c "ffmpeg/libavcodec/amr".
+ * To use the fixed version run \c "./configure" with \c "--enable-amr_nb-fixed".
+ *
+ * \subsection Specification
+ * The specification for AMR-NB can be found in TS 26.071
+ * (http://www.3gpp.org/ftp/Specs/html-info/26071.htm) and some other
+ * info at http://www.3gpp.org/ftp/Specs/html-info/26-series.htm.
+ *
+ * \section AMR-WB
+ * \subsection Float
+ * The reference code can be downloaded from:
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
+ * It should be extracted to \c "ffmpeg/libavcodec/amrwb_float". Enable it with
+ * \c "--enable-amr_wb".
+ *
+ * \subsection Fixed-point
+ * If someone wants to use the fixed point version it can be downloaded from:
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip.
+ *
+ * \subsection Specification
+ * The specification for AMR-WB can be downloaded from:
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip.
+ *
  */
 
 #include "avcodec.h"
