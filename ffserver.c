@@ -436,13 +436,13 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         char bindmsg[32];
         snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)", ntohs(my_addr->sin_port));
         perror (bindmsg);
-        close(server_fd);
+        closesocket(server_fd);
         return -1;
     }
 
     if (listen (server_fd, 5) < 0) {
         perror ("listen");
-        close(server_fd);
+        closesocket(server_fd);
         return -1;
     }
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
@@ -686,7 +686,7 @@ static void new_connection(int server_fd, int is_rtsp)
         av_free(c->buffer);
         av_free(c);
     }
-    close(fd);
+    closesocket(fd);
 }
 
 static void close_connection(HTTPContext *c)
@@ -716,7 +716,7 @@ static void close_connection(HTTPContext *c)
 
     /* remove connection associated resources */
     if (c->fd >= 0)
-        close(c->fd);
+        closesocket(c->fd);
     if (c->fmt_in) {
         /* close each frame parser */
         for(i=0;i<c->fmt_in->nb_streams;i++) {
