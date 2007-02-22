@@ -186,6 +186,9 @@ static int fs_screen_width;
 static int fs_screen_height;
 static int screen_width = 0;
 static int screen_height = 0;
+static int frame_width = 0;
+static int frame_height = 0;
+static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int audio_disable;
 static int video_disable;
 static int wanted_audio_stream= 0;
@@ -1866,9 +1869,10 @@ static int decode_thread(void *arg)
     ap->initial_pause = 1; /* we force a pause when starting an RTSP
                               stream */
 
-    ap->width = screen_width;
-    ap->height= screen_height;
+    ap->width = frame_width;
+    ap->height= frame_height;
     ap->time_base= (AVRational){1, 25};
+    ap->pix_fmt = frame_pix_fmt;
 
     err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
     if (err < 0) {
@@ -2335,6 +2339,18 @@ static void event_loop(void)
     }
 }
 
+static void opt_frame_size(const char *arg)
+{
+    if (parse_image_size(&screen_width, &screen_height, arg) < 0) {
+        fprintf(stderr, "Incorrect frame size\n");
+        exit(1);
+    }
+    if ((frame_width % 2) != 0 || (frame_height % 2) != 0) {
+        fprintf(stderr, "Frame size must be a multiple of 2\n");
+        exit(1);
+    }
+}
+
 void opt_width(const char *arg)
 {
     screen_width = atoi(arg);
@@ -2360,6 +2376,11 @@ static void opt_format(const char *arg)
         fprintf(stderr, "Unknown input format: %s\n", arg);
         exit(1);
     }
+}
+
+static void opt_frame_pix_fmt(const char *arg)
+{
+    frame_pix_fmt = avcodec_get_pix_fmt(arg);
 }
 
 #ifdef CONFIG_NETWORK
@@ -2410,6 +2431,7 @@ const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG, {(void*)opt_height}, "force displayed height", "height" },
+    { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "fs", OPT_BOOL, {(void*)&is_full_screen}, "force full screen" },
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
@@ -2418,6 +2440,7 @@ const OptionDef options[] = {
     { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
