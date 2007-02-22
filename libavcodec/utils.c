@@ -1276,7 +1276,7 @@ void avcodec_init(void)
 }
 
 /**
- * Flush buffers, should be called when seeking or when swicthing to a different stream.
+ * Flush buffers, should be called when seeking or when switching to a different stream.
  */
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
