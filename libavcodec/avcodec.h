@@ -2776,7 +2776,10 @@ void avcodec_default_free_buffers(AVCodecContext *s);
 char av_get_pict_type_char(int pict_type);
 
 /**
- * returns codec bits per sample
+ * Returns codec bits per sample.
+ *
+ * @param[in] codec_id The codec.
+ * @return Number of bits per sample or zero if unknown for the given codec.
  */
 int av_get_bits_per_sample(enum CodecID codec_id);
 
