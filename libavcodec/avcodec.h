@@ -2908,7 +2908,12 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 void av_free_static(void);
 
 /**
- * allocation of static arrays - do not use for normal allocation.
+ * Allocation of static arrays.
+ *
+ * @warning Do not use for normal allocation.
+ *
+ * @param[in] size The amount of memory you need in bytes.
+ * @return Block of memory of the requested size.
  */
 void *av_mallocz_static(unsigned int size);
 
