@@ -2895,7 +2895,10 @@ extern AVBitStreamFilter mjpega_dump_header_bsf;
 /* memory */
 
 /**
- * realloc which does nothing if the block is large enough
+ * Reallocates the given block if it is not large enough, otherwise it
+ * does nothing.
+ *
+ * @see av_realloc
  */
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 
