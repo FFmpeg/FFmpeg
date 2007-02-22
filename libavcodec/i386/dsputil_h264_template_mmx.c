@@ -188,8 +188,8 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "pxor   %%mm7, %%mm7        \n\t"
         "movd %5, %%mm2             \n\t"
         "movd %6, %%mm3             \n\t"
-        "movq %7, %%mm4             \n\t"
-        "movq %7, %%mm5             \n\t"
+        "movq "MANGLE(ff_pw_8)", %%mm4\n\t"
+        "movq "MANGLE(ff_pw_8)", %%mm5\n\t"
         "punpcklwd %%mm2, %%mm2     \n\t"
         "punpcklwd %%mm3, %%mm3     \n\t"
         "punpcklwd %%mm2, %%mm2     \n\t"
@@ -246,7 +246,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "sub $2, %2                 \n\t"
         "jnz 1b                     \n\t"
         : "+r"(dst), "+r"(src), "+r"(h)
-        : "r"((long)stride), "m"(ff_pw_32), "m"(x), "m"(y), "m"(ff_pw_8)
+        : "r"((long)stride), "m"(ff_pw_32), "m"(x), "m"(y)
     );
 }
 
