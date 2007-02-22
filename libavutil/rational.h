@@ -56,7 +56,7 @@ static inline double av_q2d(AVRational a){
 
 /**
  * reduce a fraction.
- * this is usefull for framerate calculations
+ * This is useful for framerate calculations.
  * @param max the maximum allowed for dst_nom & dst_den
  * @return 1 if exact, 0 otherwise
  */
