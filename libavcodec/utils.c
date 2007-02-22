@@ -741,11 +741,6 @@ static const AVOption options[]={
 
 static AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options };
 
-/**
- * Sets the fields of the given AVCodecContext to default values.
- *
- * @param s The AVCodecContext of which the fields should be set to default values.
- */
 void avcodec_get_context_defaults(AVCodecContext *s){
     memset(s, 0, sizeof(AVCodecContext));
 
@@ -767,13 +762,6 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->reget_buffer= avcodec_default_reget_buffer;
 }
 
-/**
- * Allocates an AVCodecContext and sets its fields to default values.  The
- * resulting struct can be deallocated by simply calling av_free().
- *
- * @return An AVCodecContext filled with default values or NULL on failure.
- * @see avcodec_get_context_defaults
- */
 AVCodecContext *avcodec_alloc_context(void){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 
@@ -784,11 +772,6 @@ AVCodecContext *avcodec_alloc_context(void){
     return avctx;
 }
 
-/**
- * Sets its fields of the given AVFrame to default values.
- *
- * @param pic The AVFrame of which the fields should be set to default values.
- */
 void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
@@ -796,13 +779,6 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     pic->key_frame= 1;
 }
 
-/**
- * Allocates an AVFrame and sets its fields to default values.  The resulting
- * struct can be deallocated by simply calling av_free().
- *
- * @return An AVFrame filled with default values or NULL on failure.
- * @see avcodec_get_frame_defaults
- */
 AVFrame *avcodec_alloc_frame(void){
     AVFrame *pic= av_malloc(sizeof(AVFrame));
 
@@ -874,13 +850,6 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return 0;
 }
 
-/**
- * encode a frame.
- * @param buf buffer for the bitstream of encoded frame
- * @param buf_size the size of the buffer in bytes
- * @param pict the input picture to encode, in avctx.pix_fmt
- * @return -1 if error
- */
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict)
 {
@@ -909,15 +878,6 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return ret;
 }
 
-/**
- * decode a frame.
- * @param buf bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE larger then the actual read bytes
- * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
- * @param buf_size the size of the buffer in bytes
- * @param got_picture_ptr zero if no frame could be decompressed, Otherwise, it is non zero
- * @return -1 if error, otherwise return the number of
- * bytes used.
- */
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          uint8_t *buf, int buf_size)
@@ -941,10 +901,6 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
     return ret;
 }
 
-/* decode an audio frame. return -1 if error, otherwise return the
-   *number of bytes used. If no frame could be decompressed,
-   *frame_size_ptr is zero. Otherwise, it is the decompressed frame
-   *size in BYTES. */
 int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size)
@@ -1018,12 +974,6 @@ int avcodec_close(AVCodecContext *avctx)
     return 0;
 }
 
-/**
- * Find an encoder with a matching codec ID.
- *
- * @param id CodecID of the requested encoder.
- * @return An encoder if one was found, NULL otherwise.
- */
 AVCodec *avcodec_find_encoder(enum CodecID id)
 {
     AVCodec *p;
@@ -1036,12 +986,6 @@ AVCodec *avcodec_find_encoder(enum CodecID id)
     return NULL;
 }
 
-/**
- * Find an encoder with the specified name.
- *
- * @param name Name of the requested encoder.
- * @return An encoder if one was found, NULL otherwise.
- */
 AVCodec *avcodec_find_encoder_by_name(const char *name)
 {
     AVCodec *p;
@@ -1054,12 +998,6 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
     return NULL;
 }
 
-/**
- * Find a decoder with a matching codec ID.
- *
- * @param id CodecID of the requested decoder.
- * @return An decoder if one was found, NULL otherwise.
- */
 AVCodec *avcodec_find_decoder(enum CodecID id)
 {
     AVCodec *p;
@@ -1072,12 +1010,6 @@ AVCodec *avcodec_find_decoder(enum CodecID id)
     return NULL;
 }
 
-/**
- * Find an decoder with the specified name.
- *
- * @param name Name of the requested decoder.
- * @return An decoder if one was found, NULL otherwise.
- */
 AVCodec *avcodec_find_decoder_by_name(const char *name)
 {
     AVCodec *p;
@@ -1262,7 +1194,6 @@ static void init_crcs(void){
     av_crc_init(av_crc07      , 0,  8, 0x07      , sizeof(AVCRC)*257);
 }
 
-/* must be called before any other functions */
 void avcodec_init(void)
 {
     static int inited = 0;

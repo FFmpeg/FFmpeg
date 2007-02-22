@@ -896,9 +896,9 @@ typedef struct AVCodecContext {
 
     /**
      * hurry up amount.
-     * deprecated in favor of skip_idct and skip_frame
      * - encoding: unused
      * - decoding: set by user. 1-> skip b frames, 2-> skip idct/dequant too, 5-> skip everything except header
+     * @deprecated Deprecated in favor of skip_idct and skip_frame.
      */
     int hurry_up;
 
@@ -2439,7 +2439,7 @@ attribute_deprecated void img_resample_close(ImgReSampleContext *s);
  * @param pix_fmt the format of the picture.
  * @param width the width of the picture.
  * @param height the height of the picture.
- * @return 0 if successful, -1 if not.
+ * @return Zero if successful, a negative value if not.
  */
 int avpicture_alloc(AVPicture *picture, int pix_fmt, int width, int height);
 
@@ -2493,24 +2493,95 @@ extern AVCodec *first_avcodec;
 unsigned avcodec_version(void);
 /* returns LIBAVCODEC_BUILD constant */
 unsigned avcodec_build(void);
+
+/**
+ * Initializes libavcodec.
+ *
+ * @warning This function \e must be called before any other libavcodec
+ * function.
+ */
 void avcodec_init(void);
 
 void register_avcodec(AVCodec *format);
+
+/**
+ * Finds an encoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested encoder.
+ * @return An encoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_encoder(enum CodecID id);
+
+/**
+ * Finds an encoder with the specified name.
+ *
+ * @param name Name of the requested encoder.
+ * @return An encoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_encoder_by_name(const char *name);
+
+/**
+ * Finds a decoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested decoder.
+ * @return A decoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_decoder(enum CodecID id);
+
+/**
+ * Finds an decoder with the specified name.
+ *
+ * @param name Name of the requested decoder.
+ * @return A decoder if one was found, NULL otherwise.
+ */
 AVCodec *avcodec_find_decoder_by_name(const char *name);
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
+/**
+ * Sets the fields of the given AVCodecContext to default values.
+ *
+ * @param s The AVCodecContext of which the fields should be set to default values.
+ */
 void avcodec_get_context_defaults(AVCodecContext *s);
+
+/**
+ * Allocates an AVCodecContext and sets its fields to default values.  The
+ * resulting struct can be deallocated by simply calling av_free().
+ *
+ * @return An AVCodecContext filled with default values or NULL on failure.
+ * @see avcodec_get_context_defaults
+ */
 AVCodecContext *avcodec_alloc_context(void);
+
+/**
+ * Sets the fields of the given AVFrame to default values.
+ *
+ * @param pic The AVFrame of which the fields should be set to default values.
+ */
 void avcodec_get_frame_defaults(AVFrame *pic);
+
+/**
+ * Allocates an AVFrame and sets its fields to default values.  The resulting
+ * struct can be deallocated by simply calling av_free().
+ *
+ * @return An AVFrame filled with default values or NULL on failure.
+ * @see avcodec_get_frame_defaults
+ */
 AVFrame *avcodec_alloc_frame(void);
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
+
+/**
+ * Checks if the given dimension of a picture is valid, meaning that all
+ * bytes of the picture can be addressed with a signed int.
+ *
+ * @param[in] w Width of the picture.
+ * @param[in] h Height of the picture.
+ * @return Zero if valid, a negative value if invalid.
+ */
 int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h);
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
@@ -2521,28 +2592,111 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
 //FIXME func typedef
 
 /**
- * opens / inits the AVCodecContext.
- * not thread save!
+ * Initializes the AVCodecContext to use the given AVCodec. Prior to using this
+ * function the context has to be allocated.
+ *
+ * The functions avcodec_find_decoder_by_name(), avcodec_find_encoder_by_name(),
+ * avcodec_find_decoder() and avcodec_find_encoder() provide an easy way for
+ * retrieving a codec.
+ *
+ * @warning This function is not thread save!
+ *
+ * @code
+ * codec = avcodec_find_decoder(CODEC_ID_H264);
+ * if (!codec)
+ *     exit(1);
+ *
+ * context = avcodec_alloc_context();
+ *
+ * if (avcodec_open(context, codec) < 0)
+ *     exit(1);
+ * @endcode
+ *
+ * @param avctx The context which will be setup to use the given codec.
+ * @param codec The codec to use within the context.
+ * @return Zero on success, a negative value on error.
+ * @see avcodec_alloc_context, avcodec_find_decoder, avcodec_find_encoder
  */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
-
+/**
+ * @deprecated Use avcodec_decode_audio2() instead.
+ */
 attribute_deprecated int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size);
+
 /**
- * Decode an audio frame.
+ * Decodes an audio frame from \p buf into \p samples.
+ * The avcodec_decode_audio2() function decodes a frame of audio from the input
+ * buffer \p buf of size \p buf_size. To decode it, it makes use of the
+ * audiocodec which was coupled with \p avctx using avcodec_open(). The
+ * resulting decoded frame is stored in output buffer \p samples.  If no frame
+ * could be decompressed, \p frame_size_ptr is zero. Otherwise, it is the
+ * decompressed frame size in \e bytes.
  *
- * @param avctx the codec context.
- * @param samples output buffer, 16 byte aligned
- * @param frame_size_ptr the output buffer size in bytes (you MUST set this to the allocated size before calling avcodec_decode_audio2()), zero if no frame could be compressed
- * @param buf input buffer, 16 byte aligned
- * @param buf_size the input buffer size
- * @return 0 if successful, -1 if not.
+ * @warning You \e must set \p frame_size_ptr to the allocated size of the
+ * output buffer before calling avcodec_decode_audio2().
+ *
+ * @warning The input buffer must be \c FF_INPUT_BUFFER_PADDING_SIZE larger than
+ * the actual read bytes because some optimized bitstream readers read 32 or 64
+ * bits at once and could read over the end.
+ *
+ * @warning The end of the input buffer \p buf should be set to 0 to ensure that
+ * no overreading happens for damaged MPEG streams.
+ *
+ * @note You might have to align the input buffer \p buf and output buffer \p
+ * samples. The alignment requirements depend on the CPU: on some CPUs it isn't
+ * necessary at all, on others it won't work at all if not aligned and on others
+ * it will work but it will have an impact on performance. In practice, the
+ * bitstream should have 4 byte alignment at minimum and all sample data should
+ * be 16 byte aligned unless the CPU doesn't need it (AltiVec and SSE do). If
+ * the linesize is not a multiple of 16 then there's no sense in aligning the
+ * start of the buffer to 16.
+ *
+ * @param avctx The codec context.
+ * @param[out] samples The output buffer.
+ * @param[in,out] frame_size_ptr The output buffer size in bytes.
+ * @param[in] buf The input buffer.
+ * @param[in] buf_size The input buffer size in bytes.
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame could be decompressed.
  */
 int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size);
+
+/**
+ * Decodes a video frame from \p buf into \p picture.
+ * The avcodec_decode_video() function decodes a frame of video from the input
+ * buffer \p buf of size \p buf_size. To decode it, it makes use of the
+ * videocodec which was coupled with \p avctx using avcodec_open(). The
+ * resulting decoded frame is stored in \p picture.
+ *
+ * @warning The input buffer must be \c FF_INPUT_BUFFER_PADDING_SIZE larger than
+ * the actual read bytes because some optimized bitstream readers read 32 or 64
+ * bits at once and could read over the end.
+ *
+ * @warning The end of the input buffer \p buf should be set to 0 to ensure that
+ * no overreading happens for damaged MPEG streams.
+ *
+ * @note You might have to align the input buffer \p buf and output buffer \p
+ * samples. The alignment requirements depend on the CPU: on some CPUs it isn't
+ * necessary at all, on others it won't work at all if not aligned and on others
+ * it will work but it will have an impact on performance. In practice, the
+ * bitstream should have 4 byte alignment at minimum and all sample data should
+ * be 16 byte aligned unless the CPU doesn't need it (AltiVec and SSE do). If
+ * the linesize is not a multiple of 16 then there's no sense in aligning the
+ * start of the buffer to 16.
+ *
+ * @param avctx The codec context.
+ * @param[out] picture The AVFrame in which the decoded video frame will be stored.
+ * @param[in] buf The input buffer.
+ * @param[in] buf_size The size of the input buffer in bytes.
+ * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is non zero.
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame could be decompressed.
+ */
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          uint8_t *buf, int buf_size);
@@ -2552,8 +2706,41 @@ int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
 int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata,
                         int *data_size_ptr,
                         uint8_t *buf, int buf_size);
+
+/**
+ * Encodes an audio frame from \p samples into \p buf.
+ * The avcodec_encode_audio() function encodes a frame of audio from the input
+ * buffer \p samples. To encode it, it makes use of the audiocodec which was
+ * coupled with \p avctx using avcodec_open(). The resulting encoded frame is
+ * stored in output buffer \p buf.
+ *
+ * @note The output buffer should be at least \c FF_MIN_BUFFER_SIZE bytes large.
+ *
+ * @param avctx The codec context.
+ * @param[out] buf The output buffer.
+ * @param[in] buf_size The output buffer size.
+ * @param[in] samples The input buffer containing the samples.
+ * @return On error a negative value is returned, on succes zero or the number
+ * of bytes used from the input buffer.
+ */
 int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const short *samples);
+
+/**
+ * Encodes a video frame from \p pict into \p buf.
+ * The avcodec_encode_video() function encodes a frame of video from the input
+ * \p pict. To encode it, it makes use of the videocodec which was coupled with
+ * \p avctx using avcodec_open(). The resulting encoded bytes representing the
+ * frame are stored in the output buffer \p buf. The input picture should be
+ * stored using a specific format, namely \c avctx.pix_fmt.
+ *
+ * @param avctx The codec context.
+ * @param[out] buf The output buffer for the bitstream of encoded frame.
+ * @param[in] buf_size The size of the outputbuffer in bytes.
+ * @param[in] pict The input picture to encode.
+ * @return On error a negative value is returned, on success zero or the number
+ * of bytes used from the input buffer.
+ */
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict);
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
