@@ -74,7 +74,7 @@ typedef struct SwsContext{
 	int16_t *vChrFilter;
 	int16_t *vChrFilterPos;
 
-	uint8_t formatConvBuffer[4000]; //FIXME dynamic alloc, but we have to change alot of code for this to be usefull
+	uint8_t formatConvBuffer[4000]; //FIXME dynamic alloc, but we have to change a lot of code for this to be useful
 
 	int hLumFilterSize;
 	int hChrFilterSize;
