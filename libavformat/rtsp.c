@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 
+#include <sys/time.h>
 #include <unistd.h> /* for select() prototype */
 #include "network.h"
 
