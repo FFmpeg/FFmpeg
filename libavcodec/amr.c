@@ -20,22 +20,22 @@
  */
  /*
     This code implements amr-nb and amr-wb audio encoder/decoder through external reference
-    code from www.3gpp.org. The licence of the code from 3gpp is unclear so you
+    code from www.3gpp.org. The license of the code from 3gpp is unclear so you
     have to download the code separately. Two versions exists: One fixed-point
     and one with floats. For some reason the float-encoder is significant faster
-    atleast on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
-    Both float and fixed point is supported for amr-nb, but only float for
+    at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
+    Both float and fixed point are supported for amr-nb, but only float for
     amr-wb.
 
     --AMR-NB--
     The fixed-point (TS26.073) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip
-    Extract the soure into ffmpeg/libavcodec/amr
+    Extract the source into ffmpeg/libavcodec/amr
     To use the fixed version run "./configure" with "--enable-amr_nb-fixed"
 
     The float version (default) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
-    Extract the soure into ffmpeg/libavcodec/amr_float
+    Extract the source into ffmpeg/libavcodec/amr_float
 
     The specification for amr-nb can be found in TS 26.071
     (http://www.3gpp.org/ftp/Specs/html-info/26071.htm) and some other
@@ -50,7 +50,7 @@
     The specification for amr-wb can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip
 
-    If someone want to use the fixed point version it can be downloaded
+    If someone wants to use the fixed point version it can be downloaded
     from: http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip
 
  */
