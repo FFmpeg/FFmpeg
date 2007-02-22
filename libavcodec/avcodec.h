@@ -2902,8 +2902,8 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /* for static data only */
 
 /**
- * free all static arrays and reset pointers to 0.
- * call av_free_static to release all staticaly allocated tables
+ * Frees all static arrays and reset their pointers to 0.
+ * Call this function to release all statically allocated tables.
  */
 void av_free_static(void);
 
