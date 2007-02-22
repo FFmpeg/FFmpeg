@@ -787,7 +787,7 @@ static int handle_connection(HTTPContext *c)
             return 0;
         /* read the data */
     read_loop:
-        len = read(c->fd, c->buffer_ptr, 1);
+        len = recv(c->fd, c->buffer_ptr, 1, 0);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR)
                 return -1;
@@ -822,7 +822,7 @@ static int handle_connection(HTTPContext *c)
         /* no need to write if no events */
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
-        len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 /* error : close connection */
@@ -889,7 +889,7 @@ static int handle_connection(HTTPContext *c)
         /* no need to write if no events */
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
-        len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 /* error : close connection */
@@ -914,8 +914,8 @@ static int handle_connection(HTTPContext *c)
         /* no need to write if no events */
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
-        len = write(c->fd, c->packet_buffer_ptr,
-                    c->packet_buffer_end - c->packet_buffer_ptr);
+        len = send(c->fd, c->packet_buffer_ptr,
+                    c->packet_buffer_end - c->packet_buffer_ptr, 0);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 /* error : close connection */
@@ -2286,8 +2286,8 @@ static int http_send_data(HTTPContext *c)
                     c->buffer_ptr += len;
 
                     /* send everything we can NOW */
-                    len = write(rtsp_c->fd, rtsp_c->packet_buffer_ptr,
-                                rtsp_c->packet_buffer_end - rtsp_c->packet_buffer_ptr);
+                    len = send(rtsp_c->fd, rtsp_c->packet_buffer_ptr,
+                                rtsp_c->packet_buffer_end - rtsp_c->packet_buffer_ptr, 0);
                     if (len > 0) {
                         rtsp_c->packet_buffer_ptr += len;
                     }
@@ -2311,7 +2311,7 @@ static int http_send_data(HTTPContext *c)
                 }
             } else {
                 /* TCP data output */
-                len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+                len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
                 if (len < 0) {
                     if (errno != EAGAIN && errno != EINTR) {
                         /* error : close connection */
@@ -2368,7 +2368,7 @@ static int http_receive_data(HTTPContext *c)
     if (c->buffer_end > c->buffer_ptr) {
         int len;
 
-        len = read(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        len = recv(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 /* error : close connection */
