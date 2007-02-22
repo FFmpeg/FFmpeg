@@ -2768,7 +2768,10 @@ void avcodec_default_free_buffers(AVCodecContext *s);
 /* misc useful functions */
 
 /**
- * returns a single letter to describe the picture type
+ * Returns a single letter to describe the given picture type \p pict_type.
+ *
+ * @param[in] pict_type The picture type.
+ * @return A single character representing the picture type.
  */
 char av_get_pict_type_char(int pict_type);
 
