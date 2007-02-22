@@ -59,9 +59,6 @@ const uint8_t ff_reverse[256]={
 
 static int volatile entangled_thread_counter=0;
 
-/**
- * realloc which does nothing if the block is large enough
- */
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 {
     if(min_size < *size)
@@ -76,9 +73,6 @@ static unsigned int last_static = 0;
 static unsigned int allocated_static = 0;
 static void** array_static = NULL;
 
-/**
- * allocation of static arrays - do not use for normal allocation.
- */
 void *av_mallocz_static(unsigned int size)
 {
     void *ptr = av_mallocz(size);
@@ -92,10 +86,6 @@ void *av_mallocz_static(unsigned int size)
 
     return ptr;
 }
-
-/**
- * same as above, but does realloc
- */
 
 void *av_realloc_static(void *ptr, unsigned int size)
 {
@@ -113,9 +103,6 @@ void *av_realloc_static(void *ptr, unsigned int size)
 
 }
 
-/**
- * free all static arrays and reset pointers to 0.
- */
 void av_free_static(void)
 {
     while(last_static){
@@ -938,10 +925,6 @@ int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
 }
 #endif
 
-
-/* decode a subtitle message. return -1 if error, otherwise return the
-   *number of bytes used. If no subtitle could be decompressed,
-   *got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */
 int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             const uint8_t *buf, int buf_size)
@@ -1206,9 +1189,6 @@ void avcodec_init(void)
     init_crcs();
 }
 
-/**
- * Flush buffers, should be called when seeking or when switching to a different stream.
- */
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
     if(avctx->codec->flush)

@@ -2700,6 +2700,10 @@ int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          uint8_t *buf, int buf_size);
+
+/* decode a subtitle message. return -1 if error, otherwise return the
+   *number of bytes used. If no subtitle could be decompressed,
+   *got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */
 int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             const uint8_t *buf, int buf_size);
@@ -2750,6 +2754,9 @@ int avcodec_close(AVCodecContext *avctx);
 
 void avcodec_register_all(void);
 
+/**
+ * Flush buffers, should be called when seeking or when switching to a different stream.
+ */
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 void avcodec_default_free_buffers(AVCodecContext *s);
@@ -2876,11 +2883,28 @@ extern AVBitStreamFilter mjpega_dump_header_bsf;
 
 
 /* memory */
+
+/**
+ * realloc which does nothing if the block is large enough
+ */
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
+
 /* for static data only */
-/* call av_free_static to release all staticaly allocated tables */
+
+/**
+ * free all static arrays and reset pointers to 0.
+ * call av_free_static to release all staticaly allocated tables
+ */
 void av_free_static(void);
+
+/**
+ * allocation of static arrays - do not use for normal allocation.
+ */
 void *av_mallocz_static(unsigned int size);
+
+/**
+ * same as above, but does realloc
+ */
 void *av_realloc_static(void *ptr, unsigned int size);
 
 void img_copy(AVPicture *dst, const AVPicture *src,
