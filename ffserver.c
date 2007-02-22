@@ -4146,6 +4146,11 @@ static int parse_ffconfig(const char *filename)
                 video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                 video_enc.flags |= CODEC_FLAG_4MV;
             }
+        } else if (!strcasecmp(cmd, "VideoTag")) {
+            get_arg(arg, sizeof(arg), &p);
+            if ((strlen(arg) == 4) && stream) {
+                video_enc.codec_tag = ff_get_fourcc(arg);
+            }
         } else if (!strcasecmp(cmd, "BitExact")) {
             if (stream) {
                 video_enc.flags |= CODEC_FLAG_BITEXACT;
