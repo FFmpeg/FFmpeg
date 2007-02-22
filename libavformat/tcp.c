@@ -73,7 +73,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (resolve_host(&dest_addr.sin_addr, hostname) < 0)
         goto fail;
 
-    fd = socket(PF_INET, SOCK_STREAM, 0);
+    fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
         goto fail;
     fcntl(fd, F_SETFL, O_NONBLOCK);

@@ -330,7 +330,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
 
 #ifndef CONFIG_IPV6
-    udp_fd = socket(PF_INET, SOCK_DGRAM, 0);
+    udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd < 0)
         goto fail;
 

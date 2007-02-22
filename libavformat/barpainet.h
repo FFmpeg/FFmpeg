@@ -27,7 +27,6 @@
 
 # include <socket.h>
 int inet_aton (const char * str, struct in_addr * add);
-# define PF_INET AF_INET
 # define SO_SNDBUF 0x40000001
 
 /* fake */
