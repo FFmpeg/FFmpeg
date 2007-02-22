@@ -2913,7 +2913,11 @@ void av_free_static(void);
 void *av_mallocz_static(unsigned int size);
 
 /**
- * same as above, but does realloc
+ * Same as av_mallocz_static(), but does a realloc.
+ *
+ * @param[in] ptr The block of memory to reallocate.
+ * @param[in] size The requested size.
+ * @return Block of memory of requested size.
  */
 void *av_realloc_static(void *ptr, unsigned int size);
 
