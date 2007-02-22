@@ -1109,6 +1109,9 @@ the FFmpeg Windows Help Forum at
 @url{http://www.mingw.org/}. You can find detailed installation
 instructions in the download section and the FAQ.
 
+NOTE: Use at least bash 3.1. Older versions are known to be failing on the
+configure script.
+
 @item If you want to test the FFplay, also download
 the MinGW development library of SDL 1.2.x
 (@file{SDL-devel-1.2.x-mingw32.tar.gz}) from
