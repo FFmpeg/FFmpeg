@@ -762,6 +762,13 @@ static void close_connection(HTTPContext *c)
 
     if (c->stream && !c->post && c->stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth -= c->stream->bandwidth;
+
+    /* signal that there is no feed if we are the feeder socket */
+    if (c->state == HTTPSTATE_RECEIVE_DATA && c->stream) {
+        c->stream->feed_opened = 0;
+        close(c->feed_fd);
+    }
+
     av_freep(&c->pb_buffer);
     av_freep(&c->packet_buffer);
     av_free(c->buffer);
