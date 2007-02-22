@@ -228,8 +228,6 @@ void video_encode_example(const char *filename)
         exit(1);
     }
 
-    /* the codec gives us the frame size, in samples */
-
     f = fopen(filename, "wb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
