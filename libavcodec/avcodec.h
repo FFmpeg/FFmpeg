@@ -2443,7 +2443,11 @@ attribute_deprecated void img_resample_close(ImgReSampleContext *s);
  */
 int avpicture_alloc(AVPicture *picture, int pix_fmt, int width, int height);
 
-/* Free a picture previously allocated by avpicture_alloc. */
+/**
+ * Free a picture previously allocated by avpicture_alloc().
+ *
+ * @param picture The AVPicture to be freed.
+ */
 void avpicture_free(AVPicture *picture);
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
