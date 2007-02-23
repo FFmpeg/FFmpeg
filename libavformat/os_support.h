@@ -62,6 +62,10 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
      /* doesn't set errno but that's enough */
 #    define usleep(t)  snooze((bigtime_t)(t))
 #  endif
+#  ifndef SA_RESTART
+#    warning SA_RESTART not implemented; ffserver might misbehave.
+#    define SA_RESTART 0
+#  endif
 #endif
 
 #if defined(CONFIG_OS2)
