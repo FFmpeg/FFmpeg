@@ -265,9 +265,9 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         "punpckldq %%mm6, %%mm6\n\t"
         "pxor %%mm7, %%mm7\n\t"
         /* mm0 = src[0,1,1,2] */
-        "movd %2, %%mm0\n\t"
-        "punpcklbw %%mm7, %%mm0\n\t"
-        "pshufw $0x94, %%mm0, %%mm0\n\t"
+        "movd %2, %%mm2\n\t"
+        "punpcklbw %%mm7, %%mm2\n\t"
+        "pshufw $0x94, %%mm2, %%mm2\n\t"
         :: "r"(AB), "r"(CD), "m"(src[0]));
 
 
@@ -275,7 +275,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         "1:\n\t"
         "add %4, %1\n\t"
         /* mm1 = A * src[0,1] + B * src[1,2] */
-        "movq    %%mm0, %%mm1\n\t"
+        "movq    %%mm2, %%mm1\n\t"
         "pmaddwd %%mm5, %%mm1\n\t"
         /* mm0 = src[0,1,1,2] */
         "movd (%1), %%mm0\n\t"
@@ -283,8 +283,8 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         "pshufw $0x94, %%mm0, %%mm0\n\t"
         /* mm1 += C * src[0,1] + D * src[1,2] */
         "movq    %%mm0, %%mm2\n\t"
-        "pmaddwd %%mm6, %%mm2\n\t"
-        "paddw   %%mm2, %%mm1\n\t"
+        "pmaddwd %%mm6, %%mm0\n\t"
+        "paddw   %%mm0, %%mm1\n\t"
         /* dst[0,1] = pack((mm1 + 32) >> 6) */
         "paddw %3, %%mm1\n\t"
         "psrlw $6, %%mm1\n\t"
