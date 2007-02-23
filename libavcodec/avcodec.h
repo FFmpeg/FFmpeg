@@ -258,6 +258,7 @@ enum CodecType {
     CODEC_TYPE_AUDIO,
     CODEC_TYPE_DATA,
     CODEC_TYPE_SUBTITLE,
+    CODEC_TYPE_NB
 };
 
 /* currently unused, may be used if 24/32 bits samples ever supported */
