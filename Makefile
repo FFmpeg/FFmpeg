@@ -242,6 +242,4 @@ codectest libavtest test-server fulltest test mpeg4 mpeg: $(PROGS)
 .PHONY: dep depend clean distclean TAGS
 .PHONY: codectest libavtest test-server fulltest test mpeg4 mpeg
 
-ifneq ($(wildcard .depend),)
-include .depend
-endif
+-include .depend
