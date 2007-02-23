@@ -87,7 +87,7 @@ void *av_mallocz_static(unsigned int size)
     return ptr;
 }
 
-void *av_realloc_static(void *ptr, unsigned int size)
+void *ff_realloc_static(void *ptr, unsigned int size)
 {
     int i;
     if(!ptr)

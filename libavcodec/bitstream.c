@@ -37,7 +37,7 @@
  * @param[in] size The requested size.
  * @return Block of memory of requested size.
  */
-void *av_realloc_static(void *ptr, unsigned int size);
+void *ff_realloc_static(void *ptr, unsigned int size);
 
 void align_put_bits(PutBitContext *s)
 {
@@ -87,7 +87,7 @@ static int alloc_table(VLC *vlc, int size, int use_static)
     if (vlc->table_size > vlc->table_allocated) {
         vlc->table_allocated += (1 << vlc->bits);
         if(use_static)
-            vlc->table = av_realloc_static(vlc->table,
+            vlc->table = ff_realloc_static(vlc->table,
                                            sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
         else
             vlc->table = av_realloc(vlc->table,
