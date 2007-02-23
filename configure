@@ -1578,7 +1578,7 @@ fi
 
 test "$vhook" = "default" && vhook="$dlopen"
 
-enabled_any vhook liba52bin libfaadbin && add_extralibs $ldl
+enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
 
 if test "$targetos" = "CYGWIN" && enabled static ; then
     vhook="no"
