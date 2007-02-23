@@ -284,9 +284,9 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         /* mm1 += C * src[0,1] + D * src[1,2] */
         "movq    %%mm0, %%mm2\n\t"
         "pmaddwd %%mm6, %%mm0\n\t"
+        "paddw      %3, %%mm1\n\t"
         "paddw   %%mm0, %%mm1\n\t"
         /* dst[0,1] = pack((mm1 + 32) >> 6) */
-        "paddw %3, %%mm1\n\t"
         "psrlw $6, %%mm1\n\t"
         "packssdw %%mm7, %%mm1\n\t"
         "packuswb %%mm7, %%mm1\n\t"
