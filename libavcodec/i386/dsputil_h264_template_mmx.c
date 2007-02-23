@@ -293,11 +293,14 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         /* writes garbage to the right of dst.
             * ok because partitions are processed from left to right. */
         H264_CHROMA_OP4((%0), %%mm1, %%mm3)
-        "movd %%mm1, (%0)\n\t"
+        "movd %%mm1, %%esi\n\t"
+        "movw %%si, (%0)\n\t"
         "add %4, %0\n\t"
         "sub $1, %2\n\t"
         "jnz 1b\n\t"
-        : "+r" (dst), "+r"(src), "+r"(h) : "m" (ff_pw_32), "r"(stride));
+        : "+r" (dst), "+r"(src), "+r"(h)
+        : "m" (ff_pw_32), "r"(stride)
+        : "%esi");
 
 }
 #endif
