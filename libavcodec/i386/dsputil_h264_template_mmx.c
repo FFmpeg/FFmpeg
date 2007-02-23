@@ -218,8 +218,8 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "movq %%mm1, %%mm0          \n\t"
         "pmullw %%mm5, %%mm6        \n\t"
         "pmullw %%mm3, %%mm1        \n\t"
+        "paddw %4, %%mm6            \n\t"
         "paddw %%mm6, %%mm1         \n\t"
-        "paddw %4, %%mm1            \n\t"
         "psrlw $6, %%mm1            \n\t"
         "packuswb %%mm1, %%mm1      \n\t"
         H264_CHROMA_OP4((%0), %%mm1, %%mm6)
@@ -236,8 +236,8 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "movq %%mm1, %%mm6          \n\t"
         "pmullw %%mm5, %%mm0        \n\t"
         "pmullw %%mm3, %%mm1        \n\t"
+        "paddw %4, %%mm0            \n\t"
         "paddw %%mm0, %%mm1         \n\t"
-        "paddw %4, %%mm1            \n\t"
         "psrlw $6, %%mm1            \n\t"
         "packuswb %%mm1, %%mm1      \n\t"
         H264_CHROMA_OP4((%0), %%mm1, %%mm0)
