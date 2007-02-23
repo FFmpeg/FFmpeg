@@ -575,7 +575,7 @@ static int av_always_inline get_cabac_inline(CABACContext *c, uint8_t * const st
     return bit;
 }
 
-static int __attribute((noinline)) get_cabac_noinline(CABACContext *c, uint8_t * const state){
+static int av_noinline get_cabac_noinline(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
 
