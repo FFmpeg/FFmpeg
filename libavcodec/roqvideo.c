@@ -51,8 +51,9 @@ typedef struct RoqContext {
 
     AVCodecContext *avctx;
     DSPContext dsp;
-    AVFrame last_frame;
-    AVFrame current_frame;
+    AVFrame frames[2];
+    AVFrame *last_frame;
+    AVFrame *current_frame;
     int first_frame;
     int y_stride;
     int c_stride;
@@ -87,14 +88,14 @@ static void apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
 {
     unsigned char *yptr;
 
-    yptr = ri->current_frame.data[0] + (y * ri->y_stride) + x;
+    yptr = ri->current_frame->data[0] + (y * ri->y_stride) + x;
     *yptr++ = cell->y0;
     *yptr++ = cell->y1;
     yptr += (ri->y_stride - 2);
     *yptr++ = cell->y2;
     *yptr++ = cell->y3;
-    ri->current_frame.data[1][(y/2) * (ri->c_stride) + x/2] = cell->u;
-    ri->current_frame.data[2][(y/2) * (ri->c_stride) + x/2] = cell->v;
+    ri->current_frame->data[1][(y/2) * (ri->c_stride) + x/2] = cell->u;
+    ri->current_frame->data[2][(y/2) * (ri->c_stride) + x/2] = cell->v;
 }
 
 static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
@@ -103,9 +104,9 @@ static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
     register unsigned char y0, y1, u, v;
     unsigned char *yptr, *uptr, *vptr;
 
-    yptr = ri->current_frame.data[0] + (y * ri->y_stride) + x;
-    uptr = ri->current_frame.data[1] + (y/2) * (ri->c_stride) + x/2;
-    vptr = ri->current_frame.data[2] + (y/2) * (ri->c_stride) + x/2;
+    yptr = ri->current_frame->data[0] + (y * ri->y_stride) + x;
+    uptr = ri->current_frame->data[1] + (y/2) * (ri->c_stride) + x/2;
+    vptr = ri->current_frame->data[2] + (y/2) * (ri->c_stride) + x/2;
 
     row_inc = ri->y_stride - 4;
     c_row_inc = (ri->c_stride) - 2;
@@ -153,8 +154,8 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
         return;
     }
 
-    pa = ri->current_frame.data[0] + (y * ri->y_stride) + x;
-    pb = ri->last_frame.data[0] + (my * ri->y_stride) + mx;
+    pa = ri->current_frame->data[0] + (y * ri->y_stride) + x;
+    pb = ri->last_frame->data[0] + (my * ri->y_stride) + mx;
     for(i = 0; i < 4; i++) {
         pa[0] = pb[0];
         pa[1] = pb[1];
@@ -165,8 +166,8 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
     }
 
     hw = ri->y_stride/2;
-    pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
-    pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+    pa = ri->current_frame->data[1] + (y * ri->y_stride)/4 + x/2;
+    pb = ri->last_frame->data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
 
     for(i = 0; i < 2; i++) {
         switch(((my & 0x01) << 1) | (mx & 0x01)) {
@@ -200,8 +201,8 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
             break;
         }
 
-        pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
-        pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+        pa = ri->current_frame->data[2] + (y * ri->y_stride)/4 + x/2;
+        pb = ri->last_frame->data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
     }
 }
 
@@ -222,8 +223,8 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
         return;
     }
 
-    pa = ri->current_frame.data[0] + (y * ri->y_stride) + x;
-    pb = ri->last_frame.data[0] + (my * ri->y_stride) + mx;
+    pa = ri->current_frame->data[0] + (y * ri->y_stride) + x;
+    pb = ri->last_frame->data[0] + (my * ri->y_stride) + mx;
     for(i = 0; i < 8; i++) {
         pa[0] = pb[0];
         pa[1] = pb[1];
@@ -238,8 +239,8 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
     }
 
     hw = ri->c_stride;
-    pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
-    pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+    pa = ri->current_frame->data[1] + (y * ri->y_stride)/4 + x/2;
+    pb = ri->last_frame->data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
     for(j = 0; j < 2; j++) {
         for(i = 0; i < 4; i++) {
             switch(((my & 0x01) << 1) | (mx & 0x01)) {
@@ -276,8 +277,8 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
             pb += ri->c_stride;
         }
 
-        pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
-        pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+        pa = ri->current_frame->data[2] + (y * ri->y_stride)/4 + x/2;
+        pb = ri->last_frame->data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
     }
 }
 
@@ -407,6 +408,8 @@ static int roq_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->first_frame = 1;
+    s->last_frame    = &s->frames[0];
+    s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
@@ -424,12 +427,12 @@ static int roq_decode_frame(AVCodecContext *avctx,
 {
     RoqContext *s = avctx->priv_data;
 
-    if (avctx->get_buffer(avctx, &s->current_frame)) {
+    if (avctx->get_buffer(avctx, s->current_frame)) {
         av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
         return -1;
     }
-    s->y_stride = s->current_frame.linesize[0];
-    s->c_stride = s->current_frame.linesize[1];
+    s->y_stride = s->current_frame->linesize[0];
+    s->c_stride = s->current_frame->linesize[1];
 
     s->buf = buf;
     s->size = buf_size;
@@ -439,13 +442,13 @@ static int roq_decode_frame(AVCodecContext *avctx,
     if (s->first_frame)
         s->first_frame = 0;
     else
-        avctx->release_buffer(avctx, &s->last_frame);
-
-    /* shuffle frames */
-    s->last_frame = s->current_frame;
+        avctx->release_buffer(avctx, s->last_frame);
 
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->current_frame;
+    *(AVFrame*)data = *s->current_frame;
+
+    /* shuffle frames */
+    FFSWAP(AVFrame *, s->current_frame, s->last_frame);
 
     return buf_size;
 }
@@ -455,8 +458,8 @@ static int roq_decode_end(AVCodecContext *avctx)
     RoqContext *s = avctx->priv_data;
 
     /* release the last frame */
-    if (s->last_frame.data[0])
-        avctx->release_buffer(avctx, &s->last_frame);
+    if (s->last_frame->data[0])
+        avctx->release_buffer(avctx, s->last_frame);
 
     return 0;
 }
