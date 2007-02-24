@@ -870,6 +870,9 @@ static int handle_connection(HTTPContext *c)
         }
         if (http_send_data(c) < 0)
             return -1;
+        /* close connection if trailer sent */
+        if (c->state == HTTPSTATE_SEND_DATA_TRAILER)
+            return -1;
         break;
     case HTTPSTATE_RECEIVE_DATA:
         /* no need to read if no events */
