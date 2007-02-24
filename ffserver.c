@@ -2033,7 +2033,8 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.pb.is_streamed = 1;
 
         av_set_parameters(&c->fmt_ctx, NULL);
-        av_write_header(&c->fmt_ctx);
+        if (av_write_header(&c->fmt_ctx) < 0)
+            return -1;
 
         len = url_close_dyn_buf(&c->fmt_ctx.pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
@@ -3525,7 +3526,10 @@ static void build_feed_streams(void)
                 s->streams[i] = st;
             }
             av_set_parameters(s, NULL);
-            av_write_header(s);
+            if (av_write_header(s) < 0) {
+                fprintf(stderr, "Container doesn't supports the required parameters\n");
+                exit(1);
+            }
             /* XXX: need better api */
             av_freep(&s->priv_data);
             url_fclose(&s->pb);
