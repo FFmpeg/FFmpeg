@@ -94,7 +94,7 @@ const char *http_state[] = {
 
 typedef struct {
     int64_t count1, count2;
-    long time1, time2;
+    int64_t time1, time2;
 } DataRateData;
 
 /* context associated with one connection */
@@ -103,7 +103,7 @@ typedef struct HTTPContext {
     int fd; /* socket file descriptor */
     struct sockaddr_in from_addr; /* origin */
     struct pollfd *poll_entry; /* used when polling */
-    long timeout;
+    int64_t timeout;
     uint8_t *buffer_ptr, *buffer_end;
     int http_error;
     int post;
@@ -114,7 +114,7 @@ typedef struct HTTPContext {
     int feed_fd;
     /* input format handling */
     AVFormatContext *fmt_in;
-    long start_time;            /* In milliseconds - this wraps fairly often */
+    int64_t start_time;            /* In milliseconds - this wraps fairly often */
     int64_t first_pts;            /* initial pts value */
     int64_t cur_pts;             /* current pts value from the stream in us */
     int64_t cur_frame_duration;  /* duration of the current frame in us */
@@ -194,7 +194,7 @@ typedef struct FFStream {
     IPAddressACL *acl;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
-    long max_time;      /* Number of milliseconds to run */
+    int64_t max_time;      /* Number of milliseconds to run */
     int send_on_key;
     AVStream *streams[MAX_STREAMS];
     int feed_streams[MAX_STREAMS]; /* index of streams in the feed */
@@ -290,7 +290,7 @@ static int nb_connections;
 static int max_bandwidth;
 static int current_bandwidth;
 
-static long cur_time;           // Making this global saves on passing it around everywhere
+static int64_t cur_time;           // Making this global saves on passing it around everywhere
 
 static AVRandomState random_state;
 
@@ -597,7 +597,7 @@ static int http_server(void)
                 return -1;
         } while (ret <= 0);
 
-        cur_time = (long)(av_gettime()/1000);
+        cur_time = av_gettime() / 1000;
 
         if (need_to_start_children) {
             need_to_start_children = 0;
@@ -1960,7 +1960,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
 static int64_t get_server_clock(HTTPContext *c)
 {
     /* compute current pts value from system time */
-    return (int64_t)(cur_time - c->start_time) * 1000LL;
+    return (cur_time - c->start_time) * 1000;
 }
 
 /* return the estimated time at which the current packet must be sent
