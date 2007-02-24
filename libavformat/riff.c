@@ -317,7 +317,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else {
         bps = 16;
     }
-    if(bps != enc->bits_per_sample){
+    if(bps != enc->bits_per_sample && enc->bits_per_sample){
         av_log(enc, AV_LOG_WARNING, "requested bits_per_sample (%d) and actually stored (%d) differ\n", enc->bits_per_sample, bps);
     }
 
