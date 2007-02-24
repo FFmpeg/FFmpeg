@@ -327,10 +327,10 @@ OBJS += i386/fdct_mmx.o \
         i386/vp3dsp_sse2.o \
         i386/fft_3dn.o \
         i386/fft_3dn2.o \
-        i386/snowdsp_mmx.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
+OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 endif
 
 # armv4l specific stuff
