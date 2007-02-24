@@ -46,34 +46,6 @@
 #define M_PI    3.14159265358979323846
 #endif
 
-#ifndef PRId64
-#define PRId64 "lld"
-#endif
-
-#ifndef PRIu64
-#define PRIu64 "llu"
-#endif
-
-#ifndef PRIx64
-#define PRIx64 "llx"
-#endif
-
-#ifndef PRIX64
-#define PRIX64 "llX"
-#endif
-
-#ifndef PRId32
-#define PRId32 "d"
-#endif
-
-#ifndef PRIdFAST16
-#define PRIdFAST16 PRId32
-#endif
-
-#ifndef PRIdFAST32
-#define PRIdFAST32 PRId32
-#endif
-
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff-1)
 #endif
