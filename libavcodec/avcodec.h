@@ -383,7 +383,7 @@ typedef struct RcOverride{
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
  *              Reference Picture Selection
- *              Independant Segment Decoding */
+ *              Independent Segment Decoding */
 /* /Fx */
 /* codec capabilities */
 
@@ -1705,14 +1705,14 @@ typedef struct AVCodecContext {
 
     /**
      * Thread count.
-     * is used to decide how many independant tasks should be passed to execute()
+     * is used to decide how many independent tasks should be passed to execute()
      * - encoding: set by user
      * - decoding: set by user
      */
     int thread_count;
 
     /**
-     * the codec may call this to execute several independant things. it will return only after
+     * the codec may call this to execute several independent things. it will return only after
      * finishing all tasks, the user may replace this with some multithreaded implementation, the
      * default implementation will execute the parts serially
      * @param count the number of things to execute

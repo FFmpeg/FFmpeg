@@ -422,7 +422,7 @@ typedef struct Plane{
 }Plane;
 
 typedef struct SnowContext{
-//    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
+//    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     AVCodecContext *avctx;
     RangeCoder c;
@@ -473,7 +473,7 @@ typedef struct SnowContext{
     int me_cache_generation;
     slice_buffer sb;
 
-    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
+    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 }SnowContext;
 
 typedef struct {

@@ -26,7 +26,7 @@
 
 #include "common.h"
 
-/* here we can use OS dependant allocation functions */
+/* here we can use OS dependent allocation functions */
 #undef malloc
 #undef free
 #undef realloc

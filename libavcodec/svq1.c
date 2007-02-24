@@ -65,7 +65,7 @@ static VLC svq1_inter_mean;
 #define SVQ1_BLOCK_INTRA        3
 
 typedef struct SVQ1Context {
-    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
+    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independent of MpegEncContext, so this will be removed then (FIXME/XXX)
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame picture;

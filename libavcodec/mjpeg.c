@@ -901,7 +901,7 @@ typedef struct MJpegDecodeContext {
     int cur_scan; /* current scan, used by JPEG-LS */
 } MJpegDecodeContext;
 
-#include "jpeg_ls.c" //FIXME make jpeg-ls more independant
+#include "jpeg_ls.c" //FIXME make jpeg-ls more independent
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
 

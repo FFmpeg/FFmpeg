@@ -31,7 +31,7 @@ intreadwrite.h          reading and writing of unaligned big/little/native-endia
 
 Goals:
 ======
-* Modular (few interdependancies and the possibility of disabling individual parts during ./configure)
+* Modular (few interdependencies and the possibility of disabling individual parts during ./configure)
 * Small (source and object)
 * Efficient (low CPU and memory usage)
 * Useful (avoid useless features almost noone needs)

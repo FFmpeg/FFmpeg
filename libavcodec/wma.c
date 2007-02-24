@@ -108,7 +108,7 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
         s->nb_block_sizes = 1;
     }
 
-    /* init rate dependant parameters */
+    /* init rate dependent parameters */
     s->use_noise_coding = 1;
     high_freq = s->sample_rate * 0.5;
 

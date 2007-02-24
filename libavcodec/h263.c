@@ -2519,7 +2519,7 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 #endif //CONFIG_ENCODERS
 
 /**
- * set qscale and update qscale dependant variables.
+ * set qscale and update qscale dependent variables.
  */
 void ff_set_qscale(MpegEncContext * s, int qscale)
 {

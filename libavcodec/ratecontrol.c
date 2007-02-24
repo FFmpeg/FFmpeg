@@ -751,7 +751,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 //printf("%f ", q);
         assert(q>0.0);
 
-        if(pict_type==P_TYPE || s->intra_only){ //FIXME type dependant blur like in 2-pass
+        if(pict_type==P_TYPE || s->intra_only){ //FIXME type dependent blur like in 2-pass
             rcc->short_term_qsum*=a->qblur;
             rcc->short_term_qcount*=a->qblur;
 
@@ -811,7 +811,7 @@ static int init_pass2(MpegEncContext *s)
     int i, toobig;
     double fps= 1/av_q2d(s->avctx->time_base);
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
-    uint64_t const_bits[5]={0,0,0,0,0}; // quantizer idependant bits
+    uint64_t const_bits[5]={0,0,0,0,0}; // quantizer independent bits
     uint64_t all_const_bits;
     uint64_t all_available_bits= (uint64_t)(s->bit_rate*(double)rcc->num_entries/fps);
     double rate_factor=0;
