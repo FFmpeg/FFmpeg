@@ -1175,7 +1175,7 @@ static int http_parse_request(HTTPContext *c)
     char *p;
     enum RedirType redir_type;
     char cmd[32];
-    char info[1024], *filename;
+    char info[1024], filename[1024];
     char url[1024], *q;
     char protocol[32];
     char msg[1024];
@@ -1209,17 +1209,15 @@ static int http_parse_request(HTTPContext *c)
         http_log("New connection: %s %s\n", cmd, url);
 
     /* find the filename and the optional info string in the request */
-    p = url;
-    if (*p == '/')
-        p++;
-    filename = p;
-    p = strchr(p, '?');
+    p = strchr(url, '?');
     if (p) {
         pstrcpy(info, sizeof(info), p);
         *p = '\0';
     } else {
         info[0] = '\0';
     }
+
+    pstrcpy(filename, sizeof(filename)-1, url + ((*url == '/') ? 1 : 0));
 
     for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
         if (strncasecmp(p, "User-Agent:", 11) == 0) {
@@ -1248,11 +1246,15 @@ static int http_parse_request(HTTPContext *c)
         strcpy(filename + strlen(filename)-2, "m");
     } else if (match_ext(filename, "rtsp")) {
         redir_type = REDIR_RTSP;
-        compute_real_filename(filename, sizeof(url) - 1);
+        compute_real_filename(filename, sizeof(filename) - 1);
     } else if (match_ext(filename, "sdp")) {
         redir_type = REDIR_SDP;
-        compute_real_filename(filename, sizeof(url) - 1);
+        compute_real_filename(filename, sizeof(filename) - 1);
     }
+
+    // "redirect" / request to index.html
+    if (!strlen(filename))
+        pstrcpy(filename, sizeof(filename) - 1, "index.html");
 
     stream = first_stream;
     while (stream != NULL) {
