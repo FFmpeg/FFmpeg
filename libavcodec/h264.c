@@ -3497,7 +3497,7 @@ b= t;
     }
 }
 
-static void hl_decode_mb(H264Context *h){
+static void av_always_inline hl_decode_mb_internal(H264Context *h, int simple){
     MpegEncContext * const s = &h->s;
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
@@ -3508,12 +3508,9 @@ static void hl_decode_mb(H264Context *h){
     int i;
     int *block_offset = &h->block_offset[0];
     const unsigned int bottom = mb_y & 1;
-    const int transform_bypass = (s->qscale == 0 && h->sps.transform_bypass);
+    const int transform_bypass = (s->qscale == 0 && h->sps.transform_bypass), is_h264 = (simple || s->codec_id == CODEC_ID_H264);
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
-
-    if(!s->decode)
-        return;
 
     dest_y  = s->current_picture.data[0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
     dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
@@ -3522,7 +3519,7 @@ static void hl_decode_mb(H264Context *h){
     s->dsp.prefetch(dest_y + (s->mb_x&3)*4*s->linesize + 64, s->linesize, 4);
     s->dsp.prefetch(dest_cb + (s->mb_x&7)*s->uvlinesize + 64, dest_cr - dest_cb, 2);
 
-    if (MB_FIELD) {
+    if (!simple && MB_FIELD) {
         linesize   = h->mb_linesize   = s->linesize * 2;
         uvlinesize = h->mb_uvlinesize = s->uvlinesize * 2;
         block_offset = &h->block_offset[24];
@@ -3566,7 +3563,7 @@ static void hl_decode_mb(H264Context *h){
         idct_add = s->dsp.h264_idct_add;
     }
 
-    if(FRAME_MBAFF && h->deblocking_filter && IS_INTRA(mb_type)
+    if(!simple && FRAME_MBAFF && h->deblocking_filter && IS_INTRA(mb_type)
        && (!bottom || !IS_INTRA(s->current_picture.mb_type[mb_xy-s->mb_stride]))){
         int mbt_y = mb_y&~1;
         uint8_t *top_y  = s->current_picture.data[0] + (mbt_y * 16* s->linesize  ) + mb_x * 16;
@@ -3575,7 +3572,7 @@ static void hl_decode_mb(H264Context *h){
         xchg_pair_border(h, top_y, top_cb, top_cr, s->linesize, s->uvlinesize, 1);
     }
 
-    if (IS_INTRA_PCM(mb_type)) {
+    if (!simple && IS_INTRA_PCM(mb_type)) {
         unsigned int x, y;
 
         // The pixels are stored in h->mb array in the same order as levels,
@@ -3603,16 +3600,16 @@ static void hl_decode_mb(H264Context *h){
         }
     } else {
         if(IS_INTRA(mb_type)){
-            if(h->deblocking_filter && !FRAME_MBAFF)
+            if(h->deblocking_filter && (simple || !FRAME_MBAFF))
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1);
 
-            if(!(s->flags&CODEC_FLAG_GRAY)){
+            if(simple || !(s->flags&CODEC_FLAG_GRAY)){
                 h->pred8x8[ h->chroma_pred_mode ](dest_cb, uvlinesize);
                 h->pred8x8[ h->chroma_pred_mode ](dest_cr, uvlinesize);
             }
 
             if(IS_INTRA4x4(mb_type)){
-                if(!s->encoding){
+                if(simple || !s->encoding){
                     if(IS_8x8DCT(mb_type)){
                         for(i=0; i<16; i+=4){
                             uint8_t * const ptr= dest_y + block_offset[i];
@@ -3648,7 +3645,7 @@ static void hl_decode_mb(H264Context *h){
                         h->pred4x4[ dir ](ptr, topright, linesize);
                         nnz = h->non_zero_count_cache[ scan8[i] ];
                         if(nnz){
-                            if(s->codec_id == CODEC_ID_H264){
+                            if(is_h264){
                                 if(nnz == 1 && h->mb[i*16])
                                     idct_dc_add(ptr, h->mb + i*16, linesize);
                                 else
@@ -3660,15 +3657,15 @@ static void hl_decode_mb(H264Context *h){
                 }
             }else{
                 h->pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
-                if(s->codec_id == CODEC_ID_H264){
+                if(is_h264){
                     if(!transform_bypass)
                         h264_luma_dc_dequant_idct_c(h->mb, s->qscale, h->dequant4_coeff[IS_INTRA(mb_type) ? 0:3][s->qscale][0]);
                 }else
                     svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
             }
-            if(h->deblocking_filter && !FRAME_MBAFF)
+            if(h->deblocking_filter && (simple || !FRAME_MBAFF))
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
-        }else if(s->codec_id == CODEC_ID_H264){
+        }else if(is_h264){
             hl_motion(h, dest_y, dest_cb, dest_cr,
                       s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
                       s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
@@ -3677,7 +3674,7 @@ static void hl_decode_mb(H264Context *h){
 
 
         if(!IS_INTRA4x4(mb_type)){
-            if(s->codec_id == CODEC_ID_H264){
+            if(is_h264){
                 if(IS_INTRA16x16(mb_type)){
                     for(i=0; i<16; i++){
                         if(h->non_zero_count_cache[ scan8[i] ])
@@ -3707,7 +3704,7 @@ static void hl_decode_mb(H264Context *h){
             }
         }
 
-        if(!(s->flags&CODEC_FLAG_GRAY)){
+        if(simple || !(s->flags&CODEC_FLAG_GRAY)){
             uint8_t *dest[2] = {dest_cb, dest_cr};
             if(transform_bypass){
                 idct_add = idct_dc_add = s->dsp.add_pixels4;
@@ -3717,7 +3714,7 @@ static void hl_decode_mb(H264Context *h){
                 chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp][0]);
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp][0]);
             }
-            if(s->codec_id == CODEC_ID_H264){
+            if(is_h264){
                 for(i=16; i<16+8; i++){
                     if(h->non_zero_count_cache[ scan8[i] ])
                         idct_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
@@ -3735,7 +3732,7 @@ static void hl_decode_mb(H264Context *h){
         }
     }
     if(h->deblocking_filter) {
-        if (FRAME_MBAFF) {
+        if (!simple && FRAME_MBAFF) {
             //FIXME try deblocking one mb at a time?
             // the reduction in load/storing mvs and such might outweigh the extra backup/xchg_border
             const int mb_y = s->mb_y - 1;
@@ -3772,6 +3769,36 @@ static void hl_decode_mb(H264Context *h){
             filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         }
     }
+}
+
+/**
+ * Process a macroblock; this case avoids checks for expensive uncommon cases.
+ */
+static void hl_decode_mb_simple(H264Context *h){
+    hl_decode_mb_internal(h, 1);
+}
+
+/**
+ * Process a macroblock; this handles edge cases, such as interlacing.
+ */
+static void av_noinline hl_decode_mb_complex(H264Context *h){
+    hl_decode_mb_internal(h, 0);
+}
+
+static void hl_decode_mb(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    const int mb_x= s->mb_x;
+    const int mb_y= s->mb_y;
+    const int mb_xy= mb_x + mb_y*s->mb_stride;
+    const int mb_type= s->current_picture.mb_type[mb_xy];
+    int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 || (s->flags&CODEC_FLAG_GRAY) || s->encoding;
+
+    if(!s->decode)
+        return;
+
+    if (is_complex)
+        hl_decode_mb_complex(h);
+    else hl_decode_mb_simple(h);
 }
 
 /**
