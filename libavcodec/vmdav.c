@@ -462,7 +462,7 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
             s->predictors[chan] -= vmdaudio_table[buf[i] & 0x7F];
         else
             s->predictors[chan] += vmdaudio_table[buf[i]];
-        s->predictors[chan] = clip(s->predictors[chan], -32768, 32767);
+        s->predictors[chan] = av_clip(s->predictors[chan], -32768, 32767);
         out[i] = s->predictors[chan];
         chan ^= stereo;
     }

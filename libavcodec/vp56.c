@@ -308,8 +308,8 @@ static void vp56_edge_filter(vp56_context_t *s, uint8_t *yuv,
     for (i=0; i<12; i++) {
         v = (yuv[-pix2_inc] + 3*(yuv[0]-yuv[-pix_inc]) - yuv[pix_inc] + 4) >>3;
         v = s->adjust(v, t);
-        yuv[-pix_inc] = clip_uint8(yuv[-pix_inc] + v);
-        yuv[0] = clip_uint8(yuv[0] - v);
+        yuv[-pix_inc] = av_clip_uint8(yuv[-pix_inc] + v);
+        yuv[0] = av_clip_uint8(yuv[0] - v);
         yuv += line_inc;
     }
 }

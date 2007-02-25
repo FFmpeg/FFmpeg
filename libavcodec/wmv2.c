@@ -641,8 +641,8 @@ void ff_mspel_motion(MpegEncContext *s,
 
     /* WARNING: do no forget half pels */
     v_edge_pos = s->v_edge_pos;
-    src_x = clip(src_x, -16, s->width);
-    src_y = clip(src_y, -16, s->height);
+    src_x = av_clip(src_x, -16, s->width);
+    src_y = av_clip(src_y, -16, s->height);
 
     if(src_x<=-16 || src_x >= s->width)
         dxy &= ~3;
@@ -688,10 +688,10 @@ void ff_mspel_motion(MpegEncContext *s,
 
     src_x = s->mb_x * 8 + mx;
     src_y = s->mb_y * 8 + my;
-    src_x = clip(src_x, -8, s->width >> 1);
+    src_x = av_clip(src_x, -8, s->width >> 1);
     if (src_x == (s->width >> 1))
         dxy &= ~1;
-    src_y = clip(src_y, -8, s->height >> 1);
+    src_y = av_clip(src_y, -8, s->height >> 1);
     if (src_y == (s->height >> 1))
         dxy &= ~2;
     offset = (src_y * uvlinesize) + src_x;

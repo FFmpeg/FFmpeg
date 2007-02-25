@@ -121,7 +121,7 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
 
         /* normalize so that an uniform color remains the same */
         for(i=0;i<tap_count;i++) {
-            v = clip(lrintf(tab[i] * scale / norm + e), FELEM_MIN, FELEM_MAX);
+            v = av_clip(lrintf(tab[i] * scale / norm + e), FELEM_MIN, FELEM_MAX);
             filter[ph * tap_count + i] = v;
             e += tab[i] * scale / norm - v;
         }

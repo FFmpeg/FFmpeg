@@ -1322,13 +1322,13 @@ static inline void direct_dist_scale_factor(H264Context * const h){
     int i;
     for(i=0; i<h->ref_count[0]; i++){
         int poc0 = h->ref_list[0][i].poc;
-        int td = clip(poc1 - poc0, -128, 127);
+        int td = av_clip(poc1 - poc0, -128, 127);
         if(td == 0 /* FIXME || pic0 is a long-term ref */){
             h->dist_scale_factor[i] = 256;
         }else{
-            int tb = clip(poc - poc0, -128, 127);
+            int tb = av_clip(poc - poc0, -128, 127);
             int tx = (16384 + (FFABS(td) >> 1)) / td;
-            h->dist_scale_factor[i] = clip((tb*tx + 32) >> 6, -1024, 1023);
+            h->dist_scale_factor[i] = av_clip((tb*tx + 32) >> 6, -1024, 1023);
         }
     }
     if(FRAME_MBAFF){
@@ -1948,7 +1948,7 @@ static void chroma_dc_dct_c(DCTELEM *block){
  */
 static inline int get_chroma_qp(int chroma_qp_index_offset, int qscale){
 
-    return chroma_qp[clip(qscale + chroma_qp_index_offset, 0, 51)];
+    return chroma_qp[av_clip(qscale + chroma_qp_index_offset, 0, 51)];
 }
 
 //FIXME need to check that this doesnt overflow signed 32 bit for low qp, i am not sure, it's very close
@@ -4122,11 +4122,11 @@ static void implicit_weight_table(H264Context *h){
         int poc0 = h->ref_list[0][ref0].poc;
         for(ref1=0; ref1 < h->ref_count[1]; ref1++){
             int poc1 = h->ref_list[1][ref1].poc;
-            int td = clip(poc1 - poc0, -128, 127);
+            int td = av_clip(poc1 - poc0, -128, 127);
             if(td){
-                int tb = clip(cur_poc - poc0, -128, 127);
+                int tb = av_clip(cur_poc - poc0, -128, 127);
                 int tx = (16384 + (FFABS(td) >> 1)) / td;
-                int dist_scale_factor = clip((tb*tx + 32) >> 6, -1024, 1023) >> 2;
+                int dist_scale_factor = av_clip((tb*tx + 32) >> 6, -1024, 1023) >> 2;
                 if(dist_scale_factor < -64 || dist_scale_factor > 128)
                     h->implicit_weight[ref0][ref1] = 32;
                 else
@@ -6814,17 +6814,17 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
                 int i_delta;
 
                 if( FFABS( p2 - p0 ) < beta ) {
-                    pix[-2] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
+                    pix[-2] = p1 + av_clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
                 if( FFABS( q2 - q0 ) < beta ) {
-                    pix[1] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
+                    pix[1] = q1 + av_clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
 
-                i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
-                pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
+                i_delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                pix[-1] = av_clip_uint8( p0 + i_delta );    /* p0' */
+                pix[0]  = av_clip_uint8( q0 - i_delta );    /* q0' */
                 tprintf("filter_mb_mbaff_edgev i:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, qp[qp_index], index_a, alpha, beta, tc, bS[bS_index], pix[-3], p1, p0, q0, q1, pix[2], p1, pix[-1], pix[0], q1);
             }
         }else{
@@ -6902,10 +6902,10 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
             if( FFABS( p0 - q0 ) < alpha &&
                 FFABS( p1 - p0 ) < beta &&
                 FFABS( q1 - q0 ) < beta ) {
-                const int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                const int i_delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
 
-                pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
-                pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
+                pix[-1] = av_clip_uint8( p0 + i_delta );    /* p0' */
+                pix[0]  = av_clip_uint8( q0 - i_delta );    /* q0' */
                 tprintf("filter_mb_mbaff_edgecv i:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, qp[qp_index], index_a, alpha, beta, tc, bS[bS_index], pix[-3], p1, p0, q0, q1, pix[2], p1, pix[-1], pix[0], q1);
             }
         }else{
@@ -7387,9 +7387,9 @@ static int decode_slice(H264Context *h){
         for( i= 0; i < 460; i++ ) {
             int pre;
             if( h->slice_type == I_TYPE )
-                pre = clip( ((cabac_context_init_I[i][0] * s->qscale) >>4 ) + cabac_context_init_I[i][1], 1, 126 );
+                pre = av_clip( ((cabac_context_init_I[i][0] * s->qscale) >>4 ) + cabac_context_init_I[i][1], 1, 126 );
             else
-                pre = clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
+                pre = av_clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
 
             if( pre <= 63 )
                 h->cabac_state[i] = 2 * ( 63 - pre ) + 0;

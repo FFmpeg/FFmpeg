@@ -1810,7 +1810,7 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
 static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, slice_buffer * sb, int start_y, int h, int save_state[1]){
     const int w= b->width;
     int y;
-    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
     int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int new_index = 0;
@@ -2898,7 +2898,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     }
     *b= backup;
 
-    return clip(((ab<<LOG2_OBMC_MAX) + aa/2)/aa, 0, 255); //FIXME we shouldnt need cliping
+    return av_clip(((ab<<LOG2_OBMC_MAX) + aa/2)/aa, 0, 255); //FIXME we shouldnt need cliping
 }
 
 static inline int get_block_bits(SnowContext *s, int x, int y, int w){
@@ -3407,7 +3407,7 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
     const int level= b->level;
     const int w= b->width;
     const int h= b->height;
-    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
     const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     int x,y, thres1, thres2;
 //    START_TIMER
@@ -3466,7 +3466,7 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
 
 static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride, int start_y, int end_y){
     const int w= b->width;
-    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
     const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
@@ -3494,7 +3494,7 @@ static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand
 static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
     const int w= b->width;
     const int h= b->height;
-    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
     const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
@@ -3869,7 +3869,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
             const int w= b->width;
             const int h= b->height;
             const int stride= b->stride;
-            const int qlog= clip(2*QROOT + b->qlog, 0, QROOT*16);
+            const int qlog= av_clip(2*QROOT + b->qlog, 0, QROOT*16);
             const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
             const int qdiv= (1<<16)/qmul;
             int x, y;

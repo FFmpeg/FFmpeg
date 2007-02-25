@@ -281,7 +281,7 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
         for(k = 0; k < 8; k++)
             sum += ptr0[k] * ptr1[k];
         sum = (sum + (out[i] << 12) + 0x800) >> 12;
-        out[i] = clip(sum, -0x7FFE, 0x7FFE);
+        out[i] = av_clip(sum, -0x7FFE, 0x7FFE);
         for(k = 7; k > 0; k--)
             ptr0[k] = ptr0[k - 1];
         ptr0[0] = out[i];
@@ -311,11 +311,11 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
             sum += ptr0[k] * t[k];
         for(k = 7; k > 0; k--)
             ptr0[k] = ptr0[k - 1];
-        ptr0[0] = clip((sum + 0x800) >> 12, -0x7FFE, 0x7FFE);
+        ptr0[0] = av_clip((sum + 0x800) >> 12, -0x7FFE, 0x7FFE);
 
         sum = ((ptr0[1] * (dec->filtval - (dec->filtval >> 2))) >> 4) + sum;
         sum = sum - (sum >> 3);
-        out[i] = clip((sum + 0x800) >> 12, -0x7FFE, 0x7FFE);
+        out[i] = av_clip((sum + 0x800) >> 12, -0x7FFE, 0x7FFE);
     }
 }
 

@@ -128,9 +128,9 @@ static inline int get_bs(vector_t *mvP, vector_t *mvQ, int b) {
 }
 
 #define SET_PARAMS                                            \
-    alpha = alpha_tab[clip(qp_avg + h->alpha_offset,0,63)];   \
-    beta  =  beta_tab[clip(qp_avg + h->beta_offset, 0,63)];   \
-    tc    =    tc_tab[clip(qp_avg + h->alpha_offset,0,63)];
+    alpha = alpha_tab[av_clip(qp_avg + h->alpha_offset,0,63)];   \
+    beta  =  beta_tab[av_clip(qp_avg + h->beta_offset, 0,63)];   \
+    tc    =    tc_tab[av_clip(qp_avg + h->alpha_offset,0,63)];
 
 /**
  * in-loop deblocking filter for a single macroblock

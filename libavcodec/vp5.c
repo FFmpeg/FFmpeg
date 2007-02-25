@@ -164,7 +164,7 @@ static void vp5_parse_coeff_models(vp56_context_t *s)
     for (pt=0; pt<2; pt++)
         for (ctx=0; ctx<36; ctx++)
             for (node=0; node<5; node++)
-                s->coeff_model_dcct[pt][ctx][node] = clip(((s->coeff_model_dccv[pt][node] * vp5_dccv_lc[node][ctx][0] + 128) >> 8) + vp5_dccv_lc[node][ctx][1], 1, 254);
+                s->coeff_model_dcct[pt][ctx][node] = av_clip(((s->coeff_model_dccv[pt][node] * vp5_dccv_lc[node][ctx][0] + 128) >> 8) + vp5_dccv_lc[node][ctx][1], 1, 254);
 
     /* coeff_model_acct is a linear combination of coeff_model_ract */
     for (ct=0; ct<3; ct++)
@@ -172,7 +172,7 @@ static void vp5_parse_coeff_models(vp56_context_t *s)
             for (cg=0; cg<3; cg++)
                 for (ctx=0; ctx<6; ctx++)
                     for (node=0; node<5; node++)
-                        s->coeff_model_acct[pt][ct][cg][ctx][node] = clip(((s->coeff_model_ract[pt][ct][cg][node] * vp5_ract_lc[ct][cg][node][ctx][0] + 128) >> 8) + vp5_ract_lc[ct][cg][node][ctx][1], 1, 254);
+                        s->coeff_model_acct[pt][ct][cg][ctx][node] = av_clip(((s->coeff_model_ract[pt][ct][cg][node] * vp5_ract_lc[ct][cg][node][ctx][0] + 128) >> 8) + vp5_ract_lc[ct][cg][node][ctx][1], 1, 254);
 }
 
 static void vp5_parse_coeff(vp56_context_t *s)

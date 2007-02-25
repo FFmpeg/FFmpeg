@@ -347,7 +347,7 @@ static int bit_allocation (IMCContext* q, int stream_format_code, int freebits, 
         iacc = 0;
 
         for(j = (stream_format_code & 0x2)?4:0; j < BANDS; j++) {
-            cwlen = clip((int)((q->flcoeffs4[j] * 0.5) - summa + 0.5), 0, 6);
+            cwlen = av_clip((int)((q->flcoeffs4[j] * 0.5) - summa + 0.5), 0, 6);
 
             q->bitsBandT[j] = cwlen;
             summer += q->bandWidthT[j] * cwlen;

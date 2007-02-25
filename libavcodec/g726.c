@@ -213,12 +213,12 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
             c->b[i] = 0;
     } else {
         /* This is a bit crazy, but it really is +255 not +256 */
-        fa1 = clip((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
+        fa1 = av_clip((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
 
         c->a[1] += 128*pk0*c->pk[1] + fa1 - (c->a[1]>>7);
-        c->a[1] = clip(c->a[1], -12288, 12288);
+        c->a[1] = av_clip(c->a[1], -12288, 12288);
         c->a[0] += 64*3*pk0*c->pk[0] - (c->a[0] >> 8);
-        c->a[0] = clip(c->a[0], -(15360 - c->a[1]), 15360 - c->a[1]);
+        c->a[0] = av_clip(c->a[0], -(15360 - c->a[1]), 15360 - c->a[1]);
 
         for (i=0; i<6; i++)
             c->b[i] += 128*dq0*sgn(-c->dq[i].sign) - (c->b[i]>>8);
@@ -248,7 +248,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
         c->ap += (0x200 - c->ap) >> 4;
 
     /* Update Yu and Yl */
-    c->yu = clip(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
+    c->yu = av_clip(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
     c->yl += c->yu + ((-c->yl)>>6);
 
     /* Next iteration for Y */
@@ -264,7 +264,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
         c->se += mult(i2f(c->a[i] >> 2, &f), &c->sr[i]);
     c->se >>= 1;
 
-    return clip(re_signal << 2, -0xffff, 0xffff);
+    return av_clip(re_signal << 2, -0xffff, 0xffff);
 }
 
 static int g726_reset(G726Context* c, int bit_rate)

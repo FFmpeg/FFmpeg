@@ -633,7 +633,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
                 int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-                s->qmat[inter][plane][i]= clip((qscale * coeff)/100 * 4, qmin, 4096);
+                s->qmat[inter][plane][i]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
             }
         }
     }
@@ -1729,8 +1729,8 @@ static void horizontal_filter(unsigned char *first_pixel, int stride,
             (first_pixel[-2] - first_pixel[ 1])
          +3*(first_pixel[ 0] - first_pixel[-1]);
         filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[-1] = clip_uint8(first_pixel[-1] + filter_value);
-        first_pixel[ 0] = clip_uint8(first_pixel[ 0] - filter_value);
+        first_pixel[-1] = av_clip_uint8(first_pixel[-1] + filter_value);
+        first_pixel[ 0] = av_clip_uint8(first_pixel[ 0] - filter_value);
     }
 }
 
@@ -1746,8 +1746,8 @@ static void vertical_filter(unsigned char *first_pixel, int stride,
             (first_pixel[2 * nstride] - first_pixel[ stride])
          +3*(first_pixel[0          ] - first_pixel[nstride]);
         filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[nstride] = clip_uint8(first_pixel[nstride] + filter_value);
-        first_pixel[0] = clip_uint8(first_pixel[0] - filter_value);
+        first_pixel[nstride] = av_clip_uint8(first_pixel[nstride] + filter_value);
+        first_pixel[0] = av_clip_uint8(first_pixel[0] - filter_value);
     }
 }
 

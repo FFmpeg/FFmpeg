@@ -244,7 +244,7 @@ static int flac_encode_init(AVCodecContext *avctx)
 
     /* set compression option overrides from AVCodecContext */
     if(avctx->use_lpc >= 0) {
-        s->options.use_lpc = clip(avctx->use_lpc, 0, 11);
+        s->options.use_lpc = av_clip(avctx->use_lpc, 0, 11);
     }
     if(s->options.use_lpc == 1)
         av_log(avctx, AV_LOG_DEBUG, " use lpc: Levinson-Durbin recursion with Welch window\n");
@@ -712,7 +712,7 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     error=0;
     for(i=0; i<order; i++) {
         error += lpc_in[i] * (1 << sh);
-        lpc_out[i] = clip(lrintf(error), -qmax, qmax);
+        lpc_out[i] = av_clip(lrintf(error), -qmax, qmax);
         error -= lpc_out[i];
     }
     *shift = sh;

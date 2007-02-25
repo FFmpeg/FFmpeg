@@ -1178,19 +1178,19 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
                                            + src[index+stride+1]*   frac_x )*   frac_y
                                         + r)>>(shift*2);
                 }else{
-                    index= src_x + clip(src_y, 0, height)*stride;
+                    index= src_x + av_clip(src_y, 0, height)*stride;
                     dst[y*stride + x]= ( (  src[index         ]*(s-frac_x)
                                           + src[index       +1]*   frac_x )*s
                                         + r)>>(shift*2);
                 }
             }else{
                 if((unsigned)src_y < height){
-                    index= clip(src_x, 0, width) + src_y*stride;
+                    index= av_clip(src_x, 0, width) + src_y*stride;
                     dst[y*stride + x]= (  (  src[index         ]*(s-frac_y)
                                            + src[index+stride  ]*   frac_y )*s
                                         + r)>>(shift*2);
                 }else{
-                    index= clip(src_x, 0, width) + clip(src_y, 0, height)*stride;
+                    index= av_clip(src_x, 0, width) + av_clip(src_y, 0, height)*stride;
                     dst[y*stride + x]=    src[index         ];
                 }
             }
@@ -2434,8 +2434,8 @@ H264_MC(avg_, 16)
 #undef op2_put
 #endif
 
-#define op_scale1(x)  block[x] = clip_uint8( (block[x]*weight + offset) >> log2_denom )
-#define op_scale2(x)  dst[x] = clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
+#define op_scale1(x)  block[x] = av_clip_uint8( (block[x]*weight + offset) >> log2_denom )
+#define op_scale2(x)  dst[x] = av_clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
 static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
     int y; \
@@ -2659,7 +2659,7 @@ static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
 
         ad1= FFABS(d1)>>1;
 
-        d2= clip((p0-p3)/4, -ad1, ad1);
+        d2= av_clip((p0-p3)/4, -ad1, ad1);
 
         src[x-2*stride] = p0 - d2;
         src[x+  stride] = p3 + d2;
@@ -2694,7 +2694,7 @@ static void h263_h_loop_filter_c(uint8_t *src, int stride, int qscale){
 
         ad1= FFABS(d1)>>1;
 
-        d2= clip((p0-p3)/4, -ad1, ad1);
+        d2= av_clip((p0-p3)/4, -ad1, ad1);
 
         src[y*stride-2] = p0 - d2;
         src[y*stride+1] = p3 + d2;
@@ -2752,17 +2752,17 @@ static inline void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystrid
                 int i_delta;
 
                 if( FFABS( p2 - p0 ) < beta ) {
-                    pix[-2*xstride] = p1 + clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc0[i], tc0[i] );
+                    pix[-2*xstride] = p1 + av_clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc0[i], tc0[i] );
                     tc++;
                 }
                 if( FFABS( q2 - q0 ) < beta ) {
-                    pix[   xstride] = q1 + clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc0[i], tc0[i] );
+                    pix[   xstride] = q1 + av_clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc0[i], tc0[i] );
                     tc++;
                 }
 
-                i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                pix[-xstride] = clip_uint8( p0 + i_delta );    /* p0' */
-                pix[0]        = clip_uint8( q0 - i_delta );    /* q0' */
+                i_delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                pix[-xstride] = av_clip_uint8( p0 + i_delta );    /* p0' */
+                pix[0]        = av_clip_uint8( q0 - i_delta );    /* q0' */
             }
             pix += ystride;
         }
@@ -2796,10 +2796,10 @@ static inline void h264_loop_filter_chroma_c(uint8_t *pix, int xstride, int ystr
                 FFABS( p1 - p0 ) < beta &&
                 FFABS( q1 - q0 ) < beta ) {
 
-                int delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                int delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
 
-                pix[-xstride] = clip_uint8( p0 + delta );    /* p0' */
-                pix[0]        = clip_uint8( q0 - delta );    /* q0' */
+                pix[-xstride] = av_clip_uint8( p0 + delta );    /* p0' */
+                pix[0]        = av_clip_uint8( q0 - delta );    /* q0' */
             }
             pix += ystride;
         }

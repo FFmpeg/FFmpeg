@@ -612,8 +612,8 @@ void ff_er_frame_start(MpegEncContext *s){
  *               error of the same type occured
  */
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status){
-    const int start_i= clip(startx + starty * s->mb_width    , 0, s->mb_num-1);
-    const int end_i  = clip(endx   + endy   * s->mb_width    , 0, s->mb_num);
+    const int start_i= av_clip(startx + starty * s->mb_width    , 0, s->mb_num-1);
+    const int end_i  = av_clip(endx   + endy   * s->mb_width    , 0, s->mb_num);
     const int start_xy= s->mb_index2xy[start_i];
     const int end_xy  = s->mb_index2xy[end_i];
     int mask= -1;

@@ -280,7 +280,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
         }
 
         left= buffer_size - rcc->buffer_index - 1;
-        rcc->buffer_index += clip(left, min_rate, max_rate);
+        rcc->buffer_index += av_clip(left, min_rate, max_rate);
 
         if(rcc->buffer_index > buffer_size){
             int stuffing= ceil((rcc->buffer_index - buffer_size)/8);
@@ -417,8 +417,8 @@ static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pic
         qmax= (int)(qmax*FFABS(s->avctx->i_quant_factor)+s->avctx->i_quant_offset + 0.5);
     }
 
-    qmin= clip(qmin, 1, FF_LAMBDA_MAX);
-    qmax= clip(qmax, 1, FF_LAMBDA_MAX);
+    qmin= av_clip(qmin, 1, FF_LAMBDA_MAX);
+    qmax= av_clip(qmax, 1, FF_LAMBDA_MAX);
 
     if(qmax<qmin) qmax= qmin;
 
@@ -915,7 +915,7 @@ static int init_pass2(MpegEncContext *s)
     for(i=0; i<rcc->num_entries; i++){
         /* av_log(s->avctx, AV_LOG_DEBUG, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
             i, rcc->entry[i].new_qscale, rcc->entry[i].new_qscale / FF_QP2LAMBDA); */
-        qscale_sum += clip(rcc->entry[i].new_qscale / FF_QP2LAMBDA, s->avctx->qmin, s->avctx->qmax);
+        qscale_sum += av_clip(rcc->entry[i].new_qscale / FF_QP2LAMBDA, s->avctx->qmin, s->avctx->qmax);
     }
     assert(toobig <= 40);
     av_log(s->avctx, AV_LOG_DEBUG,

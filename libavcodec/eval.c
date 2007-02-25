@@ -155,7 +155,7 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
         case e_func2:  return e->value * e->a.func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
         case e_squish: return 1/(1+exp(4*eval_expr(p, e->param[0])));
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
-        case e_ld:     return e->value * p->var[clip(eval_expr(p, e->param[0]), 0, VARS-1)];
+        case e_ld:     return e->value * p->var[av_clip(eval_expr(p, e->param[0]), 0, VARS-1)];
         case e_while: {
             double d = NAN;
             while(eval_expr(p, e->param[0]))
@@ -177,7 +177,7 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
                 case e_div: return e->value * (d / d2);
                 case e_add: return e->value * (d + d2);
                 case e_last:return e->value * d2;
-                case e_st : return e->value * (p->var[clip(d, 0, VARS-1)]= d2);
+                case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
             }
         }
     }

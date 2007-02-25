@@ -821,10 +821,10 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
 
-    src_x   = clip(  src_x, -16, s->mb_width  * 16);
-    src_y   = clip(  src_y, -16, s->mb_height * 16);
-    uvsrc_x = clip(uvsrc_x,  -8, s->mb_width  *  8);
-    uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
+    src_x   = av_clip(  src_x, -16, s->mb_width  * 16);
+    src_y   = av_clip(  src_y, -16, s->mb_height * 16);
+    uvsrc_x = av_clip(uvsrc_x,  -8, s->mb_width  *  8);
+    uvsrc_y = av_clip(uvsrc_y,  -8, s->mb_height *  8);
 
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
@@ -944,8 +944,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
     src_x = s->mb_x * 16 + (n&1) * 8 + (mx >> 2);
     src_y = s->mb_y * 16 + (n&2) * 4 + (my >> 2);
 
-    src_x   = clip(  src_x, -16, s->mb_width  * 16);
-    src_y   = clip(  src_y, -16, s->mb_height * 16);
+    src_x   = av_clip(  src_x, -16, s->mb_width  * 16);
+    src_y   = av_clip(  src_y, -16, s->mb_height * 16);
 
     srcY += src_y * s->linesize + src_x;
 
@@ -1071,8 +1071,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
 
-    uvsrc_x = clip(uvsrc_x,  -8, s->mb_width  *  8);
-    uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
+    uvsrc_x = av_clip(uvsrc_x,  -8, s->mb_width  *  8);
+    uvsrc_y = av_clip(uvsrc_y,  -8, s->mb_height *  8);
     srcU = s->last_picture.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV = s->last_picture.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
     if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
@@ -1499,8 +1499,8 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
                     shift = v->lumshift << 6;
             }
             for(i = 0; i < 256; i++) {
-                v->luty[i] = clip_uint8((scale * i + shift + 32) >> 6);
-                v->lutuv[i] = clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
+                v->luty[i] = av_clip_uint8((scale * i + shift + 32) >> 6);
+                v->lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
             }
         }
         if(v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
@@ -1740,8 +1740,8 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                     shift = v->lumshift << 6;
             }
             for(i = 0; i < 256; i++) {
-                v->luty[i] = clip_uint8((scale * i + shift + 32) >> 6);
-                v->lutuv[i] = clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
+                v->luty[i] = av_clip_uint8((scale * i + shift + 32) >> 6);
+                v->lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
             }
             v->use_ic = 1;
         }
@@ -2116,10 +2116,10 @@ static void vc1_interp_mc(VC1Context *v)
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
 
-    src_x   = clip(  src_x, -16, s->mb_width  * 16);
-    src_y   = clip(  src_y, -16, s->mb_height * 16);
-    uvsrc_x = clip(uvsrc_x,  -8, s->mb_width  *  8);
-    uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
+    src_x   = av_clip(  src_x, -16, s->mb_width  * 16);
+    src_y   = av_clip(  src_y, -16, s->mb_height * 16);
+    uvsrc_x = av_clip(uvsrc_x,  -8, s->mb_width  *  8);
+    uvsrc_y = av_clip(uvsrc_y,  -8, s->mb_height *  8);
 
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;

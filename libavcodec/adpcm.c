@@ -209,7 +209,7 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
     int nibble = FFMIN(7, abs(delta)*4/step_table[c->step_index]) + (delta<0)*8;
     c->prev_sample = c->prev_sample + ((step_table[c->step_index] * yamaha_difflookup[nibble]) / 8);
     CLAMP_TO_SHORT(c->prev_sample);
-    c->step_index = clip(c->step_index + index_table[nibble], 0, 88);
+    c->step_index = av_clip(c->step_index + index_table[nibble], 0, 88);
     return nibble;
 }
 
@@ -224,7 +224,7 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
     else          bias=-c->idelta/2;
 
     nibble= (nibble + bias) / c->idelta;
-    nibble= clip(nibble, -8, 7)&0x0F;
+    nibble= av_clip(nibble, -8, 7)&0x0F;
 
     predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
     CLAMP_TO_SHORT(predictor);
@@ -254,7 +254,7 @@ static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, 
     c->predictor = c->predictor + ((c->step * yamaha_difflookup[nibble]) / 8);
     CLAMP_TO_SHORT(c->predictor);
     c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
-    c->step = clip(c->step, 127, 24567);
+    c->step = av_clip(c->step, 127, 24567);
 
     return nibble;
 }
@@ -324,8 +324,8 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
             if(version == CODEC_ID_ADPCM_MS) {
                 const int predictor = ((nodes[j]->sample1 * c->coeff1) + (nodes[j]->sample2 * c->coeff2)) / 256;
                 const int div = (sample - predictor) / step;
-                const int nmin = clip(div-range, -8, 6);
-                const int nmax = clip(div+range, -7, 7);
+                const int nmin = av_clip(div-range, -8, 6);
+                const int nmax = av_clip(div+range, -7, 7);
                 for(nidx=nmin; nidx<=nmax; nidx++) {
                     const int nibble = nidx & 0xf;
                     int dec_sample = predictor + nidx * step;
@@ -372,8 +372,8 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
 #define LOOP_NODES(NAME, STEP_TABLE, STEP_INDEX)\
                 const int predictor = nodes[j]->sample1;\
                 const int div = (sample - predictor) * 4 / STEP_TABLE;\
-                int nmin = clip(div-range, -7, 6);\
-                int nmax = clip(div+range, -6, 7);\
+                int nmin = av_clip(div-range, -7, 6);\
+                int nmax = av_clip(div+range, -6, 7);\
                 if(nmin<=0) nmin--; /* distinguish -0 from +0 */\
                 if(nmax<0) nmax--;\
                 for(nidx=nmin; nidx<=nmax; nidx++) {\
@@ -381,9 +381,9 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     int dec_sample = predictor + (STEP_TABLE * yamaha_difflookup[nibble]) / 8;\
                     STORE_NODE(NAME, STEP_INDEX);\
                 }
-                LOOP_NODES(ima, step_table[step], clip(step + index_table[nibble], 0, 88));
+                LOOP_NODES(ima, step_table[step], av_clip(step + index_table[nibble], 0, 88));
             } else { //CODEC_ID_ADPCM_YAMAHA
-                LOOP_NODES(yamaha, step, clip((step * yamaha_indexscale[nibble]) >> 8, 127, 24567));
+                LOOP_NODES(yamaha, step, av_clip((step * yamaha_indexscale[nibble]) >> 8, 127, 24567));
 #undef LOOP_NODES
 #undef STORE_NODE
             }
@@ -734,7 +734,7 @@ static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned c
     c->predictor += (c->step * yamaha_difflookup[nibble]) / 8;
     CLAMP_TO_SHORT(c->predictor);
     c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
-    c->step = clip(c->step, 127, 24567);
+    c->step = av_clip(c->step, 127, 24567);
     return c->predictor;
 }
 
@@ -974,10 +974,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         n = buf_size - 7 * avctx->channels;
         if (n < 0)
             return -1;
-        block_predictor[0] = clip(*src++, 0, 7);
+        block_predictor[0] = av_clip(*src++, 0, 7);
         block_predictor[1] = 0;
         if (st)
-            block_predictor[1] = clip(*src++, 0, 7);
+            block_predictor[1] = av_clip(*src++, 0, 7);
         c->status[0].idelta = (int16_t)((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
         src+=2;
         if (st){
@@ -1299,8 +1299,8 @@ return -1;
 
                 c->status[i].step_index += table[delta & (~signmask)];
 
-                c->status[i].step_index = clip(c->status[i].step_index, 0, 88);
-                c->status[i].predictor = clip(c->status[i].predictor, -32768, 32767);
+                c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
+                c->status[i].predictor = av_clip(c->status[i].predictor, -32768, 32767);
 
                 *samples++ = c->status[i].predictor;
             }

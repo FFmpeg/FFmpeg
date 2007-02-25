@@ -327,7 +327,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
     }
     while (buf_size > 0) {
         cin->delta += cinaudio_delta16_table[*src++];
-        cin->delta = clip(cin->delta, -32768, 32767);
+        cin->delta = av_clip(cin->delta, -32768, 32767);
         *samples++ = cin->delta;
         --buf_size;
     }

@@ -366,10 +366,10 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
             }
 
             if(sign){
-                pred = clip(pred - state->C[context], 0, state->maxval);
+                pred = av_clip(pred - state->C[context], 0, state->maxval);
                 err = -ls_get_code_regular(&s->gb, state, context);
             } else {
-                pred = clip(pred + state->C[context], 0, state->maxval);
+                pred = av_clip(pred + state->C[context], 0, state->maxval);
                 err = ls_get_code_regular(&s->gb, state, context);
             }
 
@@ -381,7 +381,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
                 pred += state->range * state->twonear;
             else if(pred > state->maxval + state->near)
                 pred -= state->range * state->twonear;
-            pred = clip(pred, 0, state->maxval);
+            pred = av_clip(pred, 0, state->maxval);
         }
 
         pred &= state->maxval;
@@ -623,9 +623,9 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
                     err = -(state->near - err) / state->twonear;
 
                 if(RItype || (Rb >= Ra))
-                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
+                    Ra = av_clip(pred + err * state->twonear, 0, state->maxval);
                 else
-                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
+                    Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
                 W(cur, x, Ra);
             }
             if(err < 0)
@@ -646,11 +646,11 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
             if(context < 0){
                 context = -context;
                 sign = 1;
-                pred = clip(pred - state->C[context], 0, state->maxval);
+                pred = av_clip(pred - state->C[context], 0, state->maxval);
                 err = pred - R(cur, x);
             }else{
                 sign = 0;
-                pred = clip(pred + state->C[context], 0, state->maxval);
+                pred = av_clip(pred + state->C[context], 0, state->maxval);
                 err = R(cur, x) - pred;
             }
 
@@ -660,9 +660,9 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
                 else
                     err = -(state->near - err) / state->twonear;
                 if(!sign)
-                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
+                    Ra = av_clip(pred + err * state->twonear, 0, state->maxval);
                 else
-                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
+                    Ra = av_clip(pred - err * state->twonear, 0, state->maxval);
                 W(cur, x, Ra);
             }
 

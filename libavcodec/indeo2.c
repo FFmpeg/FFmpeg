@@ -87,11 +87,11 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
                 }
             } else { /* add two deltas from table */
                 t = dst[out - stride] + (table[c * 2] - 128);
-                t= clip_uint8(t);
+                t= av_clip_uint8(t);
                 dst[out] = t;
                 out++;
                 t = dst[out - stride] + (table[(c * 2) + 1] - 128);
-                t= clip_uint8(t);
+                t= av_clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
@@ -121,11 +121,11 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
                 out += c * 2;
             } else { /* add two deltas from table */
                 t = dst[out] + (((table[c * 2] - 128)*3) >> 2);
-                t= clip_uint8(t);
+                t= av_clip_uint8(t);
                 dst[out] = t;
                 out++;
                 t = dst[out] + (((table[(c * 2) + 1] - 128)*3) >> 2);
-                t= clip_uint8(t);
+                t= av_clip_uint8(t);
                 dst[out] = t;
                 out++;
             }

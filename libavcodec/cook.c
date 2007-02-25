@@ -998,7 +998,7 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
      */
     for (j = 0; j < q->samples_per_channel; j++) {
         out[chan + q->nb_channels * j] =
-          clip(lrintf(q->mono_mdct_output[j]), -32768, 32767);
+          av_clip(lrintf(q->mono_mdct_output[j]), -32768, 32767);
     }
 }
 

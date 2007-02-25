@@ -384,7 +384,7 @@ static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *de
             d = deltas[i + j * 4];
             ct += d;
             last[i] += ct;
-            Y[i] = clip_uint8(last[i]);
+            Y[i] = av_clip_uint8(last[i]);
         }
         Y += stride;
         ctx->D[j] = ct;
@@ -735,7 +735,7 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     src = (ctx->cur?ctx->Y2:ctx->Y1);
     for(j = 0; j < ctx->avctx->height; j++){
         for(i = 0; i < ctx->avctx->width; i++){
-            Y[i] = clip_uint8(*src++);
+            Y[i] = av_clip_uint8(*src++);
         }
         Y += p->linesize[0];
     }
@@ -743,7 +743,7 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     src = (ctx->cur?ctx->U2:ctx->U1);
     for(j = 0; j < (ctx->avctx->height + 1) >> 1; j++){
         for(i = 0; i < (ctx->avctx->width + 1) >> 1; i++){
-            U[i] = clip_uint8(*src++);
+            U[i] = av_clip_uint8(*src++);
         }
         U += p->linesize[2];
     }
@@ -751,7 +751,7 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     src = (ctx->cur?ctx->V2:ctx->V1);
     for(j = 0; j < (ctx->avctx->height + 1) >> 1; j++){
         for(i = 0; i < (ctx->avctx->width + 1) >> 1; i++){
-            V[i] = clip_uint8(*src++);
+            V[i] = av_clip_uint8(*src++);
         }
         V += p->linesize[1];
     }

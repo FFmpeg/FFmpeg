@@ -475,7 +475,7 @@ static void do_audio_out(AVFormatContext *s,
                         fprintf(stderr, "adding %d audio samples of silence\n", (int)delta);
                 }
             }else if(audio_sync_method>1){
-                int comp= clip(delta, -audio_sync_method, audio_sync_method);
+                int comp= av_clip(delta, -audio_sync_method, audio_sync_method);
                 assert(ost->audio_resample);
                 if(verbose > 2)
                     fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);

@@ -1004,8 +1004,8 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
                 diff= block_sum[stage] - sum;
                 mean= (diff + (size>>1)) >> (level+3);
                 assert(mean >-300 && mean<300);
-                if(intra) mean= clip(mean, 0, 255);
-                else      mean= clip(mean, -256, 255);
+                if(intra) mean= av_clip(mean, 0, 255);
+                else      mean= av_clip(mean, -256, 255);
                 score= sqr - ((diff*(int64_t)diff)>>(level+3)); //FIXME 64bit slooow
                 if(score < best_vector_score){
                     best_vector_score= score;

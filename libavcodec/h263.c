@@ -211,7 +211,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         for(i=0; i<2; i++){
             int div, error;
             div= (s->avctx->time_base.num*1800000LL + 500LL*s->avctx->time_base.den) / ((1000LL+i)*s->avctx->time_base.den);
-            div= clip(1, div, 127);
+            div= av_clip(1, div, 127);
             error= FFABS(s->avctx->time_base.num*1800000LL - (1000LL+i)*s->avctx->time_base.den*div);
             if(error < best_error){
                 best_error= error;
@@ -496,7 +496,7 @@ static void ff_init_qscale_tab(MpegEncContext *s){
     for(i=0; i<s->mb_num; i++){
         unsigned int lam= s->lambda_table[ s->mb_index2xy[i] ];
         int qp= (lam*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
-        qscale_table[ s->mb_index2xy[i] ]= clip(qp, s->avctx->qmin, s->avctx->qmax);
+        qscale_table[ s->mb_index2xy[i] ]= av_clip(qp, s->avctx->qmin, s->avctx->qmax);
     }
 }
 

@@ -355,7 +355,7 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
     tptr = tmp;
     for(j = 0; j < 11; j++) {
         for(i = 0; i < 8; i++)
-            tptr[i] = clip_uint8(vc1_mspel_filter(src + i, 1, m, r));
+            tptr[i] = av_clip_uint8(vc1_mspel_filter(src + i, 1, m, r));
         src += stride;
         tptr += 8;
     }
@@ -365,7 +365,7 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
     tptr = tmp + 8;
     for(j = 0; j < 8; j++) {
         for(i = 0; i < 8; i++)
-            dst[i] = clip_uint8(vc1_mspel_filter(tptr + i, 8, m, r));
+            dst[i] = av_clip_uint8(vc1_mspel_filter(tptr + i, 8, m, r));
         dst += stride;
         tptr += 8;
     }
