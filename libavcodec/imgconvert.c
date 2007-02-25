@@ -382,22 +382,6 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
     return i;
 }
 
-/**
- * Fill in AVPicture's fields.
- * The fields of the given AVPicture are filled in by using the 'ptr' address
- * which points to the image data buffer. Depending on the specified picture
- * format, one or multiple image data pointers and line sizes will be set.
- * If a planar format is specified, several pointers will be set pointing to
- * the different picture planes and the line sizes of the different planes
- * will be stored in the lines_sizes array.
- *
- * @param picture AVPicture who's fields are to be filled in
- * @param ptr Buffer which will contain or contains the actual image data
- * @param pix_fmt The format in which the picture data is stored
- * @param width The width of the image in pixels
- * @param height The height of the image in pixels
- * @return Size of the image data in bytes.
- */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height)
 {
@@ -575,24 +559,12 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
     return size;
 }
 
-/**
- * Calculate the size in bytes that a picture of the given width and height
- * would occupy if stored in the given picture format.
- *
- * @param pix_fmt The given picture format
- * @param width The width of the image
- * @param height The height of the image
- * @return Image data size in bytes
- */
 int avpicture_get_size(int pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
     return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
 }
 
-/**
- * compute the loss when converting from a pixel format to another
- */
 int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
                              int has_alpha)
 {
@@ -716,9 +688,6 @@ static int avcodec_find_best_pix_fmt1(int pix_fmt_mask,
     return dst_pix_fmt;
 }
 
-/**
- * find best pixel format to convert to. Return -1 if none found
- */
 int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr)
 {
@@ -764,9 +733,6 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
-/**
- * Copy image 'src' to 'dst'.
- */
 void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height)
 {
@@ -2248,9 +2214,6 @@ static inline int is_yuv_planar(const PixFmtInfo *ps)
         ps->pixel_type == FF_PIXEL_PLANAR;
 }
 
-/**
- * Crop image top and left side
- */
 int img_crop(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int top_band, int left_band)
 {
@@ -2273,9 +2236,6 @@ int img_crop(AVPicture *dst, const AVPicture *src,
     return 0;
 }
 
-/**
- * Pad image
- */
 int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
             int pix_fmt, int padtop, int padbottom, int padleft, int padright,
             int *color)
@@ -2606,10 +2566,6 @@ static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
     return ret;
 }
 
-/**
- * Tell if an image really has transparent alpha values.
- * @return ored mask of FF_ALPHA_xxx constants
- */
 int img_get_alpha_info(const AVPicture *src,
                        int pix_fmt, int width, int height)
 {
@@ -2829,8 +2785,6 @@ static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
     av_free(buf);
 }
 
-
-/* deinterlace - if not supported return -1 */
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           int pix_fmt, int width, int height)
 {

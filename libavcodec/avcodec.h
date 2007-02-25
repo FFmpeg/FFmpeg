@@ -2451,10 +2451,36 @@ int avpicture_alloc(AVPicture *picture, int pix_fmt, int width, int height);
  */
 void avpicture_free(AVPicture *picture);
 
+/**
+ * Fill in AVPicture's fields.
+ * The fields of the given AVPicture are filled in by using the 'ptr' address
+ * which points to the image data buffer. Depending on the specified picture
+ * format, one or multiple image data pointers and line sizes will be set.
+ * If a planar format is specified, several pointers will be set pointing to
+ * the different picture planes and the line sizes of the different planes
+ * will be stored in the lines_sizes array.
+ *
+ * @param picture AVPicture who's fields are to be filled in
+ * @param ptr Buffer which will contain or contains the actual image data
+ * @param pix_fmt The format in which the picture data is stored
+ * @param width The width of the image in pixels
+ * @param height The height of the image in pixels
+ * @return Size of the image data in bytes.
+ */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
 int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size);
+
+/**
+ * Calculate the size in bytes that a picture of the given width and height
+ * would occupy if stored in the given picture format.
+ *
+ * @param pix_fmt The given picture format
+ * @param width The width of the image
+ * @param height The height of the image
+ * @return Image data size in bytes
+ */
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
@@ -2469,13 +2495,25 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat p);
 #define FF_LOSS_COLORQUANT  0x0010 /* loss due to color quantization */
 #define FF_LOSS_CHROMA      0x0020 /* loss of chroma (e.g. rgb to gray conversion) */
 
+/**
+ * compute the loss when converting from a pixel format to another
+ */
 int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
                              int has_alpha);
+
+/**
+ * find best pixel format to convert to. Return -1 if none found
+ */
 int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
+
+/**
+ * Tell if an image really has transparent alpha values.
+ * @return ored mask of FF_ALPHA_xxx constants
+ */
 int img_get_alpha_info(const AVPicture *src,
                        int pix_fmt, int width, int height);
 
@@ -2487,6 +2525,7 @@ attribute_deprecated int img_convert(AVPicture *dst, int dst_pix_fmt,
 #endif
 
 /* deinterlace a picture */
+/* deinterlace - if not supported return -1 */
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           int pix_fmt, int width, int height);
 
@@ -2921,12 +2960,21 @@ void av_free_static(void);
  */
 void *av_mallocz_static(unsigned int size);
 
+/**
+ * Copy image 'src' to 'dst'.
+ */
 void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height);
 
+/**
+ * Crop image top and left side
+ */
 int img_crop(AVPicture *dst, const AVPicture *src,
              int pix_fmt, int top_band, int left_band);
 
+/**
+ * Pad image
+ */
 int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 
