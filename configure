@@ -584,7 +584,7 @@ THREADS_LIST='
     w32threads
 '
 
-HAVE_LIST='
+HAVE_LIST="
     $THREADS_LIST
     altivec
     altivec_h
@@ -621,7 +621,7 @@ HAVE_LIST='
     sys_poll_h
     sys_soundcard_h
     threads
-'
+"
 
 TARGET_LIST='
     altivec
