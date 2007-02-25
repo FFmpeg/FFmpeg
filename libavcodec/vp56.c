@@ -496,7 +496,6 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     vp56_context_t *s = avctx->priv_data;
     AVFrame *const p = s->framep[VP56_FRAME_CURRENT];
-    AVFrame *picture = data;
     int mb_row, mb_col, mb_row_flip, mb_offset = 0;
     int block, y, uv, stride_y, stride_uv;
     int golden_frame = 0;
@@ -607,8 +606,8 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     FFSWAP(AVFrame *, s->framep[VP56_FRAME_CURRENT],
                       s->framep[VP56_FRAME_PREVIOUS]);
 
-    *picture = *p;
-    *data_size = sizeof(AVPicture);
+    *(AVFrame*)data = *p;
+    *data_size = sizeof(AVFrame);
 
     return buf_size;
 }
