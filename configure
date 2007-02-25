@@ -577,12 +577,19 @@ CONFIG_LIST='
     zlib
 '
 
+THREADS_LIST='
+    beosthreads
+    os2threads
+    pthreads
+    w32threads
+'
+
 HAVE_LIST='
+    $THREADS_LIST
     altivec
     altivec_h
     armv5te
     armv6
-    beosthreads
     byteswap_h
     cmov
     dcbzl
@@ -608,15 +615,12 @@ HAVE_LIST='
     mmi
     mmx
     os2
-    os2threads
-    pthreads
     sdl
     sdl_video_size
     soundcard_h
     sys_poll_h
     sys_soundcard_h
     threads
-    w32threads
 '
 
 TARGET_LIST='
@@ -631,15 +635,12 @@ TARGET_LIST='
 CMDLINE_SELECT="
     $CONFIG_LIST
     $TARGET_LIST
+    $THREADS_LIST
     amr_if2
     debug
     extra_warnings
     shared
     static
-    beosthreads
-    os2threads
-    pthreads
-    w32threads
 "
 
 flashsv_decoder_deps="zlib"
@@ -1521,7 +1522,7 @@ if enabled pthreads; then
     fi
 fi
 
-for thread in pthreads beosthreads os2threads w32threads; do
+for thread in $THREADS_LIST; do
     if enabled $thread; then
         if ! disabled thread_type ; then
             die "ERROR: Only one thread type must be selected."
@@ -1733,7 +1734,7 @@ enabled_any $DECODER_LIST && enable decoders
 enabled_any $MUXER_LIST   && enable muxers
 enabled_any $DEMUXER_LIST && enable demuxers
 
-enabled_any pthreads beosthreads os2threads w32threads && enable threads
+enabled_any $THREADS_LIST && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
     $DEMUXER_LIST $MUXER_LIST
