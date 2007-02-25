@@ -316,7 +316,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 		for(j=0; j<lumFilterSize; j++)
 			val += lumSrc[j][i] * lumFilter[j];
 
-		dest[i]= clip_uint8(val>>19);
+		dest[i]= av_clip_uint8(val>>19);
 	}
 
 	if(uDest != NULL)
@@ -331,8 +331,8 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[i]= clip_uint8(u>>19);
-			vDest[i]= clip_uint8(v>>19);
+			uDest[i]= av_clip_uint8(u>>19);
+			vDest[i]= av_clip_uint8(v>>19);
 		}
 }
 
@@ -349,7 +349,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 		for(j=0; j<lumFilterSize; j++)
 			val += lumSrc[j][i] * lumFilter[j];
 
-		dest[i]= clip_uint8(val>>19);
+		dest[i]= av_clip_uint8(val>>19);
 	}
 
 	if(uDest == NULL)
@@ -367,8 +367,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[2*i]= clip_uint8(u>>19);
-			uDest[2*i+1]= clip_uint8(v>>19);
+			uDest[2*i]= av_clip_uint8(u>>19);
+			uDest[2*i+1]= av_clip_uint8(v>>19);
 		}
 	else
 		for(i=0; i<chrDstW; i++)
@@ -382,8 +382,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[2*i]= clip_uint8(v>>19);
-			uDest[2*i+1]= clip_uint8(u>>19);
+			uDest[2*i]= av_clip_uint8(v>>19);
+			uDest[2*i+1]= av_clip_uint8(u>>19);
 		}
 }
 
@@ -1465,7 +1465,7 @@ static void globalInit(void){
     // generating tables:
     int i;
     for(i=0; i<768; i++){
-	int c= clip_uint8(i-256);
+	int c= av_clip_uint8(i-256);
 	clip_table[i]=c;
     }
 }

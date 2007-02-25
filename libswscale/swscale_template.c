@@ -2488,7 +2488,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			val += ((int)src[srcPos + j])*filter[filterSize*i + j];
 		}
 //		filter += hFilterSize;
-		dst[i] = clip(val>>7, 0, (1<<15)-1); // the cubic equation does overflow ...
+		dst[i] = av_clip(val>>7, 0, (1<<15)-1); // the cubic equation does overflow ...
 //		dst[i] = val>>7;
 	}
 #endif

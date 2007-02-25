@@ -277,7 +277,7 @@ int yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange, 
 
     for (i = 0; i < 1024; i++) {
         value = (cy*(((i - YTABLE_MIN)<<16) - oy) + (1<<31))>>32;
-        ytable[i] = clip_uint8(value);
+        ytable[i] = av_clip_uint8(value);
     }
 
     entry_size = get_entry_size(fmt_depth(c->dstFormat));
