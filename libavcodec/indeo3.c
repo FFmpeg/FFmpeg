@@ -97,10 +97,6 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
   long fflags2, unsigned char *hdr,
   unsigned char *buf2, int min_width_160);
 
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
 /* ---------------------------------------------------------------------- */
 static void iv_alloc_frames(Indeo3DecodeContext *s)
 {
@@ -230,7 +226,7 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
   iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, hdr_width,
     hdr_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
-    min(hdr_width, 160));
+    FFMIN(hdr_width, 160));
 
   if (!(s->avctx->flags & CODEC_FLAG_GRAY))
   {
@@ -241,7 +237,7 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
   iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width,
     chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
-    min(chroma_width, 40));
+    FFMIN(chroma_width, 40));
 
   buf_pos = buf + 16 + offs3;
   offs = le2me_32(*(uint32_t *)buf_pos);
@@ -249,7 +245,7 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
   iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width,
     chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
-    min(chroma_width, 40));
+    FFMIN(chroma_width, 40));
 
   }
 
