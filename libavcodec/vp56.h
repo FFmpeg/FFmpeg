@@ -73,6 +73,7 @@ struct vp56_context {
     DSPContext dsp;
     ScanTable scantable;
     AVFrame frames[3];
+    AVFrame *framep[4];
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
     vp56_range_coder_t c;

@@ -41,10 +41,10 @@ static int vp5_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
     int rows, cols;
 
     vp56_init_range_decoder(&s->c, buf, buf_size);
-    s->frames[VP56_FRAME_CURRENT].key_frame = !vp56_rac_get(c);
+    s->framep[VP56_FRAME_CURRENT]->key_frame = !vp56_rac_get(c);
     vp56_rac_get(c);
     vp56_init_dequant(s, vp56_rac_gets(c, 6));
-    if (s->frames[VP56_FRAME_CURRENT].key_frame)
+    if (s->framep[VP56_FRAME_CURRENT]->key_frame)
     {
         vp56_rac_gets(c, 8);
         if(vp56_rac_gets(c, 5) > 5)
@@ -145,7 +145,7 @@ static void vp5_parse_coeff_models(vp56_context_t *s)
             if (vp56_rac_get_prob(c, vp5_dccv_pct[pt][node])) {
                 def_prob[node] = vp56_rac_gets_nn(c, 7);
                 s->coeff_model_dccv[pt][node] = def_prob[node];
-            } else if (s->frames[VP56_FRAME_CURRENT].key_frame) {
+            } else if (s->framep[VP56_FRAME_CURRENT]->key_frame) {
                 s->coeff_model_dccv[pt][node] = def_prob[node];
             }
 
@@ -156,7 +156,7 @@ static void vp5_parse_coeff_models(vp56_context_t *s)
                     if (vp56_rac_get_prob(c, vp5_ract_pct[ct][pt][cg][node])) {
                         def_prob[node] = vp56_rac_gets_nn(c, 7);
                         s->coeff_model_ract[pt][ct][cg][node] = def_prob[node];
-                    } else if (s->frames[VP56_FRAME_CURRENT].key_frame) {
+                    } else if (s->framep[VP56_FRAME_CURRENT]->key_frame) {
                         s->coeff_model_ract[pt][ct][cg][node] = def_prob[node];
                     }
 

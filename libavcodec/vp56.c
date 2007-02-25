@@ -326,7 +326,7 @@ static void vp56_mc(vp56_context_t *s, int b, uint8_t *src,
                     int stride, int x, int y)
 {
     int plane = vp56_b6to3[b];
-    uint8_t *dst= s->frames[VP56_FRAME_CURRENT].data[plane]+s->block_offset[b];
+    uint8_t *dst=s->framep[VP56_FRAME_CURRENT]->data[plane]+s->block_offset[b];
     uint8_t *src_block;
     int src_offset;
     int overlap_offset = 0;
@@ -337,7 +337,7 @@ static void vp56_mc(vp56_context_t *s, int b, uint8_t *src,
 
     if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY
-         && !s->frames[VP56_FRAME_CURRENT].key_frame))
+         && !s->framep[VP56_FRAME_CURRENT]->key_frame))
         deblock_filtering = 0;
 
     dx = s->mv[b].x / s->vp56_coord_div[b];
@@ -400,7 +400,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
     vp56_frame_t ref_frame;
     int b, plan, off;
 
-    if (s->frames[VP56_FRAME_CURRENT].key_frame)
+    if (s->framep[VP56_FRAME_CURRENT]->key_frame)
         mb_type = VP56_MB_INTRA;
     else
         mb_type = vp56_decode_mv(s, row, col);
@@ -412,8 +412,8 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
 
     vp56_add_predictors_dc(s, ref_frame);
 
-    frame_current = &s->frames[VP56_FRAME_CURRENT];
-    frame_ref = &s->frames[ref_frame];
+    frame_current = s->framep[VP56_FRAME_CURRENT];
+    frame_ref = s->framep[ref_frame];
 
     switch (mb_type) {
         case VP56_MB_INTRA:
@@ -459,7 +459,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
 
 static int vp56_size_changed(AVCodecContext *avctx, vp56_context_t *s)
 {
-    int stride = s->frames[VP56_FRAME_CURRENT].linesize[0];
+    int stride = s->framep[VP56_FRAME_CURRENT]->linesize[0];
     int i;
 
     s->plane_width[0] = s->avctx->coded_width;
@@ -468,7 +468,7 @@ static int vp56_size_changed(AVCodecContext *avctx, vp56_context_t *s)
     s->plane_height[1] = s->plane_height[2] = s->avctx->coded_height/2;
 
     for (i=0; i<3; i++)
-        s->stride[i] = s->flip * s->frames[VP56_FRAME_CURRENT].linesize[i];
+        s->stride[i] = s->flip * s->framep[VP56_FRAME_CURRENT]->linesize[i];
 
     s->mb_width = (s->avctx->coded_width+15) / 16;
     s->mb_height = (s->avctx->coded_height+15) / 16;
@@ -495,7 +495,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                       uint8_t *buf, int buf_size)
 {
     vp56_context_t *s = avctx->priv_data;
-    AVFrame *const p = &s->frames[VP56_FRAME_CURRENT];
+    AVFrame *const p = s->framep[VP56_FRAME_CURRENT];
     AVFrame *picture = data;
     int mb_row, mb_col, mb_row_flip, mb_offset = 0;
     int block, y, uv, stride_y, stride_uv;
@@ -594,22 +594,22 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
     }
 
-    if (s->frames[VP56_FRAME_PREVIOUS].data[0]
-        && (s->frames[VP56_FRAME_PREVIOUS].data[0]
-            != s->frames[VP56_FRAME_GOLDEN].data[0])) {
-        avctx->release_buffer(avctx, &s->frames[VP56_FRAME_PREVIOUS]);
-    }
+    if (s->framep[VP56_FRAME_PREVIOUS] == s->framep[VP56_FRAME_GOLDEN])
+        FFSWAP(AVFrame *, s->framep[VP56_FRAME_PREVIOUS],
+                          s->framep[VP56_FRAME_UNUSED]);
+    else if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
+        avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);
     if (p->key_frame || golden_frame) {
-        if (s->frames[VP56_FRAME_GOLDEN].data[0])
-            avctx->release_buffer(avctx, &s->frames[VP56_FRAME_GOLDEN]);
-        s->frames[VP56_FRAME_GOLDEN] = *p;
+        if (s->framep[VP56_FRAME_GOLDEN]->data[0])
+            avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
+        s->framep[VP56_FRAME_GOLDEN] = p;
     }
-    s->frames[VP56_FRAME_PREVIOUS] = *p;
+    FFSWAP(AVFrame *, s->framep[VP56_FRAME_CURRENT],
+                      s->framep[VP56_FRAME_PREVIOUS]);
 
     *picture = *p;
     *data_size = sizeof(AVPicture);
 
-    s->frames[VP56_FRAME_CURRENT].data[0] = NULL;
     return buf_size;
 }
 
@@ -628,7 +628,8 @@ void vp56_init(vp56_context_t *s, AVCodecContext *avctx, int flip)
     avcodec_set_dimensions(s->avctx, 0, 0);
 
     for (i=0; i<3; i++)
-        s->frames[i].data[0] = NULL;
+        s->framep[i] = &s->frames[i];
+    s->framep[VP56_FRAME_UNUSED] = s->framep[VP56_FRAME_GOLDEN];
     s->edge_emu_buffer_alloc = NULL;
 
     s->above_blocks = NULL;
@@ -656,11 +657,10 @@ int vp56_free(AVCodecContext *avctx)
     av_free(s->above_blocks);
     av_free(s->macroblocks);
     av_free(s->edge_emu_buffer_alloc);
-    if (s->frames[VP56_FRAME_GOLDEN].data[0]
-        && (s->frames[VP56_FRAME_PREVIOUS].data[0]
-            != s->frames[VP56_FRAME_GOLDEN].data[0]))
-        avctx->release_buffer(avctx, &s->frames[VP56_FRAME_GOLDEN]);
-    if (s->frames[VP56_FRAME_PREVIOUS].data[0])
-        avctx->release_buffer(avctx, &s->frames[VP56_FRAME_PREVIOUS]);
+    if (s->framep[VP56_FRAME_GOLDEN]->data[0]
+        && (s->framep[VP56_FRAME_PREVIOUS] != s->framep[VP56_FRAME_GOLDEN]))
+        avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
+    if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
+        avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);
     return 0;
 }
