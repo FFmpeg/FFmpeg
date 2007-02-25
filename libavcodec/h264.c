@@ -7990,36 +7990,45 @@ static int find_frame_end(H264Context *h, const uint8_t *buf, int buf_size){
 //printf("first %02X%02X%02X%02X\n", buf[0], buf[1],buf[2],buf[3]);
 //    mb_addr= pc->mb_addr - 1;
     state= pc->state;
-    for(i=0; i<=buf_size; i++){
-        if((state&0xFFFFFF1F) == 0x101 || (state&0xFFFFFF1F) == 0x102 || (state&0xFFFFFF1F) == 0x105){
-            tprintf("find_frame_end new startcode = %08x, frame_start_found = %d, pos = %d\n", state, pc->frame_start_found, i);
-            if(pc->frame_start_found){
-                // If there isn't one more byte in the buffer
-                // the test on first_mb_in_slice cannot be done yet
-                // do it at next call.
-                if (i >= buf_size) break;
-                if (buf[i] & 0x80) {
-                    // first_mb_in_slice is 0, probably the first nal of a new
-                    // slice
-                    tprintf("find_frame_end frame_end_found, state = %08x, pos = %d\n", state, i);
-                    pc->state=-1;
-                    pc->frame_start_found= 0;
-                    return i-4;
+    if(state>13)
+        state= 7;
+
+    for(i=0; i<buf_size; i++){
+        if(state==7){
+            for(; i<buf_size; i++){
+                if(!buf[i]){
+                    state=2;
+                    break;
                 }
             }
-            pc->frame_start_found = 1;
+        }else if(state<=2){
+            if(buf[i]==1)   state^= 5; //2->7, 1->4, 0->5
+            else if(buf[i]) state = 7;
+            else            state>>=1; //2->1, 1->0, 0->0
+        }else if(state<=5){
+            int v= buf[i] & 0x1F;
+            if(v==7 || v==8 || v==9){
+                if(pc->frame_start_found){
+                    i++;
+found:
+                    pc->state=7;
+                    pc->frame_start_found= 0;
+                    return i-(state&5);
+                }
+            }else if(v==1 || v==2 || v==5){
+                if(pc->frame_start_found){
+                    state+=8;
+                    continue;
+                }else
+                    pc->frame_start_found = 1;
+            }
+            state= 7;
+        }else{
+            if(buf[i] & 0x80)
+                goto found;
+            state= 7;
         }
-        if((state&0xFFFFFF1F) == 0x107 || (state&0xFFFFFF1F) == 0x108 || (state&0xFFFFFF1F) == 0x109){
-           if(pc->frame_start_found){
-                pc->state=-1;
-                pc->frame_start_found= 0;
-                return i-4;
-           }
-        }
-        if (i<buf_size)
-            state= (state<<8) | buf[i];
     }
-
     pc->state= state;
     return END_NOT_FOUND;
 }
@@ -8040,6 +8049,10 @@ static int h264_parse(AVCodecParserContext *s,
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
+    }
+
+    if(next<0){
+        find_frame_end(h, &pc->buffer[pc->last_index + next], -next); //update state
     }
 
     *poutbuf = (uint8_t *)buf;
