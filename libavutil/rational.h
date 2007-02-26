@@ -51,7 +51,7 @@ static inline int av_cmp_q(AVRational a, AVRational b){
 }
 
 /**
- * Rational to double conversion
+ * Rational to double conversion.
  * @param a rational to convert
  * @return (double) a
  */
@@ -71,10 +71,44 @@ static inline double av_q2d(AVRational a){
  */
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
 
+/**
+ * Multiplies two rationals.
+ * @param b first rational.
+ * @param c second rational.
+ * @return b*c.
+ */
 AVRational av_mul_q(AVRational b, AVRational c);
+
+/**
+ * Divides two rationals.
+ * @param b first rational.
+ * @param c second rational.
+ * @return b/c.
+ */
 AVRational av_div_q(AVRational b, AVRational c);
+
+/**
+ * Adds two rationals.
+ * @param b first rational.
+ * @param c second rational.
+ * @return b+c.
+ */
 AVRational av_add_q(AVRational b, AVRational c);
+
+/**
+ * Substracts two rationals.
+ * @param b first rational.
+ * @param c second rational.
+ * returns b-c.
+ */
 AVRational av_sub_q(AVRational b, AVRational c);
+
+/**
+ * Converts a double precision floating point number to a rational.
+ * @param d double to convert
+ * @param max the maximum allowed numerator and denominator
+ * @return (AVRational) d.
+ */
 AVRational av_d2q(double d, int max);
 
 #endif // RATIONAL_H
