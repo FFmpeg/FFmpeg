@@ -3,8 +3,6 @@
 #
 include ../config.mak
 
-CFLAGS+=-DBUILD_AVUTIL
-
 OBJS= mathematics.o \
       rational.o \
       intfloat_readwrite.o \
