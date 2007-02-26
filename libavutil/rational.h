@@ -38,7 +38,10 @@ typedef struct AVRational{
 } AVRational;
 
 /**
- * returns 0 if a==b, 1 if a>b and -1 if a<b.
+ * Compare two rationals.
+ * @param a first rational
+ * @param b second rational
+ * @return 0 if a==b, 1 if a>b and -1 if a<b.
  */
 static inline int av_cmp_q(AVRational a, AVRational b){
     const int64_t tmp= a.num * (int64_t)b.den - b.num * (int64_t)a.den;
@@ -48,15 +51,21 @@ static inline int av_cmp_q(AVRational a, AVRational b){
 }
 
 /**
- * converts the given AVRational to a double.
+ * Rational to double conversion
+ * @param a rational to convert
+ * @return (double) a
  */
 static inline double av_q2d(AVRational a){
     return a.num / (double) a.den;
 }
 
 /**
- * reduce a fraction.
+ * Reduce a fraction.
  * This is useful for framerate calculations.
+ * @param dst_nom destination numerator
+ * @param dst_den destination denominator
+ * @param nom source numerator
+ * @param den source denominator
  * @param max the maximum allowed for dst_nom & dst_den
  * @return 1 if exact, 0 otherwise
  */
