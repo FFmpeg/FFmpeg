@@ -80,7 +80,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
 AVRational av_mul_q(AVRational b, AVRational c);
 
 /**
- * Divides two rationals.
+ * Divides one rational by another.
  * @param b first rational.
  * @param c second rational.
  * @return b/c.
@@ -96,7 +96,7 @@ AVRational av_div_q(AVRational b, AVRational c);
 AVRational av_add_q(AVRational b, AVRational c);
 
 /**
- * Substracts two rationals.
+ * Subtracts one rational from another.
  * @param b first rational.
  * @param c second rational.
  * returns b-c.
