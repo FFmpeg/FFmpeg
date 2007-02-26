@@ -162,7 +162,7 @@ qlog
 
 mv_scale
     stored as delta from last, last is reset to 0 if always_reset || keyframe
-    FIXME check that everything works fine if this chanes between frames
+    FIXME check that everything works fine if this changes between frames
 
 qbias
     dequantization bias
