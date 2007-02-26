@@ -47,6 +47,4 @@ distclean: clean
 
 .PHONY: all depend dep clean distclean install* uninstall*
 
-ifneq ($(wildcard .depend),)
-include .depend
-endif
+-include .depend
