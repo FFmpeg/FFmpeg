@@ -31,13 +31,13 @@ DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(L
 endif
 
 ifeq ($(CONFIG_VHOOK),yes)
-VHOOK=videohook
-INSTALLVHOOK=install-vhook
+all: videohook
+install: install-vhook
 endif
 
 ifeq ($(BUILD_DOC),yes)
-DOC=documentation
-INSTALLMAN=install-man
+all: documentation
+install: install-man
 endif
 
 OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
@@ -50,7 +50,7 @@ LDFLAGS+=-L./libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
-all: lib $(PROGS) $(VHOOK) $(DOC)
+all: lib $(PROGS)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -107,7 +107,7 @@ videohook: .libs
 documentation:
 	$(MAKE) -C doc all
 
-install: install-progs install-libs install-headers $(INSTALLMAN) $(INSTALLVHOOK)
+install: install-progs install-libs install-headers
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: $(PROGS) install-libs
