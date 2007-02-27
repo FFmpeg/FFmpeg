@@ -1750,7 +1750,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 {
     int16_t *samples;
     AVCodec *codec;
-    int got_picture, ret=0;
+    int got_picture, data_size, ret=0;
     AVFrame picture;
 
   if(!st->codec->codec){
@@ -1769,11 +1769,12 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
                                    &got_picture, (uint8_t *)data, size);
         break;
     case CODEC_TYPE_AUDIO:
-        samples = av_malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
+        data_size = FFMAX(size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+        samples = av_malloc(data_size);
         if (!samples)
             goto fail;
-        ret = avcodec_decode_audio(st->codec, samples,
-                                   &got_picture, (uint8_t *)data, size);
+        ret = avcodec_decode_audio2(st->codec, samples,
+                                    &data_size, (uint8_t *)data, size);
         av_free(samples);
         break;
     default:
