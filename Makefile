@@ -40,8 +40,7 @@ all: documentation
 install: install-man
 endif
 
-OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
-SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
+SRCS = ffmpeg.c ffserver.c cmdutils.c ffplay.c
 LDFLAGS := -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
 EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
