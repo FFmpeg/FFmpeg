@@ -11,22 +11,13 @@ CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 LDFLAGS+= -g
 
-ifeq ($(CONFIG_FFMPEG),yes)
-MANPAGES=doc/ffmpeg.1
-PROGS_G+=ffmpeg_g$(EXESUF)
-PROGS+=ffmpeg$(EXESUF)
-endif
+PROGS-$(CONFIG_FFMPEG)   += ffmpeg
+PROGS-$(CONFIG_FFPLAY)   += ffplay
+PROGS-$(CONFIG_FFSERVER) += ffserver
 
-ifeq ($(CONFIG_FFSERVER),yes)
-MANPAGES+=doc/ffserver.1
-PROGS+=ffserver$(EXESUF)
-endif
-
-ifeq ($(CONFIG_FFPLAY),yes)
-MANPAGES+=doc/ffplay.1
-PROGS_G+=ffplay_g$(EXESUF)
-PROGS+=ffplay$(EXESUF)
-endif
+PROGS = $(addsuffix $(EXESUF), $(PROGS-yes))
+PROGS_G = $(addsuffix _g$(EXESUF), $(PROGS-yes))
+MANPAGES = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 
 BASENAMES=ffmpeg ffplay ffserver
 ALLPROGS=$(addsuffix $(EXESUF), $(BASENAMES))
