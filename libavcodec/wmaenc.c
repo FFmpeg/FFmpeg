@@ -31,6 +31,8 @@ static int encode_init(AVCodecContext * avctx){
     int i, flags1, flags2;
     uint8_t *extradata;
 
+    s->avctx = avctx;
+
     if(avctx->channels > MAX_CHANNELS)
         return -1;
 

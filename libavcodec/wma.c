@@ -268,14 +268,14 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
             }
             s->exponent_high_sizes[k] = j;
 #if 0
-            tprintf("%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
+            tprintf(s->avctx, "%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
                   s->frame_len >> k,
                   s->coefs_end[k],
                   s->high_band_start[k],
                   s->exponent_high_sizes[k]);
             for(j=0;j<s->exponent_high_sizes[k];j++)
-                tprintf(" %d", s->exponent_high_bands[k][j]);
-            tprintf("\n");
+                tprintf(s->avctx, " %d", s->exponent_high_bands[k][j]);
+            tprintf(s->avctx, "\n");
 #endif
         }
     }
@@ -284,12 +284,12 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
     {
         int i, j;
         for(i = 0; i < s->nb_block_sizes; i++) {
-            tprintf("%5d: n=%2d:",
+            tprintf(s->avctx, "%5d: n=%2d:",
                    s->frame_len >> i,
                    s->exponent_sizes[i]);
             for(j=0;j<s->exponent_sizes[i];j++)
-                tprintf(" %d", s->exponent_bands[i][j]);
-            tprintf("\n");
+                tprintf(s->avctx, " %d", s->exponent_bands[i][j]);
+            tprintf(s->avctx, "\n");
         }
     }
 #endif

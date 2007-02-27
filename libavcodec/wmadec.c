@@ -48,34 +48,34 @@
 static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len);
 
 #ifdef TRACE
-static void dump_shorts(const char *name, const short *tab, int n)
+static void dump_shorts(WMADecodeContext *s, const char *name, const short *tab, int n)
 {
     int i;
 
-    tprintf("%s[%d]:\n", name, n);
+    tprintf(s->avctx, "%s[%d]:\n", name, n);
     for(i=0;i<n;i++) {
         if ((i & 7) == 0)
-            tprintf("%4d: ", i);
-        tprintf(" %5d.0", tab[i]);
+            tprintf(s->avctx, "%4d: ", i);
+        tprintf(s->avctx, " %5d.0", tab[i]);
         if ((i & 7) == 7)
-            tprintf("\n");
+            tprintf(s->avctx, "\n");
     }
 }
 
-static void dump_floats(const char *name, int prec, const float *tab, int n)
+static void dump_floats(WMADecodeContext *s, const char *name, int prec, const float *tab, int n)
 {
     int i;
 
-    tprintf("%s[%d]:\n", name, n);
+    tprintf(s->avctx, "%s[%d]:\n", name, n);
     for(i=0;i<n;i++) {
         if ((i & 7) == 0)
-            tprintf("%4d: ", i);
-        tprintf(" %8.*f", prec, tab[i]);
+            tprintf(s->avctx, "%4d: ", i);
+        tprintf(s->avctx, " %8.*f", prec, tab[i]);
         if ((i & 7) == 7)
-            tprintf("\n");
+            tprintf(s->avctx, "\n");
     }
     if ((i & 7) != 0)
-        tprintf("\n");
+        tprintf(s->avctx, "\n");
 }
 #endif
 
@@ -84,6 +84,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     WMADecodeContext *s = avctx->priv_data;
     int i, flags1, flags2;
     uint8_t *extradata;
+
+    s->avctx = avctx;
 
     /* extract flag infos */
     flags1 = 0;
@@ -326,7 +328,7 @@ static int wma_decode_block(WMADecodeContext *s)
     float mdct_norm;
 
 #ifdef TRACE
-    tprintf("***decode_block: %d:%d\n", s->frame_count - 1, s->block_num);
+    tprintf(s->avctx, "***decode_block: %d:%d\n", s->frame_count - 1, s->block_num);
 #endif
 
     /* compute current block length */
@@ -567,7 +569,7 @@ static int wma_decode_block(WMADecodeContext *s)
                         }
                         exp_power[j] = e2 / n;
                         last_high_band = j;
-                        tprintf("%d: power=%f (%d)\n", j, exp_power[j], n);
+                        tprintf(s->avctx, "%d: power=%f (%d)\n", j, exp_power[j], n);
                     }
                     exp_ptr += n;
                 }
@@ -628,8 +630,8 @@ static int wma_decode_block(WMADecodeContext *s)
 #ifdef TRACE
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            dump_floats("exponents", 3, s->exponents[ch], s->block_len);
-            dump_floats("coefs", 1, s->coefs[ch], s->block_len);
+            dump_floats(s, "exponents", 3, s->exponents[ch], s->block_len);
+            dump_floats(s, "coefs", 1, s->coefs[ch], s->block_len);
         }
     }
 #endif
@@ -642,7 +644,7 @@ static int wma_decode_block(WMADecodeContext *s)
         /* no need to optimize this case because it should almost
            never happen */
         if (!s->channel_coded[0]) {
-            tprintf("rare ms-stereo case happened\n");
+            tprintf(s->avctx, "rare ms-stereo case happened\n");
             memset(s->coefs[0], 0, sizeof(float) * s->block_len);
             s->channel_coded[0] = 1;
         }
@@ -744,7 +746,7 @@ static int wma_decode_frame(WMADecodeContext *s, int16_t *samples)
     float *iptr;
 
 #ifdef TRACE
-    tprintf("***decode_frame: %d size=%d\n", s->frame_count++, s->frame_len);
+    tprintf(s->avctx, "***decode_frame: %d size=%d\n", s->frame_count++, s->frame_len);
 #endif
 
     /* read each block */
@@ -783,7 +785,7 @@ static int wma_decode_frame(WMADecodeContext *s, int16_t *samples)
     }
 
 #ifdef TRACE
-    dump_shorts("samples", samples, n * s->nb_channels);
+    dump_shorts(s, "samples", samples, n * s->nb_channels);
 #endif
     return 0;
 }
@@ -797,7 +799,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     uint8_t *q;
     int16_t *samples;
 
-    tprintf("***decode_superframe:\n");
+    tprintf(avctx, "***decode_superframe:\n");
 
     if(buf_size==0){
         s->last_superframe_len = 0;

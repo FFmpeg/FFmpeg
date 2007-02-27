@@ -59,6 +59,7 @@ typedef struct CoefVLCTable {
 } CoefVLCTable;
 
 typedef struct WMADecodeContext {
+    AVCodecContext* avctx;
     GetBitContext gb;
     PutBitContext pb;
     int sample_rate;
