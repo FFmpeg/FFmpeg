@@ -42,7 +42,7 @@ sleep 5
 kill $FFMPEG_PID
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
-rm -r feed1.ffm
+rm -f feed1.ffm
 if $diff_cmd data/ffserver.regression "$1" ; then
     echo
     echo Server regression test succeeded.
