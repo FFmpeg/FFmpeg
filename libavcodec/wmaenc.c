@@ -27,7 +27,7 @@
 
 
 static int encode_init(AVCodecContext * avctx){
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int i, flags1, flags2;
     uint8_t *extradata;
 
@@ -78,7 +78,7 @@ static int encode_init(AVCodecContext * avctx){
 
 
 static void apply_window_and_mdct(AVCodecContext * avctx, signed short * audio, int len) {
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int window_index= s->frame_len_bits - s->block_len_bits;
     int i, j, channel;
     const float * win = s->windows[window_index];
@@ -97,7 +97,7 @@ static void apply_window_and_mdct(AVCodecContext * avctx, signed short * audio, 
 }
 
 //FIXME use for decoding too
-static void init_exp(WMADecodeContext *s, int ch, int *exp_param){
+static void init_exp(WMACodecContext *s, int ch, int *exp_param){
     int n;
     const uint16_t *ptr;
     float v, *q, max_scale, *q_end;
@@ -118,7 +118,7 @@ static void init_exp(WMADecodeContext *s, int ch, int *exp_param){
     s->max_exponent[ch] = max_scale;
 }
 
-static void encode_exp_vlc(WMADecodeContext *s, int ch, const int *exp_param){
+static void encode_exp_vlc(WMACodecContext *s, int ch, const int *exp_param){
     int last_exp;
     const uint16_t *ptr;
     float *q, *q_end;
@@ -144,7 +144,7 @@ static void encode_exp_vlc(WMADecodeContext *s, int ch, const int *exp_param){
     }
 }
 
-static int encode_block(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], int total_gain){
+static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], int total_gain){
     int v, bsize, ch, coef_nb_bits, parse_exponents;
     float mdct_norm;
     int nb_coefs[MAX_CHANNELS];
@@ -308,7 +308,7 @@ static int encode_block(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
     return 0;
 }
 
-static int encode_frame(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], uint8_t *buf, int buf_size, int total_gain){
+static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], uint8_t *buf, int buf_size, int total_gain){
     init_put_bits(&s->pb, buf, buf_size);
 
     if (s->use_bit_reservoir) {
@@ -325,7 +325,7 @@ static int encode_frame(WMADecodeContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
 
 static int encode_superframe(AVCodecContext *avctx,
                             unsigned char *buf, int buf_size, void *data){
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     short *samples = data;
     int i, total_gain, best;
 
@@ -386,7 +386,7 @@ AVCodec wmav1_encoder =
     "wmav1",
     CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV1,
-    sizeof(WMADecodeContext),
+    sizeof(WMACodecContext),
     encode_init,
     encode_superframe,
     ff_wma_end,
@@ -397,7 +397,7 @@ AVCodec wmav2_encoder =
     "wmav2",
     CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV2,
-    sizeof(WMADecodeContext),
+    sizeof(WMACodecContext),
     encode_init,
     encode_superframe,
     ff_wma_end,

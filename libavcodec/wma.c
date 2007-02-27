@@ -64,7 +64,7 @@ static void init_coef_vlc(VLC *vlc,
 
 int ff_wma_init(AVCodecContext * avctx, int flags2)
 {
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int i;
     float *window;
     float bps1, high_freq;
@@ -362,7 +362,7 @@ int ff_wma_total_gain_to_bits(int total_gain){
 
 int ff_wma_end(AVCodecContext *avctx)
 {
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int i;
 
     for(i = 0; i < s->nb_block_sizes; i++)

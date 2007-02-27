@@ -45,7 +45,7 @@
 #define HGAINVLCBITS 9
 #define HGAINMAX ((13+HGAINVLCBITS-1)/HGAINVLCBITS)
 
-static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len);
+static void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len);
 
 #ifdef TRACE
 static void dump_shorts(WMADecodeContext *s, const char *name, const short *tab, int n)
@@ -81,7 +81,7 @@ static void dump_floats(WMADecodeContext *s, const char *name, int prec, const f
 
 static int wma_decode_init(AVCodecContext * avctx)
 {
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int i, flags1, flags2;
     uint8_t *extradata;
 
@@ -164,7 +164,7 @@ static void interpolate_array(float *scale, int old_size, int new_size)
  * expense (linear interpolation approximately doubles the number of
  * bits of precision).
  */
-static inline float pow_m1_4(WMADecodeContext *s, float x)
+static inline float pow_m1_4(WMACodecContext *s, float x)
 {
     union {
         float f;
@@ -183,7 +183,7 @@ static inline float pow_m1_4(WMADecodeContext *s, float x)
     return s->lsp_pow_e_table[e] * (a + b * t.f);
 }
 
-static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len)
+static void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len)
 {
     float wdel, a, b;
     int i, e, m;
@@ -224,7 +224,7 @@ static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len)
  * NOTE: We use the same code as Vorbis here
  * @todo optimize it further with SSE/3Dnow
  */
-static void wma_lsp_to_curve(WMADecodeContext *s,
+static void wma_lsp_to_curve(WMACodecContext *s,
                              float *out, float *val_max_ptr,
                              int n, float *lsp)
 {
@@ -254,7 +254,7 @@ static void wma_lsp_to_curve(WMADecodeContext *s,
 /**
  * decode exponents coded with LSP coefficients (same idea as Vorbis)
  */
-static void decode_exp_lsp(WMADecodeContext *s, int ch)
+static void decode_exp_lsp(WMACodecContext *s, int ch)
 {
     float lsp_coefs[NB_LSP_COEFS];
     int val, i;
@@ -274,7 +274,7 @@ static void decode_exp_lsp(WMADecodeContext *s, int ch)
 /**
  * decode exponents coded with VLC codes
  */
-static int decode_exp_vlc(WMADecodeContext *s, int ch)
+static int decode_exp_vlc(WMACodecContext *s, int ch)
 {
     int last_exp, n, code;
     const uint16_t *ptr, *band_ptr;
@@ -320,7 +320,7 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
  * @return 0 if OK. 1 if last block of frame. return -1 if
  * unrecorrable error.
  */
-static int wma_decode_block(WMADecodeContext *s)
+static int wma_decode_block(WMACodecContext *s)
 {
     int n, v, a, ch, code, bsize;
     int coef_nb_bits, total_gain, parse_exponents;
@@ -739,7 +739,7 @@ static int wma_decode_block(WMADecodeContext *s)
 }
 
 /* decode a frame of frame_len samples */
-static int wma_decode_frame(WMADecodeContext *s, int16_t *samples)
+static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
 {
     int ret, i, n, a, ch, incr;
     int16_t *ptr;
@@ -794,7 +794,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  uint8_t *buf, int buf_size)
 {
-    WMADecodeContext *s = avctx->priv_data;
+    WMACodecContext *s = avctx->priv_data;
     int nb_frames, bit_offset, i, pos, len;
     uint8_t *q;
     int16_t *samples;
@@ -891,7 +891,7 @@ AVCodec wmav1_decoder =
     "wmav1",
     CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV1,
-    sizeof(WMADecodeContext),
+    sizeof(WMACodecContext),
     wma_decode_init,
     NULL,
     ff_wma_end,
@@ -903,7 +903,7 @@ AVCodec wmav2_decoder =
     "wmav2",
     CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV2,
-    sizeof(WMADecodeContext),
+    sizeof(WMACodecContext),
     wma_decode_init,
     NULL,
     ff_wma_end,

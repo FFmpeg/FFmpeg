@@ -58,7 +58,7 @@ typedef struct CoefVLCTable {
     const uint16_t *levels;     ///< table to build run/level tables
 } CoefVLCTable;
 
-typedef struct WMADecodeContext {
+typedef struct WMACodecContext {
     AVCodecContext* avctx;
     GetBitContext gb;
     PutBitContext pb;
@@ -135,7 +135,7 @@ typedef struct WMADecodeContext {
 #ifdef TRACE
     int frame_count;
 #endif
-} WMADecodeContext;
+} WMACodecContext;
 
 extern const uint16_t ff_wma_hgain_huffcodes[37];
 extern const uint8_t ff_wma_hgain_huffbits[37];
