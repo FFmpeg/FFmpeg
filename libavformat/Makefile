@@ -171,9 +171,7 @@ endif
 endif
 
 NAME=avformat
-ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFVERSION)
 LIBMAJOR=$(LAVFMAJOR)
-endif
 
 include ../common.mak

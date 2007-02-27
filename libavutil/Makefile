@@ -24,9 +24,7 @@ HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
           random.h
 
 NAME=avutil
-ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVUVERSION)
 LIBMAJOR=$(LAVUMAJOR)
-endif
 
 include ../common.mak

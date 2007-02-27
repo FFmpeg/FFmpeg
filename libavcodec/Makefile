@@ -397,10 +397,8 @@ OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 NAME=avcodec
-ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
-endif
 
 TESTS= imgresample-test fft-test
 ifeq ($(TARGET_ARCH_X86),yes)
