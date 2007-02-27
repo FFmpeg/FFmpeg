@@ -2,10 +2,8 @@
 include ../config.mak
 
 NAME=swscale
-ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(SWSVERSION)
 LIBMAJOR=$(SWSMAJOR)
-endif
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
