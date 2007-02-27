@@ -1082,6 +1082,7 @@ following image formats are supported:
 @item Intel Music Coder      @tab      @tab X
 @item Musepack               @tab      @tab X
 @tab Only SV7 is supported
+@item DT$ Coherent Audio     @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

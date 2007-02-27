@@ -64,6 +64,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(CLJR, cljr);
     REGISTER_DECODER(CSCD, cscd);
     REGISTER_DECODER(CYUV, cyuv);
+    REGISTER_DECODER(DCA, dca);
     REGISTER_DECODER(DSICINVIDEO, dsicinvideo);
     REGISTER_ENCDEC (DVVIDEO, dvvideo);
     REGISTER_DECODER(EIGHTBPS, eightbps);
@@ -249,6 +250,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER (AAC, aac);
     REGISTER_PARSER (AC3, ac3);
     REGISTER_PARSER (CAVSVIDEO, cavsvideo);
+    REGISTER_PARSER (DCA, dca);
     REGISTER_PARSER (DVBSUB, dvbsub);
     REGISTER_PARSER (DVDSUB, dvdsub);
     REGISTER_PARSER (H261, h261);

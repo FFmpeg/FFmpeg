@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(34<<8)+0)
-#define LIBAVCODEC_VERSION      51.34.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(35<<8)+0)
+#define LIBAVCODEC_VERSION      51.35.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2219,6 +2219,7 @@ extern AVCodec cljr_decoder;
 extern AVCodec cook_decoder;
 extern AVCodec cscd_decoder;
 extern AVCodec cyuv_decoder;
+extern AVCodec dca_decoder;
 extern AVCodec dsicinaudio_decoder;
 extern AVCodec dsicinvideo_decoder;
 extern AVCodec dvvideo_decoder;
@@ -2883,6 +2884,7 @@ void av_parser_close(AVCodecParserContext *s);
 extern AVCodecParser aac_parser;
 extern AVCodecParser ac3_parser;
 extern AVCodecParser cavsvideo_parser;
+extern AVCodecParser dca_parser;
 extern AVCodecParser dvbsub_parser;
 extern AVCodecParser dvdsub_parser;
 extern AVCodecParser h261_parser;
