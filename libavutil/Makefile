@@ -1,6 +1,3 @@
-#
-# libavutil Makefile
-#
 include ../config.mak
 
 OBJS= mathematics.o \
