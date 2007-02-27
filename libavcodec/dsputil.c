@@ -4097,7 +4097,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->try_8x8basis= try_8x8basis_c;
     c->add_8x8basis= add_8x8basis_c;
 
-#ifdef CONFIG_SNOW_ENCODER
+#ifdef CONFIG_SNOW_DECODER
     c->vertical_compose97i = ff_snow_vertical_compose97i;
     c->horizontal_compose97i = ff_snow_horizontal_compose97i;
     c->inner_add_yblock = ff_snow_inner_add_yblock;
