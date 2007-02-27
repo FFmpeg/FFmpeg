@@ -26,25 +26,25 @@ struct AVTreeNode;
 /**
  * Finds an element.
  * @param root a pointer to the root node of the tree
- * @param next if next is not NULL then next[0] will contain the previous element and
- *             next[1] the next element if either doesnt exist then the corresponding
- *             entry in next is unchanged
- * @return an element with cmp(key, elem)==0 or NULL if no such element exists in
- *         the tree
+ * @param next If next is not NULL then next[0] will contain the previous
+ *             element and next[1] the next element if either does not exist
+ *             then the corresponding entry in next is unchanged.
+ * @return An element with cmp(key, elem)==0 or NULL if no such element exists in
+ *         the tree.
  */
 void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *key, const void *b), void *next[2]);
 
 /**
  * Finds a element for which cmp(key, elem)==0, if no such element is found key
  * is inserted into the tree.
- * @param rootp a pointer to a pointer to the root node of the tree note the
- *              root node can change during insertions, this is required to
- *              keep the tree balanced
+ * @param rootp A pointer to a pointer to the root node of the tree. Note that
+ *              the root node can change during insertions, this is required
+ *              to keep the tree balanced.
  *
- * @return if no insertion happened, the found element
- *         if a insertion happened, then either key or NULL is returned (which it is
- *         depends on the tree state and the implemenattion, you should make no
- *         asumtations that its one or the other in code)
+ * @return If no insertion happened, the found element.
+ *         If an insertion happened, then either key or NULL is returned (which
+ *         one it is depends on the tree state and the implementation, you
+ *         should make no assumptions that it's one or the other in the code).
  */
 void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b));
 void av_tree_destroy(struct AVTreeNode *t);
