@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file tree.h
+ * A tree container.
+ * @author Michael Niedermayer <michaelni@gmx.at>
+ */
+
 #ifndef TREE_H
 #define TREE_H
 
@@ -42,9 +48,9 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *              to keep the tree balanced.
  *
  * @return If no insertion happened, the found element.
- *         If an insertion happened, then either key or NULL is returned (which
- *         one it is depends on the tree state and the implementation, you
- *         should make no assumptions that it's one or the other in the code).
+ *         If an insertion happened, then either key or NULL will be returned.
+ *         Which one it is depends on the tree state and the implementation. You
+ *         should make no assumptions that it's one or the other in the code.
  */
 void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b));
 void av_tree_destroy(struct AVTreeNode *t);
