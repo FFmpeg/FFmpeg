@@ -907,8 +907,10 @@ typedef struct AVCodecContext {
 
     void *priv_data;
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
     /* unused, FIXME remove*/
     int rtp_mode;
+#endif
 
     int rtp_payload_size;   /* The size of the RTP payload: the coder will  */
                             /* do it's best to deliver a chunk with size    */
