@@ -1614,7 +1614,7 @@ static int av_encode(AVFormatContext **output_files,
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
                                          codec->width, codec->height ) )
-                        goto fail;
+                        exit(1);
 
                     ost->img_resample_ctx = sws_getContext(
                             icodec->width - (frame_leftBand + frame_rightBand),
