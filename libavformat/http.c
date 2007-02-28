@@ -206,14 +206,17 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     HTTPContext *s = h->priv_data;
     int post, err, ch;
     char line[1024], *q;
-    char *auth_b64;
+    char *auth_b64 = av_malloc(strlen(auth) * 4 / 3 + 12);
     offset_t off = s->off;
 
+    if (auth_b64 == NULL) return AVERROR(ENOMEM);
 
     /* send http header */
     post = h->flags & URL_WRONLY;
 
-    auth_b64 = av_base64_encode((uint8_t *)auth, strlen(auth));
+    auth_b64 = av_base64_encode(auth_b64, strlen(auth) * 4 / 3 + 12,
+                                (uint8_t *)auth, strlen(auth));
+
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
              "User-Agent: %s\r\n"

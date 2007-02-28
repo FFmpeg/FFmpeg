@@ -104,6 +104,8 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
 //    start= url_ftell(bc) - 8;
 
     size= get_v(bc);
+    if(size > 4096)
+        get_be32(bc); //FIXME check this
 
     init_checksum(bc, calculate_checksum ? av_crc04C11DB7_update : NULL, 0);
 

@@ -18,7 +18,7 @@ OBJS= mathematics.o \
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
           intfloat_readwrite.h md5.h adler32.h log.h fifo.h lzo.h \
-          random.h
+          random.h base64.h
 
 NAME=avutil
 LIBVERSION=$(LAVUVERSION)

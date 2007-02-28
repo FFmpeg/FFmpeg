@@ -27,7 +27,11 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length);
 
 /**
  * encodes base64
+ * @param out string
+ * @param out_len of the string, must be at least (len * 4 / 3 + 12)
  * @param src data, not a string
+ * @param len data length
+ * @return the zero terminated encoded string or NULL in case of errors
  */
-char *av_base64_encode(uint8_t * src, int len);
+char *av_base64_encode(char *out, int out_len, uint8_t * src, int len);
 

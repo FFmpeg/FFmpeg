@@ -70,17 +70,17 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length)
 * fixed edge cases and made it work from data (vs. strings) by ryan.
 *****************************************************************************/
 
-char *av_base64_encode(uint8_t * src, int len)
+char *av_base64_encode(char *out, int out_len, uint8_t * src, int len)
 {
     static const char b64[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    char *ret, *dst;
+    char *dst;
     unsigned i_bits = 0;
     int i_shift = 0;
     int bytes_remaining = len;
 
-    if (len < UINT_MAX / 4) {
-        ret = dst = av_malloc(len * 4 / 3 + 12);
+    if (len < UINT_MAX / 4 && out_len > (len * 4 / 3 + 12) && out) {
+        dst = out;
     } else
         return NULL;
 
@@ -95,12 +95,12 @@ char *av_base64_encode(uint8_t * src, int len)
                 i_shift -= 6;
             } while (i_shift > 6 || (bytes_remaining == 0 && i_shift > 0));
         }
-        while ((dst - ret) & 3)
+        while ((dst - out) & 3)
             *dst++ = '=';
     }
     *dst = '\0';
 
-    return ret;
+    return out;
 }
 
 // #define TEST_BASE64
@@ -131,10 +131,12 @@ int b64test()
     };
     for (t = tests; t->data; t++) {
         char *str;
+        int ret;
 
         av_log(NULL, AV_LOG_ERROR, "Encoding %s...\n", (char *) t->data);
-        str = av_base64_encode(t->data, t->len);
-        if (str) {
+        str = av_malloc(t->len * 4 / 3 + 12);
+        ret = av_base64_encode(str, t->len * 4 / 3 + 12, t->data, t->len);
+        if (ret > 0) {
             av_log(NULL, AV_LOG_ERROR, "Encoded to %s...\n", str);
             if (strcmp(str, t->result) != 0) {
                 av_log(NULL, AV_LOG_ERROR, "failed test %d: %s != %s\n",
@@ -168,9 +170,9 @@ int b64test()
         srand(123141);          // time(NULL));
         for (test_count = 0; test_count < 100; test_count++) {
             int size = rand() % 1024;
-            int ii;
+            int ii, ret;
             uint8_t *data;
-            char *encoded_result;
+            char *encoded_result = av_malloc(size * 4 / 3 + 12);
 
             av_log(NULL, AV_LOG_ERROR, "Test %d: Size %d bytes...",
                    test_count, size);
@@ -179,8 +181,9 @@ int b64test()
                 data[ii] = rand() % 255;
             }
 
-            encoded_result = av_base64_encode(data, size);
-            if (encoded_result) {
+            ret = av_base64_encode(encoded_result, size * 4 / 3 + 12,
+                                   data, size);
+            if (ret > 0) {
                 int decode_buffer_size = size + 10;     // try without 10 as well
                 uint8_t *decode_buffer = av_malloc(decode_buffer_size);
                 if (decode_buffer) {
