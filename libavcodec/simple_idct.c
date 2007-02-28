@@ -78,13 +78,13 @@
 static inline void idctRowCondDC (DCTELEM * row)
 {
         int a0, a1, a2, a3, b0, b1, b2, b3;
-#ifdef FAST_64BIT
+#ifdef HAVE_FAST_64BIT
         uint64_t temp;
 #else
         uint32_t temp;
 #endif
 
-#ifdef FAST_64BIT
+#ifdef HAVE_FAST_64BIT
 #ifdef WORDS_BIGENDIAN
 #define ROW0_MASK 0xffff000000000000LL
 #else
@@ -146,7 +146,7 @@ static inline void idctRowCondDC (DCTELEM * row)
         MUL16(b3, W7, row[1]);
         MAC16(b3, -W5, row[3]);
 
-#ifdef FAST_64BIT
+#ifdef HAVE_FAST_64BIT
         temp = ((uint64_t*)row)[1];
 #else
         temp = ((uint32_t*)row)[2] | ((uint32_t*)row)[3];

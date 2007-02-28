@@ -600,6 +600,7 @@ HAVE_LIST="
     dev_video_bktr_ioctl_bt848_h
     dlfcn_h
     dlopen
+    fast_64bit
     fast_cmov
     freetype2
     imlib2
@@ -957,6 +958,7 @@ case "$arch" in
     if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
       if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
         arch="x86_64"
+        enable fast_64bit
       fi
     fi
   ;;
@@ -966,15 +968,21 @@ case "$arch" in
   ;;
   alpha)
     arch="alpha"
+    enable fast_64bit
   ;;
-  "Power Macintosh"|ppc|ppc64|powerpc)
+  "Power Macintosh"|ppc|powerpc)
     arch="powerpc"
+  ;;
+  ppc64)
+    arch="powerpc"
+    enable fast_64bit
   ;;
   mips|mipsel|IP*)
     arch="mips"
   ;;
   sun4u|sparc64)
     arch="sparc64"
+    enable fast_64bit
   ;;
   sparc)
     arch="sparc"
@@ -982,8 +990,12 @@ case "$arch" in
   sh4)
     arch="sh4"
   ;;
-  parisc|parisc64)
+  parisc)
     arch="parisc"
+  ;;
+  parisc64)
+    arch="parisc"
+    enable fast_64bit
   ;;
   s390|s390x)
     arch="s390"
@@ -993,6 +1005,7 @@ case "$arch" in
   ;;
   ia64)
     arch="ia64"
+    enable fast_64bit
   ;;
   bfin)
     arch="bfin"
