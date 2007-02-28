@@ -1145,10 +1145,9 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 
     av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
-    if (v->profile == 2)
+    if (v->profile == PROFILE_COMPLEX)
     {
-        av_log(avctx, AV_LOG_ERROR, "Profile value 2 is forbidden (and WMV3 Complex Profile is unsupported)\n");
-        return -1;
+        av_log(avctx, AV_LOG_ERROR, "WMV3 Complex Profile is not fully supported\n");
     }
 
     if (v->profile == PROFILE_ADVANCED)
@@ -1465,6 +1464,9 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     else
         if (v->multires && v->s.pict_type != B_TYPE) v->respic = get_bits(gb, 2);
 
+    if(v->res_x8 && (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)){
+        if(get_bits1(gb))return -1;
+    }
 //av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
 //        (v->s.pict_type == P_TYPE) ? 'P' : ((v->s.pict_type == I_TYPE) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
 
@@ -3435,6 +3437,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     s->dsp.vc1_inv_trans_8x8(s->block[i]);
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
+                    if(!v->res_fasttx && v->res_x8) for(j = 0; j < 64; j++) s->block[i][j] += 16;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
@@ -3538,6 +3541,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     s->dsp.vc1_inv_trans_8x8(s->block[i]);
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
+                    if(!v->res_fasttx && v->res_x8) for(j = 0; j < 64; j++) s->block[i][j] += 16;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
