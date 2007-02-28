@@ -76,15 +76,19 @@ static int Faac_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = 0;
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
 
-        unsigned char *buffer;
+        unsigned char *buffer = NULL;
         unsigned long decoder_specific_info_size;
 
         if (!faacEncGetDecoderSpecificInfo(s->faac_handle, &buffer,
                                            &decoder_specific_info_size)) {
-            avctx->extradata = buffer;
+            avctx->extradata = av_malloc(decoder_specific_info_size + FF_INPUT_BUFFER_PADDING_SIZE);
             avctx->extradata_size = decoder_specific_info_size;
+            memcpy(avctx->extradata, buffer, avctx->extradata_size);
             faac_cfg->outputFormat = 0;
         }
+#undef free
+        free(buffer);
+#define free please_use_av_free
     }
 
     if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
@@ -115,8 +119,7 @@ static int Faac_encode_close(AVCodecContext *avctx)
     FaacAudioContext *s = avctx->priv_data;
 
     av_freep(&avctx->coded_frame);
-
-    //if (avctx->extradata_size) free(avctx->extradata);
+    av_freep(&avctx->extradata);
 
     faacEncClose(s->faac_handle);
     return 0;
