@@ -3169,6 +3169,7 @@ i--;
 		for(i=0; i<vLumFilterSize; i++)
 		{
 			lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
+			lumMmxFilter[4*i+1]= (uint64_t)lumSrcPtr[i] >> 32;
 			lumMmxFilter[4*i+2]= 
 			lumMmxFilter[4*i+3]= 
 				((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
@@ -3176,6 +3177,7 @@ i--;
 		for(i=0; i<vChrFilterSize; i++)
 		{
 			chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
+			chrMmxFilter[4*i+1]= (uint64_t)chrSrcPtr[i] >> 32;
 			chrMmxFilter[4*i+2]= 
 			chrMmxFilter[4*i+3]= 
 				((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
