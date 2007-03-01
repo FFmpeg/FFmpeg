@@ -742,7 +742,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int nbits, len, frame_rate, tag, v;
-    offset_t firstTagOff;
+    offset_t frame_offset = -1;
     AVStream *ast = 0;
     AVStream *vst = 0;
 
@@ -769,14 +769,12 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     swf->ms_per_frame = ( 1000 * 256 ) / frame_rate;
     swf->samples_per_frame = 0;
 
-    firstTagOff = url_ftell(pb);
     for(;;) {
+        offset_t tag_offset = url_ftell(pb);
         tag = get_swf_tag(pb, &len);
-        if (tag < 0) {
-            if ( ast || vst )
-                break;
-            av_log(s, AV_LOG_ERROR, "No media found in SWF\n");
-            return AVERROR_IO;
+        if (tag < 0 || tag == TAG_VIDEOFRAME || tag == TAG_STREAMBLOCK) {
+            url_fseek(pb, frame_offset == -1 ? tag_offset : frame_offset, SEEK_SET);
+            break;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {
             int ch_id = get_le16(pb);
@@ -814,6 +812,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = CODEC_ID_MJPEG;
             url_fskip(pb, len);
+            frame_offset = tag_offset;
         } else {
             url_fskip(pb, len);
         }
@@ -825,8 +824,6 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             vst->codec->time_base.num = 1;
         }
     }
-    url_fseek(pb, firstTagOff, SEEK_SET);
-
     return 0;
 }
 
