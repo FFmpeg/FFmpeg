@@ -355,7 +355,9 @@ typedef struct RcOverride{
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< place global headers in extradata instead of every keyframe
 #define CODEC_FLAG_BITEXACT       0x00800000 ///< use only bitexact stuff (except (i)dct)
 /* Fx : Flag for h263+ extra options */
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 #define CODEC_FLAG_H263P_AIC      0x01000000 ///< H263 Advanced intra coding / MPEG4 AC prediction (remove this)
+#endif
 #define CODEC_FLAG_AC_PRED        0x01000000 ///< H263 Advanced intra coding / MPEG4 AC prediction
 #define CODEC_FLAG_H263P_UMV      0x02000000 ///< Unlimited motion vector
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< use rate distortion optimization for cbp
