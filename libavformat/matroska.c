@@ -1055,7 +1055,7 @@ matroska_probe (AVProbeData *p)
      * we don't parse the whole header but simply check for the
      * availability of that array of characters inside the header.
      * Not fully fool-proof, but good enough. */
-    for (n = 4 + size; n < 4 + size + total - sizeof(probe_data); n++)
+    for (n = 4 + size; n <= 4 + size + total - sizeof(probe_data); n++)
         if (!memcmp (&p->buf[n], probe_data, sizeof(probe_data)))
             return AVPROBE_SCORE_MAX;
 
