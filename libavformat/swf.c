@@ -786,13 +786,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_byte(pb);
             /* Check for FLV1 */
             vst = av_new_stream(s, ch_id);
-            av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
-            if (swf->ms_per_frame) {
-                vst->codec->time_base.den = 1000. / swf->ms_per_frame;
-                vst->codec->time_base.num = 1;
-            }
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {
             /* streaming found */
             int sample_rate_code;
@@ -816,16 +811,18 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         } else if (tag == TAG_JPEG2 && !vst) {
             vst = av_new_stream(s, -2); /* -2 to avoid clash with video stream and audio stream */
-            av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = CODEC_ID_MJPEG;
-            if (swf->ms_per_frame) {
-                vst->codec->time_base.den = 1000. / swf->ms_per_frame;
-                vst->codec->time_base.num = 1;
-            }
             url_fskip(pb, len);
         } else {
             url_fskip(pb, len);
+        }
+    }
+    if (vst) {
+        av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
+        if (swf->ms_per_frame) {
+            vst->codec->time_base.den = 1000. / swf->ms_per_frame;
+            vst->codec->time_base.num = 1;
         }
     }
     url_fseek(pb, firstTagOff, SEEK_SET);
