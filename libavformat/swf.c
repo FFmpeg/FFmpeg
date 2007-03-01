@@ -773,13 +773,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(;;) {
         tag = get_swf_tag(pb, &len);
         if (tag < 0) {
-            if ( ast || vst ) {
-                if ( vst && ast ) {
-                    vst->codec->time_base.den = ast->codec->sample_rate / swf->samples_per_frame;
-                    vst->codec->time_base.num = 1;
-                }
+            if ( ast || vst )
                 break;
-            }
             av_log(s, AV_LOG_ERROR, "No media found in SWF\n");
             return AVERROR_IO;
         }
@@ -794,7 +789,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
-            if (swf->samples_per_frame) {
+            if (swf->ms_per_frame) {
                 vst->codec->time_base.den = 1000. / swf->ms_per_frame;
                 vst->codec->time_base.num = 1;
             }
@@ -824,7 +819,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = CODEC_ID_MJPEG;
-            if (swf->samples_per_frame) {
+            if (swf->ms_per_frame) {
                 vst->codec->time_base.den = 1000. / swf->ms_per_frame;
                 vst->codec->time_base.num = 1;
             }
