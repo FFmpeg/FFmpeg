@@ -63,9 +63,27 @@ static const PixelFormatTag pixelFormatTags[] = {
     { -1, 0 },
 };
 
-static int findPixelFormat(unsigned int fourcc)
+static const PixelFormatTag pixelFormatBpsAVI[] = {
+    { PIX_FMT_PAL8,    8 },
+    { PIX_FMT_RGB555, 15 },
+    { PIX_FMT_RGB555, 16 },
+    { PIX_FMT_BGR24,  24 },
+    { PIX_FMT_RGB32,  32 },
+    { -1, 0 },
+};
+
+static const PixelFormatTag pixelFormatBpsMOV[] = {
+    /* FIXME fix swscaler to support those */
+    /* http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/chapter_4_section_2.html */
+    { PIX_FMT_PAL8,      8 },
+    { PIX_FMT_BGR555,   16 },
+    { PIX_FMT_RGB24,    24 },
+    { PIX_FMT_BGR32_1,  32 },
+    { -1, 0 },
+};
+
+static int findPixelFormat(const PixelFormatTag *tags, unsigned int fourcc)
 {
-    const PixelFormatTag * tags = pixelFormatTags;
     while (tags->pix_fmt >= 0) {
         if (tags->fourcc == fourcc)
             return tags->pix_fmt;
@@ -91,17 +109,12 @@ static int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 
-    if (avctx->codec_tag)
-        avctx->pix_fmt = findPixelFormat(avctx->codec_tag);
-    else if (avctx->bits_per_sample){
-        switch(avctx->bits_per_sample){
-        case  8: avctx->pix_fmt= PIX_FMT_PAL8  ; break;
-        case 15: avctx->pix_fmt= PIX_FMT_RGB555; break;
-        case 16: avctx->pix_fmt= PIX_FMT_RGB555; break;
-        case 24: avctx->pix_fmt= PIX_FMT_BGR24 ; break;
-        case 32: avctx->pix_fmt= PIX_FMT_RGB32; break;
-        }
-    }
+    if (avctx->codec_tag == MKTAG('r','a','w',' '))
+        avctx->pix_fmt = findPixelFormat(pixelFormatBpsMOV, avctx->bits_per_sample);
+    else if (avctx->codec_tag)
+        avctx->pix_fmt = findPixelFormat(pixelFormatTags,   avctx->codec_tag);
+    else if (avctx->bits_per_sample)
+        avctx->pix_fmt = findPixelFormat(pixelFormatBpsAVI, avctx->bits_per_sample);
 
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     context->buffer = av_malloc(context->length);
