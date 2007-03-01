@@ -2376,32 +2376,13 @@ rv_offset(uint8_t *data, int slice, int slices)
 }
 
 static int
-matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
-                           uint64_t              cluster_time)
+matroska_parse_block(MatroskaDemuxContext *matroska, uint64_t cluster_time,
+                     int is_keyframe, int *ptrack, AVPacket **ppkt)
 {
-    int res = 0;
-    uint32_t id;
-    AVPacket *pkt = NULL;
-    int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
-    uint64_t duration = AV_NOPTS_VALUE;
-    int track = -1;
-
-    av_log(matroska->ctx, AV_LOG_DEBUG, "parsing blockgroup...\n");
-
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-            /* one block inside the group. Note, block parsing is one
-             * of the harder things, so this code is a bit complicated.
-             * See http://www.matroska.org/ for documentation. */
-            case MATROSKA_ID_BLOCK: {
+                int res;
+                uint32_t id;
+                int track;
+                AVPacket *pkt;
                 uint8_t *data, *origdata;
                 int size;
                 int16_t block_time;
@@ -2411,7 +2392,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 int64_t pos= url_ftell(&matroska->ctx->pb);
 
                 if ((res = ebml_read_binary(matroska, &id, &data, &size)) < 0)
-                    break;
+                    return res;
                 origdata = data;
 
                 /* first byte(s): tracknum */
@@ -2419,22 +2400,23 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     av_log(matroska->ctx, AV_LOG_ERROR,
                            "EBML block data error\n");
                     av_free(origdata);
-                    break;
+                    return res;
                 }
                 data += n;
                 size -= n;
 
                 /* fetch track from num */
                 track = matroska_find_track_by_num(matroska, num);
+                if (ptrack)  *ptrack = track;
                 if (size <= 3 || track < 0 || track >= matroska->num_tracks) {
                     av_log(matroska->ctx, AV_LOG_INFO,
                            "Invalid stream %d or size %u\n", track, size);
                     av_free(origdata);
-                    break;
+                    return res;
                 }
                 if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard >= AVDISCARD_ALL){
                     av_free(origdata);
-                    break;
+                    return res;
                 }
 
                 /* block_time (relative to cluster time) */
@@ -2549,6 +2531,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                             else
                                 slice_size = rv_offset(data, slice+1, slices) - slice_offset;
                             pkt = av_mallocz(sizeof(AVPacket));
+                            if (ppkt)  *ppkt = pkt;
                             /* XXX: prevent data copy... */
                             if (av_new_packet(pkt, slice_size) < 0) {
                                 res = AVERROR_NOMEM;
@@ -2573,6 +2556,38 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
                 av_free(lace_size);
                 av_free(origdata);
+                return res;
+}
+
+static int
+matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
+                           uint64_t              cluster_time)
+{
+    int res = 0;
+    uint32_t id;
+    AVPacket *pkt = NULL;
+    int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
+    uint64_t duration = AV_NOPTS_VALUE;
+    int track = -1;
+
+    av_log(matroska->ctx, AV_LOG_DEBUG, "parsing blockgroup...\n");
+
+    while (res == 0) {
+        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+            res = AVERROR_IO;
+            break;
+        } else if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+
+        switch (id) {
+            /* one block inside the group. Note, block parsing is one
+             * of the harder things, so this code is a bit complicated.
+             * See http://www.matroska.org/ for documentation. */
+            case MATROSKA_ID_BLOCK: {
+                res = matroska_parse_block(matroska, cluster_time,
+                                           is_keyframe, &track, &pkt);
                 break;
             }
 
