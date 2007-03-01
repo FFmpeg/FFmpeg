@@ -206,7 +206,7 @@ static int sws_flags = SWS_BICUBIC;
 
 const char **opt_names=NULL;
 int opt_name_count=0;
-AVCodecContext *avctx_opts;
+AVCodecContext *avctx_opts[CODEC_TYPE_NB];
 AVFormatContext *avformat_opts;
 
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
@@ -781,7 +781,7 @@ static void do_video_out(AVFormatContext *s,
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
-            if(avctx_opts->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)){
+            if(avctx_opts[CODEC_TYPE_VIDEO]->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)){
                 if(top_field_first == -1)
                     big_picture.top_field_first = in_picture->top_field_first;
                 else
@@ -2604,7 +2604,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_AUDIO:
             for(j=0; j<opt_name_count; j++){
                 const AVOption *opt;
-                double d= av_get_double(avctx_opts, opt_names[j], &opt);
+                double d= av_get_double(avctx_opts[CODEC_TYPE_AUDIO], opt_names[j], &opt);
                 if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
             }
@@ -2617,7 +2617,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_VIDEO:
             for(j=0; j<opt_name_count; j++){
                 const AVOption *opt;
-                double d= av_get_double(avctx_opts, opt_names[j], &opt);
+                double d= av_get_double(avctx_opts[CODEC_TYPE_VIDEO], opt_names[j], &opt);
                 if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
             }
@@ -2733,11 +2733,11 @@ static void new_video_stream(AVFormatContext *oc)
     if(   (video_global_header&1)
        || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER))){
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avctx_opts->flags|= CODEC_FLAG_GLOBAL_HEADER;
+        avctx_opts[CODEC_TYPE_VIDEO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
     if(video_global_header&2){
         video_enc->flags2 |= CODEC_FLAG2_LOCAL_HEADER;
-        avctx_opts->flags2|= CODEC_FLAG2_LOCAL_HEADER;
+        avctx_opts[CODEC_TYPE_VIDEO]->flags2|= CODEC_FLAG2_LOCAL_HEADER;
     }
 
     if (video_stream_copy) {
@@ -2757,7 +2757,7 @@ static void new_video_stream(AVFormatContext *oc)
 
         for(i=0; i<opt_name_count; i++){
              const AVOption *opt;
-             double d= av_get_double(avctx_opts, opt_names[i], &opt);
+             double d= av_get_double(avctx_opts[CODEC_TYPE_VIDEO], opt_names[i], &opt);
              if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(video_enc, opt_names[i], d);
         }
@@ -2898,7 +2898,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avctx_opts->flags|= CODEC_FLAG_GLOBAL_HEADER;
+        avctx_opts[CODEC_TYPE_AUDIO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (audio_stream_copy) {
         st->stream_copy = 1;
@@ -2908,7 +2908,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
         for(i=0; i<opt_name_count; i++){
             const AVOption *opt;
-            double d= av_get_double(avctx_opts, opt_names[i], &opt);
+            double d= av_get_double(avctx_opts[CODEC_TYPE_AUDIO], opt_names[i], &opt);
             if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_double(audio_enc, opt_names[i], d);
         }
@@ -2965,7 +2965,7 @@ static void opt_new_subtitle_stream(void)
     } else {
         for(i=0; i<opt_name_count; i++){
              const AVOption *opt;
-             double d= av_get_double(avctx_opts, opt_names[i], &opt);
+             double d= av_get_double(avctx_opts[CODEC_TYPE_SUBTITLE], opt_names[i], &opt);
              if(d==d && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(subtitle_enc, opt_names[i], d);
         }
@@ -3524,9 +3524,20 @@ static void show_version(void)
 }
 
 static int opt_default(const char *opt, const char *arg){
-    const AVOption *o= av_set_string(avctx_opts, opt, arg);
+    int type;
+    const AVOption *o;
+    for(type=0; type<CODEC_TYPE_NB; type++)
+        o = av_set_string(avctx_opts[type], opt, arg);
     if(!o)
         o = av_set_string(avformat_opts, opt, arg);
+    if(!o){
+        if(opt[0] == 'a')
+            o = av_set_string(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg);
+        else if(opt[0] == 'v')
+            o = av_set_string(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg);
+        else if(opt[0] == 's')
+            o = av_set_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg);
+    }
     if(!o)
         return -1;
 
@@ -3538,11 +3549,11 @@ static int opt_default(const char *opt, const char *arg){
 
 #if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
     /* disable generate of real time pts in ffm (need to be supressed anyway) */
-    if(avctx_opts->flags & CODEC_FLAG_BITEXACT)
+    if(avctx_opts[0]->flags & CODEC_FLAG_BITEXACT)
         ffm_nopts = 1;
 #endif
 
-    if(avctx_opts->debug)
+    if(avctx_opts[0]->debug)
         av_log_level = AV_LOG_DEBUG;
     return 0;
 }
@@ -3750,7 +3761,7 @@ static void show_help(void)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
                       OPT_EXPERT);
-    av_opt_show(avctx_opts, NULL);
+    av_opt_show(avctx_opts[0], NULL);
     av_opt_show(avformat_opts, NULL);
 
     exit(1);
@@ -3768,7 +3779,8 @@ int main(int argc, char **argv)
 
     av_register_all();
 
-    avctx_opts= avcodec_alloc_context();
+    for(i=0; i<CODEC_TYPE_NB; i++)
+        avctx_opts[i]= avcodec_alloc_context();
     avformat_opts = av_alloc_format_context();
 
     if (argc <= 1)
