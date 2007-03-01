@@ -249,8 +249,11 @@ enum CodecID {
                          stream (only used by libavformat) */
 };
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /* CODEC_ID_MP3LAME is absolete */
 #define CODEC_ID_MP3LAME CODEC_ID_MP3
+#define CODEC_ID_MPEG4AAC CODEC_ID_AAC
+#endif
 
 enum CodecType {
     CODEC_TYPE_UNKNOWN = -1,
