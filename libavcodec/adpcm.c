@@ -150,10 +150,6 @@ typedef struct ADPCMContext {
     int channel; /* for stereo MOVs, decode left, then decode right, then tell it's decoded */
     ADPCMChannelStatus status[2];
     short sample_buffer[32]; /* hold left samples while waiting for right samples */
-
-    /* SWF only */
-    int nb_bits;
-    int nb_samples;
 } ADPCMContext;
 
 /* XXX: implement encoding */
@@ -1240,46 +1236,30 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     {
         GetBitContext gb;
         const int *table;
-        int k0, signmask;
+        int k0, signmask, nb_bits;
         int size = buf_size*8;
 
         init_get_bits(&gb, buf, size);
 
-//FIXME the following return -1 may be removed only after
-//1. correctly spliting the stream into packets at demuxer or parser level
-//2. checking array bounds when writing
-//3. moving the global nb_bits header into extradata
-return -1;
-        // first frame, read bits & inital values
-        if (!c->nb_bits)
-        {
-            c->nb_bits = get_bits(&gb, 2)+2;
-//            av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", c->nb_bits);
+        //read bits & inital values
+        nb_bits = get_bits(&gb, 2)+2;
+        //av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", nb_bits);
+        table = swf_index_tables[nb_bits-2];
+        k0 = 1 << (nb_bits-2);
+        signmask = 1 << (nb_bits-1);
+
+        for (i = 0; i < avctx->channels; i++) {
+            *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
+            c->status[i].step_index = get_bits(&gb, 6);
         }
 
-        table = swf_index_tables[c->nb_bits-2];
-        k0 = 1 << (c->nb_bits-2);
-        signmask = 1 << (c->nb_bits-1);
-
-        while (get_bits_count(&gb) <= size)
+        while (get_bits_count(&gb) < size)
         {
             int i;
 
-            c->nb_samples++;
-            // wrap around at every 4096 samples...
-            if ((c->nb_samples & 0xfff) == 1)
-            {
-                for (i = 0; i <= st; i++)
-                {
-                    *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
-                    c->status[i].step_index = get_bits(&gb, 6);
-                }
-            }
-
-            // similar to IMA adpcm
-            for (i = 0; i <= st; i++)
-            {
-                int delta = get_bits(&gb, c->nb_bits);
+            for (i = 0; i < avctx->channels; i++) {
+                // similar to IMA adpcm
+                int delta = get_bits(&gb, nb_bits);
                 int step = step_table[c->status[i].step_index];
                 long vpdiff = 0; // vpdiff = (delta+0.5)*step/4
                 int k = k0;
@@ -1303,12 +1283,13 @@ return -1;
                 c->status[i].predictor = av_clip(c->status[i].predictor, -32768, 32767);
 
                 *samples++ = c->status[i].predictor;
+                if (samples >= samples_end) {
+                    av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
+                    return -1;
+                }
             }
         }
-
-//        src += get_bits_count(&gb)*8;
-        src += size;
-
+        src += buf_size;
         break;
     }
     case CODEC_ID_ADPCM_YAMAHA:
