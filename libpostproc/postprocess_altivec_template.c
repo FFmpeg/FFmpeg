@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <avutil.h>
+#include "avutil.h"
 
 #ifdef CONFIG_DARWIN
 #define AVV(x...) (x)
