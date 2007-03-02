@@ -739,7 +739,7 @@ static void video_image_display(VideoState *is)
             is->no_background = 0;
         }
         rect.x = is->xleft + x;
-        rect.y = is->xleft + y;
+        rect.y = is->ytop  + y;
         rect.w = width;
         rect.h = height;
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
