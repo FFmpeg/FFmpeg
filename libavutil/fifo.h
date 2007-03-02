@@ -30,73 +30,66 @@ typedef struct AVFifoBuffer {
 } AVFifoBuffer;
 
 /**
- * Initializes a FIFO *.
- * @param *f FIFO buffer
+ * Initializes an AVFifoBuffer.
+ * @param *f AVFifoBuffer to initialize
  * @param size of FIFO
  * @return <0 for failure >=0 otherwise
  */
 int av_fifo_init(AVFifoBuffer *f, int size);
 
 /**
- * Frees a FIFO *.
- * @param *f FIFO buffer
+ * Frees an AVFifoBuffer.
+ * @param *f AVFifoBuffer to free
  */
 void av_fifo_free(AVFifoBuffer *f);
 
 /**
- * Returns the size of a FIFO *.
- * @param *f FIFO buffer
+ * Returns the amount of data in bytes in the AVFifoBuffer, that is the
+ * amount of data you can read from it.
+ * @param *f AVFifoBuffer to read from
  * @return size
  */
 int av_fifo_size(AVFifoBuffer *f);
 
 /**
- * Reads the data from the FIFO *.
- * @param *f FIFO buffer
+ * Reads data from an AVFifoBuffer.
+ * @param *f AVFifoBuffer to read from
  * @param *buf data destination
- * @param buf_size data size
- * @return -1 if not enough data
+ * @param buf_size number of bytes to read
  */
 int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size);
 
 /**
- * Reads the data from the FIFO *.
- * @param *f FIFO buffer
- * @param buf_size data size
+ * Feeds data from an AVFifoBuffer to a user supplied callback.
+ * @param *f AVFifoBuffer to read from
+ * @param buf_size number of bytes to read
  * @param *func generic read function
  * @param *dest data destination
- * @return -1 if not enough data
  */
 int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest);
 
 /**
- * Writes the data in the FIFO *.
- * @param *f FIFO buffer
+ * Writes data into an AVFifoBuffer.
+ * @param *f AVFifoBuffer to write to
  * @param *buf data source
  * @param size data size
  */
 void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size);
 
 /**
- * Resizes the FIFO *.
- * @param *f FIFO buffer
- * @param size data size
+ * Resizes an AVFifoBuffer.
+ * @param *f AVFifoBuffer to resize
+ * @param size new AVFifoBuffer size in bytes
  */
 void av_fifo_realloc(AVFifoBuffer *f, unsigned int size);
 
 /**
- * Discards the data from the FIFO *.
- * @param *f FIFO buffer
- * @param size data size
+ * Reads and discards the specified amount of data from an AVFifoBuffer.
+ * @param *f AVFifoBuffer to read from
+ * @param size amount of data to read in bytes
  */
 void av_fifo_drain(AVFifoBuffer *f, int size);
 
-/**
- * Returns a pointer with circular offset from FIFO's read pointer.
- * @param *f FIFO buffer
- * @param offs offset
- * @return ptr=rptr+offs if rptr+offs<end else rptr+offs -(end-begin)
- */
 static inline uint8_t av_fifo_peek(AVFifoBuffer *f, int offs)
 {
     uint8_t *ptr = f->rptr + offs;
