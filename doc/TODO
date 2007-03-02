@@ -50,7 +50,6 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 Baptiste's TODO list:
 -----------------
 - mov edit list support (AVEditList)
-- support quicktime "None" fourcc, and corresponding pixel formats
 - YUV 10 bit per component support "2vuy"
 - mxf muxer
 - mpeg2 non linear quantizer
