@@ -289,6 +289,10 @@ typedef struct MatroskaSubtitleTrack {
     //..
 } MatroskaSubtitleTrack;
 
+#define MAX_TRACK_SIZE (FFMAX(FFMAX(sizeof(MatroskaVideoTrack), \
+                                    sizeof(MatroskaAudioTrack)), \
+                                    sizeof(MatroskaSubtitleTrack)))
+
 typedef struct MatroskaLevel {
     uint64_t start, length;
 } MatroskaLevel;
@@ -1165,7 +1169,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
     av_log(matroska->ctx, AV_LOG_DEBUG, "parsing track, adding stream..,\n");
 
     /* Allocate a generic track. As soon as we know its type we'll realloc. */
-    track = av_mallocz(sizeof(MatroskaTrack));
+    track = av_mallocz(MAX_TRACK_SIZE);
     matroska->num_tracks++;
 
     /* start with the master */
@@ -1204,30 +1208,19 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
             /* track type (video, audio, combined, subtitle, etc.) */
             case MATROSKA_ID_TRACKTYPE: {
                 uint64_t num;
-                if (track->type != 0) {
+                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
+                    break;
+                if (track->type && track->type != num) {
                     av_log(matroska->ctx, AV_LOG_INFO,
                            "More than one tracktype in an entry - skip\n");
                     break;
                 }
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    break;
                 track->type = num;
 
-                /* ok, so we're actually going to reallocate this thing */
                 switch (track->type) {
                     case MATROSKA_TRACK_TYPE_VIDEO:
-                        track = (MatroskaTrack *)
-                            av_realloc(track, sizeof(MatroskaVideoTrack));
-                        break;
                     case MATROSKA_TRACK_TYPE_AUDIO:
-                        track = (MatroskaTrack *)
-                            av_realloc(track, sizeof(MatroskaAudioTrack));
-                        ((MatroskaAudioTrack *)track)->channels = 1;
-                        ((MatroskaAudioTrack *)track)->samplerate = 8000;
-                        break;
                     case MATROSKA_TRACK_TYPE_SUBTITLE:
-                        track = (MatroskaTrack *)
-                            av_realloc(track, sizeof(MatroskaSubtitleTrack));
                         break;
                     case MATROSKA_TRACK_TYPE_COMPLEX:
                     case MATROSKA_TRACK_TYPE_LOGO:
@@ -1246,6 +1239,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
             /* tracktype specific stuff for video */
             case MATROSKA_ID_TRACKVIDEO: {
                 MatroskaVideoTrack *videotrack;
+                if (!track->type)
+                    track->type = MATROSKA_TRACK_TYPE_VIDEO;
                 if (track->type != MATROSKA_TRACK_TYPE_VIDEO) {
                     av_log(matroska->ctx, AV_LOG_INFO,
                            "video data in non-video track - ignoring\n");
@@ -1413,6 +1408,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
             /* tracktype specific stuff for audio */
             case MATROSKA_ID_TRACKAUDIO: {
                 MatroskaAudioTrack *audiotrack;
+                if (!track->type)
+                    track->type = MATROSKA_TRACK_TYPE_AUDIO;
                 if (track->type != MATROSKA_TRACK_TYPE_AUDIO) {
                     av_log(matroska->ctx, AV_LOG_INFO,
                            "audio data in non-audio track - ignoring\n");
@@ -1421,6 +1418,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 } else if ((res = ebml_read_master(matroska, &id)) < 0)
                     break;
                 audiotrack = (MatroskaAudioTrack *)track;
+                audiotrack->channels = 1;
+                audiotrack->samplerate = 8000;
 
                 while (res == 0) {
                     if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
