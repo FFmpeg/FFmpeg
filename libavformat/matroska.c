@@ -139,6 +139,7 @@
 /* IDs in the cluster master */
 #define MATROSKA_ID_CLUSTERTIMECODE 0xE7
 #define MATROSKA_ID_BLOCKGROUP 0xA0
+#define MATROSKA_ID_SIMPLEBLOCK 0xA3
 
 /* IDs in the blockgroup master */
 #define MATROSKA_ID_BLOCK      0xA1
@@ -2076,9 +2077,9 @@ matroska_read_header (AVFormatContext    *s,
         return AVERROR_NOFMT;
     }
     av_free(doctype);
-    if (version != 1) {
+    if (version > 2) {
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Matroska demuxer version 1 too old for file version %d\n",
+               "Matroska demuxer version 2 too old for file version %d\n",
                version);
         return AVERROR_NOFMT;
     }
@@ -2425,6 +2426,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint64_t cluster_time,
     flags = *data;
     data += 1;
     size -= 1;
+    if (is_keyframe == -1)
+        is_keyframe = flags & 1 ? PKT_FLAG_KEY : 0;
     switch ((flags & 0x06) >> 1) {
         case 0x0: /* no lacing */
             laces = 1;
@@ -2664,6 +2667,10 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 if ((res = ebml_read_master(matroska, &id)) < 0)
                     break;
                 res = matroska_parse_blockgroup(matroska, cluster_time);
+                break;
+
+            case MATROSKA_ID_SIMPLEBLOCK:
+                matroska_parse_block(matroska, cluster_time, -1, NULL, NULL);
                 break;
 
             default:
