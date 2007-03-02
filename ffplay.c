@@ -1617,7 +1617,7 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
    cannot have a precise information */
 static int audio_write_get_buf_size(VideoState *is)
 {
-    return is->audio_hw_buf_size - is->audio_buf_index;
+    return is->audio_buf_size - is->audio_buf_index;
 }
 
 
