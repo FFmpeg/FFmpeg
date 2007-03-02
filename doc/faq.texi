@@ -327,11 +327,11 @@ and libmpdemux/demux_lavf.c in MPlayer sources.
 
 The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
 
-@section I tried to pass rtp packets into a decoder, it doesnt work
+@section I tried to pass RTP packets into a decoder, but it doesn't work.
 
-Of course not, you MUST strip ALL rtp headers and assemble valid packets
-first, a mp3 decoder decodes mp3 packets not bastarized mp3 encapsulated in
-rtp, the same applies to all decoders, this is not even ffmpeg or libavcodec
-specific
+Of course not, you MUST strip ALL RTP headers and assemble valid packets
+first, an MP3 decoder decodes MP3 packets not bastardized MP3 packets
+encapsulated in RTP. The same applies to all decoders, this is not specific
+to ffmpeg or libavcodec.
 
 @bye
