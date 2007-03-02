@@ -647,21 +647,18 @@ static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
-static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+/* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
+static int mov_read_extradata(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-
-    // currently ALAC decoder expect full atom header - so let's fake it
-    // this should be fixed and just ALAC header should be passed
-
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
     av_free(st->codec->extradata);
-    st->codec->extradata_size = 36;
+    st->codec->extradata_size = atom.size + 8;
     st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
     if (st->codec->extradata) {
-        memcpy(st->codec->extradata + 4, "alac", 4); // fake
-        get_buffer(pb, st->codec->extradata + 8, 36 - 8);
-        dprintf("Reading alac %d  %s\n", st->codec->extradata_size, st->codec->extradata);
+        AV_WL32(st->codec->extradata + 4, atom.type);
+        get_buffer(pb, st->codec->extradata + 8, atom.size);
     } else
         url_fskip(pb, atom.size);
     return 0;
@@ -686,27 +683,6 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             url_fskip(pb, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
         mov_read_default(c, pb, atom);
-    } else
-        url_fskip(pb, atom.size);
-    return 0;
-}
-
-static int mov_read_jp2h(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
-{
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-
-    if((uint64_t)atom.size > (1<<30))
-        return -1;
-
-    av_free(st->codec->extradata);
-
-    st->codec->extradata_size = atom.size + 8;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
-    /* pass all jp2h atom to codec */
-    if (st->codec->extradata) {
-        memcpy(st->codec->extradata + 4, "jp2h", 4);
-        get_buffer(pb, st->codec->extradata + 8, atom.size);
     } else
         url_fskip(pb, atom.size);
     return 0;
@@ -1392,7 +1368,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
 { MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
-{ MKTAG( 'j', 'p', '2', 'h' ), mov_read_jp2h },
+{ MKTAG( 'j', 'p', '2', 'h' ), mov_read_extradata },
 { MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
 { MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
 { MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
@@ -1400,7 +1376,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'm', 'o', 'o', 'v' ), mov_read_moov },
 { MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
-{ MKTAG( 'a', 'l', 'a', 'c' ), mov_read_alac }, /* alac specific atom */
+{ MKTAG( 'a', 'l', 'a', 'c' ), mov_read_extradata }, /* alac specific atom */
 { MKTAG( 'a', 'v', 'c', 'C' ), mov_read_avcC },
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
