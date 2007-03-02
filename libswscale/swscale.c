@@ -2437,20 +2437,20 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 	if (c->sliceDir == 1) {
             uint8_t* src2[4]= {src[0], src[1], src[2]};
 	    // slices go from top to bottom
-	    int srcStride2[3]= {srcStride[0], srcStride[1], srcStride[2]};
-	    int dstStride2[3]= {dstStride[0], dstStride[1], dstStride[2]};
+	    int srcStride2[4]= {srcStride[0], srcStride[1], srcStride[2]};
+	    int dstStride2[4]= {dstStride[0], dstStride[1], dstStride[2]};
 	    return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
 	} else {
 	    // slices go from bottom to top => we flip the image internally
-	    uint8_t* src2[3]= {src[0] + (srcSliceH-1)*srcStride[0],
+	    uint8_t* src2[4]= {src[0] + (srcSliceH-1)*srcStride[0],
 			       src[1] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1],
 			       src[2] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2]
 	    };
-	    uint8_t* dst2[3]= {dst[0] + (c->dstH-1)*dstStride[0],
+	    uint8_t* dst2[4]= {dst[0] + (c->dstH-1)*dstStride[0],
 			       dst[1] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[1],
 			       dst[2] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[2]};
-	    int srcStride2[3]= {-srcStride[0], -srcStride[1], -srcStride[2]};
-	    int dstStride2[3]= {-dstStride[0], -dstStride[1], -dstStride[2]};
+	    int srcStride2[4]= {-srcStride[0], -srcStride[1], -srcStride[2]};
+	    int dstStride2[4]= {-dstStride[0], -dstStride[1], -dstStride[2]};
 	    
 	    return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH, srcSliceH, dst2, dstStride2);
 	}
