@@ -1366,6 +1366,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
 { MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
 { MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
+{ MKTAG( 'f', 'i', 'e', 'l' ), mov_read_extradata },
 { MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
 { MKTAG( 'j', 'p', '2', 'h' ), mov_read_extradata },
