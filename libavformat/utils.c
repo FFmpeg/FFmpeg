@@ -1814,8 +1814,11 @@ int av_find_stream_info(AVFormatContext *ic)
     AVPacketList *pktl=NULL, **ppktl;
     int64_t last_dts[MAX_STREAMS];
     int duration_count[MAX_STREAMS]={0};
-    double duration_error[MAX_STREAMS][MAX_STD_TIMEBASES]={{0}}; //FIXME malloc()?
+    double (*duration_error)[MAX_STD_TIMEBASES];
     offset_t old_offset = url_ftell(&ic->pb);
+
+    duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
+    if (!duration_error) return AVERROR_NOMEM;
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -1927,7 +1930,7 @@ int av_find_stream_info(AVFormatContext *ic)
 //                if(st->codec->codec_type == CODEC_TYPE_VIDEO)
 //                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
                 if(duration_count[index] < 2)
-                    memset(duration_error, 0, sizeof(duration_error));
+                    memset(duration_error, 0, MAX_STREAMS * sizeof(*duration_error));
                 for(i=1; i<MAX_STD_TIMEBASES; i++){
                     int framerate= get_std_framerate(i);
                     int ticks= lrintf(dur*framerate/(1001*12));
@@ -2050,6 +2053,9 @@ int av_find_stream_info(AVFormatContext *ic)
         }
     }
 #endif
+
+    av_free(duration_error);
+
     return ret;
 }
 
