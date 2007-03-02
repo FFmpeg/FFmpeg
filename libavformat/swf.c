@@ -86,6 +86,15 @@ static const AVCodecTag swf_codec_tags[] = {
     {0, 0},
 };
 
+static const AVCodecTag swf_audio_codec_tags[] = {
+    {CODEC_ID_PCM_S16LE,  0x00},
+    {CODEC_ID_ADPCM_SWF,  0x01},
+    {CODEC_ID_MP3,        0x02},
+    {CODEC_ID_PCM_S16LE,  0x03},
+  //{CODEC_ID_NELLYMOSER, 0x06},
+    {0, 0},
+};
+
 static const int sSampleRates[3][4] = {
     {44100, 48000, 32000, 0},
     {22050, 24000, 16000, 0},
@@ -797,8 +806,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             swf->audio_stream_index = ast->index;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
-            if (v & 0x20)
-                ast->codec->codec_id = CODEC_ID_MP3;
+            ast->codec->codec_id = codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
             ast->need_parsing = 1;
             sample_rate_code= (v>>2) & 3;
             if (!sample_rate_code)
@@ -856,9 +864,11 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (st->codec->codec_id == CODEC_ID_MP3) {
                 url_fskip(pb, 4);
                 av_get_packet(pb, pkt, len-4);
-                pkt->stream_index = st->index;
-                return pkt->size;
+            } else { // ADPCM, PCM
+                av_get_packet(pb, pkt, len);
             }
+            pkt->stream_index = st->index;
+            return pkt->size;
         } else if (tag == TAG_JPEG2) {
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
