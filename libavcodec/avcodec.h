@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(35<<8)+0)
-#define LIBAVCODEC_VERSION      51.35.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(36<<8)+0)
+#define LIBAVCODEC_VERSION      51.36.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -384,6 +384,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< only do ME/MC (I frames -> ref, P frame -> ME+MC)
 #define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format
 #define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skiping
+#define CODEC_FLAG2_CHUNKS        0x00008000 ///< input bitstream might be truncated at a packet boundaries instead of only at frame boundaries
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)

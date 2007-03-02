@@ -4516,6 +4516,11 @@ static int decode_slice_header(H264Context *h){
 
     first_mb_in_slice= get_ue_golomb(&s->gb);
 
+    if((s->flags2 & CODEC_FLAG2_CHUNKS) && first_mb_in_slice == 0){
+        h->slice_num = 0;
+        s->current_picture_ptr= NULL;
+    }
+
     slice_type= get_ue_golomb(&s->gb);
     if(slice_type > 9){
         av_log(h->s.avctx, AV_LOG_ERROR, "slice type too large (%d) at %d %d\n", h->slice_type, s->mb_x, s->mb_y);
@@ -8095,8 +8100,11 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         av_log(NULL, AV_LOG_ERROR,"%02X ", buf[i]);
     }
 #endif
-    h->slice_num = 0;
-    s->current_picture_ptr= NULL;
+    if(!(s->flags2 & CODEC_FLAG2_CHUNKS)){
+        h->slice_num = 0;
+        s->current_picture_ptr= NULL;
+    }
+
     for(;;){
         int consumed;
         int dst_length;
@@ -8232,24 +8240,6 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         }
     }
 
-    if(!s->current_picture_ptr) return buf_index; //no frame
-
-    s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
-    s->current_picture_ptr->pict_type= s->pict_type;
-
-    h->prev_frame_num_offset= h->frame_num_offset;
-    h->prev_frame_num= h->frame_num;
-    if(s->current_picture_ptr->reference){
-        h->prev_poc_msb= h->poc_msb;
-        h->prev_poc_lsb= h->poc_lsb;
-    }
-    if(s->current_picture_ptr->reference)
-        execute_ref_pic_marking(h, h->mmco, h->mmco_index);
-
-    ff_er_frame_end(s);
-
-    MPV_frame_end(s);
-
     return buf_index;
 }
 
@@ -8365,23 +8355,36 @@ static int decode_frame(AVCodecContext *avctx,
     if(buf_index < 0)
         return -1;
 
+    if(!(s->flags2 & CODEC_FLAG2_CHUNKS) || (s->mb_y >= s->mb_height && s->mb_height)){
+        Picture *out = s->current_picture_ptr;
+        Picture *cur = s->current_picture_ptr;
+        Picture *prev = h->delayed_output_pic;
+        int i, pics, cross_idr, out_of_order, out_idx;
+
+        s->mb_y= 0;
+
+        s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
+        s->current_picture_ptr->pict_type= s->pict_type;
+
+        h->prev_frame_num_offset= h->frame_num_offset;
+        h->prev_frame_num= h->frame_num;
+        if(s->current_picture_ptr->reference){
+            h->prev_poc_msb= h->poc_msb;
+            h->prev_poc_lsb= h->poc_lsb;
+        }
+        if(s->current_picture_ptr->reference)
+            execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+
+        ff_er_frame_end(s);
+
+        MPV_frame_end(s);
+
     //FIXME do something with unavailable reference frames
 
-//    if(ret==FRAME_SKIPPED) return get_consumed_bytes(s, buf_index, buf_size);
-    if(!s->current_picture_ptr){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "error, NO frame\n");
-        return -1;
-    }
-
-    {
-        Picture *out = s->current_picture_ptr;
 #if 0 //decode order
         *data_size = sizeof(AVFrame);
 #else
         /* Sort B-frames into display order */
-        Picture *cur = s->current_picture_ptr;
-        Picture *prev = h->delayed_output_pic;
-        int i, pics, cross_idr, out_of_order, out_idx;
 
         if(h->sps.bitstream_restriction_flag
            && s->avctx->has_b_frames < h->sps.num_reorder_frames){
