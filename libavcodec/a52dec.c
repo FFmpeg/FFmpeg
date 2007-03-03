@@ -70,6 +70,7 @@ typedef struct AC3DecodeState {
 
 } AC3DecodeState;
 
+#ifdef CONFIG_LIBA52BIN
 static void* dlsymm(void* handle, const char* symbol)
 {
     void* f = dlsym(handle, symbol);
@@ -77,6 +78,7 @@ static void* dlsymm(void* handle, const char* symbol)
         av_log( NULL, AV_LOG_ERROR, "A52 Decoder - function '%s' can't be resolved\n", symbol);
     return f;
 }
+#endif
 
 static int a52_decode_init(AVCodecContext *avctx)
 {
