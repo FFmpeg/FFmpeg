@@ -322,25 +322,6 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
-static const AVCodecTag codec_movaudio_tags[] = {
-    { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') },
-    { CODEC_ID_PCM_ALAW, MKTAG('a', 'l', 'a', 'w') },
-    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') },
-    { CODEC_ID_MACE3, MKTAG('M', 'A', 'C', '3') },
-    { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') },
-    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') },
-    { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') },
-    { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') },
-    { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') },
-    { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') },
-    { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
-    { CODEC_ID_PCM_S24LE, MKTAG('i', 'n', '2', '4') },
-    { CODEC_ID_PCM_S32BE, MKTAG('i', 'n', '3', '2') },
-    { CODEC_ID_PCM_S32LE, MKTAG('i', 'n', '3', '2') },
-    { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') },
-    { CODEC_ID_NONE, 0 },
-};
-
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
@@ -525,22 +506,6 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
     }
     return updateSize(pb, pos);
 }
-
-static const AVCodecTag codec_movvideo_tags[] = {
-    { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') },
-    { CODEC_ID_SVQ3, MKTAG('S', 'V', 'Q', '3') },
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
-    { CODEC_ID_H263, MKTAG('h', '2', '6', '3') },
-    { CODEC_ID_H263, MKTAG('s', '2', '6', '3') },
-    { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') },
-    /* special handling in mov_find_video_codec_tag */
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') }, /* DV NTSC */
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', 'p') }, /* DV PAL */
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'p', 'p') }, /* DVCPRO PAL */
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '5', 'n') }, /* DVCPRO50 NTSC */
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '5', 'p') }, /* DVCPRO50 PAL */
-    { CODEC_ID_NONE, 0 },
-};
 
 static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
