@@ -540,7 +540,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt);
  * then it contains one frame.
  *
  * pkt->pts, pkt->dts and pkt->duration are always set to correct
- * values in AV_TIME_BASE unit (and guessed if the format cannot
+ * values in AVStream.timebase units (and guessed if the format cannot
  * provided them). pkt->pts can be AV_NOPTS_VALUE if the video format
  * has B frames, so it is better to rely on pkt->dts if you do not
  * decompress the payload.
@@ -734,10 +734,6 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
 
 /**
  * Converts frame rate from string to a fraction.
- *
- * First we try to get an exact integer or fractional frame rate.
- * If this fails we convert the frame rate to a double and return
- * an approximate fraction using the DEFAULT_FRAME_RATE_BASE.
  */
 int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
 
