@@ -54,6 +54,10 @@ typedef struct AVPacket {
 #define PKT_FLAG_KEY   0x0001
 
 void av_destruct_packet_nofree(AVPacket *pkt);
+
+/**
+ * Default packet destructor.
+ */
 void av_destruct_packet(AVPacket *pkt);
 
 /* initialize optional fields of a packet */
@@ -68,8 +72,26 @@ static inline void av_init_packet(AVPacket *pkt)
     pkt->destruct= av_destruct_packet_nofree;
 }
 
+/**
+ * Allocate the payload of a packet and intialized its fields to default values.
+ *
+ * @param pkt packet
+ * @param size wanted payload size
+ * @return 0 if OK. AVERROR_xxx otherwise.
+ */
 int av_new_packet(AVPacket *pkt, int size);
+
+/**
+ * Allocate and read the payload of a packet and intialized its fields to default values.
+ *
+ * @param pkt packet
+ * @param size wanted payload size
+ * @return >0 (read size) if OK. AVERROR_xxx otherwise.
+ */
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
+
+/* This is a hack - the packet memory allocation stuff is broken. The
+   packet is allocated if it was not really allocated */
 int av_dup_packet(AVPacket *pkt);
 
 /**
@@ -410,10 +432,27 @@ AVOutputFormat *guess_stream_format(const char *short_name,
                                     const char *filename, const char *mime_type);
 AVOutputFormat *guess_format(const char *short_name,
                              const char *filename, const char *mime_type);
+
+/**
+ * Guesses the codec id based upon muxer and filename.
+ */
 enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type, enum CodecType type);
 
+/**
+ * Print  nice hexa dump of a buffer
+ * @param f stream for output
+ * @param buf buffer
+ * @param size buffer size
+ */
 void av_hex_dump(FILE *f, uint8_t *buf, int size);
+
+/**
+ * Print on 'f' a nice dump of a packet
+ * @param f stream for output
+ * @param pkt packet to dump
+ * @param dump_payload true if the payload must be displayed too
+ */
 void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 void av_register_all(void);
@@ -423,11 +462,39 @@ enum CodecID av_codec_get_id(const struct AVCodecTag **tags, unsigned int tag);
 unsigned int av_codec_get_tag(const struct AVCodecTag **tags, enum CodecID id);
 
 /* media file input */
+
+/**
+ * finds AVInputFormat based on input format's short name.
+ */
 AVInputFormat *av_find_input_format(const char *short_name);
+
+/**
+ * Guess file format.
+ *
+ * @param is_opened whether the file is already opened, determines whether
+ *                  demuxers with or without AVFMT_NOFILE are probed
+ */
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
+
+/**
+ * Allocates all the structures needed to read an input stream.
+ *        This does not open the needed codecs for decoding the stream[s].
+ */
 int av_open_input_stream(AVFormatContext **ic_ptr,
                          ByteIOContext *pb, const char *filename,
                          AVInputFormat *fmt, AVFormatParameters *ap);
+
+/**
+ * Open a media file as input. The codec are not opened. Only the file
+ * header (if present) is read.
+ *
+ * @param ic_ptr the opened media file handle is put here
+ * @param filename filename to open.
+ * @param fmt if non NULL, force the file format to use
+ * @param buf_size optional buffer size (zero if default is OK)
+ * @param ap additionnal parameters needed when opening the file (NULL if default)
+ * @return 0 if OK. AVERROR_xxx otherwise.
+ */
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
@@ -435,14 +502,107 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 /* no av_open for output, so applications will need this: */
 AVFormatContext *av_alloc_format_context(void);
 
+/**
+ * Read packets of a media file to get stream information. This
+ * is useful for file formats with no headers such as MPEG. This
+ * function also computes the real frame rate in case of mpeg2 repeat
+ * frame mode.
+ * The logical file position is not changed by this function;
+ * examined packets may be buffered for later processing.
+ *
+ * @param ic media file handle
+ * @return >=0 if OK. AVERROR_xxx if error.
+ * @todo let user decide somehow what information is needed so we dont waste time geting stuff the user doesnt need
+ */
 int av_find_stream_info(AVFormatContext *ic);
+
+/**
+ * Read a transport packet from a media file.
+ *
+ * This function is absolete and should never be used.
+ * Use av_read_frame() instead.
+ *
+ * @param s media file handle
+ * @param pkt is filled
+ * @return 0 if OK. AVERROR_xxx if error.
+ */
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
+
+/**
+ * Return the next frame of a stream.
+ *
+ * The returned packet is valid
+ * until the next av_read_frame() or until av_close_input_file() and
+ * must be freed with av_free_packet. For video, the packet contains
+ * exactly one frame. For audio, it contains an integer number of
+ * frames if each frame has a known fixed size (e.g. PCM or ADPCM
+ * data). If the audio frames have a variable size (e.g. MPEG audio),
+ * then it contains one frame.
+ *
+ * pkt->pts, pkt->dts and pkt->duration are always set to correct
+ * values in AV_TIME_BASE unit (and guessed if the format cannot
+ * provided them). pkt->pts can be AV_NOPTS_VALUE if the video format
+ * has B frames, so it is better to rely on pkt->dts if you do not
+ * decompress the payload.
+ *
+ * @return 0 if OK, < 0 if error or end of file.
+ */
 int av_read_frame(AVFormatContext *s, AVPacket *pkt);
+
+/**
+ * Seek to the key frame at timestamp.
+ * 'timestamp' in 'stream_index'.
+ * @param stream_index If stream_index is (-1), a default
+ * stream is selected, and timestamp is automatically converted
+ * from AV_TIME_BASE units to the stream specific time_base.
+ * @param timestamp timestamp in AVStream.time_base units
+ *        or if there is no stream specified then in AV_TIME_BASE units
+ * @param flags flags which select direction and seeking mode
+ * @return >= 0 on success
+ */
 int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
+
+/**
+ * start playing a network based stream (e.g. RTSP stream) at the
+ * current position
+ */
 int av_read_play(AVFormatContext *s);
+
+/**
+ * Pause a network based stream (e.g. RTSP stream).
+ *
+ * Use av_read_play() to resume it.
+ */
 int av_read_pause(AVFormatContext *s);
+
+/**
+ * Close a media file (but not its codecs).
+ *
+ * @param s media file handle
+ */
 void av_close_input_file(AVFormatContext *s);
+
+/**
+ * Add a new stream to a media file.
+ *
+ * Can only be called in the read_header() function. If the flag
+ * AVFMTCTX_NOHEADER is in the format context, then new streams
+ * can be added in read_packet too.
+ *
+ * @param s media file handle
+ * @param id file format dependent stream id
+ */
 AVStream *av_new_stream(AVFormatContext *s, int id);
+
+/**
+ * Set the pts for a given stream.
+ *
+ * @param s stream
+ * @param pts_wrap_bits number of bits effectively used by the pts
+ *        (used for wrap control, 33 is the value for MPEG)
+ * @param pts_num numerator to convert to seconds (MPEG: 1)
+ * @param pts_den denominator to convert to seconds (MPEG: 90000)
+ */
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
                      int pts_num, int pts_den);
 
@@ -451,28 +611,151 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non keyframes
 
 int av_find_default_stream_index(AVFormatContext *s);
+
+/**
+ * Gets the index for a specific timestamp.
+ * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond to
+ *                 the timestamp which is <= the requested one, if backward is 0
+ *                 then it will be >=
+ *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
+ * @return < 0 if no such timestamp could be found
+ */
 int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
+
+/**
+ * Add a index entry into a sorted list updateing if it is already there.
+ *
+ * @param timestamp timestamp in the timebase of the given stream
+ */
 int av_add_index_entry(AVStream *st,
                        int64_t pos, int64_t timestamp, int size, int distance, int flags);
+
+/**
+ * Does a binary search using av_index_search_timestamp() and AVCodec.read_timestamp().
+ * this isnt supposed to be called directly by a user application, but by demuxers
+ * @param target_ts target timestamp in the time base of the given stream
+ * @param stream_index stream number
+ */
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags);
+
+/**
+ * Updates cur_dts of all streams based on given timestamp and AVStream.
+ *
+ * Stream ref_st unchanged, others set cur_dts in their native timebase
+ * only needed for timestamp wrapping or if (dts not set and pts!=dts)
+ * @param timestamp new dts expressed in time_base of param ref_st
+ * @param ref_st reference stream giving time_base of param timestamp
+ */
 void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
+
+/**
+ * Does a binary search using read_timestamp().
+ * this isnt supposed to be called directly by a user application, but by demuxers
+ * @param target_ts target timestamp in the time base of the given stream
+ * @param stream_index stream number
+ */
 int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, int64_t pos_min, int64_t pos_max, int64_t pos_limit, int64_t ts_min, int64_t ts_max, int flags, int64_t *ts_ret, int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 
 /* media file output */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+
+/**
+ * allocate the stream private data and write the stream header to an
+ * output media file
+ *
+ * @param s media file handle
+ * @return 0 if OK. AVERROR_xxx if error.
+ */
 int av_write_header(AVFormatContext *s);
+
+/**
+ * Write a packet to an output media file.
+ *
+ * The packet shall contain one audio or video frame.
+ * The packet must be correctly interleaved according to the container specification,
+ * if not then av_interleaved_write_frame must be used
+ *
+ * @param s media file handle
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ */
 int av_write_frame(AVFormatContext *s, AVPacket *pkt);
+
+/**
+ * Writes a packet to an output media file ensuring correct interleaving.
+ *
+ * The packet must contain one audio or video frame.
+ * If the packets are already correctly interleaved the application should
+ * call av_write_frame() instead as its slightly faster, its also important
+ * to keep in mind that completly non interleaved input will need huge amounts
+ * of memory to interleave with this, so its prefereable to interleave at the
+ * demuxer level
+ *
+ * @param s media file handle
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
+
+/**
+ * Interleave a packet per DTS in an output media file.
+ *
+ * Packets with pkt->destruct == av_destruct_packet will be freed inside this function,
+ * so they cannot be used after it, note calling av_free_packet() on them is still safe.
+ *
+ * @param s media file handle
+ * @param out the interleaved packet will be output here
+ * @param in the input packet
+ * @param flush 1 if no further packets are available as input and all
+ *              remaining packets should be output
+ * @return 1 if a packet was output, 0 if no packet could be output,
+ *         < 0 if an error occured
+ */
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush);
 
+/**
+ * @brief Write the stream trailer to an output media file and
+ *        free the file private data.
+ *
+ * @param s media file handle
+ * @return 0 if OK. AVERROR_xxx if error.
+ */
 int av_write_trailer(AVFormatContext *s);
 
 void dump_format(AVFormatContext *ic,
                  int index,
                  const char *url,
                  int is_output);
+
+/**
+ * parses width and height out of string str.
+ */
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
+
+/**
+ * Converts frame rate from string to a fraction.
+ *
+ * First we try to get an exact integer or fractional frame rate.
+ * If this fails we convert the frame rate to a double and return
+ * an approximate fraction using the DEFAULT_FRAME_RATE_BASE.
+ */
 int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
+
+/**
+ * Converts date string to number of seconds since Jan 1st, 1970.
+ *
+ * @code
+ * Syntax:
+ * - If not a duration:
+ *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
+ * Time is localtime unless Z is suffixed to the end. In this case GMT
+ * Return the date in micro seconds since 1970
+ *
+ * - If a duration:
+ *  HH[:MM[:SS[.m...]]]
+ *  S+[.m...]
+ * @endcode
+ */
 int64_t parse_date(const char *datestr, int duration);
 
 int64_t av_gettime(void);
@@ -483,10 +766,35 @@ offset_t ffm_read_write_index(int fd);
 void ffm_write_write_index(int fd, offset_t pos);
 void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size);
 
+/**
+ * Attempts to find a specific tag in a URL.
+ *
+ * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
+ * Return 1 if found.
+ */
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
+/**
+ * Returns in 'buf' the path with '%d' replaced by number.
+
+ * Also handles the '%0nd' format where 'n' is the total number
+ * of digits and '%%'.
+ *
+ * @param buf destination buffer
+ * @param buf_size destination buffer size
+ * @param path numbered sequence string
+ * @number frame number
+ * @return 0 if OK, -1 if format error.
+ */
 int av_get_frame_filename(char *buf, int buf_size,
                           const char *path, int number);
+
+/**
+ * Check whether filename actually is a numbered sequence generator.
+ *
+ * @param filename possible numbered sequence string
+ * @return 1 if a valid numbered sequence string, 0 otherwise.
+ */
 int av_filename_number_test(const char *filename);
 
 /* grab specific */
