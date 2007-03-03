@@ -1,5 +1,5 @@
 /*
- * A52 decoder
+ * A52 decoder using liba52
  * Copyright (c) 2001 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file a52dec.c
- * A52 decoder.
+ * A52 decoder using liba52
  */
 
 #include "avcodec.h"
