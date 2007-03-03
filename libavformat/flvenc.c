@@ -91,7 +91,7 @@ static int get_audio_flags(AVCodecContext *enc){
         flags |= FLV_CODECID_PCM_LE | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_ADPCM_SWF:
-        flags |= FLV_CODECID_ADPCM;
+        flags |= FLV_CODECID_ADPCM | FLV_SAMPLESSIZE_16BIT;
         break;
     case 0:
         flags |= enc->codec_tag<<4;
