@@ -8355,6 +8355,11 @@ static int decode_frame(AVCodecContext *avctx,
     if(buf_index < 0)
         return -1;
 
+    if(!(s->flags2 & CODEC_FLAG2_CHUNKS) && !s->current_picture_ptr){
+        av_log(avctx, AV_LOG_ERROR, "no frame!\n");
+        return -1;
+    }
+
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS) || (s->mb_y >= s->mb_height && s->mb_height)){
         Picture *out = s->current_picture_ptr;
         Picture *cur = s->current_picture_ptr;
