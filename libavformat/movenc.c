@@ -343,7 +343,11 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 
     if (track->mode == MODE_MOV) {
         put_be16(pb, track->enc->channels);
-        put_be16(pb, 16); /* FIXME 8 bit for 'raw ' in mov */
+        if (track->enc->codec_id == CODEC_ID_PCM_U8 ||
+            track->enc->codec_id == CODEC_ID_PCM_S8)
+            put_be16(pb, 8); /* bits per sample */
+        else
+            put_be16(pb, 16);
         put_be16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
     } else { /* reserved for mp4/3gp */
         put_be16(pb, 2);
