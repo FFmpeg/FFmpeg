@@ -117,10 +117,6 @@ AVInteger av_shr_i(AVInteger a, int s){
     return out;
 }
 
-/**
- * returns a % b.
- * @param quot a/b will be stored here
- */
 AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b){
     int i= av_log2_i(a) - av_log2_i(b);
     AVInteger quot_temp;
