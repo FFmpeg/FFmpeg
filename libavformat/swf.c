@@ -65,7 +65,6 @@ typedef struct {
 
     int samples_per_frame;
     int sound_samples;
-    int video_samples;
     int swf_frame_number;
     int video_frame_number;
     int ms_per_frame;
@@ -73,8 +72,6 @@ typedef struct {
 
     uint8_t audio_fifo[AUDIO_FIFO_SIZE];
     int audio_in_pos;
-    int audio_out_pos;
-    int audio_size;
 
     int video_type;
     int audio_type;
@@ -254,10 +251,7 @@ static int swf_write_header(AVFormatContext *s)
     int i, width, height, rate, rate_base;
 
     swf->audio_in_pos = 0;
-    swf->audio_out_pos = 0;
-    swf->audio_size = 0;
     swf->sound_samples = 0;
-    swf->video_samples = 0;
     swf->swf_frame_number = 0;
     swf->video_frame_number = 0;
 
@@ -505,8 +499,6 @@ static int swf_write_video(AVFormatContext *s,
             }
 
             swf->swf_frame_number ++;
-
-    swf->video_samples += swf->samples_per_frame;
 
     /* streaming sound always should be placed just before showframe tags */
     if (swf->audio_type && swf->audio_in_pos) {
