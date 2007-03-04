@@ -221,6 +221,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "Range: bytes=%"PRId64"-\r\n"
              "Host: %s\r\n"
              "Authorization: Basic %s\r\n"
+             "Connection: close\r\n"
              "\r\n",
              post ? "POST" : "GET",
              path,
