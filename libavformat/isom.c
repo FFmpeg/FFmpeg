@@ -133,6 +133,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
     { CODEC_ID_PCM_S16LE, MKTAG('l', 'p', 'c', 'm') },
+    { CODEC_ID_PCM_S8,    MKTAG('s', 'o', 'w', 't') },
     { CODEC_ID_PCM_U8,    MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
     { CODEC_ID_PCM_ALAW,  MKTAG('a', 'l', 'a', 'w') }, /*  */
