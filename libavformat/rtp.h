@@ -43,6 +43,12 @@ extern AVInputFormat rtp_demuxer;
 int rtp_get_local_port(URLContext *h);
 int rtp_set_remote_url(URLContext *h, const char *uri);
 void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd);
+
+/**
+ * some rtp servers assume client is dead if they don't hear from them...
+ * so we send a Receiver Report to the provided ByteIO context
+ * (we don't have access to the rtcp handle from here)
+ */
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
 
 extern URLProtocol rtp_protocol;

@@ -335,11 +335,6 @@ static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp, uint32
 }
 #endif
 
-/**
- * some rtp servers assume client is dead if they don't hear from them...
- * so we send a Receiver Report to the provided ByteIO context
- * (we don't have access to the rtcp handle from here)
- */
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 {
     ByteIOContext pb;
