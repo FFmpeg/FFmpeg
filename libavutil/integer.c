@@ -151,11 +151,6 @@ AVInteger av_int2i(int64_t a){
     return out;
 }
 
-/**
- * converts the given AVInteger to an int64_t.
- * if the AVInteger is too large to fit into an int64_t,
- * then only the least significant 64bit will be used
- */
 int64_t av_i2int(AVInteger a){
     int i;
     int64_t out=(int8_t)a.v[AV_INTEGER_SIZE-1];

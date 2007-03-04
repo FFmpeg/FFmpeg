@@ -66,6 +66,12 @@ AVInteger av_div_i(AVInteger a, AVInteger b);
  * converts the given int64_t to an AVInteger.
  */
 AVInteger av_int2i(int64_t a);
+
+/**
+ * converts the given AVInteger to an int64_t.
+ * if the AVInteger is too large to fit into an int64_t,
+ * then only the least significant 64bit will be used
+ */
 int64_t av_i2int(AVInteger a);
 
 #endif // INTEGER_H
