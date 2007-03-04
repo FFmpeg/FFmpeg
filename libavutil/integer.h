@@ -61,6 +61,10 @@ AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b);
  * returns a/b.
  */
 AVInteger av_div_i(AVInteger a, AVInteger b);
+
+/**
+ * converts the given int64_t to an AVInteger.
+ */
 AVInteger av_int2i(int64_t a);
 int64_t av_i2int(AVInteger a);
 

@@ -140,9 +140,6 @@ AVInteger av_div_i(AVInteger a, AVInteger b){
     return quot;
 }
 
-/**
- * converts the given int64_t to an AVInteger.
- */
 AVInteger av_int2i(int64_t a){
     AVInteger out;
     int i;
