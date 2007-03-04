@@ -40,6 +40,11 @@ AVInteger av_sub_i(AVInteger a, AVInteger b);
 int av_log2_i(AVInteger a);
 AVInteger av_mul_i(AVInteger a, AVInteger b);
 int av_cmp_i(AVInteger a, AVInteger b);
+
+/**
+ * bitwise shift.
+ * @param s the number of bits by which the value should be shifted right, may be negative for shifting left
+ */
 AVInteger av_shr_i(AVInteger a, int s);
 
 /**

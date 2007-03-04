@@ -99,10 +99,6 @@ int av_cmp_i(AVInteger a, AVInteger b){
     return 0;
 }
 
-/**
- * bitwise shift.
- * @param s the number of bits by which the value should be shifted right, may be negative for shifting left
- */
 AVInteger av_shr_i(AVInteger a, int s){
     AVInteger out;
     int i;
