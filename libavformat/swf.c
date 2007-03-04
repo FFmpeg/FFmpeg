@@ -71,7 +71,7 @@ typedef struct {
     int ms_per_frame;
     int tag;
 
-    uint8_t *audio_fifo;
+    uint8_t audio_fifo[AUDIO_FIFO_SIZE];
     int audio_in_pos;
     int audio_out_pos;
     int audio_size;
@@ -94,73 +94,6 @@ static const AVCodecTag swf_audio_codec_tags[] = {
   //{CODEC_ID_NELLYMOSER, 0x06},
     {0, 0},
 };
-
-static const int sSampleRates[3][4] = {
-    {44100, 48000, 32000, 0},
-    {22050, 24000, 16000, 0},
-    {11025, 12000,  8000, 0},
-};
-
-static const int sBitRates[2][3][15] = {
-    {   {  0, 32, 64, 96,128,160,192,224,256,288,320,352,384,416,448},
-        {  0, 32, 48, 56, 64, 80, 96,112,128,160,192,224,256,320,384},
-        {  0, 32, 40, 48, 56, 64, 80, 96,112,128,160,192,224,256,320}
-    },
-    {   {  0, 32, 48, 56, 64, 80, 96,112,128,144,160,176,192,224,256},
-        {  0,  8, 16, 24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160},
-        {  0,  8, 16, 24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160}
-    },
-};
-
-static const int sSamplesPerFrame[3][3] =
-{
-    {  384,     1152,    1152 },
-    {  384,     1152,     576 },
-    {  384,     1152,     576 }
-};
-
-static const int sBitsPerSlot[3] = {
-    32,
-    8,
-    8
-};
-
-static int swf_mp3_info(void *data, int *byteSize, int *samplesPerFrame, int *sampleRate, int *isMono )
-{
-    uint32_t header = AV_RB32(data);
-    int layerID = 3 - ((header >> 17) & 0x03);
-    int bitRateID = ((header >> 12) & 0x0f);
-    int sampleRateID = ((header >> 10) & 0x03);
-    int bitRate = 0;
-    int bitsPerSlot = sBitsPerSlot[layerID];
-    int isPadded = ((header >> 9) & 0x01);
-
-    if ( (( header >> 21 ) & 0x7ff) != 0x7ff ) {
-        return 0;
-    }
-
-    *isMono = ((header >>  6) & 0x03) == 0x03;
-
-    if ( (header >> 19 ) & 0x01 ) {
-        *sampleRate = sSampleRates[0][sampleRateID];
-        bitRate = sBitRates[0][layerID][bitRateID] * 1000;
-        *samplesPerFrame = sSamplesPerFrame[0][layerID];
-    } else {
-        if ( (header >> 20) & 0x01 ) {
-            *sampleRate = sSampleRates[1][sampleRateID];
-            bitRate = sBitRates[1][layerID][bitRateID] * 1000;
-            *samplesPerFrame = sSamplesPerFrame[1][layerID];
-        } else {
-            *sampleRate = sSampleRates[2][sampleRateID];
-            bitRate = sBitRates[1][layerID][bitRateID] * 1000;
-            *samplesPerFrame = sSamplesPerFrame[2][layerID];
-        }
-    }
-
-    *byteSize = ( ( ( ( *samplesPerFrame * (bitRate / bitsPerSlot) ) / *sampleRate ) + isPadded ) );
-
-    return 1;
-}
 
 #ifdef CONFIG_MUXERS
 static void put_swf_tag(AVFormatContext *s, int tag)
@@ -323,7 +256,6 @@ static int swf_write_header(AVFormatContext *s)
     swf->audio_in_pos = 0;
     swf->audio_out_pos = 0;
     swf->audio_size = 0;
-    swf->audio_fifo = av_malloc(AUDIO_FIFO_SIZE);
     swf->sound_samples = 0;
     swf->video_samples = 0;
     swf->swf_frame_number = 0;
@@ -333,9 +265,18 @@ static int swf_write_header(AVFormatContext *s)
     audio_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
         enc = s->streams[i]->codec;
-        if (enc->codec_type == CODEC_TYPE_AUDIO)
-            audio_enc = enc;
-        else {
+        if (enc->codec_type == CODEC_TYPE_AUDIO) {
+            if (enc->codec_id == CODEC_ID_MP3) {
+                if (!enc->frame_size) {
+                    av_log(s, AV_LOG_ERROR, "audio frame size not set\n");
+                    return -1;
+                }
+                audio_enc = enc;
+            } else {
+                av_log(enc, AV_LOG_ERROR, "SWF only supports MP3\n");
+                return -1;
+            }
+        } else {
             if ( enc->codec_id == CODEC_ID_VP6F ||
                  enc->codec_id == CODEC_ID_FLV1 ||
                  enc->codec_id == CODEC_ID_MJPEG ) {
@@ -476,53 +417,10 @@ static int swf_write_video(AVFormatContext *s,
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int c = 0;
-    int outSize = 0;
-    int outSamples = 0;
 
     /* Flash Player limit */
     if ( swf->swf_frame_number == 16000 ) {
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
-    }
-
-    if ( swf->audio_type ) {
-        /* Prescan audio data for this swf frame */
-retry_swf_audio_packet:
-        if ( ( swf->audio_size-outSize ) >= 4 ) {
-            int mp3FrameSize = 0;
-            int mp3SampleRate = 0;
-            int mp3IsMono = 0;
-            int mp3SamplesPerFrame = 0;
-
-            /* copy out mp3 header from ring buffer */
-            uint8_t header[4];
-            for (c=0; c<4; c++) {
-                header[c] = swf->audio_fifo[(swf->audio_in_pos+outSize+c) % AUDIO_FIFO_SIZE];
-            }
-
-            if ( swf_mp3_info(header,&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono) ) {
-                if ( ( swf->audio_size-outSize ) >= mp3FrameSize ) {
-                    outSize += mp3FrameSize;
-                    outSamples += mp3SamplesPerFrame;
-                    if ( ( swf->sound_samples + outSamples + swf->samples_per_frame ) < swf->video_samples ) {
-                        goto retry_swf_audio_packet;
-                    }
-                }
-            } else {
-                /* invalid mp3 data, skip forward
-                we need to do this since the Flash Player
-                does not like custom headers */
-                swf->audio_in_pos ++;
-                swf->audio_size --;
-                swf->audio_in_pos %= AUDIO_FIFO_SIZE;
-                goto retry_swf_audio_packet;
-            }
-        }
-
-        /* audio stream is behind video stream, bail */
-        if ( ( swf->sound_samples + outSamples + swf->samples_per_frame ) < swf->video_samples ) {
-            return 0;
-        }
     }
 
             if ( swf->video_type == CODEC_ID_VP6F ||
@@ -611,20 +509,16 @@ retry_swf_audio_packet:
     swf->video_samples += swf->samples_per_frame;
 
     /* streaming sound always should be placed just before showframe tags */
-    if ( outSize > 0 ) {
+    if (swf->audio_type && swf->audio_in_pos) {
         put_swf_tag(s, TAG_STREAMBLOCK | TAG_LONG);
-        put_le16(pb, outSamples);
-        put_le16(pb, 0);
-        for (c=0; c<outSize; c++) {
-            put_byte(pb,swf->audio_fifo[(swf->audio_in_pos+c) % AUDIO_FIFO_SIZE]);
-        }
+        put_le16(pb, swf->sound_samples);
+        put_le16(pb, 0); // seek samples
+        put_buffer(pb, swf->audio_fifo, swf->audio_in_pos);
         put_swf_end_tag(s);
 
         /* update FIFO */
-        swf->sound_samples += outSamples;
-        swf->audio_in_pos += outSize;
-        swf->audio_size -= outSize;
-        swf->audio_in_pos %= AUDIO_FIFO_SIZE;
+        swf->sound_samples = 0;
+        swf->audio_in_pos = 0;
     }
 
     /* output the frame */
@@ -640,21 +534,20 @@ static int swf_write_audio(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
     SWFContext *swf = s->priv_data;
-    int c = 0;
 
     /* Flash Player limit */
     if ( swf->swf_frame_number == 16000 ) {
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
-    if (enc->codec_id == CODEC_ID_MP3 ) {
-        for (c=0; c<size; c++) {
-            swf->audio_fifo[(swf->audio_out_pos+c)%AUDIO_FIFO_SIZE] = buf[c];
-        }
-        swf->audio_size += size;
-        swf->audio_out_pos += size;
-        swf->audio_out_pos %= AUDIO_FIFO_SIZE;
+    if (swf->audio_in_pos + size >= AUDIO_FIFO_SIZE) {
+        av_log(s, AV_LOG_ERROR, "audio fifo too small to mux audio essence\n");
+        return -1;
     }
+
+    memcpy(swf->audio_fifo +  swf->audio_in_pos, buf, size);
+    swf->audio_in_pos += size;
+    swf->sound_samples += enc->frame_size;
 
     /* if audio only stream make sure we add swf frames */
     if ( swf->video_type == 0 ) {
@@ -701,9 +594,6 @@ static int swf_write_trailer(AVFormatContext *s)
         put_le16(pb, video_enc->frame_number);
         url_fseek(pb, file_size, SEEK_SET);
     }
-
-    av_free(swf->audio_fifo);
-
     return 0;
 }
 #endif //CONFIG_MUXERS
