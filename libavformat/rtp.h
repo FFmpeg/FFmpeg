@@ -26,6 +26,8 @@
 
 int rtp_init(void);
 int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
+
+/* return < 0 if unknown payload type */
 int rtp_get_payload_type(AVCodecContext *codec);
 
 typedef struct RTPDemuxContext RTPDemuxContext;
