@@ -341,11 +341,16 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 0); /* Revision level */
     put_be32(pb, 0); /* Reserved */
 
-    put_be16(pb, track->mode == MODE_MOV ? track->enc->channels : 2); /* Number of channels */
-    /* FIXME 8 bit for 'raw ' in mov */
-    put_be16(pb, 16); /* Reserved */
+    if (track->mode == MODE_MOV) {
+        put_be16(pb, track->enc->channels);
+        put_be16(pb, 16); /* FIXME 8 bit for 'raw ' in mov */
+        put_be16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
+    } else { /* reserved for mp4/3gp */
+        put_be16(pb, 2);
+        put_be16(pb, 16);
+        put_be16(pb, 0);
+    }
 
-    put_be16(pb, track->mode == MODE_MOV && track->audio_vbr ? -2 : 0); /* compression ID */
     put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
