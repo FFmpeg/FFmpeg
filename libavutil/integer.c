@@ -84,9 +84,6 @@ AVInteger av_mul_i(AVInteger a, AVInteger b){
     return out;
 }
 
-/**
- * returns 0 if a==b, 1 if a>b and -1 if a<b.
- */
 int av_cmp_i(AVInteger a, AVInteger b){
     int i;
     int v= (int16_t)a.v[AV_INTEGER_SIZE-1] - (int16_t)b.v[AV_INTEGER_SIZE-1];

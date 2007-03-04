@@ -39,6 +39,10 @@ AVInteger av_add_i(AVInteger a, AVInteger b);
 AVInteger av_sub_i(AVInteger a, AVInteger b);
 int av_log2_i(AVInteger a);
 AVInteger av_mul_i(AVInteger a, AVInteger b);
+
+/**
+ * returns 0 if a==b, 1 if a>b and -1 if a<b.
+ */
 int av_cmp_i(AVInteger a, AVInteger b);
 
 /**
