@@ -35,6 +35,7 @@ static av_always_inline void bytestream_put_ ##name(uint8_t **b, const unsigned 
 DEF(le32, 4, AV_RL32, AV_WL32)
 DEF(le16, 2, AV_RL16, AV_WL16)
 DEF(be32, 4, AV_RB32, AV_WB32)
+DEF(be24, 3, AV_RB24, AV_WB24)
 DEF(be16, 2, AV_RB16, AV_WB16)
 DEF(byte, 1, AV_RB8 , AV_WB8 )
 
