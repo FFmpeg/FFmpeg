@@ -52,6 +52,14 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[1] = (d); \
                     ((uint8_t*)(p))[0] = (d)>>8; }
 
+#define AV_RB24(x) ((((uint8_t*)(x))[0] << 16) | \
+                    (((uint8_t*)(x))[1] << 8) | \
+                     ((uint8_t*)(x))[2])
+#define AV_WB24(p, d) { \
+                    ((uint8_t*)(p))[2] = (d); \
+                    ((uint8_t*)(p))[1] = (d)>>8; \
+                    ((uint8_t*)(p))[0] = (d)>>16; }
+
 #define AV_RB32(x) ((((uint8_t*)(x))[0] << 24) | \
                    (((uint8_t*)(x))[1] << 16) | \
                    (((uint8_t*)(x))[2] << 8) | \
