@@ -733,7 +733,7 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
-void img_copy(AVPicture *dst, const AVPicture *src,
+void av_picture_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height)
 {
     int bwidth, bits, i;
@@ -2214,7 +2214,7 @@ static inline int is_yuv_planar(const PixFmtInfo *ps)
         ps->pixel_type == FF_PIXEL_PLANAR;
 }
 
-int img_crop(AVPicture *dst, const AVPicture *src,
+int av_picture_crop(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int top_band, int left_band)
 {
     int y_shift;
@@ -2236,7 +2236,7 @@ int img_crop(AVPicture *dst, const AVPicture *src,
     return 0;
 }
 
-int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
+int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
             int pix_fmt, int padtop, int padbottom, int padleft, int padright,
             int *color)
 {
@@ -2296,6 +2296,27 @@ int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+void img_copy(AVPicture *dst, const AVPicture *src,
+              int pix_fmt, int width, int height)
+{
+    av_picture_copy(dst, src, pix_fmt, width, height);
+}
+
+int img_crop(AVPicture *dst, const AVPicture *src,
+              int pix_fmt, int top_band, int left_band)
+{
+    return av_picture_crop(dst, src, pix_fmt, top_band, left_band);
+}
+
+int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
+            int pix_fmt, int padtop, int padbottom, int padleft, int padright,
+            int *color)
+{
+    return av_picture_pad(dst, src, height, width, pix_fmt, padtop, padbottom, padleft, padright, color);
+}
+#endif
+
 #ifndef CONFIG_SWSCALER
 /* XXX: always use linesize. Return -1 if not supported */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
@@ -2326,7 +2347,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     src_pix = &pix_fmt_info[src_pix_fmt];
     if (src_pix_fmt == dst_pix_fmt) {
         /* no conversion needed: just copy */
-        img_copy(dst, src, dst_pix_fmt, dst_width, dst_height);
+        av_picture_copy(dst, src, dst_pix_fmt, dst_width, dst_height);
         return 0;
     }
 

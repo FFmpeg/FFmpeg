@@ -802,7 +802,7 @@ int sws_scale(struct SwsContext *ctx, uint8_t* src[], int srcStride[],
             goto the_end;
         }
     } else if (resampled_picture != &dst_pict) {
-        img_copy(&dst_pict, resampled_picture, current_pix_fmt,
+        av_picture_copy(&dst_pict, resampled_picture, current_pix_fmt,
                         ctx->resampling_ctx->owidth, ctx->resampling_ctx->oheight);
     }
 

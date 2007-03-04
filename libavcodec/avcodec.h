@@ -3008,20 +3008,31 @@ void *av_mallocz_static(unsigned int size);
 /**
  * Copy image 'src' to 'dst'.
  */
-void img_copy(AVPicture *dst, const AVPicture *src,
+void av_picture_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height);
 
 /**
  * Crop image top and left side
  */
-int img_crop(AVPicture *dst, const AVPicture *src,
+int av_picture_crop(AVPicture *dst, const AVPicture *src,
              int pix_fmt, int top_band, int left_band);
 
 /**
  * Pad image
  */
-int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
+int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
+
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+attribute_deprecated void img_copy(AVPicture *dst, const AVPicture *src,
+              int pix_fmt, int width, int height);
+
+attribute_deprecated int img_crop(AVPicture *dst, const AVPicture *src,
+             int pix_fmt, int top_band, int left_band);
+
+attribute_deprecated int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
+            int padtop, int padbottom, int padleft, int padright, int *color);
+#endif
 
 extern unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 

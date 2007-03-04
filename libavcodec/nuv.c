@@ -50,7 +50,7 @@ static void copy_frame(AVFrame *f, uint8_t *src,
                        int width, int height) {
     AVPicture pic;
     avpicture_fill(&pic, src, PIX_FMT_YUV420P, width, height);
-    img_copy((AVPicture *)f, &pic, PIX_FMT_YUV420P, width, height);
+    av_picture_copy((AVPicture *)f, &pic, PIX_FMT_YUV420P, width, height);
 }
 
 /**

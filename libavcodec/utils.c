@@ -370,7 +370,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
     if (s->get_buffer(s, pic))
         return -1;
     /* Copy image data from old buffer to new buffer */
-    img_copy((AVPicture*)pic, (AVPicture*)&temp_pic, s->pix_fmt, s->width,
+    av_picture_copy((AVPicture*)pic, (AVPicture*)&temp_pic, s->pix_fmt, s->width,
              s->height);
     s->release_buffer(s, &temp_pic); // Release old frame
     return 0;

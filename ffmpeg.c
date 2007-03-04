@@ -596,7 +596,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
                 picture2 = picture;
             }
         } else {
-            img_copy(picture2, picture, dec->pix_fmt, dec->width, dec->height);
+            av_picture_copy(picture2, picture, dec->pix_fmt, dec->width, dec->height);
         }
     } else {
         picture2 = picture;
@@ -716,7 +716,7 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     if (ost->video_crop) {
-        if (img_crop((AVPicture *)&picture_crop_temp, (AVPicture *)in_picture, dec->pix_fmt, ost->topBand, ost->leftBand) < 0) {
+        if (av_picture_crop((AVPicture *)&picture_crop_temp, (AVPicture *)in_picture, dec->pix_fmt, ost->topBand, ost->leftBand) < 0) {
             av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
             goto the_end;
         }
@@ -731,7 +731,7 @@ static void do_video_out(AVFormatContext *s,
     if (ost->video_pad) {
         final_picture = &ost->pict_tmp;
         if (ost->video_resample) {
-            if (img_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
+            if (av_picture_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
                 av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
                 goto the_end;
             }
@@ -747,7 +747,7 @@ static void do_video_out(AVFormatContext *s,
     }
 
     if (ost->video_pad) {
-        img_pad((AVPicture*)final_picture, (AVPicture *)padding_src,
+        av_picture_pad((AVPicture*)final_picture, (AVPicture *)padding_src,
                 enc->height, enc->width, enc->pix_fmt,
                 ost->padtop, ost->padbottom, ost->padleft, ost->padright, padcolor);
     }
