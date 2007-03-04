@@ -141,9 +141,6 @@ AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b){
     return a;
 }
 
-/**
- * returns a/b.
- */
 AVInteger av_div_i(AVInteger a, AVInteger b){
     AVInteger quot;
     av_mod_i(&quot, a, b);

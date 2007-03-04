@@ -47,6 +47,10 @@ AVInteger av_shr_i(AVInteger a, int s);
  * @param quot a/b will be stored here
  */
 AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b);
+
+/**
+ * returns a/b.
+ */
 AVInteger av_div_i(AVInteger a, AVInteger b);
 AVInteger av_int2i(int64_t a);
 int64_t av_i2int(AVInteger a);
