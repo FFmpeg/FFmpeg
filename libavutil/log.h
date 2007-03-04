@@ -83,6 +83,20 @@ struct AVCLASS {
 #endif
 extern int av_log_level;
 
+/**
+ * Send the specified message to the log if the level is less than or equal to
+ * the current av_log_level. By default, all logging messages are sent to
+ * stderr. This behavior can be altered by setting a different av_vlog callback
+ * function.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param fmt The format string (printf-compatible) that specifies how
+ * subsequent arguments are converted to output.
+ * @see av_vlog
+ */
 #ifdef __GNUC__
 extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
 #else
