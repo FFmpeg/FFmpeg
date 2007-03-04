@@ -419,9 +419,19 @@ void ff_mpeg1_clean_buffers(MpegEncContext *s){
 
 #ifdef CONFIG_ENCODERS
 
+static av_always_inline void put_qscale(MpegEncContext *s)
+{
+    if(s->q_scale_type){
+        assert(s->qscale>=1 && s->qscale <=12);
+        put_bits(&s->pb, 5, inv_non_linear_qscale[s->qscale]);
+    }else{
+        put_bits(&s->pb, 5, s->qscale);
+    }
+}
+
 void ff_mpeg1_encode_slice_header(MpegEncContext *s){
     put_header(s, SLICE_MIN_START_CODE + s->mb_y);
-    put_bits(&s->pb, 5, s->qscale); /* quantizer scale */
+    put_qscale(s);
     put_bits(&s->pb, 1, 0); /* slice extra information */
 }
 
@@ -567,7 +577,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
         if (s->pict_type == I_TYPE) {
             if(s->dquant && cbp){
                 put_mb_modes(s, 2, 1, 0, 0); /* macroblock_type : macroblock_quant = 1 */
-                put_bits(&s->pb, 5, s->qscale);
+                put_qscale(s);
             }else{
                 put_mb_modes(s, 1, 1, 0, 0); /* macroblock_type : macroblock_quant = 0 */
                 s->qscale -= s->dquant;
@@ -577,7 +587,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
         } else if (s->mb_intra) {
             if(s->dquant && cbp){
                 put_mb_modes(s, 6, 0x01, 0, 0);
-                put_bits(&s->pb, 5, s->qscale);
+                put_qscale(s);
             }else{
                 put_mb_modes(s, 5, 0x03, 0, 0);
                 s->qscale -= s->dquant;
@@ -591,7 +601,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                     if ((motion_x|motion_y) == 0) {
                         if(s->dquant){
                             put_mb_modes(s, 5, 1, 0, 0); /* macroblock_pattern & quant */
-                            put_bits(&s->pb, 5, s->qscale);
+                            put_qscale(s);
                         }else{
                             put_mb_modes(s, 2, 1, 0, 0); /* macroblock_pattern only */
                         }
@@ -599,7 +609,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                     } else {
                         if(s->dquant){
                             put_mb_modes(s, 5, 2, 1, 0); /* motion + cbp */
-                            put_bits(&s->pb, 5, s->qscale);
+                            put_qscale(s);
                         }else{
                             put_mb_modes(s, 1, 1, 1, 0); /* motion + cbp */
                         }
@@ -626,7 +636,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                 if (cbp) {
                     if(s->dquant){
                         put_mb_modes(s, 5, 2, 1, 1); /* motion + cbp */
-                        put_bits(&s->pb, 5, s->qscale);
+                        put_qscale(s);
                     }else{
                         put_mb_modes(s, 1, 1, 1, 1); /* motion + cbp */
                     }
@@ -664,7 +674,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                             put_mb_modes(s, 6, 3, 1, 0);
                         else
                             put_mb_modes(s, mb_type_len[s->mv_dir]+3, 2, 1, 0);
-                        put_bits(&s->pb, 5, s->qscale);
+                        put_qscale(s);
                     } else {
                         put_mb_modes(s, mb_type_len[s->mv_dir], 3, 1, 0);
                     }
@@ -698,7 +708,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                             put_mb_modes(s, 6, 3, 1, 1);
                         else
                             put_mb_modes(s, mb_type_len[s->mv_dir]+3, 2, 1, 1);
-                        put_bits(&s->pb, 5, s->qscale);
+                        put_qscale(s);
                     } else {
                         put_mb_modes(s, mb_type_len[s->mv_dir], 3, 1, 1);
                     }

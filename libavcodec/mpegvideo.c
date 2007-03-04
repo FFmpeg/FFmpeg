@@ -1015,6 +1015,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->loop_filter= !!(s->flags & CODEC_FLAG_LOOP_FILTER);
     s->alternate_scan= !!(s->flags & CODEC_FLAG_ALT_SCAN);
     s->intra_vlc_format= !!(s->flags2 & CODEC_FLAG2_INTRA_VLC);
+    s->q_scale_type= !!(s->flags2 & CODEC_FLAG2_NON_LINEAR_QUANT);
 
     if(avctx->rc_max_rate && !avctx->rc_buffer_size){
         av_log(avctx, AV_LOG_ERROR, "a vbv buffer size is needed, for encoding with a maximum bitrate\n");
@@ -1111,6 +1112,17 @@ int MPV_encode_init(AVCodecContext *avctx)
         }
         if (s->max_b_frames != 0){
             av_log(avctx, AV_LOG_ERROR, "b frames cannot be used with low delay\n");
+            return -1;
+        }
+    }
+
+    if(s->q_scale_type == 1){
+        if(s->codec_id != CODEC_ID_MPEG2VIDEO){
+            av_log(avctx, AV_LOG_ERROR, "non linear quant is only available for mpeg2\n");
+            return -1;
+        }
+        if(avctx->qmax > 12){
+            av_log(avctx, AV_LOG_ERROR, "non linear quant only supports qmax <= 12 currently\n");
             return -1;
         }
     }

@@ -718,6 +718,7 @@ static const AVOption options[]={
 {"max_partition_order", NULL, OFFSET(max_partition_order), FF_OPT_TYPE_INT, -1, INT_MIN, INT_MAX, A|E},
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), FF_OPT_TYPE_INT, 0, 0, INT_MAX, V|E},
 {"drop_frame_timecode", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_DROP_FRAME_TIMECODE, INT_MIN, INT_MAX, V|E, "flags2"},
+{"non_linear_q", "use non linear quantizer", 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_NON_LINEAR_QUANT, INT_MIN, INT_MAX, V|E, "flags2"},
 {NULL},
 };
 
