@@ -212,7 +212,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   libnut.c                              Oded Shimon
   matroska.c                            Aurelien Jacobs
-  mov.c                                 Francois Revol, Michael Niedermayer
+  mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpc.c                                 Kostya Shishkov
   mpegts*                               Mans Rullgard
