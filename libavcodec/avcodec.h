@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(37<<8)+0)
-#define LIBAVCODEC_VERSION      51.37.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(38<<8)+0)
+#define LIBAVCODEC_VERSION      51.38.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2974,6 +2974,7 @@ extern AVBitStreamFilter noise_bsf;
 extern AVBitStreamFilter mp3_header_compress_bsf;
 extern AVBitStreamFilter mp3_header_decompress_bsf;
 extern AVBitStreamFilter mjpega_dump_header_bsf;
+extern AVBitStreamFilter imx_dump_header_bsf;
 
 
 /* memory */

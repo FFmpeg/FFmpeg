@@ -31,6 +31,7 @@
 #include "mpegvideo.h"
 
 #include "mpeg12data.h"
+#include "bytestream.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -3521,6 +3522,35 @@ AVCodecParser mpegvideo_parser = {
     mpegvideo_split,
 };
 #endif /* !CONFIG_MPEGVIDEO_PARSER */
+
+static int imx_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
+                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t *buf, int buf_size, int keyframe)
+{
+    /* MXF essence element key */
+    static const uint8_t imx_header[16] = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x05,0x01,0x01,0x00 };
+    uint8_t *poutbufp;
+
+    if (avctx->codec_id != CODEC_ID_MPEG2VIDEO) {
+        av_log(avctx, AV_LOG_ERROR, "imx bitstream filter only applies to mpeg2video codec\n");
+        return 0;
+    }
+
+    *poutbuf = av_malloc(buf_size + 20 + FF_INPUT_BUFFER_PADDING_SIZE);
+    poutbufp = *poutbuf;
+    bytestream_put_buffer(&poutbufp, imx_header, 16);
+    bytestream_put_byte(&poutbufp, 0x83); /* KLV BER long form */
+    bytestream_put_be24(&poutbufp, buf_size);
+    bytestream_put_buffer(&poutbufp, buf, buf_size);
+    *poutbuf_size = poutbufp - *poutbuf;
+    return 1;
+}
+
+AVBitStreamFilter imx_dump_header_bsf = {
+    "imxdump",
+    0,
+    imx_dump_header,
+};
 
 /* this is ugly i know, but the alternative is too make
    hundreds of vars global and prefix them with ff_mpeg1_

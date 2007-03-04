@@ -269,5 +269,6 @@ void avcodec_register_all(void)
     av_register_bitstream_filter(&mp3_header_compress_bsf);
     av_register_bitstream_filter(&mp3_header_decompress_bsf);
     av_register_bitstream_filter(&mjpega_dump_header_bsf);
+    av_register_bitstream_filter(&imx_dump_header_bsf);
 }
 
