@@ -72,7 +72,7 @@ typedef struct rtp_payload_data_s
     int objecttype;
     char *mode;
 
-    /* mpeg 4 AU headers */
+    /** mpeg 4 AU headers */
     struct AUHeaders {
         int size;
         int index;
