@@ -76,6 +76,7 @@ typedef int FFRTSPCallback(enum RTSPCallbackAction action,
                            char *buf, int buf_size,
                            void *arg);
 
+/* useful for modules: set RTSP callback function */
 void rtsp_set_callback(FFRTSPCallback *rtsp_cb);
 
 int rtsp_init(void);
