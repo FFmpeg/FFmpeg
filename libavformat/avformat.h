@@ -170,7 +170,7 @@ typedef struct AVOutputFormat {
     const char *name;
     const char *long_name;
     const char *mime_type;
-    const char *extensions; /**< comma separated extensions */
+    const char *extensions; /**< comma separated filename extensions */
     /** size of private data so that it can be allocated in the wrapper */
     int priv_data_size;
     /* output support */
