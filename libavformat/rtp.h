@@ -61,7 +61,7 @@ extern URLProtocol rtp_protocol;
 #define RTCP_TX_RATIO_NUM 5
 #define RTCP_TX_RATIO_DEN 1000
 
-/* Structure listing useful vars to parse RTP packet payload*/
+/** Structure listing useful vars to parse RTP packet payload*/
 typedef struct rtp_payload_data_s
 {
     int sizelength;
