@@ -122,10 +122,6 @@ void av_free(void *ptr)
 #endif
 }
 
-/**
- * Frees memory and sets the pointer to NULL.
- * @param arg pointer to the pointer which should be freed
- */
 void av_freep(void *arg)
 {
     void **ptr= (void**)arg;

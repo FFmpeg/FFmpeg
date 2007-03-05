@@ -354,6 +354,11 @@ void av_free(void *ptr);
 
 void *av_mallocz(unsigned int size);
 char *av_strdup(const char *s);
+
+/**
+ * Frees memory and sets the pointer to NULL.
+ * @param arg pointer to the pointer which should be freed
+ */
 void av_freep(void *ptr);
 
 #endif /* COMMON_H */
