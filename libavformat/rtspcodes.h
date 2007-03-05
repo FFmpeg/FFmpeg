@@ -18,14 +18,19 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-DEF(200, RTSP_STATUS_OK, "OK")
-DEF(405, RTSP_STATUS_METHOD, "Method Not Allowed")
-DEF(453, RTSP_STATUS_BANDWIDTH, "Not Enough Bandwidth")
-DEF(454, RTSP_STATUS_SESSION, "Session Not Found")
-DEF(455, RTSP_STATUS_STATE, "Method Not Valid in This State")
-DEF(459, RTSP_STATUS_AGGREGATE, "Aggregate operation not allowed")
-DEF(460, RTSP_STATUS_ONLY_AGGREGATE, "Only aggregate operation allowed")
-DEF(461, RTSP_STATUS_TRANSPORT, "Unsupported transport")
-DEF(500, RTSP_STATUS_INTERNAL, "Internal Server Error")
-DEF(503, RTSP_STATUS_SERVICE, "Service Unavailable")
-DEF(505, RTSP_STATUS_VERSION, "RTSP Version not supported")
+
+/** RTSP handling */
+enum RTSPStatusCode {
+RTSP_STATUS_OK              =200, /**< OK */
+RTSP_STATUS_METHOD          =405, /**< Method Not Allowed */
+RTSP_STATUS_BANDWIDTH       =453, /**< Not Enough Bandwidth */
+RTSP_STATUS_SESSION         =454, /**< Session Not Found */
+RTSP_STATUS_STATE           =455, /**< Method Not Valid in This State */
+RTSP_STATUS_AGGREGATE       =459, /**< Aggregate operation not allowed */
+RTSP_STATUS_ONLY_AGGREGATE  =460, /**< Only aggregate operation allowed */
+RTSP_STATUS_TRANSPORT       =461, /**< Unsupported transport */
+RTSP_STATUS_INTERNAL        =500, /**< Internal Server Error */
+RTSP_STATUS_SERVICE         =503, /**< Service Unavailable */
+RTSP_STATUS_VERSION         =505, /**< RTSP Version not supported */
+};
+

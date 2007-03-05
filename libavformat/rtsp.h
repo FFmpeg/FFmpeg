@@ -21,12 +21,7 @@
 #ifndef RTSP_H
 #define RTSP_H
 
-/* RTSP handling */
-enum RTSPStatusCode {
-#define DEF(n, c, s) c = n,
 #include "rtspcodes.h"
-#undef DEF
-};
 
 enum RTSPProtocol {
     RTSP_PROTOCOL_RTP_UDP = 0,
