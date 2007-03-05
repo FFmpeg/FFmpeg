@@ -24,6 +24,11 @@ Modules are loaded using the -vhook option to ffmpeg. The value of this paramete
 is a space separated list of arguments. The first is the module name, and the rest
 are passed as arguments to the Configure function of the module.
 
+The modules are dynamic libraries: They have different suffixes (.so, .dll, .dylib)
+depending on your platform. And your platform dictates if they need to be
+somewhere in your PATH, or in your LD_LIBRARY_PATH. Otherwise you will need to
+specify the full path of the vhook file that you are using.
+
 @section null.c
 
 This does nothing. Actually it converts the input image to RGB24 and then converts
@@ -45,6 +50,10 @@ This module implements a text overlay for a video image. Currently it
 supports a fixed overlay or reading the text from a file. The string
 is passed through strftime so that it is easy to imprint the date and
 time onto the image.
+
+This module depends on the external library imlib2, available on
+Sourceforge, among other places, if it is not already installed on
+your system.
 
 You may also overlay an image (even semi-transparent) like TV stations do.
 You may move either the text or the image around your video to create
