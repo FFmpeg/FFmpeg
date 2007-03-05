@@ -114,7 +114,7 @@ fi
 # create the data directory if it does not exist
 mkdir -p $datadir
 
-FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
+FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple -ab 64k"
 
 do_ffmpeg()
 {
@@ -192,7 +192,7 @@ do_video_encoding()
 do_audio_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -y -ab 128 -ac 2 -f s16le -i $pcm_src $3 $file
+    do_ffmpeg $file -y -ab 128k -ac 2 -f s16le -i $pcm_src $3 $file
 }
 
 do_audio_decoding()
@@ -236,7 +236,7 @@ echo "ffmpeg benchmarks" > $benchfile
 ###################################
 # generate reference for quality check
 do_ffmpeg_nocheck $raw_ref -y -f pgmyuv -i $raw_src -an -f rawvideo $raw_ref
-do_ffmpeg_nocheck $pcm_ref -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
+do_ffmpeg_nocheck $pcm_ref -y -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
 
 ###################################
 if [ -n "$do_mpeg" ] ; then
@@ -252,7 +252,7 @@ do_video_encoding mpeg2.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1vide
 do_video_decoding
 
 # mpeg2 encoding intra vlc qprd
-do_video_encoding mpeg2ivlc-qprd.mpg "-b 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-vcodec mpeg2video -f mpeg2video"
+do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-vcodec mpeg2video -f mpeg2video"
 
 # mpeg2 decoding
 do_video_decoding
@@ -389,7 +389,7 @@ fi
 ###################################
 if [ -n "$do_mp4psp" ] ; then
 # mp4 PSP style
-do_video_encoding mpeg4-PSP.mp4 "-b 768k -s 320x240" psp "-ar 24000 -ab 32 -i $raw_src"
+do_video_encoding mpeg4-PSP.mp4 "-vb 768k -s 320x240" psp "-ar 24000 -ab 32k -i $raw_src"
 fi
 
 ###################################
@@ -530,7 +530,7 @@ fi
 ###################################
 if [ -n "$do_g726" ] ; then
 # g726
-do_audio_encoding g726.wav "-ar 44100" "-ab 32 -ac 1 -ar 8000 -acodec g726"
+do_audio_encoding g726.wav "-ar 44100" "-ab 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding
 fi
 

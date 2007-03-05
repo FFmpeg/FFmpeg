@@ -137,7 +137,6 @@ static int qp_hist = 0;
 
 static int intra_only = 0;
 static int audio_sample_rate = 44100;
-static int audio_bit_rate = 64000;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
@@ -2323,11 +2322,6 @@ static void opt_thread_count(const char *arg)
 #endif
 }
 
-static void opt_audio_bitrate(const char *arg)
-{
-    audio_bit_rate = atoi(arg) * 1000;
-}
-
 static void opt_audio_rate(const char *arg)
 {
     audio_sample_rate = atoi(arg);
@@ -2906,7 +2900,6 @@ static void new_audio_stream(AVFormatContext *oc)
             codec_id = audio_codec_id;
         audio_enc->codec_id = codec_id;
 
-        audio_enc->bit_rate = audio_bit_rate;
         if (audio_qscale > QSCALE_NONE) {
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
@@ -3392,7 +3385,7 @@ static void opt_target(const char *arg)
         opt_default("minrate", "1150000");
         opt_default("bufsize", "327680"); // 40*1024*8;
 
-        audio_bit_rate = 224000;
+        opt_default("ab", "224000");
         audio_sample_rate = 44100;
         audio_channels = 2;
 
@@ -3422,7 +3415,7 @@ static void opt_target(const char *arg)
         opt_default("flags", "+SCAN_OFFSET");
 
 
-        audio_bit_rate = 224000;
+        opt_default("ab", "224000");
         audio_sample_rate = 44100;
 
         opt_default("packetsize", "2324");
@@ -3445,7 +3438,7 @@ static void opt_target(const char *arg)
         opt_default("packetsize", "2048");  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
         opt_default("muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
-        audio_bit_rate = 448000;
+        opt_default("ab", "448000");
         audio_sample_rate = 48000;
 
     } else if(!strncmp(arg, "dv", 2)) {
@@ -3634,7 +3627,6 @@ const OptionDef options[] = {
 
     /* audio options */
     { "aframes", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&max_frames[CODEC_TYPE_AUDIO]}, "set the number of audio frames to record", "number" },
-    { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
