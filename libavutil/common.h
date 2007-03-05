@@ -344,6 +344,12 @@ void *av_malloc(unsigned int size);
  * free(ptr) and NULL is returned.
  */
 void *av_realloc(void *ptr, unsigned int size);
+
+/**
+ * Free memory which has been allocated with av_malloc(z)() or av_realloc().
+ * NOTE: ptr = NULL is explicetly allowed
+ * Note2: it is recommended that you use av_freep() instead
+ */
 void av_free(void *ptr);
 
 void *av_mallocz(unsigned int size);
