@@ -648,6 +648,7 @@ static void put_payload_header(
 static void put_frame(
                     AVFormatContext *s,
                     ASFStream       *stream,
+                    AVStream        *avst,
                     int             timestamp,
                     const uint8_t   *buf,
                     int             m_obj_size,
@@ -677,6 +678,11 @@ static void put_frame(
             frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS - PACKET_HEADER_MIN_SIZE - 1;
 
             asf->packet_timestamp_start = timestamp;
+
+            if(frag_len1 < payload_len && avst->codec->codec_type == CODEC_TYPE_AUDIO){
+                flush_packet(s);
+                continue;
+            }
         }
         if (frag_len1 > 0) {
             if (payload_len > frag_len1)
@@ -731,7 +737,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     asf->duration= FFMAX(asf->duration, duration);
 
     packet_st = asf->nb_packets;
-    put_frame(s, stream, pkt->dts, pkt->data, pkt->size, flags);
+    put_frame(s, stream, s->streams[pkt->stream_index], pkt->dts, pkt->data, pkt->size, flags);
 
     /* check index */
     if ((!asf->is_streamed) && (flags & PKT_FLAG_KEY)) {
