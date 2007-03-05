@@ -303,8 +303,6 @@ void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned l
     }
 }
 
-/* NOTE: return 0 if EOF, so you cannot use it if EOF handling is
-   necessary */
 /* XXX: put an inline version */
 int get_byte(ByteIOContext *s)
 {
@@ -319,7 +317,6 @@ int get_byte(ByteIOContext *s)
     }
 }
 
-/* NOTE: return URL_EOF (-1) if EOF */
 int url_fgetc(ByteIOContext *s)
 {
     if (s->buf_ptr < s->buf_end) {
@@ -524,7 +521,6 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
     return 0;
 }
 
-/* XXX: must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size)
 {
     uint8_t *buffer;
@@ -543,8 +539,6 @@ int url_setbufsize(ByteIOContext *s, int buf_size)
     return 0;
 }
 
-/* NOTE: when opened as read/write, the buffers are only used for
-   reading */
 int url_fopen(ByteIOContext *s, const char *filename, int flags)
 {
     URLContext *h;
@@ -576,7 +570,6 @@ URLContext *url_fileno(ByteIOContext *s)
 }
 
 #ifdef CONFIG_MUXERS
-/* XXX: currently size is limited */
 int url_fprintf(ByteIOContext *s, const char *fmt, ...)
 {
     va_list ap;
@@ -591,8 +584,6 @@ int url_fprintf(ByteIOContext *s, const char *fmt, ...)
 }
 #endif //CONFIG_MUXERS
 
-/* note: unlike fgets, the EOL character is not returned and a whole
-   line is parsed. return NULL if first char read was EOF */
 char *url_fgets(ByteIOContext *s, char *buf, int buf_size)
 {
     int c;
@@ -614,14 +605,6 @@ char *url_fgets(ByteIOContext *s, char *buf, int buf_size)
     return buf;
 }
 
-/*
- * Return the maximum packet size associated to packetized buffered file
- * handle. If the file is not packetized (stream like http or file on
- * disk), then 0 is returned.
- *
- * @param h buffered file handle
- * @return maximum packet size in bytes
- */
 int url_fget_max_packet_size(ByteIOContext *s)
 {
     return s->max_packet_size;
@@ -638,7 +621,6 @@ int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags)
                          NULL, NULL, NULL, NULL);
 }
 
-/* return the written or read size */
 int url_close_buf(ByteIOContext *s)
 {
     put_flush_packet(s);
@@ -746,26 +728,11 @@ static int url_open_dyn_buf_internal(ByteIOContext *s, int max_packet_size)
     return ret;
 }
 
-/*
- * Open a write only memory stream.
- *
- * @param s new IO context
- * @return zero if no error.
- */
 int url_open_dyn_buf(ByteIOContext *s)
 {
     return url_open_dyn_buf_internal(s, 0);
 }
 
-/*
- * Open a write only packetized memory stream with a maximum packet
- * size of 'max_packet_size'.  The stream is stored in a memory buffer
- * with a big endian 4 byte header giving the packet size in bytes.
- *
- * @param s new IO context
- * @param max_packet_size maximum packet size (must be > 0)
- * @return zero if no error.
- */
 int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size)
 {
     if (max_packet_size <= 0)
@@ -773,13 +740,6 @@ int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size)
     return url_open_dyn_buf_internal(s, max_packet_size);
 }
 
-/*
- * Return the written size and a pointer to the buffer. The buffer
- *  must be freed with av_free().
- * @param s IO context
- * @param pointer to a byte buffer
- * @return the length of the byte buffer
- */
 int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d = s->opaque;
