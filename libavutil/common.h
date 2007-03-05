@@ -330,6 +330,12 @@ tend= read_time();\
 #endif
 
 /* memory */
+
+/**
+ * Memory allocation of size byte with alignment suitable for all
+ * memory accesses (including vectors if available on the
+ * CPU). av_malloc(0) must return a non NULL pointer.
+ */
 void *av_malloc(unsigned int size);
 void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);

@@ -39,11 +39,6 @@
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically */
 
-/**
- * Memory allocation of size byte with alignment suitable for all
- * memory accesses (including vectors if available on the
- * CPU). av_malloc(0) must return a non NULL pointer.
- */
 void *av_malloc(unsigned int size)
 {
     void *ptr;
