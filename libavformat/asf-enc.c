@@ -310,8 +310,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le64(pb, asf->nb_packets); /* number of packets */
     put_le64(pb, duration); /* end time stamp (in 100ns units) */
     put_le64(pb, duration); /* duration (in 100ns units) */
-    put_le32(pb, preroll_time); /* start time stamp */
-    put_le32(pb, 0); /* ??? */
+    put_le64(pb, preroll_time); /* start time stamp */
     put_le32(pb, asf->is_streamed ? 1 : 0); /* ??? */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, asf->packet_size); /* packet size */
