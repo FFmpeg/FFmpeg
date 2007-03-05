@@ -290,7 +290,7 @@ typedef struct AVStream {
     AVRational time_base;
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
     /* ffmpeg.c private use */
-    int stream_copy; /**< if TRUE, just copy stream */
+    int stream_copy; /**< if set, just copy stream */
     enum AVDiscard discard; ///< selects which packets can be discarded at will and dont need to be demuxed
     //FIXME move stuff to a flags field?
     /** quality, as it has been removed from AVCodecContext and put in AVVideoFrame
