@@ -61,6 +61,15 @@ offset_t url_seek(URLContext *h, offset_t pos, int whence);
 int url_close(URLContext *h);
 int url_exist(const char *filename);
 offset_t url_filesize(URLContext *h);
+
+/*
+ * Return the maximum packet size associated to packetized file
+ * handle. If the file is not packetized (stream like http or file on
+ * disk), then 0 is returned.
+ *
+ * @param h file handle
+ * @return maximum packet size in bytes
+ */
 int url_get_max_packet_size(URLContext *h);
 void url_get_filename(URLContext *h, char *buf, int buf_size);
 

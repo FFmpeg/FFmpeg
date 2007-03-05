@@ -162,14 +162,6 @@ offset_t url_filesize(URLContext *h)
     return size;
 }
 
-/*
- * Return the maximum packet size associated to packetized file
- * handle. If the file is not packetized (stream like http or file on
- * disk), then 0 is returned.
- *
- * @param h file handle
- * @return maximum packet size in bytes
- */
 int url_get_max_packet_size(URLContext *h)
 {
     return h->max_packet_size;
@@ -186,12 +178,6 @@ static int default_interrupt_cb(void)
     return 0;
 }
 
-/**
- * The callback is called in blocking functions to test regulary if
- * asynchronous interruption is needed. AVERROR(EINTR) is returned
- * in this case by the interrupted function. 'NULL' means no interrupt
- * callback is given.
- */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
 {
     if (!interrupt_cb)
