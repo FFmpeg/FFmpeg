@@ -17,7 +17,7 @@ the video to be modified or examined between the decoder and the encoder.
 Any number of hook modules can be placed inline, and they are run in the
 order that they were specified on the ffmpeg command line.
 
-Three modules are provided and are described below. They are all intended to
+A few modules are provided and are described below. They are all intended to
 be used as a base for your own modules.
 
 Modules are loaded using the -vhook option to ffmpeg. The value of this parameter
