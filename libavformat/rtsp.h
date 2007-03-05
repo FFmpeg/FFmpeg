@@ -38,27 +38,27 @@ enum RTSPProtocol {
 #define RTSP_RTP_PORT_MAX 10000
 
 typedef struct RTSPTransportField {
-    int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
-    int port_min, port_max; /* RTP ports */
-    int client_port_min, client_port_max; /* RTP ports */
-    int server_port_min, server_port_max; /* RTP ports */
-    int ttl; /* ttl value */
-    uint32_t destination; /* destination IP address */
+    int interleaved_min, interleaved_max;  /**< interleave ids, if TCP transport */
+    int port_min, port_max; /**< RTP ports */
+    int client_port_min, client_port_max; /**< RTP ports */
+    int server_port_min, server_port_max; /**< RTP ports */
+    int ttl; /**< ttl value */
+    uint32_t destination; /**< destination IP address */
     enum RTSPProtocol protocol;
 } RTSPTransportField;
 
 typedef struct RTSPHeader {
     int content_length;
-    enum RTSPStatusCode status_code; /* response code from server */
+    enum RTSPStatusCode status_code; /**< response code from server */
     int nb_transports;
-    /* in AV_TIME_BASE unit, AV_NOPTS_VALUE if not used */
+    /** in AV_TIME_BASE unit, AV_NOPTS_VALUE if not used */
     int64_t range_start, range_end;
     RTSPTransportField transports[RTSP_MAX_TRANSPORTS];
-    int seq; /* sequence number */
+    int seq; /**< sequence number */
     char session_id[512];
 } RTSPHeader;
 
-/* the callback can be used to extend the connection setup/teardown step */
+/** the callback can be used to extend the connection setup/teardown step */
 enum RTSPCallbackAction {
     RTSP_ACTION_SERVER_SETUP,
     RTSP_ACTION_SERVER_TEARDOWN,
