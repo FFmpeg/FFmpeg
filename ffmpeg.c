@@ -3808,9 +3808,7 @@ int main(int argc, char **argv)
 
     av_free_static();
 
-    if(intra_matrix)
         av_free(intra_matrix);
-    if(inter_matrix)
         av_free(inter_matrix);
 
 #ifdef CONFIG_POWERPC_PERF
