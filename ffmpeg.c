@@ -3808,8 +3808,8 @@ int main(int argc, char **argv)
 
     av_free_static();
 
-        av_free(intra_matrix);
-        av_free(inter_matrix);
+    av_free(intra_matrix);
+    av_free(inter_matrix);
 
 #ifdef CONFIG_POWERPC_PERF
     extern void powerpc_display_perf_report(void);
