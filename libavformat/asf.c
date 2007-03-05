@@ -249,7 +249,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->need_parsing = 1;
                 /* We have to init the frame size at some point .... */
                 pos2 = url_ftell(pb);
-                if (gsize > (pos2 + 8 - pos1 + 24)) {
+                if (gsize >= (pos2 + 8 - pos1 + 24)) {
                     asf_st->ds_span = get_byte(pb);
                     asf_st->ds_packet_size = get_le16(pb);
                     asf_st->ds_chunk_size = get_le16(pb);
