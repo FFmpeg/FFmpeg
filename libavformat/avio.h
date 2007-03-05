@@ -30,13 +30,13 @@ typedef int64_t offset_t;
 struct URLContext {
     struct URLProtocol *prot;
     int flags;
-    int is_streamed;  /* true if streamed (no seek possible), default = false */
-    int max_packet_size;  /* if non zero, the stream is packetized with this max packet size */
+    int is_streamed;  /**< true if streamed (no seek possible), default = false */
+    int max_packet_size;  /**< if non zero, the stream is packetized with this max packet size */
     void *priv_data;
 #if LIBAVFORMAT_VERSION_INT >= (52<<16)
-    char *filename; /* specified filename */
+    char *filename; /**< specified filename */
 #else
-    char filename[1]; /* specified filename */
+    char filename[1]; /**< specified filename */
 #endif
 };
 
@@ -62,7 +62,7 @@ int url_close(URLContext *h);
 int url_exist(const char *filename);
 offset_t url_filesize(URLContext *h);
 
-/*
+/**
  * Return the maximum packet size associated to packetized file
  * handle. If the file is not packetized (stream like http or file on
  * disk), then 0 is returned.
@@ -73,10 +73,12 @@ offset_t url_filesize(URLContext *h);
 int url_get_max_packet_size(URLContext *h);
 void url_get_filename(URLContext *h, char *buf, int buf_size);
 
-/* the callback is called in blocking functions to test regulary if
-   asynchronous interruption is needed. AVERROR(EINTR) is returned
-   in this case by the interrupted function. 'NULL' means no interrupt
-   callback is given. */
+/**
+ * the callback is called in blocking functions to test regulary if
+ * asynchronous interruption is needed. AVERROR(EINTR) is returned
+ * in this case by the interrupted function. 'NULL' means no interrupt
+ * callback is given. i
+ */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
 /* not implemented */
@@ -112,10 +114,10 @@ typedef struct {
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     offset_t (*seek)(void *opaque, offset_t offset, int whence);
-    offset_t pos; /* position in the file of the current buffer */
-    int must_flush; /* true if the next seek should flush */
-    int eof_reached; /* true if eof reached */
-    int write_flag;  /* true if open for writing */
+    offset_t pos; /**< position in the file of the current buffer */
+    int must_flush; /**< true if the next seek should flush */
+    int eof_reached; /**< true if eof reached */
+    int write_flag;  /**< true if open for writing */
     int is_streamed;
     int max_packet_size;
     unsigned long checksum;
@@ -155,17 +157,17 @@ int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
 
 #define URL_EOF (-1)
-/* NOTE: return URL_EOF (-1) if EOF */
+/** @note return URL_EOF (-1) if EOF */
 int url_fgetc(ByteIOContext *s);
 
-/* XXX: currently size is limited */
+/** @warning currently size is limited */
 #ifdef __GNUC__
 int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
 #else
 int url_fprintf(ByteIOContext *s, const char *fmt, ...);
 #endif
 
-/* note: unlike fgets, the EOL character is not returned and a whole
+/** @note unlike fgets, the EOL character is not returned and a whole
    line is parsed. return NULL if first char read was EOF */
 char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
 
@@ -174,7 +176,7 @@ void put_flush_packet(ByteIOContext *s);
 int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
 int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size);
 
-/* NOTE: return 0 if EOF, so you cannot use it if EOF handling is
+/** @note return 0 if EOF, so you cannot use it if EOF handling is
    necessary */
 int get_byte(ByteIOContext *s);
 unsigned int get_le24(ByteIOContext *s);
@@ -195,16 +197,16 @@ static inline int url_is_streamed(ByteIOContext *s)
 
 int url_fdopen(ByteIOContext *s, URLContext *h);
 
-/* XXX: must be called before any I/O */
+/** @warning must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size);
 
-/* NOTE: when opened as read/write, the buffers are only used for
+/** @note when opened as read/write, the buffers are only used for
    reading */
 int url_fopen(ByteIOContext *s, const char *filename, int flags);
 int url_fclose(ByteIOContext *s);
 URLContext *url_fileno(ByteIOContext *s);
 
-/*
+/**
  * Return the maximum packet size associated to packetized buffered file
  * handle. If the file is not packetized (stream like http or file on
  * disk), then 0 is returned.
@@ -216,10 +218,10 @@ int url_fget_max_packet_size(ByteIOContext *s);
 
 int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags);
 
-/* return the written or read size */
+/** return the written or read size */
 int url_close_buf(ByteIOContext *s);
 
-/*
+/**
  * Open a write only memory stream.
  *
  * @param s new IO context
@@ -227,7 +229,7 @@ int url_close_buf(ByteIOContext *s);
  */
 int url_open_dyn_buf(ByteIOContext *s);
 
-/*
+/**
  * Open a write only packetized memory stream with a maximum packet
  * size of 'max_packet_size'.  The stream is stored in a memory buffer
  * with a big endian 4 byte header giving the packet size in bytes.
@@ -238,7 +240,7 @@ int url_open_dyn_buf(ByteIOContext *s);
  */
 int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size);
 
-/*
+/**
  * Return the written size and a pointer to the buffer. The buffer
  *  must be freed with av_free().
  * @param s IO context
