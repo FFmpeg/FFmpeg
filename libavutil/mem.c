@@ -91,11 +91,6 @@ void *av_malloc(unsigned int size)
     return ptr;
 }
 
-/**
- * av_realloc semantics (same as glibc): if ptr is NULL and size > 0,
- * identical to malloc(size). If size is zero, it is identical to
- * free(ptr) and NULL is returned.
- */
 void *av_realloc(void *ptr, unsigned int size)
 {
 #ifdef CONFIG_MEMALIGN_HACK
