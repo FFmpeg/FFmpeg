@@ -267,7 +267,7 @@ static int swf_write_header(AVFormatContext *s)
                 }
                 audio_enc = enc;
             } else {
-                av_log(enc, AV_LOG_ERROR, "SWF only supports MP3\n");
+                av_log(enc, AV_LOG_ERROR, "SWF muxer only supports MP3\n");
                 return -1;
             }
         } else {
@@ -276,7 +276,7 @@ static int swf_write_header(AVFormatContext *s)
                  enc->codec_id == CODEC_ID_MJPEG ) {
                 video_enc = enc;
             } else {
-                av_log(enc, AV_LOG_ERROR, "SWF only supports VP6, FLV1 and MJPEG\n");
+                av_log(enc, AV_LOG_ERROR, "SWF muxer only supports VP6, FLV1 and MJPEG\n");
                 return -1;
             }
         }
