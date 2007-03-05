@@ -55,7 +55,7 @@ extern URLProtocol rtp_protocol;
 
 #define RTP_PT_PRIVATE 96
 #define RTP_VERSION 2
-#define RTP_MAX_SDES 256   /* maximum text length for SDES */
+#define RTP_MAX_SDES 256   /**< maximum text length for SDES */
 
 /* RTCP paquets use 0.5 % of the bandwidth */
 #define RTCP_TX_RATIO_NUM 5
