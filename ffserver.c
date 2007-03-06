@@ -1299,6 +1299,12 @@ static int http_parse_request(HTTPContext *c)
         }
     }
 
+    /* If already streaming this feed, dont let start an another feeder */
+    if (stream->feed_opened) {
+        snprintf(msg, sizeof(msg), "This feed is already being received.");
+        goto send_error;
+    }
+
     if (c->post == 0 && stream->stream_type == STREAM_TYPE_LIVE) {
         current_bandwidth += stream->bandwidth;
     }
