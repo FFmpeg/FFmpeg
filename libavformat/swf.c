@@ -387,7 +387,6 @@ static int swf_write_header(AVFormatContext *s)
         default:
             /* not supported */
             av_log(s, AV_LOG_ERROR, "swf doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
-            av_free(swf->audio_fifo);
             return -1;
         }
         v |= 0x02; /* 16 bit playback */
