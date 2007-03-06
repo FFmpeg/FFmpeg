@@ -169,6 +169,9 @@ static int process_line(URLContext *h, char *line, int line_count,
 #ifdef DEBUG
         printf("http_code=%d\n", s->http_code);
 #endif
+        /* error codes are 4xx and 5xx */
+        if (s->http_code >= 400 && s->http_code < 600)
+            return -1;
     } else {
         while (*p != '\0' && *p != ':')
             p++;
