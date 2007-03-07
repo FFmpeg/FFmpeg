@@ -411,7 +411,8 @@ static const char* context_to_name(void* ptr) {
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
 static const AVOption options[]={
-{"b", "set bitrate (in bits/s)", OFFSET(bit_rate), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE, INT_MIN, INT_MAX, V|A|E},
+{"b", "set bitrate (in bits/s)", OFFSET(bit_rate), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE, INT_MIN, INT_MAX, V|E},
+{"ab", "set bitrate (in bits/s)", OFFSET(bit_rate), FF_OPT_TYPE_INT, 64*1000, INT_MIN, INT_MAX, A|E},
 {"bt", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE*20, 1, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, V|A|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, FF_OPT_TYPE_CONST, CODEC_FLAG_4MV, INT_MIN, INT_MAX, V|E, "flags"},
