@@ -2696,6 +2696,7 @@ static void new_video_stream(AVFormatContext *oc)
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+    avcodec_get_context_defaults2(st->codec, CODEC_TYPE_VIDEO);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
     video_bitstream_filters= NULL;
 
@@ -2854,6 +2855,7 @@ static void new_audio_stream(AVFormatContext *oc)
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+    avcodec_get_context_defaults2(st->codec, CODEC_TYPE_AUDIO);
 
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
     audio_bitstream_filters= NULL;
@@ -2930,6 +2932,7 @@ static void opt_new_subtitle_stream(void)
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+    avcodec_get_context_defaults2(st->codec, CODEC_TYPE_SUBTITLE);
 
     subtitle_enc = st->codec;
     subtitle_enc->codec_type = CODEC_TYPE_SUBTITLE;
@@ -3755,8 +3758,9 @@ int main(int argc, char **argv)
 
     av_register_all();
 
-    for(i=0; i<CODEC_TYPE_NB; i++)
-        avctx_opts[i]= avcodec_alloc_context();
+    for(i=0; i<CODEC_TYPE_NB; i++){
+        avctx_opts[i]= avcodec_alloc_context2(i);
+    }
     avformat_opts = av_alloc_format_context();
 
     if (argc <= 1)
