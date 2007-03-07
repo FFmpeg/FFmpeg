@@ -115,7 +115,7 @@ static int flic_decode_init(AVCodecContext *avctx)
                   return -1;
                   break;
         default :
-                  av_log(avctx, AV_LOG_ERROR, "Unkown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
+                  av_log(avctx, AV_LOG_ERROR, "Unknown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
                   return -1;
     }
 

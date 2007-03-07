@@ -51,7 +51,7 @@ static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     url_fskip(pb, 20);
     header_size = get_le16(pb) - 22;
     if (header_size != 4) {
-        av_log(s, AV_LOG_ERROR, "unkown header size: %d\n", header_size);
+        av_log(s, AV_LOG_ERROR, "unknown header size: %d\n", header_size);
         return AVERROR_NOTSUPP;
     }
     url_fskip(pb, header_size);

@@ -3465,7 +3465,7 @@ static void opt_video_bsf(const char *arg)
     AVBitStreamFilterContext **bsfp;
 
     if(!bsfc){
-        fprintf(stderr, "Unkown bitstream filter %s\n", arg);
+        fprintf(stderr, "Unknown bitstream filter %s\n", arg);
         exit(1);
     }
 
@@ -3483,7 +3483,7 @@ static void opt_audio_bsf(const char *arg)
     AVBitStreamFilterContext **bsfp;
 
     if(!bsfc){
-        fprintf(stderr, "Unkown bitstream filter %s\n", arg);
+        fprintf(stderr, "Unknown bitstream filter %s\n", arg);
         exit(1);
     }
 
