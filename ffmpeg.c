@@ -714,7 +714,7 @@ static void do_video_out(AVFormatContext *s,
     if (ost->video_crop) {
         if (av_picture_crop((AVPicture *)&picture_crop_temp, (AVPicture *)in_picture, dec->pix_fmt, ost->topBand, ost->leftBand) < 0) {
             av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
-            goto the_end;
+            return;
         }
         formatted_picture = &picture_crop_temp;
     } else {
@@ -729,7 +729,7 @@ static void do_video_out(AVFormatContext *s,
         if (ost->video_resample) {
             if (av_picture_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
                 av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
-                goto the_end;
+                return;
             }
             resampling_dst = &picture_pad_temp;
         }
@@ -828,8 +828,6 @@ static void do_video_out(AVFormatContext *s,
         ost->sync_opts++;
         ost->frame_number++;
     }
- the_end:
-    return;
 }
 
 static double psnr(double d){
