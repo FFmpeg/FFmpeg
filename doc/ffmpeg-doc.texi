@@ -117,7 +117,7 @@ Converts a.wav to MPEG audio at 22050Hz sample rate.
 mapping from input stream to output streams:
 
 @example
-ffmpeg -i /tmp/a.wav -ab 64 /tmp/a.mp2 -ab 128 /tmp/b.mp2 -map 0:0 -map 0:0
+ffmpeg -i /tmp/a.wav -ab 64k /tmp/a.mp2 -ab 128k /tmp/b.mp2 -map 0:0 -map 0:0
 @end example
 
 Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
@@ -127,7 +127,7 @@ stream, in the order of the definition of output streams.
 * You can transcode decrypted VOBs
 
 @example
-ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec mp3 -ab 128 snatch.avi
+ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec mp3 -ab 128k snatch.avi
 @end example
 
 This is a typical DVD ripping example; the input is a VOB file, the
@@ -560,7 +560,7 @@ Set the number of audio frames to record.
 @item -ar freq
 Set the audio sampling frequency (default = 44100 Hz).
 @item -ab bitrate
-Set the audio bitrate in kbit/s (default = 64).
+Set the audio bitrate in bit/s (default = 64k).
 @item -ac channels
 Set the number of audio channels (default = 1).
 @item -an
@@ -578,7 +578,7 @@ can override the mapping using @code{-map} as usual.
 
 Example:
 @example
-ffmpeg -i file.mpg -vcodec copy -acodec ac3 -ab 384 test.mpg -acodec mp2 -ab 192 -newaudio
+ffmpeg -i file.mpg -vcodec copy -acodec ac3 -ab 384k test.mpg -acodec mp2 -ab 192k -newaudio
 @end example
 @item -alang code
 Set the ISO 639 language code (3 letters) of the current audio stream.
