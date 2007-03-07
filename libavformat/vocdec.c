@@ -22,7 +22,6 @@
 #include "voc.h"
 
 
-static const int voc_max_pkt_size = 2048;
 
 
 static int voc_probe(AVProbeData *p)
@@ -128,7 +127,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     dec->bit_rate = dec->sample_rate * dec->bits_per_sample;
 
     if (max_size <= 0)
-        max_size = voc_max_pkt_size;
+        max_size = 2048;
     size = FFMIN(voc->remaining_size, max_size);
     voc->remaining_size -= size;
     return av_get_packet(pb, pkt, size);
