@@ -270,8 +270,6 @@ typedef struct AVInputFile {
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
-    int buffer_size_max;  /* buffer size at which we consider we can stop
-                             buffering */
     int nb_streams;       /* nb streams we are aware of */
 } AVInputFile;
 
@@ -675,7 +673,6 @@ static void do_video_out(AVFormatContext *s,
     int nb_frames, i, ret;
     AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
     AVFrame picture_crop_temp, picture_pad_temp;
-    uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
 
     avcodec_get_frame_defaults(&picture_crop_temp);
@@ -832,8 +829,7 @@ static void do_video_out(AVFormatContext *s,
         ost->frame_number++;
     }
  the_end:
-    av_free(buf);
-    av_free(buf1);
+    return;
 }
 
 static double psnr(double d){
@@ -1766,11 +1762,6 @@ static int av_encode(AVFormatContext **output_files,
         if(input_files_ts_offset[ist->file_index])
             ist->next_pts= AV_NOPTS_VALUE;
         ist->is_start = 1;
-    }
-
-    /* compute buffer size max (should use a complete heuristic) */
-    for(i=0;i<nb_input_files;i++) {
-        file_table[i].buffer_size_max = 2048;
     }
 
     /* set meta data information from input file if required */
