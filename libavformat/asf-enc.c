@@ -194,7 +194,7 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-static int preroll_time = 3100;
+#define PREROLL_TIME 3100
 
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
@@ -278,7 +278,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     int bit_rate;
     int64_t duration;
 
-    duration = asf->duration + preroll_time * 10000;
+    duration = asf->duration + PREROLL_TIME * 10000;
     has_title = (s->title[0] || s->author[0] || s->copyright[0] || s->comment[0]);
 
     bit_rate = 0;
@@ -310,7 +310,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le64(pb, asf->nb_packets); /* number of packets */
     put_le64(pb, duration); /* end time stamp (in 100ns units) */
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
-    put_le64(pb, preroll_time); /* start time stamp */
+    put_le64(pb, PREROLL_TIME); /* start time stamp */
     put_le32(pb, asf->is_streamed ? 3 : 2); /* ??? */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, asf->packet_size); /* packet size */
@@ -690,7 +690,7 @@ static void put_frame(
             else if (payload_len == (frag_len1 - 1))
                 payload_len = frag_len1 - 2;  //additional byte need to put padding length
 
-            put_payload_header(s, stream, timestamp+preroll_time, m_obj_size, m_obj_offset, payload_len, flags);
+            put_payload_header(s, stream, timestamp+PREROLL_TIME, m_obj_size, m_obj_offset, payload_len, flags);
             put_buffer(&asf->pb, buf, payload_len);
 
             if (asf->multi_payloads_present)
