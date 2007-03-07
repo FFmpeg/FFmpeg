@@ -31,12 +31,12 @@
 #include "eval.h"
 
 //FIXME order them and do a bin search
-static const AVOption *find_opt(void *v, const char *name, const char *unit){
+const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags){
     AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
     const AVOption *o= c->option;
 
     for(;o && o->name; o++){
-        if(!strcmp(o->name, name) && (!unit || !strcmp(o->unit, unit)) )
+        if(!strcmp(o->name, name) && (!unit || !strcmp(o->unit, unit)) && (o->flags & mask) == flags )
             return o;
     }
     return NULL;
@@ -49,7 +49,7 @@ const AVOption *av_next_option(void *obj, const AVOption *last){
 }
 
 static const AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
-    const AVOption *o= find_opt(obj, name, NULL);
+    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
     if(!o || o->offset<=0)
         return NULL;
@@ -109,7 +109,7 @@ static const char *const_names[]={
 };
 
 const AVOption *av_set_string(void *obj, const char *name, const char *val){
-    const AVOption *o= find_opt(obj, name, NULL);
+    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
         return set_all_opt(obj, o->unit, o->default_val);
     }
@@ -133,7 +133,7 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
 
             d = ff_eval2(buf, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error);
             if(isnan(d)) {
-                const AVOption *o_named= find_opt(obj, buf, o->unit);
+                const AVOption *o_named= av_find_opt(obj, buf, o->unit, 0, 0);
                 if(o_named && o_named->type == FF_OPT_TYPE_CONST)
                     d= o_named->default_val;
                 else if(!strcmp(buf, "default")) d= o->default_val;
@@ -180,7 +180,7 @@ const AVOption *av_set_int(void *obj, const char *name, int64_t n){
  * @param buf_len allocated length in bytes of buf
  */
 const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len){
-    const AVOption *o= find_opt(obj, name, NULL);
+    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
     if(!o || o->offset<=0)
         return NULL;
@@ -206,7 +206,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
 }
 
 static int av_get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum){
-    const AVOption *o= find_opt(obj, name, NULL);
+    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
     if(!o || o->offset<=0)
         goto error;

@@ -68,6 +68,7 @@ typedef struct AVOption {
 } AVOption;
 
 
+const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
 const AVOption *av_set_string(void *obj, const char *name, const char *val);
 const AVOption *av_set_double(void *obj, const char *name, double n);
 const AVOption *av_set_q(void *obj, const char *name, AVRational n);
