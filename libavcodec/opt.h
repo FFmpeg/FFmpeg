@@ -80,5 +80,6 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
 const AVOption *av_next_option(void *obj, const AVOption *last);
 int av_opt_show(void *obj, void *av_log_obj);
 void av_opt_set_defaults(void *s);
+void av_opt_set_defaults2(void *s, int mask, int flags);
 
 #endif

@@ -343,10 +343,12 @@ int av_opt_show(void *obj, void *av_log_obj){
  *
  * @param s AVCodecContext or AVFormatContext for which the defaults will be set
  */
-void av_opt_set_defaults(void *s)
+void av_opt_set_defaults2(void *s, int mask, int flags)
 {
     const AVOption *opt = NULL;
     while ((opt = av_next_option(s, opt)) != NULL) {
+        if((opt->flags & mask) != flags)
+            continue;
         switch(opt->type) {
             case FF_OPT_TYPE_CONST:
                 /* Nothing to be done here */
@@ -377,5 +379,9 @@ void av_opt_set_defaults(void *s)
                 av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
         }
     }
+}
+
+void av_opt_set_defaults(void *s){
+    av_opt_set_defaults2(s, 0, 0);
 }
 
