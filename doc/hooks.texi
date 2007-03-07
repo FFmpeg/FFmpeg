@@ -17,8 +17,8 @@ the video to be modified or examined between the decoder and the encoder.
 Any number of hook modules can be placed inline, and they are run in the
 order that they were specified on the ffmpeg command line.
 
-A few modules are provided and are described below. They are all intended to
-be used as a base for your own modules.
+The video hook modules are provided for use as a base for your own modules,
+and are described below.
 
 Modules are loaded using the -vhook option to ffmpeg. The value of this parameter
 is a space separated list of arguments. The first is the module name, and the rest
@@ -48,7 +48,7 @@ colors than would an RGB cuboid.
 
 This module implements a text overlay for a video image. Currently it
 supports a fixed overlay or reading the text from a file. The string
-is passed through strftime so that it is easy to imprint the date and
+is passed through strftime() so that it is easy to imprint the date and
 time onto the image.
 
 This module depends on the external library imlib2, available on
@@ -59,7 +59,13 @@ You may also overlay an image (even semi-transparent) like TV stations do.
 You may move either the text or the image around your video to create
 scrolling credits, for example.
 
-Text fonts are being looked for in a FONTPATH environment variable.
+The font file used is looked for in a FONTPATH environment variable, and
+prepended to the point size as a command line option and can be specified
+with the full path to the font file, as in:
+@example
+-F /usr/X11R6/lib/X11/fonts/TTF/VeraBd.ttf/20
+@end example
+where 20 is the point size.
 
 Options:
 @multitable @columnfractions .2 .8
@@ -67,8 +73,8 @@ Options:
 @item @option{-F <fontname>}  @tab The font face and size
 @item @option{-t <text>}      @tab The text
 @item @option{-f <filename>}  @tab The filename to read text from
-@item @option{-x <expresion>} @tab X coordinate of text or image
-@item @option{-y <expresion>} @tab Y coordinate of text or image
+@item @option{-x <expresion>} @tab x coordinate of text or image
+@item @option{-y <expresion>} @tab y coordinate of text or image
 @item @option{-i <filename>}  @tab The filename to read a image from
 @end multitable
 
@@ -105,18 +111,150 @@ Usage examples:
    ffmpeg -i input.avi -vhook \
      'vhook/imlib2.dll -c red -F Vera.ttf/20 -x 150+0.5*N -y 70+0.25*N -t Hello' \
      -acodec copy -sameq output.avi
+
+   # Date and time stamp, security-camera style:
+   ffmpeg -r 29.97 -s 320x256 -f video4linux -i /dev/video0 \
+     -vhook 'vhook/imlib2.so -x 0 -y 0 -i black-260x20.png' \
+     -vhook 'vhook/imlib2.so -c white -F VeraBd.ttf/12 -x 0 -y 0 -t %A-%D-%T' \
+     output.avi
+
+     In this example the video is captured from the first video capture card as a
+     320x256 AVI, and a black 260 by 20 pixel PNG image is placed in the upper
+     left corner, with the day, date and time overlaid on it in Vera Bold 12
+     point font. A simple black PNG file 260 pixels wide and 20 pixels tall
+     was created in the GIMP for this purpose.
+
+   # Scrolling credits from a text file
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.so -c white -F VeraBd.ttf/16 -x 100 -y -1.0*N -f credits.txt' \
+     -sameq output.avi
+
+     In this example, the text is stored in a file, and is positioned 100
+     pixels from the left hand edge of the video. The text is scrolled from the
+     bottom up. Making the y factor positive will scroll from the top down.
+     Increasing the magnitude of the y factor makes the text scroll faster,
+     decreasing it makes it scroll slower. Hint: Blank lines containing only
+     a newline are treated as end-of-file. To create blank lines, use lines
+     that consist of space characters only.
+
+   # scrolling credits from a graphics file
+   ffmpeg -sameq -i input.avi \
+     -vhook 'vhook/imlib2.so -x 0 -y -1.0*N -i credits.png' output.avi
+
+     In this example, a transparent PNG file the same width as the video
+     (e.g. 320 pixels), but very long, (e.g. 3000 pixels), was created, and
+     text, graphics, brushstrokes, etc, were added to the image. The image
+     is then scrolled up, from the bottom of the frame.
+
 @end example
 
 @section ppm.c
 
 It's basically a launch point for a PPM pipe, so you can use any
 executable (or script) which consumes a PPM on stdin and produces a PPM
-on stdout (and flushes each frame).
+on stdout (and flushes each frame). The Netpbm utilities are a series of
+such programs.
+
+A list of them is here:
+
+@url{http://netpbm.sourceforge.net/doc/directory.html}
 
 Usage example:
 
 @example
 ffmpeg -i input -vhook "/path/to/ppm.so some-ppm-filter args" output
+@end example
+
+@section drawtext.c
+
+This module implements a text overlay for a video image. Currently it
+supports a fixed overlay or reading the text from a file. The string
+is passed through strftime() so that it is easy to imprint the date and
+time onto the image.
+
+Features:
+@itemize @minus
+@item TrueType, Type1 and others via the FreeType2 library
+@item Font kerning (better output)
+@item Line Wrap (put the text that doesn't fit one line on the next line)
+@item Background box (currently in development)
+@item Outline
+@end itemize
+
+Options:
+@multitable @columnfractions .2 .8
+@item @option{-c <color>}          @tab Foreground color of the text ('internet' way) <#RRGGBB> [default #FFFFFF]
+@item @option{-C <color>}          @tab Background color of the text ('internet' way) <#RRGGBB> [default #000000]
+@item @option{-f <font-filename>}  @tab font file to use
+@item @option{-t <text>}           @tab text to display
+@item @option{-T <filename>}       @tab file to read text from
+@item @option{-x <pos>}            @tab x coordinate of the start of the text
+@item @option{-y <pos>}            @tab y coordinate of the start of the text
+@end multitable
+
+Text fonts are being looked for in a FONTPATH environment variable.
+If the FONTPATH environment variable is not available, or is not checked by
+your target (i.e. Cygwin), then specify the full path to the font file as in:
+@example
+-f /usr/X11R6/lib/X11/fonts/TTF/VeraBd.ttf
+@end example
+
+Usage Example:
+@example
+   # Remember to set the path to your fonts
+   FONTPATH="/cygdrive/c/WINDOWS/Fonts/"
+   FONTPATH="$FONTPATH:/usr/share/imlib2/data/fonts/"
+   FONTPATH="$FONTPATH:/usr/X11R6/lib/X11/fonts/TTF/"
+   export FONTPATH
+
+   # Time and date display
+   ffmpeg -f video4linux2 -i /dev/video0 \
+   -vhook 'vhook/drawtext.so -f VeraBd.ttf -t %A-%D-%T' movie.mpg
+
+     This example grabs video from the first capture card and outputs it to an
+     MPEG video, and places "Weekday-dd/mm/yy-hh:mm:ss" at the top left of the
+     frame, updated every second, using the Vera Bold TrueType Font, which
+     should exist in: /usr/X11R6/lib/X11/fonts/TTF/
+@end example
+
+Check the man page for strftime() for all the various ways you can format
+the date and time.
+
+@section watermark.c
+
+Command Line options:
+@multitable @columnfractions .2 .8
+@item @option{-m [0|1]}            @tab Mode (default: 0, see below)
+@item @option{-t 000000 - FFFFFF}  @tab Threshold, six digit hex number
+@item @option{-f <filename>}       @tab Watermark image filename, must be specified!
+@end multitable
+
+MODE 0:
+ The watermark picture works like this (assuming color intensities 0..0xFF):
+ Per color do this:
+ If mask color is 0x80, no change to the original frame.
+ If mask color is < 0x80 the absolute difference is subtracted from the
+ frame. If result < 0, result = 0.
+ If mask color is > 0x80 the absolute difference is added to the
+ frame. If result > 0xFF, result = 0xFF.
+
+ You can override the 0x80 level with the -t flag. E.g. if threshold is
+ 000000 the color value of watermark is added to the destination.
+
+ This way a mask that is visible both in light and dark pictures can be made
+ (e.g. by using a picture generated by the Gimp and the bump map tool).
+
+ An example watermark file is at:
+ @url{http://engene.se/ffmpeg_watermark.gif}
+
+MODE 1:
+ Per color do this:
+ If mask color > threshold color then the watermark pixel is used.
+
+Example usage:
+@example
+   ffmpeg -i infile -vhook '/path/watermark.so -f wm.gif' -an out.mov
+   ffmpeg -i infile -vhook '/path/watermark.so -f wm.gif -m 1 -t 222222' -an out.mov
 @end example
 
 @bye
