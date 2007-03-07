@@ -731,12 +731,19 @@ static const AVOption options[]={
 
 static AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options };
 
-void avcodec_get_context_defaults(AVCodecContext *s){
+void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType codec_type){
+    int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
 
     s->av_class= &av_codec_context_class;
 
-    av_opt_set_defaults(s);
+    if(codec_type == CODEC_TYPE_AUDIO)
+        flags= AV_OPT_FLAG_AUDIO_PARAM;
+    else if(codec_type == CODEC_TYPE_VIDEO)
+        flags= AV_OPT_FLAG_VIDEO_PARAM;
+    else if(codec_type == CODEC_TYPE_SUBTITLE)
+        flags= AV_OPT_FLAG_SUBTITLE_PARAM;
+    av_opt_set_defaults2(s, flags, flags);
 
     s->rc_eq= "tex^qComp";
     s->time_base= (AVRational){0,1};
@@ -752,14 +759,22 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->reget_buffer= avcodec_default_reget_buffer;
 }
 
-AVCodecContext *avcodec_alloc_context(void){
+AVCodecContext *avcodec_alloc_context2(enum CodecType codec_type){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 
     if(avctx==NULL) return NULL;
 
-    avcodec_get_context_defaults(avctx);
+    avcodec_get_context_defaults2(avctx, codec_type);
 
     return avctx;
+}
+
+void avcodec_get_context_defaults(AVCodecContext *s){
+    avcodec_get_context_defaults2(s, CODEC_TYPE_UNKNOWN);
+}
+
+AVCodecContext *avcodec_alloc_context(void){
+    return avcodec_alloc_context2(CODEC_TYPE_UNKNOWN);
 }
 
 void avcodec_get_frame_defaults(AVFrame *pic){

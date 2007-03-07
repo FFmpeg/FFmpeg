@@ -2631,6 +2631,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
  */
 void avcodec_get_context_defaults(AVCodecContext *s);
 
+/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
+ *  we WILL change its arguments and name a few times! */
+void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType);
+
 /**
  * Allocates an AVCodecContext and sets its fields to default values.  The
  * resulting struct can be deallocated by simply calling av_free().
@@ -2639,6 +2643,10 @@ void avcodec_get_context_defaults(AVCodecContext *s);
  * @see avcodec_get_context_defaults
  */
 AVCodecContext *avcodec_alloc_context(void);
+
+/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
+ *  we WILL change its arguments and name a few times! */
+AVCodecContext *avcodec_alloc_context2(enum CodecType);
 
 /**
  * Sets the fields of the given AVFrame to default values.
