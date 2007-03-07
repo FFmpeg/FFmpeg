@@ -3507,9 +3507,14 @@ static void show_version(void)
 
 static int opt_default(const char *opt, const char *arg){
     int type;
-    const AVOption *o;
-    for(type=0; type<CODEC_TYPE_NB; type++)
-        o = av_set_string(avctx_opts[type], opt, arg);
+    const AVOption *o= NULL;
+    int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
+
+    for(type=0; type<CODEC_TYPE_NB; type++){
+        const AVOption *o2 = av_find_opt(avctx_opts[0], opt, NULL, opt_types[type], opt_types[type]);
+        if(o2)
+            o = av_set_string(avctx_opts[type], opt, arg);
+    }
     if(!o)
         o = av_set_string(avformat_opts, opt, arg);
     if(!o){
