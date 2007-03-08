@@ -90,7 +90,6 @@ typedef struct AMR_bitrates
     int startrate;
     int stoprate;
     enum Mode mode;
-
 } AMR_bitrates;
 
 /* Match desired bitrate with closest one*/
@@ -106,9 +105,9 @@ static enum Mode getBitrateMode(int bitrate)
                            {7950,9999,MR795},//9
                            {10000,11999,MR102},//10
                            {12000,64000,MR122},//12
-
                          };
     int i;
+
     for(i=0;i<8;i++)
     {
         if(rates[i].startrate<=bitrate && rates[i].stoprate>=bitrate)
@@ -154,13 +153,12 @@ typedef struct AMRContext {
     Speech_Encode_FrameState *enstate;
     sid_syncState *sidstate;
     enum TXFrameType tx_frametype;
-
-
 } AMRContext;
 
 static int amr_nb_decode_init(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     s->frameCount=0;
     s->speech_decoder_state=NULL;
     s->rx_type = (enum RXFrameType)0;
@@ -188,6 +186,7 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
 static int amr_nb_encode_init(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     s->frameCount=0;
     s->speech_decoder_state=NULL;
     s->rx_type = (enum RXFrameType)0;
@@ -224,6 +223,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 static int amr_nb_encode_close(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     Speech_Encode_Frame_exit(&s->enstate);
     sid_sync_exit (&s->sidstate);
     av_freep(&avctx->coded_frame);
@@ -233,6 +233,7 @@ static int amr_nb_encode_close(AVCodecContext * avctx)
 static int amr_nb_decode_close(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     Speech_Decode_Frame_exit(&s->speech_decoder_state);
     return 0;
 }
@@ -242,16 +243,12 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
             uint8_t * buf, int buf_size)
 {
     AMRContext *s = avctx->priv_data;
-
     uint8_t*amrData=buf;
     int offset=0;
-
     UWord8 toc, q, ft;
-
     Word16 serial[SERIAL_FRAMESIZE];   /* coded bits */
     Word16 *synth;
     UWord8 *packed_bits;
-
     static Word16 packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
     int i;
 
@@ -334,7 +331,6 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
     short serial_data[250] = {0};
-
     AMRContext *s = avctx->priv_data;
     int written;
 
@@ -368,6 +364,7 @@ typedef struct AMRContext {
 static int amr_nb_decode_init(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     s->frameCount=0;
     s->decState=Decoder_Interface_init();
     if(!s->decState)
@@ -390,6 +387,7 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
 static int amr_nb_encode_init(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     s->frameCount=0;
 
     if(avctx->sample_rate!=8000)
@@ -422,6 +420,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 static int amr_nb_decode_close(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     Decoder_Interface_exit(s->decState);
     return 0;
 }
@@ -429,6 +428,7 @@ static int amr_nb_decode_close(AVCodecContext * avctx)
 static int amr_nb_encode_close(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
+
     Encoder_Interface_exit(s->enstate);
     av_freep(&avctx->coded_frame);
     return 0;
@@ -439,7 +439,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
             uint8_t * buf, int buf_size)
 {
     AMRContext *s = (AMRContext*)avctx->priv_data;
-
     uint8_t*amrData=buf;
     static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
@@ -529,7 +528,6 @@ typedef struct AMRWB_bitrates
     int startrate;
     int stoprate;
     int mode;
-
 } AMRWB_bitrates;
 
 static int getWBBitrateMode(int bitrate)
@@ -545,7 +543,6 @@ static int getWBBitrateMode(int bitrate)
                            {18001,22000,6},//19.85
                            {22001,23000,7},//23.05
                            {23001,24000,8},//23.85
-
                          };
     int i;
 
@@ -571,6 +568,7 @@ typedef struct AMRWBContext {
 static int amr_wb_encode_init(AVCodecContext * avctx)
 {
     AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
+
     s->frameCount=0;
 
     if(avctx->sample_rate!=16000)
@@ -598,6 +596,7 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
 static int amr_wb_encode_close(AVCodecContext * avctx)
 {
     AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
+
     E_IF_exit(s->state);
     av_freep(&avctx->coded_frame);
     s->frameCount++;
@@ -618,6 +617,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
 static int amr_wb_decode_init(AVCodecContext * avctx)
 {
     AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+
     s->frameCount=0;
     s->state = D_IF_init();
 
@@ -639,7 +639,6 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
             uint8_t * buf, int buf_size)
 {
     AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
-
     uint8_t*amrData=buf;
     int mode;
     int packet_size;
@@ -666,6 +665,7 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
 static int amr_wb_decode_close(AVCodecContext * avctx)
 {
     AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+
     D_IF_exit(s->state);
     return 0;
 }
