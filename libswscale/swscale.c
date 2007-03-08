@@ -116,7 +116,8 @@ untested special converters
 			|| (x)==PIX_FMT_NV12 || (x)==PIX_FMT_NV21\
 			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P)
-#define isPacked(x)    ((x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422 ||isRGB(x) || isBGR(x))
+#define isPacked(x)    ((x)==PIX_FMT_PAL8 || (x)==PIX_FMT_YUYV422 ||\
+                        (x)==PIX_FMT_UYVY422 || isRGB(x) || isBGR(x))
 
 #define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
