@@ -438,7 +438,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
             uint8_t * buf, int buf_size)
 {
-    AMRContext *s = (AMRContext*)avctx->priv_data;
+    AMRContext *s = avctx->priv_data;
     uint8_t*amrData=buf;
     static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
@@ -466,7 +466,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 static int amr_nb_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
-    AMRContext *s = (AMRContext*)avctx->priv_data;
+    AMRContext *s = avctx->priv_data;
     int written;
 
     s->enc_bitrate=getBitrateMode(avctx->bit_rate);
@@ -567,7 +567,7 @@ typedef struct AMRWBContext {
 
 static int amr_wb_encode_init(AVCodecContext * avctx)
 {
-    AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
 
     s->frameCount=0;
 
@@ -595,7 +595,7 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
 
 static int amr_wb_encode_close(AVCodecContext * avctx)
 {
-    AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
 
     E_IF_exit(s->state);
     av_freep(&avctx->coded_frame);
@@ -606,7 +606,7 @@ static int amr_wb_encode_close(AVCodecContext * avctx)
 static int amr_wb_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
-    AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
     int size;
 
     s->mode=getWBBitrateMode(avctx->bit_rate);
@@ -616,7 +616,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
 
 static int amr_wb_decode_init(AVCodecContext * avctx)
 {
-    AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
 
     s->frameCount=0;
     s->state = D_IF_init();
@@ -638,7 +638,7 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
             uint8_t * buf, int buf_size)
 {
-    AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
     uint8_t*amrData=buf;
     int mode;
     int packet_size;
@@ -664,7 +664,7 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
 
 static int amr_wb_decode_close(AVCodecContext * avctx)
 {
-    AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+    AMRWBContext *s = avctx->priv_data;
 
     D_IF_exit(s->state);
     return 0;
