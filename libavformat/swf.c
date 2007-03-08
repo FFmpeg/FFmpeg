@@ -679,7 +679,6 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
             ast = av_new_stream(s, -1); /* -1 to avoid clash with video stream ch_id */
-            av_set_pts_info(ast, 64, 256, swf->frame_rate); /* XXX same as video stream */
             swf->audio_stream_index = ast->index;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -689,6 +688,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!sample_rate_code)
                 return AVERROR_IO;
             ast->codec->sample_rate = 11025 << (sample_rate_code-1);
+            av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             if (len > 4)
                 url_fskip(pb,len-4);
 
