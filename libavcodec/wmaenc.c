@@ -36,6 +36,9 @@ static int encode_init(AVCodecContext * avctx){
     if(avctx->channels > MAX_CHANNELS)
         return -1;
 
+    if(avctx->bit_rate < 24*1000)
+        return -1;
+
     /* extract flag infos */
     flags1 = 0;
     flags2 = 1;
