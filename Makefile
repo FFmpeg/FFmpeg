@@ -40,7 +40,7 @@ all: documentation
 install: install-man
 endif
 
-SRCS = ffmpeg.c ffserver.c cmdutils.c ffplay.c
+SRCS = $(addsuffix .c, $(PROGS-yes)) cmdutils.c
 LDFLAGS := -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
 EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
