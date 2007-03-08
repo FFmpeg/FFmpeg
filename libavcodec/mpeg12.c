@@ -369,7 +369,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             }
 
             put_header(s, GOP_START_CODE);
-            put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG2_DROP_FRAME_TIMECODE)); /* drop frame flag */
+            put_bits(&s->pb, 1, !!(s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE)); /* drop frame flag */
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = (framerate.num + framerate.den/2)/ framerate.den;
