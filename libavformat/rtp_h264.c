@@ -164,7 +164,9 @@ static int h264_handle_packet(RTPDemuxContext * s,
                               const uint8_t * buf,
                               int len)
 {
-//    h264_rtp_extra_data *data = s->dynamic_protocol_context;
+#ifdef DEBUG
+    h264_rtp_extra_data *data = s->dynamic_protocol_context;
+#endif
     uint8_t nal = buf[0];
     uint8_t type = (nal & 0x1f);
     int result= 0;

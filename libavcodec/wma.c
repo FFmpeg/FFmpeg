@@ -171,7 +171,7 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
             high_freq = high_freq * 0.5;
         }
     }
-    dprintf("flags1=0x%x flags2=0x%x\n", flags1, flags2);
+    dprintf("flags2=0x%x\n", flags2);
     dprintf("version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
            s->version, s->nb_channels, s->sample_rate, s->bit_rate,
            s->block_align);
