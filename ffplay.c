@@ -1547,7 +1547,7 @@ static int synchronize_audio(VideoState *is, short *samples,
 }
 
 /* decode one audio frame and returns its uncompressed size */
-static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_ptr)
+static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double *pts_ptr)
 {
     AVPacket *pkt = &is->audio_pkt;
     int n, len1, data_size;
@@ -1556,7 +1556,8 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (is->audio_pkt_size > 0) {
-            len1 = avcodec_decode_audio(is->audio_st->codec,
+            data_size = buf_size;
+            len1 = avcodec_decode_audio2(is->audio_st->codec,
                                         (int16_t *)audio_buf, &data_size,
                                         is->audio_pkt_data, is->audio_pkt_size);
             if (len1 < 0) {
@@ -1632,7 +1633,7 @@ void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
-           audio_size = audio_decode_frame(is, is->audio_buf, &pts);
+           audio_size = audio_decode_frame(is, is->audio_buf, sizeof(is->audio_buf), &pts);
            if (audio_size < 0) {
                 /* if error, just output silence */
                is->audio_buf_size = 1024;
