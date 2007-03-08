@@ -1068,6 +1068,9 @@ static int cook_decode_frame(AVCodecContext *avctx,
 
     *data_size = decode_subpacket(q, buf, avctx->block_align, data);
 
+    /* Discard the first two frames: no valid audio. */
+    if (avctx->frame_number < 2) *data_size = 0;
+
     return avctx->block_align;
 }
 
