@@ -86,7 +86,7 @@ static inline int16_t fix15(float a)
 static inline int calc_lowcomp1(int a, int b0, int b1)
 {
     if ((b0 + 256) == b1) {
-        a = 384 ;
+        a = 384;
     } else if (b0 > b1) {
         a = a - 64;
         if (a < 0) a=0;
@@ -98,14 +98,14 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 {
     if (bin < 7) {
         if ((b0 + 256) == b1) {
-            a = 384 ;
+            a = 384;
         } else if (b0 > b1) {
             a = a - 64;
             if (a < 0) a=0;
         }
     } else if (bin < 20) {
         if ((b0 + 256) == b1) {
-            a = 320 ;
+            a = 320;
         } else if (b0 > b1) {
             a= a - 64;
             if (a < 0) a=0;
@@ -171,21 +171,21 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 
     if (bndstrt == 0) {
         lowcomp = 0;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1]) ;
-        excite[0] = bndpsd[0] - fgain - lowcomp ;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2]) ;
-        excite[1] = bndpsd[1] - fgain - lowcomp ;
-        begin = 7 ;
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1]);
+        excite[0] = bndpsd[0] - fgain - lowcomp;
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2]);
+        excite[1] = bndpsd[1] - fgain - lowcomp;
+        begin = 7;
         for (bin = 2; bin < 7; bin++) {
             if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1]) ;
-            fastleak = bndpsd[bin] - fgain ;
-            slowleak = bndpsd[bin] - s->sgain ;
-            excite[bin] = fastleak - lowcomp ;
+                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1]);
+            fastleak = bndpsd[bin] - fgain;
+            slowleak = bndpsd[bin] - s->sgain;
+            excite[bin] = fastleak - lowcomp;
             if (!(is_lfe && bin == 6)) {
                 if (bndpsd[bin] <= bndpsd[bin+1]) {
-                    begin = bin + 1 ;
-                    break ;
+                    begin = bin + 1;
+                    break;
                 }
             }
         }
@@ -195,13 +195,13 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 
         for (bin = begin; bin < end1; bin++) {
             if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin) ;
+                lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin);
 
-            fastleak -= s->fdecay ;
+            fastleak -= s->fdecay;
             v = bndpsd[bin] - fgain;
             if (fastleak < v) fastleak = v;
 
-            slowleak -= s->sdecay ;
+            slowleak -= s->sdecay;
             v = bndpsd[bin] - s->sgain;
             if (slowleak < v) slowleak = v;
 
@@ -220,10 +220,10 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     }
 
     for (bin = begin; bin < bndend; bin++) {
-        fastleak -= s->fdecay ;
+        fastleak -= s->fdecay;
         v = bndpsd[bin] - fgain;
         if (fastleak < v) fastleak = v;
-        slowleak -= s->sdecay ;
+        slowleak -= s->sdecay;
         v = bndpsd[bin] - s->sgain;
         if (slowleak < v) slowleak = v;
 
@@ -249,44 +249,44 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 
     if (deltbae == 0 || deltbae == 1) {
         int band, seg, delta;
-        band = 0 ;
+        band = 0;
         for (seg = 0; seg < deltnseg; seg++) {
-            band += deltoffst[seg] ;
+            band += deltoffst[seg];
             if (deltba[seg] >= 4) {
                 delta = (deltba[seg] - 3) << 7;
             } else {
                 delta = (deltba[seg] - 4) << 7;
             }
             for (k = 0; k < deltlen[seg]; k++) {
-                mask[band] += delta ;
-                band++ ;
+                mask[band] += delta;
+                band++;
             }
         }
     }
 
     /* compute bit allocation */
 
-    i = start ;
-    j = masktab[start] ;
+    i = start;
+    j = masktab[start];
     do {
         v=mask[j];
-        v -= snroffset ;
-        v -= s->floor ;
+        v -= snroffset;
+        v -= s->floor;
         if (v < 0) v = 0;
-        v &= 0x1fe0 ;
-        v += s->floor ;
+        v &= 0x1fe0;
+        v += s->floor;
 
         end1=bndtab[j] + bndsz[j];
         if (end1 > end) end1=end;
 
         for (k = i; k < end1; k++) {
-            address = (psd[i] - v) >> 5 ;
+            address = (psd[i] - v) >> 5;
             if (address < 0) address=0;
             else if (address > 63) address=63;
             bap[i] = baptab[address];
             i++;
         }
-    } while (end > bndtab[j++]) ;
+    } while (end > bndtab[j++]);
 }
 
 typedef struct IComplex {
