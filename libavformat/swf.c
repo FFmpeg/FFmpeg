@@ -67,7 +67,7 @@ typedef struct {
     int sound_samples;
     int swf_frame_number;
     int video_frame_number;
-    int ms_per_frame;
+    int frame_rate;
     int tag;
 
     uint8_t audio_fifo[AUDIO_FIFO_SIZE];
@@ -631,7 +631,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int nbits, len, frame_rate, tag, v;
+    int nbits, len, tag, v;
     offset_t frame_offset = -1;
     AVStream *ast = 0;
     AVStream *vst = 0;
@@ -650,13 +650,9 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     nbits = get_byte(pb) >> 3;
     len = (4 * nbits - 3 + 7) / 8;
     url_fskip(pb, len);
-    frame_rate = get_le16(pb);
+    swf->frame_rate = get_le16(pb); /* 8.8 fixed */
     get_le16(pb); /* frame count */
 
-    /* The Flash Player converts 8.8 frame rates
-       to milliseconds internally. Do the same to get
-       a correct framerate */
-    swf->ms_per_frame = ( 1000 * 256 ) / frame_rate;
     swf->samples_per_frame = 0;
 
     for(;;) {
@@ -683,7 +679,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
             ast = av_new_stream(s, -1); /* -1 to avoid clash with video stream ch_id */
-            av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
+            av_set_pts_info(ast, 64, 256, swf->frame_rate); /* XXX same as video stream */
             swf->audio_stream_index = ast->index;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -706,13 +702,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             url_fskip(pb, len);
         }
     }
-    if (vst) {
-        av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
-        if (swf->ms_per_frame) {
-            vst->codec->time_base.den = 1000. / swf->ms_per_frame;
-            vst->codec->time_base.num = 1;
-        }
-    }
+    if (vst)
+        av_set_pts_info(vst, 64, 256, swf->frame_rate);
     return 0;
 }
 
@@ -735,7 +726,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id) {
                     frame = get_le16(pb);
                     av_get_packet(pb, pkt, len-2);
-                    pkt->pts = frame * swf->ms_per_frame;
+                    pkt->pts = frame;
                     pkt->stream_index = st->index;
                     return pkt->size;
                 }
