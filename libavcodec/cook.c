@@ -65,10 +65,9 @@
 //#define COOKDEBUG
 
 typedef struct {
-    int     size;
-    int     loccode[8];
-    int     levcode[8];
-} COOKgain;
+    int *now;
+    int *previous;
+} cook_gains;
 
 typedef struct {
     GetBitContext       gb;
@@ -102,12 +101,12 @@ typedef struct {
     int                 mlt_size;       //modulated lapped transform size
 
     /* gain buffers */
-    COOKgain            *gain_ptr1[2];
-    COOKgain            *gain_ptr2[2];
-    COOKgain            gain_1;
-    COOKgain            gain_2;
-    COOKgain            gain_3;
-    COOKgain            gain_4;
+    cook_gains          gains1;
+    cook_gains          gains2;
+    int                 gain_1[9];
+    int                 gain_2[9];
+    int                 gain_3[9];
+    int                 gain_4[9];
 
     /* VLC data */
     int                 js_vlc_bits;
@@ -339,29 +338,27 @@ static int cook_decode_close(AVCodecContext *avctx)
 }
 
 /**
- * Fill the COOKgain structure for the timedomain quantization.
+ * Fill the gain array for the timedomain quantization.
  *
  * @param q                 pointer to the COOKContext
- * @param gaininfo          pointer to the COOKgain
+ * @param gaininfo[9]       array of gain indices
  */
 
-static void decode_gain_info(GetBitContext *gb, COOKgain* gaininfo) {
-    int i;
+static void decode_gain_info(GetBitContext *gb, int *gaininfo)
+{
+    int i, n;
 
     while (get_bits1(gb)) {}
+    n = get_bits_count(gb) - 1;     //amount of elements*2 to update
 
-    gaininfo->size = get_bits_count(gb) - 1;     //amount of elements*2 to update
+    i = 0;
+    while (n--) {
+        int index = get_bits(gb, 3);
+        int gain = get_bits1(gb) ? get_bits(gb, 4) - 7 : -1;
 
-    if (get_bits_count(gb) - 1 <= 0) return;
-
-    for (i=0 ; i<gaininfo->size ; i++){
-        gaininfo->loccode[i] = get_bits(gb,3);
-        if (get_bits1(gb)) {
-            gaininfo->levcode[i] = get_bits(gb,4) - 7;  //convert to signed
-        } else {
-            gaininfo->levcode[i] = -1;
-        }
+        while (i <= index) gaininfo[i++] = gain;
     }
+    while (i <= 8) gaininfo[i++] = 0;
 }
 
 /**
@@ -784,77 +781,34 @@ static void interpolate(COOKContext *q, float* buffer,
     }
 }
 
-/**
- * timedomain requantization of the timedomain samples
- *
- * @param q                 pointer to the COOKContext
- * @param buffer            pointer to the timedomain buffer
- * @param gain_now          current gain structure
- * @param gain_previous     previous gain structure
- */
-
-static void gain_window(COOKContext *q, float* buffer, COOKgain* gain_now,
-                        COOKgain* gain_previous){
-    int i, index;
-    int gain_index[9];
-    int tmp_gain_index;
-
-    gain_index[8]=0;
-    index = gain_previous->size;
-    for (i=7 ; i>=0 ; i--) {
-        if(index && gain_previous->loccode[index-1]==i) {
-            gain_index[i] = gain_previous->levcode[index-1];
-            index--;
-        } else {
-            gain_index[i]=gain_index[i+1];
-        }
-    }
-    /* This is applied to the to be previous data buffer. */
-    for(i=0;i<8;i++){
-        interpolate(q, &buffer[q->samples_per_channel+q->gain_size_factor*i],
-                    gain_index[i], gain_index[i+1]);
-    }
-
-    tmp_gain_index = gain_index[0];
-    index = gain_now->size;
-    for (i=7 ; i>=0 ; i--) {
-        if(index && gain_now->loccode[index-1]==i) {
-            gain_index[i]= gain_now->levcode[index-1];
-            index--;
-        } else {
-            gain_index[i]=gain_index[i+1];
-        }
-    }
-
-    /* This is applied to the to be current block. */
-    for(i=0;i<8;i++){
-        interpolate(q, &buffer[i*q->gain_size_factor],
-                    tmp_gain_index+gain_index[i],
-                    tmp_gain_index+gain_index[i+1]);
-    }
-}
-
 
 /**
  * mlt overlapping and buffer management
  *
  * @param q                 pointer to the COOKContext
- * @param buffer            pointer to the timedomain buffer
- * @param gain_now          current gain structure
- * @param gain_previous     previous gain structure
+ * @param gains_ptr         current and previous gains
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
- *
  */
 
-static void gain_compensate(COOKContext *q, float* buffer, COOKgain* gain_now,
-                            COOKgain* gain_previous, float* previous_buffer) {
+static void gain_compensate(COOKContext *q, cook_gains *gains_ptr,
+                            float* previous_buffer)
+{
+    const float fc = q->pow2tab[gains_ptr->previous[0] + 63];
+    float *buffer = q->mono_mdct_output;
     int i;
-    if((gain_now->size  || gain_previous->size)) {
-        gain_window(q, buffer, gain_now, gain_previous);
-    }
 
     /* Overlap with the previous block. */
-    for(i=0 ; i<q->samples_per_channel ; i++) buffer[i]+=previous_buffer[i];
+    for(i=0 ; i<q->samples_per_channel ; i++) {
+        buffer[i] *= fc;
+        buffer[i] += previous_buffer[i];
+    }
+
+    /* Apply gain profile */
+    for (i = 0; i < 8; i++) {
+        if (gains_ptr->now[i] || gains_ptr->now[i + 1])
+            interpolate(q, &buffer[q->gain_size_factor * i],
+                        gains_ptr->now[i], gains_ptr->now[i + 1]);
+    }
 
     /* Save away the current to be previous block. */
     memcpy(previous_buffer, buffer+q->samples_per_channel,
@@ -956,7 +910,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
 
 static inline void
 decode_bytes_and_gain(COOKContext *q, uint8_t *inbuffer,
-                      COOKgain *gain_ptr[])
+                      cook_gains *gains_ptr)
 {
     int offset;
 
@@ -964,10 +918,10 @@ decode_bytes_and_gain(COOKContext *q, uint8_t *inbuffer,
                           q->bits_per_subpacket/8);
     init_get_bits(&q->gb, q->decoded_bytes_buffer + offset,
                   q->bits_per_subpacket);
-    decode_gain_info(&q->gb, gain_ptr[0]);
+    decode_gain_info(&q->gb, gains_ptr->now);
 
     /* Swap current and previous gains */
-    FFSWAP(COOKgain *, gain_ptr[0], gain_ptr[1]);
+    FFSWAP(int *, gains_ptr->now, gains_ptr->previous);
 }
 
 /**
@@ -985,14 +939,13 @@ decode_bytes_and_gain(COOKContext *q, uint8_t *inbuffer,
 
 static inline void
 mlt_compensate_output(COOKContext *q, float *decode_buffer,
-                      COOKgain *gain_ptr[], float *previous_buffer,
+                      cook_gains *gains, float *previous_buffer,
                       int16_t *out, int chan)
 {
     int j;
 
     cook_imlt(q, decode_buffer, q->mono_mdct_output, q->mlt_tmp);
-    gain_compensate(q, q->mono_mdct_output, gain_ptr[0],
-                    gain_ptr[1], previous_buffer);
+    gain_compensate(q, gains, previous_buffer);
 
     /* Clip and convert floats to 16 bits.
      */
@@ -1022,7 +975,7 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
 //    }
 //    av_log(NULL, AV_LOG_ERROR, "\n");
 
-    decode_bytes_and_gain(q, inbuffer, q->gain_ptr1);
+    decode_bytes_and_gain(q, inbuffer, &q->gains1);
 
     if (q->joint_stereo) {
         joint_decode(q, q->decode_buffer_1, q->decode_buffer_2);
@@ -1030,21 +983,20 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
         mono_decode(q, q->decode_buffer_1);
 
         if (q->nb_channels == 2) {
-            decode_bytes_and_gain(q, inbuffer + sub_packet_size/2,
-                                  q->gain_ptr2);
+            decode_bytes_and_gain(q, inbuffer + sub_packet_size/2, &q->gains2);
             mono_decode(q, q->decode_buffer_2);
         }
     }
 
-    mlt_compensate_output(q, q->decode_buffer_1, q->gain_ptr1,
+    mlt_compensate_output(q, q->decode_buffer_1, &q->gains1,
                           q->mono_previous_buffer1, outbuffer, 0);
 
     if (q->nb_channels == 2) {
         if (q->joint_stereo) {
-            mlt_compensate_output(q, q->decode_buffer_2, q->gain_ptr1,
+            mlt_compensate_output(q, q->decode_buffer_2, &q->gains1,
                                   q->mono_previous_buffer2, outbuffer, 1);
         } else {
-            mlt_compensate_output(q, q->decode_buffer_2, q->gain_ptr2,
+            mlt_compensate_output(q, q->decode_buffer_2, &q->gains2,
                                   q->mono_previous_buffer2, outbuffer, 1);
         }
     }
@@ -1225,10 +1177,10 @@ static int cook_decode_init(AVCodecContext *avctx)
     if (q->decoded_bytes_buffer == NULL)
         return -1;
 
-    q->gain_ptr1[0] = &q->gain_1;
-    q->gain_ptr1[1] = &q->gain_2;
-    q->gain_ptr2[0] = &q->gain_3;
-    q->gain_ptr2[1] = &q->gain_4;
+    q->gains1.now      = q->gain_1;
+    q->gains1.previous = q->gain_2;
+    q->gains2.now      = q->gain_3;
+    q->gains2.previous = q->gain_4;
 
     /* Initialize transform. */
     if ( init_cook_mlt(q) == 0 )
