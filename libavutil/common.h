@@ -357,7 +357,7 @@ char *av_strdup(const char *s);
 
 /**
  * Frees memory and sets the pointer to NULL.
- * @param arg pointer to the pointer which should be freed
+ * @param ptr pointer to the pointer which should be freed
  */
 void av_freep(void *ptr);
 
