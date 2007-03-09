@@ -1766,6 +1766,7 @@ static void compute_stats(HTTPContext *c)
                 switch(st->codec->codec_type) {
                 case CODEC_TYPE_AUDIO:
                     type = "audio";
+                    snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz", st->codec->channels, st->codec->sample_rate);
                     break;
                 case CODEC_TYPE_VIDEO:
                     type = "video";
