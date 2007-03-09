@@ -1281,7 +1281,7 @@ You must use the MinGW cross compilation tools available at
 
 Then configure FFmpeg with the following options:
 @example
-./configure --enable-mingw32 --cross-prefix=i386-mingw32msvc-
+./configure --target-os=mingw32 --cross-prefix=i386-mingw32msvc-
 @end example
 (you can change the cross-prefix according to the prefix chosen for the
 MinGW tools).
@@ -1335,12 +1335,12 @@ and add some special flags to your configure invocation.
 
 For a static build run
 @example
-./configure --enable-mingw32 --enable-memalign-hack --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+./configure --target-os=mingw32 --enable-memalign-hack --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
 and for a build with shared libraries
 @example
-./configure --enable-mingw32 --enable-memalign-hack --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+./configure --target-os=mingw32 --enable-memalign-hack --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
 @section BeOS
