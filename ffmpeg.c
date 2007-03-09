@@ -1347,7 +1347,6 @@ static int av_encode(AVFormatContext **output_files,
     AVOutputStream *ost, **ost_table = NULL;
     AVInputStream *ist, **ist_table = NULL;
     AVInputFile *file_table;
-    AVFormatContext *stream_no_data;
     int key;
 
     file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
@@ -1809,7 +1808,6 @@ static int av_encode(AVFormatContext **output_files,
     }
     term_init();
 
-    stream_no_data = 0;
     key = -1;
 
     for(; received_sigterm == 0;) {
@@ -1879,11 +1877,6 @@ static int av_encode(AVFormatContext **output_files,
             if (opt_shortest) break; else continue; //
         }
 
-        if (!pkt.size) {
-            stream_no_data = is;
-        } else {
-            stream_no_data = 0;
-        }
         if (do_pkt_dump) {
             av_pkt_dump(stdout, &pkt, do_hex_dump);
         }
