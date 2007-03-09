@@ -62,7 +62,11 @@ typedef struct AC3EncodeContext {
     int mant1_cnt, mant2_cnt, mant4_cnt;
 } AC3EncodeContext;
 
-#include "ac3tab.h"
+static int16_t costab[64];
+static int16_t sintab[64];
+static int16_t fft_rev[512];
+static int16_t xcos1[128];
+static int16_t xsin1[128];
 
 #define MDCT_NBITS 9
 #define N         (1 << MDCT_NBITS)
@@ -81,159 +85,6 @@ static inline int16_t fix15(float a)
     else if (v > 32767)
         v = 32767;
     return v;
-}
-
-static inline int calc_lowcomp1(int a, int b0, int b1, int c)
-{
-    if ((b0 + 256) == b1) {
-        a = c;
-    } else if (b0 > b1) {
-        a = FFMAX(a - 64, 0);
-    }
-    return a;
-}
-
-static inline int calc_lowcomp(int a, int b0, int b1, int bin)
-{
-    if (bin < 7) {
-        return calc_lowcomp1(a, b0, b1, 384);
-    } else if (bin < 20) {
-        return calc_lowcomp1(a, b0, b1, 320);
-    } else {
-        return FFMAX(a - 128, 0);
-    }
-}
-
-/* AC3 bit allocation. The algorithm is the one described in the AC3
-   spec. */
-void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
-                                   int8_t *exp, int start, int end,
-                                   int snroffset, int fgain, int is_lfe,
-                                   int deltbae,int deltnseg,
-                                   uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba)
-{
-    int bin,i,j,k,end1,v,bndstrt,bndend,lowcomp,begin;
-    int fastleak,slowleak,address,tmp;
-    int16_t psd[256]; /* scaled exponents */
-    int16_t bndpsd[50]; /* interpolated exponents */
-    int16_t excite[50]; /* excitation */
-    int16_t mask[50];   /* masking value */
-
-    /* exponent mapping to PSD */
-    for(bin=start;bin<end;bin++) {
-        psd[bin]=(3072 - (exp[bin] << 7));
-    }
-
-    /* PSD integration */
-    j=start;
-    k=masktab[start];
-    do {
-        v=psd[j];
-        j++;
-        end1 = FFMIN(bndtab[k+1], end);
-        for(i=j;i<end1;i++) {
-            /* logadd */
-            int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
-            v = FFMAX(v, psd[j]) + latab[adr];
-            j++;
-        }
-        bndpsd[k]=v;
-        k++;
-    } while (end > bndtab[k]);
-
-    /* excitation function */
-    bndstrt = masktab[start];
-    bndend = masktab[end-1] + 1;
-
-    if (bndstrt == 0) {
-        lowcomp = 0;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1], 384);
-        excite[0] = bndpsd[0] - fgain - lowcomp;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2], 384);
-        excite[1] = bndpsd[1] - fgain - lowcomp;
-        begin = 7;
-        for (bin = 2; bin < 7; bin++) {
-            if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1], 384);
-            fastleak = bndpsd[bin] - fgain;
-            slowleak = bndpsd[bin] - s->sgain;
-            excite[bin] = fastleak - lowcomp;
-            if (!(is_lfe && bin == 6)) {
-                if (bndpsd[bin] <= bndpsd[bin+1]) {
-                    begin = bin + 1;
-                    break;
-                }
-            }
-        }
-
-        end1=bndend;
-        if (end1 > 22) end1=22;
-
-        for (bin = begin; bin < end1; bin++) {
-            if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin);
-
-            fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
-            slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
-            excite[bin] = FFMAX(fastleak - lowcomp, slowleak);
-        }
-        begin = 22;
-    } else {
-        /* coupling channel */
-        begin = bndstrt;
-
-        fastleak = (s->cplfleak << 8) + 768;
-        slowleak = (s->cplsleak << 8) + 768;
-    }
-
-    for (bin = begin; bin < bndend; bin++) {
-        fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
-        slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
-        excite[bin] = FFMAX(fastleak, slowleak);
-    }
-
-    /* compute masking curve */
-
-    for (bin = bndstrt; bin < bndend; bin++) {
-        tmp = s->dbknee - bndpsd[bin];
-        if (tmp > 0) {
-            excite[bin] += tmp >> 2;
-        }
-        mask[bin] = FFMAX(hth[bin >> s->halfratecod][s->fscod], excite[bin]);
-    }
-
-    /* delta bit allocation */
-
-    if (deltbae == 0 || deltbae == 1) {
-        int band, seg, delta;
-        band = 0;
-        for (seg = 0; seg < deltnseg; seg++) {
-            band += deltoffst[seg];
-            if (deltba[seg] >= 4) {
-                delta = (deltba[seg] - 3) << 7;
-            } else {
-                delta = (deltba[seg] - 4) << 7;
-            }
-            for (k = 0; k < deltlen[seg]; k++) {
-                mask[band] += delta;
-                band++;
-            }
-        }
-    }
-
-    /* compute bit allocation */
-
-    i = start;
-    j = masktab[start];
-    do {
-        v = (FFMAX(mask[j] - snroffset - s->floor, 0) & 0x1FE0) + s->floor;
-        end1 = FFMIN(bndtab[j] + bndsz[j], end);
-        for (k = i; k < end1; k++) {
-            address = av_clip((psd[i] - v) >> 5, 0, 63);
-            bap[i] = baptab[address];
-            i++;
-        }
-    } while (end > bndtab[j++]);
 }
 
 typedef struct IComplex {
@@ -599,7 +450,7 @@ static int bit_alloc(AC3EncodeContext *s,
                                           0, s->nb_coefs[ch],
                                           (((csnroffst-15) << 4) +
                                            fsnroffst) << 2,
-                                          fgaintab[s->fgaincod[ch]],
+                                          ff_fgaintab[s->fgaincod[ch]],
                                           ch == s->lfe_channel,
                                           2, 0, NULL, NULL, NULL);
             frame_bits += compute_mantissa_size(s, bap[i][ch],
@@ -639,11 +490,11 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* compute real values */
     s->bit_alloc.fscod = s->fscod;
     s->bit_alloc.halfratecod = s->halfratecod;
-    s->bit_alloc.sdecay = sdecaytab[s->sdecaycod] >> s->halfratecod;
-    s->bit_alloc.fdecay = fdecaytab[s->fdecaycod] >> s->halfratecod;
-    s->bit_alloc.sgain = sgaintab[s->sgaincod];
-    s->bit_alloc.dbknee = dbkneetab[s->dbkneecod];
-    s->bit_alloc.floor = floortab[s->floorcod];
+    s->bit_alloc.sdecay = ff_sdecaytab[s->sdecaycod] >> s->halfratecod;
+    s->bit_alloc.fdecay = ff_fdecaytab[s->fdecaycod] >> s->halfratecod;
+    s->bit_alloc.sgain = ff_sgaintab[s->sgaincod];
+    s->bit_alloc.dbknee = ff_dbkneetab[s->dbkneecod];
+    s->bit_alloc.floor = ff_floortab[s->floorcod];
 
     /* header size */
     frame_bits += 65;
@@ -741,22 +592,6 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
-void ac3_common_init(void)
-{
-    int i, j, k, l, v;
-    /* compute bndtab and masktab from bandsz */
-    k = 0;
-    l = 0;
-    for(i=0;i<50;i++) {
-        bndtab[i] = l;
-        v = bndsz[i];
-        for(j=0;j<v;j++) masktab[k++]=i;
-        l += v;
-    }
-    bndtab[50] = l;
-}
-
-
 static int AC3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
@@ -788,7 +623,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* frequency */
     for(i=0;i<3;i++) {
         for(j=0;j<3;j++)
-            if ((ac3_freqs[j] >> i) == freq)
+            if ((ff_ac3_freqs[j] >> i) == freq)
                 goto found;
     }
     return -1;
@@ -802,7 +637,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* bitrate & frame size */
     bitrate /= 1000;
     for(i=0;i<19;i++) {
-        if ((ac3_bitratetab[i] >> s->halfratecod) == bitrate)
+        if ((ff_ac3_bitratetab[i] >> s->halfratecod) == bitrate)
             break;
     }
     if (i == 19)
@@ -1316,9 +1151,9 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             /* apply the MDCT window */
             for(j=0;j<N/2;j++) {
                 input_samples[j] = MUL16(input_samples[j],
-                                         ac3_window[j]) >> 15;
+                                         ff_ac3_window[j]) >> 15;
                 input_samples[N-j-1] = MUL16(input_samples[N-j-1],
-                                             ac3_window[j]) >> 15;
+                                             ff_ac3_window[j]) >> 15;
             }
 
             /* Normalize the samples to use the maximum available
