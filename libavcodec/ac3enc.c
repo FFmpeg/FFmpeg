@@ -83,13 +83,12 @@ static inline int16_t fix15(float a)
     return v;
 }
 
-static inline int calc_lowcomp1(int a, int b0, int b1)
+static inline int calc_lowcomp1(int a, int b0, int b1, int c)
 {
     if ((b0 + 256) == b1) {
-        a = 384;
+        a = c;
     } else if (b0 > b1) {
-        a = a - 64;
-        if (a < 0) a=0;
+        a = FFMAX(a - 64, 0);
     }
     return a;
 }
@@ -97,24 +96,12 @@ static inline int calc_lowcomp1(int a, int b0, int b1)
 static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 {
     if (bin < 7) {
-        if ((b0 + 256) == b1) {
-            a = 384;
-        } else if (b0 > b1) {
-            a = a - 64;
-            if (a < 0) a=0;
-        }
+        return calc_lowcomp1(a, b0, b1, 384);
     } else if (bin < 20) {
-        if ((b0 + 256) == b1) {
-            a = 320;
-        } else if (b0 > b1) {
-            a= a - 64;
-            if (a < 0) a=0;
-        }
+        return calc_lowcomp1(a, b0, b1, 320);
     } else {
-        a = a - 128;
-        if (a < 0) a=0;
+        return FFMAX(a - 128, 0);
     }
-    return a;
 }
 
 /* AC3 bit allocation. The algorithm is the one described in the AC3
@@ -125,7 +112,7 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    int deltbae,int deltnseg,
                                    uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba)
 {
-    int bin,i,j,k,end1,v,v1,bndstrt,bndend,lowcomp,begin;
+    int bin,i,j,k,end1,v,bndstrt,bndend,lowcomp,begin;
     int fastleak,slowleak,address,tmp;
     int16_t psd[256]; /* scaled exponents */
     int16_t bndpsd[50]; /* interpolated exponents */
@@ -143,22 +130,11 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     do {
         v=psd[j];
         j++;
-        end1=bndtab[k+1];
-        if (end1 > end) end1=end;
+        end1 = FFMIN(bndtab[k+1], end);
         for(i=j;i<end1;i++) {
-            int c,adr;
             /* logadd */
-            v1=psd[j];
-            c=v-v1;
-            if (c >= 0) {
-                adr=c >> 1;
-                if (adr > 255) adr=255;
-                v=v + latab[adr];
-            } else {
-                adr=(-c) >> 1;
-                if (adr > 255) adr=255;
-                v=v1 + latab[adr];
-            }
+            int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
+            v = FFMAX(v, psd[j]) + latab[adr];
             j++;
         }
         bndpsd[k]=v;
@@ -171,14 +147,14 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 
     if (bndstrt == 0) {
         lowcomp = 0;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1]);
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1], 384);
         excite[0] = bndpsd[0] - fgain - lowcomp;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2]);
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2], 384);
         excite[1] = bndpsd[1] - fgain - lowcomp;
         begin = 7;
         for (bin = 2; bin < 7; bin++) {
             if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1]);
+                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1], 384);
             fastleak = bndpsd[bin] - fgain;
             slowleak = bndpsd[bin] - s->sgain;
             excite[bin] = fastleak - lowcomp;
@@ -197,18 +173,9 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
             if (!(is_lfe && bin == 6))
                 lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin);
 
-            fastleak -= s->fdecay;
-            v = bndpsd[bin] - fgain;
-            if (fastleak < v) fastleak = v;
-
-            slowleak -= s->sdecay;
-            v = bndpsd[bin] - s->sgain;
-            if (slowleak < v) slowleak = v;
-
-            v=fastleak - lowcomp;
-            if (slowleak > v) v=slowleak;
-
-            excite[bin] = v;
+            fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
+            slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
+            excite[bin] = FFMAX(fastleak - lowcomp, slowleak);
         }
         begin = 22;
     } else {
@@ -220,29 +187,19 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     }
 
     for (bin = begin; bin < bndend; bin++) {
-        fastleak -= s->fdecay;
-        v = bndpsd[bin] - fgain;
-        if (fastleak < v) fastleak = v;
-        slowleak -= s->sdecay;
-        v = bndpsd[bin] - s->sgain;
-        if (slowleak < v) slowleak = v;
-
-        v=fastleak;
-        if (slowleak > v) v = slowleak;
-        excite[bin] = v;
+        fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
+        slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
+        excite[bin] = FFMAX(fastleak, slowleak);
     }
 
     /* compute masking curve */
 
     for (bin = bndstrt; bin < bndend; bin++) {
-        v1 = excite[bin];
         tmp = s->dbknee - bndpsd[bin];
         if (tmp > 0) {
-            v1 += tmp >> 2;
+            excite[bin] += tmp >> 2;
         }
-        v=hth[bin >> s->halfratecod][s->fscod];
-        if (v1 > v) v=v1;
-        mask[bin] = v;
+        mask[bin] = FFMAX(hth[bin >> s->halfratecod][s->fscod], excite[bin]);
     }
 
     /* delta bit allocation */
@@ -269,20 +226,10 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     i = start;
     j = masktab[start];
     do {
-        v=mask[j];
-        v -= snroffset;
-        v -= s->floor;
-        if (v < 0) v = 0;
-        v &= 0x1fe0;
-        v += s->floor;
-
-        end1=bndtab[j] + bndsz[j];
-        if (end1 > end) end1=end;
-
+        v = (FFMAX(mask[j] - snroffset - s->floor, 0) & 0x1FE0) + s->floor;
+        end1 = FFMIN(bndtab[j] + bndsz[j], end);
         for (k = i; k < end1; k++) {
-            address = (psd[i] - v) >> 5;
-            if (address < 0) address=0;
-            else if (address > 63) address=63;
+            address = av_clip((psd[i] - v) >> 5, 0, 63);
             bap[i] = baptab[address];
             i++;
         }
