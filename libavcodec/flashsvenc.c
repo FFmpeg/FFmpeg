@@ -68,7 +68,6 @@ typedef struct FlashSVContext {
     AVCodecContext *avctx;
     uint8_t *previous_frame;
     AVFrame frame;
-    int first_frame;
     int image_width, image_height;
     int block_width, block_height;
     uint8_t* tmpblock;
@@ -112,8 +111,6 @@ static int flashsv_encode_init(AVCodecContext *avctx)
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
         return -1;
     }
-
-    s->first_frame = 1;
 
     // Needed if zlib unused or init aborted before deflateInit
     memset(&(s->zstream), 0, sizeof(z_stream));
@@ -241,14 +238,13 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
     *p = *pict;
 
-    if (s->first_frame) {
+    if (avctx->frame_number == 0) {
         s->previous_frame = av_mallocz(p->linesize[0]*s->image_height);
         if (!s->previous_frame) {
             av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
             return -1;
         }
         I_frame = 1;
-        s->first_frame = 0;
     }
 
 #if 0
