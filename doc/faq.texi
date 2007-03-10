@@ -230,6 +230,19 @@ Just create an "input.avs" text file with this single line ...
 
 For ANY other help on Avisynth, please visit @url{http://www.avisynth.org/}.
 
+@section My bugreport/mail to ffmpeg-dev/user has not received any replies
+Likely reasons
+@table
+@item We are busy and havent had time yet to read or investigate the issue
+@item You didnt follow bugreports.html
+@item You didnt use latest svn
+@item You reprort a segfault without gdb output
+@item You describe a problem but not how to reproduce it
+@item its unclear if you use ffmpeg as command line tool or use libav* from another application
+@item You speak about a video having problems on playback but not what you use to play it
+@item We have no faint clue what your talking about besides that it is related to ffmpeg
+@end table
+
 @chapter Development
 
 @section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
