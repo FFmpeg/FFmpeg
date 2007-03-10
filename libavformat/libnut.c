@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file libnut.c
+ * NUT demuxing and muxing via libnut.
+ * @author Oded Shimon <ods15@ods15.dyndns.org>
+ */
+
 #include "avformat.h"
 #include "riff.h"
 #include <libnut.h>
