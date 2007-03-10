@@ -102,6 +102,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_LJPEG, MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG, MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - decoder */
+    { CODEC_ID_MJPEG, MKTAG('j', 'p', 'e', 'g') },
     { CODEC_ID_JPEGLS, MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - encoder */
     { CODEC_ID_HUFFYUV, MKTAG('H', 'F', 'Y', 'U') },
     { CODEC_ID_FFVHUFF, MKTAG('F', 'F', 'V', 'H') },
