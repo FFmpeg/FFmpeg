@@ -503,6 +503,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             sscanf(str_track, "%d", &s->track);
             break;
         default:
+            if(size > 1000000){
+                av_log(s, AV_LOG_ERROR, "well something went wrong during header parsing, "
+                                        "ill ignore it and try to continue anyway\n");
+                avi->movi_list = url_ftell(pb) - 4;
+                avi->movi_end  = url_fsize(pb);
+                goto end_of_header;
+            }
             /* skip tag */
             size += (size & 1);
             url_fskip(pb, size);
