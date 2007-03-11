@@ -2594,7 +2594,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 if (matroska->tracks[track]->flags & MATROSKA_TRACK_REORDER)
                     matroska_queue_packet_reordered(matroska, pkt, is_bframe);
                 else
-                matroska_queue_packet(matroska, pkt);
+                    matroska_queue_packet(matroska, pkt);
             }
             data += lace_size[n];
         }
