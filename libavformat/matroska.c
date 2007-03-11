@@ -607,7 +607,6 @@ ebml_read_sint (MatroskaDemuxContext *matroska,
         negative = 1;
         *num &= ~0x80;
     }
-    *num = 0;
     while (n++ < size)
         *num = (*num << 8) | get_byte(pb);
 
