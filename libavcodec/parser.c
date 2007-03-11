@@ -604,43 +604,26 @@ static const int aac_channels[8] = {
 static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
                     int *bit_rate, int *samples)
 {
-    unsigned int fscod, frmsizecod, acmod, bsid, lfeon, halfratecod;
+    int err;
+    unsigned int fscod, acmod, bsid, lfeon;
     unsigned int strmtyp, substreamid, frmsiz, fscod2, numblkscod;
     GetBitContext bits;
+    AC3HeaderInfo hdr;
 
-    init_get_bits(&bits, buf, AC3_HEADER_SIZE * 8);
+    err = ff_ac3_parse_header(buf, &hdr);
 
-    if(get_bits(&bits, 16) != 0x0b77)
+    if(err < 0 && err != -2)
         return 0;
 
-    bsid = show_bits_long(&bits, 29) & 0x1f;
+    bsid = hdr.bsid;
     if(bsid <= 10) {             /* Normal AC-3 */
-        skip_bits(&bits, 16);       /* crc */
-        fscod = get_bits(&bits, 2);
-        frmsizecod = get_bits(&bits, 6);
-
-        if(fscod == 3 && frmsizecod > 37)
-            return 0;
-
-        skip_bits(&bits, 5);        /* bsid */
-        skip_bits(&bits, 3);        /* bsmod */
-        acmod = get_bits(&bits, 3);
-        if(acmod & 1 && acmod != 1)
-            skip_bits(&bits, 2);    /* cmixlev */
-        if(acmod & 4)
-            skip_bits(&bits, 2);    /* surmixlev */
-        if(acmod & 2)
-            skip_bits(&bits, 2);    /* dsurmod */
-        lfeon = get_bits1(&bits);
-
-        halfratecod = FFMAX(bsid, 8) - 8;
-        *sample_rate = ff_ac3_freqs[fscod] >> halfratecod;
-        *bit_rate = (ff_ac3_bitratetab[frmsizecod] * 1000) >> halfratecod;
-        *channels = ff_ac3_channels[acmod] + lfeon;
-        *samples = 6 * 256;
-
-        return ff_ac3_frame_sizes[frmsizecod][fscod] * 2;
+        *sample_rate = hdr.sample_rate;
+        *bit_rate = hdr.bit_rate;
+        *channels = hdr.channels;
+        *samples = AC3_FRAME_SIZE;
+        return hdr.frame_size;
     } else if (bsid > 10 && bsid <= 16) { /* Enhanced AC-3 */
+        init_get_bits(&bits, &buf[2], (AC3_HEADER_SIZE-2) * 8);
         strmtyp = get_bits(&bits, 2);
         substreamid = get_bits(&bits, 3);
 

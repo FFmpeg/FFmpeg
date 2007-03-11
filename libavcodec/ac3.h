@@ -45,6 +45,50 @@ typedef struct AC3BitAllocParameters {
     int cplfleak, cplsleak;
 } AC3BitAllocParameters;
 
+/**
+ * @struct AC3HeaderInfo
+ * Coded AC-3 header values up to the lfeon element, plus derived values.
+ */
+typedef struct {
+    /** @defgroup coded Coded elements
+     * @{
+     */
+    uint16_t sync_word;
+    uint16_t crc1;
+    uint8_t fscod;
+    uint8_t frmsizecod;
+    uint8_t bsid;
+    uint8_t bsmod;
+    uint8_t acmod;
+    uint8_t cmixlev;
+    uint8_t surmixlev;
+    uint8_t dsurmod;
+    uint8_t lfeon;
+    /** @} */
+
+    /** @defgroup derived Derived values
+     * @{
+     */
+    uint8_t halfratecod;
+    uint16_t sample_rate;
+    uint32_t bit_rate;
+    uint8_t channels;
+    uint16_t frame_size;
+    /** @} */
+} AC3HeaderInfo;
+
+/**
+ * Parses AC-3 frame header.
+ * Parses the header up to the lfeon element, which is the first 52 or 54 bits
+ * depending on the audio coding mode.
+ * @param buf[in] Array containing the first 7 bytes of the frame.
+ * @param hdr[out] Pointer to struct where header info is written.
+ * @return Returns 0 on success, -1 if there is a sync word mismatch,
+ * -2 if the bsid (version) element is invalid, -3 if the fscod (sample rate)
+ * element is invalid, or -4 if the frmsizecod (bit rate) element is invalid.
+ */
+int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr);
+
 extern uint16_t ff_ac3_frame_sizes[38][3];
 extern const uint8_t ff_ac3_channels[8];
 extern const uint16_t ff_ac3_freqs[3];
