@@ -74,6 +74,7 @@ typedef struct FlashSVContext {
     uint8_t* encbuffer;
     int block_size;
     z_stream zstream;
+    int last_key_frame;
 } FlashSVContext;
 
 static int copy_region_enc(uint8_t *sptr, uint8_t *dptr,
@@ -124,6 +125,8 @@ static int flashsv_encode_init(AVCodecContext *avctx)
         return -1;
     }
 */
+
+    s->last_key_frame=0;
 
     s->image_width = avctx->width;
     s->image_height = avctx->height;
@@ -238,6 +241,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
     *p = *pict;
 
+    /* First frame needs to be a keyframe */
     if (avctx->frame_number == 0) {
         s->previous_frame = av_mallocz(p->linesize[0]*s->image_height);
         if (!s->previous_frame) {
@@ -245,6 +249,13 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
             return -1;
         }
         I_frame = 1;
+    }
+
+    /* Check the placement of keyframes */
+    if (avctx->gop_size > 0) {
+        if (avctx->frame_number >= s->last_key_frame + avctx->gop_size) {
+            I_frame = 1;
+        }
     }
 
 #if 0
@@ -297,6 +308,8 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
     if (I_frame) {
         p->pict_type = FF_I_TYPE;
         p->key_frame = 1;
+        s->last_key_frame = avctx->frame_number;
+        av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %d\n",avctx->frame_number);
     } else {
         p->pict_type = FF_P_TYPE;
         p->key_frame = 0;
