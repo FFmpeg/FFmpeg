@@ -29,7 +29,7 @@
  */
 
 #include "avformat.h"
-/* For codec_get_bmp_id and codec_get_wav_id. */
+/* For codec_get_id(). */
 #include "riff.h"
 #include "intfloat_readwrite.h"
 
@@ -2226,7 +2226,7 @@ matroska_read_header (AVFormatContext    *s,
                 p = (unsigned char *)track->codec_priv + 16;
                 ((MatroskaVideoTrack *)track)->fourcc = (p[3] << 24) |
                                  (p[2] << 16) | (p[1] << 8) | p[0];
-                codec_id = codec_get_bmp_id(((MatroskaVideoTrack *)track)->fourcc);
+                codec_id = codec_get_id(codec_bmp_tags, ((MatroskaVideoTrack *)track)->fourcc);
 
             }
 
@@ -2242,7 +2242,7 @@ matroska_read_header (AVFormatContext    *s,
                 /* Offset of wFormatTag. Stored in LE. */
                 p = (unsigned char *)track->codec_priv;
                 tag = (p[1] << 8) | p[0];
-                codec_id = codec_get_wav_id(tag);
+                codec_id = codec_get_id(codec_wav_tags, tag);
 
             }
 
