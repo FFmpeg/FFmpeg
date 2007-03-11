@@ -90,15 +90,9 @@ typedef struct {
     int                 random_state;
 
     /* transform data */
-    FFTContext          fft_ctx;
-    DECLARE_ALIGNED_16(FFTSample, mlt_tmp[1024]);  /* temporary storage for imlt */
+    MDCTContext         mdct_ctx;
+    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[1024]);  /* temporary storage for imlt */
     float*              mlt_window;
-    float*              mlt_precos;
-    float*              mlt_presin;
-    float*              mlt_postcos;
-    int                 fft_size;
-    int                 fft_order;
-    int                 mlt_size;       //modulated lapped transform size
 
     /* gain buffers */
     cook_gains          gains1;
@@ -225,34 +219,25 @@ static int init_cook_vlc_tables(COOKContext *q) {
 static int init_cook_mlt(COOKContext *q) {
     int j;
     float alpha;
+    int mlt_size = q->samples_per_channel;
 
-    /* Allocate the buffers, could be replaced with a static [512]
-       array if needed. */
-    q->mlt_size = q->samples_per_channel;
-    q->mlt_window = av_malloc(sizeof(float)*q->mlt_size);
-    q->mlt_precos = av_malloc(sizeof(float)*q->mlt_size/2);
-    q->mlt_presin = av_malloc(sizeof(float)*q->mlt_size/2);
-    q->mlt_postcos = av_malloc(sizeof(float)*q->mlt_size/2);
+    if ((q->mlt_window = av_malloc(sizeof(float)*mlt_size)) == 0)
+      return -1;
 
     /* Initialize the MLT window: simple sine window. */
-    alpha = M_PI / (2.0 * (float)q->mlt_size);
-    for(j=0 ; j<q->mlt_size ; j++) {
-        q->mlt_window[j] = sin((j + 512.0/(float)q->mlt_size) * alpha);
+    alpha = M_PI / (2.0 * (float)mlt_size);
+    for(j=0 ; j<mlt_size ; j++)
+        q->mlt_window[j] = sin((j + 0.5) * alpha) * sqrt(2.0 / q->samples_per_channel);
+
+    /* Initialize the MDCT. */
+    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1)) {
+      av_free(q->mlt_window);
+      return -1;
     }
+    av_log(NULL,AV_LOG_DEBUG,"MDCT initialized, order = %d.\n",
+           av_log2(mlt_size)+1);
 
-    /* pre/post twiddle factors */
-    for (j=0 ; j<q->mlt_size/2 ; j++){
-        q->mlt_precos[j] = cos( ((j+0.25)*M_PI)/q->mlt_size);
-        q->mlt_presin[j] = sin( ((j+0.25)*M_PI)/q->mlt_size);
-        q->mlt_postcos[j] = (float)sqrt(2.0/(float)q->mlt_size)*cos( ((float)j*M_PI) /q->mlt_size); //sqrt(2/MLT_size) = scalefactor
-    }
-
-    /* Initialize the FFT. */
-    ff_fft_init(&q->fft_ctx, av_log2(q->mlt_size)-1, 0);
-    av_log(NULL,AV_LOG_DEBUG,"FFT initialized, order = %d.\n",
-           av_log2(q->samples_per_channel)-1);
-
-    return (int)(q->mlt_window && q->mlt_precos && q->mlt_presin && q->mlt_postcos);
+    return 0;
 }
 
 /*************** init functions end ***********/
@@ -313,13 +298,10 @@ static int cook_decode_close(AVCodecContext *avctx)
 
     /* Free allocated memory buffers. */
     av_free(q->mlt_window);
-    av_free(q->mlt_precos);
-    av_free(q->mlt_presin);
-    av_free(q->mlt_postcos);
     av_free(q->decoded_bytes_buffer);
 
     /* Free the transform. */
-    ff_fft_end(&q->fft_ctx);
+    ff_mdct_end(&q->mdct_ctx);
 
     /* Free the VLC tables. */
     for (i=0 ; i<13 ; i++) {
@@ -714,39 +696,17 @@ static void mono_decode(COOKContext *q, float* mlt_buffer) {
  * @param mlt_tmp           pointer to temporary storage space
  */
 
-static void cook_imlt(COOKContext *q, float* inbuffer, float* outbuffer,
-                      float* mlt_tmp){
+static void cook_imlt(COOKContext *q, float* inbuffer, float* outbuffer)
+{
     int i;
 
-    /* prerotation */
-    for(i=0 ; i<q->mlt_size ; i+=2){
-        outbuffer[i] = (q->mlt_presin[i/2] * inbuffer[q->mlt_size-1-i]) +
-                       (q->mlt_precos[i/2] * inbuffer[i]);
-        outbuffer[i+1] = (q->mlt_precos[i/2] * inbuffer[q->mlt_size-1-i]) -
-                         (q->mlt_presin[i/2] * inbuffer[i]);
-    }
+    q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, outbuffer, inbuffer, q->mdct_tmp);
 
-    /* FFT */
-    ff_fft_permute(&q->fft_ctx, (FFTComplex *) outbuffer);
-    ff_fft_calc (&q->fft_ctx, (FFTComplex *) outbuffer);
+    for(i = 0; i < q->samples_per_channel; i++){
+        float tmp = outbuffer[i];
 
-    /* postrotation */
-    for(i=0 ; i<q->mlt_size ; i+=2){
-        mlt_tmp[i] =               (q->mlt_postcos[(q->mlt_size-1-i)/2] * outbuffer[i+1]) +
-                                   (q->mlt_postcos[i/2] * outbuffer[i]);
-        mlt_tmp[q->mlt_size-1-i] = (q->mlt_postcos[(q->mlt_size-1-i)/2] * outbuffer[i]) -
-                                   (q->mlt_postcos[i/2] * outbuffer[i+1]);
-    }
-
-    /* window and reorder */
-    for(i=0 ; i<q->mlt_size/2 ; i++){
-        outbuffer[i] = mlt_tmp[q->mlt_size/2-1-i] * q->mlt_window[i];
-        outbuffer[q->mlt_size-1-i]= mlt_tmp[q->mlt_size/2-1-i] *
-                                    q->mlt_window[q->mlt_size-1-i];
-        outbuffer[q->mlt_size+i]= mlt_tmp[q->mlt_size/2+i] *
-                                  q->mlt_window[q->mlt_size-1-i];
-        outbuffer[2*q->mlt_size-1-i]= -(mlt_tmp[q->mlt_size/2+i] *
-                                      q->mlt_window[i]);
+        outbuffer[i] = q->mlt_window[i] * outbuffer[q->samples_per_channel + i];
+        outbuffer[q->samples_per_channel + i] = q->mlt_window[q->samples_per_channel - 1 - i] * -tmp;
     }
 }
 
@@ -944,7 +904,7 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
 {
     int j;
 
-    cook_imlt(q, decode_buffer, q->mono_mdct_output, q->mlt_tmp);
+    cook_imlt(q, decode_buffer, q->mono_mdct_output);
     gain_compensate(q, gains, previous_buffer);
 
     /* Clip and convert floats to 16 bits.
@@ -1045,7 +1005,6 @@ static void dump_cook_context(COOKContext *q)
     PRINT("samples_per_frame",q->samples_per_frame);
     PRINT("subbands",q->subbands);
     PRINT("random_state",q->random_state);
-    PRINT("mlt_size",q->mlt_size);
     PRINT("js_subband_start",q->js_subband_start);
     PRINT("log2_numvector_size",q->log2_numvector_size);
     PRINT("numvector_size",q->numvector_size);
@@ -1145,7 +1104,6 @@ static int cook_decode_init(AVCodecContext *avctx)
     }
 
     /* Initialize variable relations */
-    q->mlt_size = q->samples_per_channel;
     q->numvector_size = (1 << q->log2_numvector_size);
 
     /* Generate tables */
@@ -1183,7 +1141,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->gains2.previous = q->gain_4;
 
     /* Initialize transform. */
-    if ( init_cook_mlt(q) == 0 )
+    if ( init_cook_mlt(q) != 0 )
         return -1;
 
     /* Try to catch some obviously faulty streams, othervise it might be exploitable */
