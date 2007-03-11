@@ -24,6 +24,20 @@
  * tables taken directly from AC3 spec.
  */
 
+/**
+ * Possible frame sizes.
+ * Generated at runtime to match ATSC A/52 Table 5.18 Frame Size Code Table.
+ */
+uint16_t ff_ac3_frame_sizes[38][3];
+
+/**
+ * Maps audio coding mode (acmod) to number of full-bandwidth channels.
+ * from ATSC A/52 Table 5.8 Audio Coding Mode
+ */
+const uint8_t ff_ac3_channels[8] = {
+    2, 1, 2, 3, 3, 4, 4, 5
+};
+
 /* possible frequencies */
 const uint16_t ff_ac3_freqs[3] = { 48000, 44100, 32000 };
 

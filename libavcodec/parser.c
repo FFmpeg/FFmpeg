@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "mpegaudio.h"
+#include "ac3.h"
 #include "parser.h"
 
 AVCodecParser *av_first_parser = NULL;
@@ -581,60 +582,6 @@ typedef struct AC3ParseContext {
 #define AAC_HEADER_SIZE 7
 
 #ifdef CONFIG_AC3_PARSER
-static const int ac3_sample_rates[4] = {
-    48000, 44100, 32000, 0
-};
-
-static const int ac3_frame_sizes[64][3] = {
-    { 64,   69,   96   },
-    { 64,   70,   96   },
-    { 80,   87,   120  },
-    { 80,   88,   120  },
-    { 96,   104,  144  },
-    { 96,   105,  144  },
-    { 112,  121,  168  },
-    { 112,  122,  168  },
-    { 128,  139,  192  },
-    { 128,  140,  192  },
-    { 160,  174,  240  },
-    { 160,  175,  240  },
-    { 192,  208,  288  },
-    { 192,  209,  288  },
-    { 224,  243,  336  },
-    { 224,  244,  336  },
-    { 256,  278,  384  },
-    { 256,  279,  384  },
-    { 320,  348,  480  },
-    { 320,  349,  480  },
-    { 384,  417,  576  },
-    { 384,  418,  576  },
-    { 448,  487,  672  },
-    { 448,  488,  672  },
-    { 512,  557,  768  },
-    { 512,  558,  768  },
-    { 640,  696,  960  },
-    { 640,  697,  960  },
-    { 768,  835,  1152 },
-    { 768,  836,  1152 },
-    { 896,  975,  1344 },
-    { 896,  976,  1344 },
-    { 1024, 1114, 1536 },
-    { 1024, 1115, 1536 },
-    { 1152, 1253, 1728 },
-    { 1152, 1254, 1728 },
-    { 1280, 1393, 1920 },
-    { 1280, 1394, 1920 },
-};
-
-static const int ac3_bitrates[64] = {
-    32, 32, 40, 40, 48, 48, 56, 56, 64, 64, 80, 80, 96, 96, 112, 112,
-    128, 128, 160, 160, 192, 192, 224, 224, 256, 256, 320, 320, 384,
-    384, 448, 448, 512, 512, 576, 576, 640, 640,
-};
-
-static const uint8_t ac3_channels[8] = {
-    2, 1, 2, 3, 3, 4, 4, 5
-};
 
 static const uint8_t eac3_blocks[4] = {
     1, 2, 3, 6
@@ -672,7 +619,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
         fscod = get_bits(&bits, 2);
         frmsizecod = get_bits(&bits, 6);
 
-        if(fscod == 3)
+        if(fscod == 3 && frmsizecod > 37)
             return 0;
 
         skip_bits(&bits, 5);        /* bsid */
@@ -687,12 +634,12 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
         lfeon = get_bits1(&bits);
 
         halfratecod = FFMAX(bsid, 8) - 8;
-        *sample_rate = ac3_sample_rates[fscod] >> halfratecod;
-        *bit_rate = (ac3_bitrates[frmsizecod] * 1000) >> halfratecod;
-        *channels = ac3_channels[acmod] + lfeon;
+        *sample_rate = ff_ac3_freqs[fscod] >> halfratecod;
+        *bit_rate = (ff_ac3_bitratetab[frmsizecod] * 1000) >> halfratecod;
+        *channels = ff_ac3_channels[acmod] + lfeon;
         *samples = 6 * 256;
 
-        return ac3_frame_sizes[frmsizecod][fscod] * 2;
+        return ff_ac3_frame_sizes[frmsizecod][fscod] * 2;
     } else if (bsid > 10 && bsid <= 16) { /* Enhanced AC-3 */
         strmtyp = get_bits(&bits, 2);
         substreamid = get_bits(&bits, 3);
@@ -709,11 +656,11 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
             if(fscod2 == 3)
                 return 0;
 
-            *sample_rate = ac3_sample_rates[fscod2] / 2;
+            *sample_rate = ff_ac3_freqs[fscod2] / 2;
         } else {
             numblkscod = get_bits(&bits, 2);
 
-            *sample_rate = ac3_sample_rates[fscod];
+            *sample_rate = ff_ac3_freqs[fscod];
         }
 
         acmod = get_bits(&bits, 3);
@@ -721,7 +668,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
 
         *samples = eac3_blocks[numblkscod] * 256;
         *bit_rate = frmsiz * (*sample_rate) * 16 / (*samples);
-        *channels = ac3_channels[acmod] + lfeon;
+        *channels = ff_ac3_channels[acmod] + lfeon;
 
         return frmsiz * 2;
     }
@@ -780,6 +727,7 @@ static int ac3_parse_init(AVCodecParserContext *s1)
     s->inbuf_ptr = s->inbuf;
     s->header_size = AC3_HEADER_SIZE;
     s->sync = ac3_sync;
+    ac3_common_init();
     return 0;
 }
 #endif

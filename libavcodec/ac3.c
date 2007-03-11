@@ -181,6 +181,11 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     } while (end > bndtab[j++]);
 }
 
+/**
+ * Initializes some tables.
+ * note: This function must remain thread safe because it is called by the
+ *       AVParser init code.
+ */
 void ac3_common_init(void)
 {
     int i, j, k, l, v;
@@ -194,4 +199,12 @@ void ac3_common_init(void)
         l += v;
     }
     bndtab[50] = l;
+
+    /* generate ff_ac3_frame_sizes table */
+    for(i=0; i<38; i++) {
+        int br = ff_ac3_bitratetab[i >> 1];
+        ff_ac3_frame_sizes[i][0] = (  2*br      );
+        ff_ac3_frame_sizes[i][1] = (320*br / 147) + (i & 1);
+        ff_ac3_frame_sizes[i][2] = (  3*br      );
+    }
 }
