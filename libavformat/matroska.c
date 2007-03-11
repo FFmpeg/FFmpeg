@@ -2512,7 +2512,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
             }
             if (cluster_time != (uint64_t)-1 && n == 0) {
                 if (cluster_time + block_time >= 0)
-                    timecode = (cluster_time + block_time) * matroska->time_scale;
+                    timecode = cluster_time + block_time;
             }
             /* FIXME: duration */
 
