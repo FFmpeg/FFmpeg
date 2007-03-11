@@ -178,6 +178,7 @@ typedef enum {
   MATROSKA_TRACK_DEFAULT = (1<<1),
   MATROSKA_TRACK_LACING  = (1<<2),
   MATROSKA_TRACK_REAL_V  = (1<<4),
+  MATROSKA_TRACK_REORDER = (1<<8),
   MATROSKA_TRACK_SHIFT   = (1<<16)
 } MatroskaTrackFlags;
 
@@ -336,6 +337,10 @@ typedef struct MatroskaDemuxContext {
     /* The packet queue. */
     AVPacket **packets;
     int num_packets;
+    /* Second packet queue used to reorder pts of some video track. */
+    AVPacket **packets_reorder;
+    int num_packets_reorder;
+    uint64_t reorder_max_pts;
 
     /* have we already parse metadata/cues/clusters? */
     int metadata_parsed,
@@ -1019,6 +1024,43 @@ matroska_queue_packet (MatroskaDemuxContext *matroska,
     matroska->packets[matroska->num_packets] = pkt;
     matroska->num_packets++;
 }
+
+/*
+ * Put a packet into our internal reordering queue. Will be moved to the
+ * main packet queue when enough packets are available to reorder pts.
+ */
+
+static void
+matroska_queue_packet_reordered (MatroskaDemuxContext *matroska,
+                                 AVPacket             *pkt,
+                                 int                   is_bframe)
+{
+    if (matroska->num_packets_reorder && !is_bframe
+        && pkt->pts > matroska->reorder_max_pts) {
+        /* reorder pts */
+        int i, j, k = 1;
+        for (j=matroska->num_packets_reorder-1; j && k; j--) {
+            k = 0;
+            for (i=0; i<j; i++) {
+                if (matroska->packets_reorder[i]->pts > matroska->packets_reorder[i+1]->pts) {
+                    FFSWAP(uint64_t, matroska->packets_reorder[i]->pts, matroska->packets_reorder[i+1]->pts);
+                    k = 1;
+                }
+            }
+        }
+        /* then really queue the packets */
+        for (i=0; i<matroska->num_packets_reorder; i++)
+            matroska_queue_packet (matroska, matroska->packets_reorder[i]);
+        matroska->num_packets_reorder = 0;
+    }
+    matroska->packets_reorder =
+        av_realloc(matroska->packets_reorder,
+                   (matroska->num_packets_reorder + 1) * sizeof(AVPacket *));
+    matroska->packets_reorder[matroska->num_packets_reorder++] = pkt;
+    if (pkt->pts > matroska->reorder_max_pts)
+        matroska->reorder_max_pts = pkt->pts;
+}
+
 
 /*
  * Autodetecting...
@@ -2245,6 +2287,14 @@ matroska_read_header (AVFormatContext    *s,
 
             }
 
+            else if (codec_id == CODEC_ID_MPEG1VIDEO ||
+                     codec_id == CODEC_ID_MPEG2VIDEO ||
+                     codec_id == CODEC_ID_MPEG4      ||
+                     codec_id == CODEC_ID_MSMPEG4V3  ||
+                     codec_id == CODEC_ID_H264) {
+                track->flags |= MATROSKA_TRACK_REORDER;
+            }
+
             else if (codec_id == CODEC_ID_AAC && !track->codec_priv_size) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *) track;
                 int profile = matroska_aac_profile(track->codec_id);
@@ -2541,6 +2591,9 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 pkt->pts = timecode;
                 pkt->pos = pos;
 
+                if (matroska->tracks[track]->flags & MATROSKA_TRACK_REORDER)
+                    matroska_queue_packet_reordered(matroska, pkt, is_bframe);
+                else
                 matroska_queue_packet(matroska, pkt);
             }
             data += lace_size[n];
@@ -2774,6 +2827,13 @@ matroska_read_close (AVFormatContext *s)
             av_free(matroska->packets[n]);
         }
         av_free(matroska->packets);
+    }
+    if (matroska->packets_reorder) {
+        for (n = 0; n < matroska->num_packets_reorder; n++) {
+            av_free_packet(matroska->packets_reorder[n]);
+            av_free(matroska->packets_reorder[n]);
+        }
+        av_free(matroska->packets_reorder);
     }
 
     for (n = 0; n < matroska->num_tracks; n++) {
