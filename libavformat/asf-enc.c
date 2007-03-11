@@ -311,7 +311,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le64(pb, duration); /* end time stamp (in 100ns units) */
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
     put_le64(pb, PREROLL_TIME); /* start time stamp */
-    put_le32(pb, asf->is_streamed ? 3 : 2); /* ??? */
+    put_le32(pb, (asf->is_streamed || url_is_streamed(pb)) ? 3 : 2); /* ??? */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, bit_rate); /* Nominal data rate in bps */
@@ -498,7 +498,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_index_count = 0;
     asf->maximum_packet = 0;
 
-    if (asf_write_header1(s, 0, 50) < 0) {
+    if (asf_write_header1(s, 0, 0) < 0) {
         //av_free(asf);
         return -1;
     }
@@ -796,7 +796,7 @@ static int asf_write_trailer(AVFormatContext *s)
     }
     put_flush_packet(&s->pb);
 
-    if (asf->is_streamed) {
+    if (asf->is_streamed || url_is_streamed(&s->pb)) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */
     } else {
         /* rewrite an updated header */
