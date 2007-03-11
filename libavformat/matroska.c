@@ -2377,7 +2377,8 @@ rv_offset(uint8_t *data, int slice, int slices)
 static int
 matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                      int64_t pos, uint64_t cluster_time,
-                     int is_keyframe, int *ptrack, AVPacket **ppkt)
+                     int is_keyframe, int is_bframe,
+                     int *ptrack, AVPacket **ppkt)
 {
     int res = 0;
     int track;
@@ -2558,6 +2559,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
     int res = 0;
     uint32_t id;
     AVPacket *pkt = NULL;
+    int is_bframe = 0;
     int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
     uint64_t duration = AV_NOPTS_VALUE;
     int track = -1;
@@ -2592,14 +2594,19 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 break;
             }
 
-            case MATROSKA_ID_BLOCKREFERENCE:
+            case MATROSKA_ID_BLOCKREFERENCE: {
+                int64_t num;
                 /* We've found a reference, so not even the first frame in
                  * the lace is a key frame. */
                 is_keyframe = 0;
                 if (last_num_packets != matroska->num_packets)
                     matroska->packets[last_num_packets]->flags = 0;
-                res = ebml_read_skip(matroska);
+                if ((res = ebml_read_sint(matroska, &id, &num)) < 0)
+                    break;
+                if (num > 0)
+                    is_bframe = 1;
                 break;
+            }
 
             default:
                 av_log(matroska->ctx, AV_LOG_INFO,
@@ -2622,7 +2629,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
     if (size > 0)
         res = matroska_parse_block(matroska, data, size, pos, cluster_time,
-                                   is_keyframe, &track, &pkt);
+                                   is_keyframe, is_bframe, &track, &pkt);
 
     if (pkt)
     {
@@ -2679,7 +2686,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 res = ebml_read_binary(matroska, &id, &data, &size);
                 if (res == 0)
                     res = matroska_parse_block(matroska, data, size, pos,
-                                               cluster_time, -1, NULL, NULL);
+                                               cluster_time, -1,0, NULL, NULL);
                 break;
 
             default:
