@@ -2698,9 +2698,8 @@ matroska_read_packet (AVFormatContext *s,
     int res = 0;
     uint32_t id;
 
-    /* Do we still have a packet queued? */
-    if (matroska_deliver_packet(matroska, pkt) == 0)
-        return 0;
+    /* Read stream until we have a packet queued. */
+    while (matroska_deliver_packet(matroska, pkt)) {
 
     /* Have we already reached the end? */
     if (matroska->done)
@@ -2708,8 +2707,7 @@ matroska_read_packet (AVFormatContext *s,
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
-            break;
+            return AVERROR_IO;
         } else if (matroska->level_up) {
             matroska->level_up--;
             break;
@@ -2737,8 +2735,9 @@ matroska_read_packet (AVFormatContext *s,
 
     if (res == -1)
         matroska->done = 1;
+    }
 
-    return matroska_deliver_packet(matroska, pkt);
+    return 0;
 }
 
 static int
