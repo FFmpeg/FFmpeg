@@ -2375,24 +2375,18 @@ rv_offset(uint8_t *data, int slice, int slices)
 }
 
 static int
-matroska_parse_block(MatroskaDemuxContext *matroska, uint64_t cluster_time,
+matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
+                     int64_t pos, uint64_t cluster_time,
                      int is_keyframe, int *ptrack, AVPacket **ppkt)
 {
-    int res;
-    uint32_t id;
+    int res = 0;
     int track;
     AVPacket *pkt;
-    uint8_t *data, *origdata;
-    int size;
+    uint8_t *origdata = data;
     int16_t block_time;
     uint32_t *lace_size = NULL;
     int n, flags, laces = 0;
     uint64_t num;
-    int64_t pos= url_ftell(&matroska->ctx->pb);
-
-    if ((res = ebml_read_binary(matroska, &id, &data, &size)) < 0)
-        return res;
-    origdata = data;
 
     /* first byte(s): tracknum */
     if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
@@ -2567,6 +2561,9 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
     int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
     uint64_t duration = AV_NOPTS_VALUE;
     int track = -1;
+    uint8_t *data;
+    int size = 0;
+    int64_t pos = 0;
 
     av_log(matroska->ctx, AV_LOG_DEBUG, "parsing blockgroup...\n");
 
@@ -2584,8 +2581,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
              * of the harder things, so this code is a bit complicated.
              * See http://www.matroska.org/ for documentation. */
             case MATROSKA_ID_BLOCK: {
-                res = matroska_parse_block(matroska, cluster_time,
-                                           is_keyframe, &track, &pkt);
+                pos = url_ftell(&matroska->ctx->pb);
+                res = ebml_read_binary(matroska, &id, &data, &size);
                 break;
             }
 
@@ -2620,6 +2617,13 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
         }
     }
 
+    if (res)
+        return res;
+
+    if (size > 0)
+        res = matroska_parse_block(matroska, data, size, pos, cluster_time,
+                                   is_keyframe, &track, &pkt);
+
     if (pkt)
     {
         if (duration != AV_NOPTS_VALUE)
@@ -2637,6 +2641,9 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
     int res = 0;
     uint32_t id;
     uint64_t cluster_time = 0;
+    uint8_t *data;
+    int64_t pos;
+    int size;
 
     av_log(matroska->ctx, AV_LOG_DEBUG,
            "parsing cluster at %"PRId64"\n", url_ftell(&matroska->ctx->pb));
@@ -2668,7 +2675,11 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 break;
 
             case MATROSKA_ID_SIMPLEBLOCK:
-                matroska_parse_block(matroska, cluster_time, -1, NULL, NULL);
+                pos = url_ftell(&matroska->ctx->pb);
+                res = ebml_read_binary(matroska, &id, &data, &size);
+                if (res == 0)
+                    res = matroska_parse_block(matroska, data, size, pos,
+                                               cluster_time, -1, NULL, NULL);
                 break;
 
             default:
