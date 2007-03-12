@@ -15,8 +15,8 @@ typedef struct AVSHA1 {
 
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
-#define blk0(i) (block[i] = be2me_32(block[i]))
-#define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
+#define blk0(i) (block[i])
+#define blk(i) (block[i])
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
@@ -31,7 +31,10 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     unsigned int a, b, c, d, e, i;
     uint32_t block[80];
 
-    memcpy(block, buffer, 64);
+    for(i=0; i<16; i++)
+        block[i]= be2me_32(((uint32_t*)buffer)[i]);
+    for(;i<80; i++)
+        block[i]= rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1);
 
     /* Copy context->state[] to working vars */
     a = state[0];
@@ -40,11 +43,10 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     d = state[3];
     e = state[4];
 
-    for(i=0; i<15; i+=5){
+    for(i=0; i<20; i+=5){
         R0(a,b,c,d,e,0+i); R0(e,a,b,c,d,1+i); R0(d,e,a,b,c,2+i); R0(c,d,e,a,b,3+i); R0(b,c,d,e,a,4+i);
     }
-    R0(a,b,c,d,e,15); R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
-    for(i=20; i<40; i+=5){
+    for(; i<40; i+=5){
         R2(a,b,c,d,e,0+i); R2(e,a,b,c,d,1+i); R2(d,e,a,b,c,2+i); R2(c,d,e,a,b,3+i); R2(b,c,d,e,a,4+i);
     }
     for(; i<60; i+=5){
