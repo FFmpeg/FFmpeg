@@ -29,7 +29,10 @@ typedef struct AVSHA1 {
 
 static void transform(uint32_t state[5], uint8_t buffer[64]){
     unsigned int a, b, c, d, e, i;
-    uint32_t* block= buffer;
+    uint32_t block[16];
+
+    memcpy(block, buffer, 64);
+
     /* Copy context->state[] to working vars */
     a = state[0];
     b = state[1];
