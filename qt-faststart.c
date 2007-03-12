@@ -8,7 +8,7 @@
  * is in front of the data, thus facilitating network streaming.
  *
  * Compile this program using:
- *  cc qt-faststart.c -o qt-faststart
+ *  make qt-faststart
  * Invoke the program with:
  *  qt-faststart <infile.mov> <outfile.mov>
  *
