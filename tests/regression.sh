@@ -114,7 +114,7 @@ fi
 # create the data directory if it does not exist
 mkdir -p $datadir
 
-FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple -ab 64k"
+FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
 
 do_ffmpeg()
 {
