@@ -73,8 +73,8 @@ void av_sha1_init(AVSHA1* context){
 void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
     unsigned int i, j;
 
-    j = (context->count >> 3) & 63;
-    context->count += len << 3;
+    j = context->count & 63;
+    context->count += len;
     if ((j + len) > 63) {
         memcpy(&context->buffer[j], data, (i = 64-j));
         transform(context->state, context->buffer);
@@ -88,10 +88,10 @@ void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
 
 void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
     int i;
-    uint64_t finalcount= be2me_64(context->count);
+    uint64_t finalcount= be2me_64(context->count<<3);
 
     av_sha1_update(context, "\200", 1);
-    while ((context->count & 504) != 448) {
+    while ((context->count & 63) != 56) {
         av_sha1_update(context, "\0", 1);
     }
     av_sha1_update(context, &finalcount, 8);  /* Should cause a transform() */
