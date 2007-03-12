@@ -242,6 +242,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->buf_end = s->buffer;
     s->line_count = 0;
     s->off = 0;
+    s->filesize = -1;
     if (post) {
         sleep(1);
         return 0;
