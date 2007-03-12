@@ -1679,6 +1679,8 @@ int av_find_stream_info(AVFormatContext *ic)
     int duration_count[MAX_STREAMS]={0};
     double (*duration_error)[MAX_STD_TIMEBASES];
     offset_t old_offset = url_ftell(&ic->pb);
+    int64_t codec_info_duration[MAX_STREAMS]={0};
+    int codec_info_nb_frames[MAX_STREAMS]={0};
 
     duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
     if (!duration_error) return AVERROR_NOMEM;
@@ -1777,10 +1779,10 @@ int av_find_stream_info(AVFormatContext *ic)
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
-        if(st->codec_info_nb_frames>1) //FIXME move codec_info_nb_frames and codec_info_duration from AVStream into this func
-            st->codec_info_duration += pkt->duration;
+        if(codec_info_nb_frames[st->index]>1)
+            codec_info_duration[st->index] += pkt->duration;
         if (pkt->duration != 0)
-            st->codec_info_nb_frames++;
+            codec_info_nb_frames[st->index]++;
 
         {
             int index= pkt->stream_index;
@@ -1801,9 +1803,6 @@ int av_find_stream_info(AVFormatContext *ic)
                     duration_error[index][i] += error*error;
                 }
                 duration_count[index]++;
-
-                if(st->codec_info_nb_frames == 0 && 0)
-                    st->codec_info_duration += duration;
             }
             if(last == AV_NOPTS_VALUE || duration_count[index]<=1)
                 last_dts[pkt->stream_index]= pkt->dts;
@@ -1839,7 +1838,7 @@ int av_find_stream_info(AVFormatContext *ic)
              (st->codec->codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
             try_decode_frame(st, pkt->data, pkt->size);
 
-        if (av_rescale_q(st->codec_info_duration, st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
+        if (av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
             break;
         }
         count++;
