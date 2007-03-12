@@ -16,7 +16,7 @@ typedef struct AVSHA1 {
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
 #define blk0(i) (block[i] = be2me_32(block[i]))
-#define blk(i) (block[i&15] = rol(block[(i+13)&15]^block[(i+8)&15]^block[(i+2)&15]^block[i&15],1))
+#define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
@@ -29,7 +29,7 @@ typedef struct AVSHA1 {
 
 static void transform(uint32_t state[5], uint8_t buffer[64]){
     unsigned int a, b, c, d, e, i;
-    uint32_t block[16];
+    uint32_t block[80];
 
     memcpy(block, buffer, 64);
 
