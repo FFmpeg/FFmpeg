@@ -2105,10 +2105,10 @@ if enabled pp; then
 fi
 
 if enabled swscaler; then
-  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "libavutil = $lavu_version" swscale
+  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" -lswscale "libavutil = $lavu_version" ffmpeg
   pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "libavutil = $lavu_version"
 else
-  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version" swscale
+  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version" ffmpeg
   pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
   apply libswscale.pc sed s/^Libs:.*$/Libs:/
   apply libswscale-uninstalled.pc sed s/^Libs:.*$/Libs:/
