@@ -95,9 +95,8 @@ void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
         av_sha1_update(context, "\0", 1);
     }
     av_sha1_update(context, &finalcount, 8);  /* Should cause a transform() */
-    for (i = 0; i < 20; i++) {
-        digest[i] = context->state[i>>2] >> ((3-(i & 3)) * 8) ;
-    }
+    for(i=0; i<5; i++)
+        ((uint32_t*)digest)[i]= be2me_32(context->state[i]);
 }
 
 // use the following to test
