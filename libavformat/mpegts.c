@@ -401,7 +401,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
-    av_hex_dump(stdout, (uint8_t *)section, section_len);
+    av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -545,7 +545,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PAT:\n");
-    av_hex_dump(stdout, (uint8_t *)section, section_len);
+    av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -594,7 +594,7 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PAT:\n");
-    av_hex_dump(stdout, (uint8_t *)section, section_len);
+    av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -655,7 +655,7 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "SDT:\n");
-    av_hex_dump(stdout, (uint8_t *)section, section_len);
+    av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
 
     p_end = section + section_len - 4;
@@ -806,7 +806,7 @@ static void mpegts_push_data(void *opaque,
                 /* we got all the PES or section header. We can now
                    decide */
 #if 0
-                av_hex_dump(pes->header, pes->data_index);
+                av_hex_dump_log(pes->stream, AV_LOG_DEBUG, pes->header, pes->data_index);
 #endif
                 if (pes->header[0] == 0x00 && pes->header[1] == 0x00 &&
                     pes->header[2] == 0x01) {

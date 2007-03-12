@@ -444,20 +444,50 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type, enum CodecType type);
 
 /**
- * Print  nice hexa dump of a buffer
- * @param f stream for output
+ * Send a nice hexadecimal dump of a buffer to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
  * @param buf buffer
  * @param size buffer size
+ *
+ * @see av_hex_dump_log, av_pkt_dump, av_pkt_dump_log
  */
 void av_hex_dump(FILE *f, uint8_t *buf, int size);
 
 /**
- * Print on 'f' a nice dump of a packet
- * @param f stream for output
+ * Send a nice hexadecimal dump of a buffer to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param buf buffer
+ * @param size buffer size
+ *
+ * @see av_hex_dump, av_pkt_dump, av_pkt_dump_log
+ */
+void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
+
+/**
+ * Send a nice dump of a packet to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
  * @param pkt packet to dump
  * @param dump_payload true if the payload must be displayed too
  */
 void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
+
+/**
+ * Send a nice dump of a packet to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param pkt packet to dump
+ * @param dump_payload true if the payload must be displayed too
+ */
+void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload);
 
 void av_register_all(void);
 

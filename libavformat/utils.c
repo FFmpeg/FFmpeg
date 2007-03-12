@@ -2702,54 +2702,78 @@ int av_get_frame_filename(char *buf, int buf_size,
     return -1;
 }
 
-void av_hex_dump(FILE *f, uint8_t *buf, int size)
+static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int size)
 {
     int len, i, j, c;
+#define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
 
     for(i=0;i<size;i+=16) {
         len = size - i;
         if (len > 16)
             len = 16;
-        fprintf(f, "%08x ", i);
+        PRINT("%08x ", i);
         for(j=0;j<16;j++) {
             if (j < len)
-                fprintf(f, " %02x", buf[i+j]);
+                PRINT(" %02x", buf[i+j]);
             else
-                fprintf(f, "   ");
+                PRINT("   ");
         }
-        fprintf(f, " ");
+        PRINT(" ");
         for(j=0;j<len;j++) {
             c = buf[i+j];
             if (c < ' ' || c > '~')
                 c = '.';
-            fprintf(f, "%c", c);
+            PRINT("%c", c);
         }
-        fprintf(f, "\n");
+        PRINT("\n");
     }
+#undef PRINT
+}
+
+void av_hex_dump(FILE *f, uint8_t *buf, int size)
+{
+    hex_dump_internal(NULL, f, 0, buf, size);
+}
+
+void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size)
+{
+    hex_dump_internal(avcl, NULL, level, buf, size);
 }
 
  //FIXME needs to know the time_base
-void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
+static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int dump_payload)
 {
-    fprintf(f, "stream #%d:\n", pkt->stream_index);
-    fprintf(f, "  keyframe=%d\n", ((pkt->flags & PKT_FLAG_KEY) != 0));
-    fprintf(f, "  duration=%0.3f\n", (double)pkt->duration / AV_TIME_BASE);
+#define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
+    PRINT("stream #%d:\n", pkt->stream_index);
+    PRINT("  keyframe=%d\n", ((pkt->flags & PKT_FLAG_KEY) != 0));
+    PRINT("  duration=%0.3f\n", (double)pkt->duration / AV_TIME_BASE);
     /* DTS is _always_ valid after av_read_frame() */
-    fprintf(f, "  dts=");
+    PRINT("  dts=");
     if (pkt->dts == AV_NOPTS_VALUE)
-        fprintf(f, "N/A");
+        PRINT("N/A");
     else
-        fprintf(f, "%0.3f", (double)pkt->dts / AV_TIME_BASE);
+        PRINT("%0.3f", (double)pkt->dts / AV_TIME_BASE);
     /* PTS may be not known if B frames are present */
-    fprintf(f, "  pts=");
+    PRINT("  pts=");
     if (pkt->pts == AV_NOPTS_VALUE)
-        fprintf(f, "N/A");
+        PRINT("N/A");
     else
-        fprintf(f, "%0.3f", (double)pkt->pts / AV_TIME_BASE);
-    fprintf(f, "\n");
-    fprintf(f, "  size=%d\n", pkt->size);
+        PRINT("%0.3f", (double)pkt->pts / AV_TIME_BASE);
+    PRINT("\n");
+    PRINT("  size=%d\n", pkt->size);
+#undef PRINT
     if (dump_payload)
         av_hex_dump(f, pkt->data, pkt->size);
+}
+
+void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
+{
+    pkt_dump_internal(NULL, f, 0, pkt, dump_payload);
+}
+
+void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
+{
+    pkt_dump_internal(avcl, NULL, level, pkt, dump_payload);
 }
 
 void url_split(char *proto, int proto_size,

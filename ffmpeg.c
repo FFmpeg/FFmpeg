@@ -1878,7 +1878,7 @@ static int av_encode(AVFormatContext **output_files,
         }
 
         if (do_pkt_dump) {
-            av_pkt_dump(stdout, &pkt, do_hex_dump);
+            av_pkt_dump_log(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump);
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
