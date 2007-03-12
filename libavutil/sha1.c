@@ -122,7 +122,7 @@ void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
 }
 
 // use the following to test
-// gcc -DTEST -DHAVE_AV_CONFIG_H -I.. sha1.c -O3 -W -Wall -o sha1 && time ./sha1
+// gcc -DTEST -DHAVE_AV_CONFIG_H -I.. sha1.c -O2 -W -Wall -o sha1 && time ./sha1
 #ifdef TEST
 #include <stdio.h>
 #undef printf
