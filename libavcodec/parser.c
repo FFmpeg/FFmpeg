@@ -451,7 +451,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     /* no sync found : move by one byte (inefficient, but simple!) */
                     memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
                     s->inbuf_ptr--;
-                    dprintf("skip %x\n", header);
+                    dprintf(avctx, "skip %x\n", header);
                     /* reset free format frame size to give a chance
                        to get a new bitrate */
                     s->free_format_frame_size = 0;
@@ -515,7 +515,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                             s->free_format_frame_size -= padding * 4;
                         else
                             s->free_format_frame_size -= padding;
-                        dprintf("free frame size=%d padding=%d\n",
+                        dprintf(avctx, "free frame size=%d padding=%d\n",
                                 s->free_format_frame_size, padding);
                         decode_header(s, header1);
                         goto next_data;

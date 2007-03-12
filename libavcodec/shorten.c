@@ -293,7 +293,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->bitstream_size= buf_size;
 
         if(buf_size < s->max_framesize){
-            //dprintf("wanna more data ... %d\n", buf_size);
+            //dprintf(avctx, "wanna more data ... %d\n", buf_size);
             return input_buf_size;
         }
     }

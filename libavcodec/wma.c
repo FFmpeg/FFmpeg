@@ -171,13 +171,13 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
             high_freq = high_freq * 0.5;
         }
     }
-    dprintf("flags2=0x%x\n", flags2);
-    dprintf("version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
+    dprintf(s->avctx, "flags2=0x%x\n", flags2);
+    dprintf(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
            s->version, s->nb_channels, s->sample_rate, s->bit_rate,
            s->block_align);
-    dprintf("bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
+    dprintf(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
            bps, bps1, high_freq, s->byte_offset_bits);
-    dprintf("use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
+    dprintf(s->avctx, "use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
            s->use_noise_coding, s->use_exp_vlc, s->nb_block_sizes);
 
     /* compute the scale factor band sizes for each MDCT block size */

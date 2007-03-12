@@ -187,7 +187,7 @@ static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-#define PRINT_KEY(s, x) dprintf("%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
+#define PRINT_KEY(pc, s, x) dprintf(pc, "%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
                              (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5], (x)[6], (x)[7], (x)[8], (x)[9], (x)[10], (x)[11], (x)[12], (x)[13], (x)[14], (x)[15])
 
 static int64_t klv_decode_ber_length(ByteIOContext *pb)
@@ -324,7 +324,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         }
 #ifdef DEBUG
-        PRINT_KEY("read packet", klv.key);
+        PRINT_KEY(s, "read packet", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
@@ -500,7 +500,7 @@ static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *des
 
     do {
         code = get_byte(pb);
-        dprintf("pixel layout: code 0x%x\n", code);
+        dprintf(NULL, "pixel layout: code 0x%x\n", code);
         switch (code) {
         case 0x52: /* R */
             descriptor->bits_per_sample += get_byte(pb);
@@ -668,7 +668,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     MXFPackage *temp_package = NULL;
     int i, j, k;
 
-    dprintf("metadata sets count %d\n", mxf->metadata_sets_count);
+    dprintf(mxf->fc, "metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
         material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
@@ -753,7 +753,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
 
 #ifdef DEBUG
-        PRINT_KEY("data definition   ul", source_track->sequence->data_definition_ul);
+        PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
 #endif
         st->codec->codec_type = mxf_get_codec_type(mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
 
@@ -780,8 +780,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             continue;
         }
 #ifdef DEBUG
-        PRINT_KEY("essence codec     ul", descriptor->essence_codec_ul);
-        PRINT_KEY("essence container ul", descriptor->essence_container_ul);
+        PRINT_KEY(mxf->fc, "essence codec     ul", descriptor->essence_codec_ul);
+        PRINT_KEY(mxf->fc, "essence container ul", descriptor->essence_container_ul);
 #endif
         essence_container_ul = &descriptor->essence_container_ul;
         /* HACK: replacing the original key with mxf_encrypted_essence_container
@@ -836,7 +836,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
         if (container_ul && container_ul->wrapping == Clip) {
-            dprintf("stream %d: clip wrapped essence\n", st->index);
+            dprintf(mxf->fc, "stream %d: clip wrapped essence\n", st->index);
             st->need_parsing = 1;
         }
     }
@@ -921,7 +921,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return -1;
         }
 #ifdef DEBUG
-        PRINT_KEY("read header", klv.key);
+        PRINT_KEY(s, "read header", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {

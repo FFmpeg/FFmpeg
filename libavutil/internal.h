@@ -150,9 +150,9 @@
 
 /* dprintf macros */
 #ifdef DEBUG
-#    define dprintf(...) av_log(NULL, AV_LOG_DEBUG, __VA_ARGS__)
+#    define dprintf(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
 #else
-#    define dprintf(...)
+#    define dprintf(pctx, ...)
 #endif
 
 #define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
