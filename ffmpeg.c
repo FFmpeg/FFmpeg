@@ -2027,6 +2027,7 @@ static void opt_format(const char *arg)
         pgmyuv_compatibility_hack=1;
 //        opt_image_format(arg);
         arg = "image2";
+        fprintf(stderr, "pgmyuv format is deprecated, use image2\n");
     }
 
     file_iformat = av_find_input_format(arg);
