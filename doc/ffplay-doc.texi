@@ -35,10 +35,17 @@ show help
 force displayed width
 @item -y height
 force displayed height
+@item -s size
+Set frame size (WxH or abbreviation), needed for videos which don't
+contain a header with the framesize like raw YUV.
 @item -an
 disable audio
 @item -vn
 disable video
+@item -ss pos
+seek to a given position in seconds
+@item -bytes
+seek by bytes
 @item -nodisp
 disable graphical display
 @item -f fmt
@@ -47,9 +54,21 @@ force format
 
 @section Advanced options
 @table @option
+@item -pix_fmt format
+set pixel format
 @item -stats
 Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.
+@item -debug
+print specific debug info
+@item -bug
+work around bugs
+@item -vismv
+visualize motion vectors
+@item -fast
+non-spec-compliant optimizations
+@item -genpts
+generate pts
 @item -rtp_tcp
 Force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
 if you are streaming with the RTSP protocol.
@@ -60,6 +79,8 @@ master clock is used to control audio-video synchronization. Most media
 players use audio as master clock, but in some cases (streaming or high
 quality broadcast) it is necessary to change that. This option is mainly
 used for debugging purposes.
+@item -threads count
+thread count
 @end table
 
 @section While playing
@@ -82,6 +103,16 @@ cycle video channel
 
 @item w
 show audio waves
+
+@item left/right
+seek backward/forward 10 seconds
+
+@item down/up
+seek backward/forward 1 minute
+
+@item mouse click
+seek to percentage in file corresponding to fraction of width
+
 @end table
 
 @c man end
