@@ -1704,10 +1704,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
-#if defined(HAVE_THREADS)
     if(thread_count>1)
         avcodec_thread_init(enc, thread_count);
-#endif
     enc->thread_count= thread_count;
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
