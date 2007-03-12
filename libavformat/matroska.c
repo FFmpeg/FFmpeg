@@ -2552,17 +2552,17 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
     if (res == 0) {
         int real_v = matroska->tracks[track]->flags & MATROSKA_TRACK_REAL_V;
+        uint64_t timecode = AV_NOPTS_VALUE;
+
+        if (cluster_time != (uint64_t)-1 && cluster_time + block_time >= 0)
+            timecode = cluster_time + block_time;
+
         for (n = 0; n < laces; n++) {
-            uint64_t timecode = AV_NOPTS_VALUE;
             int slice, slices = 1;
 
             if (real_v) {
                 slices = *data++ + 1;
                 lace_size[n]--;
-            }
-            if (cluster_time != (uint64_t)-1 && n == 0) {
-                if (cluster_time + block_time >= 0)
-                    timecode = cluster_time + block_time;
             }
             /* FIXME: duration */
 
@@ -2595,6 +2595,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     matroska_queue_packet_reordered(matroska, pkt, is_bframe);
                 else
                     matroska_queue_packet(matroska, pkt);
+
+                timecode = AV_NOPTS_VALUE;
             }
             data += lace_size[n];
         }
