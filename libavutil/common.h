@@ -63,6 +63,8 @@
 #endif
 #endif
 
+#include "mem.h"
+
 //rounded divison & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
@@ -320,45 +322,5 @@ tend= read_time();\
 #define START_TIMER
 #define STOP_TIMER(id) {}
 #endif
-
-/* memory */
-
-#ifdef __GNUC__
-  #define DECLARE_ALIGNED(n,t,v)       t v __attribute__ ((aligned (n)))
-#else
-  #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
-#endif
-
-/* memory */
-
-/**
- * Memory allocation of size byte with alignment suitable for all
- * memory accesses (including vectors if available on the
- * CPU). av_malloc(0) must return a non NULL pointer.
- */
-void *av_malloc(unsigned int size);
-
-/**
- * av_realloc semantics (same as glibc): if ptr is NULL and size > 0,
- * identical to malloc(size). If size is zero, it is identical to
- * free(ptr) and NULL is returned.
- */
-void *av_realloc(void *ptr, unsigned int size);
-
-/**
- * Free memory which has been allocated with av_malloc(z)() or av_realloc().
- * NOTE: ptr = NULL is explicetly allowed
- * Note2: it is recommended that you use av_freep() instead
- */
-void av_free(void *ptr);
-
-void *av_mallocz(unsigned int size);
-char *av_strdup(const char *s);
-
-/**
- * Frees memory and sets the pointer to NULL.
- * @param ptr pointer to the pointer which should be freed
- */
-void av_freep(void *ptr);
 
 #endif /* COMMON_H */
