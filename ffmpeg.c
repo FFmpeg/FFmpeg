@@ -24,7 +24,6 @@
 #include "avformat.h"
 #include "swscale.h"
 #include "framehook.h"
-#include "dsputil.h"
 #include "opt.h"
 #include "fifo.h"
 
