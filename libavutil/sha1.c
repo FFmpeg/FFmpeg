@@ -13,13 +13,11 @@ typedef struct AVSHA1 {
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
-#define blk(i) (block[i])
-
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk (i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R2(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk (i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
+#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +block[i]+0x5A827999+rol(v,5);w=rol(w,30);
+#define R2(v,w,x,y,z,i) z+=( w^x     ^y)    +block[i]+0x6ED9EBA1+rol(v,5);w=rol(w,30);
+#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+block[i]+0x8F1BBCDC+rol(v,5);w=rol(w,30);
+#define R4(v,w,x,y,z,i) z+=( w^x     ^y)    +block[i]+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
