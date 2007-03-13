@@ -625,13 +625,10 @@ void MPV_decode_defaults(MpegEncContext *s){
 
 #ifdef CONFIG_ENCODERS
 static void MPV_encode_defaults(MpegEncContext *s){
-    static int done=0;
-
     MPV_common_defaults(s);
 
-    if(!done){
+    {
         int i;
-        done=1;
 
         for(i=-16; i<16; i++){
             default_fcode_tab[i + MAX_MV]= 1;
