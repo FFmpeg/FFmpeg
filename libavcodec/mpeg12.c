@@ -94,7 +94,7 @@ static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_MC,
                                            -1};
 #ifdef CONFIG_ENCODERS
-static uint8_t (*mv_penalty)[MAX_MV*2+1]= NULL;
+static uint8_t mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static uint8_t fcode_tab[MAX_MV*2+1];
 
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
@@ -858,8 +858,6 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                 code= (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
                 mpeg1_chr_dc_uni[i+255]= bits + (code<<8);
         }
-
-        mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
 
         for(f_code=1; f_code<=MAX_FCODE; f_code++){
             for(mv=-MAX_MV; mv<=MAX_MV; mv++){

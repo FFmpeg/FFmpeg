@@ -107,7 +107,7 @@ static const uint8_t ff_default_chroma_qscale_table[32]={
 };
 
 #ifdef CONFIG_ENCODERS
-static uint8_t (*default_mv_penalty)[MAX_MV*2+1]=NULL;
+static uint8_t default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static uint8_t default_fcode_tab[MAX_MV*2+1];
 
 enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
@@ -633,7 +633,6 @@ static void MPV_encode_defaults(MpegEncContext *s){
         int i;
         done=1;
 
-        default_mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
         memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
 
         for(i=-16; i<16; i++){
