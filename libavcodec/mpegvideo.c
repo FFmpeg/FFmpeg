@@ -633,8 +633,6 @@ static void MPV_encode_defaults(MpegEncContext *s){
         int i;
         done=1;
 
-        memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
-
         for(i=-16; i<16; i++){
             default_fcode_tab[i + MAX_MV]= 1;
         }
