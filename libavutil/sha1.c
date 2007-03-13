@@ -76,53 +76,53 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     state[4] += e;
 }
 
-void av_sha1_init(AVSHA1* context){
-    context->state[0] = 0x67452301;
-    context->state[1] = 0xEFCDAB89;
-    context->state[2] = 0x98BADCFE;
-    context->state[3] = 0x10325476;
-    context->state[4] = 0xC3D2E1F0;
-    context->count    = 0;
+void av_sha1_init(AVSHA1* ctx){
+    ctx->state[0] = 0x67452301;
+    ctx->state[1] = 0xEFCDAB89;
+    ctx->state[2] = 0x98BADCFE;
+    ctx->state[3] = 0x10325476;
+    ctx->state[4] = 0xC3D2E1F0;
+    ctx->count    = 0;
 }
 
-void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
+void av_sha1_update(AVSHA1* ctx, uint8_t* data, unsigned int len){
     unsigned int i, j;
 
-    j = context->count & 63;
-    context->count += len;
+    j = ctx->count & 63;
+    ctx->count += len;
 #ifdef CONFIG_SMALL
     for( i = 0; i < len; i++ ){
-        context->buffer[ j++ ] = data[i];
+        ctx->buffer[ j++ ] = data[i];
         if( 64 == j ){
-            transform(context->state, context->buffer);
+            transform(ctx->state, ctx->buffer);
             j = 0;
         }
     }
 #else
     if ((j + len) > 63) {
-        memcpy(&context->buffer[j], data, (i = 64-j));
-        transform(context->state, context->buffer);
+        memcpy(&ctx->buffer[j], data, (i = 64-j));
+        transform(ctx->state, ctx->buffer);
         for ( ; i + 63 < len; i += 64) {
-            transform(context->state, &data[i]);
+            transform(ctx->state, &data[i]);
         }
         j=0;
     }
     else i = 0;
-    memcpy(&context->buffer[j], &data[i], len - i);
+    memcpy(&ctx->buffer[j], &data[i], len - i);
 #endif
 }
 
-void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
+void av_sha1_final(AVSHA1* ctx, uint8_t digest[20]){
     int i;
-    uint64_t finalcount= be2me_64(context->count<<3);
+    uint64_t finalcount= be2me_64(ctx->count<<3);
 
-    av_sha1_update(context, "\200", 1);
-    while ((context->count & 63) != 56) {
-        av_sha1_update(context, "", 1);
+    av_sha1_update(ctx, "\200", 1);
+    while ((ctx->count & 63) != 56) {
+        av_sha1_update(ctx, "", 1);
     }
-    av_sha1_update(context, &finalcount, 8);  /* Should cause a transform() */
+    av_sha1_update(ctx, &finalcount, 8);  /* Should cause a transform() */
     for(i=0; i<5; i++)
-        ((uint32_t*)digest)[i]= be2me_32(context->state[i]);
+        ((uint32_t*)digest)[i]= be2me_32(ctx->state[i]);
 }
 
 // use the following to test
@@ -133,19 +133,19 @@ void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
 
 int main(){
     int i, k;
-    AVSHA1 context;
+    AVSHA1 ctx;
     unsigned char digest[20];
 
     for(k=0; k<3; k++){
-        av_sha1_init(&context);
+        av_sha1_init(&ctx);
         if(k==0)
-            av_sha1_update(&context, "abc", 3);
+            av_sha1_update(&ctx, "abc", 3);
         else if(k==1)
-            av_sha1_update(&context, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
+            av_sha1_update(&ctx, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
         else
             for(i=0; i<1000*1000; i++)
-                av_sha1_update(&context, "a", 1);
-        av_sha1_final(&context, digest);
+                av_sha1_update(&ctx, "a", 1);
+        av_sha1_final(&ctx, digest);
         for (i = 0; i < 20; i++)
             printf("%02X", digest[i]);
         putchar('\n');
