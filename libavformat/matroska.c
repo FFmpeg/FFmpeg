@@ -2593,6 +2593,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
                 pkt->pts = timecode;
                 pkt->pos = pos;
+                pkt->duration = duration;
 
                 if (matroska->tracks[track]->flags & MATROSKA_TRACK_REORDER)
                     matroska_queue_packet_reordered(matroska, pkt, is_bframe);
@@ -2691,14 +2692,6 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
         res = matroska_parse_block(matroska, data, size, pos, cluster_time,
                                    duration, is_keyframe, is_bframe,
                                    &track, &pkt);
-
-    if (pkt)
-    {
-        if (duration != AV_NOPTS_VALUE)
-            pkt->duration = duration;
-        else if (track >= 0 && track < matroska->num_tracks)
-            pkt->duration = matroska->tracks[track]->default_duration;
-    }
 
     return res;
 }
