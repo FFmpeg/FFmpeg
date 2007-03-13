@@ -14,7 +14,7 @@ typedef struct AVSHA1 {
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define blk0(i) (block[i] = be2me_32(block[i]))
+#define blk0(i) (block[i] = be2me_32(((uint32_t*)buffer)[i]))
 #define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
 
 #define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
@@ -31,8 +31,6 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     uint32_t block[80];
     unsigned int i;
     unsigned int a, b, c, d, e;
-
-    memcpy(block, buffer, 64);
 
     a = state[0];
     b = state[1];
