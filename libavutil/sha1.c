@@ -25,8 +25,6 @@ typedef struct AVSHA1 {
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-//#define VARIANT2
-
 static void transform(uint32_t state[5], uint8_t buffer[64]){
     uint32_t block[80];
     unsigned int i, a, b, c, d, e;
@@ -36,7 +34,7 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     c = state[2];
     d = state[3];
     e = state[4];
-#ifdef VARIANT2
+#ifdef CONFIG_SMALL
     for(i=0; i<80; i++){
         int t;
         if(i<16) t= be2me_32(((uint32_t*)buffer)[i]);
