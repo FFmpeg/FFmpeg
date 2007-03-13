@@ -38,7 +38,6 @@ typedef struct AVMD5{
     uint8_t  block[64];
     uint32_t ABCD[4];
     uint64_t len;
-    int      b_used;
 } AVMD5;
 
 const int av_md5_size= sizeof(AVMD5);
@@ -117,7 +116,6 @@ CORE4(0) CORE4(16) CORE4(32) CORE4(48)
 
 void av_md5_init(AVMD5 *ctx){
     ctx->len    = 0;
-    ctx->b_used = 0;
 
     ctx->ABCD[0] = 0x10325476;
     ctx->ABCD[1] = 0x98badcfe;
@@ -126,27 +124,29 @@ void av_md5_init(AVMD5 *ctx){
 }
 
 void av_md5_update(AVMD5 *ctx, const uint8_t *src, const int len){
-    int i;
+    int i, j;
 
+    j= ctx->len & 63;
     ctx->len += len;
 
     for( i = 0; i < len; i++ ){
-        ctx->block[ ctx->b_used++ ] = src[i];
-        if( 64 == ctx->b_used ){
+        ctx->block[j++] = src[i];
+        if( 64 == j ){
             body(ctx->ABCD, (uint32_t*) ctx->block);
-            ctx->b_used = 0;
+            j = 0;
         }
     }
 }
 
 void av_md5_final(AVMD5 *ctx, uint8_t *dst){
-    int i;
+    int i, j;
 
-    ctx->block[ctx->b_used++] = 0x80;
+    j= ctx->len & 63;
+    ctx->block[j++] = 0x80;
 
-    memset(&ctx->block[ctx->b_used], 0, 64 - ctx->b_used);
+    memset(&ctx->block[j], 0, 64 - j);
 
-    if( 56 < ctx->b_used ){
+    if( 56 < j ){
         body( ctx->ABCD, (uint32_t*) ctx->block );
         memset(ctx->block, 0, 64);
     }
