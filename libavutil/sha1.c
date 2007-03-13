@@ -29,8 +29,7 @@ typedef struct AVSHA1 {
 
 static void transform(uint32_t state[5], uint8_t buffer[64]){
     uint32_t block[80];
-    unsigned int i;
-    unsigned int a, b, c, d, e;
+    unsigned int i, a, b, c, d, e;
 
     a = state[0];
     b = state[1];
