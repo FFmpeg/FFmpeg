@@ -2427,7 +2427,7 @@ rv_offset(uint8_t *data, int slice, int slices)
 
 static int
 matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
-                     int64_t pos, uint64_t cluster_time,
+                     int64_t pos, uint64_t cluster_time, uint64_t duration,
                      int is_keyframe, int is_bframe,
                      int *ptrack, AVPacket **ppkt)
 {
@@ -2462,6 +2462,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
+    if (duration == AV_NOPTS_VALUE)
+        duration = matroska->tracks[track]->default_duration;
 
     /* block_time (relative to cluster time) */
     block_time = (data[0] << 8) | data[1];
@@ -2597,7 +2599,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 else
                     matroska_queue_packet(matroska, pkt);
 
-                timecode = AV_NOPTS_VALUE;
+                if (timecode != AV_NOPTS_VALUE)
+                    timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
             }
             data += lace_size[n];
         }
@@ -2686,7 +2689,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
     if (size > 0)
         res = matroska_parse_block(matroska, data, size, pos, cluster_time,
-                                   is_keyframe, is_bframe, &track, &pkt);
+                                   duration, is_keyframe, is_bframe,
+                                   &track, &pkt);
 
     if (pkt)
     {
@@ -2743,7 +2747,8 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 res = ebml_read_binary(matroska, &id, &data, &size);
                 if (res == 0)
                     res = matroska_parse_block(matroska, data, size, pos,
-                                               cluster_time, -1,0, NULL, NULL);
+                                               cluster_time, AV_NOPTS_VALUE,
+                                               -1, 0, NULL, NULL);
                 break;
 
             default:
