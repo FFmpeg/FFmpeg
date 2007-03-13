@@ -86,32 +86,15 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     d = state[3];
     e = state[4];
 #ifdef VARIANT2
-    for(i=0; i<20; i++){
-        int t= R0b(a,b,c,d,e,i);
-        e= d;
-        d= c;
-        c= rol(b,30);
-        b= a;
-        a= t;
-    }
-    for(; i<40; i++){
-        int t= R2b(a,b,c,d,e,i);
-        e= d;
-        d= c;
-        c= rol(b,30);
-        b= a;
-        a= t;
-    }
-    for(; i<60; i++){
-        int t= R3b(a,b,c,d,e,i);
-        e= d;
-        d= c;
-        c= rol(b,30);
-        b= a;
-        a= t;
-    }
-    for(; i<80; i++){
-        int t= R4b(a,b,c,d,e,i);
+    for(i=0; i<80; i++){
+        int t= e+block[i]+rol(a,5);;
+        if(i<40){
+            if(i<20)    t+= ((b&(c^d))^d)    +0x5A827999;
+            else        t+= ( b^c     ^d)    +0x6ED9EBA1;
+        }else{
+            if(i<60)    t+= (((b|c)&d)|(b&c))+0x8F1BBCDC;
+            else        t+= ( b^c     ^d)    +0xCA62C1D6;
+        }
         e= d;
         d= c;
         c= rol(b,30);
