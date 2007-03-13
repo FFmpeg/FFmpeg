@@ -14,11 +14,6 @@ typedef struct AVSHA1 {
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define R0b(v,w,x,y,z,i) z+((w&(x^y))^y)    +block[i]+0x5A827999+rol(v,5);
-#define R2b(v,w,x,y,z,i) z+( w^x     ^y)    +block[i]+0x6ED9EBA1+rol(v,5);
-#define R3b(v,w,x,y,z,i) z+(((w|x)&y)|(w&x))+block[i]+0x8F1BBCDC+rol(v,5);
-#define R4b(v,w,x,y,z,i) z+( w^x     ^y)    +block[i]+0xCA62C1D6+rol(v,5);
-
 #define blk0(i) (block[i] = be2me_32(block[i]))
 #define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
 
@@ -30,19 +25,14 @@ typedef struct AVSHA1 {
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-//#define VARIANT1
 //#define VARIANT2
 
 static void transform(uint32_t state[5], uint8_t buffer[64]){
     uint32_t block[80];
     unsigned int i;
-#ifdef VARIANT1
-    uint32_t s[85];
-#else
     unsigned int a, b, c, d, e;
-#endif
 
-#if defined (VARIANT1) || defined (VARIANT2)
+#if defined (VARIANT2)
     for(i=0; i<16; i++)
         block[i]= be2me_32(((uint32_t*)buffer)[i]);
     for(;i<80; i++)
@@ -52,34 +42,6 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
 #endif
 
 
-#ifdef VARIANT1
-    s[0]= state[4];
-    s[1]= state[3];
-    s[2]= state[2];
-    s[3]= state[1];
-    s[4]= state[0];
-    for(i=0; i<20; i++){
-        s[5+i]= R0b(s[4+i], s[3+i], s[2+i], s[1+i], s[i], i);
-        s[3+i]= rol(s[3+i],30);
-    }
-    for(; i<40; i++){
-        s[5+i]= R2b(s[4+i], s[3+i], s[2+i], s[1+i], s[i], i);
-        s[3+i]= rol(s[3+i],30);
-    }
-    for(; i<60; i++){
-        s[5+i]= R3b(s[4+i], s[3+i], s[2+i], s[1+i], s[i], i);
-        s[3+i]= rol(s[3+i],30);
-    }
-    for(; i<80; i++){
-        s[5+i]= R4b(s[4+i], s[3+i], s[2+i], s[1+i], s[i], i);
-        s[3+i]= rol(s[3+i],30);
-    }
-    state[0] += s[84];
-    state[1] += s[83];
-    state[2] += s[82];
-    state[3] += s[81];
-    state[4] += s[80];
-#else
     a = state[0];
     b = state[1];
     c = state[2];
@@ -121,7 +83,6 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     state[2] += c;
     state[3] += d;
     state[4] += e;
-#endif
 }
 
 void av_sha1_init(AVSHA1* context){
