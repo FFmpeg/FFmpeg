@@ -87,7 +87,7 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     e = state[4];
 #ifdef VARIANT2
     for(i=0; i<80; i++){
-        int t= e+block[i]+rol(a,5);;
+        int t= e+block[i]+rol(a,5);
         if(i<40){
             if(i<20)    t+= ((b&(c^d))^d)    +0x5A827999;
             else        t+= ( b^c     ^d)    +0x6ED9EBA1;
