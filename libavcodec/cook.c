@@ -685,33 +685,6 @@ static void mono_decode(COOKContext *q, float* mlt_buffer) {
 
 
 /**
- * The modulated lapped transform, this takes transform coefficients
- * and transforms them into timedomain samples. This is done through
- * an FFT-based algorithm with pre- and postrotation steps.
- * A window and reorder step is also included.
- *
- * @param q                 pointer to the COOKContext
- * @param inbuffer          pointer to the mltcoefficients
- * @param outbuffer         pointer to the timedomain buffer
- * @param mlt_tmp           pointer to temporary storage space
- */
-
-static void cook_imlt(COOKContext *q, float* inbuffer, float* outbuffer)
-{
-    int i;
-
-    q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, outbuffer, inbuffer, q->mdct_tmp);
-
-    for(i = 0; i < q->samples_per_channel; i++){
-        float tmp = outbuffer[i];
-
-        outbuffer[i] = q->mlt_window[i] * outbuffer[q->samples_per_channel + i];
-        outbuffer[q->samples_per_channel + i] = q->mlt_window[q->samples_per_channel - 1 - i] * -tmp;
-    }
-}
-
-
-/**
  * the actual requantization of the timedomain samples
  *
  * @param q                 pointer to the COOKContext
@@ -743,36 +716,50 @@ static void interpolate(COOKContext *q, float* buffer,
 
 
 /**
- * mlt overlapping and buffer management
+ * The modulated lapped transform, this takes transform coefficients
+ * and transforms them into timedomain samples.
+ * Apply transform window, overlap buffers, apply gain profile
+ * and buffer management.
  *
  * @param q                 pointer to the COOKContext
+ * @param inbuffer          pointer to the mltcoefficients
  * @param gains_ptr         current and previous gains
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  */
 
-static void gain_compensate(COOKContext *q, cook_gains *gains_ptr,
-                            float* previous_buffer)
+static void imlt_gain(COOKContext *q, float *inbuffer,
+                      cook_gains *gains_ptr, float* previous_buffer)
 {
     const float fc = q->pow2tab[gains_ptr->previous[0] + 63];
-    float *buffer = q->mono_mdct_output;
+    float *buffer0 = q->mono_mdct_output;
+    float *buffer1 = q->mono_mdct_output + q->samples_per_channel;
     int i;
 
-    /* Overlap with the previous block. */
-    for(i=0 ; i<q->samples_per_channel ; i++) {
-        buffer[i] *= fc;
-        buffer[i] += previous_buffer[i];
+    /* Inverse modified discrete cosine transform */
+    q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, q->mono_mdct_output,
+                               inbuffer, q->mdct_tmp);
+
+    /* The weird thing here, is that the two halves of the time domain
+     * buffer are swapped. Also, the newest data, that we save away for
+     * next frame, has the wrong sign. Hence the subtraction below.
+     * Almost sounds like a complex conjugate/reverse data/FFT effect.
+     */
+
+    /* Apply window and overlap */
+    for(i = 0; i < q->samples_per_channel; i++){
+        buffer1[i] = buffer1[i] * fc * q->mlt_window[i] -
+          previous_buffer[i] * q->mlt_window[q->samples_per_channel - 1 - i];
     }
 
     /* Apply gain profile */
     for (i = 0; i < 8; i++) {
         if (gains_ptr->now[i] || gains_ptr->now[i + 1])
-            interpolate(q, &buffer[q->gain_size_factor * i],
+            interpolate(q, &buffer1[q->gain_size_factor * i],
                         gains_ptr->now[i], gains_ptr->now[i + 1]);
     }
 
     /* Save away the current to be previous block. */
-    memcpy(previous_buffer, buffer+q->samples_per_channel,
-           sizeof(float)*q->samples_per_channel);
+    memcpy(previous_buffer, buffer0, sizeof(float)*q->samples_per_channel);
 }
 
 
@@ -902,16 +889,16 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
                       cook_gains *gains, float *previous_buffer,
                       int16_t *out, int chan)
 {
+    float *output = q->mono_mdct_output + q->samples_per_channel;
     int j;
 
-    cook_imlt(q, decode_buffer, q->mono_mdct_output);
-    gain_compensate(q, gains, previous_buffer);
+    imlt_gain(q, decode_buffer, gains, previous_buffer);
 
     /* Clip and convert floats to 16 bits.
      */
     for (j = 0; j < q->samples_per_channel; j++) {
         out[chan + q->nb_channels * j] =
-          av_clip(lrintf(q->mono_mdct_output[j]), -32768, 32767);
+          av_clip(lrintf(output[j]), -32768, 32767);
     }
 }
 
