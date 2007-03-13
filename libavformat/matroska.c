@@ -2313,6 +2313,7 @@ matroska_read_header (AVFormatContext    *s,
                 } else {
                     extradata_size = 2;
                 }
+                track->default_duration = 1024*1000 / audiotrack->internal_samplerate;
             }
 
             else if (codec_id == CODEC_ID_TTA) {
