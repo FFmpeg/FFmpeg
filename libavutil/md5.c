@@ -139,22 +139,14 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, const int len){
 }
 
 void av_md5_final(AVMD5 *ctx, uint8_t *dst){
-    int i, j;
+    int i;
+    uint64_t finalcount= le2me_64(ctx->len<<3);
 
-    j= ctx->len & 63;
-    ctx->block[j++] = 0x80;
+    av_md5_update(ctx, "\200", 1);
+    while((ctx->len & 63)<56)
+        av_md5_update(ctx, "", 1);
 
-    memset(&ctx->block[j], 0, 64 - j);
-
-    if( 56 < j ){
-        body( ctx->ABCD, (uint32_t*) ctx->block );
-        memset(ctx->block, 0, 64);
-    }
-
-    for(i=0; i<8; i++)
-        ctx->block[56+i] = (ctx->len << 3) >> (i<<3);
-
-    body(ctx->ABCD, (uint32_t*) ctx->block);
+    av_md5_update(ctx, &finalcount, 8);
 
     for(i=0; i<4; i++)
         ((uint32_t*)dst)[i]= le2me_32(ctx->ABCD[3-i]);
