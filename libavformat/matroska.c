@@ -2565,7 +2565,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 slices = *data++ + 1;
                 lace_size[n]--;
             }
-            /* FIXME: duration */
 
             for (slice=0; slice<slices; slice++) {
                 int slice_size, slice_offset = 0;
