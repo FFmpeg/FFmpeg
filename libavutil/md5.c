@@ -35,9 +35,9 @@
 #include "md5.h"
 
 typedef struct AVMD5{
+    uint64_t len;
     uint8_t  block[64];
     uint32_t ABCD[4];
-    uint64_t len;
 } AVMD5;
 
 const int av_md5_size= sizeof(AVMD5);
