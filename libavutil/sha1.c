@@ -19,10 +19,14 @@ typedef struct AVSHA1 {
 #define R3b(v,w,x,y,z,i) z+(((w|x)&y)|(w&x))+block[i]+0x8F1BBCDC+rol(v,5);
 #define R4b(v,w,x,y,z,i) z+( w^x     ^y)    +block[i]+0xCA62C1D6+rol(v,5);
 
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +block[i]+0x5A827999+rol(v,5);w=rol(w,30);
-#define R2(v,w,x,y,z,i) z+=( w^x     ^y)    +block[i]+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+block[i]+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=( w^x     ^y)    +block[i]+0xCA62C1D6+rol(v,5);w=rol(w,30);
+#define blk0(i) (block[i] = be2me_32(block[i]))
+#define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
+
+#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
+#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk (i)+0x5A827999+rol(v,5);w=rol(w,30);
+#define R2(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
+#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk (i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
+#define R4(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
@@ -38,10 +42,14 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     unsigned int a, b, c, d, e;
 #endif
 
+#if defined (VARIANT1) || defined (VARIANT2)
     for(i=0; i<16; i++)
         block[i]= be2me_32(((uint32_t*)buffer)[i]);
     for(;i<80; i++)
         block[i]= rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1);
+#else
+    memcpy(block, buffer, 64);
+#endif
 
 
 #ifdef VARIANT1
@@ -111,10 +119,11 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
         a= t;
     }
 #else
-    for(i=0; i<20; i+=5){
+    for(i=0; i<15; i+=5){
         R0(a,b,c,d,e,0+i); R0(e,a,b,c,d,1+i); R0(d,e,a,b,c,2+i); R0(c,d,e,a,b,3+i); R0(b,c,d,e,a,4+i);
     }
-    for(; i<40; i+=5){
+    R0(a,b,c,d,e,15); R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
+    for(i=20; i<40; i+=5){
         R2(a,b,c,d,e,0+i); R2(e,a,b,c,d,1+i); R2(d,e,a,b,c,2+i); R2(c,d,e,a,b,3+i); R2(b,c,d,e,a,4+i);
     }
     for(; i<60; i+=5){
