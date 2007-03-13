@@ -75,7 +75,7 @@ static void* dv_anchor[DV_ANCHOR_SIZE];
 #endif
 
 /* XXX: also include quantization */
-static RL_VLC_ELEM *dv_rl_vlc;
+static RL_VLC_ELEM dv_rl_vlc[1184];
 /* VLC encoding lookup table */
 static struct dv_vlc_pair {
    uint32_t vlc;
@@ -154,10 +154,7 @@ static int dvvideo_init(AVCodecContext *avctx)
            to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j,
                  new_dv_vlc_len, 1, 1, new_dv_vlc_bits, 2, 2, 0);
-
-        dv_rl_vlc = av_mallocz_static(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
-        if (!dv_rl_vlc)
-            return AVERROR(ENOMEM);
+        assert(dv_vlc.table_size == 1184);
 
         for(i = 0; i < dv_vlc.table_size; i++){
             int code= dv_vlc.table[i][0];
