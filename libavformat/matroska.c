@@ -254,7 +254,7 @@ typedef struct Track {
     unsigned char *codec_priv;
     int codec_priv_size;
 
-    int64_t default_duration;
+    uint64_t default_duration;
     MatroskaTrackFlags flags;
 } MatroskaTrack;
 
@@ -1307,7 +1307,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             if ((res = ebml_read_uint (matroska, &id,
                                                        &num)) < 0)
                                 break;
-                            track->default_duration = num;
+                            track->default_duration = num/matroska->time_scale;
                             break;
                         }
 
@@ -1317,7 +1317,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             if ((res = ebml_read_float(matroska, &id,
                                                        &num)) < 0)
                                 break;
-                            track->default_duration = 1000000000 * (1. / num);
+                            track->default_duration = 1000000000/(matroska->time_scale*num);
                             break;
                         }
 
@@ -1620,7 +1620,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                track->default_duration = num;
+                track->default_duration = num / matroska->time_scale;
                 break;
             }
 
@@ -2357,7 +2357,7 @@ matroska_read_header (AVFormatContext    *s,
 
             if (track->default_duration)
                 av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
-                          track->default_duration, 1000000000, 30000);
+                          track->default_duration, 1000, 30000);
 
             if(extradata){
                 st->codec->extradata = extradata;
@@ -2646,6 +2646,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             case MATROSKA_ID_BLOCKDURATION: {
                 if ((res = ebml_read_uint(matroska, &id, &duration)) < 0)
                     break;
+                duration /= matroska->time_scale;
                 break;
             }
 
@@ -2691,7 +2692,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
         if (duration != AV_NOPTS_VALUE)
             pkt->duration = duration;
         else if (track >= 0 && track < matroska->num_tracks)
-            pkt->duration = matroska->tracks[track]->default_duration / matroska->time_scale;
+            pkt->duration = matroska->tracks[track]->default_duration;
     }
 
     return res;
