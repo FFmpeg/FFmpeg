@@ -2428,8 +2428,7 @@ rv_offset(uint8_t *data, int slice, int slices)
 static int
 matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                      int64_t pos, uint64_t cluster_time, uint64_t duration,
-                     int is_keyframe, int is_bframe,
-                     int *ptrack, AVPacket **ppkt)
+                     int is_keyframe, int is_bframe)
 {
     int res = 0;
     int track;
@@ -2451,7 +2450,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
     /* fetch track from num */
     track = matroska_find_track_by_num(matroska, num);
-    if (ptrack)  *ptrack = track;
     if (size <= 3 || track < 0 || track >= matroska->num_tracks) {
         av_log(matroska->ctx, AV_LOG_INFO,
                "Invalid stream %d or size %u\n", track, size);
@@ -2578,7 +2576,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 else
                     slice_size = rv_offset(data, slice+1, slices) - slice_offset;
                 pkt = av_mallocz(sizeof(AVPacket));
-                if (ppkt)  *ppkt = pkt;
                 /* XXX: prevent data copy... */
                 if (av_new_packet(pkt, slice_size) < 0) {
                     res = AVERROR_NOMEM;
@@ -2618,11 +2615,9 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 {
     int res = 0;
     uint32_t id;
-    AVPacket *pkt = NULL;
     int is_bframe = 0;
     int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
     uint64_t duration = AV_NOPTS_VALUE;
-    int track = -1;
     uint8_t *data;
     int size = 0;
     int64_t pos = 0;
@@ -2690,8 +2685,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
     if (size > 0)
         res = matroska_parse_block(matroska, data, size, pos, cluster_time,
-                                   duration, is_keyframe, is_bframe,
-                                   &track, &pkt);
+                                   duration, is_keyframe, is_bframe);
 
     return res;
 }
@@ -2741,7 +2735,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 if (res == 0)
                     res = matroska_parse_block(matroska, data, size, pos,
                                                cluster_time, AV_NOPTS_VALUE,
-                                               -1, 0, NULL, NULL);
+                                               -1, 0);
                 break;
 
             default:
