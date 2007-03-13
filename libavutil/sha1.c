@@ -144,6 +144,7 @@ void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
         for ( ; i + 63 < len; i += 64) {
             transform(context->state, &data[i]);
         }
+        j=0;
     }
     else i = 0;
     memcpy(&context->buffer[j], &data[i], len - i);
