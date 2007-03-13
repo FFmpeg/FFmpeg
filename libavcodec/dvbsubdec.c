@@ -32,7 +32,7 @@
 #define DVBSUB_OBJECT_SEGMENT   0x13
 #define DVBSUB_DISPLAY_SEGMENT  0x80
 
-static unsigned char *cm;
+#define cm (ff_cropTbl + MAX_NEG_CROP)
 
 #ifdef DEBUG_SAVE_IMAGES
 #undef fprintf
@@ -343,8 +343,6 @@ static int dvbsub_init_decoder(AVCodecContext *avctx)
 {
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = (DVBSubContext*) avctx->priv_data;
-
-    cm = ff_cropTbl + MAX_NEG_CROP;
 
     memset(avctx->priv_data, 0, sizeof(DVBSubContext));
 
