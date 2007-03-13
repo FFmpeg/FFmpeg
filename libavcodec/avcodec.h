@@ -3001,7 +3001,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
  * Frees all static arrays and reset their pointers to 0.
  * Call this function to release all statically allocated tables.
  */
-void av_free_static(void);
+attribute_deprecated void av_free_static(void);
 
 /**
  * Allocation of static arrays.
@@ -3011,7 +3011,7 @@ void av_free_static(void);
  * @param[in] size The amount of memory you need in bytes.
  * @return Block of memory of the requested size.
  */
-void *av_mallocz_static(unsigned int size);
+attribute_deprecated void *av_mallocz_static(unsigned int size);
 
 /**
  * Copy image 'src' to 'dst'.
