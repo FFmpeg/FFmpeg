@@ -90,6 +90,15 @@ void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
 
     j = context->count & 63;
     context->count += len;
+#ifdef CONFIG_SMALL
+    for( i = 0; i < len; i++ ){
+        context->buffer[ j++ ] = data[i];
+        if( 64 == j ){
+            transform(context->state, context->buffer);
+            j = 0;
+        }
+    }
+#else
     if ((j + len) > 63) {
         memcpy(&context->buffer[j], data, (i = 64-j));
         transform(context->state, context->buffer);
@@ -100,6 +109,7 @@ void av_sha1_update(AVSHA1* context, uint8_t* data, unsigned int len){
     }
     else i = 0;
     memcpy(&context->buffer[j], &data[i], len - i);
+#endif
 }
 
 void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
