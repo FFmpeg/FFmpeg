@@ -6,9 +6,9 @@
 #include "sha1.h"
 
 typedef struct AVSHA1 {
-    uint32_t state[5];
     uint64_t count;
     uint8_t buffer[64];
+    uint32_t state[5];
 } AVSHA1;
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
