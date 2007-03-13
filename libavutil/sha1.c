@@ -32,15 +32,7 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     unsigned int i;
     unsigned int a, b, c, d, e;
 
-#if defined (VARIANT2)
-    for(i=0; i<16; i++)
-        block[i]= be2me_32(((uint32_t*)buffer)[i]);
-    for(;i<80; i++)
-        block[i]= rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1);
-#else
     memcpy(block, buffer, 64);
-#endif
-
 
     a = state[0];
     b = state[1];
@@ -49,7 +41,11 @@ static void transform(uint32_t state[5], uint8_t buffer[64]){
     e = state[4];
 #ifdef VARIANT2
     for(i=0; i<80; i++){
-        int t= e+block[i]+rol(a,5);
+        int t;
+        if(i<16) t= be2me_32(((uint32_t*)buffer)[i]);
+        else     t= rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1);
+        block[i]= t;
+        t+= e+rol(a,5);
         if(i<40){
             if(i<20)    t+= ((b&(c^d))^d)    +0x5A827999;
             else        t+= ( b^c     ^d)    +0x6ED9EBA1;
