@@ -163,7 +163,7 @@ void av_sha1_final(AVSHA1* context, uint8_t digest[20]){
 
     av_sha1_update(context, "\200", 1);
     while ((context->count & 63) != 56) {
-        av_sha1_update(context, "\0", 1);
+        av_sha1_update(context, "", 1);
     }
     av_sha1_update(context, &finalcount, 8);  /* Should cause a transform() */
     for(i=0; i<5; i++)
