@@ -144,8 +144,8 @@ static VLC huff_quad_vlc[2];
 static uint16_t band_index_long[9][23];
 /* XXX: free when all decoders are closed */
 #define TABLE_4_3_SIZE (8191 + 16)*4
-static int8_t  *table_4_3_exp;
-static uint32_t *table_4_3_value;
+static int8_t  table_4_3_exp[TABLE_4_3_SIZE];
+static uint32_t table_4_3_value[TABLE_4_3_SIZE];
 static uint32_t exp_table[512];
 static uint32_t expval_table[512][16];
 /* intensity stereo coef table */
@@ -384,12 +384,6 @@ static int decode_init(AVCodecContext * avctx)
         }
 
         /* compute n ^ (4/3) and store it in mantissa/exp format */
-        table_4_3_exp= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_exp[0]));
-        if(!table_4_3_exp)
-            return -1;
-        table_4_3_value= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_value[0]));
-        if(!table_4_3_value)
-            return -1;
 
         int_pow_init();
         for(i=1;i<TABLE_4_3_SIZE;i++) {
