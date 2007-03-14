@@ -101,8 +101,6 @@ static uint8_t  uni_h263_inter_rl_len [64*64*2*2];
 //#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
 #define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
 
-static uint8_t static_rl_table_store[5][2][2*MAX_RUN + MAX_LEVEL + 3];
-
 /* mpeg4
 inter
 max level: 24/6
@@ -113,6 +111,8 @@ max level: 53/16
 max run: 29/41
 */
 #endif
+
+static uint8_t static_rl_table_store[5][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 #if 0 //3IV1 is quite rare and it slows things down a tiny bit
 #define IS_3IV1 s->codec_tag == ff_get_fourcc("3IV1")
