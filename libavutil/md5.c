@@ -75,11 +75,12 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
         t = S[i>>4][i&3];\
         a += T[i];\
 \
-        switch(i>>4){\
-        case 0: a += (d ^ (b&(c^d))) + X[      i &15 ]; break;\
-        case 1: a += (c ^ (d&(c^b))) + X[ (1+5*i)&15 ]; break;\
-        case 2: a += (b^c^d)         + X[ (5+3*i)&15 ]; break;\
-        case 3: a += (c^(b|~d))      + X[ (  7*i)&15 ]; break;\
+        if(i<32){\
+            if(i<16) a += (d ^ (b&(c^d))) + X[      i &15 ];\
+            else     a += (c ^ (d&(c^b))) + X[ (1+5*i)&15 ];\
+        }else{\
+            if(i<48) a += (b^c^d)         + X[ (5+3*i)&15 ];\
+            else     a += (c^(b|~d))      + X[ (  7*i)&15 ];\
         }\
         a = b + (( a << t ) | ( a >> (32 - t) ));
 
