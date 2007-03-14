@@ -49,7 +49,7 @@ static const uint8_t S[4][4] = {
     { 6, 10, 15, 21 }   /* Round 4 */
 };
 
-static const uint32_t T[64] = {
+static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,   /* Round 1 */
     0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
     0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
