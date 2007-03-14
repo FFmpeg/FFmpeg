@@ -80,7 +80,7 @@ static RL_VLC_ELEM dv_rl_vlc[1184];
 static struct dv_vlc_pair {
    uint32_t vlc;
    uint8_t  size;
-} (*dv_vlc_map)[DV_VLC_MAP_LEV_SIZE] = NULL;
+} dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 
 static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
 {
@@ -122,10 +122,6 @@ static int dvvideo_init(AVCodecContext *avctx)
         int16_t new_dv_vlc_level[NB_DV_VLC*2];
 
         done = 1;
-
-        dv_vlc_map = av_mallocz_static(DV_VLC_MAP_LEV_SIZE*DV_VLC_MAP_RUN_SIZE*sizeof(struct dv_vlc_pair));
-        if (!dv_vlc_map)
-            return AVERROR(ENOMEM);
 
         /* dv_anchor lets each thread know its Id */
         for (i=0; i<DV_ANCHOR_SIZE; i++)
