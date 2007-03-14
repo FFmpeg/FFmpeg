@@ -898,6 +898,9 @@ library:
 @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item SEQ @tab    @tab X
 @tab Tiertex .seq files used in the DOS CDROM version of the game Flashback.
+@item DXA @tab    @tab X
+@tab This format is used in non-Windows version of Feeble Files game and
+different game cutscenes repacked for use with ScummVM.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -1005,6 +1008,7 @@ following image formats are supported:
 @item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
 @item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
 @item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CDROM FlashBack game.
+@item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

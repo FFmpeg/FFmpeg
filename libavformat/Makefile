@@ -34,6 +34,7 @@ OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
 OBJS-$(CONFIG_DV1394_DEMUXER)            += dv1394.o
+OBJS-$(CONFIG_DXA_DEMUXER)               += dxa.o
 OBJS-$(CONFIG_EA_DEMUXER)                += electronicarts.o
 OBJS-$(CONFIG_FFM_DEMUXER)               += ffm.o
 OBJS-$(CONFIG_FFM_MUXER)                 += ffm.o

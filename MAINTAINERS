@@ -114,6 +114,7 @@ Codecs:
   cook.c, cookdata.h                    Benjamin Larsson
   cscd.c                                Reimar Doeffinger
   dpcm.c                                Mike Melanson
+  dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
   ffv1.c                                Michael Niedermayer
   flac.c                                Alex Beregszaszi
@@ -202,6 +203,7 @@ Muxers/Demuxers:
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
   dc1394.c, dv.c                        Roman Shaposhnik
+  dxa.c                                 Kostya Shishkov
   flic.c                                Mike Melanson
   flvdec.c, flvenc.c                    Michael Niedermayer
   gxf.c                                 Reimar Doeffinger

@@ -47,6 +47,7 @@ extern AVInputFormat dsicin_demuxer;
 extern AVInputFormat dv1394_demuxer;
 extern AVInputFormat dv_demuxer;
 extern AVOutputFormat dv_muxer;
+extern AVInputFormat dxa_demuxer;
 extern AVInputFormat ea_demuxer;
 extern AVInputFormat ffm_demuxer;
 extern AVOutputFormat ffm_muxer;

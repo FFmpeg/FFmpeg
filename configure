@@ -644,6 +644,7 @@ CMDLINE_SELECT="
     static
 "
 
+dxa_decoder_deps="zlib"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
 mpeg_xvmc_decoder_deps="xvmc"

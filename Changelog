@@ -73,6 +73,7 @@ version <next>
 - WMA encoder
 - GSM-MS encoder and decoder
 - DCA decoder
+- DXA demuxer and decoder
 
 version 0.4.9-pre1:
 
