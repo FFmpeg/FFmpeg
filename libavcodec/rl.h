@@ -20,7 +20,12 @@ typedef struct RLTable {
     RL_VLC_ELEM *rl_vlc[32];       ///< decoding only
 } RLTable;
 
-void init_rl(RLTable *rl, int use_static);
+/**
+ *
+ * @param static_store static uint8_t array[2][2*MAX_RUN + MAX_LEVEL + 3] which will hold
+ *                     the level and run tables, if this is NULL av_malloc() will be used
+ */
+void init_rl(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3]);
 void init_vlc_rl(RLTable *rl, int use_static);
 
 static inline int get_rl_index(const RLTable *rl, int last, int run, int level)

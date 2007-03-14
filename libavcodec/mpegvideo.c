@@ -1411,14 +1411,14 @@ int MPV_encode_end(AVCodecContext *avctx)
 
 #endif //CONFIG_ENCODERS
 
-void init_rl(RLTable *rl, int use_static)
+void init_rl(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t max_level[MAX_RUN+1], max_run[MAX_LEVEL+1];
     uint8_t index_run[MAX_RUN+1];
     int last, run, level, start, end, i;
 
     /* If table is static, we can quit if rl->max_level[0] is not NULL */
-    if(use_static && rl->max_level[0])
+    if(static_store && rl->max_level[0])
         return;
 
     /* compute max_level[], max_run[] and index_run[] */
@@ -1444,18 +1444,18 @@ void init_rl(RLTable *rl, int use_static)
             if (run > max_run[level])
                 max_run[level] = run;
         }
-        if(use_static)
-            rl->max_level[last] = av_mallocz_static(MAX_RUN + 1);
+        if(static_store)
+            rl->max_level[last] = static_store[last];
         else
             rl->max_level[last] = av_malloc(MAX_RUN + 1);
         memcpy(rl->max_level[last], max_level, MAX_RUN + 1);
-        if(use_static)
-            rl->max_run[last] = av_mallocz_static(MAX_LEVEL + 1);
+        if(static_store)
+            rl->max_run[last] = static_store[last] + MAX_RUN + 1;
         else
             rl->max_run[last] = av_malloc(MAX_LEVEL + 1);
         memcpy(rl->max_run[last], max_run, MAX_LEVEL + 1);
-        if(use_static)
-            rl->index_run[last] = av_mallocz_static(MAX_RUN + 1);
+        if(static_store)
+            rl->index_run[last] = static_store[last] + MAX_RUN + MAX_LEVEL + 2;
         else
             rl->index_run[last] = av_malloc(MAX_RUN + 1);
         memcpy(rl->index_run[last], index_run, MAX_RUN + 1);

@@ -101,6 +101,8 @@ static uint8_t  uni_h263_inter_rl_len [64*64*2*2];
 //#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
 #define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
 
+static uint8_t static_rl_table_store[5][2][2*MAX_RUN + MAX_LEVEL + 3];
+
 /* mpeg4
 inter
 max level: 24/6
@@ -2030,9 +2032,9 @@ void h263_encode_init(MpegEncContext *s)
 
         init_uni_dc_tab();
 
-        init_rl(&rl_inter, 1);
-        init_rl(&rl_intra, 1);
-        init_rl(&rl_intra_aic, 1);
+        init_rl(&rl_inter, static_rl_table_store[0]);
+        init_rl(&rl_intra, static_rl_table_store[1]);
+        init_rl(&rl_intra_aic, static_rl_table_store[2]);
 
         init_uni_mpeg4_rl_tab(&rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
@@ -2991,11 +2993,11 @@ void h263_decode_init_vlc(MpegEncContext *s)
         init_vlc(&mv_vlc, MV_VLC_BITS, 33,
                  &mvtab[0][1], 2, 1,
                  &mvtab[0][0], 2, 1, 1);
-        init_rl(&rl_inter, 1);
-        init_rl(&rl_intra, 1);
-        init_rl(&rvlc_rl_inter, 1);
-        init_rl(&rvlc_rl_intra, 1);
-        init_rl(&rl_intra_aic, 1);
+        init_rl(&rl_inter, static_rl_table_store[0]);
+        init_rl(&rl_intra, static_rl_table_store[1]);
+        init_rl(&rvlc_rl_inter, static_rl_table_store[3]);
+        init_rl(&rvlc_rl_intra, static_rl_table_store[4]);
+        init_rl(&rl_intra_aic, static_rl_table_store[2]);
         init_vlc_rl(&rl_inter, 1);
         init_vlc_rl(&rl_intra, 1);
         init_vlc_rl(&rvlc_rl_inter, 1);

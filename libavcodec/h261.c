@@ -58,6 +58,8 @@ typedef struct H261Context{
     int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
 }H261Context;
 
+static uint8_t static_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
+
 void ff_h261_loop_filter(MpegEncContext *s){
     H261Context * h= (H261Context*)s;
     const int linesize  = s->linesize;
@@ -285,7 +287,7 @@ void ff_h261_encode_init(MpegEncContext *s){
 
     if (!done) {
         done = 1;
-        init_rl(&h261_rl_tcoeff, 1);
+        init_rl(&h261_rl_tcoeff, static_rl_table_store);
     }
 
     s->min_qcoeff= -127;
@@ -392,7 +394,7 @@ static void h261_decode_init_vlc(H261Context *h){
         init_vlc(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
                  &h261_cbp_tab[0][1], 2, 1,
                  &h261_cbp_tab[0][0], 2, 1, 1);
-        init_rl(&h261_rl_tcoeff, 1);
+        init_rl(&h261_rl_tcoeff, static_rl_table_store);
         init_vlc_rl(&h261_rl_tcoeff, 1);
     }
 }

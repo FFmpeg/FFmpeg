@@ -91,6 +91,8 @@ int frame_count = 0;
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 #endif //CONFIG_ENCODERS
 
+static uint8_t static_rl_table_store[NB_RL_TABLES][2][2*MAX_RUN + MAX_LEVEL + 3];
+
 static void common_init(MpegEncContext * s)
 {
     static int inited=0;
@@ -186,7 +188,7 @@ void ff_msmpeg4_encode_init(MpegEncContext *s)
         init_mv_table(&mv_tables[0]);
         init_mv_table(&mv_tables[1]);
         for(i=0;i<NB_RL_TABLES;i++)
-            init_rl(&rl_table[i], 1);
+            init_rl(&rl_table[i], static_rl_table_store[i]);
 
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
@@ -1051,7 +1053,7 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         done = 1;
 
         for(i=0;i<NB_RL_TABLES;i++) {
-            init_rl(&rl_table[i], 1);
+            init_rl(&rl_table[i], static_rl_table_store[i]);
             init_vlc_rl(&rl_table[i], 1);
         }
         for(i=0;i<2;i++) {
