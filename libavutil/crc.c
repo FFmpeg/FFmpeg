@@ -21,10 +21,17 @@
 #include "common.h"
 #include "crc.h"
 
+#if LIBAVUTIL_VERSION_INT  < (50<<16)
 AVCRC *av_crcEDB88320;
 AVCRC *av_crc04C11DB7;
 AVCRC *av_crc8005    ;
 AVCRC *av_crc07      ;
+#else
+AVCRC av_crcEDB88320[257];
+AVCRC av_crc04C11DB7[257];
+AVCRC av_crc8005    [257];
+AVCRC av_crc07      [257];
+#endif
 
 /**
  * Inits a crc table.
