@@ -828,8 +828,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
         done=1;
         init_rl(&rl_mpeg1, static_rl_table_store[0]);
-        if(s->intra_vlc_format)
-            init_rl(&rl_mpeg2, static_rl_table_store[1]);
+        init_rl(&rl_mpeg2, static_rl_table_store[1]);
 
         for(i=0; i<64; i++)
         {
