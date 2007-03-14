@@ -37,7 +37,7 @@
  * @param[in] size The requested size.
  * @return Block of memory of requested size.
  */
-void *ff_realloc_static(void *ptr, unsigned int size);
+attribute_deprecated void *ff_realloc_static(void *ptr, unsigned int size);
 
 void align_put_bits(PutBitContext *s)
 {
