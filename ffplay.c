@@ -1366,26 +1366,26 @@ static int video_thread(void *arg)
 
         /* NOTE: ipts is the PTS of the _first_ picture beginning in
            this packet, if any */
-            global_video_pkt_pts= pkt->pts;
-            len1 = avcodec_decode_video(is->video_st->codec,
-                                        frame, &got_picture,
-                                        pkt->data, pkt->size);
+        global_video_pkt_pts= pkt->pts;
+        len1 = avcodec_decode_video(is->video_st->codec,
+                                    frame, &got_picture,
+                                    pkt->data, pkt->size);
 
-            if(   (decoder_reorder_pts || pkt->dts == AV_NOPTS_VALUE)
-               && frame->opaque && *(uint64_t*)frame->opaque != AV_NOPTS_VALUE)
-                pts= *(uint64_t*)frame->opaque;
-            else if(pkt->dts != AV_NOPTS_VALUE)
-                pts= pkt->dts;
-            else
-                pts= 0;
-            pts *= av_q2d(is->video_st->time_base);
+        if(   (decoder_reorder_pts || pkt->dts == AV_NOPTS_VALUE)
+           && frame->opaque && *(uint64_t*)frame->opaque != AV_NOPTS_VALUE)
+            pts= *(uint64_t*)frame->opaque;
+        else if(pkt->dts != AV_NOPTS_VALUE)
+            pts= pkt->dts;
+        else
+            pts= 0;
+        pts *= av_q2d(is->video_st->time_base);
 
 //            if (len1 < 0)
 //                break;
-            if (got_picture) {
-                if (output_picture2(is, frame, pts) < 0)
-                    goto the_end;
-            }
+        if (got_picture) {
+            if (output_picture2(is, frame, pts) < 0)
+                goto the_end;
+        }
         av_free_packet(pkt);
         if (step)
             if (cur_stream)
