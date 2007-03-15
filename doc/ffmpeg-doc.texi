@@ -1565,6 +1565,9 @@ please use av_log() instead.
     component of the @file{libavcodec} version number appropriately. If
     it has a fourcc, add it to @file{libavformat/avienc.c}, even if it
     is only a decoder.
+@item
+    Do not change code to hide warnings without ensuring that the underlaying
+    logic is correct and thus the warning was inappropriate
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
