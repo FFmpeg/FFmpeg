@@ -1136,7 +1136,7 @@ suffices. If you have problems using SDL, verify that
 @file{sdl-config} can be launched from the MSYS command line.
 
 @item You can install FFmpeg in @file{Program Files/FFmpeg} by typing
-@file{make install}. Don't forget to copy @file{SDL.dll} to the place
+@file{make install}. Do not forget to copy @file{SDL.dll} to the place
 you launch @file{ffplay} from.
 
 @end itemize
@@ -1182,7 +1182,7 @@ so they can be used with Visual C++:
 
 @enumerate
 
-@item Install Visual C++ (if you haven't done so already).
+@item Install Visual C++ (if you have not done so already).
 
 @item Install MinGW and MSYS as described above.
 
@@ -1206,7 +1206,7 @@ create Visual-C++-compatible import libraries.
 
 @item Type the command
 @code{./configure --enable-shared --disable-static --enable-memalign-hack}
-to configure and, if that didn't produce any errors,
+to configure and, if that did not produce any errors,
 type @code{make} to build FFmpeg.
 
 @item The subdirectories @file{libavformat}, @file{libavcodec}, and
@@ -1228,8 +1228,8 @@ Application Wizard, uncheck the "Precompiled headers" option.
 @item Write the source code for your application, or, for testing, just
 copy the code from an existing sample application into the source file
 that Visual C++ has already created for you. (Note that your source
-filehas to have a @code{.cpp} extension; otherwise, Visual C++ won't
-compile the FFmpeg headers correctly because in C mode, it doesn't
+filehas to have a @code{.cpp} extension; otherwise, Visual C++ will not
+compile the FFmpeg headers correctly because in C mode, it does not
 recognize the @code{inline} keyword.)  For example, you can copy
 @file{output_example.c} from the FFmpeg distribution (but you will
 have to make minor modifications so the code will compile under
@@ -1262,7 +1262,7 @@ set to "Multi-threaded DLL".
 the application. Hopefully, it should compile and run cleanly. If you
 used @file{output_example.c} as your sample application, you will get a
 few compiler errors, but they are easy to fix. The first type of error
-occurs because Visual C++ doesn't allow an @code{int} to be converted to
+occurs because Visual C++ does not allow an @code{int} to be converted to
 an @code{enum} without a cast. To solve the problem, insert the required
 casts (this error occurs once for a @code{CodecID} and once for a
 @code{CodecType}).  The second type of error occurs because C++ requires
@@ -1327,7 +1327,7 @@ and/or SDL, xvid, faac, faad2 packages from Cygwin Ports,
 
 @subsection Crosscompilation for Windows under Cygwin
 
-With Cygwin you can create Windows binaries that don't need the cygwin1.dll.
+With Cygwin you can create Windows binaries that do not need the cygwin1.dll.
 
 Just install your Cygwin as explained before, plus these additional
 "Devel" packages:
@@ -1358,7 +1358,7 @@ Old stuff:
 François Revol - revol at free dot fr - April 2002
 
 The configure script should guess the configuration itself,
-however I still didn't test building on the net_server version of BeOS.
+however I still did not test building on the net_server version of BeOS.
 
 FFserver is broken (needs poll() implementation).
 
@@ -1408,14 +1408,14 @@ designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
 compound literals (@samp{x = (struct s) @{ 17, 23 @};})
 @end itemize
 
-These features are supported by all compilers we care about, so we won't
-accept patches to remove their use unless they absolutely don't impair
+These features are supported by all compilers we care about, so we will not
+accept patches to remove their use unless they absolutely do not impair
 clarity and performance.
 
 All code must compile with GCC 2.95 and GCC 3.3. Currently, FFmpeg also
 compiles with several other compilers, such as the Compaq ccc compiler
 or Sun Studio 9, and we would like to keep it that way unless it would
-be exceedingly involved. To ensure compatibility, please don't use any
+be exceedingly involved. To ensure compatibility, please do not use any
 additional C99 features or GCC extensions. Especially watch out for:
 @itemize @bullet
 @item
@@ -1440,7 +1440,7 @@ bugs).
 Comments: Use the JavaDoc/Doxygen
 format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
-above them explaining what the function does, even if it's just one sentence.
+above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
 @example
 /**
@@ -1486,18 +1486,18 @@ please use av_log() instead.
    (#ifdef etc) by default so it does not interfere with other developers'
    work.
 @item
-   You don't have to over-test things. If it works for you, and you think it
+   You do not have to over-test things. If it works for you, and you think it
    should work for others, then commit. If your code has problems
    (portability, triggers compiler bugs, unusual environment etc) they will be
    reported and eventually fixed.
 @item
    Do not commit unrelated changes together, split them into self-contained
-   pieces. Also dont forget that if part B depends on part A but A doesnt
-   depend on B, then A can and should be commited first and seperately from B.
-   Keeping changes well split into self contained parts makes reviewing and
-   understanding them on svn log at the time of commit and later when
-   debugging a bug much easier.
-   Also if you have doubt about spliting or not spliting, dont hesitate to
+   pieces. Also do not forget that if part B depends on part A, but A does not
+   depend on B, then A can and should be committed first and separate from B.
+   Keeping changes well split into self-contained parts makes reviewing and
+   understanding them on the commit log mailing list easier. This also helps
+   in case of debugging later on.
+   Also if you have doubts about splitting or not splitting, do not hesitate to
    ask/disscuss it on the developer mailing list.
 @item
    Do not change behavior of the program (renaming options etc) without
@@ -1519,12 +1519,12 @@ please use av_log() instead.
    developer has his own indentation style, you should not change it. Of course
    if you (re)write something, you can use your own style, even though we would
    prefer if the indentation throughout FFmpeg was consistent (Many projects
-   force a given indentation style - we don't.). If you really need to make
+   force a given indentation style - we do not.). If you really need to make
    indentation changes (try to avoid this), separate them strictly from real
    changes.
 
    NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
-   then either do NOT change the indentation of the inner part within (don't
+   then either do NOT change the indentation of the inner part within (do not
    move it to the right)! or do so in a separate commit
 @item
    Always fill out the commit log message. Describe in a few lines what you
@@ -1540,7 +1540,7 @@ please use av_log() instead.
     Do NOT commit to code actively maintained by others without permission.
     Send a patch to ffmpeg-devel instead. If noone answers within a reasonable
     timeframe (12h for build failures and security fixes, 3 days small changes,
-    1 week for big patches) then commit your patch if you think it's OK.
+    1 week for big patches) then commit your patch if you think it is OK.
     Also note, the maintainer can simply ask for more time to review!
 @item
     Subscribe to the ffmpeg-cvslog mailing list. The diffs of all commits
@@ -1559,9 +1559,9 @@ please use av_log() instead.
     always check values read from some untrusted source before using them
     as array index or other risky things.
 @item
-    Developers who have provided a public gpg key shall only receive
-    passwords or other sensitive information related to ffmpeg encrypted
-    with their gpg key or in another secure way
+    Developers who have provided a public GPG key shall only receive
+    passwords or other sensitive information related to FFmpeg encrypted
+    with their GPG key or in another secure way.
 @item
     Remember to check if you need to bump versions for the specific libav
     parts (libavutil, libavcodec, libavformat) you are changing. You need
@@ -1579,8 +1579,8 @@ please use av_log() instead.
     it has a fourcc, add it to @file{libavformat/avienc.c}, even if it
     is only a decoder.
 @item
-    Do not change code to hide warnings without ensuring that the underlaying
-    logic is correct and thus the warning was inappropriate
+    Do not change code to hide warnings without ensuring that the underlying
+    logic is correct and thus the warning was inappropriate.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
@@ -1589,7 +1589,7 @@ Note, these rules are mostly borrowed from the MPlayer project.
 
 @section Submitting patches
 
-First, (@pxref{Coding Rules}) above if you didn't yet.
+First, (@pxref{Coding Rules}) above if you did not yet.
 
 When you submit your patch, try to send a unified diff (diff '-up'
 option). I cannot read other diffs :-)
@@ -1602,7 +1602,7 @@ Run the regression tests before submitting a patch so that you can
 verify that there are no big problems.
 
 Patches should be posted as base64 encoded attachments (or any other
-encoding which ensures that the patch won't be trashed during
+encoding which ensures that the patch will not be trashed during
 transmission) to the ffmpeg-devel mailing list, see
 @url{http://lists.mplayerhq.hu/mailman/listinfo/ffmpeg-devel}
 
@@ -1615,20 +1615,21 @@ and has no lrint()')
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
 clear note that the patch is not for SVN.
 Reviews and comments will be posted as replies to the patch on the
-mailinglist. The patch submitter then has to take care of every comment,
+mailing list. The patch submitter then has to take care of every comment,
 that can be by resubmitting a changed patch or by disscussion. Resubmitted
-patches will themselfs be reviewed like any other patch. If at some point
+patches will themselves be reviewed like any other patch. If at some point
 a patch passes review with no comments then it is approved, that can for
-simple and small patches happen immedeatly while large patches will generally
+simple and small patches happen immediately while large patches will generally
 have to be changed and reviewed many times before they are approved.
-After a patch is approved it will be applied to ffmpeg svn
+After a patch is approved it will be committed to the repository.
 
 We will review all submitted patches, but sometimes we are quite busy so
 especially for large patches this can take several weeks.
 
 When resubmitting patches, please do not make any significant changes
-unrelated to the comments such patches will be rejected, Instead submit
-such significant changes or new features as seperate patches.
+not related to the comments received during review. Such patches will
+be rejected. Instead, submit  significant changes or new features as
+separate patches.
 
 @section Regression tests
 
