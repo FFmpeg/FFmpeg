@@ -2203,6 +2203,7 @@ extern AVCodec snow_encoder;
 extern AVCodec sonic_encoder;
 extern AVCodec sonic_ls_encoder;
 extern AVCodec svq1_encoder;
+extern AVCodec targa_encoder;
 extern AVCodec vcr1_encoder;
 extern AVCodec vorbis_encoder;
 extern AVCodec wmav1_encoder;
