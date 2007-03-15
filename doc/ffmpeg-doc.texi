@@ -1552,6 +1552,9 @@ please use av_log() instead.
     unsure how best to do this, send a patch to ffmpeg-devel, the documentation
     maintainer(s) will review and commit your stuff.
 @item
+    Try to keep important discussions and requests (also) on the public
+    developer mailing list, so that all developers can benefit from them.
+@item
     Never write to unallocated memory, never write over the end of arrays,
     always check values read from some untrusted source before using them
     as array index or other risky things.
