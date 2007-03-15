@@ -1492,7 +1492,13 @@ please use av_log() instead.
    reported and eventually fixed.
 @item
    Do not commit unrelated changes together, split them into self-contained
-   pieces.
+   pieces. Also dont forget that if part B depends on part A but A doesnt
+   depend on B, then A can and should be commited first and seperately from B.
+   Keeping changes well split into self contained parts makes reviewing and
+   understanding them on svn log at the time of commit and later when
+   debugging a bug much easier.
+   Also if you have doubt about spliting or not spliting, dont hesitate to
+   ask/disscuss it on the developer mailing list.
 @item
    Do not change behavior of the program (renaming options etc) without
    first discussing it on the ffmpeg-devel mailing list. Do not remove
