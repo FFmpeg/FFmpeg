@@ -838,7 +838,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
     uint8_t*  data;
     uint8_t*  ptr;
     int       do_edge_wrap;
-    DECLARE_ALIGNED_8(DCTELEM, block[64]);
+    DECLARE_ALIGNED_16(DCTELEM, block[64]);
     EncBlockInfo  enc_blks[5*6];
     PutBitContext pbs[5*6];
     PutBitContext* pb;
@@ -846,7 +846,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
     int       vs_bit_size = 0;
     int       qnos[5];
 
-    assert((((int)block) & 7) == 0);
+    assert((((int)block) & 15) == 0);
 
     enc_blk = &enc_blks[0];
     pb = &pbs[0];
