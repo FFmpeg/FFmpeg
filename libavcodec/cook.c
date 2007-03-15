@@ -539,26 +539,26 @@ static void inline expand_category(COOKContext *q, int* category,
  * @param band                  current subband
  * @param quant_value_table     pointer to the array
  * @param subband_coef_index    array of indexes to quant_centroid_tab
- * @param subband_coef_noise    use random noise instead of predetermined value
+ * @param subband_coef_sign     signs of coefficients
  * @param mlt_buffer            pointer to the mlt buffer
  */
 
 
 static void scalar_dequant(COOKContext *q, int index, int band,
                            float* quant_value_table, int* subband_coef_index,
-                           int* subband_coef_noise, float* mlt_buffer){
+                           int* subband_coef_sign, float* mlt_buffer){
     int i;
     float f1;
 
     for(i=0 ; i<SUBBAND_SIZE ; i++) {
         if (subband_coef_index[i]) {
-            if (subband_coef_noise[i]) {
+            if (subband_coef_sign[i]) {
                 f1 = -quant_centroid_tab[index][subband_coef_index[i]];
             } else {
                 f1 = quant_centroid_tab[index][subband_coef_index[i]];
             }
         } else {
-            /* noise coding if subband_coef_noise[i] == 0 */
+            /* noise coding if subband_coef_index[i] == 0 */
             q->random_state = q->random_state * 214013 + 2531011;    //typical RNG numbers
             f1 = randsign[(q->random_state/0x1000000)&1] * dither_tab[index]; //>>31
         }
@@ -566,16 +566,16 @@ static void scalar_dequant(COOKContext *q, int index, int band,
     }
 }
 /**
- * Unpack the subband_coef_index and subband_coef_noise vectors.
+ * Unpack the subband_coef_index and subband_coef_sign vectors.
  *
  * @param q                     pointer to the COOKContext
  * @param category              pointer to the category array
  * @param subband_coef_index    array of indexes to quant_centroid_tab
- * @param subband_coef_noise    use random noise instead of predetermined value
+ * @param subband_coef_sign     signs of coefficients
  */
 
 static int unpack_SQVH(COOKContext *q, int category, int* subband_coef_index,
-                       int* subband_coef_noise) {
+                       int* subband_coef_sign) {
     int i,j;
     int vlc, vd ,tmp, result;
     int ub;
@@ -599,13 +599,13 @@ static int unpack_SQVH(COOKContext *q, int category, int* subband_coef_index,
         for(j=0 ; j<vd ; j++){
             if (subband_coef_index[i*vd + j]) {
                 if(get_bits_count(&q->gb) < q->bits_per_subpacket){
-                    subband_coef_noise[i*vd+j] = get_bits1(&q->gb);
+                    subband_coef_sign[i*vd+j] = get_bits1(&q->gb);
                 } else {
                     result=1;
-                    subband_coef_noise[i*vd+j]=0;
+                    subband_coef_sign[i*vd+j]=0;
                 }
             } else {
-                subband_coef_noise[i*vd+j]=0;
+                subband_coef_sign[i*vd+j]=0;
             }
         }
     }
@@ -627,32 +627,32 @@ static void decode_vectors(COOKContext* q, int* category,
                            float* quant_value_table, float* mlt_buffer){
     /* A zero in this table means that the subband coefficient is
        random noise coded. */
-    int subband_coef_noise[SUBBAND_SIZE];
+    int subband_coef_index[SUBBAND_SIZE];
     /* A zero in this table means that the subband coefficient is a
        positive multiplicator. */
-    int subband_coef_index[SUBBAND_SIZE];
+    int subband_coef_sign[SUBBAND_SIZE];
     int band, j;
     int index=0;
 
     for(band=0 ; band<q->total_subbands ; band++){
         index = category[band];
         if(category[band] < 7){
-            if(unpack_SQVH(q, category[band], subband_coef_index, subband_coef_noise)){
+            if(unpack_SQVH(q, category[band], subband_coef_index, subband_coef_sign)){
                 index=7;
                 for(j=0 ; j<q->total_subbands ; j++) category[band+j]=7;
             }
         }
         if(index==7) {
             memset(subband_coef_index, 0, sizeof(subband_coef_index));
-            memset(subband_coef_noise, 0, sizeof(subband_coef_noise));
+            memset(subband_coef_sign, 0, sizeof(subband_coef_sign));
         }
         scalar_dequant(q, index, band, quant_value_table, subband_coef_index,
-                       subband_coef_noise, mlt_buffer);
+                       subband_coef_sign, mlt_buffer);
     }
 
     if(q->total_subbands*SUBBAND_SIZE >= q->samples_per_channel){
         return;
-    }
+    } /* FIXME: should this be removed, or moved into loop above? */
 }
 
 
