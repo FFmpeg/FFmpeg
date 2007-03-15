@@ -2287,14 +2287,6 @@ matroska_read_header (AVFormatContext    *s,
 
             }
 
-            else if (codec_id == CODEC_ID_MPEG1VIDEO ||
-                     codec_id == CODEC_ID_MPEG2VIDEO ||
-                     codec_id == CODEC_ID_MPEG4      ||
-                     codec_id == CODEC_ID_MSMPEG4V3  ||
-                     codec_id == CODEC_ID_H264) {
-                track->flags |= MATROSKA_TRACK_REORDER;
-            }
-
             else if (codec_id == CODEC_ID_AAC && !track->codec_priv_size) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *) track;
                 int profile = matroska_aac_profile(track->codec_id);
@@ -2388,6 +2380,7 @@ matroska_read_header (AVFormatContext    *s,
                           st->codec->height * videotrack->display_width,
                           st->codec-> width * videotrack->display_height,
                           255);
+                st->need_parsing = 2;
             } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
 
