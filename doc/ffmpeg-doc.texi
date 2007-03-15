@@ -1594,8 +1594,25 @@ It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
-We reply to all submitted patches and either apply or reject with some
-explanation why, but sometimes we are quite busy so it can take a week or two.
+@section Patch review process
+
+All patches posted to ffmpeg-devel will be reviewed, unless they contain a
+clear note that the patch is not for SVN.
+Reviews and comments will be posted as replies to the patch on the
+mailinglist. The patch submitter then has to take care of every comment,
+that can be by resubmitting a changed patch or by disscussion. Resubmitted
+patches will themselfs be reviewed like any other patch. If at some point
+a patch passes review with no comments then it is approved, that can for
+simple and small patches happen immedeatly while large patches will generally
+have to be changed and reviewed many times before they are approved.
+After a patch is approved it will be applied to ffmpeg svn
+
+We will review all submitted patches, but sometimes we are quite busy so
+especially for large patches this can take several weeks.
+
+When resubmitting patches, please do not make any significant changes
+unrelated to the comments such patches will be rejected, Instead submit
+such significant changes or new features as seperate patches.
 
 @section Regression tests
 
