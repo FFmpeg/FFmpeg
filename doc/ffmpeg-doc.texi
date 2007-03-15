@@ -1559,6 +1559,10 @@ please use av_log() instead.
     always check values read from some untrusted source before using them
     as array index or other risky things.
 @item
+    Developers who have provided a public gpg key shall only receive
+    passwords or other sensitive information related to ffmpeg encrypted
+    with their gpg key or in another secure way
+@item
     Remember to check if you need to bump versions for the specific libav
     parts (libavutil, libavcodec, libavformat) you are changing. You need
     to change the version integer and the version string.
