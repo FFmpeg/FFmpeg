@@ -205,6 +205,7 @@ const char **opt_names=NULL;
 int opt_name_count=0;
 AVCodecContext *avctx_opts[CODEC_TYPE_NB];
 AVFormatContext *avformat_opts;
+static int64_t timer_start = 0;
 
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
@@ -925,9 +926,12 @@ static void print_report(AVFormatContext **output_files,
                     enc->coded_frame->quality/(float)FF_QP2LAMBDA);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
+            float t = (av_gettime()-timer_start) / 1000000.0;
+
             frame_number = ost->frame_number;
-            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d q=%3.1f ",
-                    frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3d q=%3.1f ",
+                     frame_number, (t>1)?(int)(frame_number/t+0.5) : 0,
+                     enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
             if(is_last_report)
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
             if(qp_hist && enc->coded_frame){
@@ -1808,6 +1812,7 @@ static int av_encode(AVFormatContext **output_files,
     term_init();
 
     key = -1;
+    timer_start = av_gettime();
 
     for(; received_sigterm == 0;) {
         int file_index, ist_index;
