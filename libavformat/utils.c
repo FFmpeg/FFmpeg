@@ -602,8 +602,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         /* XXX: need has_b_frame, but cannot get it if the codec is
            not initialized */
-        if ((   st->codec->codec_id == CODEC_ID_H264
-             || st->codec->has_b_frames) &&
+        if (st->codec->has_b_frames &&
             pc && pc->pict_type != FF_B_TYPE)
             presentation_delayed = 1;
         /* this may be redundant, but it shouldnt hurt */
