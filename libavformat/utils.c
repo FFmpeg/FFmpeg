@@ -578,7 +578,7 @@ static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
-    int num, den, presentation_delayed;
+    int num, den, presentation_delayed, delay;
     /* handle wrapping */
     if(st->cur_dts != AV_NOPTS_VALUE){
         if(pkt->pts != AV_NOPTS_VALUE)
@@ -598,11 +598,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->flags |= PKT_FLAG_KEY;
 
     /* do we have a video B frame ? */
+    delay= st->codec->has_b_frames;
     presentation_delayed = 0;
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         /* XXX: need has_b_frame, but cannot get it if the codec is
            not initialized */
-        if (st->codec->has_b_frames &&
+        if (delay &&
             pc && pc->pict_type != FF_B_TYPE)
             presentation_delayed = 1;
         /* this may be redundant, but it shouldnt hurt */
@@ -611,8 +612,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
 
     if(st->cur_dts == AV_NOPTS_VALUE){
-        if(presentation_delayed) st->cur_dts = -pkt->duration;
-        else                     st->cur_dts = 0;
+        st->cur_dts = -delay * pkt->duration;
     }
 
 //    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
