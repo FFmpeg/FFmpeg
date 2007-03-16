@@ -600,7 +600,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* do we have a video B frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         /* XXX: need has_b_frame, but cannot get it if the codec is
            not initialized */
         if (delay &&
@@ -609,7 +608,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         /* this may be redundant, but it shouldnt hurt */
         if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
             presentation_delayed = 1;
-    }
 
     if(st->cur_dts == AV_NOPTS_VALUE){
         st->cur_dts = -delay * pkt->duration;
