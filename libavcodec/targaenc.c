@@ -46,12 +46,17 @@ static int targa_encode_frame(AVCodecContext *avctx,
     AV_WL16(outbuf+14, avctx->height);
     outbuf[17] = 0x20;           /* origin is top-left. no alpha */
 
-    /* TODO: support alpha channel and other bit-depths.  and RLE? */
+    /* TODO: support alpha channel and RLE */
     switch(avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
         outbuf[2] = 3;           /* uncompressed grayscale image */
         outbuf[16] = 8;          /* bpp */
         n = avctx->width;
+        break;
+    case PIX_FMT_RGB555:
+        outbuf[2] = 2;           /* uncompresses true-color image */
+        outbuf[16] = 16;         /* bpp */
+        n = 2 * avctx->width;
         break;
     case PIX_FMT_BGR24:
         outbuf[2] = 2;           /* uncompressed true-color image */
@@ -92,5 +97,5 @@ AVCodec targa_encoder = {
     .priv_data_size = 0,
     .init = targa_encode_init,
     .encode = targa_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_GRAY8, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB555, PIX_FMT_GRAY8, -1},
 };
