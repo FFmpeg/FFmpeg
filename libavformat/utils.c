@@ -618,21 +618,16 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (presentation_delayed) {
         /* DTS = decompression time stamp */
         /* PTS = presentation time stamp */
-        if (pkt->dts == AV_NOPTS_VALUE) {
-            /* if we know the last pts, use it */
-            if(st->last_IP_pts != AV_NOPTS_VALUE)
-                st->cur_dts = pkt->dts = st->last_IP_pts;
-            else
-                pkt->dts = st->cur_dts;
-        } else {
-            st->cur_dts = pkt->dts;
-        }
+        if (pkt->dts == AV_NOPTS_VALUE)
+            pkt->dts = st->last_IP_pts;
+        if (pkt->dts == AV_NOPTS_VALUE)
+            pkt->dts = st->cur_dts;
+
         /* this is tricky: the dts must be incremented by the duration
            of the frame we are displaying, i.e. the last I or P frame */
         if (st->last_IP_duration == 0)
-            st->cur_dts += pkt->duration;
-        else
-            st->cur_dts += st->last_IP_duration;
+            st->last_IP_duration = pkt->duration;
+        st->cur_dts = pkt->dts + st->last_IP_duration;
         st->last_IP_duration  = pkt->duration;
         st->last_IP_pts= pkt->pts;
         /* cannot compute PTS if not present (we can compute it only
