@@ -21,12 +21,27 @@
  */
 #include "avcodec.h"
 
+static int targa_encode_normal(uint8_t *outbuf, AVFrame *pic, int bpp, int w, int h)
+{
+    int i, n = bpp * w;
+    uint8_t *out = outbuf;
+    uint8_t *ptr = pic->data[0];
+
+    for(i=0; i < h; i++) {
+        memcpy(out, ptr, n);
+        out += n;
+        ptr += pic->linesize[0];
+    }
+
+    return out - outbuf;
+}
+
 static int targa_encode_frame(AVCodecContext *avctx,
                               unsigned char *outbuf,
                               int buf_size, void *data){
     AVFrame *p = data;
-    int i, n, linesize;
-    uint8_t *ptr, *out;
+    int bpp;
+    uint8_t *out;
 
     if(avctx->width > 0xffff || avctx->height > 0xffff) {
         av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
@@ -51,31 +66,23 @@ static int targa_encode_frame(AVCodecContext *avctx,
     case PIX_FMT_GRAY8:
         outbuf[2] = 3;           /* uncompressed grayscale image */
         outbuf[16] = 8;          /* bpp */
-        n = avctx->width;
         break;
     case PIX_FMT_RGB555:
         outbuf[2] = 2;           /* uncompresses true-color image */
         outbuf[16] = 16;         /* bpp */
-        n = 2 * avctx->width;
         break;
     case PIX_FMT_BGR24:
         outbuf[2] = 2;           /* uncompressed true-color image */
         outbuf[16] = 24;         /* bpp */
-        n = 3 * avctx->width;
         break;
     default:
         return -1;
     }
+    bpp = outbuf[16] >> 3;
 
     out = outbuf + 18;  /* skip past the header we just output */
-    ptr = p->data[0];
-    linesize = p->linesize[0];
 
-    for(i=0; i < avctx->height; i++) {
-        memcpy(out, ptr, n);
-        out += n;
-        ptr += linesize;
-    }
+    out += targa_encode_normal(out, p, bpp, avctx->width, avctx->height);
 
     /* The standard recommends including this section, even if we don't use
      * any of the features it affords. TODO: take advantage of the pixel
