@@ -578,7 +578,7 @@ static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
-    int num, den, presentation_delayed, delay;
+    int num, den, presentation_delayed, delay, i;
     /* handle wrapping */
     if(st->cur_dts != AV_NOPTS_VALUE){
         if(pkt->pts != AV_NOPTS_VALUE)
@@ -615,6 +615,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
 //    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
     /* interpolate PTS and DTS if they are not present */
+  if(delay <=1){
     if (presentation_delayed) {
         /* DTS = decompression time stamp */
         /* PTS = presentation time stamp */
@@ -650,7 +651,21 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->dts = pkt->pts;
         st->cur_dts = pkt->pts + pkt->duration;
     }
-//    av_log(NULL, AV_LOG_DEBUG, "OUTdelayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts);
+  }
+
+    if(pkt->pts != AV_NOPTS_VALUE){
+        st->pts_buffer[0]= pkt->pts;
+        for(i=1; i<delay+1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
+            st->pts_buffer[i]= (i-delay-1) * pkt->duration;
+        for(i=0; i<delay && st->pts_buffer[i] > st->pts_buffer[i+1]; i++)
+            FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
+        if(pkt->dts == AV_NOPTS_VALUE)
+            pkt->dts= st->pts_buffer[0];
+        if(pkt->dts > st->cur_dts)
+            st->cur_dts = pkt->dts;
+    }
+
+//    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, delay, pkt->pts, pkt->dts, st->cur_dts);
 
     /* update flags */
     if (pc) {
