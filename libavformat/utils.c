@@ -600,14 +600,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* do we have a video B frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
-        /* XXX: need has_b_frame, but cannot get it if the codec is
-           not initialized */
-        if (delay &&
-            pc && pc->pict_type != FF_B_TYPE)
-            presentation_delayed = 1;
-        /* this may be redundant, but it shouldnt hurt */
-        if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
-            presentation_delayed = 1;
+    /* XXX: need has_b_frame, but cannot get it if the codec is
+        not initialized */
+    if (delay &&
+        pc && pc->pict_type != FF_B_TYPE)
+        presentation_delayed = 1;
+    /* this may be redundant, but it shouldnt hurt */
+    if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
+        presentation_delayed = 1;
 
     if(st->cur_dts == AV_NOPTS_VALUE){
         st->cur_dts = -delay * pkt->duration;
@@ -615,43 +615,43 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
 //    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
     /* interpolate PTS and DTS if they are not present */
-  if(delay <=1){
-    if (presentation_delayed) {
-        /* DTS = decompression time stamp */
-        /* PTS = presentation time stamp */
-        if (pkt->dts == AV_NOPTS_VALUE)
-            pkt->dts = st->last_IP_pts;
-        if (pkt->dts == AV_NOPTS_VALUE)
-            pkt->dts = st->cur_dts;
+    if(delay <=1){
+        if (presentation_delayed) {
+            /* DTS = decompression time stamp */
+            /* PTS = presentation time stamp */
+            if (pkt->dts == AV_NOPTS_VALUE)
+                pkt->dts = st->last_IP_pts;
+            if (pkt->dts == AV_NOPTS_VALUE)
+                pkt->dts = st->cur_dts;
 
-        /* this is tricky: the dts must be incremented by the duration
-           of the frame we are displaying, i.e. the last I or P frame */
-        if (st->last_IP_duration == 0)
-            st->last_IP_duration = pkt->duration;
-        st->cur_dts = pkt->dts + st->last_IP_duration;
-        st->last_IP_duration  = pkt->duration;
-        st->last_IP_pts= pkt->pts;
-        /* cannot compute PTS if not present (we can compute it only
-           by knowing the futur */
-    } else {
-        if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
-            int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
-            int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
-            if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
-                pkt->pts += pkt->duration;
-//                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%"PRId64" size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
+            /* this is tricky: the dts must be incremented by the duration
+            of the frame we are displaying, i.e. the last I or P frame */
+            if (st->last_IP_duration == 0)
+                st->last_IP_duration = pkt->duration;
+            st->cur_dts = pkt->dts + st->last_IP_duration;
+            st->last_IP_duration  = pkt->duration;
+            st->last_IP_pts= pkt->pts;
+            /* cannot compute PTS if not present (we can compute it only
+            by knowing the futur */
+        } else {
+            if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
+                int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
+                int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
+                if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
+                    pkt->pts += pkt->duration;
+    //                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%"PRId64" size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
+                }
             }
-        }
 
-        /* presentation is not delayed : PTS and DTS are the same */
-        if(pkt->pts == AV_NOPTS_VALUE)
-            pkt->pts = pkt->dts;
-        if(pkt->pts == AV_NOPTS_VALUE)
-            pkt->pts = st->cur_dts;
-        pkt->dts = pkt->pts;
-        st->cur_dts = pkt->pts + pkt->duration;
+            /* presentation is not delayed : PTS and DTS are the same */
+            if(pkt->pts == AV_NOPTS_VALUE)
+                pkt->pts = pkt->dts;
+            if(pkt->pts == AV_NOPTS_VALUE)
+                pkt->pts = st->cur_dts;
+            pkt->dts = pkt->pts;
+            st->cur_dts = pkt->pts + pkt->duration;
+        }
     }
-  }
 
     if(pkt->pts != AV_NOPTS_VALUE){
         st->pts_buffer[0]= pkt->pts;
