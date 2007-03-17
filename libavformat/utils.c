@@ -671,17 +671,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (pc) {
         pkt->flags = 0;
         /* key frame computation */
-        switch(st->codec->codec_type) {
-        case CODEC_TYPE_VIDEO:
             if (pc->pict_type == FF_I_TYPE)
                 pkt->flags |= PKT_FLAG_KEY;
-            break;
-        case CODEC_TYPE_AUDIO:
-            pkt->flags |= PKT_FLAG_KEY;
-            break;
-        default:
-            break;
-        }
     }
 }
 
