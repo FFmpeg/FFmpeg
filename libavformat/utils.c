@@ -648,20 +648,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
 
         /* presentation is not delayed : PTS and DTS are the same */
-        if (pkt->pts == AV_NOPTS_VALUE) {
-            if (pkt->dts == AV_NOPTS_VALUE) {
-                pkt->pts = st->cur_dts;
-                pkt->dts = st->cur_dts;
-            }
-            else {
-                st->cur_dts = pkt->dts;
-                pkt->pts = pkt->dts;
-            }
-        } else {
-            st->cur_dts = pkt->pts;
-            pkt->dts = pkt->pts;
-        }
-        st->cur_dts += pkt->duration;
+        if(pkt->pts == AV_NOPTS_VALUE)
+            pkt->pts = pkt->dts;
+        if(pkt->pts == AV_NOPTS_VALUE)
+            pkt->pts = st->cur_dts;
+        pkt->dts = pkt->pts;
+        st->cur_dts = pkt->pts + pkt->duration;
     }
 //    av_log(NULL, AV_LOG_DEBUG, "OUTdelayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts);
 
