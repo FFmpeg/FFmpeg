@@ -1068,8 +1068,11 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         for(i= t1+1; i<4; i++)if(!intra[i]) {t2 = i; break;}
         tx = (mvx[t1] + mvx[t2]) / 2;
         ty = (mvy[t1] + mvy[t2]) / 2;
-    } else
+    } else {
+        s->current_picture.motion_val[1][s->block_index[0]][0] = 0;
+        s->current_picture.motion_val[1][s->block_index[0]][1] = 0;
         return; //no need to do MC for inter blocks
+    }
 
     s->current_picture.motion_val[1][s->block_index[0]][0] = tx;
     s->current_picture.motion_val[1][s->block_index[0]][1] = ty;
@@ -2004,6 +2007,8 @@ static inline void vc1_pred_mv(MpegEncContext *s, int n, int dmv_x, int dmv_y, i
     if(s->mb_intra){
         s->mv[0][n][0] = s->current_picture.motion_val[0][xy][0] = 0;
         s->mv[0][n][1] = s->current_picture.motion_val[0][xy][1] = 0;
+        s->current_picture.motion_val[1][xy][0] = 0;
+        s->current_picture.motion_val[1][xy][1] = 0;
         if(mv1) { /* duplicate motion data for 1-MV block */
             s->current_picture.motion_val[0][xy + 1][0] = 0;
             s->current_picture.motion_val[0][xy + 1][1] = 0;
@@ -2011,6 +2016,12 @@ static inline void vc1_pred_mv(MpegEncContext *s, int n, int dmv_x, int dmv_y, i
             s->current_picture.motion_val[0][xy + wrap][1] = 0;
             s->current_picture.motion_val[0][xy + wrap + 1][0] = 0;
             s->current_picture.motion_val[0][xy + wrap + 1][1] = 0;
+            s->current_picture.motion_val[1][xy + 1][0] = 0;
+            s->current_picture.motion_val[1][xy + 1][1] = 0;
+            s->current_picture.motion_val[1][xy + wrap][0] = 0;
+            s->current_picture.motion_val[1][xy + wrap][1] = 0;
+            s->current_picture.motion_val[1][xy + wrap + 1][0] = 0;
+            s->current_picture.motion_val[1][xy + wrap + 1][1] = 0;
         }
         return;
     }
