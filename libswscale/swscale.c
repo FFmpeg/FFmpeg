@@ -1876,7 +1876,12 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
 	if(!srcRange){
 		cy= (cy*255) / 219;
 		oy= 16<<16;
-	}
+	}else{
+                crv= (crv*224) / 255;
+                cbu= (cbu*224) / 255;
+                cgu= (cgu*224) / 255;
+                cgv= (cgv*224) / 255;
+        }
 
 	cy = (cy *contrast             )>>16;
 	crv= (crv*contrast * saturation)>>32;

@@ -263,6 +263,11 @@ int yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange, 
     if (fullRange) {
         cy = 1 << 16;
         oy = 0;
+        crv= (crv*224) / 255;
+        cbu= (cbu*224) / 255;
+        cgu= (cgu*224) / 255;
+        cgv= (cgv*224) / 255;
+        //FIXME maybe its cleaner if the tables where based on full range (*244/255)
     } else {
         cy = ((1 << 16) * 255) / 219;
         oy= 16 << 16;
