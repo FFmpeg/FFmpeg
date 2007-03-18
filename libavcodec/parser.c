@@ -710,7 +710,6 @@ static int ac3_parse_init(AVCodecParserContext *s1)
     s->inbuf_ptr = s->inbuf;
     s->header_size = AC3_HEADER_SIZE;
     s->sync = ac3_sync;
-    ac3_common_init();
     return 0;
 }
 #endif

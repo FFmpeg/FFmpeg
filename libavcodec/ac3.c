@@ -200,14 +200,6 @@ void ac3_common_init(void)
         l += v;
     }
     bndtab[50] = l;
-
-    /* generate ff_ac3_frame_sizes table */
-    for(i=0; i<38; i++) {
-        int br = ff_ac3_bitratetab[i >> 1];
-        ff_ac3_frame_sizes[i][0] = (  2*br      );
-        ff_ac3_frame_sizes[i][1] = (320*br / 147) + (i & 1);
-        ff_ac3_frame_sizes[i][2] = (  3*br      );
-    }
 }
 
 int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)

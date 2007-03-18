@@ -89,7 +89,7 @@ typedef struct {
  */
 int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr);
 
-extern uint16_t ff_ac3_frame_sizes[38][3];
+extern const uint16_t ff_ac3_frame_sizes[38][3];
 extern const uint8_t ff_ac3_channels[8];
 extern const uint16_t ff_ac3_freqs[3];
 extern const uint16_t ff_ac3_bitratetab[19];
