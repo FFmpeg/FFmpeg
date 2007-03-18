@@ -737,13 +737,12 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         uint64_t tmp= nut->next_startcode;
         nut->next_startcode=0;
 
-        if (url_feof(bc))
-            return -1;
-
         if(tmp){
             pos-=8;
         }else{
             frame_code = get_byte(bc);
+            if(url_feof(bc))
+                return -1;
             if(frame_code == 'N'){
                 tmp= frame_code;
                 for(i=1; i<8; i++)
