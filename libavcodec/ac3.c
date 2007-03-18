@@ -50,20 +50,10 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
     }
 }
 
-/* AC3 bit allocation. The algorithm is the one described in the AC3
-   spec. */
-void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
-                                   int8_t *exp, int start, int end,
-                                   int snroffset, int fgain, int is_lfe,
-                                   int deltbae,int deltnseg,
-                                   uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba)
+void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
+                               int16_t *bndpsd)
 {
-    int bin,i,j,k,end1,v,bndstrt,bndend,lowcomp,begin;
-    int fastleak,slowleak,address,tmp;
-    int16_t psd[256]; /* scaled exponents */
-    int16_t bndpsd[50]; /* interpolated exponents */
-    int16_t excite[50]; /* excitation */
-    int16_t mask[50];   /* masking value */
+    int bin, i, j, k, end1, v;
 
     /* exponent mapping to PSD */
     for(bin=start;bin<end;bin++) {
@@ -86,6 +76,18 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
         bndpsd[k]=v;
         k++;
     } while (end > bndtab[k]);
+}
+
+void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
+                                int start, int end, int fgain, int is_lfe,
+                                int deltbae, int deltnseg, uint8_t *deltoffst,
+                                uint8_t *deltlen, uint8_t *deltba,
+                                int16_t *mask)
+{
+    int16_t excite[50]; /* excitation */
+    int bin, k;
+    int bndstrt, bndend, begin, end1, tmp;
+    int lowcomp, fastleak, slowleak;
 
     /* excitation function */
     bndstrt = masktab[start];
@@ -166,13 +168,17 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
             }
         }
     }
+}
 
-    /* compute bit allocation */
+void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
+                               int snroffset, int floor, uint8_t *bap)
+{
+    int i, j, k, end1, v, address;
 
     i = start;
     j = masktab[start];
     do {
-        v = (FFMAX(mask[j] - snroffset - s->floor, 0) & 0x1FE0) + s->floor;
+        v = (FFMAX(mask[j] - snroffset - floor, 0) & 0x1FE0) + floor;
         end1 = FFMIN(bndtab[j] + bndsz[j], end);
         for (k = i; k < end1; k++) {
             address = av_clip((psd[i] - v) >> 5, 0, 63);
@@ -180,6 +186,28 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
             i++;
         }
     } while (end > bndtab[j++]);
+}
+
+/* AC3 bit allocation. The algorithm is the one described in the AC3
+   spec. */
+void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
+                                   int8_t *exp, int start, int end,
+                                   int snroffset, int fgain, int is_lfe,
+                                   int deltbae,int deltnseg,
+                                   uint8_t *deltoffst, uint8_t *deltlen,
+                                   uint8_t *deltba)
+{
+    int16_t psd[256];   /* scaled exponents */
+    int16_t bndpsd[50]; /* interpolated exponents */
+    int16_t mask[50];   /* masking value */
+
+    ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, bndpsd);
+
+    ff_ac3_bit_alloc_calc_mask(s, bndpsd, start, end, fgain, is_lfe,
+                               deltbae, deltnseg, deltoffst, deltlen, deltba,
+                               mask);
+
+    ff_ac3_bit_alloc_calc_bap(mask, psd, start, end, snroffset, s->floor, bap);
 }
 
 /**
