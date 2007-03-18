@@ -88,7 +88,7 @@ static void build_udp_url(char *buf, int buf_size,
     if (local_port >= 0)
         url_add_option(buf, buf_size, "localport=%d", local_port);
     if (multicast)
-        url_add_option(buf, buf_size, "multicast=1", multicast);
+        url_add_option(buf, buf_size, "multicast=1");
     if (ttl >= 0)
         url_add_option(buf, buf_size, "ttl=%d", ttl);
 }
