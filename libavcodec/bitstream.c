@@ -227,10 +227,10 @@ static int build_table(VLC *vlc, int table_nb_bits,
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,
-             int use_static)
+             int flags)
 {
     vlc->bits = nb_bits;
-    if(!use_static) {
+    if(!(flags & INIT_VLC_USE_STATIC)) {
         vlc->table = NULL;
         vlc->table_allocated = 0;
         vlc->table_size = 0;
@@ -248,7 +248,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
     if (build_table(vlc, nb_bits, nb_codes,
                     bits, bits_wrap, bits_size,
                     codes, codes_wrap, codes_size,
-                    0, 0, use_static) < 0) {
+                    0, 0, flags) < 0) {
         av_free(vlc->table);
         return -1;
     }
