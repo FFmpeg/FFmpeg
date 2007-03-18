@@ -74,6 +74,7 @@ version <next>
 - GSM-MS encoder and decoder
 - DCA decoder
 - DXA demuxer and decoder
+- DNxHD decoder
 
 version 0.4.9-pre1:
 

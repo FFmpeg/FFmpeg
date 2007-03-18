@@ -64,6 +64,7 @@ OBJS-$(CONFIG_COOK_DECODER)            += cook.o
 OBJS-$(CONFIG_CSCD_DECODER)            += cscd.o
 OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
 OBJS-$(CONFIG_DCA_DECODER)             += dca.o
+OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o

@@ -1009,6 +1009,7 @@ following image formats are supported:
 @item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
 @item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CDROM FlashBack game.
 @item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
+@item AVID DNxHD             @tab     @tab  X @tab aka SMPTE VC3
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

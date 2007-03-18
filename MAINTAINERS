@@ -113,6 +113,7 @@ Codecs:
   cljr                                  Alex Beregszaszi
   cook.c, cookdata.h                    Benjamin Larsson
   cscd.c                                Reimar Doeffinger
+  dnxhddec.c                            Baptiste Coudurier
   dpcm.c                                Mike Melanson
   dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
