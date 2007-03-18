@@ -206,6 +206,29 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst, uint8_t *src
     }
 }
 
+static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
+    int i;
+    int r,g,b;
+    r= *red;
+    g= *green;
+    b= *blue;
+    for(i=0; i<FFMIN(w,4); i++){
+        const int rt= src[i*4+R];
+        const int gt= src[i*4+G];
+        const int bt= src[i*4+B];
+        dst[i*4+R]= rt - r;
+        dst[i*4+G]= gt - g;
+        dst[i*4+B]= bt - b;
+        r = rt;
+        g = gt;
+        b = bt;
+    }
+    s->dsp.diff_bytes(dst+16, src+16, src+12, w*4-16);
+    *red=   src[(w-1)*4+R];
+    *green= src[(w-1)*4+G];
+    *blue=  src[(w-1)*4+B];
+}
+
 static void read_len_table(uint8_t *dst, GetBitContext *gb){
     int i, val, repeat;
 
@@ -360,7 +383,9 @@ static void alloc_temp(HYuvContext *s){
             s->temp[i]= av_malloc(s->width + 16);
         }
     }else{
-        s->temp[0]= av_malloc(4*s->width + 16);
+        for(i=0; i<2; i++){
+            s->temp[i]= av_malloc(4*s->width + 16);
+        }
     }
 }
 
@@ -521,6 +546,9 @@ static int encode_init(AVCodecContext *avctx)
     case PIX_FMT_YUV422P:
         s->bitstream_bpp= 16;
         break;
+    case PIX_FMT_RGB32:
+        s->bitstream_bpp= 24;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return -1;
@@ -550,7 +578,12 @@ static int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
     }
 
-    ((uint8_t*)avctx->extradata)[0]= s->predictor;
+    if(s->bitstream_bpp>=24 && s->predictor==MEDIAN){
+        av_log(avctx, AV_LOG_ERROR, "Error: RGB is incompatible with median predictor\n");
+        return -1;
+    }
+
+    ((uint8_t*)avctx->extradata)[0]= s->predictor | (s->decorrelate << 6);
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
     ((uint8_t*)avctx->extradata)[2]= s->interlaced ? 0x10 : 0x20;
     if(s->context)
@@ -759,6 +792,48 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
 }
 
 #ifdef CONFIG_DECODERS
+static int encode_bgr_bitstream(HYuvContext *s, int count){
+    int i;
+
+    if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 3*4*count){
+        av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return -1;
+    }
+
+    if((s->flags&CODEC_FLAG_PASS1) && (s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)){
+        for(i=0; i<count; i++){
+            int g= s->temp[0][4*i+G];
+            int b= (s->temp[0][4*i+B] - g) & 0xff;
+            int r= (s->temp[0][4*i+R] - g) & 0xff;
+            s->stats[0][b]++;
+            s->stats[1][g]++;
+            s->stats[2][r]++;
+        }
+    }else if(s->context || (s->flags&CODEC_FLAG_PASS1)){
+        for(i=0; i<count; i++){
+            int g= s->temp[0][4*i+G];
+            int b= (s->temp[0][4*i+B] - g) & 0xff;
+            int r= (s->temp[0][4*i+R] - g) & 0xff;
+            s->stats[0][b]++;
+            s->stats[1][g]++;
+            s->stats[2][r]++;
+            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);
+            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);
+            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);
+        }
+    }else{
+        for(i=0; i<count; i++){
+            int g= s->temp[0][4*i+G];
+            int b= (s->temp[0][4*i+B] - g) & 0xff;
+            int r= (s->temp[0][4*i+R] - g) & 0xff;
+            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);
+            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);
+            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);
+        }
+    }
+    return 0;
+}
+
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
     int offset[4];
@@ -1189,6 +1264,31 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 encode_422_bitstream(s, width);
             }
         }
+    }else if(avctx->pix_fmt == PIX_FMT_RGB32){
+        uint8_t *data = p->data[0] + (height-1)*p->linesize[0];
+        const int stride = -p->linesize[0];
+        const int fake_stride = -fake_ystride;
+        int y;
+        int leftr, leftg, leftb;
+
+        put_bits(&s->pb, 8, leftr= data[R]);
+        put_bits(&s->pb, 8, leftg= data[G]);
+        put_bits(&s->pb, 8, leftb= data[B]);
+        put_bits(&s->pb, 8, 0);
+
+        sub_left_prediction_bgr32(s, s->temp[0], data+4, width-1, &leftr, &leftg, &leftb);
+        encode_bgr_bitstream(s, width-1);
+
+        for(y=1; y<s->height; y++){
+            uint8_t *dst = data + y*stride;
+            if(s->predictor == PLANE && s->interlaced < y){
+                s->dsp.diff_bytes(s->temp[1], dst, dst - fake_stride, width*4);
+                sub_left_prediction_bgr32(s, s->temp[0], s->temp[1], width, &leftr, &leftg, &leftb);
+            }else{
+                sub_left_prediction_bgr32(s, s->temp[0], dst, width, &leftr, &leftg, &leftb);
+            }
+            encode_bgr_bitstream(s, width);
+        }
     }else{
         av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
     }
@@ -1273,7 +1373,7 @@ AVCodec huffyuv_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV422P, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_RGB32, -1},
 };
 
 AVCodec ffvhuff_encoder = {
@@ -1284,7 +1384,7 @@ AVCodec ffvhuff_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_RGB32, -1},
 };
 
 #endif //CONFIG_ENCODERS
