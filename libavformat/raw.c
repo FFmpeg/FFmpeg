@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "ac3.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */
@@ -408,18 +409,33 @@ static int h261_probe(AVProbeData *p)
 
 static int ac3_probe(AVProbeData *p)
 {
-    int score=0;
+    int max_frames, first_frames, frames;
+    uint8_t *buf, *buf2, *end;
+    AC3HeaderInfo hdr;
 
-    if(p->buf_size < 6)
+    if(p->buf_size < 7)
         return 0;
 
-    if((p->buf[0] == 0x0B) && (p->buf[1] == 0x77) &&    // sync word
-       ((p->buf[4] >> 6) != 3) &&                       // fscod
-       ((p->buf[5] >> 3) <= 16)) {                      // bsid
-        score = AVPROBE_SCORE_MAX / 2 + 10;
-    }
+    max_frames = 0;
+    buf = p->buf;
+    end = buf + FFMIN(4096, p->buf_size - 7);
 
-    return score;
+    for(; buf < end; buf++) {
+        buf2 = buf;
+
+        for(frames = 0; buf2 < end; frames++) {
+            if(ff_ac3_parse_header(buf2, &hdr) < 0)
+                break;
+            buf2 += hdr.frame_size;
+        }
+        max_frames = FFMAX(max_frames, frames);
+        if(buf == p->buf)
+            first_frames = frames;
+    }
+    if   (first_frames>=3) return AVPROBE_SCORE_MAX * 3 / 4;
+    else if(max_frames>=3) return AVPROBE_SCORE_MAX / 2;
+    else if(max_frames>=1) return 1;
+    else                   return 0;
 }
 
 AVInputFormat shorten_demuxer = {
