@@ -28,6 +28,7 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length);
 /**
  * encodes base64
  * @param src data, not a string
+ * @param buf output string
  */
-char *av_base64_encode(uint8_t * src, int len);
+char *av_base64_encode(char * buf, int buf_len, uint8_t * src, int len);
 
