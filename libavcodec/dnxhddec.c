@@ -157,7 +157,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
 
-    dprintf(ctx->avctx, AV_LOG_DEBUG, "width %d, heigth %d\n", ctx->width, ctx->height);
+    dprintf(ctx->avctx, "width %d, heigth %d\n", ctx->width, ctx->height);
 
     if (buf[0x21] & 0x80) {
         av_log(ctx->avctx, AV_LOG_ERROR, "10 bit per component\n");
@@ -165,7 +165,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
     }
 
     ctx->cid = AV_RB32(buf + 0x28);
-    dprintf(ctx->avctx, AV_LOG_DEBUG, "compression id %d\n", ctx->cid);
+    dprintf(ctx->avctx, "compression id %d\n", ctx->cid);
 
     if (dnxhd_init_vlc(ctx, ctx->cid) < 0)
         return -1;
@@ -183,10 +183,10 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
         return -1;
     }
 
-    dprintf(ctx->avctx, AV_LOG_DEBUG, "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
+    dprintf(ctx->avctx, "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i<<2));
-        dprintf(ctx->avctx, AV_LOG_DEBUG, "mb scan index %d\n", ctx->mb_scan_index[i]);
+        dprintf(ctx->avctx, "mb scan index %d\n", ctx->mb_scan_index[i]);
         if (buf_size < ctx->mb_scan_index[i] + 0x280) {
             av_log(ctx->avctx, AV_LOG_ERROR, "invalid mb scan index\n");
             return -1;
@@ -319,7 +319,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     DNXHDContext *ctx = avctx->priv_data;
     AVFrame *picture = data;
 
-    dprintf(avctx, AV_LOG_DEBUG, "frame size %d\n", buf_size);
+    dprintf(avctx, "frame size %d\n", buf_size);
 
     if (dnxhd_decode_header(ctx, buf, buf_size) < 0)
         return -1;
