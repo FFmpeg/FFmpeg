@@ -791,7 +791,6 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
     }
 }
 
-#ifdef CONFIG_DECODERS
 static int encode_bgr_bitstream(HYuvContext *s, int count){
     int i;
 
@@ -834,6 +833,7 @@ static int encode_bgr_bitstream(HYuvContext *s, int count){
     return 0;
 }
 
+#ifdef CONFIG_DECODERS
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
     int offset[4];
