@@ -356,4 +356,8 @@ to ffmpeg or libavcodec.
 
 see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
+@section where are docs about ffv1, msmpeg4, asv1, 4xm?
+
+see @url{http://svn.mplayerhq.hu/michael/trunk/docs/}
+
 @bye
