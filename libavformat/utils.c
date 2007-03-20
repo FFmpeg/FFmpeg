@@ -915,7 +915,7 @@ static void av_read_frame_flush(AVFormatContext *s)
             st->parser = NULL;
         }
         st->last_IP_pts = AV_NOPTS_VALUE;
-        st->cur_dts = 0; /* we set the current DTS to an unspecified origin */
+        st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
     }
 }
 
