@@ -106,6 +106,7 @@ Codecs:
   4xm.c                                 Michael Niedermayer
   8bps.c                                Roberto Togni
   aasc.c                                Kostya Shishkov
+  ac3*                                  Justin Ruggles
   asv*                                  Michael Niedermayer
   bmp.c                                 Mans Rullgard
   cavs*                                 Stefan Gehrer
