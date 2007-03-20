@@ -52,6 +52,7 @@
 #include "dsputil.h"
 #include "common.h"
 #include "bytestream.h"
+#include "random.h"
 
 #include "cookdata.h"
 
@@ -87,7 +88,7 @@ typedef struct {
     int                 bits_per_subpacket;
     int                 cookversion;
     /* states */
-    int                 random_state;
+    AVRandomState       random_state;
 
     /* transform data */
     MDCTContext         mdct_ctx;
@@ -374,22 +375,6 @@ static void decode_envelope(COOKContext *q, int* quant_index_table) {
 }
 
 /**
- * Create the quant value table.
- *
- * @param q                 pointer to the COOKContext
- * @param quant_value_table pointer to the array
- */
-
-static void inline dequant_envelope(COOKContext *q, int* quant_index_table,
-                                    float* quant_value_table){
-
-    int i;
-    for(i=0 ; i < q->total_subbands ; i++){
-        quant_value_table[i] = q->rootpow2tab[quant_index_table[i]+63];
-    }
-}
-
-/**
  * Calculate the category and category_index vector.
  *
  * @param q                     pointer to the COOKContext
@@ -536,33 +521,28 @@ static void inline expand_category(COOKContext *q, int* category,
  *
  * @param q                     pointer to the COOKContext
  * @param index                 index
- * @param band                  current subband
- * @param quant_value_table     pointer to the array
+ * @param quant_index           quantisation index
  * @param subband_coef_index    array of indexes to quant_centroid_tab
  * @param subband_coef_sign     signs of coefficients
- * @param mlt_buffer            pointer to the mlt buffer
+ * @param mlt_p                 pointer into the mlt buffer
  */
 
-
-static void scalar_dequant(COOKContext *q, int index, int band,
-                           float* quant_value_table, int* subband_coef_index,
-                           int* subband_coef_sign, float* mlt_buffer){
+static void scalar_dequant(COOKContext *q, int index, int quant_index,
+                           int* subband_coef_index, int* subband_coef_sign,
+                           float* mlt_p){
     int i;
     float f1;
 
     for(i=0 ; i<SUBBAND_SIZE ; i++) {
         if (subband_coef_index[i]) {
-            if (subband_coef_sign[i]) {
-                f1 = -quant_centroid_tab[index][subband_coef_index[i]];
-            } else {
-                f1 = quant_centroid_tab[index][subband_coef_index[i]];
-            }
+            f1 = quant_centroid_tab[index][subband_coef_index[i]];
+            if (subband_coef_sign[i]) f1 = -f1;
         } else {
             /* noise coding if subband_coef_index[i] == 0 */
-            q->random_state = q->random_state * 214013 + 2531011;    //typical RNG numbers
-            f1 = randsign[(q->random_state/0x1000000)&1] * dither_tab[index]; //>>31
+            f1 = dither_tab[index];
+            if (av_random(&q->random_state) < 0x80000000) f1 = -f1;
         }
-        mlt_buffer[band*20+ i] = f1 * quant_value_table[band];
+        mlt_p[i] = f1 * q->rootpow2tab[quant_index+63];
     }
 }
 /**
@@ -618,13 +598,13 @@ static int unpack_SQVH(COOKContext *q, int category, int* subband_coef_index,
  *
  * @param q                 pointer to the COOKContext
  * @param category          pointer to the category array
- * @param quant_value_table pointer to the array
+ * @param quant_index_table pointer to the array
  * @param mlt_buffer        pointer to mlt coefficients
  */
 
 
 static void decode_vectors(COOKContext* q, int* category,
-                           float* quant_value_table, float* mlt_buffer){
+                           int *quant_index_table, float* mlt_buffer){
     /* A zero in this table means that the subband coefficient is
        random noise coded. */
     int subband_coef_index[SUBBAND_SIZE];
@@ -646,8 +626,9 @@ static void decode_vectors(COOKContext* q, int* category,
             memset(subband_coef_index, 0, sizeof(subband_coef_index));
             memset(subband_coef_sign, 0, sizeof(subband_coef_sign));
         }
-        scalar_dequant(q, index, band, quant_value_table, subband_coef_index,
-                       subband_coef_sign, mlt_buffer);
+        scalar_dequant(q, index, quant_index_table[band],
+                       subband_coef_index, subband_coef_sign,
+                       &mlt_buffer[band * 20]);
     }
 
     if(q->total_subbands*SUBBAND_SIZE >= q->samples_per_channel){
@@ -667,20 +648,17 @@ static void decode_vectors(COOKContext* q, int* category,
 static void mono_decode(COOKContext *q, float* mlt_buffer) {
 
     int category_index[128];
-    float quant_value_table[102];
     int quant_index_table[102];
     int category[128];
 
     memset(&category, 0, 128*sizeof(int));
-    memset(&quant_value_table, 0, 102*sizeof(int));
     memset(&category_index, 0, 128*sizeof(int));
 
     decode_envelope(q, quant_index_table);
     q->num_vectors = get_bits(&q->gb,q->log2_numvector_size);
-    dequant_envelope(q, quant_index_table, quant_value_table);
     categorize(q, quant_index_table, category, category_index);
     expand_category(q, category, category_index);
-    decode_vectors(q, category, quant_value_table, mlt_buffer);
+    decode_vectors(q, category, quant_index_table, mlt_buffer);
 }
 
 
@@ -1035,8 +1013,8 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->nb_channels = avctx->channels;
     q->bit_rate = avctx->bit_rate;
 
-    /* Initialize state. */
-    q->random_state = 1;
+    /* Initialize RNG. */
+    av_init_random(1, &q->random_state);
 
     /* Initialize extradata related variables. */
     q->samples_per_channel = q->samples_per_frame / q->nb_channels;
