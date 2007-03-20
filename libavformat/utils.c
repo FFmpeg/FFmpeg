@@ -633,7 +633,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             st->last_IP_pts= pkt->pts;
             /* cannot compute PTS if not present (we can compute it only
             by knowing the futur */
-        } else {
+        } else if(pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE || pkt->duration){
             if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
                 int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
                 int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
