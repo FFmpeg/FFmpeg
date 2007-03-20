@@ -352,4 +352,8 @@ first, an MP3 decoder decodes MP3 packets not bastardized MP3 packets
 encapsulated in RTP. The same applies to all decoders, this is not specific
 to ffmpeg or libavcodec.
 
+@section where can i find libav* headers for pascal/delphi
+
+see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
+
 @bye
