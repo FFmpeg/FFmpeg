@@ -383,14 +383,20 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     uint8_t* buf_end = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
 
-    if (buf_size == 0) return 0;
+    if (buf_size == 0){
+        *data_size = 0;
+        return 0;
+    }
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
 
     s->samples = AV_RL32(buf); buf += 4;
-    if(!s->samples) return buf_size;
+    if(!s->samples){
+        *data_size = 0;
+        return buf_size;
+    }
     /* should not happen but who knows */
-    if(s->samples * 2 * avctx->channels > AVCODEC_MAX_AUDIO_FRAME_SIZE){
+    if(s->samples * 2 * avctx->channels > *data_size){
         av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
         return -1;
     }
