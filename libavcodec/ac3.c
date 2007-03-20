@@ -175,6 +175,12 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
 {
     int i, j, k, end1, v, address;
 
+    /* special case, if snroffset is -960, set all bap's to zero */
+    if(snroffset == -960) {
+        memset(bap, 0, 256);
+        return;
+    }
+
     i = start;
     j = masktab[start];
     do {
