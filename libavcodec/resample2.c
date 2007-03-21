@@ -80,7 +80,7 @@ static double bessel(double x){
  * builds a polyphase filterbank.
  * @param factor resampling factor
  * @param scale wanted sum of coefficients for each filter
- * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2->kaiser windowed sinc beta=16
+ * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
  */
 void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
     int ph, i, v;
@@ -108,9 +108,9 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
                 w = 2.0*x / (factor*tap_count) + M_PI;
                 y *= 0.3635819 - 0.4891775 * cos(w) + 0.1365995 * cos(2*w) - 0.0106411 * cos(3*w);
                 break;
-            case 2:
+            default:
                 w = 2.0*x / (factor*tap_count*M_PI);
-                y *= bessel(16*sqrt(FFMAX(1-w*w, 0)));
+                y *= bessel(type*sqrt(FFMAX(1-w*w, 0)));
                 break;
             }
 
