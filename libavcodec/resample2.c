@@ -93,7 +93,6 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
 
     for(ph=0;ph<phase_count;ph++) {
         double norm = 0;
-        double e= 0;
         for(i=0;i<tap_count;i++) {
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
             if (x == 0) y = 1.0;
@@ -121,9 +120,8 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
 
         /* normalize so that an uniform color remains the same */
         for(i=0;i<tap_count;i++) {
-            v = av_clip(lrintf(tab[i] * scale / norm + e), FELEM_MIN, FELEM_MAX);
+            v = av_clip(lrintf(tab[i] * scale / norm), FELEM_MIN, FELEM_MAX);
             filter[ph * tap_count + i] = v;
-            e += tab[i] * scale / norm - v;
         }
     }
 }
