@@ -124,6 +124,42 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
             filter[ph * tap_count + i] = v;
         }
     }
+#if 0
+    {
+#define LEN 1024
+        int j,k;
+        double sine[LEN + tap_count];
+        double filtered[LEN];
+        double maxff=-2, minff=2, maxsf=-2, minsf=2;
+        for(i=0; i<LEN; i++){
+            double ss=0, sf=0, ff=0;
+            for(j=0; j<LEN+tap_count; j++)
+                sine[j]= cos(i*j*M_PI/LEN);
+            for(j=0; j<LEN; j++){
+                double sum=0;
+                ph=0;
+                for(k=0; k<tap_count; k++)
+                    sum += filter[ph * tap_count + k] * sine[k+j];
+                filtered[j]= sum / (1<<FILTER_SHIFT);
+                ss+= sine[j + center] * sine[j + center];
+                ff+= filtered[j] * filtered[j];
+                sf+= sine[j + center] * filtered[j];
+            }
+            ss= sqrt(2*ss/LEN);
+            ff= sqrt(2*ff/LEN);
+            sf= 2*sf/LEN;
+            maxff= FFMAX(maxff, ff);
+            minff= FFMIN(minff, ff);
+            maxsf= FFMAX(maxsf, sf);
+            minsf= FFMIN(minsf, sf);
+            if(i%11==0){
+                av_log(NULL, AV_LOG_ERROR, "i:%4d ss:%f ff:%f-%f sf:%f-%f\n", i, ss, maxff, minff, maxsf, minsf);
+                minff=minsf= 2;
+                maxff=maxsf= -2;
+            }
+        }
+    }
+#endif
 }
 
 /**
