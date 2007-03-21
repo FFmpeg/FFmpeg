@@ -1479,19 +1479,13 @@ static int mov_write_header(AVFormatContext *s)
             track->tag = mov_find_audio_codec_tag(s, track);
             track->timescale = st->codec->sample_rate;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            switch(track->enc->codec_id){
-            case CODEC_ID_MP3:
-            case CODEC_ID_AAC:
-            case CODEC_ID_AMR_NB:
-            case CODEC_ID_AMR_WB:
-                track->audio_vbr = 1;
-                break;
-            default:
-                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
-            }
-            if (!st->codec->frame_size) {
+            if(!st->codec->frame_size){
                 av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
                 return -1;
+            }else if(st->codec->frame_size > 1){ /* assume compressed audio */
+                track->audio_vbr = 1;
+            }else{
+                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
         }
     }
