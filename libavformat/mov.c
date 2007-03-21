@@ -1502,6 +1502,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for(i=0; i<mov->total_streams; i++) {
         MOVStreamContext *sc = mov->streams[i];
+        AVStream *st = s->streams[i];
         /* sanity checks */
         if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
            (!sc->sample_size && !sc->sample_count)){
@@ -1513,6 +1514,9 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(!sc->time_scale)
             sc->time_scale= mov->time_scale;
         av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
+
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO && sc->stts_count == 1)
+            st->codec->frame_size = sc->stts_data[0].duration;
 
         if(s->streams[i]->duration != AV_NOPTS_VALUE){
             assert(s->streams[i]->duration % sc->time_rate == 0);
