@@ -38,7 +38,7 @@
 #define FELEM_MAX INT16_MAX
 #define FELEM_MIN INT16_MIN
 #else
-#define FILTER_SHIFT 22
+#define FILTER_SHIFT 30
 
 #define FELEM int32_t
 #define FELEM2 int64_t
