@@ -602,13 +602,15 @@ null_chunk_retry:
         pkt = &nsv->ahead[NSV_ST_VIDEO];
         av_get_packet(pb, pkt, vsize);
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
-        pkt->dts = nst->frame_offset++;
+        pkt->dts = nst->frame_offset;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
 /*
         for (i = 0; i < MIN(8, vsize); i++)
             PRINT(("NSV video: [%d] = %02x\n", i, pkt->data[i]));
 */
     }
+    ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
+
     if (asize/*st[NSV_ST_AUDIO]*/) {
         nst = st[NSV_ST_AUDIO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_AUDIO];
