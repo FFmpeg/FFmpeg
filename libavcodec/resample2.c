@@ -30,7 +30,7 @@
 #include "common.h"
 #include "dsputil.h"
 
-#if 1
+#ifndef CONFIG_RESAMPLE_HP
 #define FILTER_SHIFT 15
 
 #define FELEM int16_t
