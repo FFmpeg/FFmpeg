@@ -168,7 +168,8 @@ typedef struct MOVStreamContext {
     int time_rate;
     long current_sample;
     MOV_esds_t esds;
-    AVRational sample_size_v1;
+    unsigned int bytes_per_frame;
+    unsigned int samples_per_frame;
     int dv_audio_container;
 } MOVStreamContext;
 
@@ -843,9 +844,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             dprintf(c->fc, "version =%d, isom =%d\n",version,c->isom);
             if(!c->isom) {
                 if(version==1) {
-                    sc->sample_size_v1.den = get_be32(pb); /* samples per packet */
+                    sc->samples_per_frame = get_be32(pb);
                     get_be32(pb); /* bytes per packet */
-                    sc->sample_size_v1.num = get_be32(pb); /* bytes per frame */
+                    sc->bytes_per_frame = get_be32(pb);
                     get_be32(pb); /* bytes per sample */
                 } else if(version==2) {
                     get_be32(pb); /* sizeof struct only */
@@ -1415,8 +1416,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             /* get chunk size */
             if (sc->sample_size > 1 || st->codec->codec_id == CODEC_ID_PCM_U8 || st->codec->codec_id == CODEC_ID_PCM_S8)
                 chunk_size = chunk_samples * sc->sample_size;
-            else if (sc->sample_size_v1.den > 0 && (chunk_samples * sc->sample_size_v1.num % sc->sample_size_v1.den == 0))
-                chunk_size = chunk_samples * sc->sample_size_v1.num / sc->sample_size_v1.den;
+            else if (sc->samples_per_frame > 0 && (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0))
+                chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
             else { /* workaround to find nearest next chunk offset */
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->total_streams; j++) {
