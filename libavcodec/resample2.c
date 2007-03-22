@@ -35,17 +35,26 @@
 
 #define FELEM int16_t
 #define FELEM2 int32_t
+#define FELEML int64_t
 #define FELEM_MAX INT16_MAX
 #define FELEM_MIN INT16_MIN
 #define WINDOW_TYPE 9
-#else
+#elif !defined(CONFIG_RESAMPLE_AUDIOPHILE_KIDDY_MODE)
 #define FILTER_SHIFT 30
 
 #define FELEM int32_t
 #define FELEM2 int64_t
+#define FELEML int64_t
 #define FELEM_MAX INT32_MAX
 #define FELEM_MIN INT32_MIN
 #define WINDOW_TYPE 12
+#else
+#define FILTER_SHIFT 0
+
+#define FELEM long double
+#define FELEM2 long double
+#define FELEML long double
+#define WINDOW_TYPE 24
 #endif
 
 
@@ -123,8 +132,11 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
 
         /* normalize so that an uniform color remains the same */
         for(i=0;i<tap_count;i++) {
-            v = av_clip(lrintf(tab[i] * scale / norm), FELEM_MIN, FELEM_MAX);
-            filter[ph * tap_count + i] = v;
+#ifdef CONFIG_RESAMPLE_AUDIOPHILE_KIDDY_MODE
+            filter[ph * tap_count + i] = tab[i] / norm;
+#else
+            filter[ph * tap_count + i] = av_clip(lrintf(tab[i] * scale / norm), FELEM_MIN, FELEM_MAX);
+#endif
         }
     }
 #if 0
@@ -156,7 +168,7 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
             maxsf= FFMAX(maxsf, sf);
             minsf= FFMIN(minsf, sf);
             if(i%11==0){
-                av_log(NULL, AV_LOG_ERROR, "i:%4d ss:%f ff:%f-%f sf:%f-%f\n", i, ss, maxff, minff, maxsf, minsf);
+                av_log(NULL, AV_LOG_ERROR, "i:%4d ss:%f ff:%13.6e-%13.6e sf:%13.6e-%13.6e\n", i, ss, maxff, minff, maxsf, minsf);
                 minff=minsf= 2;
                 maxff=maxsf= -2;
             }
@@ -259,7 +271,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             int64_t v=0;
             int sub_phase= (frac<<8) / c->src_incr;
             for(i=0; i<c->filter_length; i++){
-                int64_t coeff= filter[i]*(256 - sub_phase) + filter[i + c->filter_length]*sub_phase;
+                FELEML coeff= filter[i]*(256 - sub_phase) + filter[i + c->filter_length]*sub_phase;
                 v += src[sample_index + i] * coeff;
             }
             val= v>>8;
@@ -269,8 +281,12 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             }
         }
 
+#ifdef CONFIG_RESAMPLE_AUDIOPHILE_KIDDY_MODE
+        dst[dst_index] = av_clip(lrintf(val), -32768, 32767);
+#else
         val = (val + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;
         dst[dst_index] = (unsigned)(val + 32768) > 65535 ? (val>>31) ^ 32767 : val;
+#endif
 
         frac += dst_incr_frac;
         index += dst_incr;
