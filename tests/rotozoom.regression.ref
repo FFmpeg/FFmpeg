@@ -166,12 +166,12 @@ stddev:  3.44 PSNR:37.39 bytes:7602176
 83f8df5d5f84480566af548bb037fceb *./data/out.wav
 stddev:9330.70 PSNR:16.92 bytes:1054720
 stddev:4396.13 PSNR:23.46 bytes:1052672
-aefe11ab5067621a1c674859d6413891 *./data/a-ac3.rm
+dd68110cb7e5388392f89d5160d3a825 *./data/a-ac3.rm
 98203 ./data/a-ac3.rm
-d3fff6ca152764d2c06e5cfcb314eff4 *./data/a-g726.wav
-24280 ./data/a-g726.wav
-2e59930d3078b2e8f9b5c9f5c5471c4f *./data/out.wav
-stddev:8465.92 PSNR:17.77 bytes:96256
+39878597b1d65cce473639a7d8c93b02 *./data/a-g726.wav
+24279 ./data/a-g726.wav
+888f2f016e608d044a1bacbca5497ed2 *./data/out.wav
+stddev:8368.02 PSNR:17.87 bytes:96256
 de3f0e1f50b19bd8572fdd3dee2e72c4 *./data/a-adpcm_ima.wav
 266300 ./data/a-adpcm_ima.wav
 60178d48204f5662d91776e36eddc82e *./data/out.wav
