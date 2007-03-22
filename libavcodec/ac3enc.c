@@ -467,6 +467,9 @@ static int bit_alloc(AC3EncodeContext *s,
                      int frame_bits, int csnroffst, int fsnroffst)
 {
     int i, ch;
+    int snroffset;
+
+    snroffset = (((csnroffst - 15) << 4) + fsnroffst) << 2;
 
     /* compute size */
     for(i=0;i<NB_BLOCKS;i++) {
@@ -476,8 +479,7 @@ static int bit_alloc(AC3EncodeContext *s,
         for(ch=0;ch<s->nb_all_channels;ch++) {
             ff_ac3_bit_alloc_calc_bap(mask[i][ch], psd[i][ch],
                                           0, s->nb_coefs[ch],
-                                          (((csnroffst-15) << 4) +
-                                           fsnroffst) << 2,
+                                      snroffset,
                                       s->bit_alloc.floor, bap[i][ch]);
             frame_bits += compute_mantissa_size(s, bap[i][ch],
                                                  s->nb_coefs[ch]);
