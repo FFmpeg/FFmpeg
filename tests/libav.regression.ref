@@ -25,12 +25,12 @@ f8ad5bd78f4d012a8ce9570aa395ac54 *./data/b-libav.flv
 16518706f425cb537362bfc1c58b8de5 *./data/b-libav.mov
 366923 ./data/b-libav.mov
 ./data/b-libav.mov CRC=0x45079dca
-064ffe6f670678b8f944df92560e1fff *./data/b-libav.dv
+8e9e0b1e7ceabc8640a5dfaf052d1675 *./data/b-libav.dv
 3600000 ./data/b-libav.dv
-./data/b-libav.dv CRC=0xa6b8b635
-2b3f921fb7a01bb126cab5ee21ae3f8d *./data/b-libav.gxf
-815700 ./data/b-libav.gxf
-./data/b-libav.gxf CRC=0x238a01b0
+./data/b-libav.dv CRC=0x39821db0
+193ade994aa9512e326cbc237f480b28 *./data/b-libav.gxf
+814640 ./data/b-libav.gxf
+./data/b-libav.gxf CRC=0xaba4e1c5
 9a9da315747599f7718cc9a9a09c21ff *./data/b-libav.pbm
  317075 ./data/b-libav.pbm
 ./data/b-libav.pbm CRC=0xb92906cb

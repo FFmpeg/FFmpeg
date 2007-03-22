@@ -141,22 +141,22 @@ d72b0960e162d4998b9acbabb07e99ab *./data/a-ffv1.avi
 3525804 ./data/a-ffv1.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-2158b42147fd7a32fc3099148df0700d *./data/a-snow.avi
-68432 ./data/a-snow.avi
-d2914543504345fad6e5593f66f072bc *./data/out.yuv
-stddev: 10.93 PSNR:27.34 bytes:7602176
+40a6e938ac2bd92ee12cd57925e86454 *./data/a-snow.avi
+68758 ./data/a-snow.avi
+1e356854142898c7c4aab4bfedadf235 *./data/out.yuv
+stddev: 10.86 PSNR:27.40 bytes:7602176
 3d0da6aeec9b80c6ee0ff4b747bdd0f0 *./data/a-snow53.avi
 2721980 ./data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-af9f474238c9c68cb32e389659ee25ab *./data/a-dv.dv
+54cdeaee32d1007666a1e487e739daf6 *./data/a-dv.dv
 7200000 ./data/a-dv.dv
-bb69dda7a84a5b166434e28e1243d3d1 *./data/out.yuv
-stddev:  2.99 PSNR:38.59 bytes:7602176
-91dc1c1dc4a8cca72f27d85db6d7636f *./data/a-dv.dv
+75bf724e37f667f36af50e2051846574 *./data/out.yuv
+stddev:  3.11 PSNR:38.24 bytes:7602176
+ac6741e4c79e9ed18f179c4124ede29c *./data/a-dv.dv
 14400000 ./data/a-dv.dv
-74b01209bb5e096d570dd4df112bb82d *./data/out.yuv
-stddev:  2.98 PSNR:38.61 bytes:7602176
+ad9907f4ef608f025f5fc38b4b067b37 *./data/out.yuv
+stddev:  3.11 PSNR:38.25 bytes:7602176
 7ba9292d663819a9a1d1cdecc6f1b079 *./data/a-svq1.mov
 768407 ./data/a-svq1.mov
 6bc10518bc387c3bdf117997713ee69a *./data/out.yuv
@@ -168,10 +168,10 @@ stddev:9330.70 PSNR:16.92 bytes:1054720
 stddev:4396.13 PSNR:23.46 bytes:1052672
 aefe11ab5067621a1c674859d6413891 *./data/a-ac3.rm
 98203 ./data/a-ac3.rm
-1eea0440091a8f898c9efca99141456e *./data/a-g726.wav
+d3fff6ca152764d2c06e5cfcb314eff4 *./data/a-g726.wav
 24280 ./data/a-g726.wav
-a719ab6d47d8d601520edb13bf6136b4 *./data/out.wav
-stddev:8459.88 PSNR:17.77 bytes:96256
+2e59930d3078b2e8f9b5c9f5c5471c4f *./data/out.wav
+stddev:8465.92 PSNR:17.77 bytes:96256
 de3f0e1f50b19bd8572fdd3dee2e72c4 *./data/a-adpcm_ima.wav
 266300 ./data/a-adpcm_ima.wav
 60178d48204f5662d91776e36eddc82e *./data/out.wav
