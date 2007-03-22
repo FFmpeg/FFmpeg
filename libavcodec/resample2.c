@@ -40,7 +40,7 @@
 #define FELEM_MIN INT16_MIN
 #define WINDOW_TYPE 9
 #elif !defined(CONFIG_RESAMPLE_AUDIOPHILE_KIDDY_MODE)
-#define FILTER_SHIFT 30
+#define FILTER_SHIFT 22
 
 #define FELEM int32_t
 #define FELEM2 int64_t
