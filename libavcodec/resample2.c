@@ -71,9 +71,10 @@ static double bessel(double x){
     double t=1;
     int i;
 
+    x= x*x/4;
     for(i=1; i<50; i++){
-        t *= i;
-        v += pow(x*x/4, i)/(t*t);
+        t *= x/(i*i);
+        v += t;
     }
     return v;
 }
