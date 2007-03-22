@@ -51,9 +51,9 @@
 #else
 #define FILTER_SHIFT 0
 
-#define FELEM long double
-#define FELEM2 long double
-#define FELEML long double
+#define FELEM double
+#define FELEM2 double
+#define FELEML double
 #define WINDOW_TYPE 24
 #endif
 
