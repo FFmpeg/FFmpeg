@@ -431,10 +431,39 @@ static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
 }
 
 
+static void bit_alloc_masking(AC3EncodeContext *s,
+                              uint8_t encoded_exp[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
+                              uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNELS],
+                              int16_t psd[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
+                              int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50])
+{
+    int blk, ch;
+    int16_t bndpsd[NB_BLOCKS][AC3_MAX_CHANNELS][50];
+
+    for(blk=0; blk<NB_BLOCKS; blk++) {
+        for(ch=0;ch<s->nb_all_channels;ch++) {
+            if(exp_strategy[blk][ch] == EXP_REUSE) {
+                memcpy(psd[blk][ch], psd[blk-1][ch], (N/2)*sizeof(int16_t));
+                memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(int16_t));
+            } else {
+                ff_ac3_bit_alloc_calc_psd(encoded_exp[blk][ch], 0,
+                                          s->nb_coefs[ch],
+                                          psd[blk][ch], bndpsd[blk][ch]);
+                ff_ac3_bit_alloc_calc_mask(&s->bit_alloc, bndpsd[blk][ch],
+                                           0, s->nb_coefs[ch],
+                                           ff_fgaintab[s->fgaincod[ch]],
+                                           ch == s->lfe_channel,
+                                           2, 0, NULL, NULL, NULL,
+                                           mask[blk][ch]);
+            }
+        }
+    }
+}
+
 static int bit_alloc(AC3EncodeContext *s,
+                     int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50],
+                     int16_t psd[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
                      uint8_t bap[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
-                     uint8_t encoded_exp[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
-                     uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNELS],
                      int frame_bits, int csnroffst, int fsnroffst)
 {
     int i, ch;
@@ -445,14 +474,11 @@ static int bit_alloc(AC3EncodeContext *s,
         s->mant2_cnt = 0;
         s->mant4_cnt = 0;
         for(ch=0;ch<s->nb_all_channels;ch++) {
-            ac3_parametric_bit_allocation(&s->bit_alloc,
-                                          bap[i][ch], (int8_t *)encoded_exp[i][ch],
+            ff_ac3_bit_alloc_calc_bap(mask[i][ch], psd[i][ch],
                                           0, s->nb_coefs[ch],
                                           (((csnroffst-15) << 4) +
                                            fsnroffst) << 2,
-                                          ff_fgaintab[s->fgaincod[ch]],
-                                          ch == s->lfe_channel,
-                                          2, 0, NULL, NULL, NULL);
+                                      s->bit_alloc.floor, bap[i][ch]);
             frame_bits += compute_mantissa_size(s, bap[i][ch],
                                                  s->nb_coefs[ch]);
         }
@@ -476,6 +502,8 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     int i, ch;
     int csnroffst, fsnroffst;
     uint8_t bap1[NB_BLOCKS][AC3_MAX_CHANNELS][N/2];
+    int16_t psd[NB_BLOCKS][AC3_MAX_CHANNELS][N/2];
+    int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50];
     static int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
 
     /* init default parameters */
@@ -533,38 +561,41 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* CRC */
     frame_bits += 16;
 
+    /* calculate psd and masking curve before doing bit allocation */
+    bit_alloc_masking(s, encoded_exp, exp_strategy, psd, mask);
+
     /* now the big work begins : do the bit allocation. Modify the snr
        offset until we can pack everything in the requested frame size */
 
     csnroffst = s->csnroffst;
     while (csnroffst >= 0 &&
-           bit_alloc(s, bap, encoded_exp, exp_strategy, frame_bits, csnroffst, 0) < 0)
+           bit_alloc(s, mask, psd, bap, frame_bits, csnroffst, 0) < 0)
         csnroffst -= SNR_INC1;
     if (csnroffst < 0) {
         av_log(NULL, AV_LOG_ERROR, "Bit allocation failed, try increasing the bitrate, -ab 384 for example!\n");
         return -1;
     }
     while ((csnroffst + SNR_INC1) <= 63 &&
-           bit_alloc(s, bap1, encoded_exp, exp_strategy, frame_bits,
+           bit_alloc(s, mask, psd, bap1, frame_bits,
                      csnroffst + SNR_INC1, 0) >= 0) {
         csnroffst += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
     while ((csnroffst + 1) <= 63 &&
-           bit_alloc(s, bap1, encoded_exp, exp_strategy, frame_bits, csnroffst + 1, 0) >= 0) {
+           bit_alloc(s, mask, psd, bap1, frame_bits, csnroffst + 1, 0) >= 0) {
         csnroffst++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
     fsnroffst = 0;
     while ((fsnroffst + SNR_INC1) <= 15 &&
-           bit_alloc(s, bap1, encoded_exp, exp_strategy, frame_bits,
+           bit_alloc(s, mask, psd, bap1, frame_bits,
                      csnroffst, fsnroffst + SNR_INC1) >= 0) {
         fsnroffst += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
     while ((fsnroffst + 1) <= 15 &&
-           bit_alloc(s, bap1, encoded_exp, exp_strategy, frame_bits,
+           bit_alloc(s, mask, psd, bap1, frame_bits,
                      csnroffst, fsnroffst + 1) >= 0) {
         fsnroffst++;
         memcpy(bap, bap1, sizeof(bap1));
