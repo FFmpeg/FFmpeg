@@ -268,13 +268,12 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         }else if(sample_index + c->filter_length > src_size){
             break;
         }else if(c->linear){
-            int64_t v=0;
-            int sub_phase= (frac<<8) / c->src_incr;
+            FELEM2 v2=0;
             for(i=0; i<c->filter_length; i++){
-                FELEML coeff= filter[i]*(256 - sub_phase) + filter[i + c->filter_length]*sub_phase;
-                v += src[sample_index + i] * coeff;
+                val += src[sample_index + i] * (FELEM2)filter[i];
+                v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_length];
             }
-            val= v>>8;
+            val+=(v2-val)*(FELEML)frac / c->src_incr;
         }else{
             for(i=0; i<c->filter_length; i++){
                 val += src[sample_index + i] * (FELEM2)filter[i];
