@@ -743,7 +743,10 @@ typedef struct AVCodecContext {
 
     /**
      * some codecs needs additionnal format info. It is stored here
-     * - encoding: set by user.
+     * if any muxer uses this then ALL demuxers/parsers AND encoders for the specific codec MUST set it correctly
+     * too otherwise stream copy breaks
+     * in general use of this field by muxers is not recommanded
+     * - encoding: set by lavc.
      * - decoding: set by lavc. (FIXME is this ok?)
      */
     int sub_id;
