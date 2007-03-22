@@ -37,6 +37,7 @@
 #define FELEM2 int32_t
 #define FELEM_MAX INT16_MAX
 #define FELEM_MIN INT16_MIN
+#define WINDOW_TYPE 9
 #else
 #define FILTER_SHIFT 30
 
@@ -44,6 +45,7 @@
 #define FELEM2 int64_t
 #define FELEM_MAX INT32_MAX
 #define FELEM_MIN INT32_MIN
+#define WINDOW_TYPE 12
 #endif
 
 
@@ -177,7 +179,7 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
 
     c->filter_length= FFMAX((int)ceil(filter_size/factor), 1);
     c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
-    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, 1);
+    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
