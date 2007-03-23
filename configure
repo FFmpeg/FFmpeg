@@ -590,6 +590,7 @@ HAVE_LIST="
     altivec_h
     armv5te
     armv6
+    arpa_inet_h
     byteswap_h
     cmov
     dcbzl
@@ -1508,6 +1509,8 @@ if disabled_all memalign memalign_hack && enabled need_memalign ; then
 fi
 
 check_header byteswap.h
+
+check_header arpa/inet.h
 
 check_func inet_aton
 check_func localtime_r

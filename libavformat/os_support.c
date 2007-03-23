@@ -78,7 +78,7 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
 #if !defined(HAVE_INET_ATON) && defined(CONFIG_NETWORK)
 #include <stdlib.h>
 #include <strings.h>
-#include "barpainet.h"
+#include "network.h"
 
 int inet_aton (const char * str, struct in_addr * add)
 {

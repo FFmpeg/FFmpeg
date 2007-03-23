@@ -24,7 +24,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
 #include <netdb.h>
+
+#if !defined(HAVE_INET_ATON)
+/* in os_support.c */
+int inet_aton (const char * str, struct in_addr * add);
+#endif
 
 #endif
