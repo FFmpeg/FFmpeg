@@ -28,9 +28,14 @@ extern void MPV_common_init_armv5te(MpegEncContext *s);
 
 void MPV_common_init_armv4l(MpegEncContext *s)
 {
+    /* IWMMXT support is a superset of armv5te, so
+     * allow optimised functions for armv5te unless
+     * a better iwmmxt function exists
+     */
+#ifdef HAVE_ARMV5TE
+    MPV_common_init_armv5te(s);
+#endif
 #ifdef HAVE_IWMMXT
     MPV_common_init_iwmmxt(s);
-#elif defined(HAVE_ARMV5TE)
-    MPV_common_init_armv5te(s);
 #endif
 }
