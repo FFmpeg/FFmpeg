@@ -45,10 +45,15 @@ feb04ba3cf4f607d5527664eb69ec72e *./data/b-libav.gxf
 b977a4fedff90a79baf70c8e02986820 *./data/b-libav.y4m
 3801810 ./data/b-libav.y4m
 ./data/b-libav%02d.pgm CRC=0x84c09106
+de216b43403f51e57e644fbf812568bf *./data/b-libav02.pgm
 ./data/b-libav%02d.ppm CRC=0x25c06ecf
+86bbdb77afa289ff363120f8044f29df *./data/b-libav02.ppm
 ./data/b-libav%02d.bmp CRC=0xf3a66ecf
+c3a9f333ddebff6eae3f4360bad2de29 *./data/b-libav02.bmp
 ./data/b-libav%02d.tga CRC=0xf3a66ecf
+f558eef0740c4b247f1eb17e1dbf7adf *./data/b-libav02.tga
 ./data/b-libav%02d.jpg CRC=0x62328baa
+5d6c53e5297c4485e26c25e37885376f *./data/b-libav02.jpg
 b0a8c8063d81921db5d7c8f50a1cc454 *./data/b-libav.wav
   89132 ./data/b-libav.wav
 ./data/b-libav.wav CRC=0x2a09519c

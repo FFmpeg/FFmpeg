@@ -220,7 +220,7 @@ do_image_formats()
     file=${outfile}libav%02d.$1
     $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $2 $3 $file
     do_ffmpeg_crc $file $3 -i $file
-
+    do_md5sum ${outfile}libav02.$1 >> $logfile
 }
 
 do_audio_only()
@@ -655,19 +655,19 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 
 ####################
 # image formats
-# pgm (we do not do md5 on image files yet)
+# pgm
 do_image_formats pgm
 
-# ppm (we do not do md5 on image files yet)
+# ppm
 do_image_formats ppm
 
-# bmp (we do not do md5 on image files yet)
+# bmp
 do_image_formats bmp
 
-# tga (we do not do md5 on image files yet)
+# tga
 do_image_formats tga
 
-# jpeg (we do not do md5 on image files yet)
+# jpeg
 do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
 
 ####################
