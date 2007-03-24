@@ -41,7 +41,7 @@ const AVCodecTag ff_mov_obj_type[] = {
     { CODEC_ID_AAC       , 104 }, /* MPEG2 AAC SSR */
     { CODEC_ID_MP3       , 105 }, /* 13818-3 */
     { CODEC_ID_MPEG1VIDEO, 106 }, /* 11172-2 */
-    { CODEC_ID_MP2       , 107 }, /* 11172-3 */
+    { CODEC_ID_MP3       , 107 }, /* 11172-3 */
     { CODEC_ID_MJPEG     , 108 }, /* 10918-1 */
     { CODEC_ID_PCM_S16LE , 224 },
     { CODEC_ID_VORBIS    , 221 },
