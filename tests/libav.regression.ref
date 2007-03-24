@@ -46,6 +46,8 @@ b977a4fedff90a79baf70c8e02986820 *./data/b-libav.y4m
 3801810 ./data/b-libav.y4m
 ./data/b-libav%02d.pgm CRC=0x84c09106
 ./data/b-libav%02d.ppm CRC=0x25c06ecf
+./data/b-libav%02d.bmp CRC=0xf3a66ecf
+./data/b-libav%02d.tga CRC=0xf3a66ecf
 ./data/b-libav%02d.jpg CRC=0x62328baa
 b0a8c8063d81921db5d7c8f50a1cc454 *./data/b-libav.wav
   89132 ./data/b-libav.wav

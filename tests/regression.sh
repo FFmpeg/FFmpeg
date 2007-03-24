@@ -661,6 +661,12 @@ do_image_formats pgm
 # ppm (we do not do md5 on image files yet)
 do_image_formats ppm
 
+# bmp (we do not do md5 on image files yet)
+do_image_formats bmp
+
+# tga (we do not do md5 on image files yet)
+do_image_formats tga
+
 # jpeg (we do not do md5 on image files yet)
 do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
 
