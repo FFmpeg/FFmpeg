@@ -85,7 +85,7 @@ static int lzw_get_code(struct LZWState * s)
             s->bs--;
         }
         c = s->bbuf & s->curmask;
-       s->bbuf >>= s->cursize;
+        s->bbuf >>= s->cursize;
     } else { // TIFF
         while (s->bbits < s->cursize) {
             if (s->pbuf >= s->ebuf) {
