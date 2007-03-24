@@ -25,7 +25,7 @@
 #define FFMPEG_ISOM_H
 
 /* isom.c */
-extern const AVCodecTag ff_mov_obj_type[];
+extern const AVCodecTag ff_mp4_obj_type[];
 extern const AVCodecTag codec_movvideo_tags[];
 extern const AVCodecTag codec_movaudio_tags[];
 

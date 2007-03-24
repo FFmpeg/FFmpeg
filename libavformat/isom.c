@@ -26,7 +26,7 @@
 #include "isom.h"
 
 /* http://www.mp4ra.org */
-const AVCodecTag ff_mov_obj_type[] = {
+const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_MPEG4     ,  32 },
     { CODEC_ID_H264      ,  33 },
     { CODEC_ID_AAC       ,  64 },

@@ -382,7 +382,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         sc->esds.max_bitrate = get_be32(pb);
         sc->esds.avg_bitrate = get_be32(pb);
 
-        st->codec->codec_id= codec_get_id(ff_mov_obj_type, sc->esds.object_type_id);
+        st->codec->codec_id= codec_get_id(ff_mp4_obj_type, sc->esds.object_type_id);
         dprintf(c->fc, "esds object type id %d\n", sc->esds.object_type_id);
         len = mov_mp4_read_descr(c, pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {

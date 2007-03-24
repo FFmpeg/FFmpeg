@@ -260,7 +260,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     putDescr(pb, 0x04, 13 + decoderSpecificInfoLen);
 
     // Object type indication
-    put_byte(pb, codec_get_tag(ff_mov_obj_type, track->enc->codec_id));
+    put_byte(pb, codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));
 
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
