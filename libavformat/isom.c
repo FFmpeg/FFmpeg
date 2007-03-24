@@ -46,8 +46,8 @@ const AVCodecTag ff_mov_obj_type[] = {
     { CODEC_ID_PNG       , 109 },
     { CODEC_ID_JPEG2000  , 110 }, /* 15444-1 */
     { CODEC_ID_VC1       , 163 },
-    { CODEC_ID_PCM_S16LE , 224 },
     { CODEC_ID_VORBIS    , 221 },
+    { CODEC_ID_PCM_S16LE , 224 },
     { CODEC_ID_QCELP     , 225 },
     { CODEC_ID_AC3       , 226 },
     { CODEC_ID_PCM_ALAW  , 227 },
