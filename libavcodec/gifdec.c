@@ -245,10 +245,8 @@ static int gif_read_header1(GifState *s)
 
 static int gif_parse_next_image(GifState *s)
 {
-    int ret, code;
-
     for (;;) {
-        code = bytestream_get_byte(&s->bytestream);
+        int code = bytestream_get_byte(&s->bytestream);
 #ifdef DEBUG
         dprintf(s->avctx, "gif: code=%02x '%c'\n", code, code);
 #endif
@@ -256,25 +254,19 @@ static int gif_parse_next_image(GifState *s)
         case ',':
             if (gif_read_image(s) < 0)
                 return -1;
-            ret = 0;
-            goto the_end;
+            return 0;
         case ';':
             /* end of image */
-            ret = -1;
-            goto the_end;
+            return -1;
         case '!':
             if (gif_read_extension(s) < 0)
                 return -1;
             break;
-        case EOF:
         default:
             /* error or errneous EOF */
-            ret = -1;
-            goto the_end;
+            return -1;
         }
     }
-  the_end:
-    return ret;
 }
 
 static int gif_decode_init(AVCodecContext *avctx)
