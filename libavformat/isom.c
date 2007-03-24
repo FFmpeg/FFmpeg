@@ -25,7 +25,7 @@
 #include "riff.h"
 #include "isom.h"
 
-/* http://gpac.sourceforge.net/tutorial/mediatypes.htm */
+/* http://www.mp4ra.org */
 const AVCodecTag ff_mov_obj_type[] = {
     { CODEC_ID_MPEG4     ,  32 },
     { CODEC_ID_H264      ,  33 },
@@ -39,10 +39,10 @@ const AVCodecTag ff_mov_obj_type[] = {
     { CODEC_ID_AAC       , 102 }, /* MPEG2 AAC Main */
     { CODEC_ID_AAC       , 103 }, /* MPEG2 AAC Low */
     { CODEC_ID_AAC       , 104 }, /* MPEG2 AAC SSR */
-    { CODEC_ID_MP3       , 105 },
-    { CODEC_ID_MPEG1VIDEO, 106 },
-    { CODEC_ID_MP2       , 107 },
-    { CODEC_ID_MJPEG     , 108 },
+    { CODEC_ID_MP3       , 105 }, /* 13818-3 */
+    { CODEC_ID_MPEG1VIDEO, 106 }, /* 11172-2 */
+    { CODEC_ID_MP2       , 107 }, /* 11172-3 */
+    { CODEC_ID_MJPEG     , 108 }, /* 10918-1 */
     { CODEC_ID_PCM_S16LE , 224 },
     { CODEC_ID_VORBIS    , 221 },
     { CODEC_ID_QCELP     , 225 },
