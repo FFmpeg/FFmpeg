@@ -166,7 +166,7 @@ stddev: 10.98 PSNR:27.30 bytes:7602176
 83f8df5d5f84480566af548bb037fceb *./data/out.wav
 stddev:9330.70 PSNR:16.92 bytes:1054720
 stddev:4396.13 PSNR:23.46 bytes:1052672
-dd68110cb7e5388392f89d5160d3a825 *./data/a-ac3.rm
+aefe11ab5067621a1c674859d6413891 *./data/a-ac3.rm
 98203 ./data/a-ac3.rm
 39878597b1d65cce473639a7d8c93b02 *./data/a-g726.wav
 24279 ./data/a-g726.wav
