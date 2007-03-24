@@ -48,6 +48,7 @@ typedef struct GifState {
 
     /* LZW compatible decoder */
     uint8_t *bytestream;
+    uint8_t *bytestream_end;
     LZWState *lzw;
 
     /* aux buffers */
@@ -209,6 +210,9 @@ static int gif_read_header1(GifState *s)
     int v, n;
     int has_global_palette;
 
+    if (s->bytestream_end < s->bytestream + 13)
+        return -1;
+
     /* read gif signature */
     bytestream_get_buffer(&s->bytestream, sig, 6);
     if (memcmp(sig, gif87a_sig, 6) != 0 &&
@@ -238,6 +242,8 @@ static int gif_read_header1(GifState *s)
 #endif
     if (has_global_palette) {
         n = 1 << s->bits_per_pixel;
+        if (s->bytestream_end < s->bytestream + n * 3)
+            return -1;
         bytestream_get_buffer(&s->bytestream, s->global_palette, n * 3);
     }
     return 0;
@@ -245,7 +251,7 @@ static int gif_read_header1(GifState *s)
 
 static int gif_parse_next_image(GifState *s)
 {
-    for (;;) {
+    while (s->bytestream < s->bytestream_end) {
         int code = bytestream_get_byte(&s->bytestream);
 #ifdef DEBUG
         dprintf(s->avctx, "gif: code=%02x '%c'\n", code, code);
@@ -289,6 +295,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, u
     int ret;
 
     s->bytestream = buf;
+    s->bytestream_end = buf + buf_size;
     if (gif_read_header1(s) < 0)
         return -1;
 
