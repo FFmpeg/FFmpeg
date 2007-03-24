@@ -77,6 +77,7 @@ static int lzw_get_code(struct LZWState * s)
                 s->bs = sizbuf;
                 if(!sizbuf) {
                     s->eob_reached = 1;
+                    break;
                 }
             }
             s->bbuf |= (*s->pbuf++) << s->bbits;
