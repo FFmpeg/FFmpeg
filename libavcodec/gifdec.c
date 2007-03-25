@@ -317,7 +317,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, u
 
     *picture = s->picture;
     *data_size = sizeof(AVPicture);
-    return 0;
+    return s->bytestream - buf;
 }
 
 static int gif_decode_close(AVCodecContext *avctx)
