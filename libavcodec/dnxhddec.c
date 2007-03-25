@@ -340,7 +340,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     *picture = ctx->picture;
     *data_size = sizeof(AVPicture);
-    return 0;
+    return buf_size;
 }
 
 static int dnxhd_decode_close(AVCodecContext *avctx)
