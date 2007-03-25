@@ -88,6 +88,7 @@ Generic Parts:
     dsputils.c, dsputils.h              Michael Niedermayer
   entropy coding:
     rangecoder.c, rangecoder.h          Michael Niedermayer
+    lzw.*                               Michael Niedermayer
   floating point AAN DCT:
     faandct.c, faandct.h                Michael Niedermayer
   Golomb coding:
