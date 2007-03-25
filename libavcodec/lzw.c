@@ -196,7 +196,6 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
         }
         c = lzw_get_code(s);
         if (c == s->end_code) {
-            s->end_code = -1;
             break;
         } else if (c == s->clear_code) {
             s->cursize = s->codesize + 1;
@@ -206,10 +205,11 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
             fc= oc= -1;
         } else {
             code = c;
-            if (code >= s->slot) {
+            if (code == s->slot && fc>=0) {
                 *sp++ = fc;
                 code = oc;
-            }
+            }else if(code >= s->slot)
+                break;
             while (code >= s->newcodes) {
                 *sp++ = s->suffix[code];
                 code = s->prefix[code];
@@ -229,6 +229,7 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
             }
         }
     }
+    s->end_code = -1;
   the_end:
     s->sp = sp;
     s->oc = oc;
