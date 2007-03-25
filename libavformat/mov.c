@@ -926,6 +926,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->channels= 1; /* really needed */
         break;
     case CODEC_ID_MP2:
+    case CODEC_ID_MP3:
         st->codec->codec_type = CODEC_TYPE_AUDIO; /* force type after stsd for m1a hdlr */
         st->need_parsing = 1;
         break;
