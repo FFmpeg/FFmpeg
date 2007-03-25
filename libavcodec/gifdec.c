@@ -108,7 +108,6 @@ static int gif_read_image(GifState *s)
 
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
-    //TODO: add proper data size
     ff_lzw_decode_init(s->lzw, code_size, s->bytestream,
                        s->bytestream_end - s->bytestream, FF_LZW_GIF);
 
