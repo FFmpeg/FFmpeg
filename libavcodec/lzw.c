@@ -42,7 +42,6 @@ static const uint16_t mask[17] =
 };
 
 struct LZWState {
-    int eob_reached;
     uint8_t *pbuf, *ebuf;
     int bbits;
     unsigned int bbuf;
@@ -74,10 +73,6 @@ static int lzw_get_code(struct LZWState * s)
         while (s->bbits < s->cursize) {
             if (!s->bs) {
                 s->bs = *s->pbuf++;
-                if(!s->bs) {
-                    s->eob_reached = 1;
-                    break;
-                }
             }
             s->bbuf |= (*s->pbuf++) << s->bbits;
             s->bbits += 8;
@@ -87,9 +82,6 @@ static int lzw_get_code(struct LZWState * s)
         s->bbuf >>= s->cursize;
     } else { // TIFF
         while (s->bbits < s->cursize) {
-            if (s->pbuf >= s->ebuf) {
-                s->eob_reached = 1;
-            }
             s->bbuf = (s->bbuf << 8) | (*s->pbuf++);
             s->bbits += 8;
         }
@@ -107,8 +99,14 @@ uint8_t* ff_lzw_cur_ptr(LZWState *p)
 void ff_lzw_decode_tail(LZWState *p)
 {
     struct LZWState *s = (struct LZWState *)p;
-    while(!s->eob_reached)
-        lzw_get_code(s);
+
+    if(s->mode == FF_LZW_GIF) {
+        while(s->pbuf < s->ebuf && s->bs>0){
+            s->pbuf += s->bs;
+            s->bs = *s->pbuf++;
+        }
+    }else
+        s->pbuf= s->ebuf;
 }
 
 void ff_lzw_decode_open(LZWState **p)
@@ -136,7 +134,6 @@ int ff_lzw_decode_init(LZWState *p, int csize, uint8_t *buf, int buf_size, int m
     if(csize < 1 || csize > LZW_MAXBITS)
         return -1;
     /* read buffer */
-    s->eob_reached = 0;
     s->pbuf = buf;
     s->ebuf = s->pbuf + buf_size;
     s->bbuf = 0;
