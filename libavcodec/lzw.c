@@ -55,7 +55,7 @@ struct LZWState {
     int end_code;
     int newcodes;               ///< First available code
     int top_slot;               ///< Highest code for current size
-    int top_slot2;              ///< Highest possible code for current size (<=top_slot)
+    int extra_slot;
     int slot;                   ///< Last read code
     int fc, oc;
     uint8_t *sp;
@@ -158,10 +158,10 @@ int ff_lzw_decode_init(LZWState *p, int csize, uint8_t *buf, int buf_size, int m
     s->mode = mode;
     switch(s->mode){
     case FF_LZW_GIF:
-        s->top_slot2 = s->top_slot;
+        s->extra_slot= 0;
         break;
     case FF_LZW_TIFF:
-        s->top_slot2 = s->top_slot - 1;
+        s->extra_slot= 1;
         break;
     default:
         return -1;
@@ -208,9 +208,6 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
             s->curmask = mask[s->cursize];
             s->slot = s->newcodes;
             s->top_slot = 1 << s->cursize;
-            s->top_slot2 = s->top_slot;
-            if(s->mode == FF_LZW_TIFF)
-                s->top_slot2--;
             while ((c = lzw_get_code(s)) == s->clear_code);
             if (c == s->end_code) {
                 s->end_code = -1;
@@ -239,12 +236,9 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
                 s->prefix[s->slot++] = oc;
                 oc = c;
             }
-            if (s->slot >= s->top_slot2) {
+            if (s->slot >= s->top_slot - s->extra_slot) {
                 if (s->cursize < LZW_MAXBITS) {
                     s->top_slot <<= 1;
-                    s->top_slot2 = s->top_slot;
-                    if(s->mode == FF_LZW_TIFF)
-                        s->top_slot2--;
                     s->curmask = mask[++s->cursize];
                 }
             }
