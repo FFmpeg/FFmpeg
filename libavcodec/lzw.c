@@ -68,14 +68,13 @@ struct LZWState {
 /* get one code from stream */
 static int lzw_get_code(struct LZWState * s)
 {
-    int c, sizbuf;
+    int c;
 
     if(s->mode == FF_LZW_GIF) {
         while (s->bbits < s->cursize) {
             if (!s->bs) {
-                sizbuf = *s->pbuf++;
-                s->bs = sizbuf;
-                if(!sizbuf) {
+                s->bs = *s->pbuf++;
+                if(!s->bs) {
                     s->eob_reached = 1;
                     break;
                 }
