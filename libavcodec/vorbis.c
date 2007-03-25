@@ -33,6 +33,7 @@
 #include "dsputil.h"
 
 #include "vorbis.h"
+#include "xiph.h"
 
 #define V_NB_BITS 8
 #define V_NB_BITS2 11
@@ -1039,7 +1040,7 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
     uint8_t *header_start[3];
     int header_len[3];
     GetBitContext *gb = &(vc->gb);
-    int i, j, hdr_type;
+    int hdr_type;
 
     vc->avccontext = avccontext;
     dsputil_init(&vc->dsp, avccontext);
@@ -1057,32 +1058,7 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
         return -1;
     }
 
-    if(headers[0] == 0 && headers[1] == 30) {
-        for(i = 0; i < 3; i++){
-            header_len[i] = *headers++ << 8;
-            header_len[i] += *headers++;
-            header_start[i] = headers;
-            headers += header_len[i];
-        }
-    } else if(headers[0] == 2) {
-        for(j=1,i=0;i<2;++i, ++j) {
-            header_len[i]=0;
-            while(j<headers_len && headers[j]==0xff) {
-                header_len[i]+=0xff;
-                ++j;
-            }
-            if (j>=headers_len) {
-                av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
-                return -1;
-            }
-            header_len[i]+=headers[j];
-        }
-        header_len[2]=headers_len-header_len[0]-header_len[1]-j;
-        headers+=j;
-        header_start[0] = headers;
-        header_start[1] = header_start[0] + header_len[0];
-        header_start[2] = header_start[1] + header_len[1];
-    } else {
+    if (ff_split_xiph_headers(headers, headers_len, 30, header_start, header_len) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
         return -1;
     }
