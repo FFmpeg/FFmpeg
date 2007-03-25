@@ -273,6 +273,7 @@ static int gif_parse_next_image(GifState *s)
             return -1;
         }
     }
+    return -1;
 }
 
 static int gif_decode_init(AVCodecContext *avctx)
