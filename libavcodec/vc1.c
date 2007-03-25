@@ -2954,7 +2954,9 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
     q1 = s->current_picture.qscale_table[mb_pos];
     if(dc_pred_dir && c_avail && mb_pos) q2 = s->current_picture.qscale_table[mb_pos - 1];
     if(!dc_pred_dir && a_avail && mb_pos >= s->mb_stride) q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
-    if(n && n<4) q2 = q1;
+    if(dc_pred_dir && n==1) q2 = q1;
+    if(!dc_pred_dir && n==2) q2 = q1;
+    if(n==3) q2 = q1;
 
     if(coded) {
         int last = 0, skip, value;
@@ -3159,7 +3161,9 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     q1 = s->current_picture.qscale_table[mb_pos];
     if(dc_pred_dir && c_avail && mb_pos) q2 = s->current_picture.qscale_table[mb_pos - 1];
     if(!dc_pred_dir && a_avail && mb_pos >= s->mb_stride) q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
-    if(n && n<4) q2 = q1;
+    if(dc_pred_dir && n==1) q2 = q1;
+    if(!dc_pred_dir && n==2) q2 = q1;
+    if(n==3) q2 = q1;
 
     if(coded) {
         int last = 0, skip, value;
