@@ -78,17 +78,17 @@ static int lzw_get_code(struct LZWState * s)
             s->bbits += 8;
             s->bs--;
         }
-        c = s->bbuf & s->curmask;
+        c = s->bbuf;
         s->bbuf >>= s->cursize;
     } else { // TIFF
         while (s->bbits < s->cursize) {
             s->bbuf = (s->bbuf << 8) | (*s->pbuf++);
             s->bbits += 8;
         }
-        c = (s->bbuf >> (s->bbits - s->cursize)) & s->curmask;
+        c = s->bbuf >> (s->bbits - s->cursize);
     }
     s->bbits -= s->cursize;
-    return c;
+    return c & s->curmask;
 }
 
 uint8_t* ff_lzw_cur_ptr(LZWState *p)
