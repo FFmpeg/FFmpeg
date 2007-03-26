@@ -294,6 +294,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
 
         if(buf_size < s->max_framesize){
             //dprintf(avctx, "wanna more data ... %d\n", buf_size);
+            *data_size = 0;
             return input_buf_size;
         }
     }
@@ -471,6 +472,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 s->blocksize = get_uint(s, av_log2(s->blocksize));
                 break;
             case FN_QUIT:
+                *data_size = 0;
                 return buf_size;
                 break;
             default:
