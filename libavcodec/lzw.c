@@ -152,16 +152,7 @@ int ff_lzw_decode_init(LZWState *p, int csize, uint8_t *buf, int buf_size, int m
     s->sp = s->stack;
 
     s->mode = mode;
-    switch(s->mode){
-    case FF_LZW_GIF:
-        s->extra_slot= 0;
-        break;
-    case FF_LZW_TIFF:
-        s->extra_slot= 1;
-        break;
-    default:
-        return -1;
-    }
+    s->extra_slot = s->mode == FF_LZW_TIFF;
     return 0;
 }
 
