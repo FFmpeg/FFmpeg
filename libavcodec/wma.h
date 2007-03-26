@@ -112,7 +112,6 @@ typedef struct WMACodecContext {
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
     DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
-    DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
     float *windows[BLOCK_NB_SIZES];
     DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); ///< temporary storage for imdct

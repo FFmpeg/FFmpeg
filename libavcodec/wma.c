@@ -302,7 +302,7 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
         window = av_malloc(sizeof(float) * n);
         alpha = M_PI / (2.0 * n);
         for(j=0;j<n;j++) {
-            window[n - j - 1] = sin((j + 0.5) * alpha);
+            window[j] = sin((j + 0.5) * alpha);
         }
         s->windows[i] = window;
     }

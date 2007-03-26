@@ -316,6 +316,61 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
     return 0;
 }
 
+
+/**
+ * Apply MDCT window and add into output.
+ *
+ * We ensure that when the windows overlap their squared sum
+ * is always 1 (MDCT reconstruction rule).
+ */
+static void wma_window(WMACodecContext *s, float *out)
+{
+    float *in = s->output;
+    int block_len, bsize, n;
+
+    /* left part */
+    if (s->block_len_bits <= s->prev_block_len_bits) {
+        block_len = s->block_len;
+        bsize = s->frame_len_bits - s->block_len_bits;
+
+        s->dsp.vector_fmul_add_add(out, in, s->windows[bsize],
+                                   out, 0, block_len, 1);
+
+    } else {
+        block_len = 1 << s->prev_block_len_bits;
+        n = (s->block_len - block_len) / 2;
+        bsize = s->frame_len_bits - s->prev_block_len_bits;
+
+        s->dsp.vector_fmul_add_add(out+n, in+n, s->windows[bsize],
+                                   out+n, 0, block_len, 1);
+
+        memcpy(out+n+block_len, in+n+block_len, n*sizeof(float));
+    }
+
+    out += s->block_len;
+    in += s->block_len;
+
+    /* right part */
+    if (s->block_len_bits <= s->next_block_len_bits) {
+        block_len = s->block_len;
+        bsize = s->frame_len_bits - s->block_len_bits;
+
+        s->dsp.vector_fmul_reverse(out, in, s->windows[bsize], block_len);
+
+    } else {
+        block_len = 1 << s->next_block_len_bits;
+        n = (s->block_len - block_len) / 2;
+        bsize = s->frame_len_bits - s->next_block_len_bits;
+
+        memcpy(out, in, n*sizeof(float));
+
+        s->dsp.vector_fmul_reverse(out+n, in+n, s->windows[bsize], block_len);
+
+        memset(out+n+block_len, 0, n*sizeof(float));
+    }
+}
+
+
 /**
  * @return 0 if OK. 1 if last block of frame. return -1 if
  * unrecorrable error.
@@ -657,54 +712,8 @@ static int wma_decode_block(WMACodecContext *s)
         }
     }
 
-    /* build the window : we ensure that when the windows overlap
-       their squared sum is always 1 (MDCT reconstruction rule) */
-    /* XXX: merge with output */
-    {
-        int i, next_block_len, block_len, prev_block_len, n;
-        float *wptr;
-
-        block_len = s->block_len;
-        prev_block_len = 1 << s->prev_block_len_bits;
-        next_block_len = 1 << s->next_block_len_bits;
-
-        /* right part */
-        wptr = s->window + block_len;
-        if (block_len <= next_block_len) {
-            for(i=0;i<block_len;i++)
-                *wptr++ = s->windows[bsize][i];
-        } else {
-            /* overlap */
-            n = (block_len / 2) - (next_block_len / 2);
-            for(i=0;i<n;i++)
-                *wptr++ = 1.0;
-            for(i=0;i<next_block_len;i++)
-                *wptr++ = s->windows[s->frame_len_bits - s->next_block_len_bits][i];
-            for(i=0;i<n;i++)
-                *wptr++ = 0.0;
-        }
-
-        /* left part */
-        wptr = s->window + block_len;
-        if (block_len <= prev_block_len) {
-            for(i=0;i<block_len;i++)
-                *--wptr = s->windows[bsize][i];
-        } else {
-            /* overlap */
-            n = (block_len / 2) - (prev_block_len / 2);
-            for(i=0;i<n;i++)
-                *--wptr = 1.0;
-            for(i=0;i<prev_block_len;i++)
-                *--wptr = s->windows[s->frame_len_bits - s->prev_block_len_bits][i];
-            for(i=0;i<n;i++)
-                *--wptr = 0.0;
-        }
-    }
-
-
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            float *ptr;
             int n4, index, n;
 
             n = s->block_len;
@@ -712,19 +721,14 @@ static int wma_decode_block(WMACodecContext *s)
             s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize],
                           s->output, s->coefs[ch], s->mdct_tmp);
 
-            /* XXX: optimize all that by build the window and
-               multipying/adding at the same time */
-
             /* multiply by the window and add in the frame */
             index = (s->frame_len / 2) + s->block_pos - n4;
-            ptr = &s->frame_out[ch][index];
-            s->dsp.vector_fmul_add_add(ptr,s->window,s->output,ptr,0,2*n,1);
+            wma_window(s, &s->frame_out[ch][index]);
 
             /* specific fast case for ms-stereo : add to second
                channel if it is not coded */
             if (s->ms_stereo && !s->channel_coded[1]) {
-                ptr = &s->frame_out[1][index];
-                s->dsp.vector_fmul_add_add(ptr,s->window,s->output,ptr,0,2*n,1);
+                wma_window(s, &s->frame_out[1][index]);
             }
         }
     }
@@ -779,9 +783,6 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
         /* prepare for next block */
         memmove(&s->frame_out[ch][0], &s->frame_out[ch][s->frame_len],
                 s->frame_len * sizeof(float));
-        /* XXX: suppress this */
-        memset(&s->frame_out[ch][s->frame_len], 0,
-               s->frame_len * sizeof(float));
     }
 
 #ifdef TRACE

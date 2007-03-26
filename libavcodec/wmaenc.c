@@ -92,8 +92,8 @@ static void apply_window_and_mdct(AVCodecContext * avctx, signed short * audio, 
         memcpy(s->output, s->frame_out[channel], sizeof(float)*window_len);
         j = channel;
         for (i = 0; i < len; i++, j += avctx->channels){
-            s->output[i+window_len]  = audio[j] / n * win[i];
-            s->frame_out[channel][i] = audio[j] / n * win[window_len - i - 1];
+            s->output[i+window_len]  = audio[j] / n * win[window_len - i - 1];
+            s->frame_out[channel][i] = audio[j] / n * win[i];
         }
         ff_mdct_calc(&s->mdct_ctx[window_index], s->coefs[channel], s->output, s->mdct_tmp);
     }
