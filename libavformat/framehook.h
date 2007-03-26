@@ -22,6 +22,8 @@
 #ifndef _FRAMEHOOK_H
 #define _FRAMEHOOK_H
 
+#warning VHOOK is deprecated please help porting libmpcodecs or a better filter system to ffmpeg instead of wasting your time writing new fiters for this crappy one
+
 /*
  * Prototypes for interface to .so that implement a video processing hook
  */
