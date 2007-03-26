@@ -10,6 +10,8 @@
 #define MP_XVMC_STATE_DISPLAY_PENDING 1
 //the surface is needed for prediction, codec manipulate this
 #define MP_XVMC_STATE_PREDICTION 2
+//this surface is needed for subpicture rendering
+#define MP_XVMC_STATE_OSD_SOURCE 4
 //                     1337    IDCT MCo
 #define MP_XVMC_RENDER_MAGIC 0x1DC711C0
 
@@ -25,7 +27,6 @@ typedef   struct{
   int idct;//does we use IDCT acceleration?
   int chroma_format;//420,422,444
   int unsigned_intra;//+-128 for intra pictures after clip
-  int reserved1[13];//future extenstions (e.g. gmc,qpel)
   XvMCSurface* p_surface;//pointer to rendered surface, never changed
 
 //these are changed by decoder
@@ -43,5 +44,7 @@ typedef   struct{
   int filled_mv_blocks_num;//processed mv block in this slice,change by decoder
 
   int next_free_data_block_num;//used in add_mv_block, pointer to next free block
+//extensions
+  void * p_osd_target_surface_render;//pointer to the surface where subpicture is rendered
 
 } xvmc_render_state_t;
