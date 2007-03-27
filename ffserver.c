@@ -47,6 +47,8 @@
 #include "ffserver.h"
 #include "random.h"
 
+#undef exit
+
 /* maximum number of simultaneous HTTP connections */
 #define HTTP_MAX_CONNECTIONS 2000
 

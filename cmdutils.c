@@ -24,6 +24,8 @@
 
 #include "cmdutils.h"
 
+#undef exit
+
 void show_help_options(const OptionDef *options, const char *msg, int mask, int value)
 {
     const OptionDef *po;

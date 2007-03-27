@@ -55,6 +55,8 @@
 #define INFINITY HUGE_VAL
 #endif
 
+#undef exit
+
 /* select an input stream for an output stream */
 typedef struct AVStreamMap {
     int file_index;

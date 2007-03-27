@@ -49,6 +49,8 @@
  }
 #endif
 
+#undef exit
+
 //#define DEBUG_SYNC
 
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
