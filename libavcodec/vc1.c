@@ -3849,6 +3849,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 vc1_decode_i_block(v, s->block[k], k, val, (k<4)? v->codingset : v->codingset2);
 
                 s->dsp.vc1_inv_trans_8x8(s->block[k]);
+                if(!v->res_fasttx && !v->res_x8) for(j = 0; j < 64; j++) s->block[k][j] -= 16;
                 if(v->pq >= 9 && v->overlap) {
                     for(j = 0; j < 64; j++) s->block[k][j] += 128;
                 }
