@@ -463,7 +463,6 @@ static int decode_init(AVCodecContext *avctx)
     VmncContext * const c = (VmncContext *)avctx->priv_data;
 
     c->avctx = avctx;
-    avctx->has_b_frames = 0;
 
     c->pic.data[0] = NULL;
     c->width = avctx->width;

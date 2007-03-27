@@ -834,7 +834,6 @@ static int decode_init(AVCodecContext *avctx){
 
     l->avctx = avctx;
     l->pic.data[0]=NULL;
-    avctx->has_b_frames = 0;
     avctx->pix_fmt = PIX_FMT_YUV420P;
 
     dsputil_init(&l->dsp, avctx);

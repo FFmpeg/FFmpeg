@@ -346,7 +346,6 @@ static int decode_init(AVCodecContext * avctx)
     int i;
 
     c->avctx = avctx;
-    avctx->has_b_frames = 0;
 
     c->pic.data[0] = NULL;
 

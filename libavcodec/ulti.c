@@ -51,7 +51,6 @@ static int ulti_decode_init(AVCodecContext *avctx)
     s->height = avctx->height;
     s->blocks = (s->width / 8) * (s->height / 8);
     avctx->pix_fmt = PIX_FMT_YUV410P;
-    avctx->has_b_frames = 0;
     avctx->coded_frame = (AVFrame*) &s->frame;
     s->ulti_codebook = ulti_codebook;
 

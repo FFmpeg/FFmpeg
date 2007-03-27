@@ -612,7 +612,6 @@ static int decode_init(AVCodecContext *avctx)
     int zret; // Zlib return code
 
     c->avctx = avctx;
-    avctx->has_b_frames = 0;
 
     c->pic.data[0] = NULL;
     c->width = avctx->width;

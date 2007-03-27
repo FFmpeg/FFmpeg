@@ -293,7 +293,6 @@ static int decode_init(AVCodecContext *avctx){
 
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
     a->pic.data[0] = NULL;
     a->refdata = av_malloc(avctx->width * avctx->height);
 
