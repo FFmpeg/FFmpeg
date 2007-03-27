@@ -237,13 +237,12 @@ int av_filename_number_test(const char *filename)
     return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
 }
 
-AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
+static AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
 {
     AVInputFormat *fmt1, *fmt;
-    int score, score_max;
+    int score;
 
     fmt = NULL;
-    score_max = 0;
     for(fmt1 = first_iformat; fmt1 != NULL; fmt1 = fmt1->next) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
             continue;
@@ -255,12 +254,17 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
                 score = 50;
             }
         }
-        if (score > score_max) {
-            score_max = score;
+        if (score > *score_max) {
+            *score_max = score;
             fmt = fmt1;
         }
     }
     return fmt;
+}
+
+AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
+    int score=0;
+    return av_probe_input_format2(pd, is_opened, &score);
 }
 
 /************************************************************/
@@ -423,6 +427,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         }
 
         for(probe_size= PROBE_BUF_MIN; probe_size<=PROBE_BUF_MAX && !fmt; probe_size<<=1){
+            int score= probe_size < PROBE_BUF_MAX ? AVPROBE_SCORE_MAX/4 : 0;
             /* read probe data */
             pd->buf= av_realloc(pd->buf, probe_size);
             pd->buf_size = get_buffer(pb, pd->buf, probe_size);
@@ -435,7 +440,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                 }
             }
             /* guess file format */
-            fmt = av_probe_input_format(pd, 1);
+            fmt = av_probe_input_format2(pd, 1, &score);
         }
         av_freep(&pd->buf);
     }
