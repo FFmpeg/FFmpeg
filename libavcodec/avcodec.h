@@ -47,6 +47,12 @@ extern "C" {
 #define AV_TIME_BASE            1000000
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
+/**
+ *
+ * if you add a codec id to this list add it so that
+ * 1. no value of a existing codec id changes (that would break ABI)
+ * 2. closest to similar codecs
+ */
 enum CodecID {
     CODEC_ID_NONE,
     CODEC_ID_MPEG1VIDEO,
