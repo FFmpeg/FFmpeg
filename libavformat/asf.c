@@ -148,8 +148,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int size, i;
     int64_t gsize;
     AVRational dar[128];
+    uint32_t bitrate[128];
 
     memset(dar, 0, sizeof(dar));
+    memset(bitrate, 0, sizeof(bitrate));
 
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
@@ -417,13 +419,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
             int ext_len, payload_ext_ct, stream_ct;
-            uint32_t ext_d;
+            uint32_t ext_d, leak_rate, stream_num;
             int64_t pos_ex_st;
             pos_ex_st = url_ftell(pb);
 
             get_le64(pb); // starttime
             get_le64(pb); // endtime
-            get_le32(pb); // leak-datarate
+            leak_rate = get_le32(pb); // leak-datarate
             get_le32(pb); // bucket-datasize
             get_le32(pb); // init-bucket-fullness
             get_le32(pb); // alt-leak-datarate
@@ -431,11 +433,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_le32(pb); // alt-init-bucket-fullness
             get_le32(pb); // max-object-size
             get_le32(pb); // flags (reliable,seekable,no_cleanpoints?,resend-live-cleanpoints, rest of bits reserved)
-            get_le16(pb); // stream-num
+            stream_num = get_le16(pb); // stream-num
             get_le16(pb); // stream-language-id-index
             get_le64(pb); // avg frametime in 100ns units
             stream_ct = get_le16(pb); //stream-name-count
             payload_ext_ct = get_le16(pb); //payload-extension-system-count
+
+            if (stream_num < 128)
+                bitrate[stream_num] = leak_rate;
 
             for (i=0; i<stream_ct; i++){
                 get_le16(pb);
@@ -500,11 +505,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for(i=0; i<128; i++){
         int stream_num= asf->asfid2avid[i];
-        if(stream_num>=0 && dar[i].num>0 && dar[i].den>0){
+        if(stream_num>=0){
             AVCodecContext *codec= s->streams[stream_num]->codec;
-            av_reduce(&codec->sample_aspect_ratio.num,
-                    &codec->sample_aspect_ratio.den,
-                    dar[i].num, dar[i].den, INT_MAX);
+            codec->bit_rate = bitrate[i];
+            if (dar[i].num > 0 && dar[i].den > 0)
+                av_reduce(&codec->sample_aspect_ratio.num,
+                        &codec->sample_aspect_ratio.den,
+                        dar[i].num, dar[i].den, INT_MAX);
 //av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
         }
     }
