@@ -46,7 +46,7 @@ typedef FrameHookRelease *FrameHookReleaseFn;
 extern FrameHookRelease Release;
 
 extern int frame_hook_add(int argc, char *argv[]);
-extern void frame_hook_process(struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height);
+extern void frame_hook_process(struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, int64_t pts);
 extern void frame_hook_release(void);
 
 #endif

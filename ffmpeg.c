@@ -601,7 +601,8 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
         picture2 = picture;
     }
 
-    frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height);
+    frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height,
+                       1000000 * ist->pts / AV_TIME_BASE);
 
     if (picture != picture2)
         *picture = *picture2;
