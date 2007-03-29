@@ -87,36 +87,34 @@
 /* Common code for fixed and float version*/
 typedef struct AMR_bitrates
 {
-    int startrate;
-    int stoprate;
+    int rate;
     enum Mode mode;
 } AMR_bitrates;
 
-/* Match desired bitrate with closest one*/
-static enum Mode getBitrateMode(int bitrate)
+/* Match desired bitrate */
+static int getBitrateMode(int bitrate)
 {
-    /* Adjusted so that all bitrates can be used from commandline where
-       only a multiple of 1000 can be specified*/
-    AMR_bitrates rates[]={ {0,4999,MR475}, //4
-                           {5000,5899,MR515},//5
-                           {5900,6699,MR59},//6
-                           {6700,7000,MR67},//7
-                           {7001,7949,MR74},//8
-                           {7950,9999,MR795},//9
-                           {10000,11999,MR102},//10
-                           {12000,64000,MR122},//12
+    /* make the correspondance between bitrate and mode */
+    AMR_bitrates rates[]={ {4750,MR475},
+                           {5150,MR515},
+                           {5900,MR59},
+                           {6700,MR67},
+                           {7400,MR74},
+                           {7950,MR795},
+                           {10200,MR102},
+                           {12200,MR122},
                          };
     int i;
 
     for(i=0;i<8;i++)
     {
-        if(rates[i].startrate<=bitrate && rates[i].stoprate>=bitrate)
+        if(rates[i].rate==bitrate)
         {
             return(rates[i].mode);
         }
     }
-    /*Return highest possible*/
-    return(MR122);
+    /* no bitrate matching, return an error */
+    return -1;
 }
 
 static void amr_decode_fix_avctx(AVCodecContext * avctx)
@@ -149,7 +147,7 @@ typedef struct AMRContext {
     Word16 reset_flag;
     Word16 reset_flag_old;
 
-    enum Mode enc_bitrate;
+    int enc_bitrate;
     Speech_Encode_FrameState *enstate;
     sid_syncState *sidstate;
     enum TXFrameType tx_frametype;
@@ -215,7 +213,11 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
         return -1;
     }
 
-    s->enc_bitrate=getBitrateMode(avctx->bit_rate);
+    if((s->enc_bitrate=getBitrateMode(avctx->bit_rate))<0)
+    {
+        av_log(avctx, AV_LOG_ERROR, "bitrate not supported\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -358,7 +360,7 @@ typedef struct AMRContext {
     int frameCount;
     void * decState;
     int *enstate;
-    enum Mode enc_bitrate;
+    int enc_bitrate;
 } AMRContext;
 
 static int amr_nb_decode_init(AVCodecContext * avctx)
@@ -412,7 +414,11 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
         return -1;
     }
 
-    s->enc_bitrate=getBitrateMode(avctx->bit_rate);
+    if((s->enc_bitrate=getBitrateMode(avctx->bit_rate))<0)
+    {
+        av_log(avctx, AV_LOG_ERROR, "bitrate not supported\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -469,7 +475,11 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = avctx->priv_data;
     int written;
 
-    s->enc_bitrate=getBitrateMode(avctx->bit_rate);
+    if((s->enc_bitrate=getBitrateMode(avctx->bit_rate))<0)
+    {
+        av_log(avctx, AV_LOG_ERROR, "bitrate not supported\n");
+        return -1;
+    }
 
     written = Encoder_Interface_Encode(s->enstate,
         s->enc_bitrate,
@@ -525,36 +535,34 @@ AVCodec amr_nb_encoder =
 /* Common code for fixed and float version*/
 typedef struct AMRWB_bitrates
 {
-    int startrate;
-    int stoprate;
+    int rate;
     int mode;
 } AMRWB_bitrates;
 
 static int getWBBitrateMode(int bitrate)
 {
-    /* Adjusted so that all bitrates can be used from commandline where
-       only a multiple of 1000 can be specified*/
-    AMRWB_bitrates rates[]={ {0,7999,0}, //6.6kHz
-                           {8000,9999,1},//8.85
-                           {10000,13000,2},//12.65
-                           {13001,14999,3},//14.25
-                           {15000,17000,4},//15.85
-                           {17001,18000,5},//18.25
-                           {18001,22000,6},//19.85
-                           {22001,23000,7},//23.05
-                           {23001,24000,8},//23.85
+    /* make the correspondance between bitrate and mode */
+    AMRWB_bitrates rates[]={ {6600,0},
+                           {8850,1},
+                           {12650,2},
+                           {14250,3},
+                           {15850,4},
+                           {18250,5},
+                           {19850,6},
+                           {23050,7},
+                           {23850,8},
                          };
     int i;
 
     for(i=0;i<9;i++)
     {
-        if(rates[i].startrate<=bitrate && rates[i].stoprate>=bitrate)
+        if(rates[i].rate==bitrate)
         {
             return(rates[i].mode);
         }
     }
-    /*Return highest possible*/
-    return(8);
+    /* no bitrate matching, return an error */
+    return -1;
 }
 
 
@@ -583,11 +591,16 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
         return -1;
     }
 
+    if((s->mode=getWBBitrateMode(avctx->bit_rate))<0)
+    {
+        av_log(avctx, AV_LOG_ERROR, "bitrate not supported\n");
+        return -1;
+    }
+
     avctx->frame_size=320;
     avctx->coded_frame= avcodec_alloc_frame();
 
     s->state = E_IF_init();
-    s->mode=getWBBitrateMode(avctx->bit_rate);
     s->allow_dtx=0;
 
     return 0;
@@ -609,7 +622,11 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
     AMRWBContext *s = avctx->priv_data;
     int size;
 
-    s->mode=getWBBitrateMode(avctx->bit_rate);
+    if((s->mode=getWBBitrateMode(avctx->bit_rate))<0)
+    {
+        av_log(avctx, AV_LOG_ERROR, "bitrate not supported\n");
+        return -1;
+    }
     size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
     return size;
 }
