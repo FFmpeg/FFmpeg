@@ -244,14 +244,13 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             if (a.size <= 8)
                 break;
         }
+        a.size -= 8;
+        if(a.size < 0 || a.size > atom.size - total_size)
+            break;
+
         for (i = 0; c->parse_table[i].type != 0L
              && c->parse_table[i].type != a.type; i++)
             /* empty */;
-
-        a.size -= 8;
-
-        if(a.size < 0 || a.size > atom.size - total_size)
-            break;
 
         if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
             url_fskip(pb, a.size);
