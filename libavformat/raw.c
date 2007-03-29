@@ -337,9 +337,9 @@ static int mpegvideo_probe(AVProbeData *p)
             case PICTURE_START_CODE:   pic++; break;
             case   SLICE_START_CODE: slice++; break;
             case    PACK_START_CODE: pspack++; break;
-            case           VIDEO_ID:
-            case           AUDIO_ID:   pes++; break;
             }
+            if     ((code & 0x1f0) == VIDEO_ID)   pes++;
+            else if((code & 0x1e0) == AUDIO_ID)   pes++;
         }
     }
     if(seq && seq*9<=pic*10 && pic*9<=slice*10 && !pspack && !pes)
