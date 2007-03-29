@@ -1874,7 +1874,7 @@ static int av_encode(AVFormatContext **output_files,
             break;
 
         /* finish if limit size exhausted */
-        if (limit_filesize != 0 && (limit_filesize * 1024) >= url_ftell(&output_files[0]->pb))
+        if (limit_filesize != 0 && (limit_filesize * 1024) < url_ftell(&output_files[0]->pb))
             break;
 
         /* read a frame from it and output it in the fifo */
