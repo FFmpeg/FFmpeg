@@ -1509,6 +1509,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
            (!sc->sample_size && !sc->sample_count)){
             av_log(s, AV_LOG_ERROR, "missing mandatory atoms, broken header\n");
+            sc->sample_count = 0; //ignore track
             continue;
         }
         if(!sc->time_rate)
