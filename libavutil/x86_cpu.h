@@ -57,4 +57,8 @@
 #  define REGSP   esp
 #endif
 
+#if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && defined(CONFIG_EBX_AVAILABLE) && defined(CONFIG_EBP_AVAILABLE))
+#  define CONFIG_7REGS 1
+#endif
+
 #endif /* AVUTIL_X86CPU_H */

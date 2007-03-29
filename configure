@@ -542,6 +542,8 @@ CONFIG_LIST='
     bktr
     dc1394
     dv1394
+    ebp_available
+    ebx_available
     ffmpeg
     ffplay
     ffserver
@@ -1190,6 +1192,10 @@ ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
+# Disable core dumps so that intentional execution of broken apps doesn't
+# pollute the current directory.
+ulimit -c 0
+
 # we need to build at least one lib type
 if disabled_all static shared; then
     cat <<EOF
@@ -1389,6 +1395,37 @@ if test "$?" != 0; then
         echo "Only do this if you know what cross compiling means."
     fi
     die "C compiler test failed."
+fi
+
+if test $arch = "x86_32" -o $arch = "x86_64"; then
+    if test "$targetos" = "mingw32" -o "$targetos" = "CYGWIN"; then
+        cat <<EOF
+WARNING: The following test might cause a testapp to crash (intentionally)
+resulting in the appearance of a dialog box. Please click "Don't send" and
+ignore it.
+EOF
+    fi
+
+    # check whether EBP is available on x86
+    # As 'i' is stored on the stack, this program will crash
+    # if the base pointer is used to access it because the
+    # base pointer is cleared in the inline assembly code.
+    check_exec <<EOF && enable ebp_available
+int main(){
+    volatile int i=0;
+    asm volatile (
+        "xorl %%ebp, %%ebp"
+    ::: "%ebp");
+    return i;
+}
+EOF
+
+    # check wether EBX is available on x86
+    check_cc <<EOF && enable ebx_available
+int main(){
+    asm volatile ("":::"%ebx");
+}
+EOF
 fi
 
 # check for assembler specific support
