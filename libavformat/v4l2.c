@@ -422,6 +422,57 @@ static void mmap_close(struct video_data *s)
     av_free(s->buf_len);
 }
 
+static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
+{
+    struct video_data *s = s1->priv_data;
+    struct v4l2_input input;
+    struct v4l2_standard standard;
+    int i;
+
+    /* set tv video input */
+    memset (&input, 0, sizeof (input));
+    input.index = ap->channel;
+    if(ioctl (s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
+        av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
+        return AVERROR_IO;
+    }
+
+    av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
+           ap->channel, input.name);
+    if(ioctl (s->fd, VIDIOC_S_INPUT, &input.index) < 0 ) {
+        av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set input(%d) failed\n",
+            ap->channel);
+        return AVERROR_IO;
+    }
+
+    av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
+           ap->standard );
+    /* set tv standard */
+    memset (&standard, 0, sizeof (standard));
+    for(i=0;;i++) {
+        standard.index = i;
+        if (ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+            av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
+                   ap->standard);
+            return AVERROR_IO;
+        }
+
+        if(!strcasecmp(standard.name, ap->standard)) {
+            break;
+        }
+    }
+
+    av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
+           ap->standard, standard.id);
+    if (ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
+        av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
+            ap->standard);
+        return AVERROR_IO;
+    }
+
+    return 0;
+}
+
 static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     struct video_data *s = s1->priv_data;
@@ -493,6 +544,9 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR_IO;
     }
     s->frame_format = desired_format;
+
+    if( v4l2_set_parameters( s1, ap ) < 0 )
+        return AVERROR_IO;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format);
     s->frame_size = avpicture_get_size(st->codec->pix_fmt, width, height);
