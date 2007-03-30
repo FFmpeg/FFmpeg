@@ -204,7 +204,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * this is an array[4][4] of motion compensation funcions for 4
+     * this is an array[4][4] of motion compensation functions for 4
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
@@ -228,7 +228,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * this is an array[2][4] of motion compensation funcions for 2
+     * this is an array[2][4] of motion compensation functions for 2
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
@@ -240,7 +240,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * this is an array[2][4] of motion compensation funcions for 2
+     * this is an array[2][4] of motion compensation functions for 2
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
@@ -254,7 +254,8 @@ typedef struct DSPContext {
 
     /**
      * Thirdpel motion compensation with rounding (a+b+1)>>1.
-     * this is an array[12] of motion compensation funcions for the 9 thirdpel positions<br>
+     * this is an array[12] of motion compensation functions for the 9 thirdpe
+     * positions<br>
      * *pixels_tab[ xthirdpel + 4*ythirdpel ]
      * @param block destination where the result is stored
      * @param pixels source
@@ -271,7 +272,7 @@ typedef struct DSPContext {
     qpel_mc_func put_mspel_pixels_tab[8];
 
     /**
-     * h264 Chram MC
+     * h264 Chroma MC
      */
     h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
     /* This is really one func used in VC-1 decoding */
