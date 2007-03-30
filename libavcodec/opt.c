@@ -36,7 +36,7 @@ const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mas
     const AVOption *o= c->option;
 
     for(;o && o->name; o++){
-        if(!strcmp(o->name, name) && (!unit || !strcmp(o->unit, unit)) && (o->flags & mask) == flags )
+        if(!strcmp(o->name, name) && (!unit || (o->unit && !strcmp(o->unit, unit))) && (o->flags & mask) == flags )
             return o;
     }
     return NULL;
