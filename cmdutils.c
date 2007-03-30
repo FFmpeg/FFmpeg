@@ -98,6 +98,8 @@ unknown_opt:
                 *po->u.int_arg = 1;
             } else if (po->flags & OPT_INT) {
                 *po->u.int_arg = atoi(arg);
+            } else if (po->flags & OPT_INT64) {
+                *po->u.int64_arg = atoll(arg);
             } else if (po->flags & OPT_FLOAT) {
                 *po->u.float_arg = atof(arg);
             } else if (po->flags & OPT_FUNC2) {
