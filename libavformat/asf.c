@@ -541,7 +541,7 @@ static int asf_get_packet(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint32_t packet_length, padsize;
-    int rsize = 9;
+    int rsize = 8;
     int c, d, e, off;
 
     off= (url_ftell(&s->pb) - s->data_offset) % asf->packet_size + 3;
@@ -558,23 +558,21 @@ static int asf_get_packet(AVFormatContext *s)
         if (!url_feof(pb))
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
     }
-    if ((c & 0x0f) == 2) { // always true for now
+    if ((c & 0x8f) == 0x82) {
         if (d || e) {
             if (!url_feof(pb))
                 av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
             return -1;
         }
+        c= get_byte(pb);
         d= get_byte(pb);
-        e= get_byte(pb);
-        rsize+=2;
-/*    }else{
-        if (!url_feof(pb))
-            printf("ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
-        return AVERROR_IO;*/
+        rsize+=3;
+    }else{
+        url_fseek(pb, -1, SEEK_CUR); //FIXME
     }
 
-    asf->packet_flags = d;
-    asf->packet_property = e;
+    asf->packet_flags    = c;
+    asf->packet_property = d;
 
     DO_2BITS(asf->packet_flags >> 5, packet_length, asf->packet_size);
     DO_2BITS(asf->packet_flags >> 1, padsize, 0); // sequence ignored
