@@ -35,7 +35,7 @@
  *
  * \subsection Float
  * The float version (default) can be downloaded from:
- * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-610.zip
  * Extract the source into \c "ffmpeg/libavcodec/amr_float".
  *
  * \subsection Fixed-point
@@ -52,7 +52,7 @@
  * \section AMR-WB
  * \subsection Float
  * The reference code can be downloaded from:
- * http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-600.zip
  * It should be extracted to \c "ffmpeg/libavcodec/amrwb_float". Enable it with
  * \c "--enable-amr_wb".
  *
@@ -61,8 +61,9 @@
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip.
  *
  * \subsection Specification
- * The specification for AMR-WB can be downloaded from:
- * http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip.
+ * The specification for AMR-WB can be found in TS 26.171
+ * (http://www.3gpp.org/ftp/Specs/html-info/26171.htm) and some other
+ * info at http://www.3gpp.org/ftp/Specs/html-info/26-series.htm.
  *
  */
 
