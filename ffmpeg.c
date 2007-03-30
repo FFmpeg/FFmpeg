@@ -1874,7 +1874,7 @@ static int av_encode(AVFormatContext **output_files,
             break;
 
         /* finish if limit size exhausted */
-        if (limit_filesize != 0 && (limit_filesize * 1024) < url_ftell(&output_files[0]->pb))
+        if (limit_filesize != 0 && limit_filesize < url_ftell(&output_files[0]->pb))
             break;
 
         /* read a frame from it and output it in the fifo */
@@ -3544,7 +3544,7 @@ const OptionDef options[] = {
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
-    { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size", "limit_size" }, //
+    { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
