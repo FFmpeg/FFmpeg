@@ -992,15 +992,10 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
 
             for(i=0; i<16; i++){
                 int sum= codebook_sum[stage*16 + i];
-                int sqr=0;
-                int diff, mean, score;
+                int sqr, diff, mean, score;
 
                 vector = codebook + stage*size*16 + i*size;
-
-                for(j=0; j<size; j++){
-                    int v= vector[j];
-                    sqr += (v - block[stage][j])*(v - block[stage][j]);
-                }
+                sqr = s->dsp.ssd_int8_vs_int16(vector, block[stage], size);
                 diff= block_sum[stage] - sum;
                 mean= (diff + (size>>1)) >> (level+3);
                 assert(mean >-300 && mean<300);

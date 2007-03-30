@@ -1730,6 +1730,38 @@ static int hadamard8_diff_mmx2(void *s, uint8_t *src1, uint8_t *src2, int stride
 
 WARPER8_16_SQ(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 WARPER8_16_SQ(hadamard8_diff_mmx2, hadamard8_diff16_mmx2)
+
+static int ssd_int8_vs_int16_mmx(int8_t *pix1, int16_t *pix2, int size){
+    int sum;
+    long i=size;
+    asm volatile(
+        "pxor %%mm4, %%mm4 \n"
+        "1: \n"
+        "sub $8, %0 \n"
+        "movq (%2,%0), %%mm2 \n"
+        "movq (%3,%0,2), %%mm0 \n"
+        "movq 8(%3,%0,2), %%mm1 \n"
+        "punpckhbw %%mm2, %%mm3 \n"
+        "punpcklbw %%mm2, %%mm2 \n"
+        "psraw $8, %%mm3 \n"
+        "psraw $8, %%mm2 \n"
+        "psubw %%mm3, %%mm1 \n"
+        "psubw %%mm2, %%mm0 \n"
+        "pmaddwd %%mm1, %%mm1 \n"
+        "pmaddwd %%mm0, %%mm0 \n"
+        "paddd %%mm1, %%mm4 \n"
+        "paddd %%mm0, %%mm4 \n"
+        "jg 1b \n"
+        "movq %%mm4, %%mm3 \n"
+        "psrlq $32, %%mm3 \n"
+        "paddd %%mm3, %%mm4 \n"
+        "movd %%mm4, %1 \n"
+        :"+r"(i), "=r"(sum)
+        :"r"(pix1), "r"(pix2)
+    );
+    return sum;
+}
+
 #endif //CONFIG_ENCODERS
 
 #define put_no_rnd_pixels8_mmx(a,b,c,d) put_pixels8_mmx(a,b,c,d)
@@ -3214,6 +3246,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->try_8x8basis= try_8x8basis_mmx;
         }
         c->add_8x8basis= add_8x8basis_mmx;
+
+        c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
 
 #endif //CONFIG_ENCODERS
 
