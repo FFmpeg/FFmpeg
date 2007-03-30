@@ -64,7 +64,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     url_fskip(&s->pb, 4); // header crc
 
-    framelen = 1.04489795918367346939 * samplerate;
+    framelen = samplerate*256/245;
     c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
     c->currentframe = 0;
 
