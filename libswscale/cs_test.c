@@ -23,7 +23,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <malloc.h>
 
 #include "swscale.h"
 #include "rgb2rgb.h"
@@ -32,9 +31,6 @@
 #define srcByte 0x55
 #define dstByte 0xBB
 
-#ifdef __APPLE_CC__
-#define memalign(x,y) malloc(y)
-#endif
 
 static int cpu_caps;
 
@@ -64,8 +60,8 @@ static char *args_parse(int argc, char *argv[])
 int main(int argc, char **argv)
 {
 	int i, funcNum;
-	uint8_t *srcBuffer= (uint8_t*)memalign(128, SIZE);
-	uint8_t *dstBuffer= (uint8_t*)memalign(128, SIZE);
+	uint8_t *srcBuffer= (uint8_t*)av_malloc(SIZE);
+	uint8_t *dstBuffer= (uint8_t*)av_malloc(SIZE);
 	int failedNum=0;
 	int passedNum=0;
 	
@@ -85,11 +81,11 @@ int main(int argc, char **argv)
 
 		for(width=32; width<64; width++){
 			int dstOffset;
-			for(dstOffset=128; dstOffset<196; dstOffset++){
+			for(dstOffset=128; dstOffset<196; dstOffset+=4){
 				int srcOffset;
 				memset(dstBuffer, dstByte, SIZE);
 
-				for(srcOffset=128; srcOffset<196; srcOffset++){
+				for(srcOffset=128; srcOffset<196; srcOffset+=4){
 					uint8_t *src= srcBuffer+srcOffset;
 					uint8_t *dst= dstBuffer+dstOffset;
 					char *name=NULL;
