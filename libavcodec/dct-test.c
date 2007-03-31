@@ -184,7 +184,7 @@ void dct_error(const char *name, int is_idct,
 #endif
 
         fdct_func(block);
-        emms(); /* for ff_mmx_idct */
+        emms_c(); /* for ff_mmx_idct */
 
         if (fdct_func == fdct_ifast
 #ifndef FAAN_POSTSCALE
@@ -286,7 +286,7 @@ void dct_error(const char *name, int is_idct,
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    emms();
+    emms_c();
 
     printf("%s %s: %0.1f kdct/s\n",
            is_idct ? "IDCT" : "DCT",
@@ -446,7 +446,7 @@ void idct248_error(const char *name,
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    emms();
+    emms_c();
 
     printf("%s %s: %0.1f kdct/s\n",
            1 ? "IDCT248" : "DCT248",
