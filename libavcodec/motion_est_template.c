@@ -1004,7 +1004,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     MotionEstContext * const c= &s->me;
     int best[2]={0, 0};      /*!< x and y coordinates of the best motion vector.
                                i.e. the difference between the position of the
-                               block current being encoded and the position of
+                               block currently being encoded and the position of
                                the block chosen to predict it from. */
     int d;                   ///< the score (cmp + penalty) of any given mv
     int dmin;                /*!< the best value of d, i.e. the score
