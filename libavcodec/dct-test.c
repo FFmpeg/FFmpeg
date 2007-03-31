@@ -461,7 +461,6 @@ void help(void)
            "            2 -> do 3. test from mpeg4 std\n"
            "-i          test IDCT implementations\n"
            "-4          test IDCT248 implementations\n");
-    exit(1);
 }
 
 int main(int argc, char **argv)
@@ -493,7 +492,7 @@ int main(int argc, char **argv)
         default :
         case 'h':
             help();
-            break;
+            return 0;
         }
     }
 
