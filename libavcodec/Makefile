@@ -404,9 +404,9 @@ NAME=avcodec
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
 
-TESTS= imgresample-test fft-test
+TESTS= imgresample-test fft-test dct-test
 ifeq ($(TARGET_ARCH_X86),yes)
-TESTS+= cpuid_test dct-test motion-test
+TESTS+= cpuid_test motion-test
 endif
 
 include ../common.mak
