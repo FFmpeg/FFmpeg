@@ -75,7 +75,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_NOMEM;
 
     for (i = 0; i < c->totalframes; i++)
-            c->seektable[i] = get_le32(&s->pb);
+        c->seektable[i] = get_le32(&s->pb);
     url_fskip(&s->pb, 4); // seektable crc
 
     st = av_new_stream(s, 0);
