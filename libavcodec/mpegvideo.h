@@ -162,7 +162,11 @@ typedef struct MotionEstContext{
     uint32_t *score_map;               ///< map to store the scores
     int map_generation;
     int pre_penalty_factor;
-    int penalty_factor;
+    int penalty_factor;                /*!< an estimate of the bits required to
+                                        code a given mv value, e.g. (1,0) takes
+                                        more bits than (0,0). We have to
+                                        estimate whether any reduction in
+                                        residual is worth the extra bits. */
     int sub_penalty_factor;
     int mb_penalty_factor;
     int flags;

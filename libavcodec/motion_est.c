@@ -103,6 +103,9 @@ static int get_flags(MotionEstContext *c, int direct, int chroma){
            + (chroma ? FLAG_CHROMA : 0);
 }
 
+/*! \brief compares two blocks, which may be full macroblocks or may be
+    partitions thereof.
+ */
 static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
                       const int size, const int h, int ref_index, int src_index,
                       me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
