@@ -1541,7 +1541,7 @@ static int http_parse_request(HTTPContext *c)
     q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "HTTP/1.0 200 OK\r\n");
     mime_type = c->stream->fmt->mime_type;
     if (!mime_type)
-        mime_type = "application/x-octet_stream";
+        mime_type = "application/x-octet-stream";
     q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "Pragma: no-cache\r\n");
 
     /* for asf, we need extra headers */
