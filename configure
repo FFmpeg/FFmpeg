@@ -1351,7 +1351,7 @@ if test $cpu != "generic"; then
         ;;
         bf*) #bf531 bf532 bf533 bf561 bf5xx all get this config
             add_cflags "-mfdpic"
-            add_ldflags "-mfdpic -Wl,--defsym,__stacksize=0x40000"
+            add_ldflags "-mfdpic"
         ;;
         *)
         echo "WARNING: Unknown CPU \"$cpu\", ignored."
