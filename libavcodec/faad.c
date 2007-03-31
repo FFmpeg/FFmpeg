@@ -196,8 +196,7 @@ static int faac_decode_end(AVCodecContext *avctx)
 {
     FAACContext *s = (FAACContext *) avctx->priv_data;
 
-    if (s->faacDecClose)
-        s->faacDecClose(s->faac_handle);
+    s->faacDecClose(s->faac_handle);
 
     dlclose(s->handle);
     return 0;
@@ -228,6 +227,7 @@ static int faac_decode_init(AVCodecContext *avctx)
 
         // resolve all needed function calls
         dfaac(Open, (faacDecHandle FAADAPI (*)(void)));
+        dfaac(Close, (void FAADAPI (*)(faacDecHandle hDecoder)));
         dfaac(GetCurrentConfiguration, (faacDecConfigurationPtr
                                         FAADAPI (*)(faacDecHandle)));
 #ifndef FAAD2_VERSION
@@ -239,7 +239,6 @@ static int faac_decode_init(AVCodecContext *avctx)
     dfaac(Init2, (int FAADAPI (*)(faacDecHandle, unsigned char*,
                                        unsigned long, unsigned long*,
                                        unsigned long*)));
-    dfaac(Close, (void FAADAPI (*)(faacDecHandle hDecoder)));
         dfaac(Decode, (int FAADAPI (*)(faacDecHandle, unsigned char*,
                              unsigned long*, short*, unsigned long*)));
 #else
