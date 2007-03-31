@@ -1101,6 +1101,7 @@ case `tolower $targetos` in
     FFSERVERLDFLAGS=-Wl,-bind_at_load
     ;;
   mingw32*)
+    targetos=mingw32
     if enabled_all shared static; then
         cat <<EOF
 You can only build one library type at once on MinGW.
