@@ -85,9 +85,6 @@ const char *http_state[] = {
 
 #define IOBUFFER_INIT_SIZE 8192
 
-/* coef for exponential mean for bitrate estimation in statistics */
-#define AVG_COEF 0.9
-
 /* timeouts are in ms */
 #define HTTP_REQUEST_TIMEOUT (15 * 1000)
 #define RTSP_REQUEST_TIMEOUT (3600 * 24 * 1000)
@@ -2233,9 +2230,6 @@ static int http_prepare_data(HTTPContext *c)
     }
     return 0;
 }
-
-/* in bit/s */
-#define SHORT_TERM_BANDWIDTH 8000000
 
 /* should convert the format at the same time */
 /* send data starting at c->buffer_ptr to the output connection
@@ -4432,25 +4426,6 @@ static int parse_ffconfig(const char *filename)
     else
         return 0;
 }
-
-
-#if 0
-static void write_packet(FFCodec *ffenc,
-                         uint8_t *buf, int size)
-{
-    PacketHeader hdr;
-    AVCodecContext *enc = &ffenc->enc;
-    uint8_t *wptr;
-    mk_header(&hdr, enc, size);
-    wptr = http_fifo.wptr;
-    fifo_write(&http_fifo, (uint8_t *)&hdr, sizeof(hdr), &wptr);
-    fifo_write(&http_fifo, buf, size, &wptr);
-    /* atomic modification of wptr */
-    http_fifo.wptr = wptr;
-    ffenc->data_count += size;
-    ffenc->avg_frame_size = ffenc->avg_frame_size * AVG_COEF + size * (1.0 - AVG_COEF);
-}
-#endif
 
 static void show_banner(void)
 {
