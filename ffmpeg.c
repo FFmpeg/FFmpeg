@@ -1610,9 +1610,10 @@ static int av_encode(AVFormatContext **output_files,
                 if (ost->video_resample) {
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height ) )
+                                         codec->width, codec->height ) ) {
+                        fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                         exit(1);
-
+                    }
                     ost->img_resample_ctx = sws_getContext(
                             icodec->width - (frame_leftBand + frame_rightBand),
                             icodec->height - (frame_topBand + frame_bottomBand),
