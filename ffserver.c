@@ -4320,11 +4320,7 @@ static int parse_ffconfig(const char *filename)
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 av_freep(&stream->rtsp_option);
-                /* XXX: av_strdup ? */
-                stream->rtsp_option = av_malloc(strlen(arg) + 1);
-                if (stream->rtsp_option) {
-                    strcpy(stream->rtsp_option, arg);
-                }
+                stream->rtsp_option = av_strdup(arg);
             }
         } else if (!strcasecmp(cmd, "MulticastAddress")) {
             get_arg(arg, sizeof(arg), &p);
