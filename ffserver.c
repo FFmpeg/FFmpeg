@@ -4296,8 +4296,8 @@ static int parse_ffconfig(const char *filename)
                 IPAddressACL *nacl = (IPAddressACL *) av_mallocz(sizeof(*nacl));
                 IPAddressACL **naclp = 0;
 
+                acl.next = 0;
                 *nacl = acl;
-                nacl->next = 0;
 
                 if (stream) {
                     naclp = &stream->acl;
