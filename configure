@@ -1411,7 +1411,7 @@ EOF
     # As 'i' is stored on the stack, this program will crash
     # if the base pointer is used to access it because the
     # base pointer is cleared in the inline assembly code.
-    check_exec <<EOF && enable ebp_available
+    (check_exec) <<EOF >>$logfile 2>&1 && enable ebp_available
 int main(){
     volatile int i=0;
     asm volatile (
