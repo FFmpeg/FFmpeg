@@ -2046,16 +2046,15 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         *(dst++) = x;
                         if (avctx->codec_id != CODEC_ID_THP)
                         {
-                        if (x == 0xff)
-                        {
-                            while(src<buf_end && x == 0xff)
-                                x = *(src++);
+                            if (x == 0xff) {
+                                while (src < buf_end && x == 0xff)
+                                    x = *(src++);
 
-                            if (x >= 0xd0 && x <= 0xd7)
-                                *(dst++) = x;
-                            else if (x)
-                                break;
-                        }
+                                if (x >= 0xd0 && x <= 0xd7)
+                                    *(dst++) = x;
+                                else if (x)
+                                    break;
+                            }
                         }
                     }
                     init_get_bits(&s->gb, s->buffer, (dst - s->buffer)*8);
