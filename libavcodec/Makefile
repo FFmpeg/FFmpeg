@@ -317,7 +317,7 @@ ifneq ($(CONFIG_SWSCALER),yes)
 OBJS += imgresample.o
 endif
 
-# i386 mmx specific stuff
+# processor-specific code
 ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o \
         i386/cputest.o \
@@ -337,7 +337,6 @@ OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 endif
 
-# armv4l specific stuff
 ASM_OBJS-$(TARGET_ARCH_ARMV4L)         += armv4l/jrevdct_arm.o     \
                                           armv4l/simple_idct_arm.o \
                                           armv4l/dsputil_arm_s.o   \
@@ -353,15 +352,12 @@ ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o \
 
 ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o
 
-# sun sparc
 OBJS-$(TARGET_ARCH_SPARC)              += sparc/dsputil_vis.o \
 
 sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 
-# sun mediaLib specific stuff
 OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o \
 
-# alpha specific stuff
 OBJS-$(TARGET_ARCH_ALPHA)              += alpha/dsputil_alpha.o     \
                                           alpha/mpegvideo_alpha.o   \
                                           alpha/simple_idct_alpha.o \
