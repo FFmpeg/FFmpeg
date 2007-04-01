@@ -76,6 +76,7 @@ version <next>
 - DXA demuxer and decoder
 - DNxHD decoder
 - Gamecube movie (.THP) playback system
+- bfin optimizations
 
 version 0.4.9-pre1:
 
