@@ -266,7 +266,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             if (ci->toRGB_convert_ctx == NULL) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Cannot initialize the toRGB conversion context\n");
-                exit(1);
+                return;
             }
 
 // img_convert parameters are          2 first destination, then 4 source
@@ -335,7 +335,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         if (ci->fromRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot initialize the fromRGB conversion context\n");
-            exit(1);
+            return;
         }
 
 // img_convert parameters are          2 first destination, then 4 source

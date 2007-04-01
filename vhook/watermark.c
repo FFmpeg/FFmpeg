@@ -224,7 +224,7 @@ static void Process0(void *ctx,
         if (ci->toRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot initialize the toRGB conversion context\n");
-            exit(1);
+            return;
         }
 
 // img_convert parameters are          2 first destination, then 4 source
@@ -299,7 +299,7 @@ static void Process0(void *ctx,
         if (ci->fromRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot initialize the fromRGB conversion context\n");
-            exit(1);
+            return;
         }
 // img_convert parameters are          2 first destination, then 4 source
 // sws_scale   parameters are context, 4 first source,      then 2 destination
@@ -355,7 +355,7 @@ static void Process1(void *ctx,
         if (ci->toRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot initialize the toRGB conversion context\n");
-            exit(1);
+            return;
         }
 
 // img_convert parameters are          2 first destination, then 4 source
@@ -410,7 +410,7 @@ static void Process1(void *ctx,
         if (ci->fromRGB_convert_ctx == NULL) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot initialize the fromRGB conversion context\n");
-            exit(1);
+            return;
         }
 // img_convert parameters are          2 first destination, then 4 source
 // sws_scale   parameters are context, 4 first source,      then 2 destination
@@ -610,7 +610,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
                     if (ci->watermark_convert_ctx == NULL) {
                         av_log(NULL, AV_LOG_ERROR,
                               "Cannot initialize the watermark conversion context\n");
-                        exit(1);
+                        return -1;
                     }
 // img_convert parameters are          2 first destination, then 4 source
 // sws_scale   parameters are context, 4 first source,      then 2 destination
