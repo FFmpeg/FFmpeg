@@ -31,7 +31,7 @@
    formats you want to support */
 
 /**
- * Initialize libavcodec and register all the codecs and formats.
+ * Initialize libavformat and register all the (de)muxers and protocols.
  */
 void av_register_all(void)
 {
