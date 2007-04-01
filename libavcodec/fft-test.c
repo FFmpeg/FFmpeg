@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#undef exit
+
 int mm_flags;
 
 /* reference fft */

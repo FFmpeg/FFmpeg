@@ -33,6 +33,7 @@
 
 #include "i386/mmx.h"
 
+#undef exit
 #undef printf
 
 int pix_abs16x16_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
