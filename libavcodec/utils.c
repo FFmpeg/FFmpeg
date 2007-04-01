@@ -830,12 +830,12 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     avctx->codec_id = codec->id;
     avctx->frame_number = 0;
     if(avctx->codec->init){
-    ret = avctx->codec->init(avctx);
-    if (ret < 0) {
-        av_freep(&avctx->priv_data);
-        avctx->codec= NULL;
-        goto end;
-    }
+        ret = avctx->codec->init(avctx);
+        if (ret < 0) {
+            av_freep(&avctx->priv_data);
+            avctx->codec= NULL;
+            goto end;
+        }
     }
     ret=0;
 end:
