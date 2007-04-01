@@ -142,6 +142,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(SWF, swf);
     REGISTER_MUXER   (TG2, tg2);
     REGISTER_MUXER   (TGP, tgp);
+    REGISTER_DEMUXER (THP, thp);
     REGISTER_DEMUXER (TIERTEXSEQ, tiertexseq);
     REGISTER_DEMUXER (TTA, tta);
     REGISTER_DEMUXER (V4L2, v4l2);

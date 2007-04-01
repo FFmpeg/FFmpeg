@@ -120,6 +120,7 @@ OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swf.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swf.o
+OBJS-$(CONFIG_THP_DEMUXER)               += thp.o
 OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
 OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o

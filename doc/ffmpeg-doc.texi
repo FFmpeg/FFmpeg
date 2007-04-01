@@ -901,6 +901,8 @@ library:
 @item DXA @tab    @tab X
 @tab This format is used in non-Windows version of Feeble Files game and
 different game cutscenes repacked for use with ScummVM.
+@item THP @tab    @tab X
+@tab Used on the Nintendo GameCube (video only)
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

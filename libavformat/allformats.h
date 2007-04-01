@@ -168,6 +168,7 @@ extern AVOutputFormat yuv4mpegpipe_muxer;
 extern AVInputFormat yuv4mpegpipe_demuxer;
 extern AVInputFormat tiertexseq_demuxer;
 extern AVInputFormat x11_grab_device_demuxer;
+extern AVInputFormat thp_demuxer;
 
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s,

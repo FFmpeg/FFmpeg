@@ -2044,6 +2044,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         uint8_t x = *(src++);
 
                         *(dst++) = x;
+                        if (avctx->codec_id != CODEC_ID_THP)
+                        {
                         if (x == 0xff)
                         {
                             while(src<buf_end && x == 0xff)
@@ -2053,6 +2055,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                                 *(dst++) = x;
                             else if (x)
                                 break;
+                        }
                         }
                     }
                     init_get_bits(&s->gb, s->buffer, (dst - s->buffer)*8);
@@ -2574,6 +2577,19 @@ AVCodec mjpeg_decoder = {
     "mjpeg",
     CODEC_TYPE_VIDEO,
     CODEC_ID_MJPEG,
+    sizeof(MJpegDecodeContext),
+    mjpeg_decode_init,
+    NULL,
+    mjpeg_decode_end,
+    mjpeg_decode_frame,
+    CODEC_CAP_DR1,
+    NULL
+};
+
+AVCodec thp_decoder = {
+    "thp",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_THP,
     sizeof(MJpegDecodeContext),
     mjpeg_decode_init,
     NULL,

@@ -75,6 +75,7 @@ version <next>
 - DCA decoder
 - DXA demuxer and decoder
 - DNxHD decoder
+- Gamecube movie (.THP) playback system
 
 version 0.4.9-pre1:
 

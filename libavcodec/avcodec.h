@@ -158,6 +158,7 @@ enum CodecID {
     CODEC_ID_FFH264,
     CODEC_ID_DXA,
     CODEC_ID_DNXHD,
+    CODEC_ID_THP,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2329,6 +2330,7 @@ extern AVCodec svq1_decoder;
 extern AVCodec svq3_decoder;
 extern AVCodec targa_decoder;
 extern AVCodec theora_decoder;
+extern AVCodec thp_decoder;
 extern AVCodec tiertexseqvideo_decoder;
 extern AVCodec tiff_decoder;
 extern AVCodec truemotion1_decoder;
