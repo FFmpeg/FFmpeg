@@ -750,7 +750,7 @@ mmi="default"
 bigendian="no"
 
 # OS
-targetos=`tolower \` uname -s\` `
+targetos=$(tolower $(uname -s))
 beos_netserver="no"
 os2="no"
 wince="no"
