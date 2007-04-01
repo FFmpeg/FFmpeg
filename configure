@@ -750,7 +750,7 @@ mmi="default"
 bigendian="no"
 
 # OS
-targetos=`uname -s`
+targetos=`tolower \` uname -s\` `
 beos_netserver="no"
 os2="no"
 wince="no"
@@ -1021,7 +1021,7 @@ esac
 
 # OS specific
 osextralibs="-lm"
-case `tolower $targetos` in
+case $targetos in
   beos|haiku|zeta)
     PREFIX="$HOME/config"
     # helps building libavcodec
@@ -1128,7 +1128,7 @@ EOF
     add_extralibs -lws2_32
     ;;
   cygwin*)
-    targetos=CYGWIN
+    targetos=cygwin
     shlibdir="$bindir"
     dv1394="no"
     VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libswscale -L$(BUILD_ROOT)/libavutil'
@@ -1145,7 +1145,7 @@ EOF
     LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
     ;;
   irix*)
-    targetos=IRIX
+    targetos=irix
     ranlib="echo ignoring ranlib"
     ;;
   os/2)
@@ -1258,7 +1258,7 @@ test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
 needmdynamicnopic="no"
-if test $targetos = Darwin; then
+if test $targetos = darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
@@ -1399,7 +1399,7 @@ if test "$?" != 0; then
 fi
 
 if test $arch = "x86_32" -o $arch = "x86_64"; then
-    if test "$targetos" = "mingw32" -o "$targetos" = "CYGWIN"; then
+    if test "$targetos" = mingw32 -o "$targetos" = cygwin; then
         cat <<EOF
 WARNING: The following test might cause a testapp to crash (intentionally)
 resulting in the appearance of a dialog box. Please click "Don't send" and
@@ -1635,7 +1635,7 @@ test "$vhook" = "default" && vhook="$dlopen"
 
 enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
 
-if test "$targetos" = "CYGWIN" && enabled static ; then
+if test "$targetos" = cygwin && enabled static ; then
     vhook="no"
     echo
     echo "At the moment vhooks don't work on Cygwin static builds."
@@ -1990,7 +1990,7 @@ print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
 print_config TARGET_ $TMPH config.mak $TARGET_LIST
 
-if test "$targetos" = "Darwin"; then
+if test "$targetos" = darwin; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
 fi
 
