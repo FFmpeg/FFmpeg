@@ -397,7 +397,6 @@ OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
 ASM_OBJS-$(TARGET_ARCH_BFIN)           += bfin/pixels_bfin.o \
                                           bfin/idct_bfin.o   \
                                           bfin/fdct_bfin.o   \
-                                          bfin/xidct.o       \
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
