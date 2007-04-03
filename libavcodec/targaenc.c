@@ -20,39 +20,7 @@
  *
  */
 #include "avcodec.h"
-
-/**
- * Count up to 127 consecutive pixels which are either all the same or
- * all differ from the previous and next pixels.
- * @param start Pointer to the first pixel
- * @param len Maximum number of pixels
- * @param bpp Bytes per pixel
- * @param same 1 if searching for identical pixel values.  0 for differing
- * @return Number of matching consecutive pixels found
- */
-static int count_pixels(uint8_t *start, int len, int bpp, int same)
-{
-    uint8_t *pos;
-    int count = 1;
-
-    for(pos = start + bpp; count < FFMIN(128, len); pos += bpp, count ++) {
-        if(same != !memcmp(pos-bpp, pos, bpp)) {
-            if(!same) {
-                /* if bpp == 1, then 0 1 1 0 is more efficiently encoded as a single
-                 * raw block of pixels.  for larger bpp, RLE is as good or better */
-                if(bpp == 1 && count + 1 < FFMIN(128, len) && *pos != *(pos+1))
-                    continue;
-
-                /* if RLE can encode the next block better than as a raw block,
-                 * back up and leave _all_ the identical pixels for RLE */
-                count --;
-            }
-            break;
-        }
-    }
-
-    return count;
-}
+#include "rle.h"
 
 /**
  * RLE compress the image, with maximum size of out_size
@@ -67,35 +35,18 @@ static int count_pixels(uint8_t *start, int len, int bpp, int same)
 static int targa_encode_rle(uint8_t *outbuf, int out_size, AVFrame *pic,
                             int bpp, int w, int h)
 {
-    int count, x, y;
-    uint8_t *ptr, *line, *out;
+    int y,ret;
+    uint8_t *out;
 
     out = outbuf;
-    line = pic->data[0];
 
     for(y = 0; y < h; y ++) {
-        ptr = line;
-
-        for(x = 0; x < w; x += count) {
-            /* see if we can encode the next set of pixels with RLE */
-            if((count = count_pixels(ptr, w-x, bpp, 1)) > 1) {
-                if(out + bpp + 1 > outbuf + out_size) return -1;
-                *out++ = 0x80 | (count - 1);
-                memcpy(out, ptr, bpp);
-                out += bpp;
-            } else {
-                /* fall back on uncompressed */
-                count = count_pixels(ptr, w-x, bpp, 0);
-                *out++ = count - 1;
-
-                if(out + bpp*count > outbuf + out_size) return -1;
-                memcpy(out, ptr, bpp * count);
-                out += bpp * count;
-            }
-            ptr += count * bpp;
+        ret = ff_rle_encode(out, out_size, pic->data[0] + pic->linesize[0] * y, bpp, w, 0x7f, 0);
+        if(ret == -1){
+            return -1;
         }
-
-        line += pic->linesize[0];
+        out+= ret;
+        out_size -= ret;
     }
 
     return out - outbuf;
