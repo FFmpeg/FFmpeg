@@ -144,13 +144,8 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
 OBJS+= framehook.o
 
-ifeq ($(CONFIG_V4L),yes)
-OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab.o
-endif
-
-ifeq ($(CONFIG_BKTR),yes)
-OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab_bktr.o
-endif
+OBJS-$(CONFIG_VIDEO_GRAB_V4L_DEMUXER)    += grab.o
+OBJS-$(CONFIG_VIDEO_GRAB_BKTR_DEMUXER)   += grab_bktr.o
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
