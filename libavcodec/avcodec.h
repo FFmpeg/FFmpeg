@@ -1566,8 +1566,8 @@ typedef struct AVCodecContext {
      */
     int global_quality;
 
-#define FF_CODER_TYPE_VLC   0
-#define FF_CODER_TYPE_AC    1
+#define FF_CODER_TYPE_VLC       0
+#define FF_CODER_TYPE_AC        1
 #define FF_CODER_TYPE_RAW       2
 #define FF_CODER_TYPE_RLE       3
 #define FF_CODER_TYPE_DEFLATE   4
