@@ -260,68 +260,68 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 
     synth=data;
 
-        toc=amrData[offset];
-        /* read rest of the frame based on ToC byte */
-        q  = (toc >> 2) & 0x01;
-        ft = (toc >> 3) & 0x0F;
+    toc=amrData[offset];
+    /* read rest of the frame based on ToC byte */
+    q  = (toc >> 2) & 0x01;
+    ft = (toc >> 3) & 0x0F;
 
-        //printf("offset=%d, packet_size=%d amrData= 0x%X %X %X %X\n",offset,packed_size[ft],amrData[offset],amrData[offset+1],amrData[offset+2],amrData[offset+3]);
+    //printf("offset=%d, packet_size=%d amrData= 0x%X %X %X %X\n",offset,packed_size[ft],amrData[offset],amrData[offset+1],amrData[offset+2],amrData[offset+3]);
 
-        offset++;
+    offset++;
 
-        packed_bits=amrData+offset;
+    packed_bits=amrData+offset;
 
-        offset+=packed_size[ft];
+    offset+=packed_size[ft];
 
-        //Unsort and unpack bits
-        s->rx_type = UnpackBits(q, ft, packed_bits, &s->mode, &serial[1]);
+    //Unsort and unpack bits
+    s->rx_type = UnpackBits(q, ft, packed_bits, &s->mode, &serial[1]);
 
-        //We have a new frame
-        s->frameCount++;
+    //We have a new frame
+    s->frameCount++;
 
-        if (s->rx_type == RX_NO_DATA)
+    if (s->rx_type == RX_NO_DATA)
+    {
+        s->mode = s->speech_decoder_state->prev_mode;
+    }
+    else {
+        s->speech_decoder_state->prev_mode = s->mode;
+    }
+
+    /* if homed: check if this frame is another homing frame */
+    if (s->reset_flag_old == 1)
+    {
+        /* only check until end of first subframe */
+        s->reset_flag = decoder_homing_frame_test_first(&serial[1], s->mode);
+    }
+    /* produce encoder homing frame if homed & input=decoder homing frame */
+    if ((s->reset_flag != 0) && (s->reset_flag_old != 0))
+    {
+        for (i = 0; i < L_FRAME; i++)
         {
-            s->mode = s->speech_decoder_state->prev_mode;
+            synth[i] = EHF_MASK;
         }
-        else {
-            s->speech_decoder_state->prev_mode = s->mode;
-        }
+    }
+    else
+    {
+        /* decode frame */
+        Speech_Decode_Frame(s->speech_decoder_state, s->mode, &serial[1], s->rx_type, synth);
+    }
 
-        /* if homed: check if this frame is another homing frame */
-        if (s->reset_flag_old == 1)
-        {
-            /* only check until end of first subframe */
-            s->reset_flag = decoder_homing_frame_test_first(&serial[1], s->mode);
-        }
-        /* produce encoder homing frame if homed & input=decoder homing frame */
-        if ((s->reset_flag != 0) && (s->reset_flag_old != 0))
-        {
-            for (i = 0; i < L_FRAME; i++)
-            {
-                synth[i] = EHF_MASK;
-            }
-        }
-        else
-        {
-            /* decode frame */
-            Speech_Decode_Frame(s->speech_decoder_state, s->mode, &serial[1], s->rx_type, synth);
-        }
+    //Each AMR-frame results in 160 16-bit samples
+    *data_size+=160*2;
 
-        //Each AMR-frame results in 160 16-bit samples
-        *data_size+=160*2;
-
-        /* if not homed: check whether current frame is a homing frame */
-        if (s->reset_flag_old == 0)
-        {
-            /* check whole frame */
-            s->reset_flag = decoder_homing_frame_test(&serial[1], s->mode);
-        }
-        /* reset decoder if current frame is a homing frame */
-        if (s->reset_flag != 0)
-        {
-            Speech_Decode_Frame_reset(s->speech_decoder_state);
-        }
-        s->reset_flag_old = s->reset_flag;
+    /* if not homed: check whether current frame is a homing frame */
+    if (s->reset_flag_old == 0)
+    {
+        /* check whole frame */
+        s->reset_flag = decoder_homing_frame_test(&serial[1], s->mode);
+    }
+    /* reset decoder if current frame is a homing frame */
+    if (s->reset_flag != 0)
+    {
+        Speech_Decode_Frame_reset(s->speech_decoder_state);
+    }
+    s->reset_flag_old = s->reset_flag;
 
     return offset;
 }
