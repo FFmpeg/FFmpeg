@@ -150,10 +150,8 @@ ifeq ($(CONFIG_BKTR),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab_bktr.o
 endif
 
-ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
 OBJS-$(CONFIG_AUDIO_MUXER)               += audio.o
-endif
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
