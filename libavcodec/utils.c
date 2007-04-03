@@ -637,7 +637,7 @@ static const AVOption options[]={
 {"vlc", "variable length coder / huffman coder", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_VLC, INT_MIN, INT_MAX, V|E, "coder"},
 {"ac", "arithmetic coder", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_AC, INT_MIN, INT_MAX, V|E, "coder"},
 {"raw", "raw (no encoding)", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_RAW, INT_MIN, INT_MAX, V|E, "coder"},
-{"rle", "run-lenghth coder", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_RLE, INT_MIN, INT_MAX, V|E, "coder"},
+{"rle", "run-length coder", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_RLE, INT_MIN, INT_MAX, V|E, "coder"},
 {"deflate", "deflate-based coder", 0, FF_OPT_TYPE_CONST, FF_CODER_TYPE_DEFLATE, INT_MIN, INT_MAX, V|E, "coder"},
 {"context", "context model", OFFSET(context_model), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"slice_flags", NULL, OFFSET(slice_flags), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
