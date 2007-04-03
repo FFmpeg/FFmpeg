@@ -309,7 +309,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 
         //Each AMR-frame results in 160 16-bit samples
         *data_size+=160*2;
-        synth+=160;
 
         /* if not homed: check whether current frame is a homing frame */
         if (s->reset_flag_old == 0)
