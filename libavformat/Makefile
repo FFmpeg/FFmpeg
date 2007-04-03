@@ -22,6 +22,8 @@ OBJS-$(CONFIG_ASF_MUXER)                 += asf-enc.o riff.o
 OBJS-$(CONFIG_ASF_STREAM_MUXER)          += asf-enc.o riff.o
 OBJS-$(CONFIG_AU_DEMUXER)                += au.o riff.o
 OBJS-$(CONFIG_AU_MUXER)                  += au.o riff.o
+OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
+OBJS-$(CONFIG_AUDIO_MUXER)               += audio.o
 OBJS-$(CONFIG_AVI_DEMUXER)               += avidec.o riff.o
 OBJS-$(CONFIG_AVI_MUXER)                 += avienc.o riff.o
 OBJS-$(CONFIG_AVISYNTH)                  += avisynth.o
@@ -149,9 +151,6 @@ endif
 ifeq ($(CONFIG_BKTR),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab_bktr.o
 endif
-
-OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
-OBJS-$(CONFIG_AUDIO_MUXER)               += audio.o
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
