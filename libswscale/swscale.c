@@ -2086,6 +2086,13 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		/* rgb/bgr -> rgb/bgr (no dither needed forms) */
 		if(   (isBGR(srcFormat) || isRGB(srcFormat))
 		   && (isBGR(dstFormat) || isRGB(dstFormat)) 
+		   && srcFormat != PIX_FMT_BGR8 && dstFormat != PIX_FMT_BGR8
+		   && srcFormat != PIX_FMT_RGB8 && dstFormat != PIX_FMT_RGB8
+		   && srcFormat != PIX_FMT_BGR4 && dstFormat != PIX_FMT_BGR4
+		   && srcFormat != PIX_FMT_RGB4 && dstFormat != PIX_FMT_RGB4
+		   && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
+		   && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
+		   && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
 		   && !needsDither)
 			c->swScale= rgb2rgbWrapper;
 
