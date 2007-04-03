@@ -155,19 +155,14 @@ endif
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
 
-ifeq ($(CONFIG_AUDIO_BEOS),yes)
-CPPOBJS+= beosaudio.o
-endif
+CPPOBJS-$(CONFIG_AUDIO_BEOS)             += beosaudio.o
 
 # protocols I/O
 OBJS+= avio.o aviobuf.o
 
-ifeq ($(CONFIG_PROTOCOLS),yes)
-OBJS+= file.o
-endif
-ifeq ($(CONFIG_NETWORK),yes)
-OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o rtp_h264.o
-endif
+OBJS-$(CONFIG_PROTOCOLS)                 += file.o
+OBJS-$(CONFIG_NETWORK)                   += udp.o tcp.o http.o rtsp.o rtp.o \
+                                            rtpproto.o mpegts.o rtp_h264.o
 
 NAME=avformat
 LIBVERSION=$(LAVFVERSION)
