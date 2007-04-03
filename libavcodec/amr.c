@@ -260,8 +260,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 
     synth=data;
 
-//    while(offset<buf_size)
-    {
         toc=amrData[offset];
         /* read rest of the frame based on ToC byte */
         q  = (toc >> 2) & 0x01;
@@ -326,7 +324,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
         }
         s->reset_flag_old = s->reset_flag;
 
-    }
     return offset;
 }
 
