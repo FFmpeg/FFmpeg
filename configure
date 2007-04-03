@@ -2017,11 +2017,11 @@ else
 fi
 
 
-for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
-    ucname="`toupper $codec`"
+for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
+    ucname="`toupper $part`"
     config_name="CONFIG_$ucname"
     enabled_name="ENABLE_$ucname"
-    if enabled $codec; then
+    if enabled $part; then
         echo "#define $config_name 1" >> $TMPH
         echo "#define $enabled_name 1" >> $TMPH
         echo "$config_name=yes" >> config.mak
