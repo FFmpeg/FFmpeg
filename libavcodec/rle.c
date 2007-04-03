@@ -55,15 +55,6 @@ static int count_pixels(const uint8_t *start, int len, int bpp, int same)
     return count;
 }
 
-/**
- * RLE compress the row, with maximum size of out_size. Value before repeated bytes is (count ^ xor) + add.
- * @param outbuf Output buffer
- * @param out_size Maximum output size
- * @param ptr Input buffer
- * @param bpp Bytes per pixel
- * @param w Image width
- * @return Size of output in bytes, or -1 if larger than out_size
- */
 int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, int w, int8_t add, uint8_t xor)
 {
     int count, x;
