@@ -64,21 +64,6 @@ extern int ff_bfin_sse8  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
 extern int ff_bfin_sse16 (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) L1CODE;
 
 
-#if 0
-void pblk (uint8_t *p, int w, int h, int s)
-{
-    int i,j;
-    av_log (0,0,"0x%08x:\n", p);
-    for (i = 0;i<h;i++) {
-        for (j=0;j<w;j++)
-            av_log (0,0,"%3d ", p[j]);
-        p+=s;
-        av_log (0,0,"\n");
-    }
-    av_log (0,0,"\n");
-}
-#endif
-
 static void bfin_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_bfin_idct (block);
