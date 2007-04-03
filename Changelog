@@ -63,7 +63,7 @@ version <next>
 - Delphine Software .cin demuxer/audio and video decoder
 - Tiertex .seq demuxer/video decoder
 - MTV demuxer
-- TIFF picture decoder
+- TIFF picture encoder and decoder
 - GIF picture decoder
 - Intel Music decoder
 - Musepack decoder

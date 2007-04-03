@@ -922,7 +922,7 @@ following image formats are supported:
 @item animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated.
 @item PNG          @tab X @tab X @tab 2 bit and 4 bit/pixel not supported yet.
 @item Targa        @tab   @tab X @tab Targa (.TGA) image format.
-@item TIFF         @tab   @tab X @tab Only 24 bit/pixel images are supported.
+@item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @item SGI          @tab X @tab X @tab SGI RGB image format
 @end multitable
 
