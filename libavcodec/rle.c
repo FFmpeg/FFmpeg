@@ -55,7 +55,8 @@ static int count_pixels(const uint8_t *start, int len, int bpp, int same)
     return count;
 }
 
-int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, int w, int8_t add, uint8_t xor)
+int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, int w,
+                   int8_t add_rep, uint8_t xor_rep,int8_t add_raw,uint8_t xor_raw)
 {
     int count, x;
     uint8_t *out = outbuf;
@@ -64,13 +65,13 @@ int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, i
         /* see if we can encode the next set of pixels with RLE */
         if((count = count_pixels(ptr, w-x, bpp, 1)) > 1) {
             if(out + bpp + 1 > outbuf + out_size) return -1;
-            *out++ = (count ^ xor) + add;
+            *out++ = (count ^ xor_rep) + add_rep;
             memcpy(out, ptr, bpp);
             out += bpp;
         } else {
             /* fall back on uncompressed */
             count = count_pixels(ptr, w-x, bpp, 0);
-            *out++ = count - 1;
+            *out++ = (count ^ xor_raw) + add_raw;
 
             if(out + bpp*count > outbuf + out_size) return -1;
             memcpy(out, ptr, bpp * count);
