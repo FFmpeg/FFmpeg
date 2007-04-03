@@ -230,7 +230,7 @@ asm volatile (\
     "cmovl %3, %0       \n\t"\
     "cmovl %4, %1       \n\t"\
     "cmovl %5, %2       \n\t"\
-    : "+r" (x), "+r" (a), "+r" (c)\
+    : "+&r" (x), "+&r" (a), "+r" (c)\
     : "r" (y), "r" (b), "r" (d)\
 );
 #else
