@@ -37,12 +37,13 @@
  * The float version (default) can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-610.zip
  * Extract the source into \c "ffmpeg/libavcodec/amr_float".
+ * Enable it by passing \c "--enable-amr-nb" to \c "./configure".
  *
  * \subsection Fixed-point
  * The fixed-point (TS26.073) can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip.
  * Extract the source into \c "ffmpeg/libavcodec/amr".
- * To use the fixed version run \c "./configure" with \c "--enable-amr_nb-fixed".
+ * Enable it by passing \c "--enable-amr-nb-fixed" to \c "./configure".
  *
  * \subsection Specification
  * The specification for AMR-NB can be found in TS 26.071
@@ -53,8 +54,8 @@
  * \subsection Float
  * The reference code can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-600.zip
- * It should be extracted to \c "ffmpeg/libavcodec/amrwb_float". Enable it with
- * \c "--enable-amr_wb".
+ * It should be extracted to \c "ffmpeg/libavcodec/amrwb_float".
+ * Enable it by passing \c "--enable-amr-wb" to \c "./configure".
  *
  * \subsection Fixed-point
  * If someone wants to use the fixed point version it can be downloaded from:
