@@ -58,9 +58,7 @@ static int count_pixels(const uint8_t *start, int len, int bpp, int same)
 int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, int w, int8_t add, uint8_t xor)
 {
     int count, x;
-    uint8_t *out;
-
-    out = outbuf;
+    uint8_t *out = outbuf;
 
     for(x = 0; x < w; x += count) {
         /* see if we can encode the next set of pixels with RLE */
