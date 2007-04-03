@@ -56,7 +56,7 @@ static int count_pixels(const uint8_t *start, int len, int bpp, int same)
 }
 
 int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, int w,
-                   int8_t add_rep, uint8_t xor_rep,int8_t add_raw,uint8_t xor_raw)
+                  int add_rep, int xor_rep, int add_raw, int xor_raw)
 {
     int count, x;
     uint8_t *out = outbuf;

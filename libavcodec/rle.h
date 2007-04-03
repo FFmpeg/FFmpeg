@@ -33,6 +33,6 @@
  * @return Size of output in bytes, or -1 if larger than out_size
  */
 int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *inbuf, int bpp, int w,
-                 int8_t add_rep, uint8_t xor_rep, int8_t add_raw, uint8_t xor_raw);
+                  int add_rep, int xor_rep, int add_raw, int xor_raw);
 
 #endif /* RLE_H */
