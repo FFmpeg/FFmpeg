@@ -4601,7 +4601,7 @@ static int vc1_parse(AVCodecParserContext *s,
     return next;
 }
 
-int vc1_split(AVCodecContext *avctx,
+static int vc1_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
     int i;
