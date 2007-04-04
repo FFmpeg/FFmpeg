@@ -186,7 +186,7 @@ static void register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
     RTPFirstDynamicPayloadHandler= handler;
 }
 
-void av_register_rtp_dynamic_payload_handlers()
+void av_register_rtp_dynamic_payload_handlers(void)
 {
     register_dynamic_payload_handler(&mp4v_es_handler);
     register_dynamic_payload_handler(&mpeg4_generic_handler);

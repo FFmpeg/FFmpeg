@@ -179,6 +179,6 @@ int pcm_read_seek(AVFormatContext *s,
 /* rtsp.c */
 int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 /* rtp.c */
-void av_register_rtp_dynamic_payload_handlers();
+void av_register_rtp_dynamic_payload_handlers(void);
 
 #endif

@@ -312,7 +312,7 @@ static int h264_handle_packet(RTPDemuxContext * s,
 }
 
 /* ---------------- public code */
-static void *h264_new_extradata()
+static void *h264_new_extradata(void)
 {
     h264_rtp_extra_data *data =
         av_mallocz(sizeof(h264_rtp_extra_data) +

@@ -185,7 +185,7 @@ typedef struct {
     DSPContext dsp;
 } DCAContext;
 
-static void dca_init_vlcs()
+static void dca_init_vlcs(void)
 {
     static int vlcs_inited = 0;
     int i, j;
