@@ -20,10 +20,15 @@
  *
  */
 
+/**
+ * TIFF tables
+ * @file tiff.h
+ * @author Konstantin Shishkov
+ */
 #ifndef TIFF_H
 #define TIFF_H
 
-/* abridged list of TIFF tags */
+/** abridged list of TIFF tags */
 enum TiffTags{
     TIFF_SUBFILE = 0xfe,
     TIFF_WIDTH = 0x100,
@@ -50,6 +55,7 @@ enum TiffTags{
     TIFF_REFERENCE_BW = 0x214,
 };
 
+/** list of TIFF compression types */
 enum TiffCompr{
     TIFF_RAW = 1,
     TIFF_CCITT_RLE,

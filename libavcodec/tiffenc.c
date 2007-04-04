@@ -20,6 +20,11 @@
  *
  */
 
+/**
+ * TIFF image encoder
+ * @file tiffenc.c
+ * @author Bartlomiej Wolowiec
+ */
 #include "avcodec.h"
 #ifdef CONFIG_ZLIB
 #include <zlib.h>

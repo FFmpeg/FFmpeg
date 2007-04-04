@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+/**
+ * TIFF image decoder
+ * @file tiff.c
+ * @author Konstantin Shishkov
+ */
 #include "avcodec.h"
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
