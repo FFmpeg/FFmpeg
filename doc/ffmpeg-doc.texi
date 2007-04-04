@@ -1070,7 +1070,7 @@ following image formats are supported:
 @tab Used in Sierra Online game audio files.
 @item Apple MACE 3           @tab      @tab X
 @item Apple MACE 6           @tab      @tab X
-@item FLAC lossless audio    @tab      @tab X
+@item FLAC lossless audio    @tab X    @tab X
 @item Shorten lossless audio @tab      @tab X
 @item Apple lossless audio   @tab      @tab X
 @tab QuickTime fourcc 'alac'
