@@ -107,6 +107,7 @@ typedef struct WMACodecContext {
     int block_pos;                          ///< current position in frame
     uint8_t ms_stereo;                      ///< true if mid/side stereo mode
     uint8_t channel_coded[MAX_CHANNELS];    ///< true if channel is coded
+    int exponents_bsize[MAX_CHANNELS];      ///< log2 ratio frame/exp. length
     DECLARE_ALIGNED_16(float, exponents[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     float max_exponent[MAX_CHANNELS];
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
