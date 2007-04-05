@@ -127,6 +127,13 @@ static void add_entry(TiffEncoderContext * s,
     s->num_entries++;
 }
 
+static void add_entry1(TiffEncoderContext * s,
+                       enum TiffTags tag, enum TiffTypes type, int val){
+    uint16_t w = val;
+    uint32_t dw= val;
+    add_entry(s, tag, type, 1, type == TIFF_SHORT ? &w : &dw);
+}
+
 /**
  * Encode one strip in tiff file
  *
@@ -297,25 +304,25 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
 
     s->num_entries = 0;
 
-    add_entry(s, TIFF_SUBFILE,           TIFF_LONG,     1,      (uint32_t[]) {0});
-    add_entry(s, TIFF_WIDTH,             TIFF_LONG,     1,      (uint32_t[]) {s->width});
-    add_entry(s, TIFF_HEIGHT,            TIFF_LONG,     1,      (uint32_t[]) {s->height});
+    add_entry1(s,TIFF_SUBFILE,           TIFF_LONG,             0);
+    add_entry1(s,TIFF_WIDTH,             TIFF_LONG,             s->width);
+    add_entry1(s,TIFF_HEIGHT,            TIFF_LONG,             s->height);
 
     if (s->bpp_tab_size)
     add_entry(s, TIFF_BPP,               TIFF_SHORT,    s->bpp_tab_size, bpp_tab);
 
-    add_entry(s, TIFF_COMPR,             TIFF_SHORT,    1,      (uint16_t[]) {s->compr});
-    add_entry(s, TIFF_INVERT,            TIFF_SHORT,    1,      (uint16_t[]) {s->invert});
+    add_entry1(s,TIFF_COMPR,             TIFF_SHORT,            s->compr);
+    add_entry1(s,TIFF_INVERT,            TIFF_SHORT,            s->invert);
     add_entry(s, TIFF_STRIP_OFFS,        TIFF_LONG,     strips, strip_offsets);
 
     if (s->bpp_tab_size)
-    add_entry(s, TIFF_SAMPLES_PER_PIXEL, TIFF_SHORT,    1,      (uint16_t[]) {s->bpp_tab_size});
+    add_entry1(s,TIFF_SAMPLES_PER_PIXEL, TIFF_SHORT,            s->bpp_tab_size);
 
-    add_entry(s, TIFF_ROWSPERSTRIP,      TIFF_LONG,     1,      (uint32_t[]) {s->rps});
+    add_entry1(s,TIFF_ROWSPERSTRIP,      TIFF_LONG,             s->rps);
     add_entry(s, TIFF_STRIP_SIZE,        TIFF_LONG,     strips, strip_sizes);
     add_entry(s, TIFF_XRES,              TIFF_RATIONAL, 1,      res);
     add_entry(s, TIFF_YRES,              TIFF_RATIONAL, 1,      res);
-    add_entry(s, TIFF_RES_UNIT,          TIFF_SHORT,    1,      (uint16_t[]) {2});
+    add_entry1(s,TIFF_RES_UNIT,          TIFF_SHORT,            2);
     add_entry(s, TIFF_SOFTWARE_NAME,     TIFF_STRING,
               strlen(LIBAVCODEC_IDENT) + 1, LIBAVCODEC_IDENT);
 
