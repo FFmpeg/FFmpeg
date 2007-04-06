@@ -667,6 +667,12 @@ do_image_formats bmp
 # tga
 do_image_formats tga
 
+# tiff
+do_image_formats tiff
+
+# sgi
+do_image_formats sgi
+
 # jpeg
 do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
 
