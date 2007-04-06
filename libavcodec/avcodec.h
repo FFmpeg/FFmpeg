@@ -159,6 +159,7 @@ enum CodecID {
     CODEC_ID_DXA,
     CODEC_ID_DNXHD,
     CODEC_ID_THP,
+    CODEC_ID_SGI,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2220,6 +2221,7 @@ extern AVCodec png_encoder;
 extern AVCodec ppm_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec rv20_encoder;
+extern AVCodec sgi_encoder;
 extern AVCodec snow_encoder;
 extern AVCodec sonic_encoder;
 extern AVCodec sonic_ls_encoder;
@@ -2322,6 +2324,7 @@ extern AVCodec rv10_decoder;
 extern AVCodec rv20_decoder;
 extern AVCodec rv30_decoder;
 extern AVCodec rv40_decoder;
+extern AVCodec sgi_decoder;
 extern AVCodec shorten_decoder;
 extern AVCodec smackaud_decoder;
 extern AVCodec smacker_decoder;

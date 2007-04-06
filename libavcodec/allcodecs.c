@@ -122,6 +122,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(RPZA, rpza);
     REGISTER_ENCDEC (RV10, rv10);
     REGISTER_ENCDEC (RV20, rv20);
+    REGISTER_ENCDEC (SGI, sgi);
     REGISTER_DECODER(SMACKER, smacker);
     REGISTER_DECODER(SMC, smc);
     REGISTER_ENCDEC (SNOW, snow);

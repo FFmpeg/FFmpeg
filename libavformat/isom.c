@@ -125,6 +125,7 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_VC1, MKTAG('v', 'c', '-', '1') }, /* SMPTE RP 2025 */
 
     { CODEC_ID_DNXHD, MKTAG('A', 'V', 'd', 'n') }, /* AVID DNxHD */
+    { CODEC_ID_SGI,   MKTAG('s', 'g', 'i', ' ') }, /* SGI  */
 
     { CODEC_ID_NONE, 0 },
 };
