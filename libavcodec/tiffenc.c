@@ -49,7 +49,7 @@ typedef struct TiffEncoderContext {
     unsigned int bpp;                   ///< bits per pixel
     int compr;                          ///< compression level
     int bpp_tab_size;                   ///< bpp_tab size
-    int invert;                         ///< photometric interpretation
+    int photometric_interpretation;     ///< photometric interpretation
     int strips;                         ///< number of strips
     int rps;                            ///< row per strip
     uint8_t entries[TIFF_MAX_ENTRY*12]; ///< entires in header
@@ -214,23 +214,23 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
         s->bpp = 24;
-        s->invert = 2;
+        s->photometric_interpretation = 2;
         break;
     case PIX_FMT_GRAY8:
         s->bpp = 8;
-        s->invert = 1;
+        s->photometric_interpretation = 1;
         break;
     case PIX_FMT_PAL8:
         s->bpp = 8;
-        s->invert = 3;
+        s->photometric_interpretation = 3;
         break;
     case PIX_FMT_MONOBLACK:
         s->bpp = 1;
-        s->invert = 1;
+        s->photometric_interpretation = 1;
         break;
     case PIX_FMT_MONOWHITE:
         s->bpp = 1;
-        s->invert = 0;
+        s->photometric_interpretation = 0;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
@@ -312,7 +312,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     add_entry(s, TIFF_BPP,               TIFF_SHORT,    s->bpp_tab_size, bpp_tab);
 
     add_entry1(s,TIFF_COMPR,             TIFF_SHORT,            s->compr);
-    add_entry1(s,TIFF_INVERT,            TIFF_SHORT,            s->invert);
+    add_entry1(s,TIFF_INVERT,            TIFF_SHORT,            s->photometric_interpretation);
     add_entry(s, TIFF_STRIP_OFFS,        TIFF_LONG,     strips, strip_offsets);
 
     if (s->bpp_tab_size)
