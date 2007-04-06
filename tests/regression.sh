@@ -668,7 +668,7 @@ do_image_formats bmp
 do_image_formats tga
 
 # tiff
-do_image_formats tiff
+do_image_formats tiff "-pix_fmt rgb24"
 
 # sgi
 do_image_formats sgi

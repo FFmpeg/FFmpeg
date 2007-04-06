@@ -57,6 +57,7 @@ typedef struct TiffEncoderContext {
     uint8_t **buf;                      ///< actual position in buffer
     uint8_t *buf_start;                 ///< pointer to first byte in buffer
     int buf_size;                       ///< buffer size
+    uint16_t subsampling[2];            ///< YUV subsampling factors
 } TiffEncoderContext;
 
 
@@ -173,6 +174,23 @@ static int encode_strip(TiffEncoderContext * s, const int8_t * src,
     }
 }
 
+static void pack_yuv(TiffEncoderContext * s, uint8_t * dst, int lnum)
+{
+    AVFrame *p = &s->picture;
+    int i, j, k;
+    int w = (s->width - 1) / s->subsampling[0] + 1;
+    uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
+    uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
+    for (i = 0; i < w; i++){
+        for (j = 0; j < s->subsampling[1]; j++)
+            for (k = 0; k < s->subsampling[0]; k++)
+                *dst++ = p->data[0][(lnum + j) * p->linesize[0] +
+                                    i * s->subsampling[0] + k];
+        *dst++ = *pu++;
+        *dst++ = *pv++;
+    }
+}
+
 static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
                         int buf_size, void *data)
 {
@@ -190,6 +208,9 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     uint32_t res[2] = { 72, 1 };        // image resolution (72/1)
     static const uint16_t bpp_tab[] = { 8, 8, 8, 8 };
     int ret = -1;
+    int is_yuv = 0;
+    uint8_t *yuv_line = NULL;
+    int shift_h, shift_v;
 
     s->buf_start = buf;
     s->buf = &ptr;
@@ -210,6 +231,8 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
 
     s->width = avctx->width;
     s->height = avctx->height;
+    s->subsampling[0] = 1;
+    s->subsampling[1] = 1;
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
@@ -232,11 +255,26 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         s->bpp = 1;
         s->photometric_interpretation = 0;
         break;
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV444P:
+    case PIX_FMT_YUV410P:
+    case PIX_FMT_YUV411P:
+        s->photometric_interpretation = 6;
+        avcodec_get_chroma_sub_sample(avctx->pix_fmt,
+                &shift_h, &shift_v);
+        s->bpp = 8 + (16 >> (shift_h + shift_v));
+        s->subsampling[0] = 1 << shift_h;
+        s->subsampling[1] = 1 << shift_v;
+        s->bpp_tab_size = 3;
+        is_yuv = 1;
+        break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
                "This colors format is not supported\n");
         return -1;
     }
+    if (!is_yuv)
     s->bpp_tab_size = (s->bpp >> 3);
 
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE)
@@ -244,6 +282,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         s->rps = s->height;
     else
         s->rps = FFMAX(8192 / (((s->width * s->bpp) >> 3) + 1), 1);     // suggest size of strip
+    s->rps = ((s->rps - 1) / s->subsampling[1] + 1) * s->subsampling[1]; // round rps up
 
     strips = (s->height - 1) / s->rps + 1;
 
@@ -260,7 +299,15 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     strip_sizes = av_mallocz(sizeof(*strip_sizes) * strips);
     strip_offsets = av_mallocz(sizeof(*strip_offsets) * strips);
 
-    bytes_per_row = (s->width * s->bpp + 7) >> 3;
+    bytes_per_row = (((s->width - 1)/s->subsampling[0] + 1) * s->bpp
+                    * s->subsampling[0] * s->subsampling[1] + 7) >> 3;
+    if (is_yuv){
+        yuv_line = av_malloc(bytes_per_row);
+        if (yuv_line == NULL){
+            av_log(s->avctx, AV_LOG_ERROR, "Not enough memory\n");
+            goto fail;
+        }
+    }
 
 #ifdef CONFIG_ZLIB
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
@@ -273,6 +320,12 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         strip_offsets[0] = ptr - buf;
         zn = 0;
         for (j = 0; j < s->rps; j++) {
+            if (is_yuv){
+                pack_yuv(s, yuv_line, j);
+                memcpy(zbuf + zn, yuv_line, bytes_per_row);
+                j += s->subsampling[1] - 1;
+            }
+            else
             memcpy(zbuf + j * bytes_per_row,
                    p->data[0] + j * p->linesize[0], bytes_per_row);
             zn += bytes_per_row;
@@ -292,8 +345,15 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
             if (strip_sizes[i / s->rps] == 0) {
                 strip_offsets[i / s->rps] = ptr - buf;
             }
-            if ((n = encode_strip(s, p->data[0] + i * p->linesize[0]
-                                  , ptr, bytes_per_row, s->compr)) < 0) {
+            if (is_yuv){
+                 pack_yuv(s, yuv_line, i);
+                 n = encode_strip(s, yuv_line, ptr, bytes_per_row, s->compr);
+                 i += s->subsampling[1] - 1;
+            }
+            else
+                n = encode_strip(s, p->data[0] + i * p->linesize[0],
+                        ptr, bytes_per_row, s->compr);
+            if (n < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Encode strip failed\n");
                 goto fail;
             }
@@ -336,6 +396,12 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         }
         add_entry(s, TIFF_PAL, TIFF_SHORT, 256 * 3, pal);
     }
+    if (is_yuv){
+        /** according to CCIR Recommendation 601.1 */
+        uint32_t refbw[12] = {15, 1, 235, 1, 128, 1, 240, 1, 128, 1, 240, 1};
+        add_entry(s, TIFF_YCBCR_SUBSAMPLING, TIFF_SHORT,    2, s->subsampling);
+        add_entry(s, TIFF_REFERENCE_BW,      TIFF_RATIONAL, 6, refbw);
+    }
     bytestream_put_le32(&offset, ptr - buf);    // write offset to dir
 
     if (check_size(s, 6 + s->num_entries * 12))
@@ -349,6 +415,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
 fail:
     av_free(strip_sizes);
     av_free(strip_offsets);
+    av_free(yuv_line);
     return ret;
 }
 
@@ -366,6 +433,9 @@ AVCodec tiff_encoder = {
     .pix_fmts =
         (enum PixelFormat[]) {PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8,
                               PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
+                              PIX_FMT_YUV420P, PIX_FMT_YUV422P,
+                              PIX_FMT_YUV444P, PIX_FMT_YUV410P,
+                              PIX_FMT_YUV411P
                               -1}
 
 };
