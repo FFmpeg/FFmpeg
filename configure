@@ -1196,7 +1196,7 @@ strip="${cross_prefix}${strip}"
 
 # Disable core dumps so that intentional execution of broken apps doesn't
 # pollute the current directory.
-ulimit -c 0
+ulimit -c 0 >/dev/null 2>&1
 
 # we need to build at least one lib type
 if disabled_all static shared; then
