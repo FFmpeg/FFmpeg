@@ -2050,7 +2050,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	c->chrIntHSubSample= c->chrDstHSubSample;
 	c->chrIntVSubSample= c->chrSrcVSubSample;
 
-	// note the -((-x)>>y) is so that we allways round toward +inf
+	// Note the -((-x)>>y) is so that we always round toward +inf.
 	c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
 	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
 	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);

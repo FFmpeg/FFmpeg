@@ -2317,7 +2317,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 {
 #ifdef HAVE_MMX
 	assert(filterSize % 4 == 0 && filterSize>0);
-	if(filterSize==4) // allways true for upscaling, sometimes for down too
+	if(filterSize==4) // Always true for upscaling, sometimes for down, too.
 	{
 		long counter= -2*dstW;
 		filter-= counter*2;
