@@ -907,6 +907,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used in the game Cyberia from Interplay.
 @item Bethsoft VID @tab    @tab X
 @tab Used in some games from Bethesda Softworks.
+@item CRYO APC @tab    @tab X
+@tab Audio format used in some games by CRYO Interactive Entertainment.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

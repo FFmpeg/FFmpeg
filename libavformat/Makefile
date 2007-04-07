@@ -17,6 +17,7 @@ OBJS-$(CONFIG_AIFF_DEMUXER)              += aiff.o riff.o
 OBJS-$(CONFIG_AIFF_MUXER)                += aiff.o riff.o
 OBJS-$(CONFIG_AMR_DEMUXER)               += amr.o
 OBJS-$(CONFIG_AMR_MUXER)                 += amr.o
+OBJS-$(CONFIG_APC_DEMUXER)               += apc.o
 OBJS-$(CONFIG_ASF_DEMUXER)               += asf.o riff.o
 OBJS-$(CONFIG_ASF_MUXER)                 += asf-enc.o riff.o
 OBJS-$(CONFIG_ASF_STREAM_MUXER)          += asf-enc.o riff.o

@@ -79,6 +79,7 @@ version <next>
 - Blackfin optimizations
 - Interplay C93 demuxer and video decoder
 - Bethsoft VID demuxer and video decoder
+- CRYO APC demuxer
 
 version 0.4.9-pre1:
 

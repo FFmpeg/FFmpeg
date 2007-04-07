@@ -26,6 +26,7 @@ extern AVInputFormat aac_demuxer;
 extern AVInputFormat ac3_demuxer;
 extern AVInputFormat aiff_demuxer;
 extern AVInputFormat amr_demuxer;
+extern AVInputFormat apc_demuxer;
 extern AVInputFormat asf_demuxer;
 extern AVInputFormat au_demuxer;
 extern AVInputFormat audio_demuxer;
