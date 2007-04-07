@@ -62,18 +62,18 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 {
     BethsoftvidContext * vid = avctx->priv_data;
     char block_type;
-    uint8_t * destination;
+    uint8_t * dst;
     uint8_t * frame_end;
-    int line_remaining = avctx->width;          // number of bytes remaining on a line
+    int remaining = avctx->width;          // number of bytes remaining on a line
     const int wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
-    int rle_num_bytes;
+    int code;
     int yoffset;
 
     if (avctx->reget_buffer(avctx, &vid->frame)) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
-    destination = vid->frame.data[0];
+    dst = vid->frame.data[0];
     frame_end = vid->frame.data[0] + vid->frame.linesize[0] * avctx->height;
 
     switch(block_type = *buf++){
@@ -84,33 +84,33 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
             yoffset = bytestream_get_le16(&buf);
             if(yoffset >= avctx->height)
                 return -1;
-            destination += vid->frame.linesize[0] * yoffset;
+            dst += vid->frame.linesize[0] * yoffset;
     }
 
     // main code
-    while((rle_num_bytes = *buf++)){
-        int length = rle_num_bytes & 0x7f;
+    while((code = *buf++)){
+        int length = code & 0x7f;
 
         // copy any bytes starting at the current position, and ending at the frame width
-        while(length > line_remaining){
-            if(rle_num_bytes < 0x80)
-                bytestream_get_buffer(&buf, destination, line_remaining);
+        while(length > remaining){
+            if(code < 0x80)
+                bytestream_get_buffer(&buf, dst, remaining);
             else if(block_type == VIDEO_I_FRAME)
-                memset(destination, buf[0], line_remaining);
-            length -= line_remaining;      // decrement the number of bytes to be copied
-            destination += line_remaining + wrap_to_next_line;    // skip over extra bytes at end of frame
-            line_remaining = avctx->width;
-            if(destination == frame_end)
+                memset(dst, buf[0], remaining);
+            length -= remaining;      // decrement the number of bytes to be copied
+            dst += remaining + wrap_to_next_line;    // skip over extra bytes at end of frame
+            remaining = avctx->width;
+            if(dst == frame_end)
                 goto end;
         }
 
         // copy any remaining bytes after / if line overflows
-        if(rle_num_bytes < 0x80)
-            bytestream_get_buffer(&buf, destination, length);
+        if(code < 0x80)
+            bytestream_get_buffer(&buf, dst, length);
         else if(block_type == VIDEO_I_FRAME)
-            memset(destination, *buf++, length);
-        line_remaining -= length;
-        destination += length;
+            memset(dst, *buf++, length);
+        remaining -= length;
+        dst += length;
     }
     end:
 
