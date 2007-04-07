@@ -101,7 +101,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
 {
     uint8_t * vidbuf_start = NULL;
     int vidbuf_nbytes = 0;
-    int rle_num_bytes;
+    int code;
     int bytes_copied = 0;
     int position;
     size_t vidbuf_capacity;
@@ -130,18 +130,18 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
         if(!vidbuf_start)
             return AVERROR_NOMEM;
 
-        rle_num_bytes = get_byte(pb);
-        vidbuf_start[vidbuf_nbytes++] = rle_num_bytes;
+        code = get_byte(pb);
+        vidbuf_start[vidbuf_nbytes++] = code;
 
-        if(rle_num_bytes >= 0x80){ // rle sequence
+        if(code >= 0x80){ // rle sequence
             if(block_type == VIDEO_I_FRAME)
                 vidbuf_start[vidbuf_nbytes++] = get_byte(pb);
-        } else if(rle_num_bytes){ // plain sequence
-            if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], rle_num_bytes) != rle_num_bytes)
+        } else if(code){ // plain sequence
+            if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], code) != code)
                 goto fail;
-            vidbuf_nbytes += rle_num_bytes;
+            vidbuf_nbytes += code;
         }
-        bytes_copied += rle_num_bytes & 0x7F;
+        bytes_copied += code & 0x7F;
         if(bytes_copied == npixels){ // sometimes no stop character is given, need to keep track of bytes copied
             // may contain a 0 byte even if read all pixels
             if(get_byte(pb))
@@ -150,7 +150,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
         }
         if(bytes_copied > npixels)
             goto fail;
-    } while(rle_num_bytes);
+    } while(code);
 
     // copy data into packet
     if(av_new_packet(pkt, vidbuf_nbytes) < 0)
