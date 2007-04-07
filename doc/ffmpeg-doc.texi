@@ -1017,6 +1017,7 @@ following image formats are supported:
 @item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
 @item AVID DNxHD             @tab     @tab  X @tab aka SMPTE VC3
 @item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
+@item THP                    @tab     @tab  X @tab Used on the Nintendo GameCube.
 @item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.
 @end multitable
 
@@ -1055,6 +1056,8 @@ following image formats are supported:
 @tab Used in various EA titles.
 @item Creative ADPCM         @tab      @tab X
 @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
+@item THP ADPCM              @tab      @tab X
+@tab Used on the Nintendo GameCube.
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
