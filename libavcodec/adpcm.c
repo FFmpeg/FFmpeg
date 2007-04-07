@@ -1332,10 +1332,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             table[0][i] = get_sbits(&gb, 16);
 
         /* Initialize the previous sample.  */
-        for (ch = 0; ch < 2; ch++) {
-            prev[ch][0] = get_sbits(&gb, 16);
-            prev[ch][1] = get_sbits(&gb, 16);
-        }
+        for (i = 0; i < 4; i++)
+            prev[0][i] = get_sbits(&gb, 16);
 
         if (samplecnt >= (samples_end - samples) /  (st + 1)) {
             av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
