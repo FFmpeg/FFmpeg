@@ -29,6 +29,7 @@
  *   by Mike Melanson (melanson@pcisys.net)
  * CD-ROM XA ADPCM codec by BERO
  * EA ADPCM decoder by Robin Kay (komadori@myrealbox.com)
+ * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
  *
  * Features and limitations:
  *
@@ -1308,6 +1309,72 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
         }
         break;
+    case CODEC_ID_ADPCM_THP:
+      {
+        GetBitContext gb;
+        int table[16][2];
+        unsigned int samplecnt;
+        int prev1[2], prev2[2];
+        int ch;
+
+        if (buf_size < 80) {
+            av_log(avctx, AV_LOG_ERROR, "frame too small\n");
+            return -1;
+        }
+
+        init_get_bits(&gb, src, buf_size * 8);
+        src += buf_size;
+
+                    get_bits_long(&gb, 32); /* Channel size */
+        samplecnt = get_bits_long(&gb, 32);
+
+        for (ch = 0; ch < 2; ch++)
+            for (i = 0; i < 16; i++)
+                table[i][ch] = get_sbits(&gb, 16);
+
+        /* Initialize the previous sample.  */
+        for (ch = 0; ch < 2; ch++) {
+            prev1[ch] = get_sbits(&gb, 16);
+            prev2[ch] = get_sbits(&gb, 16);
+        }
+
+        if (samplecnt >= (samples_end - samples) /  (st + 1)) {
+            av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
+            return -1;
+        }
+
+        for (ch = 0; ch <= st; ch++) {
+            samples = (unsigned short *) data + ch;
+
+            /* Read in every sample for this channel.  */
+            for (i = 0; i < samplecnt / 14; i++) {
+                uint8_t index = get_bits (&gb, 4) & 7;
+                unsigned int exp = get_bits (&gb, 4);
+                int factor1 = table[index * 2][ch];
+                int factor2 = table[index * 2 + 1][ch];
+
+                /* Decode 14 samples.  */
+                for (n = 0; n < 14; n++) {
+                    int sampledat = get_sbits (&gb, 4);
+
+                    *samples = ((prev1[ch]*factor1
+                                + prev2[ch]*factor2) >> 11) + (sampledat << exp);
+                    prev2[ch] = prev1[ch];
+                    prev1[ch] = *samples++;
+
+                    /* In case of stereo, skip one sample, this sample
+                       is for the other channel.  */
+                    samples += st;
+                }
+            }
+        }
+
+        /* In the previous loop, in case stereo is used, samples is
+           increased exactly one time too often.  */
+        samples -= st;
+        break;
+      }
+
     default:
         return -1;
     }
@@ -1368,5 +1435,6 @@ ADPCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
 ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4);
 ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3);
 ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
+ADPCM_CODEC(CODEC_ID_ADPCM_THP, adpcm_thp);
 
 #undef ADPCM_CODEC

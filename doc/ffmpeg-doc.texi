@@ -902,7 +902,7 @@ library:
 @tab This format is used in non-Windows version of Feeble Files game and
 different game cutscenes repacked for use with ScummVM.
 @item THP @tab    @tab X
-@tab Used on the Nintendo GameCube (video only)
+@tab Used on the Nintendo GameCube.
 @item C93 @tab    @tab X
 @tab Used in the game Cyberia from Interplay.
 @end multitable

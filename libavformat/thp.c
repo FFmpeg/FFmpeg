@@ -35,10 +35,12 @@ typedef struct ThpDemuxContext {
     int              next_frame;
     int              next_framesz;
     int              video_stream_index;
+    int              audio_stream_index;
     int              compcount;
     unsigned char    components[16];
     AVStream*        vst;
     int              has_audio;
+    int              audiosize;
 } ThpDemuxContext;
 
 
@@ -116,7 +118,23 @@ static int thp_read_header(AVFormatContext *s,
              get_be32(pb); /* Unknown.  */
         }
       else if (thp->components[i] == 1) {
-          /* XXX: Required for audio playback.  */
+          if (thp->has_audio != 0)
+              break;
+
+          /* Audio component.  */
+          st = av_new_stream(s, 0);
+          if (!st)
+              return AVERROR_NOMEM;
+
+          st->codec->codec_type = CODEC_TYPE_AUDIO;
+          st->codec->codec_id = CODEC_ID_ADPCM_THP;
+          st->codec->codec_tag = 0;  /* no fourcc */
+          st->codec->channels    = get_be32(pb); /* numChannels.  */
+          st->codec->sample_rate = get_be32(pb); /* Frequency.  */
+
+          av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+          thp->audio_stream_index = st->index;
           thp->has_audio = 1;
       }
     }
@@ -132,6 +150,8 @@ static int thp_read_packet(AVFormatContext *s,
     int size;
     int ret;
 
+    if (thp->audiosize == 0) {
+
     /* Terminate when last frame is reached.  */
     if (thp->frame >= thp->framecnt)
        return AVERROR_IO;
@@ -145,8 +165,12 @@ static int thp_read_packet(AVFormatContext *s,
                         get_be32(pb); /* Previous total size.  */
     size              = get_be32(pb); /* Total size of this frame.  */
 
+    /* Store the audiosize so the next time this function is called,
+       the audio can be read.  */
     if (thp->has_audio)
-                        get_be32(pb); /* Audio size.  */
+        thp->audiosize = get_be32(pb); /* Audio size.  */
+    else
+        thp->frame++;
 
     ret = av_get_packet(pb, pkt, size);
     if (ret != size) {
@@ -155,7 +179,18 @@ static int thp_read_packet(AVFormatContext *s,
     }
 
     pkt->stream_index = thp->video_stream_index;
-    thp->frame++;
+    }
+    else {
+        ret = av_get_packet(pb, pkt, thp->audiosize);
+        if (ret != thp->audiosize) {
+            av_free_packet(pkt);
+            return AVERROR_IO;
+        }
+
+        pkt->stream_index = thp->audio_stream_index;
+        thp->audiosize = 0;
+        thp->frame++;
+    }
 
     return 0;
 }
