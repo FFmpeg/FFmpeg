@@ -72,7 +72,8 @@ static int vid_read_header(AVFormatContext *s,
     // FFmpeg central code will use this; don't need to return or anything
     // initialize the bethsoft codec
     stream = av_new_stream(s, 0);
-    if (!stream) { return AVERROR_NOMEM; }
+    if (!stream)
+        return AVERROR_NOMEM;
     av_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
     stream->codec->codec_type = CODEC_TYPE_VIDEO;
     stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
@@ -84,7 +85,8 @@ static int vid_read_header(AVFormatContext *s,
 
     // done with video codec, set up audio codec
     stream = av_new_stream(s, 0);
-    if (!stream) { return AVERROR_NOMEM; }
+    if (!stream)
+        return AVERROR_NOMEM;
     stream->codec->codec_type = CODEC_TYPE_AUDIO;
     stream->codec->codec_id = CODEC_ID_PCM_U8;
     stream->codec->channels = 1;
@@ -107,7 +109,8 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     size_t vidbuf_capacity;
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
-    if(!vidbuf_start) { return AVERROR_NOMEM; }
+    if(!vidbuf_start)
+        return AVERROR_NOMEM;
 
     // save the file position for the packet, include block type
     position = url_ftell(pb) - 1;
@@ -119,43 +122,43 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     vid->video_pts += vid->bethsoft_global_delay + get_le16(pb);
 
     // set the y offset if it exists (decoder header data should be in data section)
-    if(block_type == VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK)
-    {
-        if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2) { return AVERROR_IO; }
+    if(block_type == VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK){
+        if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2)
+            return AVERROR_IO;
         vidbuf_nbytes += 2;
     }
 
-    do
-    {
+    do{
         vidbuf_start = av_fast_realloc(vidbuf_start, &vidbuf_capacity, vidbuf_nbytes + BUFFER_PADDING_SIZE);
-        if(!vidbuf_start) { return AVERROR_NOMEM; }
+        if(!vidbuf_start)
+            return AVERROR_NOMEM;
 
         rle_num_bytes = get_byte(pb);
         vidbuf_start[vidbuf_nbytes++] = rle_num_bytes;
 
-        if(rle_num_bytes > 0x80) // rle sequence
-        {
-            if(block_type == VIDEO_FULL_FRAME_BLOCK) { vidbuf_start[vidbuf_nbytes++] = get_byte(pb); }
+        if(rle_num_bytes > 0x80){ // rle sequence
+            if(block_type == VIDEO_FULL_FRAME_BLOCK)
+                vidbuf_start[vidbuf_nbytes++] = get_byte(pb);
             bytes_copied += rle_num_bytes - 0x80;
-        }
-        else if(rle_num_bytes) // plain sequence
-        {
+        } else if(rle_num_bytes){ // plain sequence
             if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], rle_num_bytes) != rle_num_bytes)
                 return AVERROR_IO;
             vidbuf_nbytes += rle_num_bytes;
             bytes_copied += rle_num_bytes;
         }
-        if(bytes_copied == npixels) // sometimes no stop character is given, need to keep track of bytes copied
-        {
+        if(bytes_copied == npixels){ // sometimes no stop character is given, need to keep track of bytes copied
             // may contain a 0 byte even if read all pixels
-            if(get_byte(pb)) { url_fseek(pb, -1, SEEK_CUR); }
+            if(get_byte(pb))
+                url_fseek(pb, -1, SEEK_CUR);
             break;
         }
-        if(bytes_copied > npixels) { return -1; }    // error
+        if(bytes_copied > npixels)
+            return -1;    // error
     } while(rle_num_bytes);
 
     // copy data into packet
-    if(av_new_packet(pkt, vidbuf_nbytes)) { return AVERROR_NOMEM; }
+    if(av_new_packet(pkt, vidbuf_nbytes))
+        return AVERROR_NOMEM;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
     av_free(vidbuf_start);
 
@@ -178,16 +181,19 @@ static int vid_read_packet(AVFormatContext *s,
 
     av_log(s, AV_LOG_DEBUG, "[bethsoftvid demuxer read_packet]");
 
-    if(vid->is_finished || url_feof(pb)) { return AVERROR_IO; }
+    if(vid->is_finished || url_feof(pb))
+        return AVERROR_IO;
 
     block_type = get_byte(pb);
-    switch(block_type)
-    {
+    switch(block_type){
         case PALETTE_BLOCK:
             av_log(s, AV_LOG_DEBUG, "palette block.\n");
             url_fseek(pb, -1, SEEK_CUR);     // include block type
             ret_value = av_get_packet(pb, pkt, 3 * VID_PALETTE_NUMCOLORS + 1);
-            if(ret_value != 3 * VID_PALETTE_NUMCOLORS + 1) { av_free_packet(pkt); return AVERROR_IO; }
+            if(ret_value != 3 * VID_PALETTE_NUMCOLORS + 1){
+                av_free_packet(pkt);
+                return AVERROR_IO;
+            }
             pkt->stream_index = 0;
             return ret_value;
 
