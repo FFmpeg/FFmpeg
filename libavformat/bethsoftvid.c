@@ -133,7 +133,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
         rle_num_bytes = get_byte(pb);
         vidbuf_start[vidbuf_nbytes++] = rle_num_bytes;
 
-        if(rle_num_bytes > 0x80){ // rle sequence
+        if(rle_num_bytes >= 0x80){ // rle sequence
             if(block_type == VIDEO_I_FRAME)
                 vidbuf_start[vidbuf_nbytes++] = get_byte(pb);
             bytes_copied += rle_num_bytes - 0x80;
