@@ -218,7 +218,6 @@ static int decode_init(AVCodecContext *avctx) {
     if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
         return 1;
     }
-    avctx->has_b_frames = 0;
     switch (avctx->bits_per_sample) {
         case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
         case 24: avctx->pix_fmt = PIX_FMT_BGR24; break;

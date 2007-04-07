@@ -523,7 +523,6 @@ static int qtrle_decode_init(AVCodecContext *avctx)
             avctx->bits_per_sample);
         break;
     }
-    avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
     s->frame.data[0] = NULL;

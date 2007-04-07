@@ -411,7 +411,6 @@ static int roq_decode_init(AVCodecContext *avctx)
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV420P;
-    avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
     uiclp = uiclip+512;

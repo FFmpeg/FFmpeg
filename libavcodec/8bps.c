@@ -155,7 +155,6 @@ static int decode_init(AVCodecContext *avctx)
         EightBpsContext * const c = (EightBpsContext *)avctx->priv_data;
 
         c->avctx = avctx;
-        avctx->has_b_frames = 0;
 
         c->pic.data[0] = NULL;
 

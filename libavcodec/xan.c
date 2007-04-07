@@ -70,7 +70,6 @@ static int xan_decode_init(AVCodecContext *avctx)
     }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
 
     if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
         return -1;

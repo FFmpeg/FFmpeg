@@ -865,7 +865,6 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
     }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
     /* decoding map contains 4 bits of information per 8x8 block */

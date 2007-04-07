@@ -244,7 +244,6 @@ static int msrle_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     avctx->pix_fmt = PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
     s->frame.data[0] = NULL;
 
     return 0;

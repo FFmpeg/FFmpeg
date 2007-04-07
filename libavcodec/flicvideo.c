@@ -85,7 +85,6 @@ static int flic_decode_init(AVCodecContext *avctx)
     int depth;
 
     s->avctx = avctx;
-    avctx->has_b_frames = 0;
 
     s->fli_type = AV_RL16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
     depth       = AV_RL16(&fli_header[12]);

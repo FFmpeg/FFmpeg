@@ -73,7 +73,6 @@ static int decode_init(AVCodecContext *avctx)
     FrapsContext * const s = avctx->priv_data;
 
     avctx->coded_frame = (AVFrame*)&s->frame;
-    avctx->has_b_frames = 0;
     avctx->pix_fmt= PIX_FMT_NONE; /* set in decode_frame */
 
     s->avctx = avctx;

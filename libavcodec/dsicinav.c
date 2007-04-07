@@ -93,7 +93,6 @@ static int cinvideo_decode_init(AVCodecContext *avctx)
 
     cin->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
 
     cin->frame.data[0] = NULL;
 

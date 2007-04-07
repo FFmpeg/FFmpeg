@@ -176,7 +176,6 @@ static int decode_init(AVCodecContext *avctx) {
     if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
         return 1;
     }
-    avctx->has_b_frames = 0;
     avctx->pix_fmt = PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
     c->width = avctx->width;

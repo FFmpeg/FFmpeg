@@ -180,7 +180,6 @@ static int seqvideo_decode_init(AVCodecContext *avctx)
 
     seq->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
-    avctx->has_b_frames = 0;
 
     seq->frame.data[0] = NULL;
 
