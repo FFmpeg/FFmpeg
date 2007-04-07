@@ -160,6 +160,7 @@ enum CodecID {
     CODEC_ID_DNXHD,
     CODEC_ID_THP,
     CODEC_ID_SGI,
+    CODEC_ID_C93,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2251,6 +2252,7 @@ extern AVCodec asv1_decoder;
 extern AVCodec asv2_decoder;
 extern AVCodec avs_decoder;
 extern AVCodec bmp_decoder;
+extern AVCodec c93_decoder;
 extern AVCodec cavs_decoder;
 extern AVCodec cinepak_decoder;
 extern AVCodec cljr_decoder;

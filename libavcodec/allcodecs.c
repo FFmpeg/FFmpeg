@@ -59,6 +59,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (ASV2, asv2);
     REGISTER_DECODER(AVS, avs);
     REGISTER_ENCDEC (BMP, bmp);
+    REGISTER_DECODER(C93, c93);
     REGISTER_DECODER(CAVS, cavs);
     REGISTER_DECODER(CINEPAK, cinepak);
     REGISTER_DECODER(CLJR, cljr);
