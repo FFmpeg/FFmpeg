@@ -136,13 +136,12 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
         if(rle_num_bytes >= 0x80){ // rle sequence
             if(block_type == VIDEO_I_FRAME)
                 vidbuf_start[vidbuf_nbytes++] = get_byte(pb);
-            bytes_copied += rle_num_bytes - 0x80;
         } else if(rle_num_bytes){ // plain sequence
             if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], rle_num_bytes) != rle_num_bytes)
                 goto fail;
             vidbuf_nbytes += rle_num_bytes;
-            bytes_copied += rle_num_bytes;
         }
+        bytes_copied += rle_num_bytes & 0x7F;
         if(bytes_copied == npixels){ // sometimes no stop character is given, need to keep track of bytes copied
             // may contain a 0 byte even if read all pixels
             if(get_byte(pb))
