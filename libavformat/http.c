@@ -24,8 +24,8 @@
 
 #include "base64.h"
 
-/* XXX: POST protocol is not completly implemented because ffmpeg use
-   only a subset of it */
+/* XXX: POST protocol is not completely implemented because ffmpeg uses
+   only a subset of it. */
 
 //#define DEBUG
 

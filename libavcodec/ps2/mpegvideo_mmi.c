@@ -45,7 +45,7 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
             qadd = 0;
             level = block[0];
         }
-        nCoeffs= 63; //does not allways use zigzag table
+        nCoeffs= 63; //does not always use zigzag table
     } else {
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }

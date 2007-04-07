@@ -3415,7 +3415,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         sum+= yHistogram[i];
                 }
 
-                /* we allways get a completly black picture first */
+                /* We always get a completely black picture first. */
                 maxClipped= (uint64_t)(sum * c.ppMode.maxClippedThreshold);
 
                 clipped= sum;

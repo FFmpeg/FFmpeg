@@ -204,7 +204,7 @@ typedef struct AVInputFormat {
     int (*read_probe)(AVProbeData *);
     /** read the format header and initialize the AVFormatContext
        structure. Return 0 if OK. 'ap' if non NULL contains
-       additionnal paramters. Only used in raw format right
+       additional paramters. Only used in raw format right
        now. 'av_new_stream' should be called to create new streams.  */
     int (*read_header)(struct AVFormatContext *,
                        AVFormatParameters *ap);
@@ -526,7 +526,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
  * @param filename filename to open.
  * @param fmt if non NULL, force the file format to use
  * @param buf_size optional buffer size (zero if default is OK)
- * @param ap additionnal parameters needed when opening the file (NULL if default)
+ * @param ap additional parameters needed when opening the file (NULL if default)
  * @return 0 if OK. AVERROR_xxx otherwise.
  */
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,

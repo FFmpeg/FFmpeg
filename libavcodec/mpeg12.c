@@ -1287,7 +1287,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }else{
             assert(mb_type & MB_TYPE_L0L1);
 //FIXME decide if MBs in field pictures are MB_TYPE_INTERLACED
-            /* get additionnal motion vector type */
+            /* get additional motion vector type */
             if (s->frame_pred_frame_dct)
                 motion_type = MT_FRAME;
             else{

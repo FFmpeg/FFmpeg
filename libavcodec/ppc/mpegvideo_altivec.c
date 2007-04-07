@@ -515,7 +515,7 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
         }else
             qadd = 0;
         i = 1;
-        nCoeffs= 63; //does not allways use zigzag table
+        nCoeffs= 63; //does not always use zigzag table
     } else {
         i = 0;
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];

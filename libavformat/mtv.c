@@ -89,7 +89,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* FIXME Add sanity check here */
 
-    /* first packet is allways audio*/
+    /* first packet is always audio*/
 
     mtv->audio_packet_count = 1;
 

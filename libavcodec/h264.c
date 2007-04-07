@@ -8133,7 +8133,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
       } else {
         // start code prefix search
         for(; buf_index + 3 < buf_size; buf_index++){
-            // this should allways succeed in the first iteration
+            // This should always succeed in the first iteration.
             if(buf[buf_index] == 0 && buf[buf_index+1] == 0 && buf[buf_index+2] == 1)
                 break;
         }

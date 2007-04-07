@@ -230,7 +230,7 @@ int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
     }
 #endif
 
-    /* copy overreaded bytes from last frame into buffer */
+    /* Copy overread bytes from last frame into buffer. */
     for(; pc->overread>0; pc->overread--){
         pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
     }
