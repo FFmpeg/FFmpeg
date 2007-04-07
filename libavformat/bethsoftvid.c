@@ -182,15 +182,12 @@ static int vid_read_packet(AVFormatContext *s,
     int audio_length;
     int ret_value;
 
-    av_log(s, AV_LOG_DEBUG, "[bethsoftvid demuxer read_packet]");
-
     if(vid->is_finished || url_feof(pb))
         return AVERROR_IO;
 
     block_type = get_byte(pb);
     switch(block_type){
         case PALETTE_BLOCK:
-            av_log(s, AV_LOG_DEBUG, "palette block.\n");
             url_fseek(pb, -1, SEEK_CUR);     // include block type
             ret_value = av_get_packet(pb, pkt, 3 * VID_PALETTE_NUMCOLORS + 1);
             if(ret_value != 3 * VID_PALETTE_NUMCOLORS + 1){
@@ -201,21 +198,19 @@ static int vid_read_packet(AVFormatContext *s,
             return ret_value;
 
         case FIRST_AUDIO_BLOCK:
-            av_log(s, AV_LOG_DEBUG, "first ");
             get_le16(pb); //    some unused constant
             // soundblaster DAC used for sample rate, as on specification page (link above)
             s->streams[1]->codec->sample_rate = 1000000 / (256 - get_byte(pb));
             s->streams[1]->codec->bit_rate = s->streams[1]->codec->channels * s->streams[1]->codec->sample_rate * s->streams[1]->codec->bits_per_sample;
         case AUDIO_BLOCK:
-            av_log(s, AV_LOG_DEBUG, "audio block.\n");
             audio_length = get_le16(pb);
             ret_value = av_get_packet(pb, pkt, audio_length);
             pkt->stream_index = 1;
             return (ret_value != audio_length ? AVERROR_IO : ret_value);
 
-        case VIDEO_DIFFERENCE_FRAME_BLOCK: av_log(s, AV_LOG_DEBUG, "non-");
-        case VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK: av_log(s, AV_LOG_DEBUG, "offset ");
-        case VIDEO_FULL_FRAME_BLOCK: av_log(s, AV_LOG_DEBUG, "video block.\n");
+        case VIDEO_DIFFERENCE_FRAME_BLOCK:
+        case VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK:
+        case VIDEO_FULL_FRAME_BLOCK:
             return read_frame(vid, pb, pkt, block_type, s,
                               s->streams[0]->codec->width * s->streams[0]->codec->height);
 
@@ -223,7 +218,6 @@ static int vid_read_packet(AVFormatContext *s,
             if(vid->nframes != 0)
                 av_log(s, AV_LOG_VERBOSE, "reached terminating character but not all frames read.\n");
             vid->is_finished = 1;
-            av_log(s, AV_LOG_DEBUG, "terminating block.\n");
             return AVERROR_IO;
         default:
             av_log(s, AV_LOG_ERROR, "unknown block (character = %c, decimal = %d, hex = %x)!!!\n",
