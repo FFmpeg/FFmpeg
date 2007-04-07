@@ -78,6 +78,7 @@ version <next>
 - Gamecube movie (.THP) playback system
 - Blackfin optimizations
 - Interplay C93 demuxer and video decoder
+- Bethsoft VID demuxer and video decoder
 
 version 0.4.9-pre1:
 

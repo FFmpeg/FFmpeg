@@ -905,6 +905,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used on the Nintendo GameCube.
 @item C93 @tab    @tab X
 @tab Used in the game Cyberia from Interplay.
+@item Bethsoft VID @tab    @tab X
+@tab Used in some games from Bethesda Softworks.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -1015,6 +1017,7 @@ following image formats are supported:
 @item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
 @item AVID DNxHD             @tab     @tab  X @tab aka SMPTE VC3
 @item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
+@item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

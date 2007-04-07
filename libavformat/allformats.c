@@ -58,6 +58,7 @@ void av_register_all(void)
     av_register_input_format(&avisynth_demuxer);
 #endif
     REGISTER_DEMUXER (AVS, avs);
+    REGISTER_DEMUXER (BETHSOFTVID, bethsoftvid);
     REGISTER_DEMUXER (C93, c93);
     REGISTER_MUXER   (CRC, crc);
     REGISTER_DEMUXER (DAUD, daud);

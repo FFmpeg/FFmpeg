@@ -32,6 +32,7 @@ extern AVInputFormat audio_demuxer;
 extern AVInputFormat avi_demuxer;
 extern AVInputFormat avisynth_demuxer;
 extern AVInputFormat avs_demuxer;
+extern AVInputFormat bethsoftvid_demuxer;
 extern AVInputFormat c93_demuxer;
 extern AVInputFormat daud_demuxer;
 extern AVInputFormat dc1394_demuxer;
