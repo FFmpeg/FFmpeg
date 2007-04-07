@@ -1312,7 +1312,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_ADPCM_THP:
       {
         GetBitContext gb;
-        int table[16][2];
+        int table[2][16];
         unsigned int samplecnt;
         int prev1[2], prev2[2];
         int ch;
@@ -1330,7 +1330,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         for (ch = 0; ch < 2; ch++)
             for (i = 0; i < 16; i++)
-                table[i][ch] = get_sbits(&gb, 16);
+                table[ch][i] = get_sbits(&gb, 16);
 
         /* Initialize the previous sample.  */
         for (ch = 0; ch < 2; ch++) {
@@ -1350,8 +1350,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             for (i = 0; i < samplecnt / 14; i++) {
                 uint8_t index = get_bits (&gb, 4) & 7;
                 unsigned int exp = get_bits (&gb, 4);
-                int factor1 = table[index * 2][ch];
-                int factor2 = table[index * 2 + 1][ch];
+                int factor1 = table[ch][index * 2];
+                int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
                 for (n = 0; n < 14; n++) {
