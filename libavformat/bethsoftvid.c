@@ -124,7 +124,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     // set the y offset if it exists (decoder header data should be in data section)
     if(block_type == VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK){
         if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2)
-            return AVERROR_IO;
+            goto fail;
         vidbuf_nbytes += 2;
     }
 
@@ -142,7 +142,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
             bytes_copied += rle_num_bytes - 0x80;
         } else if(rle_num_bytes){ // plain sequence
             if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], rle_num_bytes) != rle_num_bytes)
-                return AVERROR_IO;
+                goto fail;
             vidbuf_nbytes += rle_num_bytes;
             bytes_copied += rle_num_bytes;
         }
@@ -153,12 +153,12 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
             break;
         }
         if(bytes_copied > npixels)
-            return -1;    // error
+            goto fail;
     } while(rle_num_bytes);
 
     // copy data into packet
-    if(av_new_packet(pkt, vidbuf_nbytes))
-        return AVERROR_NOMEM;
+    if(av_new_packet(pkt, vidbuf_nbytes) < 0)
+        goto fail;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
     av_free(vidbuf_start);
 
@@ -168,6 +168,9 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
 
     vid->nframes--;  // used to check if all the frames were read
     return vidbuf_nbytes;
+fail:
+    av_free(vidbuf_start);
+    return -1;
 }
 
 static int vid_read_packet(AVFormatContext *s,
