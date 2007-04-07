@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "bitstream.h"
+#include "bytestream.h"
 
 /**
  * @file adpcm.c
@@ -1317,7 +1318,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         break;
     case CODEC_ID_ADPCM_THP:
       {
-        GetBitContext gb;
         int table[2][16];
         unsigned int samplecnt;
         int prev[2][2];
@@ -1328,18 +1328,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        init_get_bits(&gb, src, buf_size * 8);
-        src += buf_size;
-
-                    get_bits_long(&gb, 32); /* Channel size */
-        samplecnt = get_bits_long(&gb, 32);
+        src+=4;
+        samplecnt = bytestream_get_be32(&src);
 
         for (i = 0; i < 32; i++)
-            table[0][i] = get_sbits(&gb, 16);
+            table[0][i] = (int16_t)bytestream_get_be16(&src);
 
         /* Initialize the previous sample.  */
         for (i = 0; i < 4; i++)
-            prev[0][i] = get_sbits(&gb, 16);
+            prev[0][i] = (int16_t)bytestream_get_be16(&src);
 
         if (samplecnt >= (samples_end - samples) /  (st + 1)) {
             av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
@@ -1351,17 +1348,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
             /* Read in every sample for this channel.  */
             for (i = 0; i < samplecnt / 14; i++) {
-                int index = get_bits (&gb, 4) & 7;
-                unsigned int exp = get_bits (&gb, 4);
+                int index = (*src >> 4) & 7;
+                unsigned int exp = 28 - (*src++ & 15);
                 int factor1 = table[ch][index * 2];
                 int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
                 for (n = 0; n < 14; n++) {
-                    int sampledat = get_sbits (&gb, 4);
+                    int32_t sampledat;
+                    if(n&1) sampledat=  *src++    <<28;
+                    else    sampledat= (*src&0xF0)<<24;
 
                     *samples = ((prev[ch][0]*factor1
-                                + prev[ch][1]*factor2) >> 11) + (sampledat << exp);
+                                + prev[ch][1]*factor2) >> 11) + (sampledat>>exp);
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;
 
