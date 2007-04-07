@@ -42,7 +42,7 @@ static int bethsoftvid_decode_init(AVCodecContext *avctx)
     vid->frame.reference = 1;
     vid->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
         FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    avctx->pix_fmt = PIX_FMT_PAL8;    // palette in vid->frame.data[1]
+    avctx->pix_fmt = PIX_FMT_PAL8;
     return 0;
 }
 
@@ -51,7 +51,7 @@ static void set_palette(AVFrame * frame, uint8_t * palette_buffer)
     uint32_t * palette = (uint32_t *)frame->data[1];
     int a;
     for(a = 0; a < 256; a++){
-        palette[a] = AV_RB24(&palette_buffer[a * 3]) * 4;    // multiply all colors by 4
+        palette[a] = AV_RB24(&palette_buffer[a * 3]) * 4;
     }
     frame->palette_has_changed = 1;
 }
@@ -69,7 +69,6 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     uint8_t rle_num_bytes;
     int yoffset;
 
-    // reget buffer will copy old data, good for simple difference frames
     if (avctx->reget_buffer(avctx, &vid->frame)) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
