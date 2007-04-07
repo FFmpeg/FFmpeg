@@ -1328,9 +1328,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                     get_bits_long(&gb, 32); /* Channel size */
         samplecnt = get_bits_long(&gb, 32);
 
-        for (ch = 0; ch < 2; ch++)
-            for (i = 0; i < 16; i++)
-                table[ch][i] = get_sbits(&gb, 16);
+        for (i = 0; i < 32; i++)
+            table[0][i] = get_sbits(&gb, 16);
 
         /* Initialize the previous sample.  */
         for (ch = 0; ch < 2; ch++) {
