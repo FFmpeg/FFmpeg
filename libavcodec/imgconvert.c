@@ -1886,7 +1886,9 @@ static void gray16be_to_gray(AVPicture *dst, const AVPicture *src,
 static void gray16le_to_gray(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
-    gray16_to_gray(dst, src + 1, width, height);
+    AVPicture tmpsrc = *src;
+    tmpsrc.data[0]++;
+    gray16_to_gray(dst, &tmpsrc, width, height);
 }
 
 static void gray16_to_gray16(AVPicture *dst, const AVPicture *src,
