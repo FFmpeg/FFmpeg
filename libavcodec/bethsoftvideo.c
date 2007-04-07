@@ -43,7 +43,6 @@ static int bethsoftvid_decode_init(AVCodecContext *avctx)
     vid->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
         FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     avctx->pix_fmt = PIX_FMT_PAL8;    // palette in vid->frame.data[1]
-    av_log(avctx, AV_LOG_DEBUG, "[bethsoftvid video decoder] init\n");
     return 0;
 }
 
@@ -69,8 +68,6 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     const int wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
     uint8_t rle_num_bytes;
     int yoffset;
-
-    av_log(avctx, AV_LOG_DEBUG, "[bethsoftvid video decoder] decoding frame\n");
 
     // reget buffer will copy old data, good for simple difference frames
     if (avctx->reget_buffer(avctx, &vid->frame)) {
@@ -127,7 +124,6 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 static int bethsoftvid_decode_end(AVCodecContext *avctx)
 {
     BethsoftvidContext * vid = avctx->priv_data;
-    av_log(avctx, AV_LOG_DEBUG, "[bethsoftvid video decoder] closing\n");
     if(vid->frame.data[0])
         avctx->release_buffer(avctx, &vid->frame);
     return 0;
