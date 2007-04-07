@@ -66,7 +66,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     uint8_t * frame_end;
     int line_remaining = avctx->width;          // number of bytes remaining on a line
     const int wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
-    uint8_t rle_num_bytes;
+    int rle_num_bytes;
     int yoffset;
 
     if (avctx->reget_buffer(avctx, &vid->frame)) {
