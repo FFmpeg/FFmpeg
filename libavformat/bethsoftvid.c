@@ -40,7 +40,7 @@ typedef struct BVID_DemuxContext
 
     /** video presentation time stamp.
      * delay = 16 milliseconds * (global_delay + per_frame_delay) */
-    int64_t video_pts;
+    int video_pts;
 
     int is_finished;
 
