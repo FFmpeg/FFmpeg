@@ -2289,7 +2289,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
         for(ch=0;ch<s->nb_channels;ch++) {
             g = &granules[ch][gr];
             if(get_bits_count(&s->gb)<0){
-                av_log(NULL, AV_LOG_ERROR, "mdb:%d, lastbuf:%d skiping granule %d\n",
+                av_log(NULL, AV_LOG_ERROR, "mdb:%d, lastbuf:%d skipping granule %d\n",
                                             main_data_begin, s->last_buf_size, gr);
                 skip_bits_long(&s->gb, g->part2_3_length);
                 memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));

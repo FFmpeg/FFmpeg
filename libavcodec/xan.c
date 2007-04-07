@@ -85,7 +85,7 @@ static int xan_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* This function is used in lieu of memcpy(). This decoder can not use
+/* This function is used in lieu of memcpy(). This decoder cannot use
  * memcpy because the memory locations often overlap and
  * memcpy doesn't like that; it's not uncommon, for example, for
  * dest = src+1, to turn byte A into  pattern AAAAAAAA.

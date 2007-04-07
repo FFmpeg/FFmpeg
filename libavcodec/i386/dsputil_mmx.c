@@ -175,7 +175,7 @@ static const uint64_t ff_pb_FC attribute_used __attribute__ ((aligned(8))) = 0xF
 /* 3Dnow specific */
 
 #define DEF(x) x ## _3dnow
-/* for Athlons PAVGUSB is prefered */
+/* for Athlons PAVGUSB is preferred */
 #define PAVGB "pavgusb"
 
 #include "dsputil_mmx_avg.h"

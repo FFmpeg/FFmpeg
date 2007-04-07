@@ -80,7 +80,7 @@ Generic Parts:
     eval.c                              Michael Niedermayer
   audio and video frame extraction:
     parser.c
-  bitsream reading:
+  bitstream reading:
     bitstream.c, bitstream.h            Michael Niedermayer
   CABAC:
     cabac.h, cabac.c                    Michael Niedermayer
