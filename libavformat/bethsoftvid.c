@@ -58,8 +58,8 @@ static int vid_probe(AVProbeData *p)
 static int vid_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    BVID_DemuxContext *vid = s->priv_data;     // permanent data outside of function
-    ByteIOContext *pb = &s->pb;                // io to file
+    BVID_DemuxContext *vid = s->priv_data;
+    ByteIOContext *pb = &s->pb;
     AVStream *stream;
 
     /* load main header. Contents:
@@ -69,8 +69,6 @@ static int vid_read_header(AVFormatContext *s,
     url_fseek(pb, 5, SEEK_CUR);
     vid->nframes = get_le16(pb);
 
-    // FFmpeg central code will use this; don't need to return or anything
-    // initialize the bethsoft codec
     stream = av_new_stream(s, 0);
     if (!stream)
         return AVERROR_NOMEM;
@@ -115,7 +113,6 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     // save the file position for the packet, include block type
     position = url_ftell(pb) - 1;
 
-    // set the block type for the decoder
     vidbuf_start[vidbuf_nbytes++] = block_type;
 
     // get the video delay (next int16), and set the presentation time
@@ -176,9 +173,9 @@ fail:
 static int vid_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    BVID_DemuxContext *vid = s->priv_data;     // permanent data outside of function
-    ByteIOContext *pb = &s->pb;                // io to file
-    unsigned char block_type;                  // block type
+    BVID_DemuxContext *vid = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    unsigned char block_type;
     int audio_length;
     int ret_value;
 
@@ -198,7 +195,7 @@ static int vid_read_packet(AVFormatContext *s,
             return ret_value;
 
         case FIRST_AUDIO_BLOCK:
-            get_le16(pb); //    some unused constant
+            get_le16(pb);
             // soundblaster DAC used for sample rate, as on specification page (link above)
             s->streams[1]->codec->sample_rate = 1000000 / (256 - get_byte(pb));
             s->streams[1]->codec->bit_rate = s->streams[1]->codec->channels * s->streams[1]->codec->sample_rate * s->streams[1]->codec->bits_per_sample;
