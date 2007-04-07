@@ -51,8 +51,7 @@ static void set_palette(AVFrame * frame, uint8_t * palette_buffer)
 {
     uint32_t * palette = (uint32_t *)frame->data[1];
     int a;
-    for(a = 0; a < 256; a++)
-    {
+    for(a = 0; a < 256; a++){
         palette[a] = AV_RB24(&palette_buffer[a * 3]) * 4;    // multiply all colors by 4
     }
     frame->palette_has_changed = 1;
@@ -81,34 +80,39 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     destination = vid->frame.data[0];
     frame_end = vid->frame.data[0] + vid->frame.linesize[0] * avctx->height;
 
-    switch(block_type = *buf++)
-    {
-        case PALETTE_BLOCK: set_palette(&vid->frame, buf); return 0;
+    switch(block_type = *buf++){
+        case PALETTE_BLOCK:
+            set_palette(&vid->frame, buf);
+            return 0;
         case VIDEO_YOFF_P_FRAME:
             yoffset = bytestream_get_le16(&buf);
-            if(yoffset >= avctx->height) { return -1; }
+            if(yoffset >= avctx->height)
+                return -1;
             destination += vid->frame.linesize[0] * yoffset;
     }
 
     // main code
-    while((rle_num_bytes = *buf++))
-    {
+    while((rle_num_bytes = *buf++)){
         int length = rle_num_bytes & 0x7f;
 
         // copy any bytes starting at the current position, and ending at the frame width
-        while(length > line_remaining)
-        {
-            if(rle_num_bytes < 0x80) { bytestream_get_buffer(&buf, destination, line_remaining); }
-            else if(block_type == VIDEO_I_FRAME) { memset(destination, buf[0], line_remaining); }
+        while(length > line_remaining){
+            if(rle_num_bytes < 0x80)
+                bytestream_get_buffer(&buf, destination, line_remaining);
+            else if(block_type == VIDEO_I_FRAME)
+                memset(destination, buf[0], line_remaining);
             length -= line_remaining;      // decrement the number of bytes to be copied
             destination += line_remaining + wrap_to_next_line;    // skip over extra bytes at end of frame
             line_remaining = avctx->width;
-            if(destination == frame_end) { goto end; }
+            if(destination == frame_end)
+                goto end;
         }
 
         // copy any remaining bytes after / if line overflows
-        if(rle_num_bytes < 0x80) { bytestream_get_buffer(&buf, destination, length); }
-        else if(block_type == VIDEO_I_FRAME) { memset(destination, *buf++, length); }
+        if(rle_num_bytes < 0x80)
+            bytestream_get_buffer(&buf, destination, length);
+        else if(block_type == VIDEO_I_FRAME)
+            memset(destination, *buf++, length);
         line_remaining -= length;
         destination += length;
     }
@@ -124,7 +128,8 @@ static int bethsoftvid_decode_end(AVCodecContext *avctx)
 {
     BethsoftvidContext * vid = avctx->priv_data;
     av_log(avctx, AV_LOG_DEBUG, "[bethsoftvid video decoder] closing\n");
-    if(vid->frame.data[0]) { avctx->release_buffer(avctx, &vid->frame); }
+    if(vid->frame.data[0])
+        avctx->release_buffer(avctx, &vid->frame);
     return 0;
 }
 
