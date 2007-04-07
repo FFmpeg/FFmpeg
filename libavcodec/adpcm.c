@@ -1314,7 +1314,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         GetBitContext gb;
         int table[2][16];
         unsigned int samplecnt;
-        int prev1[2], prev2[2];
+        int prev[2][2];
         int ch;
 
         if (buf_size < 80) {
@@ -1333,8 +1333,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         /* Initialize the previous sample.  */
         for (ch = 0; ch < 2; ch++) {
-            prev1[ch] = get_sbits(&gb, 16);
-            prev2[ch] = get_sbits(&gb, 16);
+            prev[ch][0] = get_sbits(&gb, 16);
+            prev[ch][1] = get_sbits(&gb, 16);
         }
 
         if (samplecnt >= (samples_end - samples) /  (st + 1)) {
@@ -1356,10 +1356,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 for (n = 0; n < 14; n++) {
                     int sampledat = get_sbits (&gb, 4);
 
-                    *samples = ((prev1[ch]*factor1
-                                + prev2[ch]*factor2) >> 11) + (sampledat << exp);
-                    prev2[ch] = prev1[ch];
-                    prev1[ch] = *samples++;
+                    *samples = ((prev[ch][0]*factor1
+                                + prev[ch][1]*factor2) >> 11) + (sampledat << exp);
+                    prev[ch][1] = prev[ch][0];
+                    prev[ch][0] = *samples++;
 
                     /* In case of stereo, skip one sample, this sample
                        is for the other channel.  */
