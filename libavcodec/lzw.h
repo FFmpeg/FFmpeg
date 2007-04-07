@@ -30,6 +30,8 @@
 #ifndef LZW_H
 #define LZW_H
 
+#include "bitstream.h"
+
 enum FF_LZW_MODES{
     FF_LZW_GIF,
     FF_LZW_TIFF
@@ -45,5 +47,13 @@ int ff_lzw_decode_init(LZWState *s, int csize, uint8_t *buf, int buf_size, int m
 int ff_lzw_decode(LZWState *s, uint8_t *buf, int len);
 uint8_t* ff_lzw_cur_ptr(LZWState *lzw);
 void ff_lzw_decode_tail(LZWState *lzw);
+
+/** LZW encode state */
+struct LZWEncodeState;
+extern const int ff_lzw_encode_state_size;
+
+void ff_lzw_encode_init(struct LZWEncodeState * s, uint8_t * outbuf, int outsize, int maxbits);
+int ff_lzw_encode(struct LZWEncodeState * s, const uint8_t * inbuf, int insize);
+int ff_lzw_encode_flush(struct LZWEncodeState * s);
 
 #endif
