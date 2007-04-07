@@ -32,6 +32,7 @@
 #include "bytestream.h"
 #include "tiff.h"
 #include "rle.h"
+#include "lzw.h"
 
 #define TIFF_MAX_ENTRY 32
 
@@ -58,6 +59,7 @@ typedef struct TiffEncoderContext {
     uint8_t *buf_start;                 ///< pointer to first byte in buffer
     int buf_size;                       ///< buffer size
     uint16_t subsampling[2];            ///< YUV subsampling factors
+    struct LZWEncodeState *lzws;        ///< LZW Encode state
 } TiffEncoderContext;
 
 
@@ -169,6 +171,8 @@ static int encode_strip(TiffEncoderContext * s, const int8_t * src,
         return n;
     case TIFF_PACKBITS:
         return ff_rle_encode(dst, s->buf_size - (*s->buf - s->buf_start), src, 1, n, 2, 0xff, -1, 0);
+    case TIFF_LZW:
+        return ff_lzw_encode(s->lzws, src, n);
     default:
         return -1;
     }
@@ -223,8 +227,10 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     s->compr = TIFF_PACKBITS;
     if (avctx->compression_level == 0) {
         s->compr = TIFF_RAW;
+    } else if(avctx->compression_level == 2) {
+        s->compr = TIFF_LZW;
 #ifdef CONFIG_ZLIB
-    } else if ((avctx->compression_level > 2)) {
+    } else if ((avctx->compression_level >= 3)) {
         s->compr = TIFF_DEFLATE;
 #endif
     }
@@ -277,7 +283,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     if (!is_yuv)
     s->bpp_tab_size = (s->bpp >> 3);
 
-    if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE)
+    if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE
         s->rps = s->height;
     else
@@ -341,8 +347,13 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     } else
 #endif
     {
+        if(s->compr == TIFF_LZW)
+            s->lzws = av_malloc(ff_lzw_encode_state_size);
         for (i = 0; i < s->height; i++) {
             if (strip_sizes[i / s->rps] == 0) {
+                if(s->compr == TIFF_LZW){
+                    ff_lzw_encode_init(s->lzws, ptr, s->buf_size - (*s->buf - s->buf_start), 12);
+                }
                 strip_offsets[i / s->rps] = ptr - buf;
             }
             if (is_yuv){
@@ -359,7 +370,15 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
             }
             strip_sizes[i / s->rps] += n;
             ptr += n;
+            if(s->compr == TIFF_LZW && (i==s->height-1 || i%s->rps == s->rps-1)){
+                int ret;
+                ret = ff_lzw_encode_flush(s->lzws);
+                strip_sizes[(i / s->rps )] += ret ;
+                ptr += ret;
+            }
         }
+        if(s->compr == TIFF_LZW)
+            av_free(s->lzws);
     }
 
     s->num_entries = 0;
