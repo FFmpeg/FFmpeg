@@ -1348,7 +1348,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
             /* Read in every sample for this channel.  */
             for (i = 0; i < samplecnt / 14; i++) {
-                uint8_t index = get_bits (&gb, 4) & 7;
+                int index = get_bits (&gb, 4) & 7;
                 unsigned int exp = get_bits (&gb, 4);
                 int factor1 = table[ch][index * 2];
                 int factor2 = table[ch][index * 2 + 1];
