@@ -119,7 +119,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     vid->video_pts += vid->bethsoft_global_delay + get_le16(pb);
 
     // set the y offset if it exists (decoder header data should be in data section)
-    if(block_type == VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK){
+    if(block_type == VIDEO_YOFF_P_FRAME){
         if(get_buffer(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2)
             goto fail;
         vidbuf_nbytes += 2;
@@ -134,7 +134,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
         vidbuf_start[vidbuf_nbytes++] = rle_num_bytes;
 
         if(rle_num_bytes > 0x80){ // rle sequence
-            if(block_type == VIDEO_FULL_FRAME_BLOCK)
+            if(block_type == VIDEO_I_FRAME)
                 vidbuf_start[vidbuf_nbytes++] = get_byte(pb);
             bytes_copied += rle_num_bytes - 0x80;
         } else if(rle_num_bytes){ // plain sequence
@@ -186,8 +186,8 @@ static int vid_read_packet(AVFormatContext *s,
     switch(block_type){
         case PALETTE_BLOCK:
             url_fseek(pb, -1, SEEK_CUR);     // include block type
-            ret_value = av_get_packet(pb, pkt, 3 * VID_PALETTE_NUMCOLORS + 1);
-            if(ret_value != 3 * VID_PALETTE_NUMCOLORS + 1){
+            ret_value = av_get_packet(pb, pkt, 3 * 256 + 1);
+            if(ret_value != 3 * 256 + 1){
                 av_free_packet(pkt);
                 return AVERROR_IO;
             }
@@ -205,13 +205,13 @@ static int vid_read_packet(AVFormatContext *s,
             pkt->stream_index = 1;
             return (ret_value != audio_length ? AVERROR_IO : ret_value);
 
-        case VIDEO_DIFFERENCE_FRAME_BLOCK:
-        case VIDEO_YOFFSET_DIFFERENCE_FRAME_BLOCK:
-        case VIDEO_FULL_FRAME_BLOCK:
+        case VIDEO_P_FRAME:
+        case VIDEO_YOFF_P_FRAME:
+        case VIDEO_I_FRAME:
             return read_frame(vid, pb, pkt, block_type, s,
                               s->streams[0]->codec->width * s->streams[0]->codec->height);
 
-        case FINISHED_BLOCK:
+        case EOF_BLOCK:
             if(vid->nframes != 0)
                 av_log(s, AV_LOG_VERBOSE, "reached terminating character but not all frames read.\n");
             vid->is_finished = 1;
