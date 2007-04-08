@@ -2378,7 +2378,7 @@ static void opt_frame_size(const char *arg)
     }
 }
 
-void opt_width(const char *arg)
+static void opt_width(const char *arg)
 {
     screen_width = atoi(arg);
     if(screen_width<=0){
@@ -2387,7 +2387,7 @@ void opt_width(const char *arg)
     }
 }
 
-void opt_height(const char *arg)
+static void opt_height(const char *arg)
 {
     screen_height = atoi(arg);
     if(screen_height<=0){
@@ -2411,14 +2411,14 @@ static void opt_frame_pix_fmt(const char *arg)
 }
 
 #ifdef CONFIG_NETWORK
-void opt_rtp_tcp(void)
+static void opt_rtp_tcp(void)
 {
     /* only tcp protocol */
     rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP);
 }
 #endif
 
-void opt_sync(const char *arg)
+static void opt_sync(const char *arg)
 {
     if (!strcmp(arg, "audio"))
         av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -2430,7 +2430,7 @@ void opt_sync(const char *arg)
         show_help();
 }
 
-void opt_seek(const char *arg)
+static void opt_seek(const char *arg)
 {
     start_time = parse_date(arg, 1);
 }

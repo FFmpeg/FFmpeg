@@ -424,11 +424,11 @@ static int decode_info_header(NUTContext *nut){
     return 0;
 }
 
-int sp_pos_cmp(syncpoint_t *a, syncpoint_t *b){
+static int sp_pos_cmp(syncpoint_t *a, syncpoint_t *b){
     return (a->pos - b->pos>>32) - (b->pos - a->pos>>32);
 }
 
-int sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
+static int sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
     return (a->ts - b->ts>>32) - (b->ts - a->ts>>32);
 }
 
