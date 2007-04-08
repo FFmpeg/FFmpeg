@@ -728,12 +728,9 @@ static int nsv_probe(AVProbeData *p)
     int i;
 //    PRINT(("nsv_probe(), buf_size %d\n", p->buf_size));
     /* check file header */
-    if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
-        p->buf[2] == 'V' && p->buf[3] == 'f')
-        return AVPROBE_SCORE_MAX;
     /* streamed files might not have any header */
     if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
-        p->buf[2] == 'V' && p->buf[3] == 's')
+        p->buf[2] == 'V' && (p->buf[3] == 'f' || p->buf[3] == 's'))
         return AVPROBE_SCORE_MAX;
     /* XXX: do streamed files always start at chunk boundary ?? */
     /* or do we need to search NSVs in the byte stream ? */
