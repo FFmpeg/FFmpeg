@@ -71,7 +71,7 @@ static int vmd_probe(AVProbeData *p)
 static int vmd_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    VmdDemuxContext *vmd = (VmdDemuxContext *)s->priv_data;
+    VmdDemuxContext *vmd = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st, *vst;
     unsigned int toc_offset;
@@ -244,7 +244,7 @@ static int vmd_read_header(AVFormatContext *s,
 static int vmd_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    VmdDemuxContext *vmd = (VmdDemuxContext *)s->priv_data;
+    VmdDemuxContext *vmd = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int ret = 0;
     vmd_frame_t *frame;
@@ -281,7 +281,7 @@ static int vmd_read_packet(AVFormatContext *s,
 
 static int vmd_read_close(AVFormatContext *s)
 {
-    VmdDemuxContext *vmd = (VmdDemuxContext *)s->priv_data;
+    VmdDemuxContext *vmd = s->priv_data;
 
     av_free(vmd->frame_table);
 

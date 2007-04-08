@@ -432,7 +432,7 @@ static void smc_decode_stream(SmcContext *s)
 
 static int smc_decode_init(AVCodecContext *avctx)
 {
-    SmcContext *s = (SmcContext *)avctx->priv_data;
+    SmcContext *s = avctx->priv_data;
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -447,7 +447,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
 {
-    SmcContext *s = (SmcContext *)avctx->priv_data;
+    SmcContext *s = avctx->priv_data;
 
     s->buf = buf;
     s->size = buf_size;
@@ -471,7 +471,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
 
 static int smc_decode_end(AVCodecContext *avctx)
 {
-    SmcContext *s = (SmcContext *)avctx->priv_data;
+    SmcContext *s = avctx->priv_data;
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);

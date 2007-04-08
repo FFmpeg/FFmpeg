@@ -191,7 +191,7 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst, uint
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-    DxaDecContext * const c = (DxaDecContext *)avctx->priv_data;
+    DxaDecContext * const c = avctx->priv_data;
     uint8_t *outptr, *srcptr, *tmpptr;
     unsigned long dsize;
     int i, j, compr;
@@ -289,7 +289,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
 static int decode_init(AVCodecContext *avctx)
 {
-    DxaDecContext * const c = (DxaDecContext *)avctx->priv_data;
+    DxaDecContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -309,7 +309,7 @@ static int decode_init(AVCodecContext *avctx)
 
 static int decode_end(AVCodecContext *avctx)
 {
-    DxaDecContext * const c = (DxaDecContext *)avctx->priv_data;
+    DxaDecContext * const c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
     if(c->prev.data[0])

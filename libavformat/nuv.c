@@ -115,7 +115,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
 }
 
 static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
-    NUVContext *ctx = (NUVContext *)s->priv_data;
+    NUVContext *ctx = s->priv_data;
     ByteIOContext *pb = &s->pb;
     char id_string[12], version_string[5];
     double aspect, fps;
@@ -178,7 +178,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 #define HDRSIZE 12
 
 static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
-    NUVContext *ctx = (NUVContext *)s->priv_data;
+    NUVContext *ctx = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint8_t hdr[HDRSIZE];
     frametype_t frametype;

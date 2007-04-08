@@ -93,7 +93,7 @@ static int fourxm_read_header(AVFormatContext *s,
     unsigned int fourcc_tag;
     unsigned int size;
     int header_size;
-    FourxmDemuxContext *fourxm = (FourxmDemuxContext *)s->priv_data;
+    FourxmDemuxContext *fourxm = s->priv_data;
     unsigned char *header;
     int i;
     int current_track = -1;
@@ -310,7 +310,7 @@ static int fourxm_read_packet(AVFormatContext *s,
 
 static int fourxm_read_close(AVFormatContext *s)
 {
-    FourxmDemuxContext *fourxm = (FourxmDemuxContext *)s->priv_data;
+    FourxmDemuxContext *fourxm = s->priv_data;
 
     av_free(fourxm->tracks);
 

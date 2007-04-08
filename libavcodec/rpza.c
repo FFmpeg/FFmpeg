@@ -232,7 +232,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
 static int rpza_decode_init(AVCodecContext *avctx)
 {
-    RpzaContext *s = (RpzaContext *)avctx->priv_data;
+    RpzaContext *s = avctx->priv_data;
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_RGB555;
@@ -247,7 +247,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
 {
-    RpzaContext *s = (RpzaContext *)avctx->priv_data;
+    RpzaContext *s = avctx->priv_data;
 
     s->buf = buf;
     s->size = buf_size;
@@ -270,7 +270,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
 
 static int rpza_decode_end(AVCodecContext *avctx)
 {
-    RpzaContext *s = (RpzaContext *)avctx->priv_data;
+    RpzaContext *s = avctx->priv_data;
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);

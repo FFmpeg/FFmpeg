@@ -200,7 +200,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
  */
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-        LclContext * const c = (LclContext *)avctx->priv_data;
+        LclContext * const c = avctx->priv_data;
         unsigned char *encoded = (unsigned char *)buf;
     unsigned int pixel_ptr;
     int row, col;
@@ -617,7 +617,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
  */
 static int decode_init(AVCodecContext *avctx)
 {
-    LclContext * const c = (LclContext *)avctx->priv_data;
+    LclContext * const c = avctx->priv_data;
     unsigned int basesize = avctx->width * avctx->height;
     unsigned int max_basesize = ((avctx->width + 3) & ~3) * ((avctx->height + 3) & ~3);
     unsigned int max_decomp_size;
@@ -852,7 +852,7 @@ static int encode_init(AVCodecContext *avctx)
  */
 static int decode_end(AVCodecContext *avctx)
 {
-        LclContext * const c = (LclContext *)avctx->priv_data;
+        LclContext * const c = avctx->priv_data;
 
         if (c->pic.data[0])
                 avctx->release_buffer(avctx, &c->pic);

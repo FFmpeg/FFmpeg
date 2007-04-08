@@ -75,7 +75,7 @@ static int film_probe(AVProbeData *p)
 static int film_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    FilmDemuxContext *film = (FilmDemuxContext *)s->priv_data;
+    FilmDemuxContext *film = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     unsigned char scratch[256];
@@ -203,7 +203,7 @@ static int film_read_header(AVFormatContext *s,
 static int film_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
-    FilmDemuxContext *film = (FilmDemuxContext *)s->priv_data;
+    FilmDemuxContext *film = s->priv_data;
     ByteIOContext *pb = &s->pb;
     film_sample_t *sample;
     int ret = 0;
@@ -273,7 +273,7 @@ static int film_read_packet(AVFormatContext *s,
 
 static int film_read_close(AVFormatContext *s)
 {
-    FilmDemuxContext *film = (FilmDemuxContext *)s->priv_data;
+    FilmDemuxContext *film = s->priv_data;
 
     av_free(film->sample_table);
     av_free(film->stereo_buffer);

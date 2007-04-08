@@ -516,7 +516,7 @@ static int ipmovie_probe(AVProbeData *p)
 static int ipmovie_read_header(AVFormatContext *s,
                                AVFormatParameters *ap)
 {
-    IPMVEContext *ipmovie = (IPMVEContext *)s->priv_data;
+    IPMVEContext *ipmovie = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVPacket pkt;
     AVStream *st;
@@ -588,7 +588,7 @@ static int ipmovie_read_header(AVFormatContext *s,
 static int ipmovie_read_packet(AVFormatContext *s,
                                AVPacket *pkt)
 {
-    IPMVEContext *ipmovie = (IPMVEContext *)s->priv_data;
+    IPMVEContext *ipmovie = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int ret;
 
@@ -609,7 +609,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
 
 static int ipmovie_read_close(AVFormatContext *s)
 {
-//    IPMVEContext *ipmovie = (IPMVEContext *)s->priv_data;
+//    IPMVEContext *ipmovie = s->priv_data;
 
     return 0;
 }

@@ -228,7 +228,7 @@ static void kmvc_decode_inter_8x8(KmvcContext * ctx, uint8_t * src, int w, int h
 static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t * buf,
                         int buf_size)
 {
-    KmvcContext *const ctx = (KmvcContext *) avctx->priv_data;
+    KmvcContext *const ctx = avctx->priv_data;
     uint8_t *out, *src;
     int i;
     int header;
@@ -342,7 +342,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
  */
 static int decode_init(AVCodecContext * avctx)
 {
-    KmvcContext *const c = (KmvcContext *) avctx->priv_data;
+    KmvcContext *const c = avctx->priv_data;
     int i;
 
     c->avctx = avctx;
@@ -394,7 +394,7 @@ static int decode_init(AVCodecContext * avctx)
  */
 static int decode_end(AVCodecContext * avctx)
 {
-    KmvcContext *const c = (KmvcContext *) avctx->priv_data;
+    KmvcContext *const c = avctx->priv_data;
 
     av_freep(&c->frm0);
     av_freep(&c->frm1);

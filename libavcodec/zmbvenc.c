@@ -106,7 +106,7 @@ static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev, 
 
 static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void *data)
 {
-    ZmbvEncContext * const c = (ZmbvEncContext *)avctx->priv_data;
+    ZmbvEncContext * const c = avctx->priv_data;
     AVFrame *pict = data;
     AVFrame * const p = &c->pic;
     uint8_t *src, *prev;
@@ -239,7 +239,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
  */
 static int encode_init(AVCodecContext *avctx)
 {
-    ZmbvEncContext * const c = (ZmbvEncContext *)avctx->priv_data;
+    ZmbvEncContext * const c = avctx->priv_data;
     int zret; // Zlib return code
     int lvl = 9;
 
@@ -305,7 +305,7 @@ static int encode_init(AVCodecContext *avctx)
  */
 static int encode_end(AVCodecContext *avctx)
 {
-    ZmbvEncContext * const c = (ZmbvEncContext *)avctx->priv_data;
+    ZmbvEncContext * const c = avctx->priv_data;
 
     av_freep(&c->comp_buf);
     av_freep(&c->work_buf);

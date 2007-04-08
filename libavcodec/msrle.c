@@ -239,7 +239,7 @@ static void msrle_decode_pal8(MsrleContext *s)
 
 static int msrle_decode_init(AVCodecContext *avctx)
 {
-    MsrleContext *s = (MsrleContext *)avctx->priv_data;
+    MsrleContext *s = avctx->priv_data;
 
     s->avctx = avctx;
 
@@ -253,7 +253,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
                               uint8_t *buf, int buf_size)
 {
-    MsrleContext *s = (MsrleContext *)avctx->priv_data;
+    MsrleContext *s = avctx->priv_data;
 
     s->buf = buf;
     s->size = buf_size;
@@ -286,7 +286,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
 
 static int msrle_decode_end(AVCodecContext *avctx)
 {
-    MsrleContext *s = (MsrleContext *)avctx->priv_data;
+    MsrleContext *s = avctx->priv_data;
 
     /* release the last frame */
     if (s->frame.data[0])

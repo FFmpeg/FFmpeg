@@ -283,7 +283,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
 
 DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
-    DVMuxContext *c = (DVMuxContext *)s->priv_data;
+    DVMuxContext *c = s->priv_data;
     AVStream *vst = NULL;
     int i;
 
@@ -373,7 +373,7 @@ static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     uint8_t* frame;
     int fsize;
 
-    fsize = dv_assemble_frame((DVMuxContext *)s->priv_data, s->streams[pkt->stream_index],
+    fsize = dv_assemble_frame(s->priv_data, s->streams[pkt->stream_index],
                               pkt->data, pkt->size, &frame);
     if (fsize > 0) {
         put_buffer(&s->pb, frame, fsize);
@@ -390,7 +390,7 @@ static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
  */
 static int dv_write_trailer(struct AVFormatContext *s)
 {
-    dv_delete_mux((DVMuxContext *)s->priv_data);
+    dv_delete_mux(s->priv_data);
     return 0;
 }
 #endif /* CONFIG_MUXERS */

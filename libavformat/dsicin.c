@@ -92,7 +92,7 @@ static int cin_read_file_header(CinDemuxContext *cin, ByteIOContext *pb) {
 static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int rc;
-    CinDemuxContext *cin = (CinDemuxContext *)s->priv_data;
+    CinDemuxContext *cin = s->priv_data;
     CinFileHeader *hdr = &cin->file_header;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
@@ -157,7 +157,7 @@ static int cin_read_frame_header(CinDemuxContext *cin, ByteIOContext *pb) {
 
 static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    CinDemuxContext *cin = (CinDemuxContext *)s->priv_data;
+    CinDemuxContext *cin = s->priv_data;
     ByteIOContext *pb = &s->pb;
     CinFrameHeader *hdr = &cin->frame_header;
     int rc, palette_type, pkt_size;

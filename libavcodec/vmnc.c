@@ -287,7 +287,7 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int ssize,
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-    VmncContext * const c = (VmncContext *)avctx->priv_data;
+    VmncContext * const c = avctx->priv_data;
     uint8_t *outptr;
     uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left;
@@ -460,7 +460,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
  */
 static int decode_init(AVCodecContext *avctx)
 {
-    VmncContext * const c = (VmncContext *)avctx->priv_data;
+    VmncContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
 
@@ -500,7 +500,7 @@ static int decode_init(AVCodecContext *avctx)
  */
 static int decode_end(AVCodecContext *avctx)
 {
-    VmncContext * const c = (VmncContext *)avctx->priv_data;
+    VmncContext * const c = avctx->priv_data;
 
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);

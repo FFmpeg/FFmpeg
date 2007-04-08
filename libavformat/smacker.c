@@ -98,7 +98,7 @@ static int smacker_probe(AVProbeData *p)
 static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ByteIOContext *pb = &s->pb;
-    SmackerContext *smk = (SmackerContext *)s->priv_data;
+    SmackerContext *smk = s->priv_data;
     AVStream *st, *ast[7];
     int i, ret;
     int tbase;
@@ -215,7 +215,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    SmackerContext *smk = (SmackerContext *)s->priv_data;
+    SmackerContext *smk = s->priv_data;
     int flags;
     int ret;
     int i;
@@ -318,7 +318,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int smacker_read_close(AVFormatContext *s)
 {
-    SmackerContext *smk = (SmackerContext *)s->priv_data;
+    SmackerContext *smk = s->priv_data;
     int i;
 
     for(i = 0; i < 7; i++)

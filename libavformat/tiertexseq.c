@@ -183,7 +183,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, ByteIOContext *pb)
 static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int i, rc;
-    SeqDemuxContext *seq = (SeqDemuxContext *)s->priv_data;
+    SeqDemuxContext *seq = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
 
@@ -240,7 +240,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int rc;
-    SeqDemuxContext *seq = (SeqDemuxContext *)s->priv_data;
+    SeqDemuxContext *seq = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
     if (!seq->audio_buffer_full) {
@@ -294,7 +294,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int seq_read_close(AVFormatContext *s)
 {
     int i;
-    SeqDemuxContext *seq = (SeqDemuxContext *)s->priv_data;
+    SeqDemuxContext *seq = s->priv_data;
 
     for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++)
         av_free(seq->frame_buffers[i].data);

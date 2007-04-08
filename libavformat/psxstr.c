@@ -126,7 +126,7 @@ static int str_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     ByteIOContext *pb = &s->pb;
-    StrDemuxContext *str = (StrDemuxContext *)s->priv_data;
+    StrDemuxContext *str = s->priv_data;
     AVStream *st;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int start;
@@ -250,7 +250,7 @@ static int str_read_packet(AVFormatContext *s,
                            AVPacket *ret_pkt)
 {
     ByteIOContext *pb = &s->pb;
-    StrDemuxContext *str = (StrDemuxContext *)s->priv_data;
+    StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int channel;
     int packet_read = 0;
@@ -346,7 +346,7 @@ printf (" dropping other sector\n");
 
 static int str_read_close(AVFormatContext *s)
 {
-    StrDemuxContext *str = (StrDemuxContext *)s->priv_data;
+    StrDemuxContext *str = s->priv_data;
 
     av_free(str->video_chunk);
 

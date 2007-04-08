@@ -80,7 +80,7 @@ static uint32_t read_arbitary(ByteIOContext *pb) {
 static int process_ea_header(AVFormatContext *s) {
     int inHeader;
     uint32_t blockid, size;
-    EaDemuxContext *ea = (EaDemuxContext *)s->priv_data;
+    EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
     if (get_buffer(pb, (void*)&blockid, 4) != 4) {
@@ -174,7 +174,7 @@ static int ea_probe(AVProbeData *p)
 static int ea_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    EaDemuxContext *ea = (EaDemuxContext *)s->priv_data;
+    EaDemuxContext *ea = s->priv_data;
     AVStream *st;
 
     if (!process_ea_header(s))
@@ -272,7 +272,7 @@ static int ea_read_packet(AVFormatContext *s,
 
 static int ea_read_close(AVFormatContext *s)
 {
-//    EaDemuxContext *ea = (EaDemuxContext *)s->priv_data;
+//    EaDemuxContext *ea = s->priv_data;
 
     return 0;
 }

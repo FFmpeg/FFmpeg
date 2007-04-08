@@ -125,7 +125,7 @@ static int wc3_probe(AVProbeData *p)
 static int wc3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    Wc3DemuxContext *wc3 = (Wc3DemuxContext *)s->priv_data;
+    Wc3DemuxContext *wc3 = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
@@ -271,7 +271,7 @@ static int wc3_read_header(AVFormatContext *s,
 static int wc3_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    Wc3DemuxContext *wc3 = (Wc3DemuxContext *)s->priv_data;
+    Wc3DemuxContext *wc3 = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
@@ -376,7 +376,7 @@ static int wc3_read_packet(AVFormatContext *s,
 
 static int wc3_read_close(AVFormatContext *s)
 {
-    Wc3DemuxContext *wc3 = (Wc3DemuxContext *)s->priv_data;
+    Wc3DemuxContext *wc3 = s->priv_data;
 
     av_free(wc3->palettes);
 

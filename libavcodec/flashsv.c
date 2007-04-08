@@ -82,7 +82,7 @@ static void copy_region(uint8_t *sptr, uint8_t *dptr,
 
 static int flashsv_decode_init(AVCodecContext *avctx)
 {
-    FlashSVContext *s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext *s = avctx->priv_data;
     int zret; // Zlib return code
 
     s->avctx = avctx;
@@ -105,7 +105,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
                                     uint8_t *buf, int buf_size)
 {
-    FlashSVContext *s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext *s = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
     GetBitContext gb;
 
@@ -231,7 +231,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
 
 static int flashsv_decode_end(AVCodecContext *avctx)
 {
-    FlashSVContext *s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext *s = avctx->priv_data;
     inflateEnd(&(s->zstream));
     /* release the frame if needed */
     if (s->frame.data[0])

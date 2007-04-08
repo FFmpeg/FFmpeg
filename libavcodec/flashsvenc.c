@@ -100,7 +100,7 @@ static int copy_region_enc(uint8_t *sptr, uint8_t *dptr,
 
 static int flashsv_encode_init(AVCodecContext *avctx)
 {
-    FlashSVContext *s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext *s = avctx->priv_data;
 
     s->avctx = avctx;
 
@@ -232,7 +232,7 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf, int buf
 
 static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void *data)
 {
-    FlashSVContext * const s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext * const s = avctx->priv_data;
     AVFrame *pict = data;
     AVFrame * const p = &s->frame;
     int res;
@@ -322,7 +322,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
 static int flashsv_encode_end(AVCodecContext *avctx)
 {
-    FlashSVContext *s = (FlashSVContext *)avctx->priv_data;
+    FlashSVContext *s = avctx->priv_data;
 
     deflateEnd(&(s->zstream));
 

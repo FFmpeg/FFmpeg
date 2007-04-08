@@ -67,7 +67,7 @@ static int flic_probe(AVProbeData *p)
 static int flic_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    FlicDemuxContext *flic = (FlicDemuxContext *)s->priv_data;
+    FlicDemuxContext *flic = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned char header[FLIC_HEADER_SIZE];
     AVStream *st;
@@ -157,7 +157,7 @@ static int flic_read_header(AVFormatContext *s,
 static int flic_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
-    FlicDemuxContext *flic = (FlicDemuxContext *)s->priv_data;
+    FlicDemuxContext *flic = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int packet_read = 0;
     unsigned int size;
@@ -204,7 +204,7 @@ static int flic_read_packet(AVFormatContext *s,
 
 static int flic_read_close(AVFormatContext *s)
 {
-//    FlicDemuxContext *flic = (FlicDemuxContext *)s->priv_data;
+//    FlicDemuxContext *flic = s->priv_data;
 
     return 0;
 }

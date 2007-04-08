@@ -176,7 +176,7 @@ static void seqvideo_decode(SeqVideoContext *seq, unsigned char *data, int data_
 
 static int seqvideo_decode_init(AVCodecContext *avctx)
 {
-    SeqVideoContext *seq = (SeqVideoContext *)avctx->priv_data;
+    SeqVideoContext *seq = avctx->priv_data;
 
     seq->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -191,7 +191,7 @@ static int seqvideo_decode_frame(AVCodecContext *avctx,
                                  uint8_t *buf, int buf_size)
 {
 
-    SeqVideoContext *seq = (SeqVideoContext *)avctx->priv_data;
+    SeqVideoContext *seq = avctx->priv_data;
 
     seq->frame.reference = 1;
     seq->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -210,7 +210,7 @@ static int seqvideo_decode_frame(AVCodecContext *avctx,
 
 static int seqvideo_decode_end(AVCodecContext *avctx)
 {
-    SeqVideoContext *seq = (SeqVideoContext *)avctx->priv_data;
+    SeqVideoContext *seq = avctx->priv_data;
 
     if (seq->frame.data[0])
         avctx->release_buffer(avctx, &seq->frame);

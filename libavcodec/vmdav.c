@@ -318,7 +318,7 @@ static void vmd_decode(VmdVideoContext *s)
 
 static int vmdvideo_decode_init(AVCodecContext *avctx)
 {
-    VmdVideoContext *s = (VmdVideoContext *)avctx->priv_data;
+    VmdVideoContext *s = avctx->priv_data;
     int i;
     unsigned int *palette32;
     int palette_index = 0;
@@ -362,7 +362,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  uint8_t *buf, int buf_size)
 {
-    VmdVideoContext *s = (VmdVideoContext *)avctx->priv_data;
+    VmdVideoContext *s = avctx->priv_data;
 
     s->buf = buf;
     s->size = buf_size;
@@ -396,7 +396,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
 
 static int vmdvideo_decode_end(AVCodecContext *avctx)
 {
-    VmdVideoContext *s = (VmdVideoContext *)avctx->priv_data;
+    VmdVideoContext *s = avctx->priv_data;
 
     if (s->prev_frame.data[0])
         avctx->release_buffer(avctx, &s->prev_frame);
@@ -436,7 +436,7 @@ static uint16_t vmdaudio_table[128] = {
 
 static int vmdaudio_decode_init(AVCodecContext *avctx)
 {
-    VmdAudioContext *s = (VmdAudioContext *)avctx->priv_data;
+    VmdAudioContext *s = avctx->priv_data;
 
     s->avctx = avctx;
     s->channels = avctx->channels;
@@ -517,7 +517,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  uint8_t *buf, int buf_size)
 {
-    VmdAudioContext *s = (VmdAudioContext *)avctx->priv_data;
+    VmdAudioContext *s = avctx->priv_data;
     unsigned char *output_samples = (unsigned char *)data;
 
     /* point to the start of the encoded data */

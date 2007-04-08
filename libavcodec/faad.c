@@ -103,7 +103,7 @@ static const unsigned long faac_srates[] =
 
 static int faac_init_mp4(AVCodecContext *avctx)
 {
-    FAACContext *s = (FAACContext *) avctx->priv_data;
+    FAACContext *s = avctx->priv_data;
     unsigned long samplerate;
 #ifndef FAAD2_VERSION
     unsigned long channels;
@@ -134,7 +134,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
 {
-    FAACContext *s = (FAACContext *) avctx->priv_data;
+    FAACContext *s = avctx->priv_data;
 #ifndef FAAD2_VERSION
     unsigned long bytesconsumed;
     short *sample_buffer = NULL;
@@ -194,7 +194,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
 
 static int faac_decode_end(AVCodecContext *avctx)
 {
-    FAACContext *s = (FAACContext *) avctx->priv_data;
+    FAACContext *s = avctx->priv_data;
 
     s->faacDecClose(s->faac_handle);
 
@@ -204,7 +204,7 @@ static int faac_decode_end(AVCodecContext *avctx)
 
 static int faac_decode_init(AVCodecContext *avctx)
 {
-    FAACContext *s = (FAACContext *) avctx->priv_data;
+    FAACContext *s = avctx->priv_data;
     faacDecConfigurationPtr faac_cfg;
 
 #ifdef CONFIG_LIBFAADBIN

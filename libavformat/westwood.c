@@ -117,7 +117,7 @@ static int wsaud_probe(AVProbeData *p)
 static int wsaud_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    WsAudDemuxContext *wsaud = (WsAudDemuxContext *)s->priv_data;
+    WsAudDemuxContext *wsaud = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     unsigned char header[AUD_HEADER_SIZE];
@@ -159,7 +159,7 @@ static int wsaud_read_header(AVFormatContext *s,
 static int wsaud_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
-    WsAudDemuxContext *wsaud = (WsAudDemuxContext *)s->priv_data;
+    WsAudDemuxContext *wsaud = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned char preamble[AUD_CHUNK_PREAMBLE_SIZE];
     unsigned int chunk_size;
@@ -189,7 +189,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
 static int wsaud_read_close(AVFormatContext *s)
 {
-//    WsAudDemuxContext *wsaud = (WsAudDemuxContext *)s->priv_data;
+//    WsAudDemuxContext *wsaud = s->priv_data;
 
     return 0;
 }
@@ -212,7 +212,7 @@ static int wsvqa_probe(AVProbeData *p)
 static int wsvqa_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    WsVqaDemuxContext *wsvqa = (WsVqaDemuxContext *)s->priv_data;
+    WsVqaDemuxContext *wsvqa = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     unsigned char *header;
@@ -314,7 +314,7 @@ static int wsvqa_read_header(AVFormatContext *s,
 static int wsvqa_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
-    WsVqaDemuxContext *wsvqa = (WsVqaDemuxContext *)s->priv_data;
+    WsVqaDemuxContext *wsvqa = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int ret = -1;
     unsigned char preamble[VQA_PREAMBLE_SIZE];
@@ -371,7 +371,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
 static int wsvqa_read_close(AVFormatContext *s)
 {
-//    WsVqaDemuxContext *wsvqa = (WsVqaDemuxContext *)s->priv_data;
+//    WsVqaDemuxContext *wsvqa = s->priv_data;
 
     return 0;
 }

@@ -361,7 +361,7 @@ static int mov_mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     int tag, len;
 
     /* Well, broken but suffisant for some MP4 streams */
@@ -447,7 +447,7 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     int version = get_byte(pb);
     int lang;
 
@@ -618,7 +618,7 @@ static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries;
 
     get_byte(pb); /* version */
@@ -650,7 +650,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     int entries, frames_per_sample;
     uint32_t format;
     uint8_t codec_name[32];
@@ -939,7 +939,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries;
 
     get_byte(pb); /* version */
@@ -968,7 +968,7 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1,
 static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries;
 
     get_byte(pb); /* version */
@@ -998,7 +998,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries, sample_size;
 
     get_byte(pb); /* version */
@@ -1033,7 +1033,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries;
     int64_t duration=0;
     int64_t total_sample_count=0;
@@ -1079,7 +1079,7 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     unsigned int i, entries;
 
     get_byte(pb); /* version */
@@ -1471,7 +1471,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    MOVContext *mov = (MOVContext *) s->priv_data;
+    MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int i, err;
     MOV_atom_t atom = { 0, 0, 0 };
@@ -1664,7 +1664,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 static int mov_read_close(AVFormatContext *s)
 {
     int i;
-    MOVContext *mov = (MOVContext *) s->priv_data;
+    MOVContext *mov = s->priv_data;
     for(i=0; i<mov->total_streams; i++)
         mov_free_stream_context(mov->streams[i]);
     /* free color tabs */

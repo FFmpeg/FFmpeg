@@ -272,7 +272,7 @@ static int roq_read_packet(AVFormatContext *s,
 
 static int roq_read_close(AVFormatContext *s)
 {
-//    RoqDemuxContext *roq = (RoqDemuxContext *)s->priv_data;
+//    RoqDemuxContext *roq = s->priv_data;
 
     return 0;
 }

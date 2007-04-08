@@ -61,7 +61,7 @@ typedef struct EightBpsContext {
  */
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-        EightBpsContext * const c = (EightBpsContext *)avctx->priv_data;
+        EightBpsContext * const c = avctx->priv_data;
         unsigned char *encoded = (unsigned char *)buf;
         unsigned char *pixptr, *pixptr_end;
         unsigned int height = avctx->height; // Real image height
@@ -152,7 +152,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
  */
 static int decode_init(AVCodecContext *avctx)
 {
-        EightBpsContext * const c = (EightBpsContext *)avctx->priv_data;
+        EightBpsContext * const c = avctx->priv_data;
 
         c->avctx = avctx;
 
@@ -212,7 +212,7 @@ static int decode_init(AVCodecContext *avctx)
  */
 static int decode_end(AVCodecContext *avctx)
 {
-        EightBpsContext * const c = (EightBpsContext *)avctx->priv_data;
+        EightBpsContext * const c = avctx->priv_data;
 
         if (c->pic.data[0])
                 avctx->release_buffer(avctx, &c->pic);
