@@ -56,87 +56,85 @@ static int thp_probe(AVProbeData *p)
 static int thp_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-  ThpDemuxContext *thp = s->priv_data;
-  AVStream *st;
-  ByteIOContext *pb = &s->pb;
-  int i;
+    ThpDemuxContext *thp = s->priv_data;
+    AVStream *st;
+    ByteIOContext *pb = &s->pb;
+    int i;
 
-  /* Read the file header.  */
+    /* Read the file header.  */
+                           get_be32(pb); /* Skip Magic.  */
+    thp->version         = get_be32(pb);
 
-                         get_be32(pb); /* Skip Magic.  */
-  thp->version         = get_be32(pb);
+                           get_be32(pb); /* Max buf size.  */
+                           get_be32(pb); /* Max samples.  */
 
-                         get_be32(pb); /* Max buf size.  */
-                         get_be32(pb); /* Max samples.  */
+    thp->fps             = av_d2q(av_int2flt(get_be32(pb)), INT_MAX);
+    thp->framecnt        = get_be32(pb);
+    thp->first_framesz   = get_be32(pb);
+                           get_be32(pb); /* Data size.  */
 
-  thp->fps             = av_d2q(av_int2flt(get_be32(pb)), INT_MAX);
-  thp->framecnt        = get_be32(pb);
-  thp->first_framesz   = get_be32(pb);
-                         get_be32(pb); /* Data size.  */
+    thp->compoff         = get_be32(pb);
+                           get_be32(pb); /* offsetDataOffset.  */
+    thp->first_frame     = get_be32(pb);
+    thp->last_frame      = get_be32(pb);
 
-  thp->compoff         = get_be32(pb);
-                         get_be32(pb); /* offsetDataOffset.  */
-  thp->first_frame     = get_be32(pb);
-  thp->last_frame      = get_be32(pb);
+    thp->next_framesz    = thp->first_framesz;
+    thp->next_frame      = thp->first_frame;
 
-  thp->next_framesz    = thp->first_framesz;
-  thp->next_frame      = thp->first_frame;
+    /* Read the component structure.  */
+    url_fseek (pb, thp->compoff, SEEK_SET);
+    thp->compcount       = get_be32(pb);
 
-  /* Read the component structure.  */
-  url_fseek (pb, thp->compoff, SEEK_SET);
-  thp->compcount       = get_be32(pb);
+    /* Read the list of component types.  */
+    get_buffer(pb, thp->components, 16);
 
-  /* Read the list of component types.  */
-  get_buffer(pb, thp->components, 16);
+    for (i = 0; i < thp->compcount; i++) {
+        if (thp->components[i] == 0) {
+            if (thp->vst != 0)
+                break;
 
-  for (i = 0; i < thp->compcount; i++) {
-      if (thp->components[i] == 0) {
-          if (thp->vst != 0)
-             break;
+            /* Video component.  */
+            st = av_new_stream(s, 0);
+            if (!st)
+                return AVERROR_NOMEM;
 
-          /* Video component.  */
-          st = av_new_stream(s, 0);
-          if (!st)
-             return AVERROR_NOMEM;
+            /* The denominator and numerator are switched because 1/fps
+               is required.  */
+            av_set_pts_info(st, 64, thp->fps.den, thp->fps.num);
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_id = CODEC_ID_THP;
+            st->codec->codec_tag = 0;  /* no fourcc */
+            st->codec->width = get_be32(pb);
+            st->codec->height = get_be32(pb);
+            st->codec->sample_rate = av_q2d(thp->fps);
+            thp->vst = st;
+            thp->video_stream_index = st->index;
 
-          /* The denominator and numerator are switched because 1/fps
-             is required.  */
-          av_set_pts_info(st, 64, thp->fps.den, thp->fps.num);
-          st->codec->codec_type = CODEC_TYPE_VIDEO;
-          st->codec->codec_id = CODEC_ID_THP;
-          st->codec->codec_tag = 0;  /* no fourcc */
-          st->codec->width = get_be32(pb);
-          st->codec->height = get_be32(pb);
-          st->codec->sample_rate = av_q2d(thp->fps);
-          thp->vst = st;
-          thp->video_stream_index = st->index;
+            if (thp->version == 0x11000)
+                get_be32(pb); /* Unknown.  */
+        } else if (thp->components[i] == 1) {
+            if (thp->has_audio != 0)
+                break;
 
-          if (thp->version == 0x11000)
-             get_be32(pb); /* Unknown.  */
+            /* Audio component.  */
+            st = av_new_stream(s, 0);
+            if (!st)
+                return AVERROR_NOMEM;
+
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_id = CODEC_ID_ADPCM_THP;
+            st->codec->codec_tag = 0;  /* no fourcc */
+            st->codec->channels    = get_be32(pb); /* numChannels.  */
+            st->codec->sample_rate = get_be32(pb); /* Frequency.  */
+
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+            thp->audio_stream_index = st->index;
+            thp->has_audio = 1;
         }
-      else if (thp->components[i] == 1) {
-          if (thp->has_audio != 0)
-              break;
-
-          /* Audio component.  */
-          st = av_new_stream(s, 0);
-          if (!st)
-              return AVERROR_NOMEM;
-
-          st->codec->codec_type = CODEC_TYPE_AUDIO;
-          st->codec->codec_id = CODEC_ID_ADPCM_THP;
-          st->codec->codec_tag = 0;  /* no fourcc */
-          st->codec->channels    = get_be32(pb); /* numChannels.  */
-          st->codec->sample_rate = get_be32(pb); /* Frequency.  */
-
-          av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-
-          thp->audio_stream_index = st->index;
-          thp->has_audio = 1;
-      }
     }
 
-  return 0;
+    return 0;
 }
 
 static int thp_read_packet(AVFormatContext *s,
@@ -148,36 +146,34 @@ static int thp_read_packet(AVFormatContext *s,
     int ret;
 
     if (thp->audiosize == 0) {
+        /* Terminate when last frame is reached.  */
+        if (thp->frame >= thp->framecnt)
+            return AVERROR_IO;
 
-    /* Terminate when last frame is reached.  */
-    if (thp->frame >= thp->framecnt)
-       return AVERROR_IO;
+        url_fseek(pb, thp->next_frame, SEEK_SET);
 
-    url_fseek(pb, thp->next_frame, SEEK_SET);
-
-    /* Locate the next frame and read out its size.  */
-    thp->next_frame += thp->next_framesz;
-    thp->next_framesz = get_be32(pb);
+        /* Locate the next frame and read out its size.  */
+        thp->next_frame += thp->next_framesz;
+        thp->next_framesz = get_be32(pb);
 
                         get_be32(pb); /* Previous total size.  */
-    size              = get_be32(pb); /* Total size of this frame.  */
+        size          = get_be32(pb); /* Total size of this frame.  */
 
-    /* Store the audiosize so the next time this function is called,
-       the audio can be read.  */
-    if (thp->has_audio)
-        thp->audiosize = get_be32(pb); /* Audio size.  */
-    else
-        thp->frame++;
+        /* Store the audiosize so the next time this function is called,
+           the audio can be read.  */
+        if (thp->has_audio)
+            thp->audiosize = get_be32(pb); /* Audio size.  */
+        else
+            thp->frame++;
 
-    ret = av_get_packet(pb, pkt, size);
-    if (ret != size) {
-       av_free_packet(pkt);
-       return AVERROR_IO;
-    }
+        ret = av_get_packet(pb, pkt, size);
+        if (ret != size) {
+            av_free_packet(pkt);
+            return AVERROR_IO;
+        }
 
-    pkt->stream_index = thp->video_stream_index;
-    }
-    else {
+        pkt->stream_index = thp->video_stream_index;
+    } else {
         ret = av_get_packet(pb, pkt, thp->audiosize);
         if (ret != thp->audiosize) {
             av_free_packet(pkt);

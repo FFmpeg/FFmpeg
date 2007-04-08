@@ -1317,7 +1317,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_THP:
-      {
+    {
         int table[2][16];
         unsigned int samplecnt;
         int prev[2][2];
@@ -1375,7 +1375,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
            increased exactly one time too often.  */
         samples -= st;
         break;
-      }
+    }
 
     default:
         return -1;
