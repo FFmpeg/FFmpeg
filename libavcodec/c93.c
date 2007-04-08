@@ -46,13 +46,13 @@ typedef enum {
 #define C93_HAS_PALETTE 0x01
 #define C93_FIRST_FRAME 0x02
 
-static int c93_decode_init(AVCodecContext *avctx)
+static int decode_init(AVCodecContext *avctx)
 {
     avctx->pix_fmt = PIX_FMT_PAL8;
     return 0;
 }
 
-static int c93_decode_end(AVCodecContext *avctx)
+static int decode_end(AVCodecContext *avctx)
 {
     C93DecoderContext * const c93 = avctx->priv_data;
 
@@ -63,7 +63,7 @@ static int c93_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static inline int c93_copy_block(AVCodecContext *avctx, uint8_t *to,
+static inline int copy_block(AVCodecContext *avctx, uint8_t *to,
         uint8_t *from, int offset, int height, int stride)
 {
     int i;
@@ -97,7 +97,7 @@ static inline int c93_copy_block(AVCodecContext *avctx, uint8_t *to,
     return 0;
 }
 
-static inline void c93_draw_n_color(uint8_t *out, int stride, int width,
+static inline void draw_n_color(uint8_t *out, int stride, int width,
          int height, int bpp, uint8_t cols[4], uint8_t grps[4], uint32_t col)
 {
     int x, y;
@@ -113,7 +113,7 @@ static inline void c93_draw_n_color(uint8_t *out, int stride, int width,
     }
 }
 
-static int c93_decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, uint8_t * buf, int buf_size)
 {
     C93DecoderContext * const c93 = avctx->priv_data;
@@ -168,7 +168,7 @@ static int c93_decode_frame(AVCodecContext *avctx, void *data,
             switch (bt & 0x0F) {
             case C93_8X8_FROM_PREV:
                 offset = bytestream_get_le16(&buf);
-                if (c93_copy_block(avctx, out, copy_from, offset, 8, stride))
+                if (copy_block(avctx, out, copy_from, offset, 8, stride))
                     return -1;
                 break;
 
@@ -178,7 +178,7 @@ static int c93_decode_frame(AVCodecContext *avctx, void *data,
                 for (j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
                         offset = bytestream_get_le16(&buf);
-                        if (c93_copy_block(avctx, &out[j*stride+i],
+                        if (copy_block(avctx, &out[j*stride+i],
                                            copy_from, offset, 4, stride))
                             return -1;
                     }
@@ -188,7 +188,7 @@ static int c93_decode_frame(AVCodecContext *avctx, void *data,
             case C93_8X8_2COLOR:
                 bytestream_get_buffer(&buf, cols, 2);
                 for (i = 0; i < 8; i++) {
-                    c93_draw_n_color(out + i*stride, stride, 8, 1, 1, cols,
+                    draw_n_color(out + i*stride, stride, 8, 1, 1, cols,
                                      NULL, *buf++);
                 }
 
@@ -201,15 +201,15 @@ static int c93_decode_frame(AVCodecContext *avctx, void *data,
                     for (i = 0; i < 8; i += 4) {
                         if ((bt & 0x0F) == C93_4X4_2COLOR) {
                             bytestream_get_buffer(&buf, cols, 2);
-                            c93_draw_n_color(out + i + j*stride, stride, 4, 4,
+                            draw_n_color(out + i + j*stride, stride, 4, 4,
                                     1, cols, NULL, bytestream_get_le16(&buf));
                         } else if ((bt & 0x0F) == C93_4X4_4COLOR) {
                             bytestream_get_buffer(&buf, cols, 4);
-                            c93_draw_n_color(out + i + j*stride, stride, 4, 4,
+                            draw_n_color(out + i + j*stride, stride, 4, 4,
                                     2, cols, NULL, bytestream_get_le32(&buf));
                         } else {
                             bytestream_get_buffer(&buf, grps, 4);
-                            c93_draw_n_color(out + i + j*stride, stride, 4, 4,
+                            draw_n_color(out + i + j*stride, stride, 4, 4,
                                     1, cols, grps, bytestream_get_le16(&buf));
                         }
                     }
@@ -245,9 +245,9 @@ AVCodec c93_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_C93,
     sizeof(C93DecoderContext),
-    c93_decode_init,
+    decode_init,
     NULL,
-    c93_decode_end,
-    c93_decode_frame,
+    decode_end,
+    decode_frame,
     CODEC_CAP_DR1,
 };
