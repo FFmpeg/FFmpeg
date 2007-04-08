@@ -121,8 +121,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     AVFrame * const oldpic = &c93->pictures[c93->currentpic^1];
     AVFrame *picture = data;
     uint8_t *out;
-    int stride, i, x, y;
-    C93BlockType bt = 0;
+    int stride, i, x, y, bt = 0;
 
     c93->currentpic ^= 1;
 
@@ -161,11 +160,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             uint8_t *copy_from = oldpic->data[0];
             unsigned int offset, j;
             uint8_t cols[4], grps[4];
+            C93BlockType block_type;
 
             if (!bt)
                 bt = *buf++;
 
-            switch (bt & 0x0F) {
+            block_type= bt & 0x0F;
+            switch (block_type) {
             case C93_8X8_FROM_PREV:
                 offset = bytestream_get_le16(&buf);
                 if (copy_block(avctx, out, copy_from, offset, 8, stride))
@@ -199,11 +200,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             case C93_4X4_4COLOR_GRP:
                 for (j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
-                        if ((bt & 0x0F) == C93_4X4_2COLOR) {
+                        if (block_type == C93_4X4_2COLOR) {
                             bytestream_get_buffer(&buf, cols, 2);
                             draw_n_color(out + i + j*stride, stride, 4, 4,
                                     1, cols, NULL, bytestream_get_le16(&buf));
-                        } else if ((bt & 0x0F) == C93_4X4_4COLOR) {
+                        } else if (block_type == C93_4X4_4COLOR) {
                             bytestream_get_buffer(&buf, cols, 4);
                             draw_n_color(out + i + j*stride, stride, 4, 4,
                                     2, cols, NULL, bytestream_get_le32(&buf));
@@ -226,7 +227,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
             default:
                 av_log(avctx, AV_LOG_ERROR, "unexpected type %x at %dx%d\n",
-                       bt & 0x0F, x, y);
+                       block_type, x, y);
                 return -1;
             }
             bt >>= 4;
