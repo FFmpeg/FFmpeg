@@ -42,7 +42,7 @@ typedef struct {
     AVStream *audio;
 } C93DemuxContext;
 
-static int c93_probe(AVProbeData *p)
+static int probe(AVProbeData *p)
 {
     if (p->buf_size < 13)
         return 0;
@@ -56,7 +56,7 @@ static int c93_probe(AVProbeData *p)
     return 0;
 }
 
-static int c93_read_header(AVFormatContext *s,
+static int read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *video;
@@ -103,7 +103,7 @@ static int c93_read_header(AVFormatContext *s,
 #define C93_HAS_PALETTE 0x01
 #define C93_FIRST_FRAME 0x02
 
-static int c93_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
     C93DemuxContext *c93 = s->priv_data;
@@ -196,7 +196,7 @@ AVInputFormat c93_demuxer = {
     "c93",
     "Interplay C93",
     sizeof(C93DemuxContext),
-    c93_probe,
-    c93_read_header,
-    c93_read_packet,
+    probe,
+    read_header,
+    read_packet,
 };
