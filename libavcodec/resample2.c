@@ -95,7 +95,7 @@ static double bessel(double x){
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
  */
 void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
-    int ph, i, v;
+    int ph, i;
     double x, y, w, tab[tap_count];
     const int center= (tap_count-1)/2;
 
