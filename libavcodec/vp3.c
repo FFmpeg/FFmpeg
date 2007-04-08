@@ -331,8 +331,6 @@ typedef struct Vp3DecodeContext {
     int bounding_values_array[256];
 } Vp3DecodeContext;
 
-static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb);
-
 /************************************************************************
  * VP3 specific functions
  ************************************************************************/
@@ -2141,28 +2139,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     if (s->theora && get_bits1(&gb))
     {
-#if 1
         av_log(avctx, AV_LOG_ERROR, "Header packet passed to frame decoder, skipping\n");
         return -1;
-#else
-        int ptype = get_bits(&gb, 7);
-
-        skip_bits(&gb, 6*8); /* "theora" */
-
-        switch(ptype)
-        {
-            case 1:
-                theora_decode_comments(avctx, &gb);
-                break;
-            case 2:
-                theora_decode_tables(avctx, &gb);
-                    init_dequantizer(s);
-                break;
-            default:
-                av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype);
-        }
-        return buf_size;
-#endif
     }
 
     s->keyframe = !get_bits1(&gb);
