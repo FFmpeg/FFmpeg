@@ -2367,6 +2367,7 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
     return 0;
 }
 
+#ifdef CONFIG_THEORA_DECODER
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2611,7 +2612,6 @@ static int theora_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#ifdef CONFIG_THEORA_DECODER
 AVCodec theora_decoder = {
     "theora",
     CODEC_TYPE_VIDEO,
