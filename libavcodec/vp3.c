@@ -2611,19 +2611,6 @@ static int theora_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vp3_decoder = {
-    "vp3",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_VP3,
-    sizeof(Vp3DecodeContext),
-    vp3_decode_init,
-    NULL,
-    vp3_decode_end,
-    vp3_decode_frame,
-    0,
-    NULL
-};
-
 #ifdef CONFIG_THEORA_DECODER
 AVCodec theora_decoder = {
     "theora",
@@ -2638,3 +2625,16 @@ AVCodec theora_decoder = {
     NULL
 };
 #endif
+
+AVCodec vp3_decoder = {
+    "vp3",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_VP3,
+    sizeof(Vp3DecodeContext),
+    vp3_decode_init,
+    NULL,
+    vp3_decode_end,
+    vp3_decode_frame,
+    0,
+    NULL
+};
