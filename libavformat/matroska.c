@@ -1074,9 +1074,6 @@ matroska_probe (AVProbeData *p)
     int len_mask = 0x80, size = 1, n = 1;
     uint8_t probe_data[] = { 'm', 'a', 't', 'r', 'o', 's', 'k', 'a' };
 
-    if (p->buf_size < 5)
-        return 0;
-
     /* ebml header? */
     if ((p->buf[0] << 24 | p->buf[1] << 16 |
          p->buf[2] << 8 | p->buf[3]) != EBML_ID_HEADER)

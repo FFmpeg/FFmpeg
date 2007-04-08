@@ -119,9 +119,6 @@ static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 static int asf_probe(AVProbeData *pd)
 {
     /* check file header */
-    if (pd->buf_size <= 32)
-        return 0;
-
     if (!memcmp(pd->buf, &asf_header, sizeof(GUID)))
         return AVPROBE_SCORE_MAX;
     else

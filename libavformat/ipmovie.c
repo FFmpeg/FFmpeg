@@ -507,8 +507,6 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
 
 static int ipmovie_probe(AVProbeData *p)
 {
-    if (p->buf_size < IPMOVIE_SIGNATURE_SIZE)
-        return 0;
     if (strncmp(p->buf, IPMOVIE_SIGNATURE, IPMOVIE_SIGNATURE_SIZE) != 0)
         return 0;
 

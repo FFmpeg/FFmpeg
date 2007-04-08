@@ -28,8 +28,6 @@ static int voc_probe(AVProbeData *p)
 {
     int version, check;
 
-    if (p->buf_size < 26)
-        return 0;
     if (memcmp(p->buf, voc_magic, sizeof(voc_magic) - 1))
         return 0;
     version = p->buf[22] | (p->buf[23] << 8);

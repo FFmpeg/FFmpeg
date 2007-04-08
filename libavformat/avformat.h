@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(11<<8)+0)
-#define LIBAVFORMAT_VERSION     51.11.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(12<<8)+0)
+#define LIBAVFORMAT_VERSION     51.12.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -132,6 +132,7 @@ typedef struct AVProbeData {
 } AVProbeData;
 
 #define AVPROBE_SCORE_MAX 100               ///< max score, half of that is used for file extension based detection
+#define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
 
 typedef struct AVFormatParameters {
     AVRational time_base;

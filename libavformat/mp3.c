@@ -252,9 +252,6 @@ static int mp3_read_probe(AVProbeData *p)
     uint8_t *buf, *buf2, *end;
     AVCodecContext avctx;
 
-    if(p->buf_size < ID3_HEADER_SIZE)
-        return 0;
-
     if(id3_match(p->buf))
         return AVPROBE_SCORE_MAX/2+1; // this must be less then mpeg-ps because some retards put id3 tage before mpeg-ps files
 

@@ -1320,8 +1320,6 @@ static int mov_probe(AVProbeData *p)
     int score = 0;
 
     /* check file header */
-    if (p->buf_size <= 12)
-        return 0;
     offset = 0;
     for(;;) {
         /* ignore invalid offset */

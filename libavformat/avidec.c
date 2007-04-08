@@ -995,8 +995,6 @@ static int avi_read_close(AVFormatContext *s)
 static int avi_probe(AVProbeData *p)
 {
     /* check file header */
-    if (p->buf_size <= 32)
-        return 0;
     if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
         p->buf[2] == 'F' && p->buf[3] == 'F' &&
         p->buf[8] == 'A' && p->buf[9] == 'V' &&

@@ -58,9 +58,6 @@ typedef struct CinDemuxContext {
 
 static int cin_probe(AVProbeData *p)
 {
-    if (p->buf_size < 18)
-        return 0;
-
     /* header starts with this special marker */
     if (AV_RL32(&p->buf[0]) != 0x55AA0000)
         return 0;

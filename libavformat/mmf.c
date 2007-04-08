@@ -168,8 +168,6 @@ static int mmf_write_trailer(AVFormatContext *s)
 static int mmf_probe(AVProbeData *p)
 {
     /* check file header */
-    if (p->buf_size <= 32)
-        return 0;
     if (p->buf[0] == 'M' && p->buf[1] == 'M' &&
         p->buf[2] == 'M' && p->buf[3] == 'D' &&
         p->buf[8] == 'C' && p->buf[9] == 'N' &&

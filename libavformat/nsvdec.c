@@ -728,8 +728,6 @@ static int nsv_probe(AVProbeData *p)
     int i;
 //    PRINT(("nsv_probe(), buf_size %d\n", p->buf_size));
     /* check file header */
-    if (p->buf_size <= 32)
-        return 0;
     if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
         p->buf[2] == 'V' && p->buf[3] == 'f')
         return AVPROBE_SCORE_MAX;

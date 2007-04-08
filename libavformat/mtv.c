@@ -54,9 +54,6 @@ typedef struct MTVDemuxContext {
 
 static int mtv_probe(AVProbeData *p)
 {
-    if(p->buf_size < 3)
-        return 0;
-
     /* Magic is 'AMV' */
 
     if(*(p->buf) != 'A' || *(p->buf+1) != 'M' || *(p->buf+2) != 'V')

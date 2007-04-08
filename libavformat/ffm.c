@@ -758,7 +758,7 @@ static int ffm_read_close(AVFormatContext *s)
 
 static int ffm_probe(AVProbeData *p)
 {
-    if (p->buf_size >= 4 &&
+    if (
         p->buf[0] == 'F' && p->buf[1] == 'F' && p->buf[2] == 'M' &&
         p->buf[3] == '1')
         return AVPROBE_SCORE_MAX + 1;
