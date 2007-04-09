@@ -183,7 +183,7 @@ static void clearTable(LZWEncodeState * s)
  * @return Number of bytes written
  */
 static int writtenBytes(LZWEncodeState *s){
-    int ret = (put_bits_count(&s->pb)) >> 3;
+    int ret = put_bits_count(&s->pb) >> 3;
     ret -= s->output_bytes;
     s->output_bytes += ret;
     return ret;
