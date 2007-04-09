@@ -343,6 +343,10 @@ typedef struct MatroskaDemuxContext {
     /* The index for seeking. */
     int num_indexes;
     MatroskaDemuxIndex *index;
+
+    /* What to skip before effectively reading a packet. */
+    int skip_to_keyframe;
+    AVStream *skip_to_stream;
 } MatroskaDemuxContext;
 
 /*
@@ -2436,6 +2440,13 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     size -= 1;
     if (is_keyframe == -1)
         is_keyframe = flags & 1 ? PKT_FLAG_KEY : 0;
+
+    if (matroska->skip_to_keyframe) {
+        if (!is_keyframe || st != matroska->skip_to_stream)
+            return res;
+        matroska->skip_to_keyframe = 0;
+    }
+
     switch ((flags & 0x06) >> 1) {
         case 0x0: /* no lacing */
             laces = 1;
@@ -2782,6 +2793,8 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
 
     /* do the seek */
     url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
+    matroska->skip_to_stream = st;
     matroska->num_packets = 0;
     matroska->peek_id = 0;
     return 0;
