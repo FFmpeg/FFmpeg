@@ -2301,6 +2301,7 @@ matroska_read_header (AVFormatContext    *s,
             av_set_pts_info(st, 64, matroska->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
             st->codec->codec_id = codec_id;
+            st->start_time = 0;
 
             if (track->default_duration)
                 av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
