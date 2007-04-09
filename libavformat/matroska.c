@@ -320,9 +320,6 @@ typedef struct MatroskaDemuxContext {
     /* timescale in the file */
     int64_t time_scale;
 
-    /* position (time, ns) */
-    int64_t pos;
-
     /* num_streams is the number of streams that av_new_stream() was called
      * for ( = that are available to the calling program). */
     int num_tracks, num_streams;
