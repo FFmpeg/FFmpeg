@@ -974,6 +974,21 @@ ebml_read_header (MatroskaDemuxContext *matroska,
     return 0;
 }
 
+
+static int
+matroska_find_track_by_num (MatroskaDemuxContext *matroska,
+                            int                   num)
+{
+    int i;
+
+    for (i = 0; i < matroska->num_tracks; i++)
+        if (matroska->tracks[i]->num == num)
+            return i;
+
+    return -1;
+}
+
+
 /*
  * Put one packet in an application-supplied AVPacket struct.
  * Returns 0 on success or -1 on failure.
@@ -2352,19 +2367,6 @@ matroska_read_header (AVFormatContext    *s,
     }
 
     return res;
-}
-
-static int
-matroska_find_track_by_num (MatroskaDemuxContext *matroska,
-                            int                   num)
-{
-    int i;
-
-    for (i = 0; i < matroska->num_tracks; i++)
-        if (matroska->tracks[i]->num == num)
-            return i;
-
-    return -1;
 }
 
 static inline int
