@@ -8147,7 +8147,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         if (ptr==NULL || dst_length < 0){
             return -1;
         }
-        while(ptr[dst_length - 1] == 0 && dst_length > 1)
+        while(ptr[dst_length - 1] == 0 && dst_length > 0)
             dst_length--;
         bit_length= 8*dst_length - decode_rbsp_trailing(h, ptr + dst_length - 1);
 
