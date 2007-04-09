@@ -1727,7 +1727,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
                                         if ((res = ebml_read_uint(matroska,
                                                           &id, &num)) < 0)
                                             break;
-                                        idx.pos = num;
+                                        idx.pos = num+matroska->segment_start;
                                         break;
                                     }
 
