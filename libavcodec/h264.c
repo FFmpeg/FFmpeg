@@ -8144,7 +8144,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
       }
 
         ptr= decode_nal(h, buf + buf_index, &dst_length, &consumed, h->is_avc ? nalsize : buf_size - buf_index);
-        if (ptr==NULL || dst_length <= 0){
+        if (ptr==NULL || dst_length < 0){
             return -1;
         }
         while(ptr[dst_length - 1] == 0 && dst_length > 1)
