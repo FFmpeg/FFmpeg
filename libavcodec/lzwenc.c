@@ -220,29 +220,27 @@ void ff_lzw_encode_init(LZWEncodeState * s, uint8_t * outbuf, int outsize, int m
 int ff_lzw_encode(LZWEncodeState * s, const uint8_t * inbuf, int insize)
 {
     int i;
-    int code_prefix = s->last_code;
 
     if(insize * 3 > (s->bufsize - s->output_bytes) * 2){
         return -1;
     }
 
-    if (code_prefix == LZW_PREFIX_EMPTY)
+    if (s->last_code == LZW_PREFIX_EMPTY)
         clearTable(s);
 
     for (i = 0; i < insize; i++) {
         uint8_t c = *inbuf++;
-        int code = findCode(s, c, code_prefix);
+        int code = findCode(s, c, s->last_code);
         if (s->tab[code].hash_prefix == LZW_PREFIX_FREE) {
-            writeCode(s, code_prefix);
-            addCode(s, c, code_prefix, code);
+            writeCode(s, s->last_code);
+            addCode(s, c, s->last_code, code);
             code= hash(0, c);
         }
-        code_prefix = s->tab[code].code;
+        s->last_code = s->tab[code].code;
         if (s->tabsize >= s->maxcode - 1) {
             clearTable(s);
         }
     }
-    s->last_code = code_prefix;
 
     return writtenBytes(s);
 }
