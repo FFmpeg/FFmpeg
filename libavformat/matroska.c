@@ -2366,6 +2366,18 @@ matroska_read_header (AVFormatContext    *s,
         res = 0;
     }
 
+    if (matroska->index_parsed) {
+        int i, track, stream;
+        for (i=0; i<matroska->num_indexes; i++) {
+            MatroskaDemuxIndex *idx = &matroska->index[i];
+            track = matroska_find_track_by_num(matroska, idx->track);
+            stream = matroska->tracks[track]->stream_index;
+            av_add_index_entry(matroska->ctx->streams[stream],
+                               idx->pos, idx->time/matroska->time_scale,
+                               0, 0, AVINDEX_KEYFRAME);
+        }
+    }
+
     return res;
 }
 
@@ -2754,6 +2766,26 @@ matroska_read_packet (AVFormatContext *s,
 }
 
 static int
+matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
+                    int flags)
+{
+    MatroskaDemuxContext *matroska = s->priv_data;
+    AVStream *st = s->streams[stream_index];
+    int index;
+
+    /* find index entry */
+    index = av_index_search_timestamp(st, timestamp, flags);
+    if (index < 0)
+        return 0;
+
+    /* do the seek */
+    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    matroska->num_packets = 0;
+    matroska->peek_id = 0;
+    return 0;
+}
+
+static int
 matroska_read_close (AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -2793,4 +2825,5 @@ AVInputFormat matroska_demuxer = {
     matroska_read_header,
     matroska_read_packet,
     matroska_read_close,
+    matroska_read_seek,
 };
