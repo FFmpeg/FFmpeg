@@ -2394,6 +2394,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 {
     int res = 0;
     int track;
+    AVStream *st;
     AVPacket *pkt;
     uint8_t *origdata = data;
     int16_t block_time;
@@ -2418,7 +2419,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
-    if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard >= AVDISCARD_ALL){
+    st = matroska->ctx->streams[matroska->tracks[track]->stream_index];
+    if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
         return res;
     }
