@@ -232,13 +232,12 @@ int ff_lzw_encode(LZWEncodeState * s, const uint8_t * inbuf, int insize)
     for (i = 0; i < insize; i++) {
         uint8_t c = *inbuf++;
         int code = findCode(s, c, code_prefix);
-        if (s->tab[code].hash_prefix != LZW_PREFIX_FREE) {
-            code_prefix = s->tab[code].code;
-        } else {
+        if (s->tab[code].hash_prefix == LZW_PREFIX_FREE) {
             writeCode(s, code_prefix);
             addCode(s, c, code_prefix, code);
-            code_prefix = s->tab[hash(0, c)].code;
+            code= hash(0, c);
         }
+        code_prefix = s->tab[code].code;
         if (s->tabsize >= s->maxcode - 1) {
             clearTable(s);
         }
