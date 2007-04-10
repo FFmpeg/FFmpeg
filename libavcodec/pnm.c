@@ -26,6 +26,7 @@ typedef struct PNMContext {
     uint8_t *bytestream_start;
     uint8_t *bytestream_end;
     AVFrame picture;
+    int maxval;                 ///< maximum value of a pixel
 } PNMContext;
 
 static inline int pnm_space(int c)
@@ -142,8 +143,12 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         return -1;
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         pnm_get(s, buf1, sizeof(buf1));
-        if(atoi(buf1) == 65535 && avctx->pix_fmt == PIX_FMT_GRAY8)
+        s->maxval = atoi(buf1);
+        if(s->maxval >= 256 && avctx->pix_fmt == PIX_FMT_GRAY8) {
             avctx->pix_fmt = PIX_FMT_GRAY16BE;
+            if (s->maxval != 65535)
+                avctx->pix_fmt = PIX_FMT_GRAY16;
+        }
     }
     /* more check if YUV420 */
     if (avctx->pix_fmt == PIX_FMT_YUV420P) {
@@ -165,7 +170,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     PNMContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
-    int i, n, linesize, h;
+    int i, n, linesize, h, upgrade = 0;
     unsigned char *ptr;
 
     s->bytestream_start=
@@ -194,9 +199,14 @@ static int pnm_decode_frame(AVCodecContext *avctx,
         goto do_read;
     case PIX_FMT_GRAY8:
         n = avctx->width;
+        if (s->maxval < 255)
+            upgrade = 1;
         goto do_read;
     case PIX_FMT_GRAY16BE:
+    case PIX_FMT_GRAY16LE:
         n = avctx->width * 2;
+        if (s->maxval < 65535)
+            upgrade = 2;
         goto do_read;
     case PIX_FMT_MONOWHITE:
     case PIX_FMT_MONOBLACK:
@@ -207,7 +217,19 @@ static int pnm_decode_frame(AVCodecContext *avctx,
         if(s->bytestream + n*avctx->height > s->bytestream_end)
             return -1;
         for(i = 0; i < avctx->height; i++) {
+            if (!upgrade)
             memcpy(ptr, s->bytestream, n);
+            else if (upgrade == 1) {
+                unsigned int j, f = (255*128 + s->maxval/2) / s->maxval;
+                for (j=0; j<n; j++)
+                    ptr[j] = (s->bytestream[j] * f + 64) >> 7;
+            } else if (upgrade == 2) {
+                unsigned int j, v, f = (65535*32768 + s->maxval/2) / s->maxval;
+                for (j=0; j<n/2; j++) {
+                    v = be2me_16(((uint16_t *)s->bytestream)[j]);
+                    ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
+                }
+            }
             s->bytestream += n;
             ptr += linesize;
         }
