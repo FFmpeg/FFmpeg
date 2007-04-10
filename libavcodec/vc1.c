@@ -2318,6 +2318,7 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
         B = s->current_picture.motion_val[0][xy - wrap*2 + off];
 
+        if(!s->mb_x) C[0] = C[1] = 0;
         if(!s->first_slice_line) { // predictor A is not out of bounds
             if(s->mb_width == 1) {
                 px = A[0];
@@ -2395,6 +2396,7 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
         B = s->current_picture.motion_val[1][xy - wrap*2 + off];
 
+        if(!s->mb_x) C[0] = C[1] = 0;
         if(!s->first_slice_line) { // predictor A is not out of bounds
             if(s->mb_width == 1) {
                 px = A[0];
