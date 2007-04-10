@@ -2508,9 +2508,39 @@ static void rtsp_reply_header(HTTPContext *c, enum RTSPStatusCode error_number)
     char buf2[32];
 
     switch(error_number) {
-#define DEF(n, c, s) case c: str = s; break;
-#include "rtspcodes.h"
-#undef DEF
+    case RTSP_STATUS_OK:
+        str = "OK";
+        break;
+    case RTSP_STATUS_METHOD:
+        str = "Method Not Allowed";
+        break;
+    case RTSP_STATUS_BANDWIDTH:
+        str = "Not Enough Bandwidth";
+        break;
+    case RTSP_STATUS_SESSION:
+        str = "Session Not Found";
+        break;
+    case RTSP_STATUS_STATE:
+        str = "Method Not Valid in This State";
+        break;
+    case RTSP_STATUS_AGGREGATE:
+        str = "Aggregate operation not allowed";
+        break;
+    case RTSP_STATUS_ONLY_AGGREGATE:
+        str = "Only aggregate operation allowed";
+        break;
+    case RTSP_STATUS_TRANSPORT:
+        str = "Unsupported transport";
+        break;
+    case RTSP_STATUS_INTERNAL:
+        str = "Internal Server Error";
+        break;
+    case RTSP_STATUS_SERVICE:
+        str = "Service Unavailable";
+        break;
+    case RTSP_STATUS_VERSION:
+        str = "RTSP Version not supported";
+        break;
     default:
         str = "Unknown Error";
         break;
