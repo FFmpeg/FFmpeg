@@ -390,6 +390,7 @@ OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/gmc_altivec.o          \
                                           ppc/fdct_altivec.o         \
                                           ppc/float_altivec.o        \
+                                          ppc/int_altivec.o          \
 
 ifeq ($(TARGET_ALTIVEC),yes)
 OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o
