@@ -1359,8 +1359,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                     if(n&1) sampledat=  *src++    <<28;
                     else    sampledat= (*src&0xF0)<<24;
 
-                    *samples = ((prev[ch][0]*factor1
+                    sampledat = ((prev[ch][0]*factor1
                                 + prev[ch][1]*factor2) >> 11) + (sampledat>>exp);
+                    CLAMP_TO_SHORT(sampledat);
+                    *samples = sampledat;
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;
 
