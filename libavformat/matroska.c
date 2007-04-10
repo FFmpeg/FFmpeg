@@ -2566,7 +2566,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 pkt->pos = pos;
                 pkt->duration = duration;
 
-                    matroska_queue_packet(matroska, pkt);
+                matroska_queue_packet(matroska, pkt);
 
                 if (timecode != AV_NOPTS_VALUE)
                     timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
