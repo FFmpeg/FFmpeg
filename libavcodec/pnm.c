@@ -218,7 +218,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
             return -1;
         for(i = 0; i < avctx->height; i++) {
             if (!upgrade)
-            memcpy(ptr, s->bytestream, n);
+                memcpy(ptr, s->bytestream, n);
             else if (upgrade == 1) {
                 unsigned int j, f = (255*128 + s->maxval/2) / s->maxval;
                 for (j=0; j<n; j++)
