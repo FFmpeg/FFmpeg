@@ -594,7 +594,7 @@ static int http_server(void)
             ret = poll(poll_table, poll_entry - poll_table, delay);
             if (ret < 0 && errno != EAGAIN && errno != EINTR)
                 return -1;
-        } while (ret <= 0);
+        } while (ret < 0);
 
         cur_time = av_gettime() / 1000;
 
