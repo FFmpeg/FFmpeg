@@ -8059,7 +8059,8 @@ static int h264_parse(AVCodecParserContext *s,
             return buf_size;
         }
 
-        if(next<0){
+        if(next<0 && next != END_NOT_FOUND){
+            assert(pc->last_index + next >= 0 );
             find_frame_end(h, &pc->buffer[pc->last_index + next], -next); //update state
         }
     }
