@@ -182,6 +182,9 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = BLKSIZE * avctx->channels;
         avctx->block_align = BLKSIZE;
         break;
+    case CODEC_ID_ADPCM_SWF:
+        avctx->frame_size = 4*BLKSIZE * avctx->channels;
+        break;
     default:
         return -1;
         break;
@@ -513,6 +516,31 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                 samples += 8 * avctx->channels;
             }
         break;
+    case CODEC_ID_ADPCM_SWF:
+    {
+        int i;
+        PutBitContext pb;
+        init_put_bits(&pb, dst, buf_size*8);
+
+        //Store AdpcmCodeSize
+        put_bits(&pb, 2, 2);                //Set 4bits flash adpcm format
+
+        //Init the encoder state
+        for(i=0; i<avctx->channels; i++){
+            put_bits(&pb, 16, samples[i] & 0xFFFF);
+            put_bits(&pb, 6, c->status[i].step_index & 0x3F);
+            c->status[i].prev_sample = (signed short)samples[i];
+        }
+
+        for (i=0 ; i<4096 ; i++) {
+            put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
+            if (avctx->channels == 2)
+                put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
+        }
+
+        dst += (3 + 2048) * avctx->channels;
+        break;
+    }
     case CODEC_ID_ADPCM_MS:
         for(i=0; i<avctx->channels; i++){
             int predictor=0;
