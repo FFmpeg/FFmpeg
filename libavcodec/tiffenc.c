@@ -281,7 +281,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         return -1;
     }
     if (!is_yuv)
-    s->bpp_tab_size = (s->bpp >> 3);
+        s->bpp_tab_size = (s->bpp >> 3);
 
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE
