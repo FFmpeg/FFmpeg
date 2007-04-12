@@ -788,7 +788,8 @@ It allows almost lossless encoding.
 @chapter external libraries
 
 FFmpeg can be hooked up with a number of external libraries to add support
-for more formats.
+for more formats. None of them are used by default, their use has to be
+explicitly requested by passing the appropriate flags to @file{./configure}.
 
 @section AMR
 
