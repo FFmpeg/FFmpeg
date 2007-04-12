@@ -41,7 +41,7 @@
  *
  * \subsection Fixed-point
  * The fixed-point (TS26.073) can be downloaded from:
- * http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip.
+ * http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-600.zip
  * Extract the source into \c "ffmpeg/libavcodec/amr".
  * Enable it by passing \c "--enable-amr-nb-fixed" to \c "./configure".
  *
