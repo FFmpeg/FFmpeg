@@ -4,7 +4,7 @@
 #
 include ../config.mak
 
-CFLAGS+=-I$(SRC_PATH)/libswscale $(AMR_CFLAGS)
+CFLAGS+=-I$(SRC_PATH)/libswscale
 
 OBJS= bitstream.o \
       utils.o \
@@ -270,33 +270,11 @@ OBJS-$(CONFIG_X264)                    += x264.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 
 OBJS-$(CONFIG_AMR)                     += amr.o
-OBJS-$(CONFIG_AMR_NB)                  += amr_float/sp_dec.o     \
-                                          amr_float/sp_enc.o     \
-                                          amr_float/interf_dec.o \
-                                          amr_float/interf_enc.o
-
 ifeq ($(CONFIG_AMR_NB_FIXED),yes)
 EXTRAOBJS += amr/*.o
 EXTRADEPS=amrlibs
 endif
 
-OBJS-$(CONFIG_AMR_WB)                  += amrwb_float/dec_acelp.o \
-                                          amrwb_float/dec_dtx.o   \
-                                          amrwb_float/dec_gain.o  \
-                                          amrwb_float/dec_if.o    \
-                                          amrwb_float/dec_lpc.o   \
-                                          amrwb_float/dec_main.o  \
-                                          amrwb_float/dec_rom.o   \
-                                          amrwb_float/dec_util.o  \
-                                          amrwb_float/enc_acelp.o \
-                                          amrwb_float/enc_dtx.o   \
-                                          amrwb_float/enc_gain.o  \
-                                          amrwb_float/enc_if.o    \
-                                          amrwb_float/enc_lpc.o   \
-                                          amrwb_float/enc_main.o  \
-                                          amrwb_float/enc_rom.o   \
-                                          amrwb_float/enc_util.o  \
-                                          amrwb_float/if_rom.o
 
 OBJS-$(CONFIG_AAC_PARSER)              += parser.o
 OBJS-$(CONFIG_AC3_PARSER)              += parser.o ac3.o
@@ -433,10 +411,8 @@ clean::
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
-	   amr_float/*.o \
 	   apiexample $(TESTS)
 	-$(MAKE) -C amr clean
-	-$(MAKE) -C amrwb_float -f makefile.gcc clean
 
 apiexample: apiexample.o $(LIB)
 

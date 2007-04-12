@@ -102,7 +102,6 @@ show_help(){
   echo "  --enable-amr-nb          enable amr-nb floating point audio codec"
   echo "  --enable-amr-nb-fixed    enable amr-nb fixed-point codec"
   echo "  --enable-amr-wb          enable amr-wb floating point audio codec"
-  echo "  --enable-amr-if2         enable amr-wb IF2 audio codec"
   echo ""
   echo "Advanced options (experts only):"
   echo "  --source-path=PATH       path to source code [$source_path]"
@@ -640,7 +639,6 @@ CMDLINE_SELECT="
     $CONFIG_LIST
     $TARGET_LIST
     $THREADS_LIST
-    amr_if2
     debug
     extra_warnings
     shared
@@ -765,7 +763,6 @@ v4l2="yes"
 v4l="yes"
 
 # libraries
-amr_if2="no"
 amr_nb="no"
 amr_nb_fixed="no"
 amr_wb="no"
@@ -1587,11 +1584,13 @@ for thread in $THREADS_LIST; do
     fi
 done
 
-enabled_any amr_nb amr_nb_fixed amr_wb amr_if2 && enable amr
+enabled_any amr_nb amr_nb_fixed amr_wb && enable amr
 enabled_all amr_nb amr_nb_fixed &&
     die "Only one of amr_nb and amr_nb_fixed may be enabled."
 
 # these are off by default, so fail if requested and not available
+enabled amr_nb     && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
+enabled amr_wb     && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
 enabled libdts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
@@ -1868,7 +1867,6 @@ echo "zlib enabled              $zlib"
 echo "AMR-NB float support      $amr_nb"
 echo "AMR-NB fixed support      $amr_nb_fixed"
 echo "AMR-WB float support      $amr_wb"
-echo "AMR-WB IF2 support        $amr_if2"
 if disabled gpl; then
     echo "License: LGPL"
 else
@@ -2006,10 +2004,6 @@ echo "SRC_PATH=\"$source_path\"" >> config.mak
 echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
-if enabled amr_if2; then
-  echo "AMR_CFLAGS=-DIF2=1" >> config.mak
-fi
-
 # Apparently it's not possible to portably echo a backslash.
 if enabled asmalign_pot; then
   printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH
@@ -2054,8 +2048,6 @@ if enabled source_path_used; then
          libavcodec/mlib \
          libavcodec/ppc \
          libavcodec/amr \
-         libavcodec/amr_float \
-         libavcodec/amrwb_float \
          libpostproc \
          libavutil \
          libswscale \

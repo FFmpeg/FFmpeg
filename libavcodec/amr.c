@@ -82,8 +82,8 @@
 #include "amr/e_homing.h"
 
 #else
-#include "amr_float/interf_dec.h"
-#include "amr_float/interf_enc.h"
+#include <amrnb/interf_dec.h>
+#include <amrnb/interf_enc.h>
 #endif
 
 static const char *nb_bitrate_unsupported =
@@ -532,8 +532,9 @@ AVCodec amr_nb_encoder =
 #define typedef_h
 #endif
 
-#include "amrwb_float/enc_if.h"
-#include "amrwb_float/dec_if.h"
+#include <amrwb/enc_if.h>
+#include <amrwb/dec_if.h>
+#include <amrwb/if_rom.h>
 
 /* Common code for fixed and float version*/
 typedef struct AMRWB_bitrates
@@ -651,8 +652,6 @@ static int amr_wb_decode_init(AVCodecContext * avctx)
 
     return 0;
 }
-
-extern const UWord8 block_size[];
 
 static int amr_wb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
