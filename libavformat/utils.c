@@ -1641,6 +1641,20 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
     return ret;
 }
 
+static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
+{
+    AVInputFormat *fmt;
+    fmt = av_probe_input_format2(pd, 1, &score);
+
+    if (fmt) {
+        if (strncmp(fmt->name, "mp3", 3) == 0)
+            st->codec->codec_id = CODEC_ID_MP3;
+        else if (strncmp(fmt->name, "ac3", 3) == 0)
+            st->codec->codec_id = CODEC_ID_AC3;
+    }
+    return fmt;
+}
+
 /* absolute maximum size we read until we abort */
 #define MAX_READ_SIZE        5000000
 
@@ -1662,6 +1676,8 @@ int av_find_stream_info(AVFormatContext *ic)
     offset_t old_offset = url_ftell(&ic->pb);
     int64_t codec_info_duration[MAX_STREAMS]={0};
     int codec_info_nb_frames[MAX_STREAMS]={0};
+    AVProbeData probe_data[MAX_STREAMS];
+    int codec_identified[MAX_STREAMS]={0};
 
     duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
     if (!duration_error) return AVERROR_NOMEM;
@@ -1687,6 +1703,7 @@ int av_find_stream_info(AVFormatContext *ic)
         last_dts[i]= AV_NOPTS_VALUE;
     }
 
+    memset(probe_data, 0, sizeof(probe_data));
     count = 0;
     read_size = 0;
     ppktl = &ic->packet_buffer;
@@ -1701,6 +1718,9 @@ int av_find_stream_info(AVFormatContext *ic)
                && duration_count[i]<20 && st->codec->codec_type == CODEC_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
+                break;
+            if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
+                st->codec->codec_id == CODEC_ID_NONE)
                 break;
         }
         if (i == ic->nb_streams) {
@@ -1787,6 +1807,13 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             if(last == AV_NOPTS_VALUE || duration_count[index]<=1)
                 last_dts[pkt->stream_index]= pkt->dts;
+
+            if (st->codec->codec_id == CODEC_ID_NONE) {
+                AVProbeData *pd = &(probe_data[st->index]);
+                pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size);
+                memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
+                pd->buf_size += pkt->size;
+            }
         }
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
@@ -1866,12 +1893,28 @@ int av_find_stream_info(AVFormatContext *ic)
                 }
             }
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if (st->codec->codec_id == CODEC_ID_NONE) {
+                codec_identified[st->index] = set_codec_from_probe_data(st, &(probe_data[st->index]), 0);
+                if (codec_identified[st->index]) {
+                    st->need_parsing = 1;
+                }
+            }
             if(!st->codec->bits_per_sample)
                 st->codec->bits_per_sample= av_get_bits_per_sample(st->codec->codec_id);
         }
     }
 
     av_estimate_timings(ic, old_offset);
+
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (codec_identified[st->index]) {
+            av_read_frame_flush(ic);
+            av_seek_frame(ic, st->index, 0.0, 0);
+            url_fseek(&ic->pb, ic->data_offset, SEEK_SET);
+        }
+    }
+
 #if 0
     /* correct DTS for b frame streams with no timestamps */
     for(i=0;i<ic->nb_streams;i++) {
@@ -1898,6 +1941,9 @@ int av_find_stream_info(AVFormatContext *ic)
 #endif
 
     av_free(duration_error);
+    for(i=0;i<MAX_STREAMS;i++){
+        av_freep(&(probe_data[i].buf));
+    }
 
     return ret;
 }

@@ -195,7 +195,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             uint64_t total_size;
             unsigned int tag1;
             int64_t pos1, pos2;
-            int test_for_ext_stream_audio;
+            int test_for_ext_stream_audio, is_dvr_ms_audio=0;
 
             pos1 = url_ftell(pb);
 
@@ -241,6 +241,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_guid(pb, &g);
                 if (!memcmp(&g, &ext_stream_audio_stream, sizeof(GUID))) {
                     type = CODEC_TYPE_AUDIO;
+                    is_dvr_ms_audio=1;
                     get_guid(pb, &g);
                     get_le32(pb);
                     get_le32(pb);
@@ -253,6 +254,12 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_type = type;
             if (type == CODEC_TYPE_AUDIO) {
                 get_wav_header(pb, st->codec, type_specific_size);
+                if (is_dvr_ms_audio) {
+                    // codec_id and codec_tag are unreliable in dvr_ms
+                    // files. Set them later by probing stream.
+                    st->codec->codec_id = CODEC_ID_NONE;
+                    st->codec->codec_tag = 0;
+                }
                 st->need_parsing = 1;
                 /* We have to init the frame size at some point .... */
                 pos2 = url_ftell(pb);
