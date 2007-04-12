@@ -38,11 +38,15 @@
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-610.zip
  * Extract the source into \c "ffmpeg/libavcodec/amr_float".
  * Enable it by passing \c "--enable-amr-nb" to \c "./configure".
+ * If you try this on Alpha, you may need to change \c "Word32" to
+ * \c "int" in \c "amr/typedef.h".
  *
  * \subsection Fixed-point
  * The fixed-point (TS26.073) can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-600.zip
- * Extract the source into \c "ffmpeg/libavcodec/amr".
+ * Extract the source into \c "ffmpeg/libavcodec/amr" and add \c "-DMMS_IO" to
+ * \c "CFLAGS" in \c "libavcodec/amr/makefile", i.e.
+ * \c "CFLAGS = -Wall -pedantic-errors -I. $(CFLAGS_$(MODE)) -D$(VAD) -DMMS_IO".
  * Enable it by passing \c "--enable-amr-nb-fixed" to \c "./configure".
  *
  * \subsection Specification
