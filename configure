@@ -485,6 +485,32 @@ check_exec(){
     check_ld "$@" && { enabled cross_compile || $TMPE >>$logfile 2>&1; }
 }
 
+check_exec_crash(){
+    code=`cat`
+
+    # exit() is not async signal safe.  _Exit (C99) and _exit (POSIX)
+    # are safe but may not be available everywhere.  Thus we use
+    # raise(SIGTERM) instead.  The check is run in a subshell so we
+    # can redirect the "Terminated" message from the shell.  SIGBUS
+    # is not defined by standard C so it is used conditionally.
+
+    (check_exec "$@") >>$logfile 2>&1 <<EOF
+#include <signal.h>
+static void sighandler(int sig){
+    raise(SIGTERM);
+}
+int main(){
+    signal(SIGILL, sighandler);
+    signal(SIGFPE, sighandler);
+    signal(SIGSEGV, sighandler);
+#ifdef SIGBUS
+    signal(SIGBUS, sighandler);
+#endif
+    { $code }
+}
+EOF
+}
+
 require(){
     name="$1"
     header="$2"
@@ -1191,10 +1217,6 @@ ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
-# Disable core dumps so that intentional execution of broken apps doesn't
-# pollute the current directory.
-ulimit -c 0 >/dev/null 2>&1
-
 # we need to build at least one lib type
 if disabled_all static shared; then
     cat <<EOF
@@ -1397,26 +1419,16 @@ if test "$?" != 0; then
 fi
 
 if test $arch = "x86_32" -o $arch = "x86_64"; then
-    if test "$targetos" = mingw32 -o "$targetos" = cygwin; then
-        cat <<EOF
-WARNING: The following test might cause a testapp to crash (intentionally)
-resulting in the appearance of a dialog box. Please click "Don't send" and
-ignore it.
-EOF
-    fi
-
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
     # if the base pointer is used to access it because the
     # base pointer is cleared in the inline assembly code.
-    (check_exec) <<EOF >>$logfile 2>&1 && enable ebp_available
-int main(){
+    check_exec_crash <<EOF && enable ebp_available
     volatile int i=0;
     asm volatile (
         "xorl %%ebp, %%ebp"
     ::: "%ebp");
     return i;
-}
 EOF
 
     # check wether EBX is available on x86
