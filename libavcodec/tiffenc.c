@@ -332,8 +332,8 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
                 j += s->subsampling[1] - 1;
             }
             else
-            memcpy(zbuf + j * bytes_per_row,
-                   p->data[0] + j * p->linesize[0], bytes_per_row);
+                memcpy(zbuf + j * bytes_per_row,
+                       p->data[0] + j * p->linesize[0], bytes_per_row);
             zn += bytes_per_row;
         }
         n = encode_strip(s, zbuf, ptr, zn, s->compr);
