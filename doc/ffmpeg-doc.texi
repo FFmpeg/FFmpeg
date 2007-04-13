@@ -1615,6 +1615,9 @@ It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
+Also please if you send several patches, send each patch as seperate mail,
+dont attach several unrelated patches to the same mail.
+
 @section Patch review process
 
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
