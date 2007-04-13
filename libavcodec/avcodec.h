@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(40<<8)+2)
-#define LIBAVCODEC_VERSION      51.40.2
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(40<<8)+3)
+#define LIBAVCODEC_VERSION      51.40.3
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2940,6 +2940,9 @@ typedef struct AVCodecParserContext {
 
     int flags;
 #define PARSER_FLAG_COMPLETE_FRAMES           0x0001
+
+    int64_t offset;      ///< byte offset from starting packet start
+    int64_t last_offset;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {

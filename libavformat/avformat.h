@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(12<<8)+0)
-#define LIBAVFORMAT_VERSION     51.12.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(12<<8)+1)
+#define LIBAVFORMAT_VERSION     51.12.1
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -309,7 +309,8 @@ typedef struct AVStream {
     char language[4]; /** ISO 639 3-letter language code (empty string if undefined) */
 
     /* av_read_frame() support */
-    int need_parsing;                  ///< 1->full parsing needed, 2->only parse headers dont repack
+#define AVSTREAM_PARSE_TIMESTAMPS 3    /**< full parsing and interpolation of timestamps for frames not starting on packet boundary */
+    int need_parsing;                  ///< 1->full parsing needed, 2->only parse headers dont repack, 3->full parsing and interpolate timestamps
     struct AVCodecParserContext *parser;
 
     int64_t cur_dts;

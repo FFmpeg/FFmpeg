@@ -124,6 +124,7 @@ int av_parser_parse(AVCodecParserContext *s,
             s->fetch_timestamp=0;
             s->last_pts = pts;
             s->last_dts = dts;
+            s->last_offset = 0;
             s->cur_frame_pts[k] =
             s->cur_frame_dts[k] = AV_NOPTS_VALUE;
         }
@@ -138,6 +139,7 @@ int av_parser_parse(AVCodecParserContext *s,
         s->frame_offset = s->last_frame_offset;
         s->pts = s->last_pts;
         s->dts = s->last_dts;
+        s->offset = s->last_offset;
 
         /* offset of the next frame */
         s->last_frame_offset = s->cur_offset + index;
@@ -156,6 +158,7 @@ int av_parser_parse(AVCodecParserContext *s,
 
         s->last_pts = s->cur_frame_pts[k];
         s->last_dts = s->cur_frame_dts[k];
+        s->last_offset = s->last_frame_offset - s->cur_frame_offset[k];
 
         /* some parsers tell us the packet size even before seeing the first byte of the next packet,
            so the next pts/dts is in the next chunk */

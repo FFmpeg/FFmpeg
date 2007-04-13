@@ -584,6 +584,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
     int num, den, presentation_delayed, delay, i;
+    int64_t offset;
     /* handle wrapping */
     if(st->cur_dts != AV_NOPTS_VALUE){
         if(pkt->pts != AV_NOPTS_VALUE)
@@ -597,6 +598,16 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
         }
+    }
+
+    /* correct timestamps with byte offset if demuxers only have timestamps on packet boundaries */
+    if(pc && st->need_parsing == AVSTREAM_PARSE_TIMESTAMPS && pkt->size){
+        /* this will estimate bitrate based on this frame's duration and size */
+        offset = av_rescale(pc->offset, pkt->duration, pkt->size);
+        if(pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts += offset;
+        if(pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts += offset;
     }
 
     if(is_intra_only(st->codec))

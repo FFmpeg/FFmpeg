@@ -452,8 +452,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
                     /* Force parsing as several audio frames can be in
-                     * one packet. */
-                    st->need_parsing = 1;
+                     * one packet and timestamps refer to packet start*/
+                    st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
                     /* ADTS header is in extradata, AAC without header must be stored as exact frames, parser not needed and it will fail */
                     if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
                         st->need_parsing = 0;
