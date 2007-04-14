@@ -915,7 +915,9 @@ static void print_report(AVFormatContext **output_files,
 
     oc = output_files[0];
 
-    total_size = url_ftell(&oc->pb);
+    total_size = url_fsize(&oc->pb);
+    if(total_size<0) // FIXME improve url_fsize() so it works with non seekable output too
+        total_size= url_ftell(&oc->pb);
 
     buf[0] = '\0';
     ti1 = 1e10;
