@@ -1282,21 +1282,10 @@ if test $targetos = darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
-        gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
-        case "$gcc_version" in
-            *[34].*)
-                add_cflags "-no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
-                if disabled shared; then
-                   needmdynamicnopic="yes"
-                fi
-                ;;
-            *)
-                add_cflags "-no-cpp-precomp -pipe"
-                if disabled shared; then
-                   needmdynamicnopic="yes"
-                fi
-                ;;
-        esac
+        add_cflags "-no-cpp-precomp -pipe"
+        check_cflags "-force_cpusubtype_ALL"
+        check_cflags "-Wno-sign-compare"
+        disabled shared && needmdynamicnopic="yes"
     fi
 fi
 
