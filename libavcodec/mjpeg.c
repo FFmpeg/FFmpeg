@@ -1171,6 +1171,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
 
         s->width = width;
         s->height = height;
+        s->interlaced = 0;
 
         /* test interlaced mode */
         if (s->first_picture &&
@@ -2258,8 +2259,6 @@ read_header:
     skip_bits(&hgb, 32); /* padded field size */
     second_field_offs = get_bits_long(&hgb, 32);
     av_log(avctx, AV_LOG_DEBUG, "second field offs: 0x%x\n", second_field_offs);
-    if (second_field_offs)
-        s->interlaced = 1;
 
     dqt_offs = get_bits_long(&hgb, 32);
     av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%x\n", dqt_offs);
