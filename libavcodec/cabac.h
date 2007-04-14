@@ -532,7 +532,7 @@ static int av_always_inline get_cabac_inline(CABACContext *c, uint8_t * const st
     );
     bit&=1;
 #endif /* BRANCHLESS_CABAC_DECODER */
-#else /* defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__)) */
+#else /* defined(ARCH_X86) && defined(CONFIG_7REGS) && defined(CONFIG_EBX_AVAILABLE) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask attribute_unused;
@@ -571,7 +571,7 @@ static int av_always_inline get_cabac_inline(CABACContext *c, uint8_t * const st
     if(!(c->low & CABAC_MASK))
         refill2(c);
 #endif /* BRANCHLESS_CABAC_DECODER */
-#endif /* defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__)) */
+#endif /* defined(ARCH_X86) && defined(CONFIG_7REGS) && defined(CONFIG_EBX_AVAILABLE) */
     return bit;
 }
 
@@ -786,7 +786,7 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
     );
     return coeff_count;
 }
-#endif /* defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__)) */
+#endif /* defined(ARCH_X86) && && defined(CONFIG_7REGS) && defined(CONFIG_EBX_AVAILABLE) */
 
 /**
  *
