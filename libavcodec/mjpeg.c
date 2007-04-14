@@ -1125,6 +1125,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
 
+    //HACK for odd_height.mov
+    if(s->interlaced && s->width == width && s->height == height + 1)
+        height= s->height;
+
     av_log(s->avctx, AV_LOG_DEBUG, "sof0: picture: %dx%d\n", width, height);
     if(avcodec_check_dimensions(s->avctx, width, height))
         return -1;
