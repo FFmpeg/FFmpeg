@@ -1284,9 +1284,6 @@ if test $targetos = darwin; then
     else
         gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
         case "$gcc_version" in
-            *2.95*)
-                add_cflags "-no-cpp-precomp -pipe"
-                ;;
             *[34].*)
                 add_cflags "-no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
                 if disabled shared; then
