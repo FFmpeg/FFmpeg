@@ -402,6 +402,8 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     add_entry(s, TIFF_XRES,              TIFF_RATIONAL, 1,      res);
     add_entry(s, TIFF_YRES,              TIFF_RATIONAL, 1,      res);
     add_entry1(s,TIFF_RES_UNIT,          TIFF_SHORT,            2);
+
+    if(!(avctx->flags & CODEC_FLAG_BITEXACT))
     add_entry(s, TIFF_SOFTWARE_NAME,     TIFF_STRING,
               strlen(LIBAVCODEC_IDENT) + 1, LIBAVCODEC_IDENT);
 
