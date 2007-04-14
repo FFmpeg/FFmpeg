@@ -839,7 +839,6 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 typedef struct MJpegDecodeContext {
     AVCodecContext *avctx;
     GetBitContext gb;
-    int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
 
     int start_code; /* current start code */
     int buffer_size;
@@ -886,8 +885,7 @@ typedef struct MJpegDecodeContext {
     int8_t *qscale_table;
     DECLARE_ALIGNED_8(DCTELEM, block[64]);
     ScanTable scantable;
-    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    DSPContext dsp;
 
     int restart_interval;
     int restart_count;
@@ -930,23 +928,10 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
 static int mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
-    MpegEncContext s2;
-    memset(s, 0, sizeof(MJpegDecodeContext));
 
     s->avctx = avctx;
-
-    /* ugly way to get the idct & scantable FIXME */
-    memset(&s2, 0, sizeof(MpegEncContext));
-    s2.avctx= avctx;
-//    s2->out_format = FMT_MJPEG;
-    dsputil_init(&s2.dsp, avctx);
-    DCT_common_init(&s2);
-
-    s->scantable= s2.intra_scantable;
-    s->idct_put= s2.dsp.idct_put;
-    s->idct_add= s2.dsp.idct_add;
-
-    s->mpeg_enc_ctx_allocated = 0;
+    dsputil_init(&s->dsp, avctx);
+    ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
     s->buffer_size = 0;
     s->buffer = NULL;
     s->start_code = -1;
@@ -1615,9 +1600,9 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, i
                         ptr += s->linesize[c] >> 1;
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
                     if(!s->progressive)
-                        s->idct_put(ptr, s->linesize[c], s->block);
+                        s->dsp.idct_put(ptr, s->linesize[c], s->block);
                     else
-                        s->idct_add(ptr, s->linesize[c], s->block);
+                        s->dsp.idct_add(ptr, s->linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
                         y++;
