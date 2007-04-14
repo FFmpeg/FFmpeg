@@ -1791,7 +1791,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             s->buggy_avid = 1;
 //        if (s->first_picture)
 //            printf("mjpeg: workarounding buggy AVID\n");
-        s->interlace_polarity = get_bits(&s->gb, 8);
+        s->bottom_field = get_bits(&s->gb, 8) == 2;
 #if 0
         skip_bits(&s->gb, 8);
         skip_bits(&s->gb, 32);
