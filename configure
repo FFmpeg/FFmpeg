@@ -700,6 +700,7 @@ mp3lame_encoder_deps="libmp3lame"
 oggvorbis_decoder_deps="libvorbis"
 oggvorbis_encoder_deps="libvorbis"
 
+ac3_demuxer_deps="ac3_parser"
 audio_demuxer_deps_any="audio_oss audio_beos"
 audio_muxer_deps_any="audio_oss audio_beos"
 dc1394_demuxer_deps="dc1394"
