@@ -474,6 +474,7 @@ AVOutputFormat flac_muxer = {
 };
 #endif //CONFIG_MUXERS
 
+#ifdef CONFIG_AC3_DEMUXER
 AVInputFormat ac3_demuxer = {
     "ac3",
     "raw ac3",
@@ -485,6 +486,7 @@ AVInputFormat ac3_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
 };
+#endif
 
 #ifdef CONFIG_MUXERS
 AVOutputFormat ac3_muxer = {
