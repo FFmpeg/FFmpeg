@@ -77,18 +77,6 @@ typedef struct {
     /** @} */
 } AC3HeaderInfo;
 
-/**
- * Parses AC-3 frame header.
- * Parses the header up to the lfeon element, which is the first 52 or 54 bits
- * depending on the audio coding mode.
- * @param buf[in] Array containing the first 7 bytes of the frame.
- * @param hdr[out] Pointer to struct where header info is written.
- * @return Returns 0 on success, -1 if there is a sync word mismatch,
- * -2 if the bsid (version) element is invalid, -3 if the fscod (sample rate)
- * element is invalid, or -4 if the frmsizecod (bit rate) element is invalid.
- */
-int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr);
-
 extern const uint16_t ff_ac3_frame_sizes[38][3];
 extern const uint8_t ff_ac3_channels[8];
 extern const uint16_t ff_ac3_freqs[3];
