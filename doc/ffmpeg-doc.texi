@@ -801,7 +801,8 @@ fixed-point mode) reference decoders and encoders.
 
 @item For AMR WB floating-point and AMR NB floating point support, go to
 @url{http://www.penguin.cz/~utx/amr} and follow the instructions for building
-the libraries.
+the libraries. Pass @code{--enable-amr-nb} and/or @code{--enable-amr-wb} to
+configure to enable the libraries.
 
 @item For AMR NB fixed-point download TS26.073 REL-6 V6.0.0 from
 @url{http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-600.zip}
@@ -809,6 +810,7 @@ and extract the source to the directory @file{libavcodec/amr}.
 You must also add @code{-DMMS_IO} to @code{CFLAGS} in
 @file{libavcodec/amr/makefile}, i.e.
 ``@code{CFLAGS = -Wall -pedantic-errors -I. $(CFLAGS_$(MODE)) -D$(VAD) -DMMS_IO}''.
+Pass @code{--enable-amr-nb-fixed} to configure to enable it.
 
 @end itemize
 
