@@ -2036,7 +2036,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	c->chrSrcVSubSample+= c->vChrDrop;
 
 	// drop every 2. pixel for chroma calculation unless user wants full chroma
-	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
+	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)
+           && srcFormat!=PIX_FMT_RGB8      && srcFormat!=PIX_FMT_BGR8
+           && srcFormat!=PIX_FMT_RGB4      && srcFormat!=PIX_FMT_BGR4
+           && srcFormat!=PIX_FMT_RGB4_BYTE && srcFormat!=PIX_FMT_BGR4_BYTE)
 		c->chrSrcHSubSample=1;
 
 	if(param){

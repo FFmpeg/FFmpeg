@@ -2296,12 +2296,10 @@ static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, 
         assert(src1 == src2);
 	for(i=0; i<width; i++)
 	{
-		int d0= src1[2*i  ];
-		int d1= src1[2*i+1];
-                int p = (pal[d0]&0xFF00FF) + (pal[d1]&0xFF00FF);
+		int p= pal[src1[i]];
 
-		dstU[i]= (pal[d0]+pal[d1]-p)>>9;
-		dstV[i]= p>>17;
+		dstU[i]= p>>8;
+		dstV[i]= p>>16;
 	}
 }
 
