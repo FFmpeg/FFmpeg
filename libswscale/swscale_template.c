@@ -2285,11 +2285,8 @@ static inline void RENAME(palToY)(uint8_t *dst, uint8_t *src, int width, uint32_
 	for(i=0; i<width; i++)
 	{
 		int d= src[i];
-		int b= pal[d]     &0xFF;
-		int g=(pal[d]>>8 )&0xFF;
-		int r= pal[d]>>16;
 
-		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+		dst[i]= pal[d] & 0xFF;
 	}
 }
 
@@ -2302,12 +2299,9 @@ static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, 
 		int d0= src1[2*i  ];
 		int d1= src1[2*i+1];
                 int p = (pal[d0]&0xFF00FF) + (pal[d1]&0xFF00FF);
-                int g = (pal[d0]+pal[d1]-p)>>8;
-                int b= p&0x1FF;
-                int r= p>>16;
 
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
+		dstU[i]= (pal[d0]+pal[d1]-p)>>9;
+		dstV[i]= p>>17;
 	}
 }
 

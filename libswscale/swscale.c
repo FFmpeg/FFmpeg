@@ -2438,6 +2438,9 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
  */
 int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
+        int i;
+        uint8_t* src2[4]= {src[0], src[1], src[2]};
+        uint32_t pal[256];
 	if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
 	    av_log(c, AV_LOG_ERROR, "swScaler: slices start in the middle!\n");
 	    return 0;
@@ -2446,24 +2449,38 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 	    if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
 	}
 
+        if(c->srcFormat == PIX_FMT_PAL8){
+                for(i=0; i<256; i++){
+                        int p= ((uint32_t*)(src[1]))[i];
+                        int r= (p>>16)&0xFF;
+                        int g= (p>> 8)&0xFF;
+                        int b=  p     &0xFF;
+                        int y= av_clip_uint8(((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16 );
+                        int u= av_clip_uint8(((RU*r + GU*g + BU*b)>>RGB2YUV_SHIFT) + 128);
+                        int v= av_clip_uint8(((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128);
+                        pal[i]= y + (u<<8) + (v<<16);
+                }
+                src2[1]= pal;
+        }
+
 	// copy strides, so they can safely be modified
 	if (c->sliceDir == 1) {
-            uint8_t* src2[4]= {src[0], src[1], src[2]};
 	    // slices go from top to bottom
 	    int srcStride2[4]= {srcStride[0], srcStride[1], srcStride[2]};
 	    int dstStride2[4]= {dstStride[0], dstStride[1], dstStride[2]};
 	    return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
 	} else {
 	    // slices go from bottom to top => we flip the image internally
-	    uint8_t* src2[4]= {src[0] + (srcSliceH-1)*srcStride[0],
-			       src[1] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1],
-			       src[2] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2]
-	    };
 	    uint8_t* dst2[4]= {dst[0] + (c->dstH-1)*dstStride[0],
 			       dst[1] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[1],
 			       dst[2] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[2]};
 	    int srcStride2[4]= {-srcStride[0], -srcStride[1], -srcStride[2]};
 	    int dstStride2[4]= {-dstStride[0], -dstStride[1], -dstStride[2]};
+
+            src2[0] += (srcSliceH-1)*srcStride[0];
+            if(c->srcFormat != PIX_FMT_PAL8)
+                    src2[1] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1];
+            src2[2] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2];
 	    
 	    return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH, srcSliceH, dst2, dstStride2);
 	}
