@@ -47,7 +47,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
         case FLV_CODECID_PCM_LE:
             acodec->codec_id = acodec->bits_per_sample == 8 ? CODEC_ID_PCM_S8 : CODEC_ID_PCM_S16LE; break;
         case FLV_CODECID_ADPCM: acodec->codec_id = CODEC_ID_ADPCM_SWF;                              break;
-        case FLV_CODECID_MP3  : acodec->codec_id = CODEC_ID_MP3      ; astream->need_parsing = 1  ; break;
+        case FLV_CODECID_MP3  : acodec->codec_id = CODEC_ID_MP3      ; astream->need_parsing = AVSTREAM_PARSE_FULL; break;
         case FLV_CODECID_NELLYMOSER_8HZ_MONO:
             acodec->sample_rate = 8000; //in case metadata does not otherwise declare samplerate
         case FLV_CODECID_NELLYMOSER:

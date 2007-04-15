@@ -812,7 +812,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
             st->codec->bits_per_sample = descriptor->bits_per_sample; /* Uncompressed */
-            st->need_parsing = 2; /* only parse headers */
+            st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
@@ -834,12 +834,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 if (descriptor->essence_container_ul[13] == 0x01) /* D-10 Mapping */
                     st->codec->channels = 8; /* force channels to 8 */
             } else if (st->codec->codec_id == CODEC_ID_MP2) {
-                st->need_parsing = 1;
+                st->need_parsing = AVSTREAM_PARSE_FULL;
             }
         }
         if (container_ul && container_ul->wrapping == Clip) {
             dprintf(mxf->fc, "stream %d: clip wrapped essence\n", st->index);
-            st->need_parsing = 1;
+            st->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
     return 0;

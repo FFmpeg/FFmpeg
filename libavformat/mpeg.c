@@ -1690,7 +1690,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     st->codec->codec_type = type;
     st->codec->codec_id = codec_id;
     if (codec_id != CODEC_ID_PCM_S16BE)
-        st->need_parsing = 1;
+        st->need_parsing = AVSTREAM_PARSE_FULL;
  found:
     if(st->discard >= AVDISCARD_ALL)
         goto skip;

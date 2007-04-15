@@ -260,7 +260,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_id = CODEC_ID_NONE;
                     st->codec->codec_tag = 0;
                 }
-                st->need_parsing = 1;
+                st->need_parsing = AVSTREAM_PARSE_FULL;
                 /* We have to init the frame size at some point .... */
                 pos2 = url_ftell(pb);
                 if (gsize >= (pos2 + 8 - pos1 + 24)) {
@@ -337,7 +337,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->codec_tag = tag1;
                 st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
                 if(tag1 == MKTAG('D', 'V', 'R', ' '))
-                    st->need_parsing = 1;
+                    st->need_parsing = AVSTREAM_PARSE_FULL;
             }
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));

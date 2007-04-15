@@ -253,6 +253,13 @@ typedef struct AVInputFormat {
     struct AVInputFormat *next;
 } AVInputFormat;
 
+enum AVStreamParseType {
+    AVSTREAM_PARSE_NONE,
+    AVSTREAM_PARSE_FULL,       /**< full parsing and repack */
+    AVSTREAM_PARSE_HEADERS,    /**< only parse headers, don't repack */
+    AVSTREAM_PARSE_TIMESTAMPS, /**< full parsing and interpolation of timestamps for frames not starting on packet boundary */
+};
+
 typedef struct AVIndexEntry {
     int64_t pos;
     int64_t timestamp;
@@ -309,8 +316,7 @@ typedef struct AVStream {
     char language[4]; /** ISO 639 3-letter language code (empty string if undefined) */
 
     /* av_read_frame() support */
-#define AVSTREAM_PARSE_TIMESTAMPS 3    /**< full parsing and interpolation of timestamps for frames not starting on packet boundary */
-    int need_parsing;                  ///< 1->full parsing needed, 2->only parse headers dont repack, 3->full parsing and interpolate timestamps
+    enum AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
 
     int64_t cur_dts;

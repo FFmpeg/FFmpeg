@@ -292,7 +292,7 @@ static int mp3_read_header(AVFormatContext *s,
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_MP3;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
 
     /* try to get the TAG */
     if (!url_is_streamed(&s->pb)) {

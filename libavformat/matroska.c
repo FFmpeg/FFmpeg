@@ -2354,7 +2354,7 @@ matroska_read_header (AVFormatContext    *s,
                           st->codec->height * videotrack->display_width,
                           st->codec-> width * videotrack->display_height,
                           255);
-                st->need_parsing = 2;
+                st->need_parsing = AVSTREAM_PARSE_HEADERS;
             } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
 

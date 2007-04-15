@@ -442,7 +442,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_type = CODEC_TYPE_VIDEO;
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
-                    st->need_parsing = 2; //only parse headers dont do slower repacketization, this is needed to get the pict type which is needed for generating correct pts
+                    st->need_parsing = AVSTREAM_PARSE_HEADERS; // this is needed to get the pict type which is needed for generating correct pts
 //                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
@@ -456,7 +456,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
                     /* ADTS header is in extradata, AAC without header must be stored as exact frames, parser not needed and it will fail */
                     if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
-                        st->need_parsing = 0;
+                        st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (st->codec->stream_codec_tag == ff_get_fourcc("Axan")){

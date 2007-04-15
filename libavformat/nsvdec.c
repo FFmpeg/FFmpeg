@@ -474,7 +474,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_tag = atag;
             st->codec->codec_id = codec_get_id(nsv_codec_audio_tags, atag);
 
-            st->need_parsing = 1; /* for PCM we will read a chunk later and put correct info */
+            st->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
 
             /* set timebase to common denominator of ms and framerate */
             av_set_pts_info(st, 64, 1, framerate.num*1000);
@@ -626,7 +626,7 @@ null_chunk_retry:
             asize-=4;
             PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
             if (fill_header) {
-                st[NSV_ST_AUDIO]->need_parsing = 0; /* we know everything */
+                st[NSV_ST_AUDIO]->need_parsing = AVSTREAM_PARSE_NONE; /* we know everything */
                 if (bps != 16) {
                     PRINT(("NSV AUDIO bit/sample != 16 (%d)!!!\n", bps));
                 }

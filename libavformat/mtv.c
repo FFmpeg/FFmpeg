@@ -117,7 +117,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type      = CODEC_TYPE_AUDIO;
     st->codec->codec_id        = CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;
-    st->need_parsing=1;
+    st->need_parsing           = AVSTREAM_PARSE_FULL;
 
     /* Jump over header */
 

@@ -681,7 +681,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
             ast->codec->codec_id = codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
-            ast->need_parsing = 1;
+            ast->need_parsing = AVSTREAM_PARSE_FULL;
             sample_rate_code= (v>>2) & 3;
             if (!sample_rate_code)
                 return AVERROR_IO;

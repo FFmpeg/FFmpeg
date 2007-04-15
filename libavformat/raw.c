@@ -218,7 +218,7 @@ static int ac3_read_header(AVFormatContext *s,
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_AC3;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -233,7 +233,7 @@ static int shorten_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_SHORTEN;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -249,7 +249,7 @@ static int flac_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_FLAC;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -266,7 +266,7 @@ static int dts_read_header(AVFormatContext *s,
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_DTS;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -283,7 +283,7 @@ static int aac_read_header(AVFormatContext *s,
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_AAC;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -300,7 +300,7 @@ static int video_read_header(AVFormatContext *s,
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->value;
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
 
     /* for mjpeg, specify frame rate */
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/

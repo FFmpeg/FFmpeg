@@ -179,7 +179,7 @@ static int wav_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
 
     get_wav_header(pb, st->codec, size);
-    st->need_parsing = 1;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 

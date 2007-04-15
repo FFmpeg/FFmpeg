@@ -469,7 +469,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
         case CODEC_ID_MP3:
         case CODEC_ID_MPEG4:
         case CODEC_ID_H264:
-            st->need_parsing = 1;
+            st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
         default:
             break;

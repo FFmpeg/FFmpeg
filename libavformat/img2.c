@@ -190,7 +190,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->is_pipe = 0;
     else{
         s->is_pipe = 1;
-        st->need_parsing= 1;
+        st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
     if (!ap->time_base.num) {

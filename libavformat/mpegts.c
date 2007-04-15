@@ -961,7 +961,7 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
         st->priv_data = pes;
         st->codec->codec_type = codec_type;
         st->codec->codec_id = codec_id;
-        st->need_parsing = 1;
+        st->need_parsing = AVSTREAM_PARSE_FULL;
         pes->st = st;
     }
     return st;
