@@ -1364,49 +1364,66 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 
 static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
+    uint8_t *d = dst, *s = (uint8_t *) src;
+    const uint8_t *end = s + src_size;
 #ifdef HAVE_MMX
-/* TODO: unroll this loop */
-	asm volatile (
-		"xor %%"REG_a", %%"REG_a"	\n\t"
-		ASMALIGN(4)
-		"1:				\n\t"
-		PREFETCH" 32(%0, %%"REG_a")	\n\t"
-		"movq (%0, %%"REG_a"), %%mm0	\n\t"
-		"movq %%mm0, %%mm1		\n\t"
-		"movq %%mm0, %%mm2		\n\t"
-		"pslld $16, %%mm0		\n\t"
-		"psrld $16, %%mm1		\n\t"
-		"pand "MANGLE(mask32r)", %%mm0	\n\t"
-		"pand "MANGLE(mask32g)", %%mm2	\n\t"
-		"pand "MANGLE(mask32b)", %%mm1	\n\t"
-		"por %%mm0, %%mm2		\n\t"
-		"por %%mm1, %%mm2		\n\t"
-		MOVNTQ" %%mm2, (%1, %%"REG_a")	\n\t"
-		"add $8, %%"REG_a"		\n\t"
-		"cmp %2, %%"REG_a"		\n\t"
-		" jb 1b				\n\t"
-		:: "r" (src), "r"(dst), "r" (src_size-7)
-		: "%"REG_a
-	);
-
-	__asm __volatile(SFENCE:::"memory");
-	__asm __volatile(EMMS:::"memory");
-#else
-	unsigned i;
-	unsigned num_pixels = src_size >> 2;
-	for(i=0; i<num_pixels; i++)
-	{
-#ifdef WORDS_BIGENDIAN  
-	  dst[4*i + 1] = src[4*i + 3];
-	  dst[4*i + 2] = src[4*i + 2];
-	  dst[4*i + 3] = src[4*i + 1];
-#else
-	  dst[4*i + 0] = src[4*i + 2];
-	  dst[4*i + 1] = src[4*i + 1];
-	  dst[4*i + 2] = src[4*i + 0];
+	__asm __volatile(
+		"	"PREFETCH" (%1)			\n"
+		"	movq %3, %%mm7			\n"
+		"	pxor %4, %%mm7			\n"
+		"	movq %%mm7, %%mm6		\n"
+		"	pxor %5, %%mm7			\n"
+		"	jmp 2f				\n"
+			ASMALIGN(4)
+		"1:					\n"
+		"	"PREFETCH" 32(%1)		\n"
+		"	movq (%1), %%mm0		\n"
+		"	movq 8(%1), %%mm1		\n"
+# ifdef HAVE_MMX2
+		"	pshufw $177, %%mm0, %%mm3	\n"
+		"	pshufw $177, %%mm1, %%mm5	\n"
+		"	pand %%mm7, %%mm0		\n"
+		"	pand %%mm6, %%mm3		\n"
+		"	pand %%mm7, %%mm1		\n"
+		"	pand %%mm6, %%mm5		\n"
+		"	por %%mm3, %%mm0		\n"
+		"	por %%mm5, %%mm1		\n"
+# else
+		"	movq %%mm0, %%mm2		\n"
+		"	movq %%mm1, %%mm4		\n"
+		"	pand %%mm7, %%mm0		\n"
+		"	pand %%mm6, %%mm2		\n"
+		"	pand %%mm7, %%mm1		\n"
+		"	pand %%mm6, %%mm4		\n"
+		"	movq %%mm2, %%mm3		\n"
+		"	movq %%mm4, %%mm5		\n"
+		"	pslld $16, %%mm2		\n"
+		"	psrld $16, %%mm3		\n"
+		"	pslld $16, %%mm4		\n"
+		"	psrld $16, %%mm5		\n"
+		"	por %%mm2, %%mm0		\n"
+		"	por %%mm4, %%mm1		\n"
+		"	por %%mm3, %%mm0		\n"
+		"	por %%mm5, %%mm1		\n"
+# endif
+		"	"MOVNTQ" %%mm0, (%0)		\n"
+		"	"MOVNTQ" %%mm1, 8(%0)		\n"
+		"	add $16, %0			\n"
+		"	add $16, %1			\n"
+		"2:					\n"
+		"	cmp %1, %2			\n"
+		"	ja 1b				\n"
+		"	"SFENCE"			\n"
+		"	"EMMS"				\n"
+		: "+r"(d), "+r"(s)
+		: "r" (end-15), "m" (mask32b), "m" (mask32r), "m" (mmx_one)
+		: "memory");
 #endif
+	for (; s<end; s+=4, d+=4) {
+		int v = *(uint32_t *)s, g = v & 0xff00;
+		v &= 0xff00ff;
+		*(uint32_t *)d = (v>>16) + g + (v<<16);
 	}
-#endif
 }
 
 static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
