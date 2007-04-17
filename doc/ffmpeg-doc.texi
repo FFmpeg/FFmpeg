@@ -1623,6 +1623,53 @@ and has no lrint()')
 Also please if you send several patches, send each patch as seperate mail,
 dont attach several unrelated patches to the same mail.
 
+@section patch submission checklist
+
+@enumerate
+@item
+    Do the regression tests pass with the patch applied?
+@item
+    Is the patch a unified diff?
+@item
+    Is the patch against latest ffmpeg SVN?
+@item
+    Are you subscribed to ffmpeg-dev?
+    (the list is subscribers only due to spam)
+@item
+    Have you checked that the changes are minimal, so that the same cannot be
+    achived with a smaller patch and/or simpler final code?
+@item
+    If the change is to speed critical code did you benchmark it?
+@item
+    Have you checked that the patch does not intruduce buffer overflows or
+    other security issues?
+@item
+    Is the patch made from the root of the source, so it can be applied with -p0?
+@item
+    Does the patch not mix functional and cosmetic changes?
+@item
+    Is the patch attached to the email you send?
+@item
+    Is the mime type of the patch correct? (not application/octet-stream)
+@item
+    If the patch fixes a bug did you provide a verbose analysis of the bug?
+@item
+    If the patch fixes a bug did you provide enough information including
+    a sample, so the bug can be reproduced and the fix can be verified?
+@item
+    Did you provide a verbose summary about what the patch does change?
+@item
+    Did you provide a verbose explanation why it changes things like it does?
+@item
+    Did you provide a verbose summary of the user vissible advantages and
+    disadvantages if the patch is applied?
+@item
+    Did you provide an example so we can verify the new feature added by the
+    patch easily?
+@item
+    If you did any benchmarks, did you provide them in the mail?
+@end enumerate
+
 @section Patch review process
 
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
