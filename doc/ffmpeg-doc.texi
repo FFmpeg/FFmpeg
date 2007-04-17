@@ -1509,7 +1509,7 @@ please use av_log() instead.
    understanding them on the commit log mailing list easier. This also helps
    in case of debugging later on.
    Also if you have doubts about splitting or not splitting, do not hesitate to
-   ask/disscuss it on the developer mailing list.
+   ask/discuss it on the developer mailing list.
 @item
    Do not change behavior of the program (renaming options etc) without
    first discussing it on the ffmpeg-devel mailing list. Do not remove
@@ -1620,8 +1620,8 @@ It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
-Also please if you send several patches, send each patch as seperate mail,
-dont attach several unrelated patches to the same mail.
+Also please if you send several patches, send each patch as separate mail,
+do not attach several unrelated patches to the same mail.
 
 @section patch submission checklist
 
@@ -1637,11 +1637,11 @@ dont attach several unrelated patches to the same mail.
     (the list is subscribers only due to spam)
 @item
     Have you checked that the changes are minimal, so that the same cannot be
-    achived with a smaller patch and/or simpler final code?
+    achieved with a smaller patch and/or simpler final code?
 @item
     If the change is to speed critical code did you benchmark it?
 @item
-    Have you checked that the patch does not intruduce buffer overflows or
+    Have you checked that the patch does not introduce buffer overflows or
     other security issues?
 @item
     Is the patch made from the root of the source, so it can be applied with -p0?
@@ -1654,14 +1654,14 @@ dont attach several unrelated patches to the same mail.
 @item
     If the patch fixes a bug did you provide a verbose analysis of the bug?
 @item
-    If the patch fixes a bug did you provide enough information including
+    If the patch fixes a bug did you provide enough information, including
     a sample, so the bug can be reproduced and the fix can be verified?
 @item
     Did you provide a verbose summary about what the patch does change?
 @item
     Did you provide a verbose explanation why it changes things like it does?
 @item
-    Did you provide a verbose summary of the user vissible advantages and
+    Did you provide a verbose summary of the user visible advantages and
     disadvantages if the patch is applied?
 @item
     Did you provide an example so we can verify the new feature added by the
@@ -1676,7 +1676,7 @@ All patches posted to ffmpeg-devel will be reviewed, unless they contain a
 clear note that the patch is not for SVN.
 Reviews and comments will be posted as replies to the patch on the
 mailing list. The patch submitter then has to take care of every comment,
-that can be by resubmitting a changed patch or by disscussion. Resubmitted
+that can be by resubmitting a changed patch or by discussion. Resubmitted
 patches will themselves be reviewed like any other patch. If at some point
 a patch passes review with no comments then it is approved, that can for
 simple and small patches happen immediately while large patches will generally
