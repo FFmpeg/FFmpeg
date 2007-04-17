@@ -1364,21 +1364,22 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 
 static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
-    uint8_t *d = dst, *s = (uint8_t *) src;
-    const uint8_t *end = s + src_size;
+	long idx = 15 - src_size;
+	uint8_t *s = (uint8_t *) src-idx, *d = dst-idx;
 #ifdef HAVE_MMX
 	__asm __volatile(
-		"	"PREFETCH" (%1)			\n"
+		"	test %0, %0			\n"
+		"	jns 2f				\n"
+		"	"PREFETCH" (%1, %0)		\n"
 		"	movq %3, %%mm7			\n"
 		"	pxor %4, %%mm7			\n"
 		"	movq %%mm7, %%mm6		\n"
 		"	pxor %5, %%mm7			\n"
-		"	jmp 2f				\n"
 			ASMALIGN(4)
 		"1:					\n"
-		"	"PREFETCH" 32(%1)		\n"
-		"	movq (%1), %%mm0		\n"
-		"	movq 8(%1), %%mm1		\n"
+		"	"PREFETCH" 32(%1, %0)		\n"
+		"	movq (%1, %0), %%mm0		\n"
+		"	movq 8(%1, %0), %%mm1		\n"
 # ifdef HAVE_MMX2
 		"	pshufw $177, %%mm0, %%mm3	\n"
 		"	pshufw $177, %%mm1, %%mm5	\n"
@@ -1406,23 +1407,21 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long s
 		"	por %%mm3, %%mm0		\n"
 		"	por %%mm5, %%mm1		\n"
 # endif
-		"	"MOVNTQ" %%mm0, (%0)		\n"
-		"	"MOVNTQ" %%mm1, 8(%0)		\n"
+		"	"MOVNTQ" %%mm0, (%2, %0)	\n"
+		"	"MOVNTQ" %%mm1, 8(%2, %0)	\n"
 		"	add $16, %0			\n"
-		"	add $16, %1			\n"
-		"2:					\n"
-		"	cmp %1, %2			\n"
-		"	ja 1b				\n"
+		"	js 1b				\n"
 		"	"SFENCE"			\n"
 		"	"EMMS"				\n"
-		: "+r"(d), "+r"(s)
-		: "r" (end-15), "m" (mask32b), "m" (mask32r), "m" (mmx_one)
+		"2:					\n"
+		: "+&r"(idx)
+		: "r" (s), "r" (d), "m" (mask32b), "m" (mask32r), "m" (mmx_one)
 		: "memory");
 #endif
-	for (; s<end; s+=4, d+=4) {
-		int v = *(uint32_t *)s, g = v & 0xff00;
+	for (; idx<15; idx+=4) {
+		register int v = *(uint32_t *)&s[idx], g = v & 0xff00;
 		v &= 0xff00ff;
-		*(uint32_t *)d = (v>>16) + g + (v<<16);
+		*(uint32_t *)&d[idx] = (v>>16) + g + (v<<16);
 	}
 }
 
