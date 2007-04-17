@@ -1548,6 +1548,9 @@ please use av_log() instead.
    answer to ffmpeg-devel (or wherever you got the patch from) saying that
    you applied the patch.
 @item
+   When applying patches that have been discussed (at length) on the mailing
+   list, reference the thread in the log message.
+@item
     Do NOT commit to code actively maintained by others without permission.
     Send a patch to ffmpeg-devel instead. If noone answers within a reasonable
     timeframe (12h for build failures and security fixes, 3 days small changes,
