@@ -565,7 +565,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             }
 
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
-        } else if (!strcmp(buf, "cook")) {
+        } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc"))) {
             int codecdata_length, i;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
@@ -576,7 +576,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                 return -1;
             }
 
-            st->codec->codec_id = CODEC_ID_COOK;
+            if (!strcmp(buf, "cook")) st->codec->codec_id = CODEC_ID_COOK;
+            else st->codec->codec_id = CODEC_ID_ATRAC3;
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             for(i = 0; i < codecdata_length; i++)
@@ -957,7 +958,8 @@ resync:
 
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if ((st->codec->codec_id == CODEC_ID_RA_288) ||
-                (st->codec->codec_id == CODEC_ID_COOK)) {
+                (st->codec->codec_id == CODEC_ID_COOK) ||
+                (st->codec->codec_id == CODEC_ID_ATRAC3)) {
                 int x;
                 int sps = rm->sub_packet_size;
                 int cfs = rm->coded_framesize;
@@ -975,6 +977,7 @@ resync:
                         for (x = 0; x < h/2; x++)
                             get_buffer(pb, rm->audiobuf+x*2*w+y*cfs, cfs);
                         break;
+                    case CODEC_ID_ATRAC3:
                     case CODEC_ID_COOK:
                         for (x = 0; x < w/sps; x++)
                             get_buffer(pb, rm->audiobuf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);

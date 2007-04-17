@@ -80,6 +80,7 @@ version <next>
 - Interplay C93 demuxer and video decoder
 - Bethsoft VID demuxer and video decoder
 - CRYO APC demuxer
+- Atrac3 decoder
 
 version 0.4.9-pre1:
 

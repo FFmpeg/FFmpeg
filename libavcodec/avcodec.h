@@ -253,6 +253,7 @@ enum CodecID {
     CODEC_ID_MUSEPACK7,
     CODEC_ID_MLP,
     CODEC_ID_GSM_MS, /* as found in WAV */
+    CODEC_ID_ATRAC3,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -2252,6 +2253,7 @@ extern AVCodec amr_nb_decoder;
 extern AVCodec amr_wb_decoder;
 extern AVCodec asv1_decoder;
 extern AVCodec asv2_decoder;
+extern AVCodec atrac3_decoder;
 extern AVCodec avs_decoder;
 extern AVCodec bethsoftvid_decoder;
 extern AVCodec bmp_decoder;

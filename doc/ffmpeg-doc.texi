@@ -1098,6 +1098,7 @@ following image formats are supported:
 @item Musepack               @tab      @tab X
 @tab Only SV7 is supported
 @item DT$ Coherent Audio     @tab      @tab X
+@item ATRAC 3                @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

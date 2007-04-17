@@ -204,6 +204,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_FLAC, 0xF1AC },
     { CODEC_ID_IMC, 0x401 },
     { CODEC_ID_GSM_MS, 0x31 },
+    { CODEC_ID_ATRAC3, 0x270 },
 
     /* FIXME: All of the IDs below are not 16 bit and thus illegal. */
     // for NuppelVideo (nuv.c)
