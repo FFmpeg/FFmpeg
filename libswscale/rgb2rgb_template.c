@@ -1423,7 +1423,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long s
 		: "memory");
 #endif
 	for (; idx<15; idx+=4) {
-		register int v = *(uint32_t *)&s[idx], g = v & 0xff00;
+		register int v = *(uint32_t *)&s[idx], g = v & 0xff00ff00;
 		v &= 0xff00ff;
 		*(uint32_t *)&d[idx] = (v>>16) + g + (v<<16);
 	}
