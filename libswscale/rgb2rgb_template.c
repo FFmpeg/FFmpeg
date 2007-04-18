@@ -1435,6 +1435,8 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
 #ifdef HAVE_MMX
 	long mmx_size= 23 - src_size;
 	asm volatile (
+		"test %%"REG_a", %%"REG_a"	\n\t"
+		"jns 2f				\n\t"
 		"movq "MANGLE(mask24r)", %%mm5	\n\t"
 		"movq "MANGLE(mask24g)", %%mm6	\n\t"
 		"movq "MANGLE(mask24b)", %%mm7	\n\t"
@@ -1471,6 +1473,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
 		MOVNTQ" %%mm1, 16(%2, %%"REG_a")\n\t"
 		"add $24, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
+		"2:				\n\t"
 		: "+a" (mmx_size)
 		: "r" (src-mmx_size), "r"(dst-mmx_size)
 	);
