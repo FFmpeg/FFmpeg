@@ -26,10 +26,10 @@
  * (AMR-WB) audio encoder/decoder through external reference code from
  * http://www.3gpp.org/. The license of the code from 3gpp is unclear so you
  * have to download the code separately. Two versions exists: One fixed-point
- * and one with floats. For some reason the float-encoder is significant faster
- * at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
- * Both float and fixed point are supported for AMR-NB, but only float for
- * AMR-WB.
+ * and one floating-point. For some reason the float encoder is significantly
+ * faster at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip
+ * at MR102). Both float and fixed point are supported for AMR-NB, but only
+ * float for AMR-WB.
  *
  * \section AMR-NB
  *
