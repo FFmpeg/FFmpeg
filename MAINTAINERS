@@ -109,6 +109,7 @@ Codecs:
   aasc.c                                Kostya Shishkov
   ac3*                                  Justin Ruggles
   asv*                                  Michael Niedermayer
+  atrac3*                               Benjamin Larsson
   bmp.c                                 Mans Rullgard
   cavs*                                 Stefan Gehrer
   cinepak.c                             Roberto Togni
