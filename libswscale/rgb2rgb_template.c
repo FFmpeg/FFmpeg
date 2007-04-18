@@ -356,6 +356,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 		"movq %3, %%mm5			\n\t"
 		"movq %4, %%mm6			\n\t"
 		"movq %5, %%mm7			\n\t"
+		"jmp 2f				\n\t"
 		ASMALIGN(4)
 		"1:				\n\t"
 		PREFETCH" 32(%1)		\n\t"
@@ -379,6 +380,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 		MOVNTQ"	%%mm0, (%0)		\n\t"
 		"add $16, %1			\n\t"
 		"add $8, %0			\n\t"
+		"2:				\n\t"
 		"cmp %2, %1			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (d), "+r"(s)
