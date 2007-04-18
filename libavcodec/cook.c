@@ -556,15 +556,11 @@ static int unpack_SQVH(COOKContext *q, int category, int* subband_coef_index,
                        int* subband_coef_sign) {
     int i,j;
     int vlc, vd ,tmp, result;
-    int ub;
-    int cb;
 
     vd = vd_tab[category];
     result = 0;
     for(i=0 ; i<vpr_tab[category] ; i++){
-        ub = get_bits_count(&q->gb);
         vlc = get_vlc2(&q->gb, q->sqvh[category].table, q->sqvh[category].bits, 3);
-        cb = get_bits_count(&q->gb);
         if (q->bits_per_subpacket < get_bits_count(&q->gb)){
             vlc = 0;
             result = 1;
