@@ -413,12 +413,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
         num_bits = 0;
         index = 0;
         for (j=q->total_subbands ; j>0 ; j--){
-            exp_idx = (i - quant_index_table[index] + bias) / 2;
-            if (exp_idx<0){
-                exp_idx=0;
-            } else if(exp_idx >7) {
-                exp_idx=7;
-            }
+            exp_idx = av_clip((i - quant_index_table[index] + bias) / 2, 0, 7);
             index++;
             num_bits+=expbits_tab[exp_idx];
         }
@@ -430,12 +425,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
     /* Calculate total number of bits. */
     num_bits=0;
     for (i=0 ; i<q->total_subbands ; i++) {
-        exp_idx = (bias - quant_index_table[i]) / 2;
-        if (exp_idx<0) {
-            exp_idx=0;
-        } else if(exp_idx >7) {
-            exp_idx=7;
-        }
+        exp_idx = av_clip((bias - quant_index_table[i]) / 2, 0, 7);
         num_bits += expbits_tab[exp_idx];
         exp_index1[i] = exp_idx;
         exp_index2[i] = exp_idx;
