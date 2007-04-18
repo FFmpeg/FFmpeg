@@ -409,22 +409,19 @@ static int decodeSpectrum (GetBitContext *gb, float *pOut)
  * Restore the quantized tonal components
  *
  * @param gb            the GetBit context
- * @param numComponents tonal components to report back
  * @param pComponent    tone component
  * @param numBands      amount of coded bands
  */
 
-static int decodeTonalComponents (GetBitContext *gb, int *numComponents, tonal_component *pComponent, int numBands)
+static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent, int numBands)
 {
     int i,j,k,cnt;
-    int   component_count, components, coding_mode_selector, coding_mode, coded_values_per_component;
+    int   components, coding_mode_selector, coding_mode, coded_values_per_component;
     int   sfIndx, coded_values, max_coded_values, quant_step_index, coded_components;
     int   band_flags[4], mantissa[8];
     float  *pCoef;
     float  scalefactor;
-
-    component_count = 0;
-    *numComponents = 0;
+    int   component_count = 0;
 
     components = get_bits(gb,5);
 
@@ -480,9 +477,7 @@ static int decodeTonalComponents (GetBitContext *gb, int *numComponents, tonal_c
         }
     }
 
-    *numComponents = component_count;
-
-    return 0;
+    return component_count;
 }
 
 /**
@@ -739,8 +734,8 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
     result = decodeGainControl (gb, &(pSnd->gainBlock[pSnd->gcBlkSwitch]), pSnd->bandsCoded);
     if (result) return result;
 
-    result = decodeTonalComponents (gb, &pSnd->numComponents, pSnd->components, pSnd->bandsCoded);
-    if (result) return result;
+    pSnd->numComponents = decodeTonalComponents (gb, pSnd->components, pSnd->bandsCoded);
+    if (pSnd->numComponents == -1) return -1;
 
     numSubbands = decodeSpectrum (gb, pSnd->spectrum);
 
