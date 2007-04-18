@@ -641,8 +641,7 @@ static void decode_vectors(COOKContext* q, int* category,
  * function for decoding mono data
  *
  * @param q                 pointer to the COOKContext
- * @param mlt_buffer1       pointer to left channel mlt coefficients
- * @param mlt_buffer2       pointer to right channel mlt coefficients
+ * @param mlt_buffer        pointer to mlt coefficients
  */
 
 static void mono_decode(COOKContext *q, float* mlt_buffer) {
