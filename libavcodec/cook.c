@@ -353,9 +353,7 @@ static void decode_gain_info(GetBitContext *gb, int *gaininfo)
 
 static void decode_envelope(COOKContext *q, int* quant_index_table) {
     int i,j, vlc_index;
-    int bitbias;
 
-    bitbias = get_bits_count(&q->gb);
     quant_index_table[0]= get_bits(&q->gb,6) - 6;       //This is used later in categorize
 
     for (i=1 ; i < q->total_subbands ; i++){
