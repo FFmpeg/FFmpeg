@@ -118,7 +118,7 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_INFO,".");
         memset(srcBuffer, srcByte, SIZE);
 
-        for(width=32; width<64; width++){
+        for(width=63; width>0; width--){
             int dstOffset;
             for(dstOffset=128; dstOffset<196; dstOffset+=4){
                 int srcOffset;
