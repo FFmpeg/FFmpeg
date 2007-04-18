@@ -122,8 +122,8 @@ static const uint64_t mask16r  __attribute__((aligned(8))) = 0xF800F800F800F800U
 static const uint64_t red_16mask  __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
 static const uint64_t green_16mask __attribute__((aligned(8)))= 0x000007e0000007e0ULL;
 static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
-static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c000000f800ULL;
-static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000007e0ULL;
+static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c0000007c00ULL;
+static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000003e0ULL;
 static const uint64_t blue_15mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
 
 #ifdef FAST_BGR2YV12
