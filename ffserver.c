@@ -2932,18 +2932,6 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     dest_addr = rtp_c->from_addr;
     dest_addr.sin_port = htons(th->client_port_min);
 
-    /* add transport option if needed */
-    if (ff_rtsp_callback) {
-        setup.ipaddr = ntohl(dest_addr.sin_addr.s_addr);
-        if (ff_rtsp_callback(RTSP_ACTION_SERVER_SETUP, rtp_c->session_id,
-                             (char *)&setup, sizeof(setup),
-                             stream->rtsp_option) < 0) {
-            rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
-            return;
-        }
-        dest_addr.sin_addr.s_addr = htonl(setup.ipaddr);
-    }
-
     /* setup stream */
     if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, c) < 0) {
         rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
@@ -3083,12 +3071,6 @@ static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h)
 
     /* abort the session */
     close_connection(rtp_c);
-
-    if (ff_rtsp_callback) {
-        ff_rtsp_callback(RTSP_ACTION_SERVER_TEARDOWN, rtp_c->session_id,
-                         NULL, 0,
-                         rtp_c->stream->rtsp_option);
-    }
 
     /* now everything is OK, so we can send the connection parameters */
     rtsp_reply_header(c, RTSP_STATUS_OK);
