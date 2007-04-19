@@ -191,6 +191,7 @@ w57:    .long W57
   a2 = dest
 */
         .align
+        .type idct_row_armv6, %function
         .func idct_row_armv6
 idct_row_armv6:
         str    lr, [sp, #-4]!
@@ -245,6 +246,7 @@ idct_row_armv6:
   a2 = dest
 */
         .align
+        .type idct_col_armv6, %function
         .func idct_col_armv6
 idct_col_armv6:
         stmfd  sp!, {a2, lr}
@@ -275,6 +277,7 @@ idct_col_armv6:
   a3 = line size
 */
         .align
+        .type idct_col_put_armv6, %function
         .func idct_col_put_armv6
 idct_col_put_armv6:
         stmfd  sp!, {a2, a3, lr}
@@ -307,6 +310,7 @@ idct_col_put_armv6:
   a3 = line size
 */
         .align
+        .type idct_col_add_armv6, %function
         .func idct_col_add_armv6
 idct_col_add_armv6:
         stmfd  sp!, {a2, a3, lr}
@@ -391,6 +395,7 @@ idct_col_add_armv6:
 
         .align
         .global ff_simple_idct_armv6
+        .type ff_simple_idct_armv6, %function
         .func ff_simple_idct_armv6
 /* void ff_simple_idct_armv6(DCTELEM *data); */
 ff_simple_idct_armv6:
@@ -409,6 +414,7 @@ ff_simple_idct_armv6:
 
         .align
         .global ff_simple_idct_add_armv6
+        .type ff_simple_idct_add_armv6, %function
         .func ff_simple_idct_add_armv6
 /* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 ff_simple_idct_add_armv6:
@@ -429,6 +435,7 @@ ff_simple_idct_add_armv6:
 
         .align
         .global ff_simple_idct_put_armv6
+        .type ff_simple_idct_put_armv6, %function
         .func ff_simple_idct_put_armv6
 /* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 ff_simple_idct_put_armv6:

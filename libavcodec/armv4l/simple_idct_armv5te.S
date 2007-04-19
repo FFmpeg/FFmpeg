@@ -42,6 +42,7 @@ w26:    .long W26
 w57:    .long W57
 
         .align
+        .type idct_row_armv5te, %function
         .func idct_row_armv5te
 idct_row_armv5te:
         str    lr, [sp, #-4]!
@@ -262,6 +263,7 @@ row_dc_only:
         .endm
 
         .align
+        .type idct_col_armv5te, %function
         .func idct_col_armv5te
 idct_col_armv5te:
         str    lr, [sp, #-4]!
@@ -336,6 +338,7 @@ idct_col_armv5te:
         .endfunc
 
         .align
+        .type idct_col_put_armv5te, %function
         .func idct_col_put_armv5te
 idct_col_put_armv5te:
         str    lr, [sp, #-4]!
@@ -455,6 +458,7 @@ idct_col_put_armv5te:
         .endfunc
 
         .align
+        .type idct_col_add_armv5te, %function
         .func idct_col_add_armv5te
 idct_col_add_armv5te:
         str    lr, [sp, #-4]!
@@ -608,6 +612,7 @@ idct_col_add_armv5te:
 
         .align
         .global simple_idct_armv5te
+        .type simple_idct_armv5te, %function
         .func simple_idct_armv5te
 simple_idct_armv5te:
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
@@ -643,6 +648,7 @@ simple_idct_armv5te:
 
         .align
         .global simple_idct_add_armv5te
+        .type simple_idct_add_armv5te, %function
         .func simple_idct_add_armv5te
 simple_idct_add_armv5te:
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
@@ -681,6 +687,7 @@ simple_idct_add_armv5te:
 
         .align
         .global simple_idct_put_armv5te
+        .type simple_idct_put_armv5te, %function
         .func simple_idct_put_armv5te
 simple_idct_put_armv5te:
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
