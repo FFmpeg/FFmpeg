@@ -269,7 +269,7 @@ static int gif_parse_next_image(GifState *s)
                 return -1;
             break;
         default:
-            /* error or errneous EOF */
+            /* error or erroneous EOF */
             return -1;
         }
     }
