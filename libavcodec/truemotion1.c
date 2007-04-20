@@ -22,7 +22,7 @@
 /**
  * @file truemotion1.c
  * Duck TrueMotion v1 Video Decoder by
- * Alex Beregszaszi (alex@fsn.hu) and
+ * Alex Beregszaszi and
  * Mike Melanson (melanson@pcisys.net)
  *
  * The TrueMotion v1 decoder presently only decodes 16-bit TM1 data and

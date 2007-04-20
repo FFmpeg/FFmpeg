@@ -1,5 +1,5 @@
 /*
- * cws2fws by Alex Beregszaszi <alex@fsn.hu>
+ * cws2fws by Alex Beregszaszi
  * Public domain.
  *
  * This utility converts compressed Macromedia Flash files to uncompressed ones.

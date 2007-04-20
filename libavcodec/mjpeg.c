@@ -22,7 +22,7 @@
  *
  * Support for external huffman table, various fixes (AVID workaround),
  * aspecting, new decode_frame mechanism and apple mjpeg-b support
- *                                  by Alex Beregszaszi <alex@naxine.org>
+ *                                  by Alex Beregszaszi
  */
 
 /**
