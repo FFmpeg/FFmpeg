@@ -106,11 +106,6 @@
 #    define snprintf _snprintf
 #    define vsnprintf _vsnprintf
 
-#    ifdef CONFIG_WINCE
-#        define perror(a)
-#        define abort()
-#    endif
-
 /* __MINGW32__ end */
 #elif defined (CONFIG_OS2)
 /* OS/2 EMX */

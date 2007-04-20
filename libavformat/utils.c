@@ -2537,7 +2537,6 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
         return 0;
 }
 
-#ifndef CONFIG_WINCE
 int64_t parse_date(const char *datestr, int duration)
 {
     const char *p;
@@ -2645,7 +2644,6 @@ int64_t parse_date(const char *datestr, int duration)
     }
     return negative ? -t : t;
 }
-#endif /* CONFIG_WINCE */
 
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 {

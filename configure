@@ -62,7 +62,6 @@ show_help(){
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
   echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
-  echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
   echo "  --enable-static          build static libraries [default=yes]"
   echo "  --disable-static         do not build static libraries [default=no]"
   echo "  --enable-shared          build shared libraries [default=no]"
@@ -597,7 +596,6 @@ CONFIG_LIST='
     vhook
     v4l
     v4l2
-    wince
     x11grab
     x264
     xvid
@@ -779,7 +777,6 @@ bigendian="no"
 targetos=$(tolower $(uname -s))
 beos_netserver="no"
 os2="no"
-wince="no"
 
 # non-library system interfaces
 audio_beos="default"
@@ -936,8 +933,6 @@ for opt do
   --arch=*) arch="$optval"
   ;;
   --cpu=*) cpu="$optval"
-  ;;
-  --enable-mingwce) wince="yes"
   ;;
   --disable-opts) optimize="no"
   ;;
@@ -1139,9 +1134,6 @@ EOF
     dv1394="no"
     ffserver="no"
     network="no"
-    if enabled wince; then
-        protocols="no"
-    fi
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"

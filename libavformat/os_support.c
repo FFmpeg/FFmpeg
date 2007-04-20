@@ -21,9 +21,7 @@
  */
 #include "config.h"
 #include "avformat.h"
-#if defined(CONFIG_WINCE)
-/* Skip includes on WinCE. */
-#elif defined(__MINGW32__)
+#if defined(__MINGW32__)
 #include <sys/types.h>
 #include <sys/timeb.h>
 #elif defined(CONFIG_OS2)
@@ -49,9 +47,7 @@
  */
 int64_t av_gettime(void)
 {
-#if defined(CONFIG_WINCE)
-    return timeGetTime() * INT64_C(1000);
-#elif defined(__MINGW32__)
+#if defined(__MINGW32__)
     struct timeb tb;
     _ftime(&tb);
     return ((int64_t)tb.time * INT64_C(1000) + (int64_t)tb.millitm) * INT64_C(1000);
@@ -62,7 +58,7 @@ int64_t av_gettime(void)
 #endif
 }
 
-#if !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R)
+#if !defined(HAVE_LOCALTIME_R)
 struct tm *localtime_r(const time_t *t, struct tm *tp)
 {
     struct tm *l;
@@ -73,7 +69,7 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
     *tp = *l;
     return tp;
 }
-#endif /* !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R) */
+#endif /* !defined(HAVE_LOCALTIME_R) */
 
 #if !defined(HAVE_INET_ATON) && defined(CONFIG_NETWORK)
 #include <stdlib.h>
