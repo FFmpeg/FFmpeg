@@ -4370,7 +4370,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
         if(IS_MARKER(AV_RB32(buf))){ /* frame starts with marker and needs to be parsed */
-            uint8_t *dst = buf2, *start, *end, *next;
+            uint8_t *start, *end, *next;
             int size;
 
             next = buf;
