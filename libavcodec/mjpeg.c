@@ -2626,6 +2626,7 @@ AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
 };
 #endif
 
+#ifdef CONFIG_MJPEG_PARSER
 AVCodecParser mjpeg_parser = {
     { CODEC_ID_MJPEG },
     sizeof(ParseContext),
@@ -2633,6 +2634,7 @@ AVCodecParser mjpeg_parser = {
     jpeg_parse,
     ff_parse_close,
 };
+#endif
 
 AVBitStreamFilter mjpega_dump_header_bsf = {
     "mjpegadump",
