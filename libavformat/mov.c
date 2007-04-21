@@ -72,9 +72,9 @@
  */
 
 typedef struct MOV_sample_to_chunk_tbl {
-    long first;
-    long count;
-    long id;
+    int first;
+    int count;
+    int id;
 } MOV_sample_to_chunk_tbl;
 
 typedef struct {
@@ -92,7 +92,7 @@ struct MOVParseTableEntry;
 
 typedef struct MOVStreamContext {
     int ffindex; /* the ffmpeg stream id */
-    long next_chunk;
+    int next_chunk;
     unsigned int chunk_count;
     int64_t *chunk_offsets;
     unsigned int stts_count;
@@ -106,12 +106,12 @@ typedef struct MOVStreamContext {
     int sample_to_ctime_sample;
     unsigned int sample_size;
     unsigned int sample_count;
-    long *sample_sizes;
+    int *sample_sizes;
     unsigned int keyframe_count;
-    long *keyframes;
+    int *keyframes;
     int time_scale;
     int time_rate;
-    long current_sample;
+    int current_sample;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
     int dv_audio_container;
@@ -229,7 +229,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     ctype = get_le32(pb);
     type = get_le32(pb); /* component subtype */
 
-    dprintf(c->fc, "ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
+    dprintf(c->fc, "ctype= %c%c%c%c (0x%08x)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (int) ctype);
     dprintf(c->fc, "stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
     if(!ctype)
         c->isom = 1;
@@ -897,20 +897,20 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     entries = get_be32(pb);
 
-    if(entries >= UINT_MAX / sizeof(long))
+    if(entries >= UINT_MAX / sizeof(int))
         return -1;
 
     sc->keyframe_count = entries;
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %d\n", sc->keyframe_count);
 #endif
-    sc->keyframes = av_malloc(entries * sizeof(long));
+    sc->keyframes = av_malloc(entries * sizeof(int));
     if (!sc->keyframes)
         return -1;
     for(i=0; i<entries; i++) {
         sc->keyframes[i] = get_be32(pb);
 #ifdef DEBUG
-/*        av_log(NULL, AV_LOG_DEBUG, "keyframes[]=%ld\n", sc->keyframes[i]); */
+/*        av_log(NULL, AV_LOG_DEBUG, "keyframes[]=%d\n", sc->keyframes[i]); */
 #endif
     }
     return 0;
@@ -929,7 +929,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (!sc->sample_size) /* do not overwrite value computed in stsd */
         sc->sample_size = sample_size;
     entries = get_be32(pb);
-    if(entries >= UINT_MAX / sizeof(long))
+    if(entries >= UINT_MAX / sizeof(int))
         return -1;
 
     sc->sample_count = entries;
@@ -939,13 +939,13 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "sample_size = %d sample_count = %d\n", sc->sample_size, sc->sample_count);
 #endif
-    sc->sample_sizes = av_malloc(entries * sizeof(long));
+    sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
         return -1;
     for(i=0; i<entries; i++) {
         sc->sample_sizes[i] = get_be32(pb);
 #ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "sample_sizes[]=%ld\n", sc->sample_sizes[i]);
+        av_log(NULL, AV_LOG_DEBUG, "sample_sizes[]=%d\n", sc->sample_sizes[i]);
 #endif
     }
     return 0;
@@ -1473,7 +1473,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             AVIndexEntry *current_sample = &s->streams[i]->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
 
-            dprintf(s, "stream %d, sample %ld, dts %"PRId64"\n", i, msc->current_sample, dts);
+            dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (dts < best_dts) {
                 sample = current_sample;
                 best_dts = dts;
@@ -1536,7 +1536,7 @@ static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
     if (sample < 0) /* not sure what to do */
         return -1;
     sc->current_sample = sample;
-    dprintf(st->codec, "stream %d, found sample %ld\n", st->index, sc->current_sample);
+    dprintf(st->codec, "stream %d, found sample %d\n", st->index, sc->current_sample);
     /* adjust ctts index */
     if (sc->ctts_data) {
         time_sample = 0;
