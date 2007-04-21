@@ -212,6 +212,7 @@ AVCodec rawvideo_encoder = {
 };
 #endif // CONFIG_RAWVIDEO_ENCODER
 
+#ifdef CONFIG_RAWVIDEO_DECODER
 AVCodec rawvideo_decoder = {
     "rawvideo",
     CODEC_TYPE_VIDEO,
@@ -222,3 +223,4 @@ AVCodec rawvideo_decoder = {
     raw_close_decoder,
     raw_decode,
 };
+#endif // CONFIG_RAWVIDEO_DECODER
