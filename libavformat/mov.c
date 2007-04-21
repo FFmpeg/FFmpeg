@@ -88,54 +88,6 @@ typedef struct MOV_mdat_atom_s {
     int64_t size;
 } MOV_mdat_atom_t;
 
-typedef struct {
-    uint8_t  version;
-    uint32_t flags; // 24bit
-
-    /* 0x03 ESDescrTag */
-    uint16_t es_id;
-#define MP4ODescrTag                    0x01
-#define MP4IODescrTag                   0x02
-#define MP4ESDescrTag                   0x03
-#define MP4DecConfigDescrTag            0x04
-#define MP4DecSpecificDescrTag          0x05
-#define MP4SLConfigDescrTag             0x06
-#define MP4ContentIdDescrTag            0x07
-#define MP4SupplContentIdDescrTag       0x08
-#define MP4IPIPtrDescrTag               0x09
-#define MP4IPMPPtrDescrTag              0x0A
-#define MP4IPMPDescrTag                 0x0B
-#define MP4RegistrationDescrTag         0x0D
-#define MP4ESIDIncDescrTag              0x0E
-#define MP4ESIDRefDescrTag              0x0F
-#define MP4FileIODescrTag               0x10
-#define MP4FileODescrTag                0x11
-#define MP4ExtProfileLevelDescrTag      0x13
-#define MP4ExtDescrTagsStart            0x80
-#define MP4ExtDescrTagsEnd              0xFE
-    uint8_t  stream_priority;
-
-    /* 0x04 DecConfigDescrTag */
-    uint8_t  object_type_id;
-    uint8_t  stream_type;
-    /* XXX: really streamType is
-     * only 6bit, followed by:
-     * 1bit  upStream
-     * 1bit  reserved
-     */
-    uint32_t buffer_size_db; // 24
-    uint32_t max_bitrate;
-    uint32_t avg_bitrate;
-
-    /* 0x05 DecSpecificDescrTag */
-    uint8_t  decoder_cfg_len;
-    uint8_t *decoder_cfg;
-
-    /* 0x06 SLConfigDescrTag */
-    uint8_t  sl_config_len;
-    uint8_t *sl_config;
-} MOV_esds_t;
-
 struct MOVParseTableEntry;
 
 typedef struct MOVStreamContext {
@@ -160,7 +112,6 @@ typedef struct MOVStreamContext {
     int time_scale;
     int time_rate;
     long current_sample;
-    MOV_esds_t esds;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
     int dv_audio_container;
@@ -325,10 +276,13 @@ static int mov_mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
     return len;
 }
 
+#define MP4ESDescrTag                   0x03
+#define MP4DecConfigDescrTag            0x04
+#define MP4DecSpecificDescrTag          0x05
+
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
     int tag, len;
 
     /* Well, broken but suffisant for some MP4 streams */
@@ -342,14 +296,14 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     len = mov_mp4_read_descr(c, pb, &tag);
     if (tag == MP4DecConfigDescrTag) {
-        sc->esds.object_type_id = get_byte(pb);
-        sc->esds.stream_type = get_byte(pb);
-        sc->esds.buffer_size_db = get_be24(pb);
-        sc->esds.max_bitrate = get_be32(pb);
-        sc->esds.avg_bitrate = get_be32(pb);
+        int object_type_id = get_byte(pb);
+        get_byte(pb); /* stream type */
+        get_be24(pb); /* buffer size db */
+        get_be32(pb); /* max bitrate */
+        get_be32(pb); /* avg bitrate */
 
-        st->codec->codec_id= codec_get_id(ff_mp4_obj_type, sc->esds.object_type_id);
-        dprintf(c->fc, "esds object type id %d\n", sc->esds.object_type_id);
+        st->codec->codec_id= codec_get_id(ff_mp4_obj_type, object_type_id);
+        dprintf(c->fc, "esds object type id %d\n", object_type_id);
         len = mov_mp4_read_descr(c, pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
             dprintf(c->fc, "Specific MPEG4 header len=%d\n", len);
