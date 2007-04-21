@@ -254,7 +254,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
-static int mov_mp4_read_descr_len(ByteIOContext *pb)
+static int mp4_read_descr_len(ByteIOContext *pb)
 {
     int len = 0;
     int count = 4;
@@ -267,11 +267,11 @@ static int mov_mp4_read_descr_len(ByteIOContext *pb)
     return len;
 }
 
-static int mov_mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
+static int mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
 {
     int len;
     *tag = get_byte(pb);
-    len = mov_mp4_read_descr_len(pb);
+    len = mp4_read_descr_len(pb);
     dprintf(c->fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
     return len;
 }
@@ -287,14 +287,14 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     /* Well, broken but suffisant for some MP4 streams */
     get_be32(pb); /* version + flags */
-    len = mov_mp4_read_descr(c, pb, &tag);
+    len = mp4_read_descr(c, pb, &tag);
     if (tag == MP4ESDescrTag) {
         get_be16(pb); /* ID */
         get_byte(pb); /* priority */
     } else
         get_be16(pb); /* ID */
 
-    len = mov_mp4_read_descr(c, pb, &tag);
+    len = mp4_read_descr(c, pb, &tag);
     if (tag == MP4DecConfigDescrTag) {
         int object_type_id = get_byte(pb);
         get_byte(pb); /* stream type */
@@ -304,7 +304,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         st->codec->codec_id= codec_get_id(ff_mp4_obj_type, object_type_id);
         dprintf(c->fc, "esds object type id %d\n", object_type_id);
-        len = mov_mp4_read_descr(c, pb, &tag);
+        len = mp4_read_descr(c, pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
             dprintf(c->fc, "Specific MPEG4 header len=%d\n", len);
             st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
