@@ -83,13 +83,6 @@ typedef struct {
     int64_t size; /* total size (excluding the size and type fields) */
 } MOV_atom_t;
 
-typedef struct {
-    int seed;
-    int flags;
-    int size;
-    void* clrs;
-} MOV_ctab_t;
-
 typedef struct MOV_mdat_atom_s {
     offset_t offset;
     int64_t size;
@@ -183,8 +176,6 @@ typedef struct MOVContext {
     int total_streams;
     MOVStreamContext *streams[MAX_STREAMS];
 
-    int ctab_size;
-    MOV_ctab_t **ctab;           /* color tables */
     const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
     /* NOTE: for recursion save to/ restore from local variable! */
 
@@ -272,30 +263,6 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     }
 
     return err;
-}
-
-static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
-{
-#if 1
-    url_fskip(pb, atom.size); // for now
-#else
-    VERY VERY BROKEN, NEVER execute this, needs rewrite
-    unsigned int len;
-    MOV_ctab_t *t;
-    c->ctab = av_realloc(c->ctab, ++c->ctab_size);
-    t = c->ctab[c->ctab_size];
-    t->seed = get_be32(pb);
-    t->flags = get_be16(pb);
-    t->size = get_be16(pb) + 1;
-    len = 2 * t->size * 4;
-    if (len > 0) {
-        t->clrs = av_malloc(len); // 16bit A R G B
-        if (t->clrs)
-            get_buffer(pb, t->clrs, len);
-    }
-#endif
-
-    return 0;
 }
 
 static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
@@ -1297,7 +1264,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
 { MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
 { MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
-{ MKTAG( 'c', 't', 'a', 'b' ), mov_read_ctab },
 { MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
 { MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
 { MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
@@ -1667,9 +1633,6 @@ static int mov_read_close(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     for(i=0; i<mov->total_streams; i++)
         mov_free_stream_context(mov->streams[i]);
-    /* free color tabs */
-    for(i=0; i<mov->ctab_size; i++)
-        av_freep(&mov->ctab[i]);
     if(mov->dv_demux){
         for(i=0; i<mov->dv_fctx->nb_streams; i++){
             av_freep(&mov->dv_fctx->streams[i]->codec);
@@ -1678,7 +1641,6 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&mov->dv_fctx);
         av_freep(&mov->dv_demux);
     }
-    av_freep(&mov->ctab);
     return 0;
 }
 
