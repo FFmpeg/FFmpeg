@@ -1632,7 +1632,7 @@ do not attach several unrelated patches to the same mail.
 @item
     Is the patch a unified diff?
 @item
-    Is the patch against latest ffmpeg SVN?
+    Is the patch against latest FFmpeg SVN?
 @item
     Are you subscribed to ffmpeg-dev?
     (the list is subscribers only due to spam)
@@ -1640,22 +1640,24 @@ do not attach several unrelated patches to the same mail.
     Have you checked that the changes are minimal, so that the same cannot be
     achieved with a smaller patch and/or simpler final code?
 @item
-    If the change is to speed critical code did you benchmark it?
+    If the change is to speed critical code, did you benchmark it?
 @item
     Have you checked that the patch does not introduce buffer overflows or
     other security issues?
 @item
-    Is the patch made from the root of the source, so it can be applied with -p0?
+    Is the patch created from the root of the source tree, so it can be
+    applied with @code{patch -p0}?
 @item
     Does the patch not mix functional and cosmetic changes?
 @item
     Is the patch attached to the email you send?
 @item
-    Is the mime type of the patch correct? (not application/octet-stream)
+    Is the mime type of the patch correct? It should be text/x-diff or
+    text/x-patch or at least text/plain and not application/octet-stream.
 @item
-    If the patch fixes a bug did you provide a verbose analysis of the bug?
+    If the patch fixes a bug, did you provide a verbose analysis of the bug?
 @item
-    If the patch fixes a bug did you provide enough information, including
+    If the patch fixes a bug, did you provide enough information, including
     a sample, so the bug can be reproduced and the fix can be verified?
 @item
     Did you provide a verbose summary about what the patch does change?
