@@ -223,7 +223,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     a.offset = atom.offset;
 
     if (atom.size < 0)
-        atom.size = 0x7fffffffffffffffLL;
+        atom.size = INT64_MAX;
     while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
         a.size = atom.size;
         a.type=0L;
@@ -1482,7 +1482,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
         atom.size = url_fsize(pb);
     else
-        atom.size = 0x7FFFFFFFFFFFFFFFLL;
+        atom.size = INT64_MAX;
 
     /* check MOV header */
     err = mov_read_default(mov, pb, atom);
