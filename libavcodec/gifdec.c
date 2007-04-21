@@ -258,16 +258,13 @@ static int gif_parse_next_image(GifState *s)
 #endif
         switch (code) {
         case ',':
-            if (gif_read_image(s) < 0)
-                return -1;
-            return 0;
-        case ';':
-            /* end of image */
-            return -1;
+            return gif_read_image(s);
         case '!':
             if (gif_read_extension(s) < 0)
                 return -1;
             break;
+        case ';':
+            /* end of image */
         default:
             /* error or erroneous EOF */
             return -1;
