@@ -3813,7 +3813,13 @@ static int parse_ffconfig(const char *filename)
 
         if (!strcasecmp(cmd, "Port")) {
             get_arg(arg, sizeof(arg), &p);
-            my_http_addr.sin_port = htons (atoi(arg));
+            val = atoi(arg);
+            if (val < 1 || val > 65536) {
+                fprintf(stderr, "%s:%d: Invalid port: %s\n",
+                        filename, line_num, arg);
+                errors++;
+            }
+            my_http_addr.sin_port = htons(val);
         } else if (!strcasecmp(cmd, "BindAddress")) {
             get_arg(arg, sizeof(arg), &p);
             if (!inet_aton(arg, &my_http_addr.sin_addr)) {
@@ -3825,7 +3831,13 @@ static int parse_ffconfig(const char *filename)
             ffserver_daemon = 0;
         } else if (!strcasecmp(cmd, "RTSPPort")) {
             get_arg(arg, sizeof(arg), &p);
-            my_rtsp_addr.sin_port = htons (atoi(arg));
+            val = atoi(arg);
+            if (val < 1 || val > 65536) {
+                fprintf(stderr, "%s:%d: Invalid port: %s\n",
+                        filename, line_num, arg);
+                errors++;
+            }
+            my_rtsp_addr.sin_port = htons(atoi(arg));
         } else if (!strcasecmp(cmd, "RTSPBindAddress")) {
             get_arg(arg, sizeof(arg), &p);
             if (!inet_aton(arg, &my_rtsp_addr.sin_addr)) {
