@@ -23,7 +23,6 @@
 
 typedef struct {
     int totalframes, currentframe;
-    uint32_t *seektable;
 } TTAContext;
 
 static int tta_probe(AVProbeData *p)
@@ -39,6 +38,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     TTAContext *c = s->priv_data;
     AVStream *st;
     int i, channels, bps, samplerate, datalen, framelen;
+    uint64_t framepos;
 
     if (get_le32(&s->pb) != ff_get_fourcc("TTA1"))
         return -1; // not tta file
@@ -68,18 +68,24 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "totalframes too large\n");
         return -1;
     }
-    c->seektable = av_mallocz(sizeof(uint32_t)*c->totalframes);
-    if (!c->seektable)
-        return AVERROR_NOMEM;
-
-    for (i = 0; i < c->totalframes; i++)
-        c->seektable[i] = get_le32(&s->pb);
-    url_fskip(&s->pb, 4); // seektable crc
 
     st = av_new_stream(s, 0);
-//    av_set_pts_info(st, 32, 1, 1000);
     if (!st)
         return AVERROR_NOMEM;
+
+    av_set_pts_info(st, 64, 1, samplerate);
+    st->start_time = 0;
+    st->duration = datalen;
+
+    framepos = url_ftell(&s->pb) + 4*c->totalframes + 4;
+
+    for (i = 0; i < c->totalframes; i++) {
+        uint32_t size = get_le32(&s->pb);
+        av_add_index_entry(st, framepos, i*framelen, size, 0, AVINDEX_KEYFRAME);
+        framepos += size;
+    }
+    url_fskip(&s->pb, 4); // seektable crc
+
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_TTA;
     st->codec->channels = channels;
@@ -102,38 +108,16 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     TTAContext *c = s->priv_data;
-    int ret, size;
+    AVStream *st = s->streams[0];
+    int size;
 
     // FIXME!
     if (c->currentframe > c->totalframes)
-        size = 0;
-    else
-        size = c->seektable[c->currentframe];
+        return -1;
 
-    c->currentframe++;
+    size = st->index_entries[c->currentframe++].size;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR_IO;
-
-    pkt->pos = url_ftell(&s->pb);
-    pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, size);
-    if (ret <= 0) {
-        av_free_packet(pkt);
-        return AVERROR_IO;
-    }
-    pkt->size = ret;
-//    av_log(s, AV_LOG_INFO, "TTA packet #%d desired size: %d read size: %d at pos %d\n",
-//        c->currentframe, size, ret, pkt->pos);
-    return 0; //ret;
-}
-
-static int tta_read_close(AVFormatContext *s)
-{
-    TTAContext *c = s->priv_data;
-    if (c->seektable)
-        av_free(c->seektable);
-    return 0;
+    return av_get_packet(&s->pb, pkt, size);
 }
 
 AVInputFormat tta_demuxer = {
@@ -143,6 +127,6 @@ AVInputFormat tta_demuxer = {
     tta_probe,
     tta_read_header,
     tta_read_packet,
-    tta_read_close,
+    NULL,
     .extensions = "tta",
 };
