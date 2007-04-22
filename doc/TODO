@@ -88,5 +88,4 @@ unassigned TODO: (unordered)
 - generic audio mixing API
 - extract PES packetizer from PS muxer and use it for new TS muxer
 - implement automatic AVBistreamFilter activation
-- port libavformat/sgi.c (now removed) to new image format API
 - make cabac encoder use bytestream (see http://trac.videolan.org/x264/changeset/?format=diff&new=651)
