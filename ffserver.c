@@ -3956,16 +3956,6 @@ static int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: No corresponding <Feed> for </Feed>\n",
                         filename, line_num);
                 errors++;
-#if 0
-            } else {
-                /* Make sure that we start out clean */
-                if (unlink(feed->feed_filename) < 0
-                    && errno != ENOENT) {
-                    fprintf(stderr, "%s:%d: Unable to clean old feed file '%s': %s\n",
-                        filename, line_num, feed->feed_filename, strerror(errno));
-                    errors++;
-                }
-#endif
             }
             feed = NULL;
         } else if (!strcasecmp(cmd, "<Stream")) {
