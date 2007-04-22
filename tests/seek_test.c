@@ -23,6 +23,8 @@
 
 #include "avformat.h"
 
+#undef exit
+
 int main(int argc, char **argv)
 {
     const char *filename;
