@@ -11,6 +11,7 @@ rm $logfile
 for i in $list ; do
     echo ---------------- >>$logfile
     echo $i >>$logfile
+    echo $i | grep -vq 'b-libav[01][0-9][.]' &&
     ./seek_test $i >> $logfile
 done
 
