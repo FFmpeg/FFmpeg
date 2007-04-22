@@ -18,7 +18,7 @@ LIBAV_REFFILE=$(SRC_DIR)/libav.regression.ref
 
 SEEK_REFFILE=$(SRC_DIR)/seek.regression.ref
 
-all fulltest test: codectest libavtest
+all fulltest test: codectest libavtest seektest
 
 test-server: vsynth1/00.pgm asynth1.sw
 	@echo
