@@ -484,6 +484,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    av_init_packet(pkt);
     return s->iformat->read_packet(s, pkt);
 }
 
@@ -701,6 +702,8 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st;
     int len, ret, i;
+
+    av_init_packet(pkt);
 
     for(;;) {
         /* select current input stream component */
