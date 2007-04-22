@@ -3890,13 +3890,11 @@ static int parse_ffconfig(const char *filename)
                 feed->child_argv = (char **) av_mallocz(64 * sizeof(char *));
 
                 for (i = 0; i < 62; i++) {
-                    char argbuf[256];
-
-                    get_arg(argbuf, sizeof(argbuf), &p);
-                    if (!argbuf[0])
+                    get_arg(arg, sizeof(arg), &p);
+                    if (!arg[0])
                         break;
 
-                    feed->child_argv[i] = av_strdup(argbuf);
+                    feed->child_argv[i] = av_strdup(arg);
                 }
 
                 feed->child_argv[i] = av_malloc(30 + strlen(feed->filename));
