@@ -1279,7 +1279,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
 
     index = av_index_search_timestamp(st, timestamp, flags);
 
-    if(index < 0){
+    if(index < 0 || index==st->nb_index_entries-1){
         int i;
         AVPacket pkt;
 
