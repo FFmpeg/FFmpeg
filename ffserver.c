@@ -4024,6 +4024,7 @@ static int parse_ffconfig(const char *filename)
                 video_id = stream->fmt->video_codec;
             }
         } else if (!strcasecmp(cmd, "InputFormat")) {
+            get_arg(arg, sizeof(arg), &p);
             stream->ifmt = av_find_input_format(arg);
             if (!stream->ifmt) {
                 fprintf(stderr, "%s:%d: Unknown input format: %s\n",
