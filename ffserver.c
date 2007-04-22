@@ -3896,8 +3896,7 @@ static int parse_ffconfig(const char *filename)
                     if (!argbuf[0])
                         break;
 
-                    feed->child_argv[i] = av_malloc(strlen(argbuf) + 1);
-                    strcpy(feed->child_argv[i], argbuf);
+                    feed->child_argv[i] = av_strdup(argbuf);
                 }
 
                 feed->child_argv[i] = av_malloc(30 + strlen(feed->filename));
