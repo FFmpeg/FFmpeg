@@ -395,11 +395,11 @@ static int dca_parse_frame_header(DCAContext * s)
 }
 
 
-static inline int get_scale(GetBitContext *gb, int level, int index, int value)
+static inline int get_scale(GetBitContext *gb, int level, int value)
 {
    if (level < 5) {
        /* huffman encoded */
-       value += get_bitalloc(gb, &dca_scalefactor, index);
+       value += get_bitalloc(gb, &dca_scalefactor, level);
    } else if(level < 8)
        value = get_bits(gb, level + 1);
    return value;
@@ -436,7 +436,7 @@ static int dca_subframe_header(DCAContext * s)
                 s->bitalloc[j][k] = get_bits(&s->gb, 4);
             else {
                 s->bitalloc[j][k] =
-                    get_bitalloc(&s->gb, &dca_bitalloc_index, j);
+                    get_bitalloc(&s->gb, &dca_bitalloc_index, s->bitalloc_huffman[j]);
             }
 
             if (s->bitalloc[j][k] > 26) {
@@ -475,13 +475,13 @@ static int dca_subframe_header(DCAContext * s)
 
         for (k = 0; k < s->subband_activity[j]; k++) {
             if (k >= s->vq_start_subband[j] || s->bitalloc[j][k] > 0) {
-                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], j, scale_sum);
+                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
                 s->scale_factor[j][k][0] = scale_table[scale_sum];
             }
 
             if (k < s->vq_start_subband[j] && s->transition_mode[j][k]) {
                 /* Get second scale factor */
-                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], j, scale_sum);
+                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
                 s->scale_factor[j][k][1] = scale_table[scale_sum];
             }
         }
@@ -507,7 +507,7 @@ static int dca_subframe_header(DCAContext * s)
              * (is this valid as well for joint scales ???) */
 
             for (k = s->subband_activity[j]; k < s->subband_activity[source_channel]; k++) {
-                scale = get_scale(&s->gb, s->joint_huff[j], j, 0);
+                scale = get_scale(&s->gb, s->joint_huff[j], 0);
                 scale += 64;    /* bias */
                 s->joint_scale_factor[j][k] = scale;    /*joint_scale_table[scale]; */
             }
