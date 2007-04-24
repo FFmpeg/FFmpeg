@@ -125,6 +125,18 @@ static av_always_inline uint32_t bswap_32(uint32_t x){
       : "+r"(x), "+r"(t));
     return x;
 }
+
+#elif defined(ARCH_BFIN)
+static av_always_inline uint32_t bswap_32(uint32_t x){
+    unsigned tmp;
+    asm("%1 = %0 >> 8 (V);\n\t"
+        "%0 = %0 << 8 (V);\n\t"
+        "%0 = %0 | %1;\n\t"
+        "%0 = PACK(%0.L, %0.H);\n\t"
+        : "+d"(x), "=&d"(tmp));
+    return x;
+}
+
 #else
 static av_always_inline uint32_t bswap_32(uint32_t x){
     x= ((x<<8)&0xFF00FF00) | ((x>>8)&0x00FF00FF);
