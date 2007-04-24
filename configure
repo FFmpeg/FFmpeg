@@ -566,8 +566,6 @@ CONFIG_LIST='
     bktr
     dc1394
     dv1394
-    ebp_available
-    ebx_available
     ffmpeg
     ffplay
     ffserver
@@ -626,6 +624,8 @@ HAVE_LIST="
     dev_video_bktr_ioctl_bt848_h
     dlfcn_h
     dlopen
+    ebp_available
+    ebx_available
     fast_64bit
     fast_cmov
     freetype2
