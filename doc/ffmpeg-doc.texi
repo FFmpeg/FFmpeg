@@ -308,6 +308,54 @@ The following abbreviations are recognized:
 352x288
 @item 4cif
 704x576
+@item qqvga
+160x120
+@item qvga
+320x240
+@item vga
+640x480
+@item svga
+800x600
+@item xga
+1024x768
+@item uxga
+1600x1200
+@item qxga
+2048x1536
+@item sxga
+1280x1024
+@item qsxga
+2560x2048
+@item hsxga
+5120x4096
+@item wvga
+852x480
+@item wxga
+1366x768
+@item wsxga
+1600x1024
+@item wuxga
+1920x1200
+@item woxga
+2560x1600
+@item wqsxga
+3200x2048
+@item wquxga
+3840x2400
+@item whsxga
+6400x4096
+@item whuxga
+7680x4800
+@item cga
+320x200
+@item ega
+640x350
+@item hd480
+852x480
+@item hd720
+1280x720
+@item hd1080
+1920x1080
 @end table
 
 @item -aspect aspect
