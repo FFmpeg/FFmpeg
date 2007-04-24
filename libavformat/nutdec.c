@@ -100,7 +100,7 @@ static inline uint64_t get_vb_trace(ByteIOContext *bc, char *file, char *func, i
 
 static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_checksum)
 {
-    int64_t start, size;
+    int64_t size;
 //    start= url_ftell(bc) - 8;
 
     size= get_v(bc);
@@ -108,9 +108,6 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
         get_be32(bc); //FIXME check this
 
     init_checksum(bc, calculate_checksum ? av_crc04C11DB7_update : NULL, 0);
-
-//    nut->packet_start[2] = start;
-//    nut->written_packet_size= size;
 
     return size;
 }
