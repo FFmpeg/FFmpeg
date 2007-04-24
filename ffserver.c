@@ -3185,6 +3185,7 @@ static int rtp_new_av_stream(HTTPContext *c,
                c->stream->feed->streams[c->stream->feed_streams[stream_index]],
                sizeof(AVStream));
     }
+    st->priv_data = NULL;
 
     /* build destination RTP address */
     ipaddr = inet_ntoa(dest_addr->sin_addr);
