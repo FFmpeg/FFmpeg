@@ -271,10 +271,6 @@ OBJS-$(CONFIG_X264)                    += x264.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 
 OBJS-$(CONFIG_AMR)                     += amr.o
-ifeq ($(CONFIG_AMR_NB_FIXED),yes)
-EXTRAOBJS += amr/*.o
-EXTRADEPS=amrlibs
-endif
 
 
 OBJS-$(CONFIG_AAC_PARSER)              += parser.o
@@ -397,9 +393,6 @@ endif
 
 include ../common.mak
 
-amrlibs:
-	$(MAKE) -C amr spclib fipoplib
-
 tests: apiexample $(TESTS)
 
 clean::
@@ -413,7 +406,6 @@ clean::
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
 	   apiexample $(TESTS)
-	-$(MAKE) -C amr clean
 
 apiexample: apiexample.o $(LIB)
 
@@ -429,4 +421,4 @@ motion-test: motion_test.o $(LIB)
 
 fft-test: fft-test.o $(LIB)
 
-.PHONY: amrlibs tests
+.PHONY: tests

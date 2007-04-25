@@ -99,7 +99,6 @@ show_help(){
   echo "  --enable-xvid            enable Xvid encoding via xvidcore,"
   echo "                           native MPEG-4/Xvid encoder exists [default=no]"
   echo "  --enable-amr-nb          enable amr-nb floating point audio codec"
-  echo "  --enable-amr-nb-fixed    enable amr-nb fixed-point codec"
   echo "  --enable-amr-wb          enable amr-wb floating point audio codec"
   echo ""
   echo "Advanced options (experts only):"
@@ -557,7 +556,6 @@ CONFIG_LIST='
     demuxers
     amr
     amr_nb
-    amr_nb_fixed
     amr_wb
     audio_beos
     audio_oss
@@ -683,8 +681,8 @@ zmbv_encoder_deps="zlib"
 
 aac_decoder_deps="libfaad"
 mpeg4aac_decoder_deps="libfaad"
-amr_nb_decoder_deps_any="amr_nb amr_nb_fixed"
-amr_nb_encoder_deps_any="amr_nb amr_nb_fixed"
+amr_nb_decoder_deps="amr_nb"
+amr_nb_encoder_deps="amr_nb"
 amr_wb_decoder_deps="amr_wb"
 amr_wb_encoder_deps="amr_wb"
 dts_decoder_deps="libdts"
@@ -790,7 +788,6 @@ v4l="yes"
 
 # libraries
 amr_nb="no"
-amr_nb_fixed="no"
 amr_wb="no"
 avisynth="no"
 dc1394="no"
@@ -1579,9 +1576,7 @@ for thread in $THREADS_LIST; do
     fi
 done
 
-enabled_any amr_nb amr_nb_fixed amr_wb && enable amr
-enabled_all amr_nb amr_nb_fixed &&
-    die "Only one of amr_nb and amr_nb_fixed may be enabled."
+enabled_any amr_nb amr_wb && enable amr
 
 # these are off by default, so fail if requested and not available
 enabled amr_nb     && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
@@ -1860,7 +1855,6 @@ echo "x264 enabled              $x264"
 echo "XviD enabled              $xvid"
 echo "zlib enabled              $zlib"
 echo "AMR-NB float support      $amr_nb"
-echo "AMR-NB fixed support      $amr_nb_fixed"
 echo "AMR-WB float support      $amr_wb"
 if disabled gpl; then
     echo "License: LGPL"
@@ -2042,7 +2036,6 @@ if enabled source_path_used; then
          libavcodec/sparc \
          libavcodec/mlib \
          libavcodec/ppc \
-         libavcodec/amr \
          libpostproc \
          libavutil \
          libswscale \
