@@ -166,7 +166,6 @@ static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
 static int do_psnr = 0;
-static int do_vstats = 0;
 static int do_pass = 0;
 static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
@@ -177,6 +176,7 @@ static int audio_sync_method= 0;
 static int copy_ts= 0;
 static int opt_shortest = 0; //
 static int video_global_header = 0;
+static FILE *fvstats= NULL;
 
 static int rate_emu = 0;
 
@@ -841,27 +841,10 @@ static double psnr(double d){
 static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
                            int frame_size)
 {
-    static FILE *fvstats=NULL;
-    char filename[40];
-    time_t today2;
-    struct tm *today;
     AVCodecContext *enc;
     int frame_number;
     int64_t ti;
     double ti1, bitrate, avg_bitrate;
-
-    if (!fvstats) {
-        today2 = time(NULL);
-        today = localtime(&today2);
-        snprintf(filename, sizeof(filename), "vstats_%02d%02d%02d.log", today->tm_hour,
-                                               today->tm_min,
-                                               today->tm_sec);
-        fvstats = fopen(filename,"w");
-        if (!fvstats) {
-            perror("fopen");
-            exit(1);
-        }
-    }
 
     ti = INT64_MAX;
     enc = ost->st->codec;
@@ -1197,7 +1180,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         case CODEC_TYPE_VIDEO:
                             do_video_out(os, ost, ist, &picture, &frame_size);
                             video_size += frame_size;
-                            if (do_vstats && frame_size)
+                            if (fvstats && frame_size)
                                 do_video_stats(os, ost, frame_size);
                             break;
                         case CODEC_TYPE_SUBTITLE:
@@ -3449,6 +3432,32 @@ static void opt_target(const char *arg)
     }
 }
 
+static void opt_vstats_file (const char *arg)
+{
+    if (!fvstats)
+    {
+        fvstats = fopen(arg ,"w");
+        if (!fvstats) {
+            perror("fopen");
+            exit(1);
+        }
+    }
+}
+
+static void opt_vstats (void)
+{
+    if (!fvstats) {
+        char filename[40];
+        time_t today2 = time(NULL);
+        struct tm *today = localtime(&today2);
+
+        snprintf(filename, sizeof(filename), "vstats_%02d%02d%02d.log", today->tm_hour,
+                                               today->tm_min,
+                                               today->tm_sec);
+        opt_vstats_file(filename);
+    }
+}
+
 static void opt_video_bsf(const char *arg)
 {
     AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
@@ -3610,7 +3619,8 @@ const OptionDef options[] = {
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
       "deinterlace pictures" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
-    { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" },
+    { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
+    { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
