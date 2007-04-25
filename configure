@@ -628,6 +628,7 @@ HAVE_LIST="
     ebx_available
     fast_64bit
     fast_cmov
+    fast_unaligned
     freetype2
     imlib2
     inet_aton
@@ -765,6 +766,7 @@ powerpc_perf="no"
 mmx="default"
 cmov="no"
 fast_cmov="no"
+fast_unaligned="no"
 armv5te="default"
 armv6="default"
 iwmmxt="default"
@@ -975,9 +977,11 @@ done
 case "$arch" in
   i386|i486|i586|i686|i86pc|BePC)
     arch="x86_32"
+    enable fast_unaligned
   ;;
   x86_64|amd64)
     arch="x86_32"
+    enable fast_unaligned
     canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
     if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
       if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then

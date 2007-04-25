@@ -50,6 +50,21 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define AV_RL8(x)     AV_RB8(x)
 #define AV_WL8(p, d)  AV_WB8(p, d)
 
+#ifdef HAVE_FAST_UNALIGNED
+# ifdef WORDS_BIGENDIAN
+#  define AV_RB16(x)    LD16(x)
+#  define AV_WB16(p, d) ST16(p, d)
+
+#  define AV_RL16(x)    bswap_16(LD16(x))
+#  define AV_WL16(p, d) ST16(p, bswap_16(d))
+# else /* WORDS_BIGENDIAN */
+#  define AV_RB16(x)    bswap_16(LD16(x))
+#  define AV_WB16(p, d) ST16(p, bswap_16(d))
+
+#  define AV_RL16(x)    LD16(x)
+#  define AV_WL16(p, d) ST16(p, d)
+# endif
+#else /* HAVE_FAST_UNALIGNED */
 #define AV_RB16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
 #define AV_WB16(p, d) { \
                     ((uint8_t*)(p))[1] = (d); \
@@ -60,6 +75,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define AV_WL16(p, d) { \
                     ((uint8_t*)(p))[0] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; }
+#endif
 
 #define AV_RB24(x)  ((((uint8_t*)(x))[0] << 16) | \
                      (((uint8_t*)(x))[1] <<  8) | \
@@ -77,6 +93,21 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[2] = (d)>>16; }
 
+#ifdef HAVE_FAST_UNALIGNED
+# ifdef WORDS_BIGENDIAN
+#  define AV_RB32(x)    LD32(x)
+#  define AV_WB32(p, d) ST32(p, d)
+
+#  define AV_RL32(x)    bswap_32(LD32(x))
+#  define AV_WL32(p, d) ST32(p, bswap_32(d))
+# else /* WORDS_BIGENDIAN */
+#  define AV_RB32(x)    bswap_32(LD32(x))
+#  define AV_WB32(p, d) ST32(p, bswap_32(d))
+
+#  define AV_RL32(x)    LD32(x)
+#  define AV_WL32(p, d) ST32(p, d)
+# endif
+#else /* HAVE_FAST_UNALIGNED */
 #define AV_RB32(x)  ((((uint8_t*)(x))[0] << 24) | \
                      (((uint8_t*)(x))[1] << 16) | \
                      (((uint8_t*)(x))[2] <<  8) | \
@@ -96,5 +127,6 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[2] = (d)>>16; \
                     ((uint8_t*)(p))[3] = (d)>>24; }
+#endif
 
 #endif /* INTREADWRITE_H */
