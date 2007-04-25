@@ -585,8 +585,6 @@ The alternative is to deinterlace the input stream with
 Calculate PSNR of compressed frames.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
-@item -vstats_file file
-Dump video coding statistics to @var{file}.
 @item -vhook module
 Insert video processing @var{module}. @var{module} contains the module
 name and its parameters separated by spaces.
