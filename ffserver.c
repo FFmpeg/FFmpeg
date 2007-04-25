@@ -1120,7 +1120,7 @@ static int validate_acl(FFStream *stream, HTTPContext *c)
     enum IPAddressAction last_action = IP_DENY;
     IPAddressACL *acl;
     struct in_addr *src = &c->from_addr.sin_addr;
-    unsigned long src_addr = ntohl(src->s_addr);
+    unsigned long src_addr = src->s_addr;
 
     for (acl = stream->acl; acl; acl = acl->next) {
         if (src_addr >= acl->first.s_addr && src_addr <= acl->last.s_addr) {
@@ -4268,7 +4268,6 @@ static int parse_ffconfig(const char *filename)
             audio_id = CODEC_ID_NONE;
         } else if (!strcasecmp(cmd, "ACL")) {
             IPAddressACL acl;
-            struct hostent *he;
 
             get_arg(arg, sizeof(arg), &p);
             if (strcasecmp(arg, "allow") == 0) {
@@ -4282,29 +4281,22 @@ static int parse_ffconfig(const char *filename)
             }
 
             get_arg(arg, sizeof(arg), &p);
-
-            he = gethostbyname(arg);
-            if (!he) {
+	    
+            if (resolve_host(&acl.first, arg) != 0) {
                 fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
                         filename, line_num, arg);
                 errors++;
             } else {
-                /* Only take the first */
-                acl.first.s_addr = ntohl(((struct in_addr *) he->h_addr_list[0])->s_addr);
                 acl.last = acl.first;
             }
 
             get_arg(arg, sizeof(arg), &p);
 
             if (arg[0]) {
-                he = gethostbyname(arg);
-                if (!he) {
+                if (resolve_host(&acl.last, arg) != 0) {
                     fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
                             filename, line_num, arg);
                     errors++;
-                } else {
-                    /* Only take the first */
-                    acl.last.s_addr = ntohl(((struct in_addr *) he->h_addr_list[0])->s_addr);
                 }
             }
 
