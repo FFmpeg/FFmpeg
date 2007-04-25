@@ -234,8 +234,8 @@ typedef struct FeedData {
     float avg_frame_size;   /* frame size averraged over last frames with exponential mean */
 } FeedData;
 
-struct sockaddr_in my_http_addr;
-struct sockaddr_in my_rtsp_addr;
+static struct sockaddr_in my_http_addr;
+static struct sockaddr_in my_rtsp_addr;
 
 static char logfilename[1024];
 static HTTPContext *first_http_ctx;
