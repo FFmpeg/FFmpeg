@@ -259,6 +259,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 # external codec libraries
+OBJS-$(CONFIG_AMR)                     += amr.o
 OBJS-$(CONFIG_LIBA52)                  += a52dec.o
 OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
 OBJS-$(CONFIG_LIBFAAC)                 += faac.o
@@ -269,8 +270,6 @@ OBJS-$(CONFIG_LIBTHEORA)               += libtheoraenc.o
 OBJS-$(CONFIG_LIBVORBIS)               += oggvorbis.o
 OBJS-$(CONFIG_X264)                    += x264.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
-
-OBJS-$(CONFIG_AMR)                     += amr.o
 
 
 OBJS-$(CONFIG_AAC_PARSER)              += parser.o
