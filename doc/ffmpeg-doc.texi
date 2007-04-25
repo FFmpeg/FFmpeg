@@ -1722,6 +1722,8 @@ do not attach several unrelated patches to the same mail.
 @item
     If you added a new file, did you insert a license header? It should be
     taken from FFmpeg, not randomly copied and pasted from somewhere else.
+@item
+    Did you provide a suggestion for a clear commit log message?
 @end enumerate
 
 @section Patch review process
