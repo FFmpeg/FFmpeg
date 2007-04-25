@@ -862,7 +862,7 @@ AVOutputFormat rawvideo_muxer = {
     "rawvideo",
     "raw video format",
     NULL,
-    "yuv",
+    "yuv,rgb",
     0,
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
