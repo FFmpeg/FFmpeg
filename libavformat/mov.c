@@ -1255,6 +1255,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'u', 'd', 't', 'a' ): /* Packet Video PVAuthor adds this and a lot of more junk */
             return AVPROBE_SCORE_MAX;
         /* those are more common words, so rate then a bit less */
+        case MKTAG( 'e', 'd', 'i', 'w' ): /* xdcam files have reverted first tags */
         case MKTAG( 'w', 'i', 'd', 'e' ):
         case MKTAG( 'f', 'r', 'e', 'e' ):
         case MKTAG( 'j', 'u', 'n', 'k' ):
