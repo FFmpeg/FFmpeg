@@ -3816,6 +3816,11 @@ int main(int argc, char **argv)
 
     av_free(intra_matrix);
     av_free(inter_matrix);
+
+    if (fvstats)
+        fclose(fvstats);
+    av_free(vstats_filename);
+
     av_free(opt_names);
 
 #ifdef CONFIG_POWERPC_PERF
