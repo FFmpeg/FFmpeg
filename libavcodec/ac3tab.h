@@ -25,18 +25,18 @@
 #include "common.h"
 
 extern const uint16_t ff_ac3_frame_sizes[38][3];
-extern const uint8_t ff_ac3_channels[8];
+extern const uint8_t  ff_ac3_channels[8];
 extern const uint16_t ff_ac3_freqs[3];
 extern const uint16_t ff_ac3_bitratetab[19];
-extern const int16_t ff_ac3_window[256];
+extern const int16_t  ff_ac3_window[256];
 extern const uint8_t  ff_ac3_latab[260];
 extern const uint16_t ff_ac3_hth[50][3];
 extern const uint8_t  ff_ac3_baptab[64];
-extern const uint8_t ff_sdecaytab[4];
-extern const uint8_t ff_fdecaytab[4];
+extern const uint8_t  ff_sdecaytab[4];
+extern const uint8_t  ff_fdecaytab[4];
 extern const uint16_t ff_sgaintab[4];
 extern const uint16_t ff_dbkneetab[4];
-extern const int16_t ff_floortab[8];
+extern const int16_t  ff_floortab[8];
 extern const uint16_t ff_fgaintab[8];
 extern const uint8_t  ff_ac3_bndsz[50];
 
