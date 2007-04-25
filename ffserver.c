@@ -3823,8 +3823,8 @@ static int parse_ffconfig(const char *filename)
             my_http_addr.sin_port = htons(val);
         } else if (!strcasecmp(cmd, "BindAddress")) {
             get_arg(arg, sizeof(arg), &p);
-            if (!inet_aton(arg, &my_http_addr.sin_addr)) {
-                fprintf(stderr, "%s:%d: Invalid IP address: %s\n",
+            if (resolve_host(&my_http_addr.sin_addr, arg) != 0) {
+                fprintf(stderr, "%s:%d: Invalid host/IP address: %s\n",
                         filename, line_num, arg);
                 errors++;
             }
@@ -3841,8 +3841,8 @@ static int parse_ffconfig(const char *filename)
             my_rtsp_addr.sin_port = htons(atoi(arg));
         } else if (!strcasecmp(cmd, "RTSPBindAddress")) {
             get_arg(arg, sizeof(arg), &p);
-            if (!inet_aton(arg, &my_rtsp_addr.sin_addr)) {
-                fprintf(stderr, "%s:%d: Invalid IP address: %s\n",
+            if (resolve_host(&my_rtsp_addr.sin_addr, arg) != 0) {
+                fprintf(stderr, "%s:%d: Invalid host/IP address: %s\n",
                         filename, line_num, arg);
                 errors++;
             }
@@ -4341,8 +4341,8 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "MulticastAddress")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                if (!inet_aton(arg, &stream->multicast_ip)) {
-                    fprintf(stderr, "%s:%d: Invalid IP address: %s\n",
+                if (resolve_host(&stream->multicast_ip, arg) != 0) {
+                    fprintf(stderr, "%s:%d: Invalid host/IP address: %s\n",
                             filename, line_num, arg);
                     errors++;
                 }
