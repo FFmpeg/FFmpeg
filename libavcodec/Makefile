@@ -47,7 +47,7 @@ OBJS= bitstream.o \
 HEADERS = avcodec.h opt.h
 
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
-OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3.o
+OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o
 OBJS-$(CONFIG_ASV1_ENCODER)            += asv1.o
@@ -273,7 +273,7 @@ OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 
 
 OBJS-$(CONFIG_AAC_PARSER)              += parser.o
-OBJS-$(CONFIG_AC3_PARSER)              += parser.o ac3.o
+OBJS-$(CONFIG_AC3_PARSER)              += parser.o ac3tab.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs.o parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsubdec.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsubdec.o

@@ -24,6 +24,8 @@
  * Common code between AC3 encoder and decoder.
  */
 
+#include "ac3tab.h"
+
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
 #define AC3_MAX_CHANNELS 6 /* including LFE channel */
 
@@ -77,17 +79,6 @@ typedef struct {
     /** @} */
 } AC3HeaderInfo;
 
-extern const uint16_t ff_ac3_frame_sizes[38][3];
-extern const uint8_t ff_ac3_channels[8];
-extern const uint16_t ff_ac3_freqs[3];
-extern const uint16_t ff_ac3_bitratetab[19];
-extern const int16_t ff_ac3_window[256];
-extern const uint8_t ff_sdecaytab[4];
-extern const uint8_t ff_fdecaytab[4];
-extern const uint16_t ff_sgaintab[4];
-extern const uint16_t ff_dbkneetab[4];
-extern const int16_t ff_floortab[8];
-extern const uint16_t ff_fgaintab[8];
 
 void ac3_common_init(void);
 
