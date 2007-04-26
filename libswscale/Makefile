@@ -18,7 +18,8 @@ include ../common.mak
 
 cs_test: cs_test.o $(LIB)
 
-swscale-example: swscale-example.o $(LIB) -lm
+swscale-example: swscale-example.o $(LIB)
+swscale-example: EXTRALIBS += -lm
 
 clean::
 	rm -f cs_test swscale-example
