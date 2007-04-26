@@ -1995,7 +1995,6 @@ static int decode_thread(void *arg)
     for(;;) {
         if (is->abort_request)
             break;
-#ifdef CONFIG_NETWORK
         if (is->paused != is->last_paused) {
             is->last_paused = is->paused;
             if (is->paused)
@@ -2003,7 +2002,6 @@ static int decode_thread(void *arg)
             else
                 av_read_play(ic);
         }
-#endif
 #ifdef CONFIG_RTSP_DEMUXER
         if (is->paused && ic->iformat == &rtsp_demuxer) {
             /* wait 10 ms to avoid trying to get another packet */
