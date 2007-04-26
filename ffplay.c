@@ -2003,6 +2003,8 @@ static int decode_thread(void *arg)
             else
                 av_read_play(ic);
         }
+#endif
+#ifdef CONFIG_RTSP_DEMUXER
         if (is->paused && ic->iformat == &rtsp_demuxer) {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
