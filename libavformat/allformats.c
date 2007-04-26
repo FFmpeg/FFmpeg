@@ -26,6 +26,8 @@
 #define REGISTER_DEMUXER(X,x) \
           if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer)
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
+#define REGISTER_PROTOCOL(X,x) \
+          if(ENABLE_##X##_PROTOCOL) register_protocol(&x##_protocol)
 
 /* If you do not call this function, then you can select exactly which
    formats you want to support */
@@ -162,15 +164,10 @@ void av_register_all(void)
     REGISTER_DEMUXER (X11_GRAB_DEVICE, x11_grab_device);
     REGISTER_MUXDEMUX(YUV4MPEGPIPE, yuv4mpegpipe);
 
-#ifdef CONFIG_PROTOCOLS
-    /* file protocols */
-    register_protocol(&file_protocol);
-    register_protocol(&pipe_protocol);
-#ifdef CONFIG_NETWORK
-    register_protocol(&udp_protocol);
-    register_protocol(&rtp_protocol);
-    register_protocol(&tcp_protocol);
-    register_protocol(&http_protocol);
-#endif
-#endif
+    REGISTER_PROTOCOL(FILE, file);
+    REGISTER_PROTOCOL(HTTP, http);
+    REGISTER_PROTOCOL(PIPE, pipe);
+    REGISTER_PROTOCOL(RTP, rtp);
+    REGISTER_PROTOCOL(TCP, tcp);
+    REGISTER_PROTOCOL(UDP, udp);
 }

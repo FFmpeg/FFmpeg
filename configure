@@ -135,7 +135,6 @@ show_help(){
   echo "  --disable-debug          disable debugging symbols"
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
   echo "                           MPEG audio decoding [default=no]"
-  echo "  --disable-protocols      disable I/O protocols support [default=no]"
   echo "  --disable-ffmpeg         disable ffmpeg build"
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --disable-ffplay         disable ffplay build"
@@ -156,6 +155,9 @@ show_help(){
   echo "  --enable-parser=NAME     enables parser NAME"
   echo "  --disable-parser=NAME    disables parser NAME"
   echo "  --disable-parsers        disables all parsers"
+  echo "  --enable-protocol=NAME   enables protocol NAME"
+  echo "  --disable-protocol=NAME  disables protocol NAME"
+  echo "  --disable-protocols      disables all protocols"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
@@ -707,17 +709,21 @@ libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 ogg_muxer_deps="libogg"
 redir_demuxer_deps="network"
-rtp_muxer_deps="network mpegts_demuxer"
-rtsp_demuxer_deps="network"
-sdp_demuxer_deps="network"
+rtp_muxer_deps="mpegts_demuxer"
+rtsp_demuxer_deps="rtp_protocol rtp_muxer"
+sdp_demuxer_deps="rtsp_demuxer"
 v4l2_demuxer_deps="v4l2"
 video_grab_bktr_demuxer_deps="bktr"
 video_grab_v4l_demuxer_deps="v4l"
 x11_grab_device_demuxer_deps="x11grab"
 
+http_protocol_deps="network"
+rtp_protocol_deps="udp_protocol"
+tcp_protocol_deps="network"
+udp_protocol_deps="network"
+
 ffplay_deps="sdl"
-ffserver_deps="network muxers"
-network_deps="protocols"
+ffserver_deps="muxers rtp_protocol"
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
@@ -883,8 +889,9 @@ DECODER_LIST=`sed -n 's/^[^#]*DEC.*, *\(.*\)).*/\1_decoder/p' "$source_path/liba
 PARSER_LIST=`sed -n 's/^[^#]*PARSER.*, *\(.*\)).*/\1_parser/p' "$source_path/libavcodec/allcodecs.c"`
 MUXER_LIST=`sed -n 's/^[^#]*_MUX.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
 DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
+PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
-enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST
+enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -951,10 +958,12 @@ for opt do
   ;;
   --disable-parsers) disable $PARSER_LIST
   ;;
+  --disable-protocols) disable $PROTOCOL_LIST
+  ;;
   --enable-*=*|--disable-*=*)
   eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
   case "$thing" in
-      encoder|decoder|muxer|demuxer|parser) $action ${optval}_${thing} ;;
+      encoder|decoder|muxer|demuxer|parser|protocol) $action ${optval}_${thing} ;;
       *) die_unknown "$opt" ;;
   esac
   ;;
@@ -1777,11 +1786,12 @@ enabled_any $ENCODER_LIST && enable encoders
 enabled_any $DECODER_LIST && enable decoders
 enabled_any $MUXER_LIST   && enable muxers
 enabled_any $DEMUXER_LIST && enable demuxers
+enabled_any $PROTOCOL_LIST && enable protocols
 
 enabled_any $THREADS_LIST && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
-    $DEMUXER_LIST $MUXER_LIST
+    $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
 
 enabled libogg    && append pkg_requires "ogg >= 1.1"
 enabled libtheora && append pkg_requires "theora"
@@ -2001,7 +2011,7 @@ else
 fi
 
 
-for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
+for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST; do
     ucname="`toupper $part`"
     config_name="CONFIG_$ucname"
     enabled_name="ENABLE_$ucname"

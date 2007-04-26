@@ -117,10 +117,14 @@ OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o
 OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
+OBJS-$(CONFIG_REDIR_DEMUXER)             += rtsp.o
 OBJS-$(CONFIG_RM_DEMUXER)                += rm.o
 OBJS-$(CONFIG_RM_MUXER)                  += rm.o
+OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o rtp_h264.o
+OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_VMD_DEMUXER)               += sierravmd.o
+OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o
 OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swf.o
@@ -158,9 +162,12 @@ CPPOBJS-$(CONFIG_AUDIO_BEOS)             += beosaudio.o
 # protocols I/O
 OBJS+= avio.o aviobuf.o
 
-OBJS-$(CONFIG_PROTOCOLS)                 += file.o
-OBJS-$(CONFIG_NETWORK)                   += udp.o tcp.o http.o rtsp.o rtp.o \
-                                            rtpproto.o rtp_h264.o
+OBJS-$(CONFIG_FILE_PROTOCOL)             += file.o
+OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o
+OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
+OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
+OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
+OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 NAME=avformat
 LIBVERSION=$(LAVFVERSION)
