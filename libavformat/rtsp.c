@@ -1282,6 +1282,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
+#ifdef CONFIG_RTSP_DEMUXER
 AVInputFormat rtsp_demuxer = {
     "rtsp",
     "RTSP input format",
@@ -1295,6 +1296,7 @@ AVInputFormat rtsp_demuxer = {
     .read_play = rtsp_read_play,
     .read_pause = rtsp_read_pause,
 };
+#endif
 
 static int sdp_probe(AVProbeData *p1)
 {
