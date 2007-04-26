@@ -28,20 +28,6 @@ typedef struct TCPContext {
     int fd;
 } TCPContext;
 
-/* resolve host with also IP address parsing */
-int resolve_host(struct in_addr *sin_addr, const char *hostname)
-{
-    struct hostent *hp;
-
-    if (!inet_aton(hostname, sin_addr)) {
-        hp = gethostbyname(hostname);
-        if (!hp)
-            return -1;
-        memcpy(sin_addr, hp->h_addr, sizeof(struct in_addr));
-    }
-    return 0;
-}
-
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
