@@ -643,7 +643,7 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    Time2Sample *ctts_entries;
+    MOV_stts_t *ctts_entries;
     uint32_t entries = 0;
     uint32_t atom_size;
     int i;
@@ -677,7 +677,7 @@ static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
 /* Time to sample atom */
 static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    Time2Sample *stts_entries;
+    MOV_stts_t *stts_entries;
     uint32_t entries = -1;
     uint32_t atom_size;
     int i;

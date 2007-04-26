@@ -63,11 +63,11 @@
  * Here we just use what is needed to read the chunks
  */
 
-typedef struct MOV_sample_to_chunk_tbl {
+typedef struct {
     int first;
     int count;
     int id;
-} MOV_sample_to_chunk_tbl;
+} MOV_stsc_t;
 
 typedef struct {
     uint32_t type;
@@ -75,10 +75,10 @@ typedef struct {
     int64_t size; /* total size (excluding the size and type fields) */
 } MOV_atom_t;
 
-typedef struct MOV_mdat_atom_s {
+typedef struct {
     offset_t offset;
     int64_t size;
-} MOV_mdat_atom_t;
+} MOV_mdat_t;
 
 struct MOVParseTableEntry;
 
@@ -88,12 +88,12 @@ typedef struct MOVStreamContext {
     unsigned int chunk_count;
     int64_t *chunk_offsets;
     unsigned int stts_count;
-    Time2Sample *stts_data;
+    MOV_stts_t *stts_data;
     unsigned int ctts_count;
-    Time2Sample *ctts_data;
+    MOV_stts_t *ctts_data;
     unsigned int edit_count; /* number of 'edit' (elst atom) */
     unsigned int sample_to_chunk_sz;
-    MOV_sample_to_chunk_tbl *sample_to_chunk;
+    MOV_stsc_t *sample_to_chunk;
     int sample_to_ctime_index;
     int sample_to_ctime_sample;
     unsigned int sample_size;
@@ -123,7 +123,7 @@ typedef struct MOVContext {
     /* NOTE: for recursion save to/ restore from local variable! */
 
     AVPaletteControl palette_control;
-    MOV_mdat_atom_t *mdat_list;
+    MOV_mdat_t *mdat_list;
     int mdat_count;
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
@@ -860,13 +860,13 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     entries = get_be32(pb);
 
-    if(entries >= UINT_MAX / sizeof(MOV_sample_to_chunk_tbl))
+    if(entries >= UINT_MAX / sizeof(MOV_stsc_t))
         return -1;
 
     dprintf(c->fc, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 
     sc->sample_to_chunk_sz = entries;
-    sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
+    sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_stsc_t));
     if (!sc->sample_to_chunk)
         return -1;
     for(i=0; i<entries; i++) {
@@ -948,11 +948,11 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
-    if(entries >= UINT_MAX / sizeof(Time2Sample))
+    if(entries >= UINT_MAX / sizeof(MOV_stts_t))
         return -1;
 
     sc->stts_count = entries;
-    sc->stts_data = av_malloc(entries * sizeof(Time2Sample));
+    sc->stts_data = av_malloc(entries * sizeof(MOV_stts_t));
 
     dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 
@@ -990,11 +990,11 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
-    if(entries >= UINT_MAX / sizeof(Time2Sample))
+    if(entries >= UINT_MAX / sizeof(MOV_stts_t))
         return -1;
 
     sc->ctts_count = entries;
-    sc->ctts_data = av_malloc(entries * sizeof(Time2Sample));
+    sc->ctts_data = av_malloc(entries * sizeof(MOV_stts_t));
 
     dprintf(c->fc, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
 

@@ -32,9 +32,9 @@ extern const AVCodecTag codec_movaudio_tags[];
 int ff_mov_iso639_to_lang(const char *lang, int mp4);
 int ff_mov_lang_to_iso639(int code, char *to);
 
-typedef struct Time2Sample{
+typedef struct {
     int count;
     int duration;
-}Time2Sample;
+} MOV_stts_t;
 
 #endif /* FFMPEG_ISOM_H */
