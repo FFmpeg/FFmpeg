@@ -38,16 +38,8 @@
  *
  * Features and limitations:
  * - reads most of the QT files I have (at least the structure),
- *   the exceptions are .mov with zlib compressed headers ('cmov' section). It shouldn't be hard to implement.
- *   FIXED, Francois Revol, 07/17/2002
- * - ffmpeg has nearly none of the usual QuickTime codecs,
- *   although I succesfully dumped raw and mp3 audio tracks off .mov files.
  *   Sample QuickTime files with mp3 audio can be found at: http://www.3ivx.com/showcase.html
- * - .mp4 parsing is still hazardous, although the format really is QuickTime with some minor changes
- *   (to make .mov parser crash maybe ?), despite what they say in the MPEG FAQ at
- *   http://mpeg.telecomitalialab.com/faq.htm
  * - the code is quite ugly... maybe I won't do it recursive next time :-)
- * - seek is not supported with files that contain edit list
  *
  * Funny I didn't know about http://sourceforge.net/projects/qt-ffmpeg/
  * when coding this :) (it's a writer anyway)
