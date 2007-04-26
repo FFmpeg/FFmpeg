@@ -401,9 +401,9 @@ static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be32(pb); /* modification time */
     }
     c->time_scale = get_be32(pb); /* time scale */
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "time scale = %i\n", c->time_scale);
-#endif
+
+    dprintf(c->fc, "time scale = %i\n", c->time_scale);
+
     c->duration = (version == 1) ? get_be64(pb) : get_be32(pb); /* duration */
     get_be32(pb); /* preferred scale */
 
@@ -635,9 +635,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be32(pb); /* vert resolution */
             get_be32(pb); /* data size, always 0 */
             frames_per_sample = get_be16(pb); /* frames per samples */
-#ifdef DEBUG
-            av_log(NULL, AV_LOG_DEBUG, "frames/samples = %d\n", frames_per_sample);
-#endif
+
+            dprintf(c->fc, "frames/samples = %d\n", frames_per_sample);
+
             get_buffer(pb, codec_name, 32); /* codec name, pascal string (FIXME: true for mp4?) */
             if (codec_name[0] <= 31) {
                 memcpy(st->codec->codec_name, &codec_name[1],codec_name[0]);
@@ -863,9 +863,8 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(entries >= UINT_MAX / sizeof(MOV_sample_to_chunk_tbl))
         return -1;
 
-#ifdef DEBUG
-av_log(NULL, AV_LOG_DEBUG, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
-#endif
+    dprintf(c->fc, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
+
     sc->sample_to_chunk_sz = entries;
     sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
     if (!sc->sample_to_chunk)
@@ -893,17 +892,15 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
 
     sc->keyframe_count = entries;
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %d\n", sc->keyframe_count);
-#endif
+
+    dprintf(c->fc, "keyframe_count = %d\n", sc->keyframe_count);
+
     sc->keyframes = av_malloc(entries * sizeof(int));
     if (!sc->keyframes)
         return -1;
     for(i=0; i<entries; i++) {
         sc->keyframes[i] = get_be32(pb);
-#ifdef DEBUG
-/*        av_log(NULL, AV_LOG_DEBUG, "keyframes[]=%d\n", sc->keyframes[i]); */
-#endif
+        //dprintf(c->fc, "keyframes[]=%d\n", sc->keyframes[i]);
     }
     return 0;
 }
@@ -928,17 +925,14 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (sample_size)
         return 0;
 
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "sample_size = %d sample_count = %d\n", sc->sample_size, sc->sample_count);
-#endif
+    dprintf(c->fc, "sample_size = %d sample_count = %d\n", sc->sample_size, sc->sample_count);
+
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
         return -1;
     for(i=0; i<entries; i++) {
         sc->sample_sizes[i] = get_be32(pb);
-#ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "sample_sizes[]=%d\n", sc->sample_sizes[i]);
-#endif
+        dprintf(c->fc, "sample_sizes[]=%d\n", sc->sample_sizes[i]);
     }
     return 0;
 }
@@ -960,9 +954,7 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc->stts_count = entries;
     sc->stts_data = av_malloc(entries * sizeof(Time2Sample));
 
-#ifdef DEBUG
-av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
-#endif
+    dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 
     sc->time_rate=0;
 
