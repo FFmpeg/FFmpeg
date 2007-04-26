@@ -4281,7 +4281,7 @@ static int parse_ffconfig(const char *filename)
             }
 
             get_arg(arg, sizeof(arg), &p);
-	    
+
             if (resolve_host(&acl.first, arg) != 0) {
                 fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
                         filename, line_num, arg);

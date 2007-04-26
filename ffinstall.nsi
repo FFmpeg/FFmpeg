@@ -32,7 +32,7 @@ Section "Install"
   File ".\ffplay.exe"
   File ".\COPYING"
   File ".\CREDITS"
-  
+
   ; documentation
   SetOutPath $INSTDIR\doc
   File ".\doc\faq.html"
@@ -58,7 +58,7 @@ Section Uninstall
   Delete "$INSTDIR\ffplay.exe"
   Delete "$INSTDIR\COPYING"
   Delete "$INSTDIR\CREDITS"
-  
+
   ; delete documentation
   Delete "$INSTDIR\doc\faq.html"
   Delete "$INSTDIR\ffmpeg-doc.html"
