@@ -196,11 +196,11 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
 #define H 96
 
 int main(int argc, char **argv){
-	uint8_t rgb_data[W*H*4];
+	uint8_t *rgb_data = malloc (W*H*4);
 	uint8_t *rgb_src[3]= {rgb_data, NULL, NULL};
 	int rgb_stride[3]={4*W, 0, 0};
-	uint8_t data[3][W*H];
-	uint8_t *src[3]= {data[0], data[1], data[2]};
+	uint8_t *data = malloc (3*W*H);
+	uint8_t *src[3]= {data, data+W*H, data+W*H*2};
 	int stride[3]={W, W, W};
 	int x, y;
 	struct SwsContext *sws;
