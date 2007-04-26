@@ -1483,7 +1483,21 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
     int64_t end_time;
     int64_t filesize, offset, duration;
 
-    av_read_frame_flush(ic);
+    /* free previous packet */
+    if (ic->cur_st && ic->cur_st->parser)
+        av_free_packet(&ic->cur_pkt);
+    ic->cur_st = NULL;
+
+    /* flush packet queue */
+    flush_packet_queue(ic);
+
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (st->parser) {
+            av_parser_close(st->parser);
+            st->parser= NULL;
+        }
+    }
 
     /* we read the first packets to get the first PTS (not fully
        accurate, but it is enough now) */
@@ -2184,12 +2198,11 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     }
 
     if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && st->cur_dts >= pkt->dts){
-        av_log(NULL, AV_LOG_ERROR, "error, non monotone timestamps %"PRId64" >= %"PRId64" st:%d\n", st->cur_dts, pkt->dts, st->index);
+        av_log(NULL, AV_LOG_ERROR, "error, non monotone timestamps %"PRId64" >= %"PRId64"\n", st->cur_dts, pkt->dts);
         return -1;
     }
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){
-        av_log(NULL, AV_LOG_ERROR, "error, pts < dts (%"PRId64" < %"PRId64")\n",
-               pkt->pts, pkt->dts);
+        av_log(NULL, AV_LOG_ERROR, "error, pts < dts\n");
         return -1;
     }
 
