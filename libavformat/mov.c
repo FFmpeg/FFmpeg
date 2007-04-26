@@ -277,7 +277,6 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     int tag, len;
 
-    /* Well, broken but suffisant for some MP4 streams */
     get_be32(pb); /* version + flags */
     len = mp4_read_descr(c, pb, &tag);
     if (tag == MP4ESDescrTag) {
