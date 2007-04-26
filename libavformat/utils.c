@@ -452,7 +452,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     }
 
     /* XXX: suppress this hack for redirectors */
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_REDIR_DEMUXER
     if (fmt == &redir_demuxer) {
         err = redir_open(ic_ptr, pb);
         url_fclose(pb);

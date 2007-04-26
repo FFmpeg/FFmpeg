@@ -1399,6 +1399,7 @@ AVInputFormat sdp_demuxer = {
 };
 #endif
 
+#ifdef CONFIG_REDIR_DEMUXER
 /* dummy redirector format (used directly in av_open_input_file now) */
 static int redir_probe(AVProbeData *pd)
 {
@@ -1461,3 +1462,4 @@ AVInputFormat redir_demuxer = {
     NULL,
     NULL,
 };
+#endif
