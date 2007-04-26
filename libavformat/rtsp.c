@@ -77,8 +77,6 @@ static int rtsp_read_play(AVFormatContext *s);
 
 int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_UDP);
 
-FFRTSPCallback *ff_rtsp_callback = NULL;
-
 static int rtsp_probe(AVProbeData *p)
 {
     if (strstart(p->filename, "rtsp:", NULL))
@@ -818,12 +816,6 @@ static void rtsp_send_cmd(AVFormatContext *s,
 }
 
 
-void rtsp_set_callback(FFRTSPCallback *rtsp_cb)
-{
-    ff_rtsp_callback = rtsp_cb;
-}
-
-
 /* close and free RTSP streams */
 static void rtsp_close_streams(RTSPState *rt)
 {
@@ -1038,16 +1030,6 @@ static int rtsp_read_header(AVFormatContext *s,
             }
         }
     }
-
-    /* use callback if available to extend setup */
-    if (ff_rtsp_callback) {
-        if (ff_rtsp_callback(RTSP_ACTION_CLIENT_SETUP, rt->session_id,
-                             NULL, 0, rt->last_reply) < 0) {
-            err = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-    }
-
 
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position
@@ -1294,11 +1276,6 @@ static int rtsp_read_close(AVFormatContext *s)
              "TEARDOWN %s RTSP/1.0\r\n",
              s->filename);
     rtsp_send_cmd(s, cmd, reply, NULL);
-
-    if (ff_rtsp_callback) {
-        ff_rtsp_callback(RTSP_ACTION_CLIENT_TEARDOWN, rt->session_id,
-                         NULL, 0, NULL);
-    }
 
     rtsp_close_streams(rt);
     url_close(rt->rtsp_hd);

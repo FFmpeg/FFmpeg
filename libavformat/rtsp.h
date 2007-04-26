@@ -76,16 +76,12 @@ typedef int FFRTSPCallback(enum RTSPCallbackAction action,
                            char *buf, int buf_size,
                            void *arg);
 
-/** useful for modules: set RTSP callback function */
-void rtsp_set_callback(FFRTSPCallback *rtsp_cb);
-
 int rtsp_init(void);
 void rtsp_parse_line(RTSPHeader *reply, const char *buf);
 
 extern int rtsp_default_protocols;
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
-extern FFRTSPCallback *ff_rtsp_callback;
 extern AVInputFormat rtsp_demuxer;
 
 int rtsp_pause(AVFormatContext *s);
