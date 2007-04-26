@@ -716,7 +716,7 @@ video_grab_v4l_demuxer_deps="v4l"
 x11_grab_device_demuxer_deps="x11grab"
 
 ffplay_deps="sdl"
-ffserver_deps="network protocols muxers"
+ffserver_deps="network muxers"
 network_deps="protocols"
 
 # set temporary file name
