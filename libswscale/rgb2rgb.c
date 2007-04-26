@@ -22,7 +22,7 @@
  * You should have received a copy of the GNU General Public License
  * along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- * 
+ *
  * the C code (not assembly, mmx, ...) of this file can be used
  * under the LGPL license too
  */
@@ -271,7 +271,7 @@ void palette8tobgr32(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
 			dst[2]= palette[ src[i]*4+2 ];
 			//dst[3]= 0; /* do we need this cleansing? */
 		#endif
-		
+
 		dst+= 4;
 	}
 }
@@ -430,7 +430,7 @@ void rgb16tobgr16(const uint8_t *src, uint8_t *dst, long src_size)
 {
 	long i;
 	long num_pixels = src_size >> 1;
-	
+
 	for(i=0; i<num_pixels; i++)
 	{
 	    unsigned b,g,r;
@@ -447,7 +447,7 @@ void rgb16tobgr15(const uint8_t *src, uint8_t *dst, long src_size)
 {
 	long i;
 	long num_pixels = src_size >> 1;
-	
+
 	for(i=0; i<num_pixels; i++)
 	{
 	    unsigned b,g,r;
@@ -504,7 +504,7 @@ void rgb15tobgr16(const uint8_t *src, uint8_t *dst, long src_size)
 {
 	long i;
 	long num_pixels = src_size >> 1;
-	
+
 	for(i=0; i<num_pixels; i++)
 	{
 	    unsigned b,g,r;
@@ -521,7 +521,7 @@ void rgb15tobgr15(const uint8_t *src, uint8_t *dst, long src_size)
 {
 	long i;
 	long num_pixels = src_size >> 1;
-	
+
 	for(i=0; i<num_pixels; i++)
 	{
 	    unsigned b,g,r;

@@ -1,4 +1,3 @@
-
 /*
  * yuv2rgb_mmx.c, Software YUV to RGB coverter with Intel MMX "technology"
  *
@@ -134,7 +133,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
 
     h_size= (c->dstW+7)&~7;
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
-    
+
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
 //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
@@ -203,18 +202,18 @@ YUV2RGB
 		     "movd 4 (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 
 		     MOVNTQ " %%mm5, 8 (%1);" /* store pixel 4-7 */
-		     
+
 		     "add $16, %1			\n\t"
 		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
-		     
+
 		     : "+r" (index), "+r" (_image)
 		     : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
 		     );
     }
 
     __asm__ __volatile__ (EMMS);
-    
+
     return srcSliceH;
 }
 
@@ -229,7 +228,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
 
     h_size= (c->dstW+7)&~7;
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
-    
+
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
 //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
@@ -294,7 +293,7 @@ YUV2RGB
 		     "movd 4 (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 
 		     MOVNTQ " %%mm5, 8 (%1);" /* store pixel 4-7 */
-		     
+
 		     "add $16, %1			\n\t"
 		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
@@ -318,7 +317,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
 
     h_size= (c->dstW+7)&~7;
     if(h_size*3 > FFABS(dstStride[0])) h_size-=8;
-    
+
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
@@ -439,11 +438,11 @@ YUV2RGB
 			"movd 4 (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 			"pxor %%mm4, %%mm4		\n\t"
 #endif
-		     
+
 		     "add $24, %1			\n\t"
 		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
-		     
+
 		     : "+r" (index), "+r" (_image)
 		     : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
 		     );
@@ -464,7 +463,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
 
     h_size= (c->dstW+7)&~7;
     if(h_size*4 > FFABS(dstStride[0])) h_size-=8;
-    
+
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
@@ -529,7 +528,7 @@ YUV2RGB
 		     "add $32, %1			\n\t"
 		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
-		     
+
 		     : "+r" (index), "+r" (_image)
 		     : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
 		     );

@@ -16,7 +16,7 @@
  * \arg Maximum Rv value: 117570
  * \arg Maximum Bu value: 138420
  * \arg Maximum Gv + Gu value: 25642 + 53281 = 78923
- * 
+ *
  * These values are needed to allocate table_{r, g, b}. If you modify
  * this table, please update allocate_tables() accordingly
  */
@@ -168,7 +168,7 @@ static int get_entry_size(int bpp)
  * together, so that they are contiguous in memory
  *
  * table_r is indexed in the range
- *      [-128 * 117570 / 76309, 255 + 127 * 117570 / 76309] = 
+ *      [-128 * 117570 / 76309, 255 + 127 * 117570 / 76309] =
  *      [-197.21, 451.67] ---> [-198, 452]
  * table_b is indexed in the range
  *      [-128 * 138420 / 76309, 255 + 127 * 138420 / 76309] =
@@ -210,7 +210,7 @@ static void *allocate_tables(uint8_t **table_r, uint8_t **table_g, uint8_t **tab
 
         return NULL;
     }
-    
+
     /* ...and then, assign the table_* value */
     switch (bpp) {
         case 32:
@@ -242,7 +242,7 @@ static void *allocate_tables(uint8_t **table_r, uint8_t **table_g, uint8_t **tab
  * @param fullRange 0->MPEG YUV space 1->JPEG YUV space
 */
 int yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
-{  
+{
     int i;
     static uint8_t ytable[1024];
     int64_t cy, oy;

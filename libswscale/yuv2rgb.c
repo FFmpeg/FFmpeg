@@ -427,15 +427,15 @@ PROLOG(yuv2rgb_c_4, uint8_t)
 	acc = r[Y] + g[Y] + b[Y];	\
 	Y = py_1[2*i+1];			\
         acc |= (r[Y] + g[Y] + b[Y])<<4;\
-	dst_1[i] = acc; 
+	dst_1[i] = acc;
 
 #define DST2_4(i)					\
 	Y = py_2[2*i];				\
 	acc = r[Y] + g[Y] + b[Y];	\
 	Y = py_2[2*i+1];			\
 	acc |= (r[Y] + g[Y] + b[Y])<<4;\
-	dst_2[i] = acc; 
-	
+	dst_2[i] = acc;
+
         RGB(0);
 	DST1_4(0);
 	DST2_4(0);
@@ -572,7 +572,7 @@ PROLOG(yuv2rgb_c_1_ordered_dither, uint8_t)
 
 	DST2bpp1(3,6);
 	DST1bpp1(3,6);
-	
+
 	dst_1[0]= out_1;
 	dst_2[0]= out_2;
 EPILOG(1)
@@ -644,7 +644,7 @@ static int div_round (int dividend, int divisor)
 }
 
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
-{  
+{
     const int isRgb = isBGR(c->dstFormat);
     const int bpp = fmt_depth(c->dstFormat);
     int i;
@@ -676,7 +676,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
         cgu= (cgu*224) / 255;
         cgv= (cgv*224) / 255;
     }
-	
+
     cy = (cy *contrast             )>>16;
     crv= (crv*contrast * saturation)>>32;
     cbu= (cbu*contrast * saturation)>>32;

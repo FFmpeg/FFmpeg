@@ -141,7 +141,7 @@ extern void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint
 			long width, long height,
 			long srcStride1, long srcStride2,
 			long srcStride3, long dstStride);
-	
+
 void sws_rgb2rgb_init(int flags);
 
 #endif
