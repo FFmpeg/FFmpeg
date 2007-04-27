@@ -158,7 +158,7 @@ static int audio_write_header(AVFormatContext *s1)
     st = s1->streams[0];
     s->sample_rate = st->codec->sample_rate;
     s->channels = st->codec->channels;
-    ret = audio_open(s, 1, NULL);
+    ret = audio_open(s, 1, s1->filename);
     if (ret < 0) {
         return AVERROR_IO;
     } else {
