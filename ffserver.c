@@ -32,17 +32,13 @@
 #include <sys/time.h>
 #undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <signal.h>
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 
+#include "network.h"
 #include "version.h"
 #include "ffserver.h"
 #include "random.h"
