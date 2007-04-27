@@ -61,4 +61,8 @@
 #  define CONFIG_7REGS 1
 #endif
 
+#if defined(ARCH_X86_64) && defined(PIC)
+#  define BROKEN_RELOCATIONS 1
+#endif
+
 #endif /* AVUTIL_X86CPU_H */
