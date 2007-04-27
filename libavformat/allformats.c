@@ -136,7 +136,7 @@ void av_register_all(void)
     REGISTER_MUXER   (RTP, rtp);
     REGISTER_DEMUXER (RTSP, rtsp);
     REGISTER_DEMUXER (SDP, sdp);
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_RTP_MUXER
     av_register_rtp_dynamic_payload_handlers();
 #endif
     REGISTER_DEMUXER (SEGAFILM, segafilm);
