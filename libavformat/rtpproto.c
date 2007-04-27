@@ -178,7 +178,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         len = recvfrom (s->rtp_fd, buf, size, 0,
                         (struct sockaddr *)&from, &from_len);
         if (len < 0) {
-            if (errno == EAGAIN || errno == EINTR)
+            if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
+                ff_neterrno() == FF_NETERROR(EINTR))
                 continue;
             return AVERROR_IO;
         }
@@ -201,7 +202,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 len = recvfrom (s->rtcp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
                 if (len < 0) {
-                    if (errno == EAGAIN || errno == EINTR)
+                    if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
+                        ff_neterrno() == FF_NETERROR(EINTR))
                         continue;
                     return AVERROR_IO;
                 }
@@ -213,7 +215,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 len = recvfrom (s->rtp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
                 if (len < 0) {
-                    if (errno == EAGAIN || errno == EINTR)
+                    if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
+                        ff_neterrno() == FF_NETERROR(EINTR))
                         continue;
                     return AVERROR_IO;
                 }

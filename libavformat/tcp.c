@@ -68,9 +68,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     ret = connect(fd, (struct sockaddr *)&dest_addr,
                   sizeof(dest_addr));
     if (ret < 0) {
-        if (errno == EINTR)
+        if (ff_neterrno() == FF_NETERROR(EINTR))
             goto redo;
-        if (errno != EINPROGRESS)
+        if (ff_neterrno() != FF_NETERROR(EINPROGRESS))
             goto fail;
 
         /* wait until we are connected or until abort */
@@ -126,7 +126,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
         if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
             len = recv(s->fd, buf, size, 0);
             if (len < 0) {
-                if (errno != EINTR && errno != EAGAIN)
+                if (ff_neterrno() != FF_NETERROR(EINTR) &&
+                    ff_neterrno() != FF_NETERROR(EAGAIN))
                     return AVERROR(errno);
             } else return len;
         } else if (ret < 0) {
@@ -155,7 +156,8 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
         if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
             len = send(s->fd, buf, size, 0);
             if (len < 0) {
-                if (errno != EINTR && errno != EAGAIN)
+                if (ff_neterrno() != FF_NETERROR(EINTR) &&
+                    ff_neterrno() != FF_NETERROR(EAGAIN))
                     return AVERROR(errno);
                 continue;
             }

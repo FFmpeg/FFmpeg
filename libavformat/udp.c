@@ -428,7 +428,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
         len = recvfrom (s->udp_fd, buf, size, 0,
                         (struct sockaddr *)&from, &from_len);
         if (len < 0) {
-            if (errno != EAGAIN && errno != EINTR)
+            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
+                ff_neterrno() != FF_NETERROR(EINTR))
                 return AVERROR_IO;
         } else {
             break;
@@ -451,7 +452,8 @@ static int udp_write(URLContext *h, uint8_t *buf, int size)
                       s->dest_addr_len);
 #endif
         if (ret < 0) {
-            if (errno != EINTR && errno != EAGAIN)
+            if (ff_neterrno() != FF_NETERROR(EINTR) &&
+                ff_neterrno() != FF_NETERROR(EAGAIN))
                 return AVERROR_IO;
         } else {
             break;
