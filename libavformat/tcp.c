@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include "network.h"
 #include <sys/time.h>
-#include <fcntl.h>
 
 typedef struct TCPContext {
     int fd;
@@ -62,7 +61,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
         goto fail;
-    fcntl(fd, F_SETFL, O_NONBLOCK);
+    ff_socket_nonblock(fd, 1);
 
  redo:
     ret = connect(fd, (struct sockaddr *)&dest_addr,

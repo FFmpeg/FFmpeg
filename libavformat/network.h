@@ -32,6 +32,8 @@
 #define ff_neterrno() errno
 #define FF_NETERROR(err) err
 
+int ff_socket_nonblock(int socket, int enable);
+
 #if !defined(HAVE_INET_ATON)
 /* in os_support.c */
 int inet_aton (const char * str, struct in_addr * add);

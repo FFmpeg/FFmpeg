@@ -440,7 +440,7 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         closesocket(server_fd);
         return -1;
     }
-    fcntl(server_fd, F_SETFL, O_NONBLOCK);
+    ff_socket_nonblock(server_fd, 1);
 
     return server_fd;
 }
@@ -649,7 +649,7 @@ static void new_connection(int server_fd, int is_rtsp)
                 &len);
     if (fd < 0)
         return;
-    fcntl(fd, F_SETFL, O_NONBLOCK);
+    ff_socket_nonblock(fd, 1);
 
     /* XXX: should output a warning page when coming
        close to the connection limit */

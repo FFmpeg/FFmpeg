@@ -114,6 +114,14 @@ int resolve_host(struct in_addr *sin_addr, const char *hostname)
     }
     return 0;
 }
+
+int ff_socket_nonblock(int socket, int enable)
+{
+   if (enable)
+      return fcntl(socket, F_SETFL, fcntl(socket, F_GETFL) | O_NONBLOCK);
+   else
+      return fcntl(socket, F_SETFL, fcntl(socket, F_GETFL) & ~O_NONBLOCK);
+}
 #endif /* CONFIG_NETWORK */
 
 #ifdef CONFIG_FFSERVER
