@@ -1089,6 +1089,9 @@ static int dca_convert_bitstream(uint8_t * src, int src_size, uint8_t * dst,
     uint16_t *ssrc = (uint16_t *) src, *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
+    if((unsigned)src_size > (unsigned)max_size)
+        return -1;
+
     mrk = AV_RB32(src);
     switch (mrk) {
     case DCA_MARKER_RAW_BE:
