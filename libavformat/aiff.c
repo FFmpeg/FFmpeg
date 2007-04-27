@@ -36,6 +36,7 @@ static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_MACE6, MKTAG('M','A','C','6') },
     { CODEC_ID_GSM, MKTAG('G','S','M',' ') },
     { CODEC_ID_ADPCM_G726, MKTAG('G','7','2','6') },
+    { CODEC_ID_PCM_S16LE, MKTAG('s','o','w','t') },
     { 0, 0 },
 };
 
