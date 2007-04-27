@@ -1782,13 +1782,13 @@ if test $asmalign_pot = "unknown"; then
     echo 'asm (".align 3");' | check_cc && asmalign_pot="yes"
 fi
 
-enabled_any $ENCODER_LIST && enable encoders
-enabled_any $DECODER_LIST && enable decoders
-enabled_any $MUXER_LIST   && enable muxers
-enabled_any $DEMUXER_LIST && enable demuxers
+enabled_any $ENCODER_LIST  && enable encoders
+enabled_any $DECODER_LIST  && enable decoders
+enabled_any $MUXER_LIST    && enable muxers
+enabled_any $DEMUXER_LIST  && enable demuxers
 enabled_any $PROTOCOL_LIST && enable protocols
 
-enabled_any $THREADS_LIST && enable threads
+enabled_any $THREADS_LIST  && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
     $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
