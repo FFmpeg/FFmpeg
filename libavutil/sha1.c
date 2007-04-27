@@ -3,6 +3,7 @@
 // based on public domain SHA-1 code by Steve Reid <steve@edmweb.com>
 
 #include "common.h"
+#include "bswap.h"
 #include "sha1.h"
 
 typedef struct AVSHA1 {
