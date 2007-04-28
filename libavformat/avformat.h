@@ -306,11 +306,9 @@ typedef struct AVStream {
     /** quality, as it has been removed from AVCodecContext and put in AVVideoFrame
      * MN:dunno if thats the right place, for it */
     float quality;
-    /** decoding: position of the first frame of the component, in
-       AV_TIME_BASE fractional seconds. */
+    /** decoding: pts of the first frame of the stream, in stream time base. */
     int64_t start_time;
-    /** decoding: duration of the stream, in AV_TIME_BASE fractional
-       seconds. */
+    /** decoding: duration of the stream, in stream time base. */
     int64_t duration;
 
     char language[4]; /** ISO 639 3-letter language code (empty string if undefined) */
