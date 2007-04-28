@@ -142,7 +142,7 @@ int main(int argc, char **argv)
                     for(i=0; i<SIZE; i++){
                         if(srcBuffer[i]!=srcByte){
                             av_log(NULL, AV_LOG_INFO, "src damaged at %d w:%d src:%d dst:%d %s\n",
-                                i, width, srcOffset, dstOffset, name);
+                                   i, width, srcOffset, dstOffset, name);
                             failed=1;
                             break;
                         }
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
                     for(i=0; i<dstOffset; i++){
                         if(dstBuffer[i]!=dstByte){
                             av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n",
-                                i, width, srcOffset, dstOffset, name);
+                                   i, width, srcOffset, dstOffset, name);
                             failed=1;
                             break;
                         }
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
                     for(i=dstOffset + width*dstBpp; i<SIZE; i++){
                         if(dstBuffer[i]!=dstByte){
                             av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n",
-                                i, width, srcOffset, dstOffset, name);
+                                   i, width, srcOffset, dstOffset, name);
                             failed=1;
                             break;
                         }
