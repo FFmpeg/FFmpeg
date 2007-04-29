@@ -2229,7 +2229,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         "movq     "MANGLE(bgr2UCoeff)", %%mm6       \n\t"
         "pxor                    %%mm7, %%mm7       \n\t"
         "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
-        "add  %%"REG_d", %%"REG_d"                  \n\t"
+        "add                 %%"REG_d", %%"REG_d"   \n\t"
         ASMALIGN(4)
         "1:                                         \n\t"
         PREFETCH"    64(%0, %%"REG_d")              \n\t"
