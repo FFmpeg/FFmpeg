@@ -32,55 +32,55 @@
 #include "swscale.h"
 
 static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]){
+                               int srcSliceH, uint8_t* dst[], int dstStride[]){
     if(c->srcFormat == PIX_FMT_YUV422P){
-	srcStride[1] *= 2;
-	srcStride[2] *= 2;
+        srcStride[1] *= 2;
+        srcStride[2] *= 2;
     }
 
     assert(srcStride[1] == srcStride[2]);
 
     mlib_VideoColorYUV2ARGB420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
-			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
+                               srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
 static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]){
+                               int srcSliceH, uint8_t* dst[], int dstStride[]){
     if(c->srcFormat == PIX_FMT_YUV422P){
-	srcStride[1] *= 2;
-	srcStride[2] *= 2;
+        srcStride[1] *= 2;
+        srcStride[2] *= 2;
     }
 
     assert(srcStride[1] == srcStride[2]);
 
     mlib_VideoColorYUV2ABGR420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
-			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
+                               srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
 static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]){
+                              int srcSliceH, uint8_t* dst[], int dstStride[]){
     if(c->srcFormat == PIX_FMT_YUV422P){
-	srcStride[1] *= 2;
-	srcStride[2] *= 2;
+        srcStride[1] *= 2;
+        srcStride[2] *= 2;
     }
 
     assert(srcStride[1] == srcStride[2]);
 
     mlib_VideoColorYUV2RGB420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
-			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
+                              srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
 
 SwsFunc yuv2rgb_init_mlib(SwsContext *c)
 {
-	switch(c->dstFormat){
-	case PIX_FMT_RGB24: return mlib_YUV2RGB420_24;
-	case PIX_FMT_BGR32: return mlib_YUV2ARGB420_32;
-	case PIX_FMT_RGB32: return mlib_YUV2ABGR420_32;
-	default: return NULL;
-	}
+    switch(c->dstFormat){
+    case PIX_FMT_RGB24: return mlib_YUV2RGB420_24;
+    case PIX_FMT_BGR32: return mlib_YUV2ARGB420_32;
+    case PIX_FMT_RGB32: return mlib_YUV2ABGR420_32;
+    default: return NULL;
+    }
 }
 
