@@ -116,6 +116,7 @@ OBJS-$(CONFIG_MSZH_DECODER)            += lcl.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_PNG_DECODER)             += png.o
 OBJS-$(CONFIG_PNG_ENCODER)             += png.o
+OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o

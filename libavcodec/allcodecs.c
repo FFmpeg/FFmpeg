@@ -116,6 +116,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(PGMYUV, pgmyuv);
     REGISTER_ENCDEC (PNG, png);
     REGISTER_ENCODER(PPM, ppm);
+    REGISTER_DECODER(PTX, ptx);
     REGISTER_DECODER(QDRAW, qdraw);
     REGISTER_DECODER(QPEG, qpeg);
     REGISTER_DECODER(QTRLE, qtrle);

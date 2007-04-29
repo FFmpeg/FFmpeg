@@ -152,6 +152,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
   oggtheora.c                           Mans Rullgard
+  ptx.c                                 Ivo van Poorten
   qdm2.c, qdm2data.h                    Roberto Togni
   qdrw.c                                Kostya Shishkov
   qpeg.c                                Kostya Shishkov

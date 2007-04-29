@@ -162,6 +162,7 @@ enum CodecID {
     CODEC_ID_SGI,
     CODEC_ID_C93,
     CODEC_ID_BETHSOFTVID,
+    CODEC_ID_PTX,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2321,6 +2322,7 @@ extern AVCodec mszh_decoder;
 extern AVCodec nuv_decoder;
 extern AVCodec oggvorbis_decoder;
 extern AVCodec png_decoder;
+extern AVCodec ptx_decoder;
 extern AVCodec qdm2_decoder;
 extern AVCodec qdraw_decoder;
 extern AVCodec qpeg_decoder;
