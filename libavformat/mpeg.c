@@ -1033,7 +1033,9 @@ static int remove_decoded_packets(AVFormatContext *ctx, int64_t scr){
         while(pkt_desc && scr > pkt_desc->dts){ //FIXME > vs >=
             if(stream->buffer_index < pkt_desc->size ||
                stream->predecode_packet == stream->premux_packet){
-                av_log(ctx, AV_LOG_ERROR, "buffer underflow\n");
+                av_log(ctx, AV_LOG_ERROR,
+                       "buffer underflow i=%d bufi=%d size=%d\n",
+                       i, stream->buffer_index, pkt_desc->size);
                 break;
             }
             stream->buffer_index -= pkt_desc->size;
