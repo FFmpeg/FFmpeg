@@ -1291,6 +1291,7 @@ if test $targetos = darwin; then
         disabled shared && needmdynamicnopic="yes"
     fi
 fi
+enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
 
 disabled optimize || add_cflags -fomit-frame-pointer
 
@@ -1773,8 +1774,7 @@ if enabled gprof; then
     add_ldflags "-p"
 fi
 
-VHOOKCFLAGS="-fPIC $CFLAGS"
-enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
+VHOOKCFLAGS="-fPIC `echo $CFLAGS | sed s/-mdynamic-no-pic//`"
 
 # find if .align arg is power-of-two or not
 if test $asmalign_pot = "unknown"; then
