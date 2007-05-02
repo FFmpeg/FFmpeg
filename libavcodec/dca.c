@@ -285,7 +285,8 @@ static int dca_parse_frame_header(DCAContext * s)
     s->dialog_norm       = get_bits(&s->gb, 4);
 
     /* FIXME: channels mixing levels */
-    s->output = DCA_STEREO;
+    s->output = s->amode;
+    if(s->lfe) s->output |= DCA_LFE;
 
 #ifdef TRACE
     av_log(s->avctx, AV_LOG_DEBUG, "frame type: %i\n", s->frame_type);
@@ -1143,10 +1144,25 @@ static int dca_decode_frame(AVCodecContext * avctx,
     }
     //set AVCodec values with parsed data
     avctx->sample_rate = s->sample_rate;
-    avctx->channels = 2; //FIXME
     avctx->bit_rate = s->bit_rate;
 
-    channels = dca_channels[s->output];
+    channels = s->prim_channels + !!s->lfe;
+    if(avctx->channels == 0) {
+        avctx->channels = channels;
+    } else if(channels < avctx->channels) {
+        av_log(avctx, AV_LOG_WARNING, "DTS source channels are less than "
+               "specified: output to %d channels.\n", channels);
+        avctx->channels = channels;
+    }
+    if(avctx->channels == 2) {
+        s->output = DCA_STEREO;
+    } else if(avctx->channels != channels) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot downmix DTS to %d channels.\n",
+               avctx->channels);
+        return -1;
+    }
+
+    channels = avctx->channels;
     if(*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
     *data_size = 0;
