@@ -524,10 +524,10 @@ static int dca_subframe_header(DCAContext * s)
     /* Stereo downmix coefficients */
     if (s->prim_channels > 2) {
         if(s->downmix) {
-        for (j = 0; j < s->prim_channels; j++) {
-            s->downmix_coef[j][0] = get_bits(&s->gb, 7);
-            s->downmix_coef[j][1] = get_bits(&s->gb, 7);
-        }
+            for (j = 0; j < s->prim_channels; j++) {
+                s->downmix_coef[j][0] = get_bits(&s->gb, 7);
+                s->downmix_coef[j][1] = get_bits(&s->gb, 7);
+            }
         } else {
             int am = s->amode & DCA_CHANNEL_MASK;
             for (j = 0; j < s->prim_channels; j++) {
