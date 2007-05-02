@@ -66,7 +66,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(CLJR, cljr);
     REGISTER_DECODER(CSCD, cscd);
     REGISTER_DECODER(CYUV, cyuv);
-    REGISTER_DECODER(DCA, dca);
     REGISTER_DECODER(DNXHD, dnxhd);
     REGISTER_DECODER(DSICINVIDEO, dsicinvideo);
     REGISTER_ENCDEC (DVVIDEO, dvvideo);
@@ -170,6 +169,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (AMR_WB, amr_wb);
     REGISTER_DECODER(ATRAC3, atrac3);
     REGISTER_DECODER(COOK, cook);
+    REGISTER_DECODER(DCA, dca);
     REGISTER_DECODER(DSICINAUDIO, dsicinaudio);
     REGISTER_DECODER(DTS, dts);
     REGISTER_ENCODER(FAAC, faac);
