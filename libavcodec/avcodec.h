@@ -2149,7 +2149,9 @@ typedef struct AVPicture {
  * AVPaletteControl
  * This structure defines a method for communicating palette changes
  * between and demuxer and a decoder.
- * This is totally broken, palette changes should be sent as AVPackets.
+ *
+ * @deprecated Use AVPacket to send palette changes instead.
+ * This is totally broken.
  */
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
@@ -2464,13 +2466,25 @@ void av_resample_close(struct AVResampleContext *c);
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /* YUV420 format is assumed ! */
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 struct ImgReSampleContext attribute_deprecated;
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 typedef struct ImgReSampleContext ImgReSampleContext attribute_deprecated;
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated ImgReSampleContext *img_resample_init(int output_width, int output_height,
                                       int input_width, int input_height);
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int iwidth, int iheight,
                                       int topBand, int bottomBand,
@@ -2478,10 +2492,15 @@ attribute_deprecated ImgReSampleContext *img_resample_full_init(int owidth, int 
                                       int padtop, int padbottom,
                                       int padleft, int padright);
 
-
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated void img_resample(ImgReSampleContext *s,
                   AVPicture *output, const AVPicture *input);
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated void img_resample_close(ImgReSampleContext *s);
 
 #endif
@@ -2604,7 +2623,10 @@ int img_get_alpha_info(const AVPicture *src,
                        int pix_fmt, int width, int height);
 
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
-/* convert among pixel formats */
+/**
+ * convert among pixel formats
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated int img_convert(AVPicture *dst, int dst_pix_fmt,
                 const AVPicture *src, int pix_fmt,
                 int width, int height);
@@ -3046,6 +3068,10 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /**
  * Frees all static arrays and resets their pointers to 0.
  * Call this function to release all statically allocated tables.
+ *
+ * @deprecated. Code which uses av_free_static is broken/missdesigned
+ * and should correctly use static arrays
+ *
  */
 attribute_deprecated void av_free_static(void);
 
@@ -3056,6 +3082,8 @@ attribute_deprecated void av_free_static(void);
  *
  * @param[in] size The amount of memory you need in bytes.
  * @return block of memory of the requested size
+ * @deprecated. Code which uses av_mallocz_static is broken/missdesigned
+ * and should correctly use static arrays
  */
 attribute_deprecated void *av_mallocz_static(unsigned int size);
 
@@ -3078,12 +3106,21 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
             int padtop, int padbottom, int padleft, int padright, int *color);
 
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height);
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated int img_crop(AVPicture *dst, const AVPicture *src,
              int pix_fmt, int top_band, int left_band);
 
+/**
+ * @deprecated Use the software scaler (swscale) instead.
+ */
 attribute_deprecated int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 #endif

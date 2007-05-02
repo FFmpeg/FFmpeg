@@ -29,6 +29,9 @@
 #define AVCODEC_EVAL_H
 
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+/**
+ * @deprecated Use ff_eval2 instead
+ */
 double ff_eval(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
