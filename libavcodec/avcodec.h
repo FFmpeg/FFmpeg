@@ -1820,6 +1820,10 @@ typedef struct AVCodecContext {
      */
      int profile;
 #define FF_PROFILE_UNKNOWN -99
+#define FF_PROFILE_AAC_MAIN 0
+#define FF_PROFILE_AAC_LOW 1
+#define FF_PROFILE_AAC_SSR 2
+#define FF_PROFILE_AAC_LTP 3
 
     /**
      * level

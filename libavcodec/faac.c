@@ -54,7 +54,25 @@ static int Faac_encode_init(AVCodecContext *avctx)
     }
 
     /* put the options in the configuration struct */
-    faac_cfg->aacObjectType = LOW;
+    switch(avctx->profile) {
+        case FF_PROFILE_AAC_MAIN:
+            faac_cfg->aacObjectType = MAIN;
+            break;
+        case FF_PROFILE_UNKNOWN:
+        case FF_PROFILE_AAC_LOW:
+            faac_cfg->aacObjectType = LOW;
+            break;
+        case FF_PROFILE_AAC_SSR:
+            faac_cfg->aacObjectType = SSR;
+            break;
+        case FF_PROFILE_AAC_LTP:
+            faac_cfg->aacObjectType = LTP;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "invalid AAC profile\n");
+            faacEncClose(s->faac_handle);
+            return -1;
+    }
     faac_cfg->mpegVersion = MPEG4;
     faac_cfg->useTns = 0;
     faac_cfg->allowMidside = 1;
