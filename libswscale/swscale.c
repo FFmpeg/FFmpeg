@@ -1613,21 +1613,21 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 
     if(conv)
     {
-    if (dstStride[0]*srcBpp == srcStride[0]*dstBpp)
-        conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
-    else
-    {
-        int i;
-        uint8_t *srcPtr= src[0];
-        uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
-
-        for (i=0; i<srcSliceH; i++)
+        if (dstStride[0]*srcBpp == srcStride[0]*dstBpp)
+            conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+        else
         {
-            conv(srcPtr, dstPtr, c->srcW*srcBpp);
-            srcPtr+= srcStride[0];
-            dstPtr+= dstStride[0];
+            int i;
+            uint8_t *srcPtr= src[0];
+            uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+            for (i=0; i<srcSliceH; i++)
+            {
+                conv(srcPtr, dstPtr, c->srcW*srcBpp);
+                srcPtr+= srcStride[0];
+                dstPtr+= dstStride[0];
+            }
         }
-    }
     }
     return srcSliceH;
 }
