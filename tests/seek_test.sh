@@ -15,7 +15,7 @@ for i in $list ; do
     ./seek_test $i >> $logfile
 done
 
-if diff -u "$logfile" "$reffile" ; then
+if diff -u "$reffile" "$logfile" ; then
     echo
     echo Regression test succeeded.
     exit 0
