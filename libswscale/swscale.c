@@ -1611,6 +1611,8 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
                sws_format_name(srcFormat), sws_format_name(dstFormat));
     }
 
+    if(conv)
+    {
     if (dstStride[0]*srcBpp == srcStride[0]*dstBpp)
         conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
     else
@@ -1625,6 +1627,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
             srcPtr+= srcStride[0];
             dstPtr+= dstStride[0];
         }
+    }
     }
     return srcSliceH;
 }
