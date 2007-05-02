@@ -610,6 +610,7 @@ extern const uint8_t inter_MCBPC_bits[28];
 
 static RLTable rl_table[NB_RL_TABLES] = {
     /* intra luminance tables */
+    /* low motion  */
     {
         132,
         85,
@@ -617,6 +618,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
         table0_run,
         table0_level,
     },
+    /* high motion */
     {
         185,
         119,
@@ -624,6 +626,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
         table2_run,
         table2_level,
     },
+    /* mid-rate */
     {
         102,
         67,
@@ -632,6 +635,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
         intra_level,
     },
     /* intra chrominance / non intra tables */
+    /* low motion inter */
     {
         148,
         81,
@@ -639,6 +643,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
         table1_run,
         table1_level,
     },
+    /* high motion inter */
     {
         168,
         99,
@@ -646,6 +651,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
         table4_run,
         table4_level,
     },
+    /* mid rate inter */
     {
         102,
         58,
