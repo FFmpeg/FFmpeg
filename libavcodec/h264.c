@@ -5299,8 +5299,6 @@ decode_intra_mb:
             dct8x8_allowed = get_dct8x8_allowed(h);
 
         for(list=0; list<h->list_count; list++){
-            const int ref_count= IS_REF0(mb_type) ? 1 : h->ref_count[list];
-
             for(i=0; i<4; i++){
                 if(IS_DIRECT(h->sub_mb_type[i])) {
                     h->ref_cache[list][ scan8[4*i] ] = h->ref_cache[list][ scan8[4*i]+1 ];
