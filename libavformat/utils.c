@@ -1684,7 +1684,7 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
         else if (strncmp(fmt->name, "ac3", 3) == 0)
             st->codec->codec_id = CODEC_ID_AC3;
     }
-    return fmt;
+    return !!fmt;
 }
 
 /* absolute maximum size we read until we abort */
