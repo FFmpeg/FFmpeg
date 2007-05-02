@@ -3302,7 +3302,7 @@ ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 data/b-libav.ts
-ret: 0 st: 0 dts:95443.677689 pts:0.000000 pos:-1 size:24921 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:-1 size:24921 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:-1 size:22036 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
