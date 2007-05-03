@@ -256,8 +256,8 @@ dts_decode_end(AVCodecContext * avctx)
     return 0;
 }
 
-AVCodec dts_decoder = {
-    "dts",
+AVCodec libdts_decoder = {
+    "libdts",
     CODEC_TYPE_AUDIO,
     CODEC_ID_DTS,
     sizeof(DTSContext),

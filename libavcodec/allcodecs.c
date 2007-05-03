@@ -171,11 +171,11 @@ void avcodec_register_all(void)
     REGISTER_DECODER(COOK, cook);
     REGISTER_DECODER(DCA, dca);
     REGISTER_DECODER(DSICINAUDIO, dsicinaudio);
-    REGISTER_DECODER(DTS, dts);
     REGISTER_ENCODER(FAAC, faac);
     REGISTER_ENCDEC (FLAC, flac);
     REGISTER_DECODER(IMC, imc);
     REGISTER_DECODER(LIBA52, liba52);
+    REGISTER_DECODER(LIBDTS, libdts);
     REGISTER_ENCDEC (LIBGSM, libgsm);
     REGISTER_ENCDEC (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCODER(LIBTHEORA, libtheora);
