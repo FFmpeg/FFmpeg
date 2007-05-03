@@ -83,6 +83,8 @@ show_help(){
   echo "  --enable-liba52          enable GPLed liba52 support [default=no]"
   echo "  --enable-liba52bin       open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
+  echo "  --enable-libamr-nb       enable libamr-nb floating point audio codec"
+  echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec"
   echo "  --enable-libdts          enable GPLed libdts support [default=no]"
   echo "  --enable-libfaac         enable FAAC support via libfaac [default=no]"
   echo "  --enable-libfaad         enable FAAD support via libfaad [default=no]"
@@ -98,8 +100,6 @@ show_help(){
   echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
   echo "  --enable-xvid            enable Xvid encoding via xvidcore,"
   echo "                           native MPEG-4/Xvid encoder exists [default=no]"
-  echo "  --enable-amr-nb          enable amr-nb floating point audio codec"
-  echo "  --enable-amr-wb          enable amr-wb floating point audio codec"
   echo ""
   echo "Advanced options (experts only):"
   echo "  --source-path=PATH       path to source code [$source_path]"
@@ -556,9 +556,6 @@ CONFIG_LIST='
     parsers
     muxers
     demuxers
-    amr
-    amr_nb
-    amr_wb
     audio_beos
     audio_oss
     avisynth
@@ -574,6 +571,9 @@ CONFIG_LIST='
     ipv6
     liba52
     liba52bin
+    libamr
+    libamr_nb
+    libamr_wb
     libdts
     libfaac
     libfaad
@@ -683,12 +683,12 @@ zmbv_encoder_deps="zlib"
 
 aac_decoder_deps="libfaad"
 mpeg4aac_decoder_deps="libfaad"
-amr_nb_decoder_deps="amr_nb"
-amr_nb_encoder_deps="amr_nb"
-amr_wb_decoder_deps="amr_wb"
-amr_wb_encoder_deps="amr_wb"
 faac_encoder_deps="libfaac"
 liba52_decoder_deps="liba52"
+libamr_nb_decoder_deps="libamr_nb"
+libamr_nb_encoder_deps="libamr_nb"
+libamr_wb_decoder_deps="libamr_wb"
+libamr_wb_encoder_deps="libamr_wb"
 libdts_decoder_deps="libdts"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
@@ -793,14 +793,14 @@ v4l2="yes"
 v4l="yes"
 
 # libraries
-amr_nb="no"
-amr_wb="no"
 avisynth="no"
 dc1394="no"
 dlfcn_h="no"
 dlopen="no"
 liba52="no"
 liba52bin="no"
+libamr_nb="no"
+libamr_wb="no"
 libdts="no"
 libfaac="no"
 libfaad2="no"
@@ -1586,12 +1586,12 @@ for thread in $THREADS_LIST; do
     fi
 done
 
-enabled_any amr_nb amr_wb && enable amr
+enabled_any libamr_nb libamr_wb && enable libamr
 
 # these are off by default, so fail if requested and not available
-enabled amr_nb     && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
-enabled amr_wb     && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
+enabled libamr_nb  && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
+enabled libamr_wb  && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled libdts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
@@ -1851,6 +1851,8 @@ echo "Sun medialib support      $mlib"
 echo "AVISynth enabled          $avisynth"
 echo "liba52 support            $liba52"
 echo "liba52 dlopened           $liba52bin"
+echo "libamr-nb support         $libamr_nb"
+echo "libamr-wb support         $libamr_wb"
 echo "libdts support            $libdts"
 echo "libfaac enabled           $libfaac"
 echo "libfaad enabled           $libfaad"
@@ -1864,8 +1866,6 @@ echo "libvorbis enabled         $libvorbis"
 echo "x264 enabled              $x264"
 echo "XviD enabled              $xvid"
 echo "zlib enabled              $zlib"
-echo "AMR-NB float support      $amr_nb"
-echo "AMR-WB float support      $amr_wb"
 if disabled gpl; then
     echo "License: LGPL"
 else

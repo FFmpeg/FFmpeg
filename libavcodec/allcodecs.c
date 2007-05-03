@@ -165,8 +165,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MPEG4AAC, mpeg4aac);
     REGISTER_ENCODER(AC3, ac3);
     REGISTER_DECODER(ALAC, alac);
-    REGISTER_ENCDEC (AMR_NB, amr_nb);
-    REGISTER_ENCDEC (AMR_WB, amr_wb);
     REGISTER_DECODER(ATRAC3, atrac3);
     REGISTER_DECODER(COOK, cook);
     REGISTER_DECODER(DCA, dca);
@@ -174,6 +172,8 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(FAAC, faac);
     REGISTER_ENCDEC (FLAC, flac);
     REGISTER_DECODER(IMC, imc);
+    REGISTER_ENCDEC (LIBAMR_NB, libamr_nb);
+    REGISTER_ENCDEC (LIBAMR_WB, libamr_wb);
     REGISTER_DECODER(LIBA52, liba52);
     REGISTER_DECODER(LIBDTS, libdts);
     REGISTER_ENCDEC (LIBGSM, libgsm);

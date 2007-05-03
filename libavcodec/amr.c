@@ -65,7 +65,7 @@
 
 #include "avcodec.h"
 
-#ifdef CONFIG_AMR_NB_FIXED
+#ifdef CONFIG_LIBAMR_NB_FIXED
 
 #define MMS_IO
 
@@ -136,7 +136,7 @@ static void amr_decode_fix_avctx(AVCodecContext * avctx)
     avctx->frame_size = 160 * is_amr_wb;
 }
 
-#ifdef CONFIG_AMR_NB_FIXED
+#ifdef CONFIG_LIBAMR_NB_FIXED
 /* fixed point version*/
 /* frame size in serial bitstream file (frame type + serial stream + flags) */
 #define SERIAL_FRAMESIZE (1+MAX_SERIAL_SIZE+5)
@@ -352,7 +352,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 }
 
 
-#elif defined(CONFIG_AMR_NB) /* Float point version*/
+#elif defined(CONFIG_LIBAMR_NB) /* Float point version*/
 
 typedef struct AMRContext {
     int frameCount;
@@ -491,11 +491,11 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
 #endif
 
-#if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
+#if defined(CONFIG_LIBAMR_NB) || defined(CONFIG_LIBAMR_NB_FIXED)
 
-AVCodec amr_nb_decoder =
+AVCodec libamr_nb_decoder =
 {
-    "amr_nb",
+    "libamr_nb",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AMR_NB,
     sizeof(AMRContext),
@@ -505,9 +505,9 @@ AVCodec amr_nb_decoder =
     amr_nb_decode_frame,
 };
 
-AVCodec amr_nb_encoder =
+AVCodec libamr_nb_encoder =
 {
-    "amr_nb",
+    "libamr_nb",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AMR_NB,
     sizeof(AMRContext),
@@ -520,7 +520,7 @@ AVCodec amr_nb_encoder =
 #endif
 
 /* -----------AMR wideband ------------*/
-#ifdef CONFIG_AMR_WB
+#ifdef CONFIG_LIBAMR_WB
 
 #ifdef _TYPEDEF_H
 //To avoid duplicate typedefs from typdef in amr-nb
@@ -684,9 +684,9 @@ static int amr_wb_decode_close(AVCodecContext * avctx)
     return 0;
 }
 
-AVCodec amr_wb_decoder =
+AVCodec libamr_wb_decoder =
 {
-    "amr_wb",
+    "libamr_wb",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AMR_WB,
     sizeof(AMRWBContext),
@@ -696,9 +696,9 @@ AVCodec amr_wb_decoder =
     amr_wb_decode_frame,
 };
 
-AVCodec amr_wb_encoder =
+AVCodec libamr_wb_encoder =
 {
-    "amr_wb",
+    "libamr_wb",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AMR_WB,
     sizeof(AMRWBContext),
@@ -708,4 +708,4 @@ AVCodec amr_wb_encoder =
     NULL,
 };
 
-#endif //CONFIG_AMR_WB
+#endif //CONFIG_LIBAMR_WB
