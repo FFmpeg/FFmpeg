@@ -287,6 +287,7 @@ OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += parser.o
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += parser.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm.o
+OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o

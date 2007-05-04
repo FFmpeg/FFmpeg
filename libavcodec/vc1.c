@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "vc1data.h"
 #include "vc1acdata.h"
+#include "vc1.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -45,19 +46,6 @@ extern const uint16_t ff_msmp4_mb_i_table[64][2];
 #define DC_VLC_BITS 9
 #define AC_VLC_BITS 9
 static const uint16_t table_mb_intra[64][2];
-
-/** Markers used if VC-1 AP frame data */
-//@{
-enum VC1Code{
-    VC1_CODE_RES0       = 0x00000100,
-    VC1_CODE_ENDOFSEQ   = 0x0000010A,
-    VC1_CODE_SLICE,
-    VC1_CODE_FIELD,
-    VC1_CODE_FRAME,
-    VC1_CODE_ENTRYPOINT,
-    VC1_CODE_SEQHDR,
-};
-//@}
 
 /** Available Profiles */
 //@{
@@ -4173,8 +4161,6 @@ static void vc1_decode_blocks(VC1Context *v)
     }
 }
 
-#define IS_MARKER(x) (((x) & ~0xFF) == VC1_CODE_RES0)
-
 /** Find VC-1 marker in buffer
  * @return position where next marker starts or end of buffer if no marker found
  */
@@ -4541,94 +4527,3 @@ AVCodec wmv3_decoder = {
     CODEC_CAP_DELAY,
     NULL
 };
-
-#ifdef CONFIG_VC1_PARSER
-/**
- * finds the end of the current frame in the bitstream.
- * @return the position of the first byte of the next frame, or -1
- */
-static int vc1_find_frame_end(ParseContext *pc, const uint8_t *buf,
-                               int buf_size) {
-    int pic_found, i;
-    uint32_t state;
-
-    pic_found= pc->frame_start_found;
-    state= pc->state;
-
-    i=0;
-    if(!pic_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state == VC1_CODE_FRAME || state == VC1_CODE_FIELD){
-                i++;
-                pic_found=1;
-                break;
-            }
-        }
-    }
-
-    if(pic_found){
-        /* EOF considered as end of frame */
-        if (buf_size == 0)
-            return 0;
-        for(; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(IS_MARKER(state) && state != VC1_CODE_FIELD && state != VC1_CODE_SLICE){
-                pc->frame_start_found=0;
-                pc->state=-1;
-                return i-3;
-            }
-        }
-    }
-    pc->frame_start_found= pic_found;
-    pc->state= state;
-    return END_NOT_FOUND;
-}
-
-static int vc1_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size)
-{
-    ParseContext *pc = s->priv_data;
-    int next;
-
-    if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
-        next= buf_size;
-    }else{
-        next= vc1_find_frame_end(pc, buf, buf_size);
-
-        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-            *poutbuf = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
-        }
-    }
-    *poutbuf = (uint8_t *)buf;
-    *poutbuf_size = buf_size;
-    return next;
-}
-
-static int vc1_split(AVCodecContext *avctx,
-                           const uint8_t *buf, int buf_size)
-{
-    int i;
-    uint32_t state= -1;
-
-    for(i=0; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(IS_MARKER(state) && state != VC1_CODE_SEQHDR && state != VC1_CODE_ENTRYPOINT)
-            return i-3;
-    }
-    return 0;
-}
-
-AVCodecParser vc1_parser = {
-    { CODEC_ID_VC1 },
-    sizeof(ParseContext1),
-    NULL,
-    vc1_parse,
-    ff_parse1_close,
-    vc1_split,
-};
-#endif /* CONFIG_VC1_PARSER */
