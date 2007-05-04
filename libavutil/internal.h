@@ -189,15 +189,16 @@ extern const uint8_t ff_sqrt_tab[128];
 static inline int ff_sqrt(int a)
 {
     int ret=0;
-    int s;
+    int s, b;
 
     if(a<128) return ff_sqrt_tab[a];
 
-    for(s=15; s>=0; s--){
-        int b= (1<<(s*2)) + (ret<<s)*2;
+    for(s=30; s>=0; s-=2){
+        ret+=ret;
+        b= (1+2*ret)<<s;
         if(b<=a){
             a-=b;
-            ret+= 1<<s;
+            ret++;
         }
     }
     return ret;
