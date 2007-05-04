@@ -370,8 +370,8 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 }
 
 
-AVCodec oggvorbis_decoder = {
-    "vorbis",
+AVCodec libvorbis_decoder = {
+    "libvorbis",
     CODEC_TYPE_AUDIO,
     CODEC_ID_VORBIS,
     sizeof(OggVorbisContext),
