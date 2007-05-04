@@ -1692,6 +1692,8 @@ do not attach several unrelated patches to the same mail.
 @item
     Does the patch not mix functional and cosmetic changes?
 @item
+    Did you add tabs or trailing whitespace to the code? Both are forbidden.
+@item
     Is the patch attached to the email you send?
 @item
     Is the mime type of the patch correct? It should be text/x-diff or
