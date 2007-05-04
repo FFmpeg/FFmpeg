@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/** Markers used if VC-1 AP frame data */
+/** Markers used in VC-1 AP frame data */
 //@{
 enum VC1Code{
     VC1_CODE_RES0       = 0x00000100,
