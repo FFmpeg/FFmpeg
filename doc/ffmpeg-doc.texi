@@ -1682,6 +1682,8 @@ do not attach several unrelated patches to the same mail.
 @item
     If the change is to speed critical code, did you benchmark it?
 @item
+    If you did any benchmarks, did you provide them in the mail?
+@item
     Have you checked that the patch does not introduce buffer overflows or
     other security issues?
 @item
@@ -1709,8 +1711,6 @@ do not attach several unrelated patches to the same mail.
 @item
     Did you provide an example so we can verify the new feature added by the
     patch easily?
-@item
-    If you did any benchmarks, did you provide them in the mail?
 @item
     If you added a new file, did you insert a license header? It should be
     taken from FFmpeg, not randomly copied and pasted from somewhere else.
