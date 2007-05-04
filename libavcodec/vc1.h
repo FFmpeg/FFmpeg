@@ -35,6 +35,7 @@ enum VC1Code{
 
 #define IS_MARKER(x) (((x) & ~0xFF) == VC1_CODE_RES0)
 
+#ifndef VC1_PARSER_ONLY
 /** Available Profiles */
 //@{
 enum Profile {
@@ -362,3 +363,4 @@ typedef struct VC1Context{
     int p_frame_skipped;
     int bi_type;
 } VC1Context;
+#endif
