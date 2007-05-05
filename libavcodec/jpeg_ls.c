@@ -187,7 +187,7 @@ static int decode_lse(MJpegDecodeContext *s)
     return 0;
 }
 
-static void inline downscale_state(JLSState *state, int Q){
+static inline void downscale_state(JLSState *state, int Q){
     if(state->N[Q] == state->reset){
         state->A[Q] >>=1;
         state->B[Q] >>=1;
