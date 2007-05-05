@@ -23,6 +23,7 @@
 #ifndef FFMPEG_PARSER_H
 #define FFMPEG_PARSER_H
 
+#include "avcodec.h"
 #include "ac3.h"
 
 typedef struct ParseContext{
