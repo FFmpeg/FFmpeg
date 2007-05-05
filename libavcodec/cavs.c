@@ -1352,7 +1352,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             return FFMAX(0, buf_ptr - buf - s->parse_context.last_index);
         input_size = (buf_end - buf_ptr)*8;
         switch(stc) {
-        case SEQ_START_CODE:
+        case CAVS_START_CODE:
             init_get_bits(&s->gb, buf_ptr, input_size);
             decode_seq_header(h);
             break;
