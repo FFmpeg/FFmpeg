@@ -285,7 +285,7 @@ OBJS-$(CONFIG_H264_PARSER)             += h264.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
-OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += parser.o
+OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
