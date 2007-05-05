@@ -1292,7 +1292,6 @@ static void init_top_lines(AVSContext *h) {
 
 static int decode_seq_header(AVSContext *h) {
     MpegEncContext *s = &h->s;
-    extern const AVRational ff_frame_rate_tab[];
     int frame_rate_code;
 
     h->profile =         get_bits(&s->gb,8);
