@@ -796,7 +796,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
-int mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
+int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
 #include "rl.h"
 

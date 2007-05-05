@@ -138,7 +138,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
-        next= mpeg1_find_frame_end(pc, buf, buf_size);
+        next= ff_mpeg1_find_frame_end(pc, buf, buf_size);
 
         if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
             *poutbuf = NULL;
