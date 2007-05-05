@@ -541,6 +541,7 @@ AVCodec vp6_decoder = {
     NULL,
     vp56_free,
     vp56_decode_frame,
+    CODEC_CAP_DR1,
 };
 
 /* flash version, not flipped upside-down */
@@ -553,4 +554,5 @@ AVCodec vp6f_decoder = {
     NULL,
     vp56_free,
     vp56_decode_frame,
+    CODEC_CAP_DR1,
 };
