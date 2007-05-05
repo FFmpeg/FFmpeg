@@ -172,12 +172,12 @@ static void init_offset(ShortenContext *s)
             s->offset[chan][i] = mean;
 }
 
-static int inline get_le32(GetBitContext *gb)
+static inline int get_le32(GetBitContext *gb)
 {
     return bswap_32(get_bits_long(gb, 32));
 }
 
-static short inline get_le16(GetBitContext *gb)
+static inline short get_le16(GetBitContext *gb)
 {
     return bswap_16(get_bits_long(gb, 16));
 }

@@ -1729,7 +1729,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         g->sb_hybrid[s_index+2]=
         g->sb_hybrid[s_index+3]= 0;
         while(code){
-            const static int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
+            static const int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
             int v;
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];

@@ -163,7 +163,7 @@ static void mpc_synth(MPCContext *c, int16_t *out)
 /**
  * Fill samples for given subband
  */
-static void inline idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *dst)
+static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *dst)
 {
     int i, i1, t;
     switch(idx){

@@ -87,7 +87,7 @@ static BitAlloc dca_smpl_bitalloc[11]; ///< samples VLCs
 /** Pre-calculated cosine modulation coefs for the QMF */
 static float cos_mod[544];
 
-static int av_always_inline get_bitalloc(GetBitContext *gb, BitAlloc *ba, int idx)
+static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba, int idx)
 {
     return get_vlc2(gb, ba->vlc[idx].table, ba->vlc[idx].bits, ba->wrap) + ba->offset;
 }
