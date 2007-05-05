@@ -26,7 +26,6 @@
  * @file dca_parser.c
  */
 
-#include "avcodec.h"
 #include "parser.h"
 #include "dca.h"
 

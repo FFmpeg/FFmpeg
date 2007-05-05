@@ -25,7 +25,6 @@
  * h261codec.
  */
 
-#include "dsputil.h"
 #include "parser.h"
 
 
