@@ -1012,8 +1012,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                 nr = get_bits(gb, 8);
                 dr = get_bits(gb, 4);
                 if(nr && nr < 8 && dr && dr < 3){
-                    v->s.avctx->time_base.num = fps_dr[dr - 1];
-                    v->s.avctx->time_base.den = fps_nr[nr - 1] * 1000;
+                    v->s.avctx->time_base.num = vc1_fps_dr[dr - 1];
+                    v->s.avctx->time_base.den = vc1_fps_nr[nr - 1] * 1000;
                 }
             }
         }
@@ -1124,9 +1124,9 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     /* Quantizer stuff */
     pqindex = get_bits(gb, 5);
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
-        v->pq = pquant_table[0][pqindex];
+        v->pq = vc1_pquant_table[0][pqindex];
     else
-        v->pq = pquant_table[1][pqindex];
+        v->pq = vc1_pquant_table[1][pqindex];
 
     v->pquantizer = 1;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
@@ -1166,11 +1166,11 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         else v->tt_index = 2;
 
         lowquant = (v->pq > 12) ? 0 : 1;
-        v->mv_mode = mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
+        v->mv_mode = vc1_mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         {
             int scale, shift, i;
-            v->mv_mode2 = mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
+            v->mv_mode2 = vc1_mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
             v->use_ic = 1;
@@ -1236,7 +1236,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->ttmbf = get_bits(gb, 1);
             if (v->ttmbf)
             {
-                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
+                v->ttfrm = vc1_ttfrm_to_tt[get_bits(gb, 2)];
             }
         } else {
             v->ttmbf = 1;
@@ -1277,7 +1277,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->ttmbf = get_bits(gb, 1);
             if (v->ttmbf)
             {
-                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
+                v->ttfrm = vc1_ttfrm_to_tt[get_bits(gb, 2)];
             }
         } else {
             v->ttmbf = 1;
@@ -1358,9 +1358,9 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     pqindex = get_bits(gb, 5);
     v->pqindex = pqindex;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
-        v->pq = pquant_table[0][pqindex];
+        v->pq = vc1_pquant_table[0][pqindex];
     else
-        v->pq = pquant_table[1][pqindex];
+        v->pq = vc1_pquant_table[1][pqindex];
 
     v->pquantizer = 1;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
@@ -1408,11 +1408,11 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         else v->tt_index = 2;
 
         lowquant = (v->pq > 12) ? 0 : 1;
-        v->mv_mode = mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
+        v->mv_mode = vc1_mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         {
             int scale, shift, i;
-            v->mv_mode2 = mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
+            v->mv_mode2 = vc1_mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
             /* fill lookup tables for intensity compensation */
@@ -1477,7 +1477,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->ttmbf = get_bits(gb, 1);
             if (v->ttmbf)
             {
-                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
+                v->ttfrm = vc1_ttfrm_to_tt[get_bits(gb, 2)];
             }
         } else {
             v->ttmbf = 1;
@@ -1527,7 +1527,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->ttmbf = get_bits(gb, 1);
             if (v->ttmbf)
             {
-                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
+                v->ttfrm = vc1_ttfrm_to_tt[get_bits(gb, 2)];
             }
         } else {
             v->ttmbf = 1;
@@ -2951,7 +2951,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
     int ttblk = ttmb & 7;
 
     if(ttmb == -1) {
-        ttblk = ttblk_to_tt[v->tt_index][get_vlc2(gb, vc1_ttblk_vlc[v->tt_index].table, VC1_TTBLK_VLC_BITS, 1)];
+        ttblk = vc1_ttblk_to_tt[v->tt_index][get_vlc2(gb, vc1_ttblk_vlc[v->tt_index].table, VC1_TTBLK_VLC_BITS, 1)];
     }
     if(ttblk == TT_4X4) {
         subblkpat = ~(get_vlc2(gb, vc1_subblkpat_vlc[v->tt_index].table, VC1_SUBBLKPAT_VLC_BITS, 1) + 1);

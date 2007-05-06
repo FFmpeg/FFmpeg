@@ -30,27 +30,27 @@
 #include "vc1data.h"
 
 /** Table for conversion between TTBLK and TTMB */
-const int ttblk_to_tt[3][8] = {
+const int vc1_ttblk_to_tt[3][8] = {
   { TT_8X4, TT_4X8, TT_8X8, TT_4X4, TT_8X4_TOP, TT_8X4_BOTTOM, TT_4X8_RIGHT, TT_4X8_LEFT },
   { TT_8X8, TT_4X8_RIGHT, TT_4X8_LEFT, TT_4X4, TT_8X4, TT_4X8, TT_8X4_BOTTOM, TT_8X4_TOP },
   { TT_8X8, TT_4X8, TT_4X4, TT_8X4_BOTTOM, TT_4X8_RIGHT, TT_4X8_LEFT, TT_8X4, TT_8X4_TOP }
 };
 
-const int ttfrm_to_tt[4] = { TT_8X8, TT_8X4, TT_4X8, TT_4X4 };
+const int vc1_ttfrm_to_tt[4] = { TT_8X8, TT_8X4, TT_4X8, TT_4X4 };
 
 /** MV P mode - the 5th element is only used for mode 1 */
-const uint8_t mv_pmode_table[2][5] = {
+const uint8_t vc1_mv_pmode_table[2][5] = {
   { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_MIXED_MV },
   { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_1MV_HPEL_BILIN }
 };
-const uint8_t mv_pmode_table2[2][4] = {
+const uint8_t vc1_mv_pmode_table2[2][4] = {
   { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_MIXED_MV },
   { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_1MV_HPEL_BILIN }
 };
 
-const int fps_nr[5] = { 24, 25, 30, 50, 60 },
-  fps_dr[2] = { 1000, 1001 };
-const uint8_t pquant_table[3][32] = {
+const int vc1_fps_nr[5] = { 24, 25, 30, 50, 60 },
+  vc1_fps_dr[2] = { 1000, 1001 };
+const uint8_t vc1_pquant_table[3][32] = {
   {  /* Implicit quantizer */
      0,  1,  2,  3,  4,  5,  6,  7,  8,  6,  7,  8,  9, 10, 11, 12,
     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 29, 31

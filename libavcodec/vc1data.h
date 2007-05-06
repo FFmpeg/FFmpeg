@@ -29,16 +29,16 @@
 #define VC1DATA_H
 
 /** Table for conversion between TTBLK and TTMB */
-extern const int ttblk_to_tt[3][8];
+extern const int vc1_ttblk_to_tt[3][8];
 
-extern const int ttfrm_to_tt[4];
+extern const int vc1_ttfrm_to_tt[4];
 
 /** MV P mode - the 5th element is only used for mode 1 */
-extern const uint8_t mv_pmode_table[2][5];
-extern const uint8_t mv_pmode_table2[2][4];
+extern const uint8_t vc1_mv_pmode_table[2][5];
+extern const uint8_t vc1_mv_pmode_table2[2][4];
 
-extern const int fps_nr[5], fps_dr[2];
-extern const uint8_t pquant_table[3][32];
+extern const int vc1_fps_nr[5], vc1_fps_dr[2];
+extern const uint8_t vc1_pquant_table[3][32];
 
 /** @name VC-1 VLC tables and defines
  *  @todo TODO move this into the context
