@@ -5665,6 +5665,11 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
                 skip_bits1(gb); /* marker */
             }
             s->num_sprite_warping_points= get_bits(gb, 6);
+            if(s->num_sprite_warping_points > 3){
+                av_log(s->avctx, AV_LOG_ERROR, "%d sprite_warping_points\n", s->num_sprite_warping_points);
+                s->num_sprite_warping_points= 0;
+                return -1;
+            }
             s->sprite_warping_accuracy = get_bits(gb, 2);
             s->sprite_brightness_change= get_bits1(gb);
             if(s->vol_sprite_usage==STATIC_SPRITE)
