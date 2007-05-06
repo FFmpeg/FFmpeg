@@ -1717,6 +1717,9 @@ do not attach several unrelated patches to the same mail.
     If you added a new file, did you insert a license header? It should be
     taken from FFmpeg, not randomly copied and pasted from somewhere else.
 @item
+    Longer lists of things are usually kept in alphabetical order. If you
+    add an item, make sure to maintain alphabetical order.
+@item
     Did you provide a suggestion for a clear commit log message?
 @end enumerate
 
