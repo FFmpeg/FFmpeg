@@ -299,11 +299,6 @@ static void vp6_parse_coeff(vp56_context_t *s)
         for (coeff_idx=0; coeff_idx<64; ) {
             if ((coeff_idx>1 && ct==0) || vp56_rac_get_prob(c, model2[0])) {
                 /* parse a coeff */
-                if (coeff_idx == 0) {
-                    s->left_block[vp56_b6to4[b]].not_null_dc = 1;
-                    s->above_blocks[s->above_block_idx[b]].not_null_dc = 1;
-                }
-
                 if (vp56_rac_get_prob(c, model2[2])) {
                     if (vp56_rac_get_prob(c, model2[3])) {
                         idx = vp56_rac_get_tree(c, vp56_pc_tree, model);
@@ -331,10 +326,7 @@ static void vp6_parse_coeff(vp56_context_t *s)
             } else {
                 /* parse a run */
                 ct = 0;
-                if (coeff_idx == 0) {
-                    s->left_block[vp56_b6to4[b]].not_null_dc = 0;
-                    s->above_blocks[s->above_block_idx[b]].not_null_dc = 0;
-                } else {
+                if (coeff_idx > 0) {
                     if (!vp56_rac_get_prob(c, model2[1]))
                         break;
 
@@ -349,6 +341,9 @@ static void vp6_parse_coeff(vp56_context_t *s)
             cg = vp6_coeff_groups[coeff_idx+=run];
             model = model2 = s->coeff_model_ract[pt][ct][cg];
         }
+
+        s->left_block[vp56_b6to4[b]].not_null_dc =
+        s->above_blocks[s->above_block_idx[b]].not_null_dc = !!s->block_coeff[b][0];
     }
 }
 
