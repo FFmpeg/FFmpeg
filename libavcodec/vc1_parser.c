@@ -26,7 +26,6 @@
  */
 
 #include "parser.h"
-#define VC1_PARSER_ONLY
 #include "vc1.h"
 
 /**

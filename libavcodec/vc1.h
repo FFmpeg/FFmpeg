@@ -20,6 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avcodec.h"
+#include "mpegvideo.h"
+
 /** Markers used in VC-1 AP frame data */
 //@{
 enum VC1Code{
@@ -35,7 +38,6 @@ enum VC1Code{
 
 #define IS_MARKER(x) (((x) & ~0xFF) == VC1_CODE_RES0)
 
-#ifndef VC1_PARSER_ONLY
 /** Available Profiles */
 //@{
 enum Profile {
@@ -298,4 +300,3 @@ typedef struct VC1Context{
     int p_frame_skipped;
     int bi_type;
 } VC1Context;
-#endif
