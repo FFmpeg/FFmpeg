@@ -474,22 +474,16 @@ static void vp6_filter(vp56_context_t *s, uint8_t *dst, uint8_t *src,
         } else if (!x8) {               /* above or below combine */
             vp6_filter_hv4(dst, src+offset1, stride, stride,
                            vp6_block_copy_filter[select][y8]);
-        } else if ((mv.x^mv.y) >> 31) { /* lower-left or upper-right combine */
-            vp6_filter_diag4(dst, src+offset1-1, stride,
-                             vp6_block_copy_filter[select][x8],
-                             vp6_block_copy_filter[select][y8]);
-        } else {                        /* lower-right or upper-left combine */
-            vp6_filter_diag4(dst, src+offset1, stride,
+        } else {
+            vp6_filter_diag4(dst, src+offset1 + ((mv.x^mv.y)>>31), stride,
                              vp6_block_copy_filter[select][x8],
                              vp6_block_copy_filter[select][y8]);
         }
     } else {
         if (!x8 || !y8) {
             s->dsp.put_h264_chroma_pixels_tab[0](dst, src+offset1, stride, 8, x8, y8);
-        } else if ((mv.x^mv.y) >> 31) { /* lower-left or upper-right combine */
-            vp6_filter_diag2(s, dst, src+offset1-1, stride, x8, y8);
-        } else {                        /* lower-right or upper-left combine */
-            vp6_filter_diag2(s, dst, src+offset1, stride, x8, y8);
+        } else {
+            vp6_filter_diag2(s, dst, src+offset1 + ((mv.x^mv.y)>>31), stride, x8, y8);
         }
     }
 }
