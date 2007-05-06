@@ -514,9 +514,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!codec->bit_rate)
                 codec->bit_rate = bitrate[i];
             if (dar[i].num > 0 && dar[i].den > 0)
-            av_reduce(&codec->sample_aspect_ratio.num,
-                    &codec->sample_aspect_ratio.den,
-                    dar[i].num, dar[i].den, INT_MAX);
+                av_reduce(&codec->sample_aspect_ratio.num,
+                          &codec->sample_aspect_ratio.den,
+                          dar[i].num, dar[i].den, INT_MAX);
 //av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
         }
     }
