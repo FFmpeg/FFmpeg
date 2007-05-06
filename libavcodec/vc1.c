@@ -30,9 +30,9 @@
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
+#include "vc1.h"
 #include "vc1data.h"
 #include "vc1acdata.h"
-#include "vc1.h"
 
 #undef NDEBUG
 #include <assert.h>

@@ -121,73 +121,8 @@ enum TransformTypes {
 };
 //@}
 
-/** Table for conversion between TTBLK and TTMB */
-static const int ttblk_to_tt[3][8] = {
-  { TT_8X4, TT_4X8, TT_8X8, TT_4X4, TT_8X4_TOP, TT_8X4_BOTTOM, TT_4X8_RIGHT, TT_4X8_LEFT },
-  { TT_8X8, TT_4X8_RIGHT, TT_4X8_LEFT, TT_4X4, TT_8X4, TT_4X8, TT_8X4_BOTTOM, TT_8X4_TOP },
-  { TT_8X8, TT_4X8, TT_4X4, TT_8X4_BOTTOM, TT_4X8_RIGHT, TT_4X8_LEFT, TT_8X4, TT_8X4_TOP }
-};
-
-static const int ttfrm_to_tt[4] = { TT_8X8, TT_8X4, TT_4X8, TT_4X4 };
-
-/** MV P mode - the 5th element is only used for mode 1 */
-static const uint8_t mv_pmode_table[2][5] = {
-  { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_MIXED_MV },
-  { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_1MV_HPEL_BILIN }
-};
-static const uint8_t mv_pmode_table2[2][4] = {
-  { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_MIXED_MV },
-  { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_1MV_HPEL_BILIN }
-};
-
 /** One more frame type */
 #define BI_TYPE 7
-
-static const int fps_nr[5] = { 24, 25, 30, 50, 60 },
-  fps_dr[2] = { 1000, 1001 };
-static const uint8_t pquant_table[3][32] = {
-  {  /* Implicit quantizer */
-     0,  1,  2,  3,  4,  5,  6,  7,  8,  6,  7,  8,  9, 10, 11, 12,
-    13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 29, 31
-  },
-  {  /* Explicit quantizer, pquantizer uniform */
-     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-    16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-  },
-  {  /* Explicit quantizer, pquantizer non-uniform */
-     0,  1,  1,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13,
-    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 31
-  }
-};
-
-/** @name VC-1 VLC tables and defines
- *  @todo TODO move this into the context
- */
-//@{
-#define VC1_BFRACTION_VLC_BITS 7
-static VLC vc1_bfraction_vlc;
-#define VC1_IMODE_VLC_BITS 4
-static VLC vc1_imode_vlc;
-#define VC1_NORM2_VLC_BITS 3
-static VLC vc1_norm2_vlc;
-#define VC1_NORM6_VLC_BITS 9
-static VLC vc1_norm6_vlc;
-/* Could be optimized, one table only needs 8 bits */
-#define VC1_TTMB_VLC_BITS 9 //12
-static VLC vc1_ttmb_vlc[3];
-#define VC1_MV_DIFF_VLC_BITS 9 //15
-static VLC vc1_mv_diff_vlc[4];
-#define VC1_CBPCY_P_VLC_BITS 9 //14
-static VLC vc1_cbpcy_p_vlc[4];
-#define VC1_4MV_BLOCK_PATTERN_VLC_BITS 6
-static VLC vc1_4mv_block_pattern_vlc[4];
-#define VC1_TTBLK_VLC_BITS 5
-static VLC vc1_ttblk_vlc[3];
-#define VC1_SUBBLKPAT_VLC_BITS 6
-static VLC vc1_subblkpat_vlc[3];
-
-static VLC vc1_ac_coeff_table[8];
-//@}
 
 enum CodingSet {
     CS_HIGH_MOT_INTRA = 0,
