@@ -1105,7 +1105,7 @@ following image formats are supported:
 @item AMR-WB                 @tab X    @tab X
 @tab Supported through an external library.
 @item DV audio               @tab      @tab X
-@item Id RoQ DPCM            @tab      @tab X
+@item Id RoQ DPCM            @tab X    @tab X
 @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Interplay MVE DPCM     @tab      @tab X
 @tab Used in various Interplay computer games.
