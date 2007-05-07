@@ -125,6 +125,7 @@ OBJS-$(CONFIG_RA_144_DECODER)          += ra144.o
 OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o
 OBJS-$(CONFIG_ROQ_DECODER)             += roqvideo.o
 OBJS-$(CONFIG_ROQ_DPCM_DECODER)        += dpcm.o
+OBJS-$(CONFIG_ROQ_DPCM_ENCODER)        += roqaudioenc.o
 OBJS-$(CONFIG_RPZA_DECODER)            += rpza.o
 OBJS-$(CONFIG_RV10_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV10_ENCODER)            += rv10.o

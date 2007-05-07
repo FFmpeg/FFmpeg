@@ -226,7 +226,7 @@ void avcodec_register_all(void)
 
     /* dpcm codecs */
     REGISTER_DECODER(INTERPLAY_DPCM, interplay_dpcm);
-    REGISTER_DECODER(ROQ_DPCM, roq_dpcm);
+    REGISTER_ENCDEC (ROQ_DPCM, roq_dpcm);
     REGISTER_DECODER(SOL_DPCM, sol_dpcm);
     REGISTER_DECODER(XAN_DPCM, xan_dpcm);
 
