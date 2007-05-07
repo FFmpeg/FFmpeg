@@ -100,6 +100,7 @@ extern AVInputFormat swf_demuxer;
 extern AVInputFormat thp_demuxer;
 extern AVInputFormat tiertexseq_demuxer;
 extern AVInputFormat tta_demuxer;
+extern AVInputFormat txd_demuxer;
 extern AVInputFormat v4l2_demuxer;
 extern AVInputFormat vc1_demuxer;
 extern AVInputFormat video_grab_bktr_demuxer;

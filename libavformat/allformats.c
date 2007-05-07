@@ -150,6 +150,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (THP, thp);
     REGISTER_DEMUXER (TIERTEXSEQ, tiertexseq);
     REGISTER_DEMUXER (TTA, tta);
+    REGISTER_DEMUXER (TXD, txd);
     REGISTER_DEMUXER (V4L2, v4l2);
     REGISTER_DEMUXER (VC1, vc1);
     REGISTER_DEMUXER (VIDEO_GRAB_BKTR, video_grab_bktr);
