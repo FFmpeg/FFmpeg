@@ -8039,7 +8039,7 @@ found:
 #ifdef CONFIG_H264_PARSER
 static int h264_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
-                      uint8_t **poutbuf, int *poutbuf_size,
+                      const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
     H264Context *h = s->priv_data;
@@ -8051,7 +8051,7 @@ static int h264_parse(AVCodecParserContext *s,
     }else{
         next= find_frame_end(h, buf, buf_size);
 
-        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
             *poutbuf_size = 0;
             return buf_size;
@@ -8063,7 +8063,7 @@ static int h264_parse(AVCodecParserContext *s,
         }
     }
 
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }
@@ -8303,7 +8303,7 @@ static int decode_frame(AVCodecContext *avctx,
     if(s->flags&CODEC_FLAG_TRUNCATED){
         int next= find_frame_end(h, buf, buf_size);
 
-        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
+        if( ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf, &buf_size) < 0 )
             return buf_size;
 //printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
     }

@@ -128,7 +128,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
 static int mpegvideo_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     ParseContext1 *pc1 = s->priv_data;
@@ -140,7 +140,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     }else{
         next= ff_mpeg1_find_frame_end(pc, buf, buf_size);
 
-        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
             *poutbuf_size = 0;
             return buf_size;
@@ -156,7 +156,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
            s->pict_type, (double)avctx->time_base.den / avctx->time_base.num, s->repeat_pict);
 #endif
 
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }

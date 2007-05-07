@@ -396,7 +396,7 @@ static int h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_siz
 #ifdef CONFIG_H263_PARSER
 static int h263_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
@@ -404,13 +404,13 @@ static int h263_parse(AVCodecParserContext *s,
 
     next= h263_find_frame_end(pc, buf, buf_size);
 
-    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+    if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
     }
 
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }
@@ -460,7 +460,7 @@ uint64_t time= rdtsc();
             return -1;
         }
 
-        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
+        if( ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf, &buf_size) < 0 )
             return buf_size;
     }
 

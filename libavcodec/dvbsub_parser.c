@@ -48,7 +48,7 @@ static int dvbsub_parse_init(AVCodecParserContext *s)
 
 static int dvbsub_parse(AVCodecParserContext *s,
                         AVCodecContext *avctx,
-                        uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t **poutbuf, int *poutbuf_size,
                         const uint8_t *buf, int buf_size)
 {
     DVBSubParseContext *pc = s->priv_data;

@@ -489,7 +489,7 @@ static int pam_probe(AVProbeData *pd)
 #ifdef CONFIG_PNM_PARSER
 static int pnm_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
@@ -538,12 +538,12 @@ retry:
             next= END_NOT_FOUND;
     }
 
-    if(ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size)<0){
+    if(ff_combine_frame(pc, next, &buf, &buf_size)<0){
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
     }
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }

@@ -50,7 +50,7 @@ static int mpegaudio_parse_init(AVCodecParserContext *s1)
 
 static int mpegaudio_parse(AVCodecParserContext *s1,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     MpegAudioParseContext *s = s1->priv_data;
@@ -186,7 +186,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
         if(s->frame_size > 0 && buf_ptr - buf == s->inbuf_ptr - s->inbuf
            && buf_size + buf_ptr - buf >= s->frame_size){
             if(s->header_count > 0){
-                *poutbuf = (uint8_t *)buf;
+                *poutbuf = buf;
                 *poutbuf_size = s->frame_size;
             }
             buf_ptr = buf + s->frame_size;

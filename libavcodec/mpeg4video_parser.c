@@ -65,7 +65,7 @@ static int mpeg4video_parse_init(AVCodecParserContext *s)
 
 static int mpeg4video_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
+                           const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
@@ -76,7 +76,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
     }else{
         next= ff_mpeg4_find_frame_end(pc, buf, buf_size);
 
-        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
             *poutbuf_size = 0;
             return buf_size;
@@ -84,7 +84,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
     }
     av_mpeg4_decode_header(s, avctx, buf, buf_size);
 
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }

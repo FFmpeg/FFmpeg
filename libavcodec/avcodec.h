@@ -2981,7 +2981,7 @@ typedef struct AVCodecParser {
     int (*parser_init)(AVCodecParserContext *s);
     int (*parser_parse)(AVCodecParserContext *s,
                         AVCodecContext *avctx,
-                        uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t **poutbuf, int *poutbuf_size,
                         const uint8_t *buf, int buf_size);
     void (*parser_close)(AVCodecParserContext *s);
     int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);

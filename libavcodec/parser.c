@@ -130,7 +130,7 @@ int av_parser_parse(AVCodecParserContext *s,
     }
 
     /* WARNING: the returned index can be negative */
-    index = s->parser->parser_parse(s, avctx, poutbuf, poutbuf_size, buf, buf_size);
+    index = s->parser->parser_parse(s, avctx, (const uint8_t **)poutbuf, poutbuf_size, buf, buf_size);
 //av_log(NULL, AV_LOG_DEBUG, "parser: in:%"PRId64", %"PRId64", out:%"PRId64", %"PRId64", in:%d out:%d id:%d\n", pts, dts, s->last_pts, s->last_dts, buf_size, *poutbuf_size, avctx->codec_id);
     /* update the file pointer */
     if (*poutbuf_size) {
@@ -223,7 +223,7 @@ void av_parser_close(AVCodecParserContext *s)
  * combines the (truncated) bitstream to a complete frame
  * @returns -1 if no complete frame could be created
  */
-int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
+int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {
 #if 0
     if(pc->overread){
@@ -525,7 +525,7 @@ static int aac_parse_init(AVCodecParserContext *s1)
 /* also used for ADTS AAC */
 static int ac3_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
-                     uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size)
 {
     AC3ParseContext *s = s1->priv_data;

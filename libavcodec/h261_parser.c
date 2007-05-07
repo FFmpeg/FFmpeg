@@ -64,19 +64,19 @@ static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const ui
 
 static int h261_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
-                      uint8_t **poutbuf, int *poutbuf_size,
+                      const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
     int next;
 
     next= h261_find_frame_end(pc,avctx, buf, buf_size);
-    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+    if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
     }
-    *poutbuf = (uint8_t *)buf;
+    *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
 }
