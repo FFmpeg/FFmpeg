@@ -163,6 +163,7 @@ enum CodecID {
     CODEC_ID_C93,
     CODEC_ID_BETHSOFTVID,
     CODEC_ID_PTX,
+    CODEC_ID_TXD,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2346,6 +2347,7 @@ extern AVCodec truemotion2_decoder;
 extern AVCodec truespeech_decoder;
 extern AVCodec tscc_decoder;
 extern AVCodec tta_decoder;
+extern AVCodec txd_decoder;
 extern AVCodec ulti_decoder;
 extern AVCodec vc1_decoder;
 extern AVCodec vcr1_decoder;
