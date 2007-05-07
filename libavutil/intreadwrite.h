@@ -31,6 +31,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 
 #define ST16(a, b) (((struct unaligned_16 *) (a))->l) = (b)
 #define ST32(a, b) (((struct unaligned_32 *) (a))->l) = (b)
+#define ST64(a, b) (((struct unaligned_64 *) (a))->l) = (b)
 
 #else /* __GNUC__ */
 
@@ -40,6 +41,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 
 #define ST16(a, b) *((uint16_t*)(a)) = (b)
 #define ST32(a, b) *((uint32_t*)(a)) = (b)
+#define ST64(a, b) *((uint64_t*)(a)) = (b)
 
 #endif /* !__GNUC__ */
 
@@ -127,6 +129,58 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[2] = (d)>>16; \
                     ((uint8_t*)(p))[3] = (d)>>24; }
+#endif
+
+#ifdef HAVE_FAST_UNALIGNED
+# ifdef WORDS_BIGENDIAN
+#  define AV_RB64(x)    LD64(x)
+#  define AV_WB64(p, d) ST64(p, d)
+
+#  define AV_RL64(x)    bswap_64(LD64(x))
+#  define AV_WL64(p, d) ST64(p, bswap_64(d))
+# else /* WORDS_BIGENDIAN */
+#  define AV_RB64(x)    bswap_64(LD64(x))
+#  define AV_WB64(p, d) ST64(p, bswap_64(d))
+
+#  define AV_RL64(x)    LD64(x)
+#  define AV_WL64(p, d) ST64(p, d)
+# endif
+#else /* HAVE_FAST_UNALIGNED */
+#define AV_RB64(x)  (((uint64_t)((uint8_t*)(x))[0] << 56) | \
+                     ((uint64_t)((uint8_t*)(x))[1] << 48) | \
+                     ((uint64_t)((uint8_t*)(x))[2] << 40) | \
+                     ((uint64_t)((uint8_t*)(x))[3] << 32) | \
+                     ((uint64_t)((uint8_t*)(x))[4] << 24) | \
+                     ((uint64_t)((uint8_t*)(x))[5] << 16) | \
+                     ((uint64_t)((uint8_t*)(x))[6] <<  8) | \
+                      (uint64_t)((uint8_t*)(x))[7])
+#define AV_WB64(p, d) { \
+                    ((uint8_t*)(p))[7] = (d);     \
+                    ((uint8_t*)(p))[6] = (d)>>8;  \
+                    ((uint8_t*)(p))[5] = (d)>>16; \
+                    ((uint8_t*)(p))[4] = (d)>>24; \
+                    ((uint8_t*)(p))[3] = (d)>>32; \
+                    ((uint8_t*)(p))[2] = (d)>>40; \
+                    ((uint8_t*)(p))[1] = (d)>>48; \
+                    ((uint8_t*)(p))[0] = (d)>>56; }
+
+#define AV_RL64(x)  (((uint64_t)((uint8_t*)(x))[7] << 56) | \
+                     ((uint64_t)((uint8_t*)(x))[6] << 48) | \
+                     ((uint64_t)((uint8_t*)(x))[5] << 40) | \
+                     ((uint64_t)((uint8_t*)(x))[4] << 32) | \
+                     ((uint64_t)((uint8_t*)(x))[3] << 24) | \
+                     ((uint64_t)((uint8_t*)(x))[2] << 16) | \
+                     ((uint64_t)((uint8_t*)(x))[1] <<  8) | \
+                      (uint64_t)((uint8_t*)(x))[0])
+#define AV_WL64(p, d) { \
+                    ((uint8_t*)(p))[0] = (d);     \
+                    ((uint8_t*)(p))[1] = (d)>>8;  \
+                    ((uint8_t*)(p))[2] = (d)>>16; \
+                    ((uint8_t*)(p))[3] = (d)>>24; \
+                    ((uint8_t*)(p))[4] = (d)>>32; \
+                    ((uint8_t*)(p))[5] = (d)>>40; \
+                    ((uint8_t*)(p))[6] = (d)>>48; \
+                    ((uint8_t*)(p))[7] = (d)>>56; }
 #endif
 
 #endif /* INTREADWRITE_H */
