@@ -2371,6 +2371,7 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
+    int visible_width, visible_height;
 
     s->theora = get_bits_long(gb, 24);
     av_log(avctx, AV_LOG_INFO, "Theora bitstream version %X\n", s->theora);
@@ -2399,15 +2400,10 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         skip_bits(gb, 32); /* total number of blocks in a frame */
         skip_bits(gb, 4); /* total number of blocks in a frame */
         skip_bits(gb, 32); /* total number of macroblocks in a frame */
+    }
 
-        skip_bits(gb, 24); /* frame width */
-        skip_bits(gb, 24); /* frame height */
-    }
-    else
-    {
-        skip_bits(gb, 24); /* frame width */
-        skip_bits(gb, 24); /* frame height */
-    }
+    visible_width  = get_bits_long(gb, 24);
+    visible_height = get_bits_long(gb, 24);
 
   if (s->theora >= 0x030200) {
     skip_bits(gb, 8); /* offset x */
@@ -2438,8 +2434,11 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 
 //    align_get_bits(gb);
 
-    avctx->width = s->width;
-    avctx->height = s->height;
+    if (   visible_width  <= s->width  && visible_width  > s->width-16
+        && visible_height <= s->height && visible_height > s->height-16)
+        avcodec_set_dimensions(avctx, visible_width, visible_height);
+    else
+        avcodec_set_dimensions(avctx, s->width, s->height);
 
     return 0;
 }

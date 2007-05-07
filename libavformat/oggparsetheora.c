@@ -53,6 +53,7 @@ theora_header (AVFormatContext * s, int idx)
 
     if (os->buf[os->pstart] == 0x80) {
         GetBitContext gb;
+        int width, height;
         int version;
 
         init_get_bits(&gb, os->buf + os->pstart, os->psize*8);
@@ -70,13 +71,21 @@ theora_header (AVFormatContext * s, int idx)
             return -1;
         }
 
-        st->codec->width = get_bits(&gb, 16) << 4;
-        st->codec->height = get_bits(&gb, 16) << 4;
+        width  = get_bits(&gb, 16) << 4;
+        height = get_bits(&gb, 16) << 4;
+        avcodec_set_dimensions(st->codec, width, height);
 
         if (version >= 0x030400)
-            skip_bits(&gb, 164);
-        else if (version >= 0x030200)
-            skip_bits(&gb, 64);
+            skip_bits(&gb, 100);
+
+        width  = get_bits_long(&gb, 24);
+        height = get_bits_long(&gb, 24);
+        if (   width  <= st->codec->width  && width  > st->codec->width-16
+            && height <= st->codec->height && height > st->codec->height-16)
+            avcodec_set_dimensions(st->codec, width, height);
+
+        if (version >= 0x030200)
+            skip_bits(&gb, 16);
         st->codec->time_base.den = get_bits(&gb, 32);
         st->codec->time_base.num = get_bits(&gb, 32);
         st->time_base = st->codec->time_base;
