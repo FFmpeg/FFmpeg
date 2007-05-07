@@ -347,15 +347,13 @@ static int mpegvideo_probe(AVProbeData *p)
     return 0;
 }
 
-#define VIDEO_OBJECT_START_CODE        0x00000100
-#define VIDEO_OBJECT_LAYER_START_CODE  0x00000120
 #define VISUAL_OBJECT_START_CODE       0x000001b5
 #define VOP_START_CODE                 0x000001b6
 
 static int mpeg4video_probe(AVProbeData *probe_packet)
 {
     uint32_t temp_buffer= -1;
-    int VO=0, VOL=0, VOP = 0, VISO = 0;
+    int VO=0, VOL=0, VOP = 0, VISO = 0, res=0;
     int i;
 
     for(i=0; i<probe_packet->buf_size; i++){
@@ -364,15 +362,16 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
             switch(temp_buffer){
             case VOP_START_CODE:             VOP++; break;
             case VISUAL_OBJECT_START_CODE:  VISO++; break;
-            }
-            switch(temp_buffer & 0xfffffff0){
-            case VIDEO_OBJECT_START_CODE:            VO++; break;
-            case VIDEO_OBJECT_LAYER_START_CODE:     VOL++; break;
+            case 0x100 ... 0x11F:             VO++; break;
+            case 0x120 ... 0x12F:            VOL++; break;
+            case 0x130 ... 0x1AF:
+            case 0x1B7 ... 0x1B9:
+            case 0x1C4 ... 0x1FF:            res++; break;
             }
         }
     }
 
-    if ( VOP >= VISO && VOP >= VOL && VO >= VOL && VOL > 0)
+    if ( VOP >= VISO && VOP >= VOL && VO >= VOL && VOL > 0 && res==0)
         return AVPROBE_SCORE_MAX/2;
     return 0;
 }
