@@ -201,6 +201,12 @@ static const uint64_t ff_pb_FC attribute_used __attribute__ ((aligned(8))) = 0xF
     "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
     "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */\
 
+#define TRANSPOSE4(a,b,c,d,t)\
+    SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
+    SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
+    SBUTTERFLY(a,c,d,dq) /* a=aeim d=bfjn */\
+    SBUTTERFLY(t,b,c,dq) /* t=cgko c=dhlp */
+
 /***********************************/
 /* standard MMX */
 
@@ -1536,12 +1542,6 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     "psubw " #a ", " #z "             \n\t"\
     "pmaxsw " #z ", " #a "            \n\t"\
     "paddusw " #a ", " #sum "         \n\t"
-
-#define TRANSPOSE4(a,b,c,d,t)\
-    SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
-    SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
-    SBUTTERFLY(a,c,d,dq) /* a=aeim d=bfjn */\
-    SBUTTERFLY(t,b,c,dq) /* t=cgko c=dhlp */
 
 #define LOAD4(o, a, b, c, d)\
         "movq "#o"(%1), " #a "        \n\t"\

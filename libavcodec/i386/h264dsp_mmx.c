@@ -48,12 +48,6 @@
     SUMSUBD2_AB( s13, d13, t )\
     SUMSUB_BADC( d13, s02, s13, d02 )
 
-#define TRANSPOSE4(a,b,c,d,t)\
-    SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
-    SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
-    SBUTTERFLY(a,c,d,dq) /* a=aeim d=bfjn */\
-    SBUTTERFLY(t,b,c,dq) /* t=cgko c=dhlp */
-
 #define STORE_DIFF_4P( p, t, z ) \
     "psraw      $6,     "#p" \n\t"\
     "movd       (%0),   "#t" \n\t"\
