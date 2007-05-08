@@ -964,6 +964,7 @@ following image formats are supported:
 @item Targa        @tab   @tab X @tab Targa (.TGA) image format.
 @item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @item SGI          @tab X @tab X @tab SGI RGB image format
+@item PTX          @tab   @tab X @tab V.Flash PTX format
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
