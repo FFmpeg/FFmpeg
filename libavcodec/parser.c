@@ -19,9 +19,7 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "avcodec.h"
-#include "mpegvideo.h"
-#include "mpegaudio.h"
+
 #include "parser.h"
 
 AVCodecParser *av_first_parser = NULL;
