@@ -23,12 +23,12 @@
 #include "parser.h"
 #include "aac_ac3_parser.h"
 
-int ac3_parse(AVCodecParserContext *s1,
+int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size)
 {
-    AC3ParseContext *s = s1->priv_data;
+    AACAC3ParseContext *s = s1->priv_data;
     const uint8_t *buf_ptr;
     int len, sample_rate, bit_rate, channels, samples;
 

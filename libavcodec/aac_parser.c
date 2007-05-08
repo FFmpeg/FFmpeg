@@ -80,7 +80,7 @@ static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
 
 static int aac_parse_init(AVCodecParserContext *s1)
 {
-    AC3ParseContext *s = s1->priv_data;
+    AACAC3ParseContext *s = s1->priv_data;
     s->inbuf_ptr = s->inbuf;
     s->header_size = AAC_HEADER_SIZE;
     s->sync = aac_sync;
@@ -90,8 +90,8 @@ static int aac_parse_init(AVCodecParserContext *s1)
 
 AVCodecParser aac_parser = {
     { CODEC_ID_AAC },
-    sizeof(AC3ParseContext),
+    sizeof(AACAC3ParseContext),
     aac_parse_init,
-    ac3_parse,
+    ff_aac_ac3_parse,
     NULL,
 };

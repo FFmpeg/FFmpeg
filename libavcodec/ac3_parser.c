@@ -145,7 +145,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
 
 static int ac3_parse_init(AVCodecParserContext *s1)
 {
-    AC3ParseContext *s = s1->priv_data;
+    AACAC3ParseContext *s = s1->priv_data;
     s->inbuf_ptr = s->inbuf;
     s->header_size = AC3_HEADER_SIZE;
     s->sync = ac3_sync;
@@ -155,8 +155,8 @@ static int ac3_parse_init(AVCodecParserContext *s1)
 
 AVCodecParser ac3_parser = {
     { CODEC_ID_AC3 },
-    sizeof(AC3ParseContext),
+    sizeof(AACAC3ParseContext),
     ac3_parse_init,
-    ac3_parse,
+    ff_aac_ac3_parse,
     NULL,
 };

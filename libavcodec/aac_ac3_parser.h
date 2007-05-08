@@ -23,16 +23,16 @@
 #ifndef AAC_AC3_PARSER_H
 #define AAC_AC3_PARSER_H
 
-typedef struct AC3ParseContext {
+typedef struct AACAC3ParseContext {
     uint8_t *inbuf_ptr;
     int frame_size;
     int header_size;
     int (*sync)(const uint8_t *buf, int *channels, int *sample_rate,
                 int *bit_rate, int *samples);
     uint8_t inbuf[8192]; /* input buffer */
-} AC3ParseContext;
+} AACAC3ParseContext;
 
-int ac3_parse(AVCodecParserContext *s1,
+int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size);
