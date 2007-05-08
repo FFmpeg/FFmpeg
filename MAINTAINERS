@@ -162,6 +162,7 @@ Codecs:
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
+  s3tc*                                 Ivo van Poorten
   smc.c                                 Mike Melanson
   snow.c                                Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
@@ -172,6 +173,7 @@ Codecs:
   truemotion2*                          Kostya Shishkov
   truespeech.c                          Kostya Shishkov
   tscc.c                                Kostya Shishkov
+  txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
@@ -237,6 +239,7 @@ Muxers/Demuxers:
   rm.c                                  Roberto Togni
   segafilm.c                            Mike Melanson
   swf.c                                 Baptiste Coudurier
+  txd.c                                 Ivo van Poorten
   v4l2.c                                Luca Abeni
   voc.c                                 Aurelien Jacobs
   wav.c                                 Michael Niedermayer
