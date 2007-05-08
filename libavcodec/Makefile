@@ -275,8 +275,8 @@ OBJS-$(CONFIG_X264)                    += x264.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 
 
-OBJS-$(CONFIG_AAC_PARSER)              += parser.o
-OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o
+OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o
+OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs.o
 OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o

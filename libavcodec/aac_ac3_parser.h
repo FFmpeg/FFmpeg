@@ -1,0 +1,40 @@
+/*
+ * Common AAC and AC3 parser prototypes
+ * Copyright (c) 2003 Fabrice Bellard.
+ * Copyright (c) 2003 Michael Niedermayer.
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef AAC_AC3_PARSER_H
+#define AAC_AC3_PARSER_H
+
+typedef struct AC3ParseContext {
+    uint8_t *inbuf_ptr;
+    int frame_size;
+    int header_size;
+    int (*sync)(const uint8_t *buf, int *channels, int *sample_rate,
+                int *bit_rate, int *samples);
+    uint8_t inbuf[8192]; /* input buffer */
+} AC3ParseContext;
+
+int ac3_parse(AVCodecParserContext *s1,
+                     AVCodecContext *avctx,
+                     const uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size);
+
+#endif /* AAC_AC3_PARSER_H */
