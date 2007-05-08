@@ -670,6 +670,9 @@ CMDLINE_SELECT="
     static
 "
 
+# code dependency declarations
+
+# decoders / encoders
 dxa_decoder_deps="zlib"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
@@ -681,6 +684,7 @@ xvid_encoder_deps="xvid"
 zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
+# external libraries
 aac_decoder_deps="libfaad"
 mpeg4aac_decoder_deps="libfaad"
 faac_encoder_deps="libfaac"
@@ -699,6 +703,7 @@ mp3lame_encoder_deps="libmp3lame"
 libvorbis_decoder_deps="libvorbis"
 libvorbis_encoder_deps="libvorbis"
 
+# demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
 audio_demuxer_deps_any="audio_oss audio_beos"
 audio_muxer_deps_any="audio_oss audio_beos"
@@ -717,13 +722,16 @@ video_grab_bktr_demuxer_deps="bktr"
 video_grab_v4l_demuxer_deps="v4l"
 x11_grab_device_demuxer_deps="x11grab"
 
+# protocols
 http_protocol_deps="network"
 rtp_protocol_deps="udp_protocol"
 tcp_protocol_deps="network"
 udp_protocol_deps="network"
 
+# programs
 ffplay_deps="sdl"
 ffserver_deps="muxers rtp_protocol"
+
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
