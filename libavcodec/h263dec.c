@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "h263_parser.h"
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
@@ -358,64 +359,6 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
     return END_NOT_FOUND;
 }
 
-static int h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
-    int vop_found, i;
-    uint32_t state;
-
-    vop_found= pc->frame_start_found;
-    state= pc->state;
-
-    i=0;
-    if(!vop_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state>>(32-22) == 0x20){
-                i++;
-                vop_found=1;
-                break;
-            }
-        }
-    }
-
-    if(vop_found){
-      for(; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(state>>(32-22) == 0x20){
-            pc->frame_start_found=0;
-            pc->state=-1;
-            return i-3;
-        }
-      }
-    }
-    pc->frame_start_found= vop_found;
-    pc->state= state;
-
-    return END_NOT_FOUND;
-}
-
-#ifdef CONFIG_H263_PARSER
-static int h263_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           const uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size)
-{
-    ParseContext *pc = s->priv_data;
-    int next;
-
-    next= h263_find_frame_end(pc, buf, buf_size);
-
-    if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
-
-    *poutbuf = buf;
-    *poutbuf_size = buf_size;
-    return next;
-}
-#endif
-
 int ff_h263_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
@@ -454,7 +397,7 @@ uint64_t time= rdtsc();
         if(s->codec_id==CODEC_ID_MPEG4){
             next= ff_mpeg4_find_frame_end(&s->parse_context, buf, buf_size);
         }else if(s->codec_id==CODEC_ID_H263){
-            next= h263_find_frame_end(&s->parse_context, buf, buf_size);
+            next= ff_h263_find_frame_end(&s->parse_context, buf, buf_size);
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "this codec does not support truncated bitstreams\n");
             return -1;
@@ -902,13 +845,3 @@ AVCodec flv_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1
 };
-
-#ifdef CONFIG_H263_PARSER
-AVCodecParser h263_parser = {
-    { CODEC_ID_H263 },
-    sizeof(ParseContext),
-    NULL,
-    h263_parse,
-    ff_parse_close,
-};
-#endif
