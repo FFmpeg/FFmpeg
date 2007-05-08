@@ -1056,6 +1056,7 @@ following image formats are supported:
 @item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
 @item THP                    @tab     @tab  X @tab Used on the Nintendo GameCube.
 @item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.
+@item Renderware TXD         @tab     @tab  X @tab Texture dictionaries used by the Renderware Engine.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
