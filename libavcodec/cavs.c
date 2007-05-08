@@ -29,9 +29,10 @@
 #include "bitstream.h"
 #include "golomb.h"
 #include "mpegvideo.h"
+#include "cavs.h"
+#ifdef CONFIG_CAVS_DECODER
 #include "cavsdata.h"
 
-#ifdef CONFIG_CAVS_DECODER
 typedef struct {
     MpegEncContext s;
     Picture picture; ///< currently decoded frame
