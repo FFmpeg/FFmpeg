@@ -383,7 +383,7 @@ static void decode_envelope(COOKContext *q, int* quant_index_table) {
 
 static void categorize(COOKContext *q, int* quant_index_table,
                        int* category, int* category_index){
-    int exp_idx, bias, tmpbias, bits_left, num_bits, index, v, i, j;
+    int exp_idx, bias, tmpbias1, tmpbias2, bits_left, num_bits, index, v, i, j;
     int exp_index2[102];
     int exp_index1[102];
 
@@ -430,10 +430,10 @@ static void categorize(COOKContext *q, int* quant_index_table,
         exp_index1[i] = exp_idx;
         exp_index2[i] = exp_idx;
     }
-    tmpbias = bias = num_bits;
+    tmpbias1 = tmpbias2 = num_bits;
 
     for (j = 1 ; j < q->numvector_size ; j++) {
-        if (tmpbias + bias > 2*bits_left) {  /* ---> */
+        if (tmpbias1 + tmpbias2 > 2*bits_left) {  /* ---> */
             int max = -999999;
             index=-1;
             for (i=0 ; i<q->total_subbands ; i++){
@@ -447,7 +447,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             }
             if(index==-1)break;
             tmp_categorize_array1[tmp_categorize_array1_idx++] = index;
-            tmpbias -= expbits_tab[exp_index1[index]] -
+            tmpbias1 -= expbits_tab[exp_index1[index]] -
                        expbits_tab[exp_index1[index]+1];
             ++exp_index1[index];
         } else {  /* <--- */
@@ -464,7 +464,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             }
             if(index == -1)break;
             tmp_categorize_array2[tmp_categorize_array2_idx++] = index;
-            tmpbias -= expbits_tab[exp_index2[index]] -
+            tmpbias2 -= expbits_tab[exp_index2[index]] -
                        expbits_tab[exp_index2[index]-1];
             --exp_index2[index];
         }
