@@ -835,6 +835,7 @@ static int wmv2_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+#ifdef CONFIG_WMV2_DECODER
 AVCodec wmv2_decoder = {
     "wmv2",
     CODEC_TYPE_VIDEO,
@@ -846,6 +847,7 @@ AVCodec wmv2_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
+#endif
 
 #ifdef CONFIG_ENCODERS
 AVCodec wmv2_encoder = {

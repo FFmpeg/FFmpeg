@@ -37,8 +37,6 @@ OBJS= bitstream.o \
       rangecoder.o \
       pnm.o \
       h263.o \
-      msmpeg4.o \
-      h263dec.o \
       opt.o \
       bitstream_filter.o \
       audioconvert.o \
@@ -93,6 +91,7 @@ OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
 OBJS-$(CONFIG_GIF_ENCODER)             += gif.o
 OBJS-$(CONFIG_H261_DECODER)            += h261.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261.o
+OBJS-$(CONFIG_H263_DECODER)            += h263dec.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dsp.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o
@@ -110,6 +109,12 @@ OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc.o
+OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o
+OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o
+OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o
+OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o
+OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o
+OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcl.o
