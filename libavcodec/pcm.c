@@ -169,12 +169,13 @@ static int pcm_encode_close(AVCodecContext *avctx)
  */
 static inline void encode_from16(int bps, int le, int us,
                                short **samples, uint8_t **dst, int n) {
+    int usum = us ? 0x8000 : 0;
     if (bps > 2)
         memset(*dst, 0, n * bps);
     if (le) *dst += bps - 2;
     for(;n>0;n--) {
         register int v = *(*samples)++;
-        if (us) v += 0x8000;
+        v += usum;
         (*dst)[le] = v >> 8;
         (*dst)[1 - le] = v;
         *dst += bps;
@@ -361,10 +362,11 @@ static int pcm_decode_init(AVCodecContext * avctx)
 static inline void decode_to16(int bps, int le, int us,
                                uint8_t **src, short **samples, int src_len)
 {
+    int usum = us ? -0x8000 : 0;
     register int n = src_len / bps;
     if (le) *src += bps - 2;
     for(;n>0;n--) {
-        *(*samples)++ = ((*src)[le] << 8 | (*src)[1 - le]) - (us?0x8000:0);
+        *(*samples)++ = ((*src)[le] << 8 | (*src)[1 - le]) + usum;
         *src += bps;
     }
     if (le) *src -= bps - 2;
