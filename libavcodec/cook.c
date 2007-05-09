@@ -438,7 +438,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             index=-1;
             for (i=0 ; i<q->total_subbands ; i++){
                 if (exp_index1[i] < 7) {
-                    v = (-2*exp_index1[i]) - quant_index_table[i] - 32;
+                    v = (-2*exp_index1[i]) - quant_index_table[i] + bias;
                     if ( v >= max) {
                         max = v;
                         index = i;
@@ -455,7 +455,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             index=-1;
             for (i=0 ; i<q->total_subbands ; i++){
                 if(exp_index2[i] > 0){
-                    v = (-2*exp_index2[i])-quant_index_table[i];
+                    v = (-2*exp_index2[i])-quant_index_table[i]+bias;
                     if ( v < min) {
                         min = v;
                         index = i;
