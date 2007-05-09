@@ -84,6 +84,7 @@ version <next>
 - V.Flash PTX decoder
 - RoQ audio encoder
 - Renderware TXD demuxer and decoder
+- RoQ muxer
 
 version 0.4.9-pre1:
 
