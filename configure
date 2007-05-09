@@ -1151,6 +1151,7 @@ case $targetos in
     ;;
   mingw32*)
     targetos=mingw32
+    shlibdir="$bindir"
     if enabled_all shared static; then
         cat <<EOF
 You can only build one library type at once on MinGW.
