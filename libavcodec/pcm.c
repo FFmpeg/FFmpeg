@@ -282,29 +282,25 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S8:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = v >> 8;
-            dst++;
+            *dst++ = v >> 8;
         }
         break;
     case CODEC_ID_PCM_U8:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = (v >> 8) + 128;
-            dst++;
+            *dst++ = (v >> 8) + 128;
         }
         break;
     case CODEC_ID_PCM_ALAW:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = linear_to_alaw[(v + 32768) >> 2];
-            dst++;
+            *dst++ = linear_to_alaw[(v + 32768) >> 2];
         }
         break;
     case CODEC_ID_PCM_MULAW:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = linear_to_ulaw[(v + 32768) >> 2];
-            dst++;
+            *dst++ = linear_to_ulaw[(v + 32768) >> 2];
         }
         break;
     default:
@@ -447,23 +443,20 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S8:
         n = buf_size;
         for(;n>0;n--) {
-            *samples++ = src[0] << 8;
-            src++;
+            *samples++ = *src++ << 8;
         }
         break;
     case CODEC_ID_PCM_U8:
         n = buf_size;
         for(;n>0;n--) {
-            *samples++ = ((int)src[0] - 128) << 8;
-            src++;
+            *samples++ = ((int)*src++ - 128) << 8;
         }
         break;
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
         n = buf_size;
         for(;n>0;n--) {
-            *samples++ = s->table[src[0]];
-            src++;
+            *samples++ = s->table[*src++];
         }
         break;
     default:
