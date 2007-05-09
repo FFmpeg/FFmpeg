@@ -86,7 +86,7 @@ LIBAV = ../libavformat/libavformat.a ../libavcodec/libavcodec.a ../libavutil/lib
 
 #FIXME cleanup shit below
 seek_test$(EXESUF): seek_test.c $(LIBAV)
-	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat/ -I$(SRC_PATH)/libavcodec/ -I$(SRC_PATH)/libavutil/ -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
 
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
