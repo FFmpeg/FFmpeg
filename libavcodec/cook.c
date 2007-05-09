@@ -195,19 +195,19 @@ static int init_cook_vlc_tables(COOKContext *q) {
 
     result = 0;
     for (i=0 ; i<13 ; i++) {
-        result &= init_vlc (&q->envelope_quant_index[i], 9, 24,
+        result |= init_vlc (&q->envelope_quant_index[i], 9, 24,
             envelope_quant_index_huffbits[i], 1, 1,
             envelope_quant_index_huffcodes[i], 2, 2, 0);
     }
     av_log(NULL,AV_LOG_DEBUG,"sqvh VLC init\n");
     for (i=0 ; i<7 ; i++) {
-        result &= init_vlc (&q->sqvh[i], vhvlcsize_tab[i], vhsize_tab[i],
+        result |= init_vlc (&q->sqvh[i], vhvlcsize_tab[i], vhsize_tab[i],
             cvh_huffbits[i], 1, 1,
             cvh_huffcodes[i], 2, 2, 0);
     }
 
     if (q->nb_channels==2 && q->joint_stereo==1){
-        result &= init_vlc (&q->ccpl, 6, (1<<q->js_vlc_bits)-1,
+        result |= init_vlc (&q->ccpl, 6, (1<<q->js_vlc_bits)-1,
             ccpl_huffbits[q->js_vlc_bits-2], 1, 1,
             ccpl_huffcodes[q->js_vlc_bits-2], 2, 2, 0);
         av_log(NULL,AV_LOG_DEBUG,"Joint-stereo VLC used.\n");
