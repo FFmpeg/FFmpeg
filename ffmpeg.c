@@ -3718,8 +3718,18 @@ static void show_license(void)
     exit(1);
 }
 
+/**
+ * Trivial log callback.
+ * Only suitable for show_help and similar since it lacks prefix handling.
+ */
+static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
+{
+    vfprintf(stdout, fmt, vl);
+}
+
 static void show_help(void)
 {
+    av_log_set_callback(log_callback_help);
     show_banner();
     printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n"
            "Hyper fast Audio and Video encoder\n");
