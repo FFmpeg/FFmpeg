@@ -29,6 +29,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "h263_parser.h"
+#include "mpeg4video_parser.h"
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
@@ -316,47 +317,6 @@ static int decode_slice(MpegEncContext *s){
     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
     return -1;
-}
-
-/**
- * finds the end of the current frame in the bitstream.
- * @return the position of the first byte of the next frame, or -1
- */
-int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
-    int vop_found, i;
-    uint32_t state;
-
-    vop_found= pc->frame_start_found;
-    state= pc->state;
-
-    i=0;
-    if(!vop_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state == 0x1B6){
-                i++;
-                vop_found=1;
-                break;
-            }
-        }
-    }
-
-    if(vop_found){
-        /* EOF considered as end of frame */
-        if (buf_size == 0)
-            return 0;
-        for(; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if((state&0xFFFFFF00) == 0x100){
-                pc->frame_start_found=0;
-                pc->state=-1;
-                return i-3;
-            }
-        }
-    }
-    pc->frame_start_found= vop_found;
-    pc->state= state;
-    return END_NOT_FOUND;
 }
 
 int ff_h263_decode_frame(AVCodecContext *avctx,
