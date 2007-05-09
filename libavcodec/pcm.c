@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h" // for ff_reverse
+#include "bytestream.h"
 
 /* from g711.c by SUN microsystems (unrestricted use) */
 
@@ -248,46 +249,34 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             uint32_t tmp = ff_reverse[*samples >> 8] +
                            (ff_reverse[*samples & 0xff] << 8);
             tmp <<= 4; // sync flags would go here
-            dst[2] = tmp & 0xff;
-            tmp >>= 8;
-            dst[1] = tmp & 0xff;
-            dst[0] = tmp >> 8;
+            bytestream_put_be24(&dst, tmp);
             samples++;
-            dst += 3;
         }
         break;
     case CODEC_ID_PCM_S16LE:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = v & 0xff;
-            dst[1] = v >> 8;
-            dst += 2;
+            bytestream_put_le16(&dst, v);
         }
         break;
     case CODEC_ID_PCM_S16BE:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = v >> 8;
-            dst[1] = v;
-            dst += 2;
+            bytestream_put_be16(&dst, v);
         }
         break;
     case CODEC_ID_PCM_U16LE:
         for(;n>0;n--) {
             v = *samples++;
             v += 0x8000;
-            dst[0] = v & 0xff;
-            dst[1] = v >> 8;
-            dst += 2;
+            bytestream_put_le16(&dst, v);
         }
         break;
     case CODEC_ID_PCM_U16BE:
         for(;n>0;n--) {
             v = *samples++;
             v += 0x8000;
-            dst[0] = v >> 8;
-            dst[1] = v;
-            dst += 2;
+            bytestream_put_be16(&dst, v);
         }
         break;
     case CODEC_ID_PCM_S8:
@@ -425,39 +414,34 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S24DAUD:
         n = buf_size / 3;
         for(;n>0;n--) {
-          uint32_t v = src[0] << 16 | src[1] << 8 | src[2];
+          uint32_t v = bytestream_get_be24(&src);
           v >>= 4; // sync flags are here
           *samples++ = ff_reverse[(v >> 8) & 0xff] +
                        (ff_reverse[v & 0xff] << 8);
-          src += 3;
         }
         break;
     case CODEC_ID_PCM_S16LE:
         n = buf_size >> 1;
         for(;n>0;n--) {
-            *samples++ = src[0] | (src[1] << 8);
-            src += 2;
+            *samples++ = bytestream_get_le16(&src);
         }
         break;
     case CODEC_ID_PCM_S16BE:
         n = buf_size >> 1;
         for(;n>0;n--) {
-            *samples++ = (src[0] << 8) | src[1];
-            src += 2;
+            *samples++ = bytestream_get_be16(&src);
         }
         break;
     case CODEC_ID_PCM_U16LE:
         n = buf_size >> 1;
         for(;n>0;n--) {
-            *samples++ = (src[0] | (src[1] << 8)) - 0x8000;
-            src += 2;
+            *samples++ = bytestream_get_le16(&src) - 0x8000;
         }
         break;
     case CODEC_ID_PCM_U16BE:
         n = buf_size >> 1;
         for(;n>0;n--) {
-            *samples++ = ((src[0] << 8) | src[1]) - 0x8000;
-            src += 2;
+            *samples++ = bytestream_get_be16(&src) - 0x8000;
         }
         break;
     case CODEC_ID_PCM_S8:
