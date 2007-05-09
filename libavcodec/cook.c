@@ -387,11 +387,9 @@ static void categorize(COOKContext *q, int* quant_index_table,
     int exp_index2[102];
     int exp_index1[102];
 
-    int tmp_categorize_array1[128];
-    int tmp_categorize_array1_idx=0;
-    int tmp_categorize_array2[128];
-    int tmp_categorize_array2_idx=0;
-    int category_index_size=0;
+    int tmp_categorize_array[128*2];
+    int tmp_categorize_array1_idx=q->numvector_size;
+    int tmp_categorize_array2_idx=q->numvector_size;
 
     bits_left =  q->bits_per_subpacket - get_bits_count(&q->gb);
 
@@ -403,8 +401,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
 
     memset(&exp_index1,0,102*sizeof(int));
     memset(&exp_index2,0,102*sizeof(int));
-    memset(&tmp_categorize_array1,0,128*sizeof(int));
-    memset(&tmp_categorize_array2,0,128*sizeof(int));
+    memset(&tmp_categorize_array,0,128*2*sizeof(int));
 
     bias=-32;
 
@@ -446,7 +443,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
                 }
             }
             if(index==-1)break;
-            tmp_categorize_array1[tmp_categorize_array1_idx++] = index;
+            tmp_categorize_array[tmp_categorize_array1_idx++] = index;
             tmpbias1 -= expbits_tab[exp_index1[index]] -
                         expbits_tab[exp_index1[index]+1];
             ++exp_index1[index];
@@ -463,7 +460,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
                 }
             }
             if(index == -1)break;
-            tmp_categorize_array2[tmp_categorize_array2_idx++] = index;
+            tmp_categorize_array[--tmp_categorize_array2_idx] = index;
             tmpbias2 -= expbits_tab[exp_index2[index]] -
                         expbits_tab[exp_index2[index]-1];
             --exp_index2[index];
@@ -473,17 +470,8 @@ static void categorize(COOKContext *q, int* quant_index_table,
     for(i=0 ; i<q->total_subbands ; i++)
         category[i] = exp_index2[i];
 
-    /* Concatenate the two arrays. */
-    for(i=tmp_categorize_array2_idx-1 ; i >= 0; i--)
-        category_index[category_index_size++] =  tmp_categorize_array2[i];
-
-    for(i=0;i<tmp_categorize_array1_idx;i++)
-        category_index[category_index_size++ ] =  tmp_categorize_array1[i];
-
-    /* FIXME: mc_sich_ra8_20.rm triggers this, not sure with what we
-       should fill the remaining bytes. */
-    for(i=category_index_size;i<q->numvector_size;i++)
-        category_index[i]=0;
+    for(i=0 ; i<q->numvector_size-1 ; i++)
+        category_index[i] = tmp_categorize_array[tmp_categorize_array2_idx++];
 
 }
 
