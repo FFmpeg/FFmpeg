@@ -43,6 +43,19 @@ static int flac_write_header(struct AVFormatContext *s)
     return 0;
 }
 
+
+static int roq_write_header(struct AVFormatContext *s)
+{
+    static const uint8_t header[] = {
+        0x84, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x1E, 0x00
+    };
+
+    put_buffer(&s->pb, header, 8);
+    put_flush_packet(&s->pb);
+
+    return 0;
+}
+
 static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     put_buffer(&s->pb, pkt->data, pkt->size);
@@ -526,6 +539,22 @@ AVInputFormat aac_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aac",
 };
+
+#ifdef CONFIG_ROQ_MUXER
+AVOutputFormat roq_muxer =
+{
+    "RoQ",
+    "Id RoQ format",
+    NULL,
+    "roq",
+    0,
+    CODEC_ID_ROQ_DPCM,
+    CODEC_ID_ROQ,
+    roq_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif //CONFIG_ROQ_MUXER
 
 AVInputFormat h261_demuxer = {
     "h261",

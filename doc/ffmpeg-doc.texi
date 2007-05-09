@@ -894,7 +894,7 @@ library:
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games.
 @item Playstation STR  @tab    @tab X
-@item Id RoQ           @tab    @tab X
+@item Id RoQ           @tab X  @tab X
 @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Interplay MVE    @tab    @tab X
 @tab Format used in various Interplay computer games.

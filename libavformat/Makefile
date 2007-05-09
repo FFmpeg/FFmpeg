@@ -116,6 +116,7 @@ OBJS-$(CONFIG_REDIR_DEMUXER)             += rtsp.o
 OBJS-$(CONFIG_RM_DEMUXER)                += rm.o
 OBJS-$(CONFIG_RM_MUXER)                  += rm.o
 OBJS-$(CONFIG_ROQ_DEMUXER)               += idroq.o
+OBJS-$(CONFIG_ROQ_MUXER)                 += raw.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o rtp_h264.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o

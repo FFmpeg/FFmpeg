@@ -169,6 +169,7 @@ extern AVOutputFormat pcm_u8_muxer;
 extern AVOutputFormat psp_muxer;
 extern AVOutputFormat rawvideo_muxer;
 extern AVOutputFormat rm_muxer;
+extern AVOutputFormat roq_muxer;
 extern AVOutputFormat swf_muxer;
 extern AVOutputFormat tg2_muxer;
 extern AVOutputFormat tgp_muxer;

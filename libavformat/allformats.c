@@ -131,7 +131,7 @@ void av_register_all(void)
     REGISTER_MUXER   (PSP, psp);
     REGISTER_MUXDEMUX(RAWVIDEO, rawvideo);
     REGISTER_MUXDEMUX(RM, rm);
-    REGISTER_DEMUXER (ROQ, roq);
+    REGISTER_MUXDEMUX(ROQ, roq);
     REGISTER_DEMUXER (REDIR, redir);
     REGISTER_MUXER   (RTP, rtp);
     REGISTER_DEMUXER (RTSP, rtsp);
