@@ -1519,28 +1519,23 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         LBUTTERFLY2(%%mm0, %%mm4, %%mm1, %%mm5)\
         LBUTTERFLY2(%%mm2, %%mm6, %%mm3, %%mm7)\
 
-#define MMABS(a,z)\
+#define MMABS_MMX(a,z)\
     "pxor " #z ", " #z "              \n\t"\
     "pcmpgtw " #a ", " #z "           \n\t"\
     "pxor " #z ", " #a "              \n\t"\
     "psubw " #z ", " #a "             \n\t"
-
-#define MMABS_SUM(a,z, sum)\
-    "pxor " #z ", " #z "              \n\t"\
-    "pcmpgtw " #a ", " #z "           \n\t"\
-    "pxor " #z ", " #a "              \n\t"\
-    "psubw " #z ", " #a "             \n\t"\
-    "paddusw " #a ", " #sum "         \n\t"
 
 #define MMABS_MMX2(a,z)\
     "pxor " #z ", " #z "              \n\t"\
     "psubw " #a ", " #z "             \n\t"\
     "pmaxsw " #z ", " #a "            \n\t"
 
+#define MMABS_SUM_MMX(a,z, sum)\
+    MMABS_MMX(a,z)\
+    "paddusw " #a ", " #sum "         \n\t"
+
 #define MMABS_SUM_MMX2(a,z, sum)\
-    "pxor " #z ", " #z "              \n\t"\
-    "psubw " #a ", " #z "             \n\t"\
-    "pmaxsw " #z ", " #a "            \n\t"\
+    MMABS_MMX2(a,z)\
     "paddusw " #a ", " #sum "         \n\t"
 
 #define LOAD4(o, a, b, c, d)\
@@ -1555,178 +1550,117 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         "movq "#c", "#o"+32(%1)       \n\t"\
         "movq "#d", "#o"+48(%1)       \n\t"\
 
-static int hadamard8_diff_mmx(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){
-    DECLARE_ALIGNED_8(uint64_t, temp[16]);
-    int sum=0;
+#define HSUM_MMX(a, t, dst)\
+    "movq "#a", "#t"                  \n\t"\
+    "psrlq $32, "#a"                  \n\t"\
+    "paddusw "#t", "#a"               \n\t"\
+    "movq "#a", "#t"                  \n\t"\
+    "psrlq $16, "#a"                  \n\t"\
+    "paddusw "#t", "#a"               \n\t"\
+    "movd "#a", "#dst"                \n\t"\
 
-    assert(h==8);
+#define HSUM_MMX2(a, t, dst)\
+    "pshufw $0x0E, "#a", "#t"         \n\t"\
+    "paddusw "#t", "#a"               \n\t"\
+    "pshufw $0x01, "#a", "#t"         \n\t"\
+    "paddusw "#t", "#a"               \n\t"\
+    "movd "#a", "#dst"                \n\t"\
 
-    diff_pixels_mmx((DCTELEM*)temp, src1, src2, stride);
-
-    asm volatile(
-        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(64, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-
-        "movq %%mm7, 112(%1)            \n\t"
-
-        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
-        STORE4(0 , %%mm0, %%mm3, %%mm7, %%mm2)
-
-        "movq 112(%1), %%mm7            \n\t"
-        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
-        STORE4(64, %%mm4, %%mm7, %%mm0, %%mm6)
-
-        LOAD4(8 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-
-        "movq %%mm7, 120(%1)            \n\t"
-
-        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
-        STORE4(8 , %%mm0, %%mm3, %%mm7, %%mm2)
-
-        "movq 120(%1), %%mm7            \n\t"
-        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
-        "movq %%mm7, %%mm5              \n\t"//FIXME remove
-        "movq %%mm6, %%mm7              \n\t"
-        "movq %%mm0, %%mm6              \n\t"
-//        STORE4(72, %%mm4, %%mm7, %%mm0, %%mm6) //FIXME remove
-
-        LOAD4(64, %%mm0, %%mm1, %%mm2, %%mm3)
-//        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-        "movq %%mm7, 64(%1)             \n\t"
-        MMABS(%%mm0, %%mm7)
-        MMABS_SUM(%%mm1, %%mm7, %%mm0)
-        MMABS_SUM(%%mm2, %%mm7, %%mm0)
-        MMABS_SUM(%%mm3, %%mm7, %%mm0)
-        MMABS_SUM(%%mm4, %%mm7, %%mm0)
-        MMABS_SUM(%%mm5, %%mm7, %%mm0)
-        MMABS_SUM(%%mm6, %%mm7, %%mm0)
-        "movq 64(%1), %%mm1             \n\t"
-        MMABS_SUM(%%mm1, %%mm7, %%mm0)
-        "movq %%mm0, 64(%1)             \n\t"
-
-        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(8 , %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-        "movq %%mm7, (%1)               \n\t"
-        MMABS(%%mm0, %%mm7)
-        MMABS_SUM(%%mm1, %%mm7, %%mm0)
-        MMABS_SUM(%%mm2, %%mm7, %%mm0)
-        MMABS_SUM(%%mm3, %%mm7, %%mm0)
-        MMABS_SUM(%%mm4, %%mm7, %%mm0)
-        MMABS_SUM(%%mm5, %%mm7, %%mm0)
-        MMABS_SUM(%%mm6, %%mm7, %%mm0)
-        "movq (%1), %%mm1               \n\t"
-        MMABS_SUM(%%mm1, %%mm7, %%mm0)
-        "movq 64(%1), %%mm1             \n\t"
-        MMABS_SUM(%%mm1, %%mm7, %%mm0)
-
-        "movq %%mm0, %%mm1              \n\t"
-        "psrlq $32, %%mm0               \n\t"
-        "paddusw %%mm1, %%mm0           \n\t"
-        "movq %%mm0, %%mm1              \n\t"
-        "psrlq $16, %%mm0               \n\t"
-        "paddusw %%mm1, %%mm0           \n\t"
-        "movd %%mm0, %0                 \n\t"
-
-        : "=r" (sum)
-        : "r"(temp)
-    );
-    return sum&0xFFFF;
+#define HADAMARD8_DIFF_MMX(cpu) \
+static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){\
+    DECLARE_ALIGNED_8(uint64_t, temp[16]);\
+    int sum=0;\
+\
+    assert(h==8);\
+\
+    diff_pixels_mmx((DCTELEM*)temp, src1, src2, stride);\
+\
+    asm volatile(\
+        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)\
+        LOAD4(64, %%mm4, %%mm5, %%mm6, %%mm7)\
+\
+        HADAMARD48\
+\
+        "movq %%mm7, 112(%1)            \n\t"\
+\
+        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)\
+        STORE4(0 , %%mm0, %%mm3, %%mm7, %%mm2)\
+\
+        "movq 112(%1), %%mm7            \n\t"\
+        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)\
+        STORE4(64, %%mm4, %%mm7, %%mm0, %%mm6)\
+\
+        LOAD4(8 , %%mm0, %%mm1, %%mm2, %%mm3)\
+        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)\
+\
+        HADAMARD48\
+\
+        "movq %%mm7, 120(%1)            \n\t"\
+\
+        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)\
+        STORE4(8 , %%mm0, %%mm3, %%mm7, %%mm2)\
+\
+        "movq 120(%1), %%mm7            \n\t"\
+        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)\
+        "movq %%mm7, %%mm5              \n\t"/*FIXME remove*/\
+        "movq %%mm6, %%mm7              \n\t"\
+        "movq %%mm0, %%mm6              \n\t"\
+\
+        LOAD4(64, %%mm0, %%mm1, %%mm2, %%mm3)\
+\
+        HADAMARD48\
+        "movq %%mm7, 64(%1)             \n\t"\
+        MMABS(%%mm0, %%mm7)\
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm2, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm3, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm4, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm5, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm6, %%mm7, %%mm0)\
+        "movq 64(%1), %%mm1             \n\t"\
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)\
+        "movq %%mm0, 64(%1)             \n\t"\
+\
+        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)\
+        LOAD4(8 , %%mm4, %%mm5, %%mm6, %%mm7)\
+\
+        HADAMARD48\
+        "movq %%mm7, (%1)               \n\t"\
+        MMABS(%%mm0, %%mm7)\
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm2, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm3, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm4, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm5, %%mm7, %%mm0)\
+        MMABS_SUM(%%mm6, %%mm7, %%mm0)\
+        "movq (%1), %%mm1               \n\t"\
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)\
+        "movq 64(%1), %%mm1             \n\t"\
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)\
+\
+        HSUM(%%mm0, %%mm1, %0)\
+\
+        : "=r" (sum)\
+        : "r"(temp)\
+    );\
+    return sum&0xFFFF;\
 }
 
-static int hadamard8_diff_mmx2(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){
-    DECLARE_ALIGNED_8(uint64_t, temp[16]);
-    int sum=0;
+#define MMABS(a,z)         MMABS_MMX(a,z)
+#define MMABS_SUM(a,z,sum) MMABS_SUM_MMX(a,z,sum)
+#define HSUM(a,t,dst)      HSUM_MMX(a,t,dst)
+HADAMARD8_DIFF_MMX(mmx)
+#undef MMABS
+#undef MMABS_SUM
+#undef HSUM
 
-    assert(h==8);
-
-    diff_pixels_mmx((DCTELEM*)temp, src1, src2, stride);
-
-    asm volatile(
-        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(64, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-
-        "movq %%mm7, 112(%1)            \n\t"
-
-        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
-        STORE4(0 , %%mm0, %%mm3, %%mm7, %%mm2)
-
-        "movq 112(%1), %%mm7            \n\t"
-        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
-        STORE4(64, %%mm4, %%mm7, %%mm0, %%mm6)
-
-        LOAD4(8 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-
-        "movq %%mm7, 120(%1)            \n\t"
-
-        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
-        STORE4(8 , %%mm0, %%mm3, %%mm7, %%mm2)
-
-        "movq 120(%1), %%mm7            \n\t"
-        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
-        "movq %%mm7, %%mm5              \n\t"//FIXME remove
-        "movq %%mm6, %%mm7              \n\t"
-        "movq %%mm0, %%mm6              \n\t"
-//        STORE4(72, %%mm4, %%mm7, %%mm0, %%mm6) //FIXME remove
-
-        LOAD4(64, %%mm0, %%mm1, %%mm2, %%mm3)
-//        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-        "movq %%mm7, 64(%1)             \n\t"
-        MMABS_MMX2(%%mm0, %%mm7)
-        MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm2, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm3, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm4, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm5, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm6, %%mm7, %%mm0)
-        "movq 64(%1), %%mm1             \n\t"
-        MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
-        "movq %%mm0, 64(%1)             \n\t"
-
-        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
-        LOAD4(8 , %%mm4, %%mm5, %%mm6, %%mm7)
-
-        HADAMARD48
-        "movq %%mm7, (%1)               \n\t"
-        MMABS_MMX2(%%mm0, %%mm7)
-        MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm2, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm3, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm4, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm5, %%mm7, %%mm0)
-        MMABS_SUM_MMX2(%%mm6, %%mm7, %%mm0)
-        "movq (%1), %%mm1               \n\t"
-        MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
-        "movq 64(%1), %%mm1             \n\t"
-        MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
-
-        "pshufw $0x0E, %%mm0, %%mm1     \n\t"
-        "paddusw %%mm1, %%mm0           \n\t"
-        "pshufw $0x01, %%mm0, %%mm1     \n\t"
-        "paddusw %%mm1, %%mm0           \n\t"
-        "movd %%mm0, %0                 \n\t"
-
-        : "=r" (sum)
-        : "r"(temp)
-    );
-    return sum&0xFFFF;
-}
-
+#define MMABS(a,z)         MMABS_MMX2(a,z)
+#define MMABS_SUM(a,z,sum) MMABS_SUM_MMX2(a,z,sum)
+#define HSUM(a,t,dst)      HSUM_MMX2(a,t,dst)
+HADAMARD8_DIFF_MMX(mmx2)
+#undef MMABS
+#undef MMABS_SUM
+#undef HSUM
 
 WARPER8_16_SQ(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 WARPER8_16_SQ(hadamard8_diff_mmx2, hadamard8_diff16_mmx2)
