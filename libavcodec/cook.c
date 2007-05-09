@@ -448,7 +448,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             if(index==-1)break;
             tmp_categorize_array1[tmp_categorize_array1_idx++] = index;
             tmpbias1 -= expbits_tab[exp_index1[index]] -
-                       expbits_tab[exp_index1[index]+1];
+                        expbits_tab[exp_index1[index]+1];
             ++exp_index1[index];
         } else {  /* <--- */
             int min = 999999;
@@ -465,7 +465,7 @@ static void categorize(COOKContext *q, int* quant_index_table,
             if(index == -1)break;
             tmp_categorize_array2[tmp_categorize_array2_idx++] = index;
             tmpbias2 -= expbits_tab[exp_index2[index]] -
-                       expbits_tab[exp_index2[index]-1];
+                        expbits_tab[exp_index2[index]-1];
             --exp_index2[index];
         }
     }
