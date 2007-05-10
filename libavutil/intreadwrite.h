@@ -47,7 +47,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 
 /* endian macros */
 #define AV_RB8(x)     (((uint8_t*)(x))[0])
-#define AV_WB8(p, d)  { ((uint8_t*)(p))[0] = (d); }
+#define AV_WB8(p, d)  do { ((uint8_t*)(p))[0] = (d); } while(0)
 
 #define AV_RL8(x)     AV_RB8(x)
 #define AV_WL8(p, d)  AV_WB8(p, d)
@@ -68,32 +68,32 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 # endif
 #else /* HAVE_FAST_UNALIGNED */
 #define AV_RB16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define AV_WB16(p, d) { \
+#define AV_WB16(p, d) do { \
                     ((uint8_t*)(p))[1] = (d); \
-                    ((uint8_t*)(p))[0] = (d)>>8; }
+                    ((uint8_t*)(p))[0] = (d)>>8; } while(0)
 
 #define AV_RL16(x)  ((((uint8_t*)(x))[1] << 8) | \
                       ((uint8_t*)(x))[0])
-#define AV_WL16(p, d) { \
+#define AV_WL16(p, d) do { \
                     ((uint8_t*)(p))[0] = (d); \
-                    ((uint8_t*)(p))[1] = (d)>>8; }
+                    ((uint8_t*)(p))[1] = (d)>>8; } while(0)
 #endif
 
 #define AV_RB24(x)  ((((uint8_t*)(x))[0] << 16) | \
                      (((uint8_t*)(x))[1] <<  8) | \
                       ((uint8_t*)(x))[2])
-#define AV_WB24(p, d) { \
+#define AV_WB24(p, d) do { \
                     ((uint8_t*)(p))[2] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; \
-                    ((uint8_t*)(p))[0] = (d)>>16; }
+                    ((uint8_t*)(p))[0] = (d)>>16; } while(0)
 
 #define AV_RL24(x)  ((((uint8_t*)(x))[2] << 16) | \
                      (((uint8_t*)(x))[1] <<  8) | \
                       ((uint8_t*)(x))[0])
-#define AV_WL24(p, d) { \
+#define AV_WL24(p, d) do { \
                     ((uint8_t*)(p))[0] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; \
-                    ((uint8_t*)(p))[2] = (d)>>16; }
+                    ((uint8_t*)(p))[2] = (d)>>16; } while(0)
 
 #ifdef HAVE_FAST_UNALIGNED
 # ifdef WORDS_BIGENDIAN
@@ -114,21 +114,21 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                      (((uint8_t*)(x))[1] << 16) | \
                      (((uint8_t*)(x))[2] <<  8) | \
                       ((uint8_t*)(x))[3])
-#define AV_WB32(p, d) { \
+#define AV_WB32(p, d) do { \
                     ((uint8_t*)(p))[3] = (d); \
                     ((uint8_t*)(p))[2] = (d)>>8; \
                     ((uint8_t*)(p))[1] = (d)>>16; \
-                    ((uint8_t*)(p))[0] = (d)>>24; }
+                    ((uint8_t*)(p))[0] = (d)>>24; } while(0)
 
 #define AV_RL32(x) ((((uint8_t*)(x))[3] << 24) | \
                     (((uint8_t*)(x))[2] << 16) | \
                     (((uint8_t*)(x))[1] <<  8) | \
                      ((uint8_t*)(x))[0])
-#define AV_WL32(p, d) { \
+#define AV_WL32(p, d) do { \
                     ((uint8_t*)(p))[0] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[2] = (d)>>16; \
-                    ((uint8_t*)(p))[3] = (d)>>24; }
+                    ((uint8_t*)(p))[3] = (d)>>24; } while(0)
 #endif
 
 #ifdef HAVE_FAST_UNALIGNED
@@ -154,7 +154,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                      ((uint64_t)((uint8_t*)(x))[5] << 16) | \
                      ((uint64_t)((uint8_t*)(x))[6] <<  8) | \
                       (uint64_t)((uint8_t*)(x))[7])
-#define AV_WB64(p, d) { \
+#define AV_WB64(p, d) do { \
                     ((uint8_t*)(p))[7] = (d);     \
                     ((uint8_t*)(p))[6] = (d)>>8;  \
                     ((uint8_t*)(p))[5] = (d)>>16; \
@@ -162,7 +162,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[3] = (d)>>32; \
                     ((uint8_t*)(p))[2] = (d)>>40; \
                     ((uint8_t*)(p))[1] = (d)>>48; \
-                    ((uint8_t*)(p))[0] = (d)>>56; }
+                    ((uint8_t*)(p))[0] = (d)>>56; } while(0)
 
 #define AV_RL64(x)  (((uint64_t)((uint8_t*)(x))[7] << 56) | \
                      ((uint64_t)((uint8_t*)(x))[6] << 48) | \
@@ -172,7 +172,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                      ((uint64_t)((uint8_t*)(x))[2] << 16) | \
                      ((uint64_t)((uint8_t*)(x))[1] <<  8) | \
                       (uint64_t)((uint8_t*)(x))[0])
-#define AV_WL64(p, d) { \
+#define AV_WL64(p, d) do { \
                     ((uint8_t*)(p))[0] = (d);     \
                     ((uint8_t*)(p))[1] = (d)>>8;  \
                     ((uint8_t*)(p))[2] = (d)>>16; \
@@ -180,7 +180,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[4] = (d)>>32; \
                     ((uint8_t*)(p))[5] = (d)>>40; \
                     ((uint8_t*)(p))[6] = (d)>>48; \
-                    ((uint8_t*)(p))[7] = (d)>>56; }
+                    ((uint8_t*)(p))[7] = (d)>>56; } while(0)
 #endif
 
 #endif /* INTREADWRITE_H */
