@@ -3150,6 +3150,7 @@ extern unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 #define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
 #define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
 #define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
+#define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
 
 #ifdef __cplusplus
 }
