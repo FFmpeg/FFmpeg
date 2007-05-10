@@ -19,7 +19,6 @@
  */
 
 #include "avcodec.h"
-#include "common.h"
 #include "dsputil.h"
 #include "snow.h"
 

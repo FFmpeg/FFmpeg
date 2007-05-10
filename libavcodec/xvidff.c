@@ -27,7 +27,6 @@
 
 #include <xvid.h>
 #include <unistd.h>
-#include "common.h"
 #include "avcodec.h"
 #include "xvid_internal.h"
 

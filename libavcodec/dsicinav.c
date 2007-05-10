@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "common.h"
 
 
 typedef enum CinVideoBitmapIndex {

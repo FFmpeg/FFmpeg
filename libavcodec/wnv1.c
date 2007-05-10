@@ -26,7 +26,6 @@
  */
 
 #include "avcodec.h"
-#include "common.h"
 #include "bitstream.h"
 
 

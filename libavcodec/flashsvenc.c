@@ -58,7 +58,6 @@
 #include <stdlib.h>
 #include <zlib.h>
 
-#include "common.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "bytestream.h"

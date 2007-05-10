@@ -50,7 +50,6 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "common.h"
 #include "bytestream.h"
 #include "random.h"
 

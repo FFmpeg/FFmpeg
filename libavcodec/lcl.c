@@ -42,9 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "bitstream.h"
 #include "avcodec.h"
+#include "bitstream.h"
 
 #ifdef CONFIG_ZLIB
 #include <zlib.h>

@@ -35,7 +35,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "common.h"
 #include "rangecoder.h"
 
 

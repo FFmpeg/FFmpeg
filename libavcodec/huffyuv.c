@@ -28,9 +28,8 @@
  * huffyuv codec for libavcodec.
  */
 
-#include "common.h"
-#include "bitstream.h"
 #include "avcodec.h"
+#include "bitstream.h"
 #include "dsputil.h"
 
 #define VLC_BITS 11

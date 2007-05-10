@@ -27,7 +27,6 @@
  */
 
 #include "avcodec.h"
-#include "common.h"
 #include "dsputil.h"
 
 #ifndef CONFIG_RESAMPLE_HP

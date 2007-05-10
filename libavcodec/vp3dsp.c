@@ -24,7 +24,6 @@
  * source code.
  */
 
-#include "common.h"
 #include "avcodec.h"
 #include "dsputil.h"
 

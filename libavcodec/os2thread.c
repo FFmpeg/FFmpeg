@@ -23,7 +23,6 @@
 // Ported by Vlad Stelmahovsky
 
 #include "avcodec.h"
-#include "common.h"
 
 #define INCL_DOS
 #define INCL_DOSERRORS

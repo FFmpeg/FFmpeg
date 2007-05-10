@@ -25,7 +25,6 @@
 #include <pthread.h>
 
 #include "avcodec.h"
-#include "common.h"
 
 typedef int (action_t)(AVCodecContext *c, void *arg);
 

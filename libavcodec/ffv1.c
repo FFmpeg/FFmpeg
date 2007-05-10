@@ -26,9 +26,8 @@
  * FF Video Codec 1 (an experimental lossless codec)
  */
 
-#include "common.h"
-#include "bitstream.h"
 #include "avcodec.h"
+#include "bitstream.h"
 #include "dsputil.h"
 #include "rangecoder.h"
 #include "golomb.h"

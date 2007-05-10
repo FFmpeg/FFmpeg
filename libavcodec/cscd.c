@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
 #include "avcodec.h"
 
 #ifdef CONFIG_ZLIB

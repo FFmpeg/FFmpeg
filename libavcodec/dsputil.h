@@ -30,7 +30,6 @@
 #ifndef DSPUTIL_H
 #define DSPUTIL_H
 
-#include "common.h"
 #include "avcodec.h"
 
 
