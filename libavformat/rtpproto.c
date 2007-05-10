@@ -138,7 +138,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     if (url_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
     local_port = udp_get_local_port(s->rtp_hd);
-    /* XXX: need to open another connexion if the port is not even */
+    /* XXX: need to open another connection if the port is not even */
 
     /* well, should suppress localport in path */
 
@@ -265,7 +265,7 @@ static int rtp_close(URLContext *h)
 }
 
 /**
- * Return the local port used by the RTP connexion
+ * Return the local port used by the RTP connection
  * @param s1 media file context
  * @return the local port number
  */
