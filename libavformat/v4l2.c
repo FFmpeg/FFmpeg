@@ -429,6 +429,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
     struct v4l2_standard standard;
     int i;
 
+    if(ap->channel>=0) {
     /* set tv video input */
     memset (&input, 0, sizeof (input));
     input.index = ap->channel;
@@ -444,7 +445,9 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
             ap->channel);
         return AVERROR_IO;
     }
+    }
 
+    if(ap->standard) {
     av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
            ap->standard );
     /* set tv standard */
@@ -468,6 +471,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
         av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
             ap->standard);
         return AVERROR_IO;
+    }
     }
 
     return 0;
