@@ -86,6 +86,7 @@ int frame_count = 0;
 #endif
 
 #include "msmpeg4data.h"
+#include "msmpeg4tab.h"
 
 #ifdef CONFIG_ENCODERS //strangely gcc includes this even if its not references
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
@@ -972,9 +973,6 @@ else
 /* decoding stuff */
 
 static VLC mb_non_intra_vlc[4];
-VLC ff_msmp4_mb_i_vlc;
-VLC ff_msmp4_dc_luma_vlc[2];
-VLC ff_msmp4_dc_chroma_vlc[2];
 static VLC v2_dc_lum_vlc;
 static VLC v2_dc_chroma_vlc;
 static VLC cbpy_vlc;
