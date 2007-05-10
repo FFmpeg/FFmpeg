@@ -4583,10 +4583,12 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_MSMPEG4V3:
     case CODEC_ID_WMV1:
         if (ENABLE_MSMPEG4_ENCODER)
-        msmpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
+            msmpeg4_encode_mb(s, s->block, motion_x, motion_y);
+        break;
     case CODEC_ID_WMV2:
         if (ENABLE_WMV2_ENCODER)
-         ff_wmv2_encode_mb(s, s->block, motion_x, motion_y); break;
+            ff_wmv2_encode_mb(s, s->block, motion_x, motion_y);
+        break;
 #ifdef CONFIG_H261_ENCODER
     case CODEC_ID_H261:
         ff_h261_encode_mb(s, s->block, motion_x, motion_y); break;
