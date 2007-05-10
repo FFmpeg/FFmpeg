@@ -35,7 +35,7 @@ OBJS= bitstream.o \
       vp3dsp.o \
       h264idct.o \
       rangecoder.o \
-      pnm.o \
+      pnm.o pnm_common.o \
       h263.o \
       opt.o \
       bitstream_filter.o \
@@ -295,7 +295,7 @@ OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o
-OBJS-$(CONFIG_PNM_PARSER)              += pnm.o
+OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm_common.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
