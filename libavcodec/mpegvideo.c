@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "msmpeg4.h"
 #include "faandct.h"
 #include <limits.h>
 
@@ -1354,7 +1355,7 @@ int MPV_encode_init(AVCodecContext *avctx)
 #endif
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
-    if(s->msmpeg4_version)
+    if (ENABLE_MSMPEG4_ENCODER && s->msmpeg4_version)
         ff_msmpeg4_encode_init(s);
     if (s->out_format == FMT_MPEG1)
         ff_mpeg1_encode_init(s);
@@ -3552,7 +3553,7 @@ static inline void MPV_motion(MpegEncContext *s,
                         0, 0, 0,
                         ref_picture, pix_op, qpix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
-        }else if(s->mspel){
+        }else if(ENABLE_WMV2 && s->mspel){
             ff_mspel_motion(s, dest_y, dest_cb, dest_cr,
                         ref_picture, pix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
@@ -4076,7 +4077,7 @@ static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM b
                     }
                 }//fi gray
             }
-            else{
+            else if (ENABLE_WMV2) {
                 ff_wmv2_add_mb(s, block, dest_y, dest_cb, dest_cr);
             }
         } else {
@@ -4581,8 +4582,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_MSMPEG4V2:
     case CODEC_ID_MSMPEG4V3:
     case CODEC_ID_WMV1:
+        if (ENABLE_MSMPEG4_ENCODER)
         msmpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_WMV2:
+        if (ENABLE_WMV2_ENCODER)
          ff_wmv2_encode_mb(s, s->block, motion_x, motion_y); break;
 #ifdef CONFIG_H261_ENCODER
     case CODEC_ID_H261:
@@ -5508,7 +5511,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     }
 
     //not beautiful here but we must write it before flushing so it has to be here
-    if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == I_TYPE)
+    if (ENABLE_MSMPEG4_ENCODER && s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == I_TYPE)
         msmpeg4_encode_ext_header(s);
 
     write_slice_end(s);
@@ -5772,9 +5775,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         break;
 #endif
     case FMT_H263:
-        if (s->codec_id == CODEC_ID_WMV2)
+        if (ENABLE_WMV2_ENCODER && s->codec_id == CODEC_ID_WMV2)
             ff_wmv2_encode_picture_header(s, picture_number);
-        else if (s->h263_msmpeg4)
+        else if (ENABLE_MSMPEG4_ENCODER && s->h263_msmpeg4)
             msmpeg4_encode_picture_header(s, picture_number);
         else if (s->h263_pred)
             mpeg4_encode_picture_header(s, picture_number);

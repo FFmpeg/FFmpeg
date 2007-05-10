@@ -30,6 +30,7 @@
 #include "mpegvideo.h"
 #include "h263_parser.h"
 #include "mpeg4video_parser.h"
+#include "msmpeg4.h"
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
@@ -110,7 +111,7 @@ int ff_h263_decode_init(AVCodecContext *avctx)
         if (MPV_common_init(s) < 0)
             return -1;
 
-    if (s->h263_msmpeg4)
+    if (ENABLE_MSMPEG4_DECODER && s->h263_msmpeg4)
         ff_msmpeg4_decode_init(s);
     else
         h263_decode_init_vlc(s);
@@ -388,9 +389,9 @@ retry:
     }
 
     /* let's go :-) */
-    if (s->msmpeg4_version==5) {
+    if (ENABLE_WMV2_DECODER && s->msmpeg4_version==5) {
         ret= ff_wmv2_decode_picture_header(s);
-    } else if (s->msmpeg4_version) {
+    } else if (ENABLE_MSMPEG4_DECODER && s->msmpeg4_version) {
         ret = msmpeg4_decode_picture_header(s);
     } else if (s->h263_pred) {
         if(s->avctx->extradata_size && s->picture_number==0){
@@ -622,7 +623,7 @@ retry:
     //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
     //which isnt available before MPV_frame_start()
     if (s->msmpeg4_version==5){
-        if(ff_wmv2_decode_secondary_picture_header(s) < 0)
+        if(!ENABLE_WMV2_DECODER || ff_wmv2_decode_secondary_picture_header(s) < 0)
             return -1;
     }
 
@@ -647,7 +648,7 @@ retry:
     }
 
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
-        if(msmpeg4_decode_ext_header(s, buf_size) < 0){
+        if(!ENABLE_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
             s->error_status_table[s->mb_num-1]= AC_ERROR|DC_ERROR|MV_ERROR;
         }
 
