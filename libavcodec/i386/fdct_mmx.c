@@ -52,18 +52,20 @@
 #define RND_FRW_ROW    (1 << (SHIFT_FRW_ROW-1))
 //#define RND_FRW_COL    (1 << (SHIFT_FRW_COL-1))
 
+#define X8(x) x,x,x,x,x,x,x,x
+
 //concatenated table, for forward DCT transformation
-static const int16_t fdct_tg_all_16[] ATTR_ALIGN(8) = {
-    13036,  13036,  13036,  13036,        // tg * (2<<16) + 0.5
-    27146,  27146,  27146,  27146,        // tg * (2<<16) + 0.5
-   -21746, -21746, -21746, -21746,        // tg * (2<<16) + 0.5
+static const int16_t fdct_tg_all_16[24] ATTR_ALIGN(16) = {
+    X8(13036),  // tg * (2<<16) + 0.5
+    X8(27146),  // tg * (2<<16) + 0.5
+    X8(-21746)  // tg * (2<<16) + 0.5
 };
 
-static const int16_t ocos_4_16[4] ATTR_ALIGN(8) = {
-    23170, 23170, 23170, 23170,           //cos * (2<<15) + 0.5
+static const int16_t ocos_4_16[8] ATTR_ALIGN(16) = {
+    X8(23170)   //cos * (2<<15) + 0.5
 };
 
-static const int64_t fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
+static const int16_t fdct_one_corr[8] ATTR_ALIGN(16) = { X8(1) };
 
 static const int32_t fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
 
@@ -283,86 +285,88 @@ TABLE_SSE2
 TABLE_SSE2
 }};
 
-
-static av_always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
-{
-    movq_m2r(*(in + offset + 1 * 8), mm0);
-    movq_m2r(*(in + offset + 6 * 8), mm1);
-    movq_r2r(mm0, mm2);
-    movq_m2r(*(in + offset + 2 * 8), mm3);
-    paddsw_r2r(mm1, mm0);
-    movq_m2r(*(in + offset + 5 * 8), mm4);
-    psllw_i2r(SHIFT_FRW_COL, mm0);
-    movq_m2r(*(in + offset + 0 * 8), mm5);
-    paddsw_r2r(mm3, mm4);
-    paddsw_m2r(*(in + offset + 7 * 8), mm5);
-    psllw_i2r(SHIFT_FRW_COL, mm4);
-    movq_r2r(mm0, mm6);
-    psubsw_r2r(mm1, mm2);
-    movq_m2r(*(fdct_tg_all_16 + 4), mm1);
-    psubsw_r2r(mm4, mm0);
-    movq_m2r(*(in + offset + 3 * 8), mm7);
-    pmulhw_r2r(mm0, mm1);
-    paddsw_m2r(*(in + offset + 4 * 8), mm7);
-    psllw_i2r(SHIFT_FRW_COL, mm5);
-    paddsw_r2r(mm4, mm6);
-    psllw_i2r(SHIFT_FRW_COL, mm7);
-    movq_r2r(mm5, mm4);
-    psubsw_r2r(mm7, mm5);
-    paddsw_r2r(mm5, mm1);
-    paddsw_r2r(mm7, mm4);
-    por_m2r(fdct_one_corr, mm1);
-    psllw_i2r(SHIFT_FRW_COL + 1, mm2);
-    pmulhw_m2r(*(fdct_tg_all_16 + 4), mm5);
-    movq_r2r(mm4, mm7);
-    psubsw_m2r(*(in + offset + 5 * 8), mm3);
-    psubsw_r2r(mm6, mm4);
-    movq_r2m(mm1, *(out + offset + 2 * 8));
-    paddsw_r2r(mm6, mm7);
-    movq_m2r(*(in + offset + 3 * 8), mm1);
-    psllw_i2r(SHIFT_FRW_COL + 1, mm3);
-    psubsw_m2r(*(in + offset + 4 * 8), mm1);
-    movq_r2r(mm2, mm6);
-    movq_r2m(mm4, *(out + offset + 4 * 8));
-    paddsw_r2r(mm3, mm2);
-    pmulhw_m2r(*ocos_4_16, mm2);
-    psubsw_r2r(mm3, mm6);
-    pmulhw_m2r(*ocos_4_16, mm6);
-    psubsw_r2r(mm0, mm5);
-    por_m2r(fdct_one_corr, mm5);
-    psllw_i2r(SHIFT_FRW_COL, mm1);
-    por_m2r(fdct_one_corr, mm2);
-    movq_r2r(mm1, mm4);
-    movq_m2r(*(in + offset + 0 * 8), mm3);
-    paddsw_r2r(mm6, mm1);
-    psubsw_m2r(*(in + offset + 7 * 8), mm3);
-    psubsw_r2r(mm6, mm4);
-    movq_m2r(*(fdct_tg_all_16 + 0), mm0);
-    psllw_i2r(SHIFT_FRW_COL, mm3);
-    movq_m2r(*(fdct_tg_all_16 + 8), mm6);
-    pmulhw_r2r(mm1, mm0);
-    movq_r2m(mm7, *(out + offset + 0 * 8));
-    pmulhw_r2r(mm4, mm6);
-    movq_r2m(mm5, *(out + offset + 6 * 8));
-    movq_r2r(mm3, mm7);
-    movq_m2r(*(fdct_tg_all_16 + 8), mm5);
-    psubsw_r2r(mm2, mm7);
-    paddsw_r2r(mm2, mm3);
-    pmulhw_r2r(mm7, mm5);
-    paddsw_r2r(mm3, mm0);
-    paddsw_r2r(mm4, mm6);
-    pmulhw_m2r(*(fdct_tg_all_16 + 0), mm3);
-    por_m2r(fdct_one_corr, mm0);
-    paddsw_r2r(mm7, mm5);
-    psubsw_r2r(mm6, mm7);
-    movq_r2m(mm0, *(out + offset + 1 * 8));
-    paddsw_r2r(mm4, mm5);
-    movq_r2m(mm7, *(out + offset + 3 * 8));
-    psubsw_r2r(mm1, mm3);
-    movq_r2m(mm5, *(out + offset + 5 * 8));
-    movq_r2m(mm3, *(out + offset + 7 * 8));
+#define FDCT_COL(cpu, mm, mov)\
+static av_always_inline void fdct_col_##cpu(const int16_t *in, int16_t *out, int offset)\
+{\
+    mov##_m2r(*(in + offset + 1 * 8), mm##0);\
+    mov##_m2r(*(in + offset + 6 * 8), mm##1);\
+    mov##_r2r(mm##0, mm##2);\
+    mov##_m2r(*(in + offset + 2 * 8), mm##3);\
+    paddsw_r2r(mm##1, mm##0);\
+    mov##_m2r(*(in + offset + 5 * 8), mm##4);\
+    psllw_i2r(SHIFT_FRW_COL, mm##0);\
+    mov##_m2r(*(in + offset + 0 * 8), mm##5);\
+    paddsw_r2r(mm##3, mm##4);\
+    paddsw_m2r(*(in + offset + 7 * 8), mm##5);\
+    psllw_i2r(SHIFT_FRW_COL, mm##4);\
+    mov##_r2r(mm##0, mm##6);\
+    psubsw_r2r(mm##1, mm##2);\
+    mov##_m2r(*(fdct_tg_all_16 + 8), mm##1);\
+    psubsw_r2r(mm##4, mm##0);\
+    mov##_m2r(*(in + offset + 3 * 8), mm##7);\
+    pmulhw_r2r(mm##0, mm##1);\
+    paddsw_m2r(*(in + offset + 4 * 8), mm##7);\
+    psllw_i2r(SHIFT_FRW_COL, mm##5);\
+    paddsw_r2r(mm##4, mm##6);\
+    psllw_i2r(SHIFT_FRW_COL, mm##7);\
+    mov##_r2r(mm##5, mm##4);\
+    psubsw_r2r(mm##7, mm##5);\
+    paddsw_r2r(mm##5, mm##1);\
+    paddsw_r2r(mm##7, mm##4);\
+    por_m2r(*fdct_one_corr, mm##1);\
+    psllw_i2r(SHIFT_FRW_COL + 1, mm##2);\
+    pmulhw_m2r(*(fdct_tg_all_16 + 8), mm##5);\
+    mov##_r2r(mm##4, mm##7);\
+    psubsw_m2r(*(in + offset + 5 * 8), mm##3);\
+    psubsw_r2r(mm##6, mm##4);\
+    mov##_r2m(mm##1, *(out + offset + 2 * 8));\
+    paddsw_r2r(mm##6, mm##7);\
+    mov##_m2r(*(in + offset + 3 * 8), mm##1);\
+    psllw_i2r(SHIFT_FRW_COL + 1, mm##3);\
+    psubsw_m2r(*(in + offset + 4 * 8), mm##1);\
+    mov##_r2r(mm##2, mm##6);\
+    mov##_r2m(mm##4, *(out + offset + 4 * 8));\
+    paddsw_r2r(mm##3, mm##2);\
+    pmulhw_m2r(*ocos_4_16, mm##2);\
+    psubsw_r2r(mm##3, mm##6);\
+    pmulhw_m2r(*ocos_4_16, mm##6);\
+    psubsw_r2r(mm##0, mm##5);\
+    por_m2r(*fdct_one_corr, mm##5);\
+    psllw_i2r(SHIFT_FRW_COL, mm##1);\
+    por_m2r(*fdct_one_corr, mm##2);\
+    mov##_r2r(mm##1, mm##4);\
+    mov##_m2r(*(in + offset + 0 * 8), mm##3);\
+    paddsw_r2r(mm##6, mm##1);\
+    psubsw_m2r(*(in + offset + 7 * 8), mm##3);\
+    psubsw_r2r(mm##6, mm##4);\
+    mov##_m2r(*(fdct_tg_all_16 + 0), mm##0);\
+    psllw_i2r(SHIFT_FRW_COL, mm##3);\
+    mov##_m2r(*(fdct_tg_all_16 + 16), mm##6);\
+    pmulhw_r2r(mm##1, mm##0);\
+    mov##_r2m(mm##7, *(out + offset + 0 * 8));\
+    pmulhw_r2r(mm##4, mm##6);\
+    mov##_r2m(mm##5, *(out + offset + 6 * 8));\
+    mov##_r2r(mm##3, mm##7);\
+    mov##_m2r(*(fdct_tg_all_16 + 16), mm##5);\
+    psubsw_r2r(mm##2, mm##7);\
+    paddsw_r2r(mm##2, mm##3);\
+    pmulhw_r2r(mm##7, mm##5);\
+    paddsw_r2r(mm##3, mm##0);\
+    paddsw_r2r(mm##4, mm##6);\
+    pmulhw_m2r(*(fdct_tg_all_16 + 0), mm##3);\
+    por_m2r(*fdct_one_corr, mm##0);\
+    paddsw_r2r(mm##7, mm##5);\
+    psubsw_r2r(mm##6, mm##7);\
+    mov##_r2m(mm##0, *(out + offset + 1 * 8));\
+    paddsw_r2r(mm##4, mm##5);\
+    mov##_r2m(mm##7, *(out + offset + 3 * 8));\
+    psubsw_r2r(mm##1, mm##3);\
+    mov##_r2m(mm##5, *(out + offset + 5 * 8));\
+    mov##_r2m(mm##3, *(out + offset + 7 * 8));\
 }
 
+FDCT_COL(mmx, mm, movq)
+FDCT_COL(sse2, xmm, movdqa)
 
 static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 {
@@ -524,8 +528,8 @@ void ff_fdct_mmx(int16_t *block)
     const int16_t *table= tab_frw_01234567;
     int i;
 
-    fdct_col(block, block1, 0);
-    fdct_col(block, block1, 4);
+    fdct_col_mmx(block, block1, 0);
+    fdct_col_mmx(block, block1, 4);
 
     for(i=8;i>0;i--) {
         fdct_row_mmx(block1, block, table);
@@ -542,8 +546,8 @@ void ff_fdct_mmx2(int16_t *block)
     const int16_t *table= tab_frw_01234567;
     int i;
 
-    fdct_col(block, block1, 0);
-    fdct_col(block, block1, 4);
+    fdct_col_mmx(block, block1, 0);
+    fdct_col_mmx(block, block1, 4);
 
     for(i=8;i>0;i--) {
         fdct_row_mmx2(block1, block, table);
@@ -558,9 +562,7 @@ void ff_fdct_sse2(int16_t *block)
     int64_t align_tmp[16] ATTR_ALIGN(16);
     int16_t * const block1= (int16_t*)align_tmp;
 
-    fdct_col(block, block1, 0);
-    fdct_col(block, block1, 4);
-
+    fdct_col_sse2(block, block1, 0);
     fdct_row_sse2(block1, block);
 }
 
