@@ -37,8 +37,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-extern const uint32_t ff_table0_dc_lum[120][2], ff_table1_dc_lum[120][2];
-extern const uint32_t ff_table0_dc_chroma[120][2], ff_table1_dc_chroma[120][2];
 #define MB_INTRA_VLC_BITS 9
 #define DC_VLC_BITS 9
 #define AC_VLC_BITS 9

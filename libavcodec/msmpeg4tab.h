@@ -65,7 +65,7 @@ static const uint32_t table_mb_non_intra[128][2] = {
 
 /* dc table 0 */
 
-const uint32_t ff_table0_dc_lum[120][2] = {
+static const uint32_t ff_table0_dc_lum[120][2] = {
 { 0x1, 1 },{ 0x1, 2 },{ 0x1, 4 },{ 0x1, 5 },
 { 0x5, 5 },{ 0x7, 5 },{ 0x8, 6 },{ 0xc, 6 },
 { 0x0, 7 },{ 0x2, 7 },{ 0x12, 7 },{ 0x1a, 7 },
@@ -98,7 +98,7 @@ const uint32_t ff_table0_dc_lum[120][2] = {
 { 0x6078c, 24 },{ 0x6078d, 24 },{ 0x6078e, 24 },{ 0x6078f, 24 },
 };
 
-const uint32_t ff_table0_dc_chroma[120][2] = {
+static const uint32_t ff_table0_dc_chroma[120][2] = {
 { 0x0, 2 },{ 0x1, 2 },{ 0x5, 3 },{ 0x9, 4 },
 { 0xd, 4 },{ 0x11, 5 },{ 0x1d, 5 },{ 0x1f, 5 },
 { 0x21, 6 },{ 0x31, 6 },{ 0x38, 6 },{ 0x33, 6 },
@@ -133,7 +133,7 @@ const uint32_t ff_table0_dc_chroma[120][2] = {
 
 /* dc table 1 */
 
-const uint32_t ff_table1_dc_lum[120][2] = {
+static const uint32_t ff_table1_dc_lum[120][2] = {
 { 0x2, 2 },{ 0x3, 2 },{ 0x3, 3 },{ 0x2, 4 },
 { 0x5, 4 },{ 0x1, 5 },{ 0x3, 5 },{ 0x8, 5 },
 { 0x0, 6 },{ 0x5, 6 },{ 0xd, 6 },{ 0xf, 6 },
@@ -166,7 +166,7 @@ const uint32_t ff_table1_dc_lum[120][2] = {
 { 0x1e6964, 26 },{ 0x1e6965, 26 },{ 0x1e6966, 26 },{ 0x1e6967, 26 },
 };
 
-const uint32_t ff_table1_dc_chroma[120][2] = {
+static const uint32_t ff_table1_dc_chroma[120][2] = {
 { 0x0, 2 },{ 0x1, 2 },{ 0x4, 3 },{ 0x7, 3 },
 { 0xb, 4 },{ 0xd, 4 },{ 0x15, 5 },{ 0x28, 6 },
 { 0x30, 6 },{ 0x32, 6 },{ 0x52, 7 },{ 0x62, 7 },
