@@ -138,6 +138,9 @@ void print_error(const char *filename, int err)
     case AVERROR_NOMEM:
         fprintf(stderr, "%s: memory allocation error occured\n", filename);
         break;
+    case AVERROR_NOENT:
+        fprintf(stderr, "%s: no such file or directory\n", filename);
+        break;
     default:
         fprintf(stderr, "%s: Error while opening file\n", filename);
         break;
