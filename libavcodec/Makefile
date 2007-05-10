@@ -35,7 +35,6 @@ OBJS= bitstream.o \
       vp3dsp.o \
       h264idct.o \
       rangecoder.o \
-      pnm.o pnm_common.o \
       h263.o \
       opt.o \
       bitstream_filter.o \
@@ -119,8 +118,13 @@ OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcl.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
+OBJS-$(CONFIG_PAM_ENCODER)             += pnm.o pnm_common.o
+OBJS-$(CONFIG_PBM_ENCODER)             += pnm.o pnm_common.o
+OBJS-$(CONFIG_PGM_ENCODER)             += pnm.o pnm_common.o
+OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnm.o pnm_common.o
 OBJS-$(CONFIG_PNG_DECODER)             += png.o
 OBJS-$(CONFIG_PNG_ENCODER)             += png.o
+OBJS-$(CONFIG_PPM_ENCODER)             += pnm.o pnm_common.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
