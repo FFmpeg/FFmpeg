@@ -177,8 +177,8 @@ static inline void encode_from16(int bps, int le, int us,
     for(;n>0;n--) {
         register int v = *(*samples)++;
         v += usum;
-        if (le) {AV_WL16(*dst, v);}
-        else    {AV_WB16(*dst, v);}
+        if (le) AV_WL16(*dst, v);
+        else    AV_WB16(*dst, v);
         *dst += bps;
     }
     if (le) *dst -= bps - 2;
