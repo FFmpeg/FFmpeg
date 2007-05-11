@@ -88,6 +88,35 @@ static inline void sad8_1_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
     );
 }
 
+static int sad16_sse2(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)
+{
+    int ret;
+    asm volatile(
+        "pxor %%xmm6, %%xmm6            \n\t"
+        ASMALIGN(4)
+        "1:                             \n\t"
+        "movdqu (%1), %%xmm0            \n\t"
+        "movdqu (%1, %3), %%xmm1        \n\t"
+        "psadbw (%2), %%xmm0            \n\t"
+        "psadbw (%2, %3), %%xmm1        \n\t"
+        "paddw %%xmm0, %%xmm6           \n\t"
+        "paddw %%xmm1, %%xmm6           \n\t"
+        "lea (%1,%3,2), %1              \n\t"
+        "lea (%2,%3,2), %2              \n\t"
+        "sub $2, %0                     \n\t"
+        " jg 1b                         \n\t"
+        : "+r" (h), "+r" (blk1), "+r" (blk2)
+        : "r" ((long)stride)
+    );
+    asm volatile(
+        "movhlps %%xmm6, %%xmm0         \n\t"
+        "paddw   %%xmm0, %%xmm6         \n\t"
+        "movd    %%xmm6, %0             \n\t"
+        : "=r"(ret)
+    );
+    return ret;
+}
+
 static inline void sad8_x2a_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
     asm volatile(
@@ -423,5 +452,8 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
             c->pix_abs[1][2] = sad8_y2_mmx2;
             c->pix_abs[1][3] = sad8_xy2_mmx2;
         }
+    }
+    if ((mm_flags & MM_SSE2) && !(mm_flags & MM_3DNOW)) {
+        c->sad[0]= sad16_sse2;
     }
 }
