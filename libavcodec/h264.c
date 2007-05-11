@@ -26,7 +26,6 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
