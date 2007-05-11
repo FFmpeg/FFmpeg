@@ -74,7 +74,6 @@ static int mpc7_decode_init(AVCodecContext * avctx)
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     uint8_t buf[16];
-    float f1=1.20050805774840750476 * 256;
     static int vlc_inited = 0;
 
     if(avctx->extradata_size < 16){
