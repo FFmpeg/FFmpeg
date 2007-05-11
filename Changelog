@@ -82,9 +82,8 @@ version <next>
 - CRYO APC demuxer
 - Atrac3 decoder
 - V.Flash PTX decoder
-- RoQ audio encoder
+- RoQ muxer, audio encoder
 - Renderware TXD demuxer and decoder
-- RoQ muxer
 
 version 0.4.9-pre1:
 
