@@ -280,8 +280,8 @@ static void fill_buffer(ByteIOContext *s)
         /* do not modify buffer if EOF reached so that a seek back can
            be done without rereading data */
         s->eof_reached = 1;
-    if(len<0)
-        s->error= len;
+        if(len<0)
+            s->error= len;
     } else {
         s->pos += len;
         s->buf_ptr = s->buffer;
