@@ -337,6 +337,7 @@ static int sad8_x2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, in
     assert(h==8);\
     asm volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
+                 "movq %0, %%mm5        \n\t"\
                  :: "m"(round_tab[1]) \
                  );\
 \
