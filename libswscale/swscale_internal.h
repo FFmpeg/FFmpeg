@@ -171,21 +171,49 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 char *sws_format_name(int format);
 
 //FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==PIX_FMT_YUV410P  || (x)==PIX_FMT_YUV420P \
-                     || (x)==PIX_FMT_YUV411P  || (x)==PIX_FMT_YUV422P \
-                     || (x)==PIX_FMT_YUV444P  || (x)==PIX_FMT_NV12    \
-                     || (x)==PIX_FMT_NV21)
-#define isYUV(x)       ((x)==PIX_FMT_UYVY422  || (x)==PIX_FMT_YUYV422  || isPlanarYUV(x))
-#define isGray(x)      ((x)==PIX_FMT_GRAY8    || (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE)
-#define isGray16(x)    ((x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE)
-#define isRGB(x)       ((x)==PIX_FMT_BGR32    || (x)==PIX_FMT_RGB24   \
-                     || (x)==PIX_FMT_RGB565   || (x)==PIX_FMT_RGB555  \
-                     || (x)==PIX_FMT_RGB8     || (x)==PIX_FMT_RGB4 || (x)==PIX_FMT_RGB4_BYTE \
-                     || (x)==PIX_FMT_MONOBLACK)
-#define isBGR(x)       ((x)==PIX_FMT_RGB32    || (x)==PIX_FMT_BGR24   \
-                     || (x)==PIX_FMT_BGR565   || (x)==PIX_FMT_BGR555  \
-                     || (x)==PIX_FMT_BGR8     || (x)==PIX_FMT_BGR4 || (x)==PIX_FMT_BGR4_BYTE \
-                     || (x)==PIX_FMT_MONOBLACK)
+#define isPlanarYUV(x)  (           \
+           (x)==PIX_FMT_YUV410P     \
+        || (x)==PIX_FMT_YUV420P     \
+        || (x)==PIX_FMT_YUV411P     \
+        || (x)==PIX_FMT_YUV422P     \
+        || (x)==PIX_FMT_YUV444P     \
+        || (x)==PIX_FMT_NV12        \
+        || (x)==PIX_FMT_NV21        \
+    )
+#define isYUV(x)        (           \
+           (x)==PIX_FMT_UYVY422     \
+        || (x)==PIX_FMT_YUYV422     \
+        || isPlanarYUV(x)           \
+    )
+#define isGray(x)       (           \
+           (x)==PIX_FMT_GRAY8       \
+        || (x)==PIX_FMT_GRAY16BE    \
+        || (x)==PIX_FMT_GRAY16LE    \
+    )
+#define isGray16(x)     (           \
+           (x)==PIX_FMT_GRAY16BE    \
+        || (x)==PIX_FMT_GRAY16LE    \
+    )
+#define isRGB(x)        (           \
+           (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_RGB24       \
+        || (x)==PIX_FMT_RGB565      \
+        || (x)==PIX_FMT_RGB555      \
+        || (x)==PIX_FMT_RGB8        \
+        || (x)==PIX_FMT_RGB4        \
+        || (x)==PIX_FMT_RGB4_BYTE   \
+        || (x)==PIX_FMT_MONOBLACK   \
+    )
+#define isBGR(x)        (           \
+           (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_BGR24       \
+        || (x)==PIX_FMT_BGR565      \
+        || (x)==PIX_FMT_BGR555      \
+        || (x)==PIX_FMT_BGR8        \
+        || (x)==PIX_FMT_BGR4        \
+        || (x)==PIX_FMT_BGR4_BYTE   \
+        || (x)==PIX_FMT_MONOBLACK   \
+    )
 
 static inline int fmt_depth(int fmt)
 {
