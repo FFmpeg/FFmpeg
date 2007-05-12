@@ -401,14 +401,7 @@ NAME=avcodec
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
 
-TESTS= imgresample-test fft-test dct-test
-ifeq ($(TARGET_ARCH_X86),yes)
-TESTS+= cpuid_test motion-test
-endif
-
 include ../common.mak
-
-tests: apiexample $(TESTS)
 
 clean::
 	rm -f \
@@ -421,6 +414,13 @@ clean::
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
 	   apiexample $(TESTS)
+
+TESTS= imgresample-test fft-test dct-test
+ifeq ($(TARGET_ARCH_X86),yes)
+TESTS+= cpuid_test motion-test
+endif
+
+tests: apiexample $(TESTS)
 
 apiexample: apiexample.o $(LIB)
 
