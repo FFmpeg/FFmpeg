@@ -1525,12 +1525,13 @@ static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
     if (sc->ctts_data) {
         time_sample = 0;
         for (i = 0; i < sc->ctts_count; i++) {
-            time_sample += sc->ctts_data[i].count;
-            if (time_sample >= sc->current_sample) {
+            int next = time_sample + sc->ctts_data[i].count;
+            if (next > sc->current_sample) {
                 sc->sample_to_ctime_index = i;
-                sc->sample_to_ctime_sample = time_sample - sc->current_sample;
+                sc->sample_to_ctime_sample = sc->current_sample - time_sample;
                 break;
             }
+            time_sample = next;
         }
     }
     return sample;
