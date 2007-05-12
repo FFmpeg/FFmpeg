@@ -646,6 +646,7 @@ HAVE_LIST="
     sdl
     sdl_video_size
     soundcard_h
+    ssse3
     sys_poll_h
     sys_soundcard_h
     threads
@@ -1446,6 +1447,13 @@ EOF
     check_cc <<EOF && enable ebx_available
 int main(){
     asm volatile ("":::"%ebx");
+}
+EOF
+
+    # check whether binutils is new enough to compile SSSE3
+    check_cc <<EOF && enable ssse3
+int main(){
+    asm volatile ("pabsw %xmm0, %xmm0");
 }
 EOF
 fi
