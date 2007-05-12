@@ -267,6 +267,8 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             w+= EDGE_WIDTH*2;
             h+= EDGE_WIDTH*2;
         }
+        avcodec_align_dimensions(s, &w, &h);
+
         avpicture_fill(&picture, NULL, s->pix_fmt, w, h);
         pixel_size= picture.linesize[0]*8 / w;
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", (int)picture.data[1], w, h, s->pix_fmt);
