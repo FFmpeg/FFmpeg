@@ -234,6 +234,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
     FlashSVContext * const s = avctx->priv_data;
     AVFrame *pict = data;
     AVFrame * const p = &s->frame;
+    uint8_t *pfptr;
     int res;
     int I_frame = 0;
     int opt_w, opt_h;
@@ -242,13 +243,18 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
     /* First frame needs to be a keyframe */
     if (avctx->frame_number == 0) {
-        s->previous_frame = av_mallocz(p->linesize[0]*s->image_height);
+        s->previous_frame = av_mallocz(abs(p->linesize[0])*s->image_height);
         if (!s->previous_frame) {
             av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
             return -1;
         }
         I_frame = 1;
     }
+
+    if (p->linesize[0] < 0)
+        pfptr = s->previous_frame - ((s->image_height-1) * p->linesize[0]);
+    else
+        pfptr = s->previous_frame;
 
     /* Check the placement of keyframes */
     if (avctx->gop_size > 0) {
@@ -298,10 +304,13 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
         return -1;
     }
 
-    res = encode_bitstream(s, p, buf, buf_size, opt_w*16, opt_h*16, s->previous_frame, &I_frame);
+    res = encode_bitstream(s, p, buf, buf_size, opt_w*16, opt_h*16, pfptr, &I_frame);
 #endif
     //save the current frame
-    memcpy(s->previous_frame, p->data[0], s->image_height*p->linesize[0]);
+    if(p->linesize[0] > 0)
+        memcpy(s->previous_frame, p->data[0], s->image_height*p->linesize[0]);
+    else
+        memcpy(s->previous_frame, p->data[0] + p->linesize[0] * (s->image_height-1), s->image_height*abs(p->linesize[0]));
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
