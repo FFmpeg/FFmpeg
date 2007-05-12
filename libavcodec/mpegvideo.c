@@ -4600,7 +4600,8 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         h263_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_MJPEG:
         if (ENABLE_MJPEG_ENCODER)
-        mjpeg_encode_mb(s, s->block); break;
+            mjpeg_encode_mb(s, s->block);
+        break;
     default:
         assert(0);
     }
@@ -5770,7 +5771,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     switch(s->out_format) {
     case FMT_MJPEG:
         if (ENABLE_MJPEG_ENCODER)
-        mjpeg_picture_header(s);
+            mjpeg_picture_header(s);
         break;
 #ifdef CONFIG_H261_ENCODER
     case FMT_H261:
