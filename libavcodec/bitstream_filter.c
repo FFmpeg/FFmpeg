@@ -253,32 +253,42 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
     return 1;
 }
 
+#ifdef CONFIG_DUMP_EXTRADATA_BSF
 AVBitStreamFilter dump_extradata_bsf={
     "dump_extra",
     0,
     dump_extradata,
 };
+#endif
 
+#ifdef CONFIG_REMOVE_EXTRADATA_BSF
 AVBitStreamFilter remove_extradata_bsf={
     "remove_extra",
     0,
     remove_extradata,
 };
+#endif
 
+#ifdef CONFIG_NOISE_BSF
 AVBitStreamFilter noise_bsf={
     "noise",
     sizeof(int),
     noise,
 };
+#endif
 
+#ifdef CONFIG_MP3_HEADER_COMPRESS_BSF
 AVBitStreamFilter mp3_header_compress_bsf={
     "mp3comp",
     0,
     mp3_header_compress,
 };
+#endif
 
+#ifdef CONFIG_MP3_HEADER_DECOMPRESS_BSF
 AVBitStreamFilter mp3_header_decompress_bsf={
     "mp3decomp",
     0,
     mp3_header_decompress,
 };
+#endif

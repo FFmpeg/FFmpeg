@@ -2564,8 +2564,10 @@ AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
 };
 #endif
 
+#ifdef CONFIG_MJPEGA_DUMP_HEADER_BSF
 AVBitStreamFilter mjpega_dump_header_bsf = {
     "mjpegadump",
     0,
     mjpega_dump_header,
 };
+#endif

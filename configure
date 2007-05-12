@@ -155,6 +155,9 @@ show_help(){
   echo "  --enable-parser=NAME     enables parser NAME"
   echo "  --disable-parser=NAME    disables parser NAME"
   echo "  --disable-parsers        disables all parsers"
+  echo "  --enable-bsf=NAME        enables bitstream filter NAME"
+  echo "  --disable-bsf=NAME       disables bitstream filter NAME"
+  echo "  --disable-bsfs           disables all bitstream filters"
   echo "  --enable-protocol=NAME   enables protocol NAME"
   echo "  --disable-protocol=NAME  disables protocol NAME"
   echo "  --disable-protocols      disables all protocols"
@@ -554,6 +557,7 @@ CONFIG_LIST='
     encoders
     decoders
     parsers
+    bsfs
     muxers
     demuxers
     audio_beos
@@ -908,11 +912,12 @@ FFMPEG_CONFIGURATION="$@"
 ENCODER_LIST=`sed -n 's/^[^#]*ENC.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
 DECODER_LIST=`sed -n 's/^[^#]*DEC.*, *\(.*\)).*/\1_decoder/p' "$source_path/libavcodec/allcodecs.c"`
 PARSER_LIST=`sed -n 's/^[^#]*PARSER.*, *\(.*\)).*/\1_parser/p' "$source_path/libavcodec/allcodecs.c"`
+BSF_LIST=`sed -n 's/^[^#]*BSF.*, *\(.*\)).*/\1_bsf/p' "$source_path/libavcodec/allcodecs.c"`
 MUXER_LIST=`sed -n 's/^[^#]*_MUX.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
 DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
 PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
-enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST
+enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -979,12 +984,14 @@ for opt do
   ;;
   --disable-parsers) disable $PARSER_LIST
   ;;
+  --disable-bsfs) disable $BSF_LIST
+  ;;
   --disable-protocols) disable $PROTOCOL_LIST
   ;;
   --enable-*=*|--disable-*=*)
   eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
   case "$thing" in
-      encoder|decoder|muxer|demuxer|parser|protocol) $action ${optval}_${thing} ;;
+      encoder|decoder|muxer|demuxer|parser|bsf|protocol) $action ${optval}_${thing} ;;
       *) die_unknown "$opt" ;;
   esac
   ;;
@@ -1816,11 +1823,12 @@ enabled_any $DECODER_LIST  && enable decoders
 enabled_any $MUXER_LIST    && enable muxers
 enabled_any $DEMUXER_LIST  && enable demuxers
 enabled_any $PROTOCOL_LIST && enable protocols
+enabled_any $BSF_LIST      && enable bsfs
 
 enabled_any $THREADS_LIST  && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
-    $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
+    $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
 
 enabled libogg    && append pkg_requires "ogg >= 1.1"
 enabled libtheora && append pkg_requires "theora"
@@ -2040,7 +2048,7 @@ else
 fi
 
 
-for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST; do
+for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST; do
     ucname="`toupper $part`"
     config_name="CONFIG_$ucname"
     enabled_name="ENABLE_$ucname"

@@ -3354,6 +3354,7 @@ AVCodec mpeg_xvmc_decoder = {
 
 #endif
 
+#ifdef CONFIG_IMX_DUMP_HEADER_BSF
 static int imx_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
                            uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size, int keyframe)
@@ -3382,6 +3383,7 @@ AVBitStreamFilter imx_dump_header_bsf = {
     0,
     imx_dump_header,
 };
+#endif
 
 /* this is ugly i know, but the alternative is too make
    hundreds of vars global and prefix them with ff_mpeg1_

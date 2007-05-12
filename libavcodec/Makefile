@@ -302,6 +302,14 @@ OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
+OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += bitstream_filter.o
+OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += bitstream_filter.o
+OBJS-$(CONFIG_NOISE_BSF)               += bitstream_filter.o
+OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += bitstream_filter.o
+OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += bitstream_filter.o
+OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpeg.o
+OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += mpeg12.o
+
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 OBJS-$(HAVE_OS2THREADS)                += os2thread.o

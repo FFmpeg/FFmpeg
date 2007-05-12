@@ -34,6 +34,8 @@
 
 #define REGISTER_PARSER(X,x) \
           if(ENABLE_##X##_PARSER)  av_register_codec_parser(&x##_parser)
+#define REGISTER_BSF(X,x) \
+          if(ENABLE_##X##_BSF)     av_register_bitstream_filter(&x##_bsf)
 
 /**
  * Register all the codecs, parsers and bitstream filters which were enabled at
@@ -273,12 +275,13 @@ void avcodec_register_all(void)
     REGISTER_PARSER (PNM, pnm);
     REGISTER_PARSER (VC1, vc1);
 
-    av_register_bitstream_filter(&dump_extradata_bsf);
-    av_register_bitstream_filter(&remove_extradata_bsf);
-    av_register_bitstream_filter(&noise_bsf);
-    av_register_bitstream_filter(&mp3_header_compress_bsf);
-    av_register_bitstream_filter(&mp3_header_decompress_bsf);
-    av_register_bitstream_filter(&mjpega_dump_header_bsf);
-    av_register_bitstream_filter(&imx_dump_header_bsf);
+    /* bitstream filters */
+    REGISTER_BSF    (DUMP_EXTRADATA, dump_extradata);
+    REGISTER_BSF    (REMOVE_EXTRADATA, remove_extradata);
+    REGISTER_BSF    (NOISE, noise);
+    REGISTER_BSF    (MP3_HEADER_COMPRESS, mp3_header_compress);
+    REGISTER_BSF    (MP3_HEADER_DECOMPRESS, mp3_header_decompress);
+    REGISTER_BSF    (MJPEGA_DUMP_HEADER, mjpega_dump_header);
+    REGISTER_BSF    (IMX_DUMP_HEADER, imx_dump_header);
 }
 
