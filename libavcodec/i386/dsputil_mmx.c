@@ -1649,6 +1649,9 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     "movq "#c", "#o"+16(%1)           \n\t"\
     "movq "#d", "#o"+24(%1)           \n\t"\
 
+/* FIXME: HSUM_* saturates at 64k, while an 8x8 hadamard or dct block can get up to
+ * about 100k on extreme inputs. But that's very unlikely to occur in natural video,
+ * and it's even more unlikely to not have any alternative mvs/modes with lower cost. */
 #define HSUM_MMX(a, t, dst)\
     "movq "#a", "#t"                  \n\t"\
     "psrlq $32, "#a"                  \n\t"\
@@ -1801,6 +1804,71 @@ HADAMARD8_DIFF_SSE2(ssse3)
 #undef MMABS
 #undef MMABS_SUM_8x8
 #endif
+
+#define DCT_SAD4(m,mm,o)\
+    "mov"#m" "#o"+ 0(%1), "#mm"2      \n\t"\
+    "mov"#m" "#o"+16(%1), "#mm"3      \n\t"\
+    "mov"#m" "#o"+32(%1), "#mm"4      \n\t"\
+    "mov"#m" "#o"+48(%1), "#mm"5      \n\t"\
+    MMABS_SUM(mm##2, mm##6, mm##0)\
+    MMABS_SUM(mm##3, mm##7, mm##1)\
+    MMABS_SUM(mm##4, mm##6, mm##0)\
+    MMABS_SUM(mm##5, mm##7, mm##1)\
+
+#define DCT_SAD_MMX\
+    "pxor %%mm0, %%mm0                \n\t"\
+    "pxor %%mm1, %%mm1                \n\t"\
+    DCT_SAD4(q, %%mm, 0)\
+    DCT_SAD4(q, %%mm, 8)\
+    DCT_SAD4(q, %%mm, 64)\
+    DCT_SAD4(q, %%mm, 72)\
+    "paddusw %%mm1, %%mm0             \n\t"\
+    HSUM(%%mm0, %%mm1, %0)
+
+#define DCT_SAD_SSE2\
+    "pxor %%xmm0, %%xmm0              \n\t"\
+    "pxor %%xmm1, %%xmm1              \n\t"\
+    DCT_SAD4(dqa, %%xmm, 0)\
+    DCT_SAD4(dqa, %%xmm, 64)\
+    "paddusw %%xmm1, %%xmm0           \n\t"\
+    HSUM(%%xmm0, %%xmm1, %0)
+
+#define DCT_SAD_FUNC(cpu) \
+static int sum_abs_dctelem_##cpu(DCTELEM *block){\
+    int sum;\
+    asm volatile(\
+        DCT_SAD\
+        :"=r"(sum)\
+        :"r"(block)\
+    );\
+    return sum&0xFFFF;\
+}
+
+#define DCT_SAD       DCT_SAD_MMX
+#define HSUM(a,t,dst) HSUM_MMX(a,t,dst)
+#define MMABS(a,z)    MMABS_MMX(a,z)
+DCT_SAD_FUNC(mmx)
+#undef MMABS
+#undef HSUM
+
+#define HSUM(a,t,dst) HSUM_MMX2(a,t,dst)
+#define MMABS(a,z)    MMABS_MMX2(a,z)
+DCT_SAD_FUNC(mmx2)
+#undef HSUM
+#undef DCT_SAD
+
+#define DCT_SAD       DCT_SAD_SSE2
+#define HSUM(a,t,dst) HSUM_SSE2(a,t,dst)
+DCT_SAD_FUNC(sse2)
+#undef MMABS
+
+#ifdef HAVE_SSSE3
+#define MMABS(a,z)    MMABS_SSSE3(a,z)
+DCT_SAD_FUNC(ssse3)
+#undef MMABS
+#endif
+#undef HSUM
+#undef DCT_SAD
 
 static int ssd_int8_vs_int16_mmx(int8_t *pix1, int16_t *pix2, int size){
     int sum;
@@ -3298,6 +3366,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->add_bytes= add_bytes_mmx;
 #ifdef CONFIG_ENCODERS
         c->diff_bytes= diff_bytes_mmx;
+        c->sum_abs_dctelem= sum_abs_dctelem_mmx;
 
         c->hadamard8_diff[0]= hadamard8_diff16_mmx;
         c->hadamard8_diff[1]= hadamard8_diff_mmx;
@@ -3350,6 +3419,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
 
 #ifdef CONFIG_ENCODERS
+            c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
             c->hadamard8_diff[0]= hadamard8_diff16_mmx2;
             c->hadamard8_diff[1]= hadamard8_diff_mmx2;
             c->vsad[4]= vsad_intra16_mmx2;
@@ -3569,12 +3639,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 #ifdef CONFIG_ENCODERS
         if(mm_flags & MM_SSE2){
+            c->sum_abs_dctelem= sum_abs_dctelem_sse2;
             c->hadamard8_diff[0]= hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= hadamard8_diff_sse2;
         }
 
 #ifdef HAVE_SSSE3
         if(mm_flags & MM_SSSE3){
+            c->sum_abs_dctelem= sum_abs_dctelem_ssse3;
             c->hadamard8_diff[0]= hadamard8_diff16_ssse3;
             c->hadamard8_diff[1]= hadamard8_diff_ssse3;
         }
