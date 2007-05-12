@@ -19,32 +19,76 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#undef MMREG_WIDTH
+#undef MM
+#undef MOVQ
 #undef SPREADW
 #undef PMAXW
 #undef PMAX
-#ifdef HAVE_MMX2
-#define SPREADW(a) "pshufw $0, " #a ", " #a " \n\t"
-#define PMAXW(a,b) "pmaxsw " #a ", " #b "     \n\t"
+#undef SAVE_SIGN
+#undef RESTORE_SIGN
+
+#if defined(HAVE_SSE2)
+#define MMREG_WIDTH "16"
+#define MM "%%xmm"
+#define MOVQ "movdqa"
+#define SPREADW(a) \
+            "pshuflw $0, "a", "a"       \n\t"\
+            "punpcklwd "a", "a"         \n\t"
+#define PMAXW(a,b) "pmaxsw "a", "b"     \n\t"
 #define PMAX(a,b) \
-            "pshufw $0x0E," #a ", " #b "        \n\t"\
+            "movhlps "a", "b"           \n\t"\
             PMAXW(b, a)\
-            "pshufw $0x01," #a ", " #b "        \n\t"\
+            "pshuflw $0x0E, "a", "b"    \n\t"\
+            PMAXW(b, a)\
+            "pshuflw $0x01, "a", "b"    \n\t"\
+            PMAXW(b, a)
+#else
+#define MMREG_WIDTH "8"
+#define MM "%%mm"
+#define MOVQ "movq"
+#if defined(HAVE_MMX2)
+#define SPREADW(a) "pshufw $0, "a", "a" \n\t"
+#define PMAXW(a,b) "pmaxsw "a", "b"     \n\t"
+#define PMAX(a,b) \
+            "pshufw $0x0E, "a", "b"     \n\t"\
+            PMAXW(b, a)\
+            "pshufw $0x01, "a", "b"     \n\t"\
             PMAXW(b, a)
 #else
 #define SPREADW(a) \
-        "punpcklwd " #a ", " #a " \n\t"\
-        "punpcklwd " #a ", " #a " \n\t"
+            "punpcklwd "a", "a"         \n\t"\
+            "punpcklwd "a", "a"         \n\t"
 #define PMAXW(a,b) \
-        "psubusw " #a ", " #b " \n\t"\
-        "paddw " #a ", " #b "   \n\t"
+            "psubusw "a", "b"           \n\t"\
+            "paddw "a", "b"             \n\t"
 #define PMAX(a,b)  \
-            "movq " #a ", " #b "                \n\t"\
-            "psrlq $32, " #a "                  \n\t"\
+            "movq "a", "b"              \n\t"\
+            "psrlq $32, "a"             \n\t"\
             PMAXW(b, a)\
-            "movq " #a ", " #b "                \n\t"\
-            "psrlq $16, " #a "                  \n\t"\
+            "movq "a", "b"              \n\t"\
+            "psrlq $16, "a"             \n\t"\
             PMAXW(b, a)
 
+#endif
+#endif
+
+#ifdef HAVE_SSSE3
+#define SAVE_SIGN(a,b) \
+            "movdqa "b", "a"            \n\t"\
+            "pabsw  "b", "b"            \n\t"
+#define RESTORE_SIGN(a,b) \
+            "psignw "a", "b"            \n\t"
+#else
+#define SAVE_SIGN(a,b) \
+            "pxor "a", "a"              \n\t"\
+            "pcmpgtw "b", "a"           \n\t" /* block[i] <= 0 ? 0xFF : 0x00 */\
+            "pxor "a", "b"              \n\t"\
+            "psubw "a", "b"             \n\t" /* ABS(block[i]) */
+#define RESTORE_SIGN(a,b) \
+            "pxor "a", "b"              \n\t"\
+            "psubw "a", "b"             \n\t" // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
 #endif
 
 static int RENAME(dct_quantize)(MpegEncContext *s,
@@ -54,7 +98,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     long last_non_zero_p1;
     int level=0, q; //=0 is cuz gcc says uninitalized ...
     const uint16_t *qmat, *bias;
-    DECLARE_ALIGNED_8(int16_t, temp_block[64]);
+    DECLARE_ALIGNED_16(int16_t, temp_block[64]);
 
     assert((7&(int)(&temp_block[0])) == 0); //did gcc align it correctly?
 
@@ -106,98 +150,82 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if((s->out_format == FMT_H263 || s->out_format == FMT_H261) && s->mpeg_quant==0){
 
         asm volatile(
-            "movd %%"REG_a", %%mm3              \n\t" // last_non_zero_p1
-            SPREADW(%%mm3)
-            "pxor %%mm7, %%mm7                  \n\t" // 0
-            "pxor %%mm4, %%mm4                  \n\t" // 0
-            "movq (%2), %%mm5                   \n\t" // qmat[0]
-            "pxor %%mm6, %%mm6                  \n\t"
-            "psubw (%3), %%mm6                  \n\t" // -bias[0]
+            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            SPREADW(MM"3")
+            "pxor "MM"7, "MM"7                  \n\t" // 0
+            "pxor "MM"4, "MM"4                  \n\t" // 0
+            MOVQ" (%2), "MM"5                   \n\t" // qmat[0]
+            "pxor "MM"6, "MM"6                  \n\t"
+            "psubw (%3), "MM"6                  \n\t" // -bias[0]
             "mov $-128, %%"REG_a"               \n\t"
             ASMALIGN(4)
             "1:                                 \n\t"
-            "pxor %%mm1, %%mm1                  \n\t" // 0
-            "movq (%1, %%"REG_a"), %%mm0        \n\t" // block[i]
-            "pcmpgtw %%mm0, %%mm1               \n\t" // block[i] <= 0 ? 0xFF : 0x00
-            "pxor %%mm1, %%mm0                  \n\t"
-            "psubw %%mm1, %%mm0                 \n\t" // ABS(block[i])
-            "psubusw %%mm6, %%mm0               \n\t" // ABS(block[i]) + bias[0]
-            "pmulhw %%mm5, %%mm0                \n\t" // (ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16
-            "por %%mm0, %%mm4                   \n\t"
-            "pxor %%mm1, %%mm0                  \n\t"
-            "psubw %%mm1, %%mm0                 \n\t" // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            "movq %%mm0, (%5, %%"REG_a")        \n\t"
-            "pcmpeqw %%mm7, %%mm0               \n\t" // out==0 ? 0xFF : 0x00
-            "movq (%4, %%"REG_a"), %%mm1        \n\t"
-            "movq %%mm7, (%1, %%"REG_a")        \n\t" // 0
-            "pandn %%mm1, %%mm0                 \n\t"
-            PMAXW(%%mm0, %%mm3)
-            "add $8, %%"REG_a"                  \n\t"
+            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
+            "psubusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
+            "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16
+            "por "MM"0, "MM"4                   \n\t"
+            RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
+            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
+            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
+            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            "pandn "MM"1, "MM"0                 \n\t"
+            PMAXW(MM"0", MM"3")
+            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
             " js 1b                             \n\t"
-            PMAX(%%mm3, %%mm0)
-            "movd %%mm3, %%"REG_a"              \n\t"
+            PMAX(MM"3", MM"0")
+            "movd "MM"3, %%"REG_a"              \n\t"
             "movzb %%al, %%"REG_a"              \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat), "r" (bias),
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
         );
-        // note the asm is split cuz gcc doesnt like that many operands ...
-        asm volatile(
-            "movd %1, %%mm1                     \n\t" // max_qcoeff
-            SPREADW(%%mm1)
-            "psubusw %%mm1, %%mm4               \n\t"
-            "packuswb %%mm4, %%mm4              \n\t"
-            "movd %%mm4, %0                     \n\t" // *overflow
-        : "=g" (*overflow)
-        : "g" (s->max_qcoeff)
-        );
     }else{ // FMT_H263
         asm volatile(
-            "movd %%"REG_a", %%mm3              \n\t" // last_non_zero_p1
-            SPREADW(%%mm3)
-            "pxor %%mm7, %%mm7                  \n\t" // 0
-            "pxor %%mm4, %%mm4                  \n\t" // 0
+            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            SPREADW(MM"3")
+            "pxor "MM"7, "MM"7                  \n\t" // 0
+            "pxor "MM"4, "MM"4                  \n\t" // 0
             "mov $-128, %%"REG_a"               \n\t"
             ASMALIGN(4)
             "1:                                 \n\t"
-            "pxor %%mm1, %%mm1                  \n\t" // 0
-            "movq (%1, %%"REG_a"), %%mm0        \n\t" // block[i]
-            "pcmpgtw %%mm0, %%mm1               \n\t" // block[i] <= 0 ? 0xFF : 0x00
-            "pxor %%mm1, %%mm0                  \n\t"
-            "psubw %%mm1, %%mm0                 \n\t" // ABS(block[i])
-            "movq (%3, %%"REG_a"), %%mm6        \n\t" // bias[0]
-            "paddusw %%mm6, %%mm0               \n\t" // ABS(block[i]) + bias[0]
-            "movq (%2, %%"REG_a"), %%mm5        \n\t" // qmat[i]
-            "pmulhw %%mm5, %%mm0                \n\t" // (ABS(block[i])*qmat[0] + bias[0]*qmat[0])>>16
-            "por %%mm0, %%mm4                   \n\t"
-            "pxor %%mm1, %%mm0                  \n\t"
-            "psubw %%mm1, %%mm0                 \n\t" // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            "movq %%mm0, (%5, %%"REG_a")        \n\t"
-            "pcmpeqw %%mm7, %%mm0               \n\t" // out==0 ? 0xFF : 0x00
-            "movq (%4, %%"REG_a"), %%mm1        \n\t"
-            "movq %%mm7, (%1, %%"REG_a")        \n\t" // 0
-            "pandn %%mm1, %%mm0                 \n\t"
-            PMAXW(%%mm0, %%mm3)
-            "add $8, %%"REG_a"                  \n\t"
+            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
+            MOVQ" (%3, %%"REG_a"), "MM"6        \n\t" // bias[0]
+            "paddusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
+            MOVQ" (%2, %%"REG_a"), "MM"5        \n\t" // qmat[i]
+            "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] + bias[0]*qmat[0])>>16
+            "por "MM"0, "MM"4                   \n\t"
+            RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
+            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
+            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
+            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            "pandn "MM"1, "MM"0                 \n\t"
+            PMAXW(MM"0", MM"3")
+            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
             " js 1b                             \n\t"
-            PMAX(%%mm3, %%mm0)
-            "movd %%mm3, %%"REG_a"              \n\t"
+            PMAX(MM"3", MM"0")
+            "movd "MM"3, %%"REG_a"              \n\t"
             "movzb %%al, %%"REG_a"              \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
         );
-        // note the asm is split cuz gcc doesnt like that many operands ...
-        asm volatile(
-            "movd %1, %%mm1                     \n\t" // max_qcoeff
-            SPREADW(%%mm1)
-            "psubusw %%mm1, %%mm4               \n\t"
-            "packuswb %%mm4, %%mm4              \n\t"
-            "movd %%mm4, %0                     \n\t" // *overflow
+    }
+    asm volatile(
+        "movd %1, "MM"1                     \n\t" // max_qcoeff
+        SPREADW(MM"1")
+        "psubusw "MM"1, "MM"4               \n\t"
+        "packuswb "MM"4, "MM"4              \n\t"
+#ifdef HAVE_SSE2
+        "packuswb "MM"4, "MM"4              \n\t"
+#endif
+        "movd "MM"4, %0                     \n\t" // *overflow
         : "=g" (*overflow)
         : "g" (s->max_qcoeff)
-        );
-    }
+    );
 
     if(s->mb_intra) block[0]= level;
     else            block[0]= temp_block[0];
