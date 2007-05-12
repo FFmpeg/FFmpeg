@@ -1207,14 +1207,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { 0L, NULL }
 };
 
-static void mov_free_stream_context(MOVStreamContext *sc)
-{
-    if(sc) {
-        av_freep(&sc->ctts_data);
-        av_freep(&sc);
-    }
-}
-
 /* XXX: is it sufficient ? */
 static int mov_probe(AVProbeData *p)
 {
@@ -1570,8 +1562,10 @@ static int mov_read_close(AVFormatContext *s)
 {
     int i;
     MOVContext *mov = s->priv_data;
-    for(i=0; i<mov->total_streams; i++)
-        mov_free_stream_context(mov->streams[i]);
+    for(i=0; i<mov->total_streams; i++) {
+        av_freep(&mov->streams[i]->ctts_data);
+        av_freep(&mov->streams[i]);
+    }
     if(mov->dv_demux){
         for(i=0; i<mov->dv_fctx->nb_streams; i++){
             av_freep(&mov->dv_fctx->streams[i]->codec);
