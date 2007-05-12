@@ -51,7 +51,6 @@ extern void ff_idct_xvid_mmx(DCTELEM *block);
 extern void ff_idct_xvid_mmx2(DCTELEM *block);
 extern void init_fdct();
 
-extern void j_rev_dct(DCTELEM *data);
 extern void ff_mmx_idct(DCTELEM *data);
 extern void ff_mmxext_idct(DCTELEM *data);
 
