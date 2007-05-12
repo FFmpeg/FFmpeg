@@ -13,7 +13,6 @@ OBJS= bitstream.o \
       jrevdct.o \
       jfdctfst.o \
       jfdctint.o\
-      mjpeg.o \
       resample.o \
       resample2.o \
       dsputil.o \
@@ -101,10 +100,15 @@ OBJS-$(CONFIG_INDEO2_DECODER)          += indeo2.o
 OBJS-$(CONFIG_INDEO3_DECODER)          += indeo3.o
 OBJS-$(CONFIG_INTERPLAY_VIDEO_DECODER) += interplayvideo.o
 OBJS-$(CONFIG_INTERPLAY_DPCM_DECODER)  += dpcm.o
+OBJS-$(CONFIG_JPEGLS_ENCODER)          += mjpeg.o
 OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
+OBJS-$(CONFIG_LJPEG_ENCODER)           += mjpeg.o
 OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
+OBJS-$(CONFIG_MJPEG_DECODER)           += mjpeg.o
+OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpeg.o mpegvideo.o
+OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpeg.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc.o
@@ -152,12 +156,14 @@ OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_LS_DECODER)        += sonic.o
+OBJS-$(CONFIG_SP5X_DECODER)            += mjpeg.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1.o
 OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
 OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o
+OBJS-$(CONFIG_THP_DECODER)             += mjpeg.o
 OBJS-$(CONFIG_TIERTEXSEQVIDEO_DECODER) += tiertexseqv.o
 OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o lzw.o
 OBJS-$(CONFIG_TIFF_ENCODER)            += tiffenc.o rle.o lzwenc.o

@@ -1205,7 +1205,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->mjpeg_hsample[0] = 2;
         s->mjpeg_hsample[1] = 2>>chroma_h_shift;
         s->mjpeg_hsample[2] = 2>>chroma_h_shift;
-        if (mjpeg_init(s) < 0)
+        if (!(ENABLE_MJPEG_ENCODER || ENABLE_LJPEG_ENCODER) || mjpeg_init(s) < 0)
             return -1;
         avctx->delay=0;
         s->low_delay=1;
@@ -1401,7 +1401,7 @@ int MPV_encode_end(AVCodecContext *avctx)
     ff_rate_control_uninit(s);
 
     MPV_common_end(s);
-    if (s->out_format == FMT_MJPEG)
+    if ((ENABLE_MJPEG_ENCODER || ENABLE_LJPEG_ENCODER) && s->out_format == FMT_MJPEG)
         mjpeg_close(s);
 
     av_freep(&avctx->extradata);
@@ -2547,7 +2547,7 @@ vbv_retry:
 
         MPV_frame_end(s);
 
-        if (s->out_format == FMT_MJPEG)
+        if (ENABLE_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             mjpeg_picture_trailer(s);
 
         if(avctx->rc_buffer_size){
@@ -4599,6 +4599,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_RV20:
         h263_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_MJPEG:
+        if (ENABLE_MJPEG_ENCODER)
         mjpeg_encode_mb(s, s->block); break;
     default:
         assert(0);
@@ -4899,7 +4900,7 @@ static void write_slice_end(MpegEncContext *s){
         }
 
         ff_mpeg4_stuffing(&s->pb);
-    }else if(s->out_format == FMT_MJPEG){
+    }else if(ENABLE_MJPEG_ENCODER && s->out_format == FMT_MJPEG){
         ff_mjpeg_stuffing(&s->pb);
     }
 
@@ -5768,6 +5769,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->last_bits= put_bits_count(&s->pb);
     switch(s->out_format) {
     case FMT_MJPEG:
+        if (ENABLE_MJPEG_ENCODER)
         mjpeg_picture_header(s);
         break;
 #ifdef CONFIG_H261_ENCODER
@@ -6939,6 +6941,7 @@ AVCodec wmv1_encoder = {
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
 };
 
+#ifdef CONFIG_MJPEG_ENCODER
 AVCodec mjpeg_encoder = {
     "mjpeg",
     CODEC_TYPE_VIDEO,
@@ -6949,5 +6952,6 @@ AVCodec mjpeg_encoder = {
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
 };
+#endif
 
 #endif //CONFIG_ENCODERS
