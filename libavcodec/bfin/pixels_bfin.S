@@ -48,6 +48,7 @@ ppc$1: R2 = Max(R0, R4) (V)      || [I1++M1] = R6;
 
     (R7:4) = [SP++];
     RTS;
+DEFUN_END(put_pixels_clamped)
 
 DEFUN(add_pixels_clamped,mL1,
         (DCTELEM *block, uint8_t *dest, int line_size)):
@@ -80,6 +81,7 @@ apc$3: R6 = BYTEOP3P(R1:0, R3:2) (LO)    || [I2++M0] = R6   || R2 = [I1];
 
     (R7:4) = [SP++];
     RTS;
+DEFUN_END(add_pixels_clamped)
 
 
 /*
@@ -121,6 +123,7 @@ pp8$1:  DISALGNEXCPT                || R2 = [I1++]  || [I3++M3] = R7;
 
         (r7:6) = [sp++];
         RTS;
+DEFUN_END(put_pixels8uc)
 
 DEFUN(put_pixels16uc,mL1,
         (uint8_t *block, const uint8_t *s0, const uint8_t *s1,
@@ -155,6 +158,7 @@ pp16$1:  DISALGNEXCPT                || R2 = [I1++]   || [I3++M3] = R7;
         (r7:6) = [sp++];
         unlink;
         RTS;
+DEFUN_END(put_pixels16uc)
 
 
 
@@ -184,6 +188,7 @@ pp8$3:  DISALGNEXCPT                || R2 = [I1++]  || [I3++M3] = R7;
 
         (r7:6) = [sp++];
         RTS;
+DEFUN_END(put_pixels8uc_nornd)
 
 DEFUN(put_pixels16uc_nornd,mL1,
         (uint8_t *block, const uint8_t *s0, const uint8_t *s1,
@@ -217,6 +222,7 @@ pp16$3: DISALGNEXCPT                || R2 = [I1++]   || [I3++M3] = R7;
         (r7:6) = [sp++];
 
         RTS;
+DEFUN_END(put_pixels16uc_nornd)
 
 DEFUN(z_put_pixels16_xy2,mL1,
         (uint8_t *block, const uint8_t *s0,
@@ -275,6 +281,7 @@ LE$16O: DISALGNEXCPT                       || R2 = [I1++] || [I3++M2] = R5;
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(z_put_pixels16_xy2)
 
 DEFUN(put_pixels16_xy2_nornd,mL1,
         (uint8_t *block, const uint8_t *s0,
@@ -332,6 +339,7 @@ LE$16OT:DISALGNEXCPT                       || R2 = [I1++] || [I3++M2] = R5;
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(put_pixels16_xy2_nornd)
 
 DEFUN(z_put_pixels8_xy2,mL1,
         (uint8_t *block, const uint8_t *s0,
@@ -381,6 +389,7 @@ LE$8O:  DISALGNEXCPT                       || R2  =[I1++]   || [I3++M2] = R5;
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(z_put_pixels8_xy2)
 
 DEFUN(put_pixels8_xy2_nornd,mL1,
         (uint8_t *block, const uint8_t *s0, int line_size, int h)):
@@ -458,6 +467,7 @@ DEFUN(diff_pixels,mL1,
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(put_pixels8_xy2_nornd)
 
 /*
     for (i = 0; i < 16; i++) {
@@ -504,6 +514,7 @@ LE$PS:  r6=r6+|+r4;
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(pix_sum)
 
 
 DEFUN(get_pixels,mL1,
@@ -528,6 +539,7 @@ gp8$1:  [I3++]=R5
 
         (r7:4) = [sp++];
         RTS;
+DEFUN_END(get_pixels)
 
 
 /* sad = sad16x16 (ubyte *mb, ubyte *refwin, srcwidth, refwinwidth, h) */
@@ -559,6 +571,7 @@ e$16:   SAA (R1:0,R3:2) (R)  || R0 = [I0++]    || R2 = [I1++];
         R0 = R2 + R3 ;
         unlink;
         RTS;
+DEFUN_END(z_sad16x16)
 
 /* sad = sad8x8 (ubyte *mb, ubyte *refwin, int srcwidth, int refwinwidth, int h) */
 /* 36 cycles */
@@ -586,6 +599,7 @@ e$8:    DISALGNEXCPT         || R1 = [I0++]   || R3 = [I1++];
         R3=A1.L+A1.H,  R2=A0.L+A0.H ;
         R0 = R2 + R3 ;
         RTS;
+DEFUN_END(z_sad8x8)
 
 DEFUN(pix_norm1,mL1,
         (uint8_t * pix, int line_size)):
@@ -629,6 +643,7 @@ _pix_norm1_blkfn_loopEnd:
         (R7:4,P5:3)=[SP++];
 
         RTS;
+DEFUN_END(pix_norm1)
 
 DEFUN(sse4,mL1,
         (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)):
@@ -655,6 +670,7 @@ DEFUN(sse4,mL1,
         (r7:6) = [sp++];
         unlink;
         rts;
+DEFUN_END(sse4)
 
 DEFUN(sse8,mL1,
         (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)):
@@ -684,6 +700,7 @@ DEFUN(sse8,mL1,
         (r7:6) = [sp++];
         unlink;
         rts;
+DEFUN_END(sse8)
 
 DEFUN(sse16,mL1,
         (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)):
@@ -719,5 +736,6 @@ DEFUN(sse16,mL1,
         (r7:6) = [sp++];
         unlink;
         rts;
+DEFUN_END(sse16)
 
 

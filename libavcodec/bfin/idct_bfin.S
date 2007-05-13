@@ -293,5 +293,6 @@ DEFUN(idct,mL1,
     (R7:4,P5:3)=[SP++];
     unlink;
     RTS;
+DEFUN_END(idct)
 
 

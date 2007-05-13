@@ -39,8 +39,13 @@ DEFUN(put_pixels_clamped,mL1,
 #define DEFUN(fname,where,interface) \
         .section where;              \
         .global _ff_bfin_ ## fname ; \
+        .type _ff_bfin_ ## fname, STT_FUNC; \
         .align 8;                    \
         _ff_bfin_ ## fname
+
+#define DEFUN_END(fname) \
+        .size _ff_bfin_ ## fname, . - _ff_bfin_ ## fname
+
 
 #endif
 

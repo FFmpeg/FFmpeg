@@ -321,4 +321,5 @@ DEFUN(fdct,mL1,
         L3=0;
         (r7:4,p5:3) = [sp++];
         RTS;
+DEFUN_END(fdct)
 
