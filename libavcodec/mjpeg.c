@@ -335,9 +335,6 @@ static void jpeg_put_comments(MpegEncContext *s)
 void mjpeg_picture_header(MpegEncContext *s)
 {
     const int lossless= s->avctx->codec_id != CODEC_ID_MJPEG;
-    const int ls      = s->avctx->codec_id == CODEC_ID_JPEGLS;
-
-    assert(!(ls && s->mjpeg_write_tables));
 
     put_marker(&s->pb, SOI);
 
@@ -350,7 +347,6 @@ void mjpeg_picture_header(MpegEncContext *s)
     switch(s->avctx->codec_id){
     case CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
     case CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
-    case CODEC_ID_JPEGLS: put_marker(&s->pb, SOF48); break;
     default: assert(0);
     }
 
@@ -410,18 +406,15 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 4, 1); /* DC huffman table index */
     put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
-    put_bits(&s->pb, 8, (lossless && !ls) ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
+    put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
 
     switch(s->avctx->codec_id){
     case CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
     case CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
-    case CODEC_ID_JPEGLS: put_bits(&s->pb, 8,  1); break; /* ILV = line interleaved */
     default: assert(0);
     }
 
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
-
-    //FIXME DC/AC entropy table selectors stuff in jpegls
 }
 
 static void escape_FF(MpegEncContext *s, int start)
