@@ -4585,7 +4585,8 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         break;
     case CODEC_ID_H261:
         if (ENABLE_H261_ENCODER)
-        ff_h261_encode_mb(s, s->block, motion_x, motion_y); break;
+            ff_h261_encode_mb(s, s->block, motion_x, motion_y);
+        break;
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
     case CODEC_ID_FLV1:
@@ -5767,7 +5768,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         break;
     case FMT_H261:
         if (ENABLE_H261_ENCODER)
-        ff_h261_encode_picture_header(s, picture_number);
+            ff_h261_encode_picture_header(s, picture_number);
         break;
     case FMT_H263:
         if (ENABLE_WMV2_ENCODER && s->codec_id == CODEC_ID_WMV2)
