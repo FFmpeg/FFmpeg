@@ -435,9 +435,9 @@ void Process(void *ctx,
 {
     ContextInfo *ci = (ContextInfo *) ctx;
     if (1 == ci->mode) {
-        return Process1(ctx, picture, pix_fmt, src_width, src_height, pts);
+        Process1(ctx, picture, pix_fmt, src_width, src_height, pts);
     } else {
-        return Process0(ctx, picture, pix_fmt, src_width, src_height, pts);
+        Process0(ctx, picture, pix_fmt, src_width, src_height, pts);
     }
 }
 
