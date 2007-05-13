@@ -162,6 +162,22 @@ typedef struct SwsContext{
 
 #endif
 
+
+#ifdef ARCH_BFIN
+    uint32_t oy           __attribute__((aligned(4)));
+    uint32_t oc           __attribute__((aligned(4)));
+    uint32_t zero         __attribute__((aligned(4)));
+    uint32_t cy           __attribute__((aligned(4)));
+    uint32_t crv          __attribute__((aligned(4)));
+    uint32_t rmask        __attribute__((aligned(4)));
+    uint32_t cbu          __attribute__((aligned(4)));
+    uint32_t bmask        __attribute__((aligned(4)));
+    uint32_t cgu          __attribute__((aligned(4)));
+    uint32_t cgv          __attribute__((aligned(4)));
+    uint32_t gmask        __attribute__((aligned(4)));
+#endif
+
+
 } SwsContext;
 //FIXME check init (where 0)
 

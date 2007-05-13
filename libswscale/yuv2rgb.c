@@ -611,6 +611,14 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     }
 #endif
 
+#ifdef ARCH_BFIN
+    if (c->flags & SWS_CPU_CAPS_BFIN)
+    {
+        SwsFunc t = ff_bfin_yuv2rgb_get_func_ptr (c);
+        if (t) return t;
+    }
+#endif
+
     av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found\n");
 
     switch(c->dstFormat){

@@ -1992,7 +1992,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 #endif
 
 #if !defined(RUNTIME_CPUDETECT) || !defined (CONFIG_GPL) //ensure that the flags match the compiled variant if cpudetect is off
-    flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC);
+    flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
 #ifdef HAVE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
 #elif defined (HAVE_3DNOW)
@@ -2001,6 +2001,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     flags |= SWS_CPU_CAPS_MMX;
 #elif defined (HAVE_ALTIVEC)
     flags |= SWS_CPU_CAPS_ALTIVEC;
+#elif defined (ARCH_BFIN)
+    flags |= SWS_CPU_CAPS_BFIN;
 #endif
 #endif /* RUNTIME_CPUDETECT */
     if (clip_table[512] != 255) globalInit();
