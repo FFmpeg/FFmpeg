@@ -31,7 +31,6 @@ OBJS= bitstream.o \
       cabac.o\
       faandct.o \
       parser.o \
-      vp3dsp.o \
       h264idct.o \
       rangecoder.o \
       h263.o \
@@ -162,7 +161,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1.o
 OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
-OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o
+OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o vp3dsp.o
 OBJS-$(CONFIG_THP_DECODER)             += mjpeg.o jpeglsdec.o jpegls.o
 OBJS-$(CONFIG_TIERTEXSEQVIDEO_DECODER) += tiertexseqv.o
 OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o lzw.o
@@ -182,9 +181,9 @@ OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdav.o
 OBJS-$(CONFIG_VMNC_DECODER)            += vmnc.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += vorbis_dec.o vorbis.o vorbis_data.o xiph.o
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbis_enc.o vorbis.o vorbis_data.o
-OBJS-$(CONFIG_VP3_DECODER)             += vp3.o
-OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o
-OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o
+OBJS-$(CONFIG_VP3_DECODER)             += vp3.o vp3dsp.o
+OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp3dsp.o
+OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp3dsp.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
 OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o wma.o
@@ -337,14 +336,15 @@ OBJS += i386/fdct_mmx.o \
         i386/simple_idct_mmx.o \
         i386/idct_mmx_xvid.o \
         i386/fft_sse.o \
-        i386/vp3dsp_mmx.o \
-        i386/vp3dsp_sse2.o \
         i386/fft_3dn.o \
         i386/fft_3dn2.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
+OBJS-$(CONFIG_VP3_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+OBJS-$(CONFIG_VP5_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 endif
 
 ASM_OBJS-$(TARGET_ARCH_ARMV4L)         += armv4l/jrevdct_arm.o     \
