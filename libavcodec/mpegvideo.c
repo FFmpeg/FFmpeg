@@ -1197,8 +1197,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        s->mjpeg_write_tables = 1;
-        s->mjpeg_data_only_frames = 0; /* write all the needed headers */
         s->mjpeg_vsample[0] = 2;
         s->mjpeg_vsample[1] = 2>>chroma_v_shift;
         s->mjpeg_vsample[2] = 2>>chroma_v_shift;

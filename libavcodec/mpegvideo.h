@@ -589,8 +589,6 @@ typedef struct MpegEncContext {
     struct MJpegContext *mjpeg_ctx;
     int mjpeg_vsample[3];       ///< vertical sampling factors, default = {2, 1, 1}
     int mjpeg_hsample[3];       ///< horizontal sampling factors, default = {2, 1, 1}
-    int mjpeg_write_tables;     ///< do we want to have quantisation- and huffmantables in the jpeg file ?
-    int mjpeg_data_only_frames; ///< frames only with SOI, SOS and EOI markers
 
     /* MSMPEG4 specific */
     int mv_table_index;
