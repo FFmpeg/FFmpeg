@@ -1800,7 +1800,7 @@ static void pred4x4_vertical_right_c(uint8_t *src, uint8_t *topright, int stride
     const int lt= src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const __attribute__((unused)) int unu= l3;
+    const attribute_unused int unu= l3;
 
     src[0+0*stride]=
     src[1+2*stride]=(lt + t0 + 1)>>1;
@@ -1823,7 +1823,7 @@ static void pred4x4_vertical_right_c(uint8_t *src, uint8_t *topright, int stride
 static void pred4x4_vertical_left_c(uint8_t *src, uint8_t *topright, int stride){
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
-    const __attribute__((unused)) int unu= t7;
+    const attribute_unused int unu= t7;
 
     src[0+0*stride]=(t0 + t1 + 1)>>1;
     src[1+0*stride]=
@@ -1868,7 +1868,7 @@ static void pred4x4_horizontal_down_c(uint8_t *src, uint8_t *topright, int strid
     const int lt= src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const __attribute__((unused)) int unu= t3;
+    const attribute_unused int unu= t3;
 
     src[0+0*stride]=
     src[2+1*stride]=(lt + l0 + 1)>>1;
@@ -5655,7 +5655,7 @@ static inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     return ctx + 4 * cat;
 }
 
-static const __attribute((used)) uint8_t last_coeff_flag_offset_8x8[63] = {
+static const attribute_used uint8_t last_coeff_flag_offset_8x8[63] = {
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,

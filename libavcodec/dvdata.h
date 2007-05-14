@@ -2534,7 +2534,7 @@ static const uint8_t dv_audio_shuffle625[12][9] = {
   {  31,  67, 103,  21,  57,  93,  11,  47,  83},
 };
 
-static const __attribute__((unused)) int dv_audio_frequency[3] = {
+static const attribute_unused int dv_audio_frequency[3] = {
     48000, 44100, 32000,
 };
 

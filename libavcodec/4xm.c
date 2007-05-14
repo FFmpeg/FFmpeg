@@ -555,7 +555,7 @@ static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     uint16_t *dst= (uint16_t*)f->current_picture.data[0];
     const int stride= f->current_picture.linesize[0]>>1;
     const unsigned int bitstream_size= get32(buf);
-    const int token_count __attribute__((unused)) = get32(buf + bitstream_size + 8);
+    const int token_count attribute_unused = get32(buf + bitstream_size + 8);
     unsigned int prestream_size= 4*get32(buf + bitstream_size + 4);
     uint8_t *prestream= buf + bitstream_size + 12;
 
