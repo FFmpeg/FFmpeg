@@ -480,7 +480,6 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
         N??11111
         N??11111
         N??11111
-        N
     */
 
     for (m=0; m < 2; m++) {
@@ -939,7 +938,8 @@ static int svq3_decode_frame (AVCodecContext *avctx,
       int j;
       for(j=-1; j<4; j++)
         h->ref_cache[m][scan8[0] + 8*i + j]= 1;
-      h->ref_cache[m][scan8[0] + 8*i + j]= PART_NOT_AVAILABLE;
+      if(i<3)
+        h->ref_cache[m][scan8[0] + 8*i + j]= PART_NOT_AVAILABLE;
     }
   }
 
