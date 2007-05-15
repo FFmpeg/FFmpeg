@@ -21,16 +21,26 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#ifdef __MINGW32__
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#define ff_neterrno() WSAGetLastError()
+#define FF_NETERROR(err) WSA##err
+#define WSAEAGAIN WSAEWOULDBLOCK
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
 #include <netdb.h>
 
 #define ff_neterrno() errno
 #define FF_NETERROR(err) err
+#endif
+
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 int ff_socket_nonblock(int socket, int enable);
 
