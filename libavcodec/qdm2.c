@@ -129,7 +129,7 @@ typedef struct {
 } QDM2Complex;
 
 typedef struct {
-    QDM2Complex complex[256 + 1] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(QDM2Complex, complex[256 + 1]);
     float       samples_im[MPA_MAX_CHANNELS][256];
     float       samples_re[MPA_MAX_CHANNELS][256];
 } QDM2FFT;
@@ -182,9 +182,9 @@ typedef struct {
     float output_buffer[1024];
 
     /// Synthesis filter
-    MPA_INT synth_buf[MPA_MAX_CHANNELS][512*2] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512*2]);
     int synth_buf_offset[MPA_MAX_CHANNELS];
-    int32_t sb_samples[MPA_MAX_CHANNELS][128][SBLIMIT] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][128][SBLIMIT]);
 
     /// Mixed temporary data used in decoding
     float tone_level[MPA_MAX_CHANNELS][30][64];
@@ -229,7 +229,7 @@ static uint8_t random_dequant_index[256][5];
 static uint8_t random_dequant_type24[128][3];
 static float noise_samples[128];
 
-static MPA_INT mpa_window[512] __attribute__((aligned(16)));
+static DECLARE_ALIGNED_16(MPA_INT, mpa_window[512]);
 
 
 static void softclip_table_init(void) {

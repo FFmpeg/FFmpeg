@@ -79,9 +79,9 @@ typedef struct MPADecodeContext {
     int mode;
     int mode_ext;
     int lsf;
-    MPA_INT synth_buf[MPA_MAX_CHANNELS][512 * 2] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512 * 2]);
     int synth_buf_offset[MPA_MAX_CHANNELS];
-    int32_t sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT] __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT]);
     int32_t mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
 #ifdef DEBUG
     int frame_count;
@@ -170,7 +170,7 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
 
-static MPA_INT window[512] __attribute__((aligned(16)));
+static DECLARE_ALIGNED_16(MPA_INT, window[512]);
 
 /* layer 1 unscaling */
 /* n = number of bits of the mantissa minus 1 */
