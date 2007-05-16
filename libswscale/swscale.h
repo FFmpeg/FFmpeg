@@ -29,10 +29,6 @@
 
 #include "avutil.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
@@ -141,9 +137,5 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int srcW, int srcH, int srcFormat,
                                         int dstW, int dstH, int dstFormat, int flags,
                                         SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
