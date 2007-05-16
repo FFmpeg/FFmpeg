@@ -27,10 +27,6 @@
  */
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
@@ -128,10 +124,6 @@ enum PixelFormat {
 #define PIX_FMT_UYVY411 PIX_FMT_UYYVYY411
 #define PIX_FMT_RGBA32  PIX_FMT_RGB32
 #define PIX_FMT_YUV422  PIX_FMT_YUYV422
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif /* AVUTIL_H */

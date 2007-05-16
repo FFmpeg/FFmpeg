@@ -27,10 +27,6 @@
  *     external api for the pp stuff
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LIBPOSTPROC_VERSION_INT ((51<<16)+(1<<8)+0)
 #define LIBPOSTPROC_VERSION     51.1.0
 #define LIBPOSTPROC_BUILD       LIBPOSTPROC_VERSION_INT
@@ -76,9 +72,5 @@ void pp_free_context(pp_context_t *ppContext);
 #define PP_FORMAT_444    (0x00000000|PP_FORMAT)
 
 #define PP_PICT_TYPE_QP2  0x00000010 ///< MPEG2 style QScale
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
