@@ -266,13 +266,15 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     /* Lets see if we have enough data to construct one DV frame */
     if (c->has_video == 1 && c->has_audio + 1 == 1<<c->n_ast) {
         dv_inject_metadata(c, *frame);
+        c->has_audio = 0;
         for (i=0; i<c->n_ast; i++) {
              dv_inject_audio(c, i, *frame);
              av_fifo_drain(&c->audio_data[i], reqasize);
+             c->has_audio |= ((reqasize <= av_fifo_size(&c->audio_data[i])) << i);
         }
 
         c->has_video = 0;
-        c->has_audio = 0;
+
         c->frames++;
 
         return c->sys->frame_size;
