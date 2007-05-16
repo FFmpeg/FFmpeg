@@ -322,3 +322,15 @@ void ff_vp3_idct_mmx(int16_t *output_data)
 #undef J
 
 }
+
+void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_mmx(block);
+    put_signed_pixels_clamped_mmx(block, dest, line_size);
+}
+
+void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_mmx(block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
