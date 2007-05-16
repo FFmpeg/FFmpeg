@@ -55,6 +55,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[5*i] = s16[5*i+1] = s16[5*i+2] = s16[5*i+3] = 0;
             s16[5*i+4] = convert(f[i]);
         }
+        break;
     case DTS_CHANNEL:
     case DTS_STEREO:
     case DTS_DOLBY:
@@ -62,6 +63,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[2*i] = convert(f[i]);
             s16[2*i+1] = convert(f[i+256]);
         }
+        break;
     case DTS_3F:
         for(i = 0; i < 256; i++){
             s16[5*i] = convert(f[i+256]);
@@ -69,6 +71,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[5*i+2] = s16[5*i+3] = 0;
             s16[5*i+4] = convert(f[i]);
         }
+        break;
     case DTS_2F2R:
         for(i = 0; i < 256; i++){
             s16[4*i] = convert(f[i]);
@@ -76,6 +79,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[4*i+2] = convert(f[i+512]);
             s16[4*i+3] = convert(f[i+768]);
         }
+        break;
     case DTS_3F2R:
         for(i = 0; i < 256; i++){
             s16[5*i] = convert(f[i+256]);
@@ -84,12 +88,14 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[5*i+3] = convert(f[i+1024]);
             s16[5*i+4] = convert(f[i]);
         }
+        break;
     case DTS_MONO | DTS_LFE:
         for(i = 0; i < 256; i++){
             s16[6*i] = s16[6*i+1] = s16[6*i+2] = s16[6*i+3] = 0;
             s16[6*i+4] = convert(f[i]);
             s16[6*i+5] = convert(f[i+256]);
         }
+        break;
     case DTS_CHANNEL | DTS_LFE:
     case DTS_STEREO | DTS_LFE:
     case DTS_DOLBY | DTS_LFE:
@@ -99,6 +105,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[6*i+2] = s16[6*i+3] = s16[6*i+4] = 0;
             s16[6*i+5] = convert(f[i+512]);
         }
+        break;
     case DTS_3F | DTS_LFE:
         for(i = 0; i < 256; i++){
             s16[6*i] = convert(f[i+256]);
@@ -107,6 +114,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[6*i+4] = convert(f[i]);
             s16[6*i+5] = convert(f[i+768]);
         }
+        break;
     case DTS_2F2R | DTS_LFE:
         for(i = 0; i < 256; i++){
             s16[6*i] = convert(f[i]);
@@ -116,6 +124,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[6*i+4] = 0;
             s16[6*i+5] = convert(f[i+1024]);
         }
+        break;
     case DTS_3F2R | DTS_LFE:
         for(i = 0; i < 256; i++){
             s16[6*i] = convert(f[i+256]);
@@ -125,6 +134,7 @@ convert2s16_multi(sample_t *f, int16_t *s16, int flags)
             s16[6*i+4] = convert(f[i]);
             s16[6*i+5] = convert(f[i+1280]);
         }
+        break;
     }
 }
 
