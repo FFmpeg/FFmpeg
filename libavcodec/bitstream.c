@@ -113,7 +113,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
     table_size = 1 << table_nb_bits;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_STATIC);
 #ifdef DEBUG_VLC
-    printf("new table index=%d size=%d code_prefix=%x n=%d\n",
+    av_log(NULL,AV_LOG_DEBUG,"new table index=%d size=%d code_prefix=%x n=%d\n",
            table_index, table_size, code_prefix, n_prefix);
 #endif
     if (table_index < 0)
@@ -133,7 +133,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
         if (n <= 0)
             continue;
 #if defined(DEBUG_VLC) && 0
-        printf("i=%d n=%d code=0x%x\n", i, n, code);
+        av_log(NULL,AV_LOG_DEBUG,"i=%d n=%d code=0x%x\n", i, n, code);
 #endif
         /* if code matches the prefix, it is in the table */
         n -= n_prefix;
@@ -165,7 +165,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
                 n -= table_nb_bits;
                 j = (code >> ((flags & INIT_VLC_LE) ? n_prefix : n)) & ((1 << table_nb_bits) - 1);
 #ifdef DEBUG_VLC
-                printf("%4x: n=%d (subtable)\n",
+                av_log(NULL,AV_LOG_DEBUG,"%4x: n=%d (subtable)\n",
                        j, n);
 #endif
                 /* compute table size */
@@ -244,7 +244,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
     }
 
 #ifdef DEBUG_VLC
-    printf("build table nb_codes=%d\n", nb_codes);
+    av_log(NULL,AV_LOG_DEBUG,"build table nb_codes=%d\n", nb_codes);
 #endif
 
     if (build_table(vlc, nb_bits, nb_codes,
