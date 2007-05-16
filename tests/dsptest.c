@@ -22,16 +22,16 @@
 #include "mpegvideo.h"
 #include "mpeg12data.h"
 #include "mpeg4data.h"
-#include "../libavcodec/i386/cputest.c"
-#include "../libavcodec/i386/dsputil_mmx.c"
+#include "cputest.c"
+#include "dsputil_mmx.c"
 
-#include "../libavcodec/i386/fdct_mmx.c"
-#include "../libavcodec/i386/idct_mmx.c"
-#include "../libavcodec/i386/motion_est_mmx.c"
-#include "../libavcodec/i386/simple_idct_mmx.c"
-#include "../libavcodec/dsputil.c"
-#include "../libavcodec/simple_idct.c"
-#include "../libavcodec/jfdctfst.c"
+#include "fdct_mmx.c"
+#include "idct_mmx.c"
+#include "motion_est_mmx.c"
+#include "simple_idct_mmx.c"
+#include "dsputil.c"
+#include "simple_idct.c"
+#include "jfdctfst.c"
 
 #undef TESTCPU_MAIN
 
