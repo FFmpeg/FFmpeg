@@ -23,8 +23,8 @@
 
 #include <unistd.h>
 #include <bits/bfin_sram.h>
-#include "../avcodec.h"
-#include "../dsputil.h"
+#include "avcodec.h"
+#include "dsputil.h"
 
 #define USE_L1CODE
 

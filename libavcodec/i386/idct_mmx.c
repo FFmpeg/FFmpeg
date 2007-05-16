@@ -20,7 +20,7 @@
  */
 
 #include "common.h"
-#include "../dsputil.h"
+#include "dsputil.h"
 
 #include "mmx.h"
 

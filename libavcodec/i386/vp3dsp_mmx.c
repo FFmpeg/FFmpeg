@@ -23,7 +23,7 @@
  * MMX-optimized functions cribbed from the original VP3 source code.
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 #include "mmx.h"
 
 #define IdctAdjustBeforeShift 8

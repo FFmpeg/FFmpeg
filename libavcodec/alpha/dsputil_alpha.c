@@ -20,7 +20,7 @@
  */
 
 #include "asm.h"
-#include "../dsputil.h"
+#include "dsputil.h"
 
 extern void simple_idct_axp(DCTELEM *block);
 extern void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block);

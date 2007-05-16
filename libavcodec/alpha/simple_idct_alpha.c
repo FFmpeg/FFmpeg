@@ -27,7 +27,7 @@
  */
 
 #include "asm.h"
-#include "../dsputil.h"
+#include "dsputil.h"
 
 extern void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
                                         int line_size);

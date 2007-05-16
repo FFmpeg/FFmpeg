@@ -20,7 +20,7 @@
  *
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 
 #include "gcc_fixes.h"
 

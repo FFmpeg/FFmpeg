@@ -22,9 +22,9 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
-#include "../dsputil.h"
-#include "../simple_idct.h"
-#include "../mpegvideo.h"
+#include "dsputil.h"
+#include "simple_idct.h"
+#include "mpegvideo.h"
 #include "x86_cpu.h"
 #include "mmx.h"
 

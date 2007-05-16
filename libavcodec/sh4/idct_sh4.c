@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 #define c1      1.38703984532214752434  /* sqrt(2)*cos(1*pi/16) */
 #define c2      1.30656296487637657577  /* sqrt(2)*cos(2*pi/16) */
 #define c3      1.17587560241935884520  /* sqrt(2)*cos(3*pi/16) */

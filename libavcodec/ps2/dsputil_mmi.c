@@ -22,7 +22,7 @@
  * clear_blocks_mmi() by BroadQ
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 #include "mmi.h"
 
 void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);

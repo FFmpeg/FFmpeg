@@ -18,7 +18,7 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "../dsputil.h"
+#include "dsputil.h"
 
 static const int p1p1p1m1[4] __attribute__((aligned(16))) =
     { 0, 0, 0, 1 << 31 };

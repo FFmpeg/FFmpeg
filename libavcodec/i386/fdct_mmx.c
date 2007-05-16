@@ -30,7 +30,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "common.h"
-#include "../dsputil.h"
+#include "dsputil.h"
 #include "mmx.h"
 
 #define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))

@@ -20,8 +20,8 @@
  */
 
 #include "asm.h"
-#include "../dsputil.h"
-#include "../mpegvideo.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
 
 static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
                                     int n, int qscale)

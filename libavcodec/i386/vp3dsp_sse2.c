@@ -23,7 +23,7 @@
  * SSE2-optimized functions cribbed from the original VP3 source code.
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 #include "mmx.h"
 
 static DECLARE_ALIGNED_16(const unsigned short, SSE2_dequant_const[]) =

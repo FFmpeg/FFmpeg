@@ -26,8 +26,8 @@
  *
 */
 
-#include "../common.h"
-#include "../dsputil.h"
+#include "common.h"
+#include "dsputil.h"
 #include "mmi.h"
 
 #define BITS_INV_ACC    5       // 4 or 5 for IEEE

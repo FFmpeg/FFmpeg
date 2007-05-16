@@ -21,8 +21,8 @@
  */
 
 
-#include "../avcodec.h"
-#include "../dsputil.h"
+#include "avcodec.h"
+#include "dsputil.h"
 
 
 #define         LP(p)           *(uint32_t*)(p)

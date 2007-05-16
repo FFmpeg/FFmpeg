@@ -19,9 +19,9 @@
  *
  */
 
-#include "../dsputil.h"
-#include "../mpegvideo.h"
-#include "../avcodec.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "avcodec.h"
 
 extern void MPV_common_init_iwmmxt(MpegEncContext *s);
 extern void MPV_common_init_armv5te(MpegEncContext *s);

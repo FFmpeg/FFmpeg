@@ -31,7 +31,7 @@
 #include <signal.h>
 #include <setjmp.h>
 
-#include "../dsputil.h"
+#include "dsputil.h"
 
 #include "vis.h"
 

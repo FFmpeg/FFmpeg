@@ -21,11 +21,11 @@
  *
  */
 
-#include "../dsputil.h"
+#include "dsputil.h"
 
 #include "gcc_fixes.h"
 #include "dsputil_altivec.h"
-#include "../snow.h"
+#include "snow.h"
 
 #undef NDEBUG
 #include <assert.h>

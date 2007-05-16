@@ -25,9 +25,9 @@
  * Instructions timings and optimization guide for ARM9E: http://www.arm.com/pdfs/DDI0222B_9EJS_r1p2.pdf
  */
 
-#include "../dsputil.h"
-#include "../mpegvideo.h"
-#include "../avcodec.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "avcodec.h"
 
 
 #ifdef ENABLE_ARM_TESTS

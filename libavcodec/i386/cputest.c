@@ -21,7 +21,7 @@
  */
 
 #include <stdlib.h>
-#include "../dsputil.h"
+#include "dsputil.h"
 
 #undef printf
 

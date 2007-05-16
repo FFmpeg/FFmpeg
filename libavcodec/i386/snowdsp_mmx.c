@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../avcodec.h"
-#include "../snow.h"
+#include "avcodec.h"
+#include "snow.h"
 #include "x86_cpu.h"
 
 void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){

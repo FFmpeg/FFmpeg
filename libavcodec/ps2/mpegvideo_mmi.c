@@ -20,9 +20,9 @@
  * MMI optimization by Leon van Stuivenberg
  */
 
-#include "../dsputil.h"
-#include "../mpegvideo.h"
-#include "../avcodec.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "avcodec.h"
 
 static void dct_unquantize_h263_mmi(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
