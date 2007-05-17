@@ -909,13 +909,13 @@ fi
 
 FFMPEG_CONFIGURATION="$@"
 
-ENCODER_LIST=`sed -n 's/^[^#]*ENC.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
-DECODER_LIST=`sed -n 's/^[^#]*DEC.*, *\(.*\)).*/\1_decoder/p' "$source_path/libavcodec/allcodecs.c"`
-PARSER_LIST=`sed -n 's/^[^#]*PARSER.*, *\(.*\)).*/\1_parser/p' "$source_path/libavcodec/allcodecs.c"`
-BSF_LIST=`sed -n 's/^[^#]*BSF.*, *\(.*\)).*/\1_bsf/p' "$source_path/libavcodec/allcodecs.c"`
-MUXER_LIST=`sed -n 's/^[^#]*_MUX.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
-DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
-PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
+ENCODER_LIST=`sed -n 's/^[^#]*ENC.*(.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
+DECODER_LIST=`sed -n 's/^[^#]*DEC.*(.*, *\(.*\)).*/\1_decoder/p' "$source_path/libavcodec/allcodecs.c"`
+PARSER_LIST=`sed -n 's/^[^#]*PARSER.*(.*, *\(.*\)).*/\1_parser/p' "$source_path/libavcodec/allcodecs.c"`
+BSF_LIST=`sed -n 's/^[^#]*BSF.*(.*, *\(.*\)).*/\1_bsf/p' "$source_path/libavcodec/allcodecs.c"`
+MUXER_LIST=`sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
+DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
+PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*(.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
 enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST
 
