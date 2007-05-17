@@ -180,7 +180,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint
 
 /* this code assume that stride % 16 == 0 */
 void put_no_rnd_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
-    signed int ABCD[4] __attribute__((aligned(16))) =
+   DECLARE_ALIGNED_16(signed int, ABCD[4]) =
                         {((8 - x) * (8 - y)),
                           ((x) * (8 - y)),
                           ((8 - x) * (y)),

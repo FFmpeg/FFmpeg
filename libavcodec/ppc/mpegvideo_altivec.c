@@ -523,17 +523,17 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
 
     {
       register const_vector signed short vczero = (const_vector signed short)vec_splat_s16(0);
-      short __attribute__ ((aligned(16))) qmul8[] =
+      DECLARE_ALIGNED_16(short, qmul8[]) =
           {
             qmul, qmul, qmul, qmul,
             qmul, qmul, qmul, qmul
           };
-      short __attribute__ ((aligned(16))) qadd8[] =
+      DECLARE_ALIGNED_16(short, qadd8[]) =
           {
             qadd, qadd, qadd, qadd,
             qadd, qadd, qadd, qadd
           };
-      short __attribute__ ((aligned(16))) nqadd8[] =
+      DECLARE_ALIGNED_16(short, nqadd8[]) =
           {
             -qadd, -qadd, -qadd, -qadd,
             -qadd, -qadd, -qadd, -qadd

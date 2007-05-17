@@ -21,7 +21,7 @@
 /* this code assume that stride % 16 == 0 */
 void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
-    signed int ABCD[4] __attribute__((aligned(16))) =
+    DECLARE_ALIGNED_16(signed int, ABCD[4]) =
                         {((8 - x) * (8 - y)),
                           ((x) * (8 - y)),
                           ((8 - x) * (y)),

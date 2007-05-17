@@ -56,7 +56,7 @@ static void sigill_handler (int sig)
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix2iv, avgv, t5;
@@ -103,7 +103,7 @@ int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h
 int sad16_y2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix3v, avgv, t5;
@@ -163,7 +163,7 @@ int sad16_y2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h
 int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     uint8_t *pix3 = pix2 + line_size;
     const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     const_vector unsigned short two = (const_vector unsigned short)vec_splat_u16(2);
@@ -264,7 +264,7 @@ int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int 
 int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
@@ -306,7 +306,7 @@ int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);;
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
@@ -351,7 +351,7 @@ int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 int pix_norm1_altivec(uint8_t *pix, int line_size)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char *tv;
     vector unsigned char pixv;
@@ -387,7 +387,7 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
 int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
@@ -443,7 +443,7 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
@@ -495,7 +495,7 @@ int pix_sum_altivec(uint8_t * pix, int line_size)
     vector signed int sumdiffs;
 
     int i;
-    int s __attribute__((aligned(16)));
+    DECLARE_ALIGNED_16(int, s);
 
     sad = (vector unsigned int)vec_splat_u32(0);
 
