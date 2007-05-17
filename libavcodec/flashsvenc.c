@@ -218,7 +218,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
     /* First frame needs to be a keyframe */
     if (avctx->frame_number == 0) {
-        s->previous_frame = av_mallocz(abs(p->linesize[0])*s->image_height);
+        s->previous_frame = av_mallocz(FFABS(p->linesize[0])*s->image_height);
         if (!s->previous_frame) {
             av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
             return -1;
@@ -253,7 +253,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
     if(p->linesize[0] > 0)
         memcpy(s->previous_frame, p->data[0], s->image_height*p->linesize[0]);
     else
-        memcpy(s->previous_frame, p->data[0] + p->linesize[0] * (s->image_height-1), s->image_height*abs(p->linesize[0]));
+        memcpy(s->previous_frame, p->data[0] + p->linesize[0] * (s->image_height-1), s->image_height*FFABS(p->linesize[0]));
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
