@@ -295,8 +295,8 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
         av_log(avctx, AV_LOG_ERROR, "buf_size %d < res %d\n", buf_size, res);
 
 #else
-    opt_w=1;
-    opt_h=1;
+    opt_w=4;
+    opt_h=4;
 
     if (buf_size < s->image_width*s->image_height*3) {
         //Conservative upper bound check for compressed data
