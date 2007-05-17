@@ -103,8 +103,18 @@ ffmpeg.o ffplay.o ffserver.o: version.h
 videohook: .libs
 	$(MAKE) -C vhook all
 
-documentation:
-	$(MAKE) -C doc all
+documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
+                                 ffplay-doc.html hooks.html $(ALLMANPAGES))
+
+doc/%.html: doc/%.texi
+	texi2html -monolithic -number $<
+	mv $(@F) $@
+
+doc/%.pod: doc/%-doc.texi
+	doc/texi2pod.pl $< $@
+
+doc/%.1: doc/%.pod
+	pod2man --section=1 --center=" " --release=" " $< > $@
 
 install: install-progs install-libs install-headers
 
@@ -206,9 +216,9 @@ clean:
 	$(MAKE) -C libswscale  clean
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
-	$(MAKE) -C doc         clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF) qt-faststart$(EXESUF) cws2fws$(EXESUF)
+	rm -f doc/*.html doc/*.pod doc/*.1
 
 distclean: clean
 	$(MAKE) -C libavutil   distclean
