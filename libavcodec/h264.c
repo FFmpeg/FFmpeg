@@ -1733,22 +1733,22 @@ static void pred4x4_128_dc_c(uint8_t *src, uint8_t *topright, int stride){
 
 
 #define LOAD_TOP_RIGHT_EDGE\
-    const int t4= topright[0];\
-    const int t5= topright[1];\
-    const int t6= topright[2];\
-    const int t7= topright[3];\
+    const int attribute_unused t4= topright[0];\
+    const int attribute_unused t5= topright[1];\
+    const int attribute_unused t6= topright[2];\
+    const int attribute_unused t7= topright[3];\
 
 #define LOAD_LEFT_EDGE\
-    const int l0= src[-1+0*stride];\
-    const int l1= src[-1+1*stride];\
-    const int l2= src[-1+2*stride];\
-    const int l3= src[-1+3*stride];\
+    const int attribute_unused l0= src[-1+0*stride];\
+    const int attribute_unused l1= src[-1+1*stride];\
+    const int attribute_unused l2= src[-1+2*stride];\
+    const int attribute_unused l3= src[-1+3*stride];\
 
 #define LOAD_TOP_EDGE\
-    const int t0= src[ 0-1*stride];\
-    const int t1= src[ 1-1*stride];\
-    const int t2= src[ 2-1*stride];\
-    const int t3= src[ 3-1*stride];\
+    const int attribute_unused t0= src[ 0-1*stride];\
+    const int attribute_unused t1= src[ 1-1*stride];\
+    const int attribute_unused t2= src[ 2-1*stride];\
+    const int attribute_unused t3= src[ 3-1*stride];\
 
 static void pred4x4_down_right_c(uint8_t *src, uint8_t *topright, int stride){
     const int lt= src[-1-1*stride];
@@ -1800,7 +1800,6 @@ static void pred4x4_vertical_right_c(uint8_t *src, uint8_t *topright, int stride
     const int lt= src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const attribute_unused int unu= l3;
 
     src[0+0*stride]=
     src[1+2*stride]=(lt + t0 + 1)>>1;
@@ -1823,7 +1822,6 @@ static void pred4x4_vertical_right_c(uint8_t *src, uint8_t *topright, int stride
 static void pred4x4_vertical_left_c(uint8_t *src, uint8_t *topright, int stride){
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
-    const attribute_unused int unu= t7;
 
     src[0+0*stride]=(t0 + t1 + 1)>>1;
     src[1+0*stride]=
@@ -1868,7 +1866,6 @@ static void pred4x4_horizontal_down_c(uint8_t *src, uint8_t *topright, int strid
     const int lt= src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const attribute_unused int unu= t3;
 
     src[0+0*stride]=
     src[2+1*stride]=(lt + l0 + 1)>>1;
