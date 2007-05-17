@@ -3348,7 +3348,7 @@ static inline void RENAME(duplicate)(uint8_t src[], int stride)
 static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2)
 {
-        PPContext __attribute__((aligned(8))) c= *c2; //copy to stack for faster access
+        DECLARE_ALIGNED(8, PPContext, c)= *c2; //copy to stack for faster access
         int x,y;
 #ifdef COMPILE_TIME_MODE
         const int mode= COMPILE_TIME_MODE;
@@ -3717,7 +3717,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                                 else if(mode & H_DEBLOCK)
                                 {
 #ifdef HAVE_ALTIVEC
-                                        unsigned char __attribute__ ((aligned(16))) tempBlock[272];
+                                        DECLARE_ALIGNED(16, unsigned char, tempBlock[272]);
                                         transpose_16x8_char_toPackedAlign_altivec(tempBlock, dstBlock - (4 + 1), stride);
 
                                         const int t=vertClassify_altivec(tempBlock-48, 16, &c);

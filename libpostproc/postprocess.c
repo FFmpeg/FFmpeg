@@ -106,14 +106,14 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#define NUM_BLOCKS_AT_ONCE 16 //not used yet
 
 #if defined(ARCH_X86)
-static uint64_t __attribute__((aligned(8))) attribute_used w05= 0x0005000500050005LL;
-static uint64_t __attribute__((aligned(8))) attribute_used w04= 0x0004000400040004LL;
-static uint64_t __attribute__((aligned(8))) attribute_used w20= 0x0020002000200020LL;
-static uint64_t __attribute__((aligned(8))) attribute_used b00= 0x0000000000000000LL;
-static uint64_t __attribute__((aligned(8))) attribute_used b01= 0x0101010101010101LL;
-static uint64_t __attribute__((aligned(8))) attribute_used b02= 0x0202020202020202LL;
-static uint64_t __attribute__((aligned(8))) attribute_used b08= 0x0808080808080808LL;
-static uint64_t __attribute__((aligned(8))) attribute_used b80= 0x8080808080808080LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, w05)= 0x0005000500050005LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, w04)= 0x0004000400040004LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, w20)= 0x0020002000200020LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, b00)= 0x0000000000000000LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, b01)= 0x0101010101010101LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, b02)= 0x0202020202020202LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, b08)= 0x0808080808080808LL;
+static DECLARE_ALIGNED(8, uint64_t attribute_used, b80)= 0x8080808080808080LL;
 #endif
 
 static uint8_t clip_table[3*256];
