@@ -192,4 +192,31 @@ typedef struct MJpegDecodeContext {
     int cur_scan; /* current scan, used by JPEG-LS */
 } MJpegDecodeContext;
 
+#define PREDICT(ret, topleft, top, left, predictor)\
+    switch(predictor){\
+        case 1: ret= left; break;\
+        case 2: ret= top; break;\
+        case 3: ret= topleft; break;\
+        case 4: ret= left   +   top - topleft; break;\
+        case 5: ret= left   + ((top - topleft)>>1); break;\
+        case 6: ret= top + ((left   - topleft)>>1); break;\
+        default:\
+        case 7: ret= (left + top)>>1; break;\
+    }
+
+extern const uint8_t bits_dc_luminance[];
+extern const uint8_t val_dc_luminance[];
+
+extern const uint8_t bits_dc_chrominance[];
+extern const uint8_t val_dc_chrominance[];
+
+extern const uint8_t bits_ac_luminance[];
+extern const uint8_t val_ac_luminance[];
+
+extern const uint8_t bits_ac_chrominance[];
+extern const uint8_t val_ac_chrominance[];
+
+void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                         const uint8_t *bits_table, const uint8_t *val_table);
+
 #endif /* MJPEG_H */
