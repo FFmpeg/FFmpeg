@@ -51,7 +51,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
     assert(nb_codes <= 256);
 
     memset(huff_size, 0, sizeof(huff_size));
-    build_huffman_codes(huff_size, huff_code, bits_table, val_table);
+    ff_mjpeg_build_huffman_codes(huff_size, huff_code, bits_table, val_table);
 
     if(is_ac){
         memmove(huff_size+16, huff_size, sizeof(uint8_t)*nb_codes);
@@ -77,10 +77,14 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     s->first_picture = 1;
     s->org_height = avctx->coded_height;
 
-    build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12, 0, 0);
-    build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12, 0, 0);
-    build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251, 0, 1);
-    build_vlc(&s->vlcs[1][1], bits_ac_chrominance, val_ac_chrominance, 251, 0, 1);
+    build_vlc(&s->vlcs[0][0], ff_mjpeg_bits_dc_luminance,
+              ff_mjpeg_val_dc_luminance, 12, 0, 0);
+    build_vlc(&s->vlcs[0][1], ff_mjpeg_bits_dc_chrominance,
+              ff_mjpeg_val_dc_chrominance, 12, 0, 0);
+    build_vlc(&s->vlcs[1][0], ff_mjpeg_bits_ac_luminance,
+              ff_mjpeg_val_ac_luminance, 251, 0, 1);
+    build_vlc(&s->vlcs[1][1], ff_mjpeg_bits_ac_chrominance,
+              ff_mjpeg_val_ac_chrominance, 251, 0, 1);
 
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
     {

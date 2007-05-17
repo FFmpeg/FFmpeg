@@ -62,19 +62,19 @@ const unsigned char std_chrominance_quant_tbl[64] = {
 
 /* Set up the standard Huffman tables (cf. JPEG standard section K.3) */
 /* IMPORTANT: these are only valid for 8-bit data precision! */
-const uint8_t bits_dc_luminance[17] =
+const uint8_t ff_mjpeg_bits_dc_luminance[17] =
 { /* 0-base */ 0, 0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 };
-const uint8_t val_dc_luminance[] =
+const uint8_t ff_mjpeg_val_dc_luminance[] =
 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
-const uint8_t bits_dc_chrominance[17] =
+const uint8_t ff_mjpeg_bits_dc_chrominance[17] =
 { /* 0-base */ 0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
-const uint8_t val_dc_chrominance[] =
+const uint8_t ff_mjpeg_val_dc_chrominance[] =
 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
-const uint8_t bits_ac_luminance[17] =
+const uint8_t ff_mjpeg_bits_ac_luminance[17] =
 { /* 0-base */ 0, 0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d };
-const uint8_t val_ac_luminance[] =
+const uint8_t ff_mjpeg_val_ac_luminance[] =
 { 0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12,
   0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
   0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xa1, 0x08,
@@ -98,10 +98,10 @@ const uint8_t val_ac_luminance[] =
   0xf9, 0xfa
 };
 
-const uint8_t bits_ac_chrominance[17] =
+const uint8_t ff_mjpeg_bits_ac_chrominance[17] =
 { /* 0-base */ 0, 0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77 };
 
-const uint8_t val_ac_chrominance[] =
+const uint8_t ff_mjpeg_val_ac_chrominance[] =
 { 0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21,
   0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
   0x13, 0x22, 0x32, 0x81, 0x08, 0x14, 0x42, 0x91,
@@ -126,8 +126,9 @@ const uint8_t val_ac_chrominance[] =
 };
 
 /* isn't this function nicer than the one in the libjpeg ? */
-void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
-                                const uint8_t *bits_table, const uint8_t *val_table)
+void ff_mjpeg_build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                                  const uint8_t *bits_table,
+                                  const uint8_t *val_table)
 {
     int i, j, k,nb, code, sym;
 
