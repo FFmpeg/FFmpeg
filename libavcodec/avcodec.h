@@ -2428,7 +2428,6 @@ extern AVCodec libamr_nb_decoder;
 extern AVCodec libamr_nb_encoder;
 extern AVCodec libamr_wb_decoder;
 extern AVCodec libamr_wb_encoder;
-extern AVCodec libdts_decoder;
 extern AVCodec libgsm_decoder;
 extern AVCodec libgsm_encoder;
 extern AVCodec libgsm_ms_decoder;

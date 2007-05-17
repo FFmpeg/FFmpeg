@@ -85,7 +85,6 @@ show_help(){
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
   echo "  --enable-libamr-nb       enable libamr-nb floating point audio codec"
   echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec"
-  echo "  --enable-libdts          enable GPLed libdts support [default=no]"
   echo "  --enable-libfaac         enable FAAC support via libfaac [default=no]"
   echo "  --enable-libfaad         enable FAAD support via libfaad [default=no]"
   echo "  --enable-libfaadbin      build FAAD support with runtime linking [default=no]"
@@ -578,7 +577,6 @@ CONFIG_LIST='
     libamr
     libamr_nb
     libamr_wb
-    libdts
     libfaac
     libfaad
     libfaadbin
@@ -710,7 +708,6 @@ libamr_nb_decoder_deps="libamr_nb"
 libamr_nb_encoder_deps="libamr_nb"
 libamr_wb_decoder_deps="libamr_wb"
 libamr_wb_encoder_deps="libamr_wb"
-libdts_decoder_deps="libdts"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -826,7 +823,6 @@ liba52="no"
 liba52bin="no"
 libamr_nb="no"
 libamr_wb="no"
-libdts="no"
 libfaac="no"
 libfaad2="no"
 libfaad="no"
@@ -1282,7 +1278,6 @@ if disabled gpl ; then
     die_gpl_disabled "liba52"                  liba52
     die_gpl_disabled "libxvidcore"             xvid
     die_gpl_disabled "x264"                    x264
-    die_gpl_disabled "libdts"                  libdts
     die_gpl_disabled "FAAD2"                   libfaad2
     die_gpl_disabled "The X11 grabber"         x11grab
     die_gpl_disabled "The software scaler"     swscaler
@@ -1619,7 +1614,6 @@ enabled_any libamr_nb libamr_wb && enable libamr
 enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
 enabled libamr_nb  && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
-enabled libdts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
@@ -1881,7 +1875,6 @@ echo "liba52 support            $liba52"
 echo "liba52 dlopened           $liba52bin"
 echo "libamr-nb support         $libamr_nb"
 echo "libamr-wb support         $libamr_wb"
-echo "libdts support            $libdts"
 echo "libfaac enabled           $libfaac"
 echo "libfaad enabled           $libfaad"
 echo "faadbin enabled           $libfaadbin"

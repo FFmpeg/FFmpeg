@@ -278,7 +278,6 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 # external codec libraries
 OBJS-$(CONFIG_LIBAMR)                  += amr.o
 OBJS-$(CONFIG_LIBA52)                  += a52dec.o
-OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
 OBJS-$(CONFIG_LIBFAAC)                 += faac.o
 OBJS-$(CONFIG_LIBFAAD)                 += faad.o
 OBJS-$(CONFIG_LIBGSM)                  += libgsm.o

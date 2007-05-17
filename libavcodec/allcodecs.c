@@ -178,7 +178,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (LIBAMR_NB, libamr_nb);
     REGISTER_ENCDEC (LIBAMR_WB, libamr_wb);
     REGISTER_DECODER(LIBA52, liba52);
-    REGISTER_DECODER(LIBDTS, libdts);
     REGISTER_ENCDEC (LIBGSM, libgsm);
     REGISTER_ENCDEC (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCODER(LIBTHEORA, libtheora);
