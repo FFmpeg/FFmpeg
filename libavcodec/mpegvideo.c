@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "faandct.h"
 #include <limits.h>

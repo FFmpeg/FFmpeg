@@ -905,14 +905,5 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                        DCTELEM block[6][64],
                        int motion_x, int motion_y);
 
-/* mjpeg.c */
-int mjpeg_init(MpegEncContext *s);
-void mjpeg_close(MpegEncContext *s);
-void mjpeg_encode_mb(MpegEncContext *s,
-                     DCTELEM block[6][64]);
-void mjpeg_picture_header(MpegEncContext *s);
-void mjpeg_picture_trailer(MpegEncContext *s);
-void ff_mjpeg_stuffing(PutBitContext * pbc);
-
 #endif /* AVCODEC_MPEGVIDEO_H */
 
