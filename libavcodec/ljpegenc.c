@@ -52,7 +52,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
-    mjpeg_picture_header(s);
+    ff_mjpeg_encode_picture_header(s);
 
     s->header_bits= put_bits_count(&s->pb);
 
@@ -96,9 +96,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
                     diff= ((left[i] - pred + 0x100)&0x1FF) - 0x100;
 
                     if(i==0)
-                        mjpeg_encode_dc(s, diff, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                        ff_mjpeg_encode_dc(s, diff, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                     else
-                        mjpeg_encode_dc(s, diff, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                        ff_mjpeg_encode_dc(s, diff, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                 }
             }
         }
@@ -141,9 +141,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
                                 }
 
                                 if(i==0)
-                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                    ff_mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                                 else
-                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                                    ff_mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                             }
                         }
                     }
@@ -164,9 +164,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
                                 PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
 
                                 if(i==0)
-                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                    ff_mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
                                 else
-                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                                    ff_mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
                             }
                         }
                     }
@@ -177,7 +177,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     emms_c();
 
-    mjpeg_picture_trailer(s);
+    ff_mjpeg_encode_picture_trailer(s);
     s->picture_number++;
 
     flush_put_bits(&s->pb);

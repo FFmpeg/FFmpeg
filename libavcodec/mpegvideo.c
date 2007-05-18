@@ -1204,7 +1204,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->mjpeg_hsample[0] = 2;
         s->mjpeg_hsample[1] = 2>>chroma_h_shift;
         s->mjpeg_hsample[2] = 2>>chroma_h_shift;
-        if (!(ENABLE_MJPEG_ENCODER || ENABLE_LJPEG_ENCODER) || mjpeg_init(s) < 0)
+        if (!(ENABLE_MJPEG_ENCODER || ENABLE_LJPEG_ENCODER)
+            || ff_mjpeg_encode_init(s) < 0)
             return -1;
         avctx->delay=0;
         s->low_delay=1;
@@ -1398,7 +1399,7 @@ int MPV_encode_end(AVCodecContext *avctx)
 
     MPV_common_end(s);
     if ((ENABLE_MJPEG_ENCODER || ENABLE_LJPEG_ENCODER) && s->out_format == FMT_MJPEG)
-        mjpeg_close(s);
+        ff_mjpeg_encode_close(s);
 
     av_freep(&avctx->extradata);
 
@@ -2544,7 +2545,7 @@ vbv_retry:
         MPV_frame_end(s);
 
         if (ENABLE_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
-            mjpeg_picture_trailer(s);
+            ff_mjpeg_encode_picture_trailer(s);
 
         if(avctx->rc_buffer_size){
             RateControlContext *rcc= &s->rc_context;
@@ -4594,7 +4595,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         h263_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_MJPEG:
         if (ENABLE_MJPEG_ENCODER)
-            mjpeg_encode_mb(s, s->block);
+            ff_mjpeg_encode_mb(s, s->block);
         break;
     default:
         assert(0);
@@ -4896,7 +4897,7 @@ static void write_slice_end(MpegEncContext *s){
 
         ff_mpeg4_stuffing(&s->pb);
     }else if(ENABLE_MJPEG_ENCODER && s->out_format == FMT_MJPEG){
-        ff_mjpeg_stuffing(&s->pb);
+        ff_mjpeg_encode_stuffing(&s->pb);
     }
 
     align_put_bits(&s->pb);
@@ -5763,7 +5764,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     switch(s->out_format) {
     case FMT_MJPEG:
         if (ENABLE_MJPEG_ENCODER)
-            mjpeg_picture_header(s);
+            ff_mjpeg_encode_picture_header(s);
         break;
     case FMT_H261:
         if (ENABLE_H261_ENCODER)

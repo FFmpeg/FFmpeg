@@ -48,13 +48,13 @@ typedef struct MJpegContext {
     uint16_t huff_code_ac_chrominance[256];
 } MJpegContext;
 
-int mjpeg_init(MpegEncContext *s);
-void mjpeg_close(MpegEncContext *s);
-void mjpeg_picture_header(MpegEncContext *s);
-void mjpeg_picture_trailer(MpegEncContext *s);
-void ff_mjpeg_stuffing(PutBitContext *pbc);
-void mjpeg_encode_dc(MpegEncContext *s, int val,
-                     uint8_t *huff_size, uint16_t *huff_code);
-void mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64]);
+int  ff_mjpeg_encode_init(MpegEncContext *s);
+void ff_mjpeg_encode_close(MpegEncContext *s);
+void ff_mjpeg_encode_picture_header(MpegEncContext *s);
+void ff_mjpeg_encode_picture_trailer(MpegEncContext *s);
+void ff_mjpeg_encode_stuffing(PutBitContext *pbc);
+void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
+                        uint8_t *huff_size, uint16_t *huff_code);
+void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
 #endif /* MJPEGENC_H */
