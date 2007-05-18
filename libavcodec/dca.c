@@ -1097,8 +1097,10 @@ static int dca_convert_bitstream(uint8_t * src, int src_size, uint8_t * dst,
     uint16_t *ssrc = (uint16_t *) src, *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
-    if((unsigned)src_size > (unsigned)max_size)
+    if((unsigned)src_size > (unsigned)max_size) {
+        av_log(NULL, AV_LOG_ERROR, "Input frame size larger then DCA_MAX_FRAME_SIZE!\n");
         return -1;
+    }
 
     mrk = AV_RB32(src);
     switch (mrk) {
@@ -1140,7 +1142,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
     s->dca_buffer_size = dca_convert_bitstream(buf, buf_size, s->dca_buffer, DCA_MAX_FRAME_SIZE);
     if (s->dca_buffer_size == -1) {
-        av_log(avctx, AV_LOG_ERROR, "Not a DCA frame\n");
+        av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
         return -1;
     }
 
