@@ -1309,11 +1309,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             snprintf(p, end-p, "\n");
             p++;
         }
-    }
+    } else
+        avctx->stats_out[0] = '\0';
     if(!(s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)){
         flush_put_bits(&s->pb);
         s->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
-        avctx->stats_out[0] = '\0';
     }
 
     s->picture_number++;
