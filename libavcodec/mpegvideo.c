@@ -6930,17 +6930,4 @@ AVCodec wmv1_encoder = {
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
 };
 
-#ifdef CONFIG_MJPEG_ENCODER
-AVCodec mjpeg_encoder = {
-    "mjpeg",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MJPEG,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
-};
-#endif
-
 #endif //CONFIG_ENCODERS

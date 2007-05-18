@@ -448,3 +448,14 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
         encode_block(s, block[7], 7);
     }
 }
+
+AVCodec mjpeg_encoder = {
+    "mjpeg",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MJPEG,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
+};
