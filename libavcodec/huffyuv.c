@@ -686,34 +686,43 @@ static int encode_422_bitstream(HYuvContext *s, int count){
         return -1;
     }
 
+#define LOAD4\
+            int y0 = s->temp[0][2*i];\
+            int y1 = s->temp[0][2*i+1];\
+            int u0 = s->temp[1][i];\
+            int v0 = s->temp[2][i];
+
     count/=2;
     if(s->flags&CODEC_FLAG_PASS1){
         for(i=0; i<count; i++){
-            s->stats[0][ s->temp[0][2*i  ] ]++;
-            s->stats[1][ s->temp[1][  i  ] ]++;
-            s->stats[0][ s->temp[0][2*i+1] ]++;
-            s->stats[2][ s->temp[2][  i  ] ]++;
+            LOAD4;
+            s->stats[0][y0]++;
+            s->stats[1][u0]++;
+            s->stats[0][y1]++;
+            s->stats[2][v0]++;
         }
     }
     if(s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)
         return 0;
     if(s->context){
         for(i=0; i<count; i++){
-            s->stats[0][ s->temp[0][2*i  ] ]++;
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
-            s->stats[1][ s->temp[1][  i  ] ]++;
-            put_bits(&s->pb, s->len[1][ s->temp[1][  i  ] ], s->bits[1][ s->temp[1][  i  ] ]);
-            s->stats[0][ s->temp[0][2*i+1] ]++;
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
-            s->stats[2][ s->temp[2][  i  ] ]++;
-            put_bits(&s->pb, s->len[2][ s->temp[2][  i  ] ], s->bits[2][ s->temp[2][  i  ] ]);
+            LOAD4;
+            s->stats[0][y0]++;
+            put_bits(&s->pb, s->len[0][y0], s->bits[0][y0]);
+            s->stats[1][u0]++;
+            put_bits(&s->pb, s->len[1][u0], s->bits[1][u0]);
+            s->stats[0][y1]++;
+            put_bits(&s->pb, s->len[0][y1], s->bits[0][y1]);
+            s->stats[2][v0]++;
+            put_bits(&s->pb, s->len[2][v0], s->bits[2][v0]);
         }
     }else{
         for(i=0; i<count; i++){
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
-            put_bits(&s->pb, s->len[1][ s->temp[1][  i  ] ], s->bits[1][ s->temp[1][  i  ] ]);
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
-            put_bits(&s->pb, s->len[2][ s->temp[2][  i  ] ], s->bits[2][ s->temp[2][  i  ] ]);
+            LOAD4;
+            put_bits(&s->pb, s->len[0][y0], s->bits[0][y0]);
+            put_bits(&s->pb, s->len[1][u0], s->bits[1][u0]);
+            put_bits(&s->pb, s->len[0][y1], s->bits[0][y1]);
+            put_bits(&s->pb, s->len[2][v0], s->bits[2][v0]);
         }
     }
     return 0;
@@ -727,11 +736,21 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
         return -1;
     }
 
+#define LOAD2\
+            int y0 = s->temp[0][2*i];\
+            int y1 = s->temp[0][2*i+1];
+#define STAT2\
+            s->stats[0][y0]++;\
+            s->stats[0][y1]++;
+#define WRITE2\
+            put_bits(&s->pb, s->len[0][y0], s->bits[0][y0]);\
+            put_bits(&s->pb, s->len[0][y1], s->bits[0][y1]);
+
     count/=2;
     if(s->flags&CODEC_FLAG_PASS1){
         for(i=0; i<count; i++){
-            s->stats[0][ s->temp[0][2*i  ] ]++;
-            s->stats[0][ s->temp[0][2*i+1] ]++;
+            LOAD2;
+            STAT2;
         }
     }
     if(s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)
@@ -739,15 +758,14 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
 
     if(s->context){
         for(i=0; i<count; i++){
-            s->stats[0][ s->temp[0][2*i  ] ]++;
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
-            s->stats[0][ s->temp[0][2*i+1] ]++;
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
+            LOAD2;
+            STAT2;
+            WRITE2;
         }
     }else{
         for(i=0; i<count; i++){
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
-            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
+            LOAD2;
+            WRITE2;
         }
     }
     return 0;
@@ -798,35 +816,34 @@ static int encode_bgr_bitstream(HYuvContext *s, int count){
         return -1;
     }
 
+#define LOAD3\
+            int g= s->temp[0][4*i+G];\
+            int b= (s->temp[0][4*i+B] - g) & 0xff;\
+            int r= (s->temp[0][4*i+R] - g) & 0xff;
+#define STAT3\
+            s->stats[0][b]++;\
+            s->stats[1][g]++;\
+            s->stats[2][r]++;
+#define WRITE3\
+            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);\
+            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);\
+            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);
+
     if((s->flags&CODEC_FLAG_PASS1) && (s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)){
         for(i=0; i<count; i++){
-            int g= s->temp[0][4*i+G];
-            int b= (s->temp[0][4*i+B] - g) & 0xff;
-            int r= (s->temp[0][4*i+R] - g) & 0xff;
-            s->stats[0][b]++;
-            s->stats[1][g]++;
-            s->stats[2][r]++;
+            LOAD3;
+            STAT3;
         }
     }else if(s->context || (s->flags&CODEC_FLAG_PASS1)){
         for(i=0; i<count; i++){
-            int g= s->temp[0][4*i+G];
-            int b= (s->temp[0][4*i+B] - g) & 0xff;
-            int r= (s->temp[0][4*i+R] - g) & 0xff;
-            s->stats[0][b]++;
-            s->stats[1][g]++;
-            s->stats[2][r]++;
-            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);
-            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);
-            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);
+            LOAD3;
+            STAT3;
+            WRITE3;
         }
     }else{
         for(i=0; i<count; i++){
-            int g= s->temp[0][4*i+G];
-            int b= (s->temp[0][4*i+B] - g) & 0xff;
-            int r= (s->temp[0][4*i+R] - g) & 0xff;
-            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);
-            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);
-            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);
+            LOAD3;
+            WRITE3;
         }
     }
     return 0;
