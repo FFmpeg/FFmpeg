@@ -79,15 +79,6 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          OUT_INT *samples, int incr,
                          int32_t sb_samples[SBLIMIT]);
 
-extern const uint16_t mpa_bitrate_tab[2][3][15];
-extern const uint16_t mpa_freq_tab[3];
-extern const unsigned char *alloc_tables[5];
-extern const double enwindow[512];
-extern const int sblimit_table[5];
-extern const int quant_steps[17];
-extern const int quant_bits[17];
-extern const int32_t mpa_enwindow[257];
-
 /* fast header check for resync */
 static inline int ff_mpa_check_header(uint32_t header){
     /* header */

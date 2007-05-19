@@ -19,7 +19,7 @@ OBJS= bitstream.o \
       motion_est.o \
       imgconvert.o \
       mpeg12.o \
-      mpegaudiodec.o \
+      mpegaudiodec.o mpegaudiodata.o \
       simple_idct.o \
       ratecontrol.o \
       eval.o \
@@ -107,7 +107,7 @@ OBJS-$(CONFIG_MJPEG_DECODER)           += mjpegdec.o mjpeg.o jpeglsdec.o jpegls.
 OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpeg.o mpegvideo.o
 OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpegdec.o mjpeg.o jpeglsdec.o jpegls.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
-OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o
+OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o msmpeg4data.o
@@ -308,7 +308,7 @@ OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += bitstream_filter.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += bitstream_filter.o
 OBJS-$(CONFIG_NOISE_BSF)               += bitstream_filter.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += bitstream_filter.o
-OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += bitstream_filter.o
+OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += bitstream_filter.o mpegaudiodata.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpegdec.o mjpeg.o jpeglsdec.o jpegls.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += mpeg12.o
 

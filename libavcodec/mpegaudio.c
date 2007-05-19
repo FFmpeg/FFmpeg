@@ -59,6 +59,7 @@ typedef struct MpegAudioContext {
 /* define it to use floats in quantization (I don't like floats !) */
 //#define USE_FLOATS
 
+#include "mpegaudiodata.h"
 #include "mpegaudiotab.h"
 
 static int MPA_encode_init(AVCodecContext *avctx)

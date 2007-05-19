@@ -132,6 +132,7 @@ typedef struct HuffTable {
     const uint16_t *codes;
 } HuffTable;
 
+#include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
 
 static void compute_antialias_integer(MPADecodeContext *s, GranuleDef *g);

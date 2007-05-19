@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "mpegaudio.h"
+#include "mpegaudiodata.h"
 
 AVBitStreamFilter *first_bitstream_filter= NULL;
 
