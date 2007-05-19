@@ -91,7 +91,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(INDEO2, indeo2);
     REGISTER_DECODER(INDEO3, indeo3);
     REGISTER_DECODER(INTERPLAY_VIDEO, interplay_video);
-    REGISTER_ENCODER(JPEGLS, jpegls);
+    REGISTER_ENCDEC (JPEGLS, jpegls);
     REGISTER_DECODER(KMVC, kmvc);
     REGISTER_ENCODER(LJPEG, ljpeg);
     REGISTER_DECODER(LOCO, loco);

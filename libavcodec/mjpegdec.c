@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mjpeg.h"
+#include "mjpegdec.h"
 #include "jpeglsdec.h"
 
 
@@ -63,7 +64,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
     return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, use_static);
 }
 
-static int mjpeg_decode_init(AVCodecContext *avctx)
+int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
 
@@ -802,7 +803,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         skip_bits(&s->gb, 8);
 
     if(s->lossless){
-        if(s->ls){
+        if(ENABLE_JPEGLS_DECODER && s->ls){
 //            for(){
 //            reset_ls_coding_parameters(s, 0);
 
@@ -1075,7 +1076,7 @@ found:
     return val;
 }
 
-static int mjpeg_decode_frame(AVCodecContext *avctx,
+int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
                               uint8_t *buf, int buf_size)
 {
@@ -1237,7 +1238,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         return -1;
                     break;
                 case LSE:
-                    if (ff_jpegls_decode_lse(s) < 0)
+                    if (!ENABLE_JPEGLS_DECODER || ff_jpegls_decode_lse(s) < 0)
                         return -1;
                     break;
                 case EOI:
@@ -1473,7 +1474,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     recoded[j++] = 0xFF;
     recoded[j++] = 0xD9;
 
-    i = mjpeg_decode_frame(avctx, data, data_size, recoded, j);
+    i = ff_mjpeg_decode_frame(avctx, data, data_size, recoded, j);
 
     av_free(recoded);
 
@@ -1572,7 +1573,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     return i;
 }
 
-static int mjpeg_decode_end(AVCodecContext *avctx)
+int ff_mjpeg_decode_end(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;
@@ -1592,10 +1593,10 @@ AVCodec mjpeg_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MJPEG,
     sizeof(MJpegDecodeContext),
-    mjpeg_decode_init,
+    ff_mjpeg_decode_init,
     NULL,
-    mjpeg_decode_end,
-    mjpeg_decode_frame,
+    ff_mjpeg_decode_end,
+    ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
     NULL
 };
@@ -1605,10 +1606,10 @@ AVCodec thp_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_THP,
     sizeof(MJpegDecodeContext),
-    mjpeg_decode_init,
+    ff_mjpeg_decode_init,
     NULL,
-    mjpeg_decode_end,
-    mjpeg_decode_frame,
+    ff_mjpeg_decode_end,
+    ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
     NULL
 };
@@ -1618,9 +1619,9 @@ AVCodec mjpegb_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MJPEGB,
     sizeof(MJpegDecodeContext),
-    mjpeg_decode_init,
+    ff_mjpeg_decode_init,
     NULL,
-    mjpeg_decode_end,
+    ff_mjpeg_decode_end,
     mjpegb_decode_frame,
     CODEC_CAP_DR1,
     NULL
@@ -1631,9 +1632,9 @@ AVCodec sp5x_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_SP5X,
     sizeof(MJpegDecodeContext),
-    mjpeg_decode_init,
+    ff_mjpeg_decode_init,
     NULL,
-    mjpeg_decode_end,
+    ff_mjpeg_decode_end,
     sp5x_decode_frame,
     CODEC_CAP_DR1,
     NULL

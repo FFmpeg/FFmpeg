@@ -29,6 +29,7 @@
 #include "bitstream.h"
 #include "golomb.h"
 #include "mjpeg.h"
+#include "mjpegdec.h"
 #include "jpegls.h"
 #include "jpeglsdec.h"
 
@@ -359,3 +360,16 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
 
     return 0;
 }
+
+
+AVCodec jpegls_decoder = {
+    "jpegls",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_JPEGLS,
+    sizeof(MJpegDecodeContext),
+    ff_mjpeg_decode_init,
+    NULL,
+    ff_mjpeg_decode_end,
+    ff_mjpeg_decode_frame,
+    CODEC_CAP_DR1,
+};

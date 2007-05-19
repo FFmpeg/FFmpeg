@@ -2282,6 +2282,7 @@ extern AVCodec indeo2_decoder;
 extern AVCodec indeo3_decoder;
 extern AVCodec interplay_dpcm_decoder;
 extern AVCodec interplay_video_decoder;
+extern AVCodec jpegls_decoder;
 extern AVCodec kmvc_decoder;
 extern AVCodec loco_decoder;
 extern AVCodec mace3_decoder;
