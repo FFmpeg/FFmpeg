@@ -27,7 +27,7 @@
 #include "mpegaudiodata.h"
 
 
-const uint16_t mpa_bitrate_tab[2][3][15] = {
+const uint16_t ff_mpa_bitrate_tab[2][3][15] = {
     { {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
       {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384 },
       {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320 } },
@@ -37,11 +37,11 @@ const uint16_t mpa_bitrate_tab[2][3][15] = {
     }
 };
 
-const uint16_t mpa_freq_tab[3] = { 44100, 48000, 32000 };
+const uint16_t ff_mpa_freq_tab[3] = { 44100, 48000, 32000 };
 
 /*******************************************************/
 /* half mpeg encoding window (full precision) */
-const int32_t mpa_enwindow[257] = {
+const int32_t ff_mpa_enwindow[257] = {
      0,    -1,    -1,    -1,    -1,    -1,    -1,    -2,
     -2,    -2,    -2,    -3,    -3,    -4,    -4,    -5,
     -5,    -6,    -7,    -7,    -8,    -9,   -10,   -11,
@@ -80,9 +80,9 @@ const int32_t mpa_enwindow[257] = {
 /*******************************************************/
 /* layer 2 tables */
 
-const int sblimit_table[5] = { 27 , 30 , 8, 12 , 30 };
+const int ff_mpa_sblimit_table[5] = { 27 , 30 , 8, 12 , 30 };
 
-const int quant_steps[17] = {
+const int ff_mpa_quant_steps[17] = {
     3,     5,    7,    9,    15,
     31,    63,  127,  255,   511,
     1023,  2047, 4095, 8191, 16383,
@@ -90,7 +90,7 @@ const int quant_steps[17] = {
 };
 
 /* we use a negative value if grouped */
-const int quant_bits[17] = {
+const int ff_mpa_quant_bits[17] = {
     -5,  -7,  3, -10, 4,
      5,  6,  7,  8,  9,
     10, 11, 12, 13, 14,
@@ -221,5 +221,5 @@ static const unsigned char alloc_table_4[] = {
  2,  0,  1,  3,
 };
 
-const unsigned char *alloc_tables[5] =
+const unsigned char *ff_mpa_alloc_tables[5] =
 { alloc_table_0, alloc_table_1, alloc_table_2, alloc_table_3, alloc_table_4, };

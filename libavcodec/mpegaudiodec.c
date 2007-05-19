@@ -825,7 +825,7 @@ void ff_mpa_synth_init(MPA_INT *window)
     /* max = 18760, max sum over all 16 coefs : 44736 */
     for(i=0;i<257;i++) {
         int v;
-        v = mpa_enwindow[i];
+        v = ff_mpa_enwindow[i];
 #if WFRAC_BITS < 16
         v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
 #endif
@@ -1125,7 +1125,7 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
     s->layer = 4 - ((header >> 17) & 3);
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
-    sample_rate = mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
+    sample_rate = ff_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
     s->error_protection = ((header >> 16) & 1) ^ 1;
@@ -1146,7 +1146,7 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
         s->nb_channels = 2;
 
     if (bitrate_index != 0) {
-        frame_size = mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
+        frame_size = ff_mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
         s->bit_rate = frame_size * 1000;
         switch(s->layer) {
         case 1:
@@ -1327,8 +1327,8 @@ static int mp_decode_layer2(MPADecodeContext *s)
     /* select decoding table */
     table = l2_select_table(s->bit_rate / 1000, s->nb_channels,
                             s->sample_rate, s->lsf);
-    sblimit = sblimit_table[table];
-    alloc_table = alloc_tables[table];
+    sblimit = ff_mpa_sblimit_table[table];
+    alloc_table = ff_mpa_alloc_tables[table];
 
     if (s->mode == MPA_JSTEREO)
         bound = (s->mode_ext + 1) * 4;
@@ -1432,11 +1432,11 @@ static int mp_decode_layer2(MPADecodeContext *s)
                     if (b) {
                         scale = scale_factors[ch][i][k];
                         qindex = alloc_table[j+b];
-                        bits = quant_bits[qindex];
+                        bits = ff_mpa_quant_bits[qindex];
                         if (bits < 0) {
                             /* 3 values at the same time */
                             v = get_bits(&s->gb, -bits);
-                            steps = quant_steps[qindex];
+                            steps = ff_mpa_quant_steps[qindex];
                             s->sb_samples[ch][k * 12 + l + 0][i] =
                                 l2_unscale_group(steps, v % steps, scale);
                             v = v / steps;
@@ -1470,11 +1470,11 @@ static int mp_decode_layer2(MPADecodeContext *s)
                     scale0 = scale_factors[0][i][k];
                     scale1 = scale_factors[1][i][k];
                     qindex = alloc_table[j+b];
-                    bits = quant_bits[qindex];
+                    bits = ff_mpa_quant_bits[qindex];
                     if (bits < 0) {
                         /* 3 values at the same time */
                         v = get_bits(&s->gb, -bits);
-                        steps = quant_steps[qindex];
+                        steps = ff_mpa_quant_steps[qindex];
                         mant = v % steps;
                         v = v / steps;
                         s->sb_samples[0][k * 12 + l + 0][i] =

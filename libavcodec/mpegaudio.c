@@ -84,9 +84,9 @@ static int MPA_encode_init(AVCodecContext *avctx)
     /* encoding freq */
     s->lsf = 0;
     for(i=0;i<3;i++) {
-        if (mpa_freq_tab[i] == freq)
+        if (ff_mpa_freq_tab[i] == freq)
             break;
-        if ((mpa_freq_tab[i] / 2) == freq) {
+        if ((ff_mpa_freq_tab[i] / 2) == freq) {
             s->lsf = 1;
             break;
         }
@@ -99,7 +99,7 @@ static int MPA_encode_init(AVCodecContext *avctx)
 
     /* encoding bitrate & frequency */
     for(i=0;i<15;i++) {
-        if (mpa_bitrate_tab[s->lsf][1][i] == bitrate)
+        if (ff_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
             break;
     }
     if (i == 15){
@@ -121,8 +121,8 @@ static int MPA_encode_init(AVCodecContext *avctx)
     table = l2_select_table(bitrate, s->nb_channels, freq, s->lsf);
 
     /* number of used subbands */
-    s->sblimit = sblimit_table[table];
-    s->alloc_table = alloc_tables[table];
+    s->sblimit = ff_mpa_sblimit_table[table];
+    s->alloc_table = ff_mpa_alloc_tables[table];
 
 #ifdef DEBUG
     av_log(avctx, AV_LOG_DEBUG, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n",
@@ -134,7 +134,7 @@ static int MPA_encode_init(AVCodecContext *avctx)
 
     for(i=0;i<257;i++) {
         int v;
-        v = mpa_enwindow[i];
+        v = ff_mpa_enwindow[i];
 #if WFRAC_BITS != 16
         v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
 #endif
@@ -174,7 +174,7 @@ static int MPA_encode_init(AVCodecContext *avctx)
     }
 
     for(i=0;i<17;i++) {
-        v = quant_bits[i];
+        v = ff_mpa_quant_bits[i];
         if (v < 0)
             v = -v;
         else
@@ -688,7 +688,7 @@ static void encode_frame(MpegAudioContext *s,
                         int qindex, steps, m, sample, bits;
                         /* we encode 3 sub band samples of the same sub band at a time */
                         qindex = s->alloc_table[j+b];
-                        steps = quant_steps[qindex];
+                        steps = ff_mpa_quant_steps[qindex];
                         for(m=0;m<3;m++) {
                             sample = s->sb_samples[ch][k][l + m][i];
                             /* divide by scale factor */
@@ -718,7 +718,7 @@ static void encode_frame(MpegAudioContext *s,
                                 q[m] = steps - 1;
                             assert(q[m] >= 0 && q[m] < steps);
                         }
-                        bits = quant_bits[qindex];
+                        bits = ff_mpa_quant_bits[qindex];
                         if (bits < 0) {
                             /* group the 3 values to save bits */
                             put_bits(p, -bits,
