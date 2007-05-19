@@ -306,7 +306,7 @@ OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += bitstream_filter.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += bitstream_filter.o
-OBJS-$(CONFIG_NOISE_BSF)               += bitstream_filter.o
+OBJS-$(CONFIG_NOISE_BSF)               += noise_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += mp3_header_compress_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += mp3_header_decompress_bsf.o mpegaudiodata.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpegdec.o mjpeg.o jpeglsdec.o jpegls.o

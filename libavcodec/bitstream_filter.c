@@ -106,24 +106,6 @@ static int remove_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avct
     return 0;
 }
 
-static int noise(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe){
-    int amount= args ? atoi(args) : 10000;
-    unsigned int *state= bsfc->priv_data;
-    int i;
-
-    *poutbuf= av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
-    memcpy(*poutbuf, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    for(i=0; i<buf_size; i++){
-        (*state) += (*poutbuf)[i] + 1;
-        if(*state % amount == 0)
-            (*poutbuf)[i] = *state;
-    }
-    return 1;
-}
-
 #ifdef CONFIG_DUMP_EXTRADATA_BSF
 AVBitStreamFilter dump_extradata_bsf={
     "dump_extra",
@@ -137,13 +119,5 @@ AVBitStreamFilter remove_extradata_bsf={
     "remove_extra",
     0,
     remove_extradata,
-};
-#endif
-
-#ifdef CONFIG_NOISE_BSF
-AVBitStreamFilter noise_bsf={
-    "noise",
-    sizeof(int),
-    noise,
 };
 #endif
