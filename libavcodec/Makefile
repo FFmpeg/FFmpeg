@@ -309,7 +309,7 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += remove_extradata_bsf.o
 OBJS-$(CONFIG_NOISE_BSF)               += noise_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += mp3_header_compress_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += mp3_header_decompress_bsf.o mpegaudiodata.o
-OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpegdec.o mjpeg.o jpeglsdec.o jpegls.o
+OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += imx_dump_header_bsf.o
 
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
