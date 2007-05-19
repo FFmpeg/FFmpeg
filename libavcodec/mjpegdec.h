@@ -36,5 +36,9 @@ int ff_mjpeg_decode_end(AVCodecContext *avctx);
 int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                           void *data, int *data_size,
                           uint8_t *buf, int buf_size);
+int ff_mjpeg_decode_dqt(MJpegDecodeContext *s);
+int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
+int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
+int ff_mjpeg_decode_sos(MJpegDecodeContext *s);
 
 #endif /* MJPEGDEC_H */
