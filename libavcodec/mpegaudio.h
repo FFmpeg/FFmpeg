@@ -42,6 +42,8 @@
 #define SAME_HEADER_MASK \
    (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
 
+#define MP3_MASK 0xFFFE0CCF
+
 /* define USE_HIGHPRECISION to have a bit exact (but slower) mpeg
    audio decoder */
 
