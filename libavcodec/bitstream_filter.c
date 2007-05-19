@@ -79,45 +79,10 @@ static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx,
     return 0;
 }
 
-static int remove_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe){
-    int cmd= args ? *args : 0;
-    AVCodecParserContext *s;
-
-    if(!bsfc->parser){
-        bsfc->parser= av_parser_init(avctx->codec_id);
-    }
-    s= bsfc->parser;
-
-    if(s && s->parser->split){
-        if(  (((avctx->flags & CODEC_FLAG_GLOBAL_HEADER) || (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)) && cmd=='a')
-           ||(!keyframe && cmd=='k')
-           ||(cmd=='e' || !cmd)
-          ){
-            int i= s->parser->split(avctx, buf, buf_size);
-            buf += i;
-            buf_size -= i;
-        }
-    }
-    *poutbuf= (uint8_t *) buf;
-    *poutbuf_size= buf_size;
-
-    return 0;
-}
-
 #ifdef CONFIG_DUMP_EXTRADATA_BSF
 AVBitStreamFilter dump_extradata_bsf={
     "dump_extra",
     0,
     dump_extradata,
-};
-#endif
-
-#ifdef CONFIG_REMOVE_EXTRADATA_BSF
-AVBitStreamFilter remove_extradata_bsf={
-    "remove_extra",
-    0,
-    remove_extradata,
 };
 #endif
