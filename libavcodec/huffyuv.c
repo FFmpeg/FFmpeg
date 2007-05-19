@@ -261,57 +261,57 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
 }
 
 #ifdef CONFIG_ENCODERS
+typedef struct {
+    uint64_t val;
+    int name;
+} heap_elem_t;
+
+static void heap_sift(heap_elem_t *h, int root, int size)
+{
+    while(root*2+1 < size) {
+        int child = root*2+1;
+        if(child < size-1 && h[child].val > h[child+1].val)
+            child++;
+        if(h[root].val > h[child].val) {
+            FFSWAP(heap_elem_t, h[root], h[child]);
+            root = child;
+        } else
+            break;
+    }
+}
+
 static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
-    uint64_t counts[2*size];
+    heap_elem_t h[size];
     int up[2*size];
+    int len[2*size];
     int offset, i, next;
 
     for(offset=1; ; offset<<=1){
         for(i=0; i<size; i++){
-            counts[i]= stats[i] + offset - 1;
+            h[i].name = i;
+            h[i].val = (stats[i] << 8) + offset;
+        }
+        for(i=size/2-1; i>=0; i--)
+            heap_sift(h, i, size);
+
+        for(next=size; next<size*2-1; next++){
+            // merge the two smallest entries, and put it back in the heap
+            uint64_t min1v = h[0].val;
+            up[h[0].name] = next;
+            h[0].val = INT64_MAX;
+            heap_sift(h, 0, size);
+            up[h[0].name] = next;
+            h[0].name = next;
+            h[0].val += min1v;
+            heap_sift(h, 0, size);
         }
 
-        for(next=size; next<size*2; next++){
-            uint64_t min1, min2;
-            int min1_i, min2_i;
-
-            min1=min2= INT64_MAX;
-            min1_i= min2_i=-1;
-
-            for(i=0; i<next; i++){
-                if(min2 > counts[i]){
-                    if(min1 > counts[i]){
-                        min2= min1;
-                        min2_i= min1_i;
-                        min1= counts[i];
-                        min1_i= i;
-                    }else{
-                        min2= counts[i];
-                        min2_i= i;
-                    }
-                }
-            }
-
-            if(min2==INT64_MAX) break;
-
-            counts[next]= min1 + min2;
-            counts[min1_i]=
-            counts[min2_i]= INT64_MAX;
-            up[min1_i]=
-            up[min2_i]= next;
-            up[next]= -1;
-        }
-
-        for(i=0; i<size; i++){
-            int len;
-            int index=i;
-
-            for(len=0; up[index] != -1; len++)
-                index= up[index];
-
-            if(len >= 32) break;
-
-            dst[i]= len;
+        len[2*size-2] = 0;
+        for(i=2*size-3; i>=size; i--)
+            len[i] = len[up[i]] + 1;
+        for(i=0; i<size; i++) {
+            dst[i] = len[up[i]] + 1;
+            if(dst[i] > 32) break;
         }
         if(i==size) break;
     }
