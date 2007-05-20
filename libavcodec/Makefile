@@ -19,7 +19,7 @@ OBJS= bitstream.o \
       motion_est.o \
       imgconvert.o \
       mpeg12.o \
-      mpegaudiodec.o mpegaudiodecheader.o mpegaudiodata.o \
+      mpegaudiodec.o mpegaudiodecheader.o mpegaudiodata.o mpegaudio.o \
       simple_idct.o \
       ratecontrol.o \
       eval.o \
@@ -108,7 +108,7 @@ OBJS-$(CONFIG_MJPEG_DECODER)           += mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpeg.o mpegvideo.o
 OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpegbdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
-OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o msmpeg4data.o
