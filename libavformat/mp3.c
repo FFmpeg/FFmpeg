@@ -264,7 +264,7 @@ static int mp3_read_probe(AVProbeData *p)
 
         for(frames = 0; buf2 < end; frames++) {
             header = (buf2[0] << 24) | (buf2[1] << 16) | (buf2[2] << 8) | buf2[3];
-            fsize = mpa_decode_header(&avctx, header, &sample_rate);
+            fsize = ff_mpa_decode_header(&avctx, header, &sample_rate);
             if(fsize < 0)
                 break;
             buf2 += fsize;

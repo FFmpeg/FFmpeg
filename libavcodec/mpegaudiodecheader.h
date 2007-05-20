@@ -34,6 +34,6 @@
 /* header decoding. MUST check the header before because no
    consistency check is done there. Return 1 if free format found and
    that the frame size must be computed externally */
-int decode_header(MPADecodeContext *s, uint32_t header);
+int ff_mpegaudio_decode_header(MPADecodeContext *s, uint32_t header);
 
 #endif /* MPEGAUDIODECHEADER_H */
