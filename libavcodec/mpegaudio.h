@@ -23,6 +23,12 @@
  * mpeg audio declarations for both encoder and decoder.
  */
 
+#ifndef MPEGAUDIO_H
+#define MPEGAUDIO_H
+
+#include "bitstream.h"
+#include "dsputil.h"
+
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
 
@@ -73,6 +79,42 @@ typedef int16_t MPA_INT;
 typedef int32_t MPA_INT;
 #endif
 
+#define BACKSTEP_SIZE 512
+#define EXTRABYTES 24
+
+struct GranuleDef;
+
+typedef struct MPADecodeContext {
+    DECLARE_ALIGNED_8(uint8_t, last_buf[2*BACKSTEP_SIZE + EXTRABYTES]);
+    int last_buf_size;
+    int frame_size;
+    /* next header (used in free format parsing) */
+    uint32_t free_format_next_header;
+    int error_protection;
+    int layer;
+    int sample_rate;
+    int sample_rate_index; /* between 0 and 8 */
+    int bit_rate;
+    GetBitContext gb;
+    GetBitContext in_gb;
+    int nb_channels;
+    int mode;
+    int mode_ext;
+    int lsf;
+    DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512 * 2]);
+    int synth_buf_offset[MPA_MAX_CHANNELS];
+    DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT]);
+    int32_t mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
+#ifdef DEBUG
+    int frame_count;
+#endif
+    void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
+    int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
+    int dither_state;
+    int error_resilience;
+    AVCodecContext* avctx;
+} MPADecodeContext;
+
 int l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 int mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate);
 void ff_mpa_synth_init(MPA_INT *window);
@@ -97,3 +139,5 @@ static inline int ff_mpa_check_header(uint32_t header){
         return -1;
     return 0;
 }
+
+#endif /* MPEGAUDIO_H */

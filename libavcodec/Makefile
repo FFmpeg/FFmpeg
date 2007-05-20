@@ -19,7 +19,7 @@ OBJS= bitstream.o \
       motion_est.o \
       imgconvert.o \
       mpeg12.o \
-      mpegaudiodec.o mpegaudiodata.o \
+      mpegaudiodec.o mpegaudiodecheader.o mpegaudiodata.o \
       simple_idct.o \
       ratecontrol.o \
       eval.o \
@@ -300,7 +300,7 @@ OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o
-OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
+OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o mpegaudiodecheader.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
