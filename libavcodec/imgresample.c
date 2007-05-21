@@ -282,7 +282,7 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
     }
     emms();
 }
-#endif
+#endif /* HAVE_MMX */
 
 #ifdef HAVE_ALTIVEC
 typedef         union {
@@ -409,7 +409,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
         dst_width--;
     }
 }
-#endif
+#endif /* HAVE_ALTIVEC */
 
 /* slow version to handle limit cases. Does not need optimisation */
 static void h_resample_slow(uint8_t *dst, int dst_width,
@@ -942,8 +942,8 @@ int main(int argc, char **argv)
         exit(1);
     }
     av_log(NULL, AV_LOG_INFO, "MMX OK\n");
-#endif
+#endif /* HAVE_MMX */
     return 0;
 }
 
-#endif
+#endif /* TEST */
