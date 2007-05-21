@@ -1445,6 +1445,11 @@ static int mov_write_header(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     int i;
 
+    if (url_is_streamed(&s->pb)) {
+        av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
+        return -1;
+    }
+
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
