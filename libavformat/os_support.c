@@ -139,6 +139,11 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     int n;
     int rc;
 
+    if (numfds >= FD_SETSIZE) {
+        errno = EINVAL;
+        return -1;
+    }
+
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
     FD_ZERO(&exception_set);
@@ -147,10 +152,6 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
-        if (fds[i].fd >= FD_SETSIZE) {
-            errno = EINVAL;
-            return -1;
-        }
 
         if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &read_set);
         if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &write_set);
