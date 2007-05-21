@@ -1,5 +1,5 @@
 /*
- * H261 common code
+ * H261 decoder
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -25,31 +25,21 @@
  * h261codec.
  */
 
-#include "dsputil.h"
-#include "avcodec.h"
-#include "h261.h"
-#include "h261data.h"
+#include "mpegvideo.h"
 
-#define IS_FIL(a)    ((a)&MB_TYPE_H261_FIL)
+/**
+ * H261Context
+ */
+typedef struct H261Context{
+    MpegEncContext s;
 
-uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
-
-void ff_h261_loop_filter(MpegEncContext *s){
-    H261Context * h= (H261Context*)s;
-    const int linesize  = s->linesize;
-    const int uvlinesize= s->uvlinesize;
-    uint8_t *dest_y = s->dest[0];
-    uint8_t *dest_cb= s->dest[1];
-    uint8_t *dest_cr= s->dest[2];
-
-    if(!(IS_FIL (h->mtype)))
-        return;
-
-    s->dsp.h261_loop_filter(dest_y                   , linesize);
-    s->dsp.h261_loop_filter(dest_y                + 8, linesize);
-    s->dsp.h261_loop_filter(dest_y + 8 * linesize    , linesize);
-    s->dsp.h261_loop_filter(dest_y + 8 * linesize + 8, linesize);
-    s->dsp.h261_loop_filter(dest_cb, uvlinesize);
-    s->dsp.h261_loop_filter(dest_cr, uvlinesize);
-}
+    int current_mba;
+    int previous_mba;
+    int mba_diff;
+    int mtype;
+    int current_mv_x;
+    int current_mv_y;
+    int gob_number;
+    int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
+}H261Context;
 
