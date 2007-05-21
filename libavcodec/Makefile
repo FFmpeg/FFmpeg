@@ -447,7 +447,7 @@ imgresample-test: imgresample.c $(LIB)
 
 dct-test: dct-test.o fdctref.o $(LIB)
 
-motion-test: motion_test.o $(LIB)
+motion-test: motion-test.o $(LIB)
 
 fft-test: fft-test.o mdct.o fft.o $(LIB)
 
