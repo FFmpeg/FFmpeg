@@ -182,7 +182,7 @@ static FILE *fvstats;
 static int rate_emu = 0;
 
 static int  video_channel = 0;
-static char *video_standard = "ntsc";
+static char *video_standard;
 
 static int audio_volume = 256;
 
@@ -3833,6 +3833,8 @@ int main(int argc, char **argv)
     av_free(vstats_filename);
 
     av_free(opt_names);
+
+    av_free(video_standard);
 
 #ifdef CONFIG_POWERPC_PERF
     extern void powerpc_display_perf_report(void);
