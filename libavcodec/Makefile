@@ -25,7 +25,6 @@ OBJS= bitstream.o \
       error_resilience.o \
       raw.o \
       golomb.o \
-      cabac.o\
       faandct.o \
       parser.o \
       h264idct.o \
@@ -86,7 +85,7 @@ OBJS-$(CONFIG_GIF_ENCODER)             += gif.o
 OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o
 OBJS-$(CONFIG_H263_DECODER)            += h263dec.o
-OBJS-$(CONFIG_H264_DECODER)            += h264.o
+OBJS-$(CONFIG_H264_DECODER)            += h264.o cabac.o
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dsp.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o
@@ -160,7 +159,7 @@ OBJS-$(CONFIG_SONIC_LS_DECODER)        += sonic.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o cabac.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
 OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o vp3dsp.o
