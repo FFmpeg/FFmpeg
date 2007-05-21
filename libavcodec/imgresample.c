@@ -815,6 +815,7 @@ the_end:
 
 #ifdef TEST
 #include <stdio.h>
+#undef exit
 
 /* input */
 #define XSIZE 256
