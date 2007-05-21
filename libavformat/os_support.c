@@ -139,10 +139,12 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     int n;
     int rc;
 
+#ifdef __MINGW32__
     if (numfds >= FD_SETSIZE) {
         errno = EINVAL;
         return -1;
     }
+#endif
 
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
@@ -152,6 +154,12 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
+#ifndef __MINGW32__
+        if (fds[i].fd >= FD_SETSIZE) {
+            errno = EINVAL;
+            return -1;
+        }
+#endif
 
         if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &read_set);
         if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &write_set);
