@@ -21,12 +21,12 @@
 #include "avformat.h"
 #include "mpegaudio.h"
 
-#define ID3_HEADER_SIZE 10
-#define ID3_TAG_SIZE 128
+#define ID3v2_HEADER_SIZE 10
+#define ID3v1_TAG_SIZE 128
 
-#define ID3_GENRE_MAX 125
+#define ID3v1_GENRE_MAX 125
 
-static const char *id3_genre_str[ID3_GENRE_MAX + 1] = {
+static const char *id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
     [0] = "Blues",
     [1] = "Classic Rock",
     [2] = "Country",
@@ -155,8 +155,8 @@ static const char *id3_genre_str[ID3_GENRE_MAX + 1] = {
     [125] = "Dance Hall",
 };
 
-/* buf must be ID3_HEADER_SIZE byte long */
-static int id3_match(const uint8_t *buf)
+/* buf must be ID3v2_HEADER_SIZE byte long */
+static int id3v2_match(const uint8_t *buf)
 {
     return (buf[0] == 'I' &&
             buf[1] == 'D' &&
@@ -169,8 +169,8 @@ static int id3_match(const uint8_t *buf)
             (buf[9] & 0x80) == 0);
 }
 
-static void id3_get_string(char *str, int str_size,
-                           const uint8_t *buf, int buf_size)
+static void id3v1_get_string(char *str, int str_size,
+                             const uint8_t *buf, int buf_size)
 {
     int i, c;
     char *q;
@@ -187,8 +187,8 @@ static void id3_get_string(char *str, int str_size,
     *q = '\0';
 }
 
-/* 'buf' must be ID3_TAG_SIZE byte long */
-static int id3_parse_tag(AVFormatContext *s, const uint8_t *buf)
+/* 'buf' must be ID3v1_TAG_SIZE byte long */
+static int id3v1_parse_tag(AVFormatContext *s, const uint8_t *buf)
 {
     char str[5];
     int genre;
@@ -197,25 +197,25 @@ static int id3_parse_tag(AVFormatContext *s, const uint8_t *buf)
           buf[1] == 'A' &&
           buf[2] == 'G'))
         return -1;
-    id3_get_string(s->title, sizeof(s->title), buf + 3, 30);
-    id3_get_string(s->author, sizeof(s->author), buf + 33, 30);
-    id3_get_string(s->album, sizeof(s->album), buf + 63, 30);
-    id3_get_string(str, sizeof(str), buf + 93, 4);
+    id3v1_get_string(s->title, sizeof(s->title), buf + 3, 30);
+    id3v1_get_string(s->author, sizeof(s->author), buf + 33, 30);
+    id3v1_get_string(s->album, sizeof(s->album), buf + 63, 30);
+    id3v1_get_string(str, sizeof(str), buf + 93, 4);
     s->year = atoi(str);
-    id3_get_string(s->comment, sizeof(s->comment), buf + 97, 30);
+    id3v1_get_string(s->comment, sizeof(s->comment), buf + 97, 30);
     if (buf[125] == 0 && buf[126] != 0)
         s->track = buf[126];
     genre = buf[127];
-    if (genre <= ID3_GENRE_MAX)
-        pstrcpy(s->genre, sizeof(s->genre), id3_genre_str[genre]);
+    if (genre <= ID3v1_GENRE_MAX)
+        pstrcpy(s->genre, sizeof(s->genre), id3v1_genre_str[genre]);
     return 0;
 }
 
-static void id3_create_tag(AVFormatContext *s, uint8_t *buf)
+static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 {
     int v, i;
 
-    memset(buf, 0, ID3_TAG_SIZE); /* fail safe */
+    memset(buf, 0, ID3v1_TAG_SIZE); /* fail safe */
     buf[0] = 'T';
     buf[1] = 'A';
     buf[2] = 'G';
@@ -234,8 +234,8 @@ static void id3_create_tag(AVFormatContext *s, uint8_t *buf)
         buf[125] = 0;
         buf[126] = s->track;
     }
-    for(i = 0; i <= ID3_GENRE_MAX; i++) {
-        if (!strcasecmp(s->genre, id3_genre_str[i])) {
+    for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
+        if (!strcasecmp(s->genre, id3v1_genre_str[i])) {
             buf[127] = i;
             break;
         }
@@ -252,8 +252,8 @@ static int mp3_read_probe(AVProbeData *p)
     uint8_t *buf, *buf2, *end;
     AVCodecContext avctx;
 
-    if(id3_match(p->buf))
-        return AVPROBE_SCORE_MAX/2+1; // this must be less than mpeg-ps because some retards put id3 tags before mpeg-ps files
+    if(id3v2_match(p->buf))
+        return AVPROBE_SCORE_MAX/2+1; // this must be less than mpeg-ps because some retards put id3v2 tags before mpeg-ps files
 
     max_frames = 0;
     buf = p->buf;
@@ -283,7 +283,7 @@ static int mp3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *st;
-    uint8_t buf[ID3_TAG_SIZE];
+    uint8_t buf[ID3v1_TAG_SIZE];
     int len, ret, filesize;
 
     st = av_new_stream(s, 0);
@@ -300,20 +300,20 @@ static int mp3_read_header(AVFormatContext *s,
         filesize = url_fsize(&s->pb);
         if (filesize > 128) {
             url_fseek(&s->pb, filesize - 128, SEEK_SET);
-            ret = get_buffer(&s->pb, buf, ID3_TAG_SIZE);
-            if (ret == ID3_TAG_SIZE) {
-                id3_parse_tag(s, buf);
+            ret = get_buffer(&s->pb, buf, ID3v1_TAG_SIZE);
+            if (ret == ID3v1_TAG_SIZE) {
+                id3v1_parse_tag(s, buf);
             }
             url_fseek(&s->pb, 0, SEEK_SET);
         }
     }
 
-    /* if ID3 header found, skip it */
-    ret = get_buffer(&s->pb, buf, ID3_HEADER_SIZE);
-    if (ret != ID3_HEADER_SIZE)
+    /* if ID3v2 header found, skip it */
+    ret = get_buffer(&s->pb, buf, ID3v2_HEADER_SIZE);
+    if (ret != ID3v2_HEADER_SIZE)
         return -1;
-    if (id3_match(buf)) {
-        /* skip ID3 header */
+    if (id3v2_match(buf)) {
+        /* skip ID3v2 header */
         len = ((buf[6] & 0x7f) << 21) |
             ((buf[7] & 0x7f) << 14) |
             ((buf[8] & 0x7f) << 7) |
@@ -369,12 +369,12 @@ static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 static int mp3_write_trailer(struct AVFormatContext *s)
 {
-    uint8_t buf[ID3_TAG_SIZE];
+    uint8_t buf[ID3v1_TAG_SIZE];
 
-    /* write the id3 header */
+    /* write the id3v1 tag */
     if (s->title[0] != '\0') {
-        id3_create_tag(s, buf);
-        put_buffer(&s->pb, buf, ID3_TAG_SIZE);
+        id3v1_create_tag(s, buf);
+        put_buffer(&s->pb, buf, ID3v1_TAG_SIZE);
         put_flush_packet(&s->pb);
     }
     return 0;
