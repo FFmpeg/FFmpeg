@@ -841,7 +841,7 @@ static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     RTSPState *rt = s->priv_data;
-    char host[1024], path[1024], tcpname[1024], cmd[2048];
+    char host[1024], path[1024], tcpname[1024], cmd[2048], *option_list, *option;
     URLContext *rtsp_hd;
     int port, i, j, ret, err;
     RTSPHeader reply1, *reply = &reply1;
@@ -855,6 +855,21 @@ static int rtsp_read_header(AVFormatContext *s,
               host, sizeof(host), &port, path, sizeof(path), s->filename);
     if (port < 0)
         port = RTSP_DEFAULT_PORT;
+
+    /* search for options */
+    option_list = strchr(path, '?');
+    if (option_list) {
+        /* remove the options from the path */
+        *option_list++ = 0;
+        while(option_list) {
+            /* move the option pointer */
+            option = option_list;
+            option_list = strchr(option_list, '&');
+            if (option_list)
+                *(option_list++) = 0;
+            /* handle the options */
+        }
+    }
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
