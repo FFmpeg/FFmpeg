@@ -169,6 +169,149 @@ static int id3v2_match(const uint8_t *buf)
             (buf[9] & 0x80) == 0);
 }
 
+static unsigned int id3v2_get_size(ByteIOContext *s, int len)
+{
+    int v=0;
+    while(len--)
+        v= (v<<7) + (get_byte(s)&0x7F);
+    return v;
+}
+
+static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstlen)
+{
+    char *q;
+    int len;
+
+    if(taglen < 1)
+        return;
+
+    taglen--; /* account for encoding type byte */
+    dstlen--; /* Leave space for zero terminator */
+
+    switch(get_byte(&s->pb)) { /* encoding type */
+
+    case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
+        q = dst;
+        while(taglen--) {
+            uint8_t tmp;
+            PUT_UTF8(get_byte(&s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
+        }
+        *q = '\0';
+        break;
+
+    case 3:  /* UTF-8 */
+        len = FFMIN(taglen, dstlen);
+        get_buffer(&s->pb, dst, len);
+        dst[len] = 0;
+        break;
+    }
+}
+
+/**
+ * ID3v2 parser
+ *
+ * Handles ID3v2.2, 2.3 and 2.4.
+ *
+ */
+
+static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
+{
+    int isv34, tlen;
+    uint32_t tag;
+    offset_t next;
+    char tmp[16];
+    int taghdrlen;
+    const char *reason;
+
+    switch(version) {
+    case 2:
+        if(flags & 0x40) {
+            reason = "compression";
+            goto error;
+        }
+        isv34 = 0;
+        taghdrlen = 6;
+        break;
+
+    case 3 ... 4:
+        isv34 = 1;
+        taghdrlen = 10;
+        break;
+
+    default:
+        reason = "version";
+        goto error;
+    }
+
+    if(flags & 0x80) {
+        reason = "unsynchronization";
+        goto error;
+    }
+
+    if(isv34 && flags & 0x40) /* Extended header present, just skip over it */
+        url_fskip(&s->pb, id3v2_get_size(&s->pb, 4));
+
+    while(len >= taghdrlen) {
+        if(isv34) {
+            tag  = get_be32(&s->pb);
+            tlen = id3v2_get_size(&s->pb, 4);
+            get_be16(&s->pb); /* flags */
+        } else {
+            tag  = get_be24(&s->pb);
+            tlen = id3v2_get_size(&s->pb, 3);
+        }
+        len -= taghdrlen + tlen;
+
+        if(len < 0)
+            break;
+
+        next = url_ftell(&s->pb) + tlen;
+
+        switch(tag) {
+        case MKBETAG('T', 'I', 'T', '2'):
+        case MKBETAG(0,   'T', 'T', '2'):
+            id3v2_read_ttag(s, tlen, s->title, sizeof(s->title));
+            break;
+        case MKBETAG('T', 'P', 'E', '1'):
+        case MKBETAG(0,   'T', 'P', '1'):
+            id3v2_read_ttag(s, tlen, s->author, sizeof(s->author));
+            break;
+        case MKBETAG('T', 'A', 'L', 'B'):
+        case MKBETAG(0,   'T', 'A', 'L'):
+            id3v2_read_ttag(s, tlen, s->album, sizeof(s->album));
+            break;
+        case MKBETAG('T', 'C', 'O', 'N'):
+        case MKBETAG(0,   'T', 'C', 'O'):
+            id3v2_read_ttag(s, tlen, s->genre, sizeof(s->genre));
+            break;
+        case MKBETAG('T', 'C', 'O', 'P'):
+        case MKBETAG(0,   'T', 'C', 'R'):
+            id3v2_read_ttag(s, tlen, s->copyright, sizeof(s->copyright));
+            break;
+        case MKBETAG('T', 'R', 'C', 'K'):
+        case MKBETAG(0,   'T', 'R', 'K'):
+            id3v2_read_ttag(s, tlen, tmp, sizeof(tmp));
+            s->track = atoi(tmp);
+            break;
+        case 0:
+            /* padding, skip to end */
+            url_fskip(&s->pb, len);
+            len = 0;
+            continue;
+        }
+        /* Skip to end of tag */
+        url_fseek(&s->pb, next, SEEK_SET);
+    }
+
+    if(version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
+        url_fskip(&s->pb, 10);
+    return;
+
+  error:
+    av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
+    url_fskip(&s->pb, len);
+}
+
 static void id3v1_get_string(char *str, int str_size,
                              const uint8_t *buf, int buf_size)
 {
@@ -313,12 +456,12 @@ static int mp3_read_header(AVFormatContext *s,
     if (ret != ID3v2_HEADER_SIZE)
         return -1;
     if (id3v2_match(buf)) {
-        /* skip ID3v2 header */
+        /* parse ID3v2 header */
         len = ((buf[6] & 0x7f) << 21) |
             ((buf[7] & 0x7f) << 14) |
             ((buf[8] & 0x7f) << 7) |
             (buf[9] & 0x7f);
-        url_fskip(&s->pb, len);
+        id3v2_parse(s, len, buf[3], buf[5]);
     } else {
         url_fseek(&s->pb, 0, SEEK_SET);
     }
