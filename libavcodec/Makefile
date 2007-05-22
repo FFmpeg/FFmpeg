@@ -447,6 +447,6 @@ dct-test: dct-test.o fdctref.o $(LIB)
 
 motion-test: motion-test.o $(LIB)
 
-fft-test: fft-test.o mdct.o fft.o $(LIB)
+fft-test: fft-test.o $(LIB)
 
 .PHONY: tests
