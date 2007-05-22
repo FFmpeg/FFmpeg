@@ -847,7 +847,7 @@ static int rtsp_read_header(AVFormatContext *s,
     RTSPHeader reply1, *reply = &reply1;
     unsigned char *content = NULL;
     RTSPStream *rtsp_st;
-    int protocol_mask;
+    int protocol_mask = 0;
     AVStream *st;
 
     /* extract hostname and port */
@@ -868,8 +868,17 @@ static int rtsp_read_header(AVFormatContext *s,
             if (option_list)
                 *(option_list++) = 0;
             /* handle the options */
+            if (strcmp(option, "udp") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP);
+            else if (strcmp(option, "multicast") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP_MULTICAST);
+            else if (strcmp(option, "tcp") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_TCP);
         }
     }
+
+    if (!protocol_mask)
+        protocol_mask = rtsp_default_protocols;
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
@@ -900,8 +909,6 @@ static int rtsp_read_header(AVFormatContext *s,
         err = AVERROR_INVALIDDATA;
         goto fail;
     }
-
-    protocol_mask = rtsp_default_protocols;
 
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
