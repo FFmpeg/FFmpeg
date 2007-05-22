@@ -498,8 +498,64 @@ static int mp3_read_close(AVFormatContext *s)
 
 #ifdef CONFIG_MUXERS
 /* simple formats */
+
+static void id3v2_put_size(AVFormatContext *s, int size)
+{
+    put_byte(&s->pb, size >> 21 & 0x7f);
+    put_byte(&s->pb, size >> 14 & 0x7f);
+    put_byte(&s->pb, size >> 7  & 0x7f);
+    put_byte(&s->pb, size       & 0x7f);
+}
+
+static void id3v2_put_ttag(AVFormatContext *s, char *string, uint32_t tag)
+{
+    int len = strlen(string);
+    put_be32(&s->pb, tag);
+    id3v2_put_size(s, len + 1);
+    put_be16(&s->pb, 0);
+    put_byte(&s->pb, 3); /* UTF-8 */
+    put_buffer(&s->pb, string, len);
+}
+
+
+/**
+ * Write an ID3v2.4 header at beginning of stream
+ */
+
 static int mp3_write_header(struct AVFormatContext *s)
 {
+    int totlen = 0;
+    char tracktxt[10];
+
+    if(s->track)
+        snprintf(tracktxt, sizeof(tracktxt) - 1, "%d", s->track);
+
+    if(s->title[0])     totlen += 11 + strlen(s->title);
+    if(s->author[0])    totlen += 11 + strlen(s->author);
+    if(s->album[0])     totlen += 11 + strlen(s->album);
+    if(s->genre[0])     totlen += 11 + strlen(s->genre);
+    if(s->copyright[0]) totlen += 11 + strlen(s->copyright);
+    if(s->track)        totlen += 11 + strlen(tracktxt);
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+        totlen += strlen(LIBAVFORMAT_IDENT) + 11;
+
+    if(totlen == 0)
+        return 0;
+
+    put_be32(&s->pb, MKBETAG('I', 'D', '3', 0x04)); /* ID3v2.4 */
+    put_byte(&s->pb, 0);
+    put_byte(&s->pb, 0); /* flags */
+
+    id3v2_put_size(s, totlen);
+
+    if(s->title[0])     id3v2_put_ttag(s, s->title,     MKBETAG('T', 'I', 'T', '2'));
+    if(s->author[0])    id3v2_put_ttag(s, s->author,    MKBETAG('T', 'P', 'E', '1'));
+    if(s->album[0])     id3v2_put_ttag(s, s->album,     MKBETAG('T', 'A', 'L', 'B'));
+    if(s->genre[0])     id3v2_put_ttag(s, s->genre,     MKBETAG('T', 'C', 'O', 'N'));
+    if(s->copyright[0]) id3v2_put_ttag(s, s->copyright, MKBETAG('T', 'C', 'O', 'P'));
+    if(s->track)        id3v2_put_ttag(s, tracktxt,     MKBETAG('T', 'R', 'C', 'K'));
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+        id3v2_put_ttag(s, LIBAVFORMAT_IDENT,            MKBETAG('T', 'E', 'N', 'C'));
     return 0;
 }
 
