@@ -62,6 +62,17 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
     return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, use_static);
 }
 
+static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
+    build_vlc(&s->vlcs[0][0], ff_mjpeg_bits_dc_luminance,
+              ff_mjpeg_val_dc_luminance, 12, 0, 0);
+    build_vlc(&s->vlcs[0][1], ff_mjpeg_bits_dc_chrominance,
+              ff_mjpeg_val_dc_chrominance, 12, 0, 0);
+    build_vlc(&s->vlcs[1][0], ff_mjpeg_bits_ac_luminance,
+              ff_mjpeg_val_ac_luminance, 251, 0, 1);
+    build_vlc(&s->vlcs[1][1], ff_mjpeg_bits_ac_chrominance,
+              ff_mjpeg_val_ac_chrominance, 251, 0, 1);
+}
+
 int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
@@ -75,21 +86,16 @@ int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->first_picture = 1;
     s->org_height = avctx->coded_height;
 
-    build_vlc(&s->vlcs[0][0], ff_mjpeg_bits_dc_luminance,
-              ff_mjpeg_val_dc_luminance, 12, 0, 0);
-    build_vlc(&s->vlcs[0][1], ff_mjpeg_bits_dc_chrominance,
-              ff_mjpeg_val_dc_chrominance, 12, 0, 0);
-    build_vlc(&s->vlcs[1][0], ff_mjpeg_bits_ac_luminance,
-              ff_mjpeg_val_ac_luminance, 251, 0, 1);
-    build_vlc(&s->vlcs[1][1], ff_mjpeg_bits_ac_chrominance,
-              ff_mjpeg_val_ac_chrominance, 251, 0, 1);
+    build_basic_mjpeg_vlc(s);
 
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
     {
         av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
-        ff_mjpeg_decode_dht(s);
-        /* should check for error - but dunno */
+        if (ff_mjpeg_decode_dht(s)) {
+            av_log(avctx, AV_LOG_ERROR, "mjpeg: error using external huffman table, switching back to internal\n");
+            build_basic_mjpeg_vlc(s);
+        }
     }
     if (avctx->extradata_size > 9 &&
         AV_RL32(avctx->extradata + 4) == MKTAG('f','i','e','l')) {
