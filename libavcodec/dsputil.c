@@ -3858,7 +3858,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif //CONFIG_ENCODERS
 
     if(avctx->lowres==1){
-        if(avctx->idct_algo==FF_IDCT_INT || avctx->idct_algo==FF_IDCT_AUTO){
+        if(avctx->idct_algo==FF_IDCT_INT || avctx->idct_algo==FF_IDCT_AUTO || !ENABLE_H264_DECODER){
             c->idct_put= ff_jref_idct4_put;
             c->idct_add= ff_jref_idct4_add;
         }else{
@@ -3897,10 +3897,12 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }
     }
 
+    if (ENABLE_H264_DECODER) {
     c->h264_idct_add= ff_h264_idct_add_c;
     c->h264_idct8_add= ff_h264_idct8_add_c;
     c->h264_idct_dc_add= ff_h264_idct_dc_add_c;
     c->h264_idct8_dc_add= ff_h264_idct8_dc_add_c;
+    }
 
     c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;

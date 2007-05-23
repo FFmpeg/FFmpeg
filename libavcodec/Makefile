@@ -26,7 +26,6 @@ OBJS= bitstream.o \
       raw.o \
       faandct.o \
       parser.o \
-      h264idct.o \
       rangecoder.o \
       h263.o \
       opt.o \
@@ -84,7 +83,7 @@ OBJS-$(CONFIG_GIF_ENCODER)             += gif.o
 OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o
 OBJS-$(CONFIG_H263_DECODER)            += h263dec.o
-OBJS-$(CONFIG_H264_DECODER)            += h264.o cabac.o golomb.o
+OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o cabac.o golomb.o
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dsp.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o
