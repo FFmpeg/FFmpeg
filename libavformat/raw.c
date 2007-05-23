@@ -881,7 +881,7 @@ AVInputFormat rawvideo_demuxer = {
     rawvideo_read_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "yuv,cif,qcif",
+    .extensions = "yuv,cif,qcif,rgb",
     .value = CODEC_ID_RAWVIDEO,
 };
 
