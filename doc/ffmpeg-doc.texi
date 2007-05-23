@@ -416,6 +416,8 @@ Add a new video stream to the current output stream.
 @table @option
 @item -pix_fmt format
 Set pixel format.
+@item -sws_flags flags
+Set SwScaler flags (only available when compiled with SwScaler support).
 @item -g gop_size
 Set the group of pictures size.
 @item -intra
