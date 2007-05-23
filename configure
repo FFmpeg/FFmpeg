@@ -318,6 +318,15 @@ print_config(){
     done
 }
 
+print_config_enable(){
+    print_config $@
+    shift 3
+    for cfg; do
+        enabled $cfg && val=1 || val=0
+        echo "#define ENABLE_`toupper $cfg` $val" >> $header
+    done
+}
+
 flags_saved(){
     (: ${SAVE_CFLAGS?}) 2>/dev/null
 }
@@ -2007,8 +2016,15 @@ echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
-print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
 print_config TARGET_ $TMPH config.mak $TARGET_LIST
+print_config_enable CONFIG_ $TMPH config.mak $CONFIG_LIST   \
+                                             $DECODER_LIST  \
+                                             $ENCODER_LIST  \
+                                             $PARSER_LIST   \
+                                             $BSF_LIST      \
+                                             $DEMUXER_LIST  \
+                                             $MUXER_LIST    \
+                                             $PROTOCOL_LIST \
 
 if test "$targetos" = darwin; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
@@ -2032,19 +2048,6 @@ else
   printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
 fi
 
-
-for part in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST; do
-    ucname="`toupper $part`"
-    config_name="CONFIG_$ucname"
-    enabled_name="ENABLE_$ucname"
-    if enabled $part; then
-        echo "#define $config_name 1" >> $TMPH
-        echo "#define $enabled_name 1" >> $TMPH
-        echo "$config_name=yes" >> config.mak
-    else
-        echo "#define $enabled_name 0" >> $TMPH
-    fi
-done
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
 if ! cmp -s $TMPH config.h; then
