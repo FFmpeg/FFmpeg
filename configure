@@ -2015,8 +2015,8 @@ fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
-print_config HAVE_   $TMPH config.mak $HAVE_LIST
-print_config TARGET_ $TMPH config.mak $TARGET_LIST
+print_config        HAVE_   $TMPH config.mak $HAVE_LIST
+print_config        TARGET_ $TMPH config.mak $TARGET_LIST
 print_config_enable CONFIG_ $TMPH config.mak $CONFIG_LIST   \
                                              $DECODER_LIST  \
                                              $ENCODER_LIST  \
