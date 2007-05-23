@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
+#include "bytestream.h"
 
 typedef struct DVBSubtitleContext {
     int hide_state;
@@ -208,15 +209,6 @@ static void dvb_encode_rle4(uint8_t **pq,
 (((FIX(0.50000*224.0/255.0) * r1 - FIX(0.41869*224.0/255.0) * g1 -           \
    FIX(0.08131*224.0/255.0) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
-static inline void putbe16(uint8_t **pq, uint16_t v)
-{
-    uint8_t *q;
-    q = *pq;
-    *q++ = v >> 8;
-    *q++ = v;
-    *pq = q;
-}
-
 static int encode_dvb_subtitles(DVBSubtitleContext *s,
                                 uint8_t *outbuf, AVSubtitle *h)
 {
@@ -237,7 +229,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     *q++ = 0x0f; /* sync_byte */
     *q++ = 0x10; /* segment_type */
-    putbe16(&q, page_id);
+    bytestream_put_be16(&q, page_id);
     pseg_len = q;
     q += 2; /* segment length */
     *q++ = 30; /* page_timeout (seconds) */
@@ -251,11 +243,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     for (region_id = 0; region_id < h->num_rects; region_id++) {
         *q++ = region_id;
         *q++ = 0xff; /* reserved */
-        putbe16(&q, h->rects[region_id].x); /* left pos */
-        putbe16(&q, h->rects[region_id].y); /* top pos */
+        bytestream_put_be16(&q, h->rects[region_id].x); /* left pos */
+        bytestream_put_be16(&q, h->rects[region_id].y); /* top pos */
     }
 
-    putbe16(&pseg_len, q - pseg_len - 2);
+    bytestream_put_be16(&pseg_len, q - pseg_len - 2);
 
     if (!s->hide_state) {
         for (clut_id = 0; clut_id < h->num_rects; clut_id++) {
@@ -274,7 +266,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
             *q++ = 0x0f; /* sync byte */
             *q++ = 0x12; /* CLUT definition segment */
-            putbe16(&q, page_id);
+            bytestream_put_be16(&q, page_id);
             pseg_len = q;
             q += 2; /* segment length */
             *q++ = clut_id;
@@ -297,7 +289,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 }
             }
 
-            putbe16(&pseg_len, q - pseg_len - 2);
+            bytestream_put_be16(&pseg_len, q - pseg_len - 2);
         }
     }
 
@@ -317,27 +309,27 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
         *q++ = 0x0f; /* sync_byte */
         *q++ = 0x11; /* segment_type */
-        putbe16(&q, page_id);
+        bytestream_put_be16(&q, page_id);
         pseg_len = q;
         q += 2; /* segment length */
         *q++ = region_id;
         *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
-        putbe16(&q, h->rects[region_id].w); /* region width */
-        putbe16(&q, h->rects[region_id].h); /* region height */
+        bytestream_put_be16(&q, h->rects[region_id].w); /* region width */
+        bytestream_put_be16(&q, h->rects[region_id].h); /* region height */
         *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03;
         *q++ = region_id; /* clut_id == region_id */
         *q++ = 0; /* 8 bit fill colors */
         *q++ = 0x03; /* 4 bit and 2 bit fill colors */
 
         if (!s->hide_state) {
-            putbe16(&q, region_id); /* object_id == region_id */
+            bytestream_put_be16(&q, region_id); /* object_id == region_id */
             *q++ = (0 << 6) | (0 << 4);
             *q++ = 0;
             *q++ = 0xf0;
             *q++ = 0;
         }
 
-        putbe16(&pseg_len, q - pseg_len - 2);
+        bytestream_put_be16(&pseg_len, q - pseg_len - 2);
     }
 
     if (!s->hide_state) {
@@ -357,11 +349,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
             *q++ = 0x0f; /* sync byte */
             *q++ = 0x13;
-            putbe16(&q, page_id);
+            bytestream_put_be16(&q, page_id);
             pseg_len = q;
             q += 2; /* segment length */
 
-            putbe16(&q, object_id);
+            bytestream_put_be16(&q, object_id);
             *q++ = (s->object_version << 4) | (0 << 2) | (0 << 1) | 1; /* version = 0,
                                                                        onject_coding_method,
                                                                        non_modifying_color_flag */
@@ -388,11 +380,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                                     h->rects[object_id].w * 2, h->rects[object_id].w,
                                     h->rects[object_id].h >> 1);
 
-                putbe16(&ptop_field_len, bottom_ptr - top_ptr);
-                putbe16(&pbottom_field_len, q - bottom_ptr);
+                bytestream_put_be16(&ptop_field_len, bottom_ptr - top_ptr);
+                bytestream_put_be16(&pbottom_field_len, q - bottom_ptr);
             }
 
-            putbe16(&pseg_len, q - pseg_len - 2);
+            bytestream_put_be16(&pseg_len, q - pseg_len - 2);
         }
     }
 
@@ -400,11 +392,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     *q++ = 0x0f; /* sync_byte */
     *q++ = 0x80; /* segment_type */
-    putbe16(&q, page_id);
+    bytestream_put_be16(&q, page_id);
     pseg_len = q;
     q += 2; /* segment length */
 
-    putbe16(&pseg_len, q - pseg_len - 2);
+    bytestream_put_be16(&pseg_len, q - pseg_len - 2);
 
     *q++ = 0xff; /* end of PES data */
 

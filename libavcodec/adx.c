@@ -86,8 +86,7 @@ static void adx_encode(unsigned char *adx,const short *wav,PREV *prev)
 
     if (scale==0) scale=1;
 
-    adx[0] = scale>>8;
-    adx[1] = scale;
+    AV_WB16(adx, scale);
 
     for(i=0;i<16;i++) {
         adx[i+2] = ((data[i*2]/scale)<<4) | ((data[i*2+1]/scale)&0xf);
@@ -97,7 +96,7 @@ static void adx_encode(unsigned char *adx,const short *wav,PREV *prev)
 
 static void adx_decode(short *out,const unsigned char *in,PREV *prev)
 {
-    int scale = ((in[0]<<8)|(in[1]));
+    int scale = AV_RB16(in);
     int i;
     int s0,s1,s2,d;
 
@@ -145,14 +144,6 @@ static void adx_decode_stereo(short *out,const unsigned char *in,PREV *prev)
 
 #ifdef CONFIG_ENCODERS
 
-static void write_long(unsigned char *p,uint32_t v)
-{
-    p[0] = v>>24;
-    p[1] = v>>16;
-    p[2] = v>>8;
-    p[3] = v;
-}
-
 static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t bufsize)
 {
 #if 0
@@ -178,13 +169,13 @@ static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t buf
     } adxhdr; /* big endian */
     /* offset-6 "(c)CRI" */
 #endif
-    write_long(buf+0x00,0x80000000|0x20);
-    write_long(buf+0x04,0x03120400|avctx->channels);
-    write_long(buf+0x08,avctx->sample_rate);
-    write_long(buf+0x0c,0); /* FIXME: set after */
-    write_long(buf+0x10,0x01040300);
-    write_long(buf+0x14,0x00000000);
-    write_long(buf+0x18,0x00000000);
+    AV_WB32(buf+0x00,0x80000000|0x20);
+    AV_WB32(buf+0x04,0x03120400|avctx->channels);
+    AV_WB32(buf+0x08,avctx->sample_rate);
+    AV_WB32(buf+0x0c,0); /* FIXME: set after */
+    AV_WB32(buf+0x10,0x01040300);
+    AV_WB32(buf+0x14,0x00000000);
+    AV_WB32(buf+0x18,0x00000000);
     memcpy(buf+0x1c,"\0\0(c)CRI",8);
     return 0x20+4;
 }
@@ -264,17 +255,12 @@ static int adx_encode_frame(AVCodecContext *avctx,
 
 #endif //CONFIG_ENCODERS
 
-static uint32_t read_long(const unsigned char *p)
-{
-    return (p[0]<<24)|(p[1]<<16)|(p[2]<<8)|p[3];
-}
-
 static int is_adx(const unsigned char *buf,size_t bufsize)
 {
     int    offset;
 
     if (buf[0]!=0x80) return 0;
-    offset = (read_long(buf)^0x80000000)+4;
+    offset = (AV_RB32(buf)^0x80000000)+4;
     if (bufsize<offset || memcmp(buf+offset-6,"(c)CRI",6)) return 0;
     return offset;
 }
@@ -289,8 +275,8 @@ static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size
     if (offset==0) return 0;
 
     channels = buf[7];
-    freq = read_long(buf+8);
-    size = read_long(buf+12);
+    freq = AV_RB32(buf+8);
+    size = AV_RB32(buf+12);
 
 //    printf("freq=%d ch=%d\n",freq,channels);
 

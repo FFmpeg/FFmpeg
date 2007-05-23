@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "dsputil.h"
 
 typedef struct {
@@ -77,10 +78,6 @@ typedef struct RoqContext {
 #define RoQ_ID_CCC              0x03
 
 #define get_byte(in_buffer) *(in_buffer++)
-#define get_word(in_buffer) ((unsigned short)(in_buffer += 2, \
-  (in_buffer[-1] << 8 | in_buffer[-2])))
-#define get_long(in_buffer) ((unsigned long)(in_buffer += 4, \
-  (in_buffer[-1] << 24 | in_buffer[-2] << 16 | in_buffer[-3] << 8 | in_buffer[-4])))
 
 
 static void apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
@@ -293,9 +290,9 @@ static void roqvideo_decode_frame(RoqContext *ri)
     unsigned char *buf_end = ri->buf + ri->size;
 
     while (buf < buf_end) {
-        chunk_id = get_word(buf);
-        chunk_size = get_long(buf);
-        chunk_arg = get_word(buf);
+        chunk_id = bytestream_get_le16(&buf);
+        chunk_size = bytestream_get_le32(&buf);
+        chunk_arg = bytestream_get_le16(&buf);
 
         if(chunk_id == RoQ_QUAD_VQ)
             break;

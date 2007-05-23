@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
+#include "bytestream.h"
 
 /* TODO:
  * - add 2, 4 and 16 bit depth support
@@ -85,20 +86,6 @@ typedef struct PNGContext {
     z_stream zstream;
     uint8_t buf[IOBUF_SIZE];
 } PNGContext;
-
-static unsigned int get32(uint8_t **b){
-    (*b) += 4;
-    return ((*b)[-4]<<24) + ((*b)[-3]<<16) + ((*b)[-2]<<8) + (*b)[-1];
-}
-
-#ifdef CONFIG_ENCODERS
-static void put32(uint8_t **b, unsigned int v){
-    *(*b)++= v>>24;
-    *(*b)++= v>>16;
-    *(*b)++= v>>8;
-    *(*b)++= v;
-}
-#endif
 
 static const uint8_t pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 
@@ -509,10 +496,10 @@ static int decode_frame(AVCodecContext *avctx,
         int tag32;
         if (s->bytestream >= s->bytestream_end)
             goto fail;
-        length = get32(&s->bytestream);
+        length = bytestream_get_be32(&s->bytestream);
         if (length > 0x7fffffff)
             goto fail;
-        tag32 = get32(&s->bytestream);
+        tag32 = bytestream_get_be32(&s->bytestream);
         tag = bswap_32(tag32);
 #ifdef DEBUG
         av_log(avctx, AV_LOG_DEBUG, "png: tag=%c%c%c%c length=%u\n",
@@ -525,8 +512,8 @@ static int decode_frame(AVCodecContext *avctx,
         case MKTAG('I', 'H', 'D', 'R'):
             if (length != 13)
                 goto fail;
-            s->width = get32(&s->bytestream);
-            s->height = get32(&s->bytestream);
+            s->width = bytestream_get_be32(&s->bytestream);
+            s->height = bytestream_get_be32(&s->bytestream);
             if(avcodec_check_dimensions(avctx, s->width, s->height)){
                 s->width= s->height= 0;
                 goto fail;
@@ -536,7 +523,7 @@ static int decode_frame(AVCodecContext *avctx,
             s->compression_type = *s->bytestream++;
             s->filter_type = *s->bytestream++;
             s->interlace_type = *s->bytestream++;
-            crc = get32(&s->bytestream);
+            crc = bytestream_get_be32(&s->bytestream);
             s->state |= PNG_IHDR;
 #ifdef DEBUG
             av_log(avctx, AV_LOG_DEBUG, "width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n",
@@ -629,7 +616,7 @@ static int decode_frame(AVCodecContext *avctx,
             if (png_decode_idat(s, length) < 0)
                 goto fail;
             /* skip crc */
-            crc = get32(&s->bytestream);
+            crc = bytestream_get_be32(&s->bytestream);
             break;
         case MKTAG('P', 'L', 'T', 'E'):
             {
@@ -649,7 +636,7 @@ static int decode_frame(AVCodecContext *avctx,
                     s->palette[i] = (0xff << 24);
                 }
                 s->state |= PNG_PLTE;
-                crc = get32(&s->bytestream);
+                crc = bytestream_get_be32(&s->bytestream);
             }
             break;
         case MKTAG('t', 'R', 'N', 'S'):
@@ -665,13 +652,13 @@ static int decode_frame(AVCodecContext *avctx,
                     v = *s->bytestream++;
                     s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
                 }
-                crc = get32(&s->bytestream);
+                crc = bytestream_get_be32(&s->bytestream);
             }
             break;
         case MKTAG('I', 'E', 'N', 'D'):
             if (!(s->state & PNG_ALLIMAGE))
                 goto fail;
-            crc = get32(&s->bytestream);
+            crc = bytestream_get_be32(&s->bytestream);
             goto exit_loop;
         default:
             /* skip tag */
@@ -704,29 +691,20 @@ static void png_write_chunk(uint8_t **f, uint32_t tag,
     uint32_t crc;
     uint8_t tagbuf[4];
 
-    put32(f, length);
+    bytestream_put_be32(f, length);
     crc = crc32(0, Z_NULL, 0);
     tagbuf[0] = tag;
     tagbuf[1] = tag >> 8;
     tagbuf[2] = tag >> 16;
     tagbuf[3] = tag >> 24;
     crc = crc32(crc, tagbuf, 4);
-    put32(f, bswap_32(tag));
+    bytestream_put_be32(f, bswap_32(tag));
     if (length > 0) {
         crc = crc32(crc, buf, length);
         memcpy(*f, buf, length);
         *f += length;
     }
-    put32(f, crc);
-}
-
-/* XXX: use avcodec generic function ? */
-static void to_be32(uint8_t *p, uint32_t v)
-{
-    p[0] = v >> 24;
-    p[1] = v >> 16;
-    p[2] = v >> 8;
-    p[3] = v;
+    bytestream_put_be32(f, crc);
 }
 
 /* XXX: do filtering */
@@ -828,8 +806,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     memcpy(s->bytestream, pngsig, 8);
     s->bytestream += 8;
 
-    to_be32(s->buf, avctx->width);
-    to_be32(s->buf + 4, avctx->height);
+    AV_WB32(s->buf, avctx->width);
+    AV_WB32(s->buf + 4, avctx->height);
     s->buf[8] = bit_depth;
     s->buf[9] = color_type;
     s->buf[10] = 0; /* compression type */
