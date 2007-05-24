@@ -186,7 +186,7 @@ static void dca_init_vlcs(void)
         return;
 
     dca_bitalloc_index.offset = 1;
-    dca_bitalloc_index.wrap = 1;
+    dca_bitalloc_index.wrap = 2;
     for (i = 0; i < 5; i++)
         init_vlc(&dca_bitalloc_index.vlc[i], bitalloc_12_vlc_bits[i], 12,
                  bitalloc_12_bits[i], 1, 1,
