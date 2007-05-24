@@ -65,21 +65,12 @@ vsynth2/00.pgm: rotozoom$(EXESUF)
 	@mkdir -p vsynth2
 	$(BUILD_DIR)/$< 'vsynth2/' $(SRC_DIR)/lena.pnm
 
-videogen$(EXESUF): videogen.c
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
-
-rotozoom$(EXESUF): rotozoom.c
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
-
 # audio generation
 
 asynth1.sw: audiogen$(EXESUF)
 	$(BUILD_DIR)/$< $@
 
-audiogen$(EXESUF): audiogen.c
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
-
-tiny_psnr$(EXESUF): tiny_psnr.c
+%$(EXESUF): %.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 LIBAV = ../libavformat/libavformat.a ../libavcodec/libavcodec.a ../libavutil/libavutil.a
