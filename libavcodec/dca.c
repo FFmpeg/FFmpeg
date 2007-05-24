@@ -612,6 +612,7 @@ static int dca_subframe_header(DCAContext * s)
     }
     for (j = 0; j < s->prim_channels; j++) {
         if (s->joint_intensity[j] > 0) {
+            int source_channel = s->joint_intensity[j] - 1;
             av_log(s->avctx, AV_LOG_DEBUG, "Joint scale factor index:\n");
             for (k = s->subband_activity[j]; k < s->subband_activity[source_channel]; k++)
                 av_log(s->avctx, AV_LOG_DEBUG, " %i", s->joint_scale_factor[j][k]);
@@ -630,6 +631,7 @@ static int dca_subframe_header(DCAContext * s)
         for (k = s->vq_start_subband[j]; k < s->subband_activity[j]; k++)
             av_log(s->avctx, AV_LOG_DEBUG, "VQ index: %i\n", s->high_freq_vq[j][k]);
     if(s->lfe){
+        int lfe_samples = 2 * s->lfe * s->subsubframes;
         av_log(s->avctx, AV_LOG_DEBUG, "LFE samples:\n");
         for (j = lfe_samples; j < lfe_samples * 2; j++)
             av_log(s->avctx, AV_LOG_DEBUG, " %f", s->lfe_data[j]);
