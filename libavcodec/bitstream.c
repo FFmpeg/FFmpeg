@@ -104,9 +104,10 @@ static int build_table(VLC *vlc, int table_nb_bits,
                        int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
+                       const void *symbols, int symbols_wrap, int symbols_size,
                        uint32_t code_prefix, int n_prefix, int flags)
 {
-    int i, j, k, n, table_size, table_index, nb, n1, index, code_prefix2;
+    int i, j, k, n, table_size, table_index, nb, n1, index, code_prefix2, symbol;
     uint32_t code;
     VLC_TYPE (*table)[2];
 
@@ -132,6 +133,10 @@ static int build_table(VLC *vlc, int table_nb_bits,
         /* we accept tables with holes */
         if (n <= 0)
             continue;
+        if (!symbols)
+            symbol = i;
+        else
+            GET_DATA(symbol, symbols, i, symbols_wrap, symbols_size);
 #if defined(DEBUG_VLC) && 0
         av_log(NULL,AV_LOG_DEBUG,"i=%d n=%d code=0x%x\n", i, n, code);
 #endif
@@ -158,7 +163,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
                         return -1;
                     }
                     table[j][1] = n; //bits
-                    table[j][0] = i; //code
+                    table[j][0] = symbol;
                     j++;
                 }
             } else {
@@ -189,6 +194,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
             index = build_table(vlc, n, nb_codes,
                                 bits, bits_wrap, bits_size,
                                 codes, codes_wrap, codes_size,
+                                symbols, symbols_wrap, symbols_size,
                                 (flags & INIT_VLC_LE) ? (code_prefix | (i << n_prefix)) : ((code_prefix << table_nb_bits) | i),
                                 n_prefix + table_nb_bits, flags);
             if (index < 0)
@@ -214,6 +220,8 @@ static int build_table(VLC *vlc, int table_nb_bits,
 
    'codes' : table which gives the bit pattern of of each vlc code.
 
+   'symbols' : table which gives the values to be returned from get_vlc().
+
    'xxx_wrap' : give the number of bytes between each entry of the
    'bits' or 'codes' tables.
 
@@ -221,14 +229,15 @@ static int build_table(VLC *vlc, int table_nb_bits,
    or 'codes' tables.
 
    'wrap' and 'size' allows to use any memory configuration and types
-   (byte/word/long) to store the 'bits' and 'codes' tables.
+   (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
 
    'use_static' should be set to 1 for tables, which should be freed
    with av_free_static(), 0 if free_vlc() will be used.
 */
-int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
+int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,
+             const void *symbols, int symbols_wrap, int symbols_size,
              int flags)
 {
     vlc->bits = nb_bits;
@@ -250,6 +259,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
     if (build_table(vlc, nb_bits, nb_codes,
                     bits, bits_wrap, bits_size,
                     codes, codes_wrap, codes_size,
+                    symbols, symbols_wrap, symbols_size,
                     0, 0, flags) < 0) {
         av_free(vlc->table);
         return -1;
