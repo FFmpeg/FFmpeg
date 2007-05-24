@@ -1,6 +1,6 @@
 /*
  * Generates a synthetic YUV video sequence suitable for codec testing.
- * NOTE: no floats are used to guaranty a bit exact output.
+ * NOTE: No floats are used to guarantee a bit exact output.
  *
  * Copyright (c) 2002 Fabrice Bellard
  *
