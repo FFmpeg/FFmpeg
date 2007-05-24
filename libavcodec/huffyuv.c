@@ -71,7 +71,6 @@ typedef struct HYuvContext{
     uint8_t len[3][256];
     uint32_t bits[3][256];
     VLC vlc[6];                             //Y,U,V,YY,YU,YV
-    uint16_t pix2_map[3][1<<VLC_BITS];
     AVFrame picture;
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
@@ -320,9 +319,9 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
 #endif /* CONFIG_ENCODERS */
 
 static void generate_joint_tables(HYuvContext *s){
-    // TODO modify init_vlc to allow sparse tables, and eliminate pix2_map
     // TODO rgb
     if(s->bitstream_bpp < 24){
+        uint16_t symbols[1<<VLC_BITS];
         uint16_t bits[1<<VLC_BITS];
         uint8_t len[1<<VLC_BITS];
         int p, i, y, u;
@@ -336,14 +335,15 @@ static void generate_joint_tables(HYuvContext *s){
                         if(len1 <= limit){
                             len[i] = len0 + len1;
                             bits[i] = (s->bits[0][y] << len1) + s->bits[p][u];
-                            s->pix2_map[p][i] = (y<<8) + u;
-                            i++;
+                            symbols[i] = (y<<8) + u;
+                            if(symbols[i] != 0xffff) // reserved to mean "invalid"
+                                i++;
                         }
                     }
                 }
             }
             free_vlc(&s->vlc[3+p]);
-            init_vlc(&s->vlc[3+p], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0);
+            init_vlc_sparse(&s->vlc[3+p], VLC_BITS, i, len, 1, 1, bits, 2, 2, symbols, 2, 2, 0);
         }
     }
 }
@@ -690,11 +690,10 @@ static int encode_init(AVCodecContext *avctx)
 /* TODO instead of restarting the read when the code isn't in the first level
  * of the joint table, jump into the 2nd level of the individual table. */
 #define READ_2PIX(dst0, dst1, plane1){\
-    int code = get_vlc2(&s->gb, s->vlc[3+plane1].table, VLC_BITS, 1);\
-    if(code >= 0){\
-        int x = s->pix2_map[plane1][code];\
-        dst0 = x>>8;\
-        dst1 = x;\
+    uint16_t code = get_vlc2(&s->gb, s->vlc[3+plane1].table, VLC_BITS, 1);\
+    if(code != 0xffff){\
+        dst0 = code>>8;\
+        dst1 = code;\
     }else{\
         dst0 = get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);\
         dst1 = get_vlc2(&s->gb, s->vlc[plane1].table, VLC_BITS, 3);\
