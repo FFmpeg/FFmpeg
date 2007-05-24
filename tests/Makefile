@@ -88,26 +88,6 @@ LIBAV = ../libavformat/libavformat.a ../libavcodec/libavcodec.a ../libavutil/lib
 seek_test$(EXESUF): seek_test.c $(LIBAV)
 	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
 
-DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
- $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
- $(SRC_PATH)/libavcodec/i386/dsputil_mmx_rnd.h \
- $(SRC_PATH)/libavcodec/i386/fdct_mmx.c \
- $(SRC_PATH)/libavcodec/i386/idct_mmx.c \
- $(SRC_PATH)/libavcodec/i386/motion_est_mmx.c \
- $(SRC_PATH)/libavcodec/i386/simple_idct_mmx.c \
- $(SRC_PATH)/libavcodec/dsputil.c \
- $(SRC_PATH)/libavcodec/dsputil.h \
- $(SRC_PATH)/libavcodec/simple_idct.c
-
-DSPCFLAGS = -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -I.. \
- -I$(SRC_PATH)/libavutil/ -I$(SRC_PATH)/libavcodec/i386 \
- -I$(SRC_PATH)/libavcodec/ -lm
-
-dsptestpic: dsptest.c $(DSPDEPS)
-	$(CC) -fPIC -DPIC $(DSPCFLAGS) -o $@ $<
-dsptest: dsptest.c $(DSPDEPS)
-	$(CC) $(DSPCFLAGS) -o $@ $<
-
 distclean clean:
 	rm -rf vsynth1 vsynth2 data
 	rm -f asynth1.sw *~ audiogen$(EXESUF) videogen$(EXESUF) rotozoom$(EXESUF) tiny_psnr$(EXESUF)
