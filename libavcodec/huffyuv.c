@@ -329,17 +329,17 @@ static void generate_joint_tables(HYuvContext *s){
             for(i=y=0; y<256; y++){
                 int len0 = s->len[0][y];
                 int limit = VLC_BITS - len0;
-                if(limit > 0){
-                    for(u=0; u<256; u++){
-                        int len1 = s->len[p][u];
-                        if(len1 <= limit){
-                            len[i] = len0 + len1;
-                            bits[i] = (s->bits[0][y] << len1) + s->bits[p][u];
-                            symbols[i] = (y<<8) + u;
-                            if(symbols[i] != 0xffff) // reserved to mean "invalid"
-                                i++;
-                        }
-                    }
+                if(limit <= 0)
+                    continue;
+                for(u=0; u<256; u++){
+                    int len1 = s->len[p][u];
+                    if(len1 > limit)
+                        continue;
+                    len[i] = len0 + len1;
+                    bits[i] = (s->bits[0][y] << len1) + s->bits[p][u];
+                    symbols[i] = (y<<8) + u;
+                    if(symbols[i] != 0xffff) // reserved to mean "invalid"
+                        i++;
                 }
             }
             free_vlc(&s->vlc[3+p]);
