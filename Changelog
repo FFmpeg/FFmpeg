@@ -84,6 +84,7 @@ version <next>
 - V.Flash PTX decoder
 - RoQ muxer, audio encoder
 - Renderware TXD demuxer and decoder
+- extern C declarations for C++ removed from headers
 - sws_flags command line option
 
 version 0.4.9-pre1:
