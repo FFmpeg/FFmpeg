@@ -70,6 +70,7 @@ typedef struct HYuvContext{
     uint64_t stats[3][256];
     uint8_t len[3][256];
     uint32_t bits[3][256];
+    uint32_t pix_bgr_map[1<<VLC_BITS];
     VLC vlc[6];                             //Y,U,V,YY,YU,YV
     AVFrame picture;
     uint8_t *bitstream_buffer;
@@ -319,11 +320,10 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
 #endif /* CONFIG_ENCODERS */
 
 static void generate_joint_tables(HYuvContext *s){
-    // TODO rgb
+    uint16_t symbols[1<<VLC_BITS];
+    uint16_t bits[1<<VLC_BITS];
+    uint8_t len[1<<VLC_BITS];
     if(s->bitstream_bpp < 24){
-        uint16_t symbols[1<<VLC_BITS];
-        uint16_t bits[1<<VLC_BITS];
-        uint8_t len[1<<VLC_BITS];
         int p, i, y, u;
         for(p=0; p<3; p++){
             for(i=y=0; y<256; y++){
@@ -345,6 +345,46 @@ static void generate_joint_tables(HYuvContext *s){
             free_vlc(&s->vlc[3+p]);
             init_vlc_sparse(&s->vlc[3+p], VLC_BITS, i, len, 1, 1, bits, 2, 2, symbols, 2, 2, 0);
         }
+    }else{
+        uint8_t (*map)[4] = (uint8_t(*)[4])s->pix_bgr_map;
+        int i, b, g, r, code;
+        int p0 = s->decorrelate;
+        int p1 = !s->decorrelate;
+        // restrict the range to +/-16 becaues that's pretty much guaranteed to
+        // cover all the combinations that fit in 11 bits total, and it doesn't
+        // matter if we miss a few rare codes.
+        for(i=0, g=-16; g<16; g++){
+            int len0 = s->len[p0][g&255];
+            int limit0 = VLC_BITS - len0;
+            if(limit0 < 2)
+                continue;
+            for(b=-16; b<16; b++){
+                int len1 = s->len[p1][b&255];
+                int limit1 = limit0 - len1;
+                if(limit1 < 1)
+                    continue;
+                code = (s->bits[p0][g&255] << len1) + s->bits[p1][b&255];
+                for(r=-16; r<16; r++){
+                    int len2 = s->len[2][r&255];
+                    if(len2 > limit1)
+                        continue;
+                    len[i] = len0 + len1 + len2;
+                    bits[i] = (code << len2) + s->bits[2][r&255];
+                    if(s->decorrelate){
+                        map[i][G] = g;
+                        map[i][B] = g+b;
+                        map[i][R] = g+r;
+                    }else{
+                        map[i][B] = g;
+                        map[i][G] = b;
+                        map[i][R] = r;
+                    }
+                    i++;
+                }
+            }
+        }
+        free_vlc(&s->vlc[3]);
+        init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0);
     }
 }
 
@@ -816,39 +856,37 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
 }
 #endif /* CONFIG_ENCODERS */
 
-static void decode_bgr_bitstream(HYuvContext *s, int count){
+static av_always_inline void decode_bgr_1(HYuvContext *s, int count, int decorrelate, int alpha){
     int i;
+    for(i=0; i<count; i++){
+        int code = get_vlc2(&s->gb, s->vlc[3].table, VLC_BITS, 1);
+        if(code != -1){
+            *(uint32_t*)&s->temp[0][4*i] = s->pix_bgr_map[code];
+        }else if(decorrelate){
+            s->temp[0][4*i+G] = get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
+            s->temp[0][4*i+B] = get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3) + s->temp[0][4*i+G];
+            s->temp[0][4*i+R] = get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3) + s->temp[0][4*i+G];
+        }else{
+            s->temp[0][4*i+B] = get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);
+            s->temp[0][4*i+G] = get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
+            s->temp[0][4*i+R] = get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3);
+        }
+        if(alpha)
+            get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
+    }
+}
 
+static void decode_bgr_bitstream(HYuvContext *s, int count){
     if(s->decorrelate){
-        if(s->bitstream_bpp==24){
-            for(i=0; i<count; i++){
-                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
-                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3) + s->temp[0][4*i+G];
-                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3) + s->temp[0][4*i+G];
-            }
-        }else{
-            for(i=0; i<count; i++){
-                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
-                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3) + s->temp[0][4*i+G];
-                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3) + s->temp[0][4*i+G];
-                                   get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
-            }
-        }
+        if(s->bitstream_bpp==24)
+            decode_bgr_1(s, count, 1, 0);
+        else
+            decode_bgr_1(s, count, 1, 1);
     }else{
-        if(s->bitstream_bpp==24){
-            for(i=0; i<count; i++){
-                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);
-                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
-                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3);
-            }
-        }else{
-            for(i=0; i<count; i++){
-                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);
-                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3);
-                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3);
-                                   get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
-            }
-        }
+        if(s->bitstream_bpp==24)
+            decode_bgr_1(s, count, 0, 0);
+        else
+            decode_bgr_1(s, count, 0, 1);
     }
 }
 
