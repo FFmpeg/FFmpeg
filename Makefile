@@ -235,11 +235,11 @@ TAGS:
 
 # regression tests
 
-codectest libavtest test-server fulltest test mpeg4 mpeg: $(PROGS)
+codectest libavtest seektest test-server fulltest test: $(PROGS)
 	$(MAKE) -C tests $@
 
 .PHONY: all lib videohook documentation install* wininstaller uninstall*
 .PHONY: dep depend clean distclean TAGS
-.PHONY: codectest libavtest test-server fulltest test mpeg4 mpeg
+.PHONY: codectest libavtest seektest test-server fulltest test
 
 -include .depend
