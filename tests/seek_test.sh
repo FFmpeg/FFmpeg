@@ -1,5 +1,4 @@
 #!/bin/sh
-#feel free to clean this up ive made no attempt to write this overly portable ...
 
 datadir="./data"
 
