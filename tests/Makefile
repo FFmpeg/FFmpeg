@@ -80,8 +80,8 @@ seek_test$(EXESUF): seek_test.c $(LIBAV)
 	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
 
 distclean clean:
-	rm -rf vsynth1 vsynth2 data
-	rm -f asynth1.sw *~ audiogen$(EXESUF) videogen$(EXESUF) rotozoom$(EXESUF) tiny_psnr$(EXESUF)
+	rm -rf vsynth1 vsynth2 data asynth1.sw *~
+	rm -f $(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr)
 
 .PHONY: all fulltest test codectest libavtest test-server seektest
 .PHONY: mpeg4 mpeg ac3 snow snowll distclean clean
