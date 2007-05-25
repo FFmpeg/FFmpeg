@@ -212,7 +212,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         for(i=0; i<2; i++){
             int div, error;
             div= (s->avctx->time_base.num*1800000LL + 500LL*s->avctx->time_base.den) / ((1000LL+i)*s->avctx->time_base.den);
-            div= av_clip(1, div, 127);
+            div= av_clip(div, 1, 127);
             error= FFABS(s->avctx->time_base.num*1800000LL - (1000LL+i)*s->avctx->time_base.den*div);
             if(error < best_error){
                 best_error= error;
