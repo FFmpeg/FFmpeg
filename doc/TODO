@@ -68,6 +68,10 @@ unassigned TODO: (unordered)
 - SNOW: 4x4 block support
 - SNOW: 1/8 pel motion compensation support
 - SNOW: iterative motion estimation based on subsampled images
+- SNOW: try B frames and MCTF and see how their PSNR/bitrate/complexity behaves
+- SNOW: try to use the wavelet transformed MC-ed reference frame as context for the entropy coder
+- SNOW: think about/analyize how to make snow use multiple cpus/threads
+- SNOW: finish spec
 - FLAC: lossy encoding (viterbi and naive scalar quantization)
 - libavfilter
 - JPEG2000 decoder & encoder
