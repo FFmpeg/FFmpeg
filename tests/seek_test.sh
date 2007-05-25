@@ -7,7 +7,7 @@ logfile="$datadir/seek.regression"
 reffile="$1"
 
 list=`ls data/a-* data/b-* | sort`
-rm $logfile
+rm -f $logfile
 for i in $list ; do
     echo ---------------- >>$logfile
     echo $i >>$logfile
