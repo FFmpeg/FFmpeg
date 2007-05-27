@@ -2087,7 +2087,6 @@ if enabled source_path_used; then
           libswscale/Makefile \
           tests/Makefile \
           vhook/Makefile \
-          doc/Makefile \
           doc/texi2pod.pl \
           "
     for dir in $DIRS ; do
