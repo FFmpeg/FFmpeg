@@ -850,8 +850,8 @@ AMR WB (floating-point mode) and the AMR NB (floating-point mode) reference
 decoders and encoders.
 
 Go to @url{http://www.penguin.cz/~utx/amr} and follow the instructions for
-installing the libraries. Then pass @code{--enable-amr-nb} and/or
-@code{--enable-amr-wb} to configure to enable the libraries.
+installing the libraries. Then pass @code{--enable-libamr-nb} and/or
+@code{--enable-libamr-wb} to configure to enable the libraries.
 
 
 @chapter Supported File Formats and Codecs
