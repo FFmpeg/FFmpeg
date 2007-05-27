@@ -95,6 +95,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                     ast->codec->codec_id =
                         wav_codec_get_id(ast->codec->codec_tag,
                                          ast->codec->bits_per_sample);
+                    ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
                     url_fskip(pb, 4 * 4);
 
