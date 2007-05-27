@@ -9,8 +9,8 @@ SRC_DIR=$(SRC_PATH)/tests
 BUILD_DIR=$(BUILD_ROOT)/tests
 CFLAGS=-O2 -Wall -g
 
-REFFILE1=$(SRC_DIR)/ffmpeg.regression.ref
-REFFILE2=$(SRC_DIR)/rotozoom.regression.ref
+FFMPEG_REFFILE=$(SRC_DIR)/ffmpeg.regression.ref
+ROTOZOOM_REFFILE=$(SRC_DIR)/rotozoom.regression.ref
 
 SERVER_REFFILE=$(SRC_DIR)/ffserver.regression.ref
 
@@ -28,8 +28,8 @@ test-server: vsynth1/00.pgm asynth1.sw
 	$(SRC_DIR)/server-regression.sh $(SERVER_REFFILE) $(SRC_DIR)/test.conf
 
 codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw tiny_psnr$(EXESUF)
-	$(SRC_DIR)/regression.sh $@ $(REFFILE1) vsynth1
-	$(SRC_DIR)/regression.sh $@ $(REFFILE2) vsynth2
+	$(SRC_DIR)/regression.sh $@ $(FFMPEG_REFFILE) vsynth1
+	$(SRC_DIR)/regression.sh $@ $(ROTOZOOM_REFFILE) vsynth2
 
 ifeq ($(CONFIG_GPL),yes)
 libavtest: vsynth1/00.pgm asynth1.sw
