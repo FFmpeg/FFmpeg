@@ -36,6 +36,7 @@ libavtest:
 	@echo
 	@echo "This test requires FFmpeg to be compiled with --enable-gpl."
 	@echo
+	@exit 1
 endif
 
 ifeq ($(CONFIG_SWSCALER),yes)
