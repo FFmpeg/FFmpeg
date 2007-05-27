@@ -25,17 +25,17 @@ test-server: vsynth1/00.pgm asynth1.sw
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
 	@echo
-	@$(SRC_DIR)/server-regression.sh $(SERVER_REFFILE) $(SRC_DIR)/test.conf
+	$(SRC_DIR)/server-regression.sh $(SERVER_REFFILE) $(SRC_DIR)/test.conf
 
 # fast regression tests for all codecs
 codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw tiny_psnr$(EXESUF)
-	@$(SRC_DIR)/regression.sh $@ $(REFFILE1) vsynth1
-	@$(SRC_DIR)/regression.sh $@ $(REFFILE2) vsynth2
+	$(SRC_DIR)/regression.sh $@ $(REFFILE1) vsynth1
+	$(SRC_DIR)/regression.sh $@ $(REFFILE2) vsynth2
 
 # fast regression for libav formats
 ifeq ($(CONFIG_GPL),yes)
 libavtest: vsynth1/00.pgm asynth1.sw
-	@$(SRC_DIR)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
+	$(SRC_DIR)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
 else
 libavtest:
 	@echo
@@ -53,16 +53,16 @@ swscale_error:
 endif
 
 seektest: seek_test$(EXESUF)
-	@$(SRC_DIR)/seek_test.sh $(SEEK_REFFILE)
+	$(SRC_DIR)/seek_test.sh $(SEEK_REFFILE)
 
 # video generation
 
 vsynth1/00.pgm: videogen$(EXESUF)
-	@mkdir -p vsynth1
+	mkdir -p vsynth1
 	$(BUILD_DIR)/$< 'vsynth1/'
 
 vsynth2/00.pgm: rotozoom$(EXESUF)
-	@mkdir -p vsynth2
+	mkdir -p vsynth2
 	$(BUILD_DIR)/$< 'vsynth2/' $(SRC_DIR)/lena.pnm
 
 # audio generation
