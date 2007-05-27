@@ -2417,6 +2417,7 @@ retry:
         return -1;
     }else if(s->frame_size < buf_size){
         av_log(avctx, AV_LOG_ERROR, "incorrect frame size\n");
+        buf_size= s->frame_size;
     }
 
     out_size = mp_decode_frame(s, out_samples, buf, buf_size);
