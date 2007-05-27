@@ -73,11 +73,8 @@ asynth1.sw: audiogen$(EXESUF)
 %$(EXESUF): %.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
-LIBAV = ../libavformat/libavformat.a ../libavcodec/libavcodec.a ../libavutil/libavutil.a
-
-#FIXME cleanup shit below
-seek_test$(EXESUF): seek_test.c $(LIBAV)
-	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -o $@ $< $(SRC_PATH)/libavformat/libavformat.a $(SRC_PATH)/libavcodec/libavcodec.a $(SRC_PATH)/libavutil/libavutil.a $(EXTRALIBS)
+seek_test$(EXESUF): seek_test.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -o $@ $< $(BUILD_ROOT)/libavformat/libavformat.a $(BUILD_ROOT)/libavcodec/libavcodec.a $(BUILD_ROOT)/libavutil/libavutil.a $(EXTRALIBS)
 
 distclean clean:
 	rm -rf vsynth1 vsynth2 data asynth1.sw *~

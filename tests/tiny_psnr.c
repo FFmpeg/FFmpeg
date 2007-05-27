@@ -49,19 +49,7 @@ uint64_t exp16_table[21]={
  195360063,
  582360139072LL,
 };
-#if 1
-// 16.16 fixpoint exp()
-static unsigned int exp16(unsigned int a){
-    int i;
-    int out= 1<<16;
 
-    for(i=19;i>=0;i--){
-        if(a&(1<<i))
-            out= (out*exp16_table[i] + (1<<15))>>16;
-    }
-
-    return out;
-}
 // 16.16 fixpoint log()
 static int64_t log16(uint64_t a){
     int i;
@@ -80,7 +68,6 @@ static int64_t log16(uint64_t a){
     return out;
 }
 
-#endif
 static uint64_t int_sqrt(uint64_t a)
 {
     uint64_t ret=0;
