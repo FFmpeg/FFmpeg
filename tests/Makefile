@@ -10,10 +10,10 @@ BUILD_DIR = $(BUILD_ROOT)/tests
 CFLAGS = -O2 -Wall -g
 
 FFMPEG_REFFILE   = $(SRC_DIR)/ffmpeg.regression.ref
+FFSERVER_REFFILE = $(SRC_DIR)/ffserver.regression.ref
 LIBAV_REFFILE    = $(SRC_DIR)/libav.regression.ref
 ROTOZOOM_REFFILE = $(SRC_DIR)/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_DIR)/seek.regression.ref
-SERVER_REFFILE   = $(SRC_DIR)/ffserver.regression.ref
 
 all fulltest test: codectest libavtest seektest
 
@@ -22,7 +22,7 @@ test-server: vsynth1/00.pgm asynth1.sw
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
 	@echo
-	$(SRC_DIR)/server-regression.sh $(SERVER_REFFILE) $(SRC_DIR)/test.conf
+	$(SRC_DIR)/server-regression.sh $(FFSERVER_REFFILE) $(SRC_DIR)/test.conf
 
 codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw tiny_psnr$(EXESUF)
 	$(SRC_DIR)/regression.sh $@ $(FFMPEG_REFFILE) vsynth1
