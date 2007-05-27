@@ -4,19 +4,16 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH_BARE)/tests
-SRC_DIR=$(SRC_PATH)/tests
-BUILD_DIR=$(BUILD_ROOT)/tests
-CFLAGS=-O2 -Wall -g
+VPATH     = $(SRC_PATH_BARE)/tests
+SRC_DIR   = $(SRC_PATH)/tests
+BUILD_DIR = $(BUILD_ROOT)/tests
+CFLAGS = -O2 -Wall -g
 
-FFMPEG_REFFILE=$(SRC_DIR)/ffmpeg.regression.ref
-ROTOZOOM_REFFILE=$(SRC_DIR)/rotozoom.regression.ref
-
-SERVER_REFFILE=$(SRC_DIR)/ffserver.regression.ref
-
-LIBAV_REFFILE=$(SRC_DIR)/libav.regression.ref
-
-SEEK_REFFILE=$(SRC_DIR)/seek.regression.ref
+FFMPEG_REFFILE   = $(SRC_DIR)/ffmpeg.regression.ref
+LIBAV_REFFILE    = $(SRC_DIR)/libav.regression.ref
+ROTOZOOM_REFFILE = $(SRC_DIR)/rotozoom.regression.ref
+SEEK_REFFILE     = $(SRC_DIR)/seek.regression.ref
+SERVER_REFFILE   = $(SRC_DIR)/ffserver.regression.ref
 
 all fulltest test: codectest libavtest seektest
 
