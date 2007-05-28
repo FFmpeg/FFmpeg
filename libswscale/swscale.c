@@ -72,9 +72,6 @@ untested special converters
 #include "x86_cpu.h"
 #include "bswap.h"
 #include "rgb2rgb.h"
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
 #include "libavcodec/opt.h"
 
 #undef MOVNTQ

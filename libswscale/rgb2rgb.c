@@ -32,9 +32,6 @@
 #include "swscale_internal.h"
 #include "x86_cpu.h"
 #include "bswap.h"
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
 
 #define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
 
