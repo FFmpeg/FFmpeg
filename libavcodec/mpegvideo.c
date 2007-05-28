@@ -35,10 +35,6 @@
 #include "faandct.h"
 #include <limits.h>
 
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
-
 //#undef NDEBUG
 //#include <assert.h>
 

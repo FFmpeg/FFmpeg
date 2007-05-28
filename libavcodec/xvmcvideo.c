@@ -29,10 +29,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
-
 #ifdef HAVE_XVMC
 
 //X11 includes are in the xvmc_render.h

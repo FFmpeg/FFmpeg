@@ -28,10 +28,6 @@
 #include "swscale.h"
 #include "dsputil.h"
 
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
-
 #define NB_COMPONENTS 3
 
 #define PHASE_BITS 4

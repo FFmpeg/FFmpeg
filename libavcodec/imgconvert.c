@@ -33,10 +33,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#ifdef USE_FASTMEMCPY
-#include "libvo/fastmemcpy.h"
-#endif
-
 #ifdef HAVE_MMX
 #include "i386/mmx.h"
 #endif
