@@ -397,7 +397,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     int program_info_length, pcr_pid, pid, stream_type;
     int desc_list_len, desc_len, desc_tag;
     int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
-    char language[4];
+    char language[4] = {0}; /* initialize to kill warnings */
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
