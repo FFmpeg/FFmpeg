@@ -2766,6 +2766,7 @@ static void init_pred_ptrs(H264Context *h){
 }
 
 static void free_tables(H264Context *h){
+    int i;
     av_freep(&h->intra4x4_pred_mode);
     av_freep(&h->chroma_pred_mode_table);
     av_freep(&h->cbp_table);
@@ -2782,6 +2783,12 @@ static void free_tables(H264Context *h){
     av_freep(&h->mb2b8_xy);
 
     av_freep(&h->s.obmc_scratchpad);
+
+    for(i = 0; i < MAX_SPS_COUNT; i++)
+        av_freep(h->sps_buffers + i);
+
+    for(i = 0; i < MAX_PPS_COUNT; i++)
+        av_freep(h->pps_buffers + i);
 }
 
 static void init_dequant8_coeff_table(H264Context *h){
@@ -4194,17 +4201,17 @@ static int decode_slice_header(H264Context *h){
         av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
         return -1;
     }
-    h->pps= h->pps_buffer[pps_id];
-    if(h->pps.slice_group_count == 0){
+    if(!h->pps_buffers[pps_id]) {
         av_log(h->s.avctx, AV_LOG_ERROR, "non existing PPS referenced\n");
         return -1;
     }
+    h->pps= *h->pps_buffers[pps_id];
 
-    h->sps= h->sps_buffer[ h->pps.sps_id ];
-    if(h->sps.log2_max_frame_num == 0){
+    if(!h->sps_buffers[h->pps.sps_id]) {
         av_log(h->s.avctx, AV_LOG_ERROR, "non existing SPS referenced\n");
         return -1;
     }
+    h->sps = *h->sps_buffers[h->pps.sps_id];
 
     if(h->dequant_coeff_pps != pps_id){
         h->dequant_coeff_pps = pps_id;
@@ -7399,6 +7406,26 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
     }
 }
 
+/**
+ * Returns and optionally allocates SPS / PPS structures in the supplied array 'vec'
+ */
+static void *
+alloc_parameter_set(H264Context *h, void **vec, const unsigned int id, const unsigned int max,
+                    const size_t size, const char *name)
+{
+    if(id>=max) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "%s_id (%d) out of range\n", name, id);
+        return NULL;
+    }
+
+    if(!vec[id]) {
+        vec[id] = av_mallocz(size);
+        if(vec[id] == NULL)
+            av_log(h->s.avctx, AV_LOG_ERROR, "cannot allocate memory for %s\n", name);
+    }
+    return vec[id];
+}
+
 static inline int decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
     int profile_idc, level_idc;
@@ -7415,13 +7442,10 @@ static inline int decode_seq_parameter_set(H264Context *h){
     level_idc= get_bits(&s->gb, 8);
     sps_id= get_ue_golomb(&s->gb);
 
-    if (sps_id >= MAX_SPS_COUNT){
-        // ok it has gone out of hand, someone is sending us bad stuff.
-        av_log(h->s.avctx, AV_LOG_ERROR, "illegal sps_id (%d)\n", sps_id);
+    sps = alloc_parameter_set(h, (void **)h->sps_buffers, sps_id, MAX_SPS_COUNT, sizeof(SPS), "sps");
+    if(sps == NULL)
         return -1;
-    }
 
-    sps= &h->sps_buffer[ sps_id ];
     sps->profile_idc= profile_idc;
     sps->level_idc= level_idc;
 
@@ -7531,14 +7555,12 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     unsigned int tmp, pps_id= get_ue_golomb(&s->gb);
     PPS *pps;
 
-    if(pps_id>=MAX_PPS_COUNT){
-        av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
+    pps = alloc_parameter_set(h, (void **)h->pps_buffers, pps_id, MAX_PPS_COUNT, sizeof(PPS), "pps");
+    if(pps == NULL)
         return -1;
-    }
-    pps = &h->pps_buffer[pps_id];
 
     tmp= get_ue_golomb(&s->gb);
-    if(tmp>=MAX_SPS_COUNT){
+    if(tmp>=MAX_SPS_COUNT || h->sps_buffers[tmp] == NULL){
         av_log(h->s.avctx, AV_LOG_ERROR, "sps_id out of range\n");
         return -1;
     }
@@ -7608,7 +7630,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
 
     if(get_bits_count(&s->gb) < bit_length){
         pps->transform_8x8_mode= get_bits1(&s->gb);
-        decode_scaling_matrices(h, &h->sps_buffer[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
+        decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
         get_se_golomb(&s->gb);  //second_chroma_qp_index_offset
     }
 

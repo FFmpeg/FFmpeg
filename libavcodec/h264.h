@@ -243,10 +243,10 @@ typedef struct H264Context{
     int unknown_svq3_flag;
     int next_slice_index;
 
-    SPS sps_buffer[MAX_SPS_COUNT];
+    SPS *sps_buffers[MAX_SPS_COUNT];
     SPS sps; ///< current sps
 
-    PPS pps_buffer[MAX_PPS_COUNT];
+    PPS *pps_buffers[MAX_PPS_COUNT];
     /**
      * current pps
      */
