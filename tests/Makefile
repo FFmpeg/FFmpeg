@@ -73,4 +73,4 @@ distclean clean:
 	rm -f $(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr)
 
 .PHONY: all fulltest test codectest libavtest test-server seektest
-.PHONY: mpeg4 mpeg ac3 snow snowll distclean clean
+.PHONY: mpeg4 mpeg ac3 snow snowll swscale_error distclean clean
