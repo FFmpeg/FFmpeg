@@ -36,16 +36,16 @@
 #include "dsputil.h"
 
 typedef struct {
-  unsigned char y0, y1, y2, y3, u, v;
+  unsigned char y[4];
+  unsigned char u, v;
 } roq_cell;
 
 typedef struct {
   int idx[4];
 } roq_qcell;
 
-static int uiclip[1024], *uiclp;  /* clipping table */
-#define avg2(a,b) uiclp[(((int)(a)+(int)(b)+1)>>1)]
-#define avg4(a,b,c,d) uiclp[(((int)(a)+(int)(b)+(int)(c)+(int)(d)+2)>>2)]
+#define avg2(a,b) av_clip_uint8(((int)(a)+(int)(b)+1)>>1)
+#define avg4(a,b,c,d) av_clip_uint8(((int)(a)+(int)(b)+(int)(c)+(int)(d)+2)>>2)
 
 typedef struct RoqContext {
 
@@ -80,21 +80,21 @@ typedef struct RoqContext {
 #define get_byte(in_buffer) *(in_buffer++)
 
 
-static void apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
+void ff_apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
 {
     unsigned char *yptr;
 
     yptr = ri->current_frame->data[0] + (y * ri->y_stride) + x;
-    *yptr++ = cell->y0;
-    *yptr++ = cell->y1;
+    *yptr++ = cell->y[0];
+    *yptr++ = cell->y[1];
     yptr += (ri->y_stride - 2);
-    *yptr++ = cell->y2;
-    *yptr++ = cell->y3;
+    *yptr++ = cell->y[2];
+    *yptr++ = cell->y[3];
     ri->current_frame->data[1][(y/2) * (ri->c_stride) + x/2] = cell->u;
     ri->current_frame->data[2][(y/2) * (ri->c_stride) + x/2] = cell->v;
 }
 
-static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
+void ff_apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
 {
     unsigned long row_inc, c_row_inc;
     register unsigned char y0, y1, u, v;
@@ -106,9 +106,9 @@ static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
 
     row_inc = ri->y_stride - 4;
     c_row_inc = (ri->c_stride) - 2;
-    *yptr++ = y0 = cell->y0; *uptr++ = u = cell->u; *vptr++ = v = cell->v;
+    *yptr++ = y0 = cell->y[0]; *uptr++ = u = cell->u; *vptr++ = v = cell->v;
     *yptr++ = y0;
-    *yptr++ = y1 = cell->y1; *uptr++ = u; *vptr++ = v;
+    *yptr++ = y1 = cell->y[1]; *uptr++ = u; *vptr++ = v;
     *yptr++ = y1;
 
     yptr += row_inc;
@@ -120,9 +120,9 @@ static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
 
     yptr += row_inc; uptr += c_row_inc; vptr += c_row_inc;
 
-    *yptr++ = y0 = cell->y2; *uptr++ = u; *vptr++ = v;
+    *yptr++ = y0 = cell->y[2]; *uptr++ = u; *vptr++ = v;
     *yptr++ = y0;
-    *yptr++ = y1 = cell->y3; *uptr++ = u; *vptr++ = v;
+    *yptr++ = y1 = cell->y[3]; *uptr++ = u; *vptr++ = v;
     *yptr++ = y1;
 
     yptr += row_inc;
@@ -133,14 +133,14 @@ static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
     *yptr++ = y1;
 }
 
-static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
-    signed char mean_x, signed char mean_y)
+void ff_apply_motion_4x4(RoqContext *ri, int x, int y,
+                             int deltax, int deltay)
 {
     int i, hw, mx, my;
     unsigned char *pa, *pb;
 
-    mx = x + 8 - (mv >> 4) - mean_x;
-    my = y + 8 - (mv & 0xf) - mean_y;
+    mx = x + deltax;
+    my = y + deltay;
 
     /* check MV against frame boundaries */
     if ((mx < 0) || (mx > ri->avctx->width - 4) ||
@@ -202,14 +202,14 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
     }
 }
 
-static void apply_motion_8x8(RoqContext *ri, int x, int y,
-    unsigned char mv, signed char mean_x, signed char mean_y)
+void ff_apply_motion_8x8(RoqContext *ri, int x, int y,
+                             int deltax, int deltay)
 {
     int mx, my, i, j, hw;
     unsigned char *pa, *pb;
 
-    mx = x + 8 - (mv >> 4) - mean_x;
-    my = y + 8 - (mv & 0xf) - mean_y;
+    mx = x + deltax;
+    my = y + deltay;
 
     /* check MV against frame boundaries */
     if ((mx < 0) || (mx > ri->avctx->width - 8) ||
@@ -283,7 +283,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
     unsigned int chunk_id = 0, chunk_arg = 0;
     unsigned long chunk_size = 0;
     int i, j, k, nv1, nv2, vqflg = 0, vqflg_pos = -1;
-    int vqid, bpos, xpos, ypos, xp, yp, x, y;
+    int vqid, bpos, xpos, ypos, xp, yp, x, y, mx, my;
     int frame_stats[2][4] = {{0},{0}};
     roq_qcell *qcell;
     unsigned char *buf = ri->buf;
@@ -302,10 +302,10 @@ static void roqvideo_decode_frame(RoqContext *ri)
             if((nv2 = chunk_arg & 0xff) == 0 && nv1 * 6 < chunk_size)
                 nv2 = 256;
             for(i = 0; i < nv1; i++) {
-                ri->cells[i].y0 = get_byte(buf);
-                ri->cells[i].y1 = get_byte(buf);
-                ri->cells[i].y2 = get_byte(buf);
-                ri->cells[i].y3 = get_byte(buf);
+                ri->cells[i].y[0] = get_byte(buf);
+                ri->cells[i].y[1] = get_byte(buf);
+                ri->cells[i].y[2] = get_byte(buf);
+                ri->cells[i].y[3] = get_byte(buf);
                 ri->cells[i].u = get_byte(buf);
                 ri->cells[i].v = get_byte(buf);
             }
@@ -329,18 +329,19 @@ static void roqvideo_decode_frame(RoqContext *ri)
 
                 switch(vqid) {
                 case RoQ_ID_MOT:
-                    apply_motion_8x8(ri, xp, yp, 0, 8, 8);
+                    ff_apply_motion_8x8(ri, xp, yp, 0, 0);
                     break;
                 case RoQ_ID_FCC:
-                    apply_motion_8x8(ri, xp, yp, buf[bpos++], chunk_arg >> 8,
-                        chunk_arg & 0xff);
+                    mx = 8 - (buf[bpos] >> 4) - ((signed char) (chunk_arg >> 8));
+                    my = 8 - (buf[bpos++] & 0xf) - ((signed char) chunk_arg);
+                    ff_apply_motion_8x8(ri, xp, yp, mx, my);
                     break;
                 case RoQ_ID_SLD:
                     qcell = ri->qcells + buf[bpos++];
-                    apply_vector_4x4(ri, xp, yp, ri->cells + qcell->idx[0]);
-                    apply_vector_4x4(ri, xp+4, yp, ri->cells + qcell->idx[1]);
-                    apply_vector_4x4(ri, xp, yp+4, ri->cells + qcell->idx[2]);
-                    apply_vector_4x4(ri, xp+4, yp+4, ri->cells + qcell->idx[3]);
+                    ff_apply_vector_4x4(ri, xp, yp, ri->cells + qcell->idx[0]);
+                    ff_apply_vector_4x4(ri, xp+4, yp, ri->cells + qcell->idx[1]);
+                    ff_apply_vector_4x4(ri, xp, yp+4, ri->cells + qcell->idx[2]);
+                    ff_apply_vector_4x4(ri, xp+4, yp+4, ri->cells + qcell->idx[3]);
                     break;
                 case RoQ_ID_CCC:
                     for (k = 0; k < 4; k++) {
@@ -358,24 +359,25 @@ static void roqvideo_decode_frame(RoqContext *ri)
                         vqflg_pos--;
                         switch(vqid) {
                         case RoQ_ID_MOT:
-                            apply_motion_4x4(ri, x, y, 0, 8, 8);
+                            ff_apply_motion_4x4(ri, x, y, 0, 0);
                             break;
                         case RoQ_ID_FCC:
-                            apply_motion_4x4(ri, x, y, buf[bpos++],
-                                chunk_arg >> 8, chunk_arg & 0xff);
+                            mx = 8 - (buf[bpos] >> 4) - ((signed char) (chunk_arg >> 8));
+                            my = 8 - (buf[bpos++] & 0xf) - ((signed char) chunk_arg);
+                            ff_apply_motion_4x4(ri, x, y, mx, my);
                             break;
                         case RoQ_ID_SLD:
                             qcell = ri->qcells + buf[bpos++];
-                            apply_vector_2x2(ri, x, y, ri->cells + qcell->idx[0]);
-                            apply_vector_2x2(ri, x+2, y, ri->cells + qcell->idx[1]);
-                            apply_vector_2x2(ri, x, y+2, ri->cells + qcell->idx[2]);
-                            apply_vector_2x2(ri, x+2, y+2, ri->cells + qcell->idx[3]);
+                            ff_apply_vector_2x2(ri, x, y, ri->cells + qcell->idx[0]);
+                            ff_apply_vector_2x2(ri, x+2, y, ri->cells + qcell->idx[1]);
+                            ff_apply_vector_2x2(ri, x, y+2, ri->cells + qcell->idx[2]);
+                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cells + qcell->idx[3]);
                             break;
                         case RoQ_ID_CCC:
-                            apply_vector_2x2(ri, x, y, ri->cells + buf[bpos]);
-                            apply_vector_2x2(ri, x+2, y, ri->cells + buf[bpos+1]);
-                            apply_vector_2x2(ri, x, y+2, ri->cells + buf[bpos+2]);
-                            apply_vector_2x2(ri, x+2, y+2, ri->cells + buf[bpos+3]);
+                            ff_apply_vector_2x2(ri, x, y, ri->cells + buf[bpos]);
+                            ff_apply_vector_2x2(ri, x+2, y, ri->cells + buf[bpos+1]);
+                            ff_apply_vector_2x2(ri, x, y+2, ri->cells + buf[bpos+2]);
+                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cells + buf[bpos+3]);
                             bpos += 4;
                             break;
                         }
@@ -400,7 +402,6 @@ static void roqvideo_decode_frame(RoqContext *ri)
 static int roq_decode_init(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
-    int i;
 
     s->avctx = avctx;
     s->first_frame = 1;
@@ -408,10 +409,6 @@ static int roq_decode_init(AVCodecContext *avctx)
     s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV420P;
     dsputil_init(&s->dsp, avctx);
-
-    uiclp = uiclip+512;
-    for(i = -512; i < 512; i++)
-        uiclp[i] = (i < 0 ? 0 : (i > 255 ? 255 : i));
 
     return 0;
 }
