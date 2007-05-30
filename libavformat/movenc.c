@@ -845,6 +845,14 @@ static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
     (version == 1) ? put_be64(pb, track->trackDuration) : put_be32(pb, track->trackDuration); /* duration */
     put_be16(pb, track->language); /* language */
     put_be16(pb, 0); /* reserved (quality) */
+
+    if(version!=0 && track->mode == MODE_MOV){
+        av_log(NULL, AV_LOG_ERROR,
+            "FATAL error, file duration too long for timebase, this file will not be\n"
+            "playable with quicktime. Choose a differnt timebase or a different\n"
+            "container format\n");
+    }
+
     return 32;
 }
 
