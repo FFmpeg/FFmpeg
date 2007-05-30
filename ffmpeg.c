@@ -2243,10 +2243,24 @@ static void opt_frame_pad_right(const char *arg)
     }
 }
 
+void list_pix_fmts(void)
+{
+    int i;
+    char pix_fmt_str[128];
+    for (i=-1; i < PIX_FMT_NB; i++) {
+        avcodec_pix_fmt_string (pix_fmt_str, sizeof(pix_fmt_str), i);
+        fprintf(stdout, "%s\n", pix_fmt_str);
+    }
+}
 
 static void opt_frame_pix_fmt(const char *arg)
 {
-    frame_pix_fmt = avcodec_get_pix_fmt(arg);
+    if (strcmp(arg, "list"))
+        frame_pix_fmt = avcodec_get_pix_fmt(arg);
+    else {
+        list_pix_fmts();
+        exit(0);
+    }
 }
 
 static void opt_frame_aspect_ratio(const char *arg)
@@ -3596,7 +3610,7 @@ const OptionDef options[] = {
     { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
-    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
     { "croptop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
     { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
     { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },

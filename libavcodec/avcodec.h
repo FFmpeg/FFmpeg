@@ -2615,6 +2615,19 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
 int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
+
+/**
+ * Print in buf the string corresponding to the pixel format with
+ * number pix_fmt, or an header if pix_fmt is negative.
+ *
+ * @param buf[in] the buffer where to write the string
+ * @param buf_size[in] the size of buf
+ * @param pix_fmt[in] the number of the pixel format to print the corresponding info string, or
+ * a negative value to print the corresponding header.
+ * Meaningful values for obtaining a pixel format info vary from 0 to PIX_FMT_NB -1.
+ */
+void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt);
+
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
 
