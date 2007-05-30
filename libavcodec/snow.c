@@ -2115,7 +2115,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     //FIXME if mb_cmp != SSE then intra cant be compared currently and mb_penalty vs. lambda2
 
   //  subpel search
-    base_bits= get_rac_count(&s->c) - (s->c.bytestream - s->c.bytestream_start);
+    base_bits= get_rac_count(&s->c) - 8*(s->c.bytestream - s->c.bytestream_start);
     pc= s->c;
     pc.bytestream_start=
     pc.bytestream= p_buffer; //FIXME end/start? and at the other stoo
