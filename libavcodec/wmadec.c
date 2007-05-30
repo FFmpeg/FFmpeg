@@ -106,7 +106,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     s->use_bit_reservoir = flags2 & 0x0002;
     s->use_variable_block_len = flags2 & 0x0004;
 
-    ff_wma_init(avctx, flags2);
+    if(ff_wma_init(avctx, flags2)<0)
+        return -1;
 
     /* init MDCT */
     for(i = 0; i < s->nb_block_sizes; i++)

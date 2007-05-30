@@ -72,6 +72,11 @@ int ff_wma_init(AVCodecContext * avctx, int flags2)
     int sample_rate1;
     int coef_vlc_table;
 
+    if(   avctx->sample_rate<=0 || avctx->sample_rate>50000
+       || avctx->channels<=0 || avctx->channels>8
+       || avctx->bit_rate<=0)
+        return -1;
+
     s->sample_rate = avctx->sample_rate;
     s->nb_channels = avctx->channels;
     s->bit_rate = avctx->bit_rate;
