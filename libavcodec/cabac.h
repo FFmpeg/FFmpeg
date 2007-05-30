@@ -539,7 +539,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #else /* defined(ARCH_X86) && defined(CONFIG_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
-    int bit, lps_mask attribute_unused;
+    int bit, lps_mask av_unused;
 
     c->range -= RangeLPS;
 #ifndef BRANCHLESS_CABAC_DECODER

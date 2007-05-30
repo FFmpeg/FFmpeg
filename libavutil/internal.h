@@ -34,14 +34,6 @@
 #endif
 #endif
 
-#ifndef attribute_unused
-#if defined(__GNUC__)
-#    define attribute_unused __attribute__((unused))
-#else
-#    define attribute_unused
-#endif
-#endif
-
 #ifndef M_PI
 #define M_PI    3.14159265358979323846
 #endif
