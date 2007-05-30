@@ -613,7 +613,7 @@ resync:
             tmp = ptr[0];
             ptr[0] = ptr[1];
             ptr[1] = tmp;
-                ptr += 2;
+            ptr += 2;
         }
     }
     return 0;
