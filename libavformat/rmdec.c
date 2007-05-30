@@ -442,7 +442,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
-    int i, len, tmp, j;
+    int i, len, j;
     int64_t timestamp, pos;
     uint8_t *ptr;
     int flags;
@@ -610,9 +610,7 @@ resync:
     if (st->codec->codec_id == CODEC_ID_AC3) {
         ptr = pkt->data;
         for(j=0;j<len;j+=2) {
-            tmp = ptr[0];
-            ptr[0] = ptr[1];
-            ptr[1] = tmp;
+            FFSWAP(int, ptr[0], ptr[1]);
             ptr += 2;
         }
     }
