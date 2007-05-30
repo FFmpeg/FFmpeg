@@ -31,8 +31,10 @@ codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw t
 ifeq ($(CONFIG_GPL),yes)
 libavtest: vsynth1/00.pgm asynth1.sw
 	$(SRC_DIR)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
+seektest: seek_test$(EXESUF)
+	$(SRC_DIR)/seek_test.sh $(SEEK_REFFILE)
 else
-libavtest:
+libavtest seektest:
 	@echo
 	@echo "This test requires FFmpeg to be compiled with --enable-gpl."
 	@echo
@@ -47,9 +49,6 @@ swscale_error:
 	@echo
 	@exit 1
 endif
-
-seektest: seek_test$(EXESUF)
-	$(SRC_DIR)/seek_test.sh $(SEEK_REFFILE)
 
 vsynth1/00.pgm: videogen$(EXESUF)
 	mkdir -p vsynth1
