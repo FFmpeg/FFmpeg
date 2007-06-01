@@ -16,19 +16,21 @@ Even if ffmpeg can read the file format, it may not support all its
 codecs. Please consult the supported codec list in the ffmpeg
 documentation.
 
-@section How do I encode JPEGs to another format ?
+@section How do I encode single pictures to movies ?
 
-If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
+First, rename your pictures to follow a numerical sequence.
+For example, img1.jpg, img2.jpg, img3.jpg,...
+Then you may run:
 
 @example
   ffmpeg -f image2 -i img%d.jpg /tmp/a.mpg
 @end example
 
-@samp{%d} is replaced by the image number.
+Notice that @samp{%d} is replaced by the image number.
 
-@file{img%03d.jpg} generates @file{img001.jpg}, @file{img002.jpg}, etc...
+@file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc...
 
-The same system is used for the other image formats.
+The same logic is used for any image format that ffmpeg reads.
 
 @section How do I encode movie to single pictures ?
 
