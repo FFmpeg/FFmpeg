@@ -92,7 +92,6 @@ static void roqvideo_decode_frame(RoqContext *ri)
 
                 switch(vqid) {
                 case RoQ_ID_MOT:
-                    ff_apply_motion_8x8(ri, xp, yp, 0, 0);
                     break;
                 case RoQ_ID_FCC:
                     mx = 8 - (buf[bpos] >> 4) - ((signed char) (chunk_arg >> 8));
@@ -122,7 +121,6 @@ static void roqvideo_decode_frame(RoqContext *ri)
                         vqflg_pos--;
                         switch(vqid) {
                         case RoQ_ID_MOT:
-                            ff_apply_motion_4x4(ri, x, y, 0, 0);
                             break;
                         case RoQ_ID_FCC:
                             mx = 8 - (buf[bpos] >> 4) - ((signed char) (chunk_arg >> 8));
@@ -167,7 +165,6 @@ static int roq_decode_init(AVCodecContext *avctx)
     RoqContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    s->first_frame = 1;
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV420P;
@@ -182,7 +179,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
 {
     RoqContext *s = avctx->priv_data;
 
-    if (avctx->get_buffer(avctx, s->current_frame)) {
+    if (avctx->reget_buffer(avctx, s->current_frame)) {
         av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
         return -1;
     }
@@ -192,12 +189,6 @@ static int roq_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
     roqvideo_decode_frame(s);
-
-    /* release the last frame if it is allocated */
-    if (s->first_frame)
-        s->first_frame = 0;
-    else
-        avctx->release_buffer(avctx, s->last_frame);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = *s->current_frame;
@@ -215,6 +206,8 @@ static int roq_decode_end(AVCodecContext *avctx)
     /* release the last frame */
     if (s->last_frame->data[0])
         avctx->release_buffer(avctx, s->last_frame);
+    if (s->current_frame->data[0])
+        avctx->release_buffer(avctx, s->current_frame);
 
     return 0;
 }
