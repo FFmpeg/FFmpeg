@@ -111,9 +111,6 @@ struct MpegTSContext {
     /** list of PMTs in the last PAT seen                    */
     MpegTSService **services;
 
-    /* set service context (XXX: allocated it ?) */
-    SetServiceCallback *set_service_cb;
-    void *set_service_opaque;
     /** filter for the PAT                                   */
     MpegTSFilter *pat_filter;
     /** filter for the PMT for the MPEG program number specified by req_sid */
@@ -529,7 +526,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         }
     }
     /* all parameters are there */
-    ts->set_service_cb(ts->set_service_opaque, 0);
+    ts->stop_parse=1;
     mpegts_close_filter(ts, ts->pmt_filter);
     ts->pmt_filter = NULL;
 }
@@ -573,7 +570,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
         }
     }
     /* not found */
-    ts->set_service_cb(ts->set_service_opaque, -1);
+    ts->stop_parse=1;
 
  found:
     mpegts_close_filter(ts, ts->pat_filter);
@@ -633,11 +630,8 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
     ts->pat_filter = NULL;
 }
 
-static void mpegts_set_service(MpegTSContext *ts, int sid,
-                        SetServiceCallback *set_service_cb, void *opaque)
+static void mpegts_set_service(MpegTSContext *ts, int sid)
 {
-    ts->set_service_cb = set_service_cb;
-    ts->set_service_opaque = opaque;
     ts->req_sid = sid;
     ts->pat_filter = mpegts_open_section_filter(ts, PAT_PID,
                                                 pat_cb, ts, 1);
@@ -1158,12 +1152,6 @@ static int mpegts_probe(AVProbeData *p)
 #endif
 }
 
-static void set_service_cb(void *opaque, int ret)
-{
-    MpegTSContext *ts = opaque;
-    ts->stop_parse = 1;
-}
-
 /* return the 90 kHz PCR and the extension for the 27 MHz PCR. return
    (-1) if not available */
 static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
@@ -1266,7 +1254,7 @@ static int mpegts_read_header(AVFormatContext *s,
                 otherwise try to filter all PATs */
 
                 url_fseek(pb, pos, SEEK_SET);
-                mpegts_set_service(ts, sid, set_service_cb, ts);
+                mpegts_set_service(ts, sid);
 
                 handle_packets(ts, s->probesize);
             }
