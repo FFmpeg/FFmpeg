@@ -2423,12 +2423,12 @@ extern AVCodec rawvideo_encoder;
 
 /* the following codecs use external libs */
 extern AVCodec aac_decoder;
-extern AVCodec faac_encoder;
 extern AVCodec liba52_decoder;
 extern AVCodec libamr_nb_decoder;
 extern AVCodec libamr_nb_encoder;
 extern AVCodec libamr_wb_decoder;
 extern AVCodec libamr_wb_encoder;
+extern AVCodec libfaac_encoder;
 extern AVCodec libgsm_decoder;
 extern AVCodec libgsm_encoder;
 extern AVCodec libgsm_ms_decoder;

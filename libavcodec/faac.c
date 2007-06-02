@@ -143,8 +143,8 @@ static int Faac_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec faac_encoder = {
-    "aac",
+AVCodec libfaac_encoder = {
+    "libfaac",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(FaacAudioContext),
