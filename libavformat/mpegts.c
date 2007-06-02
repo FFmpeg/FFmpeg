@@ -1271,10 +1271,10 @@ static int mpegts_read_header(AVFormatContext *s,
 
                 handle_packets(ts, s->probesize);
             }
-            /* if could not find service, exit */
+            /* if could not find service, enable auto_guess */
 
             if (ts->set_service_ret != 0)
-                return -1;
+                ts->auto_guess = 1;
 
 #ifdef DEBUG_SI
             av_log(ts->stream, AV_LOG_DEBUG, "tuning done\n");
