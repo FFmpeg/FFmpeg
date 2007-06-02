@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "crc.h"
 #include "mpegts.h"
+#include "allformats.h"
 
 //#define DEBUG_SI
 //#define DEBUG_SEEK
@@ -89,8 +90,6 @@ struct MpegTSContext {
     int auto_guess;
     int set_service_ret;
 
-    /** force raw MPEG2 transport stream output, if possible */
-    int mpeg2ts_raw;
     /** compute exact PCR for each transport stream packet   */
     int mpeg2ts_compute_pcr;
 
@@ -1204,8 +1203,11 @@ static int mpegts_read_header(AVFormatContext *s,
     MpegTSService *service;
 
     if (ap) {
-        ts->mpeg2ts_raw = ap->mpeg2ts_raw;
         ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
+        if(ap->mpeg2ts_raw){
+            av_log(s, AV_LOG_ERROR, "use mpegtsraw_demuxer!\n");
+            return -1;
+        }
     }
 
     /* read the first 1024 bytes to get packet size */
@@ -1220,7 +1222,7 @@ static int mpegts_read_header(AVFormatContext *s,
     ts->auto_guess = 0;
 
 goto_auto_guess:
-    if (!ts->mpeg2ts_raw) {
+    if (s->iformat == &mpegts_demuxer) {
         /* normal demux */
 
         if (!ts->auto_guess) {
@@ -1396,12 +1398,8 @@ static int mpegts_read_packet(AVFormatContext *s,
 {
     MpegTSContext *ts = s->priv_data;
 
-    if (!ts->mpeg2ts_raw) {
-        ts->pkt = pkt;
-        return handle_packets(ts, 0);
-    } else {
-        return mpegts_raw_read_packet(s, pkt);
-    }
+    ts->pkt = pkt;
+    return handle_packets(ts, 0);
 }
 
 static int mpegts_read_close(AVFormatContext *s)
@@ -1545,6 +1543,19 @@ AVInputFormat mpegts_demuxer = {
     mpegts_probe,
     mpegts_read_header,
     mpegts_read_packet,
+    mpegts_read_close,
+    read_seek,
+    mpegts_get_pcr,
+    .flags = AVFMT_SHOW_IDS,
+};
+
+AVInputFormat mpegtsraw_demuxer = {
+    "mpegtsraw",
+    "MPEG2 raw transport stream format",
+    sizeof(MpegTSContext),
+    mpegts_probe,
+    mpegts_read_header,
+    mpegts_raw_read_packet,
     mpegts_read_close,
     read_seek,
     mpegts_get_pcr,
