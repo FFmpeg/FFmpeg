@@ -88,7 +88,6 @@ struct MpegTSContext {
     int raw_packet_size;
     /** if true, all pids are analyzed to find streams       */
     int auto_guess;
-    int set_service_ret;
 
     /** compute exact PCR for each transport stream packet   */
     int mpeg2ts_compute_pcr;
@@ -786,6 +785,9 @@ static void mpegts_push_data(void *opaque,
     const uint8_t *p;
     int len, code;
 
+    if(!ts->pkt)
+        return;
+
     if (is_start) {
         pes->state = MPEGTS_HEADER;
         pes->data_index = 0;
@@ -1159,7 +1161,6 @@ static int mpegts_probe(AVProbeData *p)
 static void set_service_cb(void *opaque, int ret)
 {
     MpegTSContext *ts = opaque;
-    ts->set_service_ret = ret;
     ts->stop_parse = 1;
 }
 
@@ -1225,8 +1226,6 @@ static int mpegts_read_header(AVFormatContext *s,
         /* normal demux */
 
         if (!ts->auto_guess) {
-            ts->set_service_ret = -1;
-
             /* first do a scaning to get all the services */
             url_fseek(pb, pos, SEEK_SET);
             mpegts_scan_sdt(ts);
@@ -1256,7 +1255,7 @@ static int mpegts_read_header(AVFormatContext *s,
             }
 
             /* tune to first service found */
-            for(i=0; i<ts->nb_services && ts->set_service_ret; i++){
+            for(i=0; i<ts->nb_services; i++){
                 service = ts->services[i];
                 sid = service->sid;
 #ifdef DEBUG_SI
@@ -1273,7 +1272,6 @@ static int mpegts_read_header(AVFormatContext *s,
             }
             /* if could not find service, enable auto_guess */
 
-            if (ts->set_service_ret != 0)
                 ts->auto_guess = 1;
 
 #ifdef DEBUG_SI
