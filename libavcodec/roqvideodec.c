@@ -39,8 +39,6 @@
 #define avg2(a,b) av_clip_uint8(((int)(a)+(int)(b)+1)>>1)
 #define avg4(a,b,c,d) av_clip_uint8(((int)(a)+(int)(b)+(int)(c)+(int)(d)+2)>>2)
 
-#define get_byte(in_buffer) *(in_buffer++)
-
 static void roqvideo_decode_frame(RoqContext *ri)
 {
     unsigned int chunk_id = 0, chunk_arg = 0;
@@ -65,16 +63,16 @@ static void roqvideo_decode_frame(RoqContext *ri)
             if((nv2 = chunk_arg & 0xff) == 0 && nv1 * 6 < chunk_size)
                 nv2 = 256;
             for(i = 0; i < nv1; i++) {
-                ri->cells[i].y[0] = get_byte(buf);
-                ri->cells[i].y[1] = get_byte(buf);
-                ri->cells[i].y[2] = get_byte(buf);
-                ri->cells[i].y[3] = get_byte(buf);
-                ri->cells[i].u = get_byte(buf);
-                ri->cells[i].v = get_byte(buf);
+                ri->cells[i].y[0] = *buf++;
+                ri->cells[i].y[1] = *buf++;
+                ri->cells[i].y[2] = *buf++;
+                ri->cells[i].y[3] = *buf++;
+                ri->cells[i].u = *buf++;
+                ri->cells[i].v = *buf++;
             }
             for(i = 0; i < nv2; i++)
                 for(j = 0; j < 4; j++)
-                    ri->qcells[i].idx[j] = get_byte(buf);
+                    ri->qcells[i].idx[j] = *buf++;
         }
     }
 
