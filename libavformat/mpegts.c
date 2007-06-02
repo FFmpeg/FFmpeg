@@ -1213,7 +1213,6 @@ static int mpegts_read_header(AVFormatContext *s,
     if (s->iformat == &mpegts_demuxer) {
         /* normal demux */
 
-        if (!ts->auto_guess) {
             /* first do a scaning to get all the services */
             url_fseek(pb, pos, SEEK_SET);
             mpegts_scan_sdt(ts);
@@ -1265,7 +1264,6 @@ static int mpegts_read_header(AVFormatContext *s,
 #ifdef DEBUG_SI
             av_log(ts->stream, AV_LOG_DEBUG, "tuning done\n");
 #endif
-        }
         s->ctx_flags |= AVFMTCTX_NOHEADER;
     } else {
         AVStream *st;
