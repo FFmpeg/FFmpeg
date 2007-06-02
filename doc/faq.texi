@@ -250,6 +250,63 @@ not what you use to play it.
 that it is related to FFmpeg.
 @end itemize
 
+@section How can I join video files?
+
+A few multimedia containers (MPEG1, MPEG2 PS, DV) allow to join video files by
+merely concatenating them.
+
+Hence you may concatenate your multimedia files by first transcoding them to
+these privileged formats, then using the humble @code{cat} command (or the
+equally humble @code{copy} under Win32), and finally transcoding back to your
+format of choice.
+
+@example
+ffmpeg -i input1.avi -sameq intermediate1.mpg
+ffmpeg -i input2.avi -sameq intermediate2.mpg
+cat intermediate1.mpg intermediate2.mpg > intermediate_all.mpg
+ffmpeg -i intermediate_all.mpg -sameq output.avi
+@end example
+
+Notice that you should either use @code{-sameq} or set a reasonably high
+bitrate for your intermediate and output files, if you want to preserve
+video quality.
+
+Notice too that you may avoid the huge intermediate files by taking advantage
+of named pipes, should your platform support it:
+
+@example
+mkfifo intermediate1.mpg
+mkfifo intermediate2.mpg
+ffmpeg -i input1.avi -sameq -y intermediate1.mpg < /dev/null &
+ffmpeg -i input2.avi -sameq -y intermediate2.mpg < /dev/null &
+cat intermediate1.mpg intermediate2.mpg |\
+ffmpeg -f mpeg -i - -sameq -vcodec mpeg4 -acodec mp3 output.avi
+@end example
+
+Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
+allow concatenation, and the transcoding step is almost lossless.
+
+For example, let's say we want to join two FLV files into an output.flv file:
+
+@example
+mkfifo temp1.a
+mkfifo temp1.v
+mkfifo temp2.a
+mkfifo temp2.v
+mkfifo all.a
+mkfifo all.v
+ffmpeg -i input1.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
+ffmpeg -i input2.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
+ffmpeg -i input1.flv -an -f yuv4mpegpipe - > temp1.v < /dev/null &
+ffmpeg -i input2.flv -an -f yuv4mpegpipe - > temp2.v < /dev/null &
+cat temp1.a temp2.a > all.a &
+cat temp1.v temp2.v > all.v &
+ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
+       -f yuv4mpegpipe -i all.v \
+       -sameq -y output.flv
+rm temp[12].[av] all.[av]
+@end example
+
 @chapter Development
 
 @section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
