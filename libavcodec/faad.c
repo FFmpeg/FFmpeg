@@ -324,7 +324,7 @@ AVCodec name ## _decoder = {    \
 }
 
 // FIXME - raw AAC files - maybe just one entry will be enough
-AAC_CODEC(CODEC_ID_AAC, aac);
+AAC_CODEC(CODEC_ID_AAC, libfaad);
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 // If it's mp4 file - usually embeded into Qt Mov
 AAC_CODEC(CODEC_ID_MPEG4AAC, mpeg4aac);
