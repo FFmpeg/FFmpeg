@@ -106,8 +106,7 @@ static const int sBitsPerSlot[3] = {
 
 static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
 {
-    uint8_t *dataTmp = (uint8_t *)data;
-    uint32_t header = ( (uint32_t)dataTmp[0] << 24 ) | ( (uint32_t)dataTmp[1] << 16 ) | ( (uint32_t)dataTmp[2] << 8 ) | (uint32_t)dataTmp[3];
+    uint32_t header = AV_RB32(data);
     int layerID = 3 - ((header >> 17) & 0x03);
     int bitRateID = ((header >> 12) & 0x0f);
     int sampleRateID = ((header >> 10) & 0x03);

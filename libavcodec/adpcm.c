@@ -451,16 +451,14 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
         n = avctx->frame_size / 8;
             c->status[0].prev_sample = (signed short)samples[0]; /* XXX */
 /*            c->status[0].step_index = 0; *//* XXX: not sure how to init the state machine */
-            *dst++ = (c->status[0].prev_sample) & 0xFF; /* little endian */
-            *dst++ = (c->status[0].prev_sample >> 8) & 0xFF;
+            bytestream_put_le16(&dst, c->status[0].prev_sample);
             *dst++ = (unsigned char)c->status[0].step_index;
             *dst++ = 0; /* unknown */
             samples++;
             if (avctx->channels == 2) {
                 c->status[1].prev_sample = (signed short)samples[1];
 /*                c->status[1].step_index = 0; */
-                *dst++ = (c->status[1].prev_sample) & 0xFF;
-                *dst++ = (c->status[1].prev_sample >> 8) & 0xFF;
+                bytestream_put_le16(&dst, c->status[1].prev_sample);
                 *dst++ = (unsigned char)c->status[1].step_index;
                 *dst++ = 0;
                 samples++;
@@ -553,20 +551,17 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             if (c->status[i].idelta < 16)
                 c->status[i].idelta = 16;
 
-            *dst++ = c->status[i].idelta & 0xFF;
-            *dst++ = c->status[i].idelta >> 8;
+            bytestream_put_le16(&dst, c->status[i].idelta);
         }
         for(i=0; i<avctx->channels; i++){
             c->status[i].sample1= *samples++;
 
-            *dst++ = c->status[i].sample1 & 0xFF;
-            *dst++ = c->status[i].sample1 >> 8;
+            bytestream_put_le16(&dst, c->status[i].sample1);
         }
         for(i=0; i<avctx->channels; i++){
             c->status[i].sample2= *samples++;
 
-            *dst++ = c->status[i].sample2 & 0xFF;
-            *dst++ = c->status[i].sample2 >> 8;
+            bytestream_put_le16(&dst, c->status[i].sample2);
         }
 
         if(avctx->trellis > 0) {

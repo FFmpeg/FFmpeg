@@ -579,9 +579,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 for(i = 0; i < c->width; i++) {
                     uint32_t tmp = AV_RL32(src);
                     src += 4;
-                    out[i * 3 + 0] = tmp >> 16;
-                    out[i * 3 + 1] = tmp >> 8;
-                    out[i * 3 + 2] = tmp >> 0;
+                    AV_WB24(out+(i*3), tmp);
                 }
                 out += c->pic.linesize[0];
             }

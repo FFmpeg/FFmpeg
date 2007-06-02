@@ -96,8 +96,7 @@ static int gif_read_image(GifState *s)
     n = (1 << bits_per_pixel);
     spal = palette;
     for(i = 0; i < n; i++) {
-        s->image_palette[i] = (0xff << 24) |
-            (spal[0] << 16) | (spal[1] << 8) | (spal[2]);
+        s->image_palette[i] = (0xff << 24) | AV_RB24(spal);
         spal += 3;
     }
     for(; i < 256; i++)

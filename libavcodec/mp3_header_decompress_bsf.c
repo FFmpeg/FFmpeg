@@ -84,10 +84,7 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
         }
     }
 
-    (*poutbuf)[0]= header>>24;
-    (*poutbuf)[1]= header>>16;
-    (*poutbuf)[2]= header>> 8;
-    (*poutbuf)[3]= header    ;
+    AV_WB32(*poutbuf, header);
 
     return 1;
 }

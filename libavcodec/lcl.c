@@ -358,13 +358,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 for (row = 0; row < height; row++) {
                     pixel_ptr = row * width * 3;
                     yq = encoded[pixel_ptr++];
-                    uqvq = encoded[pixel_ptr++];
-                    uqvq+=(encoded[pixel_ptr++] << 8);
+                    uqvq = AV_RL16(encoded+pixel_ptr);
+                    pixel_ptr += 2;
                     for (col = 1; col < width; col++) {
                         encoded[pixel_ptr] = yq -= encoded[pixel_ptr];
-                        uqvq -= (encoded[pixel_ptr+1] | (encoded[pixel_ptr+2]<<8));
-                        encoded[pixel_ptr+1] = (uqvq) & 0xff;
-                        encoded[pixel_ptr+2] = ((uqvq)>>8) & 0xff;
+                        uqvq -= AV_RL16(encoded+pixel_ptr+1);
+                        AV_WL16(encoded+pixel_ptr+1, uqvq);
                         pixel_ptr += 3;
                     }
                 }

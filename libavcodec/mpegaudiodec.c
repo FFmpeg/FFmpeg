@@ -2380,7 +2380,7 @@ retry:
     if(buf_size < HEADER_SIZE)
         return -1;
 
-    header = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    header = AV_RB32(buf);
     if(ff_mpa_check_header(header) < 0){
         buf++;
 //        buf_size--;
@@ -2459,7 +2459,7 @@ static int decode_frame_adu(AVCodecContext * avctx,
         len = MPA_MAX_CODED_FRAME_SIZE;
 
     // Get header and restore sync word
-    header = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3] | 0xffe00000;
+    header = AV_RB32(buf) | 0xffe00000;
 
     if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
         *data_size = 0;
@@ -2604,7 +2604,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         assert (m != NULL);
 
         // Get header
-        header = (start[0] << 24) | (start[1] << 16) | (start[2] << 8) | start[3] | 0xfff00000;
+        header = AV_RB32(start) | 0xfff00000;
 
         if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
             *data_size = 0;

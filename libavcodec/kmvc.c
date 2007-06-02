@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "bytestream.h"
 
 #define KMVC_KEYFRAME 0x80
 #define KMVC_PALETTE  0x40
@@ -249,7 +250,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
     if (buf[0] == 127) {
         buf += 3;
         for (i = 0; i < 127; i++) {
-            ctx->pal[i + (header & 0x81)] = (buf[0] << 16) | (buf[1] << 8) | buf[2];
+            ctx->pal[i + (header & 0x81)] = AV_RB24(buf);
             buf += 4;
         }
         buf -= 127 * 4 + 3;
@@ -274,8 +275,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
         ctx->pic.palette_has_changed = 1;
         // palette starts from index 1 and has 127 entries
         for (i = 1; i <= ctx->palsize; i++) {
-            ctx->pal[i] = (buf[0] << 16) | (buf[1] << 8) | buf[2];
-            buf += 3;
+            ctx->pal[i] = bytestream_get_be24(&buf);
         }
     }
 

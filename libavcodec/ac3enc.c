@@ -1136,12 +1136,10 @@ static int output_frame_end(AC3EncodeContext *s)
     /* XXX: could precompute crc_inv */
     crc_inv = pow_poly((CRC16_POLY >> 1), (16 * frame_size_58) - 16, CRC16_POLY);
     crc1 = mul_poly(crc_inv, crc1, CRC16_POLY);
-    frame[2] = crc1 >> 8;
-    frame[3] = crc1;
+    AV_WB16(frame+2,crc1);
 
     crc2 = bswap_16(av_crc(av_crc8005, 0, frame + 2 * frame_size_58, (frame_size - frame_size_58) * 2 - 2));
-    frame[2*frame_size - 2] = crc2 >> 8;
-    frame[2*frame_size - 1] = crc2;
+    AV_WB16(frame+2*frame_size-2,crc2);
 
     //    printf("n=%d frame_size=%d\n", n, frame_size);
     return frame_size * 2;

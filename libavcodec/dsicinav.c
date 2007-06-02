@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 
 
 typedef enum CinVideoBitmapIndex {
@@ -206,7 +207,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     }
 
     palette_type = buf[0];
-    palette_colors_count = buf[1] | (buf[2] << 8);
+    palette_colors_count = AV_RL16(buf+1);
     bitmap_frame_type = buf[3];
     buf += 4;
 
@@ -215,13 +216,12 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     /* handle palette */
     if (palette_type == 0) {
         for (i = 0; i < palette_colors_count; ++i) {
-            cin->palette[i] = (buf[2] << 16) | (buf[1] << 8) | buf[0];
-            buf += 3;
+            cin->palette[i] = bytestream_get_le24(&buf);
             bitmap_frame_size -= 3;
         }
     } else {
         for (i = 0; i < palette_colors_count; ++i) {
-            cin->palette[buf[0]] = (buf[3] << 16) | (buf[2] << 8) | buf[1];
+            cin->palette[buf[0]] = AV_RL24(buf+1);
             buf += 4;
             bitmap_frame_size -= 4;
         }

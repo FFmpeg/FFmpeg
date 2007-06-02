@@ -354,8 +354,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
 
         case 11:
         case 21:
-            size = (size_segment[0] << 16) | (size_segment[1] << 8) |
-                size_segment[2];
+            size = AV_RB24(size_segment);
             size_segment += 3;
             break;
         }

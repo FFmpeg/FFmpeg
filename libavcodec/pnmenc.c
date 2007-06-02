@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
+#include "bytestream.h"
 #include "pnm.h"
 
 
@@ -303,9 +304,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
         for(i=0;i<h;i++) {
             for(j=0;j<w;j++) {
                 v = ((uint32_t *)ptr)[j];
-                *s->bytestream++ = v >> 16;
-                *s->bytestream++ = v >> 8;
-                *s->bytestream++ = v;
+                bytestream_put_be24(&s->bytestream, v);
                 *s->bytestream++ = v >> 24;
             }
             ptr += linesize;

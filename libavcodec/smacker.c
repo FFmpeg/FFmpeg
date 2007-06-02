@@ -436,11 +436,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 case 0:
                     for(i = 0; i < 4; i++) {
                         pix = smk_get_code(&gb, smk->full_tbl, smk->full_last);
-                        out[2] = pix & 0xFF;
-                        out[3] = pix >> 8;
+                        AV_WL16(out+2,pix);
                         pix = smk_get_code(&gb, smk->full_tbl, smk->full_last);
-                        out[0] = pix & 0xFF;
-                        out[1] = pix >> 8;
+                        AV_WL16(out,pix);
                         out += stride;
                     }
                     break;
@@ -465,11 +463,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         uint16_t pix1, pix2;
                         pix1 = smk_get_code(&gb, smk->full_tbl, smk->full_last);
                         pix2 = smk_get_code(&gb, smk->full_tbl, smk->full_last);
-                        out[0] = pix1 & 0xFF; out[1] = pix1 >> 8;
-                        out[2] = pix2 & 0xFF; out[3] = pix2 >> 8;
+                        AV_WL16(out,pix1);
+                        AV_WL16(out+2,pix2);
                         out += stride;
-                        out[0] = pix1 & 0xFF; out[1] = pix1 >> 8;
-                        out[2] = pix2 & 0xFF; out[3] = pix2 >> 8;
+                        AV_WL16(out,pix1);
+                        AV_WL16(out+2,pix2);
                         out += stride;
                     }
                     break;

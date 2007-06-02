@@ -69,8 +69,8 @@ static int concatenate_packet(unsigned int* offset, AVCodecContext* avc_context,
 
     avc_context->extradata = newdata;
     avc_context->extradata_size = newsize;
-    avc_context->extradata[ (*offset)++ ] = packet->bytes >> 8;
-    avc_context->extradata[ (*offset)++ ] = packet->bytes & 0xff;
+    AV_WB16(avc_context->extradata + (*offset), packet->bytes);
+    *offset += 2;
     memcpy( avc_context->extradata + (*offset), packet->packet, packet->bytes );
     (*offset) += packet->bytes;
     return 0;

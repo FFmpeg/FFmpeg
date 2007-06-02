@@ -146,7 +146,7 @@ static void seqvideo_decode(SeqVideoContext *seq, unsigned char *data, int data_
         for (i = 0; i < 256; i++) {
             for (j = 0; j < 3; j++, data++)
                 c[j] = (*data << 2) | (*data >> 4);
-            seq->palette[i] = (c[0] << 16) | (c[1] << 8) | c[2];
+            seq->palette[i] = AV_RB24(c);
         }
         memcpy(seq->frame.data[1], seq->palette, sizeof(seq->palette));
         seq->frame.palette_has_changed = 1;

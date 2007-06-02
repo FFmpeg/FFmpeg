@@ -693,10 +693,7 @@ static void png_write_chunk(uint8_t **f, uint32_t tag,
 
     bytestream_put_be32(f, length);
     crc = crc32(0, Z_NULL, 0);
-    tagbuf[0] = tag;
-    tagbuf[1] = tag >> 8;
-    tagbuf[2] = tag >> 16;
-    tagbuf[3] = tag >> 24;
+    AV_WL32(tagbuf, tag);
     crc = crc32(crc, tagbuf, 4);
     bytestream_put_be32(f, bswap_32(tag));
     if (length > 0) {
@@ -833,10 +830,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             if (alpha && alpha != 0xff)
                 has_alpha = 1;
             *alpha_ptr++ = alpha;
-            ptr[0] = v >> 16;
-            ptr[1] = v >> 8;
-            ptr[2] = v;
-            ptr += 3;
+            bytestream_put_be24(&ptr, v);
         }
         png_write_chunk(&s->bytestream, MKTAG('P', 'L', 'T', 'E'), s->buf, 256 * 3);
         if (has_alpha) {

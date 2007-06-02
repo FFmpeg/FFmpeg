@@ -92,12 +92,11 @@ static int wma_decode_init(AVCodecContext * avctx)
     flags2 = 0;
     extradata = avctx->extradata;
     if (avctx->codec->id == CODEC_ID_WMAV1 && avctx->extradata_size >= 4) {
-        flags1 = extradata[0] | (extradata[1] << 8);
-        flags2 = extradata[2] | (extradata[3] << 8);
+        flags1 = AV_RL16(extradata);
+        flags2 = AV_RL16(extradata+2);
     } else if (avctx->codec->id == CODEC_ID_WMAV2 && avctx->extradata_size >= 6) {
-        flags1 = extradata[0] | (extradata[1] << 8) |
-            (extradata[2] << 16) | (extradata[3] << 24);
-        flags2 = extradata[4] | (extradata[5] << 8);
+        flags1 = AV_RL32(extradata);
+        flags2 = AV_RL16(extradata+4);
     }
 // for(i=0; i<avctx->extradata_size; i++)
 //     av_log(NULL, AV_LOG_ERROR, "%02X ", extradata[i]);

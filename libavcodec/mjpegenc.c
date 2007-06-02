@@ -147,8 +147,7 @@ static void jpeg_table_header(MpegEncContext *s)
                               ff_mjpeg_val_ac_luminance);
     size += put_huffman_table(s, 1, 1, ff_mjpeg_bits_ac_chrominance,
                               ff_mjpeg_val_ac_chrominance);
-    ptr[0] = size >> 8;
-    ptr[1] = size;
+    AV_WB16(ptr, size);
 }
 
 static void jpeg_put_comments(MpegEncContext *s)
@@ -179,8 +178,7 @@ static void jpeg_put_comments(MpegEncContext *s)
         put_bits(p, 16, 0); /* patched later */
         ff_put_string(p, LIBAVCODEC_IDENT, 1);
         size = strlen(LIBAVCODEC_IDENT)+3;
-        ptr[0] = size >> 8;
-        ptr[1] = size;
+        AV_WB16(ptr, size);
     }
 
     if(  s->avctx->pix_fmt == PIX_FMT_YUV420P
@@ -192,8 +190,7 @@ static void jpeg_put_comments(MpegEncContext *s)
         put_bits(p, 16, 0); /* patched later */
         ff_put_string(p, "CS=ITU601", 1);
         size = strlen("CS=ITU601")+3;
-        ptr[0] = size >> 8;
-        ptr[1] = size;
+        AV_WB16(ptr, size);
     }
 }
 

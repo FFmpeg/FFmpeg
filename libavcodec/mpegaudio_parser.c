@@ -105,10 +105,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
             /* special case for next header for first frame in free
                format case (XXX: find a simpler method) */
             if (s->free_format_next_header != 0) {
-                s->inbuf[0] = s->free_format_next_header >> 24;
-                s->inbuf[1] = s->free_format_next_header >> 16;
-                s->inbuf[2] = s->free_format_next_header >> 8;
-                s->inbuf[3] = s->free_format_next_header;
+                AV_WB32(s->inbuf, s->free_format_next_header);
                 s->inbuf_ptr = s->inbuf + 4;
                 s->free_format_next_header = 0;
                 goto got_header;
@@ -124,8 +121,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
             }
             if ((s->inbuf_ptr - s->inbuf) >= MPA_HEADER_SIZE) {
             got_header:
-                header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-                    (s->inbuf[2] << 8) | s->inbuf[3];
+                header = AV_RB32(s->inbuf);
 
                 ret = ff_mpa_decode_header(avctx, header, &sr);
                 if (ret < 0) {
@@ -176,10 +172,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                 p = s->inbuf_ptr - 3;
                 pend = s->inbuf_ptr + len - 4;
                 while (p <= pend) {
-                    header = (p[0] << 24) | (p[1] << 16) |
-                        (p[2] << 8) | p[3];
-                    header1 = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-                        (s->inbuf[2] << 8) | s->inbuf[3];
+                    header = AV_RB32(p);
+                    header1 = AV_RB32(s->inbuf);
                     /* check with high probability that we have a
                        valid header */
                     if ((header & SAME_HEADER_MASK) ==

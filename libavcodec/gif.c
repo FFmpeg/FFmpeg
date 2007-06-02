@@ -132,13 +132,9 @@ static void gif_put_bits_rev(PutBitContext *s, int n, unsigned int value)
     } else {
         bit_buf |= value << (bit_cnt);
 
-        *s->buf_ptr = bit_buf & 0xff;
-        s->buf_ptr[1] = (bit_buf >> 8) & 0xff;
-        s->buf_ptr[2] = (bit_buf >> 16) & 0xff;
-        s->buf_ptr[3] = (bit_buf >> 24) & 0xff;
+        bytestream_put_le32(&s->buf_ptr, bit_buf);
 
         //printf("bitbuf = %08x\n", bit_buf);
-        s->buf_ptr+=4;
         if (s->buf_ptr >= s->buf_end)
             puts("bit buffer overflow !!"); // should never happen ! who got rid of the callback ???
 //            flush_buffer_rev(s);
@@ -195,9 +191,7 @@ static int gif_image_write_header(uint8_t **bytestream,
     } else {
         for(i=0;i<256;i++) {
             v = palette[i];
-            bytestream_put_byte(bytestream, (v >> 16) & 0xff);
-            bytestream_put_byte(bytestream, (v >> 8) & 0xff);
-            bytestream_put_byte(bytestream, (v) & 0xff);
+            bytestream_put_be24(bytestream, v);
         }
     }
 

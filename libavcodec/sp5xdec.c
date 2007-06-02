@@ -65,10 +65,8 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     j += sizeof(sp5x_data_dht);
 
     memcpy(recoded+j, &sp5x_data_sof[0], sizeof(sp5x_data_sof));
-    recoded[j+5] = (avctx->coded_height >> 8) & 0xFF;
-    recoded[j+6] = avctx->coded_height & 0xFF;
-    recoded[j+7] = (avctx->coded_width >> 8) & 0xFF;
-    recoded[j+8] = avctx->coded_width & 0xFF;
+    AV_WB16(recoded+j+5, avctx->coded_height);
+    AV_WB16(recoded+j+7, avctx->coded_width);
     j += sizeof(sp5x_data_sof);
 
     memcpy(recoded+j, &sp5x_data_sos[0], sizeof(sp5x_data_sos));
