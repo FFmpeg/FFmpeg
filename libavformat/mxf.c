@@ -181,6 +181,7 @@ typedef struct MXFMetadataReadTableEntry {
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
+static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
 /* complete keys to match */
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
 static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
@@ -205,10 +206,26 @@ static int64_t klv_decode_ber_length(ByteIOContext *pb)
     return size;
 }
 
+static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
+{
+    int i, b;
+    for (i = 0; i < size && !url_feof(pb); i++) {
+        b = get_byte(pb);
+        if (b == key[0])
+            i = 0;
+        else if (b != key[i])
+            i = -1;
+    }
+    return i == size;
+}
+
 static int klv_read_packet(KLVPacket *klv, ByteIOContext *pb)
 {
-    klv->offset = url_ftell(pb);
-    get_buffer(pb, klv->key, 16);
+    if (!mxf_read_sync(pb, mxf_klv_key, 4))
+        return -1;
+    klv->offset = url_ftell(pb) - 4;
+    memcpy(klv->key, mxf_klv_key, 4);
+    get_buffer(pb, klv->key + 4, 12);
     klv->length = klv_decode_ber_length(pb);
     return klv->length == -1 ? -1 : 0;
 }
@@ -885,19 +902,6 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_metadata_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
 };
-
-static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
-{
-    int i, b;
-    for (i = 0; i < size && !url_feof(pb); i++) {
-        b = get_byte(pb);
-        if (b == key[0])
-            i = 0;
-        else if (b != key[i])
-            i = -1;
-    }
-    return i == size;
-}
 
 static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child)(), int ctx_size, enum MXFMetadataSetType type)
 {
