@@ -404,6 +404,82 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
  * IDCT transform:
  ****************************************************************************/
 
+#define VEC_1D_DCT(vb0,vb1,vb2,vb3,va0,va1,va2,va3)              \
+   /* 1st stage */                                               \
+   vz0 = vec_add(vb0,vb2);       /* temp[0] = Y[0] + Y[2] */     \
+   vz1 = vec_sub(vb0,vb2);       /* temp[1] = Y[0] - Y[2] */     \
+   vz2 = vec_sra(vb1,vec_splat_u16(1));                          \
+   vz2 = vec_sub(vz2,vb3);       /* temp[2] = Y[1].1/2 - Y[3] */ \
+   vz3 = vec_sra(vb3,vec_splat_u16(1));                          \
+   vz3 = vec_add(vb1,vz3);       /* temp[3] = Y[1] + Y[3].1/2 */ \
+   /* 2nd stage: output */                                       \
+   va0 = vec_add(vz0,vz3);       /* x[0] = temp[0] + temp[3] */  \
+   va1 = vec_add(vz1,vz2);       /* x[1] = temp[1] + temp[2] */  \
+   va2 = vec_sub(vz1,vz2);       /* x[2] = temp[1] - temp[2] */  \
+   va3 = vec_sub(vz0,vz3)        /* x[3] = temp[0] - temp[3] */
+
+#define VEC_TRANSPOSE_4(a0,a1,a2,a3,b0,b1,b2,b3) \
+    b0 = vec_mergeh( a0, a0 ); \
+    b1 = vec_mergeh( a1, a0 ); \
+    b2 = vec_mergeh( a2, a0 ); \
+    b3 = vec_mergeh( a3, a0 ); \
+    a0 = vec_mergeh( b0, b2 ); \
+    a1 = vec_mergel( b0, b2 ); \
+    a2 = vec_mergeh( b1, b3 ); \
+    a3 = vec_mergel( b1, b3 ); \
+    b0 = vec_mergeh( a0, a2 ); \
+    b1 = vec_mergel( a0, a2 ); \
+    b2 = vec_mergeh( a1, a3 ); \
+    b3 = vec_mergel( a1, a3 )
+
+#define VEC_LOAD_U8_ADD_S16_STORE_U8(va)                      \
+    vdst_orig = vec_ld(0, dst);                               \
+    vdst = vec_perm(vdst_orig, zero_u8v, vdst_mask);          \
+    vdst_ss = (vec_s16_t) vec_mergeh(zero_u8v, vdst);         \
+    va = vec_add(va, vdst_ss);                                \
+    va_u8 = vec_packsu(va, zero_s16v);                        \
+    va_u32 = vec_splat((vec_u32_t)va_u8, 0);                  \
+    vec_ste(va_u32, element, (uint32_t*)dst);
+
+static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+{
+    vec_s16_t va0, va1, va2, va3;
+    vec_s16_t vz0, vz1, vz2, vz3;
+    vec_s16_t vtmp0, vtmp1, vtmp2, vtmp3;
+    vec_u8_t va_u8;
+    vec_u32_t va_u32;
+    vec_s16_t vdst_ss;
+    const vec_u16_t v6us = vec_splat_u16(6);
+    vec_u8_t vdst, vdst_orig;
+    vec_u8_t vdst_mask = vec_lvsl(0, dst);
+    int element = ((unsigned long)dst & 0xf) >> 2;
+    LOAD_ZERO;
+
+    block[0] += 32;  /* add 32 as a DC-level for rounding */
+
+    vtmp0 = vec_ld(0,block);
+    vtmp1 = vec_sld(vtmp0, vtmp0, 8);
+    vtmp2 = vec_ld(16,block);
+    vtmp3 = vec_sld(vtmp2, vtmp2, 8);
+
+    VEC_1D_DCT(vtmp0,vtmp1,vtmp2,vtmp3,va0,va1,va2,va3);
+    VEC_TRANSPOSE_4(va0,va1,va2,va3,vtmp0,vtmp1,vtmp2,vtmp3);
+    VEC_1D_DCT(vtmp0,vtmp1,vtmp2,vtmp3,va0,va1,va2,va3);
+
+    va0 = vec_sra(va0,v6us);
+    va1 = vec_sra(va1,v6us);
+    va2 = vec_sra(va2,v6us);
+    va3 = vec_sra(va3,v6us);
+
+    VEC_LOAD_U8_ADD_S16_STORE_U8(va0);
+    dst += stride;
+    VEC_LOAD_U8_ADD_S16_STORE_U8(va1);
+    dst += stride;
+    VEC_LOAD_U8_ADD_S16_STORE_U8(va2);
+    dst += stride;
+    VEC_LOAD_U8_ADD_S16_STORE_U8(va3);
+}
+
 #define IDCT8_1D_ALTIVEC(s0, s1, s2, s3, s4, s5, s6, s7,  d0, d1, d2, d3, d4, d5, d6, d7) {\
     /*        a0  = SRC(0) + SRC(4); */ \
     vec_s16_t a0v = vec_add(s0, s4);    \
@@ -531,6 +607,7 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
     c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
     c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
+    c->h264_idct_add = ff_h264_idct_add_altivec;
     c->h264_idct8_add = ff_h264_idct8_add_altivec;
 
 #define dspfunc(PFX, IDX, NUM) \
