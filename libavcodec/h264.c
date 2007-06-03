@@ -6665,13 +6665,16 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     int mb_xy, mb_type;
     int qp, qp0, qp1, qpc, qpc0, qpc1, qp_thresh;
 
-    if(mb_x==0 || mb_y==0 || !s->dsp.h264_loop_filter_strength) {
+    mb_xy = mb_x + mb_y*s->mb_stride;
+
+    if(mb_x==0 || mb_y==0 || !s->dsp.h264_loop_filter_strength ||
+       (h->deblocking_filter == 2 && (h->slice_table[mb_xy] != h->slice_table[h->top_mb_xy] ||
+                                      h->slice_table[mb_xy] != h->slice_table[mb_xy - 1]))) {
         filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
     }
     assert(!FRAME_MBAFF);
 
-    mb_xy = mb_x + mb_y*s->mb_stride;
     mb_type = s->current_picture.mb_type[mb_xy];
     qp = s->current_picture.qscale_table[mb_xy];
     qp0 = s->current_picture.qscale_table[mb_xy-1];
