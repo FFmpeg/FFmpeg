@@ -637,10 +637,24 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },       CODEC_ID_NONE, Frame },
 };
 
+/*
+ * Match an uid independently of the version byte and up to len common bytes
+ * Returns: boolean
+ */
+static int mxf_match_uid(const UID key, const UID uid, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        if (i != 7 && key[i] != uid[i])
+            return 0;
+    }
+    return 1;
+}
+
 static const MXFCodecUL *mxf_get_codec_ul(const MXFCodecUL *uls, UID *uid)
 {
     while (uls->id != CODEC_ID_NONE) {
-        if(!memcmp(uls->uid, *uid, 16))
+        if(mxf_match_uid(uls->uid, *uid, 16))
             break;
         uls++;
     }
@@ -650,7 +664,7 @@ static const MXFCodecUL *mxf_get_codec_ul(const MXFCodecUL *uls, UID *uid)
 static enum CodecType mxf_get_codec_type(const MXFDataDefinitionUL *uls, UID *uid)
 {
     while (uls->type != CODEC_TYPE_DATA) {
-        if(!memcmp(uls->uid, *uid, 16))
+        if(mxf_match_uid(uls->uid, *uid, 16))
             break;
         uls++;
     }
