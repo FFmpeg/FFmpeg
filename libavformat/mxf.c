@@ -60,7 +60,6 @@ enum MXFMetadataSetType {
     MultipleDescriptor,
     Descriptor,
     Track,
-    EssenceContainerData,
     CryptoContext,
 };
 
@@ -127,12 +126,6 @@ typedef struct MXFPackage {
     MXFDescriptor *descriptor; /* only one */
     UID descriptor_ref;
 } MXFPackage;
-
-typedef struct MXFEssenceContainerData {
-    UID uid;
-    enum MXFMetadataSetType type;
-    UID linked_package_uid;
-} MXFEssenceContainerData;
 
 typedef struct {
     UID uid;
