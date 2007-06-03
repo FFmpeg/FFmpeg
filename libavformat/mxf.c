@@ -363,7 +363,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             } else
                 av_get_packet(&s->pb, pkt, klv.length);
             pkt->stream_index = index;
-            pkt->pos = klv->offset;
+            pkt->pos = klv.offset;
             return 0;
         } else
             url_fskip(&s->pb, klv.length);
