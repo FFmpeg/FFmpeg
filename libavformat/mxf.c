@@ -63,14 +63,14 @@ enum MXFMetadataSetType {
     CryptoContext,
 };
 
-typedef struct MXFCryptoContext {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID context_uid;
     UID source_container_ul;
 } MXFCryptoContext;
 
-typedef struct MXFStructuralComponent {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID source_package_uid;
@@ -80,7 +80,7 @@ typedef struct MXFStructuralComponent {
     int source_track_id;
 } MXFStructuralComponent;
 
-typedef struct MXFSequence {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID data_definition_ul;
@@ -89,7 +89,7 @@ typedef struct MXFSequence {
     int64_t duration;
 } MXFSequence;
 
-typedef struct MXFTrack {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     MXFSequence *sequence; /* mandatory, and only one */
@@ -99,7 +99,7 @@ typedef struct MXFTrack {
     AVRational edit_rate;
 } MXFTrack;
 
-typedef struct MXFDescriptor {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID essence_container_ul;
@@ -117,7 +117,7 @@ typedef struct MXFDescriptor {
     int extradata_size;
 } MXFDescriptor;
 
-typedef struct MXFPackage {
+typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
     UID package_uid;
@@ -132,7 +132,7 @@ typedef struct {
     enum MXFMetadataSetType type;
 } MXFMetadataSet;
 
-typedef struct MXFContext {
+typedef struct {
     UID *packages_refs;
     int packages_count;
     MXFMetadataSet **metadata_sets;
@@ -141,7 +141,7 @@ typedef struct MXFContext {
     struct AVAES *aesc;
 } MXFContext;
 
-typedef struct KLVPacket {
+typedef struct {
     UID key;
     offset_t offset;
     uint64_t length;
@@ -152,18 +152,18 @@ enum MXFWrappingScheme {
     Clip,
 };
 
-typedef struct MXFCodecUL {
+typedef struct {
     UID uid;
     enum CodecID id;
     enum MXFWrappingScheme wrapping;
 } MXFCodecUL;
 
-typedef struct MXFDataDefinitionUL {
+typedef struct {
     UID uid;
     enum CodecType type;
 } MXFDataDefinitionUL;
 
-typedef struct MXFMetadataReadTableEntry {
+typedef struct {
     const UID key;
     int (*read)();
     int ctx_size;
