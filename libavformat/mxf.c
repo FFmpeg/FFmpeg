@@ -297,16 +297,20 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     // source klv key
     klv_decode_ber_length(pb);
     get_buffer(pb, klv->key, 16);
-    if (!IS_KLV_KEY(klv, mxf_essence_element_key)) goto err_out;
+    if (!IS_KLV_KEY(klv, mxf_essence_element_key))
+        return -1;
     index = mxf_get_stream_index(s, klv);
-    if (index < 0) goto err_out;
+    if (index < 0)
+        return -1;
     // source size
     klv_decode_ber_length(pb);
     orig_size = get_be64(pb);
-    if (orig_size < plaintext_size) goto err_out;
+    if (orig_size < plaintext_size)
+        return -1;
     // enc. code
     size = klv_decode_ber_length(pb);
-    if (size < 32 || size - 32 < orig_size) goto err_out;
+    if (size < 32 || size - 32 < orig_size)
+        return -1;
     get_buffer(pb, ivec, 16);
     get_buffer(pb, tmpbuf, 16);
     if (mxf->aesc)
@@ -323,10 +327,6 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     pkt->stream_index = index;
     url_fskip(pb, end - url_ftell(pb));
     return 0;
-
-err_out:
-    url_fskip(pb, end - url_ftell(pb));
-    return -1;
 }
 
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
