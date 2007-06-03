@@ -144,7 +144,6 @@ typedef struct MXFContext {
     int packages_count;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
-    const uint8_t *sync_key;
     AVFormatContext *fc;
     struct AVAES *aesc;
 } MXFContext;
@@ -332,7 +331,6 @@ err_out:
 
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
     while (!url_feof(&s->pb)) {
@@ -343,7 +341,6 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
-            mxf->sync_key = mxf_encrypted_triplet_key;
             if (res < 0) {
                 av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
                 return -1;
@@ -932,7 +929,6 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
-    mxf->sync_key = mxf_essence_element_key;
     if (!mxf_read_sync(&s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
         return -1;
