@@ -336,10 +336,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     KLVPacket klv;
 
     while (!url_feof(&s->pb)) {
-        if (klv_read_packet(&klv, &s->pb) < 0) {
-            av_log(s, AV_LOG_ERROR, "error reading KLV packet\n");
+        if (klv_read_packet(&klv, &s->pb) < 0)
             return -1;
-        }
 #ifdef DEBUG
         PRINT_KEY(s, "read packet", klv.key);
 #endif
@@ -944,10 +942,8 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     while (!url_feof(&s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
 
-        if (klv_read_packet(&klv, &s->pb) < 0) {
-            av_log(s, AV_LOG_ERROR, "error reading KLV packet\n");
+        if (klv_read_packet(&klv, &s->pb) < 0)
             return -1;
-        }
 #ifdef DEBUG
         PRINT_KEY(s, "read header", klv.key);
 #endif
