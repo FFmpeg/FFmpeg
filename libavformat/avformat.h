@@ -56,7 +56,11 @@ void av_destruct_packet_nofree(AVPacket *pkt);
  */
 void av_destruct_packet(AVPacket *pkt);
 
-/* initialize optional fields of a packet */
+/**
+ * Initialize optional fields of a packet to default values.
+ *
+ * @param pkt packet
+ */
 void av_init_packet(AVPacket *pkt);
 
 /**
