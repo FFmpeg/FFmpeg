@@ -110,10 +110,6 @@ struct MpegTSContext {
     /** list of PMTs in the last PAT seen                    */
     MpegTSService **services;
 
-    /** filter for the PAT                                   */
-    MpegTSFilter *pat_filter;
-    /** filter for the PMT for the MPEG program number specified by req_sid */
-    MpegTSFilter *pmt_filter;
     /** MPEG program number of stream we want to decode      */
     int req_sid;
 
@@ -158,7 +154,7 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
         tss->end_of_section_reached = 1;
         if (!tss->check_crc ||
             av_crc(av_crc04C11DB7, -1, tss->section_buf, tss->section_h_size) == 0)
-            tss->section_cb(tss->opaque, tss->section_buf, tss->section_h_size);
+            tss->section_cb(tss1, tss->section_buf, tss->section_h_size);
     }
 }
 
@@ -393,9 +389,9 @@ static MpegTSService *new_service(MpegTSContext *ts, int sid,
     return service;
 }
 
-static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
+static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
-    MpegTSContext *ts = opaque;
+    MpegTSContext *ts = filter->u.section_filter.opaque;
     SectionHeader h1, *h = &h1;
     PESContext *pes;
     AVStream *st;
@@ -538,13 +534,12 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     }
     /* all parameters are there */
     ts->stop_parse=1;
-    mpegts_close_filter(ts, ts->pmt_filter);
-    ts->pmt_filter = NULL;
+    mpegts_close_filter(ts, filter);
 }
 
-static void pat_cb(void *opaque, const uint8_t *section, int section_len)
+static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
-    MpegTSContext *ts = opaque;
+    MpegTSContext *ts = filter->u.section_filter.opaque;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
@@ -574,7 +569,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
             /* NIT info */
         } else {
             if (ts->req_sid == sid) {
-                ts->pmt_filter = mpegts_open_section_filter(ts, pmt_pid,
+                mpegts_open_section_filter(ts, pmt_pid,
                                                             pmt_cb, ts, 1);
                 goto found;
             }
@@ -584,14 +579,13 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
     ts->stop_parse=1;
 
  found:
-    mpegts_close_filter(ts, ts->pat_filter);
-    ts->pat_filter = NULL;
+    mpegts_close_filter(ts, filter);
 }
 
 /* add all services found in the PAT */
-static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
+static void pat_scan_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
-    MpegTSContext *ts = opaque;
+    MpegTSContext *ts = filter->u.section_filter.opaque;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
@@ -626,20 +620,19 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
     ts->stop_parse = 1;
 
     /* remove filter */
-    mpegts_close_filter(ts, ts->pat_filter);
-    ts->pat_filter = NULL;
+    mpegts_close_filter(ts, filter);
 }
 
 static void mpegts_set_service(MpegTSContext *ts, int sid)
 {
     ts->req_sid = sid;
-    ts->pat_filter = mpegts_open_section_filter(ts, PAT_PID,
+    mpegts_open_section_filter(ts, PAT_PID,
                                                 pat_cb, ts, 1);
 }
 
-static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
+static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
-    MpegTSContext *ts = opaque;
+    MpegTSContext *ts = filter->u.section_filter.opaque;
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end, *desc_list_end, *desc_end;
     int onid, val, sid, desc_list_len, desc_tag, desc_len, service_type;
@@ -720,7 +713,7 @@ static void mpegts_scan_sdt(MpegTSContext *ts)
    than nothing !) */
 static void mpegts_scan_pat(MpegTSContext *ts)
 {
-    ts->pat_filter = mpegts_open_section_filter(ts, PAT_PID,
+    mpegts_open_section_filter(ts, PAT_PID,
                                                 pat_scan_cb, ts, 1);
 }
 
@@ -766,10 +759,10 @@ static int64_t get_pts(const uint8_t *p)
 }
 
 /* return non zero if a packet could be constructed */
-static void mpegts_push_data(void *opaque,
+static void mpegts_push_data(MpegTSFilter *filter,
                              const uint8_t *buf, int buf_size, int is_start)
 {
-    PESContext *pes = opaque;
+    PESContext *pes = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
     const uint8_t *p;
     int len, code;
@@ -1044,7 +1037,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
             }
         }
     } else {
-        tss->u.pes_filter.pes_cb(tss->u.pes_filter.opaque,
+        tss->u.pes_filter.pes_cb(tss,
                                  p, p_end - p, is_start);
     }
 }
