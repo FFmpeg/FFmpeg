@@ -1155,13 +1155,6 @@ static int mpegts_read_header(AVFormatContext *s,
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
 
-        if (ts->nb_services <= 0 && 0) {
-            /* raw transport stream */
-            ts->auto_guess = 1;
-            s->ctx_flags |= AVFMTCTX_NOHEADER;
-            goto do_pcr;
-        }
-
         mpegts_set_service(ts);
 
         handle_packets(ts, s->probesize);
@@ -1182,7 +1175,6 @@ static int mpegts_read_header(AVFormatContext *s,
 
         /* only read packets */
 
-    do_pcr:
         st = av_new_stream(s, 0);
         if (!st)
             goto fail;
