@@ -584,8 +584,6 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
-    char *provider_name, *name;
-    char buf[256];
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PAT:\n");
@@ -611,16 +609,7 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
         if (sid == 0x0000) {
             /* NIT info */
         } else {
-            /* add the service with a dummy name */
-            snprintf(buf, sizeof(buf), "Service %x\n", sid);
-            name = av_strdup(buf);
-            provider_name = av_strdup("");
-            if (name && provider_name) {
-                new_service(ts, sid, provider_name, name);
-            } else {
-                av_freep(&name);
-                av_freep(&provider_name);
-            }
+            new_service(ts, sid, NULL, NULL);
         }
     }
     ts->stop_parse = 1;
