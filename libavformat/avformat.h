@@ -64,7 +64,7 @@ void av_destruct_packet(AVPacket *pkt);
 void av_init_packet(AVPacket *pkt);
 
 /**
- * Allocate the payload of a packet and intialize its fields to default values.
+ * Allocate the payload of a packet and initialize its fields to default values.
  *
  * @param pkt packet
  * @param size wanted payload size
@@ -73,7 +73,7 @@ void av_init_packet(AVPacket *pkt);
 int av_new_packet(AVPacket *pkt, int size);
 
 /**
- * Allocate and read the payload of a packet and intialize its fields to default values.
+ * Allocate and read the payload of a packet and initialize its fields to default values.
  *
  * @param pkt packet
  * @param size wanted payload size

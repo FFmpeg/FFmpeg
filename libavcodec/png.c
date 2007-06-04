@@ -180,7 +180,7 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
     dsp_mask = png_pass_dsp_mask[pass];
     switch(bits_per_pixel) {
     case 1:
-        /* we must intialize the line to zero before writing to it */
+        /* we must initialize the line to zero before writing to it */
         if (pass == 0)
             memset(dst, 0, (width + 7) >> 3);
         src_x = 0;
