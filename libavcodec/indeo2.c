@@ -197,11 +197,13 @@ static int ir2_decode_init(AVCodecContext *avctx){
     avctx->pix_fmt= PIX_FMT_YUV410P;
 
     if (!ir2_vlc.table)
+#ifdef ALT_BITSTREAM_READER_LE
         init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
                  &ir2_codes[0][1], 4, 2,
-#ifdef ALT_BITSTREAM_READER_LE
                  &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC | INIT_VLC_LE);
 #else
+        init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
+                 &ir2_codes[0][1], 4, 2,
                  &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC);
 #endif
 
