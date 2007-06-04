@@ -39,15 +39,15 @@ typedef struct Track {
 
     /* Unique track number and track ID. stream_index is the index that
      * the calling app uses for this track. */
-    uint32_t num,
-        uid,
-        stream_index;
+    uint32_t num;
+    uint32_t uid;
+    uint32_t stream_index;
 
-    char *name,
-        *language;
+    char *name;
+    char *language;
 
-    char *codec_id,
-        *codec_name;
+    char *codec_id;
+    char *codec_name;
 
     unsigned char *codec_priv;
     int codec_priv_size;
@@ -59,10 +59,10 @@ typedef struct Track {
 typedef struct MatroskaVideoTrack {
     MatroskaTrack track;
 
-    int pixel_width,
-        pixel_height,
-        display_width,
-        display_height;
+    int pixel_width;
+    int pixel_height;
+    int display_width;
+    int display_height;
 
     uint32_t fourcc;
 
@@ -75,10 +75,10 @@ typedef struct MatroskaVideoTrack {
 typedef struct MatroskaAudioTrack {
     MatroskaTrack track;
 
-    int channels,
-        bitdepth,
-        internal_samplerate,
-        samplerate;
+    int channels;
+    int bitdepth;
+    int internal_samplerate;
+    int samplerate;
     int block_align;
 
     /* real audio header */
@@ -103,7 +103,8 @@ typedef struct MatroskaSubtitleTrack {
                                     sizeof(MatroskaSubtitleTrack)))
 
 typedef struct MatroskaLevel {
-    uint64_t start, length;
+    uint64_t start;
+    uint64_t length;
 } MatroskaLevel;
 
 typedef struct MatroskaDemuxIndex {
@@ -121,8 +122,8 @@ typedef struct MatroskaDemuxContext {
     int level_up;
 
     /* matroska stuff */
-    char *writing_app,
-        *muxing_app;
+    char *writing_app;
+    char *muxing_app;
     int64_t created;
 
     /* timescale in the file */
@@ -130,7 +131,8 @@ typedef struct MatroskaDemuxContext {
 
     /* num_streams is the number of streams that av_new_stream() was called
      * for ( = that are available to the calling program). */
-    int num_tracks, num_streams;
+    int num_tracks;
+    int num_streams;
     MatroskaTrack *tracks[MAX_STREAMS];
 
     /* cache for ID peeking */
@@ -144,9 +146,9 @@ typedef struct MatroskaDemuxContext {
     int num_packets;
 
     /* have we already parse metadata/cues/clusters? */
-    int metadata_parsed,
-        index_parsed,
-        done;
+    int metadata_parsed;
+    int index_parsed;
+    int done;
 
     /* The index for seeking. */
     int num_indexes;
