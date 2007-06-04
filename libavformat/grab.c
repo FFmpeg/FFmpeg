@@ -53,6 +53,19 @@ typedef struct {
     uint8_t *lum_m4_mem;
 } VideoData;
 
+struct {
+    int palette;
+    int depth;
+    enum PixelFormat pix_fmt;
+} video_formats [] = {
+    {.palette = VIDEO_PALETTE_YUV420P, .depth = 12, .pix_fmt = PIX_FMT_YUV420P },
+    {.palette = VIDEO_PALETTE_YUV422,  .depth = 16, .pix_fmt = PIX_FMT_YUYV422 },
+    /* NOTE: v4l uses BGR24, not RGB24 */
+    {.palette = VIDEO_PALETTE_RGB24,   .depth = 24, .pix_fmt = PIX_FMT_BGR24   },
+    {.palette = VIDEO_PALETTE_GREY,    .depth = 8,  .pix_fmt = PIX_FMT_GRAY8   },
+};
+
+
 static int aiw_init(VideoData *s);
 static int aiw_read_picture(VideoData *s, uint8_t *data);
 static int aiw_close(VideoData *s);
@@ -69,6 +82,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_audio audio;
     struct video_picture pict;
     int j;
+    int vformat_num = sizeof(video_formats) / sizeof(video_formats[0]);
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "Bad capture size (%dx%d) or wrong time base (%d)\n",
@@ -117,15 +131,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     desired_palette = -1;
     desired_depth = -1;
-    if (ap->pix_fmt == PIX_FMT_YUV420P) {
-        desired_palette = VIDEO_PALETTE_YUV420P;
-        desired_depth = 12;
-    } else if (ap->pix_fmt == PIX_FMT_YUYV422) {
-        desired_palette = VIDEO_PALETTE_YUV422;
-        desired_depth = 16;
-    } else if (ap->pix_fmt == PIX_FMT_BGR24) {
-        desired_palette = VIDEO_PALETTE_RGB24;
-        desired_depth = 24;
+    for (j = 0; j < vformat_num; j++) {
+        if (ap->pix_fmt == video_formats[j].pix_fmt) {
+            desired_palette = video_formats[j].palette;
+            desired_depth = video_formats[j].depth;
+            break;
+        }
     }
 
     /* set tv standard */
@@ -159,26 +170,14 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     pict.palette = desired_palette;
     pict.depth= desired_depth;
     if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
-        pict.palette=VIDEO_PALETTE_YUV420P;
-        pict.depth=12;
-        ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-        if (ret < 0) {
-            pict.palette=VIDEO_PALETTE_YUV422;
-            pict.depth=16;
-            ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-            if (ret < 0) {
-                pict.palette=VIDEO_PALETTE_RGB24;
-                pict.depth=24;
-                ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                if (ret < 0) {
-                    pict.palette=VIDEO_PALETTE_GREY;
-                    pict.depth=8;
-                    ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                    if (ret < 0)
-                        goto fail1;
-                }
-            }
+        for (j = 0; j < vformat_num; j++) {
+            pict.palette = video_formats[j].palette;
+            pict.depth = video_formats[j].depth;
+            if (-1 != ioctl(video_fd, VIDIOCSPICT, &pict))
+                break;
         }
+        if (j >= vformat_num)
+            goto fail1;
     }
 
     ret = ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers);
@@ -249,26 +248,17 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->use_mmap = 1;
     }
 
-    switch(s->frame_format) {
-    case VIDEO_PALETTE_YUV420P:
-        frame_size = (width * height * 3) / 2;
-        st->codec->pix_fmt = PIX_FMT_YUV420P;
-        break;
-    case VIDEO_PALETTE_YUV422:
-        frame_size = width * height * 2;
-        st->codec->pix_fmt = PIX_FMT_YUYV422;
-        break;
-    case VIDEO_PALETTE_RGB24:
-        frame_size = width * height * 3;
-        st->codec->pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
-        break;
-    case VIDEO_PALETTE_GREY:
-        frame_size = width * height * 1;
-        st->codec->pix_fmt = PIX_FMT_GRAY8;
-        break;
-    default:
-        goto fail;
+    for (j = 0; j < vformat_num; j++) {
+        if (s->frame_format == video_formats[j].palette) {
+            frame_size = width * height * video_formats[j].depth / 8;
+            st->codec->pix_fmt = video_formats[j].pix_fmt;
+            break;
+        }
     }
+
+    if (j >= vformat_num)
+        goto fail;
+
     s->fd = video_fd;
     s->frame_size = frame_size;
 
