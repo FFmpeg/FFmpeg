@@ -1175,9 +1175,8 @@ static int mpegts_read_header(AVFormatContext *s,
     MpegTSContext *ts = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint8_t buf[1024];
-    int len, sid, i;
+    int len;
     int64_t pos;
-    MpegTSService *service;
 
     if (ap) {
         ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
