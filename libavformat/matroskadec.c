@@ -2531,7 +2531,7 @@ matroska_read_packet (AVFormatContext *s,
                       AVPacket        *pkt)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    int res = 0;
+    int res;
     uint32_t id;
 
     /* Read stream until we have a packet queued. */
@@ -2541,6 +2541,7 @@ matroska_read_packet (AVFormatContext *s,
         if (matroska->done)
             return AVERROR_IO;
 
+        res = 0;
         while (res == 0) {
             if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
                 return AVERROR_IO;
