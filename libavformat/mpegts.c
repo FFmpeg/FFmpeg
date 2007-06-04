@@ -600,6 +600,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (sid == 0x0000) {
             /* NIT info */
         } else {
+            new_service(ts, sid, NULL, NULL);
             ts->stop_parse--;
                 mpegts_open_section_filter(ts, pmt_pid,
                                                             pmt_cb, ts, 1);
@@ -608,47 +609,6 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     /* not found */
     ts->stop_parse++;
 
-    mpegts_close_filter(ts, filter);
-}
-
-/* add all services found in the PAT */
-static void pat_scan_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
-{
-    MpegTSContext *ts = filter->u.section_filter.opaque;
-    SectionHeader h1, *h = &h1;
-    const uint8_t *p, *p_end;
-    int sid, pmt_pid;
-
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "PAT:\n");
-    av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
-#endif
-    p_end = section + section_len - 4;
-    p = section;
-    if (parse_section_header(h, &p, p_end) < 0)
-        return;
-    if (h->tid != PAT_TID)
-        return;
-
-    for(;;) {
-        sid = get16(&p, p_end);
-        if (sid < 0)
-            break;
-        pmt_pid = get16(&p, p_end) & 0x1fff;
-        if (pmt_pid < 0)
-            break;
-#ifdef DEBUG_SI
-        av_log(ts->stream, AV_LOG_DEBUG, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
-#endif
-        if (sid == 0x0000) {
-            /* NIT info */
-        } else {
-            new_service(ts, sid, NULL, NULL);
-        }
-    }
-    ts->stop_parse = 1;
-
-    /* remove filter */
     mpegts_close_filter(ts, filter);
 }
 
@@ -735,14 +695,6 @@ static void mpegts_scan_sdt(MpegTSContext *ts)
 {
     mpegts_open_section_filter(ts, SDT_PID,
                                                 sdt_cb, ts, 1);
-}
-
-/* scan services in a transport stream by looking at the PAT (better
-   than nothing !) */
-static void mpegts_scan_pat(MpegTSContext *ts)
-{
-    mpegts_open_section_filter(ts, PAT_PID,
-                                                pat_scan_cb, ts, 1);
 }
 
 static int64_t get_pts(const uint8_t *p)
@@ -1204,20 +1156,13 @@ static int mpegts_read_header(AVFormatContext *s,
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
 
-        if (ts->nb_services <= 0) {
-            mpegts_scan_pat(ts);
-
-            handle_packets(ts, s->probesize);
-        }
-
-        if (ts->nb_services <= 0) {
+        if (ts->nb_services <= 0 && 0) {
             /* raw transport stream */
             ts->auto_guess = 1;
             s->ctx_flags |= AVFMTCTX_NOHEADER;
             goto do_pcr;
         }
 
-            url_fseek(pb, pos, SEEK_SET);
             mpegts_set_service(ts);
 
             handle_packets(ts, s->probesize);
