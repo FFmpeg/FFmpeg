@@ -2426,24 +2426,24 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                         matroska_queue_packet(matroska, pkt);
                     }
                 } else {
-                pkt = av_mallocz(sizeof(AVPacket));
-                /* XXX: prevent data copy... */
-                if (av_new_packet(pkt, slice_size) < 0) {
-                    res = AVERROR_NOMEM;
-                    n = laces-1;
-                    break;
-                }
-                memcpy (pkt->data, data+slice_offset, slice_size);
+                    pkt = av_mallocz(sizeof(AVPacket));
+                    /* XXX: prevent data copy... */
+                    if (av_new_packet(pkt, slice_size) < 0) {
+                        res = AVERROR_NOMEM;
+                        n = laces-1;
+                        break;
+                    }
+                    memcpy (pkt->data, data+slice_offset, slice_size);
 
-                if (n == 0)
-                    pkt->flags = is_keyframe;
-                pkt->stream_index = matroska->tracks[track]->stream_index;
+                    if (n == 0)
+                        pkt->flags = is_keyframe;
+                    pkt->stream_index = matroska->tracks[track]->stream_index;
 
-                pkt->pts = timecode;
-                pkt->pos = pos;
-                pkt->duration = duration;
+                    pkt->pts = timecode;
+                    pkt->pos = pos;
+                    pkt->duration = duration;
 
-                matroska_queue_packet(matroska, pkt);
+                    matroska_queue_packet(matroska, pkt);
                 }
 
                 if (timecode != AV_NOPTS_VALUE)
