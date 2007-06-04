@@ -117,6 +117,34 @@ struct MpegTSContext {
     MpegTSFilter *pids[NB_PID_MAX];
 };
 
+/* TS stream handling */
+
+enum MpegTSState {
+    MPEGTS_HEADER = 0,
+    MPEGTS_PESHEADER_FILL,
+    MPEGTS_PAYLOAD,
+    MPEGTS_SKIP,
+};
+
+/* enough for PES header + length */
+#define PES_START_SIZE 9
+#define MAX_PES_HEADER_SIZE (9 + 255)
+
+struct PESContext {
+    int pid;
+    int stream_type;
+    MpegTSContext *ts;
+    AVFormatContext *stream;
+    AVStream *st;
+    enum MpegTSState state;
+    /* used to get the format */
+    int data_index;
+    int total_size;
+    int pes_header_size;
+    int64_t pts, dts;
+    uint8_t header[MAX_PES_HEADER_SIZE];
+};
+
 /**
  *  Assembles PES packets out of TS packets, and then calls the "section_cb"
  *  function when they are complete.
@@ -716,34 +744,6 @@ static void mpegts_scan_pat(MpegTSContext *ts)
     mpegts_open_section_filter(ts, PAT_PID,
                                                 pat_scan_cb, ts, 1);
 }
-
-/* TS stream handling */
-
-enum MpegTSState {
-    MPEGTS_HEADER = 0,
-    MPEGTS_PESHEADER_FILL,
-    MPEGTS_PAYLOAD,
-    MPEGTS_SKIP,
-};
-
-/* enough for PES header + length */
-#define PES_START_SIZE 9
-#define MAX_PES_HEADER_SIZE (9 + 255)
-
-struct PESContext {
-    int pid;
-    int stream_type;
-    MpegTSContext *ts;
-    AVFormatContext *stream;
-    AVStream *st;
-    enum MpegTSState state;
-    /* used to get the format */
-    int data_index;
-    int total_size;
-    int pes_header_size;
-    int64_t pts, dts;
-    uint8_t header[MAX_PES_HEADER_SIZE];
-};
 
 static int64_t get_pts(const uint8_t *p)
 {
