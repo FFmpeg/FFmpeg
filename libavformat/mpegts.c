@@ -105,7 +105,6 @@ struct MpegTSContext {
     /******************************************/
     /* private mpegts data */
     /* scan context */
-    MpegTSFilter *sdt_filter;
     /** number of PMTs in the last PAT seen                  */
     int nb_services;
     /** list of PMTs in the last PAT seen                    */
@@ -708,17 +707,12 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
         }
         p = desc_list_end;
     }
-    ts->stop_parse = 1;
-
-    /* remove filter */
-    mpegts_close_filter(ts, ts->sdt_filter);
-    ts->sdt_filter = NULL;
 }
 
 /* scan services in a transport stream by looking at the SDT */
 static void mpegts_scan_sdt(MpegTSContext *ts)
 {
-    ts->sdt_filter = mpegts_open_section_filter(ts, SDT_PID,
+    mpegts_open_section_filter(ts, SDT_PID,
                                                 sdt_cb, ts, 1);
 }
 
@@ -1218,18 +1212,7 @@ static int mpegts_read_header(AVFormatContext *s,
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
 
-        handle_packets(ts, s->probesize);
-
         if (ts->nb_services <= 0) {
-            /* no SDT found, we try to look at the PAT */
-
-            /* First remove the SDT filters from each PID */
-            int i;
-            for (i=0; i < NB_PID_MAX; i++) {
-                if (ts->pids[i])
-                    mpegts_close_filter(ts, ts->pids[i]);
-            }
-            url_fseek(pb, pos, SEEK_SET);
             mpegts_scan_pat(ts);
 
             handle_packets(ts, s->probesize);
