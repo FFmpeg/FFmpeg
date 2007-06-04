@@ -86,6 +86,7 @@ version <next>
 - Renderware TXD demuxer and decoder
 - extern C declarations for C++ removed from headers
 - sws_flags command line option
+- codebook generator
 
 version 0.4.9-pre1:
 
