@@ -544,8 +544,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 pes = add_pes_stream(ts, pid, stream_type);
                 if (pes)
                     st = new_pes_av_stream(pes, 0);
-                break;
             }
+            break;
         default:
             /* we ignore the other streams */
             break;
