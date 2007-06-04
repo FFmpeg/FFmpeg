@@ -541,10 +541,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 pes= ts->pids[pid]->u.pes_filter.opaque;
                 st= pes->st;
             }else{
-            pes = add_pes_stream(ts, pid, stream_type);
-            if (pes)
-                st = new_pes_av_stream(pes, 0);
-            break;
+                pes = add_pes_stream(ts, pid, stream_type);
+                if (pes)
+                    st = new_pes_av_stream(pes, 0);
+                break;
             }
         default:
             /* we ignore the other streams */
@@ -602,8 +602,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         } else {
             new_service(ts, sid, NULL, NULL);
             ts->stop_parse--;
-                mpegts_open_section_filter(ts, pmt_pid,
-                                                            pmt_cb, ts, 1);
+            mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
         }
     }
     /* not found */
@@ -1163,9 +1162,9 @@ static int mpegts_read_header(AVFormatContext *s,
             goto do_pcr;
         }
 
-            mpegts_set_service(ts);
+        mpegts_set_service(ts);
 
-            handle_packets(ts, s->probesize);
+        handle_packets(ts, s->probesize);
         /* if could not find service, enable auto_guess */
 
         ts->auto_guess = 1;
