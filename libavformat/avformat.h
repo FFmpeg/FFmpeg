@@ -64,7 +64,7 @@ void av_destruct_packet(AVPacket *pkt);
 void av_init_packet(AVPacket *pkt);
 
 /**
- * Allocate the payload of a packet and intialized its fields to default values.
+ * Allocate the payload of a packet and intialize its fields to default values.
  *
  * @param pkt packet
  * @param size wanted payload size
@@ -73,7 +73,7 @@ void av_init_packet(AVPacket *pkt);
 int av_new_packet(AVPacket *pkt, int size);
 
 /**
- * Allocate and read the payload of a packet and intialized its fields to default values.
+ * Allocate and read the payload of a packet and intialize its fields to default values.
  *
  * @param pkt packet
  * @param size wanted payload size
@@ -143,7 +143,7 @@ typedef struct AVFormatParameters {
     int mpeg2ts_raw:1;  /**< force raw MPEG2 transport stream output, if possible */
     int mpeg2ts_compute_pcr:1; /**< compute exact PCR for each transport
                                   stream packet (only meaningful if
-                                  mpeg2ts_raw is TRUE */
+                                  mpeg2ts_raw is TRUE) */
     int initial_pause:1;       /**< do not begin to play the stream
                                   immediately (RTSP only) */
     int prealloced_context:1;
@@ -195,7 +195,7 @@ typedef struct AVInputFormat {
     const char *long_name;
     /** size of private data so that it can be allocated in the wrapper */
     int priv_data_size;
-    /** tell if a given file has a chance of being parsing by this format */
+    /** tell if a given file has a chance of being parsed by this format */
     int (*read_probe)(AVProbeData *);
     /** read the format header and initialize the AVFormatContext
        structure. Return 0 if OK. 'ap' if non NULL contains
@@ -270,7 +270,7 @@ typedef struct AVStream {
     /**
      * real base frame rate of the stream.
      * this is the lowest framerate with which all timestamps can be
-     * represented accurately (its the least common multiple of all
+     * represented accurately (it is the least common multiple of all
      * framerates in the stream), Note, this value is just a guess!
      * for example if the timebase is 1/90000 and all frames have either
      * approximately 3600 or 1800 timer ticks then r_frame_rate will be 50/1
@@ -519,7 +519,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
                          AVInputFormat *fmt, AVFormatParameters *ap);
 
 /**
- * Open a media file as input. The codec are not opened. Only the file
+ * Open a media file as input. The codecs are not opened. Only the file
  * header (if present) is read.
  *
  * @param ic_ptr the opened media file handle is put here
@@ -553,7 +553,7 @@ int av_find_stream_info(AVFormatContext *ic);
 /**
  * Read a transport packet from a media file.
  *
- * This function is absolete and should never be used.
+ * This function is obsolete and should never be used.
  * Use av_read_frame() instead.
  *
  * @param s media file handle
@@ -720,7 +720,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *
  * The packet must contain one audio or video frame.
  * If the packets are already correctly interleaved the application should
- * call av_write_frame() instead as its slightly faster, its also important
+ * call av_write_frame() instead as it is slightly faster, it is also important
  * to keep in mind that completly non interleaved input will need huge amounts
  * of memory to interleave with this, so its prefereable to interleave at the
  * demuxer level
