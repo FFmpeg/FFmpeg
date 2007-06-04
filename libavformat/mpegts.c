@@ -364,7 +364,8 @@ static int parse_section_header(SectionHeader *h,
 static MpegTSService *new_service(MpegTSContext *ts, int sid,
                                   char *provider_name, char *name)
 {
-    MpegTSService *service;
+    MpegTSService *service=NULL;
+    int i;
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "new_service: "
@@ -372,13 +373,24 @@ static MpegTSService *new_service(MpegTSContext *ts, int sid,
            sid, provider_name, name);
 #endif
 
-    service = av_mallocz(sizeof(MpegTSService));
-    if (!service)
-        return NULL;
+    for(i=0; i<ts->nb_services; i++)
+        if(ts->services[i]->sid == sid)
+            service= ts->services[i];
+
+    if(!service){
+        service = av_mallocz(sizeof(MpegTSService));
+        if (!service)
+            return NULL;
+        dynarray_add(&ts->services, &ts->nb_services, service);
+    }
     service->sid = sid;
-    service->provider_name = provider_name;
-    service->name = name;
-    dynarray_add(&ts->services, &ts->nb_services, service);
+    assert((!provider_name) == (!name));
+    if(name){
+        av_free(service->provider_name);
+        av_free(service->         name);
+        service->provider_name = provider_name;
+        service->         name =          name;
+    }
     return service;
 }
 
