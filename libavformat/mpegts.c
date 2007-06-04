@@ -1213,56 +1213,56 @@ static int mpegts_read_header(AVFormatContext *s,
     if (s->iformat == &mpegts_demuxer) {
         /* normal demux */
 
-            /* first do a scaning to get all the services */
+        /* first do a scaning to get all the services */
+        url_fseek(pb, pos, SEEK_SET);
+        mpegts_scan_sdt(ts);
+
+        handle_packets(ts, s->probesize);
+
+        if (ts->nb_services <= 0) {
+            /* no SDT found, we try to look at the PAT */
+
+            /* First remove the SDT filters from each PID */
+            int i;
+            for (i=0; i < NB_PID_MAX; i++) {
+                if (ts->pids[i])
+                    mpegts_close_filter(ts, ts->pids[i]);
+            }
             url_fseek(pb, pos, SEEK_SET);
-            mpegts_scan_sdt(ts);
+            mpegts_scan_pat(ts);
 
             handle_packets(ts, s->probesize);
+        }
 
-            if (ts->nb_services <= 0) {
-                /* no SDT found, we try to look at the PAT */
+        if (ts->nb_services <= 0) {
+            /* raw transport stream */
+            ts->auto_guess = 1;
+            s->ctx_flags |= AVFMTCTX_NOHEADER;
+            goto do_pcr;
+        }
 
-                /* First remove the SDT filters from each PID */
-                int i;
-                for (i=0; i < NB_PID_MAX; i++) {
-                    if (ts->pids[i])
-                        mpegts_close_filter(ts, ts->pids[i]);
-                }
-                url_fseek(pb, pos, SEEK_SET);
-                mpegts_scan_pat(ts);
-
-                handle_packets(ts, s->probesize);
-            }
-
-            if (ts->nb_services <= 0) {
-                /* raw transport stream */
-                ts->auto_guess = 1;
-                s->ctx_flags |= AVFMTCTX_NOHEADER;
-                goto do_pcr;
-            }
-
-            /* tune to first service found */
-            for(i=0; i<ts->nb_services; i++){
-                service = ts->services[i];
-                sid = service->sid;
+        /* tune to first service found */
+        for(i=0; i<ts->nb_services; i++){
+            service = ts->services[i];
+            sid = service->sid;
 #ifdef DEBUG_SI
-                av_log(ts->stream, AV_LOG_DEBUG, "tuning to '%s'\n", service->name);
+            av_log(ts->stream, AV_LOG_DEBUG, "tuning to '%s'\n", service->name);
 #endif
 
-                /* now find the info for the first service if we found any,
-                otherwise try to filter all PATs */
+            /* now find the info for the first service if we found any,
+            otherwise try to filter all PATs */
 
-                url_fseek(pb, pos, SEEK_SET);
-                mpegts_set_service(ts, sid);
+            url_fseek(pb, pos, SEEK_SET);
+            mpegts_set_service(ts, sid);
 
-                handle_packets(ts, s->probesize);
-            }
-            /* if could not find service, enable auto_guess */
+            handle_packets(ts, s->probesize);
+        }
+        /* if could not find service, enable auto_guess */
 
-                ts->auto_guess = 1;
+        ts->auto_guess = 1;
 
 #ifdef DEBUG_SI
-            av_log(ts->stream, AV_LOG_DEBUG, "tuning done\n");
+        av_log(ts->stream, AV_LOG_DEBUG, "tuning done\n");
 #endif
         s->ctx_flags |= AVFMTCTX_NOHEADER;
     } else {
