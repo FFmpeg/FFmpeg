@@ -53,6 +53,11 @@ CodecTags ff_mkv_codec_tags[]={
     {"A_FLAC"           , CODEC_ID_FLAC},
     {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
     {"A_TTA1"           , CODEC_ID_TTA},
+    {"A_REAL/14_4"      , CODEC_ID_RA_144},
+    {"A_REAL/28_8"      , CODEC_ID_RA_288},
+    {"A_REAL/ATRC"      , CODEC_ID_ATRAC3},
+    {"A_REAL/COOK"      , CODEC_ID_COOK},
+//    {"A_REAL/SIPR"      , CODEC_ID_SIPRO},
     {NULL               , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };

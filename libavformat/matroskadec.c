@@ -79,6 +79,16 @@ typedef struct MatroskaAudioTrack {
         bitdepth,
         internal_samplerate,
         samplerate;
+    int block_align;
+
+    /* real audio header */
+    int coded_framesize;
+    int sub_packet_h;
+    int frame_size;
+    int sub_packet_size;
+    int sub_packet_cnt;
+    int pkt_cnt;
+    uint8_t *buf;
     //..
 } MatroskaAudioTrack;
 
@@ -2103,6 +2113,37 @@ matroska_read_header (AVFormatContext    *s,
                 track->flags |= MATROSKA_TRACK_REAL_V;
             }
 
+            else if (codec_id == CODEC_ID_RA_144) {
+                MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
+                audiotrack->samplerate = 8000;
+                audiotrack->channels = 1;
+            }
+
+            else if (codec_id == CODEC_ID_RA_288 ||
+                     codec_id == CODEC_ID_COOK ||
+                     codec_id == CODEC_ID_ATRAC3) {
+                MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
+                ByteIOContext b;
+
+                init_put_byte(&b, track->codec_priv, track->codec_priv_size, 0,
+                              NULL, NULL, NULL, NULL);
+                url_fskip(&b, 24);
+                audiotrack->coded_framesize = get_be32(&b);
+                url_fskip(&b, 12);
+                audiotrack->sub_packet_h    = get_be16(&b);
+                audiotrack->frame_size      = get_be16(&b);
+                audiotrack->sub_packet_size = get_be16(&b);
+                audiotrack->buf = av_malloc(audiotrack->frame_size * audiotrack->sub_packet_h);
+                if (codec_id == CODEC_ID_RA_288) {
+                    audiotrack->block_align = audiotrack->coded_framesize;
+                    track->codec_priv_size = 0;
+                } else {
+                    audiotrack->block_align = audiotrack->sub_packet_size;
+                    extradata_offset = 78;
+                    track->codec_priv_size -= extradata_offset;
+                }
+            }
+
             if (codec_id == CODEC_ID_NONE) {
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown/unsupported CodecID %s.\n",
@@ -2159,6 +2200,7 @@ matroska_read_header (AVFormatContext    *s,
                 st->codec->codec_type = CODEC_TYPE_AUDIO;
                 st->codec->sample_rate = audiotrack->samplerate;
                 st->codec->channels = audiotrack->channels;
+                st->codec->block_align = audiotrack->block_align;
             } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
                 st->codec->codec_type = CODEC_TYPE_SUBTITLE;
             }
@@ -2347,6 +2389,43 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     slice_size = lace_size[n] - slice_offset;
                 else
                     slice_size = rv_offset(data, slice+1, slices) - slice_offset;
+
+                if (st->codec->codec_id == CODEC_ID_RA_288 ||
+                    st->codec->codec_id == CODEC_ID_COOK ||
+                    st->codec->codec_id == CODEC_ID_ATRAC3) {
+                    MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)matroska->tracks[track];
+                    int a = st->codec->block_align;
+                    int sps = audiotrack->sub_packet_size;
+                    int cfs = audiotrack->coded_framesize;
+                    int h = audiotrack->sub_packet_h;
+                    int y = audiotrack->sub_packet_cnt;
+                    int w = audiotrack->frame_size;
+                    int x;
+
+                    if (!audiotrack->pkt_cnt) {
+                        if (st->codec->codec_id == CODEC_ID_RA_288)
+                            for (x=0; x<h/2; x++)
+                                memcpy(audiotrack->buf+x*2*w+y*cfs,
+                                       data+x*cfs, cfs);
+                        else
+                            for (x=0; x<w/sps; x++)
+                                memcpy(audiotrack->buf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), data+x*sps, sps);
+
+                        if (++audiotrack->sub_packet_cnt >= h) {
+                            audiotrack->sub_packet_cnt = 0;
+                            audiotrack->pkt_cnt = h*w / a;
+                        }
+                    }
+                    while (audiotrack->pkt_cnt) {
+                        pkt = av_mallocz(sizeof(AVPacket));
+                        av_new_packet(pkt, a);
+                        memcpy(pkt->data, audiotrack->buf
+                               + a * (h*w / a - audiotrack->pkt_cnt--), a);
+                        pkt->pos = pos;
+                        pkt->stream_index = matroska->tracks[track]->stream_index;
+                        matroska_queue_packet(matroska, pkt);
+                    }
+                } else {
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
                 if (av_new_packet(pkt, slice_size) < 0) {
@@ -2365,6 +2444,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 pkt->duration = duration;
 
                 matroska_queue_packet(matroska, pkt);
+                }
 
                 if (timecode != AV_NOPTS_VALUE)
                     timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
@@ -2624,6 +2704,11 @@ matroska_read_close (AVFormatContext *s)
         av_free(track->codec_priv);
         av_free(track->name);
         av_free(track->language);
+
+        if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
+            MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
+            av_free(audiotrack->buf);
+        }
 
         av_free(track);
     }
