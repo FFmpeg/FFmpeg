@@ -176,6 +176,17 @@ void av_destruct_packet(AVPacket *pkt)
     pkt->data = NULL; pkt->size = 0;
 }
 
+void av_init_packet(AVPacket *pkt)
+{
+    pkt->pts   = AV_NOPTS_VALUE;
+    pkt->dts   = AV_NOPTS_VALUE;
+    pkt->pos   = -1;
+    pkt->duration = 0;
+    pkt->flags = 0;
+    pkt->stream_index = 0;
+    pkt->destruct= av_destruct_packet_nofree;
+}
+
 int av_new_packet(AVPacket *pkt, int size)
 {
     uint8_t *data;

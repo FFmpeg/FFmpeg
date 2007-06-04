@@ -57,16 +57,7 @@ void av_destruct_packet_nofree(AVPacket *pkt);
 void av_destruct_packet(AVPacket *pkt);
 
 /* initialize optional fields of a packet */
-static inline void av_init_packet(AVPacket *pkt)
-{
-    pkt->pts   = AV_NOPTS_VALUE;
-    pkt->dts   = AV_NOPTS_VALUE;
-    pkt->pos   = -1;
-    pkt->duration = 0;
-    pkt->flags = 0;
-    pkt->stream_index = 0;
-    pkt->destruct= av_destruct_packet_nofree;
-}
+void av_init_packet(AVPacket *pkt);
 
 /**
  * Allocate the payload of a packet and intialized its fields to default values.
