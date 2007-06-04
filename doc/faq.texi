@@ -252,12 +252,12 @@ that it is related to FFmpeg.
 
 @section How can I join video files?
 
-A few multimedia containers (MPEG1, MPEG2 PS, DV) allow to join video files by
+A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to join video files by
 merely concatenating them.
 
 Hence you may concatenate your multimedia files by first transcoding them to
 these privileged formats, then using the humble @code{cat} command (or the
-equally humble @code{copy} under Win32), and finally transcoding back to your
+equally humble @code{copy} under Windows), and finally transcoding back to your
 format of choice.
 
 @example
@@ -271,7 +271,7 @@ Notice that you should either use @code{-sameq} or set a reasonably high
 bitrate for your intermediate and output files, if you want to preserve
 video quality.
 
-Notice too that you may avoid the huge intermediate files by taking advantage
+Also notice that you may avoid the huge intermediate files by taking advantage
 of named pipes, should your platform support it:
 
 @example
