@@ -108,6 +108,7 @@
 
 #ifdef USE_FASTMEMCPY
 #    include "libvo/fastmemcpy.h"
+#    define memcpy(a,b,c) fast_memcpy(a,b,c)
 #endif
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
