@@ -158,7 +158,7 @@ __asm__ __volatile__( \
 static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, qmul, qadd;
+    int level, qmul, qadd;
     int nCoeffs;
 
     assert(s->block_last_index[n]>=0);
@@ -187,7 +187,7 @@ static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
 static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, qmul, qadd;
+    int qmul, qadd;
     int nCoeffs;
 
     assert(s->block_last_index[n]>=0);
