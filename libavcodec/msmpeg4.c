@@ -162,7 +162,7 @@ static void init_mv_table(MVTable *tab)
     }
 }
 
-static void code012(PutBitContext *pb, int n)
+void ff_code012(PutBitContext *pb, int n)
 {
     if (n == 0) {
         put_bits(pb, 1, 0);
@@ -348,8 +348,8 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
         if(s->msmpeg4_version>2){
             if(!s->per_mb_rl_table){
-                code012(&s->pb, s->rl_chroma_table_index);
-                code012(&s->pb, s->rl_table_index);
+                ff_code012(&s->pb, s->rl_chroma_table_index);
+                ff_code012(&s->pb, s->rl_table_index);
             }
 
             put_bits(&s->pb, 1, s->dc_table_index);
@@ -362,7 +362,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
         if(s->msmpeg4_version>2){
             if(!s->per_mb_rl_table)
-                code012(&s->pb, s->rl_table_index);
+                ff_code012(&s->pb, s->rl_table_index);
 
             put_bits(&s->pb, 1, s->dc_table_index);
 

@@ -144,8 +144,8 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
         if(w->per_mb_rl_bit) put_bits(&s->pb, 1, s->per_mb_rl_table);
 
         if(!s->per_mb_rl_table){
-            code012(&s->pb, s->rl_chroma_table_index);
-            code012(&s->pb, s->rl_table_index);
+            ff_code012(&s->pb, s->rl_chroma_table_index);
+            ff_code012(&s->pb, s->rl_table_index);
         }
 
         put_bits(&s->pb, 1, s->dc_table_index);
@@ -156,7 +156,7 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
 
         put_bits(&s->pb, 2, SKIP_TYPE_NONE);
 
-        code012(&s->pb, cbp_index=0);
+        ff_code012(&s->pb, cbp_index=0);
         if(s->qscale <= 10){
             int map[3]= {0,2,1};
             w->cbp_table_index= map[cbp_index];
@@ -173,14 +173,14 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
         if(w->abt_flag){
             put_bits(&s->pb, 1, w->per_mb_abt^1);
             if(!w->per_mb_abt){
-                code012(&s->pb, w->abt_type);
+                ff_code012(&s->pb, w->abt_type);
             }
         }
 
         if(w->per_mb_rl_bit) put_bits(&s->pb, 1, s->per_mb_rl_table);
 
         if(!s->per_mb_rl_table){
-            code012(&s->pb, s->rl_table_index);
+            ff_code012(&s->pb, s->rl_table_index);
             s->rl_chroma_table_index = s->rl_table_index;
         }
         put_bits(&s->pb, 1, s->dc_table_index);
