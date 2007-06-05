@@ -451,7 +451,7 @@ DEFUN(yuv2rgb24_line,MEM,
         (r7:4) = [sp++];
         unlink;
         rts;
-DEFUN_END(yuv2rgb888_line)
+DEFUN_END(yuv2rgb24_line)
 
 
 
