@@ -36,9 +36,6 @@
 #include "dsputil.h"
 #include "roqvideo.h"
 
-#define avg2(a,b) av_clip_uint8(((int)(a)+(int)(b)+1)>>1)
-#define avg4(a,b,c,d) av_clip_uint8(((int)(a)+(int)(b)+(int)(c)+(int)(d)+2)>>2)
-
 static void roqvideo_decode_frame(RoqContext *ri)
 {
     unsigned int chunk_id = 0, chunk_arg = 0;
@@ -165,7 +162,7 @@ static int roq_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = PIX_FMT_YUV444P;
     dsputil_init(&s->dsp, avctx);
 
     return 0;
