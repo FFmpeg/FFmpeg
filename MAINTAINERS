@@ -97,7 +97,7 @@ Generic Parts:
     motion*                             Michael Niedermayer
   rate control:
     ratecontrol.c
-    xvid_rc.c                           Michael Niedermayer
+    libxvid_rc.c                        Michael Niedermayer
   simple IDCT:
     simple_idct.c, simple_idct.h        Michael Niedermayer
   postprocessing:
