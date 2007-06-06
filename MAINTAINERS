@@ -140,6 +140,7 @@ Codecs:
   kmvc.c                                Kostya Shishkov
   lcl.c                                 Roberto Togni
   libgsm.c                              Michel Bardiaux
+  libx264.c                             Mans Rullgard
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
@@ -151,7 +152,6 @@ Codecs:
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
-  oggtheora.c                           Mans Rullgard
   ptx.c                                 Ivo van Poorten
   qdm2.c, qdm2data.h                    Roberto Togni
   qdrw.c                                Kostya Shishkov
@@ -186,7 +186,6 @@ Codecs:
   wavpack.c                             Kostya Shishkov
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
-  x264.c                                Mans Rullgard
   xan.c                                 Mike Melanson
   xl.c                                  Kostya Shishkov
   xvmcvideo.c                           Ivan Kalvachev
