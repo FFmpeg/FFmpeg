@@ -60,16 +60,16 @@ static void roqvideo_decode_frame(RoqContext *ri)
             if((nv2 = chunk_arg & 0xff) == 0 && nv1 * 6 < chunk_size)
                 nv2 = 256;
             for(i = 0; i < nv1; i++) {
-                ri->cells[i].y[0] = *buf++;
-                ri->cells[i].y[1] = *buf++;
-                ri->cells[i].y[2] = *buf++;
-                ri->cells[i].y[3] = *buf++;
-                ri->cells[i].u = *buf++;
-                ri->cells[i].v = *buf++;
+                ri->cb2x2[i].y[0] = *buf++;
+                ri->cb2x2[i].y[1] = *buf++;
+                ri->cb2x2[i].y[2] = *buf++;
+                ri->cb2x2[i].y[3] = *buf++;
+                ri->cb2x2[i].u = *buf++;
+                ri->cb2x2[i].v = *buf++;
             }
             for(i = 0; i < nv2; i++)
                 for(j = 0; j < 4; j++)
-                    ri->qcells[i].idx[j] = *buf++;
+                    ri->cb4x4[i].idx[j] = *buf++;
         }
     }
 
@@ -94,11 +94,11 @@ static void roqvideo_decode_frame(RoqContext *ri)
                     ff_apply_motion_8x8(ri, xp, yp, mx, my);
                     break;
                 case RoQ_ID_SLD:
-                    qcell = ri->qcells + buf[bpos++];
-                    ff_apply_vector_4x4(ri, xp, yp, ri->cells + qcell->idx[0]);
-                    ff_apply_vector_4x4(ri, xp+4, yp, ri->cells + qcell->idx[1]);
-                    ff_apply_vector_4x4(ri, xp, yp+4, ri->cells + qcell->idx[2]);
-                    ff_apply_vector_4x4(ri, xp+4, yp+4, ri->cells + qcell->idx[3]);
+                    qcell = ri->cb4x4 + buf[bpos++];
+                    ff_apply_vector_4x4(ri, xp, yp, ri->cb2x2 + qcell->idx[0]);
+                    ff_apply_vector_4x4(ri, xp+4, yp, ri->cb2x2 + qcell->idx[1]);
+                    ff_apply_vector_4x4(ri, xp, yp+4, ri->cb2x2 + qcell->idx[2]);
+                    ff_apply_vector_4x4(ri, xp+4, yp+4, ri->cb2x2 + qcell->idx[3]);
                     break;
                 case RoQ_ID_CCC:
                     for (k = 0; k < 4; k++) {
@@ -123,17 +123,17 @@ static void roqvideo_decode_frame(RoqContext *ri)
                             ff_apply_motion_4x4(ri, x, y, mx, my);
                             break;
                         case RoQ_ID_SLD:
-                            qcell = ri->qcells + buf[bpos++];
-                            ff_apply_vector_2x2(ri, x, y, ri->cells + qcell->idx[0]);
-                            ff_apply_vector_2x2(ri, x+2, y, ri->cells + qcell->idx[1]);
-                            ff_apply_vector_2x2(ri, x, y+2, ri->cells + qcell->idx[2]);
-                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cells + qcell->idx[3]);
+                            qcell = ri->cb4x4 + buf[bpos++];
+                            ff_apply_vector_2x2(ri, x, y, ri->cb2x2 + qcell->idx[0]);
+                            ff_apply_vector_2x2(ri, x+2, y, ri->cb2x2 + qcell->idx[1]);
+                            ff_apply_vector_2x2(ri, x, y+2, ri->cb2x2 + qcell->idx[2]);
+                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cb2x2 + qcell->idx[3]);
                             break;
                         case RoQ_ID_CCC:
-                            ff_apply_vector_2x2(ri, x, y, ri->cells + buf[bpos]);
-                            ff_apply_vector_2x2(ri, x+2, y, ri->cells + buf[bpos+1]);
-                            ff_apply_vector_2x2(ri, x, y+2, ri->cells + buf[bpos+2]);
-                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cells + buf[bpos+3]);
+                            ff_apply_vector_2x2(ri, x, y, ri->cb2x2 + buf[bpos]);
+                            ff_apply_vector_2x2(ri, x+2, y, ri->cb2x2 + buf[bpos+1]);
+                            ff_apply_vector_2x2(ri, x, y+2, ri->cb2x2 + buf[bpos+2]);
+                            ff_apply_vector_2x2(ri, x+2, y+2, ri->cb2x2 + buf[bpos+3]);
                             bpos += 4;
                             break;
                         }

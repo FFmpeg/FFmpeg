@@ -41,8 +41,8 @@ typedef struct RoqContext {
     int y_stride;
     int c_stride;
 
-    roq_cell cells[256];
-    roq_qcell qcells[256];
+    roq_cell cb2x2[256];
+    roq_qcell cb4x4[256];
 
     unsigned char *buf;
     int size;
