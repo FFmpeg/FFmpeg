@@ -22,7 +22,7 @@
 #define XVID_INTERNAL_H
 
 /**
- * @file xvid_internal.h
+ * @file libxvid_internal.h
  * common functions for use with the XviD wrappers
  */
 

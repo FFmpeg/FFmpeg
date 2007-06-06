@@ -23,7 +23,7 @@
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
-#include "xvid_internal.h"
+#include "libxvid_internal.h"
 //#include "dsputil.h"
 #include "mpegvideo.h"
 

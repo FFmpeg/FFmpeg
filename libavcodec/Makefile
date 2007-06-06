@@ -277,16 +277,16 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 # external codec libraries
-OBJS-$(CONFIG_LIBAMR)                  += amr.o
-OBJS-$(CONFIG_LIBA52)                  += a52dec.o
-OBJS-$(CONFIG_LIBFAAC)                 += faac.o
-OBJS-$(CONFIG_LIBFAAD)                 += faad.o
+OBJS-$(CONFIG_LIBA52)                  += liba52.o
+OBJS-$(CONFIG_LIBAMR)                  += libamr.o
+OBJS-$(CONFIG_LIBFAAC)                 += libfaac.o
+OBJS-$(CONFIG_LIBFAAD)                 += libfaad.o
 OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
-OBJS-$(CONFIG_LIBMP3LAME)              += mp3lameaudio.o
+OBJS-$(CONFIG_LIBMP3LAME)              += libmp3lame.o
 OBJS-$(CONFIG_LIBTHEORA)               += libtheoraenc.o
-OBJS-$(CONFIG_LIBVORBIS)               += oggvorbis.o
-OBJS-$(CONFIG_X264)                    += x264.o
-OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
+OBJS-$(CONFIG_LIBVORBIS)               += libvorbis.o
+OBJS-$(CONFIG_X264)                    += libx264.o
+OBJS-$(CONFIG_XVID)                    += libxvidff.o libxvid_rc.o
 
 
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o
