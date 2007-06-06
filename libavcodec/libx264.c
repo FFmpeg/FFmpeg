@@ -287,8 +287,8 @@ X264_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec x264_encoder = {
-    .name = "h264",
+AVCodec libx264_encoder = {
+    .name = "libx264",
     .type = CODEC_TYPE_VIDEO,
     .id = CODEC_ID_H264,
     .priv_data_size = sizeof(X264Context),

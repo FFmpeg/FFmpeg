@@ -2433,13 +2433,13 @@ extern AVCodec libgsm_decoder;
 extern AVCodec libgsm_encoder;
 extern AVCodec libgsm_ms_decoder;
 extern AVCodec libgsm_ms_encoder;
+extern AVCodec libmp3lame_encoder;
 extern AVCodec libtheora_encoder;
 extern AVCodec libvorbis_decoder;
 extern AVCodec libvorbis_encoder;
-extern AVCodec mp3lame_encoder;
+extern AVCodec libx264_encoder;
+extern AVCodec libxvid_encoder;
 extern AVCodec mpeg4aac_decoder;
-extern AVCodec x264_encoder;
-extern AVCodec xvid_encoder;
 extern AVCodec zlib_decoder;
 extern AVCodec zlib_encoder;
 

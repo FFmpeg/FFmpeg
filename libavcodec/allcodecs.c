@@ -93,6 +93,8 @@ void avcodec_register_all(void)
     REGISTER_DECODER(INTERPLAY_VIDEO, interplay_video);
     REGISTER_ENCDEC (JPEGLS, jpegls);
     REGISTER_DECODER(KMVC, kmvc);
+    REGISTER_ENCODER(LIBX264, libx264);
+    REGISTER_ENCODER(LIBXVID, libxvid);
     REGISTER_ENCODER(LJPEG, ljpeg);
     REGISTER_DECODER(LOCO, loco);
     REGISTER_DECODER(MDEC, mdec);
@@ -156,10 +158,8 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (WMV2, wmv2);
     REGISTER_DECODER(WMV3, wmv3);
     REGISTER_DECODER(WNV1, wnv1);
-    REGISTER_ENCODER(X264, x264);
     REGISTER_DECODER(XAN_WC3, xan_wc3);
     REGISTER_DECODER(XL, xl);
-    REGISTER_ENCODER(XVID, xvid);
     REGISTER_ENCDEC (ZLIB, zlib);
     REGISTER_ENCDEC (ZMBV, zmbv);
 
@@ -180,6 +180,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(LIBFAAD, libfaad);
     REGISTER_ENCDEC (LIBGSM, libgsm);
     REGISTER_ENCDEC (LIBGSM_MS, libgsm_ms);
+    REGISTER_ENCODER(LIBMP3LAME, libmp3lame);
     REGISTER_ENCODER(LIBTHEORA, libtheora);
     if (!ENABLE_VORBIS_ENCODER)  REGISTER_ENCODER(LIBVORBIS, libvorbis);
     if (!ENABLE_VORBIS_DECODER)  REGISTER_DECODER(LIBVORBIS, libvorbis);
@@ -188,7 +189,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (MP2, mp2);
     REGISTER_DECODER(MP3, mp3);
     REGISTER_DECODER(MP3ADU, mp3adu);
-    REGISTER_ENCODER(MP3LAME, mp3lame);
     REGISTER_DECODER(MP3ON4, mp3on4);
     REGISTER_DECODER(MPC7, mpc7);
     REGISTER_DECODER(QDM2, qdm2);

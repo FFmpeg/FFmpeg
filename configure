@@ -96,8 +96,8 @@ show_help(){
   echo "  --enable-libtheora       enable Theora encoding via libtheora [default=no]"
   echo "  --enable-libvorbis       enable Vorbis en/decoding via libvorbis,"
   echo "                           native implementations exist [default=no]"
-  echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
-  echo "  --enable-xvid            enable Xvid encoding via xvidcore,"
+  echo "  --enable-libx264         enable H.264 encoding via x264 [default=no]"
+  echo "  --enable-libxvid         enable Xvid encoding via xvidcore,"
   echo "                           native MPEG-4/Xvid encoder exists [default=no]"
   echo ""
   echo "Advanced options (experts only):"
@@ -595,6 +595,8 @@ CONFIG_LIST='
     libogg
     libtheora
     libvorbis
+    libx264
+    libxvid
     memalign_hack
     mpegaudio_hp
     network
@@ -606,8 +608,6 @@ CONFIG_LIST='
     v4l
     v4l2
     x11grab
-    x264
-    xvid
     zlib
 '
 
@@ -703,8 +703,6 @@ vc1_decoder_deps="h263_decoder"
 wmv1_decoder_deps="h263_decoder"
 wmv2_decoder_deps="h263_decoder"
 wmv3_decoder_deps="h263_decoder"
-x264_encoder_deps="x264"
-xvid_encoder_deps="xvid"
 zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
@@ -721,10 +719,12 @@ libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
 libgsm_ms_encoder_deps="libgsm"
+libmp3lame_encoder_deps="libmp3lame"
 libtheora_encoder_deps="libtheora"
-mp3lame_encoder_deps="libmp3lame"
 libvorbis_decoder_deps="libvorbis"
 libvorbis_encoder_deps="libvorbis"
+libx264_encoder_deps="libx264"
+libxvid_encoder_deps="libxvid"
 
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
@@ -843,10 +843,10 @@ libnut="no"
 libogg="no"
 libtheora="no"
 libvorbis="no"
+libx264="no"
+libxvid="no"
 mlib="no"
 x11grab="no"
-x264="no"
-xvid="no"
 zlib="yes"
 
 # configurable options
@@ -1286,8 +1286,8 @@ if disabled gpl ; then
     }
     die_gpl_disabled "The Postprocessing code" pp
     die_gpl_disabled "liba52"                  liba52
-    die_gpl_disabled "libxvidcore"             xvid
-    die_gpl_disabled "x264"                    x264
+    die_gpl_disabled "libx264"                 libx264
+    die_gpl_disabled "libxvidcore"             libxvid
     die_gpl_disabled "FAAD2"                   libfaad2
     die_gpl_disabled "The X11 grabber"         x11grab
     die_gpl_disabled "The software scaler"     swscaler
@@ -1635,8 +1635,8 @@ enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheor
 enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
-enabled xvid       && require XviD xvid.h xvid_global -lxvidcore
-enabled x264       && require x264 x264.h x264_encoder_open -lx264
+enabled libx264    && require x264 x264.h x264_encoder_open -lx264
+enabled libxvid    && require Xvid xvid.h xvid_global -lxvidcore
 enabled dc1394     && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
@@ -1899,8 +1899,8 @@ echo "libnut enabled            $libnut"
 echo "libogg enabled            $libogg"
 echo "libtheora enabled         $libtheora"
 echo "libvorbis enabled         $libvorbis"
-echo "x264 enabled              $x264"
-echo "XviD enabled              $xvid"
+echo "x264 enabled              $libx264"
+echo "XviD enabled              $libxvid"
 echo "zlib enabled              $zlib"
 if disabled gpl; then
     echo "License: LGPL"

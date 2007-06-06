@@ -135,7 +135,7 @@ output an AVI file with MPEG-4 video and MP3 audio. Note that in this
 command we use B-frames so the MPEG-4 stream is DivX5 compatible, and
 GOP size is 300 which means one intra frame every 10 seconds for 29.97fps
 input video. Furthermore, the audio stream is MP3-encoded so you need
-to enable LAME support by passing @code{--enable-mp3lame} to configure.
+to enable LAME support by passing @code{--enable-libmp3lame} to configure.
 The mapping is particularly useful for DVD transcoding
 to get the desired audio language.
 

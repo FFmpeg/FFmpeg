@@ -208,8 +208,8 @@ static int MP3lame_encode_close(AVCodecContext *avctx)
 }
 
 
-AVCodec mp3lame_encoder = {
-    "mp3",
+AVCodec libmp3lame_encoder = {
+    "libmp3lame",
     CODEC_TYPE_AUDIO,
     CODEC_ID_MP3,
     sizeof(Mp3AudioContext),

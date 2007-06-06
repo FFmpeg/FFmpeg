@@ -49,8 +49,8 @@ I understand that FreeBSD systems work just fine as well.
 @section How do I make it work?
 
 First, build the kit. It *really* helps to have installed LAME first. Then when
-you run the ffserver ./configure, make sure that you have the --enable-mp3lame
-flag turned on.
+you run the ffserver ./configure, make sure that you have the
+@code{--enable-libmp3lame} flag turned on.
 
 LAME is important as it allows for streaming audio to Windows Media Player.
 Don't ask why the other audio types do not work.

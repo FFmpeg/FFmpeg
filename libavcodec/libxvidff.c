@@ -755,8 +755,8 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
 /**
  * XviD codec definition for libavcodec.
  */
-AVCodec xvid_encoder = {
-    "xvid",
+AVCodec libxvid_encoder = {
+    "libxvid",
     CODEC_TYPE_VIDEO,
     CODEC_ID_XVID,
     sizeof(xvid_context_t),
