@@ -97,6 +97,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG1VIDEO, 0x10000001 },
     { CODEC_ID_MPEG2VIDEO, 0x10000002 },
     { CODEC_ID_MPEG2VIDEO, MKTAG('D', 'V', 'R', ' ') },
+    { CODEC_ID_MPEG2VIDEO, MKTAG('M', 'M', 'E', 'S') },
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG, MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_LJPEG, MKTAG('L', 'J', 'P', 'G') },
