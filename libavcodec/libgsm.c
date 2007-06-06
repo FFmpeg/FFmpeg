@@ -84,7 +84,7 @@ static int libgsm_encode_frame(AVCodecContext *avctx,
 
 
 AVCodec libgsm_encoder = {
-    "gsm",
+    "libgsm",
     CODEC_TYPE_AUDIO,
     CODEC_ID_GSM,
     0,
@@ -94,7 +94,7 @@ AVCodec libgsm_encoder = {
 };
 
 AVCodec libgsm_ms_encoder = {
-    "gsm",
+    "libgsm_ms",
     CODEC_TYPE_AUDIO,
     CODEC_ID_GSM_MS,
     0,
@@ -123,7 +123,7 @@ static int libgsm_decode_frame(AVCodecContext *avctx,
 }
 
 AVCodec libgsm_decoder = {
-    "gsm",
+    "libgsm",
     CODEC_TYPE_AUDIO,
     CODEC_ID_GSM,
     0,
@@ -134,7 +134,7 @@ AVCodec libgsm_decoder = {
 };
 
 AVCodec libgsm_ms_decoder = {
-    "gsm_ms",
+    "libgsm_ms",
     CODEC_TYPE_AUDIO,
     CODEC_ID_GSM_MS,
     0,
