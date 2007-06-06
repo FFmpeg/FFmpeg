@@ -285,8 +285,8 @@ OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
 OBJS-$(CONFIG_LIBMP3LAME)              += libmp3lame.o
 OBJS-$(CONFIG_LIBTHEORA)               += libtheoraenc.o
 OBJS-$(CONFIG_LIBVORBIS)               += libvorbis.o
-OBJS-$(CONFIG_X264)                    += libx264.o
-OBJS-$(CONFIG_XVID)                    += libxvidff.o libxvid_rc.o
+OBJS-$(CONFIG_LIBX264)                 += libx264.o
+OBJS-$(CONFIG_LIBXVID)                 += libxvidff.o libxvid_rc.o
 
 
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o
