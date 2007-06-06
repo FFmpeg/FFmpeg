@@ -71,6 +71,7 @@ extern AVInputFormat mp3_demuxer;
 extern AVInputFormat mpc_demuxer;
 extern AVInputFormat mpegps_demuxer;
 extern AVInputFormat mpegts_demuxer;
+extern AVInputFormat mpegtsraw_demuxer;
 extern AVInputFormat mpegvideo_demuxer;
 extern AVInputFormat mtv_demuxer;
 extern AVInputFormat mxf_demuxer;
