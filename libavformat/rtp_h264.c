@@ -285,7 +285,7 @@ static int h264_handle_packet(RTPDemuxContext * s,
 
 #ifdef DEBUG
             if (start_bit)
-                data->packet_types_received[nal_type & 0x1f]++;
+                data->packet_types_received[nal_type]++;
 #endif
             if(start_bit) {
                 // copy in the start sequence, and the reconstructed nal....
