@@ -93,7 +93,9 @@ struct algo algos[] = {
 
 #ifdef HAVE_MMX
   DCT_ERROR("MMX",             0, ff_fdct_mmx,        fdct, NO_PERM),
+#ifdef HAVE_MMX2
   DCT_ERROR("MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM),
+#endif
 
 #ifdef CONFIG_GPL
   DCT_ERROR("LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM),
