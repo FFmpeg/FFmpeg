@@ -127,7 +127,7 @@ stream, in the order of the definition of output streams.
 * You can transcode decrypted VOBs
 
 @example
-ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec mp3 -ab 128k snatch.avi
+ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec libmp3lame -ab 128k snatch.avi
 @end example
 
 This is a typical DVD ripping example; the input is a VOB file, the
