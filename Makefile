@@ -214,11 +214,12 @@ clean:
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
-	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF) qt-faststart$(EXESUF) cws2fws$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
+	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
+	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
 
 distclean: clean
 	$(MAKE) -C libavutil   distclean
@@ -226,7 +227,6 @@ distclean: clean
 	$(MAKE) -C libavformat distclean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
-	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
 	rm -f .depend version.h config.* *.pc
 
@@ -235,11 +235,69 @@ TAGS:
 
 # regression tests
 
-codectest libavtest seektest test-server fulltest test: $(PROGS)
-	$(MAKE) -C tests $@
+fulltest test: codectest libavtest seektest
+#codectest libavtest seektest test-server: $(PROGS)
+
+FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
+FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
+LIBAV_REFFILE    = $(SRC_PATH)/tests/libav.regression.ref
+ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
+SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
+
+test-server: tests/vsynth1/00.pgm tests/asynth1.sw
+	@echo
+	@echo "Unfortunately ffserver is broken and therefore its regression"
+	@echo "test fails randomly. Treat the results accordingly."
+	@echo
+	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
+
+codectest mpeg4 mpeg ac3 snow snowll: tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw tests/tiny_psnr$(EXESUF)
+	$(SRC_PATH)/tests/regression.sh $@ $(FFMPEG_REFFILE)   tests/vsynth1
+	$(SRC_PATH)/tests/regression.sh $@ $(ROTOZOOM_REFFILE) tests/vsynth2
+
+ifeq ($(CONFIG_GPL),yes)
+libavtest: tests/vsynth1/00.pgm tests/asynth1.sw
+	$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) tests/vsynth1
+seektest: tests/seek_test$(EXESUF)
+	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
+else
+libavtest seektest:
+	@echo
+	@echo "This test requires FFmpeg to be compiled with --enable-gpl."
+	@echo
+	@exit 1
+endif
+
+ifeq ($(CONFIG_SWSCALER),yes)
+test-server codectest mpeg4 mpeg ac3 snow snowll libavtest: swscale_error
+swscale_error:
+	@echo
+	@echo "This regression test is incompatible with --enable-swscaler."
+	@echo
+	@exit 1
+endif
+
+tests/vsynth1/00.pgm: tests/videogen$(EXESUF)
+	mkdir -p tests/vsynth1
+	$(BUILD_ROOT)/$< 'tests/vsynth1/'
+
+tests/vsynth2/00.pgm: tests/rotozoom$(EXESUF)
+	mkdir -p tests/vsynth2
+	$(BUILD_ROOT)/$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
+
+tests/asynth1.sw: tests/audiogen$(EXESUF)
+	$(BUILD_ROOT)/$< $@
+
+%$(EXESUF): %.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
+
+tests/seek_test$(EXESUF): tests/seek_test.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -o $@ $< $(EXTRALIBS)
+
 
 .PHONY: all lib videohook documentation install* wininstaller uninstall*
 .PHONY: dep depend clean distclean TAGS
 .PHONY: codectest libavtest seektest test-server fulltest test
+.PHONY: mpeg4 mpeg ac3 snow snowll swscale-error
 
 -include .depend

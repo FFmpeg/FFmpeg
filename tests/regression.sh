@@ -19,7 +19,7 @@ fi
 
 set -e
 
-datadir="./data"
+datadir="./tests/data"
 
 logfile="$datadir/ffmpeg.regression"
 outfile="$datadir/a-"
@@ -91,8 +91,8 @@ fi
 
 
 # various files
-ffmpeg="../ffmpeg_g"
-tiny_psnr="./tiny_psnr"
+ffmpeg="./ffmpeg_g"
+tiny_psnr="tests/tiny_psnr"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"
 bench="$datadir/bench.tmp"
@@ -100,7 +100,7 @@ bench2="$datadir/bench2.tmp"
 raw_src="$3/%02d.pgm"
 raw_dst="$datadir/out.yuv"
 raw_ref="$datadir/ref.yuv"
-pcm_src="asynth1.sw"
+pcm_src="tests/asynth1.sw"
 pcm_dst="$datadir/out.wav"
 pcm_ref="$datadir/ref.wav"
 if [ X"`echo | md5sum 2> /dev/null`" != X ]; then

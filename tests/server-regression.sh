@@ -8,23 +8,23 @@ else
 fi
 
 # Make sure that the data directory exists
-mkdir -p data
+mkdir -p tests/data
 
-#perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
-#perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
+#perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/test.conf
+#perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_.asf>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/test.conf
 
 FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html`
 
-rm -f feed1.ffm
-../ffserver -d -f test.conf 2> /dev/null &
+rm -f tests/feed1.ffm
+./ffserver -d -f tests/test.conf 2> /dev/null &
 FFSERVER_PID=$!
 sleep 2
 echo "Waiting for feeds to startup..."
-../ffmpeg -loop_input -flags +bitexact -dct fastint -idct simple -y -f pgmyuv -i vsynth1/%02d.pgm http://localhost:9999/feed1.ffm 2> /dev/null &
+./ffmpeg -loop_input -flags +bitexact -dct fastint -idct simple -y -f pgmyuv -i tests/vsynth1/%02d.pgm http://localhost:9999/feed1.ffm 2> /dev/null &
 FFMPEG_PID=$!
 sleep 5
 (
-    cd data || exit $?
+    cd tests/data || exit $?
     rm -f ff-*;
     WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
@@ -42,8 +42,8 @@ sleep 5
 kill $FFMPEG_PID
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
-rm -f feed1.ffm
-if $diff_cmd data/ffserver.regression "$1" ; then
+rm -f tests/feed1.ffm
+if $diff_cmd tests/data/ffserver.regression "$1" ; then
     echo
     echo Server regression test succeeded.
     exit 0

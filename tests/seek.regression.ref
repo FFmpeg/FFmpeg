@@ -1,5 +1,5 @@
 ----------------
-data/a-ac3.rm
+tests/data/a-ac3.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:271 size:556 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:37355.520000 pts:37355.520000 pos:49793 size:25731 flags:1
@@ -40,7 +40,7 @@ ret:-1 st:-1 ts:0.460008 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:37355.520000 pts:37355.520000 pos:49793 size:25731 flags:1
 ----------------
-data/a-adpcm_ima.wav
+tests/data/a-adpcm_ima.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:60 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.960000 pts:-0.960000 pos:32768 size:4096 flags:1
@@ -95,7 +95,7 @@ ret: 0 st: 0 dts:0.511995 pts:0.511995 pos:8252 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.703991 pts:-0.703991 pos:41020 size:4096 flags:1
 ----------------
-data/a-adpcm_ms.wav
+tests/data/a-adpcm_ms.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:56 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.960000 pts:-0.960000 pos:32768 size:4096 flags:1
@@ -150,7 +150,7 @@ ret: 0 st: 0 dts:0.511995 pts:0.511995 pos:8248 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.703991 pts:-0.703991 pos:41016 size:4096 flags:1
 ----------------
-data/a-adpcm_yam.wav
+tests/data/a-adpcm_yam.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:56 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.960000 pts:-0.960000 pos:32768 size:4096 flags:1
@@ -205,7 +205,7 @@ ret: 0 st: 0 dts:0.511995 pts:0.511995 pos:8248 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.703991 pts:-0.703991 pos:41016 size:4096 flags:1
 ----------------
-data/a-asv1.avi
+tests/data/a-asv1.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5668 size:14316 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5668 size:14316 flags:1
@@ -253,7 +253,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:180224 size:15168 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-asv2.avi
+tests/data/a-asv2.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5668 size:13732 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5668 size:13732 flags:1
@@ -301,7 +301,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:171024 size:14392 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-dv.dv
+tests/data/a-dv.dv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:288000 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:288000 flags:1
@@ -356,7 +356,7 @@ ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:-1 size:288000 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:288000 flags:1
 ----------------
-data/a-error-mpeg4-adv.avi
+tests/data/a-error-mpeg4-adv.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9564 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9564 flags:1
@@ -404,7 +404,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:36782 size:10310 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-ffv1.avi
+tests/data/a-ffv1.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:70200 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:70200 flags:1
@@ -452,7 +452,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:796840 size:67971 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-flac.flac
+tests/data/a-flac.flac
 ret: 0 st: 0 dts:-102481911520608.625000 pts:-102481911520608.625000 pos:0 size:1024 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -481,7 +481,7 @@ ret:-1 st: 0 ts:1.565844 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-flv.flv
+tests/data/a-flv.flv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:10380 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:10380 flags:1
@@ -529,7 +529,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:25960 size:10089 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-g726.wav
+tests/data/a-g726.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:56 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret:-5
@@ -584,7 +584,7 @@ ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:1896 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret:-5
 ----------------
-data/a-h261.avi
+tests/data/a-h261.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:15314 size:9645 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:15314 size:9645 flags:1
@@ -632,7 +632,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:54090 size:9404 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-h263.avi
+tests/data/a-h263.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:16050 size:10381 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:16050 size:10381 flags:1
@@ -680,7 +680,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:46548 size:10090 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-h263p.avi
+tests/data/a-h263p.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:41876 size:36208 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:41876 size:36208 flags:1
@@ -728,7 +728,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:207578 size:36515 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-huffyuv.avi
+tests/data/a-huffyuv.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5736 size:129760 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5736 size:129760 flags:1
@@ -776,7 +776,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:1546184 size:128860 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-jpegls.avi
+tests/data/a-jpegls.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:169698 size:164030 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:169698 size:164030 flags:1
@@ -824,7 +824,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:2036046 size:159683 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-ljpeg.avi
+tests/data/a-ljpeg.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:101714 size:96046 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:101714 size:96046 flags:1
@@ -872,7 +872,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:1234190 size:95024 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mjpeg.avi
+tests/data/a-mjpeg.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:18314 size:12645 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:18314 size:12645 flags:1
@@ -920,7 +920,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:165884 size:12719 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mp2.mp2
+tests/data/a-mp2.mp2
 ret: 0 st: 0 dts:-102481911520608.625000 pts:-102481911520608.625000 pos:0 size:417 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:417 flags:1
@@ -975,7 +975,7 @@ ret: 0 st: 0 dts:0.470200 pts:0.470200 pos:7523 size:418 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:417 flags:1
 ----------------
-data/a-mpeg1b.mpg
+tests/data/a-mpeg1b.mpg
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:11264 size:11817 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:11264 size:11817 flags:1
@@ -1023,7 +1023,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:94832 size:13267 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg1.mpg
+tests/data/a-mpeg1.mpg
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:9216 size:9779 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
@@ -1071,7 +1071,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2i.mpg
+tests/data/a-mpeg2i.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
@@ -1119,7 +1119,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:92392 size:10965 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2ivlc-qprd.mpg
+tests/data/a-mpeg2ivlc-qprd.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:16384 size:16533 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:16384 size:16533 flags:1
@@ -1167,7 +1167,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:180534 size:14893 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2.mpg
+tests/data/a-mpeg2.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
@@ -1215,7 +1215,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2reuse.mpg
+tests/data/a-mpeg2reuse.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:20480 size:20829 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:20480 size:20829 flags:1
@@ -1263,7 +1263,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:167721 size:23537 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2threadivlc.mpg
+tests/data/a-mpeg2threadivlc.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9954 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9954 flags:1
@@ -1311,7 +1311,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79182 size:10791 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg2thread.mpg
+tests/data/a-mpeg2thread.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
@@ -1359,7 +1359,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-adap.avi
+tests/data/a-mpeg4-adap.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:7585 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:7585 flags:1
@@ -1407,7 +1407,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:106306 size:15898 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-adv.avi
+tests/data/a-mpeg4-adv.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9113 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9113 flags:1
@@ -1455,7 +1455,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:38332 size:9635 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-nr.avi
+tests/data/a-mpeg4-nr.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:10673 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:10673 flags:1
@@ -1503,7 +1503,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:35312 size:9987 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-PSP.mp4
+tests/data/a-mpeg4-PSP.mp4
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
@@ -1551,7 +1551,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-Q.avi
+tests/data/a-mpeg4-Q.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
@@ -1599,7 +1599,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-qprd.avi
+tests/data/a-mpeg4-qprd.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14733 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14733 flags:1
@@ -1647,7 +1647,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:159328 size:13215 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-rc.avi
+tests/data/a-mpeg4-rc.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
@@ -1695,7 +1695,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:154792 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-mpeg4-thread.avi
+tests/data/a-mpeg4-thread.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14645 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14645 flags:1
@@ -1743,7 +1743,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:167964 size:15139 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-msmpeg4.avi
+tests/data/a-msmpeg4.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:8637 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:8637 flags:1
@@ -1791,7 +1791,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:29400 size:8502 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-msmpeg4v2.avi
+tests/data/a-msmpeg4v2.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9003 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:9003 flags:1
@@ -1839,7 +1839,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:29782 size:8869 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-odivx.mp4
+tests/data/a-odivx.mp4
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:8719 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:8719 flags:1
@@ -1887,7 +1887,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:23263 size:8524 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-rv10.rm
+tests/data/a-rv10.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:10379 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
@@ -1942,7 +1942,7 @@ ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1391 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
 ----------------
-data/a-rv20.rm
+tests/data/a-rv20.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:9352 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
@@ -1997,7 +1997,7 @@ ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1438 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
 ----------------
-data/a-snow53.avi
+tests/data/a-snow53.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
@@ -2045,7 +2045,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-snow.avi
+tests/data/a-snow.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:2986 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:2986 flags:1
@@ -2093,7 +2093,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:18006 size:3229 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-svq1.mov
+tests/data/a-svq1.mov
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22272 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22272 flags:1
@@ -2141,7 +2141,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:157248 size:21908 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-wmav1.asf
+tests/data/a-wmav1.asf
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:404 size:743 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:3.286000 pts:3.286000 pos:3604 size:743 flags:1
@@ -2196,7 +2196,7 @@ ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:404 size:743 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:404 size:743 flags:1
 ----------------
-data/a-wmav2.asf
+tests/data/a-wmav2.asf
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:444 size:743 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:3.286000 pts:3.286000 pos:3644 size:743 flags:1
@@ -2251,7 +2251,7 @@ ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:444 size:743 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:444 size:743 flags:1
 ----------------
-data/a-wmv1.avi
+tests/data/a-wmv1.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:8995 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:8995 flags:1
@@ -2299,7 +2299,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:29812 size:8798 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/a-wmv2.avi
+tests/data/a-wmv2.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5664 size:8918 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5664 size:8918 flags:1
@@ -2347,189 +2347,189 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:29644 size:8840 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav01.bmp
+tests/data/b-libav01.bmp
 ----------------
-data/b-libav01.jpg
+tests/data/b-libav01.jpg
 ----------------
-data/b-libav01.pgm
+tests/data/b-libav01.pgm
 ----------------
-data/b-libav01.ppm
+tests/data/b-libav01.ppm
 ----------------
-data/b-libav01.sgi
+tests/data/b-libav01.sgi
 ----------------
-data/b-libav01.tga
+tests/data/b-libav01.tga
 ----------------
-data/b-libav01.tiff
+tests/data/b-libav01.tiff
 ----------------
-data/b-libav02.bmp
+tests/data/b-libav02.bmp
 ----------------
-data/b-libav02.jpg
+tests/data/b-libav02.jpg
 ----------------
-data/b-libav02.pgm
+tests/data/b-libav02.pgm
 ----------------
-data/b-libav02.ppm
+tests/data/b-libav02.ppm
 ----------------
-data/b-libav02.sgi
+tests/data/b-libav02.sgi
 ----------------
-data/b-libav02.tga
+tests/data/b-libav02.tga
 ----------------
-data/b-libav02.tiff
+tests/data/b-libav02.tiff
 ----------------
-data/b-libav03.bmp
+tests/data/b-libav03.bmp
 ----------------
-data/b-libav03.jpg
+tests/data/b-libav03.jpg
 ----------------
-data/b-libav03.pgm
+tests/data/b-libav03.pgm
 ----------------
-data/b-libav03.ppm
+tests/data/b-libav03.ppm
 ----------------
-data/b-libav03.sgi
+tests/data/b-libav03.sgi
 ----------------
-data/b-libav03.tga
+tests/data/b-libav03.tga
 ----------------
-data/b-libav03.tiff
+tests/data/b-libav03.tiff
 ----------------
-data/b-libav04.bmp
+tests/data/b-libav04.bmp
 ----------------
-data/b-libav04.jpg
+tests/data/b-libav04.jpg
 ----------------
-data/b-libav04.pgm
+tests/data/b-libav04.pgm
 ----------------
-data/b-libav04.ppm
+tests/data/b-libav04.ppm
 ----------------
-data/b-libav04.sgi
+tests/data/b-libav04.sgi
 ----------------
-data/b-libav04.tga
+tests/data/b-libav04.tga
 ----------------
-data/b-libav04.tiff
+tests/data/b-libav04.tiff
 ----------------
-data/b-libav05.bmp
+tests/data/b-libav05.bmp
 ----------------
-data/b-libav05.jpg
+tests/data/b-libav05.jpg
 ----------------
-data/b-libav05.pgm
+tests/data/b-libav05.pgm
 ----------------
-data/b-libav05.ppm
+tests/data/b-libav05.ppm
 ----------------
-data/b-libav05.sgi
+tests/data/b-libav05.sgi
 ----------------
-data/b-libav05.tga
+tests/data/b-libav05.tga
 ----------------
-data/b-libav05.tiff
+tests/data/b-libav05.tiff
 ----------------
-data/b-libav06.bmp
+tests/data/b-libav06.bmp
 ----------------
-data/b-libav06.jpg
+tests/data/b-libav06.jpg
 ----------------
-data/b-libav06.pgm
+tests/data/b-libav06.pgm
 ----------------
-data/b-libav06.ppm
+tests/data/b-libav06.ppm
 ----------------
-data/b-libav06.sgi
+tests/data/b-libav06.sgi
 ----------------
-data/b-libav06.tga
+tests/data/b-libav06.tga
 ----------------
-data/b-libav06.tiff
+tests/data/b-libav06.tiff
 ----------------
-data/b-libav07.bmp
+tests/data/b-libav07.bmp
 ----------------
-data/b-libav07.jpg
+tests/data/b-libav07.jpg
 ----------------
-data/b-libav07.pgm
+tests/data/b-libav07.pgm
 ----------------
-data/b-libav07.ppm
+tests/data/b-libav07.ppm
 ----------------
-data/b-libav07.sgi
+tests/data/b-libav07.sgi
 ----------------
-data/b-libav07.tga
+tests/data/b-libav07.tga
 ----------------
-data/b-libav07.tiff
+tests/data/b-libav07.tiff
 ----------------
-data/b-libav08.bmp
+tests/data/b-libav08.bmp
 ----------------
-data/b-libav08.jpg
+tests/data/b-libav08.jpg
 ----------------
-data/b-libav08.pgm
+tests/data/b-libav08.pgm
 ----------------
-data/b-libav08.ppm
+tests/data/b-libav08.ppm
 ----------------
-data/b-libav08.sgi
+tests/data/b-libav08.sgi
 ----------------
-data/b-libav08.tga
+tests/data/b-libav08.tga
 ----------------
-data/b-libav08.tiff
+tests/data/b-libav08.tiff
 ----------------
-data/b-libav09.bmp
+tests/data/b-libav09.bmp
 ----------------
-data/b-libav09.jpg
+tests/data/b-libav09.jpg
 ----------------
-data/b-libav09.pgm
+tests/data/b-libav09.pgm
 ----------------
-data/b-libav09.ppm
+tests/data/b-libav09.ppm
 ----------------
-data/b-libav09.sgi
+tests/data/b-libav09.sgi
 ----------------
-data/b-libav09.tga
+tests/data/b-libav09.tga
 ----------------
-data/b-libav09.tiff
+tests/data/b-libav09.tiff
 ----------------
-data/b-libav10.bmp
+tests/data/b-libav10.bmp
 ----------------
-data/b-libav10.jpg
+tests/data/b-libav10.jpg
 ----------------
-data/b-libav10.pgm
+tests/data/b-libav10.pgm
 ----------------
-data/b-libav10.ppm
+tests/data/b-libav10.ppm
 ----------------
-data/b-libav10.sgi
+tests/data/b-libav10.sgi
 ----------------
-data/b-libav10.tga
+tests/data/b-libav10.tga
 ----------------
-data/b-libav10.tiff
+tests/data/b-libav10.tiff
 ----------------
-data/b-libav11.bmp
+tests/data/b-libav11.bmp
 ----------------
-data/b-libav11.jpg
+tests/data/b-libav11.jpg
 ----------------
-data/b-libav11.pgm
+tests/data/b-libav11.pgm
 ----------------
-data/b-libav11.ppm
+tests/data/b-libav11.ppm
 ----------------
-data/b-libav11.sgi
+tests/data/b-libav11.sgi
 ----------------
-data/b-libav11.tga
+tests/data/b-libav11.tga
 ----------------
-data/b-libav11.tiff
+tests/data/b-libav11.tiff
 ----------------
-data/b-libav12.bmp
+tests/data/b-libav12.bmp
 ----------------
-data/b-libav12.jpg
+tests/data/b-libav12.jpg
 ----------------
-data/b-libav12.pgm
+tests/data/b-libav12.pgm
 ----------------
-data/b-libav12.ppm
+tests/data/b-libav12.ppm
 ----------------
-data/b-libav12.sgi
+tests/data/b-libav12.sgi
 ----------------
-data/b-libav12.tga
+tests/data/b-libav12.tga
 ----------------
-data/b-libav12.tiff
+tests/data/b-libav12.tiff
 ----------------
-data/b-libav13.bmp
+tests/data/b-libav13.bmp
 ----------------
-data/b-libav13.jpg
+tests/data/b-libav13.jpg
 ----------------
-data/b-libav13.pgm
+tests/data/b-libav13.pgm
 ----------------
-data/b-libav13.ppm
+tests/data/b-libav13.ppm
 ----------------
-data/b-libav13.sgi
+tests/data/b-libav13.sgi
 ----------------
-data/b-libav13.tga
+tests/data/b-libav13.tga
 ----------------
-data/b-libav13.tiff
+tests/data/b-libav13.tiff
 ----------------
-data/b-libav.aif
+tests/data/b-libav.aif
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-1.000000 pts:-1.000000 pos:32768 size:4096 flags:1
@@ -2584,9 +2584,9 @@ ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40626 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.645828 pts:-0.645828 pos:73394 size:4096 flags:1
 ----------------
-data/b-libav.al
+tests/data/b-libav.al
 ----------------
-data/b-libav.asf
+tests/data/b-libav.asf
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:575 size:28874 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:3.544000 pts:3.544000 pos:150975 size:209 flags:1
@@ -2641,7 +2641,7 @@ ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:575 size:28874 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:575 size:28874 flags:1
 ----------------
-data/b-libav.au
+tests/data/b-libav.au
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-1.000000 pts:-1.000000 pos:32768 size:4096 flags:1
@@ -2696,7 +2696,7 @@ ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40596 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.645828 pts:-0.645828 pos:73364 size:4096 flags:1
 ----------------
-data/b-libav.avi
+tests/data/b-libav.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:9908 size:28118 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:9908 size:28118 flags:1
@@ -2742,9 +2742,9 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:158912 size:27442 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav-bgr24.yuv
+tests/data/b-libav-bgr24.yuv
 ----------------
-data/b-libav.dv
+tests/data/b-libav.dv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
@@ -2799,7 +2799,7 @@ ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:-1 size:144000 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
 ----------------
-data/b-libav.ffm
+tests/data/b-libav.ffm
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:376832 size:208 flags:1
@@ -2854,7 +2854,7 @@ ret:-11
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret:-11
 ----------------
-data/b-libav.flv
+tests/data/b-libav.flv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:31385 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:31385 flags:1
@@ -2900,7 +2900,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:150381 size:30541 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.gif
+tests/data/b-libav.gif
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:2906382 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -2929,9 +2929,9 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav-gray.yuv
+tests/data/b-libav-gray.yuv
 ----------------
-data/b-libav.gxf
+tests/data/b-libav.gxf
 ret: 0 st: 0 dts:0.000000 pts:-184467440737095520.000000 pos:748 size:55568 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:56348 size:65536 flags:1
@@ -2986,7 +2986,7 @@ ret: 0 st: 0 dts:0.480000 pts:-184467440737095520.000000 pos:376324 size:54324 f
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:-184467440737095520.000000 pos:748 size:55568 flags:1
 ----------------
-data/b-libav.mmf
+tests/data/b-libav.mmf
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:4096 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3015,11 +3015,11 @@ ret:-1 st: 0 ts:1.565850 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav-monob.yuv
+tests/data/b-libav-monob.yuv
 ----------------
-data/b-libav-monow.yuv
+tests/data/b-libav-monow.yuv
 ----------------
-data/b-libav.mov
+tests/data/b-libav.mov
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
@@ -3065,7 +3065,7 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:166272 size:27412 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.mpg
+tests/data/b-libav.mpg
 ret: 0 st: 1 dts:0.500000 pts:0.500000 pos:-1 size:208 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.500000 pts:0.500000 pos:-1 size:208 flags:1
@@ -3120,9 +3120,9 @@ ret: 0 st: 0 dts:0.500000 pts:0.540000 pos:-1 size:16335 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 1 dts:0.500000 pts:0.500000 pos:-1 size:208 flags:1
 ----------------
-data/b-libav-pal8.yuv
+tests/data/b-libav-pal8.yuv
 ----------------
-data/b-libav.pbm
+tests/data/b-libav.pbm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:317075 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3151,7 +3151,7 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.pgm
+tests/data/b-libav.pgm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:2534775 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3180,7 +3180,7 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.ppm
+tests/data/b-libav.ppm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:7603575 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3209,15 +3209,15 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav-rgb24.yuv
+tests/data/b-libav-rgb24.yuv
 ----------------
-data/b-libav-rgb32.yuv
+tests/data/b-libav-rgb32.yuv
 ----------------
-data/b-libav-rgb555.yuv
+tests/data/b-libav-rgb555.yuv
 ----------------
-data/b-libav-rgb565.yuv
+tests/data/b-libav-rgb565.yuv
 ----------------
-data/b-libav.rm
+tests/data/b-libav.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:394 size:31384 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:31790 size:278 flags:1
@@ -3272,7 +3272,7 @@ ret: 0 st: 1 dts:0.487000 pts:0.487000 pos:191474 size:278 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:31790 size:278 flags:1
 ----------------
-data/b-libav.swf
+tests/data/b-libav.swf
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:65 size:31385 flags:0
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3301,7 +3301,7 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.ts
+tests/data/b-libav.ts
 ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:-1 size:24921 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:-1 size:22036 flags:1
@@ -3356,9 +3356,9 @@ ret: 0 st: 0 dts:0.440000 pts:0.480000 pos:-1 size:21317 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:-1 size:22036 flags:1
 ----------------
-data/b-libav.ul
+tests/data/b-libav.ul
 ----------------
-data/b-libav.voc
+tests/data/b-libav.voc
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:32 size:512 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3387,7 +3387,7 @@ ret:-1 st: 0 ts:1.565844 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav.wav
+tests/data/b-libav.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-1.000000 pts:-1.000000 pos:32768 size:4096 flags:1
@@ -3442,7 +3442,7 @@ ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40616 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.645828 pts:-0.645828 pos:73384 size:4096 flags:1
 ----------------
-data/b-libav.y4m
+tests/data/b-libav.y4m
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:66 size:152064 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
@@ -3471,20 +3471,20 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-data/b-libav-yuv410p.yuv
+tests/data/b-libav-yuv410p.yuv
 ----------------
-data/b-libav-yuv411p.yuv
+tests/data/b-libav-yuv411p.yuv
 ----------------
-data/b-libav-yuv420p.yuv
+tests/data/b-libav-yuv420p.yuv
 ----------------
-data/b-libav-yuv422p.yuv
+tests/data/b-libav-yuv422p.yuv
 ----------------
-data/b-libav-yuv444p.yuv
+tests/data/b-libav-yuv444p.yuv
 ----------------
-data/b-libav-yuvj420p.yuv
+tests/data/b-libav-yuvj420p.yuv
 ----------------
-data/b-libav-yuvj422p.yuv
+tests/data/b-libav-yuvj422p.yuv
 ----------------
-data/b-libav-yuvj444p.yuv
+tests/data/b-libav-yuvj444p.yuv
 ----------------
-data/b-libav-yuyv422.yuv
+tests/data/b-libav-yuyv422.yuv
