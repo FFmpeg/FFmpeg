@@ -429,14 +429,14 @@ clean::
 
 TESTS= imgresample-test fft-test dct-test
 ifeq ($(TARGET_ARCH_X86),yes)
-TESTS+= cpuid_test motion-test
+TESTS+= cpuid-test motion-test
 endif
 
 tests: apiexample $(TESTS)
 
 apiexample: apiexample.o $(LIB)
 
-cpuid_test: i386/cputest.c
+cpuid-test: i386/cputest.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $<
 
 imgresample-test: imgresample.c $(LIB)
