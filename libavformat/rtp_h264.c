@@ -270,7 +270,7 @@ static int h264_handle_packet(RTPDemuxContext * s,
             // these are the same as above, we just redo them here for clarity...
             uint8_t fu_indicator = nal;
             uint8_t fu_header = *buf;   // read the fu_header.
-            uint8_t start_bit = (fu_header & 0x80) >> 7;
+            uint8_t start_bit = fu_header >> 7;
 //            uint8_t end_bit = (fu_header & 0x40) >> 6;
             uint8_t nal_type = (fu_header & 0x1f);
             uint8_t reconstructed_nal;
