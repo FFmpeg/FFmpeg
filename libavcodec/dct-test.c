@@ -95,8 +95,10 @@ struct algo algos[] = {
   DCT_ERROR("MMX",             0, ff_fdct_mmx,        fdct, NO_PERM),
   DCT_ERROR("MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM),
 
+#ifdef CONFIG_GPL
   DCT_ERROR("LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM),
   DCT_ERROR("LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM),
+#endif
   DCT_ERROR("SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM),
   DCT_ERROR("XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM),
   DCT_ERROR("XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM),
