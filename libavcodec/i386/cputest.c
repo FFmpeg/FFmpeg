@@ -119,7 +119,7 @@ int mm_support(void)
     return rval;
 }
 
-#ifdef __TEST__
+#ifdef TEST
 int main ( void )
 {
   int mm_flags;

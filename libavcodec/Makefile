@@ -437,7 +437,7 @@ tests: apiexample $(TESTS)
 apiexample: apiexample.o $(LIB)
 
 cpuid_test: i386/cputest.c
-	$(CC) $(CFLAGS) -D__TEST__ -o $@ $<
+	$(CC) $(CFLAGS) -DTEST -o $@ $<
 
 imgresample-test: imgresample.c $(LIB)
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
