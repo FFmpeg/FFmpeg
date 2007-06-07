@@ -277,7 +277,7 @@ static int h264_handle_packet(RTPDemuxContext * s,
 
             // reconstruct this packet's true nal; only the data follows..
             reconstructed_nal = fu_indicator & (0xe0);  // the original nal forbidden bit and NRI are stored in this packet's nal;
-            reconstructed_nal |= (nal_type & 0x1f);
+            reconstructed_nal |= nal_type;
 
             // skip the fu_header...
             buf++;
