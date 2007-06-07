@@ -91,7 +91,7 @@ struct algo algos[] = {
   DCT_ERROR("INT",             1, j_rev_dct,          idct, MMX_PERM),
   DCT_ERROR("SIMPLE-C",        1, simple_idct,        idct, NO_PERM),
 
-#ifdef ARCH_X86
+#ifdef HAVE_MMX
   DCT_ERROR("MMX",             0, ff_fdct_mmx,        fdct, NO_PERM),
   DCT_ERROR("MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM),
 
