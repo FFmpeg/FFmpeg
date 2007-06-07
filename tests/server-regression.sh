@@ -13,7 +13,7 @@ mkdir -p data
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
-FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' test.conf | grep -v html`
+FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html`
 
 rm -f feed1.ffm
 ../ffserver -d -f test.conf 2> /dev/null &
