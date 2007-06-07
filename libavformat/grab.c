@@ -839,9 +839,7 @@ static int aiw_read_picture(VideoData *s, uint8_t *data)
                 DEINT_LINE_LUM(12)
                 }
     }
-#ifdef HAVE_MMX
-    emms();
-#endif
+    emms_c();
     return s->frame_size;
 }
 
