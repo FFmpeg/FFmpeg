@@ -2988,7 +2988,7 @@ static int frame_start(H264Context *h){
     return 0;
 }
 
-static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize){
+static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int simple){
     MpegEncContext * const s = &h->s;
     int i;
 
@@ -3006,7 +3006,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     *(uint64_t*)(h->top_borders[0][s->mb_x]+0)= *(uint64_t*)(src_y +  16*linesize);
     *(uint64_t*)(h->top_borders[0][s->mb_x]+8)= *(uint64_t*)(src_y +8+16*linesize);
 
-    if(!(s->flags&CODEC_FLAG_GRAY)){
+    if(simple || !(s->flags&CODEC_FLAG_GRAY)){
         h->left_border[17  ]= h->top_borders[0][s->mb_x][16+7];
         h->left_border[17+9]= h->top_borders[0][s->mb_x][24+7];
         for(i=1; i<9; i++){
@@ -3018,7 +3018,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     }
 }
 
-static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int xchg){
+static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int xchg, int simple){
     MpegEncContext * const s = &h->s;
     int temp8, i;
     uint64_t temp64;
@@ -3049,7 +3049,7 @@ b= t;
         }
     }
 
-    if(!(s->flags&CODEC_FLAG_GRAY)){
+    if(simple || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_left){
             for(i = !deblock_top; i<9; i++){
                 XCHG(h->left_border[i+17  ], src_cb[i*uvlinesize], temp8, xchg);
@@ -3256,7 +3256,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     } else {
         if(IS_INTRA(mb_type)){
             if(h->deblocking_filter && (simple || !FRAME_MBAFF))
-                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1);
+                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1, simple);
 
             if(simple || !(s->flags&CODEC_FLAG_GRAY)){
                 h->pred8x8[ h->chroma_pred_mode ](dest_cb, uvlinesize);
@@ -3319,7 +3319,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
             }
             if(h->deblocking_filter && (simple || !FRAME_MBAFF))
-                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
+                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
         }else if(is_h264){
             hl_motion(h, dest_y, dest_cb, dest_cr,
                       s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
@@ -3419,7 +3419,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             filter_mb(h, mb_x, mb_y+1, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         } else {
             tprintf(h->s.avctx, "call filter_mb\n");
-            backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
+            backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
             fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
             filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         }
