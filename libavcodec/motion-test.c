@@ -112,7 +112,7 @@ void test_motion(const char *name,
             }
         }
     }
-    emms();
+    emms_c();
 
     /* speed test */
     ti = gettime();
@@ -125,7 +125,7 @@ void test_motion(const char *name,
             }
         }
     }
-    emms();
+    emms_c();
     dummy = d1; /* avoid optimisation */
     ti = gettime() - ti;
 
