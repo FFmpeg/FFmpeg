@@ -94,7 +94,6 @@ struct MpegTSContext {
 
     int64_t cur_pcr;    /**< used to estimate the exact PCR  */
     int pcr_incr;       /**< used to estimate the exact PCR  */
-    int pcr_pid;        /**< used to estimate the exact PCR  */
 
     /* data needed to handle file based ts */
     /** stop parsing loop                                    */
@@ -446,7 +445,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     pcr_pid = get16(&p, p_end) & 0x1fff;
     if (pcr_pid < 0)
         return;
-    ts->pcr_pid = pcr_pid;
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "pcr_pid=0x%x\n", pcr_pid);
 #endif
@@ -1204,7 +1202,6 @@ static int mpegts_read_header(AVFormatContext *s,
             }
             nb_packets++;
         }
-        ts->pcr_pid = pcr_pid;
 
         /* NOTE1: the bitrate is computed without the FEC */
         /* NOTE2: it is only the bitrate of the start of the stream */
