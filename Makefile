@@ -236,7 +236,6 @@ TAGS:
 # regression tests
 
 fulltest test: codectest libavtest seektest
-#codectest libavtest seektest test-server: $(PROGS)
 
 FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
@@ -244,19 +243,19 @@ LIBAV_REFFILE    = $(SRC_PATH)/tests/libav.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
-test-server: tests/vsynth1/00.pgm tests/asynth1.sw
+test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
 	@echo
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
-codectest mpeg4 mpeg ac3 snow snowll: tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw tests/tiny_psnr$(EXESUF)
+codectest mpeg4 mpeg ac3 snow snowll: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw tests/tiny_psnr$(EXESUF)
 	$(SRC_PATH)/tests/regression.sh $@ $(FFMPEG_REFFILE)   tests/vsynth1
 	$(SRC_PATH)/tests/regression.sh $@ $(ROTOZOOM_REFFILE) tests/vsynth2
 
 ifeq ($(CONFIG_GPL),yes)
-libavtest: tests/vsynth1/00.pgm tests/asynth1.sw
+libavtest: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) tests/vsynth1
 seektest: tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
