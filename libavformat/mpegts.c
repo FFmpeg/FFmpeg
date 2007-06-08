@@ -35,7 +35,7 @@
 
 typedef struct PESContext PESContext;
 
-static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int stream_type);
+static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code);
 
 enum MpegTSFilterType {
@@ -130,6 +130,7 @@ enum MpegTSState {
 
 struct PESContext {
     int pid;
+    int pcr_pid; /**< if -1 then all packets containing PCR are considered */
     int stream_type;
     MpegTSContext *ts;
     AVFormatContext *stream;
@@ -541,7 +542,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 pes= ts->pids[pid]->u.pes_filter.opaque;
                 st= pes->st;
             }else{
-                pes = add_pes_stream(ts, pid, stream_type);
+                pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
                 if (pes)
                     st = new_pes_av_stream(pes, 0);
             }
@@ -902,7 +903,7 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
 }
 
 
-static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int stream_type)
+static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type)
 {
     MpegTSFilter *tss;
     PESContext *pes;
@@ -914,6 +915,7 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int stream_type)
     pes->ts = ts;
     pes->stream = ts->stream;
     pes->pid = pid;
+    pes->pcr_pid = pcr_pid;
     pes->stream_type = stream_type;
     tss = mpegts_open_pes_filter(ts, pid, mpegts_push_data, pes);
     if (!tss) {
@@ -935,7 +937,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
-        add_pes_stream(ts, pid, 0);
+        add_pes_stream(ts, pid, -1, 0);
         tss = ts->pids[pid];
     }
     if (!tss)
@@ -1301,7 +1303,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     MpegTSContext *ts = s->priv_data;
     int64_t pos, timestamp;
     uint8_t buf[TS_PACKET_SIZE];
-    int pcr_l, pid;
+    int pcr_l, pcr_pid = ((PESContext*)s->streams[stream_index]->priv_data)->pcr_pid;
     const int find_next= 1;
     pos = ((*ppos  + ts->raw_packet_size - 1) / ts->raw_packet_size) * ts->raw_packet_size;
     if (find_next) {
@@ -1309,8 +1311,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             url_fseek(&s->pb, pos, SEEK_SET);
             if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
-            pid = ((buf[1] & 0x1f) << 8) | buf[2];
-            if (pid == ts->pcr_pid &&
+            if ((pcr_pid < 0 || (((buf[1] & 0x1f) << 8) | buf[2]) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
                 break;
             }
@@ -1324,8 +1325,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             url_fseek(&s->pb, pos, SEEK_SET);
             if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
-            pid = ((buf[1] & 0x1f) << 8) | buf[2];
-            if (pid == ts->pcr_pid &&
+            if ((pcr_pid < 0 || (((buf[1] & 0x1f) << 8) | buf[2]) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
                 break;
             }
