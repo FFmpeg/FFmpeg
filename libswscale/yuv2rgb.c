@@ -276,7 +276,7 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
             int av_unused U, V;\
             int Y;\
 
-#define EPILOG(dst_delta)\
+#define EPILOG1(dst_delta)\
             pu += 4;\
             pv += 4;\
             py_1 += 8;\
@@ -284,9 +284,19 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
             dst_1 += dst_delta;\
             dst_2 += dst_delta;\
         }\
+        if (c->dstW & 4) {\
+            int av_unused U, V;\
+            int Y;\
+
+#define EPILOG2()\
+        }\
     }\
     return srcSliceH;\
 }
+
+#define EPILOG(dst_delta)\
+    EPILOG1(dst_delta)\
+    EPILOG2()
 
 PROLOG(yuv2rgb_c_32, uint32_t)
     RGB(0);
@@ -304,7 +314,15 @@ PROLOG(yuv2rgb_c_32, uint32_t)
     RGB(3);
     DST2(3);
     DST1(3);
-EPILOG(8)
+EPILOG1(8)
+    RGB(0);
+    DST1(0);
+    DST2(0);
+
+    RGB(1);
+    DST2(1);
+    DST1(1);
+EPILOG2()
 
 PROLOG(yuv2rgb_c_24_rgb, uint8_t)
     RGB(0);
@@ -322,7 +340,15 @@ PROLOG(yuv2rgb_c_24_rgb, uint8_t)
     RGB(3);
     DST2RGB(3);
     DST1RGB(3);
-EPILOG(24)
+EPILOG1(24)
+    RGB(0);
+    DST1RGB(0);
+    DST2RGB(0);
+
+    RGB(1);
+    DST2RGB(1);
+    DST1RGB(1);
+EPILOG2()
 
 // only trivial mods from yuv2rgb_c_24_rgb
 PROLOG(yuv2rgb_c_24_bgr, uint8_t)
@@ -341,7 +367,15 @@ PROLOG(yuv2rgb_c_24_bgr, uint8_t)
     RGB(3);
     DST2BGR(3);
     DST1BGR(3);
-EPILOG(24)
+EPILOG1(24)
+    RGB(0);
+    DST1BGR(0);
+    DST2BGR(0);
+
+    RGB(1);
+    DST2BGR(1);
+    DST1BGR(1);
+EPILOG2()
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
