@@ -170,12 +170,12 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
         asm volatile (
             "movaps          %0, %%xmm0 \n\t"   // xmm0 = r0 X  r1 X : in2
             "movaps          %1, %%xmm3 \n\t"   // xmm3 = X  i1 X  i0: in1
-            "movaps      -16+%0, %%xmm4 \n\t"   // xmm4 = r0 X  r1 X : in2
-            "movaps       16+%1, %%xmm7 \n\t"   // xmm7 = X  i1 X  i0: in1
+            "movaps    -16+1*%0, %%xmm4 \n\t"   // xmm4 = r0 X  r1 X : in2
+            "movaps     16+1*%1, %%xmm7 \n\t"   // xmm7 = X  i1 X  i0: in1
             "movlps          %2, %%xmm1 \n\t"   // xmm1 = X  X  R1 R0: tcos
             "movlps          %3, %%xmm2 \n\t"   // xmm2 = X  X  I1 I0: tsin
-            "movlps        8+%2, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
-            "movlps        8+%3, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
+            "movlps      8+1*%2, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
+            "movlps      8+1*%3, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
             "shufps $95, %%xmm0, %%xmm0 \n\t"   // xmm0 = r1 r1 r0 r0
             "shufps $160,%%xmm3, %%xmm3 \n\t"   // xmm3 = i1 i1 i0 i0
             "shufps $95, %%xmm4, %%xmm4 \n\t"   // xmm4 = r1 r1 r0 r0
@@ -222,13 +222,13 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
     for (k = 0; k < n4; k += 4) {
         asm (
             "movaps          %0, %%xmm0 \n\t"   // xmm0 = i1 r1 i0 r0: z
-            "movaps       16+%0, %%xmm4 \n\t"   // xmm4 = i1 r1 i0 r0: z
+            "movaps     16+1*%0, %%xmm4 \n\t"   // xmm4 = i1 r1 i0 r0: z
             "movlps          %1, %%xmm1 \n\t"   // xmm1 = X  X  R1 R0: tcos
-            "movlps        8+%1, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
+            "movlps      8+1*%1, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
             "movaps      %%xmm0, %%xmm3 \n\t"   // xmm3 = i1 r1 i0 r0
             "movaps      %%xmm4, %%xmm7 \n\t"   // xmm7 = i1 r1 i0 r0
             "movlps          %2, %%xmm2 \n\t"   // xmm2 = X  X  I1 I0: tsin
-            "movlps        8+%2, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
+            "movlps      8+1*%2, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
             "shufps $160,%%xmm0, %%xmm0 \n\t"   // xmm0 = r1 r1 r0 r0
             "shufps $245,%%xmm3, %%xmm3 \n\t"   // xmm3 = i1 i1 i0 i0
             "shufps $160,%%xmm4, %%xmm4 \n\t"   // xmm4 = r1 r1 r0 r0
@@ -248,7 +248,7 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
             "addps       %%xmm3, %%xmm0 \n\t"   // xmm0 = result
             "addps       %%xmm7, %%xmm4 \n\t"   // xmm4 = result
             "movaps      %%xmm0, %0     \n\t"
-            "movaps      %%xmm4, 16+%0  \n\t"
+            "movaps      %%xmm4, 16+1*%0\n\t"
             :"+m"(z[k])
             :"m"(tcos[k]), "m"(tsin[k])
 #ifndef ARCH_X86_64
