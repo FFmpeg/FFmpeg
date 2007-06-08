@@ -552,10 +552,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         if (st) {
             if (language[0] != 0) {
-                st->language[0] = language[0];
-                st->language[1] = language[1];
-                st->language[2] = language[2];
-                st->language[3] = language[3];
+                memcpy(st->language, language, 4);
             }
 
             if (stream_type == STREAM_TYPE_SUBTITLE_DVB) {
