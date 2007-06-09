@@ -19,7 +19,7 @@
 
 main(int argc, char *argv[])
 {
-    int fd_in, fd_out, comp_len, uncomp_len, tag, i, last_out;
+    int fd_in, fd_out, comp_len, uncomp_len, i, last_out;
     char buf_in[1024], buf_out[65536];
     z_stream zstream;
     struct stat statbuf;
