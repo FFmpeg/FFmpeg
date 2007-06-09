@@ -101,6 +101,17 @@ do { \
     h = vec_mergel (D2, H2); \
 } while (0)
 
+
+/** \brief loads unaligned vector \a *src with offset \a offset
+    and returns it */
+static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
+{
+    register vector unsigned char first = vec_ld(offset, src);
+    register vector unsigned char second = vec_ld(offset+15, src);
+    register vector unsigned char mask = vec_lvsl(offset, src);
+    return vec_perm(first, second, mask);
+}
+
 #endif /* HAVE_ALTIVEC */
 
 #endif /* _DSPUTIL_ALTIVEC_ */
