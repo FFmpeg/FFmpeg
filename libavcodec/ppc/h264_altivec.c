@@ -717,7 +717,7 @@ static inline vector unsigned char diff_lt_altivec ( register vector unsigned ch
     register vector unsigned char diff = vec_subs(x, y);
     register vector unsigned char diffneg = vec_subs(y, x);
     register vector unsigned char o = vec_or(diff, diffneg); /* |x-y| */
-    o = vec_cmplt(o, a);
+    o = (vector unsigned char)vec_cmplt(o, a);
     return o;
 }
 
