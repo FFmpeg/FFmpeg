@@ -20,8 +20,6 @@
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
-#include "common.h"
-
 #include "cmdutils.h"
 
 #undef exit
