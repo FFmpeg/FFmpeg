@@ -19,7 +19,7 @@
 #define dbgprintf
 #endif
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     int fd_in, fd_out, comp_len, uncomp_len, i, last_out;
     char buf_in[1024], buf_out[65536];
@@ -126,4 +126,5 @@ main(int argc, char *argv[])
     inflateEnd(&zstream);
     close(fd_in);
     close(fd_out);
+    return 0;
 }
