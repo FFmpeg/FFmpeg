@@ -183,7 +183,6 @@ uninstall-headers:
 	$(MAKE) -C libavformat uninstall-headers
 	$(MAKE) -C libpostproc uninstall-headers
 	-rmdir "$(incdir)"
-	-rmdir "$(prefix)/include/postproc"
 
 depend dep: .depend
 	$(MAKE) -C libavutil   depend

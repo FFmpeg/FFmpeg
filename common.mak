@@ -92,7 +92,7 @@ uninstall-libs:
 	       "$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
 	-rm -f "$(libdir)/$(LIB)"
 
-uninstall-headers:
+uninstall-headers::
 	rm -f $(addprefix "$(incdir)/",$(HEADERS))
 	rm -f "$(libdir)/pkgconfig/lib$(NAME).pc"
 
