@@ -92,8 +92,7 @@ qt-faststart$(EXESUF): qt-faststart.c
 cws2fws$(EXESUF): cws2fws.c
 	$(CC) $(CFLAGS) $< -o $@ -lz
 
-ffplay.o: ffplay.c
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $<
+ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
