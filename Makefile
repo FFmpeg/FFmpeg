@@ -84,13 +84,13 @@ version.h:
 	$(SRC_PATH)/version.sh $(SRC_PATH)
 
 output_example$(EXESUF): output_example.o .libs
-	$(CC) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
 qt-faststart$(EXESUF): qt-faststart.c
 	$(CC) $(CFLAGS) $< -o $@
 
 cws2fws$(EXESUF): cws2fws.c
-	$(CC) $< -o $@ -lz
+	$(CC) $(CFLAGS) $< -o $@ -lz
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $<
