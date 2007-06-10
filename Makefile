@@ -15,14 +15,14 @@ PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFSERVER) += ffserver
 
-PROGS = $(addsuffix $(EXESUF), $(PROGS-yes))
-PROGS_G = $(addsuffix _g$(EXESUF), $(PROGS-yes))
-MANPAGES = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
+PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
+PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
+MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 
-BASENAMES=ffmpeg ffplay ffserver
-ALLPROGS=$(addsuffix $(EXESUF), $(BASENAMES))
-ALLPROGS_G=$(addsuffix _g$(EXESUF), $(BASENAMES))
-ALLMANPAGES=$(addsuffix .1, $(BASENAMES))
+BASENAMES   = ffmpeg ffplay ffserver
+ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
+ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
+ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
 ifeq ($(BUILD_SHARED),yes)
 DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF)
