@@ -36,21 +36,6 @@
 #undef exit
 #undef printf
 
-int pix_abs16x16_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_c(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_x2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_x2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_x2_c(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_y2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_y2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_y2_c(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_xy2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_xy2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
-int pix_abs16x16_xy2_c(uint8_t *blk1, uint8_t *blk2, int lx);
-
-typedef int motion_func(uint8_t *blk1, uint8_t *blk2, int lx);
-
 #define WIDTH 64
 #define HEIGHT 64
 
@@ -88,7 +73,7 @@ int64_t gettime(void)
 int dummy;
 
 void test_motion(const char *name,
-                 motion_func *test_func, motion_func *ref_func)
+                 me_cmp_func test_func, me_cmp_func ref_func)
 {
     int x, y, d1, d2, it;
     uint8_t *ptr;
@@ -104,8 +89,8 @@ void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x;
-                d1 = test_func(img1, ptr, WIDTH);
-                d2 = ref_func(img1, ptr, WIDTH);
+                d1 = test_func(NULL, img1, ptr, WIDTH, 1);
+                d2 = ref_func(NULL, img1, ptr, WIDTH, 1);
                 if (d1 != d2) {
                     printf("error: mmx=%d c=%d\n", d1, d2);
                 }
@@ -121,7 +106,7 @@ void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x;
-                d1 += test_func(img1, ptr, WIDTH);
+                d1 += test_func(NULL, img1, ptr, WIDTH, 1);
             }
         }
     }
@@ -137,7 +122,10 @@ void test_motion(const char *name,
 
 int main(int argc, char **argv)
 {
+    AVCodecContext *ctx;
     int c;
+    DSPContext cctx, mmxctx;
+    int flags[2] = { FF_MM_MMX, FF_MM_MMXEXT };
 
     for(;;) {
         c = getopt(argc, argv, "h");
@@ -152,9 +140,24 @@ int main(int argc, char **argv)
 
     printf("ffmpeg motion test\n");
 
-    test_motion("mmx", pix_abs16x16_mmx, pix_abs16x16_c);
-    test_motion("mmx_x2", pix_abs16x16_x2_mmx, pix_abs16x16_x2_c);
-    test_motion("mmx_y2", pix_abs16x16_y2_mmx, pix_abs16x16_y2_c);
-    test_motion("mmx_xy2", pix_abs16x16_xy2_mmx, pix_abs16x16_xy2_c);
+    ctx = avcodec_alloc_context();
+    ctx->dsp_mask = FF_MM_FORCE;
+    dsputil_init(&cctx, ctx);
+    for (c = 0; c < 2; c++) {
+        int x;
+        ctx->dsp_mask = FF_MM_FORCE | flags[c];
+        dsputil_init(&mmxctx, ctx);
+
+        for (x = 0; x < 2; x++) {
+            printf("%s for %dx%d pixels\n", c ? "mmx2" : "mmx",
+                   x ? 8 : 16, x ? 8 : 16);
+            test_motion("mmx",     mmxctx.pix_abs[x][0], cctx.pix_abs[x][0]);
+            test_motion("mmx_x2",  mmxctx.pix_abs[x][1], cctx.pix_abs[x][1]);
+            test_motion("mmx_y2",  mmxctx.pix_abs[x][2], cctx.pix_abs[x][2]);
+            test_motion("mmx_xy2", mmxctx.pix_abs[x][3], cctx.pix_abs[x][3]);
+        }
+    }
+    av_free(ctx);
+
     return 0;
 }
