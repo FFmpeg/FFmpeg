@@ -46,7 +46,7 @@ depend dep: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 clean::
-	rm -f *.o *.d *~ *.a *.lib *.so *.so.* *.dylib *.dll \
+	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
 	      *.def *.dll.a *.exp
 
 distclean: clean

@@ -213,7 +213,7 @@ clean:
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
 	$(MAKE) -C vhook       clean
-	rm -f *.o *.d *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
+	rm -f *.o *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF) qt-faststart$(EXESUF) cws2fws$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~

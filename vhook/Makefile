@@ -40,7 +40,7 @@ uninstall:
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$@)
 
 clean:
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
+	rm -f *.o *~ *.a *.lib *.so *.dylib *.dll
 
 distclean: clean
 	rm -f .depend
