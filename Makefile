@@ -45,7 +45,7 @@ LDFLAGS := -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT
 EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 ifeq ($(CONFIG_SWSCALER),yes)
-LDFLAGS+=-L./libswscale
+LDFLAGS+=-L$(BUILD_ROOT)/libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
