@@ -803,7 +803,7 @@ static inline vector unsigned char h264_deblock_mask ( register vector unsigned 
     register vector unsigned char mask;                                                      \
     register vector unsigned char p1mask;                                                    \
     register vector unsigned char q1mask;                                                    \
-    register vector char tc0vec;                                                             \
+    register vector unsigned char tc0vec;                                                    \
     register vector unsigned char finaltc0;                                                  \
     register vector unsigned char tc0masked;                                                 \
                                                                                              \
