@@ -115,7 +115,7 @@ static int get_high_utility_cell(elbg_data *elbg)
  * Implementation of the simple LBG algorithm for just two codebooks
  */
 static int simple_lbg(int dim,
-                      int centroid[3][dim],
+                      int *centroid[3],
                       int newutility[3],
                       int *points,
                       cell *cells)
@@ -186,7 +186,7 @@ static void get_new_centroids(elbg_data *elbg, int huc, int *newcentroid_i,
  * @param newcentroid  A vector with the position of the new centroids
  */
 static void shift_codebook(elbg_data *elbg, int *indexes,
-                           int newcentroid[3][elbg->dim])
+                           int *newcentroid[3])
 {
     cell *tempdata;
     cell **pp = &elbg->cells[indexes[2]];
@@ -246,6 +246,7 @@ static void try_shift_candidate(elbg_data *elbg, int idx[3])
     int j, k, olderror=0, newerror, cont=0;
     int newutility[3];
     int newcentroid[3][elbg->dim];
+    int *newcentroid_ptrs[3] = { newcentroid[0], newcentroid[1], newcentroid[2] };
     cell *tempcell;
 
     for (j=0; j<3; j++)
@@ -269,11 +270,11 @@ static void try_shift_candidate(elbg_data *elbg, int idx[3])
 
     newerror = newutility[2];
 
-    newerror += simple_lbg(elbg->dim, newcentroid, newutility, elbg->points,
+    newerror += simple_lbg(elbg->dim, newcentroid_ptrs, newutility, elbg->points,
                            elbg->cells[idx[1]]);
 
     if (olderror > newerror) {
-        shift_codebook(elbg, idx, newcentroid);
+        shift_codebook(elbg, idx, newcentroid_ptrs);
 
         elbg->error += newerror - olderror;
 
