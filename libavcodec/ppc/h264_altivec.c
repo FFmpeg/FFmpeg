@@ -776,7 +776,7 @@ static inline vector unsigned char h264_deblock_mask ( register vector unsigned 
     register vector unsigned char delta;                                                          \
     register vector unsigned char deltaneg;                                                       \
                                                                                                   \
-    temp = vec_cmpeq(p0, p0);                                                                     \
+    temp = (vector unsigned char)vec_cmpeq(p0, p0);                                               \
     q1minus = vec_xor(temp, q1);               /* 255 - q1 */                                     \
     stage1 = vec_avg(p1, q1minus);             /* (p1 - q1 + 256)>>1 */                           \
     stage2 = vec_sr(stage1, vec_splat_u8(1));  /* (p1 - q1 + 256)>>2 = 64 + (p1 - q1) >> 2 */     \
