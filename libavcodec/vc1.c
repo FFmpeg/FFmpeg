@@ -4013,7 +4013,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     }
 
     /* We need to set current_picture_ptr before reading the header,
-     * otherwise we cannot store anyting in there. */
+     * otherwise we cannot store anything in there. */
     if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
