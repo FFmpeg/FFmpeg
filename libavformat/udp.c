@@ -46,14 +46,6 @@ typedef struct {
 
 #ifdef CONFIG_IPV6
 
-static int udp_ipv6_is_multicast_address(const struct sockaddr *addr) {
-    if (addr->sa_family == AF_INET)
-        return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
-    if (addr->sa_family == AF_INET6)
-        return IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr);
-    return -1;
-}
-
 static int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
