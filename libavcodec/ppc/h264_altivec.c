@@ -617,9 +617,9 @@ void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
     r3 = vec_mergel(r5, r7);  /*all set 3*/  \
 }
 
-static inline void write16x4(uint8_t *dst, int dst_stride,     register vector unsigned char r0,
-                             register vector unsigned char r1, register vector unsigned char r2,
-                             register vector unsigned char r3) {
+static inline void write16x4(uint8_t *dst, int dst_stride,
+                             register vector unsigned char r0, register vector unsigned char r1,
+                             register vector unsigned char r2, register vector unsigned char r3) {
     DECLARE_ALIGNED_16(unsigned char, result[64]);
     uint32_t *src_int = (uint32_t *)result, *dst_int = (uint32_t *)dst;
     int int_dst_stride = dst_stride/4;
