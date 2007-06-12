@@ -579,8 +579,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 }
 
                 /* Now FLX is strange, in that it is "byte" as opposed to "pixel" run length compressed.
-                 * This doesnt give us any good oportunity to perform word endian conversion
-                 * during decompression. So if its requried (ie, this isnt a LE target, we do
+                 * This does not give us any good oportunity to perform word endian conversion
+                 * during decompression. So if it is required (i.e., this is not a LE target, we do
                  * a second pass over the line here, swapping the bytes.
                  */
                 pixel = 0xFF00;
@@ -716,11 +716,11 @@ static int flic_decode_frame(AVCodecContext *avctx,
                                      buf, buf_size);
     }
 
-    /* Shouldnt get  here, ever as the pix_fmt is processed */
+    /* Should not get  here, ever as the pix_fmt is processed */
     /* in flic_decode_init and the above if should deal with */
     /* the finite set of possibilites allowable by here. */
-    /* but in case we do, just error out. */
-    av_log(avctx, AV_LOG_ERROR, "Unknown Format of FLC. My Science cant explain how this happened\n");
+    /* But in case we do, just error out. */
+    av_log(avctx, AV_LOG_ERROR, "Unknown FLC format, my science cannot explain how this happened.\n");
     return -1;
 }
 

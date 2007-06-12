@@ -335,8 +335,8 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
 }
 
 /**
- * skips the given number of bits.
- * must only be used if the actual values in the bitstream dont matter
+ * Skips the given number of bits.
+ * Must only be used if the actual values in the bitstream do not matter.
  */
 static inline void skip_put_bits(PutBitContext *s, int n){
 #ifdef ALT_BITSTREAM_WRITER

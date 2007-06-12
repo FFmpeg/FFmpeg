@@ -1006,7 +1006,7 @@ static void init_h263_dc_for_msmpeg4(void)
             /* luminance h263 */
             uni_code= DCtab_lum[size][0];
             uni_len = DCtab_lum[size][1];
-            uni_code ^= (1<<uni_len)-1; //M$ doesnt like compatibility
+            uni_code ^= (1<<uni_len)-1; //M$ does not like compatibility
 
             if (size > 0) {
                 uni_code<<=size; uni_code|=l;
@@ -1022,7 +1022,7 @@ static void init_h263_dc_for_msmpeg4(void)
             /* chrominance h263 */
             uni_code= DCtab_chrom[size][0];
             uni_len = DCtab_chrom[size][1];
-            uni_code ^= (1<<uni_len)-1; //M$ doesnt like compatibility
+            uni_code ^= (1<<uni_len)-1; //M$ does not like compatibility
 
             if (size > 0) {
                 uni_code<<=size; uni_code|=l;
@@ -1132,7 +1132,7 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         break;
     }
 
-    s->slice_height= s->mb_height; //to avoid 1/0 if the first frame isnt a keyframe
+    s->slice_height= s->mb_height; //to avoid 1/0 if the first frame is not a keyframe
 
     return 0;
 }

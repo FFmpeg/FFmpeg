@@ -1602,7 +1602,7 @@ static inline int get_chroma_qp(int chroma_qp_index_offset, int qscale){
     return chroma_qp[av_clip(qscale + chroma_qp_index_offset, 0, 51)];
 }
 
-//FIXME need to check that this doesnt overflow signed 32 bit for low qp, i am not sure, it's very close
+//FIXME need to check that this does not overflow signed 32 bit for low qp, i am not sure, it's very close
 //FIXME check that gcc inlines this (and optimizes intra & separate_dc stuff away)
 static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int intra, int separate_dc){
     int i;
@@ -4816,7 +4816,7 @@ decode_intra_mb:
     if(IS_INTRA_PCM(mb_type)){
         unsigned int x, y;
 
-        // we assume these blocks are very rare so we dont optimize it
+        // We assume these blocks are very rare so we do not optimize it.
         align_get_bits(&s->gb);
 
         // The pixels are stored in the same order as levels in h->mb array.
@@ -5957,7 +5957,7 @@ decode_intra_mb:
         const uint8_t *ptr;
         unsigned int x, y;
 
-        // We assume these blocks are very rare so we dont optimize it.
+        // We assume these blocks are very rare so we do not optimize it.
         // FIXME The two following lines get the bitstream position in the cabac
         // decode, I think it should be done by a function in cabac.h (or cabac.c).
         ptr= h->cabac.bytestream;
@@ -7721,7 +7721,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
         buf_index += consumed;
 
-        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0) //FIXME dont discard SEI id
+        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0) //FIXME do not discard SEI id
            ||(avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0))
             continue;
 
@@ -7818,7 +7818,7 @@ static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
 
         return pos;
     }else{
-        if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
+        if(pos==0) pos=1; //avoid infinite loops (i doubt that is needed but ...)
         if(pos+10>buf_size) pos=buf_size; // oops ;)
 
         return pos;
@@ -8084,7 +8084,7 @@ int main(){
         START_TIMER
         j= get_ue_golomb(&gb);
         if(j != i){
-            printf("missmatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
+            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
 //            return -1;
         }
         STOP_TIMER("get_ue_golomb");
@@ -8109,7 +8109,7 @@ int main(){
         START_TIMER
         j= get_se_golomb(&gb);
         if(j != i - COUNT/2){
-            printf("missmatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
+            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
 //            return -1;
         }
         STOP_TIMER("get_se_golomb");
@@ -8213,7 +8213,7 @@ int main(){
         }
 
         if(memcmp(bitstream, out, COUNT)){
-            printf("missmatch\n");
+            printf("mismatch\n");
             return -1;
         }
     }

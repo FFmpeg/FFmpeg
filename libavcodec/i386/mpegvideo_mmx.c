@@ -397,7 +397,7 @@ asm volatile(
                 : "%"REG_a, "memory"
         );
     block[0]= block0;
-        //Note, we dont do mismatch control for intra as errors cannot accumulate
+        //Note, we do not do mismatch control for intra as errors cannot accumulate
 }
 
 static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,

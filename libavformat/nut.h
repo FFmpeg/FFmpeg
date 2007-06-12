@@ -63,7 +63,7 @@ typedef struct {
     uint16_t size_lsb;
     int16_t  pts_delta;
     uint8_t  reserved_count;
-} FrameCode; // maybe s/FrameCode/framecode_t/ or change all to java style but dont mix
+} FrameCode; // maybe s/FrameCode/framecode_t/ or change all to Java style but do not mix
 
 typedef struct {
     int last_flags;
@@ -81,7 +81,7 @@ typedef struct {
 //    int written_packet_size;
 //    int64_t packet_start[3]; //0-> startcode less, 1-> short startcode 2-> long startcodes
     FrameCode frame_code[256];
-    uint64_t next_startcode;     ///< stores the next startcode if it has alraedy been parsed but the stream isnt seekable
+    uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;
     unsigned int max_distance;
     unsigned int time_base_count;

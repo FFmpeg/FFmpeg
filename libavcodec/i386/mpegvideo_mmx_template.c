@@ -103,7 +103,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     assert((7&(int)(&temp_block[0])) == 0); //did gcc align it correctly?
 
     //s->fdct (block);
-    RENAMEl(ff_fdct) (block); //cant be anything else ...
+    RENAMEl(ff_fdct) (block); //cannot be anything else ...
 
     if(s->dct_error_sum)
         s->denoise_dct(s, block);

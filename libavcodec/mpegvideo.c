@@ -372,7 +372,7 @@ static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst, AVFrame *sr
  * The pixels are allocated/set by calling get_buffer() if shared=0
  */
 static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
-    const int big_mb_num= s->mb_stride*(s->mb_height+1) + 1; //the +1 is needed so memset(,,stride*height) doesnt sig11
+    const int big_mb_num= s->mb_stride*(s->mb_height+1) + 1; //the +1 is needed so memset(,,stride*height) does not sig11
     const int mb_array_size= s->mb_stride*s->mb_height;
     const int b8_array_size= s->b8_stride*s->mb_height*2;
     const int b4_array_size= s->b4_stride*s->mb_height*4;
@@ -492,7 +492,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*21*2); //(width + edge + align)*interlaced*MBsize*tolerance
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21;
 
-     //FIXME should be linesize instead of s->width*2 but that isnt known before get_buffer()
+     //FIXME should be linesize instead of s->width*2 but that is not known before get_buffer()
     CHECKED_ALLOCZ(s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t))
     s->rd_scratchpad=   s->me.scratchpad;
     s->b_scratchpad=    s->me.scratchpad;
@@ -1633,7 +1633,7 @@ alloc:
     s->error_resilience= avctx->error_resilience;
 
     /* set dequantizer, we can't do it during init as it might change for mpeg4
-       and we can't do it in the header decode as init isnt called for mpeg4 there yet */
+       and we can't do it in the header decode as init is not called for mpeg4 there yet */
     if(s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO){
         s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;

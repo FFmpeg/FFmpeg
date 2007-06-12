@@ -91,7 +91,7 @@
 struct NSVf_header {
     uint32_t chunk_tag; /* 'NSVf' */
     uint32_t chunk_size;
-    uint32_t file_size; /* max 4GB ??? noone learns anything it seems :^) */
+    uint32_t file_size; /* max 4GB ??? no one learns anything it seems :^) */
     uint32_t file_length; //unknown1;  /* what about MSB of file_size ? */
     uint32_t info_strings_size; /* size of the info strings */ //unknown2;
     uint32_t table_entries;
@@ -197,7 +197,7 @@ static const AVCodecTag nsv_codec_video_tags[] = {
     { CODEC_ID_VP4, MKTAG('V', 'P', '4', ' ') },
     { CODEC_ID_VP4, MKTAG('V', 'P', '4', '0') },
 */
-    { CODEC_ID_XVID, MKTAG('X', 'V', 'I', 'D') }, /* cf sample xvid decoder from nsv_codec_sdk.zip */
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') }, /* cf sample xvid decoder from nsv_codec_sdk.zip */
     { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', '3') },
     { 0, 0 },
 };

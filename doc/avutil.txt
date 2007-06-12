@@ -34,4 +34,4 @@ Goals:
 * Modular (few interdependencies and the possibility of disabling individual parts during ./configure)
 * Small (source and object)
 * Efficient (low CPU and memory usage)
-* Useful (avoid useless features almost noone needs)
+* Useful (avoid useless features almost no one needs)

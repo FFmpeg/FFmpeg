@@ -2885,7 +2885,7 @@ extern unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 /**
  * Parses \p str and put in \p width_ptr and \p height_ptr the detected values.
  *
- * @return 0 in case of a successfull parsing, a negative value otherwise
+ * @return 0 in case of a successful parsing, a negative value otherwise
  * @param[in] str the string to parse: it has to be a string in the format
  * <width>x<height> or a valid video frame size abbreviation.
  * @param[in,out] width_ptr pointer to the variable which will contain the detected
@@ -2898,7 +2898,7 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
 /**
  * Parses \p str and put in \p frame_rate the detected values.
  *
- * @return 0 in case of a successfull parsing, a negative value otherwise
+ * @return 0 in case of a successful parsing, a negative value otherwise
  * @param[in] str the string to parse: it has to be a string in the format
  * <frame_rate_nom>/<frame_rate_den>, a float number or a valid video rate abbreviation
  * @param[in,out] frame_rate pointer to the AVRational which will contain the detected

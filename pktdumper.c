@@ -46,13 +46,13 @@ int main(int argc, char **argv)
     AVPacket pkt;
     int64_t pktnum = 0;
     int64_t maxpkts = 0;
-    int dontquit = 0;
+    int donotquit = 0;
     int nowrite = 0;
     int err;
 
     if ((argc > 1) && !strncmp(argv[1], "-", 1)) {
         if (strchr(argv[1], 'w'))
-            dontquit = 1;
+            donotquit = 1;
         if (strchr(argv[1], 'n'))
             nowrite = 1;
         argv++;
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
             break;
     }
 
-    while (dontquit)
+    while (donotquit)
         sleep(60);
 
     return 0;

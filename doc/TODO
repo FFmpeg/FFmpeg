@@ -79,7 +79,7 @@ unassigned TODO: (unordered)
 - macroblock based pixel format (better cache locality, somewhat complex, one paper claimed it faster for high res)
 - NUT muxer
 - seeking regression test
-- regression tests for codecs which dont have an encoder (I+P frame bitstream in svn)
+- regression tests for codecs which do not have an encoder (I+P-frame bitstream in svn)
 - add support for using mplayers video filters to ffmpeg
 - reverse engeneer RV30/RV40
 - finish implementation of WMV2 j-picture

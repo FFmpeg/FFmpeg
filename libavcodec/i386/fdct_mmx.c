@@ -475,7 +475,7 @@ static av_always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, cons
 
 static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
 {
-//FIXME reorder (i dont have a old mmx only cpu here to benchmark ...)
+//FIXME reorder (I do not have an old MMX-only CPU here to benchmark ...)
     movd_m2r(*(in + 6), mm1);
     punpcklwd_m2r(*(in + 4), mm1);
     movq_r2r(mm1, mm2);

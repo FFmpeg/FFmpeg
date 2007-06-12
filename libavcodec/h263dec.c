@@ -141,7 +141,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
         if(pos<0) pos=0; // padding is not really read so this might be -1
         return pos;
     }else{
-        if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
+        if(pos==0) pos=1; //avoid infinite loops (i doubt that is needed but ...)
         if(pos+10>buf_size) pos=buf_size; // oops ;)
 
         return pos;
@@ -382,7 +382,8 @@ retry:
             return -1;
     }
 
-    //we need to set current_picture_ptr before reading the header, otherwise we cant store anyting im there
+    /* We need to set current_picture_ptr before reading the header,
+     * otherwise we cannot store anyting in there */
     if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
@@ -621,7 +622,7 @@ retry:
     ff_er_frame_start(s);
 
     //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
-    //which isnt available before MPV_frame_start()
+    //which is not available before MPV_frame_start()
     if (s->msmpeg4_version==5){
         if(!ENABLE_WMV2_DECODER || ff_wmv2_decode_secondary_picture_header(s) < 0)
             return -1;

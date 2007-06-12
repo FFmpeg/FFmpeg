@@ -515,7 +515,7 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
     infos->au_headers = av_malloc(sizeof(struct AUHeaders) * infos->nb_au_headers);
 
     /* XXX: We handle multiple AU Section as only one (need to fix this for interleaving)
-       In my test, the faad decoder doesnt behave correctly when sending each AU one by one
+       In my test, the FAAD decoder does not behave correctly when sending each AU one by one
        but does when sending the whole as one big packet...  */
     infos->au_headers[0].size = 0;
     infos->au_headers[0].index = 0;

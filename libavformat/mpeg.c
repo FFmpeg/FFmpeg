@@ -822,7 +822,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
         stuffing_size = payload_size - av_fifo_size(&stream->fifo);
 
-        // first byte doesnt fit -> reset pts/dts + stuffing
+        // first byte does not fit -> reset pts/dts + stuffing
         if(payload_size <= trailer_size && pts != AV_NOPTS_VALUE){
             int timestamp_len=0;
             if(dts != pts)

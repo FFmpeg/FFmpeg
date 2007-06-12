@@ -413,7 +413,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                 get_str16_nolen(pb, name_len, name, sizeof(name));
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
-                value_num= get_le16(pb);//we should use get_value() here but it doesnt work 2 is le16 here but le32 elsewhere
+                value_num= get_le16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
                 url_fskip(pb, value_len - 2);
 
                 if(stream_num<128){

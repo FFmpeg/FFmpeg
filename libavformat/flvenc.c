@@ -69,7 +69,7 @@ static int get_audio_flags(AVCodecContext *enc){
             flags |= FLV_SAMPLERATE_SPECIAL;
             break;
         default:
-            av_log(enc, AV_LOG_ERROR, "flv doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
+            av_log(enc, AV_LOG_ERROR, "flv does not support that sample rate, choose from (44100, 22050, 11025).\n");
             return -1;
     }
 

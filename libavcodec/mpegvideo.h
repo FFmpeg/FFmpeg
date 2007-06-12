@@ -133,7 +133,7 @@ typedef struct Picture{
 #define IS_ACPRED(a)     ((a)&MB_TYPE_ACPRED)
 #define IS_QUANT(a)      ((a)&MB_TYPE_QUANT)
 #define IS_DIR(a, part, list) ((a) & (MB_TYPE_P0L0<<((part)+2*(list))))
-#define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0|MB_TYPE_P1L0)<<(2*(list)))) ///< does this mb use listX, note doesnt work if subMBs
+#define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0|MB_TYPE_P1L0)<<(2*(list)))) ///< does this mb use listX, note does not work if subMBs
 #define HAS_CBP(a)        ((a)&MB_TYPE_CBP)
 
     int field_poc[2];           ///< h264 top/bottom POC
@@ -161,9 +161,9 @@ struct MpegEncContext;
 typedef struct MotionEstContext{
     AVCodecContext *avctx;
     int skip;                          ///< set if ME is skipped for the current MB
-    int co_located_mv[4][2];           ///< mv from last p frame for direct mode ME
+    int co_located_mv[4][2];           ///< mv from last P-frame for direct mode ME
     int direct_basis_mv[4][2];
-    uint8_t *scratchpad;               ///< data area for the me algo, so that the ME doesnt need to malloc/free
+    uint8_t *scratchpad;               ///< data area for the ME algo, so that the ME does not need to malloc/free
     uint8_t *best_mb;
     uint8_t *temp_mb[2];
     uint8_t *temp;
@@ -248,8 +248,8 @@ typedef struct MpegEncContext {
 
     /* sequence parameters */
     int context_initialized;
-    int input_picture_number;  ///< used to set pic->display_picture_number, shouldnt be used for/by anything else
-    int coded_picture_number;  ///< used to set pic->coded_picture_number, shouldnt be used for/by anything else
+    int input_picture_number;  ///< used to set pic->display_picture_number, should not be used for/by anything else
+    int coded_picture_number;  ///< used to set pic->coded_picture_number, should not be used for/by anything else
     int picture_number;       //FIXME remove, unclear definition
     int picture_in_gop_number; ///< 0-> first pic in gop, ...
     int b_frames_since_non_b;  ///< used for encoding, relative to not yet reordered input

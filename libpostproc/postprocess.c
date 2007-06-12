@@ -47,8 +47,8 @@ LinBlendDeinterlace     e               E       E*
 MedianDeinterlace#      E       Ec      Ec
 TempDeNoiser#           E               e       e       Ec
 
-* i dont have a 3dnow CPU -> its untested, but noone said it doesnt work so it seems to work
-# more or less selfinvented filters so the exactness isnt too meaningfull
+* i do not have a 3DNow! CPU -> it is untested, but no one said it does not work so it seems to work
+# more or less selfinvented filters so the exactness is not too meaningful
 E = Exact implementation
 e = allmost exact implementation (slightly different rounding,...)
 a = alternative / approximate impl
@@ -398,8 +398,8 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
  * Experimental Filter 1 (Horizontal)
  * will not damage linear gradients
  * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
- * can only smooth blocks at the expected locations (it cant smooth them if they did move)
- * MMX2 version does correct clipping C version doesnt
+ * can only smooth blocks at the expected locations (it cannot smooth them if they did move)
+ * MMX2 version does correct clipping C version does not
  * not identical with the vertical one
  */
 static inline void horizX1Filter(uint8_t *src, int stride, int QP)
@@ -646,7 +646,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #include "postprocess_template.c"
 #endif
 
-// minor note: the HAVE_xyz is messed up after that line so dont use it
+// minor note: the HAVE_xyz is messed up after that line so do not use it.
 
 static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
@@ -655,9 +655,9 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
         PPMode *ppMode= (PPMode *)vm;
         c->ppMode= *ppMode; //FIXME
 
-        // useing ifs here as they are faster than function pointers allthough the
-        // difference wouldnt be messureable here but its much better because
-        // someone might exchange the cpu whithout restarting mplayer ;)
+        // Using ifs here as they are faster than function pointers although the
+        // difference would not be measureable here but it is much better because
+        // someone might exchange the CPU whithout restarting MPlayer ;)
 #ifdef RUNTIME_CPUDETECT
 #if defined(ARCH_X86)
         // ordered per speed fasterst first
@@ -961,7 +961,7 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
 
         for(i=0; i<3; i++)
         {
-                //Note:the +17*1024 is just there so i dont have to worry about r/w over te end
+                //Note: The +17*1024 is just there so i do not have to worry about r/w over the end.
                 reallocAlign((void **)&c->tempBlured[i], 8, stride*mbHeight*16 + 17*1024);
                 reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
         }

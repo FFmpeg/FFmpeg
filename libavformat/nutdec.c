@@ -116,7 +116,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
     uint64_t state=0;
 
     if(pos >= 0)
-        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream isnt seekable, but that shouldnt matter, as in this case we simply start where we are currently
+        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we are currently
 
     while(!url_feof(bc)){
         state= (state<<8) | get_byte(bc);
@@ -836,7 +836,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
                 pos= pos2;
-            //FIXME dir but i think it doesnt matter
+            //FIXME dir but i think it does not matter
         }
         dummy.pos= pos;
         sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);

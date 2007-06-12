@@ -188,7 +188,7 @@ static int MP3lame_encode_frame(AVCodecContext *avctx,
             s->buffer_index -= len;
 
             memmove(s->buffer, s->buffer+len, s->buffer_index);
-            //FIXME fix the audio codec API, so we dont need the memcpy()
+            //FIXME fix the audio codec API, so we do not need the memcpy()
 /*for(i=0; i<len; i++){
     av_log(avctx, AV_LOG_DEBUG, "%2X ", frame[i]);
 }*/

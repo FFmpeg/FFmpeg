@@ -470,7 +470,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             sf[1] = sf[2] = sf[0];
             break;
         default:
-            assert(0); //cant happen
+            assert(0); //cannot happen
             code = 0;           /* kill warning */
         }
 

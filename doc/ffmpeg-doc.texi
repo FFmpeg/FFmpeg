@@ -1595,7 +1595,7 @@ please use av_log() instead.
    list, reference the thread in the log message.
 @item
     Do NOT commit to code actively maintained by others without permission.
-    Send a patch to ffmpeg-devel instead. If noone answers within a reasonable
+    Send a patch to ffmpeg-devel instead. If no one answers within a reasonable
     timeframe (12h for build failures and security fixes, 3 days small changes,
     1 week for big patches) then commit your patch if you think it is OK.
     Also note, the maintainer can simply ask for more time to review!

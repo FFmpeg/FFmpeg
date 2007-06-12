@@ -532,7 +532,7 @@ static int h261_decode_gob(H261Context *h){
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= get_bits_count(&s->gb)>>3;
-    if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
+    if(pos==0) pos=1; //avoid infinite loops (i doubt that is needed but ...)
     if(pos+10>buf_size) pos=buf_size; // oops ;)
 
     return pos;
@@ -565,7 +565,7 @@ retry:
             return -1;
     }
 
-    //we need to set current_picture_ptr before reading the header, otherwise we cant store anyting im there
+    //we need to set current_picture_ptr before reading the header, otherwise we cannot store anyting im there
     if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
@@ -580,7 +580,7 @@ retry:
     }
 
     if (s->width != avctx->coded_width || s->height != avctx->coded_height){
-        ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
+        ParseContext pc= s->parse_context; //FIXME move this demuxing hack to libavformat
         s->parse_context.buffer=0;
         MPV_common_end(s);
         s->parse_context= pc;

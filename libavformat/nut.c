@@ -85,7 +85,7 @@ typedef struct {
     int64_t packet_start[3]; //0-> startcode less, 1-> short startcode 2-> long startcodes
     FrameCode frame_code[256];
     unsigned int stream_count;
-    uint64_t next_startcode;     ///< stores the next startcode if it has alraedy been parsed but the stream isnt seekable
+    uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;
     int max_distance;
     int max_short_distance;
@@ -359,7 +359,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
     uint64_t state=0;
 
     if(pos >= 0)
-        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream isnt seekable, but that shouldnt matter, as in this case we simply start where we are currently
+        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we are currently
 
     while(!url_feof(bc)){
         state= (state<<8) | get_byte(bc);

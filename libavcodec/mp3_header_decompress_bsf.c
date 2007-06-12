@@ -60,7 +60,7 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
             break;
     }
     if(bitrate_index == 30){
-        av_log(avctx, AV_LOG_ERROR, "couldnt find bitrate_index\n");
+        av_log(avctx, AV_LOG_ERROR, "Could not find bitrate_index.\n");
         return -1;
     }
 

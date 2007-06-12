@@ -756,7 +756,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
                     int maxval = 1;
                     if (c->books[l] != -1)
                         maxval = venc->codebooks[c->books[l]].nentries;
-                    // coded could be -1, but this still works, cause thats 0
+                    // coded could be -1, but this still works, cause that is 0
                     if (coded[counter + k] < maxval) break;
                 }
                 assert(l != csub);

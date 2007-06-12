@@ -499,7 +499,7 @@ static int svq1_motion_inter_4v_block (MpegEncContext *s, GetBitContext *bitbuf,
     int mvx= pmv[i]->x + (i&1)*16;
     int mvy= pmv[i]->y + (i>>1)*16;
 
-    ///XXX /FIXME cliping or padding?
+    ///XXX /FIXME clipping or padding?
     if(y + (mvy >> 1)<0)
        mvy= 0;
     if(x + (mvx >> 1)<0)

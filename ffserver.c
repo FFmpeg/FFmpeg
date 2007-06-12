@@ -1299,7 +1299,7 @@ static int http_parse_request(HTTPContext *c)
         }
     }
 
-    /* If already streaming this feed, dont let start an another feeder */
+    /* If already streaming this feed, do not let start another feeder. */
     if (stream->feed_opened) {
         snprintf(msg, sizeof(msg), "This feed is already being received.");
         goto send_error;

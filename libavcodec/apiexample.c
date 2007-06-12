@@ -336,11 +336,11 @@ void video_decode_example(const char *outfilename, const char *filename)
     picture= avcodec_alloc_frame();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
-        c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
+        c->flags|= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
-    /* for some codecs, such as msmpeg4 and mpeg4, width and height
-       MUST be initialized there because these info are not available
-       in the bitstream */
+    /* For some codecs, such as msmpeg4 and mpeg4, width and height
+       MUST be initialized there because this information is not
+       available in the bitstream. */
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {

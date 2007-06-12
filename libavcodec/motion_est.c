@@ -279,7 +279,9 @@ void ff_init_me(MpegEncContext *s){
         c->uvstride=  8*s->mb_width + 16;
     }
 
-    // 8x8 fullpel search would need a 4x4 chroma compare, which we dont have yet, and even if we had the motion estimation code doesnt expect it
+    /* 8x8 fullpel search would need a 4x4 chroma compare, which we do
+     * not have yet, and even if we had, the motion estimation code
+     * does not expect it. */
     if(s->codec_id != CODEC_ID_SNOW){
         if((c->avctx->me_cmp&FF_CMP_CHROMA)/* && !s->dsp.me_cmp[2]*/){
             s->dsp.me_cmp[2]= zero_cmp;
@@ -1980,7 +1982,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
             type |= CANDIDATE_MB_TYPE_BIDIR_I;
         }
          //FIXME something smarter
-        if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //dont try direct mode if its invalid for this MB
+        if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //do not try direct mode if it is invalid for this MB
         if(s->codec_id == CODEC_ID_MPEG4 && type&CANDIDATE_MB_TYPE_DIRECT && s->flags&CODEC_FLAG_MV0 && *(uint32_t*)s->b_direct_mv_table[xy])
             type |= CANDIDATE_MB_TYPE_DIRECT0;
 #if 0

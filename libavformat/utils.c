@@ -293,7 +293,7 @@ static const char* format_to_name(void* ptr)
 }
 
 #define OFFSET(x) offsetof(AVFormatContext,x)
-#define DEFAULT 0 //should be NAN but it doesnt work as its not a constant in glibc as required by ANSI/ISO C
+#define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
@@ -632,7 +632,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (delay &&
         pc && pc->pict_type != FF_B_TYPE)
         presentation_delayed = 1;
-    /* this may be redundant, but it shouldnt hurt */
+    /* This may be redundant, but it should not hurt. */
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
@@ -992,7 +992,7 @@ int av_add_index_entry(AVStream *st,
                 return -1;
             memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
             st->nb_index_entries++;
-        }else if(ie->pos == pos && distance < ie->min_distance) //dont reduce the distance
+        }else if(ie->pos == pos && distance < ie->min_distance) //do not reduce the distance
             distance= ie->min_distance;
     }
 

@@ -329,7 +329,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     }
 
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
-        blkalign = enc->frame_size; //this is wrong, but seems many demuxers dont work if this is set correctly
+        blkalign = enc->frame_size; //this is wrong, but it seems many demuxers do not work if this is set correctly
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->codec_id == CODEC_ID_ADPCM_G726) { //
         blkalign = 1;

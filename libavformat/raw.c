@@ -316,7 +316,7 @@ static int video_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     /* for mjpeg, specify frame rate */
-    /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
+    /* for mpeg4 specify it too (most mpeg4 streams do not have the fixed_vop_rate set ...)*/
     if (ap->time_base.num) {
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||

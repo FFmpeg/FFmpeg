@@ -1182,7 +1182,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     /* iTunes meta data */
     mov_write_meta_tag(pb, mov, s);
 
-  if(mov->mode == MODE_MOV){ // the title field breaks gtkpod with mp4 and my suspicion is that stuff isnt valid in mp4
+  if(mov->mode == MODE_MOV){ // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
     /* Requirements */
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;

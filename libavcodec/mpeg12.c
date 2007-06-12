@@ -1000,7 +1000,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
                 /* store the vlc & sign at once */
                 put_bits(&s->pb, table_vlc[code][1]+1, (table_vlc[code][0]<<1) + sign);
             } else {
-                /* escape seems to be pretty rare <5% so i dont optimize it */
+                /* escape seems to be pretty rare <5% so I do not optimize it */
                 put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
                 /* escape: only clip in this case */
                 put_bits(&s->pb, 6, run);
@@ -3178,18 +3178,18 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                 int mb_y= start_code - SLICE_MIN_START_CODE;
 
                 if(s2->last_picture_ptr==NULL){
-                /* skip b frames if we dont have reference frames */
+                /* Skip B-frames if we do not have reference frames. */
                     if(s2->pict_type==B_TYPE) break;
-                /* skip P frames if we dont have reference frame no valid header */
+                /* Skip P-frames if we do not have reference frame no valid header. */
 //                    if(s2->pict_type==P_TYPE && s2->first_field && !s2->first_slice) break;
                 }
-                /* skip b frames if we are in a hurry */
+                /* Skip B-frames if we are in a hurry. */
                 if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
                 if(  (avctx->skip_frame >= AVDISCARD_NONREF && s2->pict_type==B_TYPE)
                     ||(avctx->skip_frame >= AVDISCARD_NONKEY && s2->pict_type!=I_TYPE)
                     || avctx->skip_frame >= AVDISCARD_ALL)
                     break;
-                /* skip everything if we are in a hurry>=5 */
+                /* Skip everything if we are in a hurry>=5. */
                 if(avctx->hurry_up>=5) break;
 
                 if (!s->mpeg_enc_ctx_allocated) break;

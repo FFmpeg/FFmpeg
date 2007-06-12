@@ -62,7 +62,7 @@ void thread_func(void *v){
 
 /**
  * free what has been allocated by avcodec_thread_init().
- * must be called after decoding has finished, especially dont call while avcodec_thread_execute() is running
+ * must be called after decoding has finished, especially do not call while avcodec_thread_execute() is running
  */
 void avcodec_thread_free(AVCodecContext *s){
     ThreadContext *c= s->thread_opaque;

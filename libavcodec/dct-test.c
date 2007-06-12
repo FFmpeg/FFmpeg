@@ -337,7 +337,7 @@ void dct_error(const char *name, int is_idct,
             for(i=0; i<64; i++)
                 block[i]= block1[i];
 //            memcpy(block, block1, sizeof(DCTELEM) * 64);
-// dont memcpy especially not fastmemcpy because it does movntq !!!
+// do not memcpy especially not fastmemcpy because it does movntq !!!
             fdct_func(block);
         }
         it1 += NB_ITS_SPEED;
@@ -497,7 +497,7 @@ void idct248_error(const char *name,
             for(i=0; i<64; i++)
                 block[i]= block1[i];
 //            memcpy(block, block1, sizeof(DCTELEM) * 64);
-// dont memcpy especially not fastmemcpy because it does movntq !!!
+// do not memcpy especially not fastmemcpy because it does movntq !!!
             idct248_put(img_dest, 8, block);
         }
         it1 += NB_ITS_SPEED;

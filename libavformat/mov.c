@@ -751,7 +751,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 break;
             }
 
-            //Read QT version 1 fields. In version 0 theese dont exist
+            //Read QT version 1 fields. In version 0 these do not exist.
             dprintf(c->fc, "version =%d, isom =%d\n",version,c->isom);
             if(!c->isom) {
                 if(version==1) {
@@ -1423,7 +1423,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     for(i=0; i<mov->total_streams; i++) {
-        /* dont need those anymore */
+        /* Do not need those anymore. */
         av_freep(&mov->streams[i]->chunk_offsets);
         av_freep(&mov->streams[i]->sample_to_chunk);
         av_freep(&mov->streams[i]->sample_sizes);

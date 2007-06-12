@@ -158,7 +158,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_RAWPICTURE    0x0020 /**< format wants AVPicture structure for
                                       raw picture data */
 #define AVFMT_GLOBALHEADER  0x0040 /**< format wants global header */
-#define AVFMT_NOTIMESTAMPS  0x0080 /**< format doesnt need / has any timestamps */
+#define AVFMT_NOTIMESTAMPS  0x0080 /**< format does not need / have any timestamps */
 #define AVFMT_GENERIC_INDEX 0x0100 /**< use generic index building code */
 
 typedef struct AVOutputFormat {
@@ -295,10 +295,10 @@ typedef struct AVStream {
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
     /* ffmpeg.c private use */
     int stream_copy; /**< if set, just copy stream */
-    enum AVDiscard discard; ///< selects which packets can be discarded at will and dont need to be demuxed
+    enum AVDiscard discard; ///< selects which packets can be discarded at will and do not need to be demuxed
     //FIXME move stuff to a flags field?
     /** quality, as it has been removed from AVCodecContext and put in AVVideoFrame
-     * MN:dunno if thats the right place, for it */
+     * MN: dunno if that is the right place for it */
     float quality;
     /** decoding: pts of the first frame of the stream, in stream time base. */
     int64_t start_time;
@@ -546,7 +546,7 @@ AVFormatContext *av_alloc_format_context(void);
  *
  * @param ic media file handle
  * @return >=0 if OK. AVERROR_xxx if error.
- * @todo let user decide somehow what information is needed so we dont waste time geting stuff the user doesnt need
+ * @todo Let user decide somehow what information is needed so we do not waste time geting stuff the user does not need.
  */
 int av_find_stream_info(AVFormatContext *ic);
 
@@ -666,7 +666,7 @@ int av_add_index_entry(AVStream *st,
 
 /**
  * Does a binary search using av_index_search_timestamp() and AVCodec.read_timestamp().
- * this isnt supposed to be called directly by a user application, but by demuxers
+ * This is not supposed to be called directly by a user application, but by demuxers.
  * @param target_ts target timestamp in the time base of the given stream
  * @param stream_index stream number
  */
@@ -676,7 +676,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
  * Updates cur_dts of all streams based on given timestamp and AVStream.
  *
  * Stream ref_st unchanged, others set cur_dts in their native timebase
- * only needed for timestamp wrapping or if (dts not set and pts!=dts)
+ * only needed for timestamp wrapping or if (dts not set and pts!=dts).
  * @param timestamp new dts expressed in time_base of param ref_st
  * @param ref_st reference stream giving time_base of param timestamp
  */
@@ -684,7 +684,7 @@ void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
 
 /**
  * Does a binary search using read_timestamp().
- * this isnt supposed to be called directly by a user application, but by demuxers
+ * This is not supposed to be called directly by a user application, but by demuxers.
  * @param target_ts target timestamp in the time base of the given stream
  * @param stream_index stream number
  */
@@ -694,8 +694,8 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 
 /**
- * allocate the stream private data and write the stream header to an
- * output media file
+ * Allocate the stream private data and write the stream header to an
+ * output media file.
  *
  * @param s media file handle
  * @return 0 if OK. AVERROR_xxx if error.

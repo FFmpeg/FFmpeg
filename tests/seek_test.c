@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
     ret = av_open_input_file(&ic, filename, NULL, 0, NULL);
     if (ret < 0) {
-        fprintf(stderr, "cant open %s\n", filename);
+        fprintf(stderr, "cannot open %s\n", filename);
         exit(1);
     }
 

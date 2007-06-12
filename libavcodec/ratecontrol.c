@@ -160,7 +160,7 @@ int ff_rate_control_init(MpegEncContext *s)
 
             next= strchr(p, ';');
             if(next){
-                (*next)=0; //sscanf in unbelieavle slow on looong strings //FIXME copy / dont write
+                (*next)=0; //sscanf in unbelievably slow on looong strings //FIXME copy / do not write
                 next++;
             }
             e= sscanf(p, " in:%d ", &picture_number);
@@ -396,7 +396,7 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
         else if(q < last_q - maxdiff) q= last_q - maxdiff;
     }
 
-    rcc->last_qscale_for[pict_type]= q; //Note we cant do that after blurring
+    rcc->last_qscale_for[pict_type]= q; //Note we cannot do that after blurring
 
     if(pict_type!=B_TYPE)
         rcc->last_non_b_pict_type= pict_type;
@@ -605,7 +605,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         bits_tab[i]= bits;
     }
 
-    /* handle qmin/qmax cliping */
+    /* handle qmin/qmax clipping */
     if(s->flags&CODEC_FLAG_NORMALIZE_AQP){
         float factor= bits_sum/cplx_sum;
         for(i=0; i<s->mb_num; i++){

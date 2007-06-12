@@ -217,9 +217,9 @@ static AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
         c->max_b_frames = 2;
     }
     if (c->codec_id == CODEC_ID_MPEG1VIDEO){
-        /* needed to avoid using macroblocks in which some coeffs overflow
-           this doesnt happen with normal video, it just happens here as the
-           motion of the chroma plane doesnt match the luma plane */
+        /* Needed to avoid using macroblocks in which some coeffs overflow.
+           This does not happen with normal video, it just happens here as
+           the motion of the chroma plane does not match the luma plane. */
         c->mb_decision=2;
     }
     // some formats want stream headers to be separate

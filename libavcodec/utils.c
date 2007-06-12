@@ -273,7 +273,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         pixel_size= picture.linesize[0]*8 / w;
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", (int)picture.data[1], w, h, s->pix_fmt);
         assert(pixel_size>=1);
-            //FIXME next ensures that linesize= 2^x uvlinesize, thats needed because some MC code assumes it
+            //FIXME next ensures that linesize= 2^x uvlinesize, that is needed because some MC code assumes it
         if(pixel_size == 3*8)
             w= ALIGN(w, STRIDE_ALIGN<<h_chroma_shift);
         else
@@ -402,7 +402,7 @@ static const char* context_to_name(void* ptr) {
 }
 
 #define OFFSET(x) offsetof(AVCodecContext,x)
-#define DEFAULT 0 //should be NAN but it doesnt work as its not a constant in glibc as required by ANSI/ISO C
+#define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define A AV_OPT_FLAG_AUDIO_PARAM
@@ -1357,8 +1357,8 @@ typedef struct {
 static AbvEntry frame_abvs[] = {
     { "ntsc",      720, 480, 30000, 1001 },
     { "pal",       720, 576,    25,    1 },
-    { "qntsc",     352, 240, 30000, 1001 }, /* VCD compliant ntsc */
-    { "qpal",      352, 288,    25,    1 }, /* VCD compliant pal */
+    { "qntsc",     352, 240, 30000, 1001 }, /* VCD compliant NTSC */
+    { "qpal",      352, 288,    25,    1 }, /* VCD compliant PAL */
     { "sntsc",     640, 480, 30000, 1001 }, /* square pixel NTSC */
     { "spal",      768, 576,    25,    1 }, /* square pixel PAL */
     { "film",      352, 240,    24,    1 },

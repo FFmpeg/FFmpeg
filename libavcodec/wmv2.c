@@ -194,8 +194,9 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
     return 0;
 }
 
-// nearly idential to wmv1 but thats just because we dont use the useless M$ crap features
-// its duplicated here in case someone wants to add support for these carp features
+/* Nearly identical to wmv1 but that is just because we do not use the
+ * useless M$ crap features. It is duplicated here in case someone wants
+ * to add support for these crap features. */
 void ff_wmv2_encode_mb(MpegEncContext * s,
                        DCTELEM block[6][64],
                        int motion_x, int motion_y)

@@ -2112,7 +2112,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
             my= ref_my;
         }
     }
-    //FIXME if mb_cmp != SSE then intra cant be compared currently and mb_penalty vs. lambda2
+    //FIXME if mb_cmp != SSE then intra cannot be compared currently and mb_penalty vs. lambda2
 
   //  subpel search
     base_bits= get_rac_count(&s->c) - 8*(s->c.bytestream - s->c.bytestream_start);
@@ -2892,7 +2892,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     }
     *b= backup;
 
-    return av_clip(((ab<<LOG2_OBMC_MAX) + aa/2)/aa, 0, 255); //FIXME we shouldnt need cliping
+    return av_clip(((ab<<LOG2_OBMC_MAX) + aa/2)/aa, 0, 255); //FIXME we should not need clipping
 }
 
 static inline int get_block_bits(SnowContext *s, int x, int y, int w){
@@ -3276,7 +3276,7 @@ static void iterative_me(SnowContext *s){
                 for(i=0; i<3; i++)
                     color[i]= get_dc(s, mb_x, mb_y, i);
 
-                // get previous score (cant be cached due to OBMC)
+                // get previous score (cannot be cached due to OBMC)
                 if(pass > 0 && (block->type&BLOCK_INTRA)){
                     int color0[3]= {block->color[0], block->color[1], block->color[2]};
                     check_block(s, mb_x, mb_y, color0, 1, *obmc_edged, &best_rd);
