@@ -204,7 +204,7 @@ static int udp_ipv6_set_local(URLContext *h) {
     return -1;
 }
 
-#endif
+#endif /* CONFIG_IPV6 */
 
 
 /**
@@ -384,7 +384,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 goto fail;
         }
     }
-#endif
+#endif /* CONFIG_IPV6 */
 
     if (is_output) {
         /* limit the tx buf size to limit latency */
