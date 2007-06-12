@@ -373,7 +373,8 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
  * Experimental implementation of the filter (Algorithm 1) described in a paper from Ramkishor & Karandikar
  * values are correctly clipped (MMX2)
  * values are wraparound (C)
- * conclusion: its fast, but introduces ugly horizontal patterns if there is a continious gradient
+ * Conclusion: It is fast, but introduces ugly horizontal patterns
+ * if there is a continuous gradient.
         0 8 16 24
         x = 8
         x/2 = 4
@@ -3498,7 +3499,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         );
 
 #elif defined(HAVE_3DNOW)
-//FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
+//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
 /*                        prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
                         prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
                         prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
@@ -3642,7 +3643,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         );
 
 #elif defined(HAVE_3DNOW)
-//FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
+//FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
 /*                        prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
                         prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
                         prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);

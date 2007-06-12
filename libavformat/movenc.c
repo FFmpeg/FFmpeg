@@ -78,7 +78,7 @@ typedef struct MOVContext {
     MOVTrack tracks[MAX_STREAMS];
 } MOVContext;
 
-//FIXME supprt 64bit varaint with wide placeholders
+//FIXME support 64 bit variant with wide placeholders
 static offset_t updateSize (ByteIOContext *pb, offset_t pos)
 {
     offset_t curpos = url_ftell(pb);

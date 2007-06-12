@@ -259,7 +259,7 @@ typedef struct AVIndexEntry {
     int64_t timestamp;
 #define AVINDEX_KEYFRAME 0x0001
     int flags:2;
-    int size:30; //yeah trying to keep the size of this small to reduce memory requirements (its 24 vs 32 byte due to possible 8byte align)
+    int size:30; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs 32 byte due to possible 8byte align).
     int min_distance;         /**< min distance between this and the previous keyframe, used to avoid unneeded searching */
 } AVIndexEntry;
 
@@ -720,10 +720,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *
  * The packet must contain one audio or video frame.
  * If the packets are already correctly interleaved the application should
- * call av_write_frame() instead as it is slightly faster, it is also important
- * to keep in mind that completly non interleaved input will need huge amounts
- * of memory to interleave with this, so its prefereable to interleave at the
- * demuxer level
+ * call av_write_frame() instead as it is slightly faster. It is also important
+ * to keep in mind that completely non-interleaved input will need huge amounts
+ * of memory to interleave with this, so it is preferable to interleave at the
+ * demuxer level.
  *
  * @param s media file handle
  * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...

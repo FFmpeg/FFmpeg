@@ -3205,7 +3205,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         return -1;
                     }
                 if(!s2->current_picture_ptr){
-                    av_log(avctx, AV_LOG_ERROR, "current_picture not initalized\n");
+                    av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
                     return -1;
                 }
 

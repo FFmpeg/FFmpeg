@@ -1169,7 +1169,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 decode_bgr_bitstream(s, width-1);
                 add_left_prediction_bgr32(p->data[0] + last_line+4, s->temp[0], width-1, &leftr, &leftg, &leftb);
 
-                for(y=s->height-2; y>=0; y--){ //yes its stored upside down
+                for(y=s->height-2; y>=0; y--){ //Yes it is stored upside down.
                     decode_bgr_bitstream(s, width);
 
                     add_left_prediction_bgr32(p->data[0] + p->linesize[0]*y, s->temp[0], width, &leftr, &leftg, &leftb);

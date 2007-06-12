@@ -184,10 +184,10 @@ Neighboring Blocks:
 left and top are set to the respective blocks unless they are outside of
 the image in which case they are set to the Null block
 
-top-left is set to the top left block unless its outside of the image in
+top-left is set to the top left block unless it is outside of the image in
 which case it is set to the left block
 
-if this block has no larger parent block or its at the left side of its
+if this block has no larger parent block or it is at the left side of its
 parent block and the top right block is not outside of the image then the
 top right block is used for top-right else the top-left block is used
 

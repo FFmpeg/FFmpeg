@@ -3386,7 +3386,7 @@ int ff_h263_resync(MpegEncContext *s){
         if(ret>=0)
             return 0;
     }
-    //ok, it's not where its supposed to be ...
+    //OK, it's not where it is supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
     left= s->gb.size_in_bits - get_bits_count(&s->gb);
@@ -4720,7 +4720,7 @@ retry:
         i += run;
         if (i >= 64){
             if(s->alt_inter_vlc && rl == &rl_inter && !s->mb_intra){
-                //looks like a hack but no, it's the way its supposed to work ...
+                //Looks like a hack but no, it's the way it is supposed to work ...
                 rl = &rl_intra_aic;
                 i = 0;
                 s->gb= gb;

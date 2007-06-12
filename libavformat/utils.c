@@ -423,7 +423,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     must_open_file = 1;
     if (fmt && (fmt->flags & AVFMT_NOFILE)) {
         must_open_file = 0;
-        pb= NULL; //FIXME this or memset(pb, 0, sizeof(ByteIOContext)); otherwise its uninitalized
+        pb= NULL; //FIXME this or memset(pb, 0, sizeof(ByteIOContext)); otherwise it is uninitialized
     }
 
     if (!fmt || must_open_file) {
@@ -1098,7 +1098,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 
     ts_max=
     ts_min= AV_NOPTS_VALUE;
-    pos_limit= -1; //gcc falsely says it may be uninitalized
+    pos_limit= -1; //gcc falsely says it may be uninitialized
 
     st= s->streams[stream_index];
     if(st->index_entries){

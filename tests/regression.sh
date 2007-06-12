@@ -577,7 +577,7 @@ fi
 ###################################
 #if [ -n "$do_vorbis" ] ; then
 # vorbis
-#disabled because its broken
+#disabled because it is broken
 #do_audio_encoding vorbis.asf "-ar 44100" "-acodec vorbis"
 #do_audio_decoding
 #fi

@@ -1446,7 +1446,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
 
     *dst_length= di;
     *consumed= si + 1;//+1 for the header
-//FIXME store exact number of bits in the getbitcontext (its needed for decoding)
+//FIXME store exact number of bits in the getbitcontext (it is needed for decoding)
     return dst;
 }
 

@@ -164,7 +164,7 @@ static int ff_h261_resync(H261Context *h){
             if(ret>=0)
                 return 0;
         }
-        //ok, its not where its supposed to be ...
+        //OK, it is not where it is supposed to be ...
         s->gb= s->last_resync_gb;
         align_get_bits(&s->gb);
         left= s->gb.size_in_bits - get_bits_count(&s->gb);

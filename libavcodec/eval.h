@@ -68,7 +68,7 @@ typedef struct ff_expr_s AVEvalExpr;
  * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
  * @param error pointer to a char* which is set to an error message if something goes wrong
- * @return AVEvalExpr which must be freed with ff_eval_free by the user when its not needed anymore
+ * @return AVEvalExpr which must be freed with ff_eval_free by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
 AVEvalExpr * ff_parse(char *s, const char **const_name,

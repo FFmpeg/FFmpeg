@@ -3139,7 +3139,7 @@ void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scant
     DCTELEM temp[64];
 
     if(last<=0) return;
-    //if(permutation[1]==1) return; //FIXME its ok but not clean and might fail for some perms
+    //if(permutation[1]==1) return; //FIXME it is ok but not clean and might fail for some permutations
 
     for(i=0; i<=last; i++){
         const int j= scantable[i];

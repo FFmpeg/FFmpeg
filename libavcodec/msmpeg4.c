@@ -88,7 +88,7 @@ int frame_count = 0;
 #include "msmpeg4data.h"
 #include "msmpeg4tab.h"
 
-#ifdef CONFIG_ENCODERS //strangely gcc includes this even if its not references
+#ifdef CONFIG_ENCODERS //strangely gcc includes this even if it is not references
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 #endif //CONFIG_ENCODERS
 
@@ -454,7 +454,7 @@ static void msmpeg4_encode_motion(MpegEncContext * s,
              mv->table_mv_bits[code],
              mv->table_mv_code[code]);
     if (code == mv->n) {
-        /* escape : code litterally */
+        /* escape : code literally */
         put_bits(&s->pb, 6, mx);
         put_bits(&s->pb, 6, my);
     }
@@ -983,7 +983,8 @@ static VLC v1_intra_cbpc_vlc;
 static VLC v1_inter_cbpc_vlc;
 static VLC inter_intra_vlc;
 
-/* this table is practically identical to the one from h263 except that its inverted */
+/* This table is practically identical to the one from h263
+ * except that it is inverted. */
 static void init_h263_dc_for_msmpeg4(void)
 {
         int level, uni_code, uni_len;
@@ -1380,7 +1381,7 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 }
 #endif
 
-/* this is identical to h263 except that its range is multiplied by 2 */
+/* This is identical to h263 except that its range is multiplied by 2. */
 static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
     int code, val, sign, shift;

@@ -441,11 +441,12 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         CHECKED_ALLOCZ(pic->pan_scan , 1 * sizeof(AVPanScan))
     }
 
-    //it might be nicer if the application would keep track of these but it would require a API change
+    /* It might be nicer if the application would keep track of these
+     * but it would require an API change. */
     memmove(s->prev_pict_types+1, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE-1);
     s->prev_pict_types[0]= s->pict_type;
     if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == B_TYPE)
-        pic->age= INT_MAX; // skipped MBs in b frames are quite rare in mpeg1/2 and its a bit tricky to skip them anyway
+        pic->age= INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
 
     return 0;
 fail: //for the CHECKED_ALLOCZ macro

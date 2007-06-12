@@ -1272,7 +1272,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         init_get_bits(&gb, buf, size);
 
-        //read bits & inital values
+        //read bits & initial values
         nb_bits = get_bits(&gb, 2)+2;
         //av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", nb_bits);
         table = swf_index_tables[nb_bits-2];

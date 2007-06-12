@@ -145,7 +145,8 @@ static RLTable rl_intra = {
     intra_level,
 };
 
-static const uint16_t inter_rvlc[170][2]={ //note this is identical to the intra rvlc except that its reordered
+/* Note this is identical to the intra rvlc except that it is reordered. */
+static const uint16_t inter_rvlc[170][2]={
 {0x0006,  3},{0x0001,  4},{0x0004,  5},{0x001C,  7},
 {0x003C,  8},{0x003D,  8},{0x007C,  9},{0x00FC, 10},
 {0x00FD, 10},{0x01FC, 11},{0x01FD, 11},{0x03FC, 12},

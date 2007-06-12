@@ -584,7 +584,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * a second pass over the line here, swapping the bytes.
                  */
                 pixel = 0xFF00;
-                if (0xFF00 != AV_RL16(&pixel)) /* Check if its not an LE Target */
+                if (0xFF00 != AV_RL16(&pixel)) /* Check if it is not an LE target */
                 {
                   pixel_ptr = y_ptr;
                   pixel_countdown = s->avctx->width;
