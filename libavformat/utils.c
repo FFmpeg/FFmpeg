@@ -2482,114 +2482,18 @@ void dump_format(AVFormatContext *ic,
     }
 }
 
-typedef struct {
-    const char *abv;
-    int width, height;
-    int frame_rate, frame_rate_base;
-} AbvEntry;
-
-static AbvEntry frame_abvs[] = {
-    { "ntsc",      720, 480, 30000, 1001 },
-    { "pal",       720, 576,    25,    1 },
-    { "qntsc",     352, 240, 30000, 1001 }, /* VCD compliant ntsc */
-    { "qpal",      352, 288,    25,    1 }, /* VCD compliant pal */
-    { "sntsc",     640, 480, 30000, 1001 }, /* square pixel ntsc */
-    { "spal",      768, 576,    25,    1 }, /* square pixel pal */
-    { "film",      352, 240,    24,    1 },
-    { "ntsc-film", 352, 240, 24000, 1001 },
-    { "sqcif",     128,  96,     0,    0 },
-    { "qcif",      176, 144,     0,    0 },
-    { "cif",       352, 288,     0,    0 },
-    { "4cif",      704, 576,     0,    0 },
-    { "qqvga",     160, 120,     0,    0 },
-    { "qvga",      320, 240,     0,    0 },
-    { "vga",       640, 480,     0,    0 },
-    { "svga",      800, 600,     0,    0 },
-    { "xga",      1024, 768,     0,    0 },
-    { "uxga",     1600,1200,     0,    0 },
-    { "qxga",     2048,1536,     0,    0 },
-    { "sxga",     1280,1024,     0,    0 },
-    { "qsxga",    2560,2048,     0,    0 },
-    { "hsxga",    5120,4096,     0,    0 },
-    { "wvga",      852, 480,     0,    0 },
-    { "wxga",     1366, 768,     0,    0 },
-    { "wsxga",    1600,1024,     0,    0 },
-    { "wuxga",    1920,1200,     0,    0 },
-    { "woxga",    2560,1600,     0,    0 },
-    { "wqsxga",   3200,2048,     0,    0 },
-    { "wquxga",   3840,2400,     0,    0 },
-    { "whsxga",   6400,4096,     0,    0 },
-    { "whuxga",   7680,4800,     0,    0 },
-    { "cga",       320, 200,     0,    0 },
-    { "ega",       640, 350,     0,    0 },
-    { "hd480",     852, 480,     0,    0 },
-    { "hd720",    1280, 720,     0,    0 },
-    { "hd1080",   1920,1080,     0,    0 },
-};
-
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
 {
-    int i;
-    int n = sizeof(frame_abvs) / sizeof(AbvEntry);
-    const char *p;
-    int frame_width = 0, frame_height = 0;
-
-    for(i=0;i<n;i++) {
-        if (!strcmp(frame_abvs[i].abv, str)) {
-            frame_width = frame_abvs[i].width;
-            frame_height = frame_abvs[i].height;
-            break;
-        }
-    }
-    if (i == n) {
-        p = str;
-        frame_width = strtol(p, (char **)&p, 10);
-        if (*p)
-            p++;
-        frame_height = strtol(p, (char **)&p, 10);
-    }
-    if (frame_width <= 0 || frame_height <= 0)
-        return -1;
-    *width_ptr = frame_width;
-    *height_ptr = frame_height;
-    return 0;
+    return av_parse_video_frame_size(width_ptr, height_ptr, str);
 }
 
-int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
+int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
 {
-    int i;
-    char* cp;
-
-    /* First, we check our abbreviation table */
-    for (i = 0; i < sizeof(frame_abvs)/sizeof(*frame_abvs); ++i)
-         if (!strcmp(frame_abvs[i].abv, arg)) {
-             *frame_rate = frame_abvs[i].frame_rate;
-             *frame_rate_base = frame_abvs[i].frame_rate_base;
-             return 0;
-         }
-
-    /* Then, we try to parse it as fraction */
-    cp = strchr(arg, '/');
-    if (!cp)
-        cp = strchr(arg, ':');
-    if (cp) {
-        char* cpp;
-        *frame_rate = strtol(arg, &cpp, 10);
-        if (cpp != arg || cpp == cp)
-            *frame_rate_base = strtol(cp+1, &cpp, 10);
-        else
-           *frame_rate = 0;
-    }
-    else {
-        /* Finally we give up and parse it as double */
-        AVRational time_base = av_d2q(strtod(arg, 0), DEFAULT_FRAME_RATE_BASE);
-        *frame_rate_base = time_base.den;
-        *frame_rate = time_base.num;
-    }
-    if (!*frame_rate || !*frame_rate_base)
-        return -1;
-    else
-        return 0;
+    AVRational frame_rate;
+    int ret = av_parse_video_frame_rate(&frame_rate, arg);
+    *frame_rate_num= frame_rate.num;
+    *frame_rate_den= frame_rate.den;
+    return ret;
 }
 
 int64_t parse_date(const char *datestr, int duration)

@@ -763,13 +763,15 @@ void dump_format(AVFormatContext *ic,
 
 /**
  * parses width and height out of string str.
+ * @deprecated Use av_parse_video_frame_size instead.
  */
-int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
+attribute_deprecated int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
 
 /**
  * Converts frame rate from string to a fraction.
+ * @deprecated Use av_parse_video_frame_rate instead.
  */
-int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
+attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
 
 /**
  * Converts date string to number of seconds since Jan 1st, 1970.
