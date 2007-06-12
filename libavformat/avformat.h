@@ -829,14 +829,6 @@ int av_get_frame_filename(char *buf, int buf_size,
  */
 int av_filename_number_test(const char *filename);
 
-/* grab specific */
-int video_grab_init(void);
-int audio_init(void);
-
-/* DV1394 */
-int dv1394_init(void);
-int dc1394_init(void);
-
 #ifdef HAVE_AV_CONFIG_H
 
 #include "os_support.h"
