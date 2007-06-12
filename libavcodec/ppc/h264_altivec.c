@@ -763,8 +763,7 @@ static inline vector unsigned char h264_deblock_mask ( register vector unsigned 
 
 #define h264_deblock_p0_q0(p0, p1, q0, q1, tc0masked) {                                           \
                                                                                                   \
-    const vec_u8_t A0v = (vec_u8_t) AVV(0xA0,0xA0,0xA0,0xA0,0xA0,0xA0,0xA0,0xA0,                  \
-                                        0xA0,0xA0,0xA0,0xA0,0xA0,0xA0,0xA0,0xA0);                 \
+    const vector unsigned char A0v = vec_sl(vec_splat_u8(10), vec_splat_u8(4));                   \
                                                                                                   \
     register vector unsigned char pq0bit = vec_xor(p0,q0);                                        \
     register vector unsigned char temp;                                                           \
