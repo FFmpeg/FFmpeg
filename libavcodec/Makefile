@@ -402,6 +402,7 @@ OBJS-$(CONFIG_WMV3_DECODER)            += ppc/vc1dsp_altivec.o
 endif
 
 OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
+                                          bfin/mpegvideo_bfin.o \
 
 ASM_OBJS-$(TARGET_ARCH_BFIN)           += bfin/pixels_bfin.o \
                                           bfin/idct_bfin.o   \

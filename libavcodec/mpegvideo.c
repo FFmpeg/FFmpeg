@@ -295,6 +295,9 @@ int DCT_common_init(MpegEncContext *s)
 #ifdef ARCH_POWERPC
     MPV_common_init_ppc(s);
 #endif
+#ifdef ARCH_BFIN
+    MPV_common_init_bfin(s);
+#endif
 
 #ifdef CONFIG_ENCODERS
     s->fast_dct_quantize= s->dct_quantize;
