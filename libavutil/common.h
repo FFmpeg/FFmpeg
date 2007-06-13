@@ -267,7 +267,7 @@ static inline int ff_get_fourcc(const char *s){
         }\
     }
 
-#if defined(ARCH_X86) || defined(ARCH_POWERPC)
+#if defined(ARCH_X86) || defined(ARCH_POWERPC) || defined(ARCH_BFIN)
 #if defined(ARCH_X86_64)
 static inline uint64_t read_time(void)
 {
@@ -285,6 +285,19 @@ static inline long long read_time(void)
                 : "=A" (l)
         );
         return l;
+}
+#elif ARCH_BFIN
+static inline uint64_t read_time(void)
+{
+    union {
+        struct {
+            unsigned lo;
+            unsigned hi;
+        } p;
+        unsigned long long c;
+    } t;
+    asm volatile ("%0=cycles; %1=cycles2;" : "=d" (t.p.lo), "=d" (t.p.hi));
+    return t.c;
 }
 #else //FIXME check ppc64
 static inline uint64_t read_time(void)
