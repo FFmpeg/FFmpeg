@@ -222,24 +222,14 @@ int rtp_get_payload_type(AVCodecContext *codec)
     return payload_type;
 }
 
-static inline uint32_t decode_be32(const uint8_t *p)
-{
-    return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
-}
-
-static inline uint64_t decode_be64(const uint8_t *p)
-{
-    return ((uint64_t)decode_be32(p) << 32) | decode_be32(p + 4);
-}
-
 static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int len)
 {
     if (buf[1] != 200)
         return -1;
-    s->last_rtcp_ntp_time = decode_be64(buf + 8);
+    s->last_rtcp_ntp_time = AV_RB64(buf + 8);
     if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE)
         s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
-    s->last_rtcp_timestamp = decode_be32(buf + 16);
+    s->last_rtcp_timestamp = AV_RB32(buf + 16);
     return 0;
 }
 
@@ -614,8 +604,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     }
     payload_type = buf[1] & 0x7f;
     seq  = (buf[2] << 8) | buf[3];
-    timestamp = decode_be32(buf + 4);
-    ssrc = decode_be32(buf + 8);
+    timestamp = AV_RB32(buf + 4);
+    ssrc = AV_RB32(buf + 8);
     /* store the ssrc in the RTPDemuxContext */
     s->ssrc = ssrc;
 
@@ -654,7 +644,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             /* better than nothing: skip mpeg audio RTP header */
             if (len <= 4)
                 return -1;
-            h = decode_be32(buf);
+            h = AV_RB32(buf);
             len -= 4;
             buf += 4;
             av_new_packet(pkt, len);
@@ -664,7 +654,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             /* better than nothing: skip mpeg video RTP header */
             if (len <= 4)
                 return -1;
-            h = decode_be32(buf);
+            h = AV_RB32(buf);
             buf += 4;
             len -= 4;
             if (h & (1 << 26)) {
