@@ -350,7 +350,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
     end = s + src_size;
 #ifdef HAVE_MMX
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which cpus this is faster, on Athlon its slightly faster)
+#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     asm volatile(
     "movq           %3, %%mm5   \n\t"
     "movq           %4, %%mm6   \n\t"
@@ -509,7 +509,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
     end = s + src_size;
 #ifdef HAVE_MMX
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which cpus this is faster, on Athlon its slightly faster)
+#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     asm volatile(
     "movq           %3, %%mm5   \n\t"
     "movq           %4, %%mm6   \n\t"

@@ -46,7 +46,7 @@ tested special converters (most are tested actually but i didnt write it down ..
  YVU9 -> YV12
 
 untested special converters
-  YV12/I420 -> BGR15/BGR24/BGR32 (its the yuv2rgb stuff, so it should be ok)
+  YV12/I420 -> BGR15/BGR24/BGR32 (it is the yuv2rgb stuff, so it should be ok)
   YV12/I420 -> YV12/I420
   YUY2/BGR15/BGR24/BGR32/RGB24/RGB32 -> same format
   BGR24 -> BGR32 & RGB24 -> RGB32
@@ -985,7 +985,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     double *filter2=NULL;
 #if defined(ARCH_X86)
     if (flags & SWS_CPU_CAPS_MMX)
-        asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
+        asm volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
 #endif
 
     // Note the +1 is for the MMXscaler which reads over the end
@@ -1198,7 +1198,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     av_free(filter); filter=NULL;
 
     /* try to reduce the filter-size (step1 find size and shift left) */
-    // Assume its near normalized (*0.5 or *2.0 is ok but * 0.001 is not)
+    // Assume it is near normalized (*0.5 or *2.0 is OK but * 0.001 is not).
     minFilterSize= 0;
     for (i=dstW-1; i>=0; i--)
     {
@@ -1214,7 +1214,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
             if (cutOff > SWS_MAX_REDUCE_CUTOFF) break;
 
-            /* preserve Monotonicity because the core can't handle the filter otherwise */
+            /* preserve monotonicity because the core can't handle the filter otherwise */
             if (i<dstW-1 && (*filterPos)[i] >= (*filterPos)[i+1]) break;
 
             // Move filter coeffs left
@@ -1914,7 +1914,7 @@ static uint16_t roundToInt16(int64_t f){
 
 /**
  * @param inv_table the yuv2rgb coeffs, normally Inverse_Table_6_9[x]
- * @param fullRange if 1 then the luma range is 0..255 if 0 its 16..235
+ * @param fullRange if 1 then the luma range is 0..255 if 0 it is 16..235
  * @return -1 if not supported
  */
 int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation){
@@ -2246,7 +2246,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     // match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
     // but only for the FAST_BILINEAR mode otherwise do correct scaling
     // n-2 is the last chrominance sample available
-    // this is not perfect, but noone shuld notice the difference, the more correct variant
+    // this is not perfect, but no one should notice the difference, the more correct variant
     // would be like the vertical one, but that would require some special code for the
     // first and last pixel
     if (flags&SWS_FAST_BILINEAR)

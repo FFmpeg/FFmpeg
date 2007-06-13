@@ -58,8 +58,8 @@
 
 #define SWS_PRINT_INFO              0x1000
 
-//the following 3 flags are not completly implemented
-//internal chrominace subsamling info
+//the following 3 flags are not completely implemented
+//internal chrominace subsampling info
 #define SWS_FULL_CHR_H_INT    0x2000
 //input subsampling info
 #define SWS_FULL_CHR_H_INP    0x4000

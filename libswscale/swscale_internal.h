@@ -123,7 +123,7 @@ typedef struct SwsContext{
 #define V_OFFSET              "10*8"
 #define LUM_MMX_FILTER_OFFSET "11*8"
 #define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
-#define DSTW_OFFSET           "11*8+4*4*256*2" //do not change, its hardcoded in the asm
+#define DSTW_OFFSET           "11*8+4*4*256*2" //do not change, it is hardcoded in the asm
 #define ESP_OFFSET            "11*8+4*4*256*2+8"
 #define VROUNDER_OFFSET       "11*8+4*4*256*2+16"
 #define U_TEMP                "11*8+4*4*256*2+24"
