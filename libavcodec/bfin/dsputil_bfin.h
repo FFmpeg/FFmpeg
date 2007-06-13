@@ -32,8 +32,8 @@ static double Telem[16];
 static char  *TelemNames[16];
 static int    TelemCnt;
 
-#define PROF(lab,e) { int __e = e; char*__lab = lab; uint64_t _t0 = read_time();
-#define EPROF()       _t0 = read_time()-_t0; Telem[__e] = Telem[__e] + _t0; TelemNames[__e] = __lab; }
+#define PROF(lab,e) { int xx_e = e; char*xx_lab = lab; uint64_t xx_t0 = read_time();
+#define EPROF()       xx_t0 = read_time()-xx_t0; Telem[xx_e] = Telem[xx_e] + xx_t0; TelemNames[xx_e] = xx_lab; }
 
 static void prof_report (void)
 {
