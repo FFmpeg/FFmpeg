@@ -453,11 +453,11 @@ retry:
             s->workaround_bugs|= FF_BUG_UMP4;
         }
 
-        if(s->divx_version>=500){
+        if(s->divx_version>=500 && s->divx_build<1814){
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
         }
 
-        if(s->divx_version>502){
+        if(s->divx_version>502 && s->divx_build<1814){
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA2;
         }
 
