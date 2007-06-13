@@ -2517,6 +2517,7 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
  * @warning This function is not thread safe!
  *
  * @code
+ * avcodec_register_all();
  * codec = avcodec_find_decoder(CODEC_ID_H264);
  * if (!codec)
  *     exit(1);

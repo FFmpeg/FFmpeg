@@ -433,8 +433,7 @@ int main(int argc, char **argv)
     /* must be called before using avcodec lib */
     avcodec_init();
 
-    /* register all the codecs (you can also register only the codec
-       you wish to have smaller code */
+    /* register all the codecs */
     avcodec_register_all();
 
     if (argc <= 1) {
