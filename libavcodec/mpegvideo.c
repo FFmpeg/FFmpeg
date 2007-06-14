@@ -277,25 +277,19 @@ int DCT_common_init(MpegEncContext *s)
     s->denoise_dct= denoise_dct_c;
 #endif //CONFIG_ENCODERS
 
-#ifdef HAVE_MMX
+#if defined(HAVE_MMX)
     MPV_common_init_mmx(s);
-#endif
-#ifdef ARCH_ALPHA
+#elif defined(ARCH_ALPHA)
     MPV_common_init_axp(s);
-#endif
-#ifdef HAVE_MLIB
+#elif defined(HAVE_MLIB)
     MPV_common_init_mlib(s);
-#endif
-#ifdef HAVE_MMI
+#elif defined(HAVE_MMI)
     MPV_common_init_mmi(s);
-#endif
-#ifdef ARCH_ARMV4L
+#elif defined(ARCH_ARMV4L)
     MPV_common_init_armv4l(s);
-#endif
-#ifdef ARCH_POWERPC
+#elif defined(ARCH_POWERPC)
     MPV_common_init_ppc(s);
-#endif
-#ifdef ARCH_BFIN
+#elif defined(ARCH_BFIN)
     MPV_common_init_bfin(s);
 #endif
 

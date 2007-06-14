@@ -4138,31 +4138,23 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
     memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
 
-#ifdef HAVE_MMX
+#if defined(HAVE_MMX)
     dsputil_init_mmx(c, avctx);
-#endif
-#ifdef ARCH_ARMV4L
+#elif defined(ARCH_ARMV4L)
     dsputil_init_armv4l(c, avctx);
-#endif
-#ifdef HAVE_MLIB
+#elif defined(HAVE_MLIB)
     dsputil_init_mlib(c, avctx);
-#endif
-#ifdef ARCH_SPARC
+#elif defined(ARCH_SPARC)
    dsputil_init_vis(c,avctx);
-#endif
-#ifdef ARCH_ALPHA
+#elif defined(ARCH_ALPHA)
     dsputil_init_alpha(c, avctx);
-#endif
-#ifdef ARCH_POWERPC
+#elif defined(ARCH_POWERPC)
     dsputil_init_ppc(c, avctx);
-#endif
-#ifdef HAVE_MMI
+#elif defined(HAVE_MMI)
     dsputil_init_mmi(c, avctx);
-#endif
-#ifdef ARCH_SH4
+#elif defined(ARCH_SH4)
     dsputil_init_sh4(c,avctx);
-#endif
-#ifdef ARCH_BFIN
+#elif defined(ARCH_BFIN)
     dsputil_init_bfin(c,avctx);
 #endif
 
