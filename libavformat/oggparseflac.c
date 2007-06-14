@@ -49,7 +49,7 @@ flac_header (AVFormatContext * s, int idx)
         skip_bits(&gb, 4*8); /* "fLaC" */
 
         /* METADATA_BLOCK_HEADER */
-        if (get_bits(&gb, 32) != FLAC_STREAMINFO_SIZE)
+        if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
         skip_bits(&gb, 16*2+24*2);
