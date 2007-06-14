@@ -673,8 +673,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
             {\
                 int a= s->decoded[0][i];\
                 int b= s->decoded[1][i];\
-                *(samples++) = (left  << (24 - s->bps)) >> 8;\
-                *(samples++) = (right << (24 - s->bps)) >> 8;\
+                *samples++ = ((left)  << (24 - s->bps)) >> 8;\
+                *samples++ = ((right) << (24 - s->bps)) >> 8;\
             }\
             break;
 
@@ -684,7 +684,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
             for (j = 0; j < s->blocksize; j++)
             {
                 for (i = 0; i < s->channels; i++)
-                    *(samples++) = (s->decoded[i][j] << (24 - s->bps)) >> 8;
+                    *samples++ = (s->decoded[i][j] << (24 - s->bps)) >> 8;
             }
             break;
         case LEFT_SIDE:
