@@ -6,8 +6,12 @@ CFLAGS=-I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libav
        -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale $(VHOOKCFLAGS) -DHAVE_AV_CONFIG_H
 LDFLAGS+= -g
 
-HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
-ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
+HOOKS=null$(SLIBSUF) fish$(SLIBSUF) watermark$(SLIBSUF)
+ALLHOOKS=$(HOOKS) ppm$(SLIBSUF) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
+
+ifeq ($(HAVE_FORK),yes)
+    HOOKS += ppm$(SLIBSUF)
+endif
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2$(SLIBSUF)

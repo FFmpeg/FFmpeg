@@ -1667,6 +1667,8 @@ elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
 
+check_func fork
+
 test "$vhook" = "default" && vhook="$dlopen"
 
 enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
