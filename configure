@@ -1168,6 +1168,8 @@ case $targetos in
     targetos=mingw32
     shlibdir="$bindir"
     dv1394="no"
+    VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libswscale -L$(BUILD_ROOT)/libavutil'
+    VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lswscale$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
     ffserver="no"
     network="no"
     SLIBPREF=""
