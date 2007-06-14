@@ -44,6 +44,12 @@
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 /**
+ * Identifies the syntax and semantics of the bitstream.
+ * The principle is roughly:
+ * Two decoders with the same ID can decode the same streams.
+ * Two encoders with the same ID can encode compatible streams.
+ * There may be slight deviations from the principle due to implementation
+ * details.
  *
  * If you add a codec ID to this list, add it so that
  * 1. no value of a existing codec ID changes (that would break ABI),
@@ -2119,6 +2125,12 @@ typedef struct AVCodecContext {
  * AVCodec.
  */
 typedef struct AVCodec {
+    /**
+     * Name of the codec implementation.
+     * The name is globally unique among encoders and among decoders (but an
+     * encoder and a decoder can share the same name).
+     * This is the primary way to find a codec from the user perspective.
+     */
     const char *name;
     enum CodecType type;
     enum CodecID id;
