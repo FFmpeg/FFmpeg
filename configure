@@ -1671,7 +1671,7 @@ test "$vhook" = "default" && vhook="$dlopen"
 
 enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
 
-if test "$targetos" = cygwin && enabled static ; then
+if test "$targetos" = cygwin && enabled_all static vhook ; then
     vhook="no"
     echo
     echo "At the moment vhooks don't work on Cygwin static builds."
