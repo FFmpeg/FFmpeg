@@ -124,14 +124,12 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
     int code;
     int filled = 0;
     int orig_height;
-    uint8_t *blkdata;
 
     /* copy prev frame */
     for(i = 0; i < height; i++)
         memcpy(refdata + (i * width), dst + (i * stride), width);
 
     orig_height = height;
-    blkdata = src - 0x86;
     height--;
     dst = dst + height * stride;
 
