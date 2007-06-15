@@ -3797,7 +3797,7 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
     dest[0] = cm[dest[0] + ((block[0] + 4)>>3)];
 }
 
-static void just_return() { return; }
+static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }
 
 /* init static data */
 void dsputil_static_init(void)
