@@ -310,20 +310,14 @@ print_config(){
     makefile=$3
     shift 3
     for cfg; do
+        ucname="`toupper $cfg`"
         if enabled $cfg; then
-            ucname="${pfx}`toupper $cfg`"
-            echo "#define ${ucname} 1" >> $header
-            echo "${ucname}=yes" >> $makefile
+            echo "#define ${pfx}${ucname} 1" >> $header
+            echo "#define ENABLE_${ucname} 1" >> $header
+            echo "${pfx}${ucname}=yes" >> $makefile
+        else
+            echo "#define ENABLE_${ucname} 0" >> $header
         fi
-    done
-}
-
-print_config_enable(){
-    print_config $@
-    shift 3
-    for cfg; do
-        enabled $cfg && val=1 || val=0
-        echo "#define ENABLE_`toupper $cfg` $val" >> $header
     done
 }
 
@@ -2030,16 +2024,16 @@ fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
-print_config_enable ARCH_   $TMPH config.mak $ARCH_LIST
-print_config_enable HAVE_   $TMPH config.mak $HAVE_LIST
-print_config_enable CONFIG_ $TMPH config.mak $CONFIG_LIST   \
-                                             $DECODER_LIST  \
-                                             $ENCODER_LIST  \
-                                             $PARSER_LIST   \
-                                             $BSF_LIST      \
-                                             $DEMUXER_LIST  \
-                                             $MUXER_LIST    \
-                                             $PROTOCOL_LIST \
+print_config ARCH_   $TMPH config.mak $ARCH_LIST
+print_config HAVE_   $TMPH config.mak $HAVE_LIST
+print_config CONFIG_ $TMPH config.mak $CONFIG_LIST   \
+                                      $DECODER_LIST  \
+                                      $ENCODER_LIST  \
+                                      $PARSER_LIST   \
+                                      $BSF_LIST      \
+                                      $DEMUXER_LIST  \
+                                      $MUXER_LIST    \
+                                      $PROTOCOL_LIST \
 
 if test "$targetos" = darwin; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
