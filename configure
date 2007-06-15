@@ -1974,14 +1974,12 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 
-ucarch=`toupper $arch`
-echo "TARGET_ARCH_${ucarch}=yes" >> config.mak
 enable $arch
 
 # special cases
 case "$arch" in
     x86_32|x86_64)
-        echo "TARGET_ARCH_X86=yes" >> config.mak
+        echo "ARCH_X86=yes" >> config.mak
         echo "#define ARCH_X86 1" >> $TMPH
         ;;
     powerpc)
@@ -1990,7 +1988,7 @@ case "$arch" in
         fi
         ;;
     sparc64)
-        echo "TARGET_ARCH_SPARC=yes" >> config.mak
+        echo "ARCH_SPARC=yes" >> config.mak
         echo "#define ARCH_SPARC 1" >> $TMPH
         ;;
 esac

@@ -345,11 +345,11 @@ OBJS-$(CONFIG_VP5_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 endif
 
-ASM_OBJS-$(TARGET_ARCH_ARMV4L)         += armv4l/jrevdct_arm.o     \
+ASM_OBJS-$(ARCH_ARMV4L)                += armv4l/jrevdct_arm.o     \
                                           armv4l/simple_idct_arm.o \
                                           armv4l/dsputil_arm_s.o   \
 
-OBJS-$(TARGET_ARCH_ARMV4L)             += armv4l/dsputil_arm.o   \
+OBJS-$(ARCH_ARMV4L)                    += armv4l/dsputil_arm.o   \
                                           armv4l/mpegvideo_arm.o \
 
 OBJS-$(TARGET_IWMMXT)                  += armv4l/dsputil_iwmmxt.o   \
@@ -360,28 +360,28 @@ ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o \
 
 ASM_OBJS-$(TARGET_ARMV6)               += armv4l/simple_idct_armv6.o \
 
-OBJS-$(TARGET_ARCH_SPARC)              += sparc/dsputil_vis.o \
+OBJS-$(ARCH_SPARC)                     += sparc/dsputil_vis.o \
 
 sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 
 OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o \
 
-OBJS-$(TARGET_ARCH_ALPHA)              += alpha/dsputil_alpha.o     \
+OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o     \
                                           alpha/mpegvideo_alpha.o   \
                                           alpha/simple_idct_alpha.o \
                                           alpha/motion_est_alpha.o  \
 
-ASM_OBJS-$(TARGET_ARCH_ALPHA)          += alpha/dsputil_alpha_asm.o  \
+ASM_OBJS-$(ARCH_ALPHA)                 += alpha/dsputil_alpha_asm.o  \
                                           alpha/motion_est_mvi_asm.o \
 
-OBJS-$(TARGET_ARCH_POWERPC)            += ppc/dsputil_ppc.o   \
+OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o   \
                                           ppc/mpegvideo_ppc.o \
 
 OBJS-$(TARGET_MMI)                     += ps2/dsputil_mmi.o   \
                                           ps2/idct_mmi.o      \
                                           ps2/mpegvideo_mmi.o \
 
-OBJS-$(TARGET_ARCH_SH4)                += sh4/idct_sh4.o      \
+OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o      \
                                           sh4/dsputil_sh4.o   \
                                           sh4/dsputil_align.o \
 
@@ -401,10 +401,10 @@ OBJS-$(CONFIG_VC1_DECODER)             += ppc/vc1dsp_altivec.o
 OBJS-$(CONFIG_WMV3_DECODER)            += ppc/vc1dsp_altivec.o
 endif
 
-OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
+OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o \
                                           bfin/mpegvideo_bfin.o \
 
-ASM_OBJS-$(TARGET_ARCH_BFIN)           += bfin/pixels_bfin.o \
+ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/idct_bfin.o   \
                                           bfin/fdct_bfin.o   \
 
@@ -429,7 +429,7 @@ clean::
 	   apiexample $(TESTS)
 
 TESTS= imgresample-test fft-test dct-test
-ifeq ($(TARGET_ARCH_X86),yes)
+ifeq ($(ARCH_X86),yes)
 TESTS+= cpuid-test motion-test
 endif
 
