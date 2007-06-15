@@ -888,7 +888,7 @@ thread_type="no"
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
 LIBOBJFLAGS=""
-FFLDFLAGS=-Wl,--warn-common
+FFLDFLAGS=
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
@@ -1792,6 +1792,7 @@ check_cflags -Wno-pointer-sign
 enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
+check_ldflags -Wl,--warn-common
 check_ldflags $LDLATEFLAGS
 
 # not all compilers support -Os
