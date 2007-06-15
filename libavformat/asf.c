@@ -389,6 +389,16 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         {
                                 if     (!strcmp(name,"WM/AlbumTitle")) get_str16_nolen(pb, value_len, s->album, sizeof(s->album));
                                 else if(!strcmp(name,"WM/Genre"     )) get_str16_nolen(pb, value_len, s->genre, sizeof(s->genre));
+                                else if(!strcmp(name,"WM/Track")) {
+                                    char track[8];
+                                    get_str16_nolen(pb, value_len, track, sizeof(track));
+                                    s->track = strtol(track, NULL, 10) + 1;
+                                }
+                                else if(!strcmp(name,"WM/TrackNumber")) {
+                                    char track[8];
+                                    get_str16_nolen(pb, value_len, track, sizeof(track));
+                                    s->track = strtol(track, NULL, 10);
+                                }
                                 else url_fskip(pb, value_len);
                         }
                         if ((value_type >= 2) && (value_type <= 5)) // boolean or DWORD or QWORD or WORD
