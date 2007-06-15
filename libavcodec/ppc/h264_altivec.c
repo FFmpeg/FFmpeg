@@ -874,8 +874,10 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
     c->h264_idct_add = ff_h264_idct_add_altivec;
     c->h264_idct8_add = ff_h264_idct8_add_altivec;
+#if 0 // some samples aren't decoded correctly while others are fine. What's wrong?
     c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_altivec;
     c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_altivec;
+#endif
 
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_altivec; \
