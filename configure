@@ -618,12 +618,37 @@ THREADS_LIST='
     w32threads
 '
 
-HAVE_LIST="
-    $THREADS_LIST
+ARCH_LIST='
+    alpha
+    armv4l
+    bfin
+    ia64
+    m68k
+    mips
+    parisc
+    powerpc
+    s390
+    sh4
+    sparc
+    sparc64
+    x86
+    x86_32
+    x86_64
+'
+
+ARCH_EXT_LIST='
     altivec
-    altivec_h
     armv5te
     armv6
+    iwmmxt
+    mmi
+    mmx
+'
+
+HAVE_LIST="
+    $ARCH_EXT_LIST
+    $THREADS_LIST
+    altivec_h
     arpa_inet_h
     byteswap_h
     cmov
@@ -643,7 +668,6 @@ HAVE_LIST="
     freetype2
     imlib2
     inet_aton
-    iwmmxt
     localtime_r
     lrintf
     machine_ioctl_bt848_h
@@ -651,8 +675,6 @@ HAVE_LIST="
     malloc_h
     memalign
     mlib
-    mmi
-    mmx
     os2
     sdl
     sdl_video_size
@@ -663,36 +685,9 @@ HAVE_LIST="
     threads
 "
 
-ARCH_LIST='
-    alpha
-    armv4l
-    bfin
-    ia64
-    m68k
-    mips
-    parisc
-    powerpc
-    s390
-    sh4
-    sparc
-    sparc64
-    x86
-    x86_32
-    x86_64
-'
-
-TARGET_LIST='
-    altivec
-    armv5te
-    armv6
-    iwmmxt
-    mmi
-    mmx
-'
-
 CMDLINE_SELECT="
+    $ARCH_EXT_LIST
     $CONFIG_LIST
-    $TARGET_LIST
     $THREADS_LIST
     debug
     extra_warnings
@@ -2037,7 +2032,6 @@ echo "EXTRALIBS=$extralibs" >> config.mak
 
 print_config_enable ARCH_   $TMPH config.mak $ARCH_LIST
 print_config_enable HAVE_   $TMPH config.mak $HAVE_LIST
-print_config        TARGET_ $TMPH config.mak $TARGET_LIST
 print_config_enable CONFIG_ $TMPH config.mak $CONFIG_LIST   \
                                              $DECODER_LIST  \
                                              $ENCODER_LIST  \

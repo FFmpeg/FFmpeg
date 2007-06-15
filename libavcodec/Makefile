@@ -325,7 +325,7 @@ OBJS += imgresample.o
 endif
 
 # processor-specific code
-ifeq ($(TARGET_MMX),yes)
+ifeq ($(HAVE_MMX),yes)
 OBJS += i386/fdct_mmx.o \
         i386/cputest.o \
         i386/dsputil_mmx.o \
@@ -352,13 +352,13 @@ ASM_OBJS-$(ARCH_ARMV4L)                += armv4l/jrevdct_arm.o     \
 OBJS-$(ARCH_ARMV4L)                    += armv4l/dsputil_arm.o   \
                                           armv4l/mpegvideo_arm.o \
 
-OBJS-$(TARGET_IWMMXT)                  += armv4l/dsputil_iwmmxt.o   \
+OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o   \
                                           armv4l/mpegvideo_iwmmxt.o \
 
-ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o \
+ASM_OBJS-$(HAVE_ARMV5TE)               += armv4l/simple_idct_armv5te.o \
                                           armv4l/mpegvideo_armv5te.o \
 
-ASM_OBJS-$(TARGET_ARMV6)               += armv4l/simple_idct_armv6.o \
+ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o \
 
 OBJS-$(ARCH_SPARC)                     += sparc/dsputil_vis.o \
 
@@ -377,7 +377,7 @@ ASM_OBJS-$(ARCH_ALPHA)                 += alpha/dsputil_alpha_asm.o  \
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o   \
                                           ppc/mpegvideo_ppc.o \
 
-OBJS-$(TARGET_MMI)                     += ps2/dsputil_mmi.o   \
+OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o   \
                                           ps2/idct_mmi.o      \
                                           ps2/mpegvideo_mmi.o \
 
@@ -385,7 +385,7 @@ OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o      \
                                           sh4/dsputil_sh4.o   \
                                           sh4/dsputil_align.o \
 
-OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
+OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o      \
                                           ppc/mpegvideo_altivec.o    \
                                           ppc/idct_altivec.o         \
                                           ppc/fft_altivec.o          \
@@ -394,7 +394,7 @@ OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/float_altivec.o        \
                                           ppc/int_altivec.o          \
 
-ifeq ($(TARGET_ALTIVEC),yes)
+ifeq ($(HAVE_ALTIVEC),yes)
 OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o
 OBJS-$(CONFIG_SNOW_DECODER)            += ppc/snow_altivec.o
 OBJS-$(CONFIG_VC1_DECODER)             += ppc/vc1dsp_altivec.o
