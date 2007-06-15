@@ -4138,25 +4138,15 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
     memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
 
-#if defined(HAVE_MMX)
-    dsputil_init_mmx(c, avctx);
-#elif defined(ARCH_ARMV4L)
-    dsputil_init_armv4l(c, avctx);
-#elif defined(HAVE_MLIB)
-    dsputil_init_mlib(c, avctx);
-#elif defined(ARCH_SPARC)
-   dsputil_init_vis(c,avctx);
-#elif defined(ARCH_ALPHA)
-    dsputil_init_alpha(c, avctx);
-#elif defined(ARCH_POWERPC)
-    dsputil_init_ppc(c, avctx);
-#elif defined(HAVE_MMI)
-    dsputil_init_mmi(c, avctx);
-#elif defined(ARCH_SH4)
-    dsputil_init_sh4(c,avctx);
-#elif defined(ARCH_BFIN)
-    dsputil_init_bfin(c,avctx);
-#endif
+    if (ENABLE_MMX)      dsputil_init_mmx   (c, avctx);
+    if (ENABLE_ARMV4L)   dsputil_init_armv4l(c, avctx);
+    if (ENABLE_MLIB)     dsputil_init_mlib  (c, avctx);
+    if (ENABLE_SPARC)    dsputil_init_vis   (c, avctx);
+    if (ENABLE_ALPHA)    dsputil_init_alpha (c, avctx);
+    if (ENABLE_POWERPC)  dsputil_init_ppc   (c, avctx);
+    if (ENABLE_MMI)      dsputil_init_mmi   (c, avctx);
+    if (ENABLE_SH4)      dsputil_init_sh4   (c, avctx);
+    if (ENABLE_BFIN)     dsputil_init_bfin  (c, avctx);
 
     for(i=0; i<64; i++){
         if(!c->put_2tap_qpel_pixels_tab[0][i])
