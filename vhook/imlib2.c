@@ -258,9 +258,9 @@ int Configure(void **ctxp, int argc, char *argv[])
             f = fopen(rgbtxt, "r");
         else
         {
-        f = fopen("/usr/share/X11/rgb.txt", "r");
-        if (!f)
-            f = fopen("/usr/lib/X11/rgb.txt", "r");
+            f = fopen("/usr/share/X11/rgb.txt", "r");
+            if (!f)
+                f = fopen("/usr/lib/X11/rgb.txt", "r");
         }
         if (!f) {
             fprintf(stderr, "Failed to find RGB color names file\n");
