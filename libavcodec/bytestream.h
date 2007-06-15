@@ -30,7 +30,7 @@ static av_always_inline unsigned int bytestream_get_ ## name(uint8_t **b){\
 static av_always_inline void bytestream_put_ ##name(uint8_t **b, const unsigned int value){\
     write(*b, value);\
     (*b) += bytes;\
-};
+}
 
 DEF(le32, 4, AV_RL32, AV_WL32)
 DEF(le24, 3, AV_RL24, AV_WL24)
