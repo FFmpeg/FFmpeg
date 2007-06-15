@@ -663,6 +663,23 @@ HAVE_LIST="
     threads
 "
 
+ARCH_LIST='
+    alpha
+    armv4l
+    bfin
+    ia64
+    m68k
+    mips
+    parisc
+    powerpc
+    s390
+    sh4
+    sparc
+    sparc64
+    x86_32
+    x86_64
+'
+
 TARGET_LIST='
     altivec
     armv5te
@@ -1959,7 +1976,7 @@ echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 
 ucarch=`toupper $arch`
 echo "TARGET_ARCH_${ucarch}=yes" >> config.mak
-echo "#define ARCH_${ucarch} 1" >> $TMPH
+enable $arch
 
 # special cases
 case "$arch" in
@@ -2024,6 +2041,7 @@ fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
+print_config_enable ARCH_   $TMPH config.mak $ARCH_LIST
 print_config_enable HAVE_   $TMPH config.mak $HAVE_LIST
 print_config        TARGET_ $TMPH config.mak $TARGET_LIST
 print_config_enable CONFIG_ $TMPH config.mak $CONFIG_LIST   \
