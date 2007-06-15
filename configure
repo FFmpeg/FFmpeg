@@ -676,6 +676,7 @@ ARCH_LIST='
     sh4
     sparc
     sparc64
+    x86
     x86_32
     x86_64
 '
@@ -1977,19 +1978,14 @@ echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 enable $arch
 
 # special cases
+enabled_any x86_32 x86_64 && enable x86
+enabled     sparc64       && enable sparc
+
 case "$arch" in
-    x86_32|x86_64)
-        echo "ARCH_X86=yes" >> config.mak
-        echo "#define ARCH_X86 1" >> $TMPH
-        ;;
     powerpc)
         if test "$POWERPCMODE" = "64bits"; then
             echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
         fi
-        ;;
-    sparc64)
-        echo "ARCH_SPARC=yes" >> config.mak
-        echo "#define ARCH_SPARC 1" >> $TMPH
         ;;
 esac
 
