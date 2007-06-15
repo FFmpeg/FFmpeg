@@ -67,8 +67,13 @@ with the full path to the font file, as in:
 @end example
 where 20 is the point size.
 
+You can specify the filename to read RGB color names from. If none are
+specified, these defaults are used: @file{/usr/share/X11/rgb.txt} and
+@file{/usr/lib/X11/rgb.txt}
+
 Options:
 @multitable @columnfractions .2 .8
+@item @option{-C <rgb.txt>}   @tab The filename to read RGB color names from
 @item @option{-c <color>}     @tab The color of the text
 @item @option{-F <fontname>}  @tab The font face and size
 @item @option{-t <text>}      @tab The text
@@ -136,6 +141,14 @@ Usage examples:
      decreasing it makes it scroll slower. Hint: Blank lines containing only
      a newline are treated as end-of-file. To create blank lines, use lines
      that consist of space characters only.
+
+   # Scrolling credits with custom color from a text file
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.so -C rgb.txt -c CustomColor1 -F VeraBd.ttf/16 -x 100 -y -1.0*N -f credits.txt' \
+     -sameq output.avi
+
+   This example does the same as the one above, but specifies an rgb.txt file
+   to be used, which has a custom made color in it.
 
    # scrolling credits from a graphics file
    ffmpeg -sameq -i input.avi \

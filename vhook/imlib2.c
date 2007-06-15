@@ -15,6 +15,10 @@
  *
  * Options:
  *
+ * -C <rgb.txt>         The filename to read RGB color names from
+ *                      Defaults if none specified:
+ *                      /usr/share/X11/rgb.txt
+ *                      /usr/lib/X11/rgb.txt
  * -c <color>           The color of the text
  * -F <fontname>        The font face and size
  * -t <text>            The text
@@ -176,6 +180,7 @@ int Configure(void **ctxp, int argc, char *argv[])
 {
     int c;
     ContextInfo *ci;
+    char *rgbtxt = 0;
     char *font = "LucidaSansDemiBold/16";
     char *fp = getenv("FONTPATH");
     char *color = 0;
@@ -203,8 +208,11 @@ int Configure(void **ctxp, int argc, char *argv[])
         imlib_add_path_to_font_path(fp);
 
 
-    while ((c = getopt(argc, argv, "c:f:F:t:x:y:i:")) > 0) {
+    while ((c = getopt(argc, argv, "C:c:f:F:t:x:y:i:")) > 0) {
         switch (c) {
+            case 'C':
+                rgbtxt = optarg;
+                break;
             case 'c':
                 color = optarg;
                 break;
@@ -246,11 +254,16 @@ int Configure(void **ctxp, int argc, char *argv[])
         char buff[256];
         int done = 0;
 
+        if (rgbtxt)
+            f = fopen(rgbtxt, "r");
+        else
+        {
         f = fopen("/usr/share/X11/rgb.txt", "r");
         if (!f)
             f = fopen("/usr/lib/X11/rgb.txt", "r");
+        }
         if (!f) {
-            fprintf(stderr, "Failed to find rgb.txt\n");
+            fprintf(stderr, "Failed to find RGB color names file\n");
             return -1;
         }
         while (fgets(buff, sizeof(buff), f)) {
