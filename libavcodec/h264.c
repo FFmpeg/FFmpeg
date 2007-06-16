@@ -4153,6 +4153,55 @@ static int init_poc(H264Context *h){
     return 0;
 }
 
+
+/**
+ * initialize scan tables
+ */
+static void init_scan_tables(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    int i;
+    if(s->dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
+        memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
+        memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
+    }else{
+        for(i=0; i<16; i++){
+#define T(x) (x>>2) | ((x<<2) & 0xF)
+            h->zigzag_scan[i] = T(zigzag_scan[i]);
+            h-> field_scan[i] = T( field_scan[i]);
+#undef T
+        }
+    }
+    if(s->dsp.h264_idct8_add == ff_h264_idct8_add_c){
+        memcpy(h->zigzag_scan8x8,       zigzag_scan8x8,       64*sizeof(uint8_t));
+        memcpy(h->zigzag_scan8x8_cavlc, zigzag_scan8x8_cavlc, 64*sizeof(uint8_t));
+        memcpy(h->field_scan8x8,        field_scan8x8,        64*sizeof(uint8_t));
+        memcpy(h->field_scan8x8_cavlc,  field_scan8x8_cavlc,  64*sizeof(uint8_t));
+    }else{
+        for(i=0; i<64; i++){
+#define T(x) (x>>3) | ((x&7)<<3)
+            h->zigzag_scan8x8[i]       = T(zigzag_scan8x8[i]);
+            h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
+            h->field_scan8x8[i]        = T(field_scan8x8[i]);
+            h->field_scan8x8_cavlc[i]  = T(field_scan8x8_cavlc[i]);
+#undef T
+        }
+    }
+    if(h->sps.transform_bypass){ //FIXME same ugly
+        h->zigzag_scan_q0          = zigzag_scan;
+        h->zigzag_scan8x8_q0       = zigzag_scan8x8;
+        h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
+        h->field_scan_q0           = field_scan;
+        h->field_scan8x8_q0        = field_scan8x8;
+        h->field_scan8x8_cavlc_q0  = field_scan8x8_cavlc;
+    }else{
+        h->zigzag_scan_q0          = h->zigzag_scan;
+        h->zigzag_scan8x8_q0       = h->zigzag_scan8x8;
+        h->zigzag_scan8x8_cavlc_q0 = h->zigzag_scan8x8_cavlc;
+        h->field_scan_q0           = h->field_scan;
+        h->field_scan8x8_q0        = h->field_scan8x8;
+        h->field_scan8x8_cavlc_q0  = h->field_scan8x8_cavlc;
+    }
+}
 /**
  * decodes a slice header.
  * this will allso call MPV_common_init() and frame_start() as needed
@@ -4239,50 +4288,7 @@ static int decode_slice_header(H264Context *h){
         if (MPV_common_init(s) < 0)
             return -1;
 
-        if(s->dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
-            memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
-            memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
-        }else{
-            int i;
-            for(i=0; i<16; i++){
-#define T(x) (x>>2) | ((x<<2) & 0xF)
-                h->zigzag_scan[i] = T(zigzag_scan[i]);
-                h-> field_scan[i] = T( field_scan[i]);
-#undef T
-            }
-        }
-        if(s->dsp.h264_idct8_add == ff_h264_idct8_add_c){
-            memcpy(h->zigzag_scan8x8,       zigzag_scan8x8,       64*sizeof(uint8_t));
-            memcpy(h->zigzag_scan8x8_cavlc, zigzag_scan8x8_cavlc, 64*sizeof(uint8_t));
-            memcpy(h->field_scan8x8,        field_scan8x8,        64*sizeof(uint8_t));
-            memcpy(h->field_scan8x8_cavlc,  field_scan8x8_cavlc,  64*sizeof(uint8_t));
-        }else{
-            int i;
-            for(i=0; i<64; i++){
-#define T(x) (x>>3) | ((x&7)<<3)
-                h->zigzag_scan8x8[i]       = T(zigzag_scan8x8[i]);
-                h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
-                h->field_scan8x8[i]        = T(field_scan8x8[i]);
-                h->field_scan8x8_cavlc[i]  = T(field_scan8x8_cavlc[i]);
-#undef T
-            }
-        }
-        if(h->sps.transform_bypass){ //FIXME same ugly
-            h->zigzag_scan_q0          = zigzag_scan;
-            h->zigzag_scan8x8_q0       = zigzag_scan8x8;
-            h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
-            h->field_scan_q0           = field_scan;
-            h->field_scan8x8_q0        = field_scan8x8;
-            h->field_scan8x8_cavlc_q0  = field_scan8x8_cavlc;
-        }else{
-            h->zigzag_scan_q0          = h->zigzag_scan;
-            h->zigzag_scan8x8_q0       = h->zigzag_scan8x8;
-            h->zigzag_scan8x8_cavlc_q0 = h->zigzag_scan8x8_cavlc;
-            h->field_scan_q0           = h->field_scan;
-            h->field_scan8x8_q0        = h->field_scan8x8;
-            h->field_scan8x8_cavlc_q0  = h->field_scan8x8_cavlc;
-        }
-
+        init_scan_tables(h);
         alloc_tables(h);
 
         s->avctx->width = s->width;
