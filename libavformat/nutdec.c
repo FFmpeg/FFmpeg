@@ -639,7 +639,7 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
     uint64_t tmp;
 
     if(url_ftell(bc) > nut->last_syncpoint_pos + nut->max_distance){
-        av_log(s, AV_LOG_ERROR, "last frame must have been damaged %Ld > %Ld + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
+        av_log(s, AV_LOG_ERROR, "last frame must have been damaged %"PRId64" > %"PRId64" + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
         return -1;
     }
 
@@ -798,7 +798,7 @@ resync:
     *pos_arg = pos-1;
     assert(nut->last_syncpoint_pos == *pos_arg);
 
-    av_log(s, AV_LOG_DEBUG, "return %Ld %Ld\n", pts,back_ptr );
+    av_log(s, AV_LOG_DEBUG, "return %"PRId64" %"PRId64"\n", pts,back_ptr );
     if     (stream_index == -1) return pts;
     else if(stream_index == -2) return back_ptr;
 
@@ -823,7 +823,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         ts  = st->index_entries[index].timestamp;
     }else{
         av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
-        av_log(s, AV_LOG_DEBUG, "%Ld-%Ld %Ld-%Ld\n", next_node[0]->pos, next_node[1]->pos,
+        av_log(s, AV_LOG_DEBUG, "%"PRIu64"-%"PRIu64" %"PRId64"-%"PRId64"\n", next_node[0]->pos, next_node[1]->pos,
                                                     next_node[0]->ts , next_node[1]->ts);
         pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
                                             next_node[0]->ts , next_node[1]->ts, AVSEEK_FLAG_BACKWARD, &ts, nut_read_timestamp);

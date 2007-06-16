@@ -1099,7 +1099,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
             if (start_code < 0) {
                 goto the_end;
             } else {
-                av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%d\n", start_code, buf_end - buf_ptr);
+                av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n", start_code, buf_end - buf_ptr);
 
                 if ((buf_end - buf_ptr) > s->buffer_size)
                 {
@@ -1136,7 +1136,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                     }
                     init_get_bits(&s->gb, s->buffer, (dst - s->buffer)*8);
 
-                    av_log(avctx, AV_LOG_DEBUG, "escaping removed %d bytes\n",
+                    av_log(avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
                            (buf_end - buf_ptr) - (dst - s->buffer));
                 }
                 else if(start_code == SOS && s->ls){
@@ -1310,7 +1310,7 @@ not_the_end:
         }
     }
 the_end:
-    av_log(avctx, AV_LOG_DEBUG, "mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
+    av_log(avctx, AV_LOG_DEBUG, "mjpeg decode frame unused %td bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
     return buf_ptr - buf;
 }
