@@ -150,6 +150,14 @@ Usage examples:
    This example does the same as the one above, but specifies an rgb.txt file
    to be used, which has a custom made color in it.
 
+   # Variable colors
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.so -t Hello -R abs(255*sin(N/47*PI)) -G abs(255*sin(N/47*PI)) -B abs(255*sin(N/47*PI))' \
+     -sameq output.avi
+
+     In this example, the color for the text goes up and down from black to
+     white.
+
    # scrolling credits from a graphics file
    ffmpeg -sameq -i input.avi \
      -vhook 'vhook/imlib2.so -x 0 -y -1.0*N -i credits.png' output.avi

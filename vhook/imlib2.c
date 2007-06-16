@@ -26,6 +26,9 @@
  * -x <expression>      X coordinate of text or image
  * -y <expression>      Y coordinate of text or image
  * -i <filename>        The filename to read a image from
+ * -R <expression>      Value for R color
+ * -G <expression>      Value for G color
+ * -B <expression>      Value for B color
  *
  * Expressions are functions of:
  *      N  // frame number (starting at zero)
@@ -131,6 +134,9 @@ typedef struct {
     char *text;
     char *file;
     int r, g, b;
+    AVEvalExpr *eval_r, *eval_g, *eval_b;
+    char *expr_R, *expr_G, *expr_B;
+    int eval_colors;
     double x, y;
     char *fileImage;
     struct _CachedImage *cache;
@@ -170,6 +176,9 @@ void Release(void *ctx)
         }
         ff_eval_free(ci->expr_x);
         ff_eval_free(ci->expr_y);
+        ff_eval_free(ci->expr_R);
+        ff_eval_free(ci->expr_G);
+        ff_eval_free(ci->expr_B);
         sws_freeContext(ci->toRGB_convert_ctx);
         sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
@@ -208,8 +217,20 @@ int Configure(void **ctxp, int argc, char *argv[])
         imlib_add_path_to_font_path(fp);
 
 
-    while ((c = getopt(argc, argv, "C:c:f:F:t:x:y:i:")) > 0) {
+    while ((c = getopt(argc, argv, "R:G:B:C:c:f:F:t:x:y:i:")) > 0) {
         switch (c) {
+            case 'R':
+                ci->expr_R = av_strdup(optarg);
+                ci->eval_colors = 1;
+                break;
+            case 'G':
+                ci->expr_G = av_strdup(optarg);
+                ci->eval_colors = 1;
+                break;
+            case 'B':
+                ci->expr_B = av_strdup(optarg);
+                ci->eval_colors = 1;
+                break;
             case 'C':
                 rgbtxt = optarg;
                 break;
@@ -240,6 +261,12 @@ int Configure(void **ctxp, int argc, char *argv[])
         }
     }
 
+    if (ci->eval_colors && !(ci->expr_R && ci->expr_G && ci->expr_B))
+    {
+        fprintf(stderr, "You must specify expressions for all or no colors.\n");
+        return -1;
+    }
+
     if (ci->text || ci->file) {
     ci->fn = imlib_load_font(font);
     if (!ci->fn) {
@@ -253,6 +280,12 @@ int Configure(void **ctxp, int argc, char *argv[])
     if (color) {
         char buff[256];
         int done = 0;
+
+        if (ci->eval_colors)
+        {
+            fprintf(stderr, "You must not specify both a color name and expressions for the colors.\n");
+            return -1;
+        }
 
         if (rgbtxt)
             f = fopen(rgbtxt, "r");
@@ -285,7 +318,22 @@ int Configure(void **ctxp, int argc, char *argv[])
             fprintf(stderr, "Unable to find color '%s' in rgb.txt\n", color);
             return -1;
         }
+    } else if (ci->eval_colors) {
+        if (!(ci->eval_r = ff_parse(ci->expr_R, const_names, NULL, NULL, NULL, NULL, NULL))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse R expression '%s'\n", ci->expr_R);
+            return -1;
+        }
+        if (!(ci->eval_g = ff_parse(ci->expr_G, const_names, NULL, NULL, NULL, NULL, NULL))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse G expression '%s'\n", ci->expr_G);
+            return -1;
+        }
+        if (!(ci->eval_b = ff_parse(ci->expr_B, const_names, NULL, NULL, NULL, NULL, NULL))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse B expression '%s'\n", ci->expr_B);
+            return -1;
+        }
     }
+
+    if (!ci->eval_colors)
     imlib_context_set_color(ci->r, ci->g, ci->b, 255);
 
     /* load the image (for example, credits for a movie) */
@@ -422,6 +470,13 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         ci->x = ff_parse_eval(ci->eval_x, const_values, ci);
         ci->y = ff_parse_eval(ci->eval_y, const_values, ci);
         y = ci->y;
+
+        if (ci->eval_colors) {
+            ci->r = ff_parse_eval(ci->eval_r, const_values, ci);
+            ci->g = ff_parse_eval(ci->eval_g, const_values, ci);
+            ci->b = ff_parse_eval(ci->eval_b, const_values, ci);
+            imlib_context_set_color(ci->r, ci->g, ci->b, 255);
+        }
 
         if (!(ci->imageOverlaid))
         for (p = buff; p; p = q) {
