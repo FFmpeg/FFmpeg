@@ -46,9 +46,6 @@
 
 #include "mathops.h"
 
-#define FRAC_ONE    (1 << FRAC_BITS)
-
-#define FIX(a)   ((int)((a) * FRAC_ONE))
 /* WARNING: only correct for posititive numbers */
 #define FIXR(a)   ((int)((a) * FRAC_ONE + 0.5))
 #define FRAC_RND(a) (((a) + (FRAC_ONE/2)) >> FRAC_BITS)
@@ -90,13 +87,6 @@ typedef struct GranuleDef {
 
 #define MODE_EXT_MS_STEREO 2
 #define MODE_EXT_I_STEREO  1
-
-/* layer 3 huffman tables */
-typedef struct HuffTable {
-    int xsize;
-    const uint8_t *bits;
-    const uint16_t *codes;
-} HuffTable;
 
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"

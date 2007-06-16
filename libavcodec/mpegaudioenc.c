@@ -31,7 +31,6 @@
 /* currently, cannot change these constants (need to modify
    quantization stage) */
 #define MUL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
-#define FIX(a)   ((int)((a) * (1 << FRAC_BITS)))
 
 #define SAMPLES_BUF_SIZE 4096
 

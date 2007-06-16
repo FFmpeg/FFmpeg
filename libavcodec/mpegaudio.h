@@ -62,6 +62,10 @@
 #define WFRAC_BITS  14   /* fractional bits for window */
 #endif
 
+#define FRAC_ONE    (1 << FRAC_BITS)
+
+#define FIX(a)   ((int)((a) * FRAC_ONE))
+
 #if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
 typedef int32_t OUT_INT;
 #define OUT_MAX INT32_MAX
@@ -115,6 +119,13 @@ typedef struct MPADecodeContext {
     int error_resilience;
     AVCodecContext* avctx;
 } MPADecodeContext;
+
+/* layer 3 huffman tables */
+typedef struct HuffTable {
+    int xsize;
+    const uint8_t *bits;
+    const uint16_t *codes;
+} HuffTable;
 
 int ff_mpa_l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate);
