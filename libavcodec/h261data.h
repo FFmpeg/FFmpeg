@@ -24,6 +24,9 @@
  * H.261 tables.
  */
 
+#include <stdint.h>
+#include "h261.h"
+
 // H.261 VLC table for macroblock addressing
 static const uint8_t h261_mba_code[35] = {
      1,  3,  2,  3,

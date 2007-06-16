@@ -1,6 +1,8 @@
 #ifndef AV_SHA1_H
 #define AV_SHA1_H
 
+#include <stdint.h>
+
 extern const int av_sha1_size;
 
 struct AVSHA1;

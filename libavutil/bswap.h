@@ -26,6 +26,9 @@
 #ifndef __BSWAP_H__
 #define __BSWAP_H__
 
+#include <stdint.h>
+#include "common.h"
+
 #ifdef HAVE_BYTESWAP_H
 #include <byteswap.h>
 #else

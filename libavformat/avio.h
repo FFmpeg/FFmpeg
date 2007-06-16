@@ -21,6 +21,8 @@
 #ifndef AVIO_H
 #define AVIO_H
 
+#include <stdint.h>
+
 /* output byte stream handling */
 
 typedef int64_t offset_t;

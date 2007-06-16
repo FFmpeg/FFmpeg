@@ -29,6 +29,8 @@
 #ifndef INTEGER_H
 #define INTEGER_H
 
+#include <stdint.h>
+
 #define AV_INTEGER_SIZE 8
 
 typedef struct AVInteger{

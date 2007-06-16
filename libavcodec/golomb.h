@@ -28,6 +28,9 @@
  * @author Michael Niedermayer <michaelni@gmx.at> and Alex Beregszaszi
  */
 
+#include <stdint.h>
+#include "bitstream.h"
+
 #define INVALID_VLC           0x80000000
 
 extern const uint8_t ff_golomb_vlc_len[512];

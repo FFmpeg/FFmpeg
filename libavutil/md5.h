@@ -21,6 +21,8 @@
 #ifndef MD5_H
 #define MD5_H
 
+#include <stdint.h>
+
 extern const int av_md5_size;
 
 struct AVMD5;

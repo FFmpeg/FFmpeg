@@ -19,6 +19,8 @@
  *
  */
 
+#include <stdint.h>
+
 #define MIN_EXP -126
 #define MAX_EXP  126
 #define ONE_BITS 29

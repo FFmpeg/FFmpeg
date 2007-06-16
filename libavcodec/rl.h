@@ -6,6 +6,10 @@
 #ifndef AVCODEC_RL_H
 #define AVCODEC_RL_H
 
+#include <stdint.h>
+#include "bitstream.h"
+#include "mpegvideo.h"
+
 /** RLTable. */
 typedef struct RLTable {
     int n;                         ///< number of entries of table_vlc minus 1

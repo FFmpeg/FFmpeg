@@ -26,6 +26,8 @@
  * Cook AKA RealAudio G2 compatible decoderdata
  */
 
+#include <stdint.h>
+
 /* various data tables */
 
 static const int expbits_tab[8] = {

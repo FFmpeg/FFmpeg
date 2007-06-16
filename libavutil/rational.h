@@ -29,6 +29,8 @@
 #ifndef RATIONAL_H
 #define RATIONAL_H
 
+#include <stdint.h>
+
 /**
  * Rational number num/den.
  */

@@ -21,6 +21,8 @@
 #ifndef SVQ1_VLC_H
 #define SVQ1_VLC_H
 
+#include <stdint.h>
+
 /* values in this table range from 0..3; adjust retrieved value by +0 */
 static const uint8_t svq1_block_type_vlc[4][2] = {
  /* { code, length } */

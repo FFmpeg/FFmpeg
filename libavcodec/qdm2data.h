@@ -31,6 +31,8 @@
 #ifndef QDM2DATA_H
 #define QDM2DATA_H
 
+#include <stdint.h>
+
 /** VLC TABLES **/
 
 /* values in this table range from -1..23; adjust retrieved value by -1 */

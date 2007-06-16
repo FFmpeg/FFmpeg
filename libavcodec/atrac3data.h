@@ -25,6 +25,8 @@
  * Atrac 3 AKA RealAudio 8 compatible decoder data
  */
 
+#include <stdint.h>
+
 /* VLC tables */
 
 static const uint8_t huffcode1[9] = {

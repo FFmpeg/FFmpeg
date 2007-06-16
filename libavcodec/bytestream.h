@@ -22,6 +22,8 @@
 #ifndef FFMPEG_BYTESTREAM_H
 #define FFMPEG_BYTESTREAM_H
 
+#include "common.h"
+
 #define DEF(name, bytes, read, write)\
 static av_always_inline unsigned int bytestream_get_ ## name(uint8_t **b){\
     (*b) += bytes;\

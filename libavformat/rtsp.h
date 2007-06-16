@@ -21,6 +21,8 @@
 #ifndef RTSP_H
 #define RTSP_H
 
+#include <stdint.h>
+#include "avformat.h"
 #include "rtspcodes.h"
 
 enum RTSPProtocol {

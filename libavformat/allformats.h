@@ -22,6 +22,8 @@
 #ifndef ALLFORMATS_H
 #define ALLFORMATS_H
 
+#include "avformat.h"
+
 extern AVInputFormat aac_demuxer;
 extern AVInputFormat ac3_demuxer;
 extern AVInputFormat aiff_demuxer;

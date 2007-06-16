@@ -23,6 +23,9 @@
 #ifndef AAC_AC3_PARSER_H
 #define AAC_AC3_PARSER_H
 
+#include <stdint.h>
+#include "avcodec.h"
+
 typedef struct AACAC3ParseContext {
     uint8_t *inbuf_ptr;
     int frame_size;

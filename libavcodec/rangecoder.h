@@ -25,6 +25,10 @@
  * Range coder.
  */
 
+#include <stdint.h>
+#include <assert.h>
+#include "common.h"
+
 typedef struct RangeCoder{
     int low;
     int range;

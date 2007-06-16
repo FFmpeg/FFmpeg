@@ -22,6 +22,8 @@
 #ifndef SP5X_H
 #define SP5X_H
 
+#include <stdint.h>
+
 static const uint8_t sp5x_data_sof[] =
 {
     0xFF, 0xC0,       /* SOF */

@@ -21,6 +21,8 @@
 #ifndef AES_H
 #define AES_H
 
+#include <stdint.h>
+
 extern const int av_aes_size;
 
 struct AVAES;

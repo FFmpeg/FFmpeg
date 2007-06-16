@@ -25,6 +25,9 @@
  * mpeg4 tables.
  */
 
+#include <stdint.h>
+#include "mpegvideo.h"
+
 // shapes
 #define RECT_SHAPE       0
 #define BIN_SHAPE        1

@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 #define IR2_CODES 143
 static const uint16_t ir2_codes[IR2_CODES][2] = {
 #ifdef ALT_BITSTREAM_READER_LE

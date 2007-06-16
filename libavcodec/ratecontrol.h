@@ -28,6 +28,8 @@
  * ratecontrol header.
  */
 
+#include <stdio.h>
+#include <stdint.h>
 #include "eval.h"
 
 typedef struct Predictor{

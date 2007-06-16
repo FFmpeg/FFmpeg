@@ -29,6 +29,7 @@
 #define JPEGLSDEC_H
 
 #include "mjpeg.h"
+#include "mjpegdec.h"
 
 /**
  * Decode LSE block with initialization parameters

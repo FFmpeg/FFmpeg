@@ -27,6 +27,10 @@
  * MSMPEG4 data tables.
  */
 
+#include <stdint.h>
+#include "bitstream.h"
+#include "rl.h"
+
 /* non intra picture macro block coded block pattern + mb type */
 static const uint32_t table_mb_non_intra[128][2] = {
 { 0x40, 7 },{ 0x13c9, 13 },{ 0x9fd, 12 },{ 0x1fc, 15 },

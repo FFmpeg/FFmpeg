@@ -20,6 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+
 #define TMODE_COUNT 4
 static const uint8_t tmode_vlc_bits[TMODE_COUNT] = { 3, 3, 3, 2 };
 static const uint16_t tmode_codes[TMODE_COUNT][4] = {

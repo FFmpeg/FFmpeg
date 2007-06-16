@@ -26,6 +26,8 @@
  * H.263 tables.
  */
 
+#include <stdint.h>
+#include "mpegvideo.h"
 
 /* intra MCBPC, mb_type = (intra), then (intraq) */
 const uint8_t intra_MCBPC_code[9] = { 1, 1, 2, 3, 1, 1, 2, 3, 1 };

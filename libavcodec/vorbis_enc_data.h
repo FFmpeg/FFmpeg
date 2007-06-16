@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <stdint.h>
+
 static const uint8_t codebook0[] = {
    2, 10,  8, 14,  7, 12, 11, 14,  1,  5,  3,  7,  4,  9,  7,
   13,

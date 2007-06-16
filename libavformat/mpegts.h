@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avformat.h"
+
 #define TS_FEC_PACKET_SIZE 204
 #define TS_DVHS_PACKET_SIZE 192
 #define TS_PACKET_SIZE 188

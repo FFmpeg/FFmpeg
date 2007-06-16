@@ -25,6 +25,9 @@
 #ifndef TRUEMOTION1DATA_H
 #define TRUEMOTION1DATA_H
 
+#include <stdint.h>
+#include <stdlib.h>
+
 /* Y delta tables, skinny and fat */
 static const int16_t ydt1[8] = { 0, -2, 2, -6, 6, -12, 12, -12 };
 static const int16_t ydt2[8] = { 0, -2, 4, -6, 8, -12, 12, -12 };

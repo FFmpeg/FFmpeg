@@ -23,6 +23,8 @@
 #ifndef FF_S3TC_H
 #define FF_S3TC_H
 
+#include <stdint.h>
+
 #define FF_S3TC_DXT1    0x31545844
 #define FF_S3TC_DXT3    0x33545844
 

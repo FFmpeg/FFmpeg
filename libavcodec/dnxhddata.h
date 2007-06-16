@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 static const uint8_t dnxhd_1238_luma_weigth[] = {
      0, 32, 32, 33, 34, 33, 33, 33,
     33, 33, 33, 33, 33, 35, 37, 37,

@@ -22,6 +22,8 @@
 #ifndef __TRUESPEECH_DATA__
 #define __TRUESPEECH_DATA__
 
+#include <stdint.h>
+
 /* codebooks fo expanding input filter */
 static const int16_t ts_cb_0[32] = {
     0x8240, 0x8364, 0x84CE, 0x865D, 0x8805, 0x89DE, 0x8BD7, 0x8DF4,

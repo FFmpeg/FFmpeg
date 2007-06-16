@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 static const uint32_t correction[] = {
         0x00000000, 0x00000202, 0xfffffdfe, 0x000002ff, 0xfffffd01, 0xffffff03, 0x000000fd, 0x00000404,
         0xfffffbfc, 0x00000501, 0xfffffaff, 0x00000105, 0xfffffefb, 0x000003fc, 0xfffffc04, 0x000005fe,

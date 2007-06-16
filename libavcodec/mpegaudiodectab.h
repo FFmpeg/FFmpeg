@@ -24,6 +24,9 @@
  * mpeg audio layer decoder tables.
  */
 
+#include <stdint.h>
+#include "mpegaudio.h"
+
 /*******************************************************/
 /* layer 3 tables */
 

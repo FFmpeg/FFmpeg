@@ -23,6 +23,10 @@
 #ifndef RTP_INTERNAL_H
 #define RTP_INTERNAL_H
 
+#include <stdint.h>
+#include "avcodec.h"
+#include "rtp.h"
+
 // these statistics are used for rtcp receiver reports...
 typedef struct {
     uint16_t max_seq;           ///< highest sequence number seen

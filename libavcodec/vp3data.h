@@ -21,6 +21,9 @@
 #ifndef VP3DATA_H
 #define VP3DATA_H
 
+#include <stdint.h>
+#include <stdlib.h>
+
 /* these coefficients dequantize intraframe Y plane coefficients
  * (note: same as JPEG) */
 static const int16_t vp31_intra_y_dequant[64] =

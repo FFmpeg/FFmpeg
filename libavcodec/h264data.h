@@ -27,6 +27,10 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include <stdint.h>
+#include "mpegvideo.h"
+#include "rational.h"
+
 #define VERT_PRED             0
 #define HOR_PRED              1
 #define DC_PRED               2

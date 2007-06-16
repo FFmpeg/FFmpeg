@@ -27,6 +27,9 @@
  * Most of them come from the mpeg audio specification.
  */
 
+#include <stdint.h>
+#include "mpegaudio.h"
+
 #define SQRT2 1.41421356237309514547
 
 static const int costab32[30] = {

@@ -28,6 +28,9 @@
 #ifndef FF_RIFF_H
 #define FF_RIFF_H
 
+#include "avcodec.h"
+#include "avio.h"
+
 offset_t start_tag(ByteIOContext *pb, const char *tag);
 void end_tag(ByteIOContext *pb, offset_t start);
 

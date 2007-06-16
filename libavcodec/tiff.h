@@ -28,6 +28,8 @@
 #ifndef TIFF_H
 #define TIFF_H
 
+#include <stdint.h>
+
 /** abridged list of TIFF tags */
 enum TiffTags{
     TIFF_SUBFILE = 0xfe,

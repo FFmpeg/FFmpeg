@@ -24,6 +24,9 @@
  * Constants for DV codec.
  */
 
+#include "avcodec.h"
+#include "rational.h"
+
 /*
  * DVprofile is used to express the differences between various
  * DV flavors. For now it's primarily used for differentiating

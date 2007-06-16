@@ -26,6 +26,11 @@
 #ifndef BITSTREAM_H
 #define BITSTREAM_H
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <assert.h>
+#include "common.h"
+#include "bswap.h"
 #include "log.h"
 
 #if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)

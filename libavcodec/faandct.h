@@ -27,6 +27,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "dsputil.h"
+
 #define FAAN_POSTSCALE
 
 void ff_faandct(DCTELEM * data);

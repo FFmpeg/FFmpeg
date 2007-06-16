@@ -24,6 +24,8 @@
  * @file dcadata.c
  */
 
+#include <stdint.h>
+
 /* Generic tables */
 
 static const uint32_t dca_sample_rates[16] =

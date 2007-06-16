@@ -22,5 +22,7 @@
 #ifndef RTP_H264_H
 #define RTP_H264_H
 
+#include "rtp_internal.h"
+
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
 #endif /* RTP_H264_H */
