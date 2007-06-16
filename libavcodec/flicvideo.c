@@ -583,16 +583,14 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * during decompression. So if it is required (i.e., this is not a LE target, we do
                  * a second pass over the line here, swapping the bytes.
                  */
-                pixel = 0xFF00;
-                if (0xFF00 != AV_RL16(&pixel)) /* Check if it is not an LE target */
-                {
+#ifdef WORDS_BIGENDIAN
                   pixel_ptr = y_ptr;
                   pixel_countdown = s->avctx->width;
                   while (pixel_countdown > 0) {
                     *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[pixel_ptr]);
                     pixel_ptr += 2;
                   }
-                }
+#endif
                 y_ptr += s->frame.linesize[0];
             }
             break;
