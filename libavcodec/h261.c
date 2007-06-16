@@ -28,7 +28,6 @@
 #include "dsputil.h"
 #include "avcodec.h"
 #include "h261.h"
-#include "h261data.h"
 
 #define IS_FIL(a)    ((a)&MB_TYPE_H261_FIL)
 
