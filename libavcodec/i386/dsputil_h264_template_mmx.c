@@ -251,7 +251,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
 }
 
 #ifdef H264_CHROMA_MC2_TMPL
-static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*/, long stride, int h, int x, int y)
+static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
     int tmp = ((1<<16)-1)*x + 8;
     int CD= tmp*y;
@@ -297,7 +297,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         "sub $1, %2\n\t"
         "jnz 1b\n\t"
         : "+r" (dst), "+r"(src), "+r"(h)
-        : "m" (ff_pw_32), "r"(stride)
+        : "m" (ff_pw_32), "r"((long)stride)
         : "%esi");
 
 }
