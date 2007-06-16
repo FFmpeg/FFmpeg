@@ -9,7 +9,7 @@ EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 OBJS= swscale.o rgb2rgb.o
 
-OBJS-$(TARGET_ALTIVEC)     +=  yuv2rgb_altivec.o
+OBJS-$(HAVE_ALTIVEC)       +=  yuv2rgb_altivec.o
 OBJS-$(CONFIG_GPL)         +=  yuv2rgb.o
 
 OBJS-$(ARCH_BFIN)          +=  yuv2rgb_bfin.o
