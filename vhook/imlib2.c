@@ -23,11 +23,11 @@
  * -F <fontname>        The font face and size
  * -t <text>            The text
  * -f <filename>        The filename to read text from
- * -x <expresion>       X coordinate of text or image
- * -y <expresion>       Y coordinate of text or image
+ * -x <expression>      X coordinate of text or image
+ * -y <expression>      Y coordinate of text or image
  * -i <filename>        The filename to read a image from
  *
- * Expresions are functions of:
+ * Expressions are functions of:
  *      N  // frame number (starting at zero)
  *      H  // frame height
  *      W  // frame width

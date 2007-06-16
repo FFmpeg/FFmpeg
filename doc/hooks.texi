@@ -78,12 +78,12 @@ Options:
 @item @option{-F <fontname>}  @tab The font face and size
 @item @option{-t <text>}      @tab The text
 @item @option{-f <filename>}  @tab The filename to read text from
-@item @option{-x <expresion>} @tab x coordinate of text or image
-@item @option{-y <expresion>} @tab y coordinate of text or image
+@item @option{-x <expression>}@tab x coordinate of text or image
+@item @option{-y <expression>}@tab y coordinate of text or image
 @item @option{-i <filename>}  @tab The filename to read a image from
 @end multitable
 
-Expresions are functions of these variables:
+Expressions are functions of these variables:
 @multitable @columnfractions .2 .8
 @item @var{N} @tab frame number (starting at zero)
 @item @var{H} @tab frame height
