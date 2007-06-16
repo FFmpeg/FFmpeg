@@ -584,12 +584,12 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * a second pass over the line here, swapping the bytes.
                  */
 #ifdef WORDS_BIGENDIAN
-                  pixel_ptr = y_ptr;
-                  pixel_countdown = s->avctx->width;
-                  while (pixel_countdown > 0) {
+                pixel_ptr = y_ptr;
+                pixel_countdown = s->avctx->width;
+                while (pixel_countdown > 0) {
                     *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[pixel_ptr]);
                     pixel_ptr += 2;
-                  }
+                }
 #endif
                 y_ptr += s->frame.linesize[0];
             }
