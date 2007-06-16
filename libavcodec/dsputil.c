@@ -2020,7 +2020,7 @@ QPEL_MC(0, avg_       , _       , op_avg)
 
 #if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
-static void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
+static av_unused void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=2;\
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
@@ -2033,7 +2033,7 @@ static void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstSt
     }\
 }\
 \
-static void OPNAME ## h264_qpel2_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
+static av_unused void OPNAME ## h264_qpel2_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=2;\
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
@@ -2053,7 +2053,7 @@ static void OPNAME ## h264_qpel2_v_lowpass(uint8_t *dst, uint8_t *src, int dstSt
     }\
 }\
 \
-static void OPNAME ## h264_qpel2_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
+static av_unused void OPNAME ## h264_qpel2_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
     const int h=2;\
     const int w=2;\
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
