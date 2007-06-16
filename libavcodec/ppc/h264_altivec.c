@@ -766,7 +766,6 @@ static inline vector unsigned char h264_deblock_mask ( register vector unsigned 
     const vector unsigned char A0v = vec_sl(vec_splat_u8(10), vec_splat_u8(4));                   \
                                                                                                   \
     register vector unsigned char pq0bit = vec_xor(p0,q0);                                        \
-    register vector unsigned char temp;                                                           \
     register vector unsigned char q1minus;                                                        \
     register vector unsigned char p0minus;                                                        \
     register vector unsigned char stage1;                                                         \
@@ -775,11 +774,10 @@ static inline vector unsigned char h264_deblock_mask ( register vector unsigned 
     register vector unsigned char delta;                                                          \
     register vector unsigned char deltaneg;                                                       \
                                                                                                   \
-    temp = (vector unsigned char)vec_cmpeq(p0, p0);                                               \
-    q1minus = vec_xor(temp, q1);               /* 255 - q1 */                                     \
+    q1minus = vec_nor(q1, q1);                 /* 255 - q1 */                                     \
     stage1 = vec_avg(p1, q1minus);             /* (p1 - q1 + 256)>>1 */                           \
     stage2 = vec_sr(stage1, vec_splat_u8(1));  /* (p1 - q1 + 256)>>2 = 64 + (p1 - q1) >> 2 */     \
-    p0minus = vec_xor(temp, p0);               /* 255 - p0 */                                     \
+    p0minus = vec_nor(p0, p0);                 /* 255 - p0 */                                     \
     stage1 = vec_avg(q0, p0minus);             /* (q0 - p0 + 256)>>1 */                           \
     pq0bit = vec_and(pq0bit, vec_splat_u8(1));                                                    \
     stage2 = vec_avg(stage2, pq0bit);          /* 32 + ((q0 - p0)&1 + (p1 - q1) >> 2 + 1) >> 1 */ \
