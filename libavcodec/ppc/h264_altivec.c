@@ -806,7 +806,7 @@ static inline vector unsigned char h264_deblock_q1(register vector unsigned char
     register vector unsigned char mask;                                                      \
     register vector unsigned char p1mask;                                                    \
     register vector unsigned char q1mask;                                                    \
-    register vector char tc0vec;                                                             \
+    register vector signed   char tc0vec;                                                    \
     register vector unsigned char finaltc0;                                                  \
     register vector unsigned char tc0masked;                                                 \
     register vector unsigned char newp1;                                                     \
@@ -820,7 +820,7 @@ static inline vector unsigned char h264_deblock_q1(register vector unsigned char
     mask = h264_deblock_mask(p0, p1, q0, q1, alphavec, betavec); /*if in block */            \
                                                                                              \
     *((int *)temp) = *((int *)tc0);                                                          \
-    tc0vec = vec_ld(0, temp);                                                                \
+    tc0vec = vec_ld(0, (signed char*)temp);                                                  \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \
     mask = vec_and(mask, vec_cmpgt(tc0vec, vec_splat_s8(-1)));  /* if tc0[i] >= 0 */         \
@@ -828,14 +828,14 @@ static inline vector unsigned char h264_deblock_q1(register vector unsigned char
                                                                                              \
     p1mask = diff_lt_altivec(p2, p0, betavec);                                               \
     p1mask = vec_and(p1mask, mask);                             /* if( |p2 - p0| < beta) */  \
-    tc0masked = vec_and(p1mask, tc0vec);                                                     \
+    tc0masked = vec_and(p1mask, (vector unsigned char)tc0vec);                               \
     finaltc0 = vec_sub(finaltc0, p1mask);                       /* tc++ */                   \
     newp1 = h264_deblock_q1(p0, p1, p2, q0, tc0masked);                                      \
     /*end if*/                                                                               \
                                                                                              \
     q1mask = diff_lt_altivec(q2, q0, betavec);                                               \
     q1mask = vec_and(q1mask, mask);                             /* if ( |q2 - q0| < beta ) */\
-    tc0masked = vec_and(q1mask, tc0vec);                                                     \
+    tc0masked = vec_and(q1mask, (vector unsigned char)tc0vec);                               \
     finaltc0 = vec_sub(finaltc0, q1mask);                       /* tc++ */                   \
     newq1 = h264_deblock_q1(p0, q1, q2, q0, tc0masked);                                      \
     /*end if*/                                                                               \
