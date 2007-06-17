@@ -52,4 +52,4 @@ void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
                   int numCB, int num_steps, int *closest_cb,
                   AVRandomState *rand_state);
 
-#endif
+#endif // AVCODEC_ELBG_H

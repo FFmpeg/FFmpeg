@@ -4121,4 +4121,4 @@ static const unsigned char ulti_codebook[16384]={
     0x3D, 0x3E, 0x3E, 0x3F
 };
 
-#endif
+#endif // AVCODEC_ULTI_CB_H

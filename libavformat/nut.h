@@ -99,4 +99,4 @@ static unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t
     return av_crc(av_crc04C11DB7, checksum, buf, len);
 }
 
-#endif
+#endif AVFORMAT_NUT_H

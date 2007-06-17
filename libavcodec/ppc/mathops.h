@@ -35,4 +35,4 @@
          __rt; })
 #endif
 
-#endif
+#endif // AVCODEC_PPC_MATHOPS_H

@@ -70,4 +70,4 @@ void ff_apply_motion_4x4(RoqContext *ri, int x, int y, int deltax, int deltay);
 
 void ff_apply_motion_8x8(RoqContext *ri, int x, int y, int deltax, int deltay);
 
-#endif
+#endif // AVCODEC_ROQVIDEO_H

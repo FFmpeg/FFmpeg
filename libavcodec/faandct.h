@@ -37,4 +37,4 @@
 void ff_faandct(DCTELEM * data);
 void ff_faandct248(DCTELEM * data);
 
-#endif
+#endif // AVCODEC_FAANDCT_H

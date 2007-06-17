@@ -12,4 +12,4 @@ enum BethsoftVidBlockType
     EOF_BLOCK           = 0x14,
 };
 
-#endif
+#endif // AVCODEC_BETHSOFTVIDEO_H

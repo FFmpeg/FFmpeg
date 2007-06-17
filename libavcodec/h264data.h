@@ -1329,4 +1329,4 @@ static const int cabac_context_init_PB[3][460][2] =
     }
 };
 
-#endif
+#endif // AVCODEC_H264DATA_H

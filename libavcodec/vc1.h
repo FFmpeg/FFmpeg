@@ -304,4 +304,4 @@ typedef struct VC1Context{
     int bi_type;
 } VC1Context;
 
-#endif
+#endif // AVCODEC_VC1_H

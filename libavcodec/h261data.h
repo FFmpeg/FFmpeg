@@ -161,4 +161,4 @@ static RLTable h261_rl_tcoeff = {
     h261_tcoeff_level,
 };
 
-#endif
+#endif // AVCODEC_H261DATA_H

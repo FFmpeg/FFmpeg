@@ -37,4 +37,4 @@ RTSP_STATUS_SERVICE         =503, /**< Service Unavailable */
 RTSP_STATUS_VERSION         =505, /**< RTSP Version not supported */
 };
 
-#endif
+#endif // AVFORMAT_RTSPCODES_H

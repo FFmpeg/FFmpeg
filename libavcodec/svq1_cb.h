@@ -1585,4 +1585,4 @@ static const int8_t svq1_intra_codebook_sum[4][16*6] = {
  }
 };
 
-#endif
+#endif // AVCODEC_SVQ1_CB_H

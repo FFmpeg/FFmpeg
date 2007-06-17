@@ -2729,4 +2729,4 @@ static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t* buf)
     return 3;
 }
 
-#endif
+#endif // AVCODEC_DVDATA_H

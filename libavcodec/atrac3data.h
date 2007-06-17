@@ -137,4 +137,4 @@ static const float qmf_48tap_half[24] = {
 /* joint stereo related tables */
 static const float matrixCoeffs[8] = {0.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0, 1.0};
 
-#endif
+#endif // AVCODEC_ATRAC3DATA_H

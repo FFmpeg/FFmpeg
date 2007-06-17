@@ -1438,4 +1438,4 @@ static const CoefVLCTable coef_vlcs[6] = {
     },
 };
 
-#endif
+#endif // AVCODEC_WMADATA_H

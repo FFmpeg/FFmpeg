@@ -286,4 +286,4 @@ static const GUID my_guid = {
 
 #define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000
 
-#endif
+#endif // AVFORMAT_ASF_H

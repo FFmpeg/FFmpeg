@@ -502,4 +502,4 @@ static const struct {
     { 3, 2, 3, (const int[]){ -1, 12, 13, 14 } },
 };
 
-#endif
+#endif // AVCODEC_VORBIS_ENC_DATA_H

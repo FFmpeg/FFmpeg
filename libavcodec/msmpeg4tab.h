@@ -2020,4 +2020,4 @@ static const uint8_t wmv2_scantableB[64]={
 0x13, 0x32, 0x1B, 0x3A, 0x23, 0x2B, 0x33, 0x3B,
 };
 
-#endif
+#endif // AVCODEC_MSMPEG4TAB_H

@@ -518,4 +518,4 @@ static const int_fast8_t top_modifier_l[8]  = {-1, 1, 5,-1,-1, 5, 7, 7};
 static const int_fast8_t left_modifier_c[7] = { 5,-1, 2,-1, 6, 5, 6};
 static const int_fast8_t top_modifier_c[7]  = { 4, 1,-1,-1, 4, 6, 6};
 
-#endif
+#endif // AVCODEC_CAVSDATA_H

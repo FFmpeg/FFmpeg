@@ -563,4 +563,4 @@ static const float* cplscales[5] = {
     cplscale2, cplscale3, cplscale4, cplscale5, cplscale6,
 };
 
-#endif
+#endif // AVCODEC_COOKDATA_H

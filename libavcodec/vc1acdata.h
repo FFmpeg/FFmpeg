@@ -589,4 +589,4 @@ static const uint8_t vc1_last_delta_run_table[AC_MODES][10] = {
 }
 };
 
-#endif
+#endif // AVCODEC_VC1ACDATA_H

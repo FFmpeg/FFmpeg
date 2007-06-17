@@ -329,4 +329,4 @@ static inline void vis_alignaddrl_g0(void *_ptr)
 
 #define vis_pdist(rs1,rs2,rd)           vis_dd2d(0x3e, rs1, rs2, rd)
 
-#endif
+#endif // AVCODEC_VIS_H

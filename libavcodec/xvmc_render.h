@@ -52,4 +52,4 @@ typedef   struct{
 
 } xvmc_render_state_t;
 
-#endif
+#endif // AVCODEC_XVMC_RENDER_H

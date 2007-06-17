@@ -31,4 +31,4 @@
 #define DCA_MARKER_14B_BE 0x1FFFE800
 #define DCA_MARKER_14B_LE 0xFF1F00E8
 
-#endif
+#endif // AVCODEC_DCA_H

@@ -603,4 +603,4 @@ static const float ci_table[8] = {
     -0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037,
 };
 
-#endif
+#endif // AVCODEC_MPEGAUDIODECTAB_H

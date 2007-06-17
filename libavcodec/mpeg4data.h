@@ -429,4 +429,4 @@ static const uint8_t mpeg4_dc_threshold[8]={
     99, 13, 15, 17, 19, 21, 23, 0
 };
 
-#endif
+#endif // AVCODEC_MPEG4DATA_H

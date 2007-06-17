@@ -41,4 +41,4 @@ DVMuxContext* dv_init_mux(AVFormatContext* s);
 int dv_assemble_frame(DVMuxContext *c, AVStream*, const uint8_t*, int, uint8_t**);
 void dv_delete_mux(DVMuxContext*);
 
-#endif
+#endif // AVFORMAT_DV_H

@@ -42,4 +42,4 @@
      asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb));\
      rt; })
 
-#endif
+#endif // AVCODEC_X86_MATHOPS_H

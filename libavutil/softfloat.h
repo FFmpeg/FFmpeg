@@ -126,4 +126,4 @@ static inline int av_sf2int(SoftFloat v, int frac_bits){
     else           return v.mant >>(-v.exp);
 }
 
-#endif
+#endif // AVUTIL_SOFTFLOAT_H

@@ -185,4 +185,4 @@ static inline void linecpy(void *dest, void *src, int lines, int stride)
         }
 }
 
-#endif
+#endif // POSTPROCESS_INTERNAL_H

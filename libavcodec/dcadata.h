@@ -8471,4 +8471,4 @@ where Ch(n) represents the subband samples in the (n)th audio channel.
 
 */
 
-#endif
+#endif // AVCODEC_DCADATA_H

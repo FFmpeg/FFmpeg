@@ -167,4 +167,4 @@ static const uint16_t imc_huffman_bits[4][4][18] = {
     }
 };
 
-#endif
+#endif // AVCODEC_IMCDATA_H

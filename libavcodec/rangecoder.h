@@ -139,4 +139,4 @@ static inline int get_rac(RangeCoder *c, uint8_t * const state){
 #endif
 }
 
-#endif
+#endif // AVCODEC_RANGECODER_H

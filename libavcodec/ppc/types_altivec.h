@@ -43,4 +43,4 @@
 #define zero_u32v (vec_u32_t) zerov
 #define zero_s32v (vec_s32_t) zerov
 
-#endif
+#endif // AVCODEC_TYPES_ALTIVEC_H

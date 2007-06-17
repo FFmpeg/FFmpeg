@@ -115,4 +115,4 @@ static const float fixed_smr[SBLIMIT] =  {
 
 static const unsigned char nb_scale_factors[4] = { 3, 2, 1, 2 };
 
-#endif
+#endif // AVCODEC_MPEGAUDIOTAB_H

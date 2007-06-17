@@ -479,4 +479,4 @@ static const uint8_t svcd_scan_offset_placeholder[14]={
     0xff, 0xff, 0xff,
 };
 
-#endif
+#endif // AVCODEC_MPEG12DATA_H

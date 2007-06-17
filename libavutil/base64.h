@@ -37,4 +37,4 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length);
  */
 char *av_base64_encode(char * buf, int buf_len, uint8_t * src, int len);
 
-#endif
+#endif // AVUTIL_BASE64_H

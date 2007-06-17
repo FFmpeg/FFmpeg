@@ -484,4 +484,4 @@ static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k, int limit
     set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
 }
 
-#endif
+#endif // AVCODEC_GOLOMB_H

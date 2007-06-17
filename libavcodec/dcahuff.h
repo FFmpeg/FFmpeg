@@ -1073,4 +1073,4 @@ static const uint8_t* bitalloc_bits[10][8] = {
     bitalloc_129_bits_e, bitalloc_129_bits_f, bitalloc_129_bits_g, NULL }
 };
 
-#endif
+#endif // AVCODEC_DCAHUFF_H

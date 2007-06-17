@@ -35,4 +35,4 @@ typedef enum {
     BMP_BITFIELDS   =3,
 } BiCompression;
 
-#endif
+#endif // AVCODEC_BMP_H

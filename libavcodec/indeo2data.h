@@ -138,4 +138,4 @@ static const uint8_t ir2_luma_table[256] = {
  0x3F, 0x94, 0xD9, 0xD9, 0x27, 0x27, 0x80, 0x80
 };
 
-#endif
+#endif // AVCODEC_INDEO2DATA_H

@@ -51,4 +51,4 @@
 
 #endif
 
-#endif
+#endif // AVCODEC_ARM_MATHOPS_H
