@@ -1484,15 +1484,15 @@ fi
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if enabled altivec; then
-        if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
-            add_cflags "-faltivec"
-        else
-            add_cflags "-maltivec -mabi=altivec"
-        fi
+    if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
+        add_cflags "-faltivec"
+    else
+        add_cflags "-maltivec -mabi=altivec"
+    fi
 
-check_header altivec.h
+    check_header altivec.h
 
-# check if our compiler supports Motorola AltiVec C API
+    # check if our compiler supports Motorola AltiVec C API
     if enabled altivec_h; then
         inc_altivec_h="#include <altivec.h>"
     else
@@ -1510,9 +1510,9 @@ fi
 
 # check armv5te instructions support
 enabled armv5te && check_cc <<EOF || disable armv5te
-        int main(void) {
-        __asm__ __volatile__ ("qadd r0, r0, r0");
-        }
+int main(void) {
+    __asm__ __volatile__ ("qadd r0, r0, r0");
+}
 EOF
 
 enabled armv6 && check_cc <<EOF || disable armv6
@@ -1523,9 +1523,9 @@ EOF
 
 # check iwmmxt support
 enabled iwmmxt && check_cc <<EOF || disable iwmmxt
-        int main(void) {
-        __asm__ __volatile__ ("wunpckelub wr6, wr4");
-        }
+int main(void) {
+    __asm__ __volatile__ ("wunpckelub wr6, wr4");
+}
 EOF
 
 # check if our compiler supports mmi
