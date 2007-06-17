@@ -637,6 +637,7 @@ ARCH_EXT_LIST='
     iwmmxt
     mmi
     mmx
+    ssse3
 '
 
 HAVE_LIST="
@@ -673,7 +674,6 @@ HAVE_LIST="
     sdl
     sdl_video_size
     soundcard_h
-    ssse3
     sys_poll_h
     sys_soundcard_h
     threads
@@ -690,6 +690,15 @@ CMDLINE_SELECT="
 "
 
 # code dependency declarations
+
+# architecture extensions
+altivec_deps="powerpc"
+armv5te_deps="armv4l"
+armv6_deps="armv4l"
+iwmmxt_deps="armv4l"
+mmi_deps="mips"
+mmx_deps="x86"
+ssse3_deps="x86"
 
 # decoders / encoders
 dxa_decoder_deps="zlib"
@@ -806,16 +815,10 @@ asmalign_pot="unknown"
 arch=`uname -m`
 cpu="generic"
 powerpc_perf="no"
-mmx="default"
 cmov="no"
 fast_cmov="no"
 fast_unaligned="no"
-armv5te="default"
-armv6="default"
-iwmmxt="default"
-altivec="default"
 dcbzl="no"
-mmi="default"
 bigendian="no"
 
 # OS
@@ -1090,6 +1093,10 @@ case "$arch" in
   ;;
 esac
 
+enable $arch
+enabled_any x86_32 x86_64 && enable x86
+enabled     sparc64       && enable sparc
+
 # OS specific
 osextralibs="-lm"
 case $targetos in
@@ -1302,14 +1309,8 @@ if disabled gpl ; then
     die_gpl_disabled "The software scaler"     swscaler
 fi
 
-# compute MMX state
-if test $mmx = "default"; then
-    if test $arch = "x86_32" -o $arch = "x86_64"; then
-        mmx="yes"
-    else
-        mmx="no"
-    fi
-fi
+enable     $ARCH_EXT_LIST
+check_deps $ARCH_EXT_LIST
 
 test -z "$need_memalign" && need_memalign="$mmx"
 
@@ -1328,15 +1329,6 @@ fi
 enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
 
 disabled optimize || add_cflags -fomit-frame-pointer
-
-# Can only do AltiVec on PowerPC
-if test $altivec = "default"; then
-    if test $arch = "powerpc"; then
-        altivec="yes"
-    else
-        altivec="no"
-    fi
-fi
 
 # Add processor-specific flags
 POWERPCMODE="32bits"
@@ -1447,7 +1439,7 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
-if test $arch = "x86_32" -o $arch = "x86_64"; then
+if enabled x86; then
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
     # if the base pointer is used to access it because the
@@ -1468,7 +1460,7 @@ int main(){
 EOF
 
     # check whether binutils is new enough to compile SSSE3
-    check_cc <<EOF && enable ssse3
+    enabled ssse3 && check_cc <<EOF || disable ssse3
 int main(){
     asm volatile ("pabsw %xmm0, %xmm0");
 }
@@ -1491,20 +1483,16 @@ fi
 # check for SIMD availability
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
-if test $arch = "powerpc"; then
-    if enabled altivec; then
+if enabled altivec; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
             add_cflags "-faltivec"
         else
             add_cflags "-maltivec -mabi=altivec"
         fi
-    fi
-fi
 
 check_header altivec.h
 
 # check if our compiler supports Motorola AltiVec C API
-if enabled altivec; then
     if enabled altivec_h; then
         inc_altivec_h="#include <altivec.h>"
     else
@@ -1521,41 +1509,24 @@ EOF
 fi
 
 # check armv5te instructions support
-if test $armv5te = "default" -a $arch = "armv4l"; then
-    armv5te=no
-    check_cc <<EOF && armv5te=yes
+enabled armv5te && check_cc <<EOF || disable armv5te
         int main(void) {
         __asm__ __volatile__ ("qadd r0, r0, r0");
         }
 EOF
-fi
 
-if test $armv6 = "default" -a $arch = "armv4l"; then
-    check_cc <<EOF && armv6=yes || armv6=no
+enabled armv6 && check_cc <<EOF || disable armv6
 int main(void) {
     __asm__ __volatile__ ("sadd16 r0, r0, r0");
 }
 EOF
-fi
 
 # check iwmmxt support
-if test $iwmmxt = "default" -a $arch = "armv4l"; then
-    iwmmxt=no
-    check_cc <<EOF && iwmmxt=yes
+enabled iwmmxt && check_cc <<EOF || disable iwmmxt
         int main(void) {
         __asm__ __volatile__ ("wunpckelub wr6, wr4");
         }
 EOF
-fi
-
-# mmi only available on mips
-if test $mmi = "default"; then
-    if test $arch = "mips"; then
-        mmi="yes"
-    else
-        mmi="no"
-    fi
-fi
 
 # check if our compiler supports mmi
 enabled mmi && check_cc <<EOF || mmi="no"
@@ -1964,12 +1935,6 @@ fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
-
-enable $arch
-
-# special cases
-enabled_any x86_32 x86_64 && enable x86
-enabled     sparc64       && enable sparc
 
 case "$arch" in
     powerpc)
