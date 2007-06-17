@@ -42,12 +42,18 @@ $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 %: %.o $(LIB)
 	$(CC) $(LDFLAGS) -o $@ $^ $(EXTRALIBS)
 
+%.ho: %.h
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
+
+ALLHEADERS = $(subst $(VPATH)/,,$(wildcard $(VPATH)/*.h))
+checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
+
 depend dep: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 clean::
 	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
-	      *.def *.dll.a *.exp
+	      *.def *.dll.a *.exp *.ho
 
 distclean: clean
 	rm -f .depend
