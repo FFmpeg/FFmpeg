@@ -268,13 +268,13 @@ int Configure(void **ctxp, int argc, char *argv[])
     }
 
     if (ci->text || ci->file) {
-    ci->fn = imlib_load_font(font);
-    if (!ci->fn) {
-        fprintf(stderr, "Failed to load font '%s'\n", font);
-        return -1;
-    }
-    imlib_context_set_font(ci->fn);
-    imlib_context_set_direction(IMLIB_TEXT_TO_RIGHT);
+        ci->fn = imlib_load_font(font);
+        if (!ci->fn) {
+            fprintf(stderr, "Failed to load font '%s'\n", font);
+            return -1;
+        }
+        imlib_context_set_font(ci->fn);
+        imlib_context_set_direction(IMLIB_TEXT_TO_RIGHT);
     }
 
     if (color) {
@@ -334,7 +334,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     }
 
     if (!ci->eval_colors)
-    imlib_context_set_color(ci->r, ci->g, ci->b, 255);
+        imlib_context_set_color(ci->r, ci->g, ci->b, 255);
 
     /* load the image (for example, credits for a movie) */
     if (ci->fileImage) {
@@ -401,7 +401,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     imlib_context_set_image(image);
     data = imlib_image_get_data();
 
-        avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGB32, width, height);
+    avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGB32, width, height);
 
     // if we already got a SWS context, let's realloc if is not re-useable
     ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
