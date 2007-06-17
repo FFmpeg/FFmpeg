@@ -1553,7 +1553,7 @@ fi
 
 for thread in $THREADS_LIST; do
     if enabled $thread; then
-        if ! disabled thread_type ; then
+        if test -n "$thread_type"; then
             die "ERROR: Only one thread type must be selected."
         else
             thread_type="$thread"
