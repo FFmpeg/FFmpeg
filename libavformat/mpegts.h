@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFORMAT_MPEGTS_H
+#define AVFORMAT_MPEGTS_H
+
 #include "avformat.h"
 
 #define TS_FEC_PACKET_SIZE 204
@@ -63,3 +66,5 @@ MpegTSContext *mpegts_parse_open(AVFormatContext *s);
 int mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
                         const uint8_t *buf, int len);
 void mpegts_parse_close(MpegTSContext *ts);
+
+#endif

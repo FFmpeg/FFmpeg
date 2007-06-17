@@ -22,8 +22,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_DCA_H
+#define AVCODEC_DCA_H
+
 /** DCA syncwords, also used for bitstream type detection */
 #define DCA_MARKER_RAW_BE 0x7FFE8001
 #define DCA_MARKER_RAW_LE 0xFE7F0180
 #define DCA_MARKER_14B_BE 0x1FFFE800
 #define DCA_MARKER_14B_LE 0xFF1F00E8
+
+#endif

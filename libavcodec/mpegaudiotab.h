@@ -27,6 +27,9 @@
  * Most of them come from the mpeg audio specification.
  */
 
+#ifndef AVCODEC_MPEGAUDIOTAB_H
+#define AVCODEC_MPEGAUDIOTAB_H
+
 #include <stdint.h>
 #include "mpegaudio.h"
 
@@ -112,3 +115,4 @@ static const float fixed_smr[SBLIMIT] =  {
 
 static const unsigned char nb_scale_factors[4] = { 3, 2, 1, 2 };
 
+#endif

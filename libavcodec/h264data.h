@@ -27,6 +27,9 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#ifndef AVCODEC_H264DATA_H
+#define AVCODEC_H264DATA_H
+
 #include <stdint.h>
 #include "mpegvideo.h"
 #include "rational.h"
@@ -1325,3 +1328,5 @@ static const int cabac_context_init_PB[3][460][2] =
         {  31,  12 }, {  37,  23 }, {  31,  38 }, {  20,  64 },
     }
 };
+
+#endif

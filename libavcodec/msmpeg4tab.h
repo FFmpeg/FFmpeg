@@ -27,6 +27,9 @@
  * MSMPEG4 data tables.
  */
 
+#ifndef AVCODEC_MSMPEG4TAB_H
+#define AVCODEC_MSMPEG4TAB_H
+
 #include <stdint.h>
 #include "bitstream.h"
 #include "rl.h"
@@ -2016,3 +2019,5 @@ static const uint8_t wmv2_scantableB[64]={
 0x38, 0x29, 0x22, 0x03, 0x31, 0x39, 0x0B, 0x2A,
 0x13, 0x32, 0x1B, 0x3A, 0x23, 0x2B, 0x33, 0x3B,
 };
+
+#endif

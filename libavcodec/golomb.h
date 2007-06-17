@@ -28,6 +28,9 @@
  * @author Michael Niedermayer <michaelni@gmx.at> and Alex Beregszaszi
  */
 
+#ifndef AVCODEC_GOLOMB_H
+#define AVCODEC_GOLOMB_H
+
 #include <stdint.h>
 #include "bitstream.h"
 
@@ -480,3 +483,5 @@ static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k, int limit
 
     set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
 }
+
+#endif

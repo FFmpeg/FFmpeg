@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_ARM_MATHOPS_H
+#define AVCODEC_ARM_MATHOPS_H
+
 #ifdef FRAC_BITS
 #   define MULL(a, b) \
         ({  int lo, hi;\
@@ -45,5 +48,7 @@
         ({ int __rt;                                                    \
          asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));  \
          __rt; })
+
+#endif
 
 #endif

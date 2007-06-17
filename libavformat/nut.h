@@ -20,6 +20,9 @@
  *
  */
 
+#ifndef AVFORMAT_NUT_H
+#define AVFORMAT_NUT_H
+
 //#include <limits.h>
 #include "avformat.h"
 #include "crc.h"
@@ -95,3 +98,5 @@ typedef struct {
 static unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
     return av_crc(av_crc04C11DB7, checksum, buf, len);
 }
+
+#endif

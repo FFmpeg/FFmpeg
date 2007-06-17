@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_ELBG_H
+#define AVCODEC_ELBG_H
+
 #include "random.h"
 
 /**
@@ -48,3 +51,5 @@ void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
 void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
                   int numCB, int num_steps, int *closest_cb,
                   AVRandomState *rand_state);
+
+#endif

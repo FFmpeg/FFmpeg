@@ -1,3 +1,6 @@
+#ifndef AVCODEC_BETHSOFTVIDEO_H
+#define AVCODEC_BETHSOFTVIDEO_H
+
 enum BethsoftVidBlockType
 {
     PALETTE_BLOCK       = 0x02,
@@ -8,3 +11,5 @@ enum BethsoftVidBlockType
     VIDEO_YOFF_P_FRAME  = 0x04,
     EOF_BLOCK           = 0x14,
 };
+
+#endif

@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef AVCODEC_ROQVIDEO_H
+#define AVCODEC_ROQVIDEO_H
+
 #include "avcodec.h"
 #include "dsputil.h"
 
@@ -66,3 +69,5 @@ void ff_apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell);
 void ff_apply_motion_4x4(RoqContext *ri, int x, int y, int deltax, int deltay);
 
 void ff_apply_motion_8x8(RoqContext *ri, int x, int y, int deltax, int deltay);
+
+#endif

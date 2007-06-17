@@ -25,6 +25,9 @@
  * mpeg4 tables.
  */
 
+#ifndef AVCODEC_MPEG4DATA_H
+#define AVCODEC_MPEG4DATA_H
+
 #include <stdint.h>
 #include "mpegvideo.h"
 
@@ -425,3 +428,5 @@ const uint16_t ff_mpeg4_resync_prefix[8]={
 static const uint8_t mpeg4_dc_threshold[8]={
     99, 13, 15, 17, 19, 21, 23, 0
 };
+
+#endif

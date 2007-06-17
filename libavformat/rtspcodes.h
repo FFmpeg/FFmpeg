@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFORMAT_RTSPCODES_H
+#define AVFORMAT_RTSPCODES_H
+
 /** RTSP handling */
 enum RTSPStatusCode {
 RTSP_STATUS_OK              =200, /**< OK */
@@ -34,3 +37,4 @@ RTSP_STATUS_SERVICE         =503, /**< Service Unavailable */
 RTSP_STATUS_VERSION         =505, /**< RTSP Version not supported */
 };
 
+#endif

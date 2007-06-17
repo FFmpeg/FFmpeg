@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef AVUTIL_SOFTFLOAT_H
+#define AVUTIL_SOFTFLOAT_H
+
 #include <stdint.h>
 
 #define MIN_EXP -126
@@ -122,3 +125,5 @@ static inline int av_sf2int(SoftFloat v, int frac_bits){
     if(v.exp >= 0) return v.mant <<  v.exp ;
     else           return v.mant >>(-v.exp);
 }
+
+#endif

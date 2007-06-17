@@ -24,6 +24,9 @@
  * @file dcadata.c
  */
 
+#ifndef AVCODEC_DCADATA_H
+#define AVCODEC_DCADATA_H
+
 #include <stdint.h>
 
 /* Generic tables */
@@ -8467,3 +8470,5 @@ where Ch(n) represents the subband samples in the (n)th audio channel.
 
 
 */
+
+#endif

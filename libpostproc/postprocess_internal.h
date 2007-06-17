@@ -23,6 +23,9 @@
  * internal api header.
  */
 
+#ifndef POSTPROCESS_INTERNAL_H
+#define POSTPROCESS_INTERNAL_H
+
 #include "avutil.h"
 
 #define V_DEBLOCK       0x01
@@ -181,3 +184,5 @@ static inline void linecpy(void *dest, void *src, int lines, int stride)
                 memcpy(dest+(lines-1)*stride, src+(lines-1)*stride, -lines*stride);
         }
 }
+
+#endif

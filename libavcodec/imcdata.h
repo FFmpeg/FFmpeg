@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef AVCODEC_IMCDATA_H
+#define AVCODEC_IMCDATA_H
+
 #include <stdint.h>
 
 static const uint16_t band_tab[33] = {
@@ -164,3 +167,4 @@ static const uint16_t imc_huffman_bits[4][4][18] = {
     }
 };
 
+#endif

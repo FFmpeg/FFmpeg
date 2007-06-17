@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_ULTI_CB_H
+#define AVCODEC_ULTI_CB_H
+
 static const unsigned char ulti_codebook[16384]={
     0x00, 0x01, 0x01, 0x02,
     0x00, 0x01, 0x02, 0x03,
@@ -4117,3 +4120,5 @@ static const unsigned char ulti_codebook[16384]={
     0x3C, 0x3D, 0x3E, 0x3F,
     0x3D, 0x3E, 0x3E, 0x3F
 };
+
+#endif

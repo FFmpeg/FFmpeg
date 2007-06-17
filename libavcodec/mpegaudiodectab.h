@@ -24,6 +24,9 @@
  * mpeg audio layer decoder tables.
  */
 
+#ifndef AVCODEC_MPEGAUDIODECTAB_H
+#define AVCODEC_MPEGAUDIODECTAB_H
+
 #include <stdint.h>
 #include "mpegaudio.h"
 
@@ -599,3 +602,5 @@ static const uint8_t mpa_pretab[2][22] = {
 static const float ci_table[8] = {
     -0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037,
 };
+
+#endif

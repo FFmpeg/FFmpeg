@@ -25,6 +25,9 @@
  * MPEG1/2 tables.
  */
 
+#ifndef AVCODEC_MPEG12DATA_H
+#define AVCODEC_MPEG12DATA_H
+
 #include <stdint.h>
 #include "mpegvideo.h"
 
@@ -475,3 +478,5 @@ static const uint8_t svcd_scan_offset_placeholder[14]={
     0xff, 0xff, 0xff,
     0xff, 0xff, 0xff,
 };
+
+#endif

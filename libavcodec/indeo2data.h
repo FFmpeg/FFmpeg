@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_INDEO2DATA_H
+#define AVCODEC_INDEO2DATA_H
+
 #include <stdint.h>
 
 #define IR2_CODES 143
@@ -134,3 +137,5 @@ static const uint8_t ir2_luma_table[256] = {
  0x28, 0x5C, 0x6C, 0xC1, 0x94, 0x3F, 0xC1, 0x6C,
  0x3F, 0x94, 0xD9, 0xD9, 0x27, 0x27, 0x80, 0x80
 };
+
+#endif

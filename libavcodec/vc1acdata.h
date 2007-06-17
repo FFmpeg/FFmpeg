@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_VC1ACDATA_H
+#define AVCODEC_VC1ACDATA_H
+
 #include <stdint.h>
 
 #define AC_MODES 8
@@ -585,3 +588,5 @@ static const uint8_t vc1_last_delta_run_table[AC_MODES][10] = {
       -1,    30,    28,     3,     0
 }
 };
+
+#endif

@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_INDEO3DATA_H
+#define AVCODEC_INDEO3DATA_H
+
 #include <stdint.h>
 
 static const uint32_t correction[] = {
@@ -2335,3 +2338,5 @@ static const uint32_t correctionhighorder[] = {
         0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2, 0xd1d1d1d2,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
+
+#endif

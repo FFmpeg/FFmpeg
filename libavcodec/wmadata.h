@@ -24,6 +24,9 @@
  * Various WMA tables.
  */
 
+#ifndef AVCODEC_WMADATA_H
+#define AVCODEC_WMADATA_H
+
 #include <stdint.h>
 #include "wma.h"
 
@@ -1434,3 +1437,5 @@ static const CoefVLCTable coef_vlcs[6] = {
         sizeof(coef5_huffbits), sizeof(levels5)/2, coef5_huffcodes, coef5_huffbits, levels5,
     },
 };
+
+#endif

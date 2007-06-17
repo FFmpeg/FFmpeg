@@ -25,6 +25,9 @@
  * Range coder.
  */
 
+#ifndef AVCODEC_RANGECODER_H
+#define AVCODEC_RANGECODER_H
+
 #include <stdint.h>
 #include <assert.h>
 #include "common.h"
@@ -136,3 +139,4 @@ static inline int get_rac(RangeCoder *c, uint8_t * const state){
 #endif
 }
 
+#endif

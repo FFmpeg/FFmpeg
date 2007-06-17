@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef AVCODEC_VORBIS_ENC_DATA_H
+#define AVCODEC_VORBIS_ENC_DATA_H
+
 #include <stdint.h>
 
 static const uint8_t codebook0[] = {
@@ -498,3 +501,5 @@ static const struct {
     { 4, 2, 2, (const int[]){ -1,  9, 10, 11 } },
     { 3, 2, 3, (const int[]){ -1, 12, 13, 14 } },
 };
+
+#endif

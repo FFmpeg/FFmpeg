@@ -20,6 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_PPC_MATHOPS_H
+#define AVCODEC_PPC_MATHOPS_H
+
 #if defined(ARCH_POWERPC_405)
 /* signed 16x16 -> 32 multiply add accumulate */
 #   define MAC16(rt, ra, rb) \
@@ -30,4 +33,6 @@
         ({ int __rt;
          asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));
          __rt; })
+#endif
+
 #endif

@@ -26,6 +26,9 @@
  * Cook AKA RealAudio G2 compatible decoderdata
  */
 
+#ifndef AVCODEC_COOKDATA_H
+#define AVCODEC_COOKDATA_H
+
 #include <stdint.h>
 
 /* various data tables */
@@ -559,3 +562,5 @@ static const float cplscale6[63] = {
 static const float* cplscales[5] = {
     cplscale2, cplscale3, cplscale4, cplscale5, cplscale6,
 };
+
+#endif
