@@ -814,20 +814,11 @@ asmalign_pot="unknown"
 # machine
 arch=`uname -m`
 cpu="generic"
-powerpc_perf="no"
-cmov="no"
-fast_cmov="no"
-fast_unaligned="no"
-dcbzl="no"
-bigendian="no"
 
 # OS
 targetos=$(tolower $(uname -s))
-beos_netserver="no"
-os2="no"
 
 # non-library system interfaces
-audio_beos="default"
 audio_oss="yes"
 bktr="yes"
 dv1394="yes"
@@ -835,39 +826,15 @@ v4l2="yes"
 v4l="yes"
 
 # libraries
-avisynth="no"
-dc1394="no"
-dlfcn_h="no"
-dlopen="no"
-liba52="no"
-liba52bin="no"
-libamr_nb="no"
-libamr_wb="no"
-libfaac="no"
-libfaad2="no"
-libfaad="no"
-libfaadbin="no"
-libgsm="no"
-libmp3lame="no"
-libnut="no"
-libogg="no"
-libtheora="no"
-libvorbis="no"
-libx264="no"
-libxvid="no"
-mlib="no"
-x11grab="no"
 zlib="yes"
 
 # configurable options
 debug="yes"
 dostrip="yes"
-extra_warnings="no"
 ffmpeg="yes"
 ffplay="yes"
 ffserver="yes"
 gpl="no"
-gprof="no"
 ipv6="yes"
 shared="no"
 static="yes"
@@ -875,17 +842,8 @@ memalign_hack="no"
 mpegaudio_hp="yes"
 network="yes"
 optimize="yes"
-pp="no"
 protocols="yes"
-swscaler="no"
 vhook="default"
-
-# threading
-beosthreads="no"
-os2threads="no"
-pthreads="no"
-w32threads="no"
-thread_type="no"
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$@'
