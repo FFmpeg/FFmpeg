@@ -671,6 +671,7 @@ HAVE_LIST="
     memalign
     mlib
     os2
+    ppc64
     sdl
     sdl_video_size
     soundcard_h
@@ -1289,7 +1290,6 @@ enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
 disabled optimize || add_cflags -fomit-frame-pointer
 
 # Add processor-specific flags
-POWERPCMODE="32bits"
 if test $cpu != "generic"; then
     warn_altivec(){
         $1 altivec && echo "WARNING: Tuning for $2 but AltiVec $1.";
@@ -1322,12 +1322,12 @@ if test $cpu != "generic"; then
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
             warn_altivec disabled PPC970
-            POWERPCMODE="64bits"
+            enable ppc64
         ;;
         Cell|CELL|cell)
             add_cflags "-mcpu=cell"
             warn_altivec disabled Cell
-            POWERPCMODE="64bits"
+            enable ppc64
         ;;
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
@@ -1893,14 +1893,6 @@ fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
-
-case "$arch" in
-    powerpc)
-        if test "$POWERPCMODE" = "64bits"; then
-            echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
-        fi
-        ;;
-esac
 
 if enabled bigendian; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak

@@ -25,7 +25,7 @@
 void powerpc_display_perf_report(void);
 /* the 604* have 2, the G3* have 4, the G4s have 6,
    and the G5 are completely different (they MUST use
-   POWERPC_MODE_64BITS, and let's hope all future 64 bis PPC
+   HAVE_PPC64, and let's hope all future 64 bis PPC
    will use the same PMCs... */
 #define POWERPC_NUM_PMC_ENABLED 6
 /* if you add to the enum below, also add to the perfname array
@@ -68,7 +68,7 @@ enum powerpc_data_index {
 };
 extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 
-#ifndef POWERPC_MODE_64BITS
+#ifndef HAVE_PPC64
 #define POWERP_PMC_DATATYPE unsigned long
 #define POWERPC_GET_PMC1(a) asm volatile("mfspr %0, 937" : "=r" (a))
 #define POWERPC_GET_PMC2(a) asm volatile("mfspr %0, 938" : "=r" (a))
@@ -86,7 +86,7 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
 #define POWERPC_GET_PMC5(a) do {} while (0)
 #define POWERPC_GET_PMC6(a) do {} while (0)
 #endif
-#else /* POWERPC_MODE_64BITS */
+#else /* HAVE_PPC64 */
 #define POWERP_PMC_DATATYPE unsigned long long
 #define POWERPC_GET_PMC1(a) asm volatile("mfspr %0, 771" : "=r" (a))
 #define POWERPC_GET_PMC2(a) asm volatile("mfspr %0, 772" : "=r" (a))
@@ -104,7 +104,7 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
 #define POWERPC_GET_PMC5(a) do {} while (0)
 #define POWERPC_GET_PMC6(a) do {} while (0)
 #endif
-#endif /* POWERPC_MODE_64BITS */
+#endif /* HAVE_PPC64 */
 #define POWERPC_PERF_DECLARE(a, cond)   \
   POWERP_PMC_DATATYPE                   \
     pmc_start[POWERPC_NUM_PMC_ENABLED], \
