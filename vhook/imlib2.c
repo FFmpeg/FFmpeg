@@ -174,11 +174,17 @@ void Release(void *ctx)
             imlib_context_set_image(ci->imageOverlaid);
             imlib_free_image();
         }
-        ff_eval_free(ci->expr_x);
-        ff_eval_free(ci->expr_y);
-        ff_eval_free(ci->expr_R);
-        ff_eval_free(ci->expr_G);
-        ff_eval_free(ci->expr_B);
+        ff_eval_free(ci->eval_x);
+        ff_eval_free(ci->eval_y);
+        ff_eval_free(ci->eval_r);
+        ff_eval_free(ci->eval_g);
+        ff_eval_free(ci->eval_b);
+
+        av_free(ci->expr_x);
+        av_free(ci->expr_y);
+        av_free(ci->expr_R);
+        av_free(ci->expr_G);
+        av_free(ci->expr_B);
         sws_freeContext(ci->toRGB_convert_ctx);
         sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
