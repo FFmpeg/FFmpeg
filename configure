@@ -1561,6 +1561,13 @@ for thread in $THREADS_LIST; do
     fi
 done
 
+# test for lrintf in math.h
+check_exec <<EOF && lrintf=yes || lrintf=no
+#define _ISOC9X_SOURCE  1
+#include <math.h>
+int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
+EOF
+
 enabled_any libamr_nb libamr_wb && enable libamr
 
 # these are off by default, so fail if requested and not available
@@ -1580,13 +1587,6 @@ enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -l
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
-
-# test for lrintf in math.h
-check_exec <<EOF && lrintf=yes || lrintf=no
-#define _ISOC9X_SOURCE  1
-#include <math.h>
-int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
-EOF
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
