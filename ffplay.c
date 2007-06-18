@@ -2368,7 +2368,7 @@ static void event_loop(void)
 
 static void opt_frame_size(const char *arg)
 {
-    if (parse_image_size(&frame_width, &frame_height, arg) < 0) {
+    if (av_parse_video_frame_size(&frame_width, &frame_height, arg) < 0) {
         fprintf(stderr, "Incorrect frame size\n");
         exit(1);
     }

@@ -4160,7 +4160,7 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoSize")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                parse_image_size(&video_enc.width, &video_enc.height, arg);
+                av_parse_video_frame_size(&video_enc.width, &video_enc.height, arg);
                 if ((video_enc.width % 16) != 0 ||
                     (video_enc.height % 16) != 0) {
                     fprintf(stderr, "%s:%d: Image size must be a multiple of 16\n",

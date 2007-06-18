@@ -108,8 +108,7 @@ static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
 static int frame_rightBand = 0;
 static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
-static int frame_rate = 25;
-static int frame_rate_base = 1;
+static AVRational frame_rate = (AVRational) {25,1};
 static float video_qscale = 0;
 static int video_qdiff = 3;
 static uint16_t *intra_matrix = NULL;
@@ -2067,7 +2066,7 @@ static void opt_verbose(const char *arg)
 
 static void opt_frame_rate(const char *arg)
 {
-    if (parse_frame_rate(&frame_rate, &frame_rate_base, arg) < 0) {
+    if (av_parse_video_frame_rate(&frame_rate, arg) < 0) {
         fprintf(stderr, "Incorrect frame rate\n");
         exit(1);
     }
@@ -2147,7 +2146,7 @@ static void opt_frame_crop_right(const char *arg)
 
 static void opt_frame_size(const char *arg)
 {
-    if (parse_image_size(&frame_width, &frame_height, arg) < 0) {
+    if (av_parse_video_frame_size(&frame_width, &frame_height, arg) < 0) {
         fprintf(stderr, "Incorrect frame size\n");
         exit(1);
     }
@@ -2531,8 +2530,8 @@ static void opt_input_file(const char *filename)
     ap->prealloced_context = 1;
     ap->sample_rate = audio_sample_rate;
     ap->channels = audio_channels;
-    ap->time_base.den = frame_rate;
-    ap->time_base.num = frame_rate_base;
+    ap->time_base.den = frame_rate.num;
+    ap->time_base.num = frame_rate.den;
     ap->width = frame_width + frame_padleft + frame_padright;
     ap->height = frame_height + frame_padtop + frame_padbottom;
     ap->pix_fmt = frame_pix_fmt;
@@ -2629,8 +2628,8 @@ static void opt_input_file(const char *filename)
                     (float)rfps / rfps_base, rfps, rfps_base);
             }
             /* update the current frame rate to match the stream frame rate */
-            frame_rate      = rfps;
-            frame_rate_base = rfps_base;
+            frame_rate.num = rfps;
+            frame_rate.den = rfps_base;
 
             enc->rate_emu = rate_emu;
             if(video_disable)
@@ -2750,11 +2749,11 @@ static void new_video_stream(AVFormatContext *oc)
                  av_set_double(video_enc, opt_names[i], d);
         }
 
-        video_enc->time_base.den = frame_rate;
-        video_enc->time_base.num = frame_rate_base;
+        video_enc->time_base.den = frame_rate.num;
+        video_enc->time_base.num = frame_rate.den;
         if(codec && codec->supported_framerates){
             const AVRational *p= codec->supported_framerates;
-            AVRational req= (AVRational){frame_rate, frame_rate_base};
+            AVRational req= (AVRational){frame_rate.num, frame_rate.den};
             const AVRational *best=NULL;
             AVRational best_error= (AVRational){INT_MAX, 1};
             for(; p->den!=0; p++){
@@ -3331,7 +3330,7 @@ static void opt_target(const char *arg)
     } else {
         int fr;
         /* Calculate FR via float to avoid int overflow */
-        fr = (int)(frame_rate * 1000.0 / frame_rate_base);
+        fr = (int)(frame_rate.num * 1000.0 / frame_rate.den);
         if(fr == 25000) {
             norm = 0;
         } else if((fr == 29970) || (fr == 23976)) {
