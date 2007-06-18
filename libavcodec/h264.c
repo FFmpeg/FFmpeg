@@ -7683,32 +7683,32 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         uint8_t *ptr;
         int i, nalsize = 0;
 
-      if(h->is_avc) {
-        if(buf_index >= buf_size) break;
-        nalsize = 0;
-        for(i = 0; i < h->nal_length_size; i++)
-            nalsize = (nalsize << 8) | buf[buf_index++];
-        if(nalsize <= 1 || (nalsize+buf_index > buf_size)){
-            if(nalsize == 1){
-                buf_index++;
-                continue;
-            }else{
-                av_log(h->s.avctx, AV_LOG_ERROR, "AVC: nal size %d\n", nalsize);
-                break;
+        if(h->is_avc) {
+            if(buf_index >= buf_size) break;
+            nalsize = 0;
+            for(i = 0; i < h->nal_length_size; i++)
+                nalsize = (nalsize << 8) | buf[buf_index++];
+            if(nalsize <= 1 || (nalsize+buf_index > buf_size)){
+                if(nalsize == 1){
+                    buf_index++;
+                    continue;
+                }else{
+                    av_log(h->s.avctx, AV_LOG_ERROR, "AVC: nal size %d\n", nalsize);
+                    break;
+                }
             }
-        }
-      } else {
-        // start code prefix search
-        for(; buf_index + 3 < buf_size; buf_index++){
-            // This should always succeed in the first iteration.
-            if(buf[buf_index] == 0 && buf[buf_index+1] == 0 && buf[buf_index+2] == 1)
-                break;
-        }
+        } else {
+            // start code prefix search
+            for(; buf_index + 3 < buf_size; buf_index++){
+                // This should always succeed in the first iteration.
+                if(buf[buf_index] == 0 && buf[buf_index+1] == 0 && buf[buf_index+2] == 1)
+                    break;
+            }
 
-        if(buf_index+3 >= buf_size) break;
+            if(buf_index+3 >= buf_size) break;
 
-        buf_index+=3;
-      }
+            buf_index+=3;
+        }
 
         ptr= decode_nal(h, buf + buf_index, &dst_length, &consumed, h->is_avc ? nalsize : buf_size - buf_index);
         if (ptr==NULL || dst_length < 0){
