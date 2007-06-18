@@ -158,6 +158,14 @@ Usage examples:
      In this example, the color for the text goes up and down from black to
      white.
 
+   # Text fade-out
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.so -t Hello -A max(0,255-exp(N/47))' \
+     -sameq output.avi
+
+     In this example, the text fades out in about 10 seconds for a 25 fps input
+     video file.
+
    # scrolling credits from a graphics file
    ffmpeg -sameq -i input.avi \
      -vhook 'vhook/imlib2.so -x 0 -y -1.0*N -i credits.png' output.avi

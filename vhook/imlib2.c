@@ -29,6 +29,7 @@
  * -R <expression>      Value for R color
  * -G <expression>      Value for G color
  * -B <expression>      Value for B color
+ * -A <expression>      Value for Alpha channel
  *
  * Expressions are functions of:
  *      N  // frame number (starting at zero)
@@ -133,9 +134,9 @@ typedef struct {
     Imlib_Font fn;
     char *text;
     char *file;
-    int r, g, b;
-    AVEvalExpr *eval_r, *eval_g, *eval_b;
-    char *expr_R, *expr_G, *expr_B;
+    int r, g, b, a;
+    AVEvalExpr *eval_r, *eval_g, *eval_b, *eval_a;
+    char *expr_R, *expr_G, *expr_B, *expr_A;
     int eval_colors;
     double x, y;
     char *fileImage;
@@ -179,12 +180,14 @@ void Release(void *ctx)
         ff_eval_free(ci->eval_r);
         ff_eval_free(ci->eval_g);
         ff_eval_free(ci->eval_b);
+        ff_eval_free(ci->eval_a);
 
         av_free(ci->expr_x);
         av_free(ci->expr_y);
         av_free(ci->expr_R);
         av_free(ci->expr_G);
         av_free(ci->expr_B);
+        av_free(ci->expr_A);
         sws_freeContext(ci->toRGB_convert_ctx);
         sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
@@ -223,7 +226,7 @@ int Configure(void **ctxp, int argc, char *argv[])
         imlib_add_path_to_font_path(fp);
 
 
-    while ((c = getopt(argc, argv, "R:G:B:C:c:f:F:t:x:y:i:")) > 0) {
+    while ((c = getopt(argc, argv, "R:G:B:A:C:c:f:F:t:x:y:i:")) > 0) {
         switch (c) {
             case 'R':
                 ci->expr_R = av_strdup(optarg);
@@ -236,6 +239,9 @@ int Configure(void **ctxp, int argc, char *argv[])
             case 'B':
                 ci->expr_B = av_strdup(optarg);
                 ci->eval_colors = 1;
+                break;
+            case 'A':
+                ci->expr_A = av_strdup(optarg);
                 break;
             case 'C':
                 rgbtxt = optarg;
@@ -339,8 +345,17 @@ int Configure(void **ctxp, int argc, char *argv[])
         }
     }
 
-    if (!ci->eval_colors)
-        imlib_context_set_color(ci->r, ci->g, ci->b, 255);
+    if (ci->expr_A) {
+        if (!(ci->eval_a = ff_parse(ci->expr_A, const_names, NULL, NULL, NULL, NULL, NULL))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse A expression '%s'\n", ci->expr_A);
+            return -1;
+        }
+    } else {
+        ci->a = 255;
+    }
+
+    if (!(ci->eval_colors || ci->eval_a))
+        imlib_context_set_color(ci->r, ci->g, ci->b, ci->a);
 
     /* load the image (for example, credits for a movie) */
     if (ci->fileImage) {
@@ -477,11 +492,18 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         ci->y = ff_parse_eval(ci->eval_y, const_values, ci);
         y = ci->y;
 
+        if (ci->eval_a) {
+            ci->a = ff_parse_eval(ci->eval_a, const_values, ci);
+        }
+
         if (ci->eval_colors) {
             ci->r = ff_parse_eval(ci->eval_r, const_values, ci);
             ci->g = ff_parse_eval(ci->eval_g, const_values, ci);
             ci->b = ff_parse_eval(ci->eval_b, const_values, ci);
-            imlib_context_set_color(ci->r, ci->g, ci->b, 255);
+        }
+
+        if (ci->eval_colors || ci->eval_a) {
+            imlib_context_set_color(ci->r, ci->g, ci->b, ci->a);
         }
 
         if (!(ci->imageOverlaid))
