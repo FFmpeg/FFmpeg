@@ -67,4 +67,4 @@ int mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
                         const uint8_t *buf, int len);
 void mpegts_parse_close(MpegTSContext *ts);
 
-#endif AVFORMAT_MPEGTS_H
+#endif /* AVFORMAT_MPEGTS_H */
