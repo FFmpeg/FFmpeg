@@ -82,6 +82,7 @@ void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_e
 /* for jpeg fast DCT */
 #define CONST_BITS 14
 
+#ifdef CONFIG_ENCODERS
 static const uint16_t aanscales[64] = {
     /* precomputed values scaled up by 14 bits */
     16384, 22725, 21407, 19266, 16384, 12873,  8867,  4520,
@@ -93,6 +94,7 @@ static const uint16_t aanscales[64] = {
     8867 , 12299, 11585, 10426,  8867,  6967,  4799,  2446,
     4520 ,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
+#endif //CONFIG_ENCODERS
 
 static const uint8_t h263_chroma_roundtab[16] = {
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
