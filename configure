@@ -398,7 +398,12 @@ check_cpp(){
 check_ld(){
     log check_ld "$@"
     check_cc || return
-    check_cmd $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
+    flags=''
+    libs=''
+    for f; do
+        test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
+    done
+    check_cmd $cc $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
 }
 
 check_cflags(){
