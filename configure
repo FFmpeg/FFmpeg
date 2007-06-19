@@ -2010,7 +2010,6 @@ if enabled source_path_used; then
           libpostproc/Makefile \
           libavutil/Makefile \
           libswscale/Makefile \
-          tests/Makefile \
           vhook/Makefile \
           doc/texi2pod.pl \
           "
