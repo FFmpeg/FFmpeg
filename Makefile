@@ -99,7 +99,7 @@ ffmpeg.o ffplay.o ffserver.o: version.h
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-videohook:
+videohook: .libs
 	$(MAKE) -C vhook all
 
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
