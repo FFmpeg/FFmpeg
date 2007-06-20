@@ -204,6 +204,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     char *color = 0;
     FILE *f;
     char *p;
+    char *error;
 
     *ctxp = av_mallocz(sizeof(ContextInfo));
     ci = (ContextInfo *) *ctxp;
@@ -331,23 +332,23 @@ int Configure(void **ctxp, int argc, char *argv[])
             return -1;
         }
     } else if (ci->eval_colors) {
-        if (!(ci->eval_r = ff_parse(ci->expr_R, const_names, NULL, NULL, NULL, NULL, NULL))){
-            av_log(NULL, AV_LOG_ERROR, "Couldn't parse R expression '%s'\n", ci->expr_R);
+        if (!(ci->eval_r = ff_parse(ci->expr_R, const_names, NULL, NULL, NULL, NULL, &error))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse R expression '%s': %s\n", ci->expr_R, error);
             return -1;
         }
-        if (!(ci->eval_g = ff_parse(ci->expr_G, const_names, NULL, NULL, NULL, NULL, NULL))){
-            av_log(NULL, AV_LOG_ERROR, "Couldn't parse G expression '%s'\n", ci->expr_G);
+        if (!(ci->eval_g = ff_parse(ci->expr_G, const_names, NULL, NULL, NULL, NULL, &error))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse G expression '%s': %s\n", ci->expr_G, error);
             return -1;
         }
-        if (!(ci->eval_b = ff_parse(ci->expr_B, const_names, NULL, NULL, NULL, NULL, NULL))){
-            av_log(NULL, AV_LOG_ERROR, "Couldn't parse B expression '%s'\n", ci->expr_B);
+        if (!(ci->eval_b = ff_parse(ci->expr_B, const_names, NULL, NULL, NULL, NULL, &error))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse B expression '%s': %s\n", ci->expr_B, error);
             return -1;
         }
     }
 
     if (ci->expr_A) {
-        if (!(ci->eval_a = ff_parse(ci->expr_A, const_names, NULL, NULL, NULL, NULL, NULL))){
-            av_log(NULL, AV_LOG_ERROR, "Couldn't parse A expression '%s'\n", ci->expr_A);
+        if (!(ci->eval_a = ff_parse(ci->expr_A, const_names, NULL, NULL, NULL, NULL, &error))){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't parse A expression '%s': %s\n", ci->expr_A, error);
             return -1;
         }
     } else {
@@ -369,13 +370,13 @@ int Configure(void **ctxp, int argc, char *argv[])
         ci->imageOverlaid_height = imlib_image_get_height();
     }
 
-    if (!(ci->eval_x = ff_parse(ci->expr_x, const_names, NULL, NULL, NULL, NULL, NULL))){
-        av_log(NULL, AV_LOG_ERROR, "Couldn't parse x expression '%s'\n", ci->expr_x);
+    if (!(ci->eval_x = ff_parse(ci->expr_x, const_names, NULL, NULL, NULL, NULL, &error))){
+        av_log(NULL, AV_LOG_ERROR, "Couldn't parse x expression '%s': %s\n", ci->expr_x, error);
         return -1;
     }
 
-    if (!(ci->eval_y = ff_parse(ci->expr_y, const_names, NULL, NULL, NULL, NULL, NULL))){
-        av_log(NULL, AV_LOG_ERROR, "Couldn't parse y expression '%s'\n", ci->expr_y);
+    if (!(ci->eval_y = ff_parse(ci->expr_y, const_names, NULL, NULL, NULL, NULL, &error))){
+        av_log(NULL, AV_LOG_ERROR, "Couldn't parse y expression '%s': %s\n", ci->expr_y, error);
         return -1;
     }
 
