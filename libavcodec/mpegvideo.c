@@ -271,11 +271,6 @@ int DCT_common_init(MpegEncContext *s)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
-#ifdef CONFIG_ENCODERS
-    s->dct_quantize= dct_quantize_c;
-    s->denoise_dct= denoise_dct_c;
-#endif //CONFIG_ENCODERS
-
 #if defined(HAVE_MMX)
     MPV_common_init_mmx(s);
 #elif defined(ARCH_ALPHA)
@@ -293,6 +288,10 @@ int DCT_common_init(MpegEncContext *s)
 #endif
 
 #ifdef CONFIG_ENCODERS
+    if(!s->dct_quantize)
+        s->dct_quantize= dct_quantize_c;
+    if(!s->denoise_dct)
+        s->denoise_dct= denoise_dct_c;
     s->fast_dct_quantize= s->dct_quantize;
 
     if(s->flags&CODEC_FLAG_TRELLIS_QUANT){
