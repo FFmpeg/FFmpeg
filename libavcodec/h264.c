@@ -1392,6 +1392,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
 static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *consumed, int length){
     int i, si, di;
     uint8_t *dst;
+    int bufidx;
 
 //    src[0]&0x80;                //forbidden bit
     h->nal_ref_idc= src[0]>>5;
@@ -1420,8 +1421,9 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
         return src;
     }
 
-    h->rbsp_buffer= av_fast_realloc(h->rbsp_buffer, &h->rbsp_buffer_size, length);
-    dst= h->rbsp_buffer;
+    bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0; // use second escape buffer for inter data
+    h->rbsp_buffer[bufidx]= av_fast_realloc(h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length);
+    dst= h->rbsp_buffer[bufidx];
 
     if (dst == NULL){
         return NULL;
@@ -8237,7 +8239,8 @@ static int decode_end(AVCodecContext *avctx)
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
 
-    av_freep(&h->rbsp_buffer);
+    av_freep(&h->rbsp_buffer[0]);
+    av_freep(&h->rbsp_buffer[1]);
     free_tables(h); //FIXME cleanup init stuff perhaps
     MPV_common_end(s);
 

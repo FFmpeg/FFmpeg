@@ -160,8 +160,8 @@ typedef struct H264Context{
     MpegEncContext s;
     int nal_ref_idc;
     int nal_unit_type;
-    uint8_t *rbsp_buffer;
-    unsigned int rbsp_buffer_size;
+    uint8_t *rbsp_buffer[2];
+    unsigned int rbsp_buffer_size[2];
 
     /**
       * Used to parse AVC variant of h264
