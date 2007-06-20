@@ -20,7 +20,7 @@
  */
 
 /**
- * @file matroska.c
+ * @file matroskadec.c
  * Matroska file demuxer
  * by Ronald Bultje <rbultje@ronald.bitfreak.net>
  * with a little help from Moritz Bunkus <moritz@bunkus.org>
