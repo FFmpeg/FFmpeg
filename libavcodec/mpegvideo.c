@@ -79,9 +79,6 @@ void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_e
 //#define DEBUG
 
 
-/* for jpeg fast DCT */
-#define CONST_BITS 14
-
 #ifdef CONFIG_ENCODERS
 static const uint16_t aanscales[64] = {
     /* precomputed values scaled up by 14 bits */
