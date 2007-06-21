@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "allformats.h"
 #include "bitstream.h"
 #include "fifo.h"
 #include "mpeg.h"
@@ -75,12 +76,6 @@ typedef struct {
     int64_t vcd_padding_bytes_written;
 
 } MpegMuxContext;
-
-AVOutputFormat mpeg1system_muxer;
-AVOutputFormat mpeg1vcd_muxer;
-AVOutputFormat mpeg2vob_muxer;
-AVOutputFormat mpeg2svcd_muxer;
-AVOutputFormat mpeg2dvd_muxer;
 
 static int put_pack_header(AVFormatContext *ctx,
                            uint8_t *buf, int64_t timestamp)
