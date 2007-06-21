@@ -709,6 +709,16 @@ Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
+@item -copyts
+Copy timestamps from input to output.
+@item -shortest
+Finish encoding when the shortest input stream ends.
+@item -dts_delta_threshold
+Timestamp discontinuity delta threshold.
+@item -muxdelay seconds
+Set the maximum demux-decode delay.
+@item -muxpreload seconds
+Set the initial demux-decode delay.
 @end table
 
 @node FFmpeg formula evaluator
