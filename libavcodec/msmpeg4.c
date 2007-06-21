@@ -61,7 +61,7 @@
 static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
 
-static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
+void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                        int n, int coded, const uint8_t *scantable);
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
@@ -247,7 +247,7 @@ static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, 
     return size;
 }
 
-static void find_best_tables(MpegEncContext * s)
+void ff_find_best_tables(MpegEncContext * s)
 {
     int i;
     int best       =-1, best_size       =9999999;
@@ -317,7 +317,7 @@ static void find_best_tables(MpegEncContext * s)
 /* write MSMPEG4 compatible frame header */
 void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
-    find_best_tables(s);
+    ff_find_best_tables(s);
 
     align_put_bits(&s->pb);
     put_bits(&s->pb, 2, s->pict_type - 1);
@@ -534,7 +534,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
         s->mv_bits += get_bits_diff(s);
 
         for (i = 0; i < 6; i++) {
-            msmpeg4_encode_block(s, block[i], i);
+            ff_msmpeg4_encode_block(s, block[i], i);
         }
         s->p_tex_bits += get_bits_diff(s);
     } else {
@@ -593,7 +593,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
         s->misc_bits += get_bits_diff(s);
 
         for (i = 0; i < 6; i++) {
-            msmpeg4_encode_block(s, block[i], i);
+            ff_msmpeg4_encode_block(s, block[i], i);
         }
         s->i_tex_bits += get_bits_diff(s);
         s->i_count++;
@@ -852,7 +852,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
 /* Encoding of a block. Very similar to MPEG4 except for a different
    escape coding (same as H263) and more vlc tables.
  */
-static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
+void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
 {
     int level, run, last, i, j, last_index;
     int last_non_zero, sign, slevel;

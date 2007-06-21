@@ -261,7 +261,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
     }
 
     for (i = 0; i < 6; i++) {
-        msmpeg4_encode_block(s, block[i], i);
+        ff_msmpeg4_encode_block(s, block[i], i);
     }
 }
 #endif //CONFIG_WMV2_ENCODER
