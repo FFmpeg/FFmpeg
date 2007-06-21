@@ -76,7 +76,6 @@ typedef struct {
 
 } MpegMuxContext;
 
-#ifdef CONFIG_MUXERS
 AVOutputFormat mpeg1system_muxer;
 AVOutputFormat mpeg1vcd_muxer;
 AVOutputFormat mpeg2vob_muxer;
@@ -1219,7 +1218,6 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     }
     return 0;
 }
-#endif //CONFIG_MUXERS
 
 #ifdef CONFIG_MPEG1SYSTEM_MUXER
 AVOutputFormat mpeg1system_muxer = {

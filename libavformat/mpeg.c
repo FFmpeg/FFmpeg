@@ -535,7 +535,6 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-#ifdef CONFIG_MPEGPS_DEMUXER
 AVInputFormat mpegps_demuxer = {
     "mpeg",
     "MPEG PS format",
@@ -548,4 +547,3 @@ AVInputFormat mpegps_demuxer = {
     mpegps_read_dts,
     .flags = AVFMT_SHOW_IDS,
 };
-#endif
