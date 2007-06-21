@@ -3024,8 +3024,18 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     MpegEncContext * const s = &h->s;
     int temp8, i;
     uint64_t temp64;
-    int deblock_left = (s->mb_x > 0);
-    int deblock_top  = (s->mb_y > 0);
+    int deblock_left;
+    int deblock_top;
+    int mb_xy;
+
+    if(h->deblocking_filter == 2) {
+        mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+        deblock_left = h->slice_table[mb_xy] == h->slice_table[mb_xy - 1];
+        deblock_top  = h->slice_table[mb_xy] == h->slice_table[h->top_mb_xy];
+    } else {
+        deblock_left = (s->mb_x > 0);
+        deblock_top =  (s->mb_y > 0);
+    }
 
     src_y  -=   linesize + 1;
     src_cb -= uvlinesize + 1;
