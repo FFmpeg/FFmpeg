@@ -1349,61 +1349,76 @@ int av_tempfile(char *prefix, char **filename) {
 }
 
 typedef struct {
-    const char *abv;
+    const char *abbr;
     int width, height;
-    int frame_rate, frame_rate_base;
-} AbvEntry;
+} VideoFrameSizeAbbr;
 
-static AbvEntry frame_abvs[] = {
-    { "ntsc",      720, 480, 30000, 1001 },
-    { "pal",       720, 576,    25,    1 },
-    { "qntsc",     352, 240, 30000, 1001 }, /* VCD compliant NTSC */
-    { "qpal",      352, 288,    25,    1 }, /* VCD compliant PAL */
-    { "sntsc",     640, 480, 30000, 1001 }, /* square pixel NTSC */
-    { "spal",      768, 576,    25,    1 }, /* square pixel PAL */
-    { "film",      352, 240,    24,    1 },
-    { "ntsc-film", 352, 240, 24000, 1001 },
-    { "sqcif",     128,  96,     0,    0 },
-    { "qcif",      176, 144,     0,    0 },
-    { "cif",       352, 288,     0,    0 },
-    { "4cif",      704, 576,     0,    0 },
-    { "qqvga",     160, 120,     0,    0 },
-    { "qvga",      320, 240,     0,    0 },
-    { "vga",       640, 480,     0,    0 },
-    { "svga",      800, 600,     0,    0 },
-    { "xga",      1024, 768,     0,    0 },
-    { "uxga",     1600,1200,     0,    0 },
-    { "qxga",     2048,1536,     0,    0 },
-    { "sxga",     1280,1024,     0,    0 },
-    { "qsxga",    2560,2048,     0,    0 },
-    { "hsxga",    5120,4096,     0,    0 },
-    { "wvga",      852, 480,     0,    0 },
-    { "wxga",     1366, 768,     0,    0 },
-    { "wsxga",    1600,1024,     0,    0 },
-    { "wuxga",    1920,1200,     0,    0 },
-    { "woxga",    2560,1600,     0,    0 },
-    { "wqsxga",   3200,2048,     0,    0 },
-    { "wquxga",   3840,2400,     0,    0 },
-    { "whsxga",   6400,4096,     0,    0 },
-    { "whuxga",   7680,4800,     0,    0 },
-    { "cga",       320, 200,     0,    0 },
-    { "ega",       640, 350,     0,    0 },
-    { "hd480",     852, 480,     0,    0 },
-    { "hd720",    1280, 720,     0,    0 },
-    { "hd1080",   1920,1080,     0,    0 },
+typedef struct {
+    const char *abbr;
+    int rate_num, rate_den;
+} VideoFrameRateAbbr;
+
+static VideoFrameSizeAbbr video_frame_size_abbrs[] = {
+    { "ntsc",      720, 480 },
+    { "pal",       720, 576 },
+    { "qntsc",     352, 240 }, /* VCD compliant NTSC */
+    { "qpal",      352, 288 }, /* VCD compliant PAL */
+    { "sntsc",     640, 480 }, /* square pixel NTSC */
+    { "spal",      768, 576 }, /* square pixel PAL */
+    { "film",      352, 240 },
+    { "ntsc-film", 352, 240 },
+    { "sqcif",     128,  96 },
+    { "qcif",      176, 144 },
+    { "cif",       352, 288 },
+    { "4cif",      704, 576 },
+    { "qqvga",     160, 120 },
+    { "qvga",      320, 240 },
+    { "vga",       640, 480 },
+    { "svga",      800, 600 },
+    { "xga",      1024, 768 },
+    { "uxga",     1600,1200 },
+    { "qxga",     2048,1536 },
+    { "sxga",     1280,1024 },
+    { "qsxga",    2560,2048 },
+    { "hsxga",    5120,4096 },
+    { "wvga",      852, 480 },
+    { "wxga",     1366, 768 },
+    { "wsxga",    1600,1024 },
+    { "wuxga",    1920,1200 },
+    { "woxga",    2560,1600 },
+    { "wqsxga",   3200,2048 },
+    { "wquxga",   3840,2400 },
+    { "whsxga",   6400,4096 },
+    { "whuxga",   7680,4800 },
+    { "cga",       320, 200 },
+    { "ega",       640, 350 },
+    { "hd480",     852, 480 },
+    { "hd720",    1280, 720 },
+    { "hd1080",   1920,1080 },
+};
+
+static VideoFrameRateAbbr video_frame_rate_abbrs[]= {
+    { "ntsc",      30000, 1001 },
+    { "pal",          25,    1 },
+    { "qntsc",     30000, 1001 }, /* VCD compliant NTSC */
+    { "qpal",         25,    1 }, /* VCD compliant PAL */
+    { "sntsc",     30000, 1001 }, /* square pixel NTSC */
+    { "spal",         25,    1 }, /* square pixel PAL */
+    { "film",         24,    1 },
+    { "ntsc-film", 24000, 1001 },
 };
 
 int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
-    int n = sizeof(frame_abvs) / sizeof(AbvEntry);
+    int n = sizeof(video_frame_size_abbrs) / sizeof(VideoFrameSizeAbbr);
     const char *p;
     int frame_width = 0, frame_height = 0;
 
     for(i=0;i<n;i++) {
-        if (!strcmp(frame_abvs[i].abv, str)) {
-            frame_width = frame_abvs[i].width;
-            frame_height = frame_abvs[i].height;
+        if (!strcmp(video_frame_size_abbrs[i].abbr, str)) {
+            frame_width = video_frame_size_abbrs[i].width;
+            frame_height = video_frame_size_abbrs[i].height;
             break;
         }
     }
@@ -1424,13 +1439,14 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
 {
     int i;
+    int n = sizeof(video_frame_rate_abbrs) / sizeof(VideoFrameRateAbbr);
     char* cp;
 
     /* First, we check our abbreviation table */
-    for (i = 0; i < sizeof(frame_abvs)/sizeof(*frame_abvs); ++i)
-         if (!strcmp(frame_abvs[i].abv, arg)) {
-             frame_rate->num = frame_abvs[i].frame_rate;
-             frame_rate->den = frame_abvs[i].frame_rate_base;
+    for (i = 0; i < n; ++i)
+         if (!strcmp(video_frame_rate_abbrs[i].abbr, arg)) {
+             frame_rate->num = video_frame_rate_abbrs[i].rate_num;
+             frame_rate->den = video_frame_rate_abbrs[i].rate_den;
              return 0;
          }
 
