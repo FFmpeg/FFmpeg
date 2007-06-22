@@ -783,7 +783,8 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
 static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
 {
     int sign, code;
-    int pred;
+    int pred, extquant;
+    int extrabits = 0;
 
     if(s->msmpeg4_version==1){
         int32_t *dc_val;
@@ -825,6 +826,15 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
         code = level;
         if (code > DC_MAX)
             code = DC_MAX;
+        else if( s->msmpeg4_version>=6 ) {
+            if( s->qscale == 1 ) {
+                extquant = (level + 3) & 0x3;
+                code  = ((level+3)>>2);
+            } else if( s->qscale == 2 ) {
+                extquant = (level + 1) & 0x1;
+                code  = ((level+1)>>1);
+            }
+        }
 
         if (s->dc_table_index == 0) {
             if (n < 4) {
@@ -840,8 +850,13 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
             }
         }
 
+        if(s->msmpeg4_version>=6 && s->qscale<=2)
+            extrabits = 3 - s->qscale;
+
         if (code == DC_MAX)
-            put_bits(&s->pb, 8, level);
+            put_bits(&s->pb, 8 + extrabits, level);
+        else if(extrabits > 0)//== VC1 && s->qscale<=2
+            put_bits(&s->pb, extrabits, extquant);
 
         if (level != 0) {
             put_bits(&s->pb, 1, sign);
@@ -868,7 +883,7 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
         } else {
             rl = &rl_table[3 + s->rl_chroma_table_index];
         }
-        run_diff = 0;
+        run_diff = s->msmpeg4_version>=6;
         scantable= s->intra_scantable.permutated;
     } else {
         i = 0;
@@ -881,7 +896,7 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
     }
 
     /* recalculate block_last_index for M$ wmv1 */
-    if(s->msmpeg4_version>=4 && s->block_last_index[n]>0){
+    if(s->msmpeg4_version>=4 && s->msmpeg4_version<6 && s->block_last_index[n]>0){
         for(last_index=63; last_index>=0; last_index--){
             if(block[scantable[last_index]]) break;
         }
@@ -937,8 +952,9 @@ else
                             if(s->esc3_level_length==0){
                                 s->esc3_level_length=8;
                                 s->esc3_run_length= 6;
+                                //ESCLVLSZ + ESCRUNSZ
                                 if(s->qscale<8)
-                                    put_bits(&s->pb, 6, 3);
+                                    put_bits(&s->pb, 6 + (s->msmpeg4_version>=6), 3);
                                 else
                                     put_bits(&s->pb, 8, 3);
                             }
