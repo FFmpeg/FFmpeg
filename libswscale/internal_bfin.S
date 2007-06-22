@@ -476,7 +476,7 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 
         r1 = [fp + ARG_srcStride];
         r2 = r0 + r1;
-        r1 += -8;
+        r1 += -8;  // i0,i1 is pre read need to correct
         m0 = r1;
 
         i0 = r0;  // uyvy_T even
