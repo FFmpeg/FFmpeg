@@ -26,24 +26,16 @@
  * set to the next character in 'str' after the prefix.
  *
  * @param str input string
- * @param val prefix to test
+ * @param pfx prefix to test
  * @param ptr updated after the prefix in str in there is a match
  * @return TRUE if there is a match
  */
-int strstart(const char *str, const char *val, const char **ptr)
+int strstart(const char *str, const char *pfx, const char **ptr)
 {
-    const char *p, *q;
-    p = str;
-    q = val;
-    while (*q != '\0') {
-        if (*p != *q)
-            return 0;
-        p++;
-        q++;
-    }
-    if (ptr)
-        *ptr = p;
-    return 1;
+    while (*pfx && *pfx++ == *str++);
+    if (!*pfx && ptr)
+        *ptr = str;
+    return !*pfx;
 }
 
 /**
