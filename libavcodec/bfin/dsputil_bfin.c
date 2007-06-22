@@ -25,43 +25,37 @@
 #include <bits/bfin_sram.h>
 #include "avcodec.h"
 #include "dsputil.h"
+#include "dsputil_bfin.h"
 
-#define USE_L1CODE
-
-#ifdef USE_L1CODE
-#define L1CODE __attribute__ ((l1_text))
-#else
-#define L1CODE
-#endif
 int off;
 
 
-extern void ff_bfin_idct (DCTELEM *block) L1CODE;
-extern void ff_bfin_fdct (DCTELEM *block) L1CODE;
-extern void ff_bfin_add_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) L1CODE;
-extern void ff_bfin_put_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) L1CODE;
-extern void ff_bfin_diff_pixels (DCTELEM *block, uint8_t *s1, uint8_t *s2, int stride)  L1CODE;
-extern void ff_bfin_get_pixels  (DCTELEM *restrict block, const uint8_t *pixels, int line_size) L1CODE;
-extern int  ff_bfin_pix_norm1  (uint8_t * pix, int line_size) L1CODE;
-extern int  ff_bfin_z_sad8x8   (uint8_t *blk1, uint8_t *blk2, int dsz, int line_size, int h) L1CODE;
-extern int  ff_bfin_z_sad16x16 (uint8_t *blk1, uint8_t *blk2, int dsz, int line_size, int h) L1CODE;
+extern void ff_bfin_idct (DCTELEM *block) attribute_l1_text;
+extern void ff_bfin_fdct (DCTELEM *block) attribute_l1_text;
+extern void ff_bfin_add_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
+extern void ff_bfin_put_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
+extern void ff_bfin_diff_pixels (DCTELEM *block, uint8_t *s1, uint8_t *s2, int stride)  attribute_l1_text;
+extern void ff_bfin_get_pixels  (DCTELEM *restrict block, const uint8_t *pixels, int line_size) attribute_l1_text;
+extern int  ff_bfin_pix_norm1  (uint8_t * pix, int line_size) attribute_l1_text;
+extern int  ff_bfin_z_sad8x8   (uint8_t *blk1, uint8_t *blk2, int dsz, int line_size, int h) attribute_l1_text;
+extern int  ff_bfin_z_sad16x16 (uint8_t *blk1, uint8_t *blk2, int dsz, int line_size, int h) attribute_l1_text;
 
-extern void ff_bfin_z_put_pixels16_xy2     (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) L1CODE;
-extern void ff_bfin_z_put_pixels8_xy2      (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) L1CODE;
-extern void ff_bfin_put_pixels16_xy2_nornd (uint8_t *block, const uint8_t *s0, int line_size, int h) L1CODE;
-extern void ff_bfin_put_pixels8_xy2_nornd  (uint8_t *block, const uint8_t *s0, int line_size, int h) L1CODE;
+extern void ff_bfin_z_put_pixels16_xy2     (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_z_put_pixels8_xy2      (uint8_t *block, const uint8_t *s0, int dest_size, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_put_pixels16_xy2_nornd (uint8_t *block, const uint8_t *s0, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_put_pixels8_xy2_nornd  (uint8_t *block, const uint8_t *s0, int line_size, int h) attribute_l1_text;
 
 
-extern int  ff_bfin_pix_sum (uint8_t *p, int stride) L1CODE;
+extern int  ff_bfin_pix_sum (uint8_t *p, int stride) attribute_l1_text;
 
-extern void ff_bfin_put_pixels8uc        (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int dest_size, int line_size, int h) L1CODE;
-extern void ff_bfin_put_pixels16uc       (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int dest_size, int line_size, int h) L1CODE;
-extern void ff_bfin_put_pixels8uc_nornd  (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int line_size, int h) L1CODE;
-extern void ff_bfin_put_pixels16uc_nornd (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int line_size, int h) L1CODE;
+extern void ff_bfin_put_pixels8uc        (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int dest_size, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_put_pixels16uc       (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int dest_size, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_put_pixels8uc_nornd  (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int line_size, int h) attribute_l1_text;
+extern void ff_bfin_put_pixels16uc_nornd (uint8_t *block, const uint8_t *s0, const uint8_t *s1, int line_size, int h) attribute_l1_text;
 
-extern int ff_bfin_sse4  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) L1CODE;
-extern int ff_bfin_sse8  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) L1CODE;
-extern int ff_bfin_sse16 (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) L1CODE;
+extern int ff_bfin_sse4  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) attribute_l1_text;
+extern int ff_bfin_sse8  (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) attribute_l1_text;
+extern int ff_bfin_sse16 (void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h) attribute_l1_text;
 
 
 static void bfin_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
