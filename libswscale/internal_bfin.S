@@ -476,23 +476,25 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 
         r1 = [fp + ARG_srcStride];
         r2 = r0 + r1;
-        r1 += -16;
+        r1 += -8;
         m0 = r1;
 
         i0 = r0;  // uyvy_T even
         i1 = r2;  // uyvy_B odd
 
-        r2 = [fp + ARG_chromStride];
-        m1 = r2;
-
         p2 = [fp + ARG_lumStride];
         p1 = p0 + p2;  // Y bot odd
-        p2 += -4;
 
         p5 = [fp + ARG_width];
         p4 = [fp + ARG_height];
+        r0 = p5;
         p4 = p4 >> 1;
         p5 = p5 >> 2;
+
+        r2 = [fp + ARG_chromStride];
+        r0 = r0 >> 1;
+        r2 = r2 - r0;
+        m1 = r2;
 
         r6.l = w[i2--];  r6.l = w[i2];
         r6.h = w[i3--];  r6.h = w[i3];
@@ -521,6 +523,8 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 
           i0 += m0;
           i1 += m0;
+          i2 += m1;
+          i3 += m1;
           p0 = p0 + p2;
 1:        p1 = p1 + p2;
 
