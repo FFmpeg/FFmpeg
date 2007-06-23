@@ -2271,10 +2271,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     /* block_time (relative to cluster time) */
     block_time = AV_RB16(data);
     data += 2;
-    size -= 2;
-    flags = *data;
-    data += 1;
-    size -= 1;
+    flags = *data++;
+    size -= 3;
     if (is_keyframe == -1)
         is_keyframe = flags & 1 ? PKT_FLAG_KEY : 0;
 
