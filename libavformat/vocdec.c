@@ -30,8 +30,8 @@ static int voc_probe(AVProbeData *p)
 
     if (memcmp(p->buf, voc_magic, sizeof(voc_magic) - 1))
         return 0;
-    version = p->buf[22] | (p->buf[23] << 8);
-    check = p->buf[24] | (p->buf[25] << 8);
+    version = AV_RL16(p->buf + 22);
+    check = AV_RL16(p->buf + 24);
     if (~version + 0x1234 != check)
         return 10;
 
