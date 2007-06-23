@@ -22,8 +22,6 @@
 #include "voc.h"
 
 
-
-
 static int voc_probe(AVProbeData *p)
 {
     int version, check;
