@@ -23,6 +23,7 @@
 
 #include "tree.h"
 #include "nut.h"
+#include "avstring.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -404,13 +405,13 @@ static int decode_info_header(NUTContext *nut){
 
         if(chapter_id==0 && !strcmp(type, "UTF-8")){
             if     (!strcmp(name, "Author"))
-                pstrcpy(s->author   , sizeof(s->author)   , str_value);
+                av_strlcpy(s->author   , str_value, sizeof(s->author));
             else if(!strcmp(name, "Title"))
-                pstrcpy(s->title    , sizeof(s->title)    , str_value);
+                av_strlcpy(s->title    , str_value, sizeof(s->title));
             else if(!strcmp(name, "Copyright"))
-                pstrcpy(s->copyright, sizeof(s->copyright), str_value);
+                av_strlcpy(s->copyright, str_value, sizeof(s->copyright));
             else if(!strcmp(name, "Description"))
-                pstrcpy(s->comment  , sizeof(s->comment)  , str_value);
+                av_strlcpy(s->comment  , str_value, sizeof(s->comment));
         }
     }
 

@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "allformats.h"
 #include "opt.h"
+#include "avstring.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -362,7 +363,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         ic->pb = *pb;
     ic->duration = AV_NOPTS_VALUE;
     ic->start_time = AV_NOPTS_VALUE;
-    pstrcpy(ic->filename, sizeof(ic->filename), filename);
+    av_strlcpy(ic->filename, filename, sizeof(ic->filename));
 
     /* allocate private data */
     if (fmt->priv_data_size > 0) {
@@ -2840,7 +2841,7 @@ void url_split(char *proto, int proto_size,
     }
     if (port_ptr)
         *port_ptr = port;
-    pstrcpy(path, path_size, p);
+    av_strlcpy(path, p, path_size);
 }
 
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,

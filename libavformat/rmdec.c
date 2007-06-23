@@ -20,7 +20,7 @@
  */
 #include "avformat.h"
 #include "rm.h"
-
+#include "avstring.h"
 
 static void get_str(ByteIOContext *pb, char *buf, int buf_size)
 {
@@ -175,8 +175,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             }
         } else {
             st->codec->codec_id = CODEC_ID_NONE;
-            pstrcpy(st->codec->codec_name, sizeof(st->codec->codec_name),
-                    buf);
+            av_strlcpy(st->codec->codec_name, buf, sizeof(st->codec->codec_name));
         }
         if (read_all) {
             get_byte(pb);

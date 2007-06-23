@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avstring.h"
 
 typedef struct {
     int img_first;
@@ -182,7 +183,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
     }
 
-    pstrcpy(s->path, sizeof(s->path), s1->filename);
+    av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
     s->img_count = 0;
 
@@ -307,7 +308,7 @@ static int img_write_header(AVFormatContext *s)
     VideoData *img = s->priv_data;
 
     img->img_number = 1;
-    pstrcpy(img->path, sizeof(img->path), s->filename);
+    av_strlcpy(img->path, s->filename, sizeof(img->path));
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)

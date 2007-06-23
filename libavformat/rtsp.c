@@ -23,6 +23,7 @@
 #include <sys/time.h>
 #include <unistd.h> /* for select() prototype */
 #include "network.h"
+#include "avstring.h"
 
 #include "rtp_internal.h"
 
@@ -405,11 +406,11 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         }
         break;
     case 's':
-        pstrcpy(s->title, sizeof(s->title), p);
+        av_strlcpy(s->title, p, sizeof(s->title));
         break;
     case 'i':
         if (s->nb_streams == 0) {
-            pstrcpy(s->comment, sizeof(s->comment), p);
+            av_strlcpy(s->comment, p, sizeof(s->comment));
             break;
         }
         break;
@@ -456,7 +457,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             }
         }
         /* put a default control url */
-        pstrcpy(rtsp_st->control_url, sizeof(rtsp_st->control_url), s->filename);
+        av_strlcpy(rtsp_st->control_url, s->filename, sizeof(rtsp_st->control_url));
         break;
     case 'a':
         if (strstart(p, "control:", &p) && s->nb_streams > 0) {
@@ -469,10 +470,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             url_split(proto, sizeof(proto), NULL, 0, NULL, 0, NULL, NULL, 0, p);
             if (proto[0] == '\0') {
                 /* relative control URL */
-                pstrcat(rtsp_st->control_url, sizeof(rtsp_st->control_url), "/");
-                pstrcat(rtsp_st->control_url, sizeof(rtsp_st->control_url), p);
+                av_strlcat(rtsp_st->control_url, "/", sizeof(rtsp_st->control_url));
+                av_strlcat(rtsp_st->control_url, p,   sizeof(rtsp_st->control_url));
             } else {
-                pstrcpy(rtsp_st->control_url, sizeof(rtsp_st->control_url), p);
+                av_strlcpy(rtsp_st->control_url, p,   sizeof(rtsp_st->control_url));
             }
         } else if (strstart(p, "rtpmap:", &p)) {
             /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
@@ -749,14 +750,14 @@ static void rtsp_send_cmd(AVFormatContext *s,
     memset(reply, 0, sizeof(RTSPHeader));
 
     rt->seq++;
-    pstrcpy(buf, sizeof(buf), cmd);
+    av_strlcpy(buf, cmd, sizeof(buf));
     snprintf(buf1, sizeof(buf1), "CSeq: %d\r\n", rt->seq);
-    pstrcat(buf, sizeof(buf), buf1);
+    av_strlcat(buf, buf1, sizeof(buf));
     if (rt->session_id[0] != '\0' && !strstr(cmd, "\nIf-Match:")) {
         snprintf(buf1, sizeof(buf1), "Session: %s\r\n", rt->session_id);
-        pstrcat(buf, sizeof(buf), buf1);
+        av_strlcat(buf, buf1, sizeof(buf));
     }
-    pstrcat(buf, sizeof(buf), "\r\n");
+    av_strlcat(buf, "\r\n", sizeof(buf));
 #ifdef DEBUG
     printf("Sending:\n%s--\n", buf);
 #endif
@@ -795,14 +796,14 @@ static void rtsp_send_cmd(AVFormatContext *s,
             reply->status_code = atoi(buf1);
         } else {
             rtsp_parse_line(reply, p);
-            pstrcat(rt->last_reply, sizeof(rt->last_reply), p);
-            pstrcat(rt->last_reply, sizeof(rt->last_reply), "\n");
+            av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
+            av_strlcat(rt->last_reply, "\n", sizeof(rt->last_reply));
         }
         line_count++;
     }
 
     if (rt->session_id[0] == '\0' && reply->session_id[0] != '\0')
-        pstrcpy(rt->session_id, sizeof(rt->session_id), reply->session_id);
+        av_strlcpy(rt->session_id, reply->session_id, sizeof(rt->session_id));
 
     content_length = reply->content_length;
     if (content_length > 0) {
@@ -947,7 +948,7 @@ static int rtsp_read_header(AVFormatContext *s,
         rtp_opened:
             port = rtp_get_local_port(rtsp_st->rtp_handle);
             if (transport[0] != '\0')
-                pstrcat(transport, sizeof(transport), ",");
+                av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
                      "RTP/AVP/UDP;unicast;client_port=%d-%d",
                      port, port + 1);
@@ -956,14 +957,14 @@ static int rtsp_read_header(AVFormatContext *s,
         /* RTP/TCP */
         else if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_TCP)) {
             if (transport[0] != '\0')
-                pstrcat(transport, sizeof(transport), ",");
+                av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
                      "RTP/AVP/TCP");
         }
 
         else if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_UDP_MULTICAST)) {
             if (transport[0] != '\0')
-                pstrcat(transport, sizeof(transport), ",");
+                av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport),
                      sizeof(transport) - strlen(transport) - 1,
                      "RTP/AVP/UDP;multicast");

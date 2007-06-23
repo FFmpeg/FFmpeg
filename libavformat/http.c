@@ -23,6 +23,7 @@
 #include "network.h"
 
 #include "base64.h"
+#include "avstring.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */
@@ -72,7 +73,7 @@ static int http_open_cnx(URLContext *h)
     if (port > 0) {
         snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
     } else {
-        pstrcpy(hoststr, sizeof(hoststr), hostname);
+        av_strlcpy(hoststr, hostname, sizeof(hoststr));
     }
 
     if (use_proxy) {

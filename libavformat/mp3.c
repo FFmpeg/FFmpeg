@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "mpegaudio.h"
+#include "avstring.h"
 
 #define ID3v2_HEADER_SIZE 10
 #define ID3v1_TAG_SIZE 128
@@ -350,7 +351,7 @@ static int id3v1_parse_tag(AVFormatContext *s, const uint8_t *buf)
         s->track = buf[126];
     genre = buf[127];
     if (genre <= ID3v1_GENRE_MAX)
-        pstrcpy(s->genre, sizeof(s->genre), id3v1_genre_str[genre]);
+        av_strlcpy(s->genre, id3v1_genre_str[genre], sizeof(s->genre));
     return 0;
 }
 

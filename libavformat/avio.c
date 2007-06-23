@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avstring.h"
 
 static int default_interrupt_cb(void);
 
@@ -169,7 +170,7 @@ int url_get_max_packet_size(URLContext *h)
 
 void url_get_filename(URLContext *h, char *buf, int buf_size)
 {
-    pstrcpy(buf, buf_size, h->filename);
+    av_strlcpy(buf, h->filename, buf_size);
 }
 
 
