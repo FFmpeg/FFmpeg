@@ -20,7 +20,6 @@
  */
 #include "avformat.h"
 
-#if !defined(CONFIG_NOCUTILS)
 /**
  * Return TRUE if val is a prefix of str. If it returns TRUE, ptr is
  * set to the next character in 'str' after the prefix.
@@ -83,8 +82,6 @@ char *pstrcat(char *buf, int buf_size, const char *s)
         pstrcpy(buf + len, buf_size - len, s);
     return buf;
 }
-
-#endif
 
 /* add one element to a dynamic array */
 void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem)
