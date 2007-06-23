@@ -134,11 +134,6 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return voc_get_packet(s, pkt, s->streams[0], 0);
 }
 
-static int voc_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 AVInputFormat voc_demuxer = {
     "voc",
     "Creative Voice File format",
@@ -146,6 +141,5 @@ AVInputFormat voc_demuxer = {
     voc_probe,
     voc_read_header,
     voc_read_packet,
-    voc_read_close,
     .codec_tag=(const AVCodecTag*[]){voc_codec_tags, 0},
 };
