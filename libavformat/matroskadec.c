@@ -860,8 +860,7 @@ matroska_probe (AVProbeData *p)
     uint8_t probe_data[] = { 'm', 'a', 't', 'r', 'o', 's', 'k', 'a' };
 
     /* ebml header? */
-    if ((p->buf[0] << 24 | p->buf[1] << 16 |
-         p->buf[2] << 8 | p->buf[3]) != EBML_ID_HEADER)
+    if (AV_RB32(p->buf) != EBML_ID_HEADER)
         return 0;
 
     /* length of header */
@@ -2044,13 +2043,11 @@ matroska_read_header (AVFormatContext    *s,
                         MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC) &&
                 (track->codec_priv_size >= 40) &&
                 (track->codec_priv != NULL)) {
-                unsigned char *p;
+                MatroskaVideoTrack *vtrack = (MatroskaVideoTrack *) track;
 
                 /* Offset of biCompression. Stored in LE. */
-                p = (unsigned char *)track->codec_priv + 16;
-                ((MatroskaVideoTrack *)track)->fourcc = (p[3] << 24) |
-                                 (p[2] << 16) | (p[1] << 8) | p[0];
-                codec_id = codec_get_id(codec_bmp_tags, ((MatroskaVideoTrack *)track)->fourcc);
+                vtrack->fourcc = AV_RL32(track->codec_priv + 16);
+                codec_id = codec_get_id(codec_bmp_tags, vtrack->fourcc);
 
             }
 
@@ -2060,12 +2057,10 @@ matroska_read_header (AVFormatContext    *s,
                              MATROSKA_CODEC_ID_AUDIO_ACM) &&
                 (track->codec_priv_size >= 18) &&
                 (track->codec_priv != NULL)) {
-                unsigned char *p;
                 uint16_t tag;
 
                 /* Offset of wFormatTag. Stored in LE. */
-                p = (unsigned char *)track->codec_priv;
-                tag = (p[1] << 8) | p[0];
+                tag = AV_RL16(track->codec_priv);
                 codec_id = codec_get_id(codec_wav_tags, tag);
 
             }
@@ -2274,7 +2269,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         duration = matroska->tracks[track]->default_duration;
 
     /* block_time (relative to cluster time) */
-    block_time = (data[0] << 8) | data[1];
+    block_time = AV_RB16(data);
     data += 2;
     size -= 2;
     flags = *data;
