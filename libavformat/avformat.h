@@ -833,11 +833,6 @@ int av_filename_number_test(const char *filename);
 
 #include "os_support.h"
 
-int strstart(const char *str, const char *val, const char **ptr);
-int stristart(const char *str, const char *val, const char **ptr);
-void pstrcpy(char *buf, int buf_size, const char *str);
-char *pstrcat(char *buf, int buf_size, const char *s);
-
 void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem);
 
 #ifdef __GNUC__

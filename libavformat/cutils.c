@@ -20,69 +20,6 @@
  */
 #include "avformat.h"
 
-/**
- * Return TRUE if val is a prefix of str. If it returns TRUE, ptr is
- * set to the next character in 'str' after the prefix.
- *
- * @param str input string
- * @param pfx prefix to test
- * @param ptr updated after the prefix in str in there is a match
- * @return TRUE if there is a match
- */
-int strstart(const char *str, const char *pfx, const char **ptr)
-{
-    while (*pfx && *pfx++ == *str++);
-    if (!*pfx && ptr)
-        *ptr = str;
-    return !*pfx;
-}
-
-/**
- * Return TRUE if val is a prefix of str (case independent). If it
- * returns TRUE, ptr is set to the next character in 'str' after the
- * prefix.
- *
- * @param str input string
- * @param pfx prefix to test
- * @param ptr updated after the prefix in str in there is a match
- * @return TRUE if there is a match */
-int stristart(const char *str, const char *pfx, const char **ptr)
-{
-    while (*pfx && toupper((unsigned)*pfx++) == toupper((unsigned)*str++));
-    if (!*pfx && ptr)
-        *ptr = str;
-    return !*pfx;
-}
-
-/**
- * Copy the string str to buf. If str length is bigger than buf_size -
- * 1 then it is clamped to buf_size - 1.
- * NOTE: this function does what strncpy should have done to be
- * useful. NEVER use strncpy.
- *
- * @param buf destination buffer
- * @param buf_size size of destination buffer
- * @param str source string
- */
-void pstrcpy(char *buf, int buf_size, const char *str)
-{
-    if (buf_size <= 0)
-        return;
-
-    while (buf_size-- > 1 && *str)
-        *buf++ = *str++;
-    *buf = 0;
-}
-
-/* strcat and truncate. */
-char *pstrcat(char *buf, int buf_size, const char *s)
-{
-    int len = strlen(buf);
-    if (len < buf_size)
-        pstrcpy(buf + len, buf_size - len, s);
-    return buf;
-}
-
 /* add one element to a dynamic array */
 void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem)
 {
