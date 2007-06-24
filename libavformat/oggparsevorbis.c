@@ -27,6 +27,7 @@
 #include "bitstream.h"
 #include "bswap.h"
 #include "ogg2.h"
+#include "avstring.h"
 
 extern int
 vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
@@ -88,15 +89,15 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
 
             // took from Vorbis_I_spec
             if (!strcmp (tt, "AUTHOR"))
-                strncpy (as->author, ct, FFMIN(sizeof (as->author), vl));
+                av_strlcpy (as->author, ct, sizeof (as->author));
             else if (!strcmp (tt, "TITLE"))
-                strncpy (as->title, ct, FFMIN(sizeof (as->title), vl));
+                av_strlcpy (as->title, ct, sizeof (as->title));
             else if (!strcmp (tt, "COPYRIGHT"))
-                strncpy (as->copyright, ct, FFMIN(sizeof (as->copyright), vl));
+                av_strlcpy (as->copyright, ct, sizeof (as->copyright));
             else if (!strcmp (tt, "DESCRIPTION"))
-                strncpy (as->comment, ct, FFMIN(sizeof (as->comment), vl));
+                av_strlcpy (as->comment, ct, sizeof (as->comment));
             else if (!strcmp (tt, "GENRE"))
-                strncpy (as->genre, ct, FFMIN(sizeof (as->genre), vl));
+                av_strlcpy (as->genre, ct, sizeof (as->genre));
             else if (!strcmp (tt, "TRACKNUMBER"))
                 as->track = atoi (ct);
             //Too bored to add others for today
