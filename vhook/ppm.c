@@ -28,6 +28,7 @@
 #include "framehook.h"
 #include "avformat.h"
 #include "swscale.h"
+#include "avstring.h"
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -68,8 +69,8 @@ static rwpipe *rwpipe_open( int argc, char *argv[] )
             strcpy( command, "" );
             for ( i = 0; i < argc; i ++ )
             {
-                pstrcat( command, COMMAND_SIZE, argv[ i ] );
-                pstrcat( command, COMMAND_SIZE, " " );
+                av_strlcat( command, argv[ i ], COMMAND_SIZE );
+                av_strlcat( command, " ", COMMAND_SIZE );
             }
 
             dup2( output[ 0 ], STDIN_FILENO );
