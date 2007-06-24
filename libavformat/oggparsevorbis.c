@@ -140,7 +140,7 @@ typedef struct {
 
 static unsigned int
 fixup_vorbis_headers(AVFormatContext * as, oggvorbis_private_t *priv,
-                     void **buf)
+                     uint8_t **buf)
 {
     int i,offset, len;
     unsigned char *ptr;
