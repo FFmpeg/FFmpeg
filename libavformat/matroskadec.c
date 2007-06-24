@@ -2215,9 +2215,9 @@ matroska_read_header (AVFormatContext    *s,
             track = matroska_find_track_by_num(matroska, idx->track);
             stream = matroska->tracks[track]->stream_index;
             if (stream >= 0)
-            av_add_index_entry(matroska->ctx->streams[stream],
-                               idx->pos, idx->time/matroska->time_scale,
-                               0, 0, AVINDEX_KEYFRAME);
+                av_add_index_entry(matroska->ctx->streams[stream],
+                                   idx->pos, idx->time/matroska->time_scale,
+                                   0, 0, AVINDEX_KEYFRAME);
         }
     }
 
