@@ -30,7 +30,7 @@
 #include "avstring.h"
 
 extern int
-vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
+vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
 {
     char *p = buf;
     int s, n, j;
@@ -52,7 +52,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
     p += 4;
     size -= 4;
 
-    while (size >= 4){
+    while (size >= 4) {
         char *t, *v;
         int tl, vl;
 
@@ -68,7 +68,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
         size -= s;
         n--;
 
-        v = memchr (t, '=', s);
+        v = memchr(t, '=', s);
         if (!v)
             continue;
 
@@ -76,30 +76,30 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
         vl = s - tl - 1;
         v++;
 
-        if (tl && vl){
+        if (tl && vl) {
             char tt[tl + 1];
             char ct[vl + 1];
 
             for (j = 0; j < tl; j++)
-                tt[j] = toupper (t[j]);
+                tt[j] = toupper(t[j]);
             tt[tl] = 0;
 
-            memcpy (ct, v, vl);
+            memcpy(ct, v, vl);
             ct[vl] = 0;
 
             // took from Vorbis_I_spec
-            if (!strcmp (tt, "AUTHOR") || !strcmp(tt, "ARTIST"))
-                av_strlcpy (as->author, ct, sizeof (as->author));
-            else if (!strcmp (tt, "TITLE"))
-                av_strlcpy (as->title, ct, sizeof (as->title));
-            else if (!strcmp (tt, "COPYRIGHT"))
-                av_strlcpy (as->copyright, ct, sizeof (as->copyright));
-            else if (!strcmp (tt, "DESCRIPTION"))
-                av_strlcpy (as->comment, ct, sizeof (as->comment));
-            else if (!strcmp (tt, "GENRE"))
-                av_strlcpy (as->genre, ct, sizeof (as->genre));
-            else if (!strcmp (tt, "TRACKNUMBER"))
-                as->track = atoi (ct);
+            if (!strcmp(tt, "AUTHOR") || !strcmp(tt, "ARTIST"))
+                av_strlcpy(as->author, ct, sizeof(as->author));
+            else if (!strcmp(tt, "TITLE"))
+                av_strlcpy(as->title, ct, sizeof(as->title));
+            else if (!strcmp(tt, "COPYRIGHT"))
+                av_strlcpy(as->copyright, ct, sizeof(as->copyright));
+            else if (!strcmp(tt, "DESCRIPTION"))
+                av_strlcpy(as->comment, ct, sizeof(as->comment));
+            else if (!strcmp(tt, "GENRE"))
+                av_strlcpy(as->genre, ct, sizeof(as->genre));
+            else if (!strcmp(tt, "TRACKNUMBER"))
+                as->track = atoi(ct);
             else if (!strcmp(tt, "ALBUM"))
                 av_strlcpy(as->album, ct, sizeof(as->album));
             else if (!strcmp(tt, "GENRE"))
@@ -110,10 +110,10 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
     }
 
     if (size > 0)
-        av_log (as, AV_LOG_INFO, "%i bytes of comment header remain\n", size);
+        av_log(as, AV_LOG_INFO, "%i bytes of comment header remain\n", size);
     if (n > 0)
-        av_log (as, AV_LOG_INFO,
-                "truncated comment header, %i comments not found\n", n);
+        av_log(as, AV_LOG_INFO,
+               "truncated comment header, %i comments not found\n", n);
 
     return 0;
 }
@@ -152,7 +152,7 @@ fixup_vorbis_headers(AVFormatContext * as, oggvorbis_private_t *priv,
     offset = 1;
     offset += av_xiphlacing(&ptr[offset], priv->len[0]);
     offset += av_xiphlacing(&ptr[offset], priv->len[1]);
-    for(i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         memcpy(&ptr[offset], priv->packet[i], priv->len[i]);
         offset += priv->len[i];
     }
@@ -172,9 +172,9 @@ vorbis_header (AVFormatContext * s, int idx)
     if (os->seq > 2)
         return 0;
 
-    if(os->seq == 0) {
+    if (os->seq == 0) {
         os->private = av_mallocz(sizeof(oggvorbis_private_t));
-        if(!os->private)
+        if (!os->private)
             return 0;
     }
 
