@@ -26,6 +26,7 @@
 #include "framehook.h"
 #include "opt.h"
 #include "fifo.h"
+#include "avstring.h"
 
 #ifdef __MINGW32__
 #include <conio.h>
@@ -2908,7 +2909,7 @@ static void new_audio_stream(AVFormatContext *oc)
     audio_enc->sample_rate = audio_sample_rate;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
-        pstrcpy(st->language, sizeof(st->language), audio_language);
+        av_strlcpy(st->language, audio_language, sizeof(st->language));
         av_free(audio_language);
         audio_language = NULL;
     }
@@ -2954,7 +2955,7 @@ static void opt_new_subtitle_stream(void)
     }
 
     if (subtitle_language) {
-        pstrcpy(st->language, sizeof(st->language), subtitle_language);
+        av_strlcpy(st->language, subtitle_language, sizeof(st->language));
         av_free(subtitle_language);
         subtitle_language = NULL;
     }
@@ -3006,10 +3007,10 @@ static void opt_output_file(const char *filename)
     }
 
     oc->oformat = file_oformat;
-    pstrcpy(oc->filename, sizeof(oc->filename), filename);
+    av_strlcpy(oc->filename, filename, sizeof(oc->filename));
 
     if (!strcmp(file_oformat->name, "ffm") &&
-        strstart(filename, "http:", NULL)) {
+        av_strstart(filename, "http:", NULL)) {
         /* special case for files sent to ffserver: we get the stream
            parameters from ffserver */
         if (read_ffserver_streams(oc, filename) < 0) {
@@ -3049,15 +3050,15 @@ static void opt_output_file(const char *filename)
         oc->timestamp = rec_timestamp;
 
         if (str_title)
-            pstrcpy(oc->title, sizeof(oc->title), str_title);
+            av_strlcpy(oc->title, str_title, sizeof(oc->title));
         if (str_author)
-            pstrcpy(oc->author, sizeof(oc->author), str_author);
+            av_strlcpy(oc->author, str_author, sizeof(oc->author));
         if (str_copyright)
-            pstrcpy(oc->copyright, sizeof(oc->copyright), str_copyright);
+            av_strlcpy(oc->copyright, str_copyright, sizeof(oc->copyright));
         if (str_comment)
-            pstrcpy(oc->comment, sizeof(oc->comment), str_comment);
+            av_strlcpy(oc->comment, str_comment, sizeof(oc->comment));
         if (str_album)
-            pstrcpy(oc->album, sizeof(oc->album), str_album);
+            av_strlcpy(oc->album, str_album, sizeof(oc->album));
     }
 
     output_files[nb_output_files++] = oc;
@@ -3074,7 +3075,7 @@ static void opt_output_file(const char *filename)
         /* test if it already exists to avoid loosing precious files */
         if (!file_overwrite &&
             (strchr(filename, ':') == NULL ||
-             strstart(filename, "file:", NULL))) {
+             av_strstart(filename, "file:", NULL))) {
             if (url_exist(filename)) {
                 int c;
 

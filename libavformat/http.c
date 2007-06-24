@@ -63,7 +63,7 @@ static int http_open_cnx(URLContext *h)
 
     proxy_path = getenv("http_proxy");
     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
-        strstart(proxy_path, "http://", NULL);
+        av_strstart(proxy_path, "http://", NULL);
 
     /* fill the dest addr */
  redo:
@@ -126,7 +126,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
     s->filesize = -1;
     s->off = 0;
-    pstrcpy (s->location, URL_SIZE, uri);
+    av_strlcpy(s->location, uri, URL_SIZE);
 
     ret = http_open_cnx(h);
     if (ret != 0)

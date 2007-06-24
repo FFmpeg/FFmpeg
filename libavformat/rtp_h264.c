@@ -47,6 +47,7 @@
 #include "rtp_internal.h"
 #include "rtp_h264.h"
 #include "base64.h"
+#include "avstring.h"
 
 /**
     RTP/H264 specific private data.
@@ -357,7 +358,7 @@ static int parse_h264_sdp_line(AVStream * stream, void *data,
 
     assert(h264_data->cookie == MAGIC_COOKIE);
 
-    if (strstart(p, "framesize:", &p)) {
+    if (av_strstart(p, "framesize:", &p)) {
         char buf1[50];
         char *dst = buf1;
 
@@ -375,7 +376,7 @@ static int parse_h264_sdp_line(AVStream * stream, void *data,
         codec->width = atoi(buf1);
         codec->height = atoi(p + 1); // skip the -
         codec->pix_fmt = PIX_FMT_YUV420P;
-    } else if (strstart(p, "fmtp:", &p)) {
+    } else if (av_strstart(p, "fmtp:", &p)) {
         char attr[256];
         char value[4096];
 
@@ -390,7 +391,7 @@ static int parse_h264_sdp_line(AVStream * stream, void *data,
             /* grab the codec extra_data from the config parameter of the fmtp line */
             sdp_parse_fmtp_config_h264(stream, h264_data, attr, value);
         }
-    } else if (strstart(p, "cliprect:", &p)) {
+    } else if (av_strstart(p, "cliprect:", &p)) {
         // could use this if we wanted.
     }
 

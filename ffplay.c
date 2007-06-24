@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "swscale.h"
+#include "avstring.h"
 
 #include "version.h"
 #include "cmdutils.h"
@@ -2109,7 +2110,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is = av_mallocz(sizeof(VideoState));
     if (!is)
         return NULL;
-    pstrcpy(is->filename, sizeof(is->filename), filename);
+    av_strlcpy(is->filename, filename, sizeof(is->filename));
     is->iformat = iformat;
     is->ytop = 0;
     is->xleft = 0;

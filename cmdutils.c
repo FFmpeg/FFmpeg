@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "cmdutils.h"
+#include "avstring.h"
 
 #undef exit
 
@@ -37,10 +38,10 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
                 printf("%s", msg);
                 first = 0;
             }
-            pstrcpy(buf, sizeof(buf), po->name);
+            av_strlcpy(buf, po->name, sizeof(buf));
             if (po->flags & HAS_ARG) {
-                pstrcat(buf, sizeof(buf), " ");
-                pstrcat(buf, sizeof(buf), po->argname);
+                av_strlcat(buf, " ", sizeof(buf));
+                av_strlcat(buf, po->argname, sizeof(buf));
             }
             printf("-%-17s  %s\n", buf, po->help);
         }

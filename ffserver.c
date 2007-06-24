@@ -42,6 +42,7 @@
 #include "version.h"
 #include "ffserver.h"
 #include "random.h"
+#include "avstring.h"
 
 #undef exit
 
@@ -390,7 +391,7 @@ static void start_children(FFStream *feed)
                         close(i);
                 }
 
-                pstrcpy(pathname, sizeof(pathname), my_program_name);
+                av_strlcpy(pathname, my_program_name, sizeof(pathname));
 
                 slash = strrchr(pathname, '/');
                 if (!slash) {
@@ -1144,17 +1145,17 @@ static void compute_real_filename(char *filename, int max_size)
     FFStream *stream;
 
     /* compute filename by matching without the file extensions */
-    pstrcpy(file1, sizeof(file1), filename);
+    av_strlcpy(file1, filename, sizeof(file1));
     p = strrchr(file1, '.');
     if (p)
         *p = '\0';
     for(stream = first_stream; stream != NULL; stream = stream->next) {
-        pstrcpy(file2, sizeof(file2), stream->filename);
+        av_strlcpy(file2, stream->filename, sizeof(file2));
         p = strrchr(file2, '.');
         if (p)
             *p = '\0';
         if (!strcmp(file1, file2)) {
-            pstrcpy(filename, max_size, stream->filename);
+            av_strlcpy(filename, stream->filename, max_size);
             break;
         }
     }
@@ -1187,7 +1188,7 @@ static int http_parse_request(HTTPContext *c)
 
     p = c->buffer;
     get_word(cmd, sizeof(cmd), (const char **)&p);
-    pstrcpy(c->method, sizeof(c->method), cmd);
+    av_strlcpy(c->method, cmd, sizeof(c->method));
 
     if (!strcmp(cmd, "GET"))
         c->post = 0;
@@ -1197,13 +1198,13 @@ static int http_parse_request(HTTPContext *c)
         return -1;
 
     get_word(url, sizeof(url), (const char **)&p);
-    pstrcpy(c->url, sizeof(c->url), url);
+    av_strlcpy(c->url, url, sizeof(c->url));
 
     get_word(protocol, sizeof(protocol), (const char **)&p);
     if (strcmp(protocol, "HTTP/1.0") && strcmp(protocol, "HTTP/1.1"))
         return -1;
 
-    pstrcpy(c->protocol, sizeof(c->protocol), protocol);
+    av_strlcpy(c->protocol, protocol, sizeof(c->protocol));
 
     if (ffserver_debug)
         http_log("New connection: %s %s\n", cmd, url);
@@ -1211,13 +1212,13 @@ static int http_parse_request(HTTPContext *c)
     /* find the filename and the optional info string in the request */
     p = strchr(url, '?');
     if (p) {
-        pstrcpy(info, sizeof(info), p);
+        av_strlcpy(info, p, sizeof(info));
         *p = '\0';
     } else {
         info[0] = '\0';
     }
 
-    pstrcpy(filename, sizeof(filename)-1, url + ((*url == '/') ? 1 : 0));
+    av_strlcpy(filename, url + ((*url == '/') ? 1 : 0), sizeof(filename)-1);
 
     for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
         if (strncasecmp(p, "User-Agent:", 11) == 0) {
@@ -1254,7 +1255,7 @@ static int http_parse_request(HTTPContext *c)
 
     // "redirect" / request to index.html
     if (!strlen(filename))
-        pstrcpy(filename, sizeof(filename) - 1, "index.html");
+        av_strlcpy(filename, "index.html", sizeof(filename) - 1);
 
     stream = first_stream;
     while (stream != NULL) {
@@ -1392,7 +1393,7 @@ static int http_parse_request(HTTPContext *c)
                         {
                             char hostname[256], *p;
                             /* extract only hostname */
-                            pstrcpy(hostname, sizeof(hostname), hostbuf);
+                            av_strlcpy(hostname, hostbuf, sizeof(hostname));
                             p = strrchr(hostname, ':');
                             if (p)
                                 *p = '\0';
@@ -1634,7 +1635,7 @@ static void compute_stats(HTTPContext *c)
         char *eosf;
 
         if (stream->feed != stream) {
-            pstrcpy(sfilename, sizeof(sfilename) - 10, stream->filename);
+            av_strlcpy(sfilename, stream->filename, sizeof(sfilename) - 10);
             eosf = sfilename + strlen(sfilename);
             if (eosf - sfilename >= 4) {
                 if (strcmp(eosf - 4, ".asf") == 0) {
@@ -1998,14 +1999,14 @@ static int http_prepare_data(HTTPContext *c)
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
-        pstrcpy(c->fmt_ctx.author, sizeof(c->fmt_ctx.author),
-                c->stream->author);
-        pstrcpy(c->fmt_ctx.comment, sizeof(c->fmt_ctx.comment),
-                c->stream->comment);
-        pstrcpy(c->fmt_ctx.copyright, sizeof(c->fmt_ctx.copyright),
-                c->stream->copyright);
-        pstrcpy(c->fmt_ctx.title, sizeof(c->fmt_ctx.title),
-                c->stream->title);
+        av_strlcpy(c->fmt_ctx.author, c->stream->author,
+                   sizeof(c->fmt_ctx.author));
+        av_strlcpy(c->fmt_ctx.comment, c->stream->comment,
+                   sizeof(c->fmt_ctx.comment));
+        av_strlcpy(c->fmt_ctx.copyright, c->stream->copyright,
+                   sizeof(c->fmt_ctx.copyright));
+        av_strlcpy(c->fmt_ctx.title, c->stream->title,
+                   sizeof(c->fmt_ctx.title));
 
         /* open output stream by using specified codecs */
         c->fmt_ctx.oformat = c->stream->fmt;
@@ -2586,9 +2587,9 @@ static int rtsp_parse_request(HTTPContext *c)
     get_word(url, sizeof(url), &p);
     get_word(protocol, sizeof(protocol), &p);
 
-    pstrcpy(c->method, sizeof(c->method), cmd);
-    pstrcpy(c->url, sizeof(c->url), url);
-    pstrcpy(c->protocol, sizeof(c->protocol), protocol);
+    av_strlcpy(c->method, cmd, sizeof(c->method));
+    av_strlcpy(c->url, url, sizeof(c->url));
+    av_strlcpy(c->protocol, protocol, sizeof(c->protocol));
 
     c->pb = &pb1;
     if (url_open_dyn_buf(c->pb) < 0) {
@@ -3073,7 +3074,7 @@ static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h)
         return;
     }
 
-    pstrcpy(session_id, sizeof(session_id), rtp_c->session_id);
+    av_strlcpy(session_id, rtp_c->session_id, sizeof(session_id));
 
     /* abort the session */
     close_connection(rtp_c);
@@ -3115,7 +3116,7 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
         goto fail;
     nb_connections++;
     c->stream = stream;
-    pstrcpy(c->session_id, sizeof(c->session_id), session_id);
+    av_strlcpy(c->session_id, session_id, sizeof(c->session_id));
     c->state = HTTPSTATE_READY;
     c->is_packetized = 1;
     c->rtp_protocol = rtp_protocol;
@@ -3135,8 +3136,8 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
         proto_str = "???";
         break;
     }
-    pstrcpy(c->protocol, sizeof(c->protocol), "RTP/");
-    pstrcat(c->protocol, sizeof(c->protocol), proto_str);
+    av_strlcpy(c->protocol, "RTP/", sizeof(c->protocol));
+    av_strlcat(c->protocol, proto_str, sizeof(c->protocol));
 
     current_bandwidth += stream->bandwidth;
 

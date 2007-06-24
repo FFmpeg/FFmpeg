@@ -80,7 +80,7 @@ int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_UDP);
 
 static int rtsp_probe(AVProbeData *p)
 {
-    if (strstart(p->filename, "rtsp:", NULL))
+    if (av_strstart(p->filename, "rtsp:", NULL))
         return AVPROBE_SCORE_MAX;
     return 0;
 }
@@ -338,7 +338,7 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
     char buf[256];
 
     skip_spaces(&p);
-    if (!stristart(p, "npt=", &p))
+    if (!av_stristart(p, "npt=", &p))
         return;
 
     *start = AV_NOPTS_VALUE;
@@ -460,7 +460,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         av_strlcpy(rtsp_st->control_url, s->filename, sizeof(rtsp_st->control_url));
         break;
     case 'a':
-        if (strstart(p, "control:", &p) && s->nb_streams > 0) {
+        if (av_strstart(p, "control:", &p) && s->nb_streams > 0) {
             char proto[32];
             /* get the control url */
             st = s->streams[s->nb_streams - 1];
@@ -475,7 +475,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             } else {
                 av_strlcpy(rtsp_st->control_url, p,   sizeof(rtsp_st->control_url));
             }
-        } else if (strstart(p, "rtpmap:", &p)) {
+        } else if (av_strstart(p, "rtpmap:", &p)) {
             /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
@@ -486,7 +486,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     sdp_parse_rtpmap(st->codec, rtsp_st, payload_type, p);
                 }
             }
-        } else if (strstart(p, "fmtp:", &p)) {
+        } else if (av_strstart(p, "fmtp:", &p)) {
             /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
@@ -503,7 +503,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     }
                 }
             }
-        } else if(strstart(p, "framesize:", &p)) {
+        } else if(av_strstart(p, "framesize:", &p)) {
             // let dynamic protocol handlers have a stab at the line.
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
@@ -516,7 +516,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     }
                 }
             }
-        } else if(strstart(p, "range:", &p)) {
+        } else if(av_strstart(p, "range:", &p)) {
             int64_t start, end;
 
             // this is so that seeking on a streamed file can work.
@@ -683,15 +683,15 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
 
     /* NOTE: we do case independent match for broken servers */
     p = buf;
-    if (stristart(p, "Session:", &p)) {
+    if (av_stristart(p, "Session:", &p)) {
         get_word_sep(reply->session_id, sizeof(reply->session_id), ";", &p);
-    } else if (stristart(p, "Content-Length:", &p)) {
+    } else if (av_stristart(p, "Content-Length:", &p)) {
         reply->content_length = strtol(p, NULL, 10);
-    } else if (stristart(p, "Transport:", &p)) {
+    } else if (av_stristart(p, "Transport:", &p)) {
         rtsp_parse_transport(reply, p);
-    } else if (stristart(p, "CSeq:", &p)) {
+    } else if (av_stristart(p, "CSeq:", &p)) {
         reply->seq = strtol(p, NULL, 10);
-    } else if (stristart(p, "Range:", &p)) {
+    } else if (av_stristart(p, "Range:", &p)) {
         rtsp_parse_range_npt(p, &reply->range_start, &reply->range_end);
     }
 }
@@ -1327,7 +1327,7 @@ static int sdp_probe(AVProbeData *p1)
 
     /* we look for a line beginning "c=IN IP4" */
     while (p < p_end && *p != '\0') {
-        if (p + sizeof("c=IN IP4") - 1 < p_end && strstart(p, "c=IN IP4", NULL))
+        if (p + sizeof("c=IN IP4") - 1 < p_end && av_strstart(p, "c=IN IP4", NULL))
             return AVPROBE_SCORE_MAX / 2;
 
         while(p < p_end - 1 && *p != '\n') p++;
@@ -1432,8 +1432,8 @@ static int redir_probe(AVProbeData *pd)
     p = pd->buf;
     while (redir_isspace(*p))
         p++;
-    if (strstart(p, "http://", NULL) ||
-        strstart(p, "rtsp://", NULL))
+    if (av_strstart(p, "http://", NULL) ||
+        av_strstart(p, "rtsp://", NULL))
         return AVPROBE_SCORE_MAX;
     return 0;
 }

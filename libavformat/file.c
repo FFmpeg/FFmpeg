@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avstring.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -31,7 +32,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
     int access;
     int fd;
 
-    strstart(filename, "file:", &filename);
+    av_strstart(filename, "file:", &filename);
 
     if (flags & URL_RDWR) {
         access = O_CREAT | O_TRUNC | O_RDWR;

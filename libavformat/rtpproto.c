@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avstring.h"
 
 #include <unistd.h>
 #include <stdarg.h>
@@ -72,11 +73,11 @@ static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 
     va_start(ap, fmt);
     if (strchr(buf, '?'))
-        pstrcat(buf, buf_size, "&");
+        av_strlcat(buf, "&", buf_size);
     else
-        pstrcat(buf, buf_size, "?");
+        av_strlcat(buf, "?", buf_size);
     vsnprintf(buf1, sizeof(buf1), fmt, ap);
-    pstrcat(buf, buf_size, buf1);
+    av_strlcat(buf, buf1, buf_size);
     va_end(ap);
 }
 
