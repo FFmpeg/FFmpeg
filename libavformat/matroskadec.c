@@ -41,7 +41,7 @@ typedef struct Track {
      * the calling app uses for this track. */
     uint32_t num;
     uint32_t uid;
-    uint32_t stream_index;
+    int stream_index;
 
     char *name;
     char *language;
@@ -2021,6 +2021,7 @@ matroska_read_header (AVFormatContext    *s,
             int extradata_size = 0;
             int extradata_offset = 0;
             track = matroska->tracks[i];
+            track->stream_index = -1;
 
             /* libavformat does not really support subtitles.
              * Also apply some sanity checks. */
@@ -2213,6 +2214,7 @@ matroska_read_header (AVFormatContext    *s,
             MatroskaDemuxIndex *idx = &matroska->index[i];
             track = matroska_find_track_by_num(matroska, idx->track);
             stream = matroska->tracks[track]->stream_index;
+            if (stream >= 0)
             av_add_index_entry(matroska->ctx->streams[stream],
                                idx->pos, idx->time/matroska->time_scale,
                                0, 0, AVINDEX_KEYFRAME);
@@ -2260,6 +2262,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
+    if (matroska->tracks[track]->stream_index < 0)
+        return res;
     st = matroska->ctx->streams[matroska->tracks[track]->stream_index];
     if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
