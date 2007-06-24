@@ -38,7 +38,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
     if (size < 4)
         return -1;
 
-    s = le2me_32 (unaligned32 (p));
+    s = AV_RL32(p);
     p += 4;
     size -= 4;
 
@@ -48,7 +48,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
     p += s;
     size -= s;
 
-    n = le2me_32 (unaligned32 (p));
+    n = AV_RL32(p);
     p += 4;
     size -= 4;
 
@@ -56,7 +56,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
         char *t, *v;
         int tl, vl;
 
-        s = le2me_32 (unaligned32 (p));
+        s = AV_RL32(p);
         p += 4;
         size -= 4;
 
@@ -185,9 +185,9 @@ vorbis_header (AVFormatContext * s, int idx)
     if (os->buf[os->pstart] == 1) {
         uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
         st->codec->channels = *p++;
-        st->codec->sample_rate = le2me_32 (unaligned32 (p));
+        st->codec->sample_rate = AV_RL32(p);
         p += 8; //skip maximum and and nominal bitrate
-        st->codec->bit_rate = le2me_32 (unaligned32 (p)); //Minimum bitrate
+        st->codec->bit_rate = AV_RL32(p); //Minimum bitrate
 
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
