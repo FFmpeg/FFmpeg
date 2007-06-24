@@ -20,6 +20,7 @@
 #define INTREADWRITE_H
 
 #include <stdint.h>
+#include "bswap.h"
 
 #ifdef __GNUC__
 
