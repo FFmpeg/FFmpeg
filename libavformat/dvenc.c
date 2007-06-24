@@ -300,9 +300,11 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     for (i=0; i<s->nb_streams; i++) {
          switch (s->streams[i]->codec->codec_type) {
          case CODEC_TYPE_VIDEO:
+               if (vst) return NULL;
                vst = s->streams[i];
                break;
          case CODEC_TYPE_AUDIO:
+             if (c->n_ast > 1) return NULL;
              c->ast[c->n_ast++] = s->streams[i];
              break;
          default:
