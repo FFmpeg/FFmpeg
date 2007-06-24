@@ -88,7 +88,7 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
             ct[vl] = 0;
 
             // took from Vorbis_I_spec
-            if (!strcmp (tt, "AUTHOR"))
+            if (!strcmp (tt, "AUTHOR") || !strcmp(tt, "ARTIST"))
                 av_strlcpy (as->author, ct, sizeof (as->author));
             else if (!strcmp (tt, "TITLE"))
                 av_strlcpy (as->title, ct, sizeof (as->title));
@@ -100,7 +100,12 @@ vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
                 av_strlcpy (as->genre, ct, sizeof (as->genre));
             else if (!strcmp (tt, "TRACKNUMBER"))
                 as->track = atoi (ct);
-            //Too bored to add others for today
+            else if (!strcmp(tt, "ALBUM"))
+                av_strlcpy(as->album, ct, sizeof(as->album));
+            else if (!strcmp(tt, "GENRE"))
+                av_strlcpy(as->genre, ct, sizeof(as->genre));
+            else if (!strcmp(tt, "DESCRIPTION"))
+                av_strlcpy(as->comment, ct, sizeof(as->comment));
         }
     }
 
