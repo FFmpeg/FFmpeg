@@ -25,7 +25,6 @@
 #include <stdarg.h>
 #include "network.h"
 #include <fcntl.h>
-#include "avstring.h"
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
 #define RTP_RX_BUF_SIZE  (128 * 1024)
