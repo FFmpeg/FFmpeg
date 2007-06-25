@@ -41,7 +41,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
     } else {
         access = O_RDONLY;
     }
-#if defined(__MINGW32__) || defined(CONFIG_OS2) || defined(__CYGWIN__)
+#ifdef O_BINARY
     access |= O_BINARY;
 #endif
     fd = open(filename, access, 0666);
@@ -96,7 +96,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     } else {
         fd = 0;
     }
-#if defined(__MINGW32__) || defined(CONFIG_OS2) || defined(__CYGWIN__)
+#ifdef O_BINARY
     setmode(fd, O_BINARY);
 #endif
     h->priv_data = (void *)(size_t)fd;
