@@ -668,7 +668,6 @@ HAVE_LIST="
     freetype2
     imlib2
     inet_aton
-    localtime_r
     lrintf
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
@@ -1531,7 +1530,6 @@ check_header byteswap.h
 check_header arpa/inet.h
 
 check_func inet_aton
-check_func localtime_r
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 
 # ffserver uses poll(),

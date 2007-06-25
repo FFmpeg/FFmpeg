@@ -58,19 +58,6 @@ int64_t av_gettime(void)
 #endif
 }
 
-#if !defined(HAVE_LOCALTIME_R)
-struct tm *localtime_r(const time_t *t, struct tm *tp)
-{
-    struct tm *l;
-
-    l = localtime(t);
-    if (!l)
-        return 0;
-    *tp = *l;
-    return tp;
-}
-#endif /* !defined(HAVE_LOCALTIME_R) */
-
 #ifdef CONFIG_NETWORK
 #include "network.h"
 
