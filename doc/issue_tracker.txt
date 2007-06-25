@@ -16,6 +16,8 @@ nosy list or to subscribe to the ffmpeg-issues mailing list which receives
 a mail for every change to every issue. Replies to such mails will also
 properly be added to the respective issue.
 (the above does all work already after light testing)
+The subscription URL for the ffmpeg-issues list is:
+http://live.polito.it/mailman/listinfo/ffmpeg-issues
 
 note: issue = (bug report || patch || feature request)
 
