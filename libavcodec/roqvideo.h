@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "random.h"
 
 typedef struct {
   unsigned char y[4];
@@ -34,6 +35,10 @@ typedef struct {
   int idx[4];
 } roq_qcell;
 
+typedef struct {
+    int d[2];
+} motion_vect;
+
 typedef struct RoqContext {
 
     AVCodecContext *avctx;
@@ -41,6 +46,7 @@ typedef struct RoqContext {
     AVFrame frames[2];
     AVFrame *last_frame;
     AVFrame *current_frame;
+    int first_frame;
     int y_stride;
     int c_stride;
 
@@ -49,7 +55,22 @@ typedef struct RoqContext {
 
     unsigned char *buf;
     int size;
+    int width, height;
 
+    /* Encoder only data */
+    AVRandomState randctx;
+    uint64_t lambda;
+
+    motion_vect *this_motion4;
+    motion_vect *last_motion4;
+
+    motion_vect *this_motion8;
+    motion_vect *last_motion8;
+
+    unsigned int framesSinceKeyframe;
+
+    AVFrame *frame_to_enc;
+    uint8_t *out_buf;
 } RoqContext;
 
 #define RoQ_INFO              0x1001

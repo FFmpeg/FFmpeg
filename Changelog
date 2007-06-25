@@ -87,6 +87,7 @@ version <next>
 - extern C declarations for C++ removed from headers
 - sws_flags command line option
 - codebook generator
+- RoQ video encoder
 
 version 0.4.9-pre1:
 

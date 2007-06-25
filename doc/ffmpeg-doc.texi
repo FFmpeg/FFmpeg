@@ -1027,7 +1027,7 @@ following image formats are supported:
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
 @item 4X Video               @tab     @tab  X @tab Used in certain computer games.
 @item Sony Playstation MDEC  @tab     @tab  X
-@item Id RoQ                 @tab     @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item Id RoQ                 @tab  X  @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Xan/WC3                @tab     @tab  X @tab Used in Wing Commander III .MVE files.
 @item Interplay Video        @tab     @tab  X @tab Used in Interplay .MVE files.
 @item Apple Animation        @tab     @tab  X @tab fourcc: 'rle '
