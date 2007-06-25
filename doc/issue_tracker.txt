@@ -1,10 +1,10 @@
 ffmpegs bug/patch/feature request tracker manual
 ================================================
 
-NOTE, this is a draft, its not yet recommanded to send real bugrepors to the
-tracker but rather use the mailinglists
-though if you are brave and dont mind that your bugreport might disapear or
-that you might be mailbombed due to a missconiguration you can surely try
+NOTE, this is a draft, its not yet recommended to send real bugreports to the
+tracker but rather use the mailing lists
+though, if you are brave and don't mind that your bugreport might disappear or
+that you might be mailbombed due to a misconfiguration, you can surely try
 to enter a real bugreport
 
 Overview:
@@ -12,7 +12,7 @@ Overview:
 FFmpeg uses roundup for tracking issues, new issues and changes to
 existing issues can be done through a web interface and through email.
 Its possible to subscribe to individual issues by adding yourself to the
-nosy list or to subscribe to the ffmpeg-issues mailinglist which receives
+nosy list or to subscribe to the ffmpeg-issues mailing list which receives
 a mail for every change to every issue. Replies to such mails will also
 properly be added to the respective issue.
 (the above does all work already after light testing)
@@ -43,12 +43,12 @@ critical
     no feature request can be critical.
 
 important
-    Bugs which makes ffmpeg unuseable for a significant number of users, and
+    Bugs which makes ffmpeg unusable for a significant number of users, and
     patches fixing them.
-    examples here might be completly broken mpeg4 decoding or a build issue
+    examples here might be completely broken mpeg4 decoding or a build issue
     on linux
     while broken 4xm decoding or broken os2 build would not be important, the
-    seperation to normal is somewhat fuzzy ...
+    separation to normal is somewhat fuzzy ...
     For feature requests this priority would be used for things many people
     want.
 
@@ -58,11 +58,11 @@ normal
 minor
     Bugs and patches about things like spelling errors, "mp2" instead of
     "mp3" being shown and such
-    Feature requests about things few people want or which dont make a big
+    Feature requests about things few people want or which don't make a big
     difference.
 
 wish
-    Something that is desiderable to have but that there is no urgency at
+    Something that is desirable to have but that there is no urgency at
     all to implement, e.g.: something completely cosmetic like a
     website restyle or a personalized doxy template or the ffmpeg logo.
     This priority isn't valid for bugs.
@@ -127,7 +127,7 @@ bug/closed/wont_fix
 bug/closed/works_for_me
     Bugs for which sufficient information was provided to reproduce but
     reproduction failed that is the code seems to work correctly to the
-    best of our knowledgde.
+    best of our knowledge.
 
 patch/open/approved
     Patches which have been reviewed and approved by a developer.
@@ -152,7 +152,7 @@ feature_request/closed/implemented
     Feature requests which have been implemented.
 
 feature_request/closed/wont_implement
-    Feature reuests which will not be implemented. The reasons here could
+    Feature requests which will not be implemented. The reasons here could
     be legal, philosophical or others.
 
 Note, please do not use type-status-substatus combinations other than the
