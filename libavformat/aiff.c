@@ -355,7 +355,7 @@ static int aiff_read_header(AVFormatContext *s,
             case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
                 offset = get_be32(pb);      /* Offset of sound data */
                 offset += url_ftell(pb);    /* Compute absolute data offset */
-                get_be32(pb);               /* Block align... don't care */
+                get_be32(pb);               /* BlockSize... don't care */
                 if (st->codec->codec_id)    /* Assume COMM already parsed */
                     goto got_sound;
                 if (url_is_streamed(pb)) {
