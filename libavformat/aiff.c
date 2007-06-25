@@ -289,7 +289,8 @@ static int aiff_probe(AVProbeData *p)
 static int aiff_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    int size, filesize, offset;
+    int size, filesize;
+    offset_t offset = 0;
     uint32_t tag;
     unsigned version = AIFF_C_VERSION1;
     ByteIOContext *pb = &s->pb;
@@ -327,6 +328,8 @@ static int aiff_read_header(AVFormatContext *s,
                 st->nb_frames = get_aiff_header (pb, st->codec, size, version);
                 if (st->nb_frames < 0)
                         return st->nb_frames;
+                if (offset > 0) // COMM is after SSND
+                    goto got_sound;
                 break;
 
             case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
@@ -352,7 +355,15 @@ static int aiff_read_header(AVFormatContext *s,
             case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
                 get_be32(pb);               /* Block align... don't care */
                 offset = get_be32(pb);      /* Offset of sound data */
-                goto got_sound;
+                offset += url_ftell(pb);    /* Compute absolute data offset */
+                if (st->codec->codec_id)    /* Assume COMM already parsed */
+                    goto got_sound;
+                if (url_is_streamed(pb)) {
+                    av_log(s, AV_LOG_ERROR, "file is not seekable\n");
+                    return -1;
+                }
+                url_fskip(pb, size - 8);
+                break;
 
             default: /* Jump */
                 if (size & 1)   /* Always even aligned */
@@ -374,7 +385,7 @@ got_sound:
     st->duration = st->nb_frames;
 
     /* Position the stream at the first block */
-    url_fskip(pb, offset);
+    url_fseek(pb, offset, SEEK_SET);
 
     return 0;
 }
