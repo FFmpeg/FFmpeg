@@ -216,6 +216,7 @@ typedef struct AVInputFormat {
      * @param stream_index must not be -1
      * @param flags selects which direction should be preferred if no exact
      *              match is available
+     * @return >= 0 on success (but not necessarily the new offset)
      */
     int (*read_seek)(struct AVFormatContext *,
                      int stream_index, int64_t timestamp, int flags);

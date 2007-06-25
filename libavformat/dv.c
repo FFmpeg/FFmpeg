@@ -426,7 +426,8 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
 
     dv_offset_reset(c, offset / c->sys->frame_size);
 
-    return url_fseek(&s->pb, offset, SEEK_SET);
+    offset = url_fseek(&s->pb, offset, SEEK_SET);
+    return (offset < 0)?offset:0;
 }
 
 static int dv_read_close(AVFormatContext *s)
