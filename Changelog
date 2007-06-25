@@ -259,8 +259,8 @@ version 0.4.6:
 
 version 0.4.5:
 
-- some header fixes (Zdenek Kabelac <kabi@informatics.muni.cz>)
-- many MMX optimizations (Nick Kurshev <nickols_k@mail.ru>)
+- some header fixes (Zdenek Kabelac <kabi at informatics.muni.cz>)
+- many MMX optimizations (Nick Kurshev <nickols_k at mail.ru>)
 - added configure system (actually a small shell script)
 - added MPEG audio layer 1/2/3 decoding using LGPL'ed mpglib by
   Michael Hipp (temporary solution - waiting for integer only
@@ -277,12 +277,12 @@ version 0.4.5:
 - added MJPEG decoder
 - added mmx/mmxext IDCT from libmpeg2
 - added pgmyuvpipe, ppm, and ppm_pipe formats (original patch by Celer
-  <celer@shell.scrypt.net>)
+  <celer at shell.scrypt.net>)
 - added pixel format conversion layer (e.g. for MJPEG or PPM)
 - added deinterlacing option
 - MPEG-1/2 fixes
-- MPEG-4 vol header fixes (Jonathan Marsden <snmjbm@pacbell.net>)
-- ARM optimizations (Lionel Ulmer <lionel.ulmer@free.fr>).
+- MPEG-4 vol header fixes (Jonathan Marsden <snmjbm at pacbell.net>)
+- ARM optimizations (Lionel Ulmer <lionel.ulmer at free.fr>).
 - Windows porting of file converter
 - added MJPEG raw format (input/ouput)
 - added JPEG image format support (input/output)
@@ -290,7 +290,7 @@ version 0.4.5:
 version 0.4.4:
 
 - fixed some std header definitions (Bjorn Lindgren
-  <bjorn.e.lindgren@telia.com>).
+  <bjorn.e.lindgren at telia.com>).
 - added MPEG demuxer (MPEG-1 and 2 compatible).
 - added ASF demuxer
 - added prototype RM demuxer
@@ -313,7 +313,7 @@ version 0.4.4:
 
 version 0.4.3:
 
-- BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq@amsat.org>)
+- BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq at amsat.org>)
 - fixed raw yuv output
 - added motion rounding support in MPEG-4
 - fixed motion bug rounding in MSMPEG4
@@ -328,7 +328,7 @@ version 0.4.3:
 - suppressed 'img:' protocol. Simply use: /tmp/test%d.[pgm|Y] as input or
   output.
 - added pgmpipe I/O format (original patch from Martin Aumueller
-  <lists@reserv.at>, but changed completely since we use a format
+  <lists at reserv.at>, but changed completely since we use a format
   instead of a protocol)
 
 version 0.4.2:
@@ -380,7 +380,7 @@ version 0.4.0:
 - added WAV format support
 - added "tty user interface" to ffmpeg to stop grabbing gracefully
 - added MMX/SSE optimizations to SAD (Sums of Absolutes Differences)
-  (Juan J. Sierralta P. a.k.a. "Juanjo" <juanjo@atmlab.utfsm.cl>)
+  (Juan J. Sierralta P. a.k.a. "Juanjo" <juanjo at atmlab.utfsm.cl>)
 - added MMX DCT from mpeg2_movie 1.5 (Juanjo)
 - added new motion estimation algorithms, log and phods (Juanjo)
 - changed directories: libav for format handling, libavcodec for
