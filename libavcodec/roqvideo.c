@@ -77,7 +77,7 @@ void ff_apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
     bptr[         0] = bptr[         1] = bptr[stride    ] = bptr[stride  +1] = cell->y[0];
     bptr[         2] = bptr[         3] = bptr[stride  +2] = bptr[stride  +3] = cell->y[1];
     bptr[stride*2  ] = bptr[stride*2+1] = bptr[stride*3  ] = bptr[stride*3+1] = cell->y[2];
-    bptr[stride*2+2] = bptr[stride*2+3] = bptr[stride*3+2] = bptr[stride*3+3] = cell->y[2];
+    bptr[stride*2+2] = bptr[stride*2+3] = bptr[stride*3+2] = bptr[stride*3+3] = cell->y[3];
 
     bptr = ri->current_frame->data[1] + boffs;
     bptr[         0] = bptr[         1] = bptr[stride    ] = bptr[stride  +1] =
