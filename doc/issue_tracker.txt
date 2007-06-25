@@ -12,7 +12,7 @@ Overview:
 FFmpeg uses roundup for tracking issues, new issues and changes to
 existing issues can be done through a web interface and through email.
 Its possible to subscribe to individual issues by adding yourself to the
-nosy list or to subscribe to the ffmpeg_issues mailinglist which receives
+nosy list or to subscribe to the ffmpeg-issues mailinglist which receives
 a mail for every change to every issue. Replies to such mails will also
 properly be added to the respective issue.
 (the above does all work already after light testing)
@@ -62,7 +62,10 @@ minor
     difference.
 
 wish
-    [FIXME can a bug be priority wish?]
+    Something that is desiderable to have but that there is no urgency at
+    all to implement, e.g.: something completely cosmetic like a
+    website restyle or a personalized doxy template or the ffmpeg logo.
+    This priority isn't valid for bugs.
 
 
 Status:
