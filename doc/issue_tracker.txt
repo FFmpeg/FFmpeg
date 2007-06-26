@@ -159,3 +159,8 @@ feature_request/closed/wont_implement
 
 Note, please do not use type-status-substatus combinations other than the
 above without asking on ffmpeg-dev first!
+
+Topic:
+------
+A topic is a tag you should add to your issue in order to make grouping them
+easier. Some tags available: avformat, avcodec, avutils, ffmpeg, roundup
