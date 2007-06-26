@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 Mike Melanson
+ * Copyright (C) 2003 Dr. Tim Ferguson
  *
  * This file is part of FFmpeg.
  *
@@ -16,7 +17,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
 
 /**
