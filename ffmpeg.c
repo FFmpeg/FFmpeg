@@ -204,12 +204,12 @@ static int dts_delta_threshold = 10;
 
 static int sws_flags = SWS_BICUBIC;
 
-const char **opt_names=NULL;
-int opt_name_count=0;
-AVCodecContext *avctx_opts[CODEC_TYPE_NB];
-AVFormatContext *avformat_opts;
-struct SwsContext *sws_opts;
-static int64_t timer_start = 0;
+static const char **opt_names;
+static int opt_name_count;
+static AVCodecContext *avctx_opts[CODEC_TYPE_NB];
+static AVFormatContext *avformat_opts;
+static struct SwsContext *sws_opts;
+static int64_t timer_start;
 
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
