@@ -2493,7 +2493,7 @@ const OptionDef options[] = {
 
 void show_help(void)
 {
-    printf("ffplay version " FFMPEG_VERSION ", Copyright (c) 2003-2006 Fabrice Bellard, et al.\n"
+    printf("ffplay version " FFMPEG_VERSION ", Copyright (c) 2003-2007 Fabrice Bellard, et al.\n"
            "usage: ffplay [options] input_file\n"
            "Simple media player\n");
     printf("\n");
