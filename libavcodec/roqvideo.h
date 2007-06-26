@@ -27,12 +27,12 @@
 #include "random.h"
 
 typedef struct {
-  unsigned char y[4];
-  unsigned char u, v;
+    unsigned char y[4];
+    unsigned char u, v;
 } roq_cell;
 
 typedef struct {
-  int idx[4];
+    int idx[4];
 } roq_qcell;
 
 typedef struct {
