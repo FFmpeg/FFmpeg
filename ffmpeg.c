@@ -1610,8 +1610,7 @@ static int av_encode(AVFormatContext **output_files,
                         fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                         exit(1);
                     }
-                    if (ENABLE_SWSCALER)
-                        sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+                    sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
                     ost->img_resample_ctx = sws_getContext(
                             icodec->width - (frame_leftBand + frame_rightBand),
                             icodec->height - (frame_topBand + frame_bottomBand),
@@ -3534,7 +3533,7 @@ static int opt_default(const char *opt, const char *arg){
     }
     if(!o)
         o = av_set_string(avformat_opts, opt, arg);
-    if(ENABLE_SWSCALER && !o)
+    if(!o)
         o = av_set_string(sws_opts, opt, arg);
     if(!o){
         if(opt[0] == 'a')
@@ -3778,8 +3777,7 @@ static void show_help(void)
                       OPT_EXPERT);
     av_opt_show(avctx_opts[0], NULL);
     av_opt_show(avformat_opts, NULL);
-    if (ENABLE_SWSCALER)
-        av_opt_show(sws_opts, NULL);
+    av_opt_show(sws_opts, NULL);
 
     exit(1);
 }
@@ -3800,8 +3798,7 @@ int main(int argc, char **argv)
         avctx_opts[i]= avcodec_alloc_context2(i);
     }
     avformat_opts = av_alloc_format_context();
-    if (ENABLE_SWSCALER)
-        sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
+    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     if (argc <= 1)
         show_help();
