@@ -44,6 +44,7 @@
 #define LINE_BUF_HEIGHT (NB_TAPS * 4)
 
 struct SwsContext {
+    AVClass *av_class;
     struct ImgReSampleContext *resampling_ctx;
     enum PixelFormat src_pix_fmt, dst_pix_fmt;
 };
@@ -642,7 +643,8 @@ struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
     struct SwsContext *ctx;
 
     ctx = av_malloc(sizeof(struct SwsContext));
-    if (ctx == NULL) {
+    ctx->av_class = av_mallocz(sizeof(AVClass));
+    if (!ctx || !ctx->av_class) {
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate a resampling context!\n");
 
         return NULL;
@@ -676,6 +678,7 @@ void sws_freeContext(struct SwsContext *ctx)
     } else {
         av_free(ctx->resampling_ctx);
     }
+    av_free(ctx->av_class);
     av_free(ctx);
 }
 
