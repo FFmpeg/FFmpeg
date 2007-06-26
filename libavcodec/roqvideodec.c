@@ -145,11 +145,11 @@ static void roqvideo_decode_frame(RoqContext *ri)
         }
 
         xpos += 16;
-        if (xpos >= ri->avctx->width) {
-            xpos -= ri->avctx->width;
+        if (xpos >= ri->width) {
+            xpos -= ri->width;
             ypos += 16;
         }
-        if(ypos >= ri->avctx->height)
+        if(ypos >= ri->height)
             break;
     }
 }
@@ -160,6 +160,8 @@ static int roq_decode_init(AVCodecContext *avctx)
     RoqContext *s = avctx->priv_data;
 
     s->avctx = avctx;
+    s->width = avctx->width;
+    s->height = avctx->height;
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV444P;

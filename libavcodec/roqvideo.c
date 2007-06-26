@@ -102,10 +102,10 @@ static inline void apply_motion_generic(RoqContext *ri, int x, int y, int deltax
     my = y + deltay;
 
     /* check MV against frame boundaries */
-    if ((mx < 0) || (mx > ri->avctx->width - sz) ||
-        (my < 0) || (my > ri->avctx->height - sz)) {
+    if ((mx < 0) || (mx > ri->width - sz) ||
+        (my < 0) || (my > ri->height - sz)) {
         av_log(ri->avctx, AV_LOG_ERROR, "motion vector out of bounds: MV = (%d, %d), boundaries = (0, 0, %d, %d)\n",
-            mx, my, ri->avctx->width, ri->avctx->height);
+            mx, my, ri->width, ri->height);
         return;
     }
 
