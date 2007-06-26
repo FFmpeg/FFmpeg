@@ -643,6 +643,7 @@ struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
     struct SwsContext *ctx;
 
     ctx = av_malloc(sizeof(struct SwsContext));
+    if (ctx)
     ctx->av_class = av_mallocz(sizeof(AVClass));
     if (!ctx || !ctx->av_class) {
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate a resampling context!\n");
