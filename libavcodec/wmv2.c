@@ -36,8 +36,6 @@ typedef struct Wmv2Context{
     MpegEncContext s;
     int j_type_bit;
     int j_type;
-    int flag3;
-    int flag63;
     int abt_flag;
     int abt_type;
     int abt_type_table[6];
@@ -74,7 +72,7 @@ static int encode_ext_header(Wmv2Context *w){
     put_bits(&pb, 11, FFMIN(s->bit_rate/1024, 2047));
 
     put_bits(&pb, 1, w->mspel_bit=1);
-    put_bits(&pb, 1, w->flag3=1);
+    put_bits(&pb, 1, s->loop_filter);
     put_bits(&pb, 1, w->abt_flag=1);
     put_bits(&pb, 1, w->j_type_bit=1);
     put_bits(&pb, 1, w->top_left_mv_flag=0);
@@ -329,7 +327,7 @@ static int decode_ext_header(Wmv2Context *w){
     fps                = get_bits(&gb, 5);
     s->bit_rate        = get_bits(&gb, 11)*1024;
     w->mspel_bit       = get_bits1(&gb);
-    w->flag3           = get_bits1(&gb);
+    s->loop_filter     = get_bits1(&gb);
     w->abt_flag        = get_bits1(&gb);
     w->j_type_bit      = get_bits1(&gb);
     w->top_left_mv_flag= get_bits1(&gb);
@@ -341,8 +339,8 @@ static int decode_ext_header(Wmv2Context *w){
     s->slice_height = s->mb_height / code;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(s->avctx, AV_LOG_DEBUG, "fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, tl_mv_flag:%d, mbrl_bit:%d, code:%d, flag3:%d, slices:%d\n",
-        fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit, w->top_left_mv_flag, w->per_mb_rl_bit, code, w->flag3,
+        av_log(s->avctx, AV_LOG_DEBUG, "fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, tl_mv_flag:%d, mbrl_bit:%d, code:%d, loop_filter:%d, slices:%d\n",
+        fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit, w->top_left_mv_flag, w->per_mb_rl_bit, code, s->loop_filter,
         code);
     }
     return 0;
