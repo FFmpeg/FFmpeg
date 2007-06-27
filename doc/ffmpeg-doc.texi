@@ -1539,6 +1539,9 @@ int myfunc(int my_parameter)
 fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
 
+Casts should be used only when necessary. Unneeded parentheses
+should also be avoided if they don't make the code easier to understand.
+
 @section Development Policy
 
 @enumerate
