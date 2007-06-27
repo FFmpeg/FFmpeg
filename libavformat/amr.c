@@ -60,11 +60,6 @@ static int amr_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_flush_packet(&s->pb);
     return 0;
 }
-
-static int amr_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
 #endif /* CONFIG_MUXERS */
 
 static int amr_probe(AVProbeData *p)
@@ -194,6 +189,5 @@ AVOutputFormat amr_muxer = {
     CODEC_ID_NONE,
     amr_write_header,
     amr_write_packet,
-    amr_write_trailer,
 };
 #endif

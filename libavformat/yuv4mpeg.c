@@ -166,11 +166,6 @@ static int yuv4_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int yuv4_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
-
 #ifdef CONFIG_YUV4MPEGPIPE_MUXER
 AVOutputFormat yuv4mpegpipe_muxer = {
     "yuv4mpegpipe",
@@ -182,7 +177,6 @@ AVOutputFormat yuv4mpegpipe_muxer = {
     CODEC_ID_RAWVIDEO,
     yuv4_write_header,
     yuv4_write_packet,
-    yuv4_write_trailer,
     .flags = AVFMT_RAWPICTURE,
 };
 #endif

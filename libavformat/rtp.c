@@ -1055,12 +1055,6 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     return 0;
 }
 
-static int rtp_write_trailer(AVFormatContext *s1)
-{
-    //    RTPDemuxContext *s = s1->priv_data;
-    return 0;
-}
-
 AVOutputFormat rtp_muxer = {
     "rtp",
     "RTP output format",
@@ -1071,5 +1065,4 @@ AVOutputFormat rtp_muxer = {
     CODEC_ID_NONE,
     rtp_write_header,
     rtp_write_packet,
-    rtp_write_trailer,
 };
