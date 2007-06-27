@@ -125,7 +125,7 @@ static inline int eval_sse(uint8_t *a, uint8_t *b, int count)
 // FIXME Could use DSPContext.sse, but it is not so speed critical (used
 // just for motion estimation).
 static int block_sse(uint8_t **buf1, uint8_t **buf2, int x1, int y1, int x2,
-                     int y2, int stride, int size)
+                     int y2, int *stride, int size)
 {
     int i, k;
     int sse=0;
@@ -133,8 +133,8 @@ static int block_sse(uint8_t **buf1, uint8_t **buf2, int x1, int y1, int x2,
     for (k=0; k<3; k++) {
         int bias = (k ? CHROMA_BIAS : 4);
         for (i=0; i<size; i++)
-            sse += bias*eval_sse(buf1[k] + (y1+i)*stride + x1,
-                                 buf2[k] + (y2+i)*stride + x2, size);
+            sse += bias*eval_sse(buf1[k] + (y1+i)*stride[k] + x1,
+                                 buf2[k] + (y2+i)*stride[k] + x2, size);
     }
 
     return sse;
@@ -159,7 +159,7 @@ static int eval_motion_dist(RoqContext *enc, int x, int y, motion_vect vect,
         return INT_MAX;
 
     return block_sse(enc->frame_to_enc->data, enc->last_frame->data, x, y,
-                     mx, my, enc->y_stride, size);
+                     mx, my, enc->frame_to_enc->linesize, size);
 }
 
 /**
@@ -261,12 +261,13 @@ static void create_cel_evals(RoqContext *enc, roq_tempdata_t *tempData)
 static void get_frame_mb(AVFrame *frame, int x, int y, uint8_t mb[], int dim)
 {
     int i, j, cp;
-    int stride = frame->linesize[0];
 
-    for (cp=0; cp<3; cp++)
+    for (cp=0; cp<3; cp++) {
+        int stride = frame->linesize[cp];
         for (i=0; i<dim; i++)
             for (j=0; j<dim; j++)
                 *mb++ = frame->data[cp][(y+i)*stride + x + j];
+    }
 }
 
 /**
@@ -414,7 +415,9 @@ static void gather_data_for_subcel(subcel_evaluation_t *subcel, int x,
     if (enc->framesSinceKeyframe >= 2)
         subcel->eval_dist[RoQ_ID_MOT] = block_sse(enc->frame_to_enc->data,
                                                   enc->current_frame->data, x,
-                                                  y, x, y, enc->y_stride, 4);
+                                                  y, x, y,
+                                                  enc->frame_to_enc->linesize,
+                                                  4);
     else
         subcel->eval_dist[RoQ_ID_MOT] = INT_MAX;
 
@@ -476,7 +479,7 @@ static void gather_data_for_cel(cel_evaluation_t *cel, RoqContext *enc,
                                                enc->current_frame->data,
                                                cel->sourceX, cel->sourceY,
                                                cel->sourceX, cel->sourceY,
-                                               enc->y_stride, 8);
+                                               enc->frame_to_enc->linesize, 8);
     else
         cel->eval_dist[RoQ_ID_MOT] = INT_MAX;
 
@@ -737,7 +740,7 @@ static void reconstruct_and_encode_image(RoqContext *enc, roq_tempdata_t *tempDa
     av_log(enc->avctx, AV_LOG_ERROR, "Expected distortion: %i Actual: %i\n",
            dist,
            block_sse(fdata, cdata, 0, 0, 0, 0,
-                     enc->y_stride, enc->width));  //WARNING: Square dimensions implied...
+                     enc->frame_to_enc->linesize, enc->width));  //WARNING: Square dimensions implied...
 #endif
 }
 
@@ -754,6 +757,7 @@ static inline void frame_block_to_cell(uint8_t *block, uint8_t **data,
         for (j=0; j<2; j++) {
             int x = (top+i)*stride[0] + left + j;
             *block++ = data[0][x];
+            x = (top+i)*stride[1] + left + j;
             u       += data[1][x];
             v       += data[2][x];
         }
