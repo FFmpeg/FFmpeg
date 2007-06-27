@@ -52,6 +52,7 @@ void ff_apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
     bptr[stride  ] = cell->y[2];
     bptr[stride+1] = cell->y[3];
 
+    stride = ri->c_stride;
     bptr = ri->current_frame->data[1] + boffs;
     bptr[0       ] =
     bptr[1       ] =
@@ -79,6 +80,7 @@ void ff_apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
     bptr[stride*2  ] = bptr[stride*2+1] = bptr[stride*3  ] = bptr[stride*3+1] = cell->y[2];
     bptr[stride*2+2] = bptr[stride*2+3] = bptr[stride*3+2] = bptr[stride*3+3] = cell->y[3];
 
+    stride = ri->c_stride;
     bptr = ri->current_frame->data[1] + boffs;
     bptr[         0] = bptr[         1] = bptr[stride    ] = bptr[stride  +1] =
     bptr[         2] = bptr[         3] = bptr[stride  +2] = bptr[stride  +3] =
@@ -109,10 +111,13 @@ static inline void apply_motion_generic(RoqContext *ri, int x, int y, int deltax
         return;
     }
 
-    for(cp = 0; cp < 3; cp++)
-        block_copy(ri->current_frame->data[cp] + (y * ri->y_stride) + x,
-                   ri->last_frame->data[cp] + (my * ri->y_stride) + mx,
-                   ri->y_stride, ri->y_stride, sz);
+    for(cp = 0; cp < 3; cp++) {
+        int stride = ri->current_frame->linesize[cp];
+        block_copy(ri->current_frame->data[cp] + (y*stride) + x,
+                   ri->last_frame->data[cp] + (my*stride) + mx,
+                   stride, stride, sz);
+    }
+
 }
 
 
