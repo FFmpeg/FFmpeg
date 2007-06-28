@@ -1513,7 +1513,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
     }
 
 #ifdef HAVE_MMX
-    if ( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but its a bit faster
+    if ( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
     {
         switch(dstFormat)
         {
@@ -2543,7 +2543,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
     }
 
 #ifdef HAVE_MMX
-    // use the new MMX scaler if the mmx2 can't be used (its faster than the x86asm one)
+    // use the new MMX scaler if the mmx2 can't be used (it is faster than the x86 ASM one)
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
     if (!(flags&SWS_FAST_BILINEAR))
@@ -2760,7 +2760,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
     }
 
 #ifdef HAVE_MMX
-    // use the new MMX scaler if the mmx2 can't be used (its faster than the x86asm one)
+    // use the new MMX scaler if the mmx2 can't be used (it is faster than the x86 ASM one)
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
     if (!(flags&SWS_FAST_BILINEAR))
