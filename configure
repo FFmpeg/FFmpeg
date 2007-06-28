@@ -87,7 +87,7 @@ show_help(){
   echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec"
   echo "  --enable-libfaac         enable FAAC support via libfaac [default=no]"
   echo "  --enable-libfaad         enable FAAD support via libfaad [default=no]"
-  echo "  --enable-libfaadbin      build FAAD support with runtime linking [default=no]"
+  echo "  --enable-libfaadbin      open libfaad.so.0 at runtime [default=no]"
   echo "  --enable-libgsm          enable GSM support via libgsm [default=no]"
   echo "  --enable-libmp3lame      enable MP3 encoding via libmp3lame [default=no]"
   echo "  --enable-libnut          enable NUT (de)muxing via libnut,"
