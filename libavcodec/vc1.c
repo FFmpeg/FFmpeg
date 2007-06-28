@@ -2603,9 +2603,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
     //AC Decoding
     i = 1;
 
-    /* check if AC is needed at all and adjust direction if needed */
-    if(!a_avail) dc_pred_dir = 1;
-    if(!c_avail) dc_pred_dir = 0;
+    /* check if AC is needed at all */
     if(!a_avail && !c_avail) use_pred = 0;
     ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
     ac_val2 = ac_val;
