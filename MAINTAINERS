@@ -257,4 +257,5 @@ Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Luca Barbato
 Windows MinGW                           Alex Beregszaszi
+Windows Cygwin                          Victor Paesa
 ADI/Blackfin DSP                        Marc Hoffman
