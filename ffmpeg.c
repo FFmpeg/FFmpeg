@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#include <ctype.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <signal.h>
 #include <limits.h>
 #include "avformat.h"
@@ -1199,7 +1205,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                             pkt->pts);
                             break;
                         default:
-                            av_abort();
+                            abort();
                         }
                     } else {
                         AVFrame avframe; //FIXME/XXX remove this
@@ -1535,7 +1541,7 @@ static int av_encode(AVFormatContext **output_files,
             case CODEC_TYPE_SUBTITLE:
                 break;
             default:
-                av_abort();
+                abort();
             }
         } else {
             switch(codec->codec_type) {
@@ -1571,7 +1577,7 @@ static int av_encode(AVFormatContext **output_files,
                                                     codec->sample_rate, icodec->sample_rate);
                     if(!ost->resample){
                         printf("Can't resample.  Aborting.\n");
-                        av_abort();
+                        abort();
                     }
                 }
                 ist->decoding_needed = 1;
@@ -1633,7 +1639,7 @@ static int av_encode(AVFormatContext **output_files,
                 ist->decoding_needed = 1;
                 break;
             default:
-                av_abort();
+                abort();
                 break;
             }
             /* two pass mode */
@@ -2644,7 +2650,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_UNKNOWN:
             break;
         default:
-            av_abort();
+            abort();
         }
     }
 
@@ -2686,7 +2692,7 @@ static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
             case CODEC_TYPE_SUBTITLE:
                 break;
             default:
-                av_abort();
+                abort();
             }
         }
     }

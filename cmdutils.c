@@ -19,6 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+
 #include "avformat.h"
 #include "cmdutils.h"
 #include "avstring.h"

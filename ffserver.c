@@ -19,6 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#if HAVE_CLOSESOCKET != 1
+#define closesocket close
+#endif
+#include <string.h>
+#include <stdlib.h>
+#include <sys/poll.h>
 #include "avformat.h"
 
 #include <stdarg.h>
@@ -1432,7 +1439,7 @@ static int http_parse_request(HTTPContext *c)
                         }
                         break;
                     default:
-                        av_abort();
+                        abort();
                         break;
                     }
 
@@ -1695,7 +1702,7 @@ static void compute_stats(HTTPContext *c)
                             video_bit_rate += st->codec->bit_rate;
                             break;
                         default:
-                            av_abort();
+                            abort();
                         }
                     }
                     url_fprintf(pb, "<TD align=center> %s <TD align=right> %d <TD align=right> %d <TD> %s %s <TD align=right> %d <TD> %s %s",
@@ -1775,7 +1782,7 @@ static void compute_stats(HTTPContext *c)
                                 st->codec->qmin, st->codec->qmax, st->codec->time_base.den / st->codec->time_base.num);
                     break;
                 default:
-                    av_abort();
+                    abort();
                 }
                 url_fprintf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s<td>%s\n",
                         i, type, st->codec->bit_rate/1000, codec ? codec->name : "", parameters);
@@ -3302,7 +3309,7 @@ static int add_av_stream(FFStream *feed, AVStream *st)
                     goto found;
                 break;
             default:
-                av_abort();
+                abort();
             }
         }
     }
@@ -3703,7 +3710,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
 
         break;
     default:
-        av_abort();
+        abort();
     }
 
     st = av_mallocz(sizeof(AVStream));
