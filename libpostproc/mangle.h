@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MANGLE_H
-#define __MANGLE_H
+#ifndef MANGLE_H
+#define MANGLE_H
 
 /* Feel free to add more to the list, eg. a.out IMO */
 /* Use rip-relative addressing if compiling PIC code on x86-64. */
@@ -43,5 +43,5 @@
 #endif
 #endif
 
-#endif /* !__MANGLE_H */
+#endif /* !MANGLE_H */
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _SNOW_H
-#define _SNOW_H
+#ifndef SNOW_H
+#define SNOW_H
 
 #include "dsputil.h"
 

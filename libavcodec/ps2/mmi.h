@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __mmi_H
-#define __mmi_H
+#ifndef MMI_H
+#define MMI_H
 
 #define align16 __attribute__ ((aligned (16)))
 

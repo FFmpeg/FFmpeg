@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _FRAMEHOOK_H
-#define _FRAMEHOOK_H
+#ifndef FRAMEHOOK_H
+#define FRAMEHOOK_H
 
 #warning VHOOK is deprecated. Please help porting libmpcodecs or a better filter system to FFmpeg instead of wasting your time writing new filters for this crappy one.
 
