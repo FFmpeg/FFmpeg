@@ -26,8 +26,6 @@
 #ifndef RGB2RGB_INCLUDED
 #define RGB2RGB_INCLUDED
 
-// Note: do not fix the dependence on stdio.h
-
 /* A full collection of rgb to rgb(bgr) convertors */
 extern void (*rgb24to32)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb24to16)   (const uint8_t *src, uint8_t *dst, long src_size);
