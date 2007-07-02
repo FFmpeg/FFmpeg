@@ -180,8 +180,6 @@ static int roq_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
         return -1;
     }
-    s->y_stride = s->current_frame->linesize[0];
-    s->c_stride = s->current_frame->linesize[1];
 
     s->buf = buf;
     s->size = buf_size;
