@@ -27,6 +27,7 @@
 #define POSTPROCESS_INTERNAL_H
 
 #include "avutil.h"
+#include "postprocess.h"
 
 #define V_DEBLOCK       0x01
 #define H_DEBLOCK       0x02
