@@ -88,6 +88,7 @@ version <next>
 - sws_flags command line option
 - codebook generator
 - RoQ video encoder
+- QTRLE encoder
 
 version 0.4.9-pre1:
 

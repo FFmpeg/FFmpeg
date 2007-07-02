@@ -1030,7 +1030,7 @@ following image formats are supported:
 @item Id RoQ                 @tab  X  @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Xan/WC3                @tab     @tab  X @tab Used in Wing Commander III .MVE files.
 @item Interplay Video        @tab     @tab  X @tab Used in Interplay .MVE files.
-@item Apple Animation        @tab     @tab  X @tab fourcc: 'rle '
+@item Apple Animation        @tab  X  @tab  X @tab fourcc: 'rle '
 @item Apple Graphics         @tab     @tab  X @tab fourcc: 'smc '
 @item Apple Video            @tab     @tab  X @tab fourcc: rpza
 @item Apple QuickDraw        @tab     @tab  X @tab fourcc: qdrw

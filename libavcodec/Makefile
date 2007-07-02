@@ -132,6 +132,7 @@ OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mdct.o fft.o mpegaudiodec.o mpe
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
+OBJS-$(CONFIG_QTRLE_ENCODER)           += qtrleenc.o
 OBJS-$(CONFIG_RA_144_DECODER)          += ra144.o
 OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o
 OBJS-$(CONFIG_ROQ_DECODER)             += roqvideodec.o roqvideo.o

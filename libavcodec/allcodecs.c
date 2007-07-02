@@ -122,7 +122,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(PTX, ptx);
     REGISTER_DECODER(QDRAW, qdraw);
     REGISTER_DECODER(QPEG, qpeg);
-    REGISTER_DECODER(QTRLE, qtrle);
+    REGISTER_ENCDEC (QTRLE, qtrle);
     REGISTER_ENCDEC (RAWVIDEO, rawvideo);
     REGISTER_ENCDEC (ROQ, roq);
     REGISTER_DECODER(RPZA, rpza);

@@ -56,6 +56,7 @@ extern AVCodec pgm_encoder;
 extern AVCodec pgmyuv_encoder;
 extern AVCodec png_encoder;
 extern AVCodec ppm_encoder;
+extern AVCodec qtrle_encoder;
 extern AVCodec roq_dpcm_encoder;
 extern AVCodec roq_encoder;
 extern AVCodec rv10_encoder;
