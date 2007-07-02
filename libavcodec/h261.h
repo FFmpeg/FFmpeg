@@ -48,4 +48,4 @@ typedef struct H261Context{
 
 #define MB_TYPE_H261_FIL 0x800000
 
-#endif AVCODEC_H261_H
+#endif /* AVCODEC_H261_H */
