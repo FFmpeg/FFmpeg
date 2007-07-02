@@ -62,7 +62,7 @@ time_t mktimegm(struct tm *tm)
 #define ISLEAP(y) (((y) % 4 == 0) && (((y) % 100) != 0 || ((y) % 400) == 0))
 #define LEAPS_COUNT(y) ((y)/4 - (y)/100 + (y)/400)
 
-/* this is our own gmtime_r. it differs from its POSIX counterpart in a
+/* This is our own gmtime_r. It differs from its POSIX counterpart in a
    couple of places, though. */
 struct tm *brktimegm(time_t secs, struct tm *tm)
 {
