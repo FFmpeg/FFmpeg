@@ -43,7 +43,7 @@ stddev:  8.00 PSNR:30.05 bytes:7602176
 641448 ./tests/data/a-wmv1.avi
 69454f78ca636e83a600834e5a90660e *./tests/data/out.yuv
 stddev:  8.01 PSNR:30.04 bytes:7602176
-044b1b5bd5899d54a8fe09eac2181d8b *./tests/data/a-wmv2.avi
+f524505cf92daef42882d688ed6eadc7 *./tests/data/a-wmv2.avi
 675342 ./tests/data/a-wmv2.avi
 69454f78ca636e83a600834e5a90660e *./tests/data/out.yuv
 stddev:  8.01 PSNR:30.04 bytes:7602176
