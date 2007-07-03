@@ -47,8 +47,6 @@ typedef struct RoqContext {
     AVFrame *last_frame;
     AVFrame *current_frame;
     int first_frame;
-    int y_stride;
-    int c_stride;
 
     roq_cell cb2x2[256];
     roq_qcell cb4x4[256];
