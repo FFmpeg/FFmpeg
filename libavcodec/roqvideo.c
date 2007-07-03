@@ -44,7 +44,7 @@ void ff_apply_vector_2x2(RoqContext *ri, int x, int y, roq_cell *cell)
     int boffs,stride;
 
     stride = ri->current_frame->linesize[0];
-    boffs = (y * stride) + x;
+    boffs = y*stride + x;
 
     bptr = ri->current_frame->data[0] + boffs;
     bptr[0       ] = cell->y[0];
@@ -74,7 +74,7 @@ void ff_apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
     int boffs,stride;
 
     stride = ri->current_frame->linesize[0];
-    boffs = (y * stride) + x;
+    boffs = y*stride + x;
 
     bptr = ri->current_frame->data[0] + boffs;
     bptr[         0] = bptr[         1] = bptr[stride    ] = bptr[stride  +1] = cell->y[0];
