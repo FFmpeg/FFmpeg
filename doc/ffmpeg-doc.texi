@@ -1189,6 +1189,9 @@ unpack the archive @file{i386-mingw32msvc.tar.gz} in the MinGW tool
 directory. Edit the @file{sdl-config} script so that it gives the
 correct SDL directory when invoked.
 
+@item If you want to use vhooks, you must have a POSIX compliant libdl in your
+MinGW system. Get dlfcn-win32 from @url{http://code.google.com/p/dlfcn-win32}.
+
 @item Extract the current version of FFmpeg.
 
 @item Start the MSYS shell (file @file{msys.bat}).
