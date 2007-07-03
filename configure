@@ -1163,8 +1163,12 @@ case $targetos in
     targetos=cygwin
     shlibdir="$bindir"
     dv1394="no"
-    VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libswscale -L$(BUILD_ROOT)/libavutil'
-    VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lswscale$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
+    VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
+    VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
+    if enabled swscaler; then
+        VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
+        VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
+    fi
     osextralibs=""
     EXESUF=".exe"
     SLIBPREF="cyg"
