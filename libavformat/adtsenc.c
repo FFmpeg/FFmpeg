@@ -1,7 +1,7 @@
 /*
  * ADTS muxer.
  * Copyright (c) 2006 Baptiste Coudurier <baptiste.coudurier@smartjog.com>
- *                    Mans Rullgard <mru@inprovide.com>
+ *                    Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *

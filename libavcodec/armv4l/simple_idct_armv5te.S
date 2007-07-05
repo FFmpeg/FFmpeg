@@ -2,7 +2,7 @@
  * Simple IDCT
  *
  * Copyright (c) 2001 Michael Niedermayer <michaelni@gmx.at>
- * Copyright (c) 2006 Mans Rullgard <mru@inprovide.com>
+ * Copyright (c) 2006 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *

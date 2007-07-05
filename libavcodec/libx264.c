@@ -1,6 +1,6 @@
 /*
  * H.264 encoding using the x264 library
- * Copyright (C) 2005  Mans Rullgard <mru@inprovide.com>
+ * Copyright (C) 2005  Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *

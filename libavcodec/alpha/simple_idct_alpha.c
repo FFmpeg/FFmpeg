@@ -6,7 +6,7 @@
  * based upon some outcommented C code from mpeg2dec (idct_mmx.c
  * written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
  *
- * Alpha optimizations by Måns Rullgård <mru@users.sourceforge.net>
+ * Alpha optimizations by Måns Rullgård <mans@mansr.com>
  *                     and Falk Hueffner <falk@debian.org>
  *
  * This file is part of FFmpeg.
