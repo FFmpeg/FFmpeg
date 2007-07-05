@@ -1,4 +1,7 @@
 /*
+ * SVQ1 decoder
+ * ported to MPlayer by Arpi <arpi@thot.banki.hu>
+ * ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
  *
  * Copyright (C) 2002 the xine project
  * Copyright (C) 2002 the ffmpeg project
@@ -18,10 +21,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * Ported to mplayer by Arpi <arpi@thot.banki.hu>
- * Ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
- *
  */
 
 /**

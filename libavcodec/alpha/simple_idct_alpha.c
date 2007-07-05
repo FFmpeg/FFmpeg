@@ -3,6 +3,12 @@
  *
  * Copyright (c) 2001 Michael Niedermayer <michaelni@gmx.at>
  *
+ * based upon some outcommented C code from mpeg2dec (idct_mmx.c
+ * written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
+ *
+ * Alpha optimizations by Måns Rullgård <mru@users.sourceforge.net>
+ *                     and Falk Hueffner <falk@debian.org>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,12 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * based upon some outcommented c code from mpeg2dec (idct_mmx.c
- * written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
- *
- * Alpha optimiziations by Måns Rullgård <mru@users.sourceforge.net>
- *                     and Falk Hueffner <falk@debian.org>
  */
 
 #include "asm.h"

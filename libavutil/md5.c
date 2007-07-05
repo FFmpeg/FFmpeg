@@ -2,6 +2,17 @@
  * Copyright (C) 2006 Michael Niedermayer (michaelni@gmx.at)
  * Copyright (C) 2003-2005 by Christopher R. Hertel (crh@ubiqx.mn.org)
  *
+ * References:
+ *  IETF RFC 1321: The MD5 Message-Digest Algorithm
+ *       Ron Rivest. IETF, April, 1992
+ *
+ * based on http://ubiqx.org/libcifs/source/Auth/MD5.c
+ *          from Christopher R. Hertel (crh@ubiqx.mn.org)
+ * Simplified, cleaned and IMO redundant comments removed by michael.
+ *
+ * If you use gcc, then version 4.1 or later and -fomit-frame-pointer is
+ * strongly recommended.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,17 +28,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * References:
- *  IETF RFC 1321: The MD5 Message-Digest Algorithm
- *       Ron Rivest. IETF, April, 1992
- *
- * based on http://ubiqx.org/libcifs/source/Auth/MD5.c
- *          from Christopher R. Hertel (crh@ubiqx.mn.org)
- * simplified, cleaned and IMO redundant comments removed by michael
- *
- * if you use gcc, then version 4.1 or later and -fomit-frame-pointer is
- * strongly recommended
  */
 
 #include "common.h"

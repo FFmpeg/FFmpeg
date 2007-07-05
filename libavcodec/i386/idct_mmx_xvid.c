@@ -1,53 +1,43 @@
-///****************************************************************************
-// *
-// *  XVID MPEG-4 VIDEO CODEC
-// *  - MMX and XMM forward discrete cosine transform -
-// *
-// *  Copyright(C) 2001 Peter Ross <pross@xvid.org>
-// *
-// * This file is part of FFmpeg.
-// *
-// * FFmpeg is free software; you can redistribute it and/or
-// * modify it under the terms of the GNU Lesser General Public
-// * License as published by the Free Software Foundation; either
-// * version 2.1 of the License, or (at your option) any later version.
-// *
-// * FFmpeg is distributed in the hope that it will be useful,
-// * but WITHOUT ANY WARRANTY; without even the implied warranty of
-// * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// * Lesser General Public License for more details.
-// *
-// * You should have received a copy of the GNU Lesser General Public License
-// * along with FFmpeg; if not, write to the Free Software Foundation,
-// * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-// *
-// * $Id$
-// *
-// ***************************************************************************/
-
-// ****************************************************************************
-//
-// Originally provided by Intel at AP-922
-// http://developer.intel.com/vtune/cbts/strmsimd/922down.htm
-// (See more app notes at http://developer.intel.com/vtune/cbts/strmsimd/appnotes.htm)
-// but in a limited edition.
-// New macro implements a column part for precise iDCT
-// The routine precision now satisfies IEEE standard 1180-1990.
-//
-// Copyright(C) 2000-2001 Peter Gubanov <peter@elecard.net.ru>
-// Rounding trick Copyright(C) 2000 Michel Lespinasse <walken@zoy.org>
-//
-// http://www.elecard.com/peter/idct.html
-// http://www.linuxvideo.org/mpeg2dec/
-//
-// ***************************************************************************/
-//
-// These examples contain code fragments for first stage iDCT 8x8
-// (for rows) and first stage DCT 8x8 (for columns)
-//
-
-// conversion to gcc syntax by michael niedermayer
-
+/*
+ * XVID MPEG-4 VIDEO CODEC
+ * - MMX and XMM forward discrete cosine transform -
+ *
+ * Copyright(C) 2001 Peter Ross <pross@xvid.org>
+ *
+ * Originally provided by Intel at AP-922
+ * http://developer.intel.com/vtune/cbts/strmsimd/922down.htm
+ * (See more app notes at http://developer.intel.com/vtune/cbts/strmsimd/appnotes.htm)
+ * but in a limited edition.
+ * New macro implements a column part for precise iDCT
+ * The routine precision now satisfies IEEE standard 1180-1990.
+ *
+ * Copyright(C) 2000-2001 Peter Gubanov <peter@elecard.net.ru>
+ * Rounding trick Copyright(C) 2000 Michel Lespinasse <walken@zoy.org>
+ *
+ * http://www.elecard.com/peter/idct.html
+ * http://www.linuxvideo.org/mpeg2dec/
+ *
+ * These examples contain code fragments for first stage iDCT 8x8
+ * (for rows) and first stage DCT 8x8 (for columns)
+ *
+ * conversion to gcc syntax by Michael Niedermayer
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with FFmpeg; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
 #include <inttypes.h>
 #include "avcodec.h"

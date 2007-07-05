@@ -2,6 +2,8 @@
  * S3 Texture Compression (S3TC) decoding functions
  * Copyright (c) 2007 by Ivo van Poorten
  *
+ * see also: http://wiki.multimedia.cx/index.php?title=S3TC
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,8 +19,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * See also: http://wiki.multimedia.cx/index.php?title=S3TC
  */
 
 #include "avcodec.h"

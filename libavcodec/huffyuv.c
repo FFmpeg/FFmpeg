@@ -3,6 +3,9 @@
  *
  * Copyright (c) 2002-2003 Michael Niedermayer <michaelni@gmx.at>
  *
+ * see http://www.pcisys.net/~melanson/codecs/huffyuv.txt for a description of
+ * the algorithm used
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,9 +21,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * see http://www.pcisys.net/~melanson/codecs/huffyuv.txt for a description of
- * the algorithm used
  */
 
 /**

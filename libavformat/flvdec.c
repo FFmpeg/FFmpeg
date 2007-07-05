@@ -2,6 +2,11 @@
  * FLV demuxer
  * Copyright (c) 2003 The FFmpeg Project.
  *
+ * This demuxer will generate a 1 byte extradata for VP6F content.
+ * It is composed of:
+ *  - upper 4bits: difference between encoded width and visible width
+ *  - lower 4bits: difference between encoded height and visible height
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,12 +22,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- *
- * This demuxer will generate a 1 byte extradata for VP6F content.
- * It is composed of:
- *  - upper 4bits: difference between encoded width and visible width
- *  - lower 4bits: difference between encoded height and visible height
  */
 #include "avformat.h"
 #include "flv.h"

@@ -2,6 +2,8 @@
  * Floating point AAN DCT
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
+ * this implementation is based upon the IJG integer AAN DCT (see jfdctfst.c)
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,8 +19,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * this implementation is based upon the IJG integer AAN DCT (see jfdctfst.c)
  */
 
 /**

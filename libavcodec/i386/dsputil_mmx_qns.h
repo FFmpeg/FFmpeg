@@ -2,6 +2,9 @@
  * DSP utils : QNS functions are compiled 3 times for mmx/3dnow/ssse3
  * Copyright (c) 2004 Michael Niedermayer
  *
+ * MMX optimization by Michael Niedermayer <michaelni@gmx.at>
+ * 3DNow! and SSSE3 optimization by Zuxy Meng <zuxy.meng@gmail.com>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,9 +20,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * MMX optimization by Michael Niedermayer <michaelni@gmx.at>
- * 3DNow! and SSSE3 optimization by Zuxy Meng <zuxy.meng@gmail.com>
  */
 
 #define MAX_ABS (512 >> (SCALE_OFFSET>0 ? SCALE_OFFSET : 0))

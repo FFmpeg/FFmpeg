@@ -1,4 +1,8 @@
 /*
+ * Creative YUV (CYUV) Video Decoder
+ *   by Mike Melanson (melanson@pcisys.net)
+ * based on "Creative YUV (CYUV) stream format for AVI":
+ *   http://www.csse.monash.edu.au/~timf/videocodec/cyuv.txt
  *
  * Copyright (C) 2003 the ffmpeg project
  *
@@ -17,12 +21,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * Creative YUV (CYUV) Video Decoder
- *   by Mike Melanson (melanson@pcisys.net)
- * based on "Creative YUV (CYUV) stream format for AVI":
- *   http://www.csse.monash.edu.au/~timf/videocodec/cyuv.txt
- *
  */
 
 /**
