@@ -544,10 +544,6 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
             return -1;
         }
 
-        // Inform the codec that we can handle truncated bitstreams -- i.e.,
-        // bitstreams where frame boundaries can fall in the middle of packets
-        if (ci->pCodec->capabilities & CODEC_CAP_TRUNCATED)
-            ci->pCodecCtx->flags|=CODEC_FLAG_TRUNCATED;
 
         // Open codec
         if(avcodec_open(ci->pCodecCtx, ci->pCodec)<0) {
