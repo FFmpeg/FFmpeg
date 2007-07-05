@@ -608,7 +608,7 @@ typedef struct
 /* NOTE: Typecodes must be spooled AFTER arguments!! */
 static void write_typecode(CodingSpool *s, uint8_t type)
 {
-    s->typeSpool |= ((type) & 3) << (14 - s->typeSpoolLength);
+    s->typeSpool |= (type & 3) << (14 - s->typeSpoolLength);
     s->typeSpoolLength += 2;
     if (s->typeSpoolLength == 16) {
         bytestream_put_le16(s->pout, s->typeSpool);

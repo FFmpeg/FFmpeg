@@ -118,8 +118,8 @@ static inline void apply_motion_generic(RoqContext *ri, int x, int y, int deltax
     for(cp = 0; cp < 3; cp++) {
         int outstride = ri->current_frame->linesize[cp];
         int instride  = ri->last_frame   ->linesize[cp];
-        block_copy(ri->current_frame->data[cp] + (y*outstride) + x,
-                   ri->last_frame->data[cp] + (my*instride) + mx,
+        block_copy(ri->current_frame->data[cp] + y*outstride + x,
+                   ri->last_frame->data[cp] + my*instride + mx,
                    outstride, instride, sz);
     }
 }
