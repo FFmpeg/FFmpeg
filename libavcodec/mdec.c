@@ -60,7 +60,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
 {
     int level, diff, i, j, run;
     int component;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= a->scantable.permutated;
     const uint16_t *quant_matrix= ff_mpeg1_default_intra_matrix;
     const int qscale= a->qscale;

@@ -49,17 +49,17 @@ const uint16_t ff_mpeg1_default_non_intra_matrix[64] = {
     16, 16, 16, 16, 16, 16, 16, 16,
 };
 
-const uint16_t vlc_dc_lum_code[12] = {
+const uint16_t ff_mpeg12_vlc_dc_lum_code[12] = {
     0x4, 0x0, 0x1, 0x5, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe, 0x1ff,
 };
-const unsigned char vlc_dc_lum_bits[12] = {
+const unsigned char ff_mpeg12_vlc_dc_lum_bits[12] = {
     3, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 9,
 };
 
-const uint16_t vlc_dc_chroma_code[12] = {
+const uint16_t ff_mpeg12_vlc_dc_chroma_code[12] = {
     0x0, 0x1, 0x2, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe, 0x3fe, 0x3ff,
 };
-const unsigned char vlc_dc_chroma_bits[12] = {
+const unsigned char ff_mpeg12_vlc_dc_chroma_bits[12] = {
     2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
 };
 
@@ -163,7 +163,7 @@ static const int8_t mpeg1_run[111] = {
  25, 26, 27, 28, 29, 30, 31,
 };
 
-RLTable rl_mpeg1 = {
+RLTable ff_rl_mpeg1 = {
     111,
     111,
     mpeg1_vlc,
@@ -171,7 +171,7 @@ RLTable rl_mpeg1 = {
     mpeg1_level,
 };
 
-RLTable rl_mpeg2 = {
+RLTable ff_rl_mpeg2 = {
     111,
     111,
     mpeg2_vlc,
@@ -179,7 +179,7 @@ RLTable rl_mpeg2 = {
     mpeg1_level,
 };
 
-const uint8_t mbAddrIncrTable[36][2] = {
+const uint8_t ff_mpeg12_mbAddrIncrTable[36][2] = {
     {0x1, 1},
     {0x3, 3},
     {0x2, 3},
@@ -218,7 +218,7 @@ const uint8_t mbAddrIncrTable[36][2] = {
     {0x0, 8}, /* end (and 15 more 0 bits should follow) */
 };
 
-const uint8_t mbPatTable[64][2] = {
+const uint8_t ff_mpeg12_mbPatTable[64][2] = {
     {0x1, 9},
     {0xb, 5},
     {0x9, 5},
@@ -285,7 +285,7 @@ const uint8_t mbPatTable[64][2] = {
     {0xc, 6}
 };
 
-const uint8_t mbMotionVectorTable[17][2] = {
+const uint8_t ff_mpeg12_mbMotionVectorTable[17][2] = {
 { 0x1, 1 },
 { 0x1, 2 },
 { 0x1, 3 },
@@ -333,7 +333,7 @@ const uint8_t ff_mpeg1_dc_scale_table[128]={
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
 };
 
-const float mpeg1_aspect[16]={
+const float ff_mpeg1_aspect[16]={
     0.0000,
     1.0000,
     0.6735,
@@ -354,7 +354,7 @@ const float mpeg1_aspect[16]={
     1.2015,
 };
 
-const AVRational mpeg2_aspect[16]={
+const AVRational ff_mpeg2_aspect[16]={
     {0,1},
     {1,1},
     {4,3},

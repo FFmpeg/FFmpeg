@@ -78,7 +78,7 @@ static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_MC,
                                            -1};
 
-uint8_t static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
+uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 static void init_2d_vlc_rl(RLTable *rl, int use_static)
 {
@@ -122,7 +122,7 @@ static void init_2d_vlc_rl(RLTable *rl, int use_static)
     }
 }
 
-void common_init(MpegEncContext *s)
+void ff_mpeg12_common_init(MpegEncContext *s)
 {
 
     s->y_dc_scale_table=
@@ -157,20 +157,20 @@ static void init_vlcs(void)
         done = 1;
 
         init_vlc(&dc_lum_vlc, DC_VLC_BITS, 12,
-                 vlc_dc_lum_bits, 1, 1,
-                 vlc_dc_lum_code, 2, 2, 1);
+                 ff_mpeg12_vlc_dc_lum_bits, 1, 1,
+                 ff_mpeg12_vlc_dc_lum_code, 2, 2, 1);
         init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 12,
-                 vlc_dc_chroma_bits, 1, 1,
-                 vlc_dc_chroma_code, 2, 2, 1);
+                 ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
+                 ff_mpeg12_vlc_dc_chroma_code, 2, 2, 1);
         init_vlc(&mv_vlc, MV_VLC_BITS, 17,
-                 &mbMotionVectorTable[0][1], 2, 1,
-                 &mbMotionVectorTable[0][0], 2, 1, 1);
+                 &ff_mpeg12_mbMotionVectorTable[0][1], 2, 1,
+                 &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 1);
         init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 36,
-                 &mbAddrIncrTable[0][1], 2, 1,
-                 &mbAddrIncrTable[0][0], 2, 1, 1);
+                 &ff_mpeg12_mbAddrIncrTable[0][1], 2, 1,
+                 &ff_mpeg12_mbAddrIncrTable[0][0], 2, 1, 1);
         init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 64,
-                 &mbPatTable[0][1], 2, 1,
-                 &mbPatTable[0][0], 2, 1, 1);
+                 &ff_mpeg12_mbPatTable[0][1], 2, 1,
+                 &ff_mpeg12_mbPatTable[0][0], 2, 1, 1);
 
         init_vlc(&mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7,
                  &table_mb_ptype[0][1], 2, 1,
@@ -178,11 +178,11 @@ static void init_vlcs(void)
         init_vlc(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                  &table_mb_btype[0][1], 2, 1,
                  &table_mb_btype[0][0], 2, 1, 1);
-        init_rl(&rl_mpeg1, static_rl_table_store[0]);
-        init_rl(&rl_mpeg2, static_rl_table_store[1]);
+        init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
-        init_2d_vlc_rl(&rl_mpeg1, 1);
-        init_2d_vlc_rl(&rl_mpeg2, 1);
+        init_2d_vlc_rl(&ff_rl_mpeg1, 1);
+        init_2d_vlc_rl(&ff_rl_mpeg2, 1);
     }
 }
 
@@ -667,7 +667,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
 {
     int level, dc, diff, i, j, run;
     int component;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const uint16_t *quant_matrix= s->intra_matrix;
     const int qscale= s->qscale;
@@ -739,7 +739,7 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                                int n)
 {
     int level, i, j, run;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const uint16_t *quant_matrix= s->inter_matrix;
     const int qscale= s->qscale;
@@ -815,7 +815,7 @@ end:
 static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, DCTELEM *block, int n)
 {
     int level, i, j, run;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const int qscale= s->qscale;
 
@@ -889,7 +889,7 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
                                int n)
 {
     int level, i, j, run;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const uint16_t *quant_matrix;
     const int qscale= s->qscale;
@@ -970,7 +970,7 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
                                int n)
 {
     int level, i, j, run;
-    RLTable *rl = &rl_mpeg1;
+    RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const int qscale= s->qscale;
     OPEN_READER(re, &s->gb);
@@ -1059,9 +1059,9 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     mismatch = block[0] ^ 1;
     i = 0;
     if (s->intra_vlc_format)
-        rl = &rl_mpeg2;
+        rl = &ff_rl_mpeg2;
     else
-        rl = &rl_mpeg1;
+        rl = &ff_rl_mpeg1;
 
     {
         OPEN_READER(re, &s->gb);
@@ -1135,9 +1135,9 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s,
     s->last_dc[component] = dc;
     block[0] = dc << (3 - s->intra_dc_precision);
     if (s->intra_vlc_format)
-        rl = &rl_mpeg2;
+        rl = &ff_rl_mpeg2;
     else
-        rl = &rl_mpeg1;
+        rl = &ff_rl_mpeg1;
 
     {
         OPEN_READER(re, &s->gb);
@@ -1208,7 +1208,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.avctx= avctx;
     s->mpeg_enc_ctx.flags= avctx->flags;
     s->mpeg_enc_ctx.flags2= avctx->flags2;
-    common_init(&s->mpeg_enc_ctx);
+    ff_mpeg12_common_init(&s->mpeg_enc_ctx);
     init_vlcs();
 
     s->mpeg_enc_ctx_allocated = 0;
@@ -1273,7 +1273,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             avctx->time_base.num= ff_frame_rate_tab[s->frame_rate_index].den;
             //mpeg1 aspect
             avctx->sample_aspect_ratio= av_d2q(
-                    1.0/mpeg1_aspect[s->aspect_ratio_info], 255);
+                    1.0/ff_mpeg1_aspect[s->aspect_ratio_info], 255);
 
         }else{//mpeg2
         //mpeg2 fps
@@ -1288,19 +1288,19 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
                 if( (s1->pan_scan.width == 0 )||(s1->pan_scan.height == 0) ){
                     s->avctx->sample_aspect_ratio=
                         av_div_q(
-                         mpeg2_aspect[s->aspect_ratio_info],
+                         ff_mpeg2_aspect[s->aspect_ratio_info],
                          (AVRational){s->width, s->height}
                          );
                 }else{
                     s->avctx->sample_aspect_ratio=
                         av_div_q(
-                         mpeg2_aspect[s->aspect_ratio_info],
+                         ff_mpeg2_aspect[s->aspect_ratio_info],
                          (AVRational){s1->pan_scan.width, s1->pan_scan.height}
                         );
                 }
             }else{
                 s->avctx->sample_aspect_ratio=
-                    mpeg2_aspect[s->aspect_ratio_info];
+                    ff_mpeg2_aspect[s->aspect_ratio_info];
             }
         }//mpeg2
 

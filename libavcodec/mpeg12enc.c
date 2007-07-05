@@ -212,9 +212,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
                 if(s->codec_id == CODEC_ID_MPEG1VIDEO || i <=1)
-                    error-= 1.0/mpeg1_aspect[i];
+                    error-= 1.0/ff_mpeg1_aspect[i];
                 else
-                    error-= av_q2d(mpeg2_aspect[i])*s->height/s->width;
+                    error-= av_q2d(ff_mpeg2_aspect[i])*s->height/s->width;
 
                 error= FFABS(error);
 
@@ -312,8 +312,8 @@ static inline void encode_mb_skip_run(MpegEncContext *s, int run){
         put_bits(&s->pb, 11, 0x008);
         run -= 33;
     }
-    put_bits(&s->pb, mbAddrIncrTable[run][1],
-             mbAddrIncrTable[run][0]);
+    put_bits(&s->pb, ff_mpeg12_mbAddrIncrTable[run][1],
+             ff_mpeg12_mbAddrIncrTable[run][0]);
 }
 
 static av_always_inline void put_qscale(MpegEncContext *s)
@@ -554,9 +554,9 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             }
             if(cbp) {
                 if (s->chroma_y_shift) {
-                    put_bits(&s->pb, mbPatTable[cbp][1], mbPatTable[cbp][0]);
+                    put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp][1], ff_mpeg12_mbPatTable[cbp][0]);
                 } else {
-                    put_bits(&s->pb, mbPatTable[cbp>>2][1], mbPatTable[cbp>>2][0]);
+                    put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp>>2][1], ff_mpeg12_mbPatTable[cbp>>2][0]);
                     put_bits(&s->pb, 2, cbp & 3);
                 }
             }
@@ -639,9 +639,9 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             s->mv_bits += get_bits_diff(s);
             if(cbp) {
                 if (s->chroma_y_shift) {
-                    put_bits(&s->pb, mbPatTable[cbp][1], mbPatTable[cbp][0]);
+                    put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp][1], ff_mpeg12_mbPatTable[cbp][0]);
                 } else {
-                    put_bits(&s->pb, mbPatTable[cbp>>2][1], mbPatTable[cbp>>2][0]);
+                    put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp>>2][1], ff_mpeg12_mbPatTable[cbp>>2][0]);
                     put_bits(&s->pb, 2, cbp & 3);
                 }
             }
@@ -674,8 +674,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
         /* zero vector */
         code = 0;
         put_bits(&s->pb,
-                 mbMotionVectorTable[0][1],
-                 mbMotionVectorTable[0][0]);
+                 ff_mpeg12_mbMotionVectorTable[0][1],
+                 ff_mpeg12_mbMotionVectorTable[0][0]);
     } else {
         bit_size = f_or_b_code - 1;
         range = 1 << bit_size;
@@ -699,8 +699,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
         assert(code > 0 && code <= 16);
 
         put_bits(&s->pb,
-                 mbMotionVectorTable[code][1],
-                 mbMotionVectorTable[code][0]);
+                 ff_mpeg12_mbMotionVectorTable[code][1],
+                 ff_mpeg12_mbMotionVectorTable[code][0]);
 
         put_bits(&s->pb, 1, sign);
         if (bit_size > 0) {
@@ -713,7 +713,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static int done=0;
 
-    common_init(s);
+    ff_mpeg12_common_init(s);
 
     if(!done){
         int f_code;
@@ -721,18 +721,18 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
         int i;
 
         done=1;
-        init_rl(&rl_mpeg1, static_rl_table_store[0]);
-        init_rl(&rl_mpeg2, static_rl_table_store[1]);
+        init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         for(i=0; i<64; i++)
         {
-                mpeg1_max_level[0][i]= rl_mpeg1.max_level[0][i];
-                mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
+                mpeg1_max_level[0][i]= ff_rl_mpeg1.max_level[0][i];
+                mpeg1_index_run[0][i]= ff_rl_mpeg1.index_run[0][i];
         }
 
-        init_uni_ac_vlc(&rl_mpeg1, uni_mpeg1_ac_vlc_len);
+        init_uni_ac_vlc(&ff_rl_mpeg1, uni_mpeg1_ac_vlc_len);
         if(s->intra_vlc_format)
-            init_uni_ac_vlc(&rl_mpeg2, uni_mpeg2_ac_vlc_len);
+            init_uni_ac_vlc(&ff_rl_mpeg2, uni_mpeg2_ac_vlc_len);
 
         /* build unified dc encoding tables */
         for(i=-255; i<256; i++)
@@ -745,12 +745,12 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                 if(diff<0) diff--;
                 index = av_log2(2*adiff);
 
-                bits= vlc_dc_lum_bits[index] + index;
-                code= (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
+                bits= ff_mpeg12_vlc_dc_lum_bits[index] + index;
+                code= (ff_mpeg12_vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
                 mpeg1_lum_dc_uni[i+255]= bits + (code<<8);
 
-                bits= vlc_dc_chroma_bits[index] + index;
-                code= (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
+                bits= ff_mpeg12_vlc_dc_chroma_bits[index] + index;
+                code= (ff_mpeg12_vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
                 mpeg1_chr_dc_uni[i+255]= bits + (code<<8);
         }
 
@@ -758,7 +758,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
             for(mv=-MAX_MV; mv<=MAX_MV; mv++){
                 int len;
 
-                if(mv==0) len= mbMotionVectorTable[0][1];
+                if(mv==0) len= ff_mpeg12_mbMotionVectorTable[0][1];
                 else{
                     int val, bit_size, range, code;
 
@@ -771,9 +771,9 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                     val--;
                     code = (val >> bit_size) + 1;
                     if(code<17){
-                        len= mbMotionVectorTable[code][1] + 1 + bit_size;
+                        len= ff_mpeg12_mbMotionVectorTable[code][1] + 1 + bit_size;
                     }else{
-                        len= mbMotionVectorTable[16][1] + 2 + bit_size;
+                        len= ff_mpeg12_mbMotionVectorTable[16][1] + 2 + bit_size;
                     }
                 }
 
@@ -822,13 +822,13 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
         if (component == 0) {
             put_bits(
                 &s->pb,
-                vlc_dc_lum_bits[index] + index,
-                (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1)));
+                ff_mpeg12_vlc_dc_lum_bits[index] + index,
+                (ff_mpeg12_vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1)));
         }else{
             put_bits(
                 &s->pb,
-                vlc_dc_chroma_bits[index] + index,
-                (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1)));
+                ff_mpeg12_vlc_dc_chroma_bits[index] + index,
+                (ff_mpeg12_vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1)));
         }
   }else{
     if (component == 0) {
@@ -851,7 +851,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 {
     int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
     int code, component;
-    const uint16_t (*table_vlc)[2] = rl_mpeg1.table_vlc;
+    const uint16_t (*table_vlc)[2] = ff_rl_mpeg1.table_vlc;
 
     last_index = s->block_last_index[n];
 
@@ -864,7 +864,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
         s->last_dc[component] = dc;
         i = 1;
         if (s->intra_vlc_format)
-            table_vlc = rl_mpeg2.table_vlc;
+            table_vlc = ff_rl_mpeg2.table_vlc;
     } else {
         /* encode the first coefficient : needs to be done here because
            it is handled slightly differently */
