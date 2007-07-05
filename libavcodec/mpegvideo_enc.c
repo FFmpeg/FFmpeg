@@ -675,7 +675,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         h263_encode_init(s);
     if (ENABLE_MSMPEG4_ENCODER && s->msmpeg4_version)
         ff_msmpeg4_encode_init(s);
-    if (s->out_format == FMT_MPEG1)
+    if ((ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER)
+        && s->out_format == FMT_MPEG1)
         ff_mpeg1_encode_init(s);
 
     /* init q matrix */
@@ -1685,6 +1686,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     switch(s->codec_id){ //FIXME funct ptr could be slightly faster
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_MPEG2VIDEO:
+        if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER)
         mpeg1_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_MPEG4:
         mpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
@@ -2146,8 +2148,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     break;
                     case CODEC_ID_MPEG1VIDEO:
                     case CODEC_ID_MPEG2VIDEO:
+                        if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER) {
                         ff_mpeg1_encode_slice_header(s);
                         ff_mpeg1_clean_buffers(s);
+                        }
                     break;
                     case CODEC_ID_H263:
                     case CODEC_ID_H263P:
@@ -2873,6 +2877,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             h263_encode_picture_header(s, picture_number);
         break;
     case FMT_MPEG1:
+        if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER)
         mpeg1_encode_picture_header(s, picture_number);
         break;
     case FMT_H264:
