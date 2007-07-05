@@ -689,7 +689,6 @@ typedef struct MpegEncContext {
 } MpegEncContext;
 
 
-int DCT_common_init(MpegEncContext *s);
 void MPV_decode_defaults(MpegEncContext *s);
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);

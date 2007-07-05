@@ -135,7 +135,7 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
 }
 
 /* init common dct for both encoder and decoder */
-int DCT_common_init(MpegEncContext *s)
+static int DCT_common_init(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
