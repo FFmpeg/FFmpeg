@@ -162,19 +162,6 @@ int DCT_common_init(MpegEncContext *s)
     MPV_common_init_bfin(s);
 #endif
 
-#ifdef CONFIG_ENCODERS
-    if(!s->dct_quantize)
-        s->dct_quantize= dct_quantize_c;
-    if(!s->denoise_dct)
-        s->denoise_dct= denoise_dct_c;
-    s->fast_dct_quantize= s->dct_quantize;
-
-    if(s->flags&CODEC_FLAG_TRELLIS_QUANT){
-        s->dct_quantize= dct_quantize_trellis_c; //move before MPV_common_init_*
-    }
-
-#endif //CONFIG_ENCODERS
-
     /* load & permutate scantables
        note: only wmv uses different ones
     */

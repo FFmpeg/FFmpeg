@@ -660,6 +660,14 @@ int MPV_encode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
 
+    if(!s->dct_quantize)
+        s->dct_quantize = dct_quantize_c;
+    if(!s->denoise_dct)
+        s->denoise_dct = denoise_dct_c;
+    s->fast_dct_quantize = s->dct_quantize;
+    if(s->flags & CODEC_FLAG_TRELLIS_QUANT)
+        s->dct_quantize = dct_quantize_trellis_c;
+
     if(s->modified_quant)
         s->chroma_qscale_table= ff_h263_chroma_qscale_table;
     s->progressive_frame=
