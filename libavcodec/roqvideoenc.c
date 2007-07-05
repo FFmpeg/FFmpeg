@@ -1,7 +1,7 @@
 /*
  * RoQ Video Encoder.
  *
- * Copyright (C) 2007 Vitor <vitor1001@gmail.com>
+ * Copyright (C) 2007 Vitor Sessak <vitor1001@gmail.com>
  * Copyright (C) 2004-2007 Eric Lasota
  *    Based on RoQ specs (C) 2001 Tim Ferguson
  *
