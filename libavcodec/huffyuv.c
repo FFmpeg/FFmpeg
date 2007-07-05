@@ -1218,7 +1218,7 @@ static int decode_end(AVCodecContext *avctx)
     common_end(s);
     av_freep(&s->bitstream_buffer);
 
-    for(i=0; i<3; i++){
+    for(i=0; i<6; i++){
         free_vlc(&s->vlc[i]);
     }
 
