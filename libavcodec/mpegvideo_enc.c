@@ -1687,7 +1687,8 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_MPEG2VIDEO:
         if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER)
-        mpeg1_encode_mb(s, s->block, motion_x, motion_y); break;
+            mpeg1_encode_mb(s, s->block, motion_x, motion_y);
+        break;
     case CODEC_ID_MPEG4:
         mpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_MSMPEG4V2:
@@ -2149,8 +2150,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case CODEC_ID_MPEG1VIDEO:
                     case CODEC_ID_MPEG2VIDEO:
                         if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER) {
-                        ff_mpeg1_encode_slice_header(s);
-                        ff_mpeg1_clean_buffers(s);
+                            ff_mpeg1_encode_slice_header(s);
+                            ff_mpeg1_clean_buffers(s);
                         }
                     break;
                     case CODEC_ID_H263:
@@ -2878,7 +2879,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         break;
     case FMT_MPEG1:
         if (ENABLE_MPEG1VIDEO_ENCODER || ENABLE_MPEG2VIDEO_ENCODER)
-        mpeg1_encode_picture_header(s, picture_number);
+            mpeg1_encode_picture_header(s, picture_number);
         break;
     case FMT_H264:
         break;
