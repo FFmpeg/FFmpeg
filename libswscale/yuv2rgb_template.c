@@ -6,6 +6,10 @@
  *
  * Author: Olie Lho <ollie@sis.com.tw>
  *
+ * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
+ * MMX/MMX2 Template stuff from Michael Niedermayer (needed for fast movntq support)
+ * context / deglobalize stuff by Michael Niedermayer
+ *
  * This file is part of mpeg2dec, a free MPEG-2 video decoder
  *
  * mpeg2dec is free software; you can redistribute it and/or modify
@@ -21,10 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with mpeg2dec; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
- * MMX/MMX2 Template stuff from Michael Niedermayer (needed for fast movntq support)
- * context / deglobalize stuff by Michael Niedermayer
  */
 
 #undef MOVNTQ

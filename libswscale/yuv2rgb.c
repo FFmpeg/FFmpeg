@@ -9,6 +9,10 @@
  *
  *  15 & 16 bpp support by Franck Sicard <Franck.Sicard@solsoft.fr>
  *
+ *  MMX/MMX2 template stuff (needed for fast movntq support),
+ *  1,4,8bpp support and context / deglobalize stuff
+ *  by Michael Niedermayer (michaelni@gmx.at)
+ *
  *  This file is part of mpeg2dec, a free MPEG-2 video decoder
  *
  *  mpeg2dec is free software; you can redistribute it and/or modify
@@ -24,10 +28,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with mpeg2dec; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
- * 1,4,8bpp support by Michael Niedermayer (michaelni@gmx.at)
- * context / deglobalize stuff by Michael Niedermayer
  */
 
 #include <stdio.h>
