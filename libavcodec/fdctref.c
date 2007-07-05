@@ -27,7 +27,6 @@
  * are subject to royalty fees to patent holders.  Many of these patents are
  * general enough such that they are unavoidable regardless of implementation
  * design.
- *
  */
 
 #include <math.h>

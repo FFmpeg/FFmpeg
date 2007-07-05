@@ -3720,7 +3720,7 @@ static void show_license(void)
     "\n"
     "You should have received a copy of the GNU General Public License\n"
     "along with FFmpeg; if not, write to the Free Software\n"
-    "Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+    "Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA\n"
     );
 #else
     printf(

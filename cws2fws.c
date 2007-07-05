@@ -3,7 +3,6 @@
  * Public domain.
  *
  * This utility converts compressed Macromedia Flash files to uncompressed ones.
- *
  */
 
 #include <sys/stat.h>

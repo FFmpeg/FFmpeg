@@ -16,8 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- *
+ */
+
+/*
  * How to use this decoder:
  * SVQ3 data is transported within Apple Quicktime files. Quicktime files
  * have stsd atoms to describe media trak properties. A stsd atom for a
@@ -37,7 +38,6 @@
  * You will know you have these parameters passed correctly when the decoder
  * correctly decodes this file:
  *  ftp://ftp.mplayerhq.hu/MPlayer/samples/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
- *
  */
 
 /**
