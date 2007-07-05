@@ -261,7 +261,7 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                     codes, codes_wrap, codes_size,
                     symbols, symbols_wrap, symbols_size,
                     0, 0, flags) < 0) {
-        av_free(vlc->table);
+        av_freep(&vlc->table);
         return -1;
     }
     return 0;
@@ -270,6 +270,6 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 
 void free_vlc(VLC *vlc)
 {
-    av_free(vlc->table);
+    av_freep(&vlc->table);
 }
 
