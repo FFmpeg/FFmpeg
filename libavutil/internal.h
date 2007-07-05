@@ -238,8 +238,9 @@ if((y)<(x)){\
 #define free please_use_av_free
 #define realloc please_use_av_realloc
 #define time time_is_forbidden_due_to_security_issues
-#define rand rand_is_forbidden_due_to_state_trashing
-#define srand srand_is_forbidden_due_to_state_trashing
+#define rand rand_is_forbidden_due_to_state_trashing_use_av_random
+#define srand srand_is_forbidden_due_to_state_trashing_use_av_init_random
+#define random random_is_forbidden_due_to_state_trashing_use_av_random
 #define sprintf sprintf_is_forbidden_due_to_security_issues_use_snprintf
 #define strcat strcat_is_forbidden_due_to_security_issues_use_av_strlcat
 #define exit exit_is_forbidden
