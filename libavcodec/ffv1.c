@@ -702,6 +702,7 @@ static int common_end(AVCodecContext *avctx){
         PlaneContext *p= &s->plane[i];
 
         av_freep(&p->state);
+        av_freep(&p->vlc_state);
     }
 
     return 0;
