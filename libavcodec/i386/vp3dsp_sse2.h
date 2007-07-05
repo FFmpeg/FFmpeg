@@ -1,5 +1,5 @@
 /*
- * vp3dsp sse2 functions declarations
+ * vp3dsp SSE2 function declarations
  * Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.

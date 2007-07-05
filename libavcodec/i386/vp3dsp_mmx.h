@@ -1,5 +1,5 @@
 /*
- * vp3dsp mmx functions declarations
+ * vp3dsp MMX function declarations
  * Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.
