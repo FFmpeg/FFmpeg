@@ -4535,7 +4535,7 @@ AVCodec snow_decoder = {
     NULL
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_SNOW_ENCODER
 AVCodec snow_encoder = {
     "snow",
     CODEC_TYPE_VIDEO,
