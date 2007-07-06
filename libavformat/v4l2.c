@@ -119,8 +119,12 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
     struct v4l2_capability cap;
     int fd;
     int res;
+    int flags = O_RDWR;
 
-    fd = open(ctx->filename, O_RDWR /*| O_NONBLOCK*/, 0);
+    if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
+        flags |= O_NONBLOCK;
+    }
+    fd = open(ctx->filename, flags, 0);
     if (fd < 0) {
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
                  ctx->filename, strerror(errno));
@@ -331,9 +335,13 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     buf.memory = V4L2_MEMORY_MMAP;
 
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
-    while ((res = ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 &&
-           ((errno == EAGAIN) || (errno == EINTR)));
+    while ((res = ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 && (errno == EINTR));
     if (res < 0) {
+        if (errno == EAGAIN) {
+            pkt->size = 0;
+
+            return AVERROR(EAGAIN);
+        }
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", strerror(errno));
 
         return -1;
