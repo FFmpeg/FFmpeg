@@ -991,6 +991,8 @@ int avcodec_close(AVCodecContext *avctx)
         return -1;
     }
 
+    if (ENABLE_THREADS && avctx->thread_opaque)
+        avcodec_thread_free(avctx);
     if (avctx->codec->close)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
