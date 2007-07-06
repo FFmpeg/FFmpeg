@@ -399,6 +399,7 @@ typedef struct AVFormatContext {
     int flags;
 #define AVFMT_FLAG_GENPTS       0x0001 ///< generate pts if missing even if it requires parsing future frames
 #define AVFMT_FLAG_IGNIDX       0x0002 ///< ignore index
+#define AVFMT_FLAG_NONBLOCK     0x0004 ///< do not block when reading packets from input
 
     int loop_input;
     /** decoding: size of data to probe; encoding unused */
