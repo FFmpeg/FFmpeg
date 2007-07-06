@@ -128,6 +128,7 @@ typedef struct PPS{
     int transform_8x8_mode;     ///< transform_8x8_mode_flag
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[2][64];
+    uint8_t chroma_qp_table[256];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
 }PPS;
 
 /**
