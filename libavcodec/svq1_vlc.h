@@ -24,14 +24,14 @@
 #include <stdint.h>
 
 /* values in this table range from 0..3; adjust retrieved value by +0 */
-static const uint8_t svq1_block_type_vlc[4][2] = {
+const uint8_t ff_svq1_block_type_vlc[4][2] = {
  /* { code, length } */
     { 0x1, 1 },  { 0x1, 2 },  { 0x1, 3 },  { 0x0, 3 }
 
 };
 
 /* values in this table range from -1..6; adjust retrieved value by -1 */
-static const uint8_t svq1_intra_multistage_vlc[6][8][2] = {
+const uint8_t ff_svq1_intra_multistage_vlc[6][8][2] = {
  /* { code, length } */
 {
     { 0x1, 5 },  { 0x1, 1 },  { 0x3, 3 },  { 0x2, 3 },
@@ -55,7 +55,7 @@ static const uint8_t svq1_intra_multistage_vlc[6][8][2] = {
 };
 
 /* values in this table range from -1..6; adjust retrieved value by -1 */
-static const uint8_t svq1_inter_multistage_vlc[6][8][2] = {
+const uint8_t ff_svq1_inter_multistage_vlc[6][8][2] = {
  /* { code, length } */
 {
     { 0x3, 2 },  { 0x5, 3 },  { 0x4, 3 },  { 0x3, 3 },
@@ -79,7 +79,7 @@ static const uint8_t svq1_inter_multistage_vlc[6][8][2] = {
 };
 
 /* values in this table range from 0..255; adjust retrieved value by +0 */
-static const uint16_t svq1_intra_mean_vlc[256][2] = {
+const uint16_t ff_svq1_intra_mean_vlc[256][2] = {
  /* { code, length } */
     { 0x37, 6 },  { 0x56, 7 },  { 0x1, 17 },  { 0x1, 20 },
     { 0x2, 20 },  { 0x3, 20 },  { 0x0, 20 },  { 0x4, 20 },
@@ -148,7 +148,7 @@ static const uint16_t svq1_intra_mean_vlc[256][2] = {
 };
 
 /* values in this table range from -256..255; adjust retrieved value by -256 */
-static const uint16_t svq1_inter_mean_vlc[512][2] = {
+const uint16_t ff_svq1_inter_mean_vlc[512][2] = {
  /* { code, length } */
     { 0x5A, 22 },  { 0xD4, 22 },  { 0xD5, 22 },  { 0xD6, 22 },
     { 0xD7, 22 },  { 0xD8, 22 },  { 0xD9, 22 },  { 0xDA, 22 },

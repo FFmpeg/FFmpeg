@@ -26,18 +26,36 @@
  */
 
 /**
- * @file svq1.c
+ * @file svq1.h
  * Sorenson Vector Quantizer #1 (SVQ1) video codec.
  * For more information of the SVQ1 algorithm, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
-#include "svq1.h"
-#include "svq1_cb.h"
-#include "svq1_vlc.h"
+#ifndef AVCODEC_SVQ1_H
+#define AVCODEC_SVQ1_H
 
-/* standard video sizes */
-svq1_frame_size_t ff_svq1_frame_size_table[8] = {
-  { 160, 120 }, { 128,  96 }, { 176, 144 }, { 352, 288 },
-  { 704, 576 }, { 240, 180 }, { 320, 240 }, {  -1,  -1 }
-};
+#include <stdint.h>
+
+#define SVQ1_BLOCK_SKIP         0
+#define SVQ1_BLOCK_INTER        1
+#define SVQ1_BLOCK_INTER_4V     2
+#define SVQ1_BLOCK_INTRA        3
+
+typedef struct {
+    int width;
+    int height;
+} svq1_frame_size_t;
+
+extern const int8_t* const ff_svq1_inter_codebooks[6];
+extern const int8_t* const ff_svq1_intra_codebooks[6];
+
+extern const uint8_t ff_svq1_block_type_vlc[4][2];
+extern const uint8_t ff_svq1_intra_multistage_vlc[6][8][2];
+extern const uint8_t ff_svq1_inter_multistage_vlc[6][8][2];
+extern const uint16_t ff_svq1_intra_mean_vlc[256][2];
+extern const uint16_t ff_svq1_inter_mean_vlc[512][2];
+
+extern svq1_frame_size_t ff_svq1_frame_size_table[8];
+
+#endif /* AVCODEC_SVQ1_H */
