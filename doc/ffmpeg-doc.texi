@@ -468,7 +468,7 @@ Set rate control equation (@pxref{FFmpeg formula
 evaluator}) (default = @code{tex^qComp}).
 @item -rc_override override
 rate control override for specific intervals
-@item -me method
+@item -me_method method
 Set motion estimation method to @var{method}.
 Available methods are (from lowest to best quality):
 @table @samp
@@ -477,6 +477,8 @@ Try just the (0, 0) vector.
 @item phods
 @item log
 @item x1
+@item hex
+@item umh
 @item epzs
 (default method)
 @item full

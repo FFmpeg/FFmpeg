@@ -127,7 +127,6 @@ static int video_rc_qmod_freq=0;
 #endif
 static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
-static int me_method = ME_EPZS;
 static int video_disable = 0;
 static int video_discard = 0;
 static int video_codec_id = CODEC_ID_NONE;
@@ -2417,35 +2416,6 @@ static void add_frame_hooker(const char *arg)
     }
 }
 
-const char *motion_str[] = {
-    "zero",
-    "full",
-    "log",
-    "phods",
-    "epzs",
-    "x1",
-    "hex",
-    "umh",
-    "iter",
-    NULL,
-};
-
-static void opt_motion_estimation(const char *arg)
-{
-    const char **p;
-    p = motion_str;
-    for(;;) {
-        if (!*p) {
-            fprintf(stderr, "Unknown motion estimation method '%s'\n", arg);
-            exit(1);
-        }
-        if (!strcmp(*p, arg))
-            break;
-        p++;
-    }
-    me_method = (p - motion_str) + 1;
-}
-
 static void opt_video_codec(const char *arg)
 {
     opt_codec(&video_stream_copy, &video_codec_id, CODEC_TYPE_VIDEO, arg);
@@ -2839,8 +2809,6 @@ static void new_video_stream(AVFormatContext *oc)
         if (do_psnr)
             video_enc->flags|= CODEC_FLAG_PSNR;
 
-        video_enc->me_method = me_method;
-
         /* two pass mode */
         if (do_pass) {
             if (do_pass == 1) {
@@ -3167,7 +3135,7 @@ static void show_formats(void)
     AVOutputFormat *ofmt;
     URLProtocol *up;
     AVCodec *p, *p2;
-    const char **pp, *last_name;
+    const char *last_name;
 
     printf("File formats:\n");
     last_name= "000";
@@ -3268,19 +3236,7 @@ static void show_formats(void)
     printf("\n");
 
     printf("Frame size, frame rate abbreviations:\n ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
-    printf("Motion estimation methods:\n");
-    pp = motion_str;
-    while (*pp) {
-        printf(" %s", *pp);
-        if ((pp - motion_str + 1) == ME_ZERO)
-            printf("(fastest)");
-        else if ((pp - motion_str + 1) == ME_FULL)
-            printf("(slowest)");
-        else if ((pp - motion_str + 1) == ME_EPZS)
-            printf("(default)");
-        pp++;
-    }
-    printf("\n\n");
+    printf("\n");
     printf(
 "Note, the names of encoders and decoders do not always match, so there are\n"
 "several cases where the above table shows encoder only or decoder only entries\n"
@@ -3633,8 +3589,6 @@ const OptionDef options[] = {
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
-    { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method",
-      "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
