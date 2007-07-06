@@ -1598,8 +1598,8 @@ static void chroma_dc_dct_c(DCTELEM *block){
 /**
  * gets the chroma qp.
  */
-static inline int get_chroma_qp(H264Context *h, int qscale){
-    return h->pps.chroma_qp_table[qscale & 0xff];
+static inline int get_chroma_qp(H264Context *h, int t, int qscale){
+    return h->pps.chroma_qp_table[t][qscale & 0xff];
 }
 
 //FIXME need to check that this does not overflow signed 32 bit for low qp, i am not sure, it's very close
@@ -3376,8 +3376,8 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }else{
                 idct_add = s->dsp.h264_idct_add;
                 idct_dc_add = s->dsp.h264_idct_dc_add;
-                chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp][0]);
-                chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp][0]);
+                chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
+                chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
             }
             if(is_h264){
                 for(i=16; i<16+8; i++){
@@ -3419,13 +3419,15 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             s->mb_y--;
             tprintf(h->s.avctx, "call mbaff filter_mb mb_x:%d mb_y:%d pair_dest_y = %p, dest_y = %p\n", mb_x, mb_y, pair_dest_y, dest_y);
             fill_caches(h, mb_type_top, 1); //FIXME don't fill stuff which isn't used by filter_mb
-            h->chroma_qp = get_chroma_qp(h, s->current_picture.qscale_table[mb_xy]);
+            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
+            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
             filter_mb(h, mb_x, mb_y, pair_dest_y, pair_dest_cb, pair_dest_cr, linesize, uvlinesize);
             // bottom
             s->mb_y++;
             tprintf(h->s.avctx, "call mbaff filter_mb\n");
             fill_caches(h, mb_type_bottom, 1); //FIXME don't fill stuff which isn't used by filter_mb
-            h->chroma_qp = get_chroma_qp(h, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
+            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
+            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
             filter_mb(h, mb_x, mb_y+1, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         } else {
             tprintf(h->s.avctx, "call filter_mb\n");
@@ -4447,7 +4449,8 @@ static int decode_slice_header(H264Context *h){
         return -1;
     }
     s->qscale= tmp;
-    h->chroma_qp = get_chroma_qp(h, s->qscale);
+    h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
+    h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
     //FIXME qscale / qp ... stuff
     if(h->slice_type == SP_TYPE){
         get_bits1(&s->gb); /* sp_for_switch_flag */
@@ -4860,7 +4863,8 @@ decode_intra_mb:
 
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
-        h->chroma_qp = get_chroma_qp(h, 0);
+        h->chroma_qp[0] = get_chroma_qp(h, 0, 0);
+        h->chroma_qp[1] = get_chroma_qp(h, 1, 0);
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
 
@@ -5134,7 +5138,7 @@ decode_intra_mb:
 
     if(cbp || IS_INTRA16x16(mb_type)){
         int i8x8, i4x4, chroma_idx;
-        int chroma_qp, dquant;
+        int dquant;
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
         const uint8_t *scan, *scan8x8, *dc_scan;
 
@@ -5163,7 +5167,8 @@ decode_intra_mb:
             else            s->qscale-= 52;
         }
 
-        h->chroma_qp= chroma_qp= get_chroma_qp(h, s->qscale);
+        h->chroma_qp[0]= get_chroma_qp(h, 0, s->qscale);
+        h->chroma_qp[1]= get_chroma_qp(h, 1, s->qscale);
         if(IS_INTRA16x16(mb_type)){
             if( decode_residual(h, h->intra_gb_ptr, h->mb, LUMA_DC_BLOCK_INDEX, dc_scan, h->dequant4_coeff[0][s->qscale], 16) < 0){
                 return -1; //FIXME continue if partitioned and other return -1 too
@@ -5221,7 +5226,7 @@ decode_intra_mb:
 
         if(cbp&0x20){
             for(chroma_idx=0; chroma_idx<2; chroma_idx++){
-                const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][chroma_qp];
+                const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= 16 + 4*chroma_idx + i4x4;
                     if( decode_residual(h, gb, h->mb + 16*index, index, scan + 1, qmul, 15) < 0){
@@ -6013,7 +6018,8 @@ decode_intra_mb:
         h->chroma_pred_mode_table[mb_xy] = 0;
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
-        h->chroma_qp = get_chroma_qp(h, 0);
+        h->chroma_qp[0] = get_chroma_qp(h, 0, 0);
+        h->chroma_qp[1] = get_chroma_qp(h, 1, 0);
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
         s->current_picture.mb_type[mb_xy]= mb_type;
@@ -6289,7 +6295,8 @@ decode_intra_mb:
             if(s->qscale<0) s->qscale+= 52;
             else            s->qscale-= 52;
         }
-        h->chroma_qp = get_chroma_qp(h, s->qscale);
+        h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
+        h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
 
         if( IS_INTRA16x16( mb_type ) ) {
             int i;
@@ -6341,7 +6348,7 @@ decode_intra_mb:
         if( cbp&0x20 ) {
             int c, i;
             for( c = 0; c < 2; c++ ) {
-                const uint32_t *qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp];
+                const uint32_t *qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[c]];
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
@@ -6685,7 +6692,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
 
     mb_xy = mb_x + mb_y*s->mb_stride;
 
-    if(mb_x==0 || mb_y==0 || !s->dsp.h264_loop_filter_strength ||
+    if(mb_x==0 || mb_y==0 || !s->dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff ||
        (h->deblocking_filter == 2 && (h->slice_table[mb_xy] != h->slice_table[h->top_mb_xy] ||
                                       h->slice_table[mb_xy] != h->slice_table[mb_xy - 1]))) {
         filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
@@ -6697,9 +6704,9 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     qp = s->current_picture.qscale_table[mb_xy];
     qp0 = s->current_picture.qscale_table[mb_xy-1];
     qp1 = s->current_picture.qscale_table[h->top_mb_xy];
-    qpc = get_chroma_qp( h, qp );
-    qpc0 = get_chroma_qp( h, qp0 );
-    qpc1 = get_chroma_qp( h, qp1 );
+    qpc = get_chroma_qp( h, 0, qp );
+    qpc0 = get_chroma_qp( h, 0, qp0 );
+    qpc1 = get_chroma_qp( h, 0, qp1 );
     qp0 = (qp + qp0 + 1) >> 1;
     qp1 = (qp + qp1 + 1) >> 1;
     qpc0 = (qpc + qpc0 + 1) >> 1;
@@ -6805,7 +6812,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     //for sufficiently low qp, filtering wouldn't do anything
     //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
     if(!FRAME_MBAFF){
-        int qp_thresh = 15 - h->slice_alpha_c0_offset - FFMAX(0, h->pps.chroma_qp_index_offset);
+        int qp_thresh = 15 - h->slice_alpha_c0_offset - FFMAX(0, FFMAX(h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1]));
         int qp = s->current_picture.qscale_table[mb_xy];
         if(qp <= qp_thresh
            && (mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
@@ -6828,7 +6835,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         const int left_mb_xy[2] = { pair_xy-1, pair_xy-1+s->mb_stride };
         int16_t bS[8];
         int qp[2];
-        int chroma_qp[2];
+        int bqp[2];
+        int rqp[2];
         int mb_qp, mbn0_qp, mbn1_qp;
         int i;
         first_vertical_edge_done = 1;
@@ -6854,18 +6862,22 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         mbn0_qp = s->current_picture.qscale_table[left_mb_xy[0]];
         mbn1_qp = s->current_picture.qscale_table[left_mb_xy[1]];
         qp[0] = ( mb_qp + mbn0_qp + 1 ) >> 1;
-        chroma_qp[0] = ( get_chroma_qp( h, mb_qp ) +
-                         get_chroma_qp( h, mbn0_qp ) + 1 ) >> 1;
+        bqp[0] = ( get_chroma_qp( h, 0, mb_qp ) +
+                   get_chroma_qp( h, 0, mbn0_qp ) + 1 ) >> 1;
+        rqp[0] = ( get_chroma_qp( h, 1, mb_qp ) +
+                   get_chroma_qp( h, 1, mbn0_qp ) + 1 ) >> 1;
         qp[1] = ( mb_qp + mbn1_qp + 1 ) >> 1;
-        chroma_qp[1] = ( get_chroma_qp( h, mb_qp ) +
-                         get_chroma_qp( h, mbn1_qp ) + 1 ) >> 1;
+        bqp[1] = ( get_chroma_qp( h, 0, mb_qp ) +
+                   get_chroma_qp( h, 0, mbn1_qp ) + 1 ) >> 1;
+        rqp[1] = ( get_chroma_qp( h, 1, mb_qp ) +
+                   get_chroma_qp( h, 1, mbn1_qp ) + 1 ) >> 1;
 
         /* Filter edge */
-        tprintf(s->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPc:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], chroma_qp[0], chroma_qp[1], linesize, uvlinesize);
+        tprintf(s->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPb:%d/%d QPr:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], bqp[0], bqp[1], rqp[0], rqp[1], linesize, uvlinesize);
         { int i; for (i = 0; i < 8; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         filter_mb_mbaff_edgev ( h, &img_y [0], linesize,   bS, qp );
-        filter_mb_mbaff_edgecv( h, &img_cb[0], uvlinesize, bS, chroma_qp );
-        filter_mb_mbaff_edgecv( h, &img_cr[0], uvlinesize, bS, chroma_qp );
+        filter_mb_mbaff_edgecv( h, &img_cb[0], uvlinesize, bS, bqp );
+        filter_mb_mbaff_edgecv( h, &img_cr[0], uvlinesize, bS, rqp );
     }
     /* dir : 0 -> vertical edge, 1 -> horizontal edge */
     for( dir = 0; dir < 2; dir++ )
@@ -6903,7 +6915,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             unsigned int tmp_linesize   = 2 *   linesize;
             unsigned int tmp_uvlinesize = 2 * uvlinesize;
             int mbn_xy = mb_xy - 2 * s->mb_stride;
-            int qp, chroma_qp;
+            int qp;
             int i, j;
             int16_t bS[4];
 
@@ -6927,10 +6939,10 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
                 { int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
                 filter_mb_edgeh( h, &img_y[j*linesize], tmp_linesize, bS, qp );
-                chroma_qp = ( h->chroma_qp +
-                              get_chroma_qp( h, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                filter_mb_edgech( h, &img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp );
-                filter_mb_edgech( h, &img_cr[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp );
+                filter_mb_edgech( h, &img_cb[j*uvlinesize], tmp_uvlinesize, bS,
+                                  ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
+                filter_mb_edgech( h, &img_cr[j*uvlinesize], tmp_uvlinesize, bS,
+                                  ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
             }
 
             start = 1;
@@ -7027,18 +7039,18 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             if( dir == 0 ) {
                 filter_mb_edgev( h, &img_y[4*edge], linesize, bS, qp );
                 if( (edge&1) == 0 ) {
-                    int chroma_qp = ( h->chroma_qp +
-                                      get_chroma_qp( h, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                    filter_mb_edgecv( h, &img_cb[2*edge], uvlinesize, bS, chroma_qp );
-                    filter_mb_edgecv( h, &img_cr[2*edge], uvlinesize, bS, chroma_qp );
+                    filter_mb_edgecv( h, &img_cb[2*edge], uvlinesize, bS,
+                                      ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
+                    filter_mb_edgecv( h, &img_cr[2*edge], uvlinesize, bS,
+                                      ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
                 }
             } else {
                 filter_mb_edgeh( h, &img_y[4*edge*linesize], linesize, bS, qp );
                 if( (edge&1) == 0 ) {
-                    int chroma_qp = ( h->chroma_qp +
-                                      get_chroma_qp( h, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                    filter_mb_edgech( h, &img_cb[2*edge*uvlinesize], uvlinesize, bS, chroma_qp );
-                    filter_mb_edgech( h, &img_cr[2*edge*uvlinesize], uvlinesize, bS, chroma_qp );
+                    filter_mb_edgech( h, &img_cb[2*edge*uvlinesize], uvlinesize, bS,
+                                      ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
+                    filter_mb_edgech( h, &img_cr[2*edge*uvlinesize], uvlinesize, bS,
+                                      ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
                 }
             }
         }
@@ -7572,12 +7584,11 @@ static inline int decode_seq_parameter_set(H264Context *h){
 }
 
 static void
-build_qp_table(PPS *pps, int index)
+build_qp_table(PPS *pps, int t, int index)
 {
     int i;
     for(i = 0; i < 255; i++)
-        pps->chroma_qp_table[i & 0xff] = chroma_qp[av_clip(i + index, 0, 51)];
-    pps->chroma_qp_index_offset = index;
+        pps->chroma_qp_table[t][i & 0xff] = chroma_qp[av_clip(i + index, 0, 51)];
 }
 
 static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
@@ -7648,7 +7659,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     pps->weighted_bipred_idc= get_bits(&s->gb, 2);
     pps->init_qp= get_se_golomb(&s->gb) + 26;
     pps->init_qs= get_se_golomb(&s->gb) + 26;
-    build_qp_table(pps, get_se_golomb(&s->gb));
+    pps->chroma_qp_index_offset[0]= get_se_golomb(&s->gb);
     pps->deblocking_filter_parameters_present= get_bits1(&s->gb);
     pps->constrained_intra_pred= get_bits1(&s->gb);
     pps->redundant_pic_cnt_present = get_bits1(&s->gb);
@@ -7661,17 +7672,26 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     if(get_bits_count(&s->gb) < bit_length){
         pps->transform_8x8_mode= get_bits1(&s->gb);
         decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
-        get_se_golomb(&s->gb);  //second_chroma_qp_index_offset
+        pps->chroma_qp_index_offset[1]= get_se_golomb(&s->gb); //second_chroma_qp_index_offset
+    } else {
+        pps->chroma_qp_index_offset[1]= pps->chroma_qp_index_offset[0];
     }
 
+    build_qp_table(pps, 0, pps->chroma_qp_index_offset[0]);
+    if(pps->chroma_qp_index_offset[0] != pps->chroma_qp_index_offset[1]) {
+        build_qp_table(pps, 1, pps->chroma_qp_index_offset[1]);
+        h->pps.chroma_qp_diff= 1;
+    } else
+        memcpy(pps->chroma_qp_table[1], pps->chroma_qp_table[0], 256);
+
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "pps:%u sps:%u %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d %s %s %s %s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "pps:%u sps:%u %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d/%d %s %s %s %s\n",
                pps_id, pps->sps_id,
                pps->cabac ? "CABAC" : "CAVLC",
                pps->slice_group_count,
                pps->ref_count[0], pps->ref_count[1],
                pps->weighted_pred ? "weighted" : "",
-               pps->init_qp, pps->init_qs, pps->chroma_qp_index_offset,
+               pps->init_qp, pps->init_qs, pps->chroma_qp_index_offset[0], pps->chroma_qp_index_offset[1],
                pps->deblocking_filter_parameters_present ? "LPAR" : "",
                pps->constrained_intra_pred ? "CONSTR" : "",
                pps->redundant_pic_cnt_present ? "REDU" : "",

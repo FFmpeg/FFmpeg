@@ -807,7 +807,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
     h->halfpel_flag = 1;
     h->thirdpel_flag = 1;
     h->unknown_svq3_flag = 0;
-    h->chroma_qp = 4;
+    h->chroma_qp[0] = h->chroma_qp[1] = 4;
 
     if (MPV_common_init (s) < 0)
       return -1;

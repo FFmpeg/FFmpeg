@@ -121,14 +121,15 @@ typedef struct PPS{
     int weighted_bipred_idc;
     int init_qp;                ///< pic_init_qp_minus26 + 26
     int init_qs;                ///< pic_init_qs_minus26 + 26
-    int chroma_qp_index_offset;
+    int chroma_qp_index_offset[2];
     int deblocking_filter_parameters_present; ///< deblocking_filter_parameters_present_flag
     int constrained_intra_pred; ///< constrained_intra_pred_flag
     int redundant_pic_cnt_present; ///< redundant_pic_cnt_present_flag
     int transform_8x8_mode;     ///< transform_8x8_mode_flag
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[2][64];
-    uint8_t chroma_qp_table[256];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
+    uint8_t chroma_qp_table[2][256];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
+    int chroma_qp_diff;
 }PPS;
 
 /**
@@ -170,7 +171,7 @@ typedef struct H264Context{
     int got_avcC; ///< flag used to parse avcC data only once
     int nal_length_size; ///< Number of bytes used for nal length (1, 2 or 4)
 
-    int chroma_qp; //QPc
+    int chroma_qp[2]; //QPc
 
     int prev_mb_skipped;
     int next_mb_skipped;
