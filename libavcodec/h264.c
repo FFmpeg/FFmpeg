@@ -5222,9 +5222,10 @@ decode_intra_mb:
 
         if(cbp&0x20){
             for(chroma_idx=0; chroma_idx<2; chroma_idx++){
+                const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][chroma_qp];
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= 16 + 4*chroma_idx + i4x4;
-                    if( decode_residual(h, gb, h->mb + 16*index, index, scan + 1, h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][chroma_qp], 15) < 0){
+                    if( decode_residual(h, gb, h->mb + 16*index, index, scan + 1, qmul, 15) < 0){
                         return -1;
                     }
                 }
@@ -6341,10 +6342,11 @@ decode_intra_mb:
         if( cbp&0x20 ) {
             int c, i;
             for( c = 0; c < 2; c++ ) {
+                const uint32_t *qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp];
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
-                    if( decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp], 15) < 0)
+                    if( decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, qmul, 15) < 0)
                         return -1;
                 }
             }
