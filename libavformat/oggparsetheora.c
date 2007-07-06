@@ -60,10 +60,7 @@ theora_header (AVFormatContext * s, int idx)
 
         skip_bits(&gb, 7*8); /* 0x80"theora" */
 
-        version = get_bits(&gb, 8) << 16;
-        version |= get_bits(&gb, 8) << 8;
-        version |= get_bits(&gb, 8);
-
+        version = get_bits_long(&gb, 24);
         if (version < 0x030100)
         {
             av_log(s, AV_LOG_ERROR,

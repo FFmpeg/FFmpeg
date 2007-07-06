@@ -601,12 +601,12 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         ffm->read_state = READ_DATA;
         /* fall thru */
     case READ_DATA:
-        size = (ffm->header[2] << 16) | (ffm->header[3] << 8) | ffm->header[4];
+        size = AV_RB24(ffm->header + 2);
         if (!ffm_is_avail_data(s, size)) {
             return AVERROR(EAGAIN);
         }
 
-        duration = (ffm->header[5] << 16) | (ffm->header[6] << 8) | ffm->header[7];
+        duration = AV_RB24(ffm->header + 5);
 
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
@@ -714,15 +714,10 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
 offset_t ffm_read_write_index(int fd)
 {
     uint8_t buf[8];
-    offset_t pos;
-    int i;
 
     lseek(fd, 8, SEEK_SET);
     read(fd, buf, 8);
-    pos = 0;
-    for(i=0;i<8;i++)
-        pos |= (int64_t)buf[i] << (56 - i * 8);
-    return pos;
+    return AV_RB64(buf);
 }
 
 void ffm_write_write_index(int fd, offset_t pos)

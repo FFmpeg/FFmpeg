@@ -170,7 +170,7 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
 
     /* compute section length if possible */
     if (tss->section_h_size == -1 && tss->section_index >= 3) {
-        len = (((tss->section_buf[1] & 0xf) << 8) | tss->section_buf[2]) + 3;
+        len = (AV_RB16(tss->section_buf + 1) & 0xfff) + 3;
         if (len > 4096)
             return;
         tss->section_h_size = len;
@@ -324,7 +324,7 @@ static inline int get16(const uint8_t **pp, const uint8_t *p_end)
     p = *pp;
     if ((p + 1) >= p_end)
         return -1;
-    c = (p[0] << 8) | p[1];
+    c = AV_RB16(p);
     p += 2;
     *pp = p;
     return c;
@@ -694,14 +694,9 @@ static void mpegts_scan_sdt(MpegTSContext *ts)
 
 static int64_t get_pts(const uint8_t *p)
 {
-    int64_t pts;
-    int val;
-
-    pts = (int64_t)((p[0] >> 1) & 0x07) << 30;
-    val = (p[1] << 8) | p[2];
-    pts |= (int64_t)(val >> 1) << 15;
-    val = (p[3] << 8) | p[4];
-    pts |= (int64_t)(val >> 1);
+    int64_t pts = (int64_t)((p[0] >> 1) & 0x07) << 30;
+    pts |= (AV_RB16(p + 1) >> 1) << 15;
+    pts |=  AV_RB16(p + 3) >> 1;
     return pts;
 }
 
@@ -751,7 +746,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
                         new_pes_av_stream(pes, code);
                     }
                     pes->state = MPEGTS_PESHEADER_FILL;
-                    pes->total_size = (pes->header[4] << 8) | pes->header[5];
+                    pes->total_size = AV_RB16(pes->header + 4);
                     /* NOTE: a zero total size means the PES size is
                        unbounded */
                     if (pes->total_size)
@@ -928,7 +923,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     int len, pid, cc, cc_ok, afc, is_start;
     const uint8_t *p, *p_end;
 
-    pid = ((packet[1] & 0x1f) << 8) | packet[2];
+    pid = AV_RB16(packet + 1) & 0x1fff;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
@@ -1111,7 +1106,7 @@ static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
         return -1;
     if (len < 6)
         return -1;
-    v = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+    v = AV_RB32(p);
     *ppcr_high = ((int64_t)v << 1) | (p[4] >> 7);
     *ppcr_low = ((p[4] & 1) << 8) | p[5];
     return 0;
@@ -1187,7 +1182,7 @@ static int mpegts_read_header(AVFormatContext *s,
             ret = read_packet(&s->pb, packet, ts->raw_packet_size);
             if (ret < 0)
                 return -1;
-            pid = ((packet[1] & 0x1f) << 8) | packet[2];
+            pid = AV_RB16(packet + 1) & 0x1fff;
             if ((pcr_pid == -1 || pcr_pid == pid) &&
                 parse_pcr(&pcr_h, &pcr_l, packet) == 0) {
                 pcr_pid = pid;
@@ -1305,7 +1300,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             url_fseek(&s->pb, pos, SEEK_SET);
             if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
-            if ((pcr_pid < 0 || (((buf[1] & 0x1f) << 8) | buf[2]) == pcr_pid) &&
+            if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
                 break;
             }
@@ -1319,7 +1314,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             url_fseek(&s->pb, pos, SEEK_SET);
             if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
-            if ((pcr_pid < 0 || (((buf[1] & 0x1f) << 8) | buf[2]) == pcr_pid) &&
+            if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
                 break;
             }
@@ -1344,7 +1339,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
         url_fseek(&s->pb, pos, SEEK_SET);
         if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return -1;
-//        pid = ((buf[1] & 0x1f) << 8) | buf[2];
+//        pid = AV_RB16(buf + 1) & 0x1fff;
         if(buf[1] & 0x40) break;
         pos += ts->raw_packet_size;
     }

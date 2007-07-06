@@ -603,7 +603,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     }
     payload_type = buf[1] & 0x7f;
-    seq  = (buf[2] << 8) | buf[3];
+    seq  = AV_RB16(buf + 2);
     timestamp = AV_RB32(buf + 4);
     ssrc = AV_RB32(buf + 8);
     /* store the ssrc in the RTPDemuxContext */

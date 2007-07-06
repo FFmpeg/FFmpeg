@@ -720,7 +720,7 @@ static void rtsp_skip_packet(AVFormatContext *s)
     ret = url_readbuf(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return;
-    len = (buf[1] << 8) | buf[2];
+    len = AV_RB16(buf + 1);
 #ifdef DEBUG
     printf("skipping RTP packet len=%d\n", len);
 #endif
@@ -1098,7 +1098,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     if (ret != 3)
         return -1;
     id = buf[0];
-    len = (buf[1] << 8) | buf[2];
+    len = AV_RB16(buf + 1);
 #ifdef DEBUG_RTP_TCP
     printf("id=%d len=%d\n", id, len);
 #endif
