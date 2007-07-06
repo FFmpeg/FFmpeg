@@ -137,6 +137,7 @@ static inline void flush_put_bits(PutBitContext *s)
 
 void align_put_bits(PutBitContext *s);
 void ff_put_string(PutBitContext * pbc, char *s, int put_zero);
+void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length);
 
 /* bit input */
 /* buffer, buffer_end and size_in_bits must be present and used by every reader */

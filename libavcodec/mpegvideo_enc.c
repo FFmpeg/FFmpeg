@@ -1734,30 +1734,6 @@ static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int moti
     else                                encode_mb_internal(s, motion_x, motion_y, 16, 8);
 }
 
-void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
-{
-    const uint16_t *srcw= (uint16_t*)src;
-    int words= length>>4;
-    int bits= length&15;
-    int i;
-
-    if(length==0) return;
-
-    if(words < 16){
-        for(i=0; i<words; i++) put_bits(pb, 16, be2me_16(srcw[i]));
-    }else if(put_bits_count(pb)&7){
-        for(i=0; i<words; i++) put_bits(pb, 16, be2me_16(srcw[i]));
-    }else{
-        for(i=0; put_bits_count(pb)&31; i++)
-            put_bits(pb, 8, src[i]);
-        flush_put_bits(pb);
-        memcpy(pbBufPtr(pb), src+i, 2*words-i);
-        skip_put_bytes(pb, 2*words-i);
-    }
-
-    put_bits(pb, bits, be2me_16(srcw[words])>>(16-bits));
-}
-
 static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
     int i;
 
