@@ -97,7 +97,7 @@ void avcodec_thread_free(AVCodecContext *avctx)
     pthread_cond_destroy(&c->current_job_cond);
     pthread_cond_destroy(&c->last_job_cond);
     av_free(c->workers);
-    av_free(c);
+    av_freep(&avctx->thread_opaque);
 }
 
 int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, int *ret, int job_count)
