@@ -602,6 +602,7 @@ CONFIG_LIST='
     powerpc_perf
     pp
     protocols
+    small
     swscaler
     vhook
     v4l
@@ -946,8 +947,6 @@ for opt do
   --cpu=*) cpu="$optval"
   ;;
   --disable-opts) optimize="no"
-  ;;
-  --enable-small) optimize="small"
   ;;
   --enable-sunmlib) mlib="yes"
   ;;
@@ -1731,10 +1730,10 @@ enabled extra_warnings && check_cflags -Winline
 check_ldflags -Wl,--warn-common
 check_ldflags $LDLATEFLAGS
 
-# not all compilers support -Os
-test "$optimize" = "small" && check_cflags -Os
-
-if enabled optimize; then
+if enabled small; then
+    check_cflags -Os            # not all compilers support -Os
+    optimize="small"
+elif enabled optimize; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags  "-O5"
         add_ldflags "-O5"
@@ -1964,9 +1963,8 @@ fi
 
 echo "#define restrict $_restrict" >> $TMPH
 
-if test "$optimize" = "small"; then
+if enabled small; then
   echo "#define always_inline"  >> $TMPH
-  echo "#define CONFIG_SMALL 1" >> $TMPH
 fi
 
 echo "SRC_PATH=\"$source_path\"" >> config.mak
