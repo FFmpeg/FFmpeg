@@ -592,7 +592,7 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
        ((mvA->ref == NOT_AVAIL) || (mvB->ref == NOT_AVAIL) ||
            ((mvA->x | mvA->y | mvA->ref) == 0)  ||
            ((mvB->x | mvB->y | mvB->ref) == 0) )) {
-        mvP2 = &un_mv;
+        mvP2 = &ff_cavs_un_mv;
     /* if there is only one suitable candidate, take it */
     } else if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
         mvP2= mvA;
@@ -746,10 +746,10 @@ static inline void init_mb(AVSContext *h) {
     h->pred_mode_Y[2] = h->top_pred_Y[h->mbx*2+1];
     /* clear top predictors if MB B is not available */
     if(!(h->flags & B_AVAIL)) {
-        h->mv[MV_FWD_B2] = un_mv;
-        h->mv[MV_FWD_B3] = un_mv;
-        h->mv[MV_BWD_B2] = un_mv;
-        h->mv[MV_BWD_B3] = un_mv;
+        h->mv[MV_FWD_B2] = ff_cavs_un_mv;
+        h->mv[MV_FWD_B3] = ff_cavs_un_mv;
+        h->mv[MV_BWD_B2] = ff_cavs_un_mv;
+        h->mv[MV_BWD_B3] = ff_cavs_un_mv;
         h->pred_mode_Y[1] = h->pred_mode_Y[2] = NOT_AVAIL;
         h->flags &= ~(C_AVAIL|D_AVAIL);
     } else if(h->mbx) {
@@ -759,13 +759,13 @@ static inline void init_mb(AVSContext *h) {
         h->flags &= ~C_AVAIL;
     /* clear top-right predictors if MB C is not available */
     if(!(h->flags & C_AVAIL)) {
-        h->mv[MV_FWD_C2] = un_mv;
-        h->mv[MV_BWD_C2] = un_mv;
+        h->mv[MV_FWD_C2] = ff_cavs_un_mv;
+        h->mv[MV_BWD_C2] = ff_cavs_un_mv;
     }
     /* clear top-left predictors if MB D is not available */
     if(!(h->flags & D_AVAIL)) {
-        h->mv[MV_FWD_D3] = un_mv;
-        h->mv[MV_BWD_D3] = un_mv;
+        h->mv[MV_FWD_D3] = ff_cavs_un_mv;
+        h->mv[MV_BWD_D3] = ff_cavs_un_mv;
     }
     /* set pointer for co-located macroblock type */
     h->col_type = &h->col_type_base[h->mby*h->mb_width + h->mbx];
@@ -801,7 +801,7 @@ static inline int next_mb(AVSContext *h) {
         h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
         /* clear left mv predictors */
         for(i=0;i<=20;i+=4)
-            h->mv[i] = un_mv;
+            h->mv[i] = ff_cavs_un_mv;
         h->mbx = 0;
         h->mby++;
         /* re-calculate sample pointers */
@@ -911,9 +911,9 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     filter_mb(h,I_8X8);
 
     /* mark motion vectors as intra */
-    h->mv[MV_FWD_X0] = intra_mv;
+    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = intra_mv;
+    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     if(h->pic_type != FF_B_TYPE)
         *h->col_type = I_8X8;
@@ -972,9 +972,9 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     init_mb(h);
 
     /* reset all MVs */
-    h->mv[MV_FWD_X0] = dir_mv;
+    h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = dir_mv;
+    h->mv[MV_BWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     switch(mb_type) {
     case B_SKIP:
@@ -1116,10 +1116,10 @@ static void init_pic(AVSContext *h) {
 
     /* clear some predictors */
     for(i=0;i<=20;i+=4)
-        h->mv[i] = un_mv;
-    h->mv[MV_BWD_X0] = dir_mv;
+        h->mv[i] = ff_cavs_un_mv;
+    h->mv[MV_BWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    h->mv[MV_FWD_X0] = dir_mv;
+    h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
     h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
     h->cy = h->picture.data[0];
@@ -1424,8 +1424,8 @@ static int cavs_decode_init(AVCodecContext * avctx) {
     h->intra_pred_c[   INTRA_C_LP_LEFT] = intra_pred_lp_left;
     h->intra_pred_c[    INTRA_C_LP_TOP] = intra_pred_lp_top;
     h->intra_pred_c[    INTRA_C_DC_128] = intra_pred_dc_128;
-    h->mv[ 7] = un_mv;
-    h->mv[19] = un_mv;
+    h->mv[ 7] = ff_cavs_un_mv;
+    h->mv[19] = ff_cavs_un_mv;
     return 0;
 }
 
