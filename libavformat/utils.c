@@ -1006,49 +1006,6 @@ int av_add_index_entry(AVStream *st,
     return index;
 }
 
-/**
- * build an index for raw streams using a parser.
- */
-static void av_build_index_raw(AVFormatContext *s)
-{
-    AVPacket pkt1, *pkt = &pkt1;
-    int ret;
-    AVStream *st;
-
-    st = s->streams[0];
-    av_read_frame_flush(s);
-    url_fseek(&s->pb, s->data_offset, SEEK_SET);
-
-    for(;;) {
-        ret = av_read_frame(s, pkt);
-        if (ret < 0)
-            break;
-        if (pkt->stream_index == 0 && st->parser &&
-            (pkt->flags & PKT_FLAG_KEY)) {
-            av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
-                            0, 0, AVINDEX_KEYFRAME);
-        }
-        av_free_packet(pkt);
-    }
-}
-
-/**
- * Returns TRUE if we deal with a raw stream.
- *
- * Raw codec data and parsing needed.
- */
-static int is_raw_stream(AVFormatContext *s)
-{
-    AVStream *st;
-
-    if (s->nb_streams != 1)
-        return 0;
-    st = s->streams[0];
-    if (!st->need_parsing)
-        return 0;
-    return 1;
-}
-
 int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
                               int flags)
 {
