@@ -228,6 +228,7 @@ extern const int_fast8_t ff_left_modifier_l[8];
 extern const int_fast8_t ff_top_modifier_l[8];
 extern const int_fast8_t ff_left_modifier_c[7];
 extern const int_fast8_t ff_top_modifier_c[7];
+extern const vector_t ff_cavs_intra_mv;
 extern const vector_t ff_cavs_un_mv;
 
 static inline void load_intra_pred_luma(AVSContext *h, uint8_t *top,
@@ -343,6 +344,16 @@ static inline void set_mvs(vector_t *mv, enum block_t size) {
         break;
     }
 }
+
+static inline void set_mv_intra(AVSContext *h) {
+    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
+    set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
+    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
+    set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
+    if(h->pic_type != FF_B_TYPE)
+        *h->col_type = I_8X8;
+}
+
 
 /**
  * initialise predictors for motion vectors and intra prediction

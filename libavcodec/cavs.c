@@ -645,15 +645,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
 
     decode_residual_chroma(h);
     filter_mb(h,I_8X8);
-
-    /* mark motion vectors as intra */
-    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    if(h->pic_type != FF_B_TYPE)
-        *h->col_type = I_8X8;
-
+    set_mv_intra(h);
     return 0;
 }
 
