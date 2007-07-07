@@ -412,7 +412,7 @@ static int h261_probe(AVProbeData *p)
 
 static int ac3_probe(AVProbeData *p)
 {
-    int max_frames, first_frames, frames;
+    int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
 
