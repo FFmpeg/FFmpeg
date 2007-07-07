@@ -144,13 +144,13 @@ DECLARE_ALIGNED_8(typedef, struct) {
     int16_t ref;
 } vector_t;
 
-typedef struct residual_vlc_t {
+typedef struct dec_2dvlc_t {
   int8_t rltab[59][3];
   int8_t level_add[27];
   int8_t golomb_order;
   int inc_limit;
   int8_t max_run;
-} residual_vlc_t;
+} dec_2dvlc_t;
 
 typedef struct {
     MpegEncContext s;

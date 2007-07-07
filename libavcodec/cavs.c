@@ -497,7 +497,7 @@ static inline int get_ue_code(GetBitContext *gb, int order) {
  * @param stride line stride in frame buffer
  */
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
-                                 const residual_vlc_t *r, int esc_golomb_order,
+                                 const dec_2dvlc_t *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride) {
     int i,pos = -1;
     int level_code, esc_code, level, run, mask;
@@ -547,10 +547,10 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 
 static inline void decode_residual_chroma(AVSContext *h) {
     if(h->cbp & (1<<4))
-        decode_residual_block(h,&h->s.gb,chroma_2dvlc,0, chroma_qp[h->qp],
+        decode_residual_block(h,&h->s.gb,chroma_dec,0, chroma_qp[h->qp],
                               h->cu,h->c_stride);
     if(h->cbp & (1<<5))
-        decode_residual_block(h,&h->s.gb,chroma_2dvlc,0, chroma_qp[h->qp],
+        decode_residual_block(h,&h->s.gb,chroma_dec,0, chroma_qp[h->qp],
                               h->cv,h->c_stride);
 }
 
@@ -570,7 +570,7 @@ static inline int decode_residual_inter(AVSContext *h) {
         h->qp = (h->qp + get_se_golomb(&h->s.gb)) & 63;
     for(block=0;block<4;block++)
         if(h->cbp & (1<<block))
-            decode_residual_block(h,&h->s.gb,inter_2dvlc,0,h->qp,
+            decode_residual_block(h,&h->s.gb,inter_dec,0,h->qp,
                                   h->cy + h->luma_scan[block], h->l_stride);
     decode_residual_chroma(h);
 
@@ -633,7 +633,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
         h->intra_pred_l[h->pred_mode_Y[scan3x3[block]]]
             (d, top, left, h->l_stride);
         if(h->cbp & (1<<block))
-            decode_residual_block(h,gb,intra_2dvlc,1,h->qp,d,h->l_stride);
+            decode_residual_block(h,gb,intra_dec,1,h->qp,d,h->l_stride);
     }
 
     /* chroma intra prediction */

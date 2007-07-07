@@ -117,7 +117,7 @@ const vector_t ff_cavs_intra_mv = {0,0,1,REF_INTRA};
 
 #define EOB 0,0,0
 
-static const residual_vlc_t intra_2dvlc[7] = {
+static const dec_2dvlc_t intra_dec[7] = {
   {
     { //level / run / table_inc
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -254,7 +254,7 @@ static const residual_vlc_t intra_2dvlc[7] = {
   }
 };
 
-static const residual_vlc_t inter_2dvlc[7] = {
+static const dec_2dvlc_t inter_dec[7] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -391,7 +391,7 @@ static const residual_vlc_t inter_2dvlc[7] = {
   }
 };
 
-static const residual_vlc_t chroma_2dvlc[5] = {
+static const dec_2dvlc_t chroma_dec[5] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
