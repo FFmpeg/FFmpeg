@@ -461,4 +461,13 @@ static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
     return 0;
 }
 
+void ff_cavs_filter(AVSContext *h, enum mb_t mb_type);
+void ff_cavs_inter(AVSContext *h, enum mb_t mb_type);
+void ff_cavs_mv(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
+                enum mv_pred_t mode, enum block_t size, int ref);
+void ff_cavs_init_pic(AVSContext *h);
+void ff_cavs_init_top_lines(AVSContext *h);
+int ff_cavs_init(AVCodecContext *avctx);
+int ff_cavs_end (AVCodecContext *avctx);
+
 #endif /* CAVS_H */

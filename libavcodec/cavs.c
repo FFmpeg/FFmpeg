@@ -71,7 +71,7 @@ static inline int get_bs(vector_t *mvP, vector_t *mvQ, int b) {
  * ---------
  *
  */
-static void filter_mb(AVSContext *h, enum mb_t mb_type) {
+void ff_cavs_filter(AVSContext *h, enum mb_t mb_type) {
     DECLARE_ALIGNED_8(uint8_t, bs[8]);
     int qp_avg, alpha, beta, tc;
     int i;
@@ -323,7 +323,7 @@ static inline void mc_part_std(AVSContext *h,int square,int chroma_height,int de
     }
 }
 
-static void inter_pred(AVSContext *h, enum mb_t mb_type) {
+void ff_cavs_inter(AVSContext *h, enum mb_t mb_type) {
     if(partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 1, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[0],
@@ -428,8 +428,8 @@ static inline void mv_pred_sym(AVSContext *h, vector_t *src, enum block_t size) 
     set_mvs(dst, size);
 }
 
-static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
-                    enum mv_pred_t mode, enum block_t size, int ref) {
+void ff_cavs_mv(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
+                enum mv_pred_t mode, enum block_t size, int ref) {
     vector_t *mvP = &h->mv[nP];
     vector_t *mvA = &h->mv[nP-1];
     vector_t *mvB = &h->mv[nP-4];
@@ -631,7 +631,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
                                   h->left_border_v, h->c_stride);
 
     decode_residual_chroma(h);
-    filter_mb(h,I_8X8);
+    ff_cavs_filter(h,I_8X8);
     set_mv_intra(h);
     return 0;
 }
@@ -643,40 +643,40 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     init_mb(h);
     switch(mb_type) {
     case P_SKIP:
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP, BLK_16X16, 0);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, 0);
         break;
     case P_16X16:
         ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_16X16,ref[0]);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16,ref[0]);
         break;
     case P_16X8:
         ref[0] = h->ref_flag ? 0 : get_bits1(gb);
         ref[2] = h->ref_flag ? 0 : get_bits1(gb);
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,      BLK_16X8, ref[0]);
-        mv_pred(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT,     BLK_16X8, ref[2]);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,    BLK_16X8, ref[0]);
+        ff_cavs_mv(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT,   BLK_16X8, ref[2]);
         break;
     case P_8X16:
         ref[0] = h->ref_flag ? 0 : get_bits1(gb);
         ref[1] = h->ref_flag ? 0 : get_bits1(gb);
-        mv_pred(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT,     BLK_8X16, ref[0]);
-        mv_pred(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, ref[1]);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT,   BLK_8X16, ref[0]);
+        ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, ref[1]);
         break;
     case P_8X8:
         ref[0] = h->ref_flag ? 0 : get_bits1(gb);
         ref[1] = h->ref_flag ? 0 : get_bits1(gb);
         ref[2] = h->ref_flag ? 0 : get_bits1(gb);
         ref[3] = h->ref_flag ? 0 : get_bits1(gb);
-        mv_pred(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_MEDIAN,   BLK_8X8, ref[0]);
-        mv_pred(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
-        mv_pred(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
-        mv_pred(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_MEDIAN,   BLK_8X8, ref[0]);
+        ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
+        ff_cavs_mv(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
+        ff_cavs_mv(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
     }
-    inter_pred(h, mb_type);
+    ff_cavs_inter(h, mb_type);
     set_intra_mode_default(h);
     store_mvs(h);
     if(mb_type != P_SKIP)
         decode_residual_inter(h);
-    filter_mb(h,mb_type);
+    ff_cavs_filter(h,mb_type);
     *h->col_type = mb_type;
 }
 
@@ -697,8 +697,8 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     case B_DIRECT:
         if(!(*h->col_type)) {
             /* intra MB at co-location, do in-plane prediction */
-            mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
-            mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
+            ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
+            ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
         } else
             /* direct prediction from co-located P MB, block-wise */
             for(block=0;block<4;block++)
@@ -706,14 +706,14 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
                             &h->col_mv[(h->mby*h->mb_width+h->mbx)*4 + block]);
         break;
     case B_FWD_16X16:
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
         break;
     case B_SYM_16X16:
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
+        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
         mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_16X16);
         break;
     case B_BWD_16X16:
-        mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_MEDIAN, BLK_16X16, 0);
+        ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_MEDIAN, BLK_16X16, 0);
         break;
     case B_8X8:
         for(block=0;block<4;block++)
@@ -723,9 +723,9 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
             case B_SUB_DIRECT:
                 if(!(*h->col_type)) {
                     /* intra MB at co-location, do in-plane prediction */
-                    mv_pred(h, mv_scan[block], mv_scan[block]-3,
+                    ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
                             MV_PRED_BSKIP, BLK_8X8, 1);
-                    mv_pred(h, mv_scan[block]+MV_BWD_OFFS,
+                    ff_cavs_mv(h, mv_scan[block]+MV_BWD_OFFS,
                             mv_scan[block]-3+MV_BWD_OFFS,
                             MV_PRED_BSKIP, BLK_8X8, 0);
                 } else
@@ -733,11 +733,11 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
                                    &h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + block]);
                 break;
             case B_SUB_FWD:
-                mv_pred(h, mv_scan[block], mv_scan[block]-3,
+                ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
                         MV_PRED_MEDIAN, BLK_8X8, 1);
                 break;
             case B_SUB_SYM:
-                mv_pred(h, mv_scan[block], mv_scan[block]-3,
+                ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
                         MV_PRED_MEDIAN, BLK_8X8, 1);
                 mv_pred_sym(h, &h->mv[mv_scan[block]], BLK_8X8);
                 break;
@@ -745,7 +745,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         }
         for(block=0;block<4;block++) {
             if(sub_type[block] == B_SUB_BWD)
-                mv_pred(h, mv_scan[block]+MV_BWD_OFFS,
+                ff_cavs_mv(h, mv_scan[block]+MV_BWD_OFFS,
                         mv_scan[block]+MV_BWD_OFFS-3,
                         MV_PRED_MEDIAN, BLK_8X8, 0);
         }
@@ -755,37 +755,37 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         flags = partition_flags[mb_type];
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
-                mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
+                ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
             if(flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_16X8);
             if(flags & FWD1)
-                mv_pred(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
+                ff_cavs_mv(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
             if(flags & SYM1)
                 mv_pred_sym(h, &h->mv[MV_FWD_X2], BLK_16X8);
             if(flags & BWD0)
-                mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_TOP,  BLK_16X8, 0);
+                ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_TOP,  BLK_16X8, 0);
             if(flags & BWD1)
-                mv_pred(h, MV_BWD_X2, MV_BWD_A1, MV_PRED_LEFT, BLK_16X8, 0);
+                ff_cavs_mv(h, MV_BWD_X2, MV_BWD_A1, MV_PRED_LEFT, BLK_16X8, 0);
         } else {          /* 8x16 macroblock types */
             if(flags & FWD0)
-                mv_pred(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
+                ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
             if(flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_8X16);
             if(flags & FWD1)
-                mv_pred(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, 1);
+                ff_cavs_mv(h,MV_FWD_X1,MV_FWD_C2,MV_PRED_TOPRIGHT,BLK_8X16,1);
             if(flags & SYM1)
                 mv_pred_sym(h, &h->mv[MV_FWD_X1], BLK_8X16);
             if(flags & BWD0)
-                mv_pred(h, MV_BWD_X0, MV_BWD_B3, MV_PRED_LEFT, BLK_8X16, 0);
+                ff_cavs_mv(h, MV_BWD_X0, MV_BWD_B3, MV_PRED_LEFT, BLK_8X16, 0);
             if(flags & BWD1)
-                mv_pred(h, MV_BWD_X1, MV_BWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, 0);
+                ff_cavs_mv(h,MV_BWD_X1,MV_BWD_C2,MV_PRED_TOPRIGHT,BLK_8X16,0);
         }
     }
-    inter_pred(h, mb_type);
+    ff_cavs_inter(h, mb_type);
     set_intra_mode_default(h);
     if(mb_type != B_SKIP)
         decode_residual_inter(h);
-    filter_mb(h,mb_type);
+    ff_cavs_filter(h,mb_type);
 }
 
 /*****************************************************************************
@@ -828,7 +828,7 @@ static inline void check_for_slice(AVSContext *h) {
  *
  ****************************************************************************/
 
-static void init_pic(AVSContext *h) {
+void ff_cavs_init_pic(AVSContext *h) {
     int i;
 
     /* clear some predictors */
@@ -882,7 +882,7 @@ static int decode_pic(AVSContext *h) {
         s->avctx->release_buffer(s->avctx, (AVFrame *)&h->picture);
 
     s->avctx->get_buffer(s->avctx, (AVFrame *)&h->picture);
-    init_pic(h);
+    ff_cavs_init_pic(h);
     h->picture.poc = get_bits(&s->gb,8)*2;
 
     /* get temporal distances and MV scaling factors */
@@ -991,7 +991,7 @@ static int decode_pic(AVSContext *h) {
  * this data has to be stored for one complete row of macroblocks
  * and this storage space is allocated here
  */
-static void init_top_lines(AVSContext *h) {
+void ff_cavs_init_top_lines(AVSContext *h) {
     /* alloc top line of predictors */
     h->top_qp       = av_malloc( h->mb_width);
     h->top_mv[0]    = av_malloc((h->mb_width*2+1)*sizeof(vector_t));
@@ -1031,7 +1031,7 @@ static int decode_seq_header(AVSContext *h) {
     h->s.avctx->width  = s->width;
     h->s.avctx->height = s->height;
     if(!h->top_qp)
-        init_top_lines(h);
+        ff_cavs_init_top_lines(h);
     return 0;
 }
 
@@ -1115,7 +1115,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     }
 }
 
-static int cavs_decode_init(AVCodecContext * avctx) {
+int ff_cavs_init(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
@@ -1146,7 +1146,7 @@ static int cavs_decode_init(AVCodecContext * avctx) {
     return 0;
 }
 
-static int cavs_decode_end(AVCodecContext * avctx) {
+int ff_cavs_end(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
 
     av_free(h->top_qp);
@@ -1167,9 +1167,9 @@ AVCodec cavs_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_CAVS,
     sizeof(AVSContext),
-    cavs_decode_init,
+    ff_cavs_init,
     NULL,
-    cavs_decode_end,
+    ff_cavs_end,
     cavs_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= cavs_flush,
