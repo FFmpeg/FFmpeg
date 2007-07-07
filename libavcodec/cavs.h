@@ -224,4 +224,164 @@ typedef struct {
     DCTELEM *block;
 } AVSContext;
 
+extern const vector_t ff_cavs_un_mv;
+
+static inline void load_intra_pred_luma(AVSContext *h, uint8_t *top,
+                                        uint8_t **left, int block) {
+    int i;
+
+    switch(block) {
+    case 0:
+        *left = h->left_border_y;
+        h->left_border_y[0] = h->left_border_y[1];
+        memset(&h->left_border_y[17],h->left_border_y[16],9);
+        memcpy(&top[1],&h->top_border_y[h->mbx*16],16);
+        top[17] = top[16];
+        top[0] = top[1];
+        if((h->flags & A_AVAIL) && (h->flags & B_AVAIL))
+            h->left_border_y[0] = top[0] = h->topleft_border_y;
+        break;
+    case 1:
+        *left = h->intern_border_y;
+        for(i=0;i<8;i++)
+            h->intern_border_y[i+1] = *(h->cy + 7 + i*h->l_stride);
+        memset(&h->intern_border_y[9],h->intern_border_y[8],9);
+        h->intern_border_y[0] = h->intern_border_y[1];
+        memcpy(&top[1],&h->top_border_y[h->mbx*16+8],8);
+        if(h->flags & C_AVAIL)
+            memcpy(&top[9],&h->top_border_y[(h->mbx + 1)*16],8);
+        else
+            memset(&top[9],top[8],9);
+        top[17] = top[16];
+        top[0] = top[1];
+        if(h->flags & B_AVAIL)
+            h->intern_border_y[0] = top[0] = h->top_border_y[h->mbx*16+7];
+        break;
+    case 2:
+        *left = &h->left_border_y[8];
+        memcpy(&top[1],h->cy + 7*h->l_stride,16);
+        top[17] = top[16];
+        top[0] = top[1];
+        if(h->flags & A_AVAIL)
+            top[0] = h->left_border_y[8];
+        break;
+    case 3:
+        *left = &h->intern_border_y[8];
+        for(i=0;i<8;i++)
+            h->intern_border_y[i+9] = *(h->cy + 7 + (i+8)*h->l_stride);
+        memset(&h->intern_border_y[17],h->intern_border_y[16],9);
+        memcpy(&top[0],h->cy + 7 + 7*h->l_stride,9);
+        memset(&top[9],top[8],9);
+        break;
+    }
+}
+
+static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
+    *mode = mod_table[*mode];
+    if(*mode < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
+        *mode = 0;
+    }
+}
+
+static inline void set_mvs(vector_t *mv, enum block_t size) {
+    switch(size) {
+    case BLK_16X16:
+        mv[MV_STRIDE  ] = mv[0];
+        mv[MV_STRIDE+1] = mv[0];
+    case BLK_16X8:
+        mv[1] = mv[0];
+        break;
+    case BLK_8X16:
+        mv[MV_STRIDE] = mv[0];
+        break;
+    }
+}
+
+/**
+ * initialise predictors for motion vectors and intra prediction
+ */
+static inline void init_mb(AVSContext *h) {
+    int i;
+
+    /* copy predictors from top line (MB B and C) into cache */
+    for(i=0;i<3;i++) {
+        h->mv[MV_FWD_B2+i] = h->top_mv[0][h->mbx*2+i];
+        h->mv[MV_BWD_B2+i] = h->top_mv[1][h->mbx*2+i];
+    }
+    h->pred_mode_Y[1] = h->top_pred_Y[h->mbx*2+0];
+    h->pred_mode_Y[2] = h->top_pred_Y[h->mbx*2+1];
+    /* clear top predictors if MB B is not available */
+    if(!(h->flags & B_AVAIL)) {
+        h->mv[MV_FWD_B2] = ff_cavs_un_mv;
+        h->mv[MV_FWD_B3] = ff_cavs_un_mv;
+        h->mv[MV_BWD_B2] = ff_cavs_un_mv;
+        h->mv[MV_BWD_B3] = ff_cavs_un_mv;
+        h->pred_mode_Y[1] = h->pred_mode_Y[2] = NOT_AVAIL;
+        h->flags &= ~(C_AVAIL|D_AVAIL);
+    } else if(h->mbx) {
+        h->flags |= D_AVAIL;
+    }
+    if(h->mbx == h->mb_width-1) //MB C not available
+        h->flags &= ~C_AVAIL;
+    /* clear top-right predictors if MB C is not available */
+    if(!(h->flags & C_AVAIL)) {
+        h->mv[MV_FWD_C2] = ff_cavs_un_mv;
+        h->mv[MV_BWD_C2] = ff_cavs_un_mv;
+    }
+    /* clear top-left predictors if MB D is not available */
+    if(!(h->flags & D_AVAIL)) {
+        h->mv[MV_FWD_D3] = ff_cavs_un_mv;
+        h->mv[MV_BWD_D3] = ff_cavs_un_mv;
+    }
+    /* set pointer for co-located macroblock type */
+    h->col_type = &h->col_type_base[h->mby*h->mb_width + h->mbx];
+}
+
+static inline void check_for_slice(AVSContext *h);
+
+/**
+ * save predictors for later macroblocks and increase
+ * macroblock address
+ * @returns 0 if end of frame is reached, 1 otherwise
+ */
+static inline int next_mb(AVSContext *h) {
+    int i;
+
+    h->flags |= A_AVAIL;
+    h->cy += 16;
+    h->cu += 8;
+    h->cv += 8;
+    /* copy mvs as predictors to the left */
+    for(i=0;i<=20;i+=4)
+        h->mv[i] = h->mv[i+2];
+    /* copy bottom mvs from cache to top line */
+    h->top_mv[0][h->mbx*2+0] = h->mv[MV_FWD_X2];
+    h->top_mv[0][h->mbx*2+1] = h->mv[MV_FWD_X3];
+    h->top_mv[1][h->mbx*2+0] = h->mv[MV_BWD_X2];
+    h->top_mv[1][h->mbx*2+1] = h->mv[MV_BWD_X3];
+    /* next MB address */
+    h->mbx++;
+    if(h->mbx == h->mb_width) { //new mb line
+        h->flags = B_AVAIL|C_AVAIL;
+        /* clear left pred_modes */
+        h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
+        /* clear left mv predictors */
+        for(i=0;i<=20;i+=4)
+            h->mv[i] = ff_cavs_un_mv;
+        h->mbx = 0;
+        h->mby++;
+        /* re-calculate sample pointers */
+        h->cy = h->picture.data[0] + h->mby*16*h->l_stride;
+        h->cu = h->picture.data[1] + h->mby*8*h->c_stride;
+        h->cv = h->picture.data[2] + h->mby*8*h->c_stride;
+        if(h->mby == h->mb_height) { //frame end
+            return 0;
+        } else {
+            //check_for_slice(h);
+        }
+    }
+    return 1;
+}
+
 #endif /* CAVS_H */
