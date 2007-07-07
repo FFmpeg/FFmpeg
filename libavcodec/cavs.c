@@ -616,24 +616,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
         return -1;
     }
-
-    /* save pred modes before they get modified */
-    h->pred_mode_Y[3] =  h->pred_mode_Y[5];
-    h->pred_mode_Y[6] =  h->pred_mode_Y[8];
-    h->top_pred_Y[h->mbx*2+0] = h->pred_mode_Y[7];
-    h->top_pred_Y[h->mbx*2+1] = h->pred_mode_Y[8];
-
-    /* modify pred modes according to availability of neighbour samples */
-    if(!(h->flags & A_AVAIL)) {
-        modify_pred(left_modifier_l, &h->pred_mode_Y[4] );
-        modify_pred(left_modifier_l, &h->pred_mode_Y[7] );
-        modify_pred(left_modifier_c, &pred_mode_uv );
-    }
-    if(!(h->flags & B_AVAIL)) {
-        modify_pred(top_modifier_l, &h->pred_mode_Y[4] );
-        modify_pred(top_modifier_l, &h->pred_mode_Y[5] );
-        modify_pred(top_modifier_c, &pred_mode_uv );
-    }
+    modify_mb_i(h, &pred_mode_uv);
 
     /* get coded block pattern */
     if(h->pic_type == FF_I_TYPE)

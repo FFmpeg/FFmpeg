@@ -513,9 +513,9 @@ static const uint8_t tc_tab[64] = {
   5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9
 };
 
-static const int_fast8_t left_modifier_l[8] = { 0,-1, 6,-1,-1, 7, 6, 7};
-static const int_fast8_t top_modifier_l[8]  = {-1, 1, 5,-1,-1, 5, 7, 7};
-static const int_fast8_t left_modifier_c[7] = { 5,-1, 2,-1, 6, 5, 6};
-static const int_fast8_t top_modifier_c[7]  = { 4, 1,-1,-1, 4, 6, 6};
+const int_fast8_t ff_left_modifier_l[8] = { 0,-1, 6,-1,-1, 7, 6, 7};
+const int_fast8_t ff_top_modifier_l[8]  = {-1, 1, 5,-1,-1, 5, 7, 7};
+const int_fast8_t ff_left_modifier_c[7] = { 5,-1, 2,-1, 6, 5, 6};
+const int_fast8_t ff_top_modifier_c[7]  = { 4, 1,-1,-1, 4, 6, 6};
 
 #endif // AVCODEC_CAVSDATA_H

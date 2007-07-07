@@ -224,6 +224,10 @@ typedef struct {
     DCTELEM *block;
 } AVSContext;
 
+extern const int_fast8_t ff_left_modifier_l[8];
+extern const int_fast8_t ff_top_modifier_l[8];
+extern const int_fast8_t ff_left_modifier_c[7];
+extern const int_fast8_t ff_top_modifier_c[7];
 extern const vector_t ff_cavs_un_mv;
 
 static inline void load_intra_pred_luma(AVSContext *h, uint8_t *top,
@@ -298,6 +302,26 @@ static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
     if(*mode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
         *mode = 0;
+    }
+}
+
+static inline void modify_mb_i(AVSContext *h, int *pred_mode_uv) {
+    /* save pred modes before they get modified */
+    h->pred_mode_Y[3] =  h->pred_mode_Y[5];
+    h->pred_mode_Y[6] =  h->pred_mode_Y[8];
+    h->top_pred_Y[h->mbx*2+0] = h->pred_mode_Y[7];
+    h->top_pred_Y[h->mbx*2+1] = h->pred_mode_Y[8];
+
+    /* modify pred modes according to availability of neighbour samples */
+    if(!(h->flags & A_AVAIL)) {
+        modify_pred(ff_left_modifier_l, &h->pred_mode_Y[4] );
+        modify_pred(ff_left_modifier_l, &h->pred_mode_Y[7] );
+        modify_pred(ff_left_modifier_c, pred_mode_uv );
+    }
+    if(!(h->flags & B_AVAIL)) {
+        modify_pred(ff_top_modifier_l, &h->pred_mode_Y[4] );
+        modify_pred(ff_top_modifier_l, &h->pred_mode_Y[5] );
+        modify_pred(ff_top_modifier_c, pred_mode_uv );
     }
 }
 
