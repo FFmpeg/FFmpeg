@@ -69,7 +69,7 @@ void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
 
     if(length==0) return;
 
-    if(words < 16 || put_bits_count(pb)&7){
+    if(ENABLE_SMALL || words < 16 || put_bits_count(pb)&7){
         for(i=0; i<words; i++) put_bits(pb, 16, be2me_16(srcw[i]));
     }else{
         for(i=0; put_bits_count(pb)&31; i++)
