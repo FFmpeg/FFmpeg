@@ -441,4 +441,24 @@ static inline int next_mb(AVSContext *h) {
     return 1;
 }
 
+static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
+                          DCTELEM *dst, int mul, int shift, int coeff_num) {
+    int round = 1 << (shift - 1);
+    int pos = -1;
+    const uint8_t *scantab = h->scantable.permutated;
+
+    /* inverse scan and dequantization */
+    while(--coeff_num >= 0){
+        pos += run_buf[coeff_num];
+        if(pos > 63) {
+            av_log(h->s.avctx, AV_LOG_ERROR,
+                "position out of block bounds at pic %d MB(%d,%d)\n",
+                h->picture.poc, h->mbx, h->mby);
+            return -1;
+        }
+        dst[scantab[pos]] = (level_buf[coeff_num]*mul + round) >> shift;
+    }
+    return 0;
+}
+
 #endif /* CAVS_H */

@@ -499,14 +499,9 @@ static inline int get_ue_code(GetBitContext *gb, int order) {
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const dec_2dvlc_t *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride) {
-    int i,pos = -1;
-    int level_code, esc_code, level, run, mask;
-    int level_buf[64];
-    int run_buf[64];
-    int dqm = dequant_mul[qp];
-    int dqs = dequant_shift[qp];
-    int dqa = 1 << (dqs - 1);
-    const uint8_t *scantab = h->scantable.permutated;
+    int i, level_code, esc_code, level, run, mask;
+    DCTELEM level_buf[64];
+    uint8_t run_buf[64];
     DCTELEM *block = h->block;
 
     for(i=0;i<65;i++) {
@@ -529,17 +524,9 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         level_buf[i] = level;
         run_buf[i] = run;
     }
-    /* inverse scan and dequantization */
-    while(--i >= 0){
-        pos += run_buf[i];
-        if(pos > 63) {
-            av_log(h->s.avctx, AV_LOG_ERROR,
-                   "position out of block bounds at pic %d MB(%d,%d)\n",
-                   h->picture.poc, h->mbx, h->mby);
-            return -1;
-        }
-        block[scantab[pos]] = (level_buf[i]*dqm + dqa) >> dqs;
-    }
+    if(dequant(h,level_buf, run_buf, block, dequant_mul[qp],
+               dequant_shift[qp], i))
+        return -1;
     h->s.dsp.cavs_idct8_add(dst,block,stride);
     return 0;
 }
