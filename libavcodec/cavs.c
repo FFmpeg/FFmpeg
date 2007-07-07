@@ -352,9 +352,6 @@ static void inter_pred(AVSContext *h, enum mb_t mb_type) {
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
     }
-    /* set intra prediction modes to default values */
-    h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
-    h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
 }
 
 /*****************************************************************************
@@ -696,6 +693,7 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
         mv_pred(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
     }
     inter_pred(h, mb_type);
+    set_intra_mode_default(h);
     store_mvs(h);
     if(mb_type != P_SKIP)
         decode_residual_inter(h);
@@ -805,6 +803,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         }
     }
     inter_pred(h, mb_type);
+    set_intra_mode_default(h);
     if(mb_type != B_SKIP)
         decode_residual_inter(h);
     filter_mb(h,mb_type);

@@ -325,6 +325,11 @@ static inline void modify_mb_i(AVSContext *h, int *pred_mode_uv) {
     }
 }
 
+static inline void set_intra_mode_default(AVSContext *h) {
+    h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
+    h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
+}
+
 static inline void set_mvs(vector_t *mv, enum block_t size) {
     switch(size) {
     case BLK_16X16:
