@@ -23,6 +23,7 @@
 #define CAVS_H
 
 #include "dsputil.h"
+#include "mpegvideo.h"
 
 #define SLICE_MIN_START_CODE    0x00000101
 #define SLICE_MAX_START_CODE    0x000001af
@@ -150,5 +151,77 @@ typedef struct residual_vlc_t {
   int inc_limit;
   int8_t max_run;
 } residual_vlc_t;
+
+typedef struct {
+    MpegEncContext s;
+    Picture picture; ///< currently decoded frame
+    Picture DPB[2];  ///< reference frames
+    int dist[2];     ///< temporal distances from current frame to ref frames
+    int profile, level;
+    int aspect_ratio;
+    int mb_width, mb_height;
+    int pic_type;
+    int progressive;
+    int pic_structure;
+    int skip_mode_flag; ///< select between skip_count or one skip_flag per MB
+    int loop_filter_disable;
+    int alpha_offset, beta_offset;
+    int ref_flag;
+    int mbx, mby;      ///< macroblock coordinates
+    int flags;         ///< availability flags of neighbouring macroblocks
+    int stc;           ///< last start code
+    uint8_t *cy, *cu, *cv; ///< current MB sample pointers
+    int left_qp;
+    uint8_t *top_qp;
+
+    /** mv motion vector cache
+       0:    D3  B2  B3  C2
+       4:    A1  X0  X1   -
+       8:    A3  X2  X3   -
+
+       X are the vectors in the current macroblock (5,6,9,10)
+       A is the macroblock to the left (4,8)
+       B is the macroblock to the top (1,2)
+       C is the macroblock to the top-right (3)
+       D is the macroblock to the top-left (0)
+
+       the same is repeated for backward motion vectors */
+    vector_t mv[2*4*3];
+    vector_t *top_mv[2];
+    vector_t *col_mv;
+
+    /** luma pred mode cache
+       0:    --  B2  B3
+       3:    A1  X0  X1
+       6:    A3  X2  X3   */
+    int pred_mode_Y[3*3];
+    int *top_pred_Y;
+    int l_stride, c_stride;
+    int luma_scan[4];
+    int qp;
+    int qp_fixed;
+    int cbp;
+    ScanTable scantable;
+
+    /** intra prediction is done with un-deblocked samples
+     they are saved here before deblocking the MB  */
+    uint8_t *top_border_y, *top_border_u, *top_border_v;
+    uint8_t left_border_y[26], left_border_u[10], left_border_v[10];
+    uint8_t intern_border_y[26];
+    uint8_t topleft_border_y, topleft_border_u, topleft_border_v;
+
+    void (*intra_pred_l[8])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
+    void (*intra_pred_c[7])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
+    uint8_t *col_type_base;
+    uint8_t *col_type;
+
+    /* scaling factors for MV prediction */
+    int sym_factor;    ///< for scaling in symmetrical B block
+    int direct_den[2]; ///< for scaling in direct B block
+    int scale_den[2];  ///< for scaling neighbouring MVs
+
+    int got_keyframe;
+    DCTELEM *block;
+} AVSContext;
 
 #endif /* CAVS_H */
