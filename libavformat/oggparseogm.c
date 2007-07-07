@@ -25,7 +25,8 @@
 #include <stdlib.h>
 #include "avformat.h"
 #include "bitstream.h"
-#include "bswap.h"
+#include "bytestream.h"
+#include "intreadwrite.h"
 #include "ogg2.h"
 #include "riff.h"
 
@@ -51,42 +52,38 @@ ogm_header(AVFormatContext *s, int idx)
         int tag;
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         p += 8;
-        tag = le2me_32(unaligned32(p));
+        tag = bytestream_get_le32(&p);
         st->codec->codec_id = codec_get_bmp_id(tag);
         st->codec->codec_tag = tag;
     } else {
+        uint8_t acid[5];
         int cid;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         p += 8;
-        p[4] = 0;
-        cid = strtol(p, NULL, 16);
+        bytestream_get_buffer(&p, acid, 4);
+        acid[4] = 0;
+        cid = strtol(acid, NULL, 16);
         st->codec->codec_id = codec_get_wav_id(cid);
     }
 
-    p += 4;
     p += 4;                     /* useless size field */
 
-    time_unit = le2me_64(unaligned64(p));
-    p += 8;
-    spu = le2me_64(unaligned64(p));
-    p += 8;
-    default_len = le2me_32(unaligned32(p));
-    p += 4;
+    time_unit   = bytestream_get_le64(&p);
+    spu         = bytestream_get_le64(&p);
+    default_len = bytestream_get_le32(&p);
 
     p += 8;                     /* buffersize + bits_per_sample */
 
     if(st->codec->codec_type == CODEC_TYPE_VIDEO){
-        st->codec->width = le2me_32(unaligned32(p));
-        p += 4;
-        st->codec->height = le2me_32(unaligned32(p));
+        st->codec->width = bytestream_get_le32(&p);
+        st->codec->height = bytestream_get_le32(&p);
         st->codec->time_base.den = spu * 10000000;
         st->codec->time_base.num = time_unit;
         st->time_base = st->codec->time_base;
     } else {
-        st->codec->channels = le2me_16(unaligned16(p));
-        p += 2;
+        st->codec->channels = bytestream_get_le16(&p);
         p += 2;                 /* block_align */
-        st->codec->bit_rate = le2me_32(unaligned32(p)) * 8;
+        st->codec->bit_rate = bytestream_get_le32(&p) * 8;
         st->codec->sample_rate = spu * 10000000 / time_unit;
         st->time_base.num = 1;
         st->time_base.den = st->codec->sample_rate;
@@ -109,21 +106,21 @@ ogm_dshow_header(AVFormatContext *s, int idx)
     if(*p != 1)
         return 1;
 
-    t = le2me_32(unaligned32(p + 96));
+    t = AV_RL32(p + 96);
 
     if(t == 0x05589f80){
         st->codec->codec_type = CODEC_TYPE_VIDEO;
-        st->codec->codec_id = codec_get_bmp_id(le2me_32(unaligned32(p + 68)));
+        st->codec->codec_id = codec_get_bmp_id(AV_RL32(p + 68));
         st->codec->time_base.den = 10000000;
-        st->codec->time_base.num = le2me_64(unaligned64(p + 164));
-        st->codec->width = le2me_32(unaligned32(p + 176));
-        st->codec->height = le2me_32(unaligned32(p + 180));
+        st->codec->time_base.num = AV_RL64(p + 164);
+        st->codec->width = AV_RL32(p + 176);
+        st->codec->height = AV_RL32(p + 180);
     } else if(t == 0x05589f81){
         st->codec->codec_type = CODEC_TYPE_AUDIO;
-        st->codec->codec_id = codec_get_wav_id(le2me_16(unaligned16(p+124)));
-        st->codec->channels = le2me_16(unaligned16(p + 126));
-        st->codec->sample_rate = le2me_32(unaligned32(p + 128));
-        st->codec->bit_rate = le2me_32(unaligned32(p + 132)) * 8;
+        st->codec->codec_id = codec_get_wav_id(AV_RL16(p + 124));
+        st->codec->channels = AV_RL16(p + 126);
+        st->codec->sample_rate = AV_RL32(p + 128);
+        st->codec->bit_rate = AV_RL32(p + 132) * 8;
     }
 
     return 1;
