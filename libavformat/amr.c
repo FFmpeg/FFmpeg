@@ -118,7 +118,7 @@ static int amr_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
     AVCodecContext *enc = s->streams[0]->codec;
-    int read, size, toc, mode;
+    int read, size = 0, toc, mode;
 
     if (url_feof(&s->pb))
     {
