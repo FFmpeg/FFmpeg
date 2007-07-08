@@ -53,7 +53,7 @@ ogm_header(AVFormatContext *s, int idx)
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         p += 8;
         tag = bytestream_get_le32(&p);
-        st->codec->codec_id = codec_get_bmp_id(tag);
+        st->codec->codec_id = codec_get_id(codec_bmp_tags, tag);
         st->codec->codec_tag = tag;
     } else {
         uint8_t acid[5];
@@ -63,7 +63,7 @@ ogm_header(AVFormatContext *s, int idx)
         bytestream_get_buffer(&p, acid, 4);
         acid[4] = 0;
         cid = strtol(acid, NULL, 16);
-        st->codec->codec_id = codec_get_wav_id(cid);
+        st->codec->codec_id = codec_get_id(codec_wav_tags, cid);
     }
 
     p += 4;                     /* useless size field */
@@ -110,14 +110,14 @@ ogm_dshow_header(AVFormatContext *s, int idx)
 
     if(t == 0x05589f80){
         st->codec->codec_type = CODEC_TYPE_VIDEO;
-        st->codec->codec_id = codec_get_bmp_id(AV_RL32(p + 68));
+        st->codec->codec_id = codec_get_id(codec_bmp_tags, AV_RL32(p + 68));
         st->codec->time_base.den = 10000000;
         st->codec->time_base.num = AV_RL64(p + 164);
         st->codec->width = AV_RL32(p + 176);
         st->codec->height = AV_RL32(p + 180);
     } else if(t == 0x05589f81){
         st->codec->codec_type = CODEC_TYPE_AUDIO;
-        st->codec->codec_id = codec_get_wav_id(AV_RL16(p + 124));
+        st->codec->codec_id = codec_get_id(codec_wav_tags, AV_RL16(p + 124));
         st->codec->channels = AV_RL16(p + 126);
         st->codec->sample_rate = AV_RL32(p + 128);
         st->codec->bit_rate = AV_RL32(p + 132) * 8;
