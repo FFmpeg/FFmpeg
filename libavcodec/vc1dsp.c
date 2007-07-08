@@ -342,29 +342,27 @@ static av_always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int
 
 /** Function used to do motion compensation with bicubic interpolation
  */
-static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode, int rnd)
+static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int hmode, int vmode, int rnd)
 {
     int i, j;
     uint8_t tmp[8*11], *tptr;
-    int m, r;
+    int r;
 
-    m = (mode & 3);
     r = rnd;
     src -= stride;
     tptr = tmp;
     for(j = 0; j < 11; j++) {
         for(i = 0; i < 8; i++)
-            tptr[i] = av_clip_uint8(vc1_mspel_filter(src + i, 1, m, r));
+            tptr[i] = av_clip_uint8(vc1_mspel_filter(src + i, 1, hmode, r));
         src += stride;
         tptr += 8;
     }
     r = 1 - rnd;
-    m = (mode >> 2) & 3;
 
     tptr = tmp + 8;
     for(j = 0; j < 8; j++) {
         for(i = 0; i < 8; i++)
-            dst[i] = av_clip_uint8(vc1_mspel_filter(tptr + i, 8, m, r));
+            dst[i] = av_clip_uint8(vc1_mspel_filter(tptr + i, 8, vmode, r));
         dst += stride;
         tptr += 8;
     }
@@ -377,7 +375,7 @@ void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int r
 
 #define PUT_VC1_MSPEL(a, b)\
 static void put_vc1_mspel_mc ## a ## b ##_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \
-     vc1_mspel_mc(dst, src, stride, (a)&((b<<2)), rnd);                 \
+     vc1_mspel_mc(dst, src, stride, a, b, rnd);                         \
 }
 
 PUT_VC1_MSPEL(1, 0)
