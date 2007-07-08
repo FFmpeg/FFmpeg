@@ -375,65 +375,29 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
 /* this one is defined in dsputil.c */
 void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
-static void put_vc1_mspel_mc10_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x1, rnd);
+#define PUT_VC1_MSPEL(a, b)\
+static void put_vc1_mspel_mc ## a ## b ##_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \
+     vc1_mspel_mc(dst, src, stride, (a)&((b<<2)), rnd);                 \
 }
 
-static void put_vc1_mspel_mc20_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x2, rnd);
-}
+PUT_VC1_MSPEL(1, 0)
+PUT_VC1_MSPEL(2, 0)
+PUT_VC1_MSPEL(3, 0)
 
-static void put_vc1_mspel_mc30_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x3, rnd);
-}
+PUT_VC1_MSPEL(0, 1)
+PUT_VC1_MSPEL(1, 1)
+PUT_VC1_MSPEL(2, 1)
+PUT_VC1_MSPEL(3, 1)
 
-static void put_vc1_mspel_mc01_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x4, rnd);
-}
+PUT_VC1_MSPEL(0, 2)
+PUT_VC1_MSPEL(1, 2)
+PUT_VC1_MSPEL(2, 2)
+PUT_VC1_MSPEL(3, 2)
 
-static void put_vc1_mspel_mc11_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x5, rnd);
-}
-
-static void put_vc1_mspel_mc21_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x6, rnd);
-}
-
-static void put_vc1_mspel_mc31_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x7, rnd);
-}
-
-static void put_vc1_mspel_mc02_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x8, rnd);
-}
-
-static void put_vc1_mspel_mc12_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0x9, rnd);
-}
-
-static void put_vc1_mspel_mc22_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xA, rnd);
-}
-
-static void put_vc1_mspel_mc32_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xB, rnd);
-}
-
-static void put_vc1_mspel_mc03_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xC, rnd);
-}
-
-static void put_vc1_mspel_mc13_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xD, rnd);
-}
-
-static void put_vc1_mspel_mc23_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xE, rnd);
-}
-
-static void put_vc1_mspel_mc33_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    vc1_mspel_mc(dst, src, stride, 0xF, rnd);
-}
+PUT_VC1_MSPEL(0, 3)
+PUT_VC1_MSPEL(1, 3)
+PUT_VC1_MSPEL(2, 3)
+PUT_VC1_MSPEL(3, 3)
 
 void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_c;
