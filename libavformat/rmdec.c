@@ -608,7 +608,7 @@ resync:
     /* for AC3, needs to swap bytes */
     if (st->codec->codec_id == CODEC_ID_AC3) {
         ptr = pkt->data;
-        for(j=0;j<len;j+=2) {
+        for(j=0;j<pkt->size;j+=2) {
             FFSWAP(int, ptr[0], ptr[1]);
             ptr += 2;
         }
