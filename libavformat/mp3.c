@@ -234,7 +234,8 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
         taghdrlen = 6;
         break;
 
-    case 3 ... 4:
+    case 3:
+    case 4:
         isv34 = 1;
         taghdrlen = 10;
         break;

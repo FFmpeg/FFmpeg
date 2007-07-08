@@ -366,17 +366,15 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
 
     for(i=0; i<probe_packet->buf_size; i++){
         temp_buffer = (temp_buffer<<8) + probe_packet->buf[i];
-        if ((temp_buffer & 0xffffff00) == 0x100) {
-            switch(temp_buffer){
-            case VOP_START_CODE:             VOP++; break;
-            case VISUAL_OBJECT_START_CODE:  VISO++; break;
-            case 0x100 ... 0x11F:             VO++; break;
-            case 0x120 ... 0x12F:            VOL++; break;
-            case 0x130 ... 0x1AF:
-            case 0x1B7 ... 0x1B9:
-            case 0x1C4 ... 0x1FF:            res++; break;
-            }
-        }
+        if ((temp_buffer & 0xffffff00) != 0x100)
+            continue;
+
+        if (temp_buffer == VOP_START_CODE)                         VOP++;
+        else if (temp_buffer == VISUAL_OBJECT_START_CODE)          VISO++;
+        else if (temp_buffer < 0x120)                              VO++;
+        else if (temp_buffer < 0x130)                              VOL++;
+        else if (   !(0x1AF < temp_buffer && temp_buffer < 0x1B7)
+                 && !(0x1B9 < temp_buffer && temp_buffer < 0x1C4)) res++;
     }
 
     if ( VOP >= VISO && VOP >= VOL && VO >= VOL && VOL > 0 && res==0)

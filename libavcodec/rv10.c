@@ -539,43 +539,29 @@ static int rv10_decode_init(AVCodecContext *avctx)
     s->h263_long_vectors= ((uint8_t*)avctx->extradata)[3] & 1;
     avctx->sub_id= AV_RB32((uint8_t*)avctx->extradata + 4);
 
-    switch(avctx->sub_id){
-    case 0x10000000:
+    if (avctx->sub_id == 0x10000000) {
         s->rv10_version= 0;
         s->low_delay=1;
-        break;
-    case 0x10002000:
+    } else if (avctx->sub_id == 0x10002000) {
         s->rv10_version= 3;
         s->low_delay=1;
         s->obmc=1;
-        break;
-    case 0x10003000:
+    } else if (avctx->sub_id == 0x10003000) {
         s->rv10_version= 3;
         s->low_delay=1;
-        break;
-    case 0x10003001:
+    } else if (avctx->sub_id == 0x10003001) {
         s->rv10_version= 3;
         s->low_delay=1;
-        break;
-    case 0x20001000: /* real rv20 decoder fail on this id */
-    /*case 0x20100001:
-    case 0x20101001:
-    case 0x20103001:*/
-    case 0x20100000 ... 0x2019ffff:
+    } else if (    avctx->sub_id == 0x20001000
+               || (avctx->sub_id >= 0x20100000 && avctx->sub_id < 0x201a0000)) {
         s->low_delay=1;
-        break;
-    /*case 0x20200002:
-    case 0x20201002:
-    case 0x20203002:*/
-    case 0x20200002 ... 0x202fffff:
-    case 0x30202002:
-    case 0x30203002:
+    } else if (    avctx->sub_id == 0x30202002
+               ||  avctx->sub_id == 0x30203002
+               || (avctx->sub_id >= 0x20200002 && avctx->sub_id < 0x20300000)) {
         s->low_delay=0;
         s->avctx->has_b_frames=1;
-        break;
-    default:
+    } else
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
-    }
 
     if(avctx->debug & FF_DEBUG_PICT_INFO){
         av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", avctx->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
