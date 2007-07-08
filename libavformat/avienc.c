@@ -197,11 +197,6 @@ static int avi_write_header(AVFormatContext *s)
 
         stream = s->streams[i]->codec;
 
-        /* FourCC should really be set by the codec itself */
-        if (! stream->codec_tag) {
-            stream->codec_tag = codec_get_bmp_tag(stream->codec_id);
-        }
-
         /* stream generic header */
         strh = start_tag(pb, "strh");
         switch(stream->codec_type) {
