@@ -146,9 +146,9 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                         s->frame_size = -1;
                     }
 #endif
-                }
                 if(s->header_count > 1)
                     avctx->sample_rate= sr;
+                }
             }
         } else
 #if 0
