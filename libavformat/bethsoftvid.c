@@ -104,7 +104,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     int code;
     int bytes_copied = 0;
     int position;
-    size_t vidbuf_capacity;
+    unsigned int vidbuf_capacity;
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
     if(!vidbuf_start)
