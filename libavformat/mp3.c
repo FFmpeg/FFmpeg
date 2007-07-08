@@ -391,7 +391,7 @@ static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 
 static int mp3_read_probe(AVProbeData *p)
 {
-    int max_frames, first_frames;
+    int max_frames, first_frames = 0;
     int fsize, frames, sample_rate;
     uint32_t header;
     uint8_t *buf, *buf2, *end;
