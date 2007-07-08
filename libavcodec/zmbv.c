@@ -535,7 +535,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                     out[i * 3 + 0] = c->pal[(*src) * 3 + 0];
                     out[i * 3 + 1] = c->pal[(*src) * 3 + 1];
                     out[i * 3 + 2] = c->pal[(*src) * 3 + 2];
-                    *src++;
+                    src++;
                 }
                 out += c->pic.linesize[0];
             }

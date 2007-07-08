@@ -94,7 +94,7 @@ static void apply_window_and_mdct(AVCodecContext * avctx, signed short * audio, 
 }
 
 //FIXME use for decoding too
-static void init_exp(WMACodecContext *s, int ch, int *exp_param){
+static void init_exp(WMACodecContext *s, int ch, const int *exp_param){
     int n;
     const uint16_t *ptr;
     float v, *q, max_scale, *q_end;
@@ -324,7 +324,7 @@ static int encode_superframe(AVCodecContext *avctx,
                             unsigned char *buf, int buf_size, void *data){
     WMACodecContext *s = avctx->priv_data;
     short *samples = data;
-    int i, total_gain, best;
+    int i, total_gain;
 
     s->block_len_bits= s->frame_len_bits; //required by non variable block len
     s->block_len = 1 << s->block_len_bits;

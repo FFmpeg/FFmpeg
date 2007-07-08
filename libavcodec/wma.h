@@ -92,7 +92,7 @@ typedef struct WMACodecContext {
     uint16_t *run_table[2];
     uint16_t *level_table[2];
     uint16_t *int_table[2];
-    CoefVLCTable *coef_vlcs[2];
+    const CoefVLCTable *coef_vlcs[2];
     /* frame info */
     int frame_len;                          ///< frame length in samples
     int frame_len_bits;                     ///< frame_len = 1 << frame_len_bits
