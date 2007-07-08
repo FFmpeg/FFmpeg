@@ -407,7 +407,7 @@ static int mov_write_svq3_tag(ByteIOContext *pb)
 
 static uint8_t *avc_find_startcode( uint8_t *p, uint8_t *end )
 {
-    uint8_t *a = p + 4 - ((int)p & 3);
+    uint8_t *a = p + 4 - ((long)p & 3);
 
     for( end -= 3; p < a && p < end; p++ ) {
         if( p[0] == 0 && p[1] == 0 && p[2] == 1 )
