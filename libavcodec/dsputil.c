@@ -3433,11 +3433,11 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
 
 static int dct264_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){
     MpegEncContext * const s= (MpegEncContext *)c;
-    int16_t dct[8][8];
+    DCTELEM dct[8][8];
     int i;
     int sum=0;
 
-    s->dsp.diff_pixels(dct, src1, src2, stride);
+    s->dsp.diff_pixels(dct[0], src1, src2, stride);
 
 #define SRC(x) dct[i][x]
 #define DST(x,v) dct[i][x]= v
