@@ -43,14 +43,16 @@ enum MpegTSFilterType {
     MPEGTS_SECTION,
 };
 
-typedef void PESCallback(void *opaque, const uint8_t *buf, int len, int is_start);
+typedef struct MpegTSFilter MpegTSFilter;
+
+typedef void PESCallback(MpegTSFilter *f, const uint8_t *buf, int len, int is_start);
 
 typedef struct MpegTSPESFilter {
     PESCallback *pes_cb;
     void *opaque;
 } MpegTSPESFilter;
 
-typedef void SectionCallback(void *opaque, const uint8_t *buf, int len);
+typedef void SectionCallback(MpegTSFilter *f, const uint8_t *buf, int len);
 
 typedef void SetServiceCallback(void *opaque, int ret);
 
@@ -64,7 +66,7 @@ typedef struct MpegTSSectionFilter {
     void *opaque;
 } MpegTSSectionFilter;
 
-typedef struct MpegTSFilter {
+struct MpegTSFilter {
     int pid;
     int last_cc; /* last cc code (-1 if first packet) */
     enum MpegTSFilterType type;
@@ -72,7 +74,7 @@ typedef struct MpegTSFilter {
         MpegTSPESFilter pes_filter;
         MpegTSSectionFilter section_filter;
     } u;
-} MpegTSFilter;
+};
 
 typedef struct MpegTSService {
     int running:1;
