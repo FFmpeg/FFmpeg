@@ -404,8 +404,6 @@ static inline void init_mb(AVSContext *h) {
     h->col_type = &h->col_type_base[h->mby*h->mb_width + h->mbx];
 }
 
-static inline void check_for_slice(AVSContext *h);
-
 /**
  * save predictors for later macroblocks and increase
  * macroblock address

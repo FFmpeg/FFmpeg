@@ -5714,7 +5714,6 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
 
     int index[64];
 
-    int last;
     int coeff_count = 0;
 
     int abslevel1 = 1;

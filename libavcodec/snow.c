@@ -2350,7 +2350,7 @@ static void decode_blocks(SnowContext *s){
     }
 }
 
-static void mc_block(uint8_t *dst, uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
+static void mc_block(uint8_t *dst, const uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
     int x, y;
 START_TIMER
     for(y=0; y < b_h+5; y++){
@@ -2420,7 +2420,7 @@ STOP_TIMER("mc_block")
 }
 
 #define mca(dx,dy,b_w)\
-static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, uint8_t *src, int stride, int h){\
+static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, int stride, int h){\
     uint8_t tmp[stride*(b_w+5)];\
     assert(h==b_w);\
     mc_block(dst, src-2-2*stride, tmp, stride, b_w, b_w, dx, dy);\
