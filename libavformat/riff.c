@@ -258,26 +258,6 @@ enum CodecID av_codec_get_id(const AVCodecTag *tags[4], unsigned int tag)
     return CODEC_ID_NONE;
 }
 
-unsigned int codec_get_bmp_tag(int id)
-{
-    return codec_get_tag(codec_bmp_tags, id);
-}
-
-unsigned int codec_get_wav_tag(int id)
-{
-    return codec_get_tag(codec_wav_tags, id);
-}
-
-enum CodecID codec_get_bmp_id(unsigned int tag)
-{
-    return codec_get_id(codec_bmp_tags, tag);
-}
-
-enum CodecID codec_get_wav_id(unsigned int tag)
-{
-    return codec_get_id(codec_wav_tags, tag);
-}
-
 #ifdef CONFIG_MUXERS
 offset_t start_tag(ByteIOContext *pb, const char *tag)
 {
