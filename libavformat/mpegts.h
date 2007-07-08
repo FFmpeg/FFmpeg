@@ -58,8 +58,6 @@
 
 #define STREAM_TYPE_SUBTITLE_DVB    0x100
 
-extern AVOutputFormat mpegts_muxer;
-
 typedef struct MpegTSContext MpegTSContext;
 
 MpegTSContext *mpegts_parse_open(AVFormatContext *s);
