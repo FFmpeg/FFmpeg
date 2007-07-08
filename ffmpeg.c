@@ -2973,7 +2973,7 @@ static void opt_output_file(const char *filename)
     if (!file_oformat) {
         file_oformat = guess_format(NULL, filename, NULL);
         if (!file_oformat) {
-            fprintf(stderr, "Unable for find a suitable output format for '%s'\n",
+            fprintf(stderr, "Unable to find a suitable output format for '%s'\n",
                     filename);
             exit(1);
         }
