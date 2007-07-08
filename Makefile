@@ -34,6 +34,19 @@ ifeq ($(CONFIG_VHOOK),yes)
 all: videohook
 install: install-vhook
 endif
+HOOKS    = vhook/null$(SLIBSUF) vhook/fish$(SLIBSUF) vhook/ppm$(SLIBSUF) vhook/watermark$(SLIBSUF)
+ALLHOOKS = $(HOOKS) vhook/imlib2$(SLIBSUF) vhook/drawtext$(SLIBSUF)
+ALLHOOKS_SRCS := $(ALLHOOKS:$(SLIBSUF)=.c)
+ifeq ($(HAVE_IMLIB2),yes)
+HOOKS  += vhook/imlib2$(SLIBSUF)
+CFLAGS += `imlib2-config --cflags`
+LIBS_imlib2$(SLIBSUF) = `imlib2-config --libs`
+endif
+ifeq ($(HAVE_FREETYPE2),yes)
+HOOKS  += vhook/drawtext$(SLIBSUF)
+CFLAGS += `freetype-config --cflags`
+LIBS_drawtext$(SLIBSUF) = `freetype-config --libs`
+endif
 
 ifeq ($(BUILD_DOC),yes)
 all: documentation
@@ -99,8 +112,11 @@ ffmpeg.o ffplay.o ffserver.o: version.h
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-videohook: .libs
-	$(MAKE) -C vhook all
+videohook: .libs $(HOOKS)
+
+vhook/%$(SLIBSUF): vhook/%.o
+	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$@)
+
 
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
                                  ffplay-doc.html hooks.html $(ALLMANPAGES))
@@ -133,8 +149,9 @@ install-man:
 	install -d "$(mandir)/man1"
 	install -m 644 $(MANPAGES) "$(mandir)/man1"
 
-install-vhook:
-	$(MAKE) -C vhook install
+install-vhook: videohook
+	install -d "$(shlibdir)/vhook"
+	install -m 755 $(HOOKS) "$(shlibdir)/vhook"
 
 install-libs:
 	$(MAKE) -C libavutil   install-libs
@@ -169,7 +186,8 @@ uninstall-man:
 	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
 
 uninstall-vhook:
-	$(MAKE) -C vhook uninstall
+	rm -f $(addprefix $(shlibdir)/vhook/,$(ALLHOOKS))
+	-rmdir "$(shlibdir)/vhook/"
 
 uninstall-libs:
 	$(MAKE) -C libavutil   uninstall-libs
@@ -194,12 +212,11 @@ endif
 ifeq ($(CONFIG_SWSCALER),yes)
 	$(MAKE) -C libswscale  depend
 endif
-ifeq ($(CONFIG_VHOOK),yes)
-	$(MAKE) -C vhook       depend
-endif
 
 .depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
+	for file in $(ALLHOOKS_SRCS); do \
+	$(CC) $(CFLAGS) -MM -MT $(SRC_PATH)/$$file $(SRC_PATH)/$$file >> .depend ; done
 
 $(DEP_LIBS): lib
 
@@ -212,12 +229,12 @@ clean:
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
-	$(MAKE) -C vhook       clean
 	rm -f *.o *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF) qt-faststart$(EXESUF) cws2fws$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
 	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
+	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
 distclean: clean
 	$(MAKE) -C libavutil   distclean
@@ -225,7 +242,6 @@ distclean: clean
 	$(MAKE) -C libavformat distclean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
-	$(MAKE) -C vhook       distclean
 	rm -f .depend version.h config.* *.pc
 
 TAGS:
