@@ -3697,7 +3697,8 @@ static int vsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int st
     return score;
 }
 
-static int ssd_int8_vs_int16_c(int8_t *pix1, int16_t *pix2, int size){
+static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
+                               int size){
     int score=0;
     int i;
     for(i=0; i<size; i++)

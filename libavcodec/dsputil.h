@@ -200,7 +200,8 @@ typedef struct DSPContext {
     me_cmp_func ildct_cmp[5]; //only width 16 used
     me_cmp_func frame_skip_cmp[5]; //only width 8 used
 
-    int (*ssd_int8_vs_int16)(int8_t *pix1, int16_t *pix2, int size);
+    int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
+                             int size);
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.

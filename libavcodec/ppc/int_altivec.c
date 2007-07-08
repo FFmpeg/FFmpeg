@@ -29,7 +29,8 @@
 
 #include "dsputil_altivec.h"
 
-static int ssd_int8_vs_int16_altivec(int8_t *pix1, int16_t *pix2, int size) {
+static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
+                                     int size) {
     int i, size16;
     vector signed char vpix1;
     vector signed short vpix2, vdiff, vpix1l,vpix1h;

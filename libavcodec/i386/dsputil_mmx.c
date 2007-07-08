@@ -1871,7 +1871,7 @@ DCT_SAD_FUNC(ssse3)
 #undef HSUM
 #undef DCT_SAD
 
-static int ssd_int8_vs_int16_mmx(int8_t *pix1, int16_t *pix2, int size){
+static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int size){
     int sum;
     long i=size;
     asm volatile(
