@@ -375,63 +375,63 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
 /* this one is defined in dsputil.c */
 void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
-static void ff_put_vc1_mspel_mc10_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc10_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x1, rnd);
 }
 
-static void ff_put_vc1_mspel_mc20_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc20_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x2, rnd);
 }
 
-static void ff_put_vc1_mspel_mc30_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc30_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x3, rnd);
 }
 
-static void ff_put_vc1_mspel_mc01_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc01_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x4, rnd);
 }
 
-static void ff_put_vc1_mspel_mc11_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc11_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x5, rnd);
 }
 
-static void ff_put_vc1_mspel_mc21_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc21_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x6, rnd);
 }
 
-static void ff_put_vc1_mspel_mc31_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc31_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x7, rnd);
 }
 
-static void ff_put_vc1_mspel_mc02_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc02_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x8, rnd);
 }
 
-static void ff_put_vc1_mspel_mc12_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc12_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0x9, rnd);
 }
 
-static void ff_put_vc1_mspel_mc22_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc22_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xA, rnd);
 }
 
-static void ff_put_vc1_mspel_mc32_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc32_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xB, rnd);
 }
 
-static void ff_put_vc1_mspel_mc03_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc03_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xC, rnd);
 }
 
-static void ff_put_vc1_mspel_mc13_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc13_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xD, rnd);
 }
 
-static void ff_put_vc1_mspel_mc23_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc23_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xE, rnd);
 }
 
-static void ff_put_vc1_mspel_mc33_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+static void put_vc1_mspel_mc33_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     vc1_mspel_mc(dst, src, stride, 0xF, rnd);
 }
 
@@ -444,19 +444,19 @@ void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_v_overlap = vc1_v_overlap_c;
 
     dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_c;
-    dsp->put_vc1_mspel_pixels_tab[ 1] = ff_put_vc1_mspel_mc10_c;
-    dsp->put_vc1_mspel_pixels_tab[ 2] = ff_put_vc1_mspel_mc20_c;
-    dsp->put_vc1_mspel_pixels_tab[ 3] = ff_put_vc1_mspel_mc30_c;
-    dsp->put_vc1_mspel_pixels_tab[ 4] = ff_put_vc1_mspel_mc01_c;
-    dsp->put_vc1_mspel_pixels_tab[ 5] = ff_put_vc1_mspel_mc11_c;
-    dsp->put_vc1_mspel_pixels_tab[ 6] = ff_put_vc1_mspel_mc21_c;
-    dsp->put_vc1_mspel_pixels_tab[ 7] = ff_put_vc1_mspel_mc31_c;
-    dsp->put_vc1_mspel_pixels_tab[ 8] = ff_put_vc1_mspel_mc02_c;
-    dsp->put_vc1_mspel_pixels_tab[ 9] = ff_put_vc1_mspel_mc12_c;
-    dsp->put_vc1_mspel_pixels_tab[10] = ff_put_vc1_mspel_mc22_c;
-    dsp->put_vc1_mspel_pixels_tab[11] = ff_put_vc1_mspel_mc32_c;
-    dsp->put_vc1_mspel_pixels_tab[12] = ff_put_vc1_mspel_mc03_c;
-    dsp->put_vc1_mspel_pixels_tab[13] = ff_put_vc1_mspel_mc13_c;
-    dsp->put_vc1_mspel_pixels_tab[14] = ff_put_vc1_mspel_mc23_c;
-    dsp->put_vc1_mspel_pixels_tab[15] = ff_put_vc1_mspel_mc33_c;
+    dsp->put_vc1_mspel_pixels_tab[ 1] = put_vc1_mspel_mc10_c;
+    dsp->put_vc1_mspel_pixels_tab[ 2] = put_vc1_mspel_mc20_c;
+    dsp->put_vc1_mspel_pixels_tab[ 3] = put_vc1_mspel_mc30_c;
+    dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_c;
+    dsp->put_vc1_mspel_pixels_tab[ 5] = put_vc1_mspel_mc11_c;
+    dsp->put_vc1_mspel_pixels_tab[ 6] = put_vc1_mspel_mc21_c;
+    dsp->put_vc1_mspel_pixels_tab[ 7] = put_vc1_mspel_mc31_c;
+    dsp->put_vc1_mspel_pixels_tab[ 8] = put_vc1_mspel_mc02_c;
+    dsp->put_vc1_mspel_pixels_tab[ 9] = put_vc1_mspel_mc12_c;
+    dsp->put_vc1_mspel_pixels_tab[10] = put_vc1_mspel_mc22_c;
+    dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_c;
+    dsp->put_vc1_mspel_pixels_tab[12] = put_vc1_mspel_mc03_c;
+    dsp->put_vc1_mspel_pixels_tab[13] = put_vc1_mspel_mc13_c;
+    dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_c;
+    dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_c;
 }
