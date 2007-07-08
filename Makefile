@@ -34,17 +34,18 @@ ifeq ($(CONFIG_VHOOK),yes)
 all: videohook
 install: install-vhook
 endif
+VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 HOOKS    = vhook/null$(SLIBSUF) vhook/fish$(SLIBSUF) vhook/ppm$(SLIBSUF) vhook/watermark$(SLIBSUF)
 ALLHOOKS = $(HOOKS) vhook/imlib2$(SLIBSUF) vhook/drawtext$(SLIBSUF)
 ALLHOOKS_SRCS := $(ALLHOOKS:$(SLIBSUF)=.c)
 ifeq ($(HAVE_IMLIB2),yes)
 HOOKS  += vhook/imlib2$(SLIBSUF)
-CFLAGS += `imlib2-config --cflags`
+VHOOKCFLAGS += `imlib2-config --cflags`
 LIBS_imlib2$(SLIBSUF) = `imlib2-config --libs`
 endif
 ifeq ($(HAVE_FREETYPE2),yes)
 HOOKS  += vhook/drawtext$(SLIBSUF)
-CFLAGS += `freetype-config --cflags`
+VHOOKCFLAGS += `freetype-config --cflags`
 LIBS_drawtext$(SLIBSUF) = `freetype-config --libs`
 endif
 
@@ -109,14 +110,16 @@ ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
 videohook: .libs $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
-	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$@)
+	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
 
+vhook/%.o: vhook/%.c
+	$(CC) $(VHOOKCFLAGS) -c -o $@ $<
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
                                  ffplay-doc.html hooks.html $(ALLMANPAGES))
@@ -202,7 +205,7 @@ uninstall-headers:
 	$(MAKE) -C libpostproc uninstall-headers
 	-rmdir "$(incdir)"
 
-depend dep: .depend
+depend dep: .depend .vhookdep
 	$(MAKE) -C libavutil   depend
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
@@ -215,8 +218,10 @@ endif
 
 .depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
-	for file in $(ALLHOOKS_SRCS); do \
-	$(CC) $(CFLAGS) -MM -MT $(SRC_PATH)/$$file $(SRC_PATH)/$$file >> .depend ; done
+
+# gcc stupidly only outputs the basename of targets
+.vhookdep: $(ALLHOOKS_SRCS)
+	$(CC) $(VHOOKCFLAGS) -MM $^ | sed 's,^\([a-z]\),vhook/\1,' > $@
 
 $(DEP_LIBS): lib
 
@@ -314,3 +319,4 @@ tests/seek_test$(EXESUF): tests/seek_test.c
 .PHONY: mpeg4 mpeg ac3 snow snowll swscale-error
 
 -include .depend
+-include .vhookdep

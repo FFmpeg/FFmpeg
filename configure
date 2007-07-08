@@ -1757,7 +1757,7 @@ if enabled gprof; then
     add_ldflags "-p"
 fi
 
-VHOOKCFLAGS="-fPIC `echo $CFLAGS | sed s/-mdynamic-no-pic//`"
+VHOOKCFLAGS="-fPIC"
 
 # find if .align arg is power-of-two or not
 if test $asmalign_pot = "unknown"; then
