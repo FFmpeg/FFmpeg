@@ -24,7 +24,7 @@
 
 #include "cavs.h"
 
-static const uint8_t partition_flags[30] = {
+const uint8_t ff_cavs_partition_flags[30] = {
   0,                                 //I_8X8
   0,                                 //P_SKIP
   0,                                 //P_16X16
@@ -57,7 +57,7 @@ static const uint8_t partition_flags[30] = {
                       SPLITH|SPLITV, //B_8X8 = 29
 };
 
-static const uint8_t scan3x3[4] = {4,5,7,8};
+const uint8_t ff_cavs_scan3x3[4] = {4,5,7,8};
 
 static const uint8_t mv_scan[4] = {
     MV_FWD_X0,MV_FWD_X1,
@@ -75,14 +75,14 @@ static const uint8_t cbp_tab[64][2] = {
   {34,50},{50,56},{52,25},{54,22},{41,54},{56,57},{38,41},{57,38}
 };
 
-static const uint8_t chroma_qp[64] = {
+const uint8_t ff_cavs_chroma_qp[64] = {
   0,  1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
   16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
   32,33,34,35,36,37,38,39,40,41,42,42,43,43,44,44,
   45,45,46,46,47,47,48,48,48,49,49,49,50,50,50,51
 };
 
-static const uint8_t dequant_shift[64] = {
+const uint8_t ff_cavs_dequant_shift[64] = {
   14,14,14,14,14,14,14,14,
   13,13,13,13,13,13,13,13,
   13,12,12,12,12,12,12,12,
@@ -93,7 +93,7 @@ static const uint8_t dequant_shift[64] = {
   7, 7, 7, 7, 7, 7, 7, 7
 };
 
-static const uint16_t dequant_mul[64] = {
+const uint16_t ff_cavs_dequant_mul[64] = {
   32768,36061,38968,42495,46341,50535,55437,60424,
   32932,35734,38968,42495,46177,50535,55109,59933,
   65535,35734,38968,42577,46341,50617,55027,60097,
@@ -117,7 +117,7 @@ const vector_t ff_cavs_intra_mv = {0,0,1,REF_INTRA};
 
 #define EOB 0,0,0
 
-static const dec_2dvlc_t intra_dec[7] = {
+const dec_2dvlc_t ff_cavs_intra_dec[7] = {
   {
     { //level / run / table_inc
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -254,7 +254,7 @@ static const dec_2dvlc_t intra_dec[7] = {
   }
 };
 
-static const dec_2dvlc_t inter_dec[7] = {
+const dec_2dvlc_t ff_cavs_inter_dec[7] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -391,7 +391,7 @@ static const dec_2dvlc_t inter_dec[7] = {
   }
 };
 
-static const dec_2dvlc_t chroma_dec[5] = {
+const dec_2dvlc_t ff_cavs_chroma_dec[5] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},

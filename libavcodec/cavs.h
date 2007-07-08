@@ -224,12 +224,21 @@ typedef struct {
     DCTELEM *block;
 } AVSContext;
 
+extern const uint8_t     ff_cavs_dequant_shift[64];
+extern const uint16_t    ff_cavs_dequant_mul[64];
+extern const dec_2dvlc_t ff_cavs_intra_dec[7];
+extern const dec_2dvlc_t ff_cavs_inter_dec[7];
+extern const dec_2dvlc_t ff_cavs_chroma_dec[5];
+extern const uint8_t     ff_cavs_chroma_qp[64];
+extern const uint8_t     ff_cavs_scan3x3[4];
+extern const uint8_t     ff_cavs_partition_flags[30];
 extern const int_fast8_t ff_left_modifier_l[8];
 extern const int_fast8_t ff_top_modifier_l[8];
 extern const int_fast8_t ff_left_modifier_c[7];
 extern const int_fast8_t ff_top_modifier_c[7];
 extern const vector_t ff_cavs_intra_mv;
 extern const vector_t ff_cavs_un_mv;
+extern const vector_t ff_cavs_dir_mv;
 
 static inline void load_intra_pred_luma(AVSContext *h, uint8_t *top,
                                         uint8_t **left, int block) {

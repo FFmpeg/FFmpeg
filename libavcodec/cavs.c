@@ -95,11 +95,11 @@ void ff_cavs_filter(AVSContext *h, enum mb_t mb_type) {
             *((uint64_t *)bs) = 0x0202020202020202ULL;
         else{
             *((uint64_t *)bs) = 0;
-            if(partition_flags[mb_type] & SPLITV){
+            if(ff_cavs_partition_flags[mb_type] & SPLITV){
                 bs[2] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1], mb_type > P_8X8);
                 bs[3] = get_bs(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3], mb_type > P_8X8);
             }
-            if(partition_flags[mb_type] & SPLITH){
+            if(ff_cavs_partition_flags[mb_type] & SPLITH){
                 bs[6] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2], mb_type > P_8X8);
                 bs[7] = get_bs(&h->mv[MV_FWD_X1], &h->mv[MV_FWD_X3], mb_type > P_8X8);
             }
@@ -324,7 +324,7 @@ static inline void mc_part_std(AVSContext *h,int square,int chroma_height,int de
 }
 
 void ff_cavs_inter(AVSContext *h, enum mb_t mb_type) {
-    if(partition_flags[mb_type] == 0){ // 16x16
+    if(ff_cavs_partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 1, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[0],
                 h->s.dsp.put_h264_chroma_pixels_tab[0],
@@ -524,8 +524,8 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         level_buf[i] = level;
         run_buf[i] = run;
     }
-    if(dequant(h,level_buf, run_buf, block, dequant_mul[qp],
-               dequant_shift[qp], i))
+    if(dequant(h,level_buf, run_buf, block, ff_cavs_dequant_mul[qp],
+               ff_cavs_dequant_shift[qp], i))
         return -1;
     h->s.dsp.cavs_idct8_add(dst,block,stride);
     return 0;
@@ -534,11 +534,11 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 
 static inline void decode_residual_chroma(AVSContext *h) {
     if(h->cbp & (1<<4))
-        decode_residual_block(h,&h->s.gb,chroma_dec,0, chroma_qp[h->qp],
-                              h->cu,h->c_stride);
+        decode_residual_block(h,&h->s.gb,ff_cavs_chroma_dec,0,
+                              ff_cavs_chroma_qp[h->qp],h->cu,h->c_stride);
     if(h->cbp & (1<<5))
-        decode_residual_block(h,&h->s.gb,chroma_dec,0, chroma_qp[h->qp],
-                              h->cv,h->c_stride);
+        decode_residual_block(h,&h->s.gb,ff_cavs_chroma_dec,0,
+                              ff_cavs_chroma_qp[h->qp],h->cv,h->c_stride);
 }
 
 static inline int decode_residual_inter(AVSContext *h) {
@@ -557,7 +557,7 @@ static inline int decode_residual_inter(AVSContext *h) {
         h->qp = (h->qp + get_se_golomb(&h->s.gb)) & 63;
     for(block=0;block<4;block++)
         if(h->cbp & (1<<block))
-            decode_residual_block(h,&h->s.gb,inter_dec,0,h->qp,
+            decode_residual_block(h,&h->s.gb,ff_cavs_inter_dec,0,h->qp,
                                   h->cy + h->luma_scan[block], h->l_stride);
     decode_residual_chroma(h);
 
@@ -582,7 +582,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     /* get intra prediction modes from stream */
     for(block=0;block<4;block++) {
         int nA,nB,predpred;
-        int pos = scan3x3[block];
+        int pos = ff_cavs_scan3x3[block];
 
         nA = h->pred_mode_Y[pos-1];
         nB = h->pred_mode_Y[pos-3];
@@ -617,10 +617,10 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     for(block=0;block<4;block++) {
         d = h->cy + h->luma_scan[block];
         load_intra_pred_luma(h, top, &left, block);
-        h->intra_pred_l[h->pred_mode_Y[scan3x3[block]]]
+        h->intra_pred_l[h->pred_mode_Y[ff_cavs_scan3x3[block]]]
             (d, top, left, h->l_stride);
         if(h->cbp & (1<<block))
-            decode_residual_block(h,gb,intra_dec,1,h->qp,d,h->l_stride);
+            decode_residual_block(h,gb,ff_cavs_intra_dec,1,h->qp,d,h->l_stride);
     }
 
     /* chroma intra prediction */
@@ -752,7 +752,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         break;
     default:
         assert((mb_type > B_SYM_16X16) && (mb_type < B_8X8));
-        flags = partition_flags[mb_type];
+        flags = ff_cavs_partition_flags[mb_type];
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
                 ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
