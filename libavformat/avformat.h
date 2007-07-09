@@ -284,7 +284,7 @@ typedef struct AVStream {
     int codec_info_nb_frames;
 #endif
     /** encoding: PTS generation when outputing stream */
-    AVFrac pts;
+    struct AVFrac pts;
 
     /**
      * this is the fundamental unit of time (in seconds) in terms
