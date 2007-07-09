@@ -26,7 +26,6 @@ OBJS= bitstream.o \
       raw.o \
       faandct.o \
       parser.o \
-      rangecoder.o \
       h263.o \
       opt.o \
       bitstream_filter.o \
@@ -68,8 +67,8 @@ OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EIGHTBPS_DECODER)        += 8bps.o
 OBJS-$(CONFIG_ENCODERS)                += mpegvideo_enc.o
-OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o golomb.o
-OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o
+OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o rangecoder.o golomb.o
+OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
 OBJS-$(CONFIG_FLAC_DECODER)            += flac.o golomb.o
@@ -153,8 +152,8 @@ OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o golomb.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
-OBJS-$(CONFIG_SNOW_DECODER)            += snow.o
-OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o
+OBJS-$(CONFIG_SNOW_DECODER)            += snow.o rangecoder.o
+OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o golomb.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o golomb.o
