@@ -5,7 +5,7 @@
  *  All Rights Reserved.
  *
  *  Functions broken out from display_x11.c and several new modes
- *  added by Håkan Hjort <d95hjort@dtek.chalmers.se>
+ *  added by HÃ¥kan Hjort <d95hjort@dtek.chalmers.se>
  *
  *  15 & 16 bpp support by Franck Sicard <Franck.Sicard@solsoft.fr>
  *

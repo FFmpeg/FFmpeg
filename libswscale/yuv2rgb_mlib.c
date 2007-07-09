@@ -1,7 +1,7 @@
 /*
  * yuv2rgb_mlib.c, Software YUV to RGB coverter using mediaLib
  *
- *  Copyright (C) 2000, Håkan Hjort <d95hjort@dtek.chalmers.se>
+ *  Copyright (C) 2000, HÃ¥kan Hjort <d95hjort@dtek.chalmers.se>
  *  All Rights Reserved.
  *
  *  This file is part of mpeg2dec, a free MPEG-2 video decoder
