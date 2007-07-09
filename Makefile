@@ -48,10 +48,10 @@ HOOKS-$(HAVE_FREETYPE2) += drawtext
 HOOKS = $(addprefix vhook/, $(addsuffix $(SLIBSUF), $(BASEHOOKS) $(HOOKS-yes)))
 
 VHOOKCFLAGS-$(HAVE_IMLIB2) += `imlib2-config --cflags`
-LIBS_imlib2$(SLIBSUF) = `imlib2-config --libs`
+LIBS_imlib2$(SLIBSUF)       = `imlib2-config --libs`
 
 VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
-LIBS_drawtext$(SLIBSUF) = `freetype-config --libs`
+LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
