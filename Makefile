@@ -35,9 +35,12 @@ all: videohook
 install: install-vhook
 endif
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
-HOOKS    = vhook/null$(SLIBSUF) vhook/fish$(SLIBSUF) vhook/ppm$(SLIBSUF) vhook/watermark$(SLIBSUF)
-ALLHOOKS = $(HOOKS) vhook/imlib2$(SLIBSUF) vhook/drawtext$(SLIBSUF)
+HOOKS    = vhook/fish$(SLIBSUF) vhook/null$(SLIBSUF) vhook/watermark$(SLIBSUF)
+ALLHOOKS = $(HOOKS) vhook/drawtext$(SLIBSUF) vhook/imlib2$(SLIBSUF) vhook/ppm$(SLIBSUF)
 ALLHOOKS_SRCS := $(ALLHOOKS:$(SLIBSUF)=.c)
+ifeq ($(HAVE_FORK),yes)
+HOOKS  += vhook/ppm(SLIBSUF)
+endif
 ifeq ($(HAVE_IMLIB2),yes)
 HOOKS  += vhook/imlib2$(SLIBSUF)
 VHOOKCFLAGS += `imlib2-config --cflags`
