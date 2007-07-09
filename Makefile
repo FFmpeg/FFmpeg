@@ -34,23 +34,26 @@ ifeq ($(CONFIG_VHOOK),yes)
 all: videohook
 install: install-vhook
 endif
+
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
-HOOKS    = vhook/fish$(SLIBSUF) vhook/null$(SLIBSUF) vhook/watermark$(SLIBSUF)
-ALLHOOKS = $(HOOKS) vhook/drawtext$(SLIBSUF) vhook/imlib2$(SLIBSUF) vhook/ppm$(SLIBSUF)
-ALLHOOKS_SRCS := $(ALLHOOKS:$(SLIBSUF)=.c)
-ifeq ($(HAVE_FORK),yes)
-HOOKS  += vhook/ppm(SLIBSUF)
-endif
-ifeq ($(HAVE_IMLIB2),yes)
-HOOKS  += vhook/imlib2$(SLIBSUF)
-VHOOKCFLAGS += `imlib2-config --cflags`
+
+BASEHOOKS = fish null watermark
+ALLHOOKS = $(BASEHOOKS) drawtext imlib2 ppm
+ALLHOOKS_SRCS = $(addprefix vhook/, $(addsuffix .c, $(ALLHOOKS)))
+
+HOOKS-$(HAVE_FORK)      += ppm
+HOOKS-$(HAVE_IMLIB2)    += imlib2
+HOOKS-$(HAVE_FREETYPE2) += drawtext
+
+HOOKS = $(addprefix vhook/, $(addsuffix $(SLIBSUF), $(BASEHOOKS) $(HOOKS-yes)))
+
+VHOOKCFLAGS-$(HAVE_IMLIB2) += `imlib2-config --cflags`
 LIBS_imlib2$(SLIBSUF) = `imlib2-config --libs`
-endif
-ifeq ($(HAVE_FREETYPE2),yes)
-HOOKS  += vhook/drawtext$(SLIBSUF)
-VHOOKCFLAGS += `freetype-config --cflags`
+
+VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
 LIBS_drawtext$(SLIBSUF) = `freetype-config --libs`
-endif
+
+VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
 ifeq ($(BUILD_DOC),yes)
 all: documentation
