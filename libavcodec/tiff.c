@@ -155,7 +155,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
     int tag, type, count, off, value = 0;
     uint8_t *src, *dst;
     int i, j, ssize, soff, stride;
-    int *pal;
+    uint32_t *pal;
     uint8_t *rp, *gp, *bp;
 
     tag = tget_short(&buf, s->le);
@@ -245,7 +245,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         }
         if(s->bpp == 8){
             /* make default grayscale pal */
-            pal = (int *) s->picture.data[1];
+            pal = (uint32_t *) s->picture.data[1];
             for(i = 0; i < 256; i++)
                 pal[i] = i * 0x010101;
         }
@@ -378,7 +378,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             av_log(s->avctx, AV_LOG_ERROR, "Palette met but this is not palettized format\n");
             return -1;
         }
-        pal = (int *) s->picture.data[1];
+        pal = (uint32_t *) s->picture.data[1];
         off = type_sizes[type];
         rp = buf;
         gp = buf + count / 3 * off;
