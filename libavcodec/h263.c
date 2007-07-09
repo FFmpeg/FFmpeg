@@ -2517,23 +2517,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 #endif //CONFIG_ENCODERS
 
 /**
- * set qscale and update qscale dependent variables.
- */
-void ff_set_qscale(MpegEncContext * s, int qscale)
-{
-    if (qscale < 1)
-        qscale = 1;
-    else if (qscale > 31)
-        qscale = 31;
-
-    s->qscale = qscale;
-    s->chroma_qscale= s->chroma_qscale_table[qscale];
-
-    s->y_dc_scale= s->y_dc_scale_table[ qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
-}
-
-/**
  * predicts the dc.
  * encoding quantized level -> quantized diff
  * decoding quantized diff -> quantized level
