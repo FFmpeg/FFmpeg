@@ -30,10 +30,11 @@ else
 DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
 endif
 
-ifeq ($(CONFIG_VHOOK),yes)
-all: videohook
-install: install-vhook
-endif
+ALL_TARGETS-$(CONFIG_VHOOK) += videohook
+ALL_TARGETS-$(BUILD_DOC)    += documentation
+
+INSTALL_TARGETS-$(CONFIG_VHOOK) += install-vhook
+INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
@@ -55,11 +56,6 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
-ifeq ($(BUILD_DOC),yes)
-all: documentation
-install: install-man
-endif
-
 SRCS = $(addsuffix .c, $(PROGS-yes)) cmdutils.c
 LDFLAGS := -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
 EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
@@ -69,7 +65,7 @@ LDFLAGS+=-L$(BUILD_ROOT)/libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
-all: lib $(PROGS)
+all: lib $(PROGS) $(ALL_TARGETS-yes)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -140,7 +136,7 @@ doc/%.pod: doc/%-doc.texi
 doc/%.1: doc/%.pod
 	pod2man --section=1 --center=" " --release=" " $< > $@
 
-install: install-progs install-libs install-headers
+install: install-progs install-libs install-headers $(INSTALL_TARGETS-yes)
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: $(PROGS) install-libs
