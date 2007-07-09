@@ -44,7 +44,7 @@ typedef struct Track {
     int stream_index;
 
     char *name;
-    char *language;
+    char language[4];
 
     char *codec_id;
     char *codec_name;
@@ -994,6 +994,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
     /* Allocate a generic track. As soon as we know its type we'll realloc. */
     track = av_mallocz(MAX_TRACK_SIZE);
     matroska->num_tracks++;
+    strcpy(track->language, "eng");
 
     /* start with the master */
     if ((res = ebml_read_master(matroska, &id)) < 0)
@@ -1353,10 +1354,14 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
                 /* language (matters for audio/subtitles, mostly) */
             case MATROSKA_ID_TRACKLANGUAGE: {
-                char *text;
+                char *text, *end;
                 if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
                     break;
-                track->language = text;
+                if ((end = strchr(text, '-')))
+                    *end = '\0';
+                if (strlen(text) == 3)
+                    strcpy(track->language, text);
+                av_free(text);
                 break;
             }
 
@@ -2158,6 +2163,8 @@ matroska_read_header (AVFormatContext    *s,
 
             st->codec->codec_id = codec_id;
             st->start_time = 0;
+            if (strcmp(track->language, "und"))
+                strcpy(st->language, track->language);
 
             if (track->default_duration)
                 av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
@@ -2702,7 +2709,6 @@ matroska_read_close (AVFormatContext *s)
         av_free(track->codec_name);
         av_free(track->codec_priv);
         av_free(track->name);
-        av_free(track->language);
 
         if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
