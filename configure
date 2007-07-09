@@ -666,6 +666,7 @@ HAVE_LIST="
     fast_64bit
     fast_cmov
     fast_unaligned
+    fork
     freetype2
     imlib2
     inet_aton
