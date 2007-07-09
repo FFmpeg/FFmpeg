@@ -2501,7 +2501,6 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             case MATROSKA_ID_BLOCKDURATION: {
                 if ((res = ebml_read_uint(matroska, &id, &duration)) < 0)
                     break;
-                duration /= matroska->time_scale;
                 break;
             }
 
