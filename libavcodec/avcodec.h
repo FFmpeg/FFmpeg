@@ -2223,11 +2223,6 @@ void av_resample_close(struct AVResampleContext *c);
 /**
  * @deprecated Use the software scaler (swscale) instead.
  */
-struct ImgReSampleContext attribute_deprecated;
-
-/**
- * @deprecated Use the software scaler (swscale) instead.
- */
 typedef struct ImgReSampleContext ImgReSampleContext attribute_deprecated;
 
 /**
@@ -2249,13 +2244,13 @@ attribute_deprecated ImgReSampleContext *img_resample_full_init(int owidth, int 
 /**
  * @deprecated Use the software scaler (swscale) instead.
  */
-attribute_deprecated void img_resample(ImgReSampleContext *s,
+attribute_deprecated void img_resample(struct ImgReSampleContext *s,
                   AVPicture *output, const AVPicture *input);
 
 /**
  * @deprecated Use the software scaler (swscale) instead.
  */
-attribute_deprecated void img_resample_close(ImgReSampleContext *s);
+attribute_deprecated void img_resample_close(struct ImgReSampleContext *s);
 
 #endif
 
