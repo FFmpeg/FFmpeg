@@ -975,6 +975,54 @@ ret: 0 st: 0 dts:0.470200 pts:0.470200 pos:7523 size:418 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:417 flags:1
 ----------------
+tests/data/a-mpeg1.mpg
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:9216 size:9779 flags:1
+ret: 0 st:-1 ts:-1.000000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st:-1 ts:1.894167 flags:1
+ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 ts:0.788333 flags:0
+ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret:-1 st: 0 ts:-0.317500 flags:1
+ret:-1 st:-1 ts:2.576668 flags:0
+ret: 0 st:-1 ts:1.470835 flags:1
+ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 ts:0.365000 flags:0
+ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret:-1 st: 0 ts:-0.740833 flags:1
+ret:-1 st:-1 ts:2.153336 flags:0
+ret: 0 st:-1 ts:1.047503 flags:1
+ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret: 0 st: 0 ts:-0.058333 flags:0
+ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 ts:2.835833 flags:1
+ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st:-1 ts:1.730004 flags:0
+ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st:-1 ts:0.624171 flags:1
+ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret: 0 st: 0 ts:-0.481667 flags:0
+ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 ts:2.412500 flags:1
+ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st:-1 ts:1.306672 flags:0
+ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st:-1 ts:0.200839 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 ts:-0.904989 flags:0
+ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 ts:1.989178 flags:1
+ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st:-1 ts:0.883340 flags:0
+ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret:-1 st:-1 ts:-0.222493 flags:1
+ret:-1 st: 0 ts:2.671678 flags:0
+ret: 0 st: 0 ts:1.565844 flags:1
+ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st:-1 ts:0.460008 flags:0
+ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret:-1 st:-1 ts:-0.645825 flags:1
+----------------
 tests/data/a-mpeg1b.mpg
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:11264 size:11817 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
@@ -1023,52 +1071,52 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:94832 size:13267 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/a-mpeg1.mpg
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:9216 size:9779 flags:1
+tests/data/a-mpeg2.mpg
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
 ret: 0 st: 0 ts:0.788333 flags:0
-ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
 ret:-1 st: 0 ts:-0.317500 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
 ret: 0 st: 0 ts:0.365000 flags:0
-ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret: 0 st: 0 dts:0.440000 pts:-102481911520608.625000 pos:48208 size:9985 flags:1
 ret:-1 st: 0 ts:-0.740833 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
 ret: 0 st: 0 ts:-0.058333 flags:0
-ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st: 0 ts:2.835833 flags:1
-ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret: 0 st: 0 dts:0.440000 pts:-102481911520608.625000 pos:48208 size:9985 flags:1
 ret: 0 st: 0 ts:-0.481667 flags:0
-ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st: 0 ts:2.412500 flags:1
-ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
-ret: 0 st: 0 dts:0.000000 pts:-102481911520608.625000 pos:9216 size:9779 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
 ret: 0 st: 0 ts:1.989178 flags:1
-ret: 0 st: 0 dts:1.920000 pts:-102481911520608.625000 pos:188353 size:12057 flags:1
+ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.960000 pts:-102481911520608.625000 pos:86934 size:10792 flags:1
+ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.671678 flags:0
 ret: 0 st: 0 ts:1.565844 flags:1
-ret: 0 st: 0 dts:1.440000 pts:-102481911520608.625000 pos:135509 size:11796 flags:1
+ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.480000 pts:-102481911520608.625000 pos:46937 size:9873 flags:1
+ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg2i.mpg
@@ -1167,54 +1215,6 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:180534 size:14893 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/a-mpeg2.mpg
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
-ret: 0 st: 0 ts:0.788333 flags:0
-ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
-ret:-1 st: 0 ts:-0.317500 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
-ret: 0 st: 0 ts:0.365000 flags:0
-ret: 0 st: 0 dts:0.440000 pts:-102481911520608.625000 pos:48208 size:9985 flags:1
-ret:-1 st: 0 ts:-0.740833 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
-ret: 0 st: 0 ts:-0.058333 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st: 0 ts:2.835833 flags:1
-ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
-ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
-ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.440000 pts:-102481911520608.625000 pos:48208 size:9985 flags:1
-ret: 0 st: 0 ts:-0.481667 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st: 0 ts:2.412500 flags:1
-ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
-ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
-ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st: 0 ts:-0.904989 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9911 flags:1
-ret: 0 st: 0 ts:1.989178 flags:1
-ret: 0 st: 0 dts:1.880000 pts:-102481911520608.625000 pos:193402 size:12183 flags:1
-ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.671678 flags:0
-ret: 0 st: 0 ts:1.565844 flags:1
-ret: 0 st: 0 dts:1.400000 pts:-102481911520608.625000 pos:139189 size:11918 flags:1
-ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.920000 pts:-102481911520608.625000 pos:89343 size:10909 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
 tests/data/a-mpeg2reuse.mpg
 ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:20480 size:20829 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
@@ -1261,6 +1261,54 @@ ret: 0 st: 0 ts:1.565844 flags:1
 ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:264461 size:26192 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:167721 size:23537 flags:1
+ret:-1 st:-1 ts:-0.645825 flags:1
+----------------
+tests/data/a-mpeg2thread.mpg
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st:-1 ts:-1.000000 flags:0
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st:-1 ts:1.894167 flags:1
+ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st: 0 ts:0.788333 flags:0
+ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
+ret:-1 st: 0 ts:-0.317500 flags:1
+ret:-1 st:-1 ts:2.576668 flags:0
+ret: 0 st:-1 ts:1.470835 flags:1
+ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret: 0 st: 0 ts:0.365000 flags:0
+ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
+ret:-1 st: 0 ts:-0.740833 flags:1
+ret:-1 st:-1 ts:2.153336 flags:0
+ret: 0 st:-1 ts:1.047503 flags:1
+ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
+ret: 0 st: 0 ts:-0.058333 flags:0
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st: 0 ts:2.835833 flags:1
+ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st:-1 ts:1.730004 flags:0
+ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st:-1 ts:0.624171 flags:1
+ret: 0 st: 0 dts:0.360000 pts:-102481911520608.625000 pos:40457 size:10045 flags:1
+ret: 0 st: 0 ts:-0.481667 flags:0
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st: 0 ts:2.412500 flags:1
+ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st:-1 ts:1.306672 flags:0
+ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret: 0 st:-1 ts:0.200839 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st: 0 ts:-0.904989 flags:0
+ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st: 0 ts:1.989178 flags:1
+ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st:-1 ts:0.883340 flags:0
+ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret:-1 st:-1 ts:-0.222493 flags:1
+ret:-1 st: 0 ts:2.671678 flags:0
+ret: 0 st: 0 ts:1.565844 flags:1
+ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret: 0 st:-1 ts:0.460008 flags:0
+ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg2threadivlc.mpg
@@ -1311,52 +1359,100 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79182 size:10791 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/a-mpeg2thread.mpg
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+tests/data/a-mpeg4-PSP.mp4
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
-ret: 0 st: 0 ts:0.788333 flags:0
-ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
-ret:-1 st: 0 ts:-0.317500 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
+ret: 0 st: 0 ts:0.800000 flags:0
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
+ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
-ret: 0 st: 0 ts:0.365000 flags:0
-ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
-ret:-1 st: 0 ts:-0.740833 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
+ret: 0 st: 0 ts:0.360000 flags:0
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
+ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
-ret: 0 st: 0 ts:-0.058333 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
-ret: 0 st: 0 ts:2.835833 flags:1
-ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
+ret: 0 st: 0 ts:-0.040000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
+ret: 0 st: 0 ts:2.840000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.360000 pts:-102481911520608.625000 pos:40457 size:10045 flags:1
-ret: 0 st: 0 ts:-0.481667 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
-ret: 0 st: 0 ts:2.412500 flags:1
-ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
+ret: 0 st: 0 ts:-0.480000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
+ret: 0 st: 0 ts:2.400000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
-ret: 0 st: 0 ts:-0.904989 flags:0
-ret: 0 st: 0 dts:-0.040000 pts:-102481911520608.625000 pos:9216 size:9961 flags:1
-ret: 0 st: 0 ts:1.989178 flags:1
-ret: 0 st: 0 dts:1.800000 pts:-102481911520608.625000 pos:172485 size:12232 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
+ret: 0 st: 0 ts:-0.920000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
+ret: 0 st: 0 ts:2.000000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.671678 flags:0
-ret: 0 st: 0 ts:1.565844 flags:1
-ret: 0 st: 0 dts:1.320000 pts:-102481911520608.625000 pos:123712 size:11970 flags:1
+ret:-1 st: 0 ts:2.680000 flags:0
+ret: 0 st: 0 ts:1.560000 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.840000 pts:-102481911520608.625000 pos:79253 size:10965 flags:1
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
+ret:-1 st:-1 ts:-0.645825 flags:1
+----------------
+tests/data/a-mpeg4-Q.avi
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st:-1 ts:-1.000000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st:-1 ts:1.894167 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 ts:0.800000 flags:0
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret:-1 st: 0 ts:-0.320000 flags:1
+ret:-1 st:-1 ts:2.576668 flags:0
+ret: 0 st:-1 ts:1.470835 flags:1
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st: 0 ts:0.360000 flags:0
+ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
+ret:-1 st: 0 ts:-0.760000 flags:1
+ret:-1 st:-1 ts:2.153336 flags:0
+ret: 0 st:-1 ts:1.047503 flags:1
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret: 0 st: 0 ts:-0.040000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 ts:2.840000 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st:-1 ts:1.730004 flags:0
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st:-1 ts:0.624171 flags:1
+ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
+ret: 0 st: 0 ts:-0.480000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 ts:2.400000 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st:-1 ts:1.306672 flags:0
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st:-1 ts:0.200839 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 ts:-0.920000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 ts:2.000000 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st:-1 ts:0.883340 flags:0
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret:-1 st:-1 ts:-0.222493 flags:1
+ret:-1 st: 0 ts:2.680000 flags:0
+ret: 0 st: 0 ts:1.560000 flags:1
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st:-1 ts:0.460008 flags:0
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-adap.avi
@@ -1501,102 +1597,6 @@ ret: 0 st: 0 ts:1.560000 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:100640 size:12464 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:35312 size:9987 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
-tests/data/a-mpeg4-PSP.mp4
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.680000 flags:0
-ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
-tests/data/a-mpeg4-Q.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
-ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
-ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
-ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
-ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
-ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
-ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
-ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
-ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
-ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
-ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.680000 flags:0
-ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
-ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-qprd.avi
@@ -1997,54 +1997,6 @@ ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1438 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
 ----------------
-tests/data/a-snow53.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
-ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
-ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
-ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
-ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
-ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
-ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
-ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
-ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
-ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
-ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.680000 flags:0
-ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
-ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
 tests/data/a-snow.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:2986 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
@@ -2091,6 +2043,54 @@ ret: 0 st: 0 ts:1.560000 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:46794 size:3663 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:18006 size:3229 flags:1
+ret:-1 st:-1 ts:-0.645825 flags:1
+----------------
+tests/data/a-snow53.avi
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st:-1 ts:-1.000000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st:-1 ts:1.894167 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
+ret: 0 st: 0 ts:0.800000 flags:0
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
+ret:-1 st: 0 ts:-0.320000 flags:1
+ret:-1 st:-1 ts:2.576668 flags:0
+ret: 0 st:-1 ts:1.470835 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
+ret: 0 st: 0 ts:0.360000 flags:0
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
+ret:-1 st: 0 ts:-0.760000 flags:1
+ret:-1 st:-1 ts:2.153336 flags:0
+ret: 0 st:-1 ts:1.047503 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
+ret: 0 st: 0 ts:-0.040000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st: 0 ts:2.840000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
+ret: 0 st:-1 ts:1.730004 flags:0
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
+ret: 0 st:-1 ts:0.624171 flags:1
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
+ret: 0 st: 0 ts:-0.480000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st: 0 ts:2.400000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
+ret: 0 st:-1 ts:1.306672 flags:0
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
+ret: 0 st:-1 ts:0.200839 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st: 0 ts:-0.920000 flags:0
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:72476 flags:1
+ret: 0 st: 0 ts:2.000000 flags:1
+ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:2585846 size:79731 flags:1
+ret: 0 st:-1 ts:0.883340 flags:0
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:1239314 size:74994 flags:1
+ret:-1 st:-1 ts:-0.222493 flags:1
+ret:-1 st: 0 ts:2.680000 flags:0
+ret: 0 st: 0 ts:1.560000 flags:1
+ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:1902900 size:78837 flags:1
+ret: 0 st:-1 ts:0.460008 flags:0
+ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:605698 size:71059 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-svq1.mov
@@ -2347,187 +2347,41 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:29644 size:8840 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/b-libav01.bmp
+tests/data/b-libav-bgr24.yuv
 ----------------
-tests/data/b-libav01.jpg
+tests/data/b-libav-gray.yuv
 ----------------
-tests/data/b-libav01.pgm
+tests/data/b-libav-monob.yuv
 ----------------
-tests/data/b-libav01.ppm
+tests/data/b-libav-monow.yuv
 ----------------
-tests/data/b-libav01.sgi
+tests/data/b-libav-pal8.yuv
 ----------------
-tests/data/b-libav01.tga
+tests/data/b-libav-rgb24.yuv
 ----------------
-tests/data/b-libav01.tiff
+tests/data/b-libav-rgb32.yuv
 ----------------
-tests/data/b-libav02.bmp
+tests/data/b-libav-rgb555.yuv
 ----------------
-tests/data/b-libav02.jpg
+tests/data/b-libav-rgb565.yuv
 ----------------
-tests/data/b-libav02.pgm
+tests/data/b-libav-yuv410p.yuv
 ----------------
-tests/data/b-libav02.ppm
+tests/data/b-libav-yuv411p.yuv
 ----------------
-tests/data/b-libav02.sgi
+tests/data/b-libav-yuv420p.yuv
 ----------------
-tests/data/b-libav02.tga
+tests/data/b-libav-yuv422p.yuv
 ----------------
-tests/data/b-libav02.tiff
+tests/data/b-libav-yuv444p.yuv
 ----------------
-tests/data/b-libav03.bmp
+tests/data/b-libav-yuvj420p.yuv
 ----------------
-tests/data/b-libav03.jpg
+tests/data/b-libav-yuvj422p.yuv
 ----------------
-tests/data/b-libav03.pgm
+tests/data/b-libav-yuvj444p.yuv
 ----------------
-tests/data/b-libav03.ppm
-----------------
-tests/data/b-libav03.sgi
-----------------
-tests/data/b-libav03.tga
-----------------
-tests/data/b-libav03.tiff
-----------------
-tests/data/b-libav04.bmp
-----------------
-tests/data/b-libav04.jpg
-----------------
-tests/data/b-libav04.pgm
-----------------
-tests/data/b-libav04.ppm
-----------------
-tests/data/b-libav04.sgi
-----------------
-tests/data/b-libav04.tga
-----------------
-tests/data/b-libav04.tiff
-----------------
-tests/data/b-libav05.bmp
-----------------
-tests/data/b-libav05.jpg
-----------------
-tests/data/b-libav05.pgm
-----------------
-tests/data/b-libav05.ppm
-----------------
-tests/data/b-libav05.sgi
-----------------
-tests/data/b-libav05.tga
-----------------
-tests/data/b-libav05.tiff
-----------------
-tests/data/b-libav06.bmp
-----------------
-tests/data/b-libav06.jpg
-----------------
-tests/data/b-libav06.pgm
-----------------
-tests/data/b-libav06.ppm
-----------------
-tests/data/b-libav06.sgi
-----------------
-tests/data/b-libav06.tga
-----------------
-tests/data/b-libav06.tiff
-----------------
-tests/data/b-libav07.bmp
-----------------
-tests/data/b-libav07.jpg
-----------------
-tests/data/b-libav07.pgm
-----------------
-tests/data/b-libav07.ppm
-----------------
-tests/data/b-libav07.sgi
-----------------
-tests/data/b-libav07.tga
-----------------
-tests/data/b-libav07.tiff
-----------------
-tests/data/b-libav08.bmp
-----------------
-tests/data/b-libav08.jpg
-----------------
-tests/data/b-libav08.pgm
-----------------
-tests/data/b-libav08.ppm
-----------------
-tests/data/b-libav08.sgi
-----------------
-tests/data/b-libav08.tga
-----------------
-tests/data/b-libav08.tiff
-----------------
-tests/data/b-libav09.bmp
-----------------
-tests/data/b-libav09.jpg
-----------------
-tests/data/b-libav09.pgm
-----------------
-tests/data/b-libav09.ppm
-----------------
-tests/data/b-libav09.sgi
-----------------
-tests/data/b-libav09.tga
-----------------
-tests/data/b-libav09.tiff
-----------------
-tests/data/b-libav10.bmp
-----------------
-tests/data/b-libav10.jpg
-----------------
-tests/data/b-libav10.pgm
-----------------
-tests/data/b-libav10.ppm
-----------------
-tests/data/b-libav10.sgi
-----------------
-tests/data/b-libav10.tga
-----------------
-tests/data/b-libav10.tiff
-----------------
-tests/data/b-libav11.bmp
-----------------
-tests/data/b-libav11.jpg
-----------------
-tests/data/b-libav11.pgm
-----------------
-tests/data/b-libav11.ppm
-----------------
-tests/data/b-libav11.sgi
-----------------
-tests/data/b-libav11.tga
-----------------
-tests/data/b-libav11.tiff
-----------------
-tests/data/b-libav12.bmp
-----------------
-tests/data/b-libav12.jpg
-----------------
-tests/data/b-libav12.pgm
-----------------
-tests/data/b-libav12.ppm
-----------------
-tests/data/b-libav12.sgi
-----------------
-tests/data/b-libav12.tga
-----------------
-tests/data/b-libav12.tiff
-----------------
-tests/data/b-libav13.bmp
-----------------
-tests/data/b-libav13.jpg
-----------------
-tests/data/b-libav13.pgm
-----------------
-tests/data/b-libav13.ppm
-----------------
-tests/data/b-libav13.sgi
-----------------
-tests/data/b-libav13.tga
-----------------
-tests/data/b-libav13.tiff
+tests/data/b-libav-yuyv422.yuv
 ----------------
 tests/data/b-libav.aif
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
@@ -2742,8 +2596,6 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:158912 size:27442 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/b-libav-bgr24.yuv
-----------------
 tests/data/b-libav.dv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
@@ -2929,8 +2781,6 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/b-libav-gray.yuv
-----------------
 tests/data/b-libav.gxf
 ret: 0 st: 0 dts:0.000000 pts:-184467440737095520.000000 pos:748 size:55568 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
@@ -3014,10 +2864,6 @@ ret:-1 st: 0 ts:2.671678 flags:0
 ret:-1 st: 0 ts:1.565850 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
-tests/data/b-libav-monob.yuv
-----------------
-tests/data/b-libav-monow.yuv
 ----------------
 tests/data/b-libav.mov
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
@@ -3120,8 +2966,6 @@ ret: 0 st: 0 dts:0.500000 pts:0.540000 pos:-1 size:16335 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 1 dts:0.500000 pts:0.500000 pos:-1 size:208 flags:1
 ----------------
-tests/data/b-libav-pal8.yuv
-----------------
 tests/data/b-libav.pbm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:317075 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
@@ -3208,14 +3052,6 @@ ret:-1 st: 0 ts:2.680000 flags:0
 ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
-tests/data/b-libav-rgb24.yuv
-----------------
-tests/data/b-libav-rgb32.yuv
-----------------
-tests/data/b-libav-rgb555.yuv
-----------------
-tests/data/b-libav-rgb565.yuv
 ----------------
 tests/data/b-libav.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:394 size:31384 flags:1
@@ -3471,20 +3307,184 @@ ret:-1 st: 0 ts:1.560000 flags:1
 ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/b-libav-yuv410p.yuv
+tests/data/b-libav01.bmp
 ----------------
-tests/data/b-libav-yuv411p.yuv
+tests/data/b-libav01.jpg
 ----------------
-tests/data/b-libav-yuv420p.yuv
+tests/data/b-libav01.pgm
 ----------------
-tests/data/b-libav-yuv422p.yuv
+tests/data/b-libav01.ppm
 ----------------
-tests/data/b-libav-yuv444p.yuv
+tests/data/b-libav01.sgi
 ----------------
-tests/data/b-libav-yuvj420p.yuv
+tests/data/b-libav01.tga
 ----------------
-tests/data/b-libav-yuvj422p.yuv
+tests/data/b-libav01.tiff
 ----------------
-tests/data/b-libav-yuvj444p.yuv
+tests/data/b-libav02.bmp
 ----------------
-tests/data/b-libav-yuyv422.yuv
+tests/data/b-libav02.jpg
+----------------
+tests/data/b-libav02.pgm
+----------------
+tests/data/b-libav02.ppm
+----------------
+tests/data/b-libav02.sgi
+----------------
+tests/data/b-libav02.tga
+----------------
+tests/data/b-libav02.tiff
+----------------
+tests/data/b-libav03.bmp
+----------------
+tests/data/b-libav03.jpg
+----------------
+tests/data/b-libav03.pgm
+----------------
+tests/data/b-libav03.ppm
+----------------
+tests/data/b-libav03.sgi
+----------------
+tests/data/b-libav03.tga
+----------------
+tests/data/b-libav03.tiff
+----------------
+tests/data/b-libav04.bmp
+----------------
+tests/data/b-libav04.jpg
+----------------
+tests/data/b-libav04.pgm
+----------------
+tests/data/b-libav04.ppm
+----------------
+tests/data/b-libav04.sgi
+----------------
+tests/data/b-libav04.tga
+----------------
+tests/data/b-libav04.tiff
+----------------
+tests/data/b-libav05.bmp
+----------------
+tests/data/b-libav05.jpg
+----------------
+tests/data/b-libav05.pgm
+----------------
+tests/data/b-libav05.ppm
+----------------
+tests/data/b-libav05.sgi
+----------------
+tests/data/b-libav05.tga
+----------------
+tests/data/b-libav05.tiff
+----------------
+tests/data/b-libav06.bmp
+----------------
+tests/data/b-libav06.jpg
+----------------
+tests/data/b-libav06.pgm
+----------------
+tests/data/b-libav06.ppm
+----------------
+tests/data/b-libav06.sgi
+----------------
+tests/data/b-libav06.tga
+----------------
+tests/data/b-libav06.tiff
+----------------
+tests/data/b-libav07.bmp
+----------------
+tests/data/b-libav07.jpg
+----------------
+tests/data/b-libav07.pgm
+----------------
+tests/data/b-libav07.ppm
+----------------
+tests/data/b-libav07.sgi
+----------------
+tests/data/b-libav07.tga
+----------------
+tests/data/b-libav07.tiff
+----------------
+tests/data/b-libav08.bmp
+----------------
+tests/data/b-libav08.jpg
+----------------
+tests/data/b-libav08.pgm
+----------------
+tests/data/b-libav08.ppm
+----------------
+tests/data/b-libav08.sgi
+----------------
+tests/data/b-libav08.tga
+----------------
+tests/data/b-libav08.tiff
+----------------
+tests/data/b-libav09.bmp
+----------------
+tests/data/b-libav09.jpg
+----------------
+tests/data/b-libav09.pgm
+----------------
+tests/data/b-libav09.ppm
+----------------
+tests/data/b-libav09.sgi
+----------------
+tests/data/b-libav09.tga
+----------------
+tests/data/b-libav09.tiff
+----------------
+tests/data/b-libav10.bmp
+----------------
+tests/data/b-libav10.jpg
+----------------
+tests/data/b-libav10.pgm
+----------------
+tests/data/b-libav10.ppm
+----------------
+tests/data/b-libav10.sgi
+----------------
+tests/data/b-libav10.tga
+----------------
+tests/data/b-libav10.tiff
+----------------
+tests/data/b-libav11.bmp
+----------------
+tests/data/b-libav11.jpg
+----------------
+tests/data/b-libav11.pgm
+----------------
+tests/data/b-libav11.ppm
+----------------
+tests/data/b-libav11.sgi
+----------------
+tests/data/b-libav11.tga
+----------------
+tests/data/b-libav11.tiff
+----------------
+tests/data/b-libav12.bmp
+----------------
+tests/data/b-libav12.jpg
+----------------
+tests/data/b-libav12.pgm
+----------------
+tests/data/b-libav12.ppm
+----------------
+tests/data/b-libav12.sgi
+----------------
+tests/data/b-libav12.tga
+----------------
+tests/data/b-libav12.tiff
+----------------
+tests/data/b-libav13.bmp
+----------------
+tests/data/b-libav13.jpg
+----------------
+tests/data/b-libav13.pgm
+----------------
+tests/data/b-libav13.ppm
+----------------
+tests/data/b-libav13.sgi
+----------------
+tests/data/b-libav13.tga
+----------------
+tests/data/b-libav13.tiff

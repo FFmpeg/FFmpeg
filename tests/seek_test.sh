@@ -1,5 +1,8 @@
 #!/bin/sh
 
+LC_ALL=C
+export LC_ALL
+
 datadir="tests/data"
 
 logfile="$datadir/seek.regression"
