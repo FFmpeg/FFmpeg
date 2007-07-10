@@ -460,6 +460,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     int channels;
     int32_t outputsamples;
+    int hassize;
+    int readsamplesize;
+    int wasted_bytes;
+    int isnotcompressed;
 
     /* short-circuit null buffers */
     if (!inbuffer || !input_buffer_size)
@@ -479,23 +483,9 @@ static int alac_decode_frame(AVCodecContext *avctx,
         alac->context_initialized = 1;
     }
 
-    outputsamples = alac->setinfo_max_samples_per_frame;
-
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
     channels = get_bits(&alac->gb, 3);
-
-    *outputsize = outputsamples * alac->bytespersample;
-
-    switch(channels) {
-    case 0: { /* 1 channel */
-        int hassize;
-        int isnotcompressed;
-        int readsamplesize;
-
-        int wasted_bytes;
-        int ricemodifier;
-
 
         /* 2^result = something to do with output waiting.
          * perhaps matters if we read > 1 frame in a pass?
@@ -514,10 +504,15 @@ static int alac_decode_frame(AVCodecContext *avctx,
             /* now read the number of samples,
              * as a 32bit integer */
             outputsamples = get_bits(&alac->gb, 32);
-            *outputsize = outputsamples * alac->bytespersample;
-        }
+        } else
+            outputsamples = alac->setinfo_max_samples_per_frame;
 
-        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8);
+        *outputsize = outputsamples * alac->bytespersample;
+        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels;
+
+    switch(channels) {
+    case 0: { /* 1 channel */
+        int ricemodifier;
 
         if (!isnotcompressed) {
          /* so it is compressed */
@@ -628,36 +623,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         break;
     }
     case 1: { /* 2 channels */
-        int hassize;
-        int isnotcompressed;
-        int readsamplesize;
-
-        int wasted_bytes;
-
         uint8_t interlacing_shift;
         uint8_t interlacing_leftweight;
-
-        /* 2^result = something to do with output waiting.
-         * perhaps matters if we read > 1 frame in a pass?
-         */
-        get_bits(&alac->gb, 4);
-
-        get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
-
-        hassize = get_bits(&alac->gb, 1); /* the output sample size is stored soon */
-
-        wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
-
-        isnotcompressed = get_bits(&alac->gb, 1); /* whether the frame is compressed */
-
-        if (hassize) {
-            /* now read the number of samples,
-             * as a 32bit integer */
-            outputsamples = get_bits(&alac->gb, 32);
-            *outputsize = outputsamples * alac->bytespersample;
-        }
-
-        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + 1;
 
         if (!isnotcompressed) {
          /* compressed */
