@@ -24,9 +24,6 @@
 #if defined(__MINGW32__)
 #include <sys/types.h>
 #include <sys/timeb.h>
-#elif defined(CONFIG_OS2)
-#include <string.h>
-#include <sys/time.h>
 #else
 #include <unistd.h>
 #include <fcntl.h>

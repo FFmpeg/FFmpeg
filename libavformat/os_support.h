@@ -27,10 +27,8 @@
  * miscellaneous OS support macros and functions.
  *
  * - socklen_t typedef (BeOS, Innotek libc)
- * - usleep() (Win32, BeOS, OS/2)
+ * - usleep() (Win32, BeOS)
  * - lseek() (Win32)
- * - floatf() (OS/2)
- * - strcasecmp() (OS/2)
  * - closesocket()
  * - poll() (BeOS, MinGW)
  */
@@ -66,12 +64,6 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #    warning SA_RESTART not implemented; ffserver might misbehave.
 #    define SA_RESTART 0
 #  endif
-#endif
-
-#if defined(CONFIG_OS2)
-#include <stdlib.h>
-static inline int usleep(unsigned int t) { return _sleep2(t / 1000); }
-static inline int strcasecmp(const char* s1, const char* s2) { return stricmp(s1,s2); }
 #endif
 
 /* most of the time closing a socket is just closing an fd */

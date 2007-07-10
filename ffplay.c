@@ -35,23 +35,6 @@
 #undef main /* We don't want SDL to override our main() */
 #endif
 
-#ifdef CONFIG_OS2
-#define INCL_DOS
- #include <os2.h>
- #include <stdio.h>
-
- void MorphToPM()
- {
-   PPIB pib;
-   PTIB tib;
-
-   DosGetInfoBlocks(&tib, &pib);
-
-   // Change flag from VIO to PM:
-   if (pib->pib_ultype==2) pib->pib_ultype = 3;
- }
-#endif
-
 #undef exit
 
 //#define DEBUG_SYNC
@@ -2532,14 +2515,6 @@ int main(int argc, char **argv)
 
     /* register all codecs, demux and protocols */
     av_register_all();
-
-    #ifdef CONFIG_OS2
-      MorphToPM(); // Morph the VIO application to a PM one to be able to use Win* functions
-
-      // Make stdout and stderr unbuffered
-      setbuf( stdout, NULL );
-      setbuf( stderr, NULL );
-    #endif
 
     parse_options(argc, argv, options);
 

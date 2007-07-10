@@ -89,6 +89,7 @@ version <next>
 - codebook generator
 - RoQ video encoder
 - QTRLE encoder
+- OS/2 support removed
 
 version 0.4.9-pre1:
 

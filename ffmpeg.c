@@ -44,11 +44,6 @@
 #include <termios.h>
 #include <sys/resource.h>
 #endif
-#ifdef CONFIG_OS2
-#include <sys/types.h>
-#include <sys/select.h>
-#include <stdlib.h>
-#endif
 #undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 
@@ -3110,7 +3105,7 @@ static void opt_pass(const char *pass_str)
     do_pass = pass;
 }
 
-#if defined(__MINGW32__) || defined(CONFIG_OS2)
+#if defined(__MINGW32__)
 static int64_t getutime(void)
 {
   return av_gettime();

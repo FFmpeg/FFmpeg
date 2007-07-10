@@ -101,13 +101,7 @@
 #    define snprintf _snprintf
 #    define vsnprintf _vsnprintf
 
-/* __MINGW32__ end */
-#elif defined (CONFIG_OS2)
-/* OS/2 EMX */
-
-#    include <float.h>
-
-#endif /* !__MINGW32__ && CONFIG_OS2 */
+#endif /* !__MINGW32__ */
 
 #ifdef USE_FASTMEMCPY
 #    include "libvo/fastmemcpy.h"
