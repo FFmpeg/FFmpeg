@@ -2347,6 +2347,8 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
 {
     int vo_ver_id;
 
+    if (!ENABLE_MPEG4_ENCODER)  return;
+
     if(s->max_b_frames || s->quarter_sample){
         vo_ver_id= 5;
         s->vo_type= ADV_SIMPLE_VO_TYPE;
@@ -2447,8 +2449,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     int time_incr;
     int time_div, time_mod;
-
-    if (!ENABLE_MPEG4_ENCODER)  return;
 
     if(s->pict_type==I_TYPE){
         if(!(s->flags&CODEC_FLAG_GLOBAL_HEADER)){
