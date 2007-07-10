@@ -29,6 +29,7 @@
 #include "mmx.h"
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
+#include "h263.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -3347,8 +3348,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 #endif //CONFIG_ENCODERS
 
+        if (ENABLE_ANY_H263) {
         c->h263_v_loop_filter= h263_v_loop_filter_mmx;
         c->h263_h_loop_filter= h263_h_loop_filter_mmx;
+        }
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
 

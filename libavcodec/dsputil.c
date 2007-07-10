@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "simple_idct.h"
 #include "faandct.h"
+#include "h263.h"
 #include "snow.h"
 
 /* snow.c */
@@ -4107,8 +4108,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_c;
     c->h264_loop_filter_strength= NULL;
 
+    if (ENABLE_ANY_H263) {
     c->h263_h_loop_filter= h263_h_loop_filter_c;
     c->h263_v_loop_filter= h263_v_loop_filter_c;
+    }
 
     c->h261_loop_filter= h261_loop_filter_c;
 
