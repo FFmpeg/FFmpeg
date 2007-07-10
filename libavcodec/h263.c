@@ -2259,25 +2259,12 @@ void ff_mpeg4_stuffing(PutBitContext * pbc)
 }
 
 /* must be called before writing the header */
-void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
-    int time_div, time_mod;
-
-    assert(s->current_picture_ptr->pts != AV_NOPTS_VALUE);
-    s->time= s->current_picture_ptr->pts*s->avctx->time_base.num;
-
-    time_div= s->time/s->avctx->time_base.den;
-    time_mod= s->time%s->avctx->time_base.den;
-
+void ff_set_mpeg4_time(MpegEncContext * s){
     if(s->pict_type==B_TYPE){
-        s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
-        assert(s->pb_time > 0 && s->pb_time < s->pp_time);
         ff_mpeg4_init_direct_mv(s);
     }else{
         s->last_time_base= s->time_base;
-        s->time_base= time_div;
-        s->pp_time= s->time - s->last_non_b_time;
-        s->last_non_b_time= s->time;
-        assert(picture_number==0 || s->pp_time > 0);
+        s->time_base= s->time/s->avctx->time_base.den;
     }
 }
 

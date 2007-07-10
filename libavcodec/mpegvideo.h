@@ -834,7 +834,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
                         int *px, int *py);
 void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                    int dir);
-void ff_set_mpeg4_time(MpegEncContext * s, int picture_number);
+void ff_set_mpeg4_time(MpegEncContext * s);
 void mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 #ifdef CONFIG_ENCODERS
 void h263_encode_init(MpegEncContext *s);

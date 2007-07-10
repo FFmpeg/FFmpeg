@@ -2671,6 +2671,21 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
     return 0;
 }
 
+/* must be called before writing the header */
+static void set_frame_distances(MpegEncContext * s){
+    assert(s->current_picture_ptr->pts != AV_NOPTS_VALUE);
+    s->time= s->current_picture_ptr->pts*s->avctx->time_base.num;
+
+    if(s->pict_type==B_TYPE){
+        s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
+        assert(s->pb_time > 0 && s->pb_time < s->pp_time);
+    }else{
+        s->pp_time= s->time - s->last_non_b_time;
+        s->last_non_b_time= s->time;
+        assert(s->picture_number==0 || s->pp_time > 0);
+    }
+}
+
 static int encode_picture(MpegEncContext *s, int picture_number)
 {
     int i;
@@ -2685,7 +2700,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     /* we need to initialize some time vars before we can encode b-frames */
     // RAL: Condition added for MPEG1VIDEO
     if (s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO || (s->h263_pred && !s->h263_msmpeg4))
-        ff_set_mpeg4_time(s, s->picture_number);  //FIXME rename and use has_b_frames or similar
+        set_frame_distances(s);
+    if(ENABLE_MPEG4_ENCODER && s->codec_id == CODEC_ID_MPEG4)
+        ff_set_mpeg4_time(s);
 
     s->me.scene_change_score=0;
 
