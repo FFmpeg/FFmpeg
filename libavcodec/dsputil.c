@@ -4109,8 +4109,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->h264_loop_filter_strength= NULL;
 
     if (ENABLE_ANY_H263) {
-    c->h263_h_loop_filter= h263_h_loop_filter_c;
-    c->h263_v_loop_filter= h263_v_loop_filter_c;
+        c->h263_h_loop_filter= h263_h_loop_filter_c;
+        c->h263_v_loop_filter= h263_v_loop_filter_c;
     }
 
     c->h261_loop_filter= h261_loop_filter_c;

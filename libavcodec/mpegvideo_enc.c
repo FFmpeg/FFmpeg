@@ -1701,7 +1701,8 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         break;
     case CODEC_ID_MPEG4:
         if (ENABLE_MPEG4_ENCODER)
-        mpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
+            mpeg4_encode_mb(s, s->block, motion_x, motion_y);
+        break;
     case CODEC_ID_MSMPEG4V2:
     case CODEC_ID_MSMPEG4V3:
     case CODEC_ID_WMV1:
@@ -1723,7 +1724,8 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_RV20:
         if (ENABLE_H263_ENCODER || ENABLE_H263P_ENCODER ||
             ENABLE_FLV_ENCODER  || ENABLE_RV10_ENCODER  || ENABLE_RV20_ENCODER)
-        h263_encode_mb(s, s->block, motion_x, motion_y); break;
+            h263_encode_mb(s, s->block, motion_x, motion_y);
+        break;
     case CODEC_ID_MJPEG:
         if (ENABLE_MJPEG_ENCODER)
             ff_mjpeg_encode_mb(s, s->block);
@@ -2031,7 +2033,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     case CODEC_ID_H263P:
     case CODEC_ID_FLV1:
         if (ENABLE_H263_ENCODER || ENABLE_H263P_ENCODER || ENABLE_FLV_ENCODER)
-        s->gob_index = ff_h263_get_gob_height(s);
+            s->gob_index = ff_h263_get_gob_height(s);
         break;
     case CODEC_ID_MPEG4:
         if(ENABLE_MPEG4_ENCODER && s->partitioned_frame)
@@ -2135,8 +2137,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     switch(s->codec_id){
                     case CODEC_ID_MPEG4:
                         if (ENABLE_MPEG4_ENCODER) {
-                        ff_mpeg4_encode_video_packet_header(s);
-                        ff_mpeg4_clean_buffers(s);
+                            ff_mpeg4_encode_video_packet_header(s);
+                            ff_mpeg4_clean_buffers(s);
                         }
                     break;
                     case CODEC_ID_MPEG1VIDEO:
@@ -2149,7 +2151,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case CODEC_ID_H263:
                     case CODEC_ID_H263P:
                         if (ENABLE_H263_ENCODER || ENABLE_H263P_ENCODER)
-                        h263_encode_gob_header(s, mb_y);
+                            h263_encode_gob_header(s, mb_y);
                     break;
                     }
 
@@ -2482,18 +2484,18 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     break;
                 case CANDIDATE_MB_TYPE_DIRECT:
                     if (ENABLE_MPEG4_ENCODER) {
-                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-                    s->mb_intra= 0;
-                    motion_x=s->b_direct_mv_table[xy][0];
-                    motion_y=s->b_direct_mv_table[xy][1];
-                    ff_mpeg4_set_direct_mv(s, motion_x, motion_y);
+                        s->mv_dir = MV_DIR_FORWARD|MV_DIR_BACKWARD|MV_DIRECT;
+                        s->mb_intra= 0;
+                        motion_x=s->b_direct_mv_table[xy][0];
+                        motion_y=s->b_direct_mv_table[xy][1];
+                        ff_mpeg4_set_direct_mv(s, motion_x, motion_y);
                     }
                     break;
                 case CANDIDATE_MB_TYPE_DIRECT0:
                     if (ENABLE_MPEG4_ENCODER) {
-                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-                    s->mb_intra= 0;
-                    ff_mpeg4_set_direct_mv(s, 0, 0);
+                        s->mv_dir = MV_DIR_FORWARD|MV_DIR_BACKWARD|MV_DIRECT;
+                        s->mb_intra= 0;
+                        ff_mpeg4_set_direct_mv(s, 0, 0);
                     }
                     break;
                 case CANDIDATE_MB_TYPE_BIDIR:
@@ -2669,13 +2671,13 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
         switch(s->codec_id){
         case CODEC_ID_MPEG4:
             if (ENABLE_MPEG4_ENCODER)
-            ff_clean_mpeg4_qscales(s);
+                ff_clean_mpeg4_qscales(s);
             break;
         case CODEC_ID_H263:
         case CODEC_ID_H263P:
         case CODEC_ID_FLV1:
             if (ENABLE_H263_ENCODER||ENABLE_H263P_ENCODER||ENABLE_FLV_ENCODER)
-            ff_clean_h263_qscales(s);
+                ff_clean_h263_qscales(s);
             break;
         }
 
