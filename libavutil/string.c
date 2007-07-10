@@ -25,7 +25,10 @@
 
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {
-    while (*pfx && *pfx++ == *str++);
+    while (*pfx && *pfx == *str) {
+        pfx++;
+        str++;
+    }
     if (!*pfx && ptr)
         *ptr = str;
     return !*pfx;
@@ -33,7 +36,10 @@ int av_strstart(const char *str, const char *pfx, const char **ptr)
 
 int av_stristart(const char *str, const char *pfx, const char **ptr)
 {
-    while (*pfx && toupper((unsigned)*pfx++) == toupper((unsigned)*str++));
+    while (*pfx && toupper((unsigned)*pfx) == toupper((unsigned)*str)) {
+        pfx++;
+        str++;
+    }
     if (!*pfx && ptr)
         *ptr = str;
     return !*pfx;
