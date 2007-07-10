@@ -2461,6 +2461,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     int time_incr;
     int time_div, time_mod;
 
+    if (!ENABLE_MPEG4_ENCODER)  return;
+
     if(s->pict_type==I_TYPE){
         if(!(s->flags&CODEC_FLAG_GLOBAL_HEADER)){
             if(s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT) //HACK, the reference sw is buggy
