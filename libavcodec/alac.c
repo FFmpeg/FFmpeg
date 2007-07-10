@@ -86,8 +86,8 @@ typedef struct {
     uint8_t setinfo_rice_kmodifier; /* 0x0e */
     uint8_t setinfo_7f; /* 0x02 */
     uint16_t setinfo_80; /* 0x00ff */
-    uint32_t setinfo_82; /* 0x000020e7 */
-    uint32_t setinfo_86; /* 0x00069fe4 */
+    uint32_t setinfo_82; /* 0x000020e7 */ /* max sample size?? */
+    uint32_t setinfo_86; /* 0x00069fe4 */ /* bit rate (average)?? */
     uint32_t setinfo_8a_rate; /* 0x0000ac44 */
     /* end setinfo stuff */
 
