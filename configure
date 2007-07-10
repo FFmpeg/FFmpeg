@@ -71,7 +71,6 @@ show_help(){
   echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
   echo "  --enable-swscaler        software scaler support [default=no]"
   echo "  --enable-beosthreads     use BeOS threads [default=no]"
-  echo "  --enable-os2threads      use OS/2 threads [default=no]"
   echo "  --enable-pthreads        use pthreads [default=no]"
   echo "  --enable-w32threads      use Win32 threads [default=no]"
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
@@ -613,7 +612,6 @@ CONFIG_LIST='
 
 THREADS_LIST='
     beosthreads
-    os2threads
     pthreads
     w32threads
 '
@@ -676,7 +674,6 @@ HAVE_LIST="
     malloc_h
     memalign
     mlib
-    os2
     ppc64
     sdl
     sdl_video_size
@@ -1183,27 +1180,6 @@ case $targetos in
   irix*)
     targetos=irix
     ranlib="echo ignoring ranlib"
-    ;;
-  os/2)
-    TMPE=$TMPE".exe"
-    ar="emxomfar -p128"
-    ranlib="echo ignoring ranlib"
-    strip="echo ignoring strip"
-    add_cflags "-Zomf"
-    FFLDFLAGS="-Zomf -Zstack 16384 -s"
-    SHFLAGS="-Zdll -Zomf"
-    FFSERVERLDFLAGS=""
-    LIBPREF=""
-    LIBSUF=".lib"
-    SLIBPREF=""
-    SLIBSUF=".dll"
-    EXESUF=".exe"
-    osextralibs=""
-    pkg_requires=""
-    dv1394="no"
-    ffserver="no"
-    vhook="no"
-    os2="yes"
     ;;
   *)
     targetos="${targetos}-UNKNOWN"
