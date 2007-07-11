@@ -58,6 +58,11 @@ CodecTags ff_mkv_codec_tags[]={
     {"A_REAL/ATRC"      , CODEC_ID_ATRAC3},
     {"A_REAL/COOK"      , CODEC_ID_COOK},
 //    {"A_REAL/SIPR"      , CODEC_ID_SIPRO},
+
+    {"S_TEXT/ASCII"     , CODEC_ID_TEXT},
+    {"S_TEXT/UTF8"      , CODEC_ID_TEXT},
+    {"S_VOBSUB"         , CODEC_ID_DVD_SUBTITLE},
+
     {NULL               , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };

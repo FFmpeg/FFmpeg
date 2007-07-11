@@ -2028,10 +2028,8 @@ matroska_read_header (AVFormatContext    *s,
             track = matroska->tracks[i];
             track->stream_index = -1;
 
-            /* libavformat does not really support subtitles.
-             * Also apply some sanity checks. */
-            if ((track->type == MATROSKA_TRACK_TYPE_SUBTITLE) ||
-                (track->codec_id == NULL))
+            /* Apply some sanity checks. */
+            if (track->codec_id == NULL)
                 continue;
 
             for(j=0; ff_mkv_codec_tags[j].str; j++){
