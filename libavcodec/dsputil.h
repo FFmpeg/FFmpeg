@@ -47,6 +47,7 @@ void j_rev_dct (DCTELEM *data);
 void j_rev_dct4 (DCTELEM *data);
 void j_rev_dct2 (DCTELEM *data);
 void j_rev_dct1 (DCTELEM *data);
+void ff_mpeg_idct_c(DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmx2(DCTELEM *block);

@@ -3753,6 +3753,17 @@ void ff_float_to_int16_c(int16_t *dst, const float *src, int len){
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
  converted */
+static void ff_mpeg_idct_put_c(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mpeg_idct_c(block);
+    put_pixels_clamped_c(block, dest, line_size);
+}
+static void ff_mpeg_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mpeg_idct_c(block);
+    add_pixels_clamped_c(block, dest, line_size);
+}
+
 static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
@@ -3890,6 +3901,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_put= ff_vp3_idct_put_c;
             c->idct_add= ff_vp3_idct_add_c;
             c->idct    = ff_vp3_idct_c;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }else if(avctx->idct_algo==FF_IDCT_MPEG){
+            c->idct_put= ff_mpeg_idct_put_c;
+            c->idct_add= ff_mpeg_idct_add_c;
+            c->idct    = ff_mpeg_idct_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put= simple_idct_put;

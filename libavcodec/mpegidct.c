@@ -41,7 +41,6 @@
 /* this code assumes >> to be a two's-complement arithmetic */
 /* right shift: (-2)>>1 == -1 , (-3)>>1 == -2               */
 
-#include "config.h"
 
 #define W1 2841 /* 2048*sqrt(2)*cos(1*pi/16) */
 #define W2 2676 /* 2048*sqrt(2)*cos(2*pi/16) */
@@ -49,18 +48,6 @@
 #define W5 1609 /* 2048*sqrt(2)*cos(5*pi/16) */
 #define W6 1108 /* 2048*sqrt(2)*cos(6*pi/16) */
 #define W7 565  /* 2048*sqrt(2)*cos(7*pi/16) */
-
-/* global declarations */
-void Initialize_Fast_IDCT _ANSI_ARGS_((void));
-void Fast_IDCT _ANSI_ARGS_((short *block));
-
-/* private data */
-static short iclip[1024]; /* clipping table */
-static short *iclp;
-
-/* private prototypes */
-static void idctrow _ANSI_ARGS_((short *blk));
-static void idctcol _ANSI_ARGS_((short *blk));
 
 /* row (horizontal) IDCT
  *
@@ -144,7 +131,7 @@ short *blk;
         (x4 = blk[8*1]) | (x5 = blk[8*7]) | (x6 = blk[8*5]) | (x7 = blk[8*3])))
   {
     blk[8*0]=blk[8*1]=blk[8*2]=blk[8*3]=blk[8*4]=blk[8*5]=blk[8*6]=blk[8*7]=
-      iclp[(blk[8*0]+32)>>6];
+      (blk[8*0]+32)>>6;
     return;
   }
 
@@ -178,18 +165,18 @@ short *blk;
   x4 = (181*(x4-x5)+128)>>8;
 
   /* fourth stage */
-  blk[8*0] = iclp[(x7+x1)>>14];
-  blk[8*1] = iclp[(x3+x2)>>14];
-  blk[8*2] = iclp[(x0+x4)>>14];
-  blk[8*3] = iclp[(x8+x6)>>14];
-  blk[8*4] = iclp[(x8-x6)>>14];
-  blk[8*5] = iclp[(x0-x4)>>14];
-  blk[8*6] = iclp[(x3-x2)>>14];
-  blk[8*7] = iclp[(x7-x1)>>14];
+  blk[8*0] = (x7+x1)>>14;
+  blk[8*1] = (x3+x2)>>14;
+  blk[8*2] = (x0+x4)>>14;
+  blk[8*3] = (x8+x6)>>14;
+  blk[8*4] = (x8-x6)>>14;
+  blk[8*5] = (x0-x4)>>14;
+  blk[8*6] = (x3-x2)>>14;
+  blk[8*7] = (x7-x1)>>14;
 }
 
 /* two dimensional inverse discrete cosine transform */
-void Fast_IDCT(block)
+void ff_mpeg_idct_c(block)
 short *block;
 {
   int i;
@@ -199,13 +186,4 @@ short *block;
 
   for (i=0; i<8; i++)
     idctcol(block+i);
-}
-
-void Initialize_Fast_IDCT()
-{
-  int i;
-
-  iclp = iclip+512;
-  for (i= -512; i<512; i++)
-    iclp[i] = (i<-256) ? -256 : ((i>255) ? 255 : i);
 }
