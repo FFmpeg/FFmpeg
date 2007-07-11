@@ -34,9 +34,9 @@
 #include "fifo.h"
 #include "avstring.h"
 
-#ifdef __MINGW32__
+#if defined(HAVE_CONIO_H)
 #include <conio.h>
-#else
+#elif defined(HAVE_TERMIOS_H)
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -277,7 +277,7 @@ typedef struct AVInputFile {
     int nb_streams;       /* nb streams we are aware of */
 } AVInputFile;
 
-#ifndef __MINGW32__
+#ifdef HAVE_TERMIOS_H
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
@@ -285,7 +285,7 @@ static struct termios oldtty;
 
 static void term_exit(void)
 {
-#ifndef __MINGW32__
+#ifdef HAVE_TERMIOS_H
     tcsetattr (0, TCSANOW, &oldtty);
 #endif
 }
@@ -301,7 +301,7 @@ sigterm_handler(int sig)
 
 static void term_init(void)
 {
-#ifndef __MINGW32__
+#ifdef HAVE_TERMIOS_H
     struct termios tty;
 
     tcgetattr (0, &tty);
@@ -334,10 +334,10 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-#ifdef __MINGW32__
+#if defined(HAVE_CONIO_H)
     if(kbhit())
         return(getch());
-#else
+#elif defined(HAVE_TERMIOS_H)
     int n = 1;
     unsigned char ch;
 #ifndef CONFIG_BEOS_NETSERVER

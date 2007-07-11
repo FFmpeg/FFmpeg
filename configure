@@ -651,6 +651,7 @@ HAVE_LIST="
     arpa_inet_h
     byteswap_h
     cmov
+    conio_h
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -681,6 +682,7 @@ HAVE_LIST="
     soundcard_h
     sys_poll_h
     sys_soundcard_h
+    termios_h
     threads
 "
 
@@ -1509,6 +1511,9 @@ fi
 check_header byteswap.h
 
 check_func mkstemp
+
+check_header termios.h
+check_header conio.h
 
 check_header arpa/inet.h
 
