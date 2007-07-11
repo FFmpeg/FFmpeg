@@ -13,7 +13,6 @@ OBJS= bitstream.o \
       jrevdct.o \
       jfdctfst.o \
       jfdctint.o\
-      mpegidct.o \
       resample.o \
       resample2.o \
       dsputil.o \
