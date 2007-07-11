@@ -1345,7 +1345,7 @@ int av_tempfile(char *prefix, char **filename) {
         return -1;
     }
 #if !defined(HAVE_MKSTEMP)
-    fd = open(*filename, _O_RDWR | _O_BINARY | _O_CREAT, 0444);
+    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
