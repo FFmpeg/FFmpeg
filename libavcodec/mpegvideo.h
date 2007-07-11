@@ -762,6 +762,19 @@ static inline int get_bits_diff(MpegEncContext *s){
     return bits - last;
 }
 
+static inline int ff_h263_round_chroma(int x){
+    static const uint8_t h263_chroma_roundtab[16] = {
+    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+        0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+    };
+    if (x >= 0)
+        return  (h263_chroma_roundtab[x & 0xf] + ((x >> 3) & ~1));
+    else {
+        x = -x;
+        return -(h263_chroma_roundtab[x & 0xf] + ((x >> 3) & ~1));
+    }
+}
+
 /* motion_est.c */
 void ff_estimate_p_frame_motion(MpegEncContext * s,
                              int mb_x, int mb_y);
@@ -871,7 +884,6 @@ int ff_h263_resync(MpegEncContext *s);
 int ff_h263_get_gob_height(MpegEncContext *s);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
-inline int ff_h263_round_chroma(int x);
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
 
 

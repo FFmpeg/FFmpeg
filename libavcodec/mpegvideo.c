@@ -70,11 +70,6 @@ void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_e
 //#define DEBUG
 
 
-static const uint8_t h263_chroma_roundtab[16] = {
-//  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
-};
-
 static const uint8_t ff_default_chroma_qscale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
@@ -1590,15 +1585,6 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
         pix_op[lowres](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
     }
     //FIXME h261 lowres loop filter
-}
-
-inline int ff_h263_round_chroma(int x){
-    if (x >= 0)
-        return  (h263_chroma_roundtab[x & 0xf] + ((x >> 3) & ~1));
-    else {
-        x = -x;
-        return -(h263_chroma_roundtab[x & 0xf] + ((x >> 3) & ~1));
-    }
 }
 
 static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
