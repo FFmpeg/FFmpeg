@@ -22,6 +22,7 @@
 #include "allformats.h"
 #include "opt.h"
 #include "avstring.h"
+#include "riff.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -1654,6 +1655,49 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
             st->codec->codec_id = CODEC_ID_AC3;
     }
     return !!fmt;
+}
+
+unsigned int codec_get_tag(const AVCodecTag *tags, int id)
+{
+    while (tags->id != CODEC_ID_NONE) {
+        if (tags->id == id)
+            return tags->tag;
+        tags++;
+    }
+    return 0;
+}
+
+enum CodecID codec_get_id(const AVCodecTag *tags, unsigned int tag)
+{
+    while (tags->id != CODEC_ID_NONE) {
+        if(   toupper((tag >> 0)&0xFF) == toupper((tags->tag >> 0)&0xFF)
+           && toupper((tag >> 8)&0xFF) == toupper((tags->tag >> 8)&0xFF)
+           && toupper((tag >>16)&0xFF) == toupper((tags->tag >>16)&0xFF)
+           && toupper((tag >>24)&0xFF) == toupper((tags->tag >>24)&0xFF))
+            return tags->id;
+        tags++;
+    }
+    return CODEC_ID_NONE;
+}
+
+unsigned int av_codec_get_tag(const AVCodecTag *tags[4], enum CodecID id)
+{
+    int i;
+    for(i=0; tags && tags[i]; i++){
+        int tag= codec_get_tag(tags[i], id);
+        if(tag) return tag;
+    }
+    return 0;
+}
+
+enum CodecID av_codec_get_id(const AVCodecTag *tags[4], unsigned int tag)
+{
+    int i;
+    for(i=0; tags && tags[i]; i++){
+        enum CodecID id= codec_get_id(tags[i], tag);
+        if(id!=CODEC_ID_NONE) return id;
+    }
+    return CODEC_ID_NONE;
 }
 
 /* absolute maximum size we read until we abort */
