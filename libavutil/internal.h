@@ -270,21 +270,7 @@ if((y)<(x)){\
 /* btw, rintf() is existing on fbsd too -- alex */
 static av_always_inline long int lrintf(float x)
 {
-#ifdef __MINGW32__
-#  ifdef ARCH_X86_32
-    int32_t i;
-    asm volatile(
-        "fistpl %0\n\t"
-        : "=m" (i) : "t" (x) : "st"
-    );
-    return i;
-#  else
-    /* XXX: incorrect, but make it compile */
-    return (int)(x + (x < 0 ? -0.5 : 0.5));
-#  endif /* ARCH_X86_32 */
-#else
     return (int)(rint(x));
-#endif /* __MINGW32__ */
 }
 #endif /* HAVE_LRINTF */
 
