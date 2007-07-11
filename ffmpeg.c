@@ -34,15 +34,15 @@
 #include "fifo.h"
 #include "avstring.h"
 
-#if defined(HAVE_CONIO_H)
-#include <conio.h>
-#elif defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H)
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <sys/resource.h>
+#elif defined(HAVE_CONIO_H)
+#include <conio.h>
 #endif
 #undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
@@ -334,10 +334,7 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-#if defined(HAVE_CONIO_H)
-    if(kbhit())
-        return(getch());
-#elif defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H)
     int n = 1;
     unsigned char ch;
 #ifndef CONFIG_BEOS_NETSERVER
@@ -357,6 +354,9 @@ static int read_key(void)
 
         return n;
     }
+#elif defined(HAVE_CONIO_H)
+    if(kbhit())
+        return(getch());
 #endif
     return -1;
 }
