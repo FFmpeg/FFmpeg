@@ -95,6 +95,7 @@ typedef struct MatroskaAudioTrack {
 typedef struct MatroskaSubtitleTrack {
     MatroskaTrack track;
 
+    int ass;
     //..
 } MatroskaSubtitleTrack;
 
@@ -2145,6 +2146,13 @@ matroska_read_header (AVFormatContext    *s,
                 }
             }
 
+            else if (codec_id == CODEC_ID_TEXT) {
+                MatroskaSubtitleTrack *subtrack=(MatroskaSubtitleTrack *)track;
+                if (!strcmp(track->codec_id, "S_TEXT/ASS") ||
+                    !strcmp(track->codec_id, "S_TEXT/SSA"))
+                    subtrack->ass = 1;
+            }
+
             if (codec_id == CODEC_ID_NONE) {
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown/unsupported CodecID %s.\n",
@@ -2430,14 +2438,24 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                         matroska_queue_packet(matroska, pkt);
                     }
                 } else {
+                    int offset = 0;
+
+                    if (st->codec->codec_id == CODEC_ID_TEXT
+                        && ((MatroskaSubtitleTrack *)(matroska->tracks[track]))->ass) {
+                        int i;
+                        for (i=0; i<8 && data[slice_offset+offset]; offset++)
+                            if (data[slice_offset+offset] == ',')
+                                i++;
+                    }
+
                     pkt = av_mallocz(sizeof(AVPacket));
                     /* XXX: prevent data copy... */
-                    if (av_new_packet(pkt, slice_size) < 0) {
+                    if (av_new_packet(pkt, slice_size-offset) < 0) {
                         res = AVERROR_NOMEM;
                         n = laces-1;
                         break;
                     }
-                    memcpy (pkt->data, data+slice_offset, slice_size);
+                    memcpy (pkt->data, data+slice_offset+offset, slice_size-offset);
 
                     if (n == 0)
                         pkt->flags = is_keyframe;

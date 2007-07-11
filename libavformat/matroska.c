@@ -61,6 +61,8 @@ CodecTags ff_mkv_codec_tags[]={
 
     {"S_TEXT/ASCII"     , CODEC_ID_TEXT},
     {"S_TEXT/UTF8"      , CODEC_ID_TEXT},
+    {"S_TEXT/ASS"       , CODEC_ID_TEXT},
+    {"S_TEXT/SSA"       , CODEC_ID_TEXT},
     {"S_VOBSUB"         , CODEC_ID_DVD_SUBTITLE},
 
     {NULL               , CODEC_ID_NONE}
