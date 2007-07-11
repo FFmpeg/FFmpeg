@@ -93,16 +93,6 @@
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
 
-#ifdef __MINGW32__
-#    ifdef _DEBUG
-#        define DEBUG
-#    endif
-
-#    define snprintf _snprintf
-#    define vsnprintf _vsnprintf
-
-#endif /* !__MINGW32__ */
-
 #ifdef USE_FASTMEMCPY
 #    include "libvo/fastmemcpy.h"
 #    define memcpy(a,b,c) fast_memcpy(a,b,c)
