@@ -38,7 +38,7 @@ X264_log(void *p, int level, const char *fmt, va_list args)
 {
     static const int level_map[] = {
         [X264_LOG_ERROR]   = AV_LOG_ERROR,
-        [X264_LOG_WARNING] = AV_LOG_ERROR,
+        [X264_LOG_WARNING] = AV_LOG_WARNING,
         [X264_LOG_INFO]    = AV_LOG_INFO,
         [X264_LOG_DEBUG]   = AV_LOG_DEBUG
     };
