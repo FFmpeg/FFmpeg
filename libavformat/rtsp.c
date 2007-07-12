@@ -1019,15 +1019,13 @@ static int rtsp_read_header(AVFormatContext *s,
         case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
             {
                 char url[1024];
-                int ttl;
+                struct in_addr in;
 
-                ttl = reply->transports[0].ttl;
-                if (!ttl)
-                    ttl = 16;
+                in.s_addr = htonl(reply->transports[0].destination);
                 snprintf(url, sizeof(url), "rtp://%s:%d?multicast=1&ttl=%d",
-                         host,
-                         reply->transports[0].server_port_min,
-                         ttl);
+                         inet_ntoa(in),
+                         reply->transports[0].port_min,
+                         reply->transports[0].ttl);
                 if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                     err = AVERROR_INVALIDDATA;
                     goto fail;
