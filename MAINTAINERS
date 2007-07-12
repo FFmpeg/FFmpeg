@@ -236,6 +236,7 @@ Muxers/Demuxers:
   psxstr.c                              Mike Melanson
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
+  rtsp.c                                Luca Barbato
   segafilm.c                            Mike Melanson
   swf.c                                 Baptiste Coudurier
   txd.c                                 Ivo van Poorten
