@@ -1,7 +1,6 @@
 /*
  * ALAC (Apple Lossless Audio Codec) decoder
  * Copyright (c) 2005 David Hammerton
- * All rights reserved.
  *
  * This file is part of FFmpeg.
  *

@@ -1,7 +1,6 @@
 /*
  * simple_idct_arm.S
  * Copyright (C) 2002 Frederic 'dilb' Boulay.
- * All Rights Reserved.
  *
  * Author: Frederic Boulay <dilb@handhelds.org>
  *
