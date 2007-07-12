@@ -53,8 +53,6 @@
  * Decoder context
  */
 typedef struct LclDecContext {
-
-        AVCodecContext *avctx;
         AVFrame pic;
 
     // Image type
@@ -523,8 +521,6 @@ static int decode_init(AVCodecContext *avctx)
     unsigned int max_basesize = ((avctx->width + 3) & ~3) * ((avctx->height + 3) & ~3);
     unsigned int max_decomp_size;
     int zret; // Zlib return code
-
-    c->avctx = avctx;
 
     c->pic.data[0] = NULL;
 
