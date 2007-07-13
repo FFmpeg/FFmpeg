@@ -899,6 +899,7 @@ DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path
 PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*(.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
 enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST
+enable $ARCH_EXT_LIST
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -1255,7 +1256,6 @@ if disabled gpl ; then
     die_gpl_disabled "The software scaler"     swscaler
 fi
 
-enable     $ARCH_EXT_LIST
 check_deps $ARCH_EXT_LIST
 
 test -z "$need_memalign" && need_memalign="$mmx"
