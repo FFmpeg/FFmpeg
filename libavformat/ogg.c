@@ -28,8 +28,6 @@
 
 #include "avformat.h"
 
-#undef NDEBUG
-#include <assert.h>
 
 #define DECODER_BUFFER_SIZE 4096
 
