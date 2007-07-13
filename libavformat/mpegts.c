@@ -538,7 +538,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         case STREAM_TYPE_AUDIO_DTS:
         case STREAM_TYPE_SUBTITLE_DVB:
             if(ts->pids[pid]){
-                assert(ts->pids[pid].type == MPEGTS_PES);
+                assert(ts->pids[pid]->type == MPEGTS_PES);
                 pes= ts->pids[pid]->u.pes_filter.opaque;
                 st= pes->st;
             }else{
