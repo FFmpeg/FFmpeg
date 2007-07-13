@@ -487,7 +487,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
-    channels = get_bits(&alac->gb, 3);
+    channels = get_bits(&alac->gb, 3) + 1;
 
         /* 2^result = something to do with output waiting.
          * perhaps matters if we read > 1 frame in a pass?
@@ -510,10 +510,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
             outputsamples = alac->setinfo_max_samples_per_frame;
 
         *outputsize = outputsamples * alac->bytespersample;
-        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels;
+        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
 
     switch(channels) {
-    case 0: { /* 1 channel */
+    case 1: { /* 1 channel */
         int ricemodifier;
 
         if (!isnotcompressed) {
@@ -624,7 +624,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
         }
         break;
     }
-    case 1: { /* 2 channels */
+    case 2: { /* 2 channels */
         uint8_t interlacing_shift;
         uint8_t interlacing_leftweight;
 
