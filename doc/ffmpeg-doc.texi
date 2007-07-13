@@ -1551,6 +1551,11 @@ should also be avoided if they don't make the code easier to understand.
 
 @enumerate
 @item
+   Contributions should be licensed under the LGPL 2.1, including an
+   "or any later version" clause, or the MIT license.  GPL 2 including
+   an "or any later version" clause is also acceptable, but LGPL is
+   preferred.
+@item
    You must not commit code which breaks FFmpeg! (Meaning unfinished but
    enabled code which breaks compilation or compiles but does not work or
    breaks the regression tests)
