@@ -710,7 +710,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
 static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt, int size)
 {
     GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
-    int64_t dts = av_rescale(pkt->dts, ctx->sample_rate, sc->codec->time_base.den);
+    int64_t dts = av_rescale_rnd(pkt->dts, ctx->sample_rate, sc->codec->time_base.den, AV_ROUND_UP);
 
     put_byte(pb, sc->media_type);
     put_byte(pb, sc->index);
