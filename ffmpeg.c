@@ -3105,12 +3105,6 @@ static void opt_pass(const char *pass_str)
     do_pass = pass;
 }
 
-#if defined(__MINGW32__)
-static int64_t getutime(void)
-{
-  return av_gettime();
-}
-#else
 static int64_t getutime(void)
 {
 #ifdef HAVE_GETRUSAGE
@@ -3118,9 +3112,10 @@ static int64_t getutime(void)
 
     getrusage(RUSAGE_SELF, &rusage);
     return (rusage.ru_utime.tv_sec * 1000000LL) + rusage.ru_utime.tv_usec;
+#elif defined(__MINGW32__)
+  return av_gettime();
 #endif
 }
-#endif
 
 #if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
 extern int ffm_nopts;
