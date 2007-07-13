@@ -667,6 +667,7 @@ HAVE_LIST="
     fast_unaligned
     fork
     freetype2
+    getrusage
     imlib2
     inet_aton
     lrintf
@@ -1595,6 +1596,8 @@ if check_func dlopen; then
 elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
+
+check_func getrusage
 
 check_func fork
 
