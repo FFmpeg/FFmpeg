@@ -34,6 +34,10 @@
 #include "fifo.h"
 #include "avstring.h"
 
+#if !defined(HAVE_GETRUSAGE) && defined(HAVE_GETPROCESSTIMES)
+#include <windows.h>
+#endif
+
 #if defined(HAVE_TERMIOS_H)
 #include <unistd.h>
 #include <fcntl.h>
@@ -3112,7 +3116,13 @@ static int64_t getutime(void)
 
     getrusage(RUSAGE_SELF, &rusage);
     return (rusage.ru_utime.tv_sec * 1000000LL) + rusage.ru_utime.tv_usec;
-#elif defined(__MINGW32__)
+#elif defined(HAVE_GETPROCESSTIMES)
+    HANDLE proc;
+    FILETIME c, e, k, u;
+    proc = GetCurrentProcess();
+    GetProcessTimes(proc, &c, &e, &k, &u);
+    return ((int64_t) u.dwHighDateTime << 32 | u.dwLowDateTime) / 10;
+#else
   return av_gettime();
 #endif
 }

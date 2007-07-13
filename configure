@@ -667,6 +667,7 @@ HAVE_LIST="
     fast_unaligned
     fork
     freetype2
+    GetProcessTimes
     getrusage
     imlib2
     inet_aton
@@ -1598,6 +1599,7 @@ elif check_func dlopen -ldl; then
 fi
 
 check_func getrusage
+check_func2 windows.h GetProcessTimes
 
 check_func fork
 
