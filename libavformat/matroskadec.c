@@ -310,8 +310,6 @@ ebml_peek_id (MatroskaDemuxContext *matroska,
 {
     uint32_t id;
 
-    assert(level_up != NULL);
-
     if (ebml_read_element_id(matroska, &id, level_up) < 0)
         return 0;
 
