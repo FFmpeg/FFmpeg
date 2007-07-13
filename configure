@@ -1994,6 +1994,7 @@ if enabled source_path_used; then
          libavutil \
          libswscale \
          tests \
+         tools \
          vhook \
          "
     FILES="\
