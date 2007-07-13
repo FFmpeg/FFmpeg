@@ -151,7 +151,7 @@ enum COTypes {
 
 
 /** The VC1 Context
- * @fixme Change size wherever another size is more efficient
+ * @todo Change size wherever another size is more efficient
  * Many members are only used for Advanced Profile
  */
 typedef struct VC1Context{

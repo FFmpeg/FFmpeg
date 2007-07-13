@@ -44,7 +44,7 @@ static const uint16_t table_mb_intra[64][2];
 
 /**
  * Get unary code of limited length
- * @fixme FIXME Slow and ugly
+ * @todo FIXME Slow and ugly
  * @param gb GetBitContext
  * @param[in] stop The bitstop value (unary code of 1's or 0's)
  * @param[in] len Maximum length
@@ -209,7 +209,7 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, Ge
  * @param[in] width Width of this buffer
  * @param[in] height Height of this buffer
  * @param[in] stride of this buffer
- * @fixme FIXME: Optimize
+ * @todo FIXME: Optimize
  */
 static void decode_colskip(uint8_t* plane, int width, int height, int stride, GetBitContext *gb){
     int x, y;
@@ -229,7 +229,7 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, Ge
  * @param bp Bitplane where to store the decode bits
  * @param v VC-1 context for bit reading and logging
  * @return Status
- * @fixme FIXME: Optimize
+ * @todo FIXME: Optimize
  */
 static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
 {

@@ -48,7 +48,7 @@ typedef struct AVOption {
 
     /**
      * short English text help.
-     * @fixme what about other languages
+     * @todo what about other languages
      */
     const char *help;
     int offset;             ///< offset to context structure where the parsed value should be stored
