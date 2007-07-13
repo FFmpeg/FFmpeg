@@ -275,18 +275,10 @@ codectest mpeg4 mpeg ac3 snow snowll: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests
 	$(SRC_PATH)/tests/regression.sh $@ $(FFMPEG_REFFILE)   tests/vsynth1
 	$(SRC_PATH)/tests/regression.sh $@ $(ROTOZOOM_REFFILE) tests/vsynth2
 
-ifeq ($(CONFIG_GPL),yes)
 libavtest: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) tests/vsynth1
 seektest: tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
-else
-libavtest seektest:
-	@echo
-	@echo "This test requires FFmpeg to be compiled with --enable-gpl."
-	@echo
-	@exit 1
-endif
 
 ifeq ($(CONFIG_SWSCALER),yes)
 test-server codectest mpeg4 mpeg ac3 snow snowll libavtest: swscale_error
