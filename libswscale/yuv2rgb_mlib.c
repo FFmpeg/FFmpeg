@@ -1,5 +1,5 @@
 /*
- * yuv2rgb_mlib.c, Software YUV to RGB coverter using mediaLib
+ * yuv2rgb_mlib.c, Software YUV to RGB converter using mediaLib
  *
  *  Copyright (C) 2000, Håkan Hjort <d95hjort@dtek.chalmers.se>
  *  All Rights Reserved.
