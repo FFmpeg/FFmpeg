@@ -10,6 +10,11 @@
 
 @chapter Introduction
 
+@var{Please be aware that vhook is deprecated, and hence its development is
+frozen (bug fixes are still accepted).
+The substitute will be the result of our 'Video Filter API' Google Summer of Code
+project. You may monitor its progress by subscribing to the ffmpeg-soc mailing
+list at @url{http://lists.mplayerhq.hu/mailman/listinfo/ffmpeg-soc}.}
 
 The video hook functionality is designed (mostly) for live video. It allows
 the video to be modified or examined between the decoder and the encoder.
