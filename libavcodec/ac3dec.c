@@ -1482,7 +1482,7 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
         av_log(NULL, AV_LOG_INFO, "\n");
 }
 
-static void window_and_de_interleave(float *output)
+/*static void window_and_de_interleave(float *output)
 {
     int n2, n4, n8;
     int k;
@@ -1493,22 +1493,26 @@ static void window_and_de_interleave(float *output)
 
     for (k = 0; k < n8; k++) {
         output[2 * k] *= window[2 * k];
+        output[n2 - 2 * k - 1] *= window[n2 - 2 * k - 1];
+
         output[2 * k + 1] *= window[2 * k + 1];
-        output[n4 + 2 * k] *= window[n4 + 2 * k];
-        output[n4 + 2 * k + 1] *= window[n4 + 2 * k + 1];
+        output[n2 - 2 * k - 2] *= window[n2 - 2 * k - 2];
+
         output[n2 + 2 * k] *= window[n2 - 2 * k - 1];
+        output[n - 2 * k - 1] *= window[n - 2 * k - 1];
+
         output[n2 + 2 * k + 1] *= window[n2 - 2 * k - 2];
-        output[3 * n4 + 2 * k] *= window[n4 -2 * k - 1];
+        output[n - 2 * k - 2] *= window[n - 2 * k - 2];
         output[3 * n4 + 2 * k + 1] *= window[n4 - 2 * k - 2];
     }
-}
+}*/
 
 static inline void overlap_and_add(float *tmp_output, float *delay, float *output)
 {
     int n;
 
     for (n = 0; n < BLOCK_SIZE; n++) {
-        output[n] = 2 * (tmp_output[n] + delay[n]);
+        output[n] = 2 * (tmp_output[n] * window[n] + delay[n] * window[255 - n]);
         delay[n] = tmp_output[BLOCK_SIZE + n];
     }
 }
@@ -1522,14 +1526,14 @@ static inline void do_imdct(AC3DecodeContext *ctx)
     if (ctx->output & AC3_OUTPUT_LFEON) {
         av_log(NULL, AV_LOG_INFO, "imdct lfe\n");
         ff_imdct_calc(&ctx->imdct_ctx_512, ab->tmp_output, ab->transform_coeffs[0], ab->tmp_imdct);
-        window_and_de_interleave(ab->tmp_output);
+        //window_and_de_interleave(ab->tmp_output);
         overlap_and_add(ab->tmp_output, ab->delay[0], ab->output[0]);
     }
     for (i = 0; i < ctx->bsi.nfchans; i++) {
         if (!(((ab->blksw) >> i) & 1)) {
             av_log(NULL, AV_LOG_INFO, "imdct channel %d - block switching not enabled\n", i);
             ff_imdct_calc(&ctx->imdct_ctx_512, ab->tmp_output, ab->transform_coeffs[i + 1], ab->tmp_imdct);
-            window_and_de_interleave(ab->tmp_output);
+            //window_and_de_interleave(ab->tmp_output);
             overlap_and_add(ab->tmp_output, ab->delay[i + 1], ab->output[i + 1]);
         } else {
             av_log(NULL, AV_LOG_INFO, "imdct channel %d skipping - block switching enabled\n", i);
@@ -1813,8 +1817,8 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
         do_rematrixing(ctx);
 
     do_imdct(ctx);
-    for(i = 0; i < nfchans; i++)
-        dump_floats("channel output", 10, ab->output[i + 1], BLOCK_SIZE);
+    /*for(i = 0; i < nfchans; i++)
+        dump_floats("channel output", 10, ab->output[i + 1], BLOCK_SIZE);*/
 
     do_downmix(ctx);
 
@@ -1828,7 +1832,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
 
 static inline int16_t convert(float f)
 {
-    short s;
+    /*short s;
     f = f * NORMFACT;
     if (f >= 0)
         s = (short)(f + 0.5);
@@ -1839,7 +1843,10 @@ static inline int16_t convert(float f)
     if (s < (short) -MAXSAMPLE)
         s = (short) -MAXSAMPLE;
 
-    return s;
+    return s;*/
+    int a;
+    a = lrintf(f * 32767.0);
+    return ((int16_t)a);
 }
 
 static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
@@ -1915,6 +1922,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         for (;j < avctx->channels; j++) {
             for(k = 0; k < BLOCK_SIZE; k++) {
                 value = convert(ab->output[j][k]);
+                av_log(NULL, AV_LOG_INFO, "%d\t", value);
                 *(out_samples++) = value;
             }
         }
