@@ -189,8 +189,7 @@ typedef struct {
 /* BEGIN Mersenne Twister Code. */
 static void dither_seed(dither_state *state, uint32_t seed)
 {
-    if (seed == 0)
-        seed = 0x1f2e3d4c;
+    if (seed == 0) seed = 0x1f2e3d4c;
 
     state->mt[0] = seed;
     for (state->mti = 1; state->mti < NMT; state->mti++)
@@ -237,8 +236,7 @@ static inline int16_t dither_int16(dither_state *state)
 /**
  * Generate a Kaiser-Bessel Derived Window.
  */
-static void
-ac3_window_init(float *window)
+static void ac3_window_init(float *window)
 {
    int i, j;
    double sum = 0.0, bessel, tmp;
