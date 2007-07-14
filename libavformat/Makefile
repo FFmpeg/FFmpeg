@@ -93,6 +93,7 @@ OBJS-$(CONFIG_MPEG1VIDEO_MUXER)          += raw.o
 OBJS-$(CONFIG_MPEG2VIDEO_MUXER)          += raw.o
 OBJS-$(CONFIG_MPEGPS_DEMUXER)            += mpeg.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)            += mpegts.o
+OBJS-$(CONFIG_MPEGTSRAW_DEMUXER)         += mpegts.o
 OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
 OBJS-$(CONFIG_MPEGVIDEO_DEMUXER)         += raw.o
 OBJS-$(CONFIG_MPJPEG_MUXER)              += mpjpeg.o
