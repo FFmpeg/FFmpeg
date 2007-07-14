@@ -1579,35 +1579,21 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
     ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
 
     ptr = ctx->output[chindex];
-    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 0, BLOCK_SIZE, 1);
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
     ptr = ctx->delay[chindex];
     ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
-    /*for (k = 0; k < N / 2; k++) {
-        ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
-        //dump_floats("samples", 10, ctx->output[chindex], 256);
-        ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
-    }*/
 }
 
 static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
 {
-    //int k;
     float *ptr;
 
     ff_imdct_calc(&ctx->imdct_512, ctx->tmp_output,
             ctx->transform_coeffs[chindex], ctx->tmp_imdct);
-    //ff_imdct_calc_ac3_512(&ctx->imdct_512, ctx->tmp_output, ctx->transform_coeffs[chindex],
-    //        ctx->tmp_imdct, window);
     ptr = ctx->output[chindex];
-    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 0, BLOCK_SIZE, 1);
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
     ptr = ctx->delay[chindex];
     ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
-
-    /*for (k = 0; k < N / 2; k++) {
-        ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
-        //dump_floats("samples", 10, ctx->output[chindex], 256);
-        ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
-    } */
 }
 
 static inline void do_imdct(AC3DecodeContext *ctx)
@@ -1899,16 +1885,16 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     if (ctx->rematflg)
         do_rematrixing(ctx);
 
+    do_downmix(ctx);
+
     do_imdct(ctx);
     /*for(i = 0; i < nfchans; i++)
         dump_floats("channel output", 10, ctx->output[i + 1], BLOCK_SIZE);*/
 
-    do_downmix(ctx);
-
     return 0;
 }
 
-static inline int16_t convert(float f)
+/*static inline int16_t convert(float f)
 {
     if (f >= 1.0)
         return 32767;
@@ -1916,6 +1902,16 @@ static inline int16_t convert(float f)
         return -32768;
     else
         return (lrintf(f * 32767.0));
+}*/
+
+static inline int16_t convert(int32_t i)
+{
+    if (i > 0x43c07fff)
+        return 32767;
+    else if (i <= 0x43bf8000)
+        return -32768;
+    else
+        return (i - 0x43c00000);
 }
 
 static int frame_count = 0;
@@ -1925,9 +1921,13 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
     int frame_start;
     int16_t *out_samples = (int16_t *)data;
-    int i, j, k, value;
+    int i, j, k, start;
+    int32_t *int_ptr[6];
 
-    av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
+    for (i = 0; i < 6; i++)
+        int_ptr[i] = (int32_t *)(&ctx->output[i]);
+
+    //av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
 
     //Synchronize the frame.
     frame_start = ac3_synchronize(buf, buf_size);
@@ -1978,7 +1978,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         avctx->channels = ctx->nfchans + ctx->lfeon;
     }
 
-    av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->bit_rate * 1000, avctx->sample_rate);
+    //av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->bit_rate * 1000, avctx->sample_rate);
 
     //Parse the Audio Blocks.
     for (i = 0; i < AUDIO_BLOCKS; i++) {
@@ -1987,13 +1987,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
             *data_size = 0;
             return ctx->frame_size;
         }
-        for (k = 0; k < BLOCK_SIZE; k++) {
-            j = (ctx->blkoutput & AC3_OUTPUT_LFEON) ? 0 : 1;
-            for (; j <= avctx->channels; j++) {
-                value = convert(ctx->output[j][k]);
-                *(out_samples++) = value;
-            }
-        }
+        start = (ctx->blkoutput & AC3_OUTPUT_LFEON) ? 0 : 1;
+        for (k = 0; k < BLOCK_SIZE; k++)
+            for (j = start; j <= avctx->channels; j++)
+                *(out_samples++) = convert(int_ptr[j][k]);
     }
     *data_size = AUDIO_BLOCKS * BLOCK_SIZE * avctx->channels * sizeof (int16_t);
     return ctx->frame_size;
