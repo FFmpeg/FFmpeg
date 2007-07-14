@@ -151,6 +151,8 @@ typedef struct {
     int      nfchans;
     int      lfeon;
 
+    float    dynrng;
+    float    dynrng2;
     float    chcoeffs[6];
     float    cplco[5][18];
     int      ncplbnd;
@@ -176,6 +178,7 @@ typedef struct {
     DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, tmp_output[BLOCK_SIZE * 2]);
+    DECLARE_ALIGNED_16(float, window[BLOCK_SIZE]);
 
     /* Miscellaneous. */
     GetBitContext gb;
@@ -232,48 +235,28 @@ static inline int16_t dither_int16(dither_state *state)
 /* END Mersenne Twister */
 
 /**
- * Generate a Kaiser Window.
- */
-static void
-k_window_init(int alpha, float *window, int n, int iter)
-{
-    int j, k;
-    float a, x;
-    a = alpha * M_PI / n;
-    a = a*a;
-    for(k=0; k<n; k++) {
-        x = k * (n - k) * a;
-        window[k] = 1.0;
-        for(j=iter; j>0; j--) {
-            window[k] = (window[k] * x / (j*j)) + 1.0;
-        }
-    }
-}
-
-/**
  * Generate a Kaiser-Bessel Derived Window.
- * @param alpha  determines window shape
- * @param window array to fill with window values
- * @param n      length of the window
- * @param iter   number of iterations to use in BesselI0
  */
 static void
-kbd_window_init(int alpha, float *window, int n, int iter)
+ac3_window_init(float *window)
 {
-    int k, n2;
-    float *kwindow;
+   int i, j;
+   double sum = 0.0, bessel, tmp;
+   double local_window[256];
+   double alpha2 = (5.0 * M_PI / 256.0) * (5.0 * M_PI / 256.0);
 
-    n2 = n >> 1;
-    kwindow = &window[n2];
-    k_window_init(alpha, kwindow, n2, iter);
-    window[0] = kwindow[0];
-    for(k=1; k<n2; k++) {
-        window[k] = window[k-1] + kwindow[k];
-    }
-    for(k=0; k<n2; k++) {
-        window[k] = sqrt(window[k] / (window[n2-1]+1));
-        window[n-1-k] = window[k];
-    }
+   for (i = 0; i < 256; i++) {
+       tmp = i * (256 - i) * alpha2;
+       bessel = 1.0;
+       for (j = 100; j > 0; j--) /* defaul to 100 iterations */
+           bessel = bessel * tmp / (j * j) + 1;
+       sum += bessel;
+       local_window[i] = sum;
+   }
+
+   sum++;
+   for (i = 0; i < 256; i++)
+       window[i] = sqrt(local_window[i] / sum);
 }
 
 static void generate_quantizers_table(int16_t quantizers[], int level, int length)
@@ -385,9 +368,6 @@ static void ac3_tables_init(void)
 
     //for level-15 quantizers
     generate_quantizers_table(l15_quantizers, 15, 15);
-
-    /* Kaiser-Bessel derived window. */
-    kbd_window_init(5, window, 256, 100);
 }
 
 
@@ -398,6 +378,8 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ac3_tables_init();
     ff_mdct_init(&ctx->imdct_256, 8, 1);
     ff_mdct_init(&ctx->imdct_512, 9, 1);
+    /* Kaiser-Bessel derived window. */
+    ac3_window_init(ctx->window);
     dsputil_init(&ctx->dsp, avctx);
     dither_seed(&ctx->dith_state, 0);
 
@@ -469,6 +451,8 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
         ctx->deltbae[i] = AC3_DBASTR_NONE;
         ctx->deltnseg[i] = 0;
     }
+    ctx->dynrng = 1.0;
+    ctx->dynrng2 = 1.0;
 
     ctx->acmod = get_bits(gb, 3);
     ctx->nfchans = nfchans_tbl[ctx->acmod];
@@ -1075,6 +1059,15 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
     float clev = clevs[ctx->cmixlev];
     float slev = slevs[ctx->surmixlev];
     float nf = 1.0; //normalization factor for downmix coeffs
+    int i;
+
+    if (!ctx->acmod) {
+        ctx->chcoeffs[0] = 2 * ctx->dynrng;
+        ctx->chcoeffs[1] = 2 * ctx->dynrng2;
+    } else {
+        for (i = 0; i < ctx->nfchans; i++)
+            ctx->chcoeffs[i] = 2 * ctx->dynrng;
+    }
 
     if (to == AC3_OUTPUT_UNMODIFIED)
         return;
@@ -1579,9 +1572,9 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
     ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
 
     ptr = ctx->output[chindex];
-    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, ctx->window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
     ptr = ctx->delay[chindex];
-    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
+    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, ctx->window, BLOCK_SIZE);
 }
 
 static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
@@ -1591,9 +1584,9 @@ static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
     ff_imdct_calc(&ctx->imdct_512, ctx->tmp_output,
             ctx->transform_coeffs[chindex], ctx->tmp_imdct);
     ptr = ctx->output[chindex];
-    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, ctx->window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
     ptr = ctx->delay[chindex];
-    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
+    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, ctx->window, BLOCK_SIZE);
 }
 
 static inline void do_imdct(AC3DecodeContext *ctx)
@@ -1623,9 +1616,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     int mstrcplco, cplcoexp, cplcomant;
     int dynrng, chbwcod, ngrps, cplabsexp, skipl;
 
-    for (i = 0; i < 5; i++)
-        ctx->chcoeffs[i] = 2.0;
-
     ctx->blksw = 0;
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw |= get_bits1(gb) << i;
@@ -1636,15 +1626,12 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
 
     if (get_bits1(gb)) { /* dynamic range */
         dynrng = get_sbits(gb, 8);
-        drange = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
-        for (i = 0; i < nfchans; i++)
-            ctx->chcoeffs[i] *= drange;
+        ctx->dynrng = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
     }
 
     if (acmod == 0x00 && get_bits1(gb)) { /* dynamic range 1+1 mode */
         dynrng = get_sbits(gb, 8);
-        drange = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
-        ctx->chcoeffs[1] *= drange;
+        ctx->dynrng2 = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
     }
 
     get_downmix_coeffs(ctx);
