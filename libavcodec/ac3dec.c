@@ -1,6 +1,22 @@
 /* AC3 Audio Decoder.
+ * This code is developed as part of Google Summer of Code 2006 Program.
+ *
+ * Acknowledgements:
+ *
+ * I would like to acknowledge my mentor Benjamin Larsson for his timely
+ * help and excelleng guidance throughout the project.
+ * Thanks a lot Benjamin.
+ *
+ * For exponent decoding the code is reused from liba52 by Michel Lespinasse
+ * and Aaron Holtzman.
+ * http://liba52.sourceforge.net
+ *
+ * Thanks Makoto Matsumoto and Takuji Nishimura for the Mersenne Twister.
+ *
+ * Kaiser-Bessel derived window by Justin Ruggles.
  *
  * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
+ * Something is wrong up on cloud # 9!
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
