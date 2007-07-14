@@ -111,7 +111,6 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         rgb[2] = bytestream_get_le32(&buf);
     }
 
-    avctx->codec_id = CODEC_ID_BMP;
     avctx->width = width;
     avctx->height = height > 0? height: -height;
 
