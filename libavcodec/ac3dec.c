@@ -34,6 +34,7 @@
 #include "avutil.h"
 #include "common.h"
 #include "math.h"
+#include "crc.h"
 
 #define N 512   /* constant for IMDCT Block size */
 
@@ -158,8 +159,8 @@ typedef struct {
     DECLARE_ALIGNED_16(float, transform_coeffs[MAX_CHANNELS][BLOCK_SIZE]);
 
     /* For IMDCT. */
-    FFTContext fft_64;  //N/8 point IFFT context
-    FFTContext fft_128; //N/4 point IFFT context
+    MDCTContext imdct_512;  //N/8 point IFFT context
+    MDCTContext imdct_256;  //N/4 point IFFT context
     DECLARE_ALIGNED_16(float, output[MAX_CHANNELS][BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);
@@ -398,8 +399,8 @@ static int ac3_decode_init(AVCodecContext *avctx)
     AC3DecodeContext *ctx = avctx->priv_data;
 
     ac3_tables_init();
-    ff_fft_init(&ctx->fft_64, 6, 1);
-    ff_fft_init(&ctx->fft_128, 7, 1);
+    ff_mdct_init(&ctx->imdct_256, 8, 1);
+    ff_mdct_init(&ctx->imdct_512, 9, 1);
     dither_seed(&ctx->dith_state, 0);
 
     return 0;
@@ -838,9 +839,9 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                 case 0:
                     for (ch = 0; ch < ctx->nfchans; ch++)
                         if (((ctx->chincpl) >> ch) & 1) {
-                            if (!(((ctx->dithflag) >> ch) & 1)) {
+                            if ((ctx->dithflag >> ch) & 1) {
                                 TRANSFORM_COEFF(cplcoeff, dither_int16(&ctx->dith_state), exps[start], scale_factors);
-                                ctx->transform_coeffs[ch + 1][start] = cplcoeff * cplcos[ch];
+                                ctx->transform_coeffs[ch + 1][start] = cplcoeff * cplcos[ch] * LEVEL_MINUS_3DB;
                             } else
                                 ctx->transform_coeffs[ch + 1][start] = 0;
                         }
@@ -887,7 +888,7 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                     break;
 
                 default:
-                    TRANSFORM_COEFF(cplcoeff, get_bits(gb, qntztab[tbap]) << (16 - qntztab[tbap]),
+                    TRANSFORM_COEFF(cplcoeff, get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]),
                             exps[start], scale_factors);
             }
             for (ch = 0; ch < ctx->nfchans; ch++)
@@ -932,13 +933,13 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
         tbap = bap[i];
         switch (tbap) {
             case 0:
-                if (dithflag) {
+                if (!dithflag) {
                     coeffs[i] = 0;
                     continue;
                 }
                 else {
                     TRANSFORM_COEFF(coeffs[i], dither_int16(&ctx->dith_state), exps[i], factors);
-                    coeffs[i] *= LEVEL_PLUS_3DB;
+                    coeffs[i] *= LEVEL_MINUS_3DB;
                     continue;
                 }
 
@@ -983,7 +984,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                 continue;
 
             default:
-                TRANSFORM_COEFF(coeffs[i], get_bits(gb, qntztab[tbap]) << (16 - qntztab[tbap]), exps[i], factors);
+                TRANSFORM_COEFF(coeffs[i], get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]), exps[i], factors);
                 continue;
         }
     }
@@ -1075,6 +1076,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
     int to = ctx->blkoutput;
     float clev = clevs[ctx->cmixlev];
     float slev = slevs[ctx->surmixlev];
+    float nf = 1.0; //normalization factor for downmix coeffs
 
     if (to == AC3_OUTPUT_UNMODIFIED)
         return;
@@ -1084,107 +1086,142 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
             switch (to) {
                 case AC3_OUTPUT_MONO:
                 case AC3_OUTPUT_STEREO: /* We Assume that sum of both mono channels is requested */
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_6DB;
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_6DB;
+                    nf = 0.5;
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
                     break;
             }
             break;
         case AC3_INPUT_MONO:
             switch (to) {
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
+                    nf = LEVEL_MINUS_3DB;
+                    ctx->chcoeffs[0] *= nf;
                     break;
             }
             break;
         case AC3_INPUT_STEREO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_3DB;
+                    nf = LEVEL_MINUS_3DB;
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
                     break;
             }
             break;
         case AC3_INPUT_3F:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[2] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= (clev * LEVEL_PLUS_3DB);
+                    nf = LEVEL_MINUS_3DB / (1.0 + clev);
+                    ctx->chcoeffs[0] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[2] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[1] *= ((nf * clev * LEVEL_MINUS_3DB) / 2.0);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[1] *= clev;
+                    nf = 1.0 / (1.0 + clev);
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[2] *= nf;
+                    ctx->chcoeffs[1] *= (nf * clev);
                     break;
             }
             break;
         case AC3_INPUT_2F_1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[2] *= slev * LEVEL_MINUS_3DB;
+                    nf = 2.0 * LEVEL_MINUS_3DB / (2.0 + slev);
+                    ctx->chcoeffs[0] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[1] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[2] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[2] *= slev * LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + (slev * LEVEL_MINUS_3DB));
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[2] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    ctx->chcoeffs[2] *= LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[2] *= (nf * LEVEL_MINUS_3DB);
                     break;
             }
             break;
         case AC3_INPUT_3F_1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[2] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= clev * LEVEL_PLUS_3DB;
-                    ctx->chcoeffs[3] *= slev * LEVEL_MINUS_3DB;
+                    nf = LEVEL_MINUS_3DB / (1.0 + clev + (slev / 2.0));
+                    ctx->chcoeffs[0] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[2] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[1] *= (nf * clev * LEVEL_PLUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[1] *= clev;
-                    ctx->chcoeffs[3] *= slev * LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + clev + (slev * LEVEL_MINUS_3DB));
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[2] *= nf;
+                    ctx->chcoeffs[1] *= (nf * clev);
+                    ctx->chcoeffs[3] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[3] *= LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + (2.0 * LEVEL_MINUS_3DB));
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[1] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * LEVEL_MINUS_3DB);
                     break;
             }
             break;
         case AC3_INPUT_2F_2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[2] *= slev * LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[3] *= slev * LEVEL_MINUS_3DB;
+                    nf = LEVEL_MINUS_3DB / (1.0 + slev);
+                    ctx->chcoeffs[0] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[1] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[2] *= (nf * slev * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[2] *= slev;
-                    ctx->chcoeffs[3] *= slev;
+                    nf = 1.0 / (1.0 + slev);
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[2] *= (nf * slev);
+                    ctx->chcoeffs[3] *= (nf * slev);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    ctx->chcoeffs[2] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[3] *= LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + (2.0 * LEVEL_MINUS_3DB));
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[2] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * LEVEL_MINUS_3DB);
                     break;
             }
             break;
         case AC3_INPUT_3F_2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    ctx->chcoeffs[0] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[2] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[1] *= clev * LEVEL_PLUS_3DB;
-                    ctx->chcoeffs[3] *= slev * LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[4] *= slev * LEVEL_MINUS_3DB;
+                    nf = LEVEL_MINUS_3DB / (1.0 + clev + slev);
+                    ctx->chcoeffs[0] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[2] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[1] *= (nf * clev * LEVEL_PLUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * slev * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[4] *= (nf * slev * LEVEL_MINUS_3DB);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    ctx->chcoeffs[1] *= clev;
-                    ctx->chcoeffs[3] *= slev;
-                    ctx->chcoeffs[4] *= slev;
+                    nf = 1.0 / (1.0 + clev + slev);
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[2] *= nf;
+                    ctx->chcoeffs[1] *= (nf * clev);
+                    ctx->chcoeffs[3] *= (nf * slev);
+                    ctx->chcoeffs[4] *= (nf * slev);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    ctx->chcoeffs[1] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[3] *= LEVEL_MINUS_3DB;
-                    ctx->chcoeffs[4] *= LEVEL_MINUS_3DB;
+                    nf = 1.0 / (1.0 + (3.0 * LEVEL_MINUS_3DB));
+                    ctx->chcoeffs[0] *= nf;
+                    ctx->chcoeffs[1] *= nf;
+                    ctx->chcoeffs[1] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[3] *= (nf * LEVEL_MINUS_3DB);
+                    ctx->chcoeffs[4] *= (nf * LEVEL_MINUS_3DB);
                     break;
             }
             break;
@@ -1529,102 +1566,39 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
     (pim) = _are * _bim + _aim * _bre;\
 }
 
-static void do_imdct_256(FFTContext *fft_ctx, float *coeffs, float *output,
-        float *delay, float *tmp_imdct, float *tmp_output)
+static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
 {
-    int k, n2, n4, n8;
+    int k;
     float x1[128], x2[128];
-    FFTComplex *z1 = (FFTComplex *)tmp_imdct;
-    FFTComplex *z2 = (FFTComplex *)(tmp_imdct +  128);
 
-    n2 = N / 2;
-    n4 = N / 4;
-    n8 = N / 8;
-
-    for (k = 0; k < n4; k++) {
-        x1[k] = coeffs[2 * k];
-        x2[k] = coeffs[2 * k + 1];
+    for (k = 0; k < N / 4; k++) {
+        x1[k] = ctx->transform_coeffs[chindex][2 * k];
+        x2[k] = ctx->transform_coeffs[chindex][2 * k + 1];
     }
 
-    /* Pre IFFT Complex Multiply Step. */
-    for (k = 0; k < n8; k++) {
-        CMUL(z1[k].re, z1[k].im, x1[n4 - 2 * k - 1], x1[2 * k], x_cos2[k], x_sin2[k]);
-        CMUL(z2[k].re, z2[k].im, x2[n4 - 2 * k - 1], x2[2 * k], x_cos2[k], x_sin2[k]);
-    }
+    ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output, x1, ctx->tmp_imdct);
+    ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
 
-    /* N/8 pointe complex IFFT. */
-    ff_fft_permute(fft_ctx, z1);
-    ff_fft_calc(fft_ctx, z1);
-    ff_fft_permute(fft_ctx, z2);
-    ff_fft_calc(fft_ctx, z2);
-
-
-    /* Post IFFT Complex Multiply Step. */
-    for (k = 0; k < n8; k++) {
-        CMUL(z1[k].re, z1[k].im, z1[k].re, z1[k].im, x_cos2[k], x_sin2[k]);
-        CMUL(z2[k].re, z2[k].im, z2[k].re, z2[k].im, x_cos2[k], x_sin2[k]);
-    }
-
-    /* Windowing and de-interleaving step. */
-    for (k = 0; k < n8; k++) {
-        tmp_output[2 * k] = -z1[k].im * window[2 * k];
-        tmp_output[2 * k + 1] = z1[n8 - k - 1].re * window[2 * k + 1];
-        tmp_output[n4 + 2 * k] = -z1[k].re * window[n4 + 2 * k];
-        tmp_output[n4 + 2 * k + 1] = z1[n8 - k - 1].im * window[n4 + 2 * k + 1];
-        tmp_output[n2 + 2 * k] = -z2[k].re * window[n2 - 2 * k - 1];
-        tmp_output[n2 + 2* k + 1] = z2[n8 - k - 1].im * window[n2 - 2 * k - 2];
-        tmp_output[3 * n4 + 2 * k] = z2[k].im * window[n4 - 2 * k - 1] ;
-        tmp_output[3 * n4 + 2 * k + 1] = -z2[n8 - k - 1].re * window[n4 - 2 * k - 2] ;
-    }
-
-    /* Overlap and add step. */
-    for (k = 0; k < n2; k++) {
-        output[k] = 2 * (tmp_output[k] + delay[k]);
-        delay[k] = tmp_output[n2 + k];
+    for (k = 0; k < N / 2; k++) {
+        ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
+        //dump_floats("samples", 10, ctx->output[chindex], 256);
+        ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
     }
 }
 
-static void do_imdct_512(FFTContext *fft_ctx, float *coeffs, float *output,
-        float *delay, float *tmp_imdct, float *tmp_output)
+static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
 {
-    int k, n2, n4, n8;
-    FFTComplex *z = (FFTComplex *)tmp_imdct;
+    int k;
 
-    n2 = N / 2;
-    n4 = N / 4;
-    n8 = N / 8;
+    ff_imdct_calc(&ctx->imdct_512, ctx->tmp_output,
+            ctx->transform_coeffs[chindex], ctx->tmp_imdct);
+    //ff_imdct_calc_ac3_512(&ctx->imdct_512, ctx->tmp_output, ctx->transform_coeffs[chindex],
+    //        ctx->tmp_imdct, window);
 
-
-    /* Pre IFFT Complex Multiply Step. */
-    for (k = 0; k < n4; k++)
-        CMUL(z[k].re, z[k].im, coeffs[n2 - 2 * k - 1], coeffs[2 * k], x_cos1[k], x_sin1[k]);
-
-    /* Permutation needed before calling ff_fft_calc. */
-    ff_fft_permute(fft_ctx, z);
-
-    /* N/4 pointe complex IFFT. */
-    ff_fft_calc(fft_ctx, z);
-
-    /* Post IFFT Complex Multiply Step. */
-    for (k = 0; k < n4; k++)
-        CMUL(z[k].re, z[k].im, z[k].re, z[k].im, x_cos1[k], x_sin1[k]);
-
-    /* Windowing and de-interleaving step. */
-    for (k = 0; k < n8; k++) {
-        tmp_output[2 * k] = -z[n8 + k].im * window[2 * k];
-        tmp_output[2 * k + 1] = z[n8 - k - 1].re * window[2 * k + 1];
-        tmp_output[n4 + 2 * k] = -z[k].re * window[n4 + 2 * k];
-        tmp_output[n4 + 2 * k + 1] = z[n4 - k - 1].im * window[n4 + 2 * k + 1];
-        tmp_output[n2 + 2 * k] = -z[n8 + k].re * window[n2 - 2 * k - 1];
-        tmp_output[n2 + 2* k + 1] = z[n8 - k - 1].im * window[n2 - 2 * k - 2];
-        tmp_output[3 * n4 + 2 * k] = z[k].im * window[n4 - 2 * k - 1] ;
-        tmp_output[3 * n4 + 2 * k + 1] = -z[n4 - k - 1].re * window[n4 - 2 * k - 2] ;
-    }
-
-    /* Overlap and add step. */
-    for (k = 0; k < n2; k++) {
-        output[k] = 2 * (tmp_output[k] + delay[k]);
-        delay[k] = tmp_output[n2 + k];
+    for (k = 0; k < N / 2; k++) {
+        ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
+        //dump_floats("samples", 10, ctx->output[chindex], 256);
+        ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
     }
 }
 
@@ -1633,18 +1607,13 @@ static inline void do_imdct(AC3DecodeContext *ctx)
     int i;
 
     if (ctx->blkoutput & AC3_OUTPUT_LFEON) {
-        do_imdct_512(&ctx->fft_128, ctx->transform_coeffs[0], ctx->output[0],
-                ctx->delay[0], ctx->tmp_imdct, ctx->tmp_output);
+        do_imdct_512(ctx, 0);
     }
     for (i = 0; i < ctx->nfchans; i++) {
-        if (!((ctx->blksw >> i) & 1)) {
-            do_imdct_512(&ctx->fft_128, ctx->transform_coeffs[i + 1], ctx->output[i + 1],
-                    ctx->delay[i + 1], ctx->tmp_imdct, ctx->tmp_output);
-        } else {
-            av_log(NULL, AV_LOG_INFO, "block switching enabled.\n");
-            do_imdct_256(&ctx->fft_64, ctx->transform_coeffs[i + 1], ctx->output[i + 1],
-                    ctx->delay[i + 1], ctx->tmp_imdct, ctx->tmp_output);
-        }
+        if ((ctx->blksw >> i) & 1)
+            do_imdct_256(ctx, i + 1);
+        else
+            do_imdct_512(ctx, i + 1);
     }
 }
 
@@ -1661,7 +1630,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     int dynrng, chbwcod, ngrps, cplabsexp, skipl;
 
     for (i = 0; i < 5; i++)
-        ctx->chcoeffs[i] = 1.0;
+        ctx->chcoeffs[i] = 2.0;
 
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw |= get_bits1(gb) << i;
@@ -1670,14 +1639,14 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         ctx->dithflag |= get_bits1(gb) << i;
 
     if (get_bits1(gb)) { /* dynamic range */
-        dynrng = get_bits(gb, 8);
+        dynrng = get_sbits(gb, 8);
         drange = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
         for (i = 0; i < nfchans; i++)
             ctx->chcoeffs[i] *= drange;
     }
 
     if (acmod == 0x00 && get_bits1(gb)) { /* dynamic range 1+1 mode */
-        dynrng = get_bits(gb, 8);
+        dynrng = get_sbits(gb, 8);
         drange = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
         ctx->chcoeffs[1] *= drange;
     }
@@ -1931,9 +1900,12 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
 
 static inline int16_t convert(float f)
 {
-    int a;
-    a = lrintf(f * 32767.0);
-    return ((int16_t)a);
+    if (f >= 1.0)
+        return 32767;
+    else if (f <= -1.0)
+        return -32768;
+    else
+        return (lrintf(f * 32767.0));
 }
 
 static int frame_count = 0;
@@ -1943,7 +1915,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
     int frame_start;
     int16_t *out_samples = (int16_t *)data;
-    int i, j, k, value;
+    int i, j, k, value, fs_58;
+    uint16_t crc1;
 
     av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
 
@@ -1966,38 +1939,34 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         return buf_size;
     }
 
-    //Check for the errors.
-    /* if (ac3_error_check(ctx)) {
-        *data_size = 0;
-        return -1;
-    } */
-
     //Parse the BSI.
     //If 'bsid' is not valid decoder shall not decode the audio as per the standard.
     ac3_parse_bsi(ctx);
 
     avctx->sample_rate = ctx->sampling_rate;
     avctx->bit_rate = ctx->bit_rate;
-    avctx->channels = 0;
+
     if (avctx->channels == 0) {
         ctx->blkoutput |= AC3_OUTPUT_UNMODIFIED;
-        avctx->channels = ctx->nfchans;
-    } else if (ctx->nfchans + ctx->lfeon < avctx->channels) {
-        av_log(avctx, AV_LOG_INFO, "ac3_decoder: AC3 Source Channels Are Less Then Specified %d: Output to %d Channels\n",
-                avctx->channels, ctx->nfchans + ctx->lfeon);
-        avctx->channels = ctx->nfchans;
-        ctx->blkoutput |= AC3_OUTPUT_UNMODIFIED;
-    } else if (avctx->channels == 1) {
+        if (ctx->lfeon)
+            ctx->blkoutput |= AC3_OUTPUT_LFEON;
+        avctx->channels = ctx->nfchans + ctx->lfeon;
+    }
+    else if (avctx->channels == 1)
         ctx->blkoutput |= AC3_OUTPUT_MONO;
-    } else if (avctx->channels == 2) {
+    else if (avctx->channels == 2) {
         if (ctx->dsurmod == 0x02)
             ctx->blkoutput |= AC3_OUTPUT_DOLBY;
         else
             ctx->blkoutput |= AC3_OUTPUT_STEREO;
     }
-    if (ctx->lfeon) {
-        avctx->channels++;
-        ctx->blkoutput |= AC3_OUTPUT_LFEON;
+    else {
+        if (avctx->channels < (ctx->nfchans + ctx->lfeon))
+            av_log(avctx, AV_LOG_INFO, "ac3_decoder: AC3 Source Channels Are Less Then Specified %d: Output to %d Channels\n",avctx->channels, ctx->nfchans + ctx->lfeon);
+        ctx->blkoutput |= AC3_OUTPUT_UNMODIFIED;
+        if (ctx->lfeon)
+            ctx->blkoutput |= AC3_OUTPUT_LFEON;
+        avctx->channels = ctx->nfchans + ctx->lfeon;
     }
 
     av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->bit_rate * 1000, avctx->sample_rate);
@@ -2009,10 +1978,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
             *data_size = 0;
             return ctx->frame_size;
         }
-        j = ((ctx->blkoutput & AC3_OUTPUT_LFEON) ? 0 : 1);
         for (k = 0; k < BLOCK_SIZE; k++) {
-            j = ((ctx->blkoutput & AC3_OUTPUT_LFEON) ? 0 : 1);
-            for (;j < avctx->channels + 1; j++) {
+            j = (ctx->blkoutput & AC3_OUTPUT_LFEON) ? 0 : 1;
+            for (; j <= avctx->channels; j++) {
                 value = convert(ctx->output[j][k]);
                 *(out_samples++) = value;
             }
