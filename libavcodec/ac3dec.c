@@ -1632,9 +1632,11 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     for (i = 0; i < 5; i++)
         ctx->chcoeffs[i] = 2.0;
 
+    ctx->blksw = 0;
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw |= get_bits1(gb) << i;
 
+    ctx->dithflag = 0;
     for (i = 0; i < nfchans; i++) /* dithering flag */
         ctx->dithflag |= get_bits1(gb) << i;
 
@@ -1886,7 +1888,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         dump_floats("channel transform coefficients", 10, ctx->transform_coeffs[i + 1], BLOCK_SIZE);*/
 
     /* recover coefficients if rematrixing is in use */
-    if (ctx->rematstr)
+    if (ctx->rematflg)
         do_rematrixing(ctx);
 
     do_imdct(ctx);
