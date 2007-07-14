@@ -8,9 +8,6 @@
  * Michel Lespinasse and Aaron Holtzman.
  * http://liba52.sourceforge.net
  *
- * The Mersenne Twister is based on code written by Makoto Matsumoto and
- * Takuji Nishimura.
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -39,6 +36,7 @@
 #include "ac3tab.h"
 #include "bitstream.h"
 #include "dsputil.h"
+#include "random.h"
 
 static const int nfchans_tbl[8] = { 2, 1, 2, 3, 3, 4, 4, 5 };
 
@@ -116,20 +114,6 @@ static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LE
 #define AC3_INPUT_3F_1R         0x05
 #define AC3_INPUT_2F_2R         0x06
 #define AC3_INPUT_3F_2R         0x07
-
-/* Mersenne Twister */
-#define NMT 624
-#define MMT 397
-#define MATRIX_A    0x9908b0df
-#define UPPER_MASK  0x80000000
-#define LOWER_MASK  0x7fffffff
-
-
-typedef struct {
-    uint32_t mt[NMT];
-    int      mti;
-} dither_state;
-/* Mersenne Twister */
 
 typedef struct {
     uint16_t crc1;
@@ -221,54 +205,8 @@ typedef struct {
 
     /* Miscellaneous. */
     GetBitContext gb;
-    dither_state  dith_state;   //for dither generation
+    AVRandomState dith_state;   //for dither generation
 } AC3DecodeContext;
-
-
-/* BEGIN Mersenne Twister Code. */
-static void dither_seed(dither_state *state, uint32_t seed)
-{
-    static const uint32_t mag01[2] = { 0x00, MATRIX_A };
-    uint32_t y;
-    int kk;
-
-    if (seed == 0)
-        seed = 0x7ba05e;    //default seed to my birthday!
-
-    state->mt[0] = seed;
-    for (state->mti = 1; state->mti < NMT; state->mti++)
-        state->mt[state->mti] = ((69069 * state->mt[state->mti - 1]) + 1);
-
-    for (kk = 0; kk < NMT - MMT; kk++) {
-        y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
-        state->mt[kk] = state->mt[kk + MMT] ^ (y >> 1) ^ mag01[y & 0x01];
-    }
-    for (;kk < NMT - 1; kk++) {
-        y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
-        state->mt[kk] = state->mt[kk + (MMT - NMT)] ^ (y >> 1) ^ mag01[y & 0x01];
-    }
-    y = (state->mt[NMT - 1] & UPPER_MASK) | (state->mt[0] & LOWER_MASK);
-    state->mt[NMT - 1] = state->mt[MMT - 1] ^ (y >> 1) ^ mag01[y & 0x01];
-
-    state->mti = 0;
-}
-
-static int16_t dither_int16(dither_state *state)
-{
-    uint32_t y;
-
-    if (state->mti >= NMT)
-        state->mti = 0;
-
-    y = state->mt[state->mti++];
-    y ^= (y >> 11);
-    y ^= ((y << 7) & 0x9d2c5680);
-    y ^= ((y << 15) & 0xefc60000);
-    y ^= (y >> 18);
-
-    return ((y << 16) >> 16);
-}
-/* END Mersenne Twister */
 
 /*********** BEGIN INIT HELPER FUNCTIONS ***********/
 /**
@@ -431,7 +369,7 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&ctx->imdct_512, 9, 1);
     ac3_window_init(ctx->window);
     dsputil_init(&ctx->dsp, avctx);
-    dither_seed(&ctx->dith_state, 0);
+    av_init_random(0, &ctx->dith_state);
 
     return 0;
 }
@@ -898,7 +836,7 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                     for (ch = 0; ch < ctx->nfchans; ch++)
                         if (((ctx->chincpl) >> ch) & 1) {
                             if ((ctx->dithflag >> ch) & 1) {
-                                TRANSFORM_COEFF(cplcoeff, dither_int16(&ctx->dith_state), exps[start], scale_factors);
+                                TRANSFORM_COEFF(cplcoeff, av_random(&ctx->dith_state) & 0xFFFF, exps[start], scale_factors);
                                 ctx->transform_coeffs[ch + 1][start] = cplcoeff * cplcos[ch] * LEVEL_MINUS_3DB;
                             } else
                                 ctx->transform_coeffs[ch + 1][start] = 0;
@@ -996,7 +934,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     continue;
                 }
                 else {
-                    TRANSFORM_COEFF(coeffs[i], dither_int16(&ctx->dith_state), exps[i], factors);
+                    TRANSFORM_COEFF(coeffs[i], av_random(&ctx->dith_state) & 0xFFFF, exps[i], factors);
                     coeffs[i] *= LEVEL_MINUS_3DB;
                     continue;
                 }
