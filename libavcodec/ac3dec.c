@@ -13,8 +13,6 @@
  *
  * Thanks Makoto Matsumoto and Takuji Nishimura for the Mersenne Twister.
  *
- * Kaiser-Bessel derived window by Justin Ruggles.
- *
  * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
  * Something is wrong up on cloud # 9!
  *
@@ -95,7 +93,6 @@ typedef struct {
 /* Mersenne Twister */
 
 typedef struct {
-    uint32_t flags;
     uint16_t crc1;
     uint8_t  fscod;
 
@@ -148,74 +145,81 @@ typedef struct {
     int      bit_rate;
     int      frame_size;
 
-    int      nfchans;
-    int      lfeon;
+    int      nfchans;           //number of channels
+    int      lfeon;             //lfe channel in use
 
-    float    dynrng;
-    float    dynrng2;
-    float    chcoeffs[6];
-    float    cplco[5][18];
-    int      ncplbnd;
-    int      ncplsubnd;
-    int      cplstrtmant;
-    int      cplendmant;
-    int      endmant[5];
-    uint8_t  dcplexps[256];
-    uint8_t  dexps[5][256];
-    uint8_t  dlfeexps[256];
-    uint8_t  cplbap[256];
-    uint8_t  bap[5][256];
-    uint8_t  lfebap[256];
-    int      blkoutput;
+    float    dynrng;            //dynamic range gain
+    float    dynrng2;           //dynamic range gain for 1+1 mode
+    float    chcoeffs[6];       //normalized channel coefficients
+    float    cplco[5][18];      //coupling coordinates
+    int      ncplbnd;           //number of coupling bands
+    int      ncplsubnd;         //number of coupling sub bands
+    int      cplstrtmant;       //coupling start mantissa
+    int      cplendmant;        //coupling end mantissa
+    int      endmant[5];        //channel end mantissas
 
-    DECLARE_ALIGNED_16(float, transform_coeffs[MAX_CHANNELS][BLOCK_SIZE]);
+    uint8_t  dcplexps[256];     //decoded coupling exponents
+    uint8_t  dexps[5][256];     //decoded fbw channel exponents
+    uint8_t  dlfeexps[256];     //decoded lfe channel exponents
+    uint8_t  cplbap[256];       //coupling bit allocation pointers
+    uint8_t  bap[5][256];       //fbw channel bit allocation pointers
+    uint8_t  lfebap[256];       //lfe channel bit allocation pointers
+
+    int      blkoutput;         //output configuration for block
+
+    DECLARE_ALIGNED_16(float, transform_coeffs[MAX_CHANNELS][BLOCK_SIZE]);  //transform coefficients
 
     /* For IMDCT. */
-    MDCTContext imdct_512;  //N/8 point IFFT context
-    MDCTContext imdct_256;  //N/4 point IFFT context
+    MDCTContext imdct_512;  //for 512 sample imdct transform
+    MDCTContext imdct_256;  //for 256 sample imdct transform
     DSPContext  dsp;        //for optimization
-    DECLARE_ALIGNED_16(float, output[MAX_CHANNELS][BLOCK_SIZE]);
-    DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);
-    DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);
-    DECLARE_ALIGNED_16(float, tmp_output[BLOCK_SIZE * 2]);
-    DECLARE_ALIGNED_16(float, window[BLOCK_SIZE]);
+
+    DECLARE_ALIGNED_16(float, output[MAX_CHANNELS][BLOCK_SIZE]);    //output after imdct transform and windowing
+    DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);     //delay - added to the next block
+    DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);               //temporary storage for imdct transform
+    DECLARE_ALIGNED_16(float, tmp_output[BLOCK_SIZE * 2]);          //temporary storage for output before windowing
+    DECLARE_ALIGNED_16(float, window[BLOCK_SIZE]);                  //window coefficients
 
     /* Miscellaneous. */
     GetBitContext gb;
-    dither_state  dith_state;
+    dither_state  dith_state;   //for dither generation
 } AC3DecodeContext;
 
 
 /* BEGIN Mersenne Twister Code. */
 static void dither_seed(dither_state *state, uint32_t seed)
 {
-    if (seed == 0) seed = 0x1f2e3d4c;
+    static const uint32_t mag01[2] = { 0x00, MATRIX_A };
+    uint32_t y;
+    int kk;
+
+    if (seed == 0)
+        seed = 0x7ba05e;    //default seed to my birthday!
 
     state->mt[0] = seed;
     for (state->mti = 1; state->mti < NMT; state->mti++)
         state->mt[state->mti] = ((69069 * state->mt[state->mti - 1]) + 1);
+
+    for (kk = 0; kk < NMT - MMT; kk++) {
+        y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
+        state->mt[kk] = state->mt[kk + MMT] ^ (y >> 1) ^ mag01[y & 0x01];
+    }
+    for (;kk < NMT - 1; kk++) {
+        y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
+        state->mt[kk] = state->mt[kk + (MMT - NMT)] ^ (y >> 1) ^ mag01[y & 0x01];
+    }
+    y = (state->mt[NMT - 1] & UPPER_MASK) | (state->mt[0] & LOWER_MASK);
+    state->mt[NMT - 1] = state->mt[MMT - 1] ^ (y >> 1) ^ mag01[y & 0x01];
+
+    state->mti = 0;
 }
 
-static uint32_t dither_uint32(dither_state *state)
+static int16_t dither_int16(dither_state *state)
 {
     uint32_t y;
-    static const uint32_t mag01[2] = { 0x00, MATRIX_A };
-    int kk;
 
-    if (state->mti >= NMT) {
-        for (kk = 0; kk < NMT - MMT; kk++) {
-            y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
-            state->mt[kk] = state->mt[kk + MMT] ^ (y >> 1) ^ mag01[y & 0x01];
-        }
-        for (;kk < NMT - 1; kk++) {
-            y = (state->mt[kk] & UPPER_MASK) | (state->mt[kk + 1] & LOWER_MASK);
-            state->mt[kk] = state->mt[kk + (MMT - NMT)] ^ (y >> 1) ^ mag01[y & 0x01];
-        }
-        y = (state->mt[NMT - 1] & UPPER_MASK) | (state->mt[0] & LOWER_MASK);
-        state->mt[NMT - 1] = state->mt[MMT - 1] ^ (y >> 1) ^ mag01[y & 0x01];
-
+    if (state->mti >= NMT)
         state->mti = 0;
-    }
 
     y = state->mt[state->mti++];
     y ^= (y >> 11);
@@ -223,16 +227,11 @@ static uint32_t dither_uint32(dither_state *state)
     y ^= ((y << 15) & 0xefc60000);
     y ^= (y >> 18);
 
-    return y;
+    return ((y << 16) >> 16);
 }
-
-static inline int16_t dither_int16(dither_state *state)
-{
-    return ((dither_uint32(state) << 16) >> 16);
-}
-
 /* END Mersenne Twister */
 
+/*********** BEGIN INIT HELPER FUNCTIONS ***********/
 /**
  * Generate a Kaiser-Bessel Derived Window.
  */
@@ -257,6 +256,9 @@ static void ac3_window_init(float *window)
        window[i] = sqrt(local_window[i] / sum);
 }
 
+/*
+ * Generate quantizer tables.
+ */
 static void generate_quantizers_table(int16_t quantizers[], int level, int length)
 {
     int i;
@@ -308,6 +310,9 @@ static void generate_quantizers_table_3(int16_t quantizers[], int level, int len
         quantizers[i] = 0;
 }
 
+/*
+ * Initialize tables at runtime.
+ */
 static void ac3_tables_init(void)
 {
     int i, j, k, l, v;
@@ -322,6 +327,10 @@ static void ac3_tables_init(void)
     }
     masktab[253] = masktab[254] = masktab[255] = 0;
     bndtab[50] = 0;
+
+    /* PSD Table For Mapping Exponents To PSD. */
+    for (i = 0; i < 25; i++)
+        psdtab[i] = 3072 - (i << 7);
 
     /* Exponent Decoding Tables */
     for (i = 0; i < 5; i++) {
@@ -366,6 +375,11 @@ static void ac3_tables_init(void)
 
     //for level-15 quantizers
     generate_quantizers_table(l15_quantizers, 15, 15);
+    /* End Quantizer ungrouping tables. */
+
+    //generate scale factors
+    for (i = 0; i < 25; i++)
+        scale_factors[i] = pow(2.0, -(i + 15));
 }
 
 
@@ -376,14 +390,21 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ac3_tables_init();
     ff_mdct_init(&ctx->imdct_256, 8, 1);
     ff_mdct_init(&ctx->imdct_512, 9, 1);
-    /* Kaiser-Bessel derived window. */
     ac3_window_init(ctx->window);
     dsputil_init(&ctx->dsp, avctx);
     dither_seed(&ctx->dith_state, 0);
 
     return 0;
 }
+/*********** END INIT FUNCTIONS ***********/
 
+/* Synchronize to ac3 bitstream.
+ * This function searches for the syncword '0xb77'.
+ *
+ * @param buf Pointer to "probable" ac3 bitstream buffer
+ * @param buf_size Size of buffer
+ * @return Returns the position where syncword is found, -1 if no syncword is found
+ */
 static int ac3_synchronize(uint8_t *buf, int buf_size)
 {
     int i;
@@ -395,7 +416,14 @@ static int ac3_synchronize(uint8_t *buf, int buf_size)
     return -1;
 }
 
-//Returns -1 when 'fscod' is not valid;
+/* Parse the 'sync_info' from the ac3 bitstream.
+ * This function extracts the sync_info from ac3 bitstream.
+ * GetBitContext within AC3DecodeContext must point to
+ * start of the synchronized ac3 bitstream.
+ *
+ * @param ctx  AC3DecodeContext
+ * @return Returns framesize, returns 0 if fscod, frmsizecod or bsid is not valid
+ */
 static int ac3_parse_sync_info(AC3DecodeContext *ctx)
 {
     GetBitContext *gb = &ctx->gb;
@@ -434,6 +462,11 @@ static int ac3_parse_sync_info(AC3DecodeContext *ctx)
     return 0;
 }
 
+/* Parse bsi from ac3 bitstream.
+ * This function extracts the bitstream information (bsi) from ac3 bitstream.
+ *
+ * @param ctx AC3DecodeContext after processed by ac3_parse_sync_info
+ */
 static void ac3_parse_bsi(AC3DecodeContext *ctx)
 {
     GetBitContext *gb = &ctx->gb;
@@ -490,10 +523,16 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
     }
 }
 
-/* Decodes the grouped exponents and stores them
- * in decoded exponents (dexps).
- * The code is derived from liba52.
- * Uses liba52 tables.
+/* Decodes the grouped exponents.
+ * This function decodes the coded exponents according to exponent strategy
+ * and stores them in the decoded exponents buffer.
+ *
+ * @param gb GetBitContext which points to start of coded exponents
+ * @param expstr Exponent coding strategy
+ * @param ngrps Number of grouped exponetns
+ * @param absexp Absolute exponent
+ * @param dexps Decoded exponents are stored in dexps
+ * @return Returns 0 if exponents are decoded successfully, -1 if error occurs
  */
 static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t absexp, uint8_t *dexps)
 {
@@ -551,6 +590,7 @@ static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t ab
     return 0;
 }
 
+/*********** HELPER FUNCTIONS FOR BIT ALLOCATION ***********/
 static inline int logadd(int a, int b)
 {
     int c = a - b;
@@ -583,11 +623,10 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 
     return a;
 }
+/*********** END HELPER FUNCTIONS FOR BIT ALLOCATION ***********/
 
-/* do the bit allocation for chnl.
- * chnl = 0 to 4 - fbw channel
- * chnl = 5 coupling channel
- * chnl = 6 lfe channel
+/* Performs bit allocation.
+ * This function performs bit allocation for the requested chanenl.
  */
 static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
 {
@@ -655,7 +694,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     }
 
     for (bin = start; bin < end; bin++) /* exponent mapping into psd */
-        psd[bin] = (3072 - (exps[bin] << 7));
+        psd[bin] = psdtab[exps[bin]];
 
     /* psd integration */
     j = start;
@@ -972,6 +1011,10 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
     return 0;
 }
 
+/* Get the transform coefficients.
+ * This function extracts the tranform coefficients form the ac3 bitstream.
+ * This function is called after bit allocation is performed.
+ */
 static int get_transform_coeffs(AC3DecodeContext * ctx)
 {
     int i, end;
@@ -1011,6 +1054,7 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
     return 0;
 }
 
+/* Rematrixing routines. */
 static void do_rematrixing1(AC3DecodeContext *ctx, int start, int end)
 {
     float tmp0, tmp1;
@@ -1050,6 +1094,10 @@ static void do_rematrixing(AC3DecodeContext *ctx)
     }
 }
 
+/* This function sets the normalized channel coefficients.
+ * Transform coefficients are multipllied by the channel
+ * coefficients to get normalized transform coefficients.
+ */
 static void get_downmix_coeffs(AC3DecodeContext *ctx)
 {
     int from = ctx->acmod;
@@ -1217,6 +1265,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
     }
 }
 
+/*********** BEGIN DOWNMIX FUNCTIONS ***********/
 static inline void mix_dualmono_to_mono(AC3DecodeContext *ctx)
 {
     int i;
@@ -1433,11 +1482,19 @@ static inline void mix_3f_2r_to_dolby(AC3DecodeContext *ctx)
     memset(output[4], 0, sizeof(output[4]));
     memset(output[5], 0, sizeof(output[5]));
 }
+/*********** END DOWNMIX FUNCTIONS ***********/
 
+/* Downmix the output.
+ * This function downmixes the output when the number of input
+ * channels is not equal to the number of output channels requested.
+ */
 static void do_downmix(AC3DecodeContext *ctx)
 {
     int from = ctx->acmod;
     int to = ctx->blkoutput;
+
+    if (to == AC3_OUTPUT_UNMODIFIED)
+        return;
 
     switch (from) {
         case AC3_INPUT_DUALMONO:
@@ -1545,16 +1602,9 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
         av_log(NULL, AV_LOG_INFO, "\n");
 }
 
-#define CMUL(pre, pim, are, aim, bre, bim) \
-{\
-    float _are = (are);\
-    float _aim = (aim);\
-    float _bre = (bre);\
-    float _bim = (bim);\
-    (pre) = _are * _bre - _aim * _bim;\
-    (pim) = _are * _bim + _aim * _bre;\
-}
-
+/* This function performs the imdct on 256 sample transform
+ * coefficients.
+ */
 static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
 {
     int k;
@@ -1575,6 +1625,9 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
     ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, ctx->window, BLOCK_SIZE);
 }
 
+/* This function performs the imdct on 512 sample transform
+ * coefficients.
+ */
 static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
 {
     float *ptr;
@@ -1587,6 +1640,7 @@ static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
     ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, ctx->window, BLOCK_SIZE);
 }
 
+/* IMDCT Transform. */
 static inline void do_imdct(AC3DecodeContext *ctx)
 {
     int i;
@@ -1602,6 +1656,11 @@ static inline void do_imdct(AC3DecodeContext *ctx)
     }
 }
 
+/* Parse the audio block from ac3 bitstream.
+ * This function extract the audio block from the ac3 bitstream
+ * and produces the output for the block. This function must
+ * be called for each of the six audio block in the ac3 bitstream.
+ */
 static int ac3_parse_audio_block(AC3DecodeContext * ctx)
 {
     int nfchans = ctx->nfchans;
@@ -1609,7 +1668,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     int i, bnd, rbnd, seg, grpsize;
     GetBitContext *gb = &ctx->gb;
     int bit_alloc_flags = 0;
-    float drange;
     uint8_t *dexps;
     int mstrcplco, cplcoexp, cplcomant;
     int dynrng, chbwcod, ngrps, cplabsexp, skipl;
@@ -1879,16 +1937,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     return 0;
 }
 
-/*static inline int16_t convert(float f)
-{
-    if (f >= 1.0)
-        return 32767;
-    else if (f <= -1.0)
-        return -32768;
-    else
-        return (lrintf(f * 32767.0));
-}*/
-
 static inline int16_t convert(int32_t i)
 {
     if (i > 0x43c07fff)
@@ -1901,6 +1949,14 @@ static inline int16_t convert(int32_t i)
 
 static int frame_count = 0;
 
+/* Decode ac3 frame.
+ *
+ * @param avctx Pointer to AVCodecContext
+ * @param data Pointer to pcm smaples
+ * @param data_size Set to number of pcm samples produced by decoding
+ * @param buf Data to be decoded
+ * @param buf_size Size of the buffer
+ */
 static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
@@ -1981,8 +2037,14 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     return ctx->frame_size;
 }
 
-static int ac3_decode_end(AVCodecContext *ctx)
+/* Uninitialize ac3 decoder.
+ */
+static int ac3_decode_end(AVCodecContext *avctx)
 {
+    AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
+    ff_mdct_end(&ctx->imdct_512);
+    ff_mdct_end(&ctx->imdct_256);
+
     return 0;
 }
 
