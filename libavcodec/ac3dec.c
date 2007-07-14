@@ -1,33 +1,30 @@
-/* AC3 Audio Decoder.
+/*
+ * AC-3 Audio Decoder
  * This code is developed as part of Google Summer of Code 2006 Program.
  *
- * Acknowledgements:
- *
- * I would like to acknowledge my mentor Benjamin Larsson for his timely
- * help and excelleng guidance throughout the project.
- * Thanks a lot Benjamin.
+ * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
  *
  * For exponent decoding the code is inspired by the code in liba52 by
  * Michel Lespinasse and Aaron Holtzman.
  * http://liba52.sourceforge.net
  *
- * Thanks Makoto Matsumoto and Takuji Nishimura for the Mersenne Twister.
+ * The Mersenne Twister is based on code written by Makoto Matsumoto and
+ * Takuji Nishimura.
  *
- * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
- * Something is wrong up on cloud # 9!
+ * This file is part of FFmpeg.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
