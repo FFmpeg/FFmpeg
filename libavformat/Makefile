@@ -135,6 +135,7 @@ OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
 OBJS-$(CONFIG_TXD_DEMUXER)               += txd.o
 OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
+OBJS-$(CONFIG_VC1_DEMUXER)               += raw.o
 OBJS-$(CONFIG_VIDEO_GRAB_BKTR_DEMUXER)   += grab_bktr.o
 OBJS-$(CONFIG_VIDEO_GRAB_V4L_DEMUXER)    += grab.o
 OBJS-$(CONFIG_VMD_DEMUXER)               += sierravmd.o
