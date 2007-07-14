@@ -224,10 +224,10 @@ static inline int16_t dither_int16(dither_state *state)
  * Generate a Kaiser Window.
  */
 static void
-k_window_init(int alpha, double *window, int n, int iter)
+k_window_init(int alpha, float *window, int n, int iter)
 {
     int j, k;
-    double a, x;
+    float a, x;
     a = alpha * M_PI / n;
     a = a*a;
     for(k=0; k<n; k++) {
@@ -247,10 +247,10 @@ k_window_init(int alpha, double *window, int n, int iter)
  * @param iter   number of iterations to use in BesselI0
  */
 static void
-kbd_window_init(int alpha, double *window, int n, int iter)
+kbd_window_init(int alpha, float *window, int n, int iter)
 {
     int k, n2;
-    double *kwindow;
+    float *kwindow;
 
     n2 = n >> 1;
     kwindow = &window[n2];
@@ -319,7 +319,6 @@ static void generate_quantizers_table_3(int16_t quantizers[], int level, int len
 static void ac3_tables_init(void)
 {
     int i, j, k, l, v;
-    float alpha;
     /* compute bndtab and masktab from bandsz */
     k = 0;
     l = 0;
@@ -375,19 +374,6 @@ static void ac3_tables_init(void)
 
     //for level-15 quantizers
     generate_quantizers_table(l15_quantizers, 15, 15);
-
-    /* Twiddle Factors for IMDCT. */
-    for(i = 0; i < N / 4; i++) {
-        alpha = 2 * M_PI * (8 * i + 1) / (8 * N);
-        x_cos1[i] = -cos(alpha);
-        x_sin1[i] = -sin(alpha);
-    }
-
-    for (i = 0; i < N / 8; i++) {
-        alpha = 2 * M_PI * (8 * i + 1) / (4 * N);
-        x_cos2[i] = -cos(alpha);
-        x_sin2[i] = -sin(alpha);
-    }
 
     /* Kaiser-Bessel derived window. */
     kbd_window_init(5, window, 256, 100);
@@ -1917,8 +1903,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
     int frame_start;
     int16_t *out_samples = (int16_t *)data;
-    int i, j, k, value, fs_58;
-    uint16_t crc1;
+    int i, j, k, value;
 
     av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
 
