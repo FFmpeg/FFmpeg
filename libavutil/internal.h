@@ -26,7 +26,13 @@
 #ifndef INTERNAL_H
 #define INTERNAL_H
 
+#if !defined(DEBUG) && !defined(NDEBUG)
+#    define NDEBUG
+#endif
+
 #include <stdint.h>
+#include <stddef.h>
+#include <assert.h>
 
 #ifndef attribute_used
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
@@ -87,7 +93,6 @@
 #include "intreadwrite.h"
 #include "bswap.h"
 
-#include <stddef.h>
 #ifndef offsetof
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
@@ -116,11 +121,6 @@
 #endif
 
 /* debug stuff */
-
-#if !defined(DEBUG) && !defined(NDEBUG)
-#    define NDEBUG
-#endif
-#include <assert.h>
 
 /* dprintf macros */
 #ifdef DEBUG
