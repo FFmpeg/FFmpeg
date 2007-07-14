@@ -1617,8 +1617,8 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
         x2[k] = ctx->transform_coeffs[chindex][2 * k + 1];
     }
 
-    ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output, x1, ctx->tmp_imdct);
-    ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
+    ctx->imdct_256.fft.imdct_calc(&ctx->imdct_256, ctx->tmp_output, x1, ctx->tmp_imdct);
+    ctx->imdct_256.fft.imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
 
     o_ptr = ctx->output[chindex];
     d_ptr = ctx->delay[chindex];
@@ -1646,8 +1646,8 @@ static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
 {
     float *ptr;
 
-    ff_imdct_calc(&ctx->imdct_512, ctx->tmp_output,
-            ctx->transform_coeffs[chindex], ctx->tmp_imdct);
+    ctx->imdct_512.fft.imdct_calc(&ctx->imdct_512, ctx->tmp_output,
+                                  ctx->transform_coeffs[chindex], ctx->tmp_imdct);
     ptr = ctx->output[chindex];
     ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, ctx->window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
     ptr = ctx->delay[chindex];
