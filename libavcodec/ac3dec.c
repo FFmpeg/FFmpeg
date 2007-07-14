@@ -171,6 +171,7 @@ typedef struct {
     /* For IMDCT. */
     MDCTContext imdct_512;  //N/8 point IFFT context
     MDCTContext imdct_256;  //N/4 point IFFT context
+    DSPContext  dsp;        //for optimization
     DECLARE_ALIGNED_16(float, output[MAX_CHANNELS][BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);
     DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);
@@ -397,6 +398,7 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ac3_tables_init();
     ff_mdct_init(&ctx->imdct_256, 8, 1);
     ff_mdct_init(&ctx->imdct_512, 9, 1);
+    dsputil_init(&ctx->dsp, avctx);
     dither_seed(&ctx->dith_state, 0);
 
     return 0;
@@ -1566,6 +1568,7 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
 {
     int k;
     float x1[128], x2[128];
+    float *ptr;
 
     for (k = 0; k < N / 4; k++) {
         x1[k] = ctx->transform_coeffs[chindex][2 * k];
@@ -1575,27 +1578,36 @@ static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
     ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output, x1, ctx->tmp_imdct);
     ff_imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
 
-    for (k = 0; k < N / 2; k++) {
+    ptr = ctx->output[chindex];
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 0, BLOCK_SIZE, 1);
+    ptr = ctx->delay[chindex];
+    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
+    /*for (k = 0; k < N / 2; k++) {
         ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
         //dump_floats("samples", 10, ctx->output[chindex], 256);
         ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
-    }
+    }*/
 }
 
 static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
 {
-    int k;
+    //int k;
+    float *ptr;
 
     ff_imdct_calc(&ctx->imdct_512, ctx->tmp_output,
             ctx->transform_coeffs[chindex], ctx->tmp_imdct);
     //ff_imdct_calc_ac3_512(&ctx->imdct_512, ctx->tmp_output, ctx->transform_coeffs[chindex],
     //        ctx->tmp_imdct, window);
+    ptr = ctx->output[chindex];
+    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, window, ctx->delay[chindex], 0, BLOCK_SIZE, 1);
+    ptr = ctx->delay[chindex];
+    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, window, BLOCK_SIZE);
 
-    for (k = 0; k < N / 2; k++) {
+    /*for (k = 0; k < N / 2; k++) {
         ctx->output[chindex][k] = ctx->tmp_output[k] * window[k] + ctx->delay[chindex][k];
         //dump_floats("samples", 10, ctx->output[chindex], 256);
         ctx->delay[chindex][k] = ctx->tmp_output[N / 2 + k] * window[255 - k];
-    }
+    } */
 }
 
 static inline void do_imdct(AC3DecodeContext *ctx)
