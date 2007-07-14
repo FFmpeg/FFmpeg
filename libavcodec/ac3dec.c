@@ -7,8 +7,8 @@
  * help and excelleng guidance throughout the project.
  * Thanks a lot Benjamin.
  *
- * For exponent decoding the code is reused from liba52 by Michel Lespinasse
- * and Aaron Holtzman.
+ * For exponent decoding the code is inspired by the code in liba52 by
+ * Michel Lespinasse and Aaron Holtzman.
  * http://liba52.sourceforge.net
  *
  * Thanks Makoto Matsumoto and Takuji Nishimura for the Mersenne Twister.
@@ -1846,7 +1846,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     if (get_bits1(gb)) { /* snroffset */
         bit_alloc_flags = 127;
         ctx->csnroffst = get_bits(gb, 6);
-        if (ctx->cplinu) { /* couling fine snr offset and fast gain code */
+        if (ctx->cplinu) { /* coupling fine snr offset and fast gain code */
             ctx->cplfsnroffst = get_bits(gb, 4);
             ctx->cplfgaincod = get_bits(gb, 3);
         }
