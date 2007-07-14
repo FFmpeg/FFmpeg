@@ -24,13 +24,11 @@
 
 #define ALT_BITSTREAM_READER
 
+#include "avcodec.h"
 #include "ac3tab.h"
 #include "ac3_decoder.h"
-#include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "avutil.h"
-#include "common.h"
 
 #define N 512   /* constant for IMDCT Block size */
 
@@ -1979,13 +1977,12 @@ static int ac3_decode_end(AVCodecContext *ctx)
 }
 
 AVCodec lgpl_ac3_decoder = {
-    "ac3",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_AC3,
-    sizeof (AC3DecodeContext),
-    ac3_decode_init,
-    NULL,
-    ac3_decode_end,
-    ac3_decode_frame,
+    .name = "ac3",
+    .type = CODEC_TYPE_AUDIO,
+    .id = CODEC_ID_AC3,
+    .priv_data_size = sizeof (AC3DecodeContext),
+    .init = ac3_decode_init,
+    .close = ac3_decode_end,
+    .decode = ac3_decode_frame,
 };
 
