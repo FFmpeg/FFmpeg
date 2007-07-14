@@ -34,6 +34,10 @@
 #include "avutil.h"
 #include "common.h"
 
+#define MAX_CHANNELS    6
+#define MAX_BLOCK_SIZE  256
+#define MAX_BLOCKS      6
+
 /* Synchronization information. */
 typedef struct {
     uint16_t sync_word;     //synchronization word = always 0x0b77
@@ -44,6 +48,7 @@ typedef struct {
     /* Derived Attributes */
     int sampling_rate;      //sampling rate - 48, 44.1 or 32 kHz (value in Hz)
     int bit_rate;           //nominal bit rate (value in kbps)
+    int framesize;          //frame size - 16 bit words
 } ac3_sync_info;
 
 /* flags for the BSI. */
@@ -146,10 +151,7 @@ typedef struct {
     uint8_t  lfeexpstr;             //lfe exponent strategy
     uint8_t  chbwcod[5];            //channel bandwdith code for channels in use
     uint8_t  cplabsexp;             //coupling absolute exponent
-    uint8_t  cplexps[72];           //coupling exponents
-    uint8_t  exps[5][88];           //channel exponents
     uint8_t  gainrng[5];            //gain range
-    uint8_t  lfeexps[3];            //LFE exponents
     uint8_t  sdcycod;               //slow decay code
     uint8_t  fdcycod;               //fast decay code
     uint8_t  sgaincod;              //slow gain code
@@ -196,8 +198,10 @@ typedef struct {
     uint8_t  bap[5][256];           //fbw channels bit allocation parameters table
     uint8_t  lfebap[256];           //lfe bit allocaiton parameters table
 
-    float    cplcoeffs[256];        //temporary storage for coupling transform coefficients
-    float    cplco[5][18];          //coupling co-ordinates
+    DECLARE_ALIGNED_16(float, transform_coeffs[MAX_CHANNELS][MAX_BLOCK_SIZE]); //transform coefficients
+    DECLARE_ALIGNED_16(float, cplcoeffs[256]);        //temporary storage for coupling transform coefficients
+    DECLARE_ALIGNED_16(float, block_output[MAX_CHANNELS][MAX_BLOCK_SIZE]);
+    float    cplco[5][18];          //coupling coordinates
     float    chcoeffs[6];           //channel coefficients for downmix
 } ac3_audio_block;
 
@@ -281,28 +285,41 @@ typedef struct {
     ac3_sync_info   sync_info;
     ac3_bsi         bsi;
     ac3_audio_block audio_block;
-    float           *samples;
-    int             output;
     dither_state    state;
     MDCTContext     imdct_ctx_256;
     MDCTContext     imdct_ctx_512;
     GetBitContext   gb;
+    int             output;
+    DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][MAX_BLOCK_SIZE]);
+    DECLARE_ALIGNED_16(FFTSample, tmp_imdct[MAX_BLOCK_SIZE * 2]);
+    DECLARE_ALIGNED_16(FFTSample, tmp_output[MAX_BLOCK_SIZE * 2]);
 } AC3DecodeContext;
+
+static void ac3_common_init1(void)
+{
+    int i, j, k, l, v;
+    /* compute bndtab and masktab from bandsz */
+    k = 0;
+    l = 0;
+    for(i=0;i<50;i++) {
+        bndtab[i] = l;
+        v = bndsz[i];
+        for(j=0;j<v;j++) masktab[k++]=i;
+        l += v;
+    }
+    masktab[253] = masktab[254] = masktab[255] = 0;
+    bndtab[50] = 0;
+}
 
 
 static int ac3_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeContext *ctx = avctx->priv_data;
 
-    ac3_common_init();
+    ac3_common_init1();
 
     ff_mdct_init(&ctx->imdct_ctx_256, 8, 1);
     ff_mdct_init(&ctx->imdct_ctx_512, 9, 1);
-    ctx->samples = av_mallocz(6 * 256 * sizeof (float));
-    if (!ctx->samples) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot allocate memory for samples\n");
-        return -1;
-    }
     dither_seed(&ctx->state, 0);
 
     return 0;
@@ -323,19 +340,39 @@ static int ac3_synchronize(uint8_t *buf, int buf_size)
 static int ac3_parse_sync_info(AC3DecodeContext *ctx)
 {
     ac3_sync_info *sync_info = &ctx->sync_info;
+    ac3_bsi *bsi = &ctx->bsi;
     GetBitContext *gb = &ctx->gb;
 
     sync_info->sync_word = get_bits(gb, 16);
     sync_info->crc1 = get_bits(gb, 16);
     sync_info->fscod = get_bits(gb, 2);
     if (sync_info->fscod == 0x03)
-        return -1;
+        return 0;
     sync_info->frmsizecod = get_bits(gb, 6);
-    if (sync_info->frmsizecod >= 0x38)
-        return -1;
+    if (sync_info->frmsizecod >= 38)
+        return 0;
     sync_info->sampling_rate = ac3_freqs[sync_info->fscod];
     sync_info->bit_rate = ac3_bitratetab[sync_info->frmsizecod >> 1];
 
+    /* we include it here in order to determine validity of ac3 frame */
+    bsi->bsid = get_bits(gb, 5);
+    if (bsi->bsid > 0x08)
+        return 0;
+    bsi->bsmod = get_bits(gb, 3);
+
+    switch (sync_info->fscod) {
+        case 0x00:
+            sync_info->framesize = 4 * sync_info->bit_rate;
+            return sync_info->framesize;
+        case 0x01:
+            sync_info->framesize = 2 * (320 * sync_info->bit_rate / 147 + (sync_info->frmsizecod & 1));
+            return sync_info->framesize;
+        case 0x02:
+            sync_info->framesize =  6 * sync_info->bit_rate;
+            return sync_info->framesize;
+    }
+
+    /* never reached */
     return 0;
 }
 
@@ -345,16 +382,19 @@ static int ac3_parse_bsi(AC3DecodeContext *ctx)
     ac3_bsi *bsi = &ctx->bsi;
     uint32_t *flags = &bsi->flags;
     GetBitContext *gb = &ctx->gb;
+    int i;
 
     *flags = 0;
     bsi->cmixlev = 0;
     bsi->surmixlev = 0;
     bsi->dsurmod = 0;
+    ctx->audio_block.cpldeltbae = AC3_DBASTR_NONE;
+    ctx->audio_block.cpldeltnseg = 0;
+    for (i = 0; i < 5; i++) {
+        ctx->audio_block.deltbae[i] = AC3_DBASTR_NONE;
+        ctx->audio_block.deltnseg[i] = 0;
+    }
 
-    bsi->bsid = get_bits(gb, 5);
-    if (bsi->bsid > 0x08)
-        return -1;
-    bsi->bsmod = get_bits(gb, 3);
     bsi->acmod = get_bits(gb, 3);
     if (bsi->acmod & 0x01 && bsi->acmod != 0x01)
         bsi->cmixlev = get_bits(gb, 2);
@@ -362,56 +402,55 @@ static int ac3_parse_bsi(AC3DecodeContext *ctx)
         bsi->surmixlev = get_bits(gb, 2);
     if (bsi->acmod == 0x02)
         bsi->dsurmod = get_bits(gb, 2);
-    if (get_bits(gb, 1))
+    if (get_bits1(gb))
         *flags |= AC3_BSI_LFEON;
     bsi->dialnorm = get_bits(gb, 5);
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_COMPRE;
-        bsi->compr = get_bits(gb, 5);
+        bsi->compr = get_bits(gb, 8);
     }
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_LANGCODE;
         bsi->langcod = get_bits(gb, 8);
     }
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_AUDPRODIE;
         bsi->mixlevel = get_bits(gb, 5);
         bsi->roomtyp = get_bits(gb, 2);
     }
     if (bsi->acmod == 0x00) {
         bsi->dialnorm2 = get_bits(gb, 5);
-        if (get_bits(gb, 1)) {
+        if (get_bits1(gb)) {
             *flags |= AC3_BSI_COMPR2E;
-            bsi->compr2 = get_bits(gb, 5);
+            bsi->compr2 = get_bits(gb, 8);
         }
-        if (get_bits(gb, 1)) {
+        if (get_bits1(gb)) {
             *flags |= AC3_BSI_LANGCOD2E;
             bsi->langcod2 = get_bits(gb, 8);
         }
-        if (get_bits(gb, 1)) {
+        if (get_bits1(gb)) {
             *flags |= AC3_BSI_AUDPRODIE;
             bsi->mixlevel2 = get_bits(gb, 5);
             bsi->roomtyp2 = get_bits(gb, 2);
         }
     }
-    if (get_bits(gb, 1))
+    if (get_bits1(gb))
         *flags |= AC3_BSI_COPYRIGHTB;
-    if (get_bits(gb, 1))
+    if (get_bits1(gb))
         *flags |= AC3_BSI_ORIGBS;
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_TIMECOD1E;
         bsi->timecod1 = get_bits(gb, 14);
     }
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_TIMECOD2E;
         bsi->timecod2 = get_bits(gb, 14);
     }
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         *flags |= AC3_BSI_ADDBSIE;
         bsi->addbsil = get_bits(gb, 6);
-        do {
-            get_bits(gb, 8);
-        } while (bsi->addbsil--);
+        for (i = 0; i < (bsi->addbsil + 1); i++)
+            skip_bits(gb, 8);
     }
 
     bsi->nfchans = nfchans_tbl[bsi->acmod];
@@ -419,21 +458,23 @@ static int ac3_parse_bsi(AC3DecodeContext *ctx)
     return 0;
 }
 
- /* Decodes the grouped exponents (gexps) and stores them
+ /* Decodes the grouped exponents and stores them
  * in decoded exponents (dexps).
  * The code is derived from liba52.
  * Uses liba52 tables.
  */
-static int _decode_exponents(int expstr, int ngrps, uint8_t absexp, uint8_t *gexps, uint8_t *dexps)
+static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t absexp, uint8_t *dexps)
 {
     int exps;
-    int i = 0;
 
     while (ngrps--) {
-        exps = gexps[i++];
+        exps = get_bits(gb, 7);
 
         absexp += exp_1[exps];
-        assert(absexp <= 24);
+        if (absexp > 24) {
+            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
+            return -ngrps;
+        }
         switch (expstr) {
             case AC3_EXPSTR_D45:
                 *(dexps++) = absexp;
@@ -443,8 +484,12 @@ static int _decode_exponents(int expstr, int ngrps, uint8_t absexp, uint8_t *gex
             case AC3_EXPSTR_D15:
                 *(dexps++) = absexp;
         }
+
         absexp += exp_2[exps];
-        assert(absexp <= 24);
+        if (absexp > 24) {
+            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
+            return -ngrps;
+        }
         switch (expstr) {
             case AC3_EXPSTR_D45:
                 *(dexps++) = absexp;
@@ -456,7 +501,10 @@ static int _decode_exponents(int expstr, int ngrps, uint8_t absexp, uint8_t *gex
         }
 
         absexp += exp_3[exps];
-        assert(absexp <= 24);
+        if (absexp > 24) {
+            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
+            return -ngrps;
+        }
         switch (expstr) {
             case AC3_EXPSTR_D45:
                 *(dexps++) = absexp;
@@ -471,39 +519,20 @@ static int _decode_exponents(int expstr, int ngrps, uint8_t absexp, uint8_t *gex
     return 0;
 }
 
-static int decode_exponents(AC3DecodeContext *ctx)
+static inline int logadd(int a, int b)
 {
-    ac3_audio_block *ab = &ctx->audio_block;
-    int i;
-    uint8_t *exps;
-    uint8_t *dexps;
+    int c = a - b;
+    int address;
 
-    if (ab->flags & AC3_AB_CPLINU && ab->cplexpstr != AC3_EXPSTR_REUSE)
-        if (_decode_exponents(ab->cplexpstr, ab->ncplgrps, ab->cplabsexp,
-                    ab->cplexps, ab->dcplexps + ab->cplstrtmant))
-            return -1;
-    for (i = 0; i < ctx->bsi.nfchans; i++)
-        if (ab->chexpstr[i] != AC3_EXPSTR_REUSE) {
-            exps = ab->exps[i];
-            dexps = ab->dexps[i];
-            if (_decode_exponents(ab->chexpstr[i], ab->nchgrps[i], exps[0], exps + 1, dexps + 1))
-                return -1;
-        }
-    if (ctx->bsi.flags & AC3_BSI_LFEON && ab->lfeexpstr != AC3_EXPSTR_REUSE)
-        if (_decode_exponents(ab->lfeexpstr, 2, ab->lfeexps[0], ab->lfeexps + 1, ab->dlfeexps))
-            return -1;
-    return 0;
+    address = FFMIN(ABS(c) >> 1, 255);
+
+    if (c >= 0)
+        return (a + latab[address]);
+    else
+        return (b + latab[address]);
 }
 
-static inline int16_t logadd(int16_t a, int16_t b)
-{
-    int16_t c = a - b;
-    uint8_t address = FFMIN((ABS(c) >> 1), 255);
-
-    return ((c >= 0) ? (a + latab[address]) : (b + latab[address]));
-}
-
-static inline int16_t calc_lowcomp(int16_t a, int16_t b0, int16_t b1, uint8_t bin)
+static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 {
     if (bin < 7) {
         if ((b0 + 256) == b1)
@@ -517,9 +546,8 @@ static inline int16_t calc_lowcomp(int16_t a, int16_t b0, int16_t b1, uint8_t bi
         else if (b0 > b1)
             a = FFMAX(0, a - 64);
     }
-    else {
+    else
         a = FFMAX(0, a - 128);
-    }
 
     return a;
 }
@@ -529,15 +557,16 @@ static inline int16_t calc_lowcomp(int16_t a, int16_t b0, int16_t b1, uint8_t bi
  * chnl = 5 coupling channel
  * chnl = 6 lfe channel
  */
-static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
+static void do_bit_allocation1(AC3DecodeContext *ctx, int chnl)
 {
     ac3_audio_block *ab = &ctx->audio_block;
-    int16_t sdecay, fdecay, sgain, dbknee, floor;
-    int16_t lowcomp, fgain, snroffset, fastleak, slowleak;
-    int16_t psd[256], bndpsd[50], excite[50], mask[50], delta;
-    uint8_t start, end, bin, i, j, k, lastbin, bndstrt, bndend, begin, deltnseg, band, seg, address;
-    uint8_t fscod = ctx->sync_info.fscod;
-    uint8_t *exps, *deltoffst, *deltlen, *deltba;
+    int sdecay, fdecay, sgain, dbknee, floor;
+    int lowcomp = 0, fgain = 0, snroffset = 0, fastleak = 0, slowleak = 0;
+    int psd[256], bndpsd[50], excite[50], mask[50], delta;
+    int start = 0, end = 0, bin = 0, i = 0, j = 0, k = 0, lastbin = 0, bndstrt = 0;
+    int bndend = 0, begin = 0, deltnseg = 0, band = 0, seg = 0, address = 0;
+    int fscod = ctx->sync_info.fscod;
+    uint8_t *exps, *deltoffst = 0, *deltlen = 0, *deltba = 0;
     uint8_t *baps;
     int do_delta = 0;
 
@@ -557,7 +586,7 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         slowleak = (ab->cplsleak << 8) + 768;
         exps = ab->dcplexps;
         baps = ab->cplbap;
-        if (ab->cpldeltbae == 0 || ab->cpldeltbae == 1) {
+        if (ab->cpldeltbae == AC3_DBASTR_NEW || ab->cpldeltbae == AC3_DBASTR_REUSE) {
             do_delta = 1;
             deltnseg = ab->cpldeltnseg;
             deltoffst = ab->cpldeltoffst;
@@ -569,6 +598,8 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         start = 0;
         end = 7;
         lowcomp = 0;
+        fastleak = 0;
+        slowleak = 0;
         fgain = fgaintab[ab->lfefgaincod];
         snroffset = (((ab->csnroffst - 15) << 4) + ab->lfefsnroffst) << 2;
         exps = ab->dlfeexps;
@@ -578,11 +609,13 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         start = 0;
         end = ab->endmant[chnl];
         lowcomp = 0;
+        fastleak = 0;
+        slowleak = 0;
         fgain = fgaintab[ab->fgaincod[chnl]];
         snroffset = (((ab->csnroffst - 15) << 4) + ab->fsnroffst[chnl]) << 2;
         exps = ab->dexps[chnl];
         baps = ab->bap[chnl];
-        if (ab->deltbae[chnl] == 0 || ab->deltbae[chnl] == 1) {
+        if (ab->deltbae[chnl] == AC3_DBASTR_NEW || ab->deltbae[chnl] == AC3_DBASTR_REUSE) {
             do_delta = 1;
             deltnseg = ab->deltnseg[chnl];
             deltoffst = ab->deltoffst[chnl];
@@ -592,7 +625,7 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     }
 
     for (bin = start; bin < end; bin++) /* exponent mapping into psd */
-        psd[bin] = (3072 - ((int16_t) (exps[bin] << 7)));
+        psd[bin] = (3072 - ((int)(exps[bin]) << 7));
 
     /* psd integration */
     j = start;
@@ -629,7 +662,7 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
                     break;
                 }
         }
-        for (bin = begin; bin < (FFMIN(bndend, 22)); bin++) {
+        for (bin = begin; bin < FFMIN(bndend, 22); bin++) {
             if (bndend != 7 || bin != 6)
                 lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin + 1], bin);
             fastleak -= fdecay;
@@ -662,12 +695,12 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     if (do_delta) {
         band = 0;
         for (seg = 0; seg < deltnseg + 1; seg++) {
-            band += deltoffst[seg];
-            if (deltba[seg] >= 4)
-                delta = (deltba[seg] - 3) << 7;
+            band += (int)(deltoffst[seg]);
+            if ((int)(deltba[seg]) >= 4)
+                delta = ((int)(deltba[seg]) - 3) << 7;
             else
-                delta = (deltba[seg] - 4) << 7;
-            for (k = 0; k < deltlen[seg]; k++) {
+                delta = ((int)(deltba[seg]) - 4) << 7;
+            for (k = 0; k < (int)(deltlen[seg]); k++) {
                 mask[band] += delta;
                 band++;
             }
@@ -687,23 +720,21 @@ static int _do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         mask[j] += floor;
         for (k = i; k < lastbin; k++) {
             address = (psd[i] - mask[j]) >> 5;
-            address = FFMIN(63, (FFMAX(0, address)));
+            address = FFMIN(63, FFMAX(0, address));
             baps[i] = baptab[address];
             i++;
         }
         j++;
     } while (end > lastbin);
-
-    return 0;
 }
 
-static int do_bit_allocation(AC3DecodeContext *ctx, int flags)
+static void do_bit_allocation(AC3DecodeContext *ctx, int flags)
 {
     ac3_audio_block *ab = &ctx->audio_block;
     int i, snroffst = 0;
 
     if (!flags) /* bit allocation is not required */
-        return 0;
+        return;
 
     if (ab->flags & AC3_AB_SNROFFSTE) { /* check whether snroffsts are zero */
         snroffst += ab->csnroffst;
@@ -719,23 +750,18 @@ static int do_bit_allocation(AC3DecodeContext *ctx, int flags)
                 memset(ab->bap[i], 0, sizeof (ab->bap[i]));
             memset(ab->lfebap, 0, sizeof (ab->lfebap));
 
-            return 0;
+            return;
         }
     }
 
     /* perform bit allocation */
     if ((ab->flags & AC3_AB_CPLINU) && (flags & 64))
-        if (_do_bit_allocation(ctx, 5))
-            return -1;
+        do_bit_allocation1(ctx, 5);
     for (i = 0; i < ctx->bsi.nfchans; i++)
         if (flags & (1 << i))
-            if (_do_bit_allocation(ctx, i))
-                return -1;
+            do_bit_allocation1(ctx, i);
     if ((ctx->bsi.flags & AC3_BSI_LFEON) && (flags & 32))
-        if (_do_bit_allocation(ctx, 6))
-            return -1;
-
-    return 0;
+        do_bit_allocation1(ctx, 6);
 }
 
 static inline float to_float(uint8_t exp, int16_t mantissa)
@@ -749,8 +775,8 @@ typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantizati
 } mant_group;
 
 /* Get the transform coefficients for particular channel */
-static int _get_transform_coeffs(uint8_t *exps, uint8_t *bap, float chcoeff,
-        float *samples, int start, int end, int dith_flag, GetBitContext *gb,
+static int get_transform_coeffs1(uint8_t *exps, uint8_t *bap, float chcoeff,
+        float *coeffs, int start, int end, int dith_flag, GetBitContext *gb,
         dither_state *state)
 {
     int16_t mantissa;
@@ -765,21 +791,24 @@ static int _get_transform_coeffs(uint8_t *exps, uint8_t *bap, float chcoeff,
 
     i = 0;
     while (i < start)
-        samples[i++] = 0;
+        coeffs[i++] = 0;
 
     for (i = start; i < end; i++) {
         switch (bap[i]) {
             case 0:
-                if (!dith_flag)
-                    mantissa = 0;
-                else
+                if (!dith_flag) {
+                    coeffs[i] = 0;
+                    continue;
+                }
+                else {
                     mantissa = dither_int16(state);
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                    coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                    continue;
+                }
 
             case 1:
                 if (l3_grp.gcptr > 2) {
-                    gcode = get_bits(gb, qntztab[1]);
+                    gcode = get_bits(gb, 5);
                     if (gcode > 26)
                         return -1;
                     l3_grp.gcodes[0] = gcode / 9;
@@ -788,12 +817,12 @@ static int _get_transform_coeffs(uint8_t *exps, uint8_t *bap, float chcoeff,
                     l3_grp.gcptr = 0;
                 }
                 mantissa = l3_q_tab[l3_grp.gcodes[l3_grp.gcptr++]];
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                continue;
 
             case 2:
                 if (l5_grp.gcptr > 2) {
-                    gcode = get_bits(gb, qntztab[2]);
+                    gcode = get_bits(gb, 7);
                     if (gcode > 124)
                         return -1;
                     l5_grp.gcodes[0] = gcode / 25;
@@ -802,60 +831,57 @@ static int _get_transform_coeffs(uint8_t *exps, uint8_t *bap, float chcoeff,
                     l5_grp.gcptr = 0;
                 }
                 mantissa = l5_q_tab[l5_grp.gcodes[l5_grp.gcptr++]];
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                continue;
 
             case 3:
-                mantissa = get_bits(gb, qntztab[3]);
+                mantissa = get_bits(gb, 3);
                 if (mantissa > 6)
                     return -1;
                 mantissa = l7_q_tab[mantissa];
-                samples[i] = to_float(exps[i], mantissa);
-                break;
+                coeffs[i] = to_float(exps[i], mantissa);
+                continue;
 
             case 4:
                 if (l11_grp.gcptr > 1) {
-                    gcode = get_bits(gb, qntztab[4]);
+                    gcode = get_bits(gb, 7);
                     if (gcode > 120)
                         return -1;
                     l11_grp.gcodes[0] = gcode / 11;
                     l11_grp.gcodes[1] = gcode % 11;
                 }
                 mantissa = l11_q_tab[l11_grp.gcodes[l11_grp.gcptr++]];
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                continue;
 
             case 5:
-                mantissa = get_bits(gb, qntztab[5]);
+                mantissa = get_bits(gb, 4);
                 if (mantissa > 14)
                     return -1;
                 mantissa = l15_q_tab[mantissa];
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                continue;
 
             default:
                 mantissa = get_bits(gb, qntztab[bap[i]]) << (16 - qntztab[bap[i]]);
-                samples[i] = to_float(exps[i], mantissa) * chcoeff;
-                break;
+                coeffs[i] = to_float(exps[i], mantissa) * chcoeff;
+                continue;
         }
     }
 
     i = end;
     while (i < 256)
-        samples[i++] = 0;
+        coeffs[i++] = 0;
 
     return 0;
 }
 
-static int uncouple_channels(AC3DecodeContext * ctx)
+static void uncouple_channels(AC3DecodeContext * ctx)
 {
     ac3_audio_block *ab = &ctx->audio_block;
     int ch, sbnd, bin;
     int index;
-    float (*samples)[256];
     int16_t mantissa;
-
-    samples = (float (*)[256])((ctx->bsi.flags & AC3_BSI_LFEON) ? (ctx->samples + 256) : (ctx->samples));
 
     /* uncouple channels */
     for (ch = 0; ch < ctx->bsi.nfchans; ch++)
@@ -863,55 +889,43 @@ static int uncouple_channels(AC3DecodeContext * ctx)
             for (sbnd = ab->cplbegf; sbnd < 3 + ab->cplendf; sbnd++)
                 for (bin = 0; bin < 12; bin++) {
                     index = sbnd * 12 + bin + 37;
-                    samples[ch][index] = ab->cplcoeffs[index] * ab->cplco[ch][sbnd] * ab->chcoeffs[ch];
+                    ab->transform_coeffs[ch + 1][index] = ab->cplcoeffs[index] * ab->cplco[ch][sbnd] * ab->chcoeffs[ch];
+                    /* generate dither if required */
+                    if (!ab->bap[ch][index] && (ab->chincpl & (1 << ch)) && (ab->dithflag & (1 << ch))) {
+                        mantissa = dither_int16(&ctx->state);
+                        ab->transform_coeffs[ch + 1][index] = to_float(ab->dexps[ch][index], mantissa) * ab->chcoeffs[ch];
+                    }
                 }
-
-    /* generate dither if required */
-    for (ch = 0; ch < ctx->bsi.nfchans; ch++)
-        if ((ab->chincpl & (1 << ch)) && (ab->dithflag & (1 << ch)))
-            for (index = 0; index < ab->endmant[ch]; index++)
-                if (!ab->bap[ch][index]) {
-                    mantissa = dither_int16(&ctx->state);
-                    samples[ch][index] = to_float(ab->dexps[ch][index], mantissa) * ab->chcoeffs[ch];
-                }
-
-    return 0;
 }
 
 static int get_transform_coeffs(AC3DecodeContext * ctx)
 {
     int i;
     ac3_audio_block *ab = &ctx->audio_block;
-    float *samples = ctx->samples;
     int got_cplchan = 0;
     int dithflag = 0;
 
-    samples += (ctx->bsi.flags & AC3_BSI_LFEON) ? 256 : 0;
     for (i = 0; i < ctx->bsi.nfchans; i++) {
-        if ((ab->flags & AC3_AB_CPLINU) && (ab->chincpl & (1 << i)))
-            dithflag = 0; /* don't generate dither until channels are decoupled */
-        else
-            dithflag = ab->dithflag & (1 << i);
+        dithflag = ab->dithflag & (1 << i);
         /* transform coefficients for individual channel */
-        if (_get_transform_coeffs(ab->dexps[i], ab->bap[i], ab->chcoeffs[i], samples + (i * 256),
+        if (get_transform_coeffs1(ab->dexps[i], ab->bap[i], ab->chcoeffs[i], ab->transform_coeffs[i + 1],
                     0, ab->endmant[i], dithflag, &ctx->gb, &ctx->state))
             return -1;
         /* tranform coefficients for coupling channels */
         if ((ab->flags & AC3_AB_CPLINU) && (ab->chincpl & (1 << i)) && !got_cplchan) {
-            if (_get_transform_coeffs(ab->dcplexps, ab->cplbap, 1.0f, ab->cplcoeffs,
+            if (get_transform_coeffs1(ab->dcplexps, ab->cplbap, 1.0f, ab->cplcoeffs,
                         ab->cplstrtmant, ab->cplendmant, 0, &ctx->gb, &ctx->state))
                 return -1;
             got_cplchan = 1;
         }
     }
     if (ctx->bsi.flags & AC3_BSI_LFEON)
-        if (_get_transform_coeffs(ab->lfeexps, ab->lfebap, 1.0f, samples - 256, 0, 7, 0, &ctx->gb, &ctx->state))
+        if (get_transform_coeffs1(ab->dlfeexps, ab->lfebap, 1.0f, ab->transform_coeffs[0], 0, 7, 0, &ctx->gb, &ctx->state))
                 return -1;
 
     /* uncouple the channels from the coupling channel */
     if (ab->flags & AC3_AB_CPLINU)
-        if (uncouple_channels(ctx))
-            return -1;
+        uncouple_channels(ctx);
 
     return 0;
 }
@@ -920,7 +934,7 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
  * from coupling co-ordinates of each band and coupling band
  * structure information
  */
-static int generate_coupling_coordinates(AC3DecodeContext * ctx)
+static void generate_coupling_coordinates(AC3DecodeContext * ctx)
 {
     ac3_audio_block *ab = &ctx->audio_block;
     uint8_t exp, mstrcplco;
@@ -952,23 +966,19 @@ static int generate_coupling_coordinates(AC3DecodeContext * ctx)
                     cplbndstrc >>= 1;
                 }
             }
-
-    return 0;
 }
 
-static int _do_rematrixing(AC3DecodeContext *ctx, int start, int end)
+static void do_rematrixing1(AC3DecodeContext *ctx, int start, int end)
 {
     float tmp0, tmp1;
 
     while (start < end) {
-        tmp0 = ctx->samples[start];
-        tmp1 = (ctx->samples + 256)[start];
-        ctx->samples[start] = tmp0 + tmp1;
-        (ctx->samples + 256)[start] = tmp0 - tmp1;
+        tmp0 = ctx->audio_block.transform_coeffs[1][start];
+        tmp1 = ctx->audio_block.transform_coeffs[2][start];
+        ctx->audio_block.transform_coeffs[1][start] = tmp0 + tmp1;
+        ctx->audio_block.transform_coeffs[2][start] = tmp0 - tmp1;
         start++;
     }
-
-    return 0;
 }
 
 static void do_rematrixing(AC3DecodeContext *ctx)
@@ -979,16 +989,16 @@ static void do_rematrixing(AC3DecodeContext *ctx)
 
     bndend = FFMIN(ab->endmant[0], ab->endmant[1]);
     if (ab->rematflg & 1)
-        _do_rematrixing(ctx, bnd1, bnd2);
+        do_rematrixing1(ctx, bnd1, bnd2);
     if (ab->rematflg & 2)
-        _do_rematrixing(ctx, bnd2, bnd3);
+        do_rematrixing1(ctx, bnd2, bnd3);
     if (ab->rematflg & 4) {
         if (ab->cplbegf > 0 && ab->cplbegf <= 2 && (ab->flags & AC3_AB_CPLINU))
-            _do_rematrixing(ctx, bnd3, bndend);
+            do_rematrixing1(ctx, bnd3, bndend);
         else {
-            _do_rematrixing(ctx, bnd3, bnd4);
+            do_rematrixing1(ctx, bnd3, bnd4);
             if (ab->rematflg & 8)
-                _do_rematrixing(ctx, bnd4, bndend);
+                do_rematrixing1(ctx, bnd4, bndend);
         }
     }
 }
@@ -1002,7 +1012,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
     ac3_audio_block *ab = &ctx->audio_block;
 
     if (to == AC3_OUTPUT_UNMODIFIED)
-        return 0;
+        return;
 
     switch (from) {
         case AC3_INPUT_DUALMONO:
@@ -1116,284 +1126,312 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
     }
 }
 
-static inline void downmix_dualmono_to_mono(float *samples)
+static inline void mix_dualmono_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += samples[i + 256];
-        samples[i + 256] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] += output[2][i];
+    memset(output[2], 0, sizeof(output[2]));
 }
 
-static inline void downmix_dualmono_to_stereo(float *samples)
+static inline void mix_dualmono_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
     float tmp;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        tmp = samples[i] + samples[i + 256];
-        samples[i] = samples[i + 256] = tmp;
+        tmp = output[1][i] + output[2][i];
+        output[1][i] = output[2][i] = tmp;
     }
 }
 
-static inline void downmix_mono_to_stereo(float *samples)
+static inline void upmix_mono_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++)
-        samples[i + 256] = samples[i];
+        output[2][i] = output[1][i];
 }
 
-static inline void downmix_stereo_to_mono(float *samples)
+static inline void mix_stereo_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += samples[i + 256];
-        samples[i + 256] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] += output[2][i];
+    memset(output[2], 0, sizeof(output[2]));
 }
 
-static inline void downmix_3f_to_mono(float *samples)
+static inline void mix_3f_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 512]);
-        samples[i + 256] = samples[i + 512] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] += (output[2][i] + output[3][i]);
+    memset(output[2], 0, sizeof(output[2]));
+    memset(output[3], 0, sizeof(output[3]));
 }
 
-static inline void downmix_3f_to_stereo(float *samples)
+static inline void mix_3f_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += samples[i + 256];
-        samples[i + 256] = samples[i + 512];
-        samples[i + 512] = 0;
+        output[1][i] += output[2][i];
+        output[2][i] += output[3][i];
     }
+    memset(output[3], 0, sizeof(output[3]));
 }
 
-static inline void downmix_2f_1r_to_mono(float *samples)
+static inline void mix_2f_1r_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 512]);
-        samples[i + 256] = samples[i + 512] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] += (output[2][i] + output[3][i]);
+    memset(output[2], 0, sizeof(output[2]));
+    memset(output[3], 0, sizeof(output[3]));
+
 }
 
-static inline void downmix_2f_1r_to_stereo(float *samples)
+static inline void mix_2f_1r_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += samples[i + 512];
-        samples[i + 256] += samples[i + 512];
-        samples[i + 512] = 0;
+        output[1][i] += output[2][i];
+        output[2][i] += output[3][i];
     }
+    memset(output[3], 0, sizeof(output[3]));
 }
 
-static inline void downmix_2f_1r_to_dolby(float *samples)
+static inline void mix_2f_1r_to_dolby(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] -= samples[i + 512];
-        samples[i + 256] += samples[i + 512];
-        samples[i + 512] = 0;
+        output[1][i] -= output[3][i];
+        output[2][i] += output[3][i];
     }
+    memset(output[3], 0, sizeof(output[3]));
 }
 
-static inline void downmix_3f_1r_to_mono(float *samples)
+static inline void mix_3f_1r_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 512] + samples[i + 768]);
-        samples[i + 256] = samples[i + 512] = samples[i + 768] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] = (output[2][i] + output[3][i] + output[4][i]);
+    memset(output[2], 0, sizeof(output[2]));
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_3f_1r_to_stereo(float *samples)
+static inline void mix_3f_1r_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 768]);
-        samples[i + 256] += (samples[i + 512] + samples[i + 768]);
-        samples[i + 512] = samples[i + 768] = 0;
+        output[1][i] += (output[2][i] + output[4][i]);
+        output[2][i] += (output[3][i] + output[4][i]);
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_3f_1r_to_dolby(float *samples)
+static inline void mix_3f_1r_to_dolby(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] - samples[i + 768]);
-        samples[i + 256] += (samples[i + 512] + samples[i + 768]);
-        samples[i + 512] = samples[i + 768] = 0;
+        output[1][i] += (output[2][i] - output[4][i]);
+        output[2][i] += (output[3][i] + output[4][i]);
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_2f_2r_to_mono(float *samples)
+static inline void mix_2f_2r_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 512] + samples[i + 768]);
-        samples[i + 256] = samples[i + 512] = samples[i + 768] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] = (output[2][i] + output[3][i] + output[4][i]);
+    memset(output[2], 0, sizeof(output[2]));
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_2f_2r_to_stereo(float *samples)
+static inline void mix_2f_2r_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += samples[i + 512];
-        samples[i + 256] = samples[i + 768];
-        samples[i + 512] = samples[i + 768] = 0;
+        output[1][i] += output[3][i];
+        output[2][i] += output[4][i];
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_2f_2r_to_dolby(float *samples)
+static inline void mix_2f_2r_to_dolby(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] -= samples[i + 512];
-        samples[i + 256] += samples[i + 768];
-        samples[i + 512] = samples[i + 768] = 0;
+        output[1][i] -= output[3][i];
+        output[2][i] += output[4][i];
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
 }
 
-static inline void downmix_3f_2r_to_mono(float *samples)
+static inline void mix_3f_2r_to_mono(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
-    for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 512] + samples[i + 768] + samples[i + 1024]);
-        samples[i + 256] = samples[i + 512] = samples[i + 768] = samples[i + 1024] = 0;
-    }
+    for (i = 0; i < 256; i++)
+        output[1][i] += (output[2][i] + output[3][i] + output[4][i] + output[5][i]);
+    memset(output[2], 0, sizeof(output[2]));
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
+    memset(output[5], 0, sizeof(output[5]));
 }
 
-static inline void downmix_3f_2r_to_stereo(float *samples)
+static inline void mix_3f_2r_to_stereo(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] + samples[i + 768]);
-        samples[i + 256] = (samples[i + 512] + samples[i + 1024]);
-        samples[i + 512] = samples[i + 768] = samples[i + 1024] = 0;
+        output[1][i] += (output[2][i] + output[4][i]);
+        output[2][i] += (output[3][i] + output[5][i]);
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
+    memset(output[5], 0, sizeof(output[5]));
 }
 
-static inline void downmix_3f_2r_to_dolby(float *samples)
+static inline void mix_3f_2r_to_dolby(AC3DecodeContext *ctx)
 {
     int i;
+    float (*output)[256] = ctx->audio_block.block_output;
 
     for (i = 0; i < 256; i++) {
-        samples[i] += (samples[i + 256] - samples[i + 768]);
-        samples[i + 256] = (samples[i + 512] + samples[i + 1024]);
-        samples[i + 512] = samples[i + 768] = samples[i + 1024] = 0;
+        output[1][i] += (output[2][i] - output[4][i] - output[5][i]);
+        output[2][i] += (output[3][i] + output[4][i] + output[5][i]);
     }
+    memset(output[3], 0, sizeof(output[3]));
+    memset(output[4], 0, sizeof(output[4]));
+    memset(output[5], 0, sizeof(output[5]));
 }
 
 static void do_downmix(AC3DecodeContext *ctx)
 {
     int from = ctx->bsi.acmod;
     int to = ctx->output;
-    float *samples = ctx->samples + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 256 : 0);
 
     switch (from) {
         case AC3_INPUT_DUALMONO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_dualmono_to_mono(samples);
+                    mix_dualmono_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO: /* We Assume that sum of both mono channels is requested */
-                    downmix_dualmono_to_stereo(samples);
+                    mix_dualmono_to_stereo(ctx);
                     break;
             }
             break;
         case AC3_INPUT_MONO:
             switch (to) {
                 case AC3_OUTPUT_STEREO:
-                    downmix_mono_to_stereo(samples);
+                    upmix_mono_to_stereo(ctx);
                     break;
             }
             break;
         case AC3_INPUT_STEREO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_stereo_to_mono(samples);
+                    mix_stereo_to_mono(ctx);
                     break;
             }
             break;
         case AC3_INPUT_3F:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_3f_to_mono(samples);
+                    mix_3f_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    downmix_3f_to_stereo(samples);
+                    mix_3f_to_stereo(ctx);
                     break;
             }
             break;
         case AC3_INPUT_2F_1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_2f_1r_to_mono(samples);
+                    mix_2f_1r_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    downmix_2f_1r_to_stereo(samples);
+                    mix_2f_1r_to_stereo(ctx);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    downmix_2f_1r_to_dolby(samples);
+                    mix_2f_1r_to_dolby(ctx);
                     break;
             }
             break;
         case AC3_INPUT_3F_1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_3f_1r_to_mono(samples);
+                    mix_3f_1r_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    downmix_3f_1r_to_stereo(samples);
+                    mix_3f_1r_to_stereo(ctx);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    downmix_3f_1r_to_dolby(samples);
+                    mix_3f_1r_to_dolby(ctx);
                     break;
             }
             break;
         case AC3_INPUT_2F_2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_2f_2r_to_mono(samples);
+                    mix_2f_2r_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    downmix_2f_2r_to_stereo(samples);
+                    mix_2f_2r_to_stereo(ctx);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    downmix_2f_2r_to_dolby(samples);
+                    mix_2f_2r_to_dolby(ctx);
                     break;
             }
             break;
         case AC3_INPUT_3F_2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
-                    downmix_3f_2r_to_mono(samples);
+                    mix_3f_2r_to_mono(ctx);
                     break;
                 case AC3_OUTPUT_STEREO:
-                    downmix_3f_2r_to_stereo(samples);
+                    mix_3f_2r_to_stereo(ctx);
                     break;
                 case AC3_OUTPUT_DOLBY:
-                    downmix_3f_2r_to_dolby(samples);
+                    mix_3f_2r_to_dolby(ctx);
                     break;
             }
             break;
@@ -1405,22 +1443,23 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
     ac3_audio_block *ab = &ctx->audio_block;
     int nfchans = ctx->bsi.nfchans;
     int acmod = ctx->bsi.acmod;
-    int i, bnd, rbnd, grp, seg;
+    int i, bnd, rbnd, seg, grpsize;
     GetBitContext *gb = &ctx->gb;
     uint32_t *flags = &ab->flags;
     int bit_alloc_flags = 0;
     float drange;
+    uint8_t *dexps;
 
     *flags = 0;
     ab->blksw = 0;
     for (i = 0; i < 5; i++)
         ab->chcoeffs[i] = 1.0;
     for (i = 0; i < nfchans; i++) /*block switch flag */
-        ab->blksw |= get_bits(gb, 1) << i;
+        ab->blksw |= get_bits1(gb) << i;
     ab->dithflag = 0;
     for (i = 0; i < nfchans; i++) /* dithering flag */
-        ab->dithflag |= get_bits(gb, 1) << i;
-    if (get_bits(gb, 1)) { /* dynamic range */
+        ab->dithflag |= get_bits1(gb) << i;
+    if (get_bits1(gb)) { /* dynamic range */
         *flags |= AC3_AB_DYNRNGE;
         ab->dynrng = get_bits(gb, 8);
         drange = ((((ab->dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (ab->dynrng >> 5)]);
@@ -1428,7 +1467,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
             ab->chcoeffs[i] *= drange;
     }
     if (acmod == 0x00) { /* dynamic range 1+1 mode */
-        if (get_bits(gb, 1)) {
+        if (get_bits1(gb)) {
             *flags |= AC3_AB_DYNRNG2E;
             ab->dynrng2 = get_bits(gb, 8);
             drange = ((((ab->dynrng2 & 0x1f) | 0x20) << 13) * scale_factors[3 - (ab->dynrng2 >> 5)]);
@@ -1437,22 +1476,27 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
     }
     get_downmix_coeffs(ctx);
     ab->chincpl = 0;
-    if (get_bits(gb, 1)) { /* coupling strategy */
+    if (get_bits1(gb)) { /* coupling strategy */
         *flags |= AC3_AB_CPLSTRE;
         ab->cplbndstrc = 0;
-        if (get_bits(gb, 1)) { /* coupling in use */
+        if (get_bits1(gb)) { /* coupling in use */
             *flags |= AC3_AB_CPLINU;
             for (i = 0; i < nfchans; i++)
-                ab->chincpl |= get_bits(gb, 1) << i;
+                ab->chincpl |= get_bits1(gb) << i;
+            if (acmod == 0x00 || acmod == 0x01)
+                return -1; /* coupling needs atleast two shared channels */
             if (acmod == 0x02)
-                if (get_bits(gb, 1)) /* phase flag in use */
+                if (get_bits1(gb)) /* phase flag in use */
                     *flags |= AC3_AB_PHSFLGINU;
             ab->cplbegf = get_bits(gb, 4);
             ab->cplendf = get_bits(gb, 4);
-            assert((ab->ncplsubnd = 3 + ab->cplendf - ab->cplbegf) > 0);
-            ab->ncplbnd = ab->ncplsubnd;
+            if (3 + ab->cplendf - ab->cplbegf < 0)
+                return -1;
+            ab->ncplbnd = ab->ncplsubnd = 3 + ab->cplendf - ab->cplbegf;
+            ab->cplstrtmant = ab->cplbegf * 12 + 37;
+            ab->cplendmant = ((ab->cplendf + 3) * 12) + 37;
             for (i = 0; i < ab->ncplsubnd - 1; i++) /* coupling band structure */
-                if (get_bits(gb, 1)) {
+                if (get_bits1(gb)) {
                     ab->cplbndstrc |= 1 << i;
                     ab->ncplbnd--;
                 }
@@ -1462,7 +1506,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
         ab->cplcoe = 0;
         for (i = 0; i < nfchans; i++)
             if (ab->chincpl & (1 << i))
-                if (get_bits(gb, 1)) { /* coupling co-ordinates */
+                if (get_bits1(gb)) { /* coupling co-ordinates */
                     ab->cplcoe |= 1 << i;
                     ab->mstrcplco[i] = get_bits(gb, 2);
                     for (bnd = 0; bnd < ab->ncplbnd; bnd++) {
@@ -1470,77 +1514,83 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
                         ab->cplcomant[i][bnd] = get_bits(gb, 4);
                     }
                 }
-    }
-    ab->phsflg = 0;
-    if ((acmod == 0x02) && (*flags & AC3_AB_PHSFLGINU) && (ab->cplcoe & 1 || ab->cplcoe & (1 << 1))) {
-        for (bnd = 0; bnd < ab->ncplbnd; bnd++)
-            if (get_bits(gb, 1))
-                ab->phsflg |= 1 << bnd;
+        ab->phsflg = 0;
+        if ((acmod == 0x02) && (*flags & AC3_AB_PHSFLGINU) && (ab->cplcoe & 1 || ab->cplcoe & (1 << 1))) {
+            for (bnd = 0; bnd < ab->ncplbnd; bnd++)
+                if (get_bits1(gb))
+                    ab->phsflg |= 1 << bnd;
+        }
     }
     generate_coupling_coordinates(ctx);
     ab->rematflg = 0;
     if (acmod == 0x02) /* rematrixing */
-        if (get_bits(gb, 1)) {
+        if (get_bits1(gb)) {
             *flags |= AC3_AB_REMATSTR;
-            if (ab->cplbegf > 2 || !(*flags & AC3_AB_CPLINU))
+            if (!(*flags & AC3_AB_CPLINU) || ab->cplbegf > 2)
                 for (rbnd = 0; rbnd < 4; rbnd++)
-                    ab->rematflg |= get_bits(gb, 1) << bnd;
-            else if (ab->cplbegf > 0 && ab->cplbegf <= 2 && *flags & AC3_AB_CPLINU)
+                    ab->rematflg |= get_bits1(gb) << rbnd;
+            if (ab->cplbegf > 0 && ab->cplbegf <= 2 && (*flags & AC3_AB_CPLINU))
                 for (rbnd = 0; rbnd < 3; rbnd++)
-                    ab->rematflg |= get_bits(gb, 1) << bnd;
-            else if (!(ab->cplbegf) && *flags & AC3_AB_CPLINU)
+                    ab->rematflg |= get_bits1(gb) << rbnd;
+            if (ab->cplbegf == 0 && (*flags & AC3_AB_CPLINU))
                 for (rbnd = 0; rbnd < 2; rbnd++)
-                    ab->rematflg |= get_bits(gb, 1) << bnd;
+                    ab->rematflg |= get_bits1(gb) << rbnd;
         }
+    ab->cplexpstr = AC3_EXPSTR_REUSE;
+    ab->lfeexpstr = AC3_EXPSTR_REUSE;
     if (*flags & AC3_AB_CPLINU) /* coupling exponent strategy */
         ab->cplexpstr = get_bits(gb, 2);
     for (i = 0; i < nfchans; i++) /* channel exponent strategy */
         ab->chexpstr[i] = get_bits(gb, 2);
     if (ctx->bsi.flags & AC3_BSI_LFEON) /* lfe exponent strategy */
-        ab->lfeexpstr = get_bits(gb, 1);
+        ab->lfeexpstr = get_bits1(gb);
     for (i = 0; i < nfchans; i++) /* channel bandwidth code */
-        if (ab->chexpstr[i] != AC3_EXPSTR_REUSE)
-            if (!(ab->chincpl & (1 << i))) {
+        if (ab->chexpstr[i] != AC3_EXPSTR_REUSE) {
+            if ((ab->chincpl & (1 << i)))
+                ab->endmant[i] = ab->cplstrtmant;
+            else {
                 ab->chbwcod[i] = get_bits(gb, 6);
-                assert (ab->chbwcod[i] <= 60);
+                if (ab->chbwcod[i] > 60) {
+                    av_log(NULL, AV_LOG_ERROR, "chbwcod = %d > 60", ab->chbwcod[i]);
+                    return -1;
+                }
+                ab->endmant[i] = ((ab->chbwcod[i] + 12) * 3) + 37;
             }
+        }
     if (*flags & AC3_AB_CPLINU)
         if (ab->cplexpstr != AC3_EXPSTR_REUSE) {/* coupling exponents */
             bit_alloc_flags |= 64;
             ab->cplabsexp = get_bits(gb, 4) << 1;
-            ab->cplstrtmant = (ab->cplbegf * 12) + 37;
-            ab->cplendmant = ((ab->cplendmant + 3) * 12) + 37;
             ab->ncplgrps = (ab->cplendmant - ab->cplstrtmant) / (3 << (ab->cplexpstr - 1));
-            for (grp = 0; grp < ab->ncplgrps; grp++)
-                ab->cplexps[grp] = get_bits(gb, 7);
+            if (decode_exponents(gb, ab->cplexpstr, ab->ncplgrps, ab->cplabsexp, ab->dcplexps + ab->cplstrtmant)) {
+                    av_log(NULL, AV_LOG_ERROR, "error decoding coupling exponents\n");
+                    return -1;
+            }
         }
     for (i = 0; i < nfchans; i++) /* fbw channel exponents */
         if (ab->chexpstr[i] != AC3_EXPSTR_REUSE) {
             bit_alloc_flags |= 1 << i;
-            if (ab->chincpl & (1 << i))
-                ab->endmant[i] = (ab->cplbegf * 12) + 37;
-            else
-                ab->endmant[i] = ((ab->chbwcod[i] + 3) * 12) + 37;
-            ab->nchgrps[i] =
-                (ab->endmant[i] + (3 << (ab->chexpstr[i] - 1)) - 4) / (3 << (ab->chexpstr[i] - 1));
-            ab->exps[i][0] = ab->dexps[i][0] = get_bits(gb, 4);
-            for (grp = 1; grp <= ab->nchgrps[i]; grp++)
-                ab->exps[i][grp] = get_bits(gb, 7);
+            grpsize = 3 << (ab->chexpstr[i] - 1);
+            ab->nchgrps[i] = (ab->endmant[i] + grpsize - 4) / grpsize;
+            dexps = ab->dexps[i];
+            dexps[0] = get_bits(gb, 4);
+            if (decode_exponents(gb, ab->chexpstr[i], ab->nchgrps[i], dexps[0], dexps + 1)) {
+                av_log(NULL, AV_LOG_ERROR, "error decoding channel %d exponents\n", i);
+                return -1;
+            }
             ab->gainrng[i] = get_bits(gb, 2);
         }
     if (ctx->bsi.flags & AC3_BSI_LFEON) /* lfe exponents */
         if (ab->lfeexpstr != AC3_EXPSTR_REUSE) {
             bit_alloc_flags |= 32;
-            ab->lfeexps[0] = ab->dlfeexps[0] = get_bits(gb, 4);
-            ab->lfeexps[1] = get_bits(gb, 7);
-            ab->lfeexps[2] = get_bits(gb, 7);
+            ab->dlfeexps[0] = get_bits(gb, 4);
+            if (decode_exponents(gb, ab->lfeexpstr, 2, ab->dlfeexps[0], ab->dlfeexps + 1)) {
+                av_log(NULL, AV_LOG_ERROR, "error decoding lfe exponents\n");
+                return -1;
+            }
         }
-    if (decode_exponents(ctx)) {/* decode the exponents for this block */
-        av_log(NULL, AV_LOG_ERROR, "Error parsing exponents\n");
-        return -1;
-    }
 
-    if (get_bits(gb, 1)) { /* bit allocation information */
+    if (get_bits1(gb)) { /* bit allocation information */
         *flags |= AC3_AB_BAIE;
         bit_alloc_flags |= 127;
         ab->sdcycod = get_bits(gb, 2);
@@ -1549,7 +1599,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
         ab->dbpbcod = get_bits(gb, 2);
         ab->floorcod = get_bits(gb, 3);
     }
-    if (get_bits(gb, 1)) { /* snroffset */
+    if (get_bits1(gb)) { /* snroffset */
         *flags |= AC3_AB_SNROFFSTE;
         bit_alloc_flags |= 127;
         ab->csnroffst = get_bits(gb, 6);
@@ -1567,13 +1617,13 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
         }
     }
     if (*flags & AC3_AB_CPLINU)
-        if (get_bits(gb, 1)) { /* coupling leak information */
+        if (get_bits1(gb)) { /* coupling leak information */
             bit_alloc_flags |= 64;
             *flags |= AC3_AB_CPLLEAKE;
             ab->cplfleak = get_bits(gb, 3);
             ab->cplsleak = get_bits(gb, 3);
         }
-    if (get_bits(gb, 1)) { /* delta bit allocation information */
+    if (get_bits1(gb)) { /* delta bit allocation information */
         *flags |= AC3_AB_DELTBAIE;
         bit_alloc_flags |= 127;
         if (*flags & AC3_AB_CPLINU) {
@@ -1609,17 +1659,14 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
                 }
             }
     }
-    if (do_bit_allocation (ctx, bit_alloc_flags)) /* perform the bit allocation */ {
-        av_log(NULL, AV_LOG_ERROR, "Error in bit allocation routine\n");
-        return -1;
-    }
-    if (get_bits(gb, 1)) { /* unused dummy data */
+
+    do_bit_allocation (ctx, bit_alloc_flags); /* perform the bit allocation */
+
+    if (get_bits1(gb)) { /* unused dummy data */
         *flags |= AC3_AB_SKIPLE;
         ab->skipl = get_bits(gb, 9);
-        while (ab->skipl) {
-            get_bits(gb, 8);
-            ab->skipl--;
-        }
+        for (i = 0; i < ab->skipl; i++)
+            skip_bits(gb, 8);
     }
     /* unpack the transform coefficients
      * * this also uncouples channels if coupling is in use.
@@ -1632,59 +1679,34 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
     if (*flags & AC3_AB_REMATSTR)
         do_rematrixing(ctx);
 
-    if (ctx->output != AC3_OUTPUT_UNMODIFIED)
-        do_downmix(ctx);
-
     return 0;
 }
 
-/**** the following two functions comes from ac3dec */
-static inline int blah (int32_t i)
+static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-    if (i > 0x43c07fff)
-        return 32767;
-    else if (i < 0x43bf8000)
-        return -32768;
-    else
-        return i - 0x43c00000;
-}
-
-static inline void float_to_int (float * _f, int16_t * s16, int samples)
-{
-    int32_t * f = (int32_t *) _f;       // XXX assumes IEEE float format
-    int i;
-
-    for (i = 0; i < samples; i++) {
-        s16[i] = blah (f[i]);
-    }
-}
-/**** end */
-
-
-
-static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t * buf, int buf_size)
-{
-    AC3DecodeContext *ctx = avctx->priv_data;
+    AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
+    ac3_audio_block *ab = &ctx->audio_block;
     int frame_start;
-    int i, j, k, l;
-    float tmp0[128], tmp1[128], tmp[512];
-    short *out_samples = (short *)data;
-    float *samples = ctx->samples;
+    int i, j, k, l, value;
+    float tmp_block_first_half[128], tmp_block_second_half[128];
+    int16_t *out_samples = (int16_t *)data;
+    int nfchans;
 
     //Synchronize the frame.
     frame_start = ac3_synchronize(buf, buf_size);
     if (frame_start == -1) {
         av_log(avctx, AV_LOG_ERROR, "frame is not synchronized\n");
         *data_size = 0;
-        return -1;
+        return buf_size;
     }
 
     //Initialize the GetBitContext with the start of valid AC3 Frame.
     init_get_bits(&(ctx->gb), buf + frame_start, (buf_size - frame_start) * 8);
+
     //Parse the syncinfo.
-    ////If 'fscod' is not valid the decoder shall mute as per the standard.
-    if (ac3_parse_sync_info(ctx)) {
-        av_log(avctx, AV_LOG_ERROR, "fscod is not valid\n");
+    //If 'fscod' or 'bsid' is not valid the decoder shall mute as per the standard.
+    if (!ac3_parse_sync_info(ctx)) {
+        av_log(avctx, AV_LOG_ERROR, "\n");
         *data_size = 0;
         return -1;
     }
@@ -1703,15 +1725,18 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         return -1;
     }
 
+    for (i = 0; i < MAX_BLOCKS; i++)
+        memset(ctx->delay[i], 0, sizeof(ctx->delay[i]));
     avctx->sample_rate = ctx->sync_info.sampling_rate;
+    avctx->bit_rate = ctx->sync_info.bit_rate;
     if (avctx->channels == 0) {
-        avctx->channels = ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0);
+        //avctx->channels = ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0);
         ctx->output = AC3_OUTPUT_UNMODIFIED;
     }
     else if ((ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0)) < avctx->channels) {
         av_log(avctx, AV_LOG_INFO, "ac3_decoder: AC3 Source Channels Are Less Then Specified %d: Output to %d Channels\n",
                 avctx->channels, (ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0)));
-        avctx->channels = ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0);
+        //avctx->channels = ctx->bsi.nfchans + ((ctx->bsi.flags & AC3_BSI_LFEON) ? 1 : 0);
         ctx->output = AC3_OUTPUT_UNMODIFIED;
     }
     else if (avctx->channels == 1) {
@@ -1724,53 +1749,72 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     }
 
 
-    avctx->bit_rate = ctx->sync_info.bit_rate;
     av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->sample_rate, avctx->bit_rate);
 
     //Parse the Audio Blocks.
+    *data_size = 0;
     for (i = 0; i < 6; i++) {
         if (ac3_parse_audio_block(ctx, i)) {
             av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
             *data_size = 0;
             return -1;
         }
-        samples = ctx->samples;
+
+        av_log(NULL, AV_LOG_INFO, "doing imdct\n");
+
         if (ctx->bsi.flags & AC3_BSI_LFEON) {
-            ff_imdct_calc(&ctx->imdct_ctx_512, ctx->samples + 1536, samples, tmp);
+            ff_imdct_calc(&ctx->imdct_ctx_512, ctx->tmp_output, ab->transform_coeffs[0], ctx->tmp_imdct);
             for (l = 0; l < 256; l++)
-                samples[l] = (ctx->samples + 1536)[l];
-            float_to_int(samples, out_samples, 256);
-            samples += 256;
-            out_samples += 256;
+                ab->block_output[0][l] = ctx->tmp_output[l] * window[l] + ctx->delay[0][l] * window[255 -l];
+            memcpy(ctx->delay[0], ctx->tmp_output + 256, sizeof(ctx->delay[0]));
         }
+
         for (j = 0; j < ctx->bsi.nfchans; j++) {
             if (ctx->audio_block.blksw & (1 << j)) {
                 for (k = 0; k < 128; k++) {
-                    tmp0[k] = samples[2 * k];
-                    tmp1[k] = samples[2 * k + 1];
+                    tmp_block_first_half[k] = ab->transform_coeffs[j + 1][2 * k];
+                    tmp_block_second_half[k] = ab->transform_coeffs[j + 1][2 * k + 1];
                 }
-                ff_imdct_calc(&ctx->imdct_ctx_256, ctx->samples + 1536, tmp0, tmp);
+                ff_imdct_calc(&ctx->imdct_ctx_256, ctx->tmp_output, tmp_block_first_half, ctx->tmp_imdct);
                 for (l = 0; l < 256; l++)
-                    samples[l] = (ctx->samples + 1536)[l] * window[l] + (ctx->samples + 2048)[l] * window[255 - l];
-                ff_imdct_calc(&ctx->imdct_ctx_256, ctx->samples + 2048, tmp1, tmp);
-                float_to_int(samples, out_samples, 256);
-                samples += 256;
-                out_samples += 256;
-            }
-            else {
-                ff_imdct_calc(&ctx->imdct_ctx_512, ctx->samples + 1536, samples, tmp);
+                    ab->block_output[j + 1][l] = ctx->tmp_output[l] * window[l] + ctx->delay[j + 1][l] * window[255 - l];
+                ff_imdct_calc(&ctx->imdct_ctx_256, ctx->delay[j + 1], tmp_block_second_half, ctx->tmp_imdct);
+            } else {
+                ff_imdct_calc(&ctx->imdct_ctx_512, ctx->tmp_output, ab->transform_coeffs[j + 1], ctx->tmp_imdct);
                 for (l = 0; l < 256; l++)
-                    samples[l] = (ctx->samples + 1536)[l] * window[l] + (ctx->samples + 2048)[l] * window[255 - l];
-                float_to_int(samples, out_samples, 256);
-                memcpy(ctx->samples + 2048, ctx->samples + 1792, 256 * sizeof (float));
-                samples += 256;
-                out_samples += 256;
+                    ab->block_output[j + 1][l] = ctx->tmp_output[l] * window[l] + ctx->delay[j + 1][l] * window[255 - l];
+                memcpy(ctx->delay[j + 1], ctx->tmp_output + 256, sizeof(ctx->delay[j + 1]));
             }
         }
+        if (ctx->bsi.flags & AC3_BSI_LFEON) {
+            for (l = 0; l < 256; l++) {
+                value = lrint(ab->block_output[0][l]);
+                if (value < -32768)
+                    value = -32768;
+                else if (value > 32767)
+                    value = 32767;
+                *(out_samples++) = value;
+            }
+            *data_size += 256 * sizeof(int16_t);
+        }
+        do_downmix(ctx);
+        if (ctx->output == AC3_OUTPUT_UNMODIFIED)
+            nfchans = ctx->bsi.nfchans;
+        else
+            nfchans = avctx->channels;
+        for (k = 0; k < nfchans; k++)
+            for (l = 0; l < 256; l++) {
+                value = lrint(ab->block_output[k + 1][l]);
+                if (value < -32768)
+                    value = -32768;
+                else if (value > 32767)
+                    value = 32767;
+                *(out_samples++) = value;
+            }
+        *data_size += nfchans * 256 * sizeof (int16_t);
     }
-    *data_size = 6 * ctx->bsi.nfchans * 256 * sizeof (int16_t);
 
-    return (buf_size - frame_start);
+    return ctx->sync_info.framesize;
 }
 
 static int ac3_decode_end(AVCodecContext *ctx)
