@@ -20,21 +20,17 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <math.h>
-#include <inttypes.h>
 #include <string.h>
 
 #define ALT_BITSTREAM_READER
 
 #include "ac3tab.h"
-#include "ac3.h"
 #include "ac3_decoder.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
 #include "avutil.h"
 #include "common.h"
-#include "math.h"
-#include "crc.h"
 
 #define N 512   /* constant for IMDCT Block size */
 
