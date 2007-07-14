@@ -38,6 +38,7 @@
 #define BLOCK_SIZE    256
 #define AUDIO_BLOCKS    6
 
+
 /* Synchronization information. */
 typedef struct {
     uint16_t sync_word;     //synchronization word = always 0x0b77
@@ -891,6 +892,7 @@ static int get_transform_coeffs_ch(uint8_t *exps, uint8_t *bap, float chcoeff,
                 }
                 else {
                     TRANSFORM_COEFF(coeffs[i], dither_int16(state), exps[i], factors);
+                    coeffs[i] *= LEVEL_PLUS_3DB;
                     continue;
                 }
 
@@ -1482,39 +1484,13 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
         av_log(NULL, AV_LOG_INFO, "\n");
 }
 
-/*static void window_and_de_interleave(float *output)
-{
-    int n2, n4, n8;
-    int k;
-
-    n2 = 512 >> 1;
-    n4 = 512 >> 2;
-    n8 = 512 >> 3;
-
-    for (k = 0; k < n8; k++) {
-        output[2 * k] *= window[2 * k];
-        output[n2 - 2 * k - 1] *= window[n2 - 2 * k - 1];
-
-        output[2 * k + 1] *= window[2 * k + 1];
-        output[n2 - 2 * k - 2] *= window[n2 - 2 * k - 2];
-
-        output[n2 + 2 * k] *= window[n2 - 2 * k - 1];
-        output[n - 2 * k - 1] *= window[n - 2 * k - 1];
-
-        output[n2 + 2 * k + 1] *= window[n2 - 2 * k - 2];
-        output[n - 2 * k - 2] *= window[n - 2 * k - 2];
-        output[3 * n4 + 2 * k + 1] *= window[n4 - 2 * k - 2];
-    }
-}*/
-
 static inline void overlap_and_add(float *tmp_output, float *delay, float *output)
 {
     int n;
 
-    for (n = 0; n < BLOCK_SIZE; n++) {
-        output[n] = 2 * (tmp_output[n] * window[n] + delay[n] * window[255 - n]);
-        delay[n] = tmp_output[BLOCK_SIZE + n];
-    }
+    for (n = 0; n < BLOCK_SIZE; n++)
+        output[n] = (tmp_output[n] * window[n] + delay[n] * window[255 - n]);
+    memcpy(delay, tmp_output + BLOCK_SIZE, BLOCK_SIZE * sizeof (float));
 }
 
 
@@ -1526,22 +1502,18 @@ static inline void do_imdct(AC3DecodeContext *ctx)
     if (ctx->output & AC3_OUTPUT_LFEON) {
         av_log(NULL, AV_LOG_INFO, "imdct lfe\n");
         ff_imdct_calc(&ctx->imdct_ctx_512, ab->tmp_output, ab->transform_coeffs[0], ab->tmp_imdct);
-        //window_and_de_interleave(ab->tmp_output);
         overlap_and_add(ab->tmp_output, ab->delay[0], ab->output[0]);
     }
-    for (i = 0; i < ctx->bsi.nfchans; i++) {
+    for (i = 0; i < ctx->bsi.nfchans + 1; i++) {
         if (!(((ab->blksw) >> i) & 1)) {
-            av_log(NULL, AV_LOG_INFO, "imdct channel %d - block switching not enabled\n", i);
+            //av_log(NULL, AV_LOG_INFO, "imdct channel %d - block switching not enabled\n", i);
             ff_imdct_calc(&ctx->imdct_ctx_512, ab->tmp_output, ab->transform_coeffs[i + 1], ab->tmp_imdct);
-            //window_and_de_interleave(ab->tmp_output);
             overlap_and_add(ab->tmp_output, ab->delay[i + 1], ab->output[i + 1]);
         } else {
             av_log(NULL, AV_LOG_INFO, "imdct channel %d skipping - block switching enabled\n", i);
         }
     }
 }
-
-
 
 static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
 {
@@ -1559,7 +1531,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
     *flags = 0;
     ab->blksw = 0;
     for (i = 0; i < 5; i++)
-        ab->chcoeffs[i] = 1.0;
+        ab->chcoeffs[i] = 2.0;
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ab->blksw |= get_bits1(gb) << i;
     ab->dithflag = 0;
@@ -1825,29 +1797,14 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx, int index)
     return 0;
 }
 
-/* from FreeSWITCH Modular Media Switching Library */
-#define NORMFACT    (float)0x8000
-#define MAXSAMPLE   (float)0x7fff
-
-
 static inline int16_t convert(float f)
 {
-    /*short s;
-    f = f * NORMFACT;
-    if (f >= 0)
-        s = (short)(f + 0.5);
-    else
-        s = (short)(f - 0.5);
-    if ((float)s > MAXSAMPLE)
-        s = (float)MAXSAMPLE;
-    if (s < (short) -MAXSAMPLE)
-        s = (short) -MAXSAMPLE;
-
-    return s;*/
     int a;
     a = lrintf(f * 32767.0);
     return ((int16_t)a);
 }
+
+static int frame_count = 0;
 
 static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
@@ -1856,6 +1813,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     int frame_start;
     int16_t *out_samples = (int16_t *)data;
     int i, j, k, value;
+
+    av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
 
     //Synchronize the frame.
     frame_start = ac3_synchronize(buf, buf_size);
@@ -1919,10 +1878,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
             return ctx->sync_info.framesize;
         }
         j = ((ctx->output & AC3_OUTPUT_LFEON) ? 0 : 1);
-        for (;j < avctx->channels; j++) {
-            for(k = 0; k < BLOCK_SIZE; k++) {
+        for (k = 0; k < BLOCK_SIZE; k++) {
+            j = ((ctx->output & AC3_OUTPUT_LFEON) ? 0 : 1);
+            for (;j < avctx->channels + 1; j++) {
                 value = convert(ab->output[j][k]);
-                av_log(NULL, AV_LOG_INFO, "%d\t", value);
                 *(out_samples++) = value;
             }
         }
