@@ -100,7 +100,7 @@ AVRational av_add_q(AVRational b, AVRational c);
  * Subtracts one rational from another.
  * @param b first rational.
  * @param c second rational.
- * returns b-c.
+ * @return b-c.
  */
 AVRational av_sub_q(AVRational b, AVRational c);
 
