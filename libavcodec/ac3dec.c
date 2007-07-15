@@ -1997,7 +1997,7 @@ static int ac3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec lgpl_ac3_decoder = {
+AVCodec ac3_decoder = {
     .name = "ac3",
     .type = CODEC_TYPE_AUDIO,
     .id = CODEC_ID_AC3,
