@@ -2938,6 +2938,7 @@ static int decode_init(AVCodecContext *avctx){
 
     // set defaults
 //    s->decode_mb= ff_h263_decode_mb;
+    s->quarter_sample = 1;
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
