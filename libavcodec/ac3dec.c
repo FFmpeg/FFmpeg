@@ -85,8 +85,6 @@ static const float clevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_4POINT5DB,
 
 static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LEVEL_MINUS_6DB };
 
-#define N 512   /* constant for IMDCT Block size */
-
 #define BLOCK_SIZE    256
 
 /* Output and input configurations. */
@@ -1379,66 +1377,63 @@ static void do_downmix(AC3DecodeContext *ctx)
  */
 static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
 {
-    int k;
-    float x1[128], x2[128];
-    float *o_ptr, *d_ptr, *w;
-    FFTComplex *ptr1, *ptr2;
+    int i, k;
+    float x[128];
+    FFTComplex z[2][64];
+    float *o_ptr = ctx->tmp_output;
 
-    for (k = 0; k < N / 4; k++) {
-        x1[k] = ctx->transform_coeffs[chindex][2 * k];
-        x2[k] = ctx->transform_coeffs[chindex][2 * k + 1];
+    for(i=0; i<2; i++) {
+        /* de-interleave coefficients */
+        for(k=0; k<128; k++) {
+            x[k] = ctx->transform_coeffs[chindex][2*k+i];
+        }
+
+        /* run standard IMDCT */
+        ctx->imdct_256.fft.imdct_calc(&ctx->imdct_256, o_ptr, x, ctx->tmp_imdct);
+
+        /* reverse the post-rotation & reordering from standard IMDCT */
+        for(k=0; k<32; k++) {
+            z[i][32+k].re = -o_ptr[128+2*k];
+            z[i][32+k].im = -o_ptr[2*k];
+            z[i][31-k].re =  o_ptr[2*k+1];
+            z[i][31-k].im =  o_ptr[128+2*k+1];
+        }
     }
 
-    ctx->imdct_256.fft.imdct_calc(&ctx->imdct_256, ctx->tmp_output, x1, ctx->tmp_imdct);
-    ctx->imdct_256.fft.imdct_calc(&ctx->imdct_256, ctx->tmp_output + 256, x2, ctx->tmp_imdct);
-
-    o_ptr = ctx->output[chindex];
-    d_ptr = ctx->delay[chindex];
-    ptr1 = (FFTComplex *)ctx->tmp_output;
-    ptr2 = (FFTComplex *)ctx->tmp_output + 256;
-    w = ctx->window;
-
-    for (k = 0; k < N / 8; k++)
-    {
-        o_ptr[2 * k] = -ptr1[k].im * w[2 * k] + d_ptr[2 * k] + 384.0;
-        o_ptr[2 * k + 1] = ptr1[N / 8 - k - 1].re * w[2 * k + 1] + 384.0;
-        o_ptr[N / 4 + 2 * k] = -ptr1[k].re * w[N / 4 + 2 * k] + d_ptr[N / 4 + 2 * k] + 384.0;
-        o_ptr[N / 4 + 2 * k + 1] = ptr1[N / 8 - k - 1].im * w[N / 4 + 2 * k + 1] + d_ptr[N / 4 + 2 * k + 1] + 384.0;
-        d_ptr[2 * k] = ptr2[k].re * w[k / 2 - 2 * k - 1];
-        d_ptr[2 * k + 1] = -ptr2[N / 8 - k - 1].im * w[N / 2 - 2 * k - 2];
-        d_ptr[N / 4 + 2 * k] = ptr2[k].im * w[N / 4 - 2 * k - 1];
-        d_ptr[N / 4 + 2 * k + 1] = -ptr2[N / 8 - k - 1].re * w[N / 4 - 2 * k - 2];
+    /* apply AC-3 post-rotation & reordering */
+    for(k=0; k<64; k++) {
+        o_ptr[    2*k  ] = -z[0][   k].im;
+        o_ptr[    2*k+1] =  z[0][63-k].re;
+        o_ptr[128+2*k  ] = -z[0][   k].re;
+        o_ptr[128+2*k+1] =  z[0][63-k].im;
+        o_ptr[256+2*k  ] = -z[1][   k].re;
+        o_ptr[256+2*k+1] =  z[1][63-k].im;
+        o_ptr[384+2*k  ] =  z[1][   k].im;
+        o_ptr[384+2*k+1] = -z[1][63-k].re;
     }
-}
-
-/* This function performs the imdct on 512 sample transform
- * coefficients.
- */
-static void do_imdct_512(AC3DecodeContext *ctx, int chindex)
-{
-    float *ptr;
-
-    ctx->imdct_512.fft.imdct_calc(&ctx->imdct_512, ctx->tmp_output,
-                                  ctx->transform_coeffs[chindex], ctx->tmp_imdct);
-    ptr = ctx->output[chindex];
-    ctx->dsp.vector_fmul_add_add(ptr, ctx->tmp_output, ctx->window, ctx->delay[chindex], 384, BLOCK_SIZE, 1);
-    ptr = ctx->delay[chindex];
-    ctx->dsp.vector_fmul_reverse(ptr, ctx->tmp_output + 256, ctx->window, BLOCK_SIZE);
 }
 
 /* IMDCT Transform. */
 static inline void do_imdct(AC3DecodeContext *ctx)
 {
-    int i;
+    int ch;
 
     if (ctx->blkoutput & AC3_OUTPUT_LFEON) {
-        do_imdct_512(ctx, 0);
+        ctx->imdct_512.fft.imdct_calc(&ctx->imdct_512, ctx->tmp_output,
+                                      ctx->transform_coeffs[0], ctx->tmp_imdct);
     }
-    for (i = 0; i < ctx->nfchans; i++) {
-        if ((ctx->blksw >> i) & 1)
-            do_imdct_256(ctx, i + 1);
+    for (ch=1; ch<=ctx->nfchans; ch++) {
+        if ((ctx->blksw >> (ch-1)) & 1)
+            do_imdct_256(ctx, ch);
         else
-            do_imdct_512(ctx, i + 1);
+            ctx->imdct_512.fft.imdct_calc(&ctx->imdct_512, ctx->tmp_output,
+                                          ctx->transform_coeffs[ch],
+                                          ctx->tmp_imdct);
+
+        ctx->dsp.vector_fmul_add_add(ctx->output[ch], ctx->tmp_output,
+                                     ctx->window, ctx->delay[ch], 384, 256, 1);
+        ctx->dsp.vector_fmul_reverse(ctx->delay[ch], ctx->tmp_output+256,
+                                     ctx->window, 256);
     }
 }
 
