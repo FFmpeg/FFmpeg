@@ -555,7 +555,7 @@ static inline int logadd(int a, int b)
     int c = a - b;
     int address;
 
-    address = FFMIN((ABS(c) >> 1), 255);
+    address = FFMIN((FFABS(c) >> 1), 255);
 
     if (c >= 0)
         return (a + ff_ac3_latab[address]);
