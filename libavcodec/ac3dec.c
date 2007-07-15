@@ -1545,22 +1545,6 @@ static void do_downmix(AC3DecodeContext *ctx)
     }
 }
 
-static void dump_floats(const char *name, int prec, const float *tab, int n)
-{
-    int i;
-
-    av_log(NULL, AV_LOG_INFO, "%s[%d]:\n", name, n);
-    for(i=0;i<n;i++) {
-        if ((i & 7) == 0)
-            av_log(NULL, AV_LOG_INFO, "%4d: ", i);
-        av_log(NULL, AV_LOG_INFO, " %8.*f", prec, tab[i]);
-        if ((i & 7) == 7)
-            av_log(NULL, AV_LOG_INFO, "\n");
-    }
-    if ((i & 7) != 0)
-        av_log(NULL, AV_LOG_INFO, "\n");
-}
-
 /* This function performs the imdct on 256 sample transform
  * coefficients.
  */
@@ -1894,8 +1878,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         av_log(NULL, AV_LOG_ERROR, "Error in routine get_transform_coeffs\n");
         return -1;
     }
-    /*for (i = 0; i < nfchans; i++)
-        dump_floats("channel transform coefficients", 10, ctx->transform_coeffs[i + 1], BLOCK_SIZE);*/
 
     /* recover coefficients if rematrixing is in use */
     if (ctx->rematflg)
@@ -1904,8 +1886,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     do_downmix(ctx);
 
     do_imdct(ctx);
-    /*for(i = 0; i < nfchans; i++)
-        dump_floats("channel output", 10, ctx->output[i + 1], BLOCK_SIZE);*/
 
     return 0;
 }
@@ -1919,8 +1899,6 @@ static inline int16_t convert(int32_t i)
     else
         return (i - 0x43c00000);
 }
-
-static int frame_count = 0;
 
 /* Decode ac3 frame.
  *
@@ -1940,8 +1918,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
 
     for (i = 0; i < 6; i++)
         int_ptr[i] = (int32_t *)(&ctx->output[i]);
-
-    //av_log(NULL, AV_LOG_INFO, "decoding frame %d buf_size = %d\n", frame_count++, buf_size);
 
     //Synchronize the frame.
     frame_start = ac3_synchronize(buf, buf_size);
