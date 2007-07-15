@@ -48,40 +48,6 @@
 
 #define NB_PASSES 7
 
-#define IOBUF_SIZE 4096
-
-typedef struct PNGContext {
-    uint8_t *bytestream;
-    uint8_t *bytestream_start;
-    uint8_t *bytestream_end;
-    AVFrame picture;
-
-    int state;
-    int width, height;
-    int bit_depth;
-    int color_type;
-    int compression_type;
-    int interlace_type;
-    int filter_type;
-    int channels;
-    int bits_per_pixel;
-    int bpp;
-
-    uint8_t *image_buf;
-    int image_linesize;
-    uint32_t palette[256];
-    uint8_t *crow_buf;
-    uint8_t *last_row;
-    uint8_t *tmp_row;
-    int pass;
-    int crow_size; /* compressed row size (include filter type) */
-    int row_size; /* decompressed row size */
-    int pass_row_size; /* decompress row size of the current pass */
-    int y;
-    z_stream zstream;
-    uint8_t buf[IOBUF_SIZE];
-} PNGContext;
-
 extern const uint8_t ff_pngsig[8];
 
 /* Mask to determine which y pixels are valid in a pass */
@@ -105,7 +71,5 @@ extern int ff_png_get_nb_channels(int color_type);
 
 /* compute the row size of an interleaved pass */
 extern int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
-
-extern int ff_png_common_init(AVCodecContext *avctx);
 
 #endif

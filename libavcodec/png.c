@@ -80,13 +80,3 @@ int ff_png_pass_row_size(int pass, int bits_per_pixel, int width)
     pass_width = (width - xmin + (1 << shift) - 1) >> shift;
     return (pass_width * bits_per_pixel + 7) >> 3;
 }
-
-int ff_png_common_init(AVCodecContext *avctx){
-    PNGContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame= (AVFrame*)&s->picture;
-//    s->avctx= avctx;
-
-    return 0;
-}

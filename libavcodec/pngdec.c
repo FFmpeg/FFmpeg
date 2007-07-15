@@ -30,6 +30,37 @@
 
 //#define DEBUG
 
+typedef struct PNGDecContext {
+    uint8_t *bytestream;
+    uint8_t *bytestream_start;
+    uint8_t *bytestream_end;
+    AVFrame picture;
+
+    int state;
+    int width, height;
+    int bit_depth;
+    int color_type;
+    int compression_type;
+    int interlace_type;
+    int filter_type;
+    int channels;
+    int bits_per_pixel;
+    int bpp;
+
+    uint8_t *image_buf;
+    int image_linesize;
+    uint32_t palette[256];
+    uint8_t *crow_buf;
+    uint8_t *last_row;
+    uint8_t *tmp_row;
+    int pass;
+    int crow_size; /* compressed row size (include filter type) */
+    int row_size; /* decompressed row size */
+    int pass_row_size; /* decompress row size of the current pass */
+    int y;
+    z_stream zstream;
+} PNGDecContext;
+
 /* Mask to determine which y pixels can be written in a pass */
 static const uint8_t png_pass_dsp_ymask[NB_PASSES] = {
     0xff, 0xff, 0x0f, 0xcc, 0x33, 0xff, 0x55,
@@ -182,7 +213,7 @@ static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width)
 }
 
 /* process exactly one decompressed row */
-static void png_handle_row(PNGContext *s)
+static void png_handle_row(PNGDecContext *s)
 {
     uint8_t *ptr, *last_row;
     int got_line;
@@ -252,7 +283,7 @@ static void png_handle_row(PNGContext *s)
     }
 }
 
-static int png_decode_idat(PNGContext *s, int length)
+static int png_decode_idat(PNGDecContext *s, int length)
 {
     int ret;
     s->zstream.avail_in = length;
@@ -283,7 +314,7 @@ static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
-    PNGContext * const s = avctx->priv_data;
+    PNGDecContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     uint32_t tag, length;
@@ -299,7 +330,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->bytestream+= 8;
     s->y=
     s->state=0;
-//    memset(s, 0, sizeof(PNGContext));
+//    memset(s, 0, sizeof(PNGDecContext));
     /* init the zlib */
     s->zstream.zalloc = ff_png_zalloc;
     s->zstream.zfree = ff_png_zfree;
@@ -498,12 +529,21 @@ static int decode_frame(AVCodecContext *avctx,
     goto the_end;
 }
 
+static int png_dec_init(AVCodecContext *avctx){
+    PNGDecContext *s = avctx->priv_data;
+
+    avcodec_get_frame_defaults((AVFrame*)&s->picture);
+    avctx->coded_frame= (AVFrame*)&s->picture;
+
+    return 0;
+}
+
 AVCodec png_decoder = {
     "png",
     CODEC_TYPE_VIDEO,
     CODEC_ID_PNG,
-    sizeof(PNGContext),
-    ff_png_common_init,
+    sizeof(PNGDecContext),
+    png_dec_init,
     NULL,
     NULL, //decode_end,
     decode_frame,

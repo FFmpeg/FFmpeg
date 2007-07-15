@@ -31,6 +31,18 @@
 
 //#define DEBUG
 
+#define IOBUF_SIZE 4096
+
+typedef struct PNGEncContext {
+    uint8_t *bytestream;
+    uint8_t *bytestream_start;
+    uint8_t *bytestream_end;
+    AVFrame picture;
+
+    z_stream zstream;
+    uint8_t buf[IOBUF_SIZE];
+} PNGEncContext;
+
 static void png_get_interlaced_row(uint8_t *dst, int row_size,
                                    int bits_per_pixel, int pass,
                                    const uint8_t *src, int width)
@@ -106,7 +118,7 @@ static void png_write_chunk(uint8_t **f, uint32_t tag,
 }
 
 /* XXX: do filtering */
-static int png_write_row(PNGContext *s, const uint8_t *data, int size)
+static int png_write_row(PNGEncContext *s, const uint8_t *data, int size)
 {
     int ret;
 
@@ -127,7 +139,7 @@ static int png_write_row(PNGContext *s, const uint8_t *data, int size)
 }
 
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
-    PNGContext *s = avctx->priv_data;
+    PNGEncContext *s = avctx->priv_data;
     AVFrame *pict = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
@@ -297,12 +309,21 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     goto the_end;
 }
 
+static int png_enc_init(AVCodecContext *avctx){
+    PNGEncContext *s = avctx->priv_data;
+
+    avcodec_get_frame_defaults((AVFrame*)&s->picture);
+    avctx->coded_frame= (AVFrame*)&s->picture;
+
+    return 0;
+}
+
 AVCodec png_encoder = {
     "png",
     CODEC_TYPE_VIDEO,
     CODEC_ID_PNG,
-    sizeof(PNGContext),
-    ff_png_common_init,
+    sizeof(PNGEncContext),
+    png_enc_init,
     encode_frame,
     NULL, //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, -1},
