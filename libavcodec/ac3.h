@@ -43,6 +43,26 @@
 #define EXP_D25   2
 #define EXP_D45   3
 
+/** Delta bit allocation strategy */
+typedef enum {
+    DBA_REUSE = 0,
+    DBA_NEW,
+    DBA_NONE,
+    DBA_RESERVED
+} AC3DeltaStrategy;
+
+/** Channel mode (audio coding mode) */
+typedef enum {
+    AC3_ACMOD_DUALMONO = 0,
+    AC3_ACMOD_MONO,
+    AC3_ACMOD_STEREO,
+    AC3_ACMOD_3F,
+    AC3_ACMOD_2F1R,
+    AC3_ACMOD_3F1R,
+    AC3_ACMOD_2F2R,
+    AC3_ACMOD_3F2R
+} AC3ChannelMode;
+
 typedef struct AC3BitAllocParameters {
     int fscod; /* frequency */
     int halfratecod;

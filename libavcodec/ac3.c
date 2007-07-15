@@ -154,7 +154,7 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
 
     /* delta bit allocation */
 
-    if (deltbae == 0 || deltbae == 1) {
+    if (deltbae == DBA_REUSE || deltbae == DBA_NEW) {
         int band, seg, delta;
         band = 0;
         for (seg = 0; seg < deltnseg; seg++) {

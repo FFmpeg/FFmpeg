@@ -453,7 +453,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
                                            0, s->nb_coefs[ch],
                                            ff_fgaintab[s->fgaincod[ch]],
                                            ch == s->lfe_channel,
-                                           2, 0, NULL, NULL, NULL,
+                                           DBA_NONE, 0, NULL, NULL, NULL,
                                            mask[blk][ch]);
             }
         }
@@ -534,7 +534,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* audio blocks */
     for(i=0;i<NB_BLOCKS;i++) {
         frame_bits += s->nb_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->acmod == 2) {
+        if (s->acmod == AC3_ACMOD_STEREO) {
             frame_bits++; /* rematstr */
             if(i==0) frame_bits += 4;
         }
@@ -723,11 +723,11 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 5, s->bsid);
     put_bits(&s->pb, 3, s->bsmod);
     put_bits(&s->pb, 3, s->acmod);
-    if ((s->acmod & 0x01) && s->acmod != 0x01)
+    if ((s->acmod & 0x01) && s->acmod != AC3_ACMOD_MONO)
         put_bits(&s->pb, 2, 1); /* XXX -4.5 dB */
     if (s->acmod & 0x04)
         put_bits(&s->pb, 2, 1); /* XXX -6 dB */
-    if (s->acmod == 0x02)
+    if (s->acmod == AC3_ACMOD_STEREO)
         put_bits(&s->pb, 2, 0); /* surround not indicated */
     put_bits(&s->pb, 1, s->lfe); /* LFE */
     put_bits(&s->pb, 5, 31); /* dialog norm: -31 db */
@@ -810,7 +810,7 @@ static void output_audio_block(AC3EncodeContext *s,
         put_bits(&s->pb, 1, 0); /* no new coupling strategy */
     }
 
-    if (s->acmod == 2)
+    if (s->acmod == AC3_ACMOD_STEREO)
       {
         if(block_num==0)
           {

@@ -64,13 +64,13 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
 
     hdr->bsmod = get_bits(&gbc, 3);
     hdr->acmod = get_bits(&gbc, 3);
-    if((hdr->acmod & 1) && hdr->acmod != 1) {
+    if((hdr->acmod & 1) && hdr->acmod != AC3_ACMOD_MONO) {
         hdr->cmixlev = get_bits(&gbc, 2);
     }
     if(hdr->acmod & 4) {
         hdr->surmixlev = get_bits(&gbc, 2);
     }
-    if(hdr->acmod == 2) {
+    if(hdr->acmod == AC3_ACMOD_STEREO) {
         hdr->dsurmod = get_bits(&gbc, 2);
     }
     hdr->lfeon = get_bits1(&gbc);

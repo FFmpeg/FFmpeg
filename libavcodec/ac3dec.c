@@ -33,10 +33,14 @@
 #define ALT_BITSTREAM_READER
 
 #include "avcodec.h"
+#include "ac3.h"
 #include "ac3tab.h"
 #include "bitstream.h"
 #include "dsputil.h"
 #include "random.h"
+
+static uint8_t bndtab[51];
+static uint8_t masktab[253];
 
 static const int nfchans_tbl[8] = { 2, 1, 2, 3, 3, 4, 4, 5 };
 
@@ -83,21 +87,7 @@ static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LE
 
 #define N 512   /* constant for IMDCT Block size */
 
-#define MAX_CHANNELS    6
 #define BLOCK_SIZE    256
-#define AUDIO_BLOCKS    6
-
-/* Exponent strategies. */
-#define AC3_EXPSTR_D15      0x01
-#define AC3_EXPSTR_D25      0x02
-#define AC3_EXPSTR_D45      0x03
-#define AC3_EXPSTR_REUSE    0x00
-
-/* Bit allocation strategies. */
-#define AC3_DBASTR_NEW      0x01
-#define AC3_DBASTR_NONE     0x02
-#define AC3_DBASTR_RESERVED 0x03
-#define AC3_DBASTR_REUSE    0x00
 
 /* Output and input configurations. */
 #define AC3_OUTPUT_UNMODIFIED   0x01
@@ -105,15 +95,6 @@ static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LE
 #define AC3_OUTPUT_STEREO       0x04
 #define AC3_OUTPUT_DOLBY        0x08
 #define AC3_OUTPUT_LFEON        0x10
-
-#define AC3_INPUT_DUALMONO      0x00
-#define AC3_INPUT_MONO          0x01
-#define AC3_INPUT_STEREO        0x02
-#define AC3_INPUT_3F            0x03
-#define AC3_INPUT_2F_1R         0x04
-#define AC3_INPUT_3F_1R         0x05
-#define AC3_INPUT_2F_2R         0x06
-#define AC3_INPUT_3F_2R         0x07
 
 typedef struct {
     uint16_t crc1;
@@ -190,15 +171,15 @@ typedef struct {
 
     int      blkoutput;         //output configuration for block
 
-    DECLARE_ALIGNED_16(float, transform_coeffs[MAX_CHANNELS][BLOCK_SIZE]);  //transform coefficients
+    DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][BLOCK_SIZE]);  //transform coefficients
 
     /* For IMDCT. */
     MDCTContext imdct_512;  //for 512 sample imdct transform
     MDCTContext imdct_256;  //for 256 sample imdct transform
     DSPContext  dsp;        //for optimization
 
-    DECLARE_ALIGNED_16(float, output[MAX_CHANNELS][BLOCK_SIZE]);    //output after imdct transform and windowing
-    DECLARE_ALIGNED_16(float, delay[MAX_CHANNELS][BLOCK_SIZE]);     //delay - added to the next block
+    DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][BLOCK_SIZE]);    //output after imdct transform and windowing
+    DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][BLOCK_SIZE]);     //delay - added to the next block
     DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);               //temporary storage for imdct transform
     DECLARE_ALIGNED_16(float, tmp_output[BLOCK_SIZE * 2]);          //temporary storage for output before windowing
     DECLARE_ALIGNED_16(float, window[BLOCK_SIZE]);                  //window coefficients
@@ -298,7 +279,7 @@ static void ac3_tables_init(void)
     l = 0;
     for(i=0;i<50;i++) {
         bndtab[i] = l;
-        v = bndsz[i];
+        v = ff_ac3_bndsz[i];
         for(j=0;j<v;j++) masktab[k++]=i;
         l += v;
     }
@@ -364,6 +345,7 @@ static int ac3_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeContext *ctx = avctx->priv_data;
 
+    ac3_common_init();
     ac3_tables_init();
     ff_mdct_init(&ctx->imdct_256, 8, 1);
     ff_mdct_init(&ctx->imdct_512, 9, 1);
@@ -414,8 +396,8 @@ static int ac3_parse_sync_info(AC3DecodeContext *ctx)
     frmsizecod = get_bits(gb, 6);
     if (frmsizecod >= 38)
         return 0;
-    ctx->sampling_rate = ac3_freqs[ctx->fscod];
-    ctx->bit_rate = ac3_bitratetab[frmsizecod >> 1];
+    ctx->sampling_rate = ff_ac3_freqs[ctx->fscod];
+    ctx->bit_rate = ff_ac3_bitratetab[frmsizecod >> 1];
 
     /* we include it here in order to determine validity of ac3 frame */
     bsid = get_bits(gb, 5);
@@ -453,10 +435,10 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
     ctx->surmixlev = 0;
     ctx->dsurmod = 0;
     ctx->nfchans = 0;
-    ctx->cpldeltbae = AC3_DBASTR_NONE;
+    ctx->cpldeltbae = DBA_NONE;
     ctx->cpldeltnseg = 0;
     for (i = 0; i < 5; i++) {
-        ctx->deltbae[i] = AC3_DBASTR_NONE;
+        ctx->deltbae[i] = DBA_NONE;
         ctx->deltnseg[i] = 0;
     }
     ctx->dynrng = 1.0;
@@ -524,12 +506,12 @@ static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t ab
             return -ngrps;
         }
         switch (expstr) {
-            case AC3_EXPSTR_D45:
+            case EXP_D45:
                 *(dexps++) = absexp;
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D25:
+            case EXP_D25:
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D15:
+            case EXP_D15:
                 *(dexps++) = absexp;
         }
 
@@ -539,12 +521,12 @@ static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t ab
             return -ngrps;
         }
         switch (expstr) {
-            case AC3_EXPSTR_D45:
+            case EXP_D45:
                 *(dexps++) = absexp;
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D25:
+            case EXP_D25:
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D15:
+            case EXP_D15:
                 *(dexps++) = absexp;
         }
 
@@ -554,12 +536,12 @@ static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t ab
             return -ngrps;
         }
         switch (expstr) {
-            case AC3_EXPSTR_D45:
+            case EXP_D45:
                 *(dexps++) = absexp;
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D25:
+            case EXP_D25:
                 *(dexps++) = absexp;
-            case AC3_EXPSTR_D15:
+            case EXP_D15:
                 *(dexps++) = absexp;
         }
     }
@@ -576,9 +558,9 @@ static inline int logadd(int a, int b)
     address = FFMIN((ABS(c) >> 1), 255);
 
     if (c >= 0)
-        return (a + latab[address]);
+        return (a + ff_ac3_latab[address]);
     else
-        return (b + latab[address]);
+        return (b + ff_ac3_latab[address]);
 }
 
 static inline int calc_lowcomp(int a, int b0, int b1, int bin)
@@ -617,22 +599,22 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     uint8_t *exps = 0, *bap = 0;
 
     /* initialization */
-    sdecay = sdecaytab[ctx->sdcycod];
-    fdecay = fdecaytab[ctx->fdcycod];
-    sgain = sgaintab[ctx->sgaincod];
-    dbknee = dbkneetab[ctx->dbpbcod];
-    floor = floortab[ctx->floorcod];
+    sdecay = ff_sdecaytab[ctx->sdcycod];
+    fdecay = ff_fdecaytab[ctx->fdcycod];
+    sgain = ff_sgaintab[ctx->sgaincod];
+    dbknee = ff_dbkneetab[ctx->dbpbcod];
+    floor = ff_floortab[ctx->floorcod];
 
     if (chnl == 5) {
         start = ctx->cplstrtmant;
         end = ctx->cplendmant;
-        fgain = fgaintab[ctx->cplfgaincod];
+        fgain = ff_fgaintab[ctx->cplfgaincod];
         snroffset = (((ctx->csnroffst - 15) << 4) + ctx->cplfsnroffst) << 2;
         fastleak = (ctx->cplfleak << 8) + 768;
         slowleak = (ctx->cplsleak << 8) + 768;
         exps = ctx->dcplexps;
         bap = ctx->cplbap;
-        if (ctx->cpldeltbae == AC3_DBASTR_NEW || ctx->deltbae == AC3_DBASTR_REUSE) {
+        if (ctx->cpldeltbae == DBA_NEW || ctx->deltbae == DBA_REUSE) {
             do_delta = 1;
             deltnseg = ctx->cpldeltnseg;
             deltoffst = ctx->cpldeltoffst;
@@ -646,7 +628,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         lowcomp = 0;
         fastleak = 0;
         slowleak = 0;
-        fgain = fgaintab[ctx->lfefgaincod];
+        fgain = ff_fgaintab[ctx->lfefgaincod];
         snroffset = (((ctx->csnroffst - 15) << 4) + ctx->lfefsnroffst) << 2;
         exps = ctx->dlfeexps;
         bap = ctx->lfebap;
@@ -657,11 +639,11 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         lowcomp = 0;
         fastleak = 0;
         slowleak = 0;
-        fgain = fgaintab[ctx->fgaincod[chnl]];
+        fgain = ff_fgaintab[ctx->fgaincod[chnl]];
         snroffset = (((ctx->csnroffst - 15) << 4) + ctx->fsnroffst[chnl]) << 2;
         exps = ctx->dexps[chnl];
         bap = ctx->bap[chnl];
-        if (ctx->deltbae[chnl] == AC3_DBASTR_NEW || ctx->deltbae[chnl] == AC3_DBASTR_REUSE) {
+        if (ctx->deltbae[chnl] == DBA_NEW || ctx->deltbae[chnl] == DBA_REUSE) {
             do_delta = 1;
             deltnseg = ctx->deltnseg[chnl];
             deltoffst = ctx->deltoffst[chnl];
@@ -677,7 +659,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     j = start;
     k = masktab[start];
     do {
-        lastbin = FFMIN((bndtab[k] + bndsz[k]), end);
+        lastbin = FFMIN((bndtab[k] + ff_ac3_bndsz[k]), end);
         bndpsd[k] = psd[j];
         j++;
         for (i = j; i < lastbin; i++) {
@@ -734,7 +716,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     for (bin = bndstrt; bin < bndend; bin++) {
         if (bndpsd[bin] < dbknee)
             excite[bin] += ((dbknee - bndpsd[bin]) >> 2);
-        mask[bin] = FFMAX(excite[bin], hth[bin][fscod]);
+        mask[bin] = FFMAX(excite[bin], ff_ac3_hth[bin][fscod]);
     }
 
     /* apply the delta bit allocation */
@@ -757,7 +739,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
     i = start;
     j = masktab[start];
     do {
-        lastbin = FFMIN((bndtab[j] + bndsz[j]), end);
+        lastbin = FFMIN((bndtab[j] + ff_ac3_bndsz[j]), end);
         mask[j] -= snroffset;
         mask[j] -= floor;
         if (mask[j] < 0)
@@ -767,7 +749,7 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
         for (k = i; k < lastbin; k++) {
             address = (psd[i] - mask[j]) >> 5;
             address = FFMIN(63, (FFMAX(0, address)));
-            bap[i] = baptab[address];
+            bap[i] = ff_ac3_baptab[address];
             i++;
         }
         j++;
@@ -1096,7 +1078,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
         return;
 
     switch (from) {
-        case AC3_INPUT_DUALMONO:
+        case AC3_ACMOD_DUALMONO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                 case AC3_OUTPUT_STEREO: /* We Assume that sum of both mono channels is requested */
@@ -1106,7 +1088,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_MONO:
+        case AC3_ACMOD_MONO:
             switch (to) {
                 case AC3_OUTPUT_STEREO:
                     nf = LEVEL_MINUS_3DB;
@@ -1114,7 +1096,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_STEREO:
+        case AC3_ACMOD_STEREO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = LEVEL_MINUS_3DB;
@@ -1123,7 +1105,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_3F:
+        case AC3_ACMOD_3F:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = LEVEL_MINUS_3DB / (1.0 + clev);
@@ -1139,7 +1121,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_2F_1R:
+        case AC3_ACMOD_2F1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = 2.0 * LEVEL_MINUS_3DB / (2.0 + slev);
@@ -1161,7 +1143,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_3F_1R:
+        case AC3_ACMOD_3F1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = LEVEL_MINUS_3DB / (1.0 + clev + (slev / 2.0));
@@ -1186,7 +1168,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_2F_2R:
+        case AC3_ACMOD_2F2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = LEVEL_MINUS_3DB / (1.0 + slev);
@@ -1211,7 +1193,7 @@ static void get_downmix_coeffs(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_3F_2R:
+        case AC3_ACMOD_3F2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     nf = LEVEL_MINUS_3DB / (1.0 + clev + slev);
@@ -1474,7 +1456,7 @@ static void do_downmix(AC3DecodeContext *ctx)
         return;
 
     switch (from) {
-        case AC3_INPUT_DUALMONO:
+        case AC3_ACMOD_DUALMONO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_dualmono_to_mono(ctx);
@@ -1484,21 +1466,21 @@ static void do_downmix(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_MONO:
+        case AC3_ACMOD_MONO:
             switch (to) {
                 case AC3_OUTPUT_STEREO:
                     upmix_mono_to_stereo(ctx);
                     break;
             }
             break;
-        case AC3_INPUT_STEREO:
+        case AC3_ACMOD_STEREO:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_stereo_to_mono(ctx);
                     break;
             }
             break;
-        case AC3_INPUT_3F:
+        case AC3_ACMOD_3F:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_3f_to_mono(ctx);
@@ -1508,7 +1490,7 @@ static void do_downmix(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_2F_1R:
+        case AC3_ACMOD_2F1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_2f_1r_to_mono(ctx);
@@ -1521,7 +1503,7 @@ static void do_downmix(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_3F_1R:
+        case AC3_ACMOD_3F1R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_3f_1r_to_mono(ctx);
@@ -1534,7 +1516,7 @@ static void do_downmix(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_2F_2R:
+        case AC3_ACMOD_2F2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_2f_2r_to_mono(ctx);
@@ -1547,7 +1529,7 @@ static void do_downmix(AC3DecodeContext *ctx)
                     break;
             }
             break;
-        case AC3_INPUT_3F_2R:
+        case AC3_ACMOD_3F2R:
             switch (to) {
                 case AC3_OUTPUT_MONO:
                     mix_3f_2r_to_mono(ctx);
@@ -1755,8 +1737,8 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         }
     }
 
-    ctx->cplexpstr = AC3_EXPSTR_REUSE;
-    ctx->lfeexpstr = AC3_EXPSTR_REUSE;
+    ctx->cplexpstr = EXP_REUSE;
+    ctx->lfeexpstr = EXP_REUSE;
     if (ctx->cplinu) /* coupling exponent strategy */
         ctx->cplexpstr = get_bits(gb, 2);
     for (i = 0; i < nfchans; i++)  /* channel exponent strategy */
@@ -1765,7 +1747,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         ctx->lfeexpstr = get_bits1(gb);
 
     for (i = 0; i < nfchans; i++) /* channel bandwidth code */
-        if (ctx->chexpstr[i] != AC3_EXPSTR_REUSE) {
+        if (ctx->chexpstr[i] != EXP_REUSE) {
             if ((ctx->chincpl >> i) & 1)
                 ctx->endmant[i] = ctx->cplstrtmant;
             else {
@@ -1778,7 +1760,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
             }
         }
 
-    if (ctx->cplexpstr != AC3_EXPSTR_REUSE) {/* coupling exponents */
+    if (ctx->cplexpstr != EXP_REUSE) {/* coupling exponents */
         bit_alloc_flags = 64;
         cplabsexp = get_bits(gb, 4) << 1;
         ngrps = (ctx->cplendmant - ctx->cplstrtmant) / (3 << (ctx->cplexpstr - 1));
@@ -1789,7 +1771,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     }
 
     for (i = 0; i < nfchans; i++) /* fbw channel exponents */
-        if (ctx->chexpstr[i] != AC3_EXPSTR_REUSE) {
+        if (ctx->chexpstr[i] != EXP_REUSE) {
             bit_alloc_flags |= 1 << i;
             grpsize = 3 << (ctx->chexpstr[i] - 1);
             ngrps = (ctx->endmant[i] + grpsize - 4) / grpsize;
@@ -1802,7 +1784,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
             skip_bits(gb, 2); /* skip gainrng */
         }
 
-    if (ctx->lfeexpstr != AC3_EXPSTR_REUSE) { /* lfe exponents */
+    if (ctx->lfeexpstr != EXP_REUSE) { /* lfe exponents */
         bit_alloc_flags |= 32;
         ctx->dlfeexps[0] = get_bits(gb, 4);
         if (decode_exponents(gb, ctx->lfeexpstr, 2, ctx->dlfeexps[0], ctx->dlfeexps + 1)) {
@@ -1848,7 +1830,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
 
         if (ctx->cplinu) {
             ctx->cpldeltbae = get_bits(gb, 2);
-            if (ctx->cpldeltbae == AC3_DBASTR_RESERVED) {
+            if (ctx->cpldeltbae == DBA_RESERVED) {
                 av_log(NULL, AV_LOG_ERROR, "coupling delta bit allocation strategy reserved\n");
                 return -1;
             }
@@ -1856,14 +1838,14 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
 
         for (i = 0; i < nfchans; i++) {
             ctx->deltbae[i] = get_bits(gb, 2);
-            if (ctx->deltbae[i] == AC3_DBASTR_RESERVED) {
+            if (ctx->deltbae[i] == DBA_RESERVED) {
                 av_log(NULL, AV_LOG_ERROR, "delta bit allocation strategy reserved\n");
                 return -1;
             }
         }
 
         if (ctx->cplinu)
-            if (ctx->cpldeltbae == AC3_DBASTR_NEW) { /*coupling delta offset, len and bit allocation */
+            if (ctx->cpldeltbae == DBA_NEW) { /*coupling delta offset, len and bit allocation */
                 ctx->cpldeltnseg = get_bits(gb, 3);
                 for (seg = 0; seg <= ctx->cpldeltnseg; seg++) {
                     ctx->cpldeltoffst[seg] = get_bits(gb, 5);
@@ -1873,7 +1855,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
             }
 
         for (i = 0; i < nfchans; i++)
-            if (ctx->deltbae[i] == AC3_DBASTR_NEW) {/*channel delta offset, len and bit allocation */
+            if (ctx->deltbae[i] == DBA_NEW) {/*channel delta offset, len and bit allocation */
                 ctx->deltnseg[i] = get_bits(gb, 3);
                 for (seg = 0; seg <= ctx->deltnseg[i]; seg++) {
                     ctx->deltoffst[i][seg] = get_bits(gb, 5);
@@ -2013,7 +1995,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     //av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->bit_rate * 1000, avctx->sample_rate);
 
     //Parse the Audio Blocks.
-    for (i = 0; i < AUDIO_BLOCKS; i++) {
+    for (i = 0; i < NB_BLOCKS; i++) {
         if (ac3_parse_audio_block(ctx)) {
             av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
             *data_size = 0;
@@ -2024,7 +2006,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
             for (j = start; j <= avctx->channels; j++)
                 *(out_samples++) = convert(int_ptr[j][k]);
     }
-    *data_size = AUDIO_BLOCKS * BLOCK_SIZE * avctx->channels * sizeof (int16_t);
+    *data_size = NB_BLOCKS * BLOCK_SIZE * avctx->channels * sizeof (int16_t);
     return ctx->frame_size;
 }
 
