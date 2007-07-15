@@ -598,7 +598,7 @@ static void decode_vectors(COOKContext* q, int* category,
         }
         scalar_dequant(q, index, quant_index_table[band],
                        subband_coef_index, subband_coef_sign,
-                       &mlt_buffer[band * 20]);
+                       &mlt_buffer[band * SUBBAND_SIZE]);
     }
 
     if(q->total_subbands*SUBBAND_SIZE >= q->samples_per_channel){
