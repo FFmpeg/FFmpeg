@@ -1173,8 +1173,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
             stream->bytes_to_iframe = av_fifo_size(&stream->fifo);
             stream->align_iframe = 1;
             stream->vobu_start_pts = pts;
-        } else {
-            stream->align_iframe = 0;
         }
     }
 
