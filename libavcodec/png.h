@@ -23,7 +23,6 @@
 #define AVCODEC_PNG_H
 
 #include <stdint.h>
-#include <zlib.h>
 
 #define PNG_COLOR_MASK_PALETTE    1
 #define PNG_COLOR_MASK_COLOR      2
