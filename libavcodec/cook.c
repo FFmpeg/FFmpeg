@@ -121,6 +121,7 @@ typedef struct {
     float               mono_previous_buffer2[1024];
     float               decode_buffer_1[1024];
     float               decode_buffer_2[1024];
+    float               decode_buffer_0[1060]; /* static allocation for joint decode */
 } COOKContext;
 
 /* debug functions */
@@ -753,7 +754,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
                          float* mlt_buffer2) {
     int i,j;
     int decouple_tab[SUBBAND_SIZE];
-    float decode_buffer[1060];
+    float *decode_buffer = q->decode_buffer_0;
     int idx, cpl_tmp,tmp_idx;
     float f1,f2;
     float* cplscale;
