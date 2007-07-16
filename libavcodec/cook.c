@@ -144,6 +144,8 @@ typedef struct cook {
     float               decode_buffer_1[1024];
     float               decode_buffer_2[1024];
     float               decode_buffer_0[1060]; /* static allocation for joint decode */
+
+    float               *cplscales[5];
 } COOKContext;
 
 /* debug functions */
@@ -260,6 +262,18 @@ static int init_cook_mlt(COOKContext *q) {
            av_log2(mlt_size)+1);
 
     return 0;
+}
+
+static float *maybe_reformat_buffer32 (COOKContext *q, float *ptr, int n)
+{
+    if (1)
+        return ptr;
+}
+
+static int init_cplscales_table (COOKContext *q) {
+    int i;
+    for (i=0;i<5;i++)
+        q->cplscales[i] = maybe_reformat_buffer32 (q, cplscales[i], (1<<(i+2))-1);
 }
 
 /*************** init functions end ***********/
@@ -843,7 +857,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
     for (i=q->js_subband_start ; i<q->subbands ; i++) {
         cpl_tmp = cplband[i];
         idx -=decouple_tab[cpl_tmp];
-        cplscale = (float*)cplscales[q->js_vlc_bits-2];  //choose decoupler table
+        cplscale = q->cplscales[q->js_vlc_bits-2];  //choose decoupler table
         f1 = cplscale[decouple_tab[cpl_tmp]];
         f2 = cplscale[idx-1];
         q->decouple (q, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
@@ -1113,6 +1127,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     init_rootpow2table(q);
     init_pow2table(q);
     init_gain_table(q);
+    init_cplscales_table(q);
 
     if (init_cook_vlc_tables(q) != 0)
         return -1;
