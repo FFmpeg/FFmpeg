@@ -741,6 +741,30 @@ static void decouple_info(COOKContext *q, int* decouple_tab){
     return;
 }
 
+/*
+ * function decouples a pair of signals from a single signal via multiplication.
+ *
+ * @param q                 pointer to the COOKContext
+ * @param subband           index of the current subband
+ * @param f1                multiplier for channel 1 extraction
+ * @param f2                multiplier for channel 2 extraction
+ * @param decode_buffer     input buffer
+ * @param mlt_buffer1       pointer to left channel mlt coefficients
+ * @param mlt_buffer2       pointer to right channel mlt coefficients
+ */
+static void decouple_float (COOKContext *q,
+                            int subband,
+                            float f1, float f2,
+                            float *decode_buffer,
+                            float *mlt_buffer1, float *mlt_buffer2)
+{
+    int j, tmp_idx;
+    for (j=0 ; j<SUBBAND_SIZE ; j++) {
+        tmp_idx = ((q->js_subband_start + subband)*SUBBAND_SIZE)+j;
+        mlt_buffer1[SUBBAND_SIZE*subband + j] = f1 * decode_buffer[tmp_idx];
+        mlt_buffer2[SUBBAND_SIZE*subband + j] = f2 * decode_buffer[tmp_idx];
+    }
+}
 
 /**
  * function for decoding joint stereo data
@@ -785,11 +809,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
         cplscale = (float*)cplscales[q->js_vlc_bits-2];  //choose decoupler table
         f1 = cplscale[decouple_tab[cpl_tmp]];
         f2 = cplscale[idx-1];
-        for (j=0 ; j<SUBBAND_SIZE ; j++) {
-            tmp_idx = ((q->js_subband_start + i)*20)+j;
-            mlt_buffer1[20*i + j] = f1 * decode_buffer[tmp_idx];
-            mlt_buffer2[20*i + j] = f2 * decode_buffer[tmp_idx];
-        }
+        decouple_float (q, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
         idx = (1 << q->js_vlc_bits) - 1;
     }
 }
