@@ -2,7 +2,6 @@
  * yuv2rgb.c, Software YUV to RGB converter
  *
  *  Copyright (C) 1999, Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
- *  All Rights Reserved.
  *
  *  Functions broken out from display_x11.c and several new modes
  *  added by Håkan Hjort <d95hjort@dtek.chalmers.se>

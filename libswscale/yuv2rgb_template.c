@@ -2,7 +2,6 @@
  * yuv2rgb_mmx.c, Software YUV to RGB converter with Intel MMX "technology"
  *
  * Copyright (C) 2000, Silicon Integrated System Corp.
- * All Rights Reserved.
  *
  * Author: Olie Lho <ollie@sis.com.tw>
  *
