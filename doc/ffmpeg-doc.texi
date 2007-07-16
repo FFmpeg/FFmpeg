@@ -1750,6 +1750,9 @@ do not attach several unrelated patches to the same mail.
     You should maintain alphabetical order in alphabetically ordered lists as
     long as doing so does not break API/ABI compatibility.
 @item
+    Lines with similar content should be aligned vertically when doing so
+    improves readability.
+@item
     Did you provide a suggestion for a clear commit log message?
 @end enumerate
 
