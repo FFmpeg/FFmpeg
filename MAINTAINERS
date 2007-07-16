@@ -179,6 +179,7 @@ Codecs:
   vcr1.c                                Michael Niedermayer
   vmnc.c                                Kostya Shishkov
   vorbis_enc.c                          Oded Shimon
+  vorbis_dec.c                          Balatoni Denes
   vp3*                                  Mike Melanson
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
