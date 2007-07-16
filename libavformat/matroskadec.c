@@ -2147,7 +2147,9 @@ matroska_read_header (AVFormatContext    *s,
             else if (codec_id == CODEC_ID_TEXT) {
                 MatroskaSubtitleTrack *subtrack=(MatroskaSubtitleTrack *)track;
                 if (!strcmp(track->codec_id, "S_TEXT/ASS") ||
-                    !strcmp(track->codec_id, "S_TEXT/SSA"))
+                    !strcmp(track->codec_id, "S_TEXT/SSA") ||
+                    !strcmp(track->codec_id, "S_ASS") ||
+                    !strcmp(track->codec_id, "S_SSA"))
                     subtrack->ass = 1;
             }
 
