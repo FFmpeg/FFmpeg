@@ -814,6 +814,8 @@ static void rtsp_send_cmd(AVFormatContext *s,
     }
     if (content_ptr)
         *content_ptr = content;
+    else
+        av_free(content);
 }
 
 
