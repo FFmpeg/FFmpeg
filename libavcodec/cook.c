@@ -68,7 +68,29 @@ typedef struct {
     int *previous;
 } cook_gains;
 
-typedef struct {
+typedef struct cook {
+    /*
+     * The following 5 functions provide the lowlevel arithmetic on
+     * the internal audio buffers.
+     */
+    void (* scalar_dequant)(struct cook *q, int index, int quant_index,
+                            int* subband_coef_index, int* subband_coef_sign,
+                            float* mlt_p);
+
+    void (* decouple) (struct cook *q,
+                       int subband,
+                       float f1, float f2,
+                       float *decode_buffer,
+                       float *mlt_buffer1, float *mlt_buffer2);
+
+    void (* imlt_window) (struct cook *q, float *buffer1,
+                          cook_gains *gains_ptr, float *previous_buffer);
+
+    void (* interpolate) (struct cook *q, float* buffer,
+                          int gain_index, int gain_index_next);
+
+    void (* saturate_output) (struct cook *q, int chan, int16_t *out);
+
     GetBitContext       gb;
     /* stream data */
     int                 nb_channels;
@@ -597,7 +619,7 @@ static void decode_vectors(COOKContext* q, int* category,
             memset(subband_coef_index, 0, sizeof(subband_coef_index));
             memset(subband_coef_sign, 0, sizeof(subband_coef_sign));
         }
-        scalar_dequant(q, index, quant_index_table[band],
+        q->scalar_dequant(q, index, quant_index_table[band],
                        subband_coef_index, subband_coef_sign,
                        &mlt_buffer[band * SUBBAND_SIZE]);
     }
@@ -712,12 +734,12 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, q->mono_mdct_output,
                                inbuffer, q->mdct_tmp);
 
-    imlt_window_float (q, buffer1, gains_ptr, previous_buffer);
+    q->imlt_window (q, buffer1, gains_ptr, previous_buffer);
 
     /* Apply gain profile */
     for (i = 0; i < 8; i++) {
         if (gains_ptr->now[i] || gains_ptr->now[i + 1])
-            interpolate(q, &buffer1[q->gain_size_factor * i],
+            q->interpolate(q, &buffer1[q->gain_size_factor * i],
                         gains_ptr->now[i], gains_ptr->now[i + 1]);
     }
 
@@ -824,7 +846,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
         cplscale = (float*)cplscales[q->js_vlc_bits-2];  //choose decoupler table
         f1 = cplscale[decouple_tab[cpl_tmp]];
         f2 = cplscale[idx-1];
-        decouple_float (q, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
+        q->decouple (q, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
         idx = (1 << q->js_vlc_bits) - 1;
     }
 }
@@ -893,7 +915,7 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
                       int16_t *out, int chan)
 {
     imlt_gain(q, decode_buffer, gains, previous_buffer);
-    saturate_output_float (q, chan, out);
+    q->saturate_output (q, chan, out);
 }
 
 
@@ -1124,6 +1146,15 @@ static int cook_decode_init(AVCodecContext *avctx)
     /* Initialize transform. */
     if ( init_cook_mlt(q) != 0 )
         return -1;
+
+    /* Initialize COOK signal arithmetic handling */
+    if (1) {
+        q->scalar_dequant  = scalar_dequant;
+        q->decouple        = decouple_float;
+        q->imlt_window     = imlt_window_float;
+        q->interpolate     = interpolate;
+        q->saturate_output = saturate_output_float;
+    }
 
     /* Try to catch some obviously faulty streams, othervise it might be exploitable */
     if (q->total_subbands > 53) {
