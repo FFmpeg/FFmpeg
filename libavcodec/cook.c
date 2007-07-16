@@ -662,6 +662,32 @@ static void interpolate(COOKContext *q, float* buffer,
     }
 }
 
+/**
+ * Apply transform window, overlap buffers.
+ *
+ * @param q                 pointer to the COOKContext
+ * @param inbuffer          pointer to the mltcoefficients
+ * @param gains_ptr         current and previous gains
+ * @param previous_buffer   pointer to the previous buffer to be used for overlapping
+ */
+
+static void imlt_window_float (COOKContext *q, float *buffer1,
+                               cook_gains *gains_ptr, float *previous_buffer)
+{
+    const float fc = q->pow2tab[gains_ptr->previous[0] + 63];
+    int i;
+    /* The weird thing here, is that the two halves of the time domain
+     * buffer are swapped. Also, the newest data, that we save away for
+     * next frame, has the wrong sign. Hence the subtraction below.
+     * Almost sounds like a complex conjugate/reverse data/FFT effect.
+     */
+
+    /* Apply window and overlap */
+    for(i = 0; i < q->samples_per_channel; i++){
+        buffer1[i] = buffer1[i] * fc * q->mlt_window[i] -
+          previous_buffer[i] * q->mlt_window[q->samples_per_channel - 1 - i];
+    }
+}
 
 /**
  * The modulated lapped transform, this takes transform coefficients
@@ -678,7 +704,6 @@ static void interpolate(COOKContext *q, float* buffer,
 static void imlt_gain(COOKContext *q, float *inbuffer,
                       cook_gains *gains_ptr, float* previous_buffer)
 {
-    const float fc = q->pow2tab[gains_ptr->previous[0] + 63];
     float *buffer0 = q->mono_mdct_output;
     float *buffer1 = q->mono_mdct_output + q->samples_per_channel;
     int i;
@@ -687,17 +712,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, q->mono_mdct_output,
                                inbuffer, q->mdct_tmp);
 
-    /* The weird thing here, is that the two halves of the time domain
-     * buffer are swapped. Also, the newest data, that we save away for
-     * next frame, has the wrong sign. Hence the subtraction below.
-     * Almost sounds like a complex conjugate/reverse data/FFT effect.
-     */
-
-    /* Apply window and overlap */
-    for(i = 0; i < q->samples_per_channel; i++){
-        buffer1[i] = buffer1[i] * fc * q->mlt_window[i] -
-          previous_buffer[i] * q->mlt_window[q->samples_per_channel - 1 - i];
-    }
+    imlt_window_float (q, buffer1, gains_ptr, previous_buffer);
 
     /* Apply gain profile */
     for (i = 0; i < 8; i++) {
