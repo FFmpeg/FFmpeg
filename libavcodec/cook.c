@@ -901,7 +901,7 @@ static void
 saturate_output_float (COOKContext *q, int chan, int16_t *out)
 {
     int j;
-    float_t *output = q->mono_mdct_output + q->samples_per_channel;
+    float *output = q->mono_mdct_output + q->samples_per_channel;
     /* Clip and convert floats to 16 bits.
      */
     for (j = 0; j < q->samples_per_channel; j++) {
