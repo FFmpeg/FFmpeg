@@ -1503,8 +1503,8 @@ The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the Subversion repository.
 
-Main priority in FFmpeg is simplicity and small code size (=less
-bugs).
+The main priority in FFmpeg is simplicity and small code size in order to
+minimize the bug count.
 
 Comments: Use the JavaDoc/Doxygen
 format (see examples below) so that code documentation
@@ -1689,7 +1689,7 @@ It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
-Also please if you send several patches, send each patch as separate mail,
+Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
 
 @section patch submission checklist

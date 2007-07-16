@@ -419,12 +419,12 @@ see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
 see @url{http://svn.mplayerhq.hu/michael/trunk/docs/}
 
-@section how do i feed rtp-h263 (and likely other rtp bastardizations of codecs) to libavcodec?
+@section how do I feed H.263-RTP (and likely other RTP bastardizations of codecs) to libavcodec?
 
-Remove _ALL_ rtp trash and either feed the fragments through a AVParser and
+Remove _ALL_ RTP trash and either feed the fragments through an AVParser and
 then into the decoder or merge the fragments yourself into proper frames and
-feed them into the decoder. Note! the payload of h263-rtp is is not valid
-h263 you at least have to merge the first and last bytes discarding rtp trash
+feed them into the decoder. Note: The payload of H.263-RTP is not valid
+H.263 you at least have to merge the first and last bytes discarding RTP trash
 from them, possibly more.
 
 @bye
