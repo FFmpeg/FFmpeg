@@ -23,6 +23,8 @@
 #include "opt.h"
 #include "avstring.h"
 #include "riff.h"
+#include <sys/time.h>
+#include <time.h>
 
 #undef NDEBUG
 #include <assert.h>
@@ -2496,6 +2498,16 @@ int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
     *frame_rate_num= frame_rate.num;
     *frame_rate_den= frame_rate.den;
     return ret;
+}
+
+/**
+ * gets the current time in micro seconds.
+ */
+int64_t av_gettime(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 int64_t parse_date(const char *datestr, int duration)

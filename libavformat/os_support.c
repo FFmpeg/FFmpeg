@@ -25,8 +25,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #endif
-#include <sys/time.h>
-#include <time.h>
 
 #ifndef HAVE_SYS_POLL_H
 #if defined(__MINGW32__)
@@ -35,16 +33,6 @@
 #include <sys/select.h>
 #endif
 #endif
-
-/**
- * gets the current time in micro seconds.
- */
-int64_t av_gettime(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
-}
 
 #ifdef CONFIG_NETWORK
 #include "network.h"
