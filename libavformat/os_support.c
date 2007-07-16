@@ -21,14 +21,11 @@
  */
 #include "config.h"
 #include "avformat.h"
-#if defined(__MINGW32__)
-#include <sys/types.h>
-#include <sys/timeb.h>
-#else
+#if !defined(__MINGW32__)
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/time.h>
 #endif
+#include <sys/time.h>
 #include <time.h>
 
 #ifndef HAVE_SYS_POLL_H
@@ -44,15 +41,9 @@
  */
 int64_t av_gettime(void)
 {
-#if defined(__MINGW32__)
-    struct timeb tb;
-    _ftime(&tb);
-    return ((int64_t)tb.time * INT64_C(1000) + (int64_t)tb.millitm) * INT64_C(1000);
-#else
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
-#endif
 }
 
 #ifdef CONFIG_NETWORK
