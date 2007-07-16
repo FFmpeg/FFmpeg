@@ -819,6 +819,26 @@ decode_bytes_and_gain(COOKContext *q, uint8_t *inbuffer,
     FFSWAP(int *, gains_ptr->now, gains_ptr->previous);
 }
 
+ /**
+ * Saturate the output signal to signed 16bit integers.
+ *
+ * @param q                 pointer to the COOKContext
+ * @param chan              channel to saturate
+ * @param out               pointer to the output vector
+ */
+static void
+saturate_output_float (COOKContext *q, int chan, int16_t *out)
+{
+    int j;
+    float_t *output = q->mono_mdct_output + q->samples_per_channel;
+    /* Clip and convert floats to 16 bits.
+     */
+    for (j = 0; j < q->samples_per_channel; j++) {
+        out[chan + q->nb_channels * j] =
+          av_clip(lrintf(output[j]), -32768, 32767);
+    }
+}
+
 /**
  * Final part of subpacket decoding:
  *  Apply modulated lapped transform, gain compensation,
@@ -837,17 +857,8 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
                       cook_gains *gains, float *previous_buffer,
                       int16_t *out, int chan)
 {
-    float *output = q->mono_mdct_output + q->samples_per_channel;
-    int j;
-
     imlt_gain(q, decode_buffer, gains, previous_buffer);
-
-    /* Clip and convert floats to 16 bits.
-     */
-    for (j = 0; j < q->samples_per_channel; j++) {
-        out[chan + q->nb_channels * j] =
-          av_clip(lrintf(output[j]), -32768, 32767);
-    }
+    saturate_output_float (q, chan, out);
 }
 
 
