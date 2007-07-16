@@ -21,10 +21,8 @@
  */
 #include "config.h"
 #include "avformat.h"
-#if !defined(__MINGW32__)
 #include <unistd.h>
 #include <fcntl.h>
-#endif
 
 #ifndef HAVE_SYS_POLL_H
 #if defined(__MINGW32__)
