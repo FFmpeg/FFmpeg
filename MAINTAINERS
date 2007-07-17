@@ -138,7 +138,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   jpeg_ls.c                             Kostya Shishkov
   kmvc.c                                Kostya Shishkov
-  lcl.c                                 Roberto Togni
+  lcl*.c                                Roberto Togni
   libgsm.c                              Michel Bardiaux
   libx264.c                             Mans Rullgard
   loco.c                                Kostya Shishkov
