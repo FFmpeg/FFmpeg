@@ -630,133 +630,86 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
         if (!isnotcompressed) {
          /* compressed */
-            int16_t predictor_coef_table_a[32];
-            int predictor_coef_num_a;
-            int prediction_type_a;
-            int prediction_quantitization_a;
-            int ricemodifier_a;
+            int16_t predictor_coef_table[channels][32];
+            int predictor_coef_num[channels];
+            int prediction_type[channels];
+            int prediction_quantitization[channels];
+            int ricemodifier[channels];
 
-            int16_t predictor_coef_table_b[32];
-            int predictor_coef_num_b;
-            int prediction_type_b;
-            int prediction_quantitization_b;
-            int ricemodifier_b;
-
-            int i;
+            int i, chan;
 
             interlacing_shift = get_bits(&alac->gb, 8);
             interlacing_leftweight = get_bits(&alac->gb, 8);
 
-            /******** channel 1 ***********/
-            prediction_type_a = get_bits(&alac->gb, 4);
-            prediction_quantitization_a = get_bits(&alac->gb, 4);
+          for (chan = 0; chan < channels; chan++) {
+            prediction_type[chan] = get_bits(&alac->gb, 4);
+            prediction_quantitization[chan] = get_bits(&alac->gb, 4);
 
-            ricemodifier_a = get_bits(&alac->gb, 3);
-            predictor_coef_num_a = get_bits(&alac->gb, 5);
-
-            /* read the predictor table */
-            for (i = 0; i < predictor_coef_num_a; i++) {
-                predictor_coef_table_a[i] = (int16_t)get_bits(&alac->gb, 16);
-            }
-
-            /******** channel 2 *********/
-            prediction_type_b = get_bits(&alac->gb, 4);
-            prediction_quantitization_b = get_bits(&alac->gb, 4);
-
-            ricemodifier_b = get_bits(&alac->gb, 3);
-            predictor_coef_num_b = get_bits(&alac->gb, 5);
+            ricemodifier[chan] = get_bits(&alac->gb, 3);
+            predictor_coef_num[chan] = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
-            for (i = 0; i < predictor_coef_num_b; i++) {
-                predictor_coef_table_b[i] = (int16_t)get_bits(&alac->gb, 16);
+            for (i = 0; i < predictor_coef_num[chan]; i++) {
+                predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
             }
+          }
 
-            /*********************/
             if (wasted_bytes) {
               /* see mono case */
                 av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
             }
 
-            /* channel 1 */
+          for (chan = 0; chan < channels; chan++) {
             bastardized_rice_decompress(alac,
-                                        alac->predicterror_buffer[0],
+                                        alac->predicterror_buffer[chan],
                                         outputsamples,
                                         readsamplesize,
                                         alac->setinfo_rice_initialhistory,
                                         alac->setinfo_rice_kmodifier,
-                                        ricemodifier_a * alac->setinfo_rice_historymult / 4,
+                                        ricemodifier[chan] * alac->setinfo_rice_historymult / 4,
                                         (1 << alac->setinfo_rice_kmodifier) - 1);
 
-            if (prediction_type_a == 0) {
+            if (prediction_type[chan] == 0) {
               /* adaptive fir */
-                predictor_decompress_fir_adapt(alac->predicterror_buffer[0],
-                                               alac->outputsamples_buffer[0],
+                predictor_decompress_fir_adapt(alac->predicterror_buffer[chan],
+                                               alac->outputsamples_buffer[chan],
                                                outputsamples,
                                                readsamplesize,
-                                               predictor_coef_table_a,
-                                               predictor_coef_num_a,
-                                               prediction_quantitization_a);
+                                               predictor_coef_table[chan],
+                                               predictor_coef_num[chan],
+                                               prediction_quantitization[chan]);
             } else {
               /* see mono case */
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type_a);
+                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[chan]);
             }
-
-            /* channel 2 */
-            bastardized_rice_decompress(alac,
-                                        alac->predicterror_buffer[1],
-                                        outputsamples,
-                                        readsamplesize,
-                                        alac->setinfo_rice_initialhistory,
-                                        alac->setinfo_rice_kmodifier,
-                                        ricemodifier_b * alac->setinfo_rice_historymult / 4,
-                                        (1 << alac->setinfo_rice_kmodifier) - 1);
-
-            if (prediction_type_b == 0) {
-              /* adaptive fir */
-                predictor_decompress_fir_adapt(alac->predicterror_buffer[1],
-                                               alac->outputsamples_buffer[1],
-                                               outputsamples,
-                                               readsamplesize,
-                                               predictor_coef_table_b,
-                                               predictor_coef_num_b,
-                                               prediction_quantitization_b);
-            } else {
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type_b);
-            }
+          }
         } else {
          /* not compressed, easy case */
             if (alac->setinfo_sample_size <= 16) {
-                int i;
+                int i, chan;
+              for (chan = 0; chan < channels; chan++) {
                 for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits_a, audiobits_b;
+                    int32_t audiobits;
 
-                    audiobits_a = get_bits(&alac->gb, alac->setinfo_sample_size);
-                    audiobits_b = get_bits(&alac->gb, alac->setinfo_sample_size);
-
-                    audiobits_a = SIGN_EXTENDED32(audiobits_a, alac->setinfo_sample_size);
-                    audiobits_b = SIGN_EXTENDED32(audiobits_b, alac->setinfo_sample_size);
-
-                    alac->outputsamples_buffer[0][i] = audiobits_a;
-                    alac->outputsamples_buffer[1][i] = audiobits_b;
+                    audiobits = get_bits(&alac->gb, alac->setinfo_sample_size);
+                    audiobits = SIGN_EXTENDED32(audiobits, alac->setinfo_sample_size);
+                    alac->outputsamples_buffer[chan][i] = audiobits;
                 }
+              }
             } else {
-                int i;
+                int i, chan;
+              for (chan = 0; chan < channels; chan++) {
                 for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits_a, audiobits_b;
+                    int32_t audiobits;
 
-                    audiobits_a = get_bits(&alac->gb, 16);
-                    audiobits_a = audiobits_a << 16;
-                    audiobits_a = audiobits_a >> (32 - alac->setinfo_sample_size);
-                    audiobits_a |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
+                    audiobits = get_bits(&alac->gb, 16);
+                    audiobits = audiobits << 16;
+                    audiobits = audiobits >> (32 - alac->setinfo_sample_size);
+                    audiobits |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
 
-                    audiobits_b = get_bits(&alac->gb, 16);
-                    audiobits_b = audiobits_b << 16;
-                    audiobits_b = audiobits_b >> (32 - alac->setinfo_sample_size);
-                    audiobits_b |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
-
-                    alac->outputsamples_buffer[0][i] = audiobits_a;
-                    alac->outputsamples_buffer[1][i] = audiobits_b;
+                    alac->outputsamples_buffer[chan][i] = audiobits;
                 }
+              }
             }
             /* wasted_bytes = 0; */
             interlacing_shift = 0;
