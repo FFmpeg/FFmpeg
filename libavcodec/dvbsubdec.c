@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bitstream.h"
+#include "colorspace.h"
 
 //#define DEBUG
 //#define DEBUG_PACKET_CONTENTS
@@ -893,29 +894,6 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
     }
 
 }
-
-#define SCALEBITS 10
-#define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
-
-#define YUV_TO_RGB1_CCIR(cb1, cr1)\
-{\
-    cb = (cb1) - 128;\
-    cr = (cr1) - 128;\
-    r_add = FIX(1.40200*255.0/224.0) * cr + ONE_HALF;\
-    g_add = - FIX(0.34414*255.0/224.0) * cb - FIX(0.71414*255.0/224.0) * cr + \
-            ONE_HALF;\
-    b_add = FIX(1.77200*255.0/224.0) * cb + ONE_HALF;\
-}
-
-#define YUV_TO_RGB2_CCIR(r, g, b, y1)\
-{\
-    y = ((y1) - 16) * FIX(255.0/219.0);\
-    r = cm[(y + r_add) >> SCALEBITS];\
-    g = cm[(y + g_add) >> SCALEBITS];\
-    b = cm[(y + b_add) >> SCALEBITS];\
-}
-
 
 static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
                                         uint8_t *buf, int buf_size)
