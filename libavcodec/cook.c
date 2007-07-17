@@ -634,8 +634,8 @@ static void decode_vectors(COOKContext* q, int* category,
             memset(subband_coef_sign, 0, sizeof(subband_coef_sign));
         }
         q->scalar_dequant(q, index, quant_index_table[band],
-                       subband_coef_index, subband_coef_sign,
-                       &mlt_buffer[band * SUBBAND_SIZE]);
+                          subband_coef_index, subband_coef_sign,
+                          &mlt_buffer[band * SUBBAND_SIZE]);
     }
 
     if(q->total_subbands*SUBBAND_SIZE >= q->samples_per_channel){
@@ -754,7 +754,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     for (i = 0; i < 8; i++) {
         if (gains_ptr->now[i] || gains_ptr->now[i + 1])
             q->interpolate(q, &buffer1[q->gain_size_factor * i],
-                        gains_ptr->now[i], gains_ptr->now[i + 1]);
+                           gains_ptr->now[i], gains_ptr->now[i + 1]);
     }
 
     /* Save away the current to be previous block. */
