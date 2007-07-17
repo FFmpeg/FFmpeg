@@ -351,7 +351,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
             }
 
 // Weed out unused vlcs and build codevector vector
-            codebook_setup->codevectors=(float *)av_mallocz(used_entries*codebook_setup->dimensions * sizeof(float));
+            codebook_setup->codevectors=used_entries ? (float *)av_mallocz(used_entries*codebook_setup->dimensions * sizeof(float)) : NULL;
             for(j=0, i=0;i<entries;++i) {
                 uint_fast8_t dim=codebook_setup->dimensions;
 
@@ -1291,7 +1291,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                         uint_fast8_t vqclass=classifs[j_times_ptns_to_read+partition_count];
                         int_fast16_t vqbook=vr->books[vqclass][pass];
 
-                        if (vqbook>=0) {
+                        if (vqbook>=0 && vc->codebooks[vqbook].codevectors) {
                             uint_fast16_t coffs;
                             unsigned dim= vc->codebooks[vqbook].dimensions; // not uint_fast8_t: 64bit is slower here on amd64
                             uint_fast16_t step= dim==1 ? vr->partition_size
