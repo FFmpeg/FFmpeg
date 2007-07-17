@@ -2665,14 +2665,14 @@ static inline const DVprofile* dv_frame_profile(uint8_t* frame)
 {
     if ((frame[3] & 0x80) == 0) {      /* DSF flag */
         /* it's an NTSC format */
-        if ((frame[80*5 + 48 + 3] & 0x4)) { /* 4:2:2 sampling */
+        if ((frame[80*5 + 48 + 3] & 0x4) && (frame[80*5 + 48] == dv_video_source)) { /* 4:2:2 sampling */
             return &dv_profiles[3]; /* NTSC 50Mbps */
         } else { /* 4:1:1 sampling */
             return &dv_profiles[0]; /* NTSC 25Mbps */
         }
     } else {
         /* it's a PAL format */
-        if ((frame[80*5 + 48 + 3] & 0x4)) { /* 4:2:2 sampling */
+        if ((frame[80*5 + 48 + 3] & 0x4) && (frame[80*5 + 48] == dv_video_source)) { /* 4:2:2 sampling */
             return &dv_profiles[4]; /* PAL 50Mbps */
         } else if ((frame[5] & 0x07) == 0) { /* APT flag */
             return &dv_profiles[1]; /* PAL 25Mbps 4:2:0 */
