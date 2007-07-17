@@ -759,6 +759,7 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType codec_type)
 
     s->av_class= &av_codec_context_class;
 
+    s->codec_type = codec_type;
     if(codec_type == CODEC_TYPE_AUDIO)
         flags= AV_OPT_FLAG_AUDIO_PARAM;
     else if(codec_type == CODEC_TYPE_VIDEO)
