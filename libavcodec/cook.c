@@ -538,7 +538,7 @@ static inline void expand_category(COOKContext *q, int* category,
  * @param mlt_p                 pointer into the mlt buffer
  */
 
-static void scalar_dequant(COOKContext *q, int index, int quant_index,
+static void scalar_dequant_float(COOKContext *q, int index, int quant_index,
                            int* subband_coef_index, int* subband_coef_sign,
                            float* mlt_p){
     int i;
@@ -677,7 +677,7 @@ static void mono_decode(COOKContext *q, float* mlt_buffer) {
  * @param gain_index_next   index for the next block multiplier
  */
 
-static void interpolate(COOKContext *q, float* buffer,
+static void interpolate_float(COOKContext *q, float* buffer,
                         int gain_index, int gain_index_next){
     int i;
     float fc1, fc2;
@@ -1164,10 +1164,10 @@ static int cook_decode_init(AVCodecContext *avctx)
 
     /* Initialize COOK signal arithmetic handling */
     if (1) {
-        q->scalar_dequant  = scalar_dequant;
+        q->scalar_dequant  = scalar_dequant_float;
         q->decouple        = decouple_float;
         q->imlt_window     = imlt_window_float;
-        q->interpolate     = interpolate;
+        q->interpolate     = interpolate_float;
         q->saturate_output = saturate_output_float;
     }
 
