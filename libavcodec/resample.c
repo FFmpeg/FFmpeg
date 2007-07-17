@@ -1,5 +1,5 @@
 /*
- * Sample rate convertion for both audio and video
+ * samplerate conversion for both audio and video
  * Copyright (c) 2000 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file resample.c
- * Sample rate convertion for both audio and video.
+ * samplerate conversion for both audio and video
  */
 
 #include "avcodec.h"

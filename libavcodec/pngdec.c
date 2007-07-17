@@ -72,7 +72,7 @@ static const uint8_t png_pass_dsp_mask[NB_PASSES] = {
 };
 
 /* NOTE: we try to construct a good looking image at each pass. width
-   is the original image width. We also do pixel format convertion at
+   is the original image width. We also do pixel format conversion at
    this stage */
 static void png_put_interlaced_row(uint8_t *dst, int width,
                                    int bits_per_pixel, int pass,

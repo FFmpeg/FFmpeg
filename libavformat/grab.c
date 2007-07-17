@@ -212,7 +212,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             if (aiw_init(s) < 0)
                 goto fail;
             s->aiw_enabled = 1;
-            /* force 420P format because convertion from YUV422 to YUV420P
+            /* force 420P format because conversion from YUV422 to YUV420P
                is done in this driver (ugly) */
             s->frame_format = VIDEO_PALETTE_YUV420P;
         }

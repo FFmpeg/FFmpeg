@@ -1,5 +1,5 @@
 /*
- * Misc image convertion routines
+ * Misc image conversion routines
  * Copyright (c) 2001, 2002, 2003 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file imgconvert.c
- * Misc image convertion routines.
+ * misc image conversion routines
  */
 
 /* TODO:
@@ -1852,7 +1852,7 @@ typedef struct ConvertEntry {
                     const AVPicture *src, int width, int height);
 } ConvertEntry;
 
-/* Add each new convertion function in this table. In order to be able
+/* Add each new conversion function in this table. In order to be able
    to convert from any format to any format, the following constraints
    must be satisfied:
 
