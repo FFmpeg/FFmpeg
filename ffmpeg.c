@@ -969,7 +969,7 @@ static void print_report(AVFormatContext **output_files,
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+        pts = (double)ost->st->pts.val * av_q2d(ost->st->time_base);
         if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
