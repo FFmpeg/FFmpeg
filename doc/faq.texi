@@ -417,10 +417,10 @@ see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
 see @url{http://svn.mplayerhq.hu/michael/trunk/docs/}
 
-@section how do I feed H.263-RTP (and other codecs in rtp) to libavcodec?
+@section how do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
 
 Even if peculiar since it is network oriented, RTP is a container like any
-other. You have to DEMUX RTP before feeding the payload to libavcodec.
-In this specific case please look at rfc 4629 to see how it should be done.
+other. You have to @emph{demux} RTP before feeding the payload to libavcodec.
+In this specific case please look at RFC 4629 to see how it should be done.
 
 @bye
