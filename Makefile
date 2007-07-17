@@ -102,10 +102,10 @@ version.h:
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
-tools/qt-faststart$(EXESUF): qt-faststart.c
+tools/qt-faststart$(EXESUF): tools/qt-faststart.c
 	$(CC) $(CFLAGS) $< -o $@
 
-tools/cws2fws$(EXESUF): cws2fws.c
+tools/cws2fws$(EXESUF): tools/cws2fws.c
 	$(CC) $(CFLAGS) $< -o $@ -lz
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
