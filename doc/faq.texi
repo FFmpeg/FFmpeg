@@ -425,6 +425,6 @@ Remove _ALL_ RTP trash and either feed the fragments through an AVParser and
 then into the decoder or merge the fragments yourself into proper frames and
 feed them into the decoder. Note: The payload of H.263-RTP is not valid
 H.263 you at least have to merge the first and last bytes discarding RTP trash
-from them, possibly more.
+from them, possibly more. Also look at rfc 4629.
 
 @bye
