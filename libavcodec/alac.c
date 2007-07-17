@@ -466,6 +466,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
     int readsamplesize;
     int wasted_bytes;
     int isnotcompressed;
+    uint8_t interlacing_shift;
+    uint8_t interlacing_leftweight;
 
     /* short-circuit null buffers */
     if (!inbuffer || !input_buffer_size)
@@ -625,8 +627,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
         break;
     }
     case 2: { /* 2 channels */
-        uint8_t interlacing_shift;
-        uint8_t interlacing_leftweight;
 
         if (!isnotcompressed) {
          /* compressed */
