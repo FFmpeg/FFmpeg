@@ -406,10 +406,8 @@ The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
 
 @section I tried to pass RTP packets into a decoder, but it doesn't work.
 
-Of course not, you MUST strip ALL RTP headers and assemble valid packets
-first, an MP3 decoder decodes MP3 packets not bastardized MP3 packets
-encapsulated in RTP. The same applies to all decoders, this is not specific
-to ffmpeg or libavcodec.
+RTP is a container format like any other, you must first depacketize the
+codec frames/samples stored in RTP and then feed to the decoder.
 
 @section Where can I find libav* headers for Pascal/Delphi?
 
@@ -419,12 +417,10 @@ see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
 see @url{http://svn.mplayerhq.hu/michael/trunk/docs/}
 
-@section how do I feed H.263-RTP (and likely other RTP bastardizations of codecs) to libavcodec?
+@section how do I feed H.263-RTP (and other codecs in rtp) to libavcodec?
 
-Remove _ALL_ RTP trash and either feed the fragments through an AVParser and
-then into the decoder or merge the fragments yourself into proper frames and
-feed them into the decoder. Note: The payload of H.263-RTP is not valid
-H.263 you at least have to merge the first and last bytes discarding RTP trash
-from them, possibly more. Also look at rfc 4629.
+Even if peculiar since it is network oriented, RTP is a container like any
+other. You have to DEMUX RTP before feeding the payload to libavcodec.
+In this specific case please look at rfc 4629 to see how it should be done.
 
 @bye
