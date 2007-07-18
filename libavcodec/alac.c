@@ -399,7 +399,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     }
 }
 
-static void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
+static void deinterlace_16(int32_t *buffer[MAX_CHANNELS],
                            int16_t *buffer_out,
                            int numchannels, int numsamples,
                            uint8_t interlacing_shift,
@@ -416,8 +416,8 @@ static void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
             int16_t left;
             int16_t right;
 
-            midright = buffer_a[i];
-            difference = buffer_b[i];
+            midright = buffer[0][i];
+            difference = buffer[1][i];
 
 
             right = midright - ((difference * interlacing_leftweight) >> interlacing_shift);
@@ -434,8 +434,8 @@ static void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
     for (i = 0; i < numsamples; i++) {
         int16_t left, right;
 
-        left = buffer_a[i];
-        right = buffer_b[i];
+        left = buffer[0][i];
+        right = buffer[1][i];
 
         buffer_out[i*numchannels] = left;
         buffer_out[i*numchannels + 1] = right;
@@ -602,8 +602,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     switch(alac->setinfo_sample_size) {
     case 16: {
         if (channels == 2) {
-            deinterlace_16(alac->outputsamples_buffer[0],
-                           alac->outputsamples_buffer[1],
+            deinterlace_16(alac->outputsamples_buffer,
                            (int16_t*)outbuffer,
                            alac->numchannels,
                            outputsamples,
