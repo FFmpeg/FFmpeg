@@ -321,9 +321,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             int32_t val;
 
             val = buffer_out[i] + error_buffer[i+1];
-
             val = SIGN_EXTENDED32(val, readsamplesize);
-
             buffer_out[i+1] = val;
         }
 
@@ -341,7 +339,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         return;
     }
 #endif
-
 
     /* general case */
     if (predictor_coef_num > 0) {
@@ -561,8 +558,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
                                                prediction_quantitization[chan]);
             } else {
                 av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[chan]);
-                /* i think the only other prediction type (or perhaps this is just a
-                 * boolean?) runs adaptive fir twice.. like:
+                /* I think the only other prediction type (or perhaps this is
+                 * just a boolean?) runs adaptive fir twice.. like:
                  * predictor_decompress_fir_adapt(predictor_error, tempout, ...)
                  * predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
                  * little strange..
@@ -573,7 +570,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
         /* not compressed, easy case */
         if (alac->setinfo_sample_size <= 16) {
             int i, chan;
-            for (chan = 0; chan < channels; chan++) {
+            for (chan = 0; chan < channels; chan++)
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
@@ -582,10 +579,9 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
-            }
         } else {
             int i, chan;
-            for (chan = 0; chan < channels; chan++) {
+            for (chan = 0; chan < channels; chan++)
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
@@ -598,7 +594,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
-            }
         }
         /* wasted_bytes = 0; */
         interlacing_shift = 0;
