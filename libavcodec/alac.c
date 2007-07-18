@@ -119,12 +119,13 @@ static int alac_set_info(ALACContext *alac)
 
     /* buffer size / 2 ? */
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
-    alac->setinfo_7a = *ptr++;
-    alac->setinfo_sample_size = *ptr++;
-    alac->setinfo_rice_historymult = *ptr++;
-    alac->setinfo_rice_initialhistory = *ptr++;
-    alac->setinfo_rice_kmodifier = *ptr++;
-    alac->setinfo_7f = *ptr++; // channels?
+    alac->setinfo_7a                    = *ptr++;
+    alac->setinfo_sample_size           = *ptr++;
+    alac->setinfo_rice_historymult      = *ptr++;
+    alac->setinfo_rice_initialhistory   = *ptr++;
+    alac->setinfo_rice_kmodifier        = *ptr++;
+    /* channels? */
+    alac->setinfo_7f                    = *ptr++;
     alac->setinfo_80                    = bytestream_get_be16(&ptr);
     /* max coded frame size */
     alac->setinfo_82                    = bytestream_get_be32(&ptr);
