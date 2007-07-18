@@ -412,19 +412,16 @@ static void deinterlace_16(int32_t *buffer[MAX_CHANNELS],
     /* weighted interlacing */
     if (interlacing_leftweight) {
         for (i = 0; i < numsamples; i++) {
-            int32_t difference, midright;
-            int16_t left;
-            int16_t right;
+            int32_t a, b;
 
-            midright = buffer[0][i];
-            difference = buffer[1][i];
+            a = buffer[0][i];
+            b = buffer[1][i];
 
+            a -= (b * interlacing_leftweight) >> interlacing_shift;
+            b += a;
 
-            right = midright - ((difference * interlacing_leftweight) >> interlacing_shift);
-            left = right + difference;
-
-            buffer_out[i*numchannels] = left;
-            buffer_out[i*numchannels + 1] = right;
+            buffer_out[i*numchannels] = b;
+            buffer_out[i*numchannels + 1] = a;
         }
 
         return;
