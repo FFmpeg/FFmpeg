@@ -16,7 +16,7 @@
 #ifdef DEBUG
 #define dbgprintf printf
 #else
-#define dbgprintf
+#define dbgprintf(...)
 #endif
 
 int main(int argc, char *argv[])
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        dbgprintf("a_in: %d t_in: %d a_out: %d t_out: %d -- %d out\n",
+        dbgprintf("a_in: %d t_in: %lu a_out: %d t_out: %lu -- %lu out\n",
             zstream.avail_in, zstream.total_in, zstream.avail_out, zstream.total_out,
             zstream.total_out-last_out);
 
@@ -111,13 +111,13 @@ int main(int argc, char *argv[])
 
     if (zstream.total_out != uncomp_len-8)
     {
-        printf("Size mismatch (%d != %d), updating header...\n",
+        printf("Size mismatch (%lu != %d), updating header...\n",
             zstream.total_out, uncomp_len-8);
 
         buf_in[0] = (zstream.total_out+8) & 0xff;
-        buf_in[1] = (zstream.total_out+8 >> 8) & 0xff;
-        buf_in[2] = (zstream.total_out+8 >> 16) & 0xff;
-        buf_in[3] = (zstream.total_out+8 >> 24) & 0xff;
+        buf_in[1] = ((zstream.total_out+8) >> 8) & 0xff;
+        buf_in[2] = ((zstream.total_out+8) >> 16) & 0xff;
+        buf_in[3] = ((zstream.total_out+8) >> 24) & 0xff;
 
         lseek(fd_out, 4, SEEK_SET);
         write(fd_out, &buf_in, 4);
