@@ -531,8 +531,9 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 
         //Init the encoder state
         for(i=0; i<avctx->channels; i++){
+            c->status[i].step_index = av_clip(c->status[i].step_index, 0, 63); // clip step so it fits 6 bits
             put_bits(&pb, 16, samples[i] & 0xFFFF);
-            put_bits(&pb, 6, c->status[i].step_index & 0x3F);
+            put_bits(&pb, 6, c->status[i].step_index);
             c->status[i].prev_sample = (signed short)samples[i];
         }
 
