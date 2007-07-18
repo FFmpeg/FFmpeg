@@ -139,17 +139,9 @@ static int alac_set_info(ALACContext *alac)
     return 0;
 }
 
-/* hideously inefficient. could use a bitmask search,
- * alternatively bsr on x86,
- */
-static int count_leading_zeros(int32_t input)
+static inline int count_leading_zeros(int32_t input)
 {
-    int i = 0;
-    while (!(0x80000000 & input) && i < 32) {
-        i++;
-        input = input << 1;
-    }
-    return i;
+    return 31-av_log2(input);
 }
 
 static void bastardized_rice_decompress(ALACContext *alac,
