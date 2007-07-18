@@ -421,8 +421,7 @@ static void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
 
 
             right = midright - ((difference * interlacing_leftweight) >> interlacing_shift);
-            left = (midright - ((difference * interlacing_leftweight) >> interlacing_shift))
-                 + difference;
+            left = right + difference;
 
             buffer_out[i*numchannels] = left;
             buffer_out[i*numchannels + 1] = right;
