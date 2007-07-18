@@ -514,122 +514,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         *outputsize = outputsamples * alac->bytespersample;
         readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
 
-    switch(channels) {
-    case 1: { /* 1 channel */
-        int ricemodifier;
-
         if (!isnotcompressed) {
          /* so it is compressed */
-            int16_t predictor_coef_table[32];
-            int predictor_coef_num;
-            int prediction_type;
-            int prediction_quantitization;
-            int i;
-
-            /* FIXME: skip 16 bits, not sure what they are. seem to be used in
-             * two channel case */
-            get_bits(&alac->gb, 8);
-            get_bits(&alac->gb, 8);
-
-            prediction_type = get_bits(&alac->gb, 4);
-            prediction_quantitization = get_bits(&alac->gb, 4);
-
-            ricemodifier = get_bits(&alac->gb, 3);
-            predictor_coef_num = get_bits(&alac->gb, 5);
-
-            /* read the predictor table */
-            for (i = 0; i < predictor_coef_num; i++) {
-                predictor_coef_table[i] = (int16_t)get_bits(&alac->gb, 16);
-            }
-
-            if (wasted_bytes) {
-                /* these bytes seem to have something to do with
-                 * > 2 channel files.
-                 */
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
-            }
-
-            bastardized_rice_decompress(alac,
-                                        alac->predicterror_buffer[0],
-                                        outputsamples,
-                                        readsamplesize,
-                                        alac->setinfo_rice_initialhistory,
-                                        alac->setinfo_rice_kmodifier,
-                                        ricemodifier * alac->setinfo_rice_historymult / 4,
-                                        (1 << alac->setinfo_rice_kmodifier) - 1);
-
-            if (prediction_type == 0) {
-              /* adaptive fir */
-                predictor_decompress_fir_adapt(alac->predicterror_buffer[0],
-                                               alac->outputsamples_buffer[0],
-                                               outputsamples,
-                                               readsamplesize,
-                                               predictor_coef_table,
-                                               predictor_coef_num,
-                                               prediction_quantitization);
-            } else {
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type);
-                /* i think the only other prediction type (or perhaps this is just a
-                 * boolean?) runs adaptive fir twice.. like:
-                 * predictor_decompress_fir_adapt(predictor_error, tempout, ...)
-                 * predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
-                 * little strange..
-                 */
-            }
-
-        } else {
-          /* not compressed, easy case */
-            if (readsamplesize <= 16) {
-                int i;
-                for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits = get_bits(&alac->gb, readsamplesize);
-
-                    audiobits = SIGN_EXTENDED32(audiobits, readsamplesize);
-
-                    alac->outputsamples_buffer[0][i] = audiobits;
-                }
-            } else {
-                int i;
-                for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits;
-
-                    audiobits = get_bits(&alac->gb, 16);
-                    /* special case of sign extension..
-                     * as we'll be ORing the low 16bits into this */
-                    audiobits = audiobits << 16;
-                    audiobits = audiobits >> (32 - readsamplesize);
-
-                    audiobits |= get_bits(&alac->gb, readsamplesize - 16);
-
-                    alac->outputsamples_buffer[0][i] = audiobits;
-                }
-            }
-            /* wasted_bytes = 0; // unused */
-        }
-
-        switch(alac->setinfo_sample_size) {
-        case 16: {
-            int i;
-            for (i = 0; i < outputsamples; i++) {
-                int16_t sample = alac->outputsamples_buffer[0][i];
-                ((int16_t*)outbuffer)[i * alac->numchannels] = sample;
-            }
-            break;
-        }
-        case 20:
-        case 24:
-        case 32:
-            av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented sample size %i\n", alac->setinfo_sample_size);
-            break;
-        default:
-            break;
-        }
-        break;
-    }
-    case 2: { /* 2 channels */
-
-        if (!isnotcompressed) {
-         /* compressed */
             int16_t predictor_coef_table[channels][32];
             int predictor_coef_num[channels];
             int prediction_type[channels];
@@ -655,7 +541,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
           }
 
             if (wasted_bytes) {
-              /* see mono case */
                 av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
             }
 
@@ -679,8 +564,13 @@ static int alac_decode_frame(AVCodecContext *avctx,
                                                predictor_coef_num[chan],
                                                prediction_quantitization[chan]);
             } else {
-              /* see mono case */
                 av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[chan]);
+                /* i think the only other prediction type (or perhaps this is just a
+                 * boolean?) runs adaptive fir twice.. like:
+                 * predictor_decompress_fir_adapt(predictor_error, tempout, ...)
+                 * predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
+                 * little strange..
+                 */
             }
           }
         } else {
@@ -692,7 +582,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
                     int32_t audiobits;
 
                     audiobits = get_bits(&alac->gb, alac->setinfo_sample_size);
-                    audiobits = SIGN_EXTENDED32(audiobits, alac->setinfo_sample_size);
+                    audiobits = SIGN_EXTENDED32(audiobits, readsamplesize);
+
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
               }
@@ -703,6 +594,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
                     int32_t audiobits;
 
                     audiobits = get_bits(&alac->gb, 16);
+                    /* special case of sign extension..
+                     * as we'll be ORing the low 16bits into this */
                     audiobits = audiobits << 16;
                     audiobits = audiobits >> (32 - alac->setinfo_sample_size);
                     audiobits |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
@@ -718,6 +611,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
         switch(alac->setinfo_sample_size) {
         case 16: {
+          if (channels == 2) {
             deinterlace_16(alac->outputsamples_buffer[0],
                            alac->outputsamples_buffer[1],
                            (int16_t*)outbuffer,
@@ -725,6 +619,13 @@ static int alac_decode_frame(AVCodecContext *avctx,
                            outputsamples,
                            interlacing_shift,
                            interlacing_leftweight);
+          } else {
+              int i;
+              for (i = 0; i < outputsamples; i++) {
+                  int16_t sample = alac->outputsamples_buffer[0][i];
+                  ((int16_t*)outbuffer)[i * alac->numchannels] = sample;
+              }
+          }
             break;
         }
         case 20:
@@ -736,9 +637,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
             break;
         }
 
-        break;
-    }
-    }
 
     return input_buffer_size;
 }
