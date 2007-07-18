@@ -170,7 +170,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
 
         if (x > 8) { /* RICE THRESHOLD */
-          /* use alternative encoding */
+            /* use alternative encoding */
             int32_t value;
 
             value = get_bits(&alac->gb, readsamplesize);
@@ -181,7 +181,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
             x = value;
         } else {
-          /* standard rice encoding */
+            /* standard rice encoding */
             int extrabits;
             int k; /* size of extra bits */
 
@@ -202,9 +202,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
                 if (extrabits > 1) {
                     x += extrabits - 1;
                     get_bits(&alac->gb, k);
-                } else {
+                } else
                     get_bits(&alac->gb, k - 1);
-                }
             }
         }
 
@@ -217,8 +216,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
         sign_modifier = 0;
 
         /* now update the history */
-        history += (x_modified * rice_historymult)
-                 - ((history * rice_historymult) >> 9);
+        history += x_modified * rice_historymult
+                   - ((history * rice_historymult) >> 9);
 
         if (x_modified > 0xffff)
             history = 0xffff;
@@ -260,7 +259,6 @@ static void bastardized_rice_decompress(ALACContext *alac,
             if (block_size > 0) {
                 memset(&output_buffer[output_count+1], 0, block_size * 4);
                 output_count += block_size;
-
             }
 
             if (block_size > 0xffff)
@@ -292,7 +290,9 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     *buffer_out = *error_buffer;
 
     if (!predictor_coef_num) {
-        if (output_size <= 1) return;
+        if (output_size <= 1)
+            return;
+
         memcpy(buffer_out+1, error_buffer+1, (output_size-1) * 4);
         return;
     }
@@ -301,21 +301,22 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
       /* second-best case scenario for fir decompression,
        * error describes a small difference from the previous sample only
        */
-        if (output_size <= 1) return;
+        if (output_size <= 1)
+            return;
         for (i = 0; i < output_size - 1; i++) {
             int32_t prev_value;
             int32_t error_value;
 
             prev_value = buffer_out[i];
             error_value = error_buffer[i+1];
-            buffer_out[i+1] = SIGN_EXTENDED32((prev_value + error_value), readsamplesize);
+            buffer_out[i+1] =
+                SIGN_EXTENDED32((prev_value + error_value), readsamplesize);
         }
         return;
     }
 
     /* read warm-up samples */
-    if (predictor_coef_num > 0) {
-        int i;
+    if (predictor_coef_num > 0)
         for (i = 0; i < predictor_coef_num; i++) {
             int32_t val;
 
@@ -325,7 +326,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
             buffer_out[i+1] = val;
         }
-    }
 
 #if 0
     /* 4 and 8 are very common cases (the only ones i've seen). these
@@ -345,9 +345,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
     /* general case */
     if (predictor_coef_num > 0) {
-        for (i = predictor_coef_num + 1;
-             i < output_size;
-             i++) {
+        for (i = predictor_coef_num + 1; i < output_size; i++) {
             int j;
             int sum = 0;
             int outval;
@@ -405,13 +403,14 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 }
 
 static void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
-                    int16_t *buffer_out,
-                    int numchannels, int numsamples,
-                    uint8_t interlacing_shift,
-                    uint8_t interlacing_leftweight)
+                           int16_t *buffer_out,
+                           int numchannels, int numsamples,
+                           uint8_t interlacing_shift,
+                           uint8_t interlacing_leftweight)
 {
     int i;
-    if (numsamples <= 0) return;
+    if (numsamples <= 0)
+        return;
 
     /* weighted interlacing */
     if (interlacing_leftweight) {
@@ -533,9 +532,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
             predictor_coef_num[chan] = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
-            for (i = 0; i < predictor_coef_num[chan]; i++) {
+            for (i = 0; i < predictor_coef_num[chan]; i++)
                 predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
-            }
         }
 
         if (wasted_bytes) {
