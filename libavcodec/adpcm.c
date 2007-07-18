@@ -183,7 +183,13 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = BLKSIZE;
         break;
     case CODEC_ID_ADPCM_SWF:
-        avctx->frame_size = 4*BLKSIZE * avctx->channels;
+        if (avctx->sample_rate != 11025 &&
+            avctx->sample_rate != 22050 &&
+            avctx->sample_rate != 44100) {
+            av_log(avctx, AV_LOG_ERROR, "Sample rate must be 11025, 22050 or 44100\n");
+            return -1;
+        }
+        avctx->frame_size = 512 * (avctx->sample_rate / 11025);
         break;
     default:
         return -1;
@@ -530,13 +536,13 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             c->status[i].prev_sample = (signed short)samples[i];
         }
 
-        for (i=0 ; i<4096 ; i++) {
+        for (i=0; i<avctx->frame_size; i++) {
             put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
             if (avctx->channels == 2)
                 put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
         }
-
-        dst += (3 + 2048) * avctx->channels;
+        flush_put_bits(&pb);
+        dst += put_bits_count(&pb)>>3;
         break;
     }
     case CODEC_ID_ADPCM_MS:
