@@ -298,6 +298,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
+    case 0x121111:
+        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
+        break;
     case 0x211111:
     case 0x221212:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;

@@ -120,6 +120,14 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 2, .y_chroma_shift = 0,
     },
+    [PIX_FMT_YUV440P] = {
+        .name = "yuv440p",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_YUV,
+        .pixel_type = FF_PIXEL_PLANAR,
+        .depth = 8,
+        .x_chroma_shift = 0, .y_chroma_shift = 1,
+    },
 
     /* JPEG YUV */
     [PIX_FMT_YUVJ420P] = {
@@ -145,6 +153,14 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_YUVJ440P] = {
+        .name = "yuvj440p",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_YUV_JPEG,
+        .pixel_type = FF_PIXEL_PLANAR,
+        .depth = 8,
+        .x_chroma_shift = 0, .y_chroma_shift = 1,
     },
 
     /* RGB formats */
@@ -417,9 +433,11 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUV410P:
     case PIX_FMT_YUV411P:
+    case PIX_FMT_YUV440P:
     case PIX_FMT_YUVJ420P:
     case PIX_FMT_YUVJ422P:
     case PIX_FMT_YUVJ444P:
+    case PIX_FMT_YUVJ440P:
         w2 = (width + (1 << pinfo->x_chroma_shift) - 1) >> pinfo->x_chroma_shift;
         h2 = (height + (1 << pinfo->y_chroma_shift) - 1) >> pinfo->y_chroma_shift;
         size2 = w2 * h2;
@@ -1438,6 +1456,20 @@ static void grow21(uint8_t *dst, int dst_wrap,
     }
 }
 
+/* 1x1 -> 1x2 */
+static void grow12(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height-=2) {
+        memcpy(dst, src, width);
+        dst += dst_wrap;
+        memcpy(dst, src, width);
+        dst += dst_wrap;
+        src += src_wrap;
+    }
+}
+
 /* 1x1 -> 2x2 */
 static void grow22(uint8_t *dst, int dst_wrap,
                    const uint8_t *src, int src_wrap,
@@ -2389,6 +2421,9 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             break;
         case 0xf0:
             resize_func = grow21;
+            break;
+        case 0x0f:
+            resize_func = grow12;
             break;
         case 0xe0:
             resize_func = grow41;
