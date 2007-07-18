@@ -124,6 +124,7 @@ untested special converters
         || (x)==PIX_FMT_RGB8        \
         || (x)==PIX_FMT_BGR4_BYTE   \
         || (x)==PIX_FMT_RGB4_BYTE   \
+        || (x)==PIX_FMT_YUV440P     \
     )
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
@@ -351,6 +352,8 @@ char *sws_format_name(enum PixelFormat format)
             return "nv12";
         case PIX_FMT_NV21:
             return "nv21";
+        case PIX_FMT_YUV440P:
+            return "yuv440p";
         default:
             return "Unknown format";
     }
@@ -1882,6 +1885,10 @@ static void getSubSampleFactors(int *h, int *v, int format){
         *h=1;
         *v=1;
         break;
+    case PIX_FMT_YUV440P:
+        *h=0;
+        *v=1;
+        break;
     case PIX_FMT_YUV410P:
         *h=2;
         *v=2;
@@ -2001,6 +2008,9 @@ static int handle_jpeg(int *format)
             return 1;
         case PIX_FMT_YUVJ444P:
             *format = PIX_FMT_YUV444P;
+            return 1;
+        case PIX_FMT_YUVJ440P:
+            *format = PIX_FMT_YUV440P;
             return 1;
         default:
             return 0;

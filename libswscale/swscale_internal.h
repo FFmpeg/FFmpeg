@@ -193,6 +193,7 @@ char *sws_format_name(int format);
         || (x)==PIX_FMT_YUV411P     \
         || (x)==PIX_FMT_YUV422P     \
         || (x)==PIX_FMT_YUV444P     \
+        || (x)==PIX_FMT_YUV440P     \
         || (x)==PIX_FMT_NV12        \
         || (x)==PIX_FMT_NV21        \
     )
