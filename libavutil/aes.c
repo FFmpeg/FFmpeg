@@ -24,6 +24,8 @@
 #include "aes.h"
 
 typedef struct AVAES{
+    // Note: round_key[16] is accessed in the init code, but this only
+    // overwrites state, which does not matter (see also r7471).
     uint8_t round_key[15][4][4];
     uint8_t state[2][4][4];
     int rounds;
