@@ -491,6 +491,11 @@ static int alac_decode_frame(AVCodecContext *avctx,
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
     channels = get_bits(&alac->gb, 3) + 1;
+    if (channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "channels > %d not supported\n",
+               MAX_CHANNELS);
+        return input_buffer_size;
+    }
 
     /* 2^result = something to do with output waiting.
      * perhaps matters if we read > 1 frame in a pass?
