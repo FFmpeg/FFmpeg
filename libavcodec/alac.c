@@ -492,43 +492,43 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     channels = get_bits(&alac->gb, 3) + 1;
 
-        /* 2^result = something to do with output waiting.
-         * perhaps matters if we read > 1 frame in a pass?
-         */
-        get_bits(&alac->gb, 4);
+    /* 2^result = something to do with output waiting.
+     * perhaps matters if we read > 1 frame in a pass?
+     */
+    get_bits(&alac->gb, 4);
 
-        get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
+    get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
 
-        hassize = get_bits(&alac->gb, 1); /* the output sample size is stored soon */
+    /* the output sample size is stored soon */
+    hassize = get_bits(&alac->gb, 1);
 
-        wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
+    wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
 
-        isnotcompressed = get_bits(&alac->gb, 1); /* whether the frame is compressed */
+    /* whether the frame is compressed */
+    isnotcompressed = get_bits(&alac->gb, 1);
 
-        if (hassize) {
-            /* now read the number of samples,
-             * as a 32bit integer */
-            outputsamples = get_bits(&alac->gb, 32);
-        } else
-            outputsamples = alac->setinfo_max_samples_per_frame;
+    if (hassize) {
+        /* now read the number of samples as a 32bit integer */
+        outputsamples = get_bits(&alac->gb, 32);
+    } else
+        outputsamples = alac->setinfo_max_samples_per_frame;
 
-        *outputsize = outputsamples * alac->bytespersample;
-        readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
+    *outputsize = outputsamples * alac->bytespersample;
+    readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
 
-        if (!isnotcompressed) {
-         /* so it is compressed */
-            int16_t predictor_coef_table[channels][32];
-            int predictor_coef_num[channels];
-            int prediction_type[channels];
-            int prediction_quantitization[channels];
-            int ricemodifier[channels];
+    if (!isnotcompressed) {
+        /* so it is compressed */
+        int16_t predictor_coef_table[channels][32];
+        int predictor_coef_num[channels];
+        int prediction_type[channels];
+        int prediction_quantitization[channels];
+        int ricemodifier[channels];
+        int i, chan;
 
-            int i, chan;
+        interlacing_shift = get_bits(&alac->gb, 8);
+        interlacing_leftweight = get_bits(&alac->gb, 8);
 
-            interlacing_shift = get_bits(&alac->gb, 8);
-            interlacing_leftweight = get_bits(&alac->gb, 8);
-
-          for (chan = 0; chan < channels; chan++) {
+        for (chan = 0; chan < channels; chan++) {
             prediction_type[chan] = get_bits(&alac->gb, 4);
             prediction_quantitization[chan] = get_bits(&alac->gb, 4);
 
@@ -539,13 +539,13 @@ static int alac_decode_frame(AVCodecContext *avctx,
             for (i = 0; i < predictor_coef_num[chan]; i++) {
                 predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
             }
-          }
+        }
 
-            if (wasted_bytes) {
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
-            }
+        if (wasted_bytes) {
+            av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
+        }
 
-          for (chan = 0; chan < channels; chan++) {
+        for (chan = 0; chan < channels; chan++) {
             bastardized_rice_decompress(alac,
                                         alac->predicterror_buffer[chan],
                                         outputsamples,
@@ -556,7 +556,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
                                         (1 << alac->setinfo_rice_kmodifier) - 1);
 
             if (prediction_type[chan] == 0) {
-              /* adaptive fir */
+                /* adaptive fir */
                 predictor_decompress_fir_adapt(alac->predicterror_buffer[chan],
                                                alac->outputsamples_buffer[chan],
                                                outputsamples,
@@ -573,12 +573,12 @@ static int alac_decode_frame(AVCodecContext *avctx,
                  * little strange..
                  */
             }
-          }
-        } else {
-         /* not compressed, easy case */
-            if (alac->setinfo_sample_size <= 16) {
-                int i, chan;
-              for (chan = 0; chan < channels; chan++) {
+        }
+    } else {
+        /* not compressed, easy case */
+        if (alac->setinfo_sample_size <= 16) {
+            int i, chan;
+            for (chan = 0; chan < channels; chan++) {
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
@@ -587,10 +587,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
-              }
-            } else {
-                int i, chan;
-              for (chan = 0; chan < channels; chan++) {
+            }
+        } else {
+            int i, chan;
+            for (chan = 0; chan < channels; chan++) {
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
@@ -603,16 +603,16 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
-              }
             }
-            /* wasted_bytes = 0; */
-            interlacing_shift = 0;
-            interlacing_leftweight = 0;
         }
+        /* wasted_bytes = 0; */
+        interlacing_shift = 0;
+        interlacing_leftweight = 0;
+    }
 
-        switch(alac->setinfo_sample_size) {
-        case 16: {
-          if (channels == 2) {
+    switch(alac->setinfo_sample_size) {
+    case 16: {
+        if (channels == 2) {
             deinterlace_16(alac->outputsamples_buffer[0],
                            alac->outputsamples_buffer[1],
                            (int16_t*)outbuffer,
@@ -620,24 +620,23 @@ static int alac_decode_frame(AVCodecContext *avctx,
                            outputsamples,
                            interlacing_shift,
                            interlacing_leftweight);
-          } else {
-              int i;
-              for (i = 0; i < outputsamples; i++) {
-                  int16_t sample = alac->outputsamples_buffer[0][i];
-                  ((int16_t*)outbuffer)[i * alac->numchannels] = sample;
-              }
-          }
-            break;
+        } else {
+            int i;
+            for (i = 0; i < outputsamples; i++) {
+                int16_t sample = alac->outputsamples_buffer[0][i];
+                ((int16_t*)outbuffer)[i * alac->numchannels] = sample;
+            }
         }
-        case 20:
-        case 24:
-        case 32:
-            av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented sample size %i\n", alac->setinfo_sample_size);
-            break;
-        default:
-            break;
-        }
-
+        break;
+    }
+    case 20:
+    case 24:
+    case 32:
+        av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented sample size %i\n", alac->setinfo_sample_size);
+        break;
+    default:
+        break;
+    }
 
     return input_buffer_size;
 }
