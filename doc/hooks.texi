@@ -86,6 +86,10 @@ Options:
 @item @option{-x <expression>}@tab x coordinate of text or image
 @item @option{-y <expression>}@tab y coordinate of text or image
 @item @option{-i <filename>}  @tab The filename to read a image from
+@item @option{-R <expression>}@tab Value for R color
+@item @option{-G <expression>}@tab Value for G color
+@item @option{-B <expression>}@tab Value for B color
+@item @option{-A <expression>}@tab Value for Alpha channel
 @end multitable
 
 Expressions are functions of these variables:
