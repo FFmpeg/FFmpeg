@@ -32,8 +32,6 @@
 #include <math.h>
 #include <string.h>
 
-#define ALT_BITSTREAM_READER
-
 #include "avcodec.h"
 #include "ac3.h"
 #include "ac3tab.h"
