@@ -115,3 +115,7 @@ e197450dae2feba9e757b551e1e9145c *./tests/data/b-libav-monob.yuv
  304128 ./tests/data/b-libav-monob.yuv
 7a319375916cae4e691ecb74295e5d2a *./tests/data/b-libav-pal8.yuv
  304128 ./tests/data/b-libav-pal8.yuv
+ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv440p.yuv
+ 304128 ./tests/data/b-libav-yuv440p.yuv
+14117c4d7956775a7bbceabfc38da808 *./tests/data/b-libav-yuvj440p.yuv
+ 304128 ./tests/data/b-libav-yuvj440p.yuv

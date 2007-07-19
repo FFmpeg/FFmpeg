@@ -2373,11 +2373,15 @@ tests/data/b-libav-yuv420p.yuv
 ----------------
 tests/data/b-libav-yuv422p.yuv
 ----------------
+tests/data/b-libav-yuv440p.yuv
+----------------
 tests/data/b-libav-yuv444p.yuv
 ----------------
 tests/data/b-libav-yuvj420p.yuv
 ----------------
 tests/data/b-libav-yuvj422p.yuv
+----------------
+tests/data/b-libav-yuvj440p.yuv
 ----------------
 tests/data/b-libav-yuvj444p.yuv
 ----------------

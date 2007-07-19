@@ -704,7 +704,7 @@ do_audio_only voc
 # pix_fmt conversions
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
-             monob pal8"
+             monob pal8 yuv440p yuvj440p"
 for pix_fmt in $conversions ; do
     file=${outfile}libav-${pix_fmt}.yuv
     do_ffmpeg_nocheck $file -r 1 -t 1 -y -f pgmyuv -i $raw_src \
