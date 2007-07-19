@@ -305,10 +305,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     case 0x221212:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
         break;
-    default:
     case 0x221111:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
         break;
+    default:
+        av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
+        return -1;
     }
     if(s->ls){
         if(s->nb_components > 1)
