@@ -607,6 +607,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
         picture2 = picture;
     }
 
+    if (ENABLE_VHOOK)
     frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height,
                        1000000 * ist->pts / AV_TIME_BASE);
 
@@ -2395,6 +2396,7 @@ static void opt_video_tag(const char *arg)
         video_codec_tag= arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
 }
 
+#ifdef CONFIG_VHOOK
 static void add_frame_hooker(const char *arg)
 {
     int argc = 0;
@@ -2415,6 +2417,7 @@ static void add_frame_hooker(const char *arg)
         exit(1);
     }
 }
+#endif
 
 static void opt_video_codec(const char *arg)
 {
@@ -3603,7 +3606,9 @@ const OptionDef options[] = {
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
+#ifdef CONFIG_VHOOK
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
+#endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
