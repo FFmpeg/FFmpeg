@@ -445,16 +445,16 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
     }
 }
 
-/* Decodes the grouped exponents.
+/**
+ * Decodes the grouped exponents.
  * This function decodes the coded exponents according to exponent strategy
  * and stores them in the decoded exponents buffer.
  *
- * @param gb GetBitContext which points to start of coded exponents
- * @param expstr Exponent coding strategy
- * @param ngrps Number of grouped exponetns
- * @param absexp Absolute exponent
- * @param dexps Decoded exponents are stored in dexps
- * @return Returns 0 if exponents are decoded successfully, -1 if error occurs
+ * @param[in]  gb      GetBitContext which points to start of coded exponents
+ * @param[in]  expstr  Exponent coding strategy
+ * @param[in]  ngrps   Number of grouped exponents
+ * @param[in]  absexp  Absolute exponent or DC exponent
+ * @param[out] dexps   Decoded exponents are stored in dexps
  */
 static void decode_exponents(GetBitContext *gb, int expstr, int ngrps,
                              uint8_t absexp, uint8_t *dexps)
