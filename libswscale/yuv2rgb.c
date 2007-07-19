@@ -39,6 +39,10 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
+#ifdef HAVE_VIS
+#include "yuv2rgb_vis.c"
+#endif
+
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
 #endif
@@ -628,6 +632,12 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
         case PIX_FMT_BGR565: return yuv420_rgb16_MMX;
         case PIX_FMT_BGR555: return yuv420_rgb15_MMX;
         }
+    }
+#endif
+#ifdef HAVE_VIS
+    {
+        SwsFunc t= yuv2rgb_init_vis(c);
+        if (t) return t;
     }
 #endif
 #ifdef HAVE_MLIB

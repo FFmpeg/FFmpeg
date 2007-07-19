@@ -177,6 +177,9 @@ typedef struct SwsContext{
     uint32_t gmask        __attribute__((aligned(4)));
 #endif
 
+#ifdef HAVE_VIS
+    uint64_t sparc_coeffs[10] __attribute__((aligned(8)));
+#endif
 
 } SwsContext;
 //FIXME check init (where 0)
