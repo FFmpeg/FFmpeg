@@ -71,7 +71,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, samplerate);
     st->start_time = 0;

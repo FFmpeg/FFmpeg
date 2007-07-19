@@ -312,7 +312,7 @@ static int aiff_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     while (filesize > 0) {
         /* parse different chunks */

@@ -200,7 +200,7 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
 
     st = av_new_stream (s, idx);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, 1000000);
 

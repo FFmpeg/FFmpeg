@@ -130,7 +130,7 @@ static int film_read_header(AVFormatContext *s,
     if (film->video_type) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         film->video_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         st->codec->codec_id = film->video_type;
@@ -142,7 +142,7 @@ static int film_read_header(AVFormatContext *s,
     if (film->audio_type) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         film->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = film->audio_type;
@@ -223,14 +223,14 @@ static int film_read_packet(AVFormatContext *s,
         (film->video_type == CODEC_ID_CINEPAK)) {
         pkt->pos= url_ftell(pb);
         if (av_new_packet(pkt, sample->sample_size))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         get_buffer(pb, pkt->data, sample->sample_size);
     } else if ((sample->stream == film->audio_stream_index) &&
         (film->audio_channels == 2)) {
         /* stereo PCM needs to be interleaved */
 
         if (av_new_packet(pkt, sample->sample_size))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
 
         /* make sure the interleave buffer is large enough */
         if (sample->sample_size > film->stereo_buffer_size) {

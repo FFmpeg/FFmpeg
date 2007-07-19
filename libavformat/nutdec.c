@@ -293,7 +293,7 @@ static int decode_stream_header(NUTContext *nut){
 
     st = s->streams[stream_id];
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     class = get_v(bc);
     tmp = get_fourcc(bc);

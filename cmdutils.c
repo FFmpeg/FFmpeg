@@ -138,7 +138,7 @@ void print_error(const char *filename, int err)
                 "Usually that means that input file is truncated and/or corrupted.\n",
                 filename);
         break;
-    case AVERROR_NOMEM:
+    case AVERROR(ENOMEM):
         fprintf(stderr, "%s: memory allocation error occured\n", filename);
         break;
     case AVERROR_NOENT:

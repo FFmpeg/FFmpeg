@@ -176,7 +176,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                 if (!avs->st_video) {
                     avs->st_video = av_new_stream(s, AVS_VIDEO);
                     if (avs->st_video == NULL)
-                        return AVERROR_NOMEM;
+                        return AVERROR(ENOMEM);
                     avs->st_video->codec->codec_type = CODEC_TYPE_VIDEO;
                     avs->st_video->codec->codec_id = CODEC_ID_AVS;
                     avs->st_video->codec->width = avs->width;
@@ -193,7 +193,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                 if (!avs->st_audio) {
                     avs->st_audio = av_new_stream(s, AVS_AUDIO);
                     if (avs->st_audio == NULL)
-                        return AVERROR_NOMEM;
+                        return AVERROR(ENOMEM);
                     avs->st_audio->codec->codec_type = CODEC_TYPE_AUDIO;
                 }
                 avs->remaining_audio_size = size - 4;

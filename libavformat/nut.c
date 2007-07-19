@@ -952,7 +952,7 @@ static int decode_stream_header(NUTContext *nut){
 
     st = av_new_stream(s, stream_id);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     class = get_v(bc);
     tmp = get_vb(bc);

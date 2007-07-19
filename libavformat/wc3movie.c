@@ -238,7 +238,7 @@ static int wc3_read_header(AVFormatContext *s,
     /* initialize the decoder streams */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, 90000);
     wc3->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -252,7 +252,7 @@ static int wc3_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, 90000);
     wc3->audio_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_AUDIO;

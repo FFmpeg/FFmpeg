@@ -95,7 +95,7 @@ static int mm_read_header(AVFormatContext *s,
     /* video stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_MMVIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
@@ -108,7 +108,7 @@ static int mm_read_header(AVFormatContext *s,
     if (length == MM_HEADER_LEN_AV) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_tag = 0; /* no fourcc */
         st->codec->codec_id = CODEC_ID_PCM_U8;
@@ -168,7 +168,7 @@ static int mm_read_packet(AVFormatContext *s,
         case MM_TYPE_INTER_HHV :
             /* output preamble + data */
             if (av_new_packet(pkt, length + MM_PREAMBLE_SIZE))
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             memcpy(pkt->data, preamble, MM_PREAMBLE_SIZE);
             if (get_buffer(pb, pkt->data + MM_PREAMBLE_SIZE, length) != length)
                 return AVERROR_IO;
@@ -179,7 +179,7 @@ static int mm_read_packet(AVFormatContext *s,
 
         case MM_TYPE_AUDIO :
             if (av_get_packet(&s->pb, pkt, length)<0)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             pkt->size = length;
             pkt->stream_index = 1;
             pkt->pts = mm->audio_pts++;

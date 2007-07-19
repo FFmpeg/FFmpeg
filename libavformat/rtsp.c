@@ -1044,7 +1044,7 @@ static int rtsp_read_header(AVFormatContext *s,
         rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
 
         if (!rtsp_st->rtp_ctx) {
-            err = AVERROR_NOMEM;
+            err = AVERROR(ENOMEM);
             goto fail;
         } else {
             if(rtsp_st->dynamic_handler) {
@@ -1384,7 +1384,7 @@ static int sdp_read_header(AVFormatContext *s,
             s->ctx_flags |= AVFMTCTX_NOHEADER;
         rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
         if (!rtsp_st->rtp_ctx) {
-            err = AVERROR_NOMEM;
+            err = AVERROR(ENOMEM);
             goto fail;
         } else {
             if(rtsp_st->dynamic_handler) {

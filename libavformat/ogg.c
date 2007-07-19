@@ -216,7 +216,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
 
     ast = av_new_stream(avfcontext, 0) ;
     if(!ast)
-        return AVERROR_NOMEM ;
+        return AVERROR(ENOMEM) ;
     av_set_pts_info(ast, 60, 1, AV_TIME_BASE);
 
     codec= &ast->codec;

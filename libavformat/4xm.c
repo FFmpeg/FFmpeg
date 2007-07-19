@@ -116,7 +116,7 @@ static int fourxm_read_header(AVFormatContext *s,
     /* allocate space for the header and load the whole thing */
     header = av_malloc(header_size);
     if (!header)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     if (get_buffer(pb, header, header_size) != header_size)
         return AVERROR_IO;
 
@@ -140,7 +140,7 @@ static int fourxm_read_header(AVFormatContext *s,
             /* allocate a new AVStream */
             st = av_new_stream(s, 0);
             if (!st)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             av_set_pts_info(st, 60, 1, fourxm->fps);
 
             fourxm->video_stream_index = st->index;
@@ -166,7 +166,7 @@ static int fourxm_read_header(AVFormatContext *s,
                     fourxm->track_count * sizeof(AudioTrack));
                 if (!fourxm->tracks) {
                     av_free(header);
-                    return AVERROR_NOMEM;
+                    return AVERROR(ENOMEM);
                 }
             }
             fourxm->tracks[current_track].adpcm = AV_RL32(&header[i + 12]);
@@ -178,7 +178,7 @@ static int fourxm_read_header(AVFormatContext *s,
             /* allocate a new AVStream */
             st = av_new_stream(s, current_track);
             if (!st)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
 
             av_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
 

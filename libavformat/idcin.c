@@ -151,7 +151,7 @@ static int idcin_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, 90000);
     idcin->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -174,7 +174,7 @@ static int idcin_read_header(AVFormatContext *s,
         idcin->audio_present = 1;
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, 90000);
         idcin->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;

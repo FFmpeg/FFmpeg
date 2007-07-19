@@ -195,10 +195,10 @@ int av_new_packet(AVPacket *pkt, int size)
 {
     uint8_t *data;
     if((unsigned)size > (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     av_init_packet(pkt);
@@ -233,10 +233,10 @@ int av_dup_packet(AVPacket *pkt)
         /* we duplicate the packet and don't forget to put the padding
            again */
         if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!data) {
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         }
         memcpy(data, pkt->data, pkt->size);
         memset(data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
@@ -358,7 +358,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     else
         ic = *ic_ptr;
     if (!ic) {
-        err = AVERROR_NOMEM;
+        err = AVERROR(ENOMEM);
         goto fail;
     }
     ic->iformat = fmt;
@@ -372,7 +372,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     if (fmt->priv_data_size > 0) {
         ic->priv_data = av_mallocz(fmt->priv_data_size);
         if (!ic->priv_data) {
-            err = AVERROR_NOMEM;
+            err = AVERROR(ENOMEM);
             goto fail;
         }
     } else {
@@ -868,13 +868,13 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
             /* duplicate the packet */
             if (av_dup_packet(pkt) < 0)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
 
             while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
 
             pktl = av_mallocz(sizeof(AVPacketList));
             if (!pktl)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
 
             /* add the packet in the buffered packet list */
             *plast_pktl = pktl;
@@ -1727,7 +1727,7 @@ int av_find_stream_info(AVFormatContext *ic)
     int codec_identified[MAX_STREAMS]={0};
 
     duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
-    if (!duration_error) return AVERROR_NOMEM;
+    if (!duration_error) return AVERROR(ENOMEM);
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -1807,7 +1807,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
         pktl = av_mallocz(sizeof(AVPacketList));
         if (!pktl) {
-            ret = AVERROR_NOMEM;
+            ret = AVERROR(ENOMEM);
             break;
         }
 
@@ -1820,7 +1820,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
         /* duplicate the packet */
         if (av_dup_packet(pkt) < 0) {
-            ret = AVERROR_NOMEM;
+            ret = AVERROR(ENOMEM);
             break;
         }
 
@@ -2088,7 +2088,7 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
     if (s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
     } else
         s->priv_data = NULL;
 
@@ -2143,7 +2143,7 @@ int av_write_header(AVFormatContext *s)
     if (!s->priv_data && s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
     }
 
     if(s->oformat->write_header){

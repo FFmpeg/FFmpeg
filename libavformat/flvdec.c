@@ -237,14 +237,14 @@ static int flv_read_header(AVFormatContext *s,
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
     }
     if(flags & FLV_HEADER_FLAG_HASAUDIO){
         st = av_new_stream(s, 1);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
     }

@@ -95,7 +95,7 @@ static int seq_init_frame_buffers(SeqDemuxContext *seq, ByteIOContext *pb)
             seq_buffer->data_size = sz;
             seq_buffer->data = av_malloc(sz);
             if (!seq_buffer->data)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
         }
     }
     seq->frame_buffers_count = i;
@@ -208,7 +208,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 32, 1, SEQ_FRAME_RATE);
     seq->video_stream_index = st->index;
@@ -221,7 +221,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 32, 1, SEQ_SAMPLE_RATE);
     seq->audio_stream_index = st->index;
@@ -251,7 +251,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* video packet */
         if (seq->current_pal_data_size + seq->current_video_data_size != 0) {
             if (av_new_packet(pkt, 1 + seq->current_pal_data_size + seq->current_video_data_size))
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
 
             pkt->data[0] = 0;
             if (seq->current_pal_data_size != 0) {

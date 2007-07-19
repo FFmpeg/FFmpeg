@@ -184,7 +184,7 @@ static int ea_read_header(AVFormatContext *s,
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, 90000);
     ea->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -195,7 +195,7 @@ static int ea_read_header(AVFormatContext *s,
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, EA_SAMPLE_RATE);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_ADPCM_EA;

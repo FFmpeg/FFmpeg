@@ -138,7 +138,7 @@ static int wsaud_read_header(AVFormatContext *s,
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = wsaud->audio_type;
@@ -223,7 +223,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -249,7 +249,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (AV_RL16(&header[0]) == 1)

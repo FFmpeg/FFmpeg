@@ -140,7 +140,7 @@ static int roq_read_header(AVFormatContext *s,
     /* initialize the decoders */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     /* set the pts reference (1 pts = 1/90000) */
     av_set_pts_info(st, 33, 1, 90000);
     roq->video_stream_index = st->index;
@@ -153,7 +153,7 @@ static int roq_read_header(AVFormatContext *s,
     if (roq->audio_channels) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, 90000);
         roq->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;

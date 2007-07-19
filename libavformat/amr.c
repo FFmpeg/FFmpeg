@@ -87,7 +87,7 @@ static int amr_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
     {
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     if(memcmp(header,AMR_header,6)!=0)
     {

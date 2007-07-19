@@ -176,7 +176,7 @@ static int wav_read_header(AVFormatContext *s,
         return -1;
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     get_wav_header(pb, st->codec, size);
     st->need_parsing = AVSTREAM_PARSE_FULL;

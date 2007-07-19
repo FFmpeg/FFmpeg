@@ -551,7 +551,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     /* initialize the stream decoders */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, 90000);
     ipmovie->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -566,7 +566,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     if (ipmovie->audio_type) {
         st = av_new_stream(s, 0);
         if (!st)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, 90000);
         ipmovie->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -598,7 +598,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     else if (ret == CHUNK_EOF)
         ret = AVERROR_IO;
     else if (ret == CHUNK_NOMEM)
-        ret = AVERROR_NOMEM;
+        ret = AVERROR(ENOMEM);
     else if (ret == CHUNK_VIDEO)
         ret = 0;
     else

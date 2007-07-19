@@ -71,7 +71,7 @@ static int vid_read_header(AVFormatContext *s,
 
     stream = av_new_stream(s, 0);
     if (!stream)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
     stream->codec->codec_type = CODEC_TYPE_VIDEO;
     stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
@@ -84,7 +84,7 @@ static int vid_read_header(AVFormatContext *s,
     // done with video codec, set up audio codec
     stream = av_new_stream(s, 0);
     if (!stream)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     stream->codec->codec_type = CODEC_TYPE_AUDIO;
     stream->codec->codec_id = CODEC_ID_PCM_U8;
     stream->codec->channels = 1;
@@ -108,7 +108,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
     if(!vidbuf_start)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     // save the file position for the packet, include block type
     position = url_ftell(pb) - 1;
@@ -128,7 +128,7 @@ static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
     do{
         vidbuf_start = av_fast_realloc(vidbuf_start, &vidbuf_capacity, vidbuf_nbytes + BUFFER_PADDING_SIZE);
         if(!vidbuf_start)
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
 
         code = get_byte(pb);
         vidbuf_start[vidbuf_nbytes++] = code;

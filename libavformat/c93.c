@@ -77,7 +77,7 @@ static int read_header(AVFormatContext *s,
 
     video = av_new_stream(s, 0);
     if (!video)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     video->codec->codec_type = CODEC_TYPE_VIDEO;
     video->codec->codec_id = CODEC_ID_C93;
@@ -115,7 +115,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!c93->audio) {
                 c93->audio = av_new_stream(s, 1);
                 if (!c93->audio)
-                    return AVERROR_NOMEM;
+                    return AVERROR(ENOMEM);
                 c93->audio->codec->codec_type = CODEC_TYPE_AUDIO;
             }
             url_fskip(pb, 26); /* VOC header */

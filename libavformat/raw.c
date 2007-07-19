@@ -72,7 +72,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
         id = s->iformat->value;
         if (id == CODEC_ID_RAWVIDEO) {
@@ -222,7 +222,7 @@ static int ac3_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_AC3;
@@ -238,7 +238,7 @@ static int shorten_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_SHORTEN;
     st->need_parsing = AVSTREAM_PARSE_FULL;
@@ -254,7 +254,7 @@ static int flac_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_FLAC;
     st->need_parsing = AVSTREAM_PARSE_FULL;
@@ -270,7 +270,7 @@ static int dts_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_DTS;
@@ -287,7 +287,7 @@ static int aac_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_AAC;
@@ -304,7 +304,7 @@ static int video_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->value;

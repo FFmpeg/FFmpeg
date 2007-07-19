@@ -290,7 +290,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             flags >>= 1;
         }
         if (av_new_packet(pkt, frame_size + 768))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         if(smk->frm_size[smk->cur_frame] & 1)
             palchange |= 2;
         pkt->data[0] = palchange;
@@ -304,7 +304,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         smk->nextpos = url_ftell(&s->pb);
     } else {
         if (av_new_packet(pkt, smk->buf_sizes[smk->curstream]))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         memcpy(pkt->data, smk->bufs[smk->curstream], smk->buf_sizes[smk->curstream]);
         pkt->size = smk->buf_sizes[smk->curstream];
         pkt->stream_index = smk->stream_id[smk->curstream];

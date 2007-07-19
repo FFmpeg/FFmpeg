@@ -96,7 +96,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st = av_new_stream(s, VIDEO_SID);
     if(!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = CODEC_TYPE_VIDEO;
@@ -111,7 +111,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st = av_new_stream(s, AUDIO_SID);
     if(!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
     st->codec->codec_type      = CODEC_TYPE_AUDIO;

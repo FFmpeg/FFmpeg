@@ -177,7 +177,7 @@ static int wv_read_packet(AVFormatContext *s,
     }
 
     if(av_new_packet(pkt, wc->blksize + WV_EXTRA_SIZE) < 0)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     memcpy(pkt->data, wc->extra, WV_EXTRA_SIZE);
     ret = get_buffer(&s->pb, pkt->data + WV_EXTRA_SIZE, wc->blksize);
     if(ret != wc->blksize){

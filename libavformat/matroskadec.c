@@ -485,7 +485,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
      * byte more, read the string and NULL-terminate it ourselves. */
     if (size < 0 || !(*str = av_malloc(size + 1))) {
         av_log(matroska->ctx, AV_LOG_ERROR, "Memory allocation failed\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     if (get_buffer(pb, (uint8_t *) *str, size) != size) {
         offset_t pos = url_ftell(pb);
@@ -581,7 +581,7 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
     if (!(*binary = av_malloc(*size))) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Memory allocation error\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
 
     if (get_buffer(pb, *binary, *size) != *size) {
@@ -2074,7 +2074,7 @@ matroska_read_header (AVFormatContext    *s,
                 int sri = matroska_aac_sri(audiotrack->internal_samplerate);
                 extradata = av_malloc(5);
                 if (extradata == NULL)
-                    return AVERROR_NOMEM;
+                    return AVERROR(ENOMEM);
                 extradata[0] = (profile << 3) | ((sri&0x0E) >> 1);
                 extradata[1] = ((sri&0x01) << 7) | (audiotrack->channels<<3);
                 if (strstr(track->codec_id, "SBR")) {
@@ -2095,7 +2095,7 @@ matroska_read_header (AVFormatContext    *s,
                 extradata_size = 30;
                 extradata = av_mallocz(extradata_size);
                 if (extradata == NULL)
-                    return AVERROR_NOMEM;
+                    return AVERROR(ENOMEM);
                 init_put_byte(&b, extradata, extradata_size, 1,
                               NULL, NULL, NULL, NULL);
                 put_buffer(&b, (uint8_t *) "TTA1", 4);
@@ -2164,7 +2164,7 @@ matroska_read_header (AVFormatContext    *s,
             matroska->num_streams++;
             st = av_new_stream(s, track->stream_index);
             if (st == NULL)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             av_set_pts_info(st, 64, matroska->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
             st->codec->codec_id = codec_id;
@@ -2182,7 +2182,7 @@ matroska_read_header (AVFormatContext    *s,
             } else if(track->codec_priv && track->codec_priv_size > 0){
                 st->codec->extradata = av_malloc(track->codec_priv_size);
                 if(st->codec->extradata == NULL)
-                    return AVERROR_NOMEM;
+                    return AVERROR(ENOMEM);
                 st->codec->extradata_size = track->codec_priv_size;
                 memcpy(st->codec->extradata,track->codec_priv+extradata_offset,
                        track->codec_priv_size);
@@ -2451,7 +2451,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     pkt = av_mallocz(sizeof(AVPacket));
                     /* XXX: prevent data copy... */
                     if (av_new_packet(pkt, slice_size-offset) < 0) {
-                        res = AVERROR_NOMEM;
+                        res = AVERROR(ENOMEM);
                         n = laces-1;
                         break;
                     }

@@ -108,7 +108,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 32, 1, 12);
     cin->video_stream_index = st->index;
@@ -121,7 +121,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 32, 1, 22050);
     cin->audio_stream_index = st->index;
@@ -178,7 +178,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt_size = (palette_type + 3) * hdr->pal_colors_count + hdr->video_frame_size;
 
         if (av_new_packet(pkt, 4 + pkt_size))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
 
         pkt->stream_index = cin->video_stream_index;
         pkt->pts = cin->video_stream_pts++;
@@ -198,7 +198,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* audio packet */
     if (av_new_packet(pkt, cin->audio_buffer_size))
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     pkt->stream_index = cin->audio_stream_index;
     pkt->pts = cin->audio_stream_pts;
