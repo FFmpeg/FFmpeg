@@ -3,10 +3,12 @@
  * This code is developed as part of Google Summer of Code 2006 Program.
  *
  * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
+ * Copyright (c) 2007 Justin Ruggles
  *
- * For exponent decoding the code is inspired by the code in liba52 by
- * Michel Lespinasse and Aaron Holtzman.
+ * Portions of this code are derived from liba52
  * http://liba52.sourceforge.net
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of FFmpeg.
  *
