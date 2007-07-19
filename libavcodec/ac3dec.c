@@ -1638,24 +1638,24 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     }
 
     if (bit_alloc_flags) {
-            /* set bit allocation parameters */
-            ctx->bit_alloc_params.fscod = ctx->fscod;
-            ctx->bit_alloc_params.halfratecod = 0;
-            ctx->bit_alloc_params.sdecay = ff_sdecaytab[ctx->sdcycod];
-            ctx->bit_alloc_params.fdecay = ff_fdecaytab[ctx->fdcycod];
-            ctx->bit_alloc_params.sgain = ff_sgaintab[ctx->sgaincod];
-            ctx->bit_alloc_params.dbknee = ff_dbkneetab[ctx->dbpbcod];
-            ctx->bit_alloc_params.floor = ff_floortab[ctx->floorcod];
-            ctx->bit_alloc_params.cplfleak = ctx->cplfleak;
-            ctx->bit_alloc_params.cplsleak = ctx->cplsleak;
+        /* set bit allocation parameters */
+        ctx->bit_alloc_params.fscod = ctx->fscod;
+        ctx->bit_alloc_params.halfratecod = 0;
+        ctx->bit_alloc_params.sdecay = ff_sdecaytab[ctx->sdcycod];
+        ctx->bit_alloc_params.fdecay = ff_fdecaytab[ctx->fdcycod];
+        ctx->bit_alloc_params.sgain = ff_sgaintab[ctx->sgaincod];
+        ctx->bit_alloc_params.dbknee = ff_dbkneetab[ctx->dbpbcod];
+        ctx->bit_alloc_params.floor = ff_floortab[ctx->floorcod];
+        ctx->bit_alloc_params.cplfleak = ctx->cplfleak;
+        ctx->bit_alloc_params.cplsleak = ctx->cplsleak;
 
-            if (ctx->chincpl && (bit_alloc_flags & 64))
-                do_bit_allocation(ctx, 5);
-            for (i = 0; i < nfchans; i++)
-                if ((bit_alloc_flags >> i) & 1)
-                    do_bit_allocation(ctx, i);
-            if (ctx->lfeon && (bit_alloc_flags & 32))
-                do_bit_allocation(ctx, 6);
+        if (ctx->chincpl && (bit_alloc_flags & 64))
+            do_bit_allocation(ctx, 5);
+        for (i = 0; i < nfchans; i++)
+            if ((bit_alloc_flags >> i) & 1)
+                do_bit_allocation(ctx, i);
+        if (ctx->lfeon && (bit_alloc_flags & 32))
+            do_bit_allocation(ctx, 6);
     }
 
     if (get_bits1(gb)) { /* unused dummy data */
