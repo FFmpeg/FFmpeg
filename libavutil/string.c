@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include "avstring.h"
@@ -61,4 +63,16 @@ size_t av_strlcat(char *dst, const char *src, size_t size)
     if (size <= len + 1)
         return len + strlen(src);
     return len + av_strlcpy(dst + len, src, size - len);
+}
+
+size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...)
+{
+    int len = strlen(dst);
+    va_list vl;
+
+    va_start(vl, fmt);
+    len += vsnprintf(dst + len, size > len ? size - len : 0, fmt, vl);
+    va_end(vl);
+
+    return len;
 }
