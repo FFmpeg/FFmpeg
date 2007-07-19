@@ -2000,14 +2000,14 @@ int av_find_stream_info(AVFormatContext *ic)
 int av_read_play(AVFormatContext *s)
 {
     if (!s->iformat->read_play)
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     return s->iformat->read_play(s);
 }
 
 int av_read_pause(AVFormatContext *s)
 {
     if (!s->iformat->read_pause)
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     return s->iformat->read_pause(s);
 }
 

@@ -547,7 +547,7 @@ ebml_read_master (MatroskaDemuxContext *matroska,
     if (matroska->num_levels >= EBML_MAX_DEPTH) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "File moves beyond max. allowed depth (%d)\n", EBML_MAX_DEPTH);
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     }
 
     /* remember level */
