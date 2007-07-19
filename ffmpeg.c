@@ -849,7 +849,6 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
 {
     AVCodecContext *enc;
     int frame_number;
-    int64_t ti;
     double ti1, bitrate, avg_bitrate;
 
     /* this is executed just the first time do_video_stats is called */
@@ -861,7 +860,6 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         }
     }
 
-    ti = INT64_MAX;
     enc = ost->st->codec;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
