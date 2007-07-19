@@ -46,9 +46,8 @@ static const int nfchans_tbl[8] = { 2, 1, 2, 3, 3, 4, 4, 5 };
  */
 static float scale_factors[25];
 
-static int8_t exp_1[128];
-static int8_t exp_2[128];
-static int8_t exp_3[128];
+/** table for grouping exponents */
+static uint8_t exp_ungroup_tbl[128][3];
 
 static int16_t l3_quantizers_1[32];
 static int16_t l3_quantizers_2[32];
@@ -267,30 +266,7 @@ static void generate_quantizers_table_3(int16_t quantizers[], int level, int len
  */
 static void ac3_tables_init(void)
 {
-    int i, j, v;
-
-    /* Exponent Decoding Tables */
-    for (i = 0; i < 5; i++) {
-        v = i - 2;
-        for (j = 0; j < 25; j++)
-            exp_1[i * 25 + j] = v;
-    }
-
-    for (i = 0; i < 25; i++) {
-        v = (i % 5) - 2;
-        for (j = 0; j < 5; j++)
-            exp_2[i * 5 + j] = v;
-    }
-
-    for (i = 0; i < 25; i++) {
-        v = -2;
-        for (j = 0; j < 5; j++)
-            exp_3[i * 5 + j] = v++;
-    }
-
-    for (i = 125; i < 128; i++)
-        exp_1[i] = exp_2[i] = exp_3[i] = 25;
-    /* End Exponent Decoding Tables */
+    int i;
 
     /* Quantizer ungrouping tables. */
     // for level-3 quantizers
@@ -317,6 +293,14 @@ static void ac3_tables_init(void)
     //generate scale factors
     for (i = 0; i < 25; i++)
         scale_factors[i] = pow(2.0, -(i + 15));
+
+    /* generate exponent tables
+       reference: Section 7.1.3 Exponent Decoding */
+    for(i=0; i<128; i++) {
+        exp_ungroup_tbl[i][0] =  i / 25;
+        exp_ungroup_tbl[i][1] = (i % 25) / 5;
+        exp_ungroup_tbl[i][2] = (i % 25) % 5;
+    }
 }
 
 
@@ -472,60 +456,30 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
  * @param dexps Decoded exponents are stored in dexps
  * @return Returns 0 if exponents are decoded successfully, -1 if error occurs
  */
-static int decode_exponents(GetBitContext *gb, int expstr, int ngrps, uint8_t absexp, uint8_t *dexps)
+static void decode_exponents(GetBitContext *gb, int expstr, int ngrps,
+                             uint8_t absexp, uint8_t *dexps)
 {
-    int exps;
+    int i, j, grp, grpsize;
+    int dexp[256];
+    int expacc, prevexp;
 
-    while (ngrps--) {
-        exps = get_bits(gb, 7);
-
-        absexp += exp_1[exps];
-        if (absexp > 24) {
-            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
-            return -ngrps;
-        }
-        switch (expstr) {
-            case EXP_D45:
-                *(dexps++) = absexp;
-                *(dexps++) = absexp;
-            case EXP_D25:
-                *(dexps++) = absexp;
-            case EXP_D15:
-                *(dexps++) = absexp;
-        }
-
-        absexp += exp_2[exps];
-        if (absexp > 24) {
-            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
-            return -ngrps;
-        }
-        switch (expstr) {
-            case EXP_D45:
-                *(dexps++) = absexp;
-                *(dexps++) = absexp;
-            case EXP_D25:
-                *(dexps++) = absexp;
-            case EXP_D15:
-                *(dexps++) = absexp;
-        }
-
-        absexp += exp_3[exps];
-        if (absexp > 24) {
-            av_log(NULL, AV_LOG_ERROR, "Absolute Exponent > 24, ngrp = %d\n", ngrps);
-            return -ngrps;
-        }
-        switch (expstr) {
-            case EXP_D45:
-                *(dexps++) = absexp;
-                *(dexps++) = absexp;
-            case EXP_D25:
-                *(dexps++) = absexp;
-            case EXP_D15:
-                *(dexps++) = absexp;
-        }
+    /* unpack groups */
+    grpsize = expstr + (expstr == EXP_D45);
+    for(grp=0,i=0; grp<ngrps; grp++) {
+        expacc = get_bits(gb, 7);
+        dexp[i++] = exp_ungroup_tbl[expacc][0];
+        dexp[i++] = exp_ungroup_tbl[expacc][1];
+        dexp[i++] = exp_ungroup_tbl[expacc][2];
     }
 
-    return 0;
+    /* convert to absolute exps and expand groups */
+    prevexp = absexp;
+    for(i=0; i<ngrps*3; i++) {
+        prevexp = av_clip(prevexp + dexp[i]-2, 0, 24);
+        for(j=0; j<grpsize; j++) {
+            dexps[(i*grpsize)+j] = prevexp;
+        }
+    }
 }
 
 /* Performs bit allocation.
@@ -1536,10 +1490,7 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
         bit_alloc_flags = 64;
         cplabsexp = get_bits(gb, 4) << 1;
         ngrps = (ctx->cplendmant - ctx->cplstrtmant) / (3 << (ctx->cplexpstr - 1));
-        if (decode_exponents(gb, ctx->cplexpstr, ngrps, cplabsexp, ctx->dcplexps + ctx->cplstrtmant)) {
-            av_log(NULL, AV_LOG_ERROR, "error decoding coupling exponents\n");
-            return -1;
-        }
+        decode_exponents(gb, ctx->cplexpstr, ngrps, cplabsexp, ctx->dcplexps + ctx->cplstrtmant);
     }
 
     for (i = 0; i < nfchans; i++) /* fbw channel exponents */
@@ -1549,20 +1500,14 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
             ngrps = (ctx->endmant[i] + grpsize - 4) / grpsize;
             dexps = ctx->dexps[i];
             dexps[0] = get_bits(gb, 4);
-            if (decode_exponents(gb, ctx->chexpstr[i], ngrps, dexps[0], dexps + 1)) {
-                av_log(NULL, AV_LOG_ERROR, "error decoding channel %d exponents\n", i);
-                return -1;
-            }
+            decode_exponents(gb, ctx->chexpstr[i], ngrps, dexps[0], dexps + 1);
             skip_bits(gb, 2); /* skip gainrng */
         }
 
     if (ctx->lfeexpstr != EXP_REUSE) { /* lfe exponents */
         bit_alloc_flags |= 32;
         ctx->dlfeexps[0] = get_bits(gb, 4);
-        if (decode_exponents(gb, ctx->lfeexpstr, 2, ctx->dlfeexps[0], ctx->dlfeexps + 1)) {
-            av_log(NULL, AV_LOG_ERROR, "error decoding lfe exponents\n");
-            return -1;
-        }
+        decode_exponents(gb, ctx->lfeexpstr, 2, ctx->dlfeexps[0], ctx->dlfeexps + 1);
     }
 
     if (get_bits1(gb)) { /* bit allocation information */
