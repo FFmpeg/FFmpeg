@@ -123,7 +123,7 @@ static int wsaud_read_header(AVFormatContext *s,
     unsigned char header[AUD_HEADER_SIZE];
 
     if (get_buffer(pb, header, AUD_HEADER_SIZE) != AUD_HEADER_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     wsaud->audio_samplerate = AV_RL16(&header[0]);
     if (header[11] == 99)
         wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
@@ -167,7 +167,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
     if (get_buffer(pb, preamble, AUD_CHUNK_PREAMBLE_SIZE) !=
         AUD_CHUNK_PREAMBLE_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* validate the chunk */
     if (AV_RL32(&preamble[4]) != AUD_CHUNK_SIGNATURE)
@@ -176,7 +176,7 @@ static int wsaud_read_packet(AVFormatContext *s,
     chunk_size = AV_RL16(&preamble[0]);
     ret= av_get_packet(pb, pkt, chunk_size);
     if (ret != chunk_size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     pkt->stream_index = wsaud->audio_stream_index;
     pkt->pts = wsaud->audio_frame_counter;
     pkt->pts /= wsaud->audio_samplerate;
@@ -240,7 +240,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     if (get_buffer(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
         av_free(st->codec->extradata);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     st->codec->width = AV_RL16(&header[6]);
     st->codec->height = AV_RL16(&header[8]);
@@ -279,7 +279,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     do {
         if (get_buffer(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
             av_free(st->codec->extradata);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         chunk_tag = AV_RB32(&scratch[0]);
         chunk_size = AV_RB32(&scratch[4]);
@@ -330,11 +330,11 @@ static int wsvqa_read_packet(AVFormatContext *s,
         if ((chunk_type == SND1_TAG) || (chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
             if (av_new_packet(pkt, chunk_size))
-                return AVERROR_IO;
+                return AVERROR(EIO);
             ret = get_buffer(pb, pkt->data, chunk_size);
             if (ret != chunk_size) {
                 av_free_packet(pkt);
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
 
             if (chunk_type == SND2_TAG) {

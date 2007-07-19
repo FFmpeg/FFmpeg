@@ -886,7 +886,7 @@ static int rtsp_read_header(AVFormatContext *s,
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
     if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     rt->rtsp_hd = rtsp_hd;
     rt->seq = 0;
 
@@ -1199,7 +1199,7 @@ static int rtsp_read_packet(AVFormatContext *s,
         break;
     }
     if (len < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
     if (ret < 0)
         goto redo;
@@ -1473,7 +1473,7 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f)
     }
     *ic_ptr = ic;
     if (!ic)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     else
         return 0;
 }

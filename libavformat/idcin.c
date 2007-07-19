@@ -165,7 +165,7 @@ static int idcin_read_header(AVFormatContext *s,
     st->codec->extradata = av_malloc(HUFFMAN_TABLE_SIZE);
     if (get_buffer(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE) !=
         HUFFMAN_TABLE_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     /* save a reference in order to transport the palette */
     st->codec->palctrl = &idcin->palctrl;
 
@@ -222,17 +222,17 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned char palette_buffer[768];
 
     if (url_feof(&s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     if (idcin->next_chunk_is_video) {
         command = get_le32(pb);
         if (command == 2) {
-            return AVERROR_IO;
+            return AVERROR(EIO);
         } else if (command == 1) {
             /* trigger a palette change */
             idcin->palctrl.palette_changed = 1;
             if (get_buffer(pb, palette_buffer, 768) != 768)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             /* scale the palette as necessary */
             palette_scale = 2;
             for (i = 0; i < 768; i++)
@@ -255,7 +255,7 @@ static int idcin_read_packet(AVFormatContext *s,
         chunk_size -= 4;
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         pkt->stream_index = idcin->video_stream_index;
         pkt->pts = idcin->pts;
     } else {
@@ -266,7 +266,7 @@ static int idcin_read_packet(AVFormatContext *s,
             chunk_size = idcin->audio_chunk_size1;
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         pkt->stream_index = idcin->audio_stream_index;
         pkt->pts = idcin->pts;
 

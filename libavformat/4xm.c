@@ -118,7 +118,7 @@ static int fourxm_read_header(AVFormatContext *s,
     if (!header)
         return AVERROR(ENOMEM);
     if (get_buffer(pb, header, header_size) != header_size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* take the lazy approach and search for any and all vtrk and strk chunks */
     for (i = 0; i < header_size - 8; i++) {
@@ -235,7 +235,7 @@ static int fourxm_read_packet(AVFormatContext *s,
         fourcc_tag = AV_RL32(&header[0]);
         size = AV_RL32(&header[4]);
         if (url_feof(pb))
-            return AVERROR_IO;
+            return AVERROR(EIO);
         switch (fourcc_tag) {
 
         case LIST_TAG:
@@ -253,7 +253,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             /* allocate 8 more bytes than 'size' to account for fourcc
              * and size */
             if (size + 8 < size || av_new_packet(pkt, size + 8))
-                return AVERROR_IO;
+                return AVERROR(EIO);
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;
             pkt->pos = url_ftell(&s->pb);
@@ -275,7 +275,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             if (track_number == fourxm->selected_track) {
                 ret= av_get_packet(&s->pb, pkt, size);
                 if(ret<0)
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
                 pkt->stream_index =
                     fourxm->tracks[fourxm->selected_track].stream_index;
                 pkt->pts = fourxm->audio_pts;

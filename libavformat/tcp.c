@@ -98,7 +98,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
  fail:
-    ret = AVERROR_IO;
+    ret = AVERROR(EIO);
  fail1:
     if (fd >= 0)
         closesocket(fd);

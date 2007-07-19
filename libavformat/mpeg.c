@@ -232,7 +232,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         last_sync = url_ftell(&s->pb);
     //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     if (startcode == PACK_START_CODE)
         goto redo;
     if (startcode == SYSTEM_HEADER_START_CODE)

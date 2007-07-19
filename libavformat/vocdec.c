@@ -73,7 +73,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     while (!voc->remaining_size) {
         type = get_byte(pb);
         if (type == VOC_TYPE_EOF)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         voc->remaining_size = get_le24(pb);
         max_size -= 4;
 

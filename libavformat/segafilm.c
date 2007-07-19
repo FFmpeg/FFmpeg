@@ -89,7 +89,7 @@ static int film_read_header(AVFormatContext *s,
 
     /* load the main FILM header */
     if (get_buffer(pb, scratch, 16) != 16)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     data_offset = AV_RB32(&scratch[4]);
     film->version = AV_RB32(&scratch[8]);
 
@@ -97,7 +97,7 @@ static int film_read_header(AVFormatContext *s,
     if (film->version == 0) {
         /* special case for Lemmings .film files; 20-byte header */
         if (get_buffer(pb, scratch, 20) != 20)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         /* make some assumptions about the audio parameters */
         film->audio_type = CODEC_ID_PCM_S8;
         film->audio_samplerate = 22050;
@@ -106,7 +106,7 @@ static int film_read_header(AVFormatContext *s,
     } else {
         /* normal Saturn .cpk files; 32-byte header */
         if (get_buffer(pb, scratch, 32) != 32)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         film->audio_samplerate = AV_RB16(&scratch[24]);;
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
@@ -158,7 +158,7 @@ static int film_read_header(AVFormatContext *s,
 
     /* load the sample table */
     if (get_buffer(pb, scratch, 16) != 16)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     if (AV_RB32(&scratch[0]) != STAB_TAG)
         return AVERROR_INVALIDDATA;
     film->base_clock = AV_RB32(&scratch[8]);
@@ -175,7 +175,7 @@ static int film_read_header(AVFormatContext *s,
         /* load the next sample record and transfer it to an internal struct */
         if (get_buffer(pb, scratch, 16) != 16) {
             av_free(film->sample_table);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         film->sample_table[i].sample_offset =
             data_offset + AV_RB32(&scratch[0]);
@@ -211,7 +211,7 @@ static int film_read_packet(AVFormatContext *s,
     int left, right;
 
     if (film->current_sample >= film->sample_count)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     sample = &film->sample_table[film->current_sample];
 
@@ -242,7 +242,7 @@ static int film_read_packet(AVFormatContext *s,
         pkt->pos= url_ftell(pb);
         ret = get_buffer(pb, film->stereo_buffer, sample->sample_size);
         if (ret != sample->sample_size)
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
 
         left = 0;
         right = sample->sample_size / 2;
@@ -260,7 +260,7 @@ static int film_read_packet(AVFormatContext *s,
     } else {
         ret= av_get_packet(pb, pkt, sample->sample_size);
         if (ret != sample->sample_size)
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
     }
 
     pkt->stream_index = sample->stream;

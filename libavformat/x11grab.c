@@ -80,7 +80,7 @@ typedef struct x11_grab_s
  * @param ap Parameters from avformat core
  * @return <ul>
  *          <li>ENOMEM no memory left</li>
- *          <li>AVERROR_IO other failure case</li>
+ *          <li>AVERROR(EIO) other failure case</li>
  *          <li>0 success</li>
  *         </ul>
  */
@@ -109,12 +109,12 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     dpy = XOpenDisplay(param);
     if(!dpy) {
         av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "AVParameters don't have any video size. Use -s.\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     st = av_new_stream(s1, 0);
@@ -148,7 +148,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         if (!XShmAttach(dpy, &x11grab->shminfo)) {
             av_log(s1, AV_LOG_ERROR, "Fatal: Failed to attach shared memory!\n");
             /* needs some better error subroutine :) */
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
     } else {
         image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)),
@@ -176,7 +176,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         } else {
             av_log(s1, AV_LOG_ERROR, "RGB ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         break;
     case 24:
@@ -191,7 +191,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         } else {
             av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         break;
     case 32:
@@ -207,7 +207,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             input_pixfmt = PIX_FMT_ARGB32;
         }  else {
             av_log(s1, AV_LOG_ERROR,"image depth %i not supported ... aborting\n", image->bits_per_pixel);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
 #endif
         input_pixfmt = PIX_FMT_RGB32;
@@ -459,7 +459,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (av_new_packet(pkt, s->frame_size) < 0) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     pkt->pts = curtime;

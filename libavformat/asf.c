@@ -714,7 +714,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     //static int pc = 0;
     for (;;) {
         if(url_feof(pb))
-            return AVERROR_IO;
+            return AVERROR(EIO);
         if (asf->packet_size_left < FRAME_HEADER_SIZE
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
@@ -727,7 +727,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             asf->packet_pos= url_ftell(&s->pb);
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
-                return AVERROR_IO; /* Do not exceed the size of the data object */
+                return AVERROR(EIO); /* Do not exceed the size of the data object */
             ret = asf_get_packet(s);
             //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
             if (ret < 0)

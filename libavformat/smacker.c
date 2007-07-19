@@ -199,7 +199,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(ret != st->codec->extradata_size - 16){
         av_free(smk->frm_size);
         av_free(smk->frm_flags);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     ((int32_t*)st->codec->extradata)[0] = le2me_32(smk->mmap_size);
     ((int32_t*)st->codec->extradata)[1] = le2me_32(smk->mclr_size);
@@ -284,7 +284,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 smk->buf_sizes[smk->curstream] = size;
                 ret = get_buffer(&s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
                 smk->stream_id[smk->curstream] = smk->indexes[i];
             }
             flags >>= 1;
@@ -297,7 +297,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(pkt->data + 1, smk->pal, 768);
         ret = get_buffer(&s->pb, pkt->data + 769, frame_size);
         if(ret != frame_size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         pkt->stream_index = smk->videoindex;
         pkt->size = ret + 769;
         smk->cur_frame++;

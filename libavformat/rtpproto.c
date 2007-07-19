@@ -163,7 +163,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     if (s->rtcp_hd)
         url_close(s->rtcp_hd);
     av_free(s);
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int rtp_read(URLContext *h, uint8_t *buf, int size)
@@ -182,7 +182,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
             if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
                 ff_neterrno() == FF_NETERROR(EINTR))
                 continue;
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         break;
     }
@@ -206,7 +206,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                     if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
                         ff_neterrno() == FF_NETERROR(EINTR))
                         continue;
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
                 }
                 break;
             }
@@ -219,7 +219,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                     if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
                         ff_neterrno() == FF_NETERROR(EINTR))
                         continue;
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
                 }
                 break;
             }

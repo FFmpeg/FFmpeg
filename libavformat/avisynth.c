@@ -156,10 +156,10 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
   stream = &avs->streams[stream_id];
 
   if (stream->read >= stream->info.dwLength)
-    return AVERROR_IO;
+    return AVERROR(EIO);
 
   if (av_new_packet(pkt, stream->chunck_size))
-    return AVERROR_IO;
+    return AVERROR(EIO);
   pkt->stream_index = stream_id;
   pkt->pts = avs->streams[stream_id].read / avs->streams[stream_id].chunck_samples;
 

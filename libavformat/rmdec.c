@@ -220,7 +220,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* very old .ra format */
         return rm_read_header_old(s, ap);
     } else if (tag != MKTAG('.', 'R', 'M', 'F')) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     get_be32(pb); /* header size */
@@ -359,7 +359,7 @@ skip:
     for(i=0;i<s->nb_streams;i++) {
         av_free(s->streams[i]);
     }
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int get_num(ByteIOContext *pb, int *len)
@@ -468,7 +468,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             for (y = 0; y < rm->sub_packet_h; y++)
                 for (x = 0; x < rm->sub_packet_h/2; x++)
                     if (get_buffer(pb, rm->audiobuf+x*2*rm->audio_framesize+y*rm->coded_framesize, rm->coded_framesize) <= 0)
-                        return AVERROR_IO;
+                        return AVERROR(EIO);
             rm->audio_stream_num = 0;
             rm->audio_pkt_cnt = rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - 1;
             // Release first audio packet
@@ -482,7 +482,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             len= av_get_packet(pb, pkt, len);
             pkt->stream_index = 0;
             if (len <= 0) {
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
             pkt->size = len;
         }
@@ -491,7 +491,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 resync:
         len=sync(s, &timestamp, &flags, &i, &pos);
         if(len<0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         st = s->streams[i];
 
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {

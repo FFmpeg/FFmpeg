@@ -147,7 +147,7 @@ static int cin_read_frame_header(CinDemuxContext *cin, ByteIOContext *pb) {
     hdr->audio_frame_size = get_le32(pb);
 
     if (url_feof(pb) || url_ferror(pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     if (get_le32(pb) != 0xAA55AA55)
         return AVERROR_INVALIDDATA;
@@ -189,7 +189,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data[3] = hdr->video_frame_type;
 
         if (get_buffer(pb, &pkt->data[4], pkt_size) != pkt_size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         /* sound buffer will be processed on next read_packet() call */
         cin->audio_buffer_size = hdr->audio_frame_size;
@@ -205,7 +205,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
     cin->audio_stream_pts += cin->audio_buffer_size * 2 / cin->file_header.audio_frame_size;
 
     if (get_buffer(pb, pkt->data, cin->audio_buffer_size) != cin->audio_buffer_size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     cin->audio_buffer_size = 0;
     return 0;

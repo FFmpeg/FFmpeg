@@ -639,10 +639,10 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (tag == MKBETAG('C', 'W', 'S', 0))
     {
         av_log(s, AV_LOG_ERROR, "Compressed SWF format not supported\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     if (tag != MKBETAG('F', 'W', 'S', 0))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     get_le32(pb);
     /* skip rectangle size */
     nbits = get_byte(pb) >> 3;
@@ -684,7 +684,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->need_parsing = AVSTREAM_PARSE_FULL;
             sample_rate_code= (v>>2) & 3;
             if (!sample_rate_code)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             ast->codec->sample_rate = 11025 << (sample_rate_code-1);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             if (len > 4)
@@ -715,7 +715,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     for(;;) {
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         if (tag == TAG_VIDEOFRAME) {
             int ch_id = get_le16(pb);
             len -= 2;

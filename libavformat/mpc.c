@@ -148,7 +148,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     c->curbits = (curbits + size2) & 0x1F;
 
     if (av_new_packet(pkt, size) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     pkt->data[0] = curbits;
     pkt->data[1] = (c->curframe > c->fcount);
@@ -160,7 +160,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
         url_fseek(&s->pb, -4, SEEK_CUR);
     if(ret < size){
         av_free_packet(pkt);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     pkt->size = ret + 4;
 

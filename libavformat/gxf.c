@@ -473,7 +473,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         pkt->dts = field_nr;
         return ret;
     }
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {

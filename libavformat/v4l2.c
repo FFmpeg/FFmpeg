@@ -443,7 +443,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
         input.index = ap->channel;
         if(ioctl (s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
@@ -451,7 +451,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
         if(ioctl (s->fd, VIDIOC_S_INPUT, &input.index) < 0 ) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set input(%d) failed\n",
                    ap->channel);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
     }
 
@@ -465,7 +465,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
             if (ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
                 av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
                        ap->standard);
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
 
             if(!strcasecmp(standard.name, ap->standard)) {
@@ -478,7 +478,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
         if (ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
                    ap->standard);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
     }
 
@@ -526,7 +526,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (s->fd < 0) {
         av_free(st);
 
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
@@ -553,12 +553,12 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         close(s->fd);
         av_free(st);
 
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     s->frame_format = desired_format;
 
     if( v4l2_set_parameters( s1, ap ) < 0 )
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format);
     s->frame_size = avpicture_get_size(st->codec->pix_fmt, width, height);
@@ -576,7 +576,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         close(s->fd);
         av_free(st);
 
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     s->top_field_first = first_field(s->fd);
 
@@ -601,14 +601,14 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
         res = mmap_read_frame(s1, pkt);
     } else if (s->io_method == io_read) {
         if (av_new_packet(pkt, s->frame_size) < 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         res = read_frame(s1, pkt);
     } else {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     if (res < 0) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     if (s1->streams[0]->codec->coded_frame) {

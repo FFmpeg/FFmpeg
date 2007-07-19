@@ -179,7 +179,7 @@ static int vid_read_packet(AVFormatContext *s,
     int ret_value;
 
     if(vid->is_finished || url_feof(pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     block_type = get_byte(pb);
     switch(block_type){
@@ -188,7 +188,7 @@ static int vid_read_packet(AVFormatContext *s,
             ret_value = av_get_packet(pb, pkt, 3 * 256 + 1);
             if(ret_value != 3 * 256 + 1){
                 av_free_packet(pkt);
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
             pkt->stream_index = 0;
             return ret_value;
@@ -202,7 +202,7 @@ static int vid_read_packet(AVFormatContext *s,
             audio_length = get_le16(pb);
             ret_value = av_get_packet(pb, pkt, audio_length);
             pkt->stream_index = 1;
-            return (ret_value != audio_length ? AVERROR_IO : ret_value);
+            return (ret_value != audio_length ? AVERROR(EIO) : ret_value);
 
         case VIDEO_P_FRAME:
         case VIDEO_YOFF_P_FRAME:
@@ -214,7 +214,7 @@ static int vid_read_packet(AVFormatContext *s,
             if(vid->nframes != 0)
                 av_log(s, AV_LOG_VERBOSE, "reached terminating character but not all frames read.\n");
             vid->is_finished = 1;
-            return AVERROR_IO;
+            return AVERROR(EIO);
         default:
             av_log(s, AV_LOG_ERROR, "unknown block (character = %c, decimal = %d, hex = %x)!!!\n",
                    block_type, block_type, block_type); return -1;

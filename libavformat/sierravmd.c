@@ -89,7 +89,7 @@ static int vmd_read_header(AVFormatContext *s,
     /* fetch the main header, including the 2 header length bytes */
     url_fseek(pb, 0, SEEK_SET);
     if (get_buffer(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* start up the decoders */
     vst = av_new_stream(s, 0);
@@ -161,7 +161,7 @@ static int vmd_read_header(AVFormatContext *s,
         raw_frame_table_size) {
         av_free(raw_frame_table);
         av_free(vmd->frame_table);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     total_frames = 0;
@@ -250,7 +250,7 @@ static int vmd_read_packet(AVFormatContext *s,
     vmd_frame_t *frame;
 
     if (vmd->current_frame >= vmd->frame_count)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     frame = &vmd->frame_table[vmd->current_frame];
     /* position the stream (will probably be there already) */
@@ -265,7 +265,7 @@ static int vmd_read_packet(AVFormatContext *s,
 
     if (ret != frame->frame_size) {
         av_free_packet(pkt);
-        ret = AVERROR_IO;
+        ret = AVERROR(EIO);
     }
     pkt->stream_index = frame->stream_index;
     pkt->pts = frame->pts;

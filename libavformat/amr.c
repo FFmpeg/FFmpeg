@@ -122,7 +122,7 @@ static int amr_read_packet(AVFormatContext *s,
 
     if (url_feof(&s->pb))
     {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
 //FIXME this is wrong, this should rather be in a AVParset
@@ -148,7 +148,7 @@ static int amr_read_packet(AVFormatContext *s,
 
     if ( (size==0) || av_new_packet(pkt, size))
     {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     pkt->stream_index = 0;
@@ -160,7 +160,7 @@ static int amr_read_packet(AVFormatContext *s,
     if (read != size-1)
     {
         av_free_packet(pkt);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     return 0;

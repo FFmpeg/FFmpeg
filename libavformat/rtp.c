@@ -741,7 +741,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     max_packet_size = url_fget_max_packet_size(&s1->pb);
     if (max_packet_size <= 12)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     s->max_payload_size = max_packet_size - 12;
 
     switch(st->codec->codec_id) {

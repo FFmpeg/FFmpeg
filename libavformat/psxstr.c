@@ -142,7 +142,7 @@ static int str_read_header(AVFormatContext *s,
 
     /* skip over any RIFF header */
     if (get_buffer(pb, sector, RIFF_HEADER_SIZE) != RIFF_HEADER_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     if (AV_RL32(&sector[0]) == RIFF_TAG)
         start = RIFF_HEADER_SIZE;
     else
@@ -153,7 +153,7 @@ static int str_read_header(AVFormatContext *s,
     /* check through the first 32 sectors for individual channels */
     for (i = 0; i < 32; i++) {
         if (get_buffer(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
 //printf("%02x %02x %02x %02x\n",sector[0x10],sector[0x11],sector[0x12],sector[0x13]);
 
@@ -260,7 +260,7 @@ static int str_read_packet(AVFormatContext *s,
     while (!packet_read) {
 
         if (get_buffer(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         channel = sector[0x11];
         if (channel >= 32)
@@ -282,7 +282,7 @@ static int str_read_packet(AVFormatContext *s,
                 pkt = &str->tmp_pkt;
                 if (current_sector == 0) {
                     if (av_new_packet(pkt, frame_size))
-                        return AVERROR_IO;
+                        return AVERROR(EIO);
 
                     pkt->pos= url_ftell(pb) - RAW_CD_SECTOR_SIZE;
                     pkt->stream_index =
@@ -319,7 +319,7 @@ printf (" dropping audio sector\n");
             if (channel == str->audio_channel) {
                 pkt = ret_pkt;
                 if (av_new_packet(pkt, 2304))
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
                 memcpy(pkt->data,sector+24,2304);
 
                 pkt->stream_index =
@@ -338,7 +338,7 @@ printf (" dropping other sector\n");
         }
 
         if (url_feof(pb))
-            return AVERROR_IO;
+            return AVERROR(EIO);
     }
 
     return ret;

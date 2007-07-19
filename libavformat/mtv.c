@@ -122,7 +122,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* Jump over header */
 
     if(url_fseek(pb, MTV_HEADER_SIZE, SEEK_SET) != MTV_HEADER_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     return(0);
 
@@ -145,7 +145,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = av_get_packet(pb, pkt, MTV_ASUBCHUNK_DATA_SIZE);
         if(ret != MTV_ASUBCHUNK_DATA_SIZE)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         mtv->audio_packet_count++;
         pkt->stream_index = AUDIO_SID;
@@ -154,7 +154,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     {
         ret = av_get_packet(pb, pkt, mtv->img_segment_size);
         if(ret != mtv->img_segment_size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
 #ifndef WORDS_BIGENDIAN
 

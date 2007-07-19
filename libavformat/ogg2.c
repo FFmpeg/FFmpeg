@@ -540,7 +540,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
     //Get an ogg packet
     do{
         if (ogg_packet (s, &idx, &pstart, &psize) < 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
     }while (idx < 0 || !s->streams[idx]);
 
     ogg = s->priv_data;
@@ -548,7 +548,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
 
     //Alloc a pkt
     if (av_new_packet (pkt, psize) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     pkt->stream_index = idx;
     memcpy (pkt->data, os->buf + pstart, psize);
     if (os->lastgp != -1LL){

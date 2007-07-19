@@ -500,21 +500,21 @@ static int gif_parse_next_image(GifState *s)
         switch (code) {
         case ',':
             if (gif_read_image(s) < 0)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             ret = 0;
             goto the_end;
         case ';':
             /* end of image */
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
             goto the_end;
         case '!':
             if (gif_read_extension(s) < 0)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             break;
         case EOF:
         default:
             /* error or errneous EOF */
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
             goto the_end;
         }
     }
@@ -567,7 +567,7 @@ static int gif_read_packet(AVFormatContext * s1,
 
     /* XXX: avoid copying */
     if (av_new_packet(pkt, s->screen_width * s->screen_height * 3)) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     pkt->stream_index = 0;
     memcpy(pkt->data, s->image_buf, s->screen_width * s->screen_height * 3);

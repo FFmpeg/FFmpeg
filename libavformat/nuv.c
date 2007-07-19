@@ -225,7 +225,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 break;
         }
     }
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 AVInputFormat nuv_demuxer = {

@@ -136,7 +136,7 @@ static int mm_read_packet(AVFormatContext *s,
     while(1) {
 
         if (get_buffer(pb, preamble, MM_PREAMBLE_SIZE) != MM_PREAMBLE_SIZE) {
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
 
         type = AV_RL16(&preamble[0]);
@@ -146,7 +146,7 @@ static int mm_read_packet(AVFormatContext *s,
         case MM_TYPE_PALETTE :
             url_fseek(pb, 4, SEEK_CUR);  /* unknown data */
             if (get_buffer(pb, pal, MM_PALETTE_SIZE) != MM_PALETTE_SIZE)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             url_fseek(pb, length - (4 + MM_PALETTE_SIZE), SEEK_CUR);
 
             for (i=0; i<MM_PALETTE_COUNT; i++) {
@@ -171,7 +171,7 @@ static int mm_read_packet(AVFormatContext *s,
                 return AVERROR(ENOMEM);
             memcpy(pkt->data, preamble, MM_PREAMBLE_SIZE);
             if (get_buffer(pb, pkt->data + MM_PREAMBLE_SIZE, length) != length)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             pkt->size = length + MM_PREAMBLE_SIZE;
             pkt->stream_index = 0;
             pkt->pts = mm->video_pts++;

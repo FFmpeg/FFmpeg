@@ -182,7 +182,7 @@ static int wv_read_packet(AVFormatContext *s,
     ret = get_buffer(&s->pb, pkt->data + WV_EXTRA_SIZE, wc->blksize);
     if(ret != wc->blksize){
         av_free_packet(pkt);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     pkt->stream_index = 0;
     wc->block_parsed = 1;

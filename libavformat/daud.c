@@ -37,7 +37,7 @@ static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
     ByteIOContext *pb = &s->pb;
     int ret, size;
     if (url_feof(pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     size = get_be16(pb);
     get_be16(pb); // unknown
     ret = av_get_packet(pb, pkt, size);

@@ -178,7 +178,7 @@ static int ea_read_header(AVFormatContext *s,
     AVStream *st;
 
     if (!process_ea_header(s))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
 #if 0
     /* initialize the video decoder stream */
@@ -226,7 +226,7 @@ static int ea_read_packet(AVFormatContext *s,
     while (!packet_read) {
 
         if (get_buffer(pb, preamble, EA_PREAMBLE_SIZE) != EA_PREAMBLE_SIZE)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         chunk_type = AV_RL32(&preamble[0]);
         chunk_size = AV_RL32(&preamble[4]) - EA_PREAMBLE_SIZE;
 
@@ -235,7 +235,7 @@ static int ea_read_packet(AVFormatContext *s,
         case SCDl_TAG:
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret != chunk_size)
-                ret = AVERROR_IO;
+                ret = AVERROR(EIO);
             else {
                     pkt->stream_index = ea->audio_stream_index;
                     pkt->pts = 90000;
@@ -253,7 +253,7 @@ static int ea_read_packet(AVFormatContext *s,
 
         /* ending tag */
         case SCEl_TAG:
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
             packet_read = 1;
             break;
 

@@ -78,7 +78,7 @@ static int flic_read_header(AVFormatContext *s,
 
     /* load the whole header and pull out the width and height */
     if (get_buffer(pb, header, FLIC_HEADER_SIZE) != FLIC_HEADER_SIZE)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     magic_number = AV_RL16(&header[4]);
     speed = AV_RL32(&header[0x10]);
@@ -169,7 +169,7 @@ static int flic_read_packet(AVFormatContext *s,
 
         if ((ret = get_buffer(pb, preamble, FLIC_PREAMBLE_SIZE)) !=
             FLIC_PREAMBLE_SIZE) {
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
             break;
         }
 
@@ -178,7 +178,7 @@ static int flic_read_packet(AVFormatContext *s,
 
         if (((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) && size > FLIC_PREAMBLE_SIZE) {
             if (av_new_packet(pkt, size)) {
-                ret = AVERROR_IO;
+                ret = AVERROR(EIO);
                 break;
             }
             pkt->stream_index = flic->video_stream_index;
@@ -189,7 +189,7 @@ static int flic_read_packet(AVFormatContext *s,
                 size - FLIC_PREAMBLE_SIZE);
             if (ret != size - FLIC_PREAMBLE_SIZE) {
                 av_free_packet(pkt);
-                ret = AVERROR_IO;
+                ret = AVERROR(EIO);
             }
             flic->pts += flic->frame_pts_inc;
             packet_read = 1;

@@ -266,7 +266,7 @@ static int mmf_read_packet(AVFormatContext *s,
     int ret, size;
 
     if (url_feof(&s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     st = s->streams[0];
 
     size = MAX_SIZE;
@@ -274,10 +274,10 @@ static int mmf_read_packet(AVFormatContext *s,
         size = mmf->data_size;
 
     if(!size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     if (av_new_packet(pkt, size))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     pkt->stream_index = 0;
 
     ret = get_buffer(&s->pb, pkt->data, pkt->size);

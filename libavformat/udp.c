@@ -138,7 +138,7 @@ static int udp_ipv6_set_remote_url(URLContext *h, const char *uri) {
     struct addrinfo *res0;
     url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
     res0 = udp_ipv6_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
-    if (res0 == 0) return AVERROR_IO;
+    if (res0 == 0) return AVERROR(EIO);
     memcpy(&s->dest_addr, res0->ai_addr, res0->ai_addrlen);
     s->dest_addr_len = res0->ai_addrlen;
     freeaddrinfo(res0);
@@ -236,7 +236,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
 
     /* set the destination address */
     if (resolve_host(&s->dest_addr.sin_addr, hostname) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     s->dest_addr.sin_family = AF_INET;
     s->dest_addr.sin_port = htons(port);
     return 0;
@@ -401,7 +401,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (udp_fd >= 0)
         closesocket(udp_fd);
     av_free(s);
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int udp_read(URLContext *h, uint8_t *buf, int size)
@@ -422,7 +422,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
         if (len < 0) {
             if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
                 ff_neterrno() != FF_NETERROR(EINTR))
-                return AVERROR_IO;
+                return AVERROR(EIO);
         } else {
             break;
         }
@@ -446,7 +446,7 @@ static int udp_write(URLContext *h, uint8_t *buf, int size)
         if (ret < 0) {
             if (ff_neterrno() != FF_NETERROR(EINTR) &&
                 ff_neterrno() != FF_NETERROR(EAGAIN))
-                return AVERROR_IO;
+                return AVERROR(EIO);
         } else {
             break;
         }

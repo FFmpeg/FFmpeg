@@ -149,7 +149,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = av_get_packet(&s->pb, pkt, size);
         pkt->stream_index = 1;
         if(ret != size)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         c->bytes_left -= size;
         c->wavpos = url_ftell(&s->pb);
         return 0;
@@ -186,7 +186,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = get_buffer(&s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
             if(ret != size){
                 av_free_packet(pkt);
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             pkt->stream_index = 0;

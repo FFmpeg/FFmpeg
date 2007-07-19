@@ -208,7 +208,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         s->img_first = first_index;
         s->img_last = last_index;
         s->img_number = first_index;
@@ -249,10 +249,10 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
         if (av_get_frame_filename(filename, sizeof(filename),
                                   s->path, s->img_number)<0 && s->img_number > 1)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         for(i=0; i<3; i++){
             if (url_fopen(f[i], filename, URL_RDONLY) < 0)
-                return AVERROR_IO;
+                return AVERROR(EIO);
             size[i]= url_fsize(f[i]);
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
@@ -265,7 +265,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     } else {
         f[0] = &s1->pb;
         if (url_feof(f[0]))
-            return AVERROR_IO;
+            return AVERROR(EIO);
         size[0]= 4096;
     }
 
@@ -286,7 +286,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (ret[0] <= 0 || ret[1]<0 || ret[2]<0) {
         av_free_packet(pkt);
-        return AVERROR_IO; /* signal EOF */
+        return AVERROR(EIO); /* signal EOF */
     } else {
         s->img_count++;
         s->img_number++;
@@ -330,10 +330,10 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
                                   img->path, img->img_number) < 0 && img->img_number>1)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         for(i=0; i<3; i++){
             if (url_fopen(pb[i], filename, URL_WRONLY) < 0)
-                return AVERROR_IO;
+                return AVERROR(EIO);
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;

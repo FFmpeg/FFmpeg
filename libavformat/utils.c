@@ -449,7 +449,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                 url_fclose(pb);
                 if (url_fopen(pb, filename, URL_RDONLY) < 0) {
                     file_opened = 0;
-                    err = AVERROR_IO;
+                    err = AVERROR(EIO);
                     goto fail;
                 }
             }

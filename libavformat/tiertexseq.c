@@ -115,7 +115,7 @@ static int seq_fill_buffer(SeqDemuxContext *seq, ByteIOContext *pb, int buffer_n
 
     url_fseek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
     if (get_buffer(pb, seq_buffer->data + seq_buffer->fill_size, data_size) != data_size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     seq_buffer->fill_size += data_size;
     return 0;
@@ -258,7 +258,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->data[0] |= 1;
                 url_fseek(pb, seq->current_frame_offs + seq->current_pal_data_offs, SEEK_SET);
                 if (get_buffer(pb, &pkt->data[1], seq->current_pal_data_size) != seq->current_pal_data_size)
-                    return AVERROR_IO;
+                    return AVERROR(EIO);
             }
             if (seq->current_video_data_size != 0) {
                 pkt->data[0] |= 2;
@@ -277,7 +277,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* audio packet */
     if (seq->current_audio_data_offs == 0) /* end of data reached */
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     url_fseek(pb, seq->current_frame_offs + seq->current_audio_data_offs, SEEK_SET);
     rc = av_get_packet(pb, pkt, seq->current_audio_data_size);

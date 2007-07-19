@@ -101,7 +101,7 @@ int url_read(URLContext *h, unsigned char *buf, int size)
 {
     int ret;
     if (h->flags & URL_WRONLY)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     ret = h->prot->url_read(h, buf, size);
     return ret;
 }
@@ -111,10 +111,10 @@ int url_write(URLContext *h, unsigned char *buf, int size)
 {
     int ret;
     if (!(h->flags & (URL_WRONLY | URL_RDWR)))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     /* avoid sending too big packets */
     if (h->max_packet_size && size > h->max_packet_size)
-        return AVERROR_IO;
+        return AVERROR(EIO);
     ret = h->prot->url_write(h, buf, size);
     return ret;
 }

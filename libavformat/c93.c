@@ -129,7 +129,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (c93->current_frame >= br->frames) {
         if (c93->current_block >= 511 || !br[1].length)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         br++;
         c93->current_block++;
         c93->current_frame = 0;
@@ -154,7 +154,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = get_buffer(pb, pkt->data + 1, datasize);
     if (ret < datasize) {
-        ret = AVERROR_IO;
+        ret = AVERROR(EIO);
         goto fail;
     }
 
@@ -168,7 +168,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data[0] |= C93_HAS_PALETTE;
         ret = get_buffer(pb, pkt->data + pkt->size, datasize);
         if (ret < datasize) {
-            ret = AVERROR_IO;
+            ret = AVERROR(EIO);
             goto fail;
         }
         pkt->size += 768;

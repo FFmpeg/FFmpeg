@@ -514,7 +514,7 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
                       (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
                       url_read_packet, url_write_packet, url_seek_packet) < 0) {
         av_free(buffer);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     s->is_streamed = h->is_streamed;
     s->max_packet_size = max_packet_size;

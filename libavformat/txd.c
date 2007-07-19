@@ -61,10 +61,10 @@ next_chunk:
     marker     = get_le32(pb);
 
     if (url_feof(&s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     if (marker != TXD_MARKER && marker != TXD_MARKER2) {
         av_log(NULL, AV_LOG_ERROR, "marker does not match\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     switch (id) {
@@ -78,13 +78,13 @@ next_chunk:
             goto next_chunk;
         default:
             av_log(NULL, AV_LOG_ERROR, "unknown chunk id %i\n", id);
-            return AVERROR_IO;
+            return AVERROR(EIO);
     }
 
     ret = av_get_packet(&s->pb, pkt, chunk_size);
     pkt->stream_index = 0;
 
-    return ret <= 0 ? AVERROR_IO : ret;
+    return ret <= 0 ? AVERROR(EIO) : ret;
 }
 
 static int txd_read_close(AVFormatContext *s) {

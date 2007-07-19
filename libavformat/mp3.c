@@ -485,7 +485,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     if (ret <= 0) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     /* note: we need to modify the packet size here to handle the last
        packet */

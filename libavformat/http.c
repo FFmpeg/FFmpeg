@@ -101,7 +101,7 @@ static int http_open_cnx(URLContext *h)
         /* url moved, get next */
         url_close(hd);
         if (redirects++ >= MAX_REDIRECTS)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         location_changed = 0;
         goto redo;
     }
@@ -109,7 +109,7 @@ static int http_open_cnx(URLContext *h)
  fail:
     if (hd)
         url_close(hd);
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int http_open(URLContext *h, const char *uri, int flags)
@@ -139,7 +139,7 @@ static int http_getc(HTTPContext *s)
     if (s->buf_ptr >= s->buf_end) {
         len = url_read(s->hd, s->buffer, BUFFER_SIZE);
         if (len < 0) {
-            return AVERROR_IO;
+            return AVERROR(EIO);
         } else if (len == 0) {
             return -1;
         } else {
@@ -237,7 +237,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
 
     av_freep(&auth_b64);
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* init input buffer */
     s->buf_ptr = s->buffer;
@@ -255,7 +255,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     for(;;) {
         ch = http_getc(s);
         if (ch < 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         if (ch == '\n') {
             /* process line */
             if (q > line && q[-1] == '\r')

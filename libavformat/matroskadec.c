@@ -223,7 +223,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
                    "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
                    pos, pos);
         }
-        return AVERROR_IO; /* EOS or actual I/O error */
+        return AVERROR(EIO); /* EOS or actual I/O error */
     }
 
     /* get the length of the EBML number */
@@ -491,7 +491,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     (*str)[size] = '\0';
 
@@ -588,7 +588,7 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     return 0;
@@ -693,7 +693,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &level_up)))
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         /* end-of-header */
         if (level_up)
@@ -903,7 +903,7 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -1002,7 +1002,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
     /* try reading the trackentry headers */
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up > 0) {
             matroska->level_up--;
@@ -1075,7 +1075,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
                 while (res == 0) {
                     if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                        res = AVERROR_IO;
+                        res = AVERROR(EIO);
                         break;
                     } else if (matroska->level_up > 0) {
                         matroska->level_up--;
@@ -1246,7 +1246,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
                 while (res == 0) {
                     if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                        res = AVERROR_IO;
+                        res = AVERROR(EIO);
                         break;
                     } else if (matroska->level_up > 0) {
                         matroska->level_up--;
@@ -1444,7 +1444,7 @@ matroska_parse_tracks (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -1487,7 +1487,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -1508,7 +1508,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
 
                 while (res == 0) {
                     if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                        res = AVERROR_IO;
+                        res = AVERROR(EIO);
                         break;
                     } else if (matroska->level_up) {
                         matroska->level_up--;
@@ -1535,7 +1535,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
                             while (res == 0) {
                                 if (!(id = ebml_peek_id (matroska,
                                                     &matroska->level_up))) {
-                                    res = AVERROR_IO;
+                                    res = AVERROR(EIO);
                                     break;
                                 } else if (matroska->level_up) {
                                     matroska->level_up--;
@@ -1642,7 +1642,7 @@ matroska_parse_metadata (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -1680,7 +1680,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -1697,7 +1697,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
                 while (res == 0) {
                     if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                        res = AVERROR_IO;
+                        res = AVERROR(EIO);
                         break;
                     } else if (matroska->level_up) {
                         matroska->level_up--;
@@ -1913,7 +1913,7 @@ matroska_read_header (AVFormatContext    *s,
     /* The next thing is a segment. */
     while (1) {
         if (!(id = ebml_peek_id(matroska, &last_level)))
-            return AVERROR_IO;
+            return AVERROR(EIO);
         if (id == MATROSKA_ID_SEGMENT)
             break;
 
@@ -1936,7 +1936,7 @@ matroska_read_header (AVFormatContext    *s,
     /* we've found our segment, start reading the different contents in here */
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -2497,7 +2497,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -2575,7 +2575,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR_IO;
+            res = AVERROR(EIO);
             break;
         } else if (matroska->level_up) {
             matroska->level_up--;
@@ -2640,12 +2640,12 @@ matroska_read_packet (AVFormatContext *s,
 
         /* Have we already reached the end? */
         if (matroska->done)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         res = 0;
         while (res == 0) {
             if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                return AVERROR_IO;
+                return AVERROR(EIO);
             } else if (matroska->level_up) {
                 matroska->level_up--;
                 break;

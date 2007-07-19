@@ -148,7 +148,7 @@ static int thp_read_packet(AVFormatContext *s,
     if (thp->audiosize == 0) {
         /* Terminate when last frame is reached.  */
         if (thp->frame >= thp->framecnt)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         url_fseek(pb, thp->next_frame, SEEK_SET);
 
@@ -169,7 +169,7 @@ static int thp_read_packet(AVFormatContext *s,
         ret = av_get_packet(pb, pkt, size);
         if (ret != size) {
             av_free_packet(pkt);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
 
         pkt->stream_index = thp->video_stream_index;
@@ -177,7 +177,7 @@ static int thp_read_packet(AVFormatContext *s,
         ret = av_get_packet(pb, pkt, thp->audiosize);
         if (ret != thp->audiosize) {
             av_free_packet(pkt);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
 
         pkt->stream_index = thp->audio_stream_index;

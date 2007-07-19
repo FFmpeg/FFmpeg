@@ -1014,7 +1014,7 @@ static int read_packet(ByteIOContext *pb, uint8_t *buf, int raw_packet_size)
     for(;;) {
         len = get_buffer(pb, buf, TS_PACKET_SIZE);
         if (len != TS_PACKET_SIZE)
-            return AVERROR_IO;
+            return AVERROR(EIO);
         /* check paquet sync byte */
         if (buf[0] != 0x47) {
             /* find a new packet start */

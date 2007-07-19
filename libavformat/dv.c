@@ -388,7 +388,7 @@ static int dv_read_header(AVFormatContext *s,
 
     if (get_buffer(&s->pb, c->buf, DV_PROFILE_BYTES) <= 0 ||
         url_fseek(&s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     c->dv_demux->sys = dv_frame_profile(c->buf);
     s->bit_rate = av_rescale(c->dv_demux->sys->frame_size * 8,
@@ -409,7 +409,7 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (size < 0) {
         size = c->dv_demux->sys->frame_size;
         if (get_buffer(&s->pb, c->buf, size) <= 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
 
         size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
     }

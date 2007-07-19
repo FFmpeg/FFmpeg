@@ -64,7 +64,7 @@ static int get_tag(ByteIOContext *pb, uint32_t * tag)
     int size;
 
     if (url_feof(pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     *tag = get_le32(pb);
     size = get_be32(pb);
@@ -400,7 +400,7 @@ static int aiff_read_packet(AVFormatContext *s,
 
     /* End of stream may be reached */
     if (url_feof(&s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* Now for that packet */
     res = av_get_packet(&s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);

@@ -361,7 +361,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else
             url_fskip(&s->pb, klv.length);
     }
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)

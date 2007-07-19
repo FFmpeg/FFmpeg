@@ -270,7 +270,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pts = get_be24(&s->pb);
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, pts);
     if (url_feof(&s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     url_fskip(&s->pb, 4); /* reserved */
     flags = 0;
 
@@ -348,7 +348,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret= av_get_packet(&s->pb, pkt, size - 1);
     if (ret <= 0) {
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
     /* note: we need to modify the packet size here to handle the last
        packet */
