@@ -42,6 +42,7 @@
 #endif
 
 #undef printf
+#undef random
 
 void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
 

@@ -31,6 +31,7 @@
 #include <string.h>
 
 #undef exit
+#undef random
 
 int mm_flags;
 

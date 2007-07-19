@@ -35,6 +35,7 @@
 
 #undef exit
 #undef printf
+#undef random
 
 #define WIDTH 64
 #define HEIGHT 64
