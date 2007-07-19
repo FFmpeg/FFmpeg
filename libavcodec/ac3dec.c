@@ -39,17 +39,12 @@
 #include "dsputil.h"
 #include "random.h"
 
-static uint8_t bndtab[51];
-static uint8_t masktab[253];
-
 static const int nfchans_tbl[8] = { 2, 1, 2, 3, 3, 4, 4, 5 };
 
 /* table for exponent to scale_factor mapping
  * scale_factor[i] = 2 ^ -(i + 15)
  */
 static float scale_factors[25];
-
-static int16_t psdtab[25];
 
 static int8_t exp_1[128];
 static int8_t exp_2[128];
@@ -272,22 +267,7 @@ static void generate_quantizers_table_3(int16_t quantizers[], int level, int len
  */
 static void ac3_tables_init(void)
 {
-    int i, j, k, l, v;
-    /* compute bndtab and masktab from bandsz */
-    k = 0;
-    l = 0;
-    for(i=0;i<50;i++) {
-        bndtab[i] = l;
-        v = ff_ac3_bndsz[i];
-        for(j=0;j<v;j++) masktab[k++]=i;
-        l += v;
-    }
-    masktab[253] = masktab[254] = masktab[255] = 0;
-    bndtab[50] = 0;
-
-    /* PSD Table For Mapping Exponents To PSD. */
-    for (i = 0; i < 25; i++)
-        psdtab[i] = 3072 - (i << 7);
+    int i, j, v;
 
     /* Exponent Decoding Tables */
     for (i = 0; i < 5; i++) {
@@ -581,22 +561,6 @@ static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
                                       ctx->deltnseg[chnl], ctx->deltoffst[chnl],
                                       ctx->deltlen[chnl], ctx->deltba[chnl]);
     }
-}
-
-/* Check if snroffsets are zero. */
-static int is_snr_offsets_zero(AC3DecodeContext *ctx)
-{
-    int i;
-
-    if ((ctx->csnroffst) || (ctx->cplinu && ctx->cplfsnroffst) ||
-            (ctx->lfeon && ctx->lfefsnroffst))
-        return 0;
-
-    for (i = 0; i < ctx->nfchans; i++)
-        if (ctx->fsnroffst[i])
-            return 0;
-
-    return 1;
 }
 
 typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantization */
@@ -1674,12 +1638,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     }
 
     if (bit_alloc_flags) {
-        if (is_snr_offsets_zero(ctx)) {
-            memset(ctx->cplbap, 0, sizeof (ctx->cplbap));
-            memset(ctx->lfebap, 0, sizeof (ctx->lfebap));
-            for (i = 0; i < nfchans; i++)
-                memset(ctx->bap[i], 0, sizeof(ctx->bap[i]));
-        } else {
             /* set bit allocation parameters */
             ctx->bit_alloc_params.fscod = ctx->fscod;
             ctx->bit_alloc_params.halfratecod = 0;
@@ -1698,7 +1656,6 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
                     do_bit_allocation(ctx, i);
             if (ctx->lfeon && (bit_alloc_flags & 32))
                 do_bit_allocation(ctx, 6);
-        }
     }
 
     if (get_bits1(gb)) { /* unused dummy data */
