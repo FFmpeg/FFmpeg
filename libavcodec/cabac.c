@@ -179,6 +179,7 @@ void ff_init_cabac_states(CABACContext *c){
 }
 
 #if 0 //selftest
+#undef random
 #define SIZE 10240
 
 #include "avcodec.h"

@@ -8101,6 +8101,7 @@ static inline void fill_mb_avail(H264Context *h){
 #endif
 
 #if 0 //selftest
+#undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
 int main(){

@@ -1269,6 +1269,7 @@ static int AC3_encode_close(AVCodecContext *avctx)
 /*************************************************************************/
 /* TEST */
 
+#undef random
 #define FN (N/4)
 
 void fft_test(void)
