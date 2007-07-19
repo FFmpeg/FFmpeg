@@ -1881,7 +1881,10 @@ static int av_encode(AVFormatContext **output_files,
         is = input_files[file_index];
         if (av_read_frame(is, &pkt) < 0) {
             file_table[file_index].eof_reached = 1;
-            if (opt_shortest) break; else continue; //
+            if (opt_shortest)
+                break;
+            else
+                continue;
         }
 
         if (do_pkt_dump) {
