@@ -41,19 +41,10 @@
 
 int inet_aton (const char * str, struct in_addr * add)
 {
-    const char * pch = str;
     unsigned int add1 = 0, add2 = 0, add3 = 0, add4 = 0;
 
-    add1 = atoi(pch);
-    pch = strpbrk(pch,".");
-    if (!pch) return 0;
-    add2 = atoi(pch);
-    pch = strpbrk(pch,".");
-    if (!pch) return 0;
-    add3 = atoi(pch);
-    pch = strpbrk(pch,".");
-    if (!pch) return 0;
-    add4 = atoi(pch);
+    if (sscanf(str, "%d.%d.%d.%d", &add1, &add2, &add3, &add4) != 4)
+        return 0;
 
     if (!add1 || (add1|add2|add3|add4) > 255) return 0;
 
