@@ -847,6 +847,7 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 
     if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height)){
         av_freep(&avctx->priv_data);
+        ret = AVERROR(EINVAL);
         goto end;
     }
 
