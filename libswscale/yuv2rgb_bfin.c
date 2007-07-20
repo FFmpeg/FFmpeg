@@ -32,7 +32,6 @@
 #include <malloc.h>
 #endif
 #include <unistd.h>
-#include <bits/bfin_sram.h>
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
