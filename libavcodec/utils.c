@@ -832,8 +832,10 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 
     if (codec->priv_data_size > 0) {
         avctx->priv_data = av_mallocz(codec->priv_data_size);
-        if (!avctx->priv_data)
+        if (!avctx->priv_data) {
+            ret = AVERROR(ENOMEM);
             goto end;
+        }
     } else {
         avctx->priv_data = NULL;
     }
