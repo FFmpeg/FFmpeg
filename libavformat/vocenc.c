@@ -34,7 +34,7 @@ static int voc_write_header(AVFormatContext *s)
 
     if (s->nb_streams != 1
         || s->streams[0]->codec->codec_type != CODEC_TYPE_AUDIO)
-        return AVERROR(ENOSYS);
+        return AVERROR(ENOTSUP);
 
     put_buffer(pb, voc_magic, sizeof(voc_magic) - 1);
     put_le16(pb, header_size);
