@@ -526,8 +526,6 @@ typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantizati
     int l11ptr;
 } mant_groups;
 
-#define TRANSFORM_COEFF(tc, m, e, f) (tc) = (m) * (f)[(e)]
-
 /* Get the transform coefficients for coupling channel and uncouple channels.
  * The coupling transform coefficients starts at the the cplstrtmant, which is
  * equal to endmant[ch] for fbw channels. Hence we can uncouple channels before
@@ -563,7 +561,7 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                     for (ch = 0; ch < ctx->nfchans; ch++)
                         if (((ctx->chincpl) >> ch) & 1) {
                             if ((ctx->dithflag >> ch) & 1) {
-                                TRANSFORM_COEFF(cplcoeff, av_random(&ctx->dith_state) & 0xFFFF, exps[start], scale_factors);
+                                cplcoeff = (av_random(&ctx->dith_state) & 0xFFFF) * scale_factors[exps[start]];
                                 ctx->transform_coeffs[ch + 1][start] = cplcoeff * cplcos[ch] * LEVEL_MINUS_3DB;
                             } else
                                 ctx->transform_coeffs[ch + 1][start] = 0;
@@ -578,7 +576,7 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                         m->l3_quantizers[2] = l3_quantizers_3[gcode];
                         m->l3ptr = 0;
                     }
-                    TRANSFORM_COEFF(cplcoeff, m->l3_quantizers[m->l3ptr++], exps[start], scale_factors);
+                    cplcoeff = m->l3_quantizers[m->l3ptr++] * scale_factors[exps[start]];
                     break;
 
                 case 2:
@@ -589,11 +587,11 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                         m->l5_quantizers[2] = l5_quantizers_3[gcode];
                         m->l5ptr = 0;
                     }
-                    TRANSFORM_COEFF(cplcoeff, m->l5_quantizers[m->l5ptr++], exps[start], scale_factors);
+                    cplcoeff = m->l5_quantizers[m->l5ptr++] * scale_factors[exps[start]];
                     break;
 
                 case 3:
-                    TRANSFORM_COEFF(cplcoeff, l7_quantizers[get_bits(gb, 3)], exps[start], scale_factors);
+                    cplcoeff = l7_quantizers[get_bits(gb, 3)] * scale_factors[exps[start]];
                     break;
 
                 case 4:
@@ -603,16 +601,15 @@ static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
                         m->l11_quantizers[1] = l11_quantizers_2[gcode];
                         m->l11ptr = 0;
                     }
-                    TRANSFORM_COEFF(cplcoeff, m->l11_quantizers[m->l11ptr++], exps[start], scale_factors);
+                    cplcoeff = m->l11_quantizers[m->l11ptr++] * scale_factors[exps[start]];
                     break;
 
                 case 5:
-                    TRANSFORM_COEFF(cplcoeff, l15_quantizers[get_bits(gb, 4)], exps[start], scale_factors);
+                    cplcoeff = l15_quantizers[get_bits(gb, 4)] * scale_factors[exps[start]];
                     break;
 
                 default:
-                    TRANSFORM_COEFF(cplcoeff, get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]),
-                            exps[start], scale_factors);
+                    cplcoeff = (get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap])) * scale_factors[exps[start]];
             }
             for (ch = 0; ch < ctx->nfchans; ch++)
                 if ((ctx->chincpl >> ch) & 1)
@@ -661,7 +658,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     continue;
                 }
                 else {
-                    TRANSFORM_COEFF(coeffs[i], av_random(&ctx->dith_state) & 0xFFFF, exps[i], factors);
+                    coeffs[i] = (av_random(&ctx->dith_state) & 0xFFFF) * factors[exps[i]];
                     coeffs[i] *= LEVEL_MINUS_3DB;
                     continue;
                 }
@@ -674,7 +671,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l3_quantizers[2] = l3_quantizers_3[gcode];
                     m->l3ptr = 0;
                 }
-                TRANSFORM_COEFF(coeffs[i], m->l3_quantizers[m->l3ptr++], exps[i], factors);
+                coeffs[i] = m->l3_quantizers[m->l3ptr++] * factors[exps[i]];
                 continue;
 
             case 2:
@@ -685,11 +682,11 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l5_quantizers[2] = l5_quantizers_3[gcode];
                     m->l5ptr = 0;
                 }
-                TRANSFORM_COEFF(coeffs[i], m->l5_quantizers[m->l5ptr++], exps[i], factors);
+                coeffs[i] = m->l5_quantizers[m->l5ptr++] * factors[exps[i]];
                 continue;
 
             case 3:
-                TRANSFORM_COEFF(coeffs[i], l7_quantizers[get_bits(gb, 3)], exps[i], factors);
+                coeffs[i] = l7_quantizers[get_bits(gb, 3)] * factors[exps[i]];
                 continue;
 
             case 4:
@@ -699,15 +696,15 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l11_quantizers[1] = l11_quantizers_2[gcode];
                     m->l11ptr = 0;
                 }
-                TRANSFORM_COEFF(coeffs[i], m->l11_quantizers[m->l11ptr++], exps[i], factors);
+                coeffs[i] = m->l11_quantizers[m->l11ptr++] * factors[exps[i]];
                 continue;
 
             case 5:
-                TRANSFORM_COEFF(coeffs[i], l15_quantizers[get_bits(gb, 4)], exps[i], factors);
+                coeffs[i] = l15_quantizers[get_bits(gb, 4)] * factors[exps[i]];
                 continue;
 
             default:
-                TRANSFORM_COEFF(coeffs[i], get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]), exps[i], factors);
+                coeffs[i] = (get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap])) * factors[exps[i]];
                 continue;
         }
     }
