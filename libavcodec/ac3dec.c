@@ -320,24 +320,6 @@ static int ac3_decode_init(AVCodecContext *avctx)
 }
 /*********** END INIT FUNCTIONS ***********/
 
-/* Synchronize to ac3 bitstream.
- * This function searches for the syncword '0xb77'.
- *
- * @param buf Pointer to "probable" ac3 bitstream buffer
- * @param buf_size Size of buffer
- * @return Returns the position where syncword is found, -1 if no syncword is found
- */
-static int ac3_synchronize(uint8_t *buf, int buf_size)
-{
-    int i;
-
-    for (i = 0; i < buf_size - 1; i++)
-        if (buf[i] == 0x0b && buf[i + 1] == 0x77)
-            return i;
-
-    return -1;
-}
-
 /* Parse the 'sync_info' from the ac3 bitstream.
  * This function extracts the sync_info from ac3 bitstream.
  * GetBitContext within AC3DecodeContext must point to
@@ -1645,7 +1627,6 @@ static inline int16_t convert(int32_t i)
 static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
-    int frame_start;
     int16_t *out_samples = (int16_t *)data;
     int i, j, k, start;
     int32_t *int_ptr[6];
@@ -1653,16 +1634,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     for (i = 0; i < 6; i++)
         int_ptr[i] = (int32_t *)(&ctx->output[i]);
 
-    //Synchronize the frame.
-    frame_start = ac3_synchronize(buf, buf_size);
-    if (frame_start == -1) {
-        av_log(avctx, AV_LOG_ERROR, "frame is not synchronized\n");
-        *data_size = 0;
-        return buf_size;
-    }
-
     //Initialize the GetBitContext with the start of valid AC3 Frame.
-    init_get_bits(&(ctx->gb), buf + frame_start, (buf_size - frame_start) * 8);
+    init_get_bits(&ctx->gb, buf, buf_size * 8);
 
     //Parse the syncinfo.
     //If 'fscod' or 'bsid' is not valid the decoder shall mute as per the standard.
