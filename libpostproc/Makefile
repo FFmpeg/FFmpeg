@@ -2,7 +2,7 @@
 include ../config.mak
 
 # Overload incdir, postproc include files go in a different directory.
-incdir=$(prefix)/include/postproc
+INCDIR=$(prefix)/include/postproc
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
