@@ -33,8 +33,7 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "ac3.h"
-#include "ac3tab.h"
+#include "ac3_parser.h"
 #include "bitstream.h"
 #include "dsputil.h"
 #include "random.h"
@@ -89,9 +88,6 @@ static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LE
 #define AC3_OUTPUT_LFEON        0x10
 
 typedef struct {
-    uint16_t crc1;
-    uint8_t  fscod;
-
     uint8_t  acmod;
     uint8_t  cmixlev;
     uint8_t  surmixlev;
@@ -141,7 +137,8 @@ typedef struct {
     int      bit_rate;
     int      frame_size;
 
-    int      nfchans;           //number of channels
+    int      nchans;            //number of total channels
+    int      nfchans;           //number of full-bandwidth channels
     int      lfeon;             //lfe channel in use
 
     float    dynrng;            //dynamic range gain
@@ -320,87 +317,54 @@ static int ac3_decode_init(AVCodecContext *avctx)
 }
 /*********** END INIT FUNCTIONS ***********/
 
-/* Parse the 'sync_info' from the ac3 bitstream.
- * This function extracts the sync_info from ac3 bitstream.
+/**
+ * Parses the 'sync info' and 'bit stream info' from the AC-3 bitstream.
  * GetBitContext within AC3DecodeContext must point to
  * start of the synchronized ac3 bitstream.
- *
- * @param ctx  AC3DecodeContext
- * @return Returns framesize, returns 0 if fscod, frmsizecod or bsid is not valid
  */
-static int ac3_parse_sync_info(AC3DecodeContext *ctx)
+static int ac3_parse_header(AC3DecodeContext *ctx)
 {
+    AC3HeaderInfo hdr;
     GetBitContext *gb = &ctx->gb;
-    int frmsizecod, bsid;
+    int err, i;
 
+    err = ff_ac3_parse_header(gb->buffer, &hdr);
+    if(err)
+        return err;
+
+    /* get decoding parameters from header info */
+    ctx->bit_alloc_params.fscod       = hdr.fscod;
+    ctx->acmod                        = hdr.acmod;
+    ctx->cmixlev                      = hdr.cmixlev;
+    ctx->surmixlev                    = hdr.surmixlev;
+    ctx->dsurmod                      = hdr.dsurmod;
+    ctx->lfeon                        = hdr.lfeon;
+    ctx->bit_alloc_params.halfratecod = hdr.halfratecod;
+    ctx->sampling_rate                = hdr.sample_rate;
+    ctx->bit_rate                     = hdr.bit_rate;
+    ctx->nchans                       = hdr.channels;
+    ctx->nfchans                      = ctx->nchans - ctx->lfeon;
+    ctx->frame_size                   = hdr.frame_size;
+    ctx->blkoutput                    = nfchans_tbl[ctx->acmod];
+    if(ctx->lfeon)
+        ctx->blkoutput |= AC3_OUTPUT_LFEON;
+
+    /* skip over portion of header which has already been read */
     skip_bits(gb, 16); //skip the sync_word, sync_info->sync_word = get_bits(gb, 16);
-    ctx->crc1 = get_bits(gb, 16);
-    ctx->fscod = get_bits(gb, 2);
-    if (ctx->fscod == 0x03)
-        return 0;
-    frmsizecod = get_bits(gb, 6);
-    if (frmsizecod >= 38)
-        return 0;
-    ctx->sampling_rate = ff_ac3_freqs[ctx->fscod];
-    ctx->bit_rate = ff_ac3_bitratetab[frmsizecod >> 1];
-
-    /* we include it here in order to determine validity of ac3 frame */
-    bsid = get_bits(gb, 5);
-    if (bsid > 0x08)
-        return 0;
-    skip_bits(gb, 3); //skip the bsmod, bsi->bsmod = get_bits(gb, 3);
-
-    switch (ctx->fscod) {
-        case 0x00:
-            ctx->frame_size = 4 * ctx->bit_rate;
-            return ctx->frame_size;
-        case 0x01:
-            ctx->frame_size = 2 * (320 * ctx->bit_rate / 147 + (frmsizecod & 1));
-            return ctx->frame_size;
-        case 0x02:
-            ctx->frame_size =  6 * ctx->bit_rate;
-            return ctx->frame_size;
+    skip_bits(gb, 16); // skip crc1
+    skip_bits(gb, 8);  // skip fscod and frmsizecod
+    skip_bits(gb, 11); // skip bsid, bsmod, and acmod
+    if(ctx->acmod == AC3_ACMOD_STEREO) {
+        skip_bits(gb, 2); // skip dsurmod
+    } else {
+        if((ctx->acmod & 1) && ctx->acmod != AC3_ACMOD_MONO)
+            skip_bits(gb, 2); // skip cmixlev
+        if(ctx->acmod & 4)
+            skip_bits(gb, 2); // skip surmixlev
     }
+    skip_bits1(gb); // skip lfeon
 
-    /* never reached */
-    return 0;
-}
-
-/* Parse bsi from ac3 bitstream.
- * This function extracts the bitstream information (bsi) from ac3 bitstream.
- *
- * @param ctx AC3DecodeContext after processed by ac3_parse_sync_info
- */
-static void ac3_parse_bsi(AC3DecodeContext *ctx)
-{
-    GetBitContext *gb = &ctx->gb;
-    int i;
-
-    ctx->cmixlev = 0;
-    ctx->surmixlev = 0;
-    ctx->dsurmod = 0;
-    ctx->nfchans = 0;
-    ctx->cpldeltbae = DBA_NONE;
-    ctx->cpldeltnseg = 0;
-    for (i = 0; i < 5; i++) {
-        ctx->deltbae[i] = DBA_NONE;
-        ctx->deltnseg[i] = 0;
-    }
-    ctx->dynrng = 1.0;
-    ctx->dynrng2 = 1.0;
-
-    ctx->acmod = get_bits(gb, 3);
-    ctx->nfchans = nfchans_tbl[ctx->acmod];
-
-    if (ctx->acmod & 0x01 && ctx->acmod != 0x01)
-        ctx->cmixlev = get_bits(gb, 2);
-    if (ctx->acmod & 0x04)
-        ctx->surmixlev = get_bits(gb, 2);
-    if (ctx->acmod == 0x02)
-        ctx->dsurmod = get_bits(gb, 2);
-
-    ctx->lfeon = get_bits1(gb);
-
+    /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(ctx->acmod);
     do {
         skip_bits(gb, 5); //skip dialog normalization
@@ -414,6 +378,7 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
 
     skip_bits(gb, 2); //skip copyright bit and original bitstream bit
 
+    /* FIXME: read & use the xbsi1 downmix levels */
     if (get_bits1(gb))
         skip_bits(gb, 14); //skip timecode1
     if (get_bits1(gb))
@@ -425,6 +390,8 @@ static void ac3_parse_bsi(AC3DecodeContext *ctx)
             skip_bits(gb, 8);
         } while(i--);
     }
+
+    return 0;
 }
 
 /**
@@ -1339,7 +1306,7 @@ static inline void do_imdct(AC3DecodeContext *ctx)
  * and produces the output for the block. This function must
  * be called for each of the six audio block in the ac3 bitstream.
  */
-static int ac3_parse_audio_block(AC3DecodeContext * ctx)
+static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 {
     int nfchans = ctx->nfchans;
     int acmod = ctx->acmod;
@@ -1361,11 +1328,17 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
     if (get_bits1(gb)) { /* dynamic range */
         dynrng = get_sbits(gb, 8);
         ctx->dynrng = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
+    } else if(blk == 0) {
+        ctx->dynrng = 1.0;
     }
 
-    if (acmod == 0x00 && get_bits1(gb)) { /* dynamic range 1+1 mode */
+    if(acmod == AC3_ACMOD_DUALMONO) { /* dynamic range 1+1 mode */
+        if(get_bits1(gb)) {
         dynrng = get_sbits(gb, 8);
         ctx->dynrng2 = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
+        } else if(blk == 0) {
+            ctx->dynrng2 = 1.0;
+        }
     }
 
     get_downmix_coeffs(ctx);
@@ -1559,12 +1532,16 @@ static int ac3_parse_audio_block(AC3DecodeContext * ctx)
                     ctx->deltba[i][seg] = get_bits(gb, 3);
                 }
             }
+    } else if(blk == 0) {
+        if(ctx->cplinu)
+            ctx->cpldeltbae = DBA_NONE;
+        for(i=0; i<nfchans; i++) {
+            ctx->deltbae[i] = DBA_NONE;
+        }
     }
 
     if (bit_alloc_flags) {
         /* set bit allocation parameters */
-        ctx->bit_alloc_params.fscod = ctx->fscod;
-        ctx->bit_alloc_params.halfratecod = 0;
         ctx->bit_alloc_params.sdecay = ff_sdecaytab[ctx->sdcycod];
         ctx->bit_alloc_params.fdecay = ff_fdecaytab[ctx->fdcycod];
         ctx->bit_alloc_params.sgain = ff_sgaintab[ctx->sgaincod];
@@ -1638,16 +1615,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     init_get_bits(&ctx->gb, buf, buf_size * 8);
 
     //Parse the syncinfo.
-    //If 'fscod' or 'bsid' is not valid the decoder shall mute as per the standard.
-    if (!ac3_parse_sync_info(ctx)) {
+    if (ac3_parse_header(ctx)) {
         av_log(avctx, AV_LOG_ERROR, "\n");
         *data_size = 0;
         return buf_size;
     }
-
-    //Parse the BSI.
-    //If 'bsid' is not valid decoder shall not decode the audio as per the standard.
-    ac3_parse_bsi(ctx);
 
     avctx->sample_rate = ctx->sampling_rate;
     avctx->bit_rate = ctx->bit_rate;
@@ -1679,7 +1651,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
 
     //Parse the Audio Blocks.
     for (i = 0; i < NB_BLOCKS; i++) {
-        if (ac3_parse_audio_block(ctx)) {
+        if (ac3_parse_audio_block(ctx, i)) {
             av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
             *data_size = 0;
             return ctx->frame_size;
