@@ -143,20 +143,20 @@ install-progs: $(PROGS) install-libs
 else
 install-progs: $(PROGS)
 endif
-	install -d "$(bindir)"
-	install -c -m 755 $(PROGS) "$(bindir)"
+	install -d "$(BINDIR)"
+	install -c -m 755 $(PROGS) "$(BINDIR)"
 
 # Create the Windows installer.
 wininstaller: all install
 	makensis ffinstall.nsi
 
 install-man:
-	install -d "$(mandir)/man1"
-	install -m 644 $(MANPAGES) "$(mandir)/man1"
+	install -d "$(MANDIR)/man1"
+	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
 install-vhook: videohook
-	install -d "$(shlibdir)/vhook"
-	install -m 755 $(HOOKS) "$(shlibdir)/vhook"
+	install -d "$(SHLIBDIR)/vhook"
+	install -m 755 $(HOOKS) "$(SHLIBDIR)/vhook"
 
 install-libs:
 	$(MAKE) -C libavutil   install-libs
@@ -185,14 +185,14 @@ endif
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 
 uninstall-progs:
-	rm -f $(addprefix $(bindir)/, $(ALLPROGS))
+	rm -f $(addprefix $(BINDIR)/, $(ALLPROGS))
 
 uninstall-man:
-	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
+	rm -f $(addprefix $(MANDIR)/man1/,$(ALLMANPAGES))
 
 uninstall-vhook:
-	rm -f $(addprefix $(shlibdir)/vhook/,$(ALLHOOKS))
-	-rmdir "$(shlibdir)/vhook/"
+	rm -f $(addprefix $(SHLIBDIR)/vhook/,$(ALLHOOKS))
+	-rmdir "$(SHLIBDIR)/vhook/"
 
 uninstall-libs:
 	$(MAKE) -C libavutil   uninstall-libs
@@ -205,7 +205,7 @@ uninstall-headers:
 	$(MAKE) -C libavcodec  uninstall-headers
 	$(MAKE) -C libavformat uninstall-headers
 	$(MAKE) -C libpostproc uninstall-headers
-	-rmdir "$(incdir)"
+	-rmdir "$(INCDIR)"
 
 depend dep: .depend .vhookdep
 	$(MAKE) -C libavutil   depend

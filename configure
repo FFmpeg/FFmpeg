@@ -1853,11 +1853,11 @@ echo "#define FFMPEG_CONFIGURATION \"$FFMPEG_CONFIGURATION\"" >> $TMPH
 
 echo "PREFIX=$PREFIX" >> config.mak
 echo "prefix=\$(DESTDIR)\$(PREFIX)" >> config.mak
-echo "libdir=\$(DESTDIR)$libdir" >> config.mak
-echo "shlibdir=\$(DESTDIR)$shlibdir" >> config.mak
-echo "incdir=\$(DESTDIR)$incdir" >> config.mak
-echo "bindir=\$(DESTDIR)$bindir" >> config.mak
-echo "mandir=\$(DESTDIR)$mandir" >> config.mak
+echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
+echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
+echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
+echo "BINDIR=\$(DESTDIR)$bindir" >> config.mak
+echo "MANDIR=\$(DESTDIR)$mandir" >> config.mak
 echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
