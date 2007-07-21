@@ -1334,8 +1334,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if(acmod == AC3_ACMOD_DUALMONO) { /* dynamic range 1+1 mode */
         if(get_bits1(gb)) {
-        dynrng = get_sbits(gb, 8);
-        ctx->dynrng2 = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
+            dynrng = get_sbits(gb, 8);
+            ctx->dynrng2 = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
         } else if(blk == 0) {
             ctx->dynrng2 = 1.0;
         }
