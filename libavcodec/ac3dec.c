@@ -1348,7 +1348,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             for (i = 0; i < nfchans; i++)
                 ctx->chincpl[i] = get_bits1(gb);
 
-            if (acmod == 0x02)
+            if (acmod == AC3_ACMOD_STEREO)
                 ctx->phsflginu = get_bits1(gb); //phase flag in use
 
             ctx->cplbegf = get_bits(gb, 4);
@@ -1392,13 +1392,13 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
                     }
                 }
 
-        if (acmod == 0x02 && ctx->phsflginu && (ctx->cplcoe & 1 || ctx->cplcoe & 2))
+        if (acmod == AC3_ACMOD_STEREO && ctx->phsflginu && (ctx->cplcoe & 1 || ctx->cplcoe & 2))
             for (bnd = 0; bnd < ctx->ncplbnd; bnd++)
                 if (get_bits1(gb))
                     ctx->cplco[1][bnd] = -ctx->cplco[1][bnd];
     }
 
-    if (acmod == 0x02) {/* rematrixing */
+    if (acmod == AC3_ACMOD_STEREO) {/* rematrixing */
         ctx->rematstr = get_bits1(gb);
         if (ctx->rematstr) {
             if (!(ctx->cplinu) || ctx->cplbegf > 2)
