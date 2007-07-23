@@ -152,9 +152,9 @@ typedef struct {
     int      endmant[5];        //channel end mantissas
     AC3BitAllocParameters bit_alloc_params; ///< bit allocation parameters
 
-    uint8_t  dcplexps[256];     //decoded coupling exponents
-    uint8_t  dexps[5][256];     //decoded fbw channel exponents
-    uint8_t  dlfeexps[256];     //decoded lfe channel exponents
+    int8_t   dcplexps[256];     //decoded coupling exponents
+    int8_t   dexps[5][256];     //decoded fbw channel exponents
+    int8_t   dlfeexps[256];     //decoded lfe channel exponents
     uint8_t  cplbap[256];       //coupling bit allocation pointers
     uint8_t  bap[5][256];       //fbw channel bit allocation pointers
     uint8_t  lfebap[256];       //lfe channel bit allocation pointers
@@ -406,7 +406,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
  * @param[out] dexps   Decoded exponents are stored in dexps
  */
 static void decode_exponents(GetBitContext *gb, int expstr, int ngrps,
-                             uint8_t absexp, uint8_t *dexps)
+                             uint8_t absexp, int8_t *dexps)
 {
     int i, j, grp, grpsize;
     int dexp[256];
@@ -1313,7 +1313,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     int i, bnd, rbnd, seg, grpsize;
     GetBitContext *gb = &ctx->gb;
     int bit_alloc_flags = 0;
-    uint8_t *dexps;
+    int8_t *dexps;
     int mstrcplco, cplcoexp, cplcomant;
     int dynrng, chbwcod, ngrps, cplabsexp, skipl;
 
