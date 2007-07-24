@@ -107,13 +107,12 @@ typedef struct {
     int cplexpstr;
     int lfeexpstr;
     int chexpstr[5];
-    int csnroffst;
-    int cplfsnroffst;
-    int cplfgaincod;
-    int fsnroffst[5];
-    int fgaincod[5];
-    int lfefsnroffst;
-    int lfefgaincod;
+    int cplsnroffst;
+    int cplfgain;
+    int snroffst[5];
+    int fgain[5];
+    int lfesnroffst;
+    int lfefgain;
     int cpldeltbae;
     int deltbae[5];
     int cpldeltnseg;
@@ -421,41 +420,6 @@ static void decode_exponents(GetBitContext *gb, int expstr, int ngrps,
         for(j=0; j<grpsize; j++) {
             dexps[(i*grpsize)+j] = prevexp;
         }
-    }
-}
-
-/* Performs bit allocation.
- * This function performs bit allocation for the requested chanenl.
- */
-static void do_bit_allocation(AC3DecodeContext *ctx, int chnl)
-{
-    int fgain, snroffset;
-
-    if (chnl == 5) {
-        fgain = ff_fgaintab[ctx->cplfgaincod];
-        snroffset = (((ctx->csnroffst - 15) << 4) + ctx->cplfsnroffst) << 2;
-        ac3_parametric_bit_allocation(&ctx->bit_alloc_params, ctx->cplbap,
-                                      ctx->dcplexps, ctx->cplstrtmant,
-                                      ctx->cplendmant, snroffset, fgain, 0,
-                                      ctx->cpldeltbae, ctx->cpldeltnseg,
-                                      ctx->cpldeltoffst, ctx->cpldeltlen,
-                                      ctx->cpldeltba);
-    }
-    else if (chnl == 6) {
-        fgain = ff_fgaintab[ctx->lfefgaincod];
-        snroffset = (((ctx->csnroffst - 15) << 4) + ctx->lfefsnroffst) << 2;
-        ac3_parametric_bit_allocation(&ctx->bit_alloc_params, ctx->lfebap,
-                                      ctx->dlfeexps, 0, 7, snroffset, fgain, 1,
-                                      DBA_NONE, 0, NULL, NULL, NULL);
-    }
-    else {
-        fgain = ff_fgaintab[ctx->fgaincod[chnl]];
-        snroffset = (((ctx->csnroffst - 15) << 4) + ctx->fsnroffst[chnl]) << 2;
-        ac3_parametric_bit_allocation(&ctx->bit_alloc_params, ctx->bap[chnl],
-                                      ctx->dexps[chnl], 0, ctx->endmant[chnl],
-                                      snroffset, fgain, 0, ctx->deltbae[chnl],
-                                      ctx->deltnseg[chnl], ctx->deltoffst[chnl],
-                                      ctx->deltlen[chnl], ctx->deltba[chnl]);
     }
 }
 
@@ -1463,19 +1427,20 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (get_bits1(gb)) { /* snroffset */
+        int csnr;
         bit_alloc_flags = 127;
-        ctx->csnroffst = get_bits(gb, 6);
+        csnr = (get_bits(gb, 6) - 15) << 4;
         if (ctx->cplinu) { /* coupling fine snr offset and fast gain code */
-            ctx->cplfsnroffst = get_bits(gb, 4);
-            ctx->cplfgaincod = get_bits(gb, 3);
+            ctx->cplsnroffst = (csnr + get_bits(gb, 4)) << 2;
+            ctx->cplfgain = ff_fgaintab[get_bits(gb, 3)];
         }
         for (i = 0; i < nfchans; i++) { /* channel fine snr offset and fast gain code */
-            ctx->fsnroffst[i] = get_bits(gb, 4);
-            ctx->fgaincod[i] = get_bits(gb, 3);
+            ctx->snroffst[i] = (csnr + get_bits(gb, 4)) << 2;
+            ctx->fgain[i] = ff_fgaintab[get_bits(gb, 3)];
         }
         if (ctx->lfeon) { /* lfe fine snr offset and fast gain code */
-            ctx->lfefsnroffst = get_bits(gb, 4);
-            ctx->lfefgaincod = get_bits(gb, 3);
+            ctx->lfesnroffst = (csnr + get_bits(gb, 4)) << 2;
+            ctx->lfefgain = ff_fgaintab[get_bits(gb, 3)];
         }
     }
 
@@ -1533,12 +1498,26 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if (bit_alloc_flags) {
         if (ctx->cplinu && (bit_alloc_flags & 64))
-            do_bit_allocation(ctx, 5);
+            ac3_parametric_bit_allocation(&ctx->bit_alloc_params, ctx->cplbap,
+                                          ctx->dcplexps, ctx->cplstrtmant,
+                                          ctx->cplendmant, ctx->cplsnroffst,
+                                          ctx->cplfgain, 0,
+                                          ctx->cpldeltbae, ctx->cpldeltnseg,
+                                          ctx->cpldeltoffst, ctx->cpldeltlen,
+                                          ctx->cpldeltba);
         for (i = 0; i < nfchans; i++)
             if ((bit_alloc_flags >> i) & 1)
-                do_bit_allocation(ctx, i);
+                ac3_parametric_bit_allocation(&ctx->bit_alloc_params,
+                                              ctx->bap[i], ctx->dexps[i], 0,
+                                              ctx->endmant[i], ctx->snroffst[i],
+                                              ctx->fgain[i], 0, ctx->deltbae[i],
+                                              ctx->deltnseg[i], ctx->deltoffst[i],
+                                              ctx->deltlen[i], ctx->deltba[i]);
         if (ctx->lfeon && (bit_alloc_flags & 32))
-            do_bit_allocation(ctx, 6);
+            ac3_parametric_bit_allocation(&ctx->bit_alloc_params, ctx->lfebap,
+                                          ctx->dlfeexps, 0, 7, ctx->lfesnroffst,
+                                          ctx->lfefgain, 1,
+                                          DBA_NONE, 0, NULL, NULL, NULL);
     }
 
     if (get_bits1(gb)) { /* unused dummy data */
