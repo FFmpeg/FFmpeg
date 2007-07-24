@@ -79,7 +79,7 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
 }
 
 static void guess_palette(uint32_t *rgba_palette,
-                          uint8_t *palette,
+                          uint8_t *colormap,
                           uint8_t *alpha,
                           uint32_t subtitle_color)
 {
@@ -92,8 +92,8 @@ static void guess_palette(uint32_t *rgba_palette,
     memset(color_used, 0, 16);
     nb_opaque_colors = 0;
     for(i = 0; i < 4; i++) {
-        if (alpha[i] != 0 && !color_used[palette[i]]) {
-            color_used[palette[i]] = 1;
+        if (alpha[i] != 0 && !color_used[colormap[i]]) {
+            color_used[colormap[i]] = 1;
             nb_opaque_colors++;
         }
     }
@@ -105,16 +105,16 @@ static void guess_palette(uint32_t *rgba_palette,
     memset(color_used, 0, 16);
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0) {
-            if (!color_used[palette[i]])  {
+            if (!color_used[colormap[i]])  {
                 level = (0xff * j) / nb_opaque_colors;
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
                 rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17) << 24);
-                color_used[palette[i]] = (i + 1);
+                color_used[colormap[i]] = (i + 1);
                 j--;
             } else {
-                rgba_palette[i] = (rgba_palette[color_used[palette[i]] - 1] & 0x00ffffff) |
+                rgba_palette[i] = (rgba_palette[color_used[colormap[i]] - 1] & 0x00ffffff) |
                                     ((alpha[i] * 17) << 24);
             }
         }
@@ -125,7 +125,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                                 const uint8_t *buf, int buf_size)
 {
     int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
-    uint8_t palette[4], alpha[4];
+    uint8_t colormap[4], alpha[4];
     int date;
     int i;
     int is_menu = 0;
@@ -168,13 +168,13 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 sub_header->end_display_time = (date << 10) / 90;
                 break;
             case 0x03:
-                /* set palette */
+                /* set colormap */
                 if ((buf_size - pos) < 2)
                     goto fail;
-                palette[3] = buf[pos] >> 4;
-                palette[2] = buf[pos] & 0x0f;
-                palette[1] = buf[pos + 1] >> 4;
-                palette[0] = buf[pos + 1] & 0x0f;
+                colormap[3] = buf[pos] >> 4;
+                colormap[2] = buf[pos] & 0x0f;
+                colormap[1] = buf[pos + 1] >> 4;
+                colormap[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
                 break;
             case 0x04:
@@ -249,7 +249,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 decode_rle(bitmap + w, w * 2, w, h / 2,
                            buf, offset2 * 2, buf_size);
                 guess_palette(sub_header->rects[0].rgba_palette,
-                              palette, alpha, 0xffff00);
+                              colormap, alpha, 0xffff00);
                 sub_header->rects[0].x = x1;
                 sub_header->rects[0].y = y1;
                 sub_header->rects[0].w = w;
