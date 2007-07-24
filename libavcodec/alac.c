@@ -529,9 +529,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
         }
 
-        if (wasted_bytes) {
+        if (wasted_bytes)
             av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
-        }
 
         for (chan = 0; chan < channels; chan++) {
             bastardized_rice_decompress(alac,
@@ -597,7 +596,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     }
 
     switch(alac->setinfo_sample_size) {
-    case 16: {
+    case 16:
         if (channels == 2) {
             deinterlace_16(alac->outputsamples_buffer,
                            (int16_t*)outbuffer,
@@ -613,7 +612,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
-    }
     case 20:
     case 24:
     case 32:
