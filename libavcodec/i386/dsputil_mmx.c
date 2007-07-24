@@ -622,6 +622,7 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         "paddb %%mm1, %%mm6             \n\t"
 
 static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
+    if(ENABLE_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
 
     asm volatile(
@@ -638,6 +639,7 @@ static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
           "+m" (*(uint64_t*)(src + 1*stride))
         : "g" (2*strength), "m"(ff_pb_FC)
     );
+    }
 }
 
 static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride){
@@ -670,6 +672,7 @@ static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int 
 }
 
 static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
+    if(ENABLE_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
     uint64_t temp[4] __attribute__ ((aligned(8)));
     uint8_t *btemp= (uint8_t*)temp;
@@ -718,6 +721,7 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
            "r" ((long)   stride ),
            "r" ((long)(3*stride))
     );
+    }
 }
 
 #ifdef CONFIG_ENCODERS

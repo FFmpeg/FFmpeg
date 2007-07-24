@@ -2641,6 +2641,7 @@ static void put_mspel8_mc22_c(uint8_t *dst, uint8_t *src, int stride){
 }
 
 static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
+    if(ENABLE_ANY_H263) {
     int x;
     const int strength= ff_h263_loop_filter_strength[qscale];
 
@@ -2673,9 +2674,11 @@ static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
         src[x-2*stride] = p0 - d2;
         src[x+  stride] = p3 + d2;
     }
+    }
 }
 
 static void h263_h_loop_filter_c(uint8_t *src, int stride, int qscale){
+    if(ENABLE_ANY_H263) {
     int y;
     const int strength= ff_h263_loop_filter_strength[qscale];
 
@@ -2707,6 +2710,7 @@ static void h263_h_loop_filter_c(uint8_t *src, int stride, int qscale){
 
         src[y*stride-2] = p0 - d2;
         src[y*stride+1] = p3 + d2;
+    }
     }
 }
 
