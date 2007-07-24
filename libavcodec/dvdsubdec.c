@@ -348,8 +348,8 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 } else {
                     sub_header->rects[0].rgba_palette = av_malloc(4 * 4);
                     sub_header->rects[0].nb_colors = 4;
-                guess_palette(sub_header->rects[0].rgba_palette,
-                              colormap, alpha, 0xffff00);
+                    guess_palette(sub_header->rects[0].rgba_palette,
+                                  colormap, alpha, 0xffff00);
                 }
                 sub_header->rects[0].x = x1;
                 sub_header->rects[0].y = y1;
