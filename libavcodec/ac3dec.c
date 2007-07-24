@@ -107,11 +107,6 @@ typedef struct {
     uint8_t  cplexpstr;
     uint8_t  lfeexpstr;
     uint8_t  chexpstr[5];
-    uint8_t  sdcycod;
-    uint8_t  fdcycod;
-    uint8_t  sgaincod;
-    uint8_t  dbpbcod;
-    uint8_t  floorcod;
     uint8_t  csnroffst;
     uint8_t  cplfsnroffst;
     uint8_t  cplfgaincod;
@@ -119,8 +114,6 @@ typedef struct {
     uint8_t  fgaincod[5];
     uint8_t  lfefsnroffst;
     uint8_t  lfefgaincod;
-    uint8_t  cplfleak;
-    uint8_t  cplsleak;
     uint8_t  cpldeltbae;
     uint8_t  deltbae[5];
     uint8_t  cpldeltnseg;
@@ -1462,11 +1455,11 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if (get_bits1(gb)) { /* bit allocation information */
         bit_alloc_flags = 127;
-        ctx->sdcycod = get_bits(gb, 2);
-        ctx->fdcycod = get_bits(gb, 2);
-        ctx->sgaincod = get_bits(gb, 2);
-        ctx->dbpbcod = get_bits(gb, 2);
-        ctx->floorcod = get_bits(gb, 3);
+        ctx->bit_alloc_params.sdecay = ff_sdecaytab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.fdecay = ff_fdecaytab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.sgain  = ff_sgaintab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.dbknee = ff_dbkneetab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.floor  = ff_floortab[get_bits(gb, 3)];
     }
 
     if (get_bits1(gb)) { /* snroffset */
@@ -1488,8 +1481,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if (ctx->cplinu && get_bits1(gb)) { /* coupling leak information */
         bit_alloc_flags |= 64;
-        ctx->cplfleak = get_bits(gb, 3);
-        ctx->cplsleak = get_bits(gb, 3);
+        ctx->bit_alloc_params.cplfleak = get_bits(gb, 3);
+        ctx->bit_alloc_params.cplsleak = get_bits(gb, 3);
     }
 
     if (get_bits1(gb)) { /* delta bit allocation information */
@@ -1539,15 +1532,6 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (bit_alloc_flags) {
-        /* set bit allocation parameters */
-        ctx->bit_alloc_params.sdecay = ff_sdecaytab[ctx->sdcycod];
-        ctx->bit_alloc_params.fdecay = ff_fdecaytab[ctx->fdcycod];
-        ctx->bit_alloc_params.sgain = ff_sgaintab[ctx->sgaincod];
-        ctx->bit_alloc_params.dbknee = ff_dbkneetab[ctx->dbpbcod];
-        ctx->bit_alloc_params.floor = ff_floortab[ctx->floorcod];
-        ctx->bit_alloc_params.cplfleak = ctx->cplfleak;
-        ctx->bit_alloc_params.cplsleak = ctx->cplsleak;
-
         if (ctx->cplinu && (bit_alloc_flags & 64))
             do_bit_allocation(ctx, 5);
         for (i = 0; i < nfchans; i++)
