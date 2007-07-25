@@ -1507,6 +1507,10 @@ static int av_encode(AVFormatContext **output_files,
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
+        if (!ost->st->language[0])
+            av_strlcpy(ost->st->language, ist->st->language,
+                       sizeof(ost->st->language));
+
         if (ost->st->stream_copy) {
             /* if stream_copy is selected, no need to decode or encode */
             codec->codec_id = icodec->codec_id;
