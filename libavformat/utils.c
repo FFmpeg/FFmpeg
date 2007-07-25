@@ -1941,7 +1941,7 @@ int av_find_stream_info(AVFormatContext *ic)
             }
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if (st->codec->codec_id == CODEC_ID_NONE && probe_data[st->index].buf_size > 0) {
-                codec_identified[st->index] = set_codec_from_probe_data(st, &(probe_data[st->index]), 0);
+                codec_identified[st->index] = set_codec_from_probe_data(st, &(probe_data[st->index]), 1);
                 if (codec_identified[st->index]) {
                     st->need_parsing = AVSTREAM_PARSE_FULL;
                 }
