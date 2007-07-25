@@ -40,9 +40,9 @@ CodecTags ff_mkv_codec_tags[]={
 /* TODO: Real/Quicktime */
 
 //    {"A_MS/ACM"         , CODEC_ID_NONE},
-    {"A_MPEG/L1"        , CODEC_ID_MP3},
-    {"A_MPEG/L2"        , CODEC_ID_MP3},
     {"A_MPEG/L3"        , CODEC_ID_MP3},
+    {"A_MPEG/L2"        , CODEC_ID_MP3},
+    {"A_MPEG/L1"        , CODEC_ID_MP3},
     {"A_PCM/INT/BIG"    , CODEC_ID_PCM_U16BE},
     {"A_PCM/INT/LIT"    , CODEC_ID_PCM_U16LE},
 //    {"A_PCM/FLOAT/IEEE" , CODEC_ID_NONE},
@@ -59,8 +59,8 @@ CodecTags ff_mkv_codec_tags[]={
     {"A_REAL/COOK"      , CODEC_ID_COOK},
 //    {"A_REAL/SIPR"      , CODEC_ID_SIPRO},
 
-    {"S_TEXT/ASCII"     , CODEC_ID_TEXT},
     {"S_TEXT/UTF8"      , CODEC_ID_TEXT},
+    {"S_TEXT/ASCII"     , CODEC_ID_TEXT},
     {"S_TEXT/ASS"       , CODEC_ID_TEXT},
     {"S_TEXT/SSA"       , CODEC_ID_TEXT},
     {"S_ASS"            , CODEC_ID_TEXT},
