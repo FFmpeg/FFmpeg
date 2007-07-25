@@ -1237,6 +1237,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 dts= av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
                             opkt.dts= av_rescale_q(dts + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
                         }
+                        opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
                         opkt.flags= pkt->flags;
 
                         //FIXME remove the following 2 lines they shall be replaced by the bitstream filters
