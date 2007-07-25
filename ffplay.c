@@ -180,6 +180,7 @@ static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int audio_disable;
 static int video_disable;
 static int wanted_audio_stream= 0;
+static int wanted_video_stream= 0;
 static int seek_by_bytes;
 static int display_disable;
 static int show_status;
@@ -1948,7 +1949,7 @@ static int decode_thread(void *arg)
                 audio_index = i;
             break;
         case CODEC_TYPE_VIDEO:
-            if (video_index < 0 && !video_disable)
+            if ((video_index < 0 || wanted_video_stream-- > 0) && !video_disable)
                 video_index = i;
             break;
         default:
@@ -2449,6 +2450,7 @@ const OptionDef options[] = {
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_audio_stream}, "", "" },
+    { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_video_stream}, "", "" },
     { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
