@@ -193,7 +193,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     uint8_t *left = NULL;
     uint8_t *d;
 
-    init_mb(h);
+    ff_cavs_init_mb(h);
 
     /* get intra prediction modes from stream */
     for(block=0;block<4;block++) {
@@ -216,7 +216,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
         return -1;
     }
-    modify_mb_i(h, &pred_mode_uv);
+    ff_cavs_modify_mb_i(h, &pred_mode_uv);
 
     /* get coded block pattern */
     if(h->pic_type == FF_I_TYPE)
@@ -232,7 +232,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     /* luma intra prediction interleaved with residual decode/transform/add */
     for(block=0;block<4;block++) {
         d = h->cy + h->luma_scan[block];
-        load_intra_pred_luma(h, top, &left, block);
+        ff_cavs_load_intra_pred_luma(h, top, &left, block);
         h->intra_pred_l[h->pred_mode_Y[ff_cavs_scan3x3[block]]]
             (d, top, left, h->l_stride);
         if(h->cbp & (1<<block))
@@ -240,7 +240,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     }
 
     /* chroma intra prediction */
-    load_intra_pred_chroma(h);
+    ff_cavs_load_intra_pred_chroma(h);
     h->intra_pred_c[pred_mode_uv](h->cu, &h->top_border_u[h->mbx*10],
                                   h->left_border_u, h->c_stride);
     h->intra_pred_c[pred_mode_uv](h->cv, &h->top_border_v[h->mbx*10],
@@ -256,7 +256,7 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     GetBitContext *gb = &h->s.gb;
     int ref[4];
 
-    init_mb(h);
+    ff_cavs_init_mb(h);
     switch(mb_type) {
     case P_SKIP:
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, 0);
@@ -301,7 +301,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     enum sub_mb_t sub_type[4];
     int flags;
 
-    init_mb(h);
+    ff_cavs_init_mb(h);
 
     /* reset all MVs */
     h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
@@ -527,14 +527,14 @@ static int decode_pic(AVSContext *h) {
     if(h->pic_type == FF_I_TYPE) {
         do {
             decode_mb_i(h, 0);
-        } while(next_mb(h));
+        } while(ff_cavs_next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
                 while(skip_count--) {
                     decode_mb_p(h,P_SKIP);
-                    if(!next_mb(h))
+                    if(!ff_cavs_next_mb(h))
                         goto done;
                 }
                 mb_type = get_ue_golomb(&s->gb) + P_16X16;
@@ -544,14 +544,14 @@ static int decode_pic(AVSContext *h) {
                 decode_mb_i(h, mb_type - P_8X8 - 1);
             } else
                 decode_mb_p(h,mb_type);
-        } while(next_mb(h));
+        } while(ff_cavs_next_mb(h));
     } else { /* FF_B_TYPE */
         do {
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
                 while(skip_count--) {
                     decode_mb_b(h,B_SKIP);
-                    if(!next_mb(h))
+                    if(!ff_cavs_next_mb(h))
                         goto done;
                 }
                 mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
@@ -561,7 +561,7 @@ static int decode_pic(AVSContext *h) {
                 decode_mb_i(h, mb_type - B_8X8 - 1);
             } else
                 decode_mb_b(h,mb_type);
-        } while(next_mb(h));
+        } while(ff_cavs_next_mb(h));
     }
  done:
     if(h->pic_type != FF_B_TYPE) {
