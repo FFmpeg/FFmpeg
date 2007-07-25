@@ -49,7 +49,7 @@ typedef int (*vp56_parse_header_t)(vp56_context_t *s, uint8_t *buf,
 typedef struct {
     int high;
     int bits;
-    const uint8_t *buffer;
+    uint8_t *buffer;
     unsigned long code_word;
 } vp56_range_coder_t;
 
@@ -165,7 +165,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
  */
 
 static inline void vp56_init_range_decoder(vp56_range_coder_t *c,
-                                           const uint8_t *buf, int buf_size)
+                                           uint8_t *buf, int buf_size)
 {
     c->high = 255;
     c->bits = 8;
