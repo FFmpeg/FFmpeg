@@ -41,8 +41,8 @@ CodecTags ff_mkv_codec_tags[]={
 
 //    {"A_MS/ACM"         , CODEC_ID_NONE},
     {"A_MPEG/L3"        , CODEC_ID_MP3},
-    {"A_MPEG/L2"        , CODEC_ID_MP3},
-    {"A_MPEG/L1"        , CODEC_ID_MP3},
+    {"A_MPEG/L2"        , CODEC_ID_MP2},
+    {"A_MPEG/L1"        , CODEC_ID_MP2},
     {"A_PCM/INT/BIG"    , CODEC_ID_PCM_U16BE},
     {"A_PCM/INT/LIT"    , CODEC_ID_PCM_U16LE},
 //    {"A_PCM/FLOAT/IEEE" , CODEC_ID_NONE},
