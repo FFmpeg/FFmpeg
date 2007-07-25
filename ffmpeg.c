@@ -150,6 +150,7 @@ static int audio_codec_id = CODEC_ID_NONE;
 static int audio_codec_tag = 0;
 static char *audio_language = NULL;
 
+static int subtitle_disable = 0;
 static int subtitle_codec_id = CODEC_ID_NONE;
 static char *subtitle_language = NULL;
 
@@ -2624,6 +2625,8 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_DATA:
             break;
         case CODEC_TYPE_SUBTITLE:
+            if(subtitle_disable)
+                ic->streams[i]->discard = AVDISCARD_ALL;
             break;
         case CODEC_TYPE_UNKNOWN:
             break;
@@ -2647,13 +2650,15 @@ static void opt_input_file(const char *filename)
     rate_emu = 0;
 }
 
-static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
+static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
+                                         int *has_subtitle_ptr)
 {
-    int has_video, has_audio, i, j;
+    int has_video, has_audio, has_subtitle, i, j;
     AVFormatContext *ic;
 
     has_video = 0;
     has_audio = 0;
+    has_subtitle = 0;
     for(j=0;j<nb_input_files;j++) {
         ic = input_files[j];
         for(i=0;i<ic->nb_streams;i++) {
@@ -2665,9 +2670,11 @@ static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
             case CODEC_TYPE_VIDEO:
                 has_video = 1;
                 break;
+            case CODEC_TYPE_SUBTITLE:
+                has_subtitle = 1;
+                break;
             case CODEC_TYPE_DATA:
             case CODEC_TYPE_UNKNOWN:
-            case CODEC_TYPE_SUBTITLE:
                 break;
             default:
                 abort();
@@ -2676,6 +2683,7 @@ static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
     }
     *has_video_ptr = has_video;
     *has_audio_ptr = has_audio;
+    *has_subtitle_ptr = has_subtitle;
 }
 
 static void new_video_stream(AVFormatContext *oc)
@@ -2901,18 +2909,11 @@ static void new_audio_stream(AVFormatContext *oc)
     audio_stream_copy = 0;
 }
 
-static void opt_new_subtitle_stream(void)
+static void new_subtitle_stream(AVFormatContext *oc)
 {
-    AVFormatContext *oc;
     AVStream *st;
     AVCodecContext *subtitle_enc;
     int i;
-
-    if (nb_output_files <= 0) {
-        fprintf(stderr, "At least one output file must be specified\n");
-        exit(1);
-    }
-    oc = output_files[nb_output_files - 1];
 
     st = av_new_stream(oc, oc->nb_streams);
     if (!st) {
@@ -2941,6 +2942,7 @@ static void opt_new_subtitle_stream(void)
         subtitle_language = NULL;
     }
 
+    subtitle_disable = 0;
     subtitle_codec_id = CODEC_ID_NONE;
     subtitle_stream_copy = 0;
 }
@@ -2967,10 +2969,22 @@ static void opt_new_video_stream(void)
     new_video_stream(oc);
 }
 
+static void opt_new_subtitle_stream(void)
+{
+    AVFormatContext *oc;
+    if (nb_output_files <= 0) {
+        fprintf(stderr, "At least one output file must be specified\n");
+        exit(1);
+    }
+    oc = output_files[nb_output_files - 1];
+    new_subtitle_stream(oc);
+}
+
 static void opt_output_file(const char *filename)
 {
     AVFormatContext *oc;
-    int use_video, use_audio, input_has_video, input_has_audio, i;
+    int use_video, use_audio, use_subtitle;
+    int input_has_video, input_has_audio, input_has_subtitle, i;
     AVFormatParameters params, *ap = &params;
 
     if (!strcmp(filename, "-"))
@@ -3001,15 +3015,19 @@ static void opt_output_file(const char *filename)
     } else {
         use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy || video_codec_id != CODEC_ID_NONE;
         use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy || audio_codec_id != CODEC_ID_NONE;
+        use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_id != CODEC_ID_NONE;
 
         /* disable if no corresponding type found and at least one
            input file */
         if (nb_input_files > 0) {
-            check_audio_video_inputs(&input_has_video, &input_has_audio);
+            check_audio_video_sub_inputs(&input_has_video, &input_has_audio,
+                                         &input_has_subtitle);
             if (!input_has_video)
                 use_video = 0;
             if (!input_has_audio)
                 use_audio = 0;
+            if (!input_has_subtitle)
+                use_subtitle = 0;
         }
 
         /* manual disable */
@@ -3019,6 +3037,9 @@ static void opt_output_file(const char *filename)
         if (video_disable) {
             use_video = 0;
         }
+        if (subtitle_disable) {
+            use_subtitle = 0;
+        }
 
         if (use_video) {
             new_video_stream(oc);
@@ -3026,6 +3047,10 @@ static void opt_output_file(const char *filename)
 
         if (use_audio) {
             new_audio_stream(oc);
+        }
+
+        if (use_subtitle) {
+            new_subtitle_stream(oc);
         }
 
         oc->timestamp = rec_timestamp;
@@ -3635,6 +3660,7 @@ const OptionDef options[] = {
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
 
     /* subtitle options */
+    { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "newsubtitle", OPT_SUBTITLE, {(void*)opt_new_subtitle_stream}, "add a new subtitle stream to the current output stream" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },

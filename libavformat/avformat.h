@@ -186,6 +186,8 @@ typedef struct AVOutputFormat {
      */
     const struct AVCodecTag **codec_tag;
 
+    enum CodecID subtitle_codec; /**< default subtitle codec */
+
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
