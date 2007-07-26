@@ -24,11 +24,11 @@
 
 /* gxf.c */
 typedef enum {
-    PKT_MAP = 0xbc,
-    PKT_MEDIA = 0xbf,
-    PKT_EOS = 0xfb,
-    PKT_FLT = 0xfc,
-    PKT_UMF = 0xfd
+    PKT_MAP         = 0xbc,
+    PKT_MEDIA       = 0xbf,
+    PKT_EOS         = 0xfb,
+    PKT_FLT         = 0xfc,
+    PKT_UMF         = 0xfd,
 } pkt_type_t;
 
 typedef enum {
