@@ -6124,11 +6124,7 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "SAC not supported\n");
         return -1;      /* SAC: off */
     }
-    if (get_bits1(&s->gb) != 0) {
-        s->obmc= 1;
-        av_log(s->avctx, AV_LOG_ERROR, "Advanced Prediction Mode not supported\n");
-//        return -1;      /* advanced prediction mode: off */
-    }
+    s->obmc= get_bits1(&s->gb);
     if (get_bits1(&s->gb) != 0) {
         av_log(s->avctx, AV_LOG_ERROR, "PB frame mode no supported\n");
         return -1;      /* PB frame mode */
