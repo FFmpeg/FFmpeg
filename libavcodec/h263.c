@@ -6149,6 +6149,9 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
 
+    if(s->avctx->debug&FF_DEBUG_PICT_INFO)
+        show_pict_info(s);
+
     return 0;
 }
 
