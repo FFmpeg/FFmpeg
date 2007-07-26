@@ -833,6 +833,21 @@ int av_get_frame_filename(char *buf, int buf_size,
  */
 int av_filename_number_test(const char *filename);
 
+/**
+ * Generate an SDP for an RTP session.
+ *
+ * @param ac array of AVFormatContexts describing the RTP streams. If the
+ *           array is composed by only one context, such context can contain
+ *           multiple AVStreams (one AVStream per RTP stream). Otherwise,
+ *           all the contexts in the array (an AVCodecContext per RTP stream)
+ *           must contain only one AVStream
+ * @param n_streams number of AVCodecContexts contained in ac
+ * @return a pointer to the SDP (an array of chars which is allocated by
+ *         avf_sdp_create(), and must be freed by the caller), or NULL in
+ *         case of failure.
+ */
+char *avf_sdp_create(AVFormatContext *ac[], int n_streams);
+
 #ifdef HAVE_AV_CONFIG_H
 
 #include "os_support.h"
