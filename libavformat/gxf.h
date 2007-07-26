@@ -31,4 +31,23 @@ typedef enum {
     PKT_UMF = 0xfd
 } pkt_type_t;
 
+typedef enum {
+    MAT_NAME        = 0x40,
+    MAT_FIRST_FIELD = 0x41,
+    MAT_LAST_FIELD  = 0x42,
+    MAT_MARK_IN     = 0x43,
+    MAT_MARK_OUT    = 0x44,
+    MAT_SIZE        = 0x45,
+} mat_tag_t;
+
+typedef enum {
+    TRACK_NAME      = 0x4c,
+    TRACK_AUX       = 0x4d,
+    TRACK_VER       = 0x4e,
+    TRACK_MPG_AUX   = 0x4f,
+    TRACK_FPS       = 0x50,
+    TRACK_LINES     = 0x51,
+    TRACK_FPF       = 0x52,
+} track_tag_t;
+
 #endif /* FFMPEG_GXF_H */
