@@ -160,6 +160,9 @@ feature_request/closed/wont_implement
 Note, please do not use type-status-substatus combinations other than the
 above without asking on ffmpeg-dev first!
 
+Note2, if you provide the requested info dont forget to remove the
+needs_more_info substate
+
 Topic:
 ------
 A topic is a tag you should add to your issue in order to make grouping them
