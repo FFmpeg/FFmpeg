@@ -395,6 +395,14 @@ the whole libav*. If you wish, disable some parts with configure switches.
 You can also try to hack it and remove more, but if you had problems fixing
 the compilation failure then you are probably not qualified for this.
 
+@section I'm using libavcodec from within my C++ application but the linker complains about missing symbols which seem to be available.
+
+FFmpeg is a pure C project, so to use the libraries within your C++ application
+you need to explicitly state that you are using a C library. You can do this by
+encompassing your FFmpeg includes using @code{extern "C"}.
+
+See @url{http://www.parashift.com/c++-faq-lite/mixing-c-and-cpp.html#faq-32.3}
+
 @section I have a file in memory / a API different from *open/*read/ libc how do i use it with libavformat?
 
 You have to implement a URLProtocol, see libavformat/file.c in FFmpeg
