@@ -1007,7 +1007,7 @@ static int atrac3_decode_init(AVCodecContext *avctx)
     /* Pad the data buffer with FF_INPUT_BUFFER_PADDING_SIZE,
      * this is for the bitstream reader. */
     if ((q->decoded_bytes_buffer = av_mallocz((avctx->block_align+(4-avctx->block_align%4) + FF_INPUT_BUFFER_PADDING_SIZE)))  == NULL)
-        return -1;
+        return AVERROR(ENOMEM);
 
 
     /* Initialize the VLC tables. */
