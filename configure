@@ -159,6 +159,13 @@ show_help(){
   echo "  --enable-protocol=NAME   enables protocol NAME"
   echo "  --disable-protocol=NAME  disables protocol NAME"
   echo "  --disable-protocols      disables all protocols"
+  echo "  --list-decoders          show all available decoders"
+  echo "  --list-encoders          show all available encoders"
+  echo "  --list-muxers            show all available muxers"
+  echo "  --list-demuxers          show all available demuxers"
+  echo "  --list-parsers           show all available parsers"
+  echo "  --list-protocols         show all available protocols"
+  echo "  --list-bsfs              show all available bitstream filters"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
@@ -909,6 +916,13 @@ die_unknown(){
     exit 1
 }
 
+show_list() {
+    for part in $*; do
+        echo $part | sed 's/_[^_]*$//'
+    done | sort
+    exit 0
+}
+
 for opt do
   optval="${opt#*=}"
   case "$opt" in
@@ -981,6 +995,11 @@ for opt do
   eval `echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g'`
   echo "$CMDLINE_SELECT" | grep -q "^ *$option\$" || die_unknown $opt
   $action $option
+  ;;
+  --list-*)
+    NAME="${opt#--list-}"
+    NAME=$(toupper ${NAME%s})
+    eval show_list \$${NAME}_LIST
   ;;
   --help) show_help
   ;;
