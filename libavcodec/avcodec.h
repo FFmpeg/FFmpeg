@@ -258,6 +258,7 @@ enum CodecID {
     CODEC_ID_MLP,
     CODEC_ID_GSM_MS, /* as found in WAV */
     CODEC_ID_ATRAC3,
+    CODEC_ID_VOXWARE,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
