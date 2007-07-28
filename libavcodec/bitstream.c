@@ -36,7 +36,7 @@
  * @param[in] ptr The block of memory to reallocate.
  * @param[in] size The requested size.
  * @return Block of memory of requested size.
- * @deprecated. Code which uses ff_realloc_static is broken/misdesigned.
+ * @deprecated. Code which uses ff_realloc_static is broken/misdesigned
  * and should correctly use static arrays
  */
 attribute_deprecated void *ff_realloc_static(void *ptr, unsigned int size);

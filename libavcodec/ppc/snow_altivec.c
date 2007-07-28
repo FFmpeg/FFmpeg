@@ -522,7 +522,7 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
     vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
-        //FIXME ugly misue of obmc_stride
+        //FIXME ugly misuse of obmc_stride
 
         uint8_t *obmc1= obmc + y*obmc_stride;
         uint8_t *obmc2= obmc1+ (obmc_stride>>1);
@@ -588,7 +588,7 @@ static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
     vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
-        //FIXME ugly misue of obmc_stride
+        //FIXME ugly misuse of obmc_stride
 
         uint8_t *obmc1= obmc + y*obmc_stride;
         uint8_t *obmc2= obmc1+ (obmc_stride>>1);
@@ -671,7 +671,7 @@ static void inner_add_yblock_a_bw_8_obmc_16_altivec(uint8_t *obmc,
     vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
-        //FIXME ugly misue of obmc_stride
+        //FIXME ugly misuse of obmc_stride
 
         uint8_t *obmc1= obmc + y*obmc_stride;
         uint8_t *obmc2= obmc1+ (obmc_stride>>1);
@@ -717,7 +717,7 @@ static void inner_add_yblock_a_bw_16_obmc_32_altivec(uint8_t *obmc,
     vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
-        //FIXME ugly misue of obmc_stride
+        //FIXME ugly misuse of obmc_stride
 
         uint8_t *obmc1= obmc + y*obmc_stride;
         uint8_t *obmc2= obmc1+ (obmc_stride>>1);
