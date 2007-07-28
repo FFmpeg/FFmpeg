@@ -21,7 +21,7 @@
  */
 
 /**
- * @file h264dsp.c
+ * @file h264dspenc.c
  * H.264 encoder related DSP utils
  *
  */
@@ -74,7 +74,7 @@ static void h264_dct_c(DCTELEM block[4][4])
     H264_DCT_PART2(3);
 }
 
-void ff_h264dsp_init(DSPContext* c, AVCodecContext *avctx)
+void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx)
 {
     c->h264_dct = h264_dct_c;
 }

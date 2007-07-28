@@ -2560,7 +2560,7 @@ void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
 
 #if defined(CONFIG_H264_ENCODER)
 /* H264 specific */
-void ff_h264dsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx);
 #endif /* CONFIG_H264_ENCODER */
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
@@ -4053,7 +4053,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     ff_vc1dsp_init(c,avctx);
 #endif
 #if defined(CONFIG_H264_ENCODER)
-    ff_h264dsp_init(c,avctx);
+    ff_h264dspenc_init(c,avctx);
 #endif
 
     c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
