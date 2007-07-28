@@ -76,8 +76,6 @@ static const float clevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_4POINT5DB,
 
 static const float slevs[4] = { LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO, LEVEL_MINUS_6DB };
 
-#define BLOCK_SIZE    256
-
 #define AC3_OUTPUT_LFEON  8
 
 typedef struct {
@@ -145,18 +143,18 @@ typedef struct {
     uint8_t  bap[5][256];       //fbw channel bit allocation pointers
     uint8_t  lfebap[256];       //lfe channel bit allocation pointers
 
-    DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][BLOCK_SIZE]);  //transform coefficients
+    DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][256]);  //transform coefficients
 
     /* For IMDCT. */
     MDCTContext imdct_512;  //for 512 sample imdct transform
     MDCTContext imdct_256;  //for 256 sample imdct transform
     DSPContext  dsp;        //for optimization
 
-    DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][BLOCK_SIZE]);    //output after imdct transform and windowing
-    DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][BLOCK_SIZE]);     //delay - added to the next block
-    DECLARE_ALIGNED_16(float, tmp_imdct[BLOCK_SIZE]);               //temporary storage for imdct transform
-    DECLARE_ALIGNED_16(float, tmp_output[BLOCK_SIZE * 2]);          //temporary storage for output before windowing
-    DECLARE_ALIGNED_16(float, window[BLOCK_SIZE]);                  //window coefficients
+    DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][256]);   //output after imdct transform and windowing
+    DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][256]);    //delay - added to the next block
+    DECLARE_ALIGNED_16(float, tmp_imdct[256]);                  //temporary storage for imdct transform
+    DECLARE_ALIGNED_16(float, tmp_output[512]);                 //temporary storage for output before windowing
+    DECLARE_ALIGNED_16(float, window[256]);                     //window coefficients
 
     /* Miscellaneous. */
     GetBitContext gb;
@@ -1122,11 +1120,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
             return ctx->frame_size;
         }
         start = (ctx->output_mode & AC3_OUTPUT_LFEON) ? 0 : 1;
-        for (k = 0; k < BLOCK_SIZE; k++)
+        for (k = 0; k < 256; k++)
             for (j = start; j <= ctx->nfchans; j++)
                 *(out_samples++) = convert(int_ptr[j][k]);
     }
-    *data_size = NB_BLOCKS * BLOCK_SIZE * avctx->channels * sizeof (int16_t);
+    *data_size = NB_BLOCKS * 256 * avctx->channels * sizeof (int16_t);
     return ctx->frame_size;
 }
 
