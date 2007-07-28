@@ -168,7 +168,7 @@ NOTES
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
-more intelligent missalignment avoidance for the horizontal scaler
+more intelligent misalignment avoidance for the horizontal scaler
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
 add support for packed pixel yuv input & output
