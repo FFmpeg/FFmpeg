@@ -2520,7 +2520,7 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
     int y, x;
     DWTELEM * dst;
     for(y=0; y<b_h; y++){
-        //FIXME ugly missue of obmc_stride
+        //FIXME ugly misue of obmc_stride
         const uint8_t *obmc1= obmc + y*obmc_stride;
         const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
         const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
@@ -2680,7 +2680,7 @@ assert(src_stride > 2*MB_SIZE + 5);
         STOP_TIMER("inner_add_yblock")
     }else
     for(y=0; y<b_h; y++){
-        //FIXME ugly missue of obmc_stride
+        //FIXME ugly misue of obmc_stride
         const uint8_t *obmc1= obmc + y*obmc_stride;
         const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
         const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);

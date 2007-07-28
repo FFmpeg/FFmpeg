@@ -457,7 +457,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "2:                                     \n\t"
         "movl %%edx, "RANGE    "(%2)            \n\t"
         "movl %%ebx, "LOW      "(%2)            \n\t"
-        :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or misscompiles it (for example if "+a"(bit) or "+m"(*state) is used
+        :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or miscompiles it (for example if "+a"(bit) or "+m"(*state) is used
         :"r"(state), "r"(c)
         : "%"REG_c, "%ebx", "%edx", "%"REG_S, "memory"
     );

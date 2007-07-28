@@ -283,7 +283,7 @@ static int init_cplscales_table (COOKContext *q) {
  * Why? No idea, some checksum/error detection method maybe.
  *
  * Out buffer size: extra bytes are needed to cope with
- * padding/missalignment.
+ * padding/misalignment.
  * Subpackets passed to the decoder can contain two, consecutive
  * half-subpackets, of identical but arbitrary size.
  *          1234 1234 1234 1234  extraA extraB

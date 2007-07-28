@@ -283,7 +283,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     if (!video_enc) {
-        /* currenty, cannot work correctly if audio only */
+        /* currently, cannot work correctly if audio only */
         swf->video_type = 0;
         width = 320;
         height = 200;

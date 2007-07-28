@@ -176,7 +176,7 @@ typedef struct RL_VLC_ELEM {
 #define UNALIGNED_STORES_ARE_BAD
 #endif
 
-/* used to avoid missaligned exceptions on some archs (alpha, ...) */
+/* used to avoid misaligned exceptions on some archs (alpha, ...) */
 #if defined(ARCH_X86)
 #    define unaligned16(a) (*(const uint16_t*)(a))
 #    define unaligned32(a) (*(const uint32_t*)(a))

@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include <gsm.h>
 
-// gsm.h miss some essential constants
+// gsm.h misses some essential constants
 #define GSM_BLOCK_SIZE 33
 #define GSM_MS_BLOCK_SIZE 65
 #define GSM_FRAME_SIZE 160

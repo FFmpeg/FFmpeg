@@ -243,7 +243,7 @@ int ff_rate_control_init(MpegEncContext *s)
                 bits= rce.i_tex_bits + rce.p_tex_bits;
 
                 q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
-                rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME missbehaves a little for variable fps
+                rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME misbehaves a little for variable fps
             }
         }
 

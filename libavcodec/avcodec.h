@@ -2834,7 +2834,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
  * Frees all static arrays and resets their pointers to 0.
  * Call this function to release all statically allocated tables.
  *
- * @deprecated. Code which uses av_free_static is broken/missdesigned
+ * @deprecated. Code which uses av_free_static is broken/misdesigned
  * and should correctly use static arrays
  *
  */
@@ -2847,7 +2847,7 @@ attribute_deprecated void av_free_static(void);
  *
  * @param[in] size The amount of memory you need in bytes.
  * @return block of memory of the requested size
- * @deprecated. Code which uses av_mallocz_static is broken/missdesigned
+ * @deprecated. Code which uses av_mallocz_static is broken/misdesigned
  * and should correctly use static arrays
  */
 attribute_deprecated void *av_mallocz_static(unsigned int size);
