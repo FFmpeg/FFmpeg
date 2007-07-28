@@ -25,29 +25,31 @@
 static void get_str(ByteIOContext *pb, char *buf, int buf_size)
 {
     int len, i;
-    char *q;
+    char *q, r;
 
     len = get_be16(pb);
     q = buf;
     for(i=0;i<len;i++) {
+        r = get_byte(pb);
         if (i < buf_size - 1)
-            *q++ = get_byte(pb);
+            *q++ = r;
     }
-    *q = '\0';
+    if (buf_size > 0) *q = '\0';
 }
 
 static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
 {
     int len, i;
-    char *q;
+    char *q, r;
 
     len = get_byte(pb);
     q = buf;
     for(i=0;i<len;i++) {
+        r = get_byte(pb);
         if (i < buf_size - 1)
-            *q++ = get_byte(pb);
+            *q++ = r;
     }
-    *q = '\0';
+    if (buf_size > 0) *q = '\0';
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
