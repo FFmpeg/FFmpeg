@@ -22,12 +22,11 @@
 #include "rm.h"
 #include "avstring.h"
 
-static void get_str(ByteIOContext *pb, char *buf, int buf_size)
+static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
 {
-    int len, i;
+    int i;
     char *q, r;
 
-    len = get_be16(pb);
     q = buf;
     for(i=0;i<len;i++) {
         r = get_byte(pb);
@@ -37,19 +36,14 @@ static void get_str(ByteIOContext *pb, char *buf, int buf_size)
     if (buf_size > 0) *q = '\0';
 }
 
+static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
+{
+    get_strl(pb, buf, buf_size, get_be16(pb));
+}
+
 static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
 {
-    int len, i;
-    char *q, r;
-
-    len = get_byte(pb);
-    q = buf;
-    for(i=0;i<len;i++) {
-        r = get_byte(pb);
-        if (i < buf_size - 1)
-            *q++ = r;
-    }
-    if (buf_size > 0) *q = '\0';
+    get_strl(pb, buf, buf_size, get_byte(pb));
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
@@ -263,10 +257,10 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             flags = get_be16(pb); /* flags */
             break;
         case MKTAG('C', 'O', 'N', 'T'):
-            get_str(pb, s->title, sizeof(s->title));
-            get_str(pb, s->author, sizeof(s->author));
-            get_str(pb, s->copyright, sizeof(s->copyright));
-            get_str(pb, s->comment, sizeof(s->comment));
+            get_str16(pb, s->title, sizeof(s->title));
+            get_str16(pb, s->author, sizeof(s->author));
+            get_str16(pb, s->copyright, sizeof(s->copyright));
+            get_str16(pb, s->comment, sizeof(s->comment));
             break;
         case MKTAG('M', 'D', 'P', 'R'):
             st = av_new_stream(s, 0);
