@@ -50,7 +50,7 @@ FFTComplex *exptab;
 void fft_ref_init(int nbits, int inverse)
 {
     int n, i;
-    float c1, s1, alpha;
+    double c1, s1, alpha;
 
     n = 1 << nbits;
     exptab = av_malloc((n / 2) * sizeof(FFTComplex));
@@ -69,7 +69,7 @@ void fft_ref_init(int nbits, int inverse)
 void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
 {
     int n, i, j, k, n2;
-    float tmp_re, tmp_im, s, c;
+    double tmp_re, tmp_im, s, c;
     FFTComplex *q;
 
     n = 1 << nbits;
@@ -98,7 +98,7 @@ void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
 void imdct_ref(float *out, float *in, int n)
 {
     int k, i, a;
-    float sum, f;
+    double sum, f;
 
     for(i=0;i<n;i++) {
         sum = 0;
@@ -115,7 +115,7 @@ void imdct_ref(float *out, float *in, int n)
 void mdct_ref(float *output, float *input, int n)
 {
     int k, i;
-    float a, s;
+    double a, s;
 
     /* do it by hand */
     for(k=0;k<n/2;k++) {
