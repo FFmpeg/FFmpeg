@@ -144,13 +144,19 @@ int64_t gettime(void)
 void check_diff(float *tab1, float *tab2, int n)
 {
     int i;
+    double max= 0;
+    double error= 0;
 
     for(i=0;i<n;i++) {
-        if (fabsf(tab1[i] - tab2[i]) >= 1e-3) {
+        double e= fabsf(tab1[i] - tab2[i]);
+        if (e >= 1e-3) {
             av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
                    i, tab1[i], tab2[i]);
         }
+        error+= e*e;
+        if(e>max) max= e;
     }
+    av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error)/n);
 }
 
 
