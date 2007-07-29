@@ -34,6 +34,7 @@ typedef struct RawVideoContext {
 } RawVideoContext;
 
 static const PixelFormatTag pixelFormatBpsAVI[] = {
+    { PIX_FMT_PAL8,    4 },
     { PIX_FMT_PAL8,    8 },
     { PIX_FMT_RGB555, 15 },
     { PIX_FMT_RGB555, 16 },
@@ -104,6 +105,17 @@ static int raw_decode(AVCodecContext *avctx,
 
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
+
+    //4bpp raw in avi (yes this is ugly ...)
+    if(avctx->bits_per_sample == 4 && avctx->pix_fmt==PIX_FMT_PAL8 && !avctx->codec_tag){
+        int i;
+        for(i=256*2; i+1 < context->length>>1; i++){
+            context->buffer[2*i+0]= buf[i-256*2]>>4;
+            context->buffer[2*i+1]= buf[i-256*2]&15;
+        }
+        buf= context->buffer + 256*4;
+        buf_size= context->length - 256*4;
+    }
 
     if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
         return -1;
