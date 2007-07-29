@@ -342,6 +342,10 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if(avctx->rc_max_rate && avctx->rc_max_rate == avctx->bit_rate && avctx->rc_max_rate != avctx->rc_min_rate){
+        av_log(avctx, AV_LOG_INFO, "impossible bitrate constraints, this will fail\n");
+    }
+
     if(avctx->rc_buffer_size && avctx->bit_rate*av_q2d(avctx->time_base) > avctx->rc_buffer_size){
         av_log(avctx, AV_LOG_ERROR, "VBV buffer too small for bitrate\n");
         return -1;
