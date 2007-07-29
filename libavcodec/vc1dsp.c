@@ -322,6 +322,26 @@ static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
 }
 
 /* motion compensation functions */
+/** Filter in case of 2 filters */
+#define VC1_MSPEL_FILTER_16B(DIR, TYPE)                                 \
+static av_always_inline int vc1_mspel_ ## DIR ## _filter_16bits(const TYPE *src, int stride, int mode) \
+{                                                                       \
+    switch(mode){                                                       \
+    case 0: /* no shift - should not occur */                           \
+        return 0;                                                       \
+    case 1: /* 1/4 shift */                                             \
+        return -4*src[-stride] + 53*src[0] + 18*src[stride] - 3*src[stride*2]; \
+    case 2: /* 1/2 shift */                                             \
+        return -src[-stride] + 9*src[0] + 9*src[stride] - src[stride*2]; \
+    case 3: /* 3/4 shift */                                             \
+        return -3*src[-stride] + 18*src[0] + 53*src[stride] - 4*src[stride*2]; \
+    }                                                                   \
+    return 0; /* should not occur */                                    \
+}
+
+VC1_MSPEL_FILTER_16B(ver, uint8_t);
+VC1_MSPEL_FILTER_16B(hor, int16_t);
+
 
 /** Filter used to interpolate fractional pel values
  */
@@ -344,27 +364,56 @@ static av_always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int
  */
 static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int hmode, int vmode, int rnd)
 {
-    int i, j;
-    uint8_t tmp[8*11], *tptr;
-    int r;
+    int     i, j;
 
-    r = rnd;
-    src -= stride;
-    tptr = tmp;
-    for(j = 0; j < 11; j++) {
-        for(i = 0; i < 8; i++)
-            tptr[i] = av_clip_uint8(vc1_mspel_filter(src + i, 1, hmode, r));
-        src += stride;
-        tptr += 8;
+    if (vmode) { /* Horizontal filter to apply */
+        int r;
+
+        if (hmode) { /* Vertical filter to apply, output to tmp */
+            static const int shift_value[] = { 0, 5, 1, 5 };
+            int              shift = (shift_value[hmode]+shift_value[vmode])>>1;
+            int16_t          tmp[11*8], *tptr = tmp;
+
+            r = (1<<(shift-1)) + rnd-1;
+
+            src -= 1;
+            for(j = 0; j < 8; j++) {
+                for(i = 0; i < 11; i++)
+                    tptr[i] = (vc1_mspel_ver_filter_16bits(src + i, stride, vmode)+r)>>shift;
+                src += stride;
+                tptr += 11;
+            }
+
+            r = 64-rnd;
+            tptr = tmp+1;
+            for(j = 0; j < 8; j++) {
+                for(i = 0; i < 8; i++)
+                    dst[i] = av_clip_uint8((vc1_mspel_hor_filter_16bits(tptr + i, 1, hmode)+r)>>7);
+                dst += stride;
+                tptr += 11;
+            }
+
+            return;
+        }
+        else { /* No horizontal filter, output 8 lines to dst */
+            r = 1-rnd;
+
+            for(j = 0; j < 8; j++) {
+                for(i = 0; i < 8; i++)
+                    dst[i] = av_clip_uint8(vc1_mspel_filter(src + i, stride, vmode, r));
+                src += stride;
+                dst += stride;
+            }
+            return;
+        }
     }
-    r = 1 - rnd;
 
-    tptr = tmp + 8;
+    /* Horizontal mode with no vertical mode */
     for(j = 0; j < 8; j++) {
         for(i = 0; i < 8; i++)
-            dst[i] = av_clip_uint8(vc1_mspel_filter(tptr + i, 8, vmode, r));
+            dst[i] = av_clip_uint8(vc1_mspel_filter(src + i, 1, hmode, rnd));
         dst += stride;
-        tptr += 8;
+        src += stride;
     }
 }
 
