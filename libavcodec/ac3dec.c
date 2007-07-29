@@ -38,6 +38,12 @@
 #include "dsputil.h"
 #include "random.h"
 
+/**
+ * Table of bin locations for rematrixing bands
+ * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
+ */
+static const uint8_t rematrix_band_tbl[5] = { 13, 25, 37, 61, 253 };
+
 /* table for exponent to scale_factor mapping
  * scale_factor[i] = 2 ^ -(i + 15)
  */
@@ -92,6 +98,7 @@ typedef struct {
     int cplcoe;
     uint32_t cplbndstrc;
     int rematstr;
+    int nrematbnd;
     int rematflg[AC3_MAX_CHANNELS];
     int cplexpstr;
     int lfeexpstr;
@@ -648,43 +655,28 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
     return 0;
 }
 
-/* Rematrixing routines. */
-static void do_rematrixing1(AC3DecodeContext *ctx, int start, int end)
-{
-    float tmp0, tmp1;
-
-    while (start < end) {
-        tmp0 = ctx->transform_coeffs[1][start];
-        tmp1 = ctx->transform_coeffs[2][start];
-        ctx->transform_coeffs[1][start] = tmp0 + tmp1;
-        ctx->transform_coeffs[2][start] = tmp0 - tmp1;
-        start++;
-    }
-}
-
+/**
+ * Performs stereo rematrixing.
+ * reference: Section 7.5.4 Rematrixing : Decoding Technique
+ */
 static void do_rematrixing(AC3DecodeContext *ctx)
 {
-    int bnd1 = 13, bnd2 = 25, bnd3 = 37, bnd4 = 61;
+    int bnd, i;
     int end, bndend;
+    float tmp0, tmp1;
 
     end = FFMIN(ctx->endmant[0], ctx->endmant[1]);
 
-    if (ctx->rematflg[0])
-        do_rematrixing1(ctx, bnd1, bnd2);
-
-    if (ctx->rematflg[1])
-        do_rematrixing1(ctx, bnd2, bnd3);
-
-    bndend = bnd4;
-    if (bndend > end) {
-        bndend = end;
-        if (ctx->rematflg[2])
-            do_rematrixing1(ctx, bnd3, bndend);
-    } else {
-        if (ctx->rematflg[2])
-            do_rematrixing1(ctx, bnd3, bnd4);
-        if (ctx->rematflg[3])
-            do_rematrixing1(ctx, bnd4, end);
+    for(bnd=0; bnd<ctx->nrematbnd; bnd++) {
+        if(ctx->rematflg[bnd]) {
+            bndend = FFMIN(end, rematrix_band_tbl[bnd+1]);
+            for(i=rematrix_band_tbl[bnd]; i<bndend; i++) {
+                tmp0 = ctx->transform_coeffs[1][i];
+                tmp1 = ctx->transform_coeffs[2][i];
+                ctx->transform_coeffs[1][i] = tmp0 + tmp1;
+                ctx->transform_coeffs[2][i] = tmp0 - tmp1;
+            }
+        }
     }
 }
 
@@ -766,7 +758,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 {
     int nfchans = ctx->nfchans;
     int acmod = ctx->acmod;
-    int i, bnd, rbnd, seg, grpsize, ch;
+    int i, bnd, seg, grpsize, ch;
     GetBitContext *gb = &ctx->gb;
     int bit_alloc_flags = 0;
     int8_t *dexps;
@@ -857,15 +849,11 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if (acmod == AC3_ACMOD_STEREO) {/* rematrixing */
         ctx->rematstr = get_bits1(gb);
         if (ctx->rematstr) {
-            if (!(ctx->cplinu) || ctx->cplstrtmant > 61)
-                for (rbnd = 0; rbnd < 4; rbnd++)
-                    ctx->rematflg[rbnd] = get_bits1(gb);
-            if (ctx->cplstrtmant > 37 && ctx->cplstrtmant <= 61 && ctx->cplinu)
-                for (rbnd = 0; rbnd < 3; rbnd++)
-                    ctx->rematflg[rbnd] = get_bits1(gb);
-            if (ctx->cplstrtmant == 37 && ctx->cplinu)
-                for (rbnd = 0; rbnd < 2; rbnd++)
-                    ctx->rematflg[rbnd] = get_bits1(gb);
+            ctx->nrematbnd = 4;
+            if(ctx->cplinu && ctx->cplstrtmant <= 61)
+                ctx->nrematbnd -= 1 + (ctx->cplstrtmant == 37);
+            for(bnd=0; bnd<ctx->nrematbnd; bnd++)
+                ctx->rematflg[bnd] = get_bits1(gb);
         }
     }
 
