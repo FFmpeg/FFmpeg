@@ -89,8 +89,6 @@ typedef struct {
     int cplinu;
     int chincpl[AC3_MAX_CHANNELS];
     int phsflginu;
-    int cplbegf;
-    int cplendf;
     int cplcoe;
     uint32_t cplbndstrc;
     int rematstr;
@@ -801,23 +799,25 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         ctx->cplinu = get_bits1(gb);
         ctx->cplbndstrc = 0;
         if (ctx->cplinu) { /* coupling in use */
+            int cplbegf, cplendf;
+
             for (i = 0; i < nfchans; i++)
                 ctx->chincpl[i] = get_bits1(gb);
 
             if (acmod == AC3_ACMOD_STEREO)
                 ctx->phsflginu = get_bits1(gb); //phase flag in use
 
-            ctx->cplbegf = get_bits(gb, 4);
-            ctx->cplendf = get_bits(gb, 4);
+            cplbegf = get_bits(gb, 4);
+            cplendf = get_bits(gb, 4);
 
-            if (3 + ctx->cplendf - ctx->cplbegf < 0) {
-                av_log(NULL, AV_LOG_ERROR, "cplendf = %d < cplbegf = %d\n", ctx->cplendf, ctx->cplbegf);
+            if (3 + cplendf - cplbegf < 0) {
+                av_log(NULL, AV_LOG_ERROR, "cplendf = %d < cplbegf = %d\n", cplendf, cplbegf);
                 return -1;
             }
 
-            ctx->ncplbnd = ctx->ncplsubnd = 3 + ctx->cplendf - ctx->cplbegf;
-            ctx->cplstrtmant = ctx->cplbegf * 12 + 37;
-            ctx->cplendmant = ctx->cplendf * 12 + 73;
+            ctx->ncplbnd = ctx->ncplsubnd = 3 + cplendf - cplbegf;
+            ctx->cplstrtmant = cplbegf * 12 + 37;
+            ctx->cplendmant = cplendf * 12 + 73;
             for (i = 0; i < ctx->ncplsubnd - 1; i++) /* coupling band structure */
                 if (get_bits1(gb)) {
                     ctx->cplbndstrc |= 1 << i;
@@ -857,13 +857,13 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if (acmod == AC3_ACMOD_STEREO) {/* rematrixing */
         ctx->rematstr = get_bits1(gb);
         if (ctx->rematstr) {
-            if (!(ctx->cplinu) || ctx->cplbegf > 2)
+            if (!(ctx->cplinu) || ctx->cplstrtmant > 61)
                 for (rbnd = 0; rbnd < 4; rbnd++)
                     ctx->rematflg[rbnd] = get_bits1(gb);
-            if (ctx->cplbegf > 0 && ctx->cplbegf <= 2 && ctx->cplinu)
+            if (ctx->cplstrtmant > 37 && ctx->cplstrtmant <= 61 && ctx->cplinu)
                 for (rbnd = 0; rbnd < 3; rbnd++)
                     ctx->rematflg[rbnd] = get_bits1(gb);
-            if (ctx->cplbegf == 0 && ctx->cplinu)
+            if (ctx->cplstrtmant == 37 && ctx->cplinu)
                 for (rbnd = 0; rbnd < 2; rbnd++)
                     ctx->rematflg[rbnd] = get_bits1(gb);
         }
