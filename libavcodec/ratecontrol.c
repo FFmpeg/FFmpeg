@@ -371,6 +371,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         q= -q*s->avctx->i_quant_factor + s->avctx->i_quant_offset;
     else if(pict_type==B_TYPE && s->avctx->b_quant_factor<0.0)
         q= -q*s->avctx->b_quant_factor + s->avctx->b_quant_offset;
+    if(q<1) q=1;
 
     return q;
 }
@@ -386,6 +387,7 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
         q= last_p_q    *FFABS(a->i_quant_factor) + a->i_quant_offset;
     else if(pict_type==B_TYPE && a->b_quant_factor>0.0)
         q= last_non_b_q*    a->b_quant_factor  + a->b_quant_offset;
+    if(q<1) q=1;
 
     /* last qscale / qdiff stuff */
     if(rcc->last_non_b_pict_type==pict_type || pict_type!=I_TYPE){
