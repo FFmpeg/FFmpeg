@@ -225,6 +225,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (PCM_U24LE, pcm_u24le);
     REGISTER_ENCDEC (PCM_U32BE, pcm_u32be);
     REGISTER_ENCDEC (PCM_U32LE, pcm_u32le);
+    REGISTER_ENCDEC (PCM_ZORK , pcm_zork);
 
     /* dpcm codecs */
     REGISTER_DECODER(INTERPLAY_DPCM, interplay_dpcm);

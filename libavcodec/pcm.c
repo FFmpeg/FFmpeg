@@ -291,6 +291,14 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             *dst++ = (v >> 8) + 128;
         }
         break;
+    case CODEC_ID_PCM_ZORK:
+        for(;n>0;n--) {
+            v= *samples++ >> 8;
+            if(v<0)   v = -v;
+            else      v+= 128;
+            *dst++ = v;
+        }
+        break;
     case CODEC_ID_PCM_ALAW:
         for(;n>0;n--) {
             v = *samples++;
@@ -452,6 +460,15 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             *samples++ = ((int)*src++ - 128) << 8;
         }
         break;
+    case CODEC_ID_PCM_ZORK:
+        n = buf_size;
+        for(;n>0;n--) {
+            int x= *src++;
+            if(x&128) x-= 128;
+            else      x = -x;
+            *samples++ = x << 8;
+        }
+        break;
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
         n = buf_size;
@@ -505,5 +522,6 @@ PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
 PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
 PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
 PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
+PCM_CODEC(CODEC_ID_PCM_ZORK, pcm_zork);
 
 #undef PCM_CODEC

@@ -415,6 +415,8 @@ int wav_codec_get_id(unsigned int tag, int bps)
         id = CODEC_ID_PCM_S24LE;
     if (id == CODEC_ID_PCM_S16LE && bps == 32)
         id = CODEC_ID_PCM_S32LE;
+    if (id == CODEC_ID_ADPCM_IMA_WAV && bps == 8)
+        id = CODEC_ID_PCM_ZORK;
     return id;
 }
 #endif // CONFIG_DEMUXERS
