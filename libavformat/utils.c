@@ -589,24 +589,11 @@ static int is_intra_only(AVCodecContext *enc){
     return 0;
 }
 
-static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
-    int64_t mask = lsb_bits < 64 ? (1LL<<lsb_bits)-1 : -1LL;
-    int64_t delta= last_ts - mask/2;
-    return  ((lsb - delta)&mask) + delta;
-}
-
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
-    /* handle wrapping */
-    if(st->cur_dts != AV_NOPTS_VALUE){
-        if(pkt->pts != AV_NOPTS_VALUE)
-            pkt->pts= lsb2full(pkt->pts, st->cur_dts, st->pts_wrap_bits);
-        if(pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts= lsb2full(pkt->dts, st->cur_dts, st->pts_wrap_bits);
-    }
 
     if (pkt->duration == 0) {
         compute_frame_duration(&num, &den, st, pc, pkt);
