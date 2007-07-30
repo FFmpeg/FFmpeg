@@ -124,7 +124,7 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
     }
 
     p= FFMIN(p, end)-4;
-    *state=  be2me_32(unaligned32(p));
+    *state= AV_RB32(p);
 
     return p+4;
 }
