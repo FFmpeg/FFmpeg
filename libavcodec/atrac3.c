@@ -1047,6 +1047,10 @@ static int atrac3_decode_init(AVCodecContext *avctx)
     dsputil_init(&dsp, avctx);
 
     q->pUnits = av_mallocz(sizeof(channel_unit)*q->channels);
+    if (!q->pUnits) {
+        av_free(q->decoded_bytes_buffer);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
