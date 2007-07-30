@@ -6076,6 +6076,10 @@ decode_intra_mb:
             if( IS_DIRECT(h->sub_mb_type[0] | h->sub_mb_type[1] |
                           h->sub_mb_type[2] | h->sub_mb_type[3]) ) {
                 pred_direct_motion(h, &mb_type);
+                h->ref_cache[0][scan8[4]] =
+                h->ref_cache[1][scan8[4]] =
+                h->ref_cache[0][scan8[12]] =
+                h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
                 if( h->ref_count[0] > 1 || h->ref_count[1] > 1 ) {
                     for( i = 0; i < 4; i++ )
                         if( IS_DIRECT(h->sub_mb_type[i]) )
@@ -6111,11 +6115,11 @@ decode_intra_mb:
 
         for(list=0; list<h->list_count; list++){
             for(i=0; i<4; i++){
+                h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ];
                 if(IS_DIRECT(h->sub_mb_type[i])){
                     fill_rectangle(h->mvd_cache[list][scan8[4*i]], 2, 2, 8, 0, 4);
                     continue;
                 }
-                h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ];
 
                 if(IS_DIR(h->sub_mb_type[i], 0, list) && !IS_DIRECT(h->sub_mb_type[i])){
                     const int sub_mb_type= h->sub_mb_type[i];
