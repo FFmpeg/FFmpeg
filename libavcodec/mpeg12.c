@@ -1739,7 +1739,6 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 #endif
 
         ret = mpeg_decode_mb(s, s->block);
-        s->chroma_qscale= s->qscale;
 
         dprintf(s->avctx, "ret=%d\n", ret);
         if (ret < 0)
