@@ -1036,6 +1036,46 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return mov_read_default(c, pb, atom);
 }
 
+static void mov_parse_udta_string(ByteIOContext *pb, char *str, int size)
+{
+    uint16_t str_size = get_be16(pb); /* string length */;
+
+    get_be16(pb); /* skip language */
+    get_buffer(pb, str, FFMIN(size, str_size));
+}
+
+static int mov_read_udta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    uint64_t end = url_ftell(pb) + atom.size;
+
+    while (url_ftell(pb) + 8 < end) {
+        uint32_t tag_size = get_be32(pb);
+        uint32_t tag      = get_le32(pb);
+        uint64_t next     = url_ftell(pb) + tag_size - 8;
+
+        switch (tag) {
+        case MKTAG(0xa9,'n','a','m'):
+            mov_parse_udta_string(pb, c->fc->title,     sizeof(c->fc->title));
+            break;
+        case MKTAG(0xa9,'w','r','t'):
+            mov_parse_udta_string(pb, c->fc->author,    sizeof(c->fc->author));
+            break;
+        case MKTAG(0xa9,'c','p','y'):
+            mov_parse_udta_string(pb, c->fc->copyright, sizeof(c->fc->copyright));
+            break;
+        case MKTAG(0xa9,'i','n','f'):
+            mov_parse_udta_string(pb, c->fc->comment,   sizeof(c->fc->comment));
+            break;
+        default:
+            break;
+        }
+
+        url_fseek(pb, next, SEEK_SET);
+    }
+
+    return 0;
+}
+
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
@@ -1200,6 +1240,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 't', 't', 's' ), mov_read_stts },
 { MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
 { MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
+{ MKTAG( 'u', 'd', 't', 'a' ), mov_read_udta },
 { MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
 { MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
 { MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
