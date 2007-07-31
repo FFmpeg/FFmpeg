@@ -188,14 +188,13 @@ int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     const int b8_array_size= s->b8_stride*s->mb_height*2;
     const int b4_array_size= s->b4_stride*s->mb_height*4;
     int i;
+    int r= -1;
 
     if(shared){
         assert(pic->data[0]);
         assert(pic->type == 0 || pic->type == FF_BUFFER_TYPE_SHARED);
         pic->type= FF_BUFFER_TYPE_SHARED;
     }else{
-        int r;
-
         assert(!pic->data[0]);
 
         r= s->avctx->get_buffer(s->avctx, (AVFrame*)pic);
@@ -207,11 +206,13 @@ int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
         if(s->linesize && (s->linesize != pic->linesize[0] || s->uvlinesize != pic->linesize[1])){
             av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (stride changed)\n");
+            s->avctx->release_buffer(s->avctx, (AVFrame*)pic);
             return -1;
         }
 
         if(pic->linesize[1] != pic->linesize[2]){
             av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (uv stride mismatch)\n");
+            s->avctx->release_buffer(s->avctx, (AVFrame*)pic);
             return -1;
         }
 
@@ -261,6 +262,8 @@ int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
     return 0;
 fail: //for the CHECKED_ALLOCZ macro
+    if(r>=0)
+        s->avctx->release_buffer(s->avctx, (AVFrame*)pic);
     return -1;
 }
 
