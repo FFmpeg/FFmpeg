@@ -1663,7 +1663,6 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     AVCodecContext *avctx= s->avctx;
-    int ret;
     const int field_pic= s->picture_structure != PICT_FRAME;
     const int lowres= s->avctx->lowres;
 
@@ -1738,10 +1737,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             XVMC_init_block(s);//set s->block
 #endif
 
-        ret = mpeg_decode_mb(s, s->block);
-
-        dprintf(s->avctx, "ret=%d\n", ret);
-        if (ret < 0)
+        if(mpeg_decode_mb(s, s->block) < 0)
             return -1;
 
         if(s->current_picture.motion_val[0] && !s->encoding){ //note motion_val is normally NULL unless we want to extract the MVs
