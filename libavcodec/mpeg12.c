@@ -221,26 +221,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     assert(s->mb_skipped==0);
 
     if (s->mb_skip_run-- != 0) {
-        if(s->pict_type == I_TYPE){
-            av_log(s->avctx, AV_LOG_ERROR, "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
-        }
-
-        /* skip mb */
-        s->mb_intra = 0;
-        for(i=0;i<12;i++)
-            s->block_last_index[i] = -1;
-        if(s->picture_structure == PICT_FRAME)
-            s->mv_type = MV_TYPE_16X16;
-        else
-            s->mv_type = MV_TYPE_FIELD;
         if (s->pict_type == P_TYPE) {
-            /* if P type, zero motion vector is implied */
-            s->mv_dir = MV_DIR_FORWARD;
-            s->mv[0][0][0] = s->mv[0][0][1] = 0;
-            s->last_mv[0][0][0] = s->last_mv[0][0][1] = 0;
-            s->last_mv[0][1][0] = s->last_mv[0][1][1] = 0;
-            s->field_select[0][0]= s->picture_structure - 1;
             s->mb_skipped = 1;
             s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ]= MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
         } else {
@@ -252,12 +233,6 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 mb_type= s->current_picture.mb_type[ s->mb_width + (s->mb_y-1)*s->mb_stride - 1]; // FIXME not sure if this is allowed in mpeg at all,
             if(IS_INTRA(mb_type))
                 return -1;
-
-            /* if B type, reuse previous vectors and directions */
-            s->mv[0][0][0] = s->last_mv[0][0][0];
-            s->mv[0][0][1] = s->last_mv[0][0][1];
-            s->mv[1][0][0] = s->last_mv[1][0][0];
-            s->mv[1][0][1] = s->last_mv[1][0][1];
 
             s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ]=
                 mb_type | MB_TYPE_SKIP;
@@ -1826,6 +1801,36 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                 } else {
                     s->mb_skip_run += code;
                     break;
+                }
+            }
+            if(s->mb_skip_run){
+                int i;
+                if(s->pict_type == I_TYPE){
+                    av_log(s->avctx, AV_LOG_ERROR, "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
+                    return -1;
+                }
+
+                /* skip mb */
+                s->mb_intra = 0;
+                for(i=0;i<12;i++)
+                    s->block_last_index[i] = -1;
+                if(s->picture_structure == PICT_FRAME)
+                    s->mv_type = MV_TYPE_16X16;
+                else
+                    s->mv_type = MV_TYPE_FIELD;
+                if (s->pict_type == P_TYPE) {
+                    /* if P type, zero motion vector is implied */
+                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv[0][0][0] = s->mv[0][0][1] = 0;
+                    s->last_mv[0][0][0] = s->last_mv[0][0][1] = 0;
+                    s->last_mv[0][1][0] = s->last_mv[0][1][1] = 0;
+                    s->field_select[0][0]= s->picture_structure - 1;
+                } else {
+                    /* if B type, reuse previous vectors and directions */
+                    s->mv[0][0][0] = s->last_mv[0][0][0];
+                    s->mv[0][0][1] = s->last_mv[0][0][1];
+                    s->mv[1][0][0] = s->last_mv[1][0][0];
+                    s->mv[1][0][1] = s->last_mv[1][0][1];
                 }
             }
         }
