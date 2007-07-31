@@ -595,6 +595,11 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
 
+    if(pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && pkt->dts > pkt->pts && st->pts_wrap_bits<63
+       /*&& pkt->dts-(1LL<<st->pts_wrap_bits) < pkt->pts*/){
+        pkt->dts -= 1LL<<st->pts_wrap_bits;
+    }
+
     if (pkt->duration == 0) {
         compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
