@@ -1776,8 +1776,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         }
 
         s->dest[0] += 16 >> lowres;
-        s->dest[1] += 16 >> (s->chroma_x_shift + lowres);
-        s->dest[2] += 16 >> (s->chroma_x_shift + lowres);
+        s->dest[1] +=(16 >> lowres) >> s->chroma_x_shift;
+        s->dest[2] +=(16 >> lowres) >> s->chroma_x_shift;
 
         MPV_decode_mb(s, s->block);
 
