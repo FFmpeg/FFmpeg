@@ -522,7 +522,7 @@ static inline void qpel_motion(MpegEncContext *s,
 }
 
 /**
- * h263 chorma 4mv motion compensation.
+ * h263 chroma 4mv motion compensation.
  */
 static inline void chroma_4mv_motion(MpegEncContext *s,
                                      uint8_t *dest_cb, uint8_t *dest_cr,
