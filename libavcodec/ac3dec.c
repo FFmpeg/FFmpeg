@@ -686,7 +686,7 @@ static void do_rematrixing(AC3DecodeContext *ctx)
 static void do_imdct_256(AC3DecodeContext *ctx, int chindex)
 {
     int i, k;
-    float x[128];
+    DECLARE_ALIGNED_16(float, x[128]);
     FFTComplex z[2][64];
     float *o_ptr = ctx->tmp_output;
 
