@@ -586,6 +586,7 @@ CONFIG_LIST='
     ffserver
     gpl
     gprof
+    gray
     ipv6
     liba52
     liba52bin
@@ -616,7 +617,6 @@ CONFIG_LIST='
     v4l2
     x11grab
     zlib
-    gray
 '
 
 THREADS_LIST='
