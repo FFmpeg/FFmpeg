@@ -418,11 +418,11 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 break;
             case MT_FIELD:
                 s->mv_type = MV_TYPE_FIELD;
-                for(i=0;i<2;i++) {
-                    if (USES_LIST(mb_type, i)) {
-                        s->mv_dir |= (MV_DIR_FORWARD >> i);
-                        if (s->picture_structure == PICT_FRAME) {
-                            mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
+                if (s->picture_structure == PICT_FRAME) {
+                    mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
+                    for(i=0;i<2;i++) {
+                        if (USES_LIST(mb_type, i)) {
+                            s->mv_dir |= (MV_DIR_FORWARD >> i);
                             for(j=0;j<2;j++) {
                                 s->field_select[i][j] = get_bits1(&s->gb);
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
@@ -436,8 +436,13 @@ static int mpeg_decode_mb(MpegEncContext *s,
                                 s->mv[i][j][1] = val;
                                 dprintf(s->avctx, "fmy=%d\n", val);
                             }
-                        } else {
-                            mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
+                        }
+                    }
+                } else {
+                    mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
+                    for(i=0;i<2;i++) {
+                        if (USES_LIST(mb_type, i)) {
+                            s->mv_dir |= (MV_DIR_FORWARD >> i);
                             s->field_select[i][0] = get_bits1(&s->gb);
                             for(k=0;k<2;k++) {
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
