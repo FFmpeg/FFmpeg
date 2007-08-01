@@ -568,19 +568,17 @@ apply(){
 }
 
 CONFIG_LIST='
-    encoders
-    decoders
-    parsers
-    bsfs
-    muxers
-    demuxers
     audio_beos
     audio_oss
     avisynth
     beos_netserver
     bktr
+    bsfs
     dc1394
+    decoders
+    demuxers
     dv1394
+    encoders
     ffmpeg
     ffplay
     ffserver
@@ -606,7 +604,9 @@ CONFIG_LIST='
     libxvid
     memalign_hack
     mpegaudio_hp
+    muxers
     network
+    parsers
     powerpc_perf
     pp
     protocols
