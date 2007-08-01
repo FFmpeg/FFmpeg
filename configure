@@ -1223,7 +1223,7 @@ ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
 # we need to build at least one lib type
-if disabled_all static shared; then
+if ! enabled_any static shared; then
     cat <<EOF
 At least one library type must be built.
 Specify --enable-static to build the static libraries or --enable-shared to
@@ -1233,7 +1233,7 @@ EOF
     exit 1;
 fi
 
-if disabled libogg; then
+if ! enabled libogg; then
     enabled libtheora && die "libogg must be enabled to enable libtheora."
     enabled libvorbis && die "libogg must be enabled to enable libvorbis."
 fi
@@ -1254,7 +1254,7 @@ EOF
 fi
 
 
-if disabled gpl ; then
+if ! enabled gpl; then
     die_gpl_disabled(){
         name=$1
         shift
@@ -1390,7 +1390,7 @@ int main(){
 EOF
 if test "$?" != 0; then
     echo "$cc is unable to create an executable file."
-    if test -z "$cross_prefix" && disabled cross_compile ; then
+    if test -z "$cross_prefix" && ! enabled cross_compile ; then
         echo "If $cc is a cross-compiler, use the --cross-compile option."
         echo "Only do this if you know what cross compiling means."
     fi
@@ -1496,7 +1496,7 @@ EOF
 
 # ---
 # big/little-endian test
-if disabled cross_compile; then
+if ! enabled cross_compile; then
     check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
 #include <inttypes.h>
 int main(int argc, char ** argv){
@@ -1517,7 +1517,7 @@ fi
 check_header malloc.h
 check_func memalign
 
-if disabled_all memalign memalign_hack && enabled need_memalign ; then
+if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
@@ -1850,7 +1850,7 @@ echo "libvorbis enabled         ${libvorbis-no}"
 echo "x264 enabled              ${libx264-no}"
 echo "XviD enabled              ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
-if disabled gpl; then
+if ! enabled gpl; then
     echo "License: LGPL"
 else
     echo "License: GPL"
