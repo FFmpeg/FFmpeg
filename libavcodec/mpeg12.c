@@ -375,12 +375,12 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
             /* motion vectors */
             s->mv_dir = 0;
-            for(i=0;i<2;i++) {
-                if (USES_LIST(mb_type, i)) {
-                    s->mv_dir |= (MV_DIR_FORWARD >> i);
-                    dprintf(s->avctx, "motion_type=%d\n", motion_type);
-                    switch(motion_type) {
-                    case MT_FRAME: /* or MT_16X8 */
+            dprintf(s->avctx, "motion_type=%d\n", motion_type);
+            switch(motion_type) {
+            case MT_FRAME: /* or MT_16X8 */
+                for(i=0;i<2;i++) {
+                    if (USES_LIST(mb_type, i)) {
+                        s->mv_dir |= (MV_DIR_FORWARD >> i);
                         if (s->picture_structure == PICT_FRAME) {
                             /* MT_FRAME */
                             mb_type |= MB_TYPE_16x16;
@@ -408,9 +408,14 @@ static int mpeg_decode_mb(MpegEncContext *s,
                                 }
                             }
                         }
-                        break;
-                    case MT_FIELD:
-                        s->mv_type = MV_TYPE_FIELD;
+                    }
+                }
+                break;
+            case MT_FIELD:
+                s->mv_type = MV_TYPE_FIELD;
+                for(i=0;i<2;i++) {
+                    if (USES_LIST(mb_type, i)) {
+                        s->mv_dir |= (MV_DIR_FORWARD >> i);
                         if (s->picture_structure == PICT_FRAME) {
                             mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
                             for(j=0;j<2;j++) {
@@ -437,59 +442,61 @@ static int mpeg_decode_mb(MpegEncContext *s,
                                 s->mv[i][0][k] = val;
                             }
                         }
-                        break;
-                    case MT_DMV:
-                        {
-                            int dmx, dmy, mx, my, m;
-
-                            mx = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
-                                                    s->last_mv[i][0][0]);
-                            s->last_mv[i][0][0] = mx;
-                            s->last_mv[i][1][0] = mx;
-                            dmx = get_dmv(s);
-                            my = mpeg_decode_motion(s, s->mpeg_f_code[i][1],
-                                                    s->last_mv[i][0][1] >> 1);
-                            dmy = get_dmv(s);
-                            s->mv_type = MV_TYPE_DMV;
-
-
-                            s->last_mv[i][0][1] = my<<1;
-                            s->last_mv[i][1][1] = my<<1;
-
-                            s->mv[i][0][0] = mx;
-                            s->mv[i][0][1] = my;
-                            s->mv[i][1][0] = mx;//not used
-                            s->mv[i][1][1] = my;//not used
-
-                            if (s->picture_structure == PICT_FRAME) {
-                                mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
-
-                                //m = 1 + 2 * s->top_field_first;
-                                m = s->top_field_first ? 1 : 3;
-
-                                /* top -> top pred */
-                                s->mv[i][2][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
-                                s->mv[i][2][1] = ((my * m + (my > 0)) >> 1) + dmy - 1;
-                                m = 4 - m;
-                                s->mv[i][3][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
-                                s->mv[i][3][1] = ((my * m + (my > 0)) >> 1) + dmy + 1;
-                            } else {
-                                mb_type |= MB_TYPE_16x16;
-
-                                s->mv[i][2][0] = ((mx + (mx > 0)) >> 1) + dmx;
-                                s->mv[i][2][1] = ((my + (my > 0)) >> 1) + dmy;
-                                if(s->picture_structure == PICT_TOP_FIELD)
-                                    s->mv[i][2][1]--;
-                                else
-                                    s->mv[i][2][1]++;
-                            }
-                        }
-                        break;
-                    default:
-                        av_log(s->avctx, AV_LOG_ERROR, "00 motion_type at %d %d\n", s->mb_x, s->mb_y);
-                        return -1;
                     }
                 }
+                break;
+            case MT_DMV:
+                s->mv_type = MV_TYPE_DMV;
+                for(i=0;i<2;i++) {
+                    if (USES_LIST(mb_type, i)) {
+                        int dmx, dmy, mx, my, m;
+                        s->mv_dir |= (MV_DIR_FORWARD >> i);
+                        mx = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
+                                                s->last_mv[i][0][0]);
+                        s->last_mv[i][0][0] = mx;
+                        s->last_mv[i][1][0] = mx;
+                        dmx = get_dmv(s);
+                        my = mpeg_decode_motion(s, s->mpeg_f_code[i][1],
+                                                s->last_mv[i][0][1] >> 1);
+                        dmy = get_dmv(s);
+
+
+                        s->last_mv[i][0][1] = my<<1;
+                        s->last_mv[i][1][1] = my<<1;
+
+                        s->mv[i][0][0] = mx;
+                        s->mv[i][0][1] = my;
+                        s->mv[i][1][0] = mx;//not used
+                        s->mv[i][1][1] = my;//not used
+
+                        if (s->picture_structure == PICT_FRAME) {
+                            mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
+
+                            //m = 1 + 2 * s->top_field_first;
+                            m = s->top_field_first ? 1 : 3;
+
+                            /* top -> top pred */
+                            s->mv[i][2][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
+                            s->mv[i][2][1] = ((my * m + (my > 0)) >> 1) + dmy - 1;
+                            m = 4 - m;
+                            s->mv[i][3][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
+                            s->mv[i][3][1] = ((my * m + (my > 0)) >> 1) + dmy + 1;
+                        } else {
+                            mb_type |= MB_TYPE_16x16;
+
+                            s->mv[i][2][0] = ((mx + (mx > 0)) >> 1) + dmx;
+                            s->mv[i][2][1] = ((my + (my > 0)) >> 1) + dmy;
+                            if(s->picture_structure == PICT_TOP_FIELD)
+                                s->mv[i][2][1]--;
+                            else
+                                s->mv[i][2][1]++;
+                        }
+                    }
+                }
+                break;
+            default:
+                av_log(s->avctx, AV_LOG_ERROR, "00 motion_type at %d %d\n", s->mb_x, s->mb_y);
+                return -1;
             }
         }
 
