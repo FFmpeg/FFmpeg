@@ -95,8 +95,9 @@ void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
     }
 }
 
-void imdct_ref(float *out, float *in, int n)
+void imdct_ref(float *out, float *in, int nbits)
 {
+    int n = 1<<nbits;
     int k, i, a;
     double sum, f;
 
@@ -112,8 +113,9 @@ void imdct_ref(float *out, float *in, int n)
 }
 
 /* NOTE: no normalisation by 1 / N is done */
-void mdct_ref(float *output, float *input, int n)
+void mdct_ref(float *output, float *input, int nbits)
 {
+    int n = 1<<nbits;
     int k, i;
     double a, s;
 
@@ -246,11 +248,11 @@ int main(int argc, char **argv)
 
     if (do_mdct) {
         if (do_inverse) {
-            imdct_ref((float *)tab_ref, (float *)tab1, fft_size);
+            imdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
             ff_imdct_calc(m, tab2, (float *)tab1, tabtmp);
             check_diff((float *)tab_ref, tab2, fft_size);
         } else {
-            mdct_ref((float *)tab_ref, (float *)tab1, fft_size);
+            mdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
 
             ff_mdct_calc(m, tab2, (float *)tab1, tabtmp);
 
