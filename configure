@@ -133,6 +133,7 @@ show_help(){
   echo "  --disable-debug          disable debugging symbols"
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
   echo "                           MPEG audio decoding [default=no]"
+  echo "  --enable-gray            enable full grayscale support (slower color)"
   echo "  --disable-ffmpeg         disable ffmpeg build"
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --disable-ffplay         disable ffplay build"
@@ -615,6 +616,7 @@ CONFIG_LIST='
     v4l2
     x11grab
     zlib
+    gray
 '
 
 THREADS_LIST='
@@ -860,6 +862,7 @@ network="yes"
 optimize="yes"
 protocols="yes"
 vhook="default"
+gray="no"
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$@'

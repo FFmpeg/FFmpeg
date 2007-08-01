@@ -1554,7 +1554,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
             ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based,
                              src_x, src_y<<field_based, h_edge_pos, v_edge_pos);
             ptr_y = s->edge_emu_buffer;
-            if(!(s->flags&CODEC_FLAG_GRAY)){
+            if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                 uint8_t *uvbuf= s->edge_emu_buffer+18*s->linesize;
                 ff_emulated_edge_mc(uvbuf  , ptr_cb, s->uvlinesize, 9, 9+field_based,
                                  uvsrc_x, uvsrc_y<<field_based, h_edge_pos>>1, v_edge_pos>>1);
@@ -1581,7 +1581,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     sy <<= 2 - lowres;
     pix_op[lowres-1](dest_y, ptr_y, linesize, h, sx, sy);
 
-    if(!(s->flags&CODEC_FLAG_GRAY)){
+    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         uvsx <<= 2 - lowres;
         uvsy <<= 2 - lowres;
         pix_op[lowres](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
@@ -1687,7 +1687,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                 my += s->mv[dir][i][1];
             }
 
-        if(!(s->flags&CODEC_FLAG_GRAY))
+        if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY))
             chroma_4mv_motion_lowres(s, dest_cb, dest_cr, ref_picture, pix_op, mx, my);
         break;
     case MV_TYPE_FIELD:
@@ -1974,7 +1974,7 @@ static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM b
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
-                if(!(s->flags&CODEC_FLAG_GRAY)){
+                if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if (s->chroma_y_shift){
                         add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
                         add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
@@ -1993,7 +1993,7 @@ static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM b
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
                 add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
 
-                if(!(s->flags&CODEC_FLAG_GRAY)){
+                if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){//Chroma420
                         add_dct(s, block[4], 4, dest_cb, uvlinesize);
                         add_dct(s, block[5], 5, dest_cr, uvlinesize);
@@ -2026,7 +2026,7 @@ static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM b
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
                 put_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
-                if(!(s->flags&CODEC_FLAG_GRAY)){
+                if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){
                         put_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
                         put_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
@@ -2045,7 +2045,7 @@ static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM b
                 s->dsp.idct_put(dest_y + dct_offset             , dct_linesize, block[2]);
                 s->dsp.idct_put(dest_y + dct_offset + block_size, dct_linesize, block[3]);
 
-                if(!(s->flags&CODEC_FLAG_GRAY)){
+                if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){
                         s->dsp.idct_put(dest_cb, uvlinesize, block[4]);
                         s->dsp.idct_put(dest_cr, uvlinesize, block[5]);
