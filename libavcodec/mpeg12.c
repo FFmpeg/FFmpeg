@@ -383,7 +383,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     s->mv_type = MV_TYPE_16X16;
                     for(i=0;i<2;i++) {
                         if (USES_LIST(mb_type, i)) {
-                            s->mv_dir |= (MV_DIR_FORWARD >> i);
+                            s->mv_dir |= (MV_DIR_FORWARD << i);
                             /* MT_FRAME */
                             s->mv[i][0][0]= s->last_mv[i][0][0]= s->last_mv[i][1][0] =
                                 mpeg_decode_motion(s, s->mpeg_f_code[i][0], s->last_mv[i][0][0]);
@@ -401,7 +401,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     s->mv_type = MV_TYPE_16X8;
                     for(i=0;i<2;i++) {
                         if (USES_LIST(mb_type, i)) {
-                            s->mv_dir |= (MV_DIR_FORWARD >> i);
+                            s->mv_dir |= (MV_DIR_FORWARD << i);
                             /* MT_16X8 */
                             for(j=0;j<2;j++) {
                                 s->field_select[i][j] = get_bits1(&s->gb);
@@ -422,7 +422,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
                     for(i=0;i<2;i++) {
                         if (USES_LIST(mb_type, i)) {
-                            s->mv_dir |= (MV_DIR_FORWARD >> i);
+                            s->mv_dir |= (MV_DIR_FORWARD << i);
                             for(j=0;j<2;j++) {
                                 s->field_select[i][j] = get_bits1(&s->gb);
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
@@ -442,7 +442,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
                     for(i=0;i<2;i++) {
                         if (USES_LIST(mb_type, i)) {
-                            s->mv_dir |= (MV_DIR_FORWARD >> i);
+                            s->mv_dir |= (MV_DIR_FORWARD << i);
                             s->field_select[i][0] = get_bits1(&s->gb);
                             for(k=0;k<2;k++) {
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
@@ -460,7 +460,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 for(i=0;i<2;i++) {
                     if (USES_LIST(mb_type, i)) {
                         int dmx, dmy, mx, my, m;
-                        s->mv_dir |= (MV_DIR_FORWARD >> i);
+                        s->mv_dir |= (MV_DIR_FORWARD << i);
                         mx = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
                                                 s->last_mv[i][0][0]);
                         s->last_mv[i][0][0] = mx;

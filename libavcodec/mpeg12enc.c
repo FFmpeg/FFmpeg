@@ -562,7 +562,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             }
             s->f_count++;
         } else{
-            static const int mb_type_len[4]={0,3,4,2}; //bak,for,bi
+            static const int mb_type_len[4]={0,4,3,2}; //bak,for,bi
 
             if(s->mv_type == MV_TYPE_16X16){
                 if (cbp){    // With coded bloc pattern

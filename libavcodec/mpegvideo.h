@@ -368,8 +368,8 @@ typedef struct MpegEncContext {
     uint8_t (*b_field_select_table[2][2]);
     int me_method;                       ///< ME algorithm
     int mv_dir;
-#define MV_DIR_BACKWARD  1
-#define MV_DIR_FORWARD   2
+#define MV_DIR_FORWARD   1
+#define MV_DIR_BACKWARD  2
 #define MV_DIRECT        4 ///< bidirectional mode where the difference equals the MV of the last P/S/I-Frame (mpeg4)
     int mv_type;
 #define MV_TYPE_16X16       0   ///< 1 vector for the whole mb

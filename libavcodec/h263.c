@@ -910,7 +910,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         int i, cbp;
 
         if(s->pict_type==B_TYPE){
-            static const int mb_type_table[8]= {-1, 2, 3, 1,-1,-1,-1, 0}; /* convert from mv_dir to type */
+            static const int mb_type_table[8]= {-1, 3, 2, 1,-1,-1,-1, 0}; /* convert from mv_dir to type */
             int mb_type=  mb_type_table[s->mv_dir];
 
             if(s->mb_x==0){
