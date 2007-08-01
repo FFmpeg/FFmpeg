@@ -562,21 +562,19 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             }
             s->f_count++;
         } else{
-            static const int mb_type_len[4]={0,4,3,2}; //bak,for,bi
-
             if(s->mv_type == MV_TYPE_16X16){
                 if (cbp){    // With coded bloc pattern
                     if (s->dquant) {
                         if(s->mv_dir == MV_DIR_FORWARD)
                             put_mb_modes(s, 6, 3, 1, 0);
                         else
-                            put_mb_modes(s, mb_type_len[s->mv_dir]+3, 2, 1, 0);
+                            put_mb_modes(s, 8-s->mv_dir, 2, 1, 0);
                         put_qscale(s);
                     } else {
-                        put_mb_modes(s, mb_type_len[s->mv_dir], 3, 1, 0);
+                        put_mb_modes(s, 5-s->mv_dir, 3, 1, 0);
                     }
                 }else{    // No coded bloc pattern
-                    put_bits(&s->pb, mb_type_len[s->mv_dir], 2);
+                    put_bits(&s->pb, 5-s->mv_dir, 2);
                     if (!s->frame_pred_frame_dct)
                         put_bits(&s->pb, 2, 2); /* motion_type: frame */
                     s->qscale -= s->dquant;
@@ -604,13 +602,13 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                         if(s->mv_dir == MV_DIR_FORWARD)
                             put_mb_modes(s, 6, 3, 1, 1);
                         else
-                            put_mb_modes(s, mb_type_len[s->mv_dir]+3, 2, 1, 1);
+                            put_mb_modes(s, 8-s->mv_dir, 2, 1, 1);
                         put_qscale(s);
                     } else {
-                        put_mb_modes(s, mb_type_len[s->mv_dir], 3, 1, 1);
+                        put_mb_modes(s, 5-s->mv_dir, 3, 1, 1);
                     }
                 }else{    // No coded bloc pattern
-                    put_bits(&s->pb, mb_type_len[s->mv_dir], 2);
+                    put_bits(&s->pb, 5-s->mv_dir, 2);
                     put_bits(&s->pb, 2, 1); /* motion_type: field */
                     s->qscale -= s->dquant;
                 }
