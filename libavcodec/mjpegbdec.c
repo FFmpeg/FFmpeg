@@ -69,7 +69,7 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%x\n", dqt_offs);
     if (dqt_offs)
     {
-        init_get_bits(&s->gb, buf+dqt_offs, (buf_end - (buf+dqt_offs))*8);
+        init_get_bits(&s->gb, buf_ptr+dqt_offs, (buf_end - (buf_ptr+dqt_offs))*8);
         s->start_code = DQT;
         ff_mjpeg_decode_dqt(s);
     }
@@ -78,7 +78,7 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%x\n", dht_offs);
     if (dht_offs)
     {
-        init_get_bits(&s->gb, buf+dht_offs, (buf_end - (buf+dht_offs))*8);
+        init_get_bits(&s->gb, buf_ptr+dht_offs, (buf_end - (buf_ptr+dht_offs))*8);
         s->start_code = DHT;
         ff_mjpeg_decode_dht(s);
     }
@@ -87,7 +87,7 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%x\n", sof_offs);
     if (sof_offs)
     {
-        init_get_bits(&s->gb, buf+sof_offs, (buf_end - (buf+sof_offs))*8);
+        init_get_bits(&s->gb, buf_ptr+sof_offs, (buf_end - (buf_ptr+sof_offs))*8);
         s->start_code = SOF0;
         if (ff_mjpeg_decode_sof(s) < 0)
             return -1;
@@ -100,7 +100,7 @@ read_header:
     if (sos_offs)
     {
 //        init_get_bits(&s->gb, buf+sos_offs, (buf_end - (buf+sos_offs))*8);
-        init_get_bits(&s->gb, buf+sos_offs, field_size*8);
+        init_get_bits(&s->gb, buf_ptr+sos_offs, field_size*8);
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
         ff_mjpeg_decode_sos(s);
