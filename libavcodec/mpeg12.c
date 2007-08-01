@@ -497,14 +497,11 @@ static int mpeg_decode_mb(MpegEncContext *s,
         if (HAS_CBP(mb_type)) {
             s->dsp.clear_blocks(s->block[0]);
 
-            if(!s->chroma_y_shift){
-                s->dsp.clear_blocks(s->block[6]);
-            }
-
             cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
             if(mb_block_count > 6){
                  cbp<<= mb_block_count-6;
                  cbp |= get_bits(&s->gb, mb_block_count-6);
+                 s->dsp.clear_blocks(s->block[6]);
             }
             if (cbp <= 0){
                 av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
