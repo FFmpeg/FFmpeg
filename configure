@@ -820,8 +820,6 @@ mandir='$(PREFIX)/man'
 bindir='$(PREFIX)/bin'
 
 # toolchain
-cross_prefix=""
-cross_compile="no"
 cc="gcc"
 ar="ar"
 ranlib="ranlib"
@@ -852,11 +850,8 @@ dostrip="yes"
 ffmpeg="yes"
 ffplay="yes"
 ffserver="yes"
-gpl="no"
 ipv6="yes"
-shared="no"
 static="yes"
-memalign_hack="no"
 mpegaudio_hp="yes"
 network="yes"
 optimize="yes"
@@ -866,8 +861,6 @@ vhook="default"
 # build settings
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
-LIBOBJFLAGS=""
-FFLDFLAGS=
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
@@ -879,8 +872,6 @@ SLIBSUF=".so"
 SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF)'
 SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
-EXESUF=""
-BUILDSUF=""
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIB)"'
 
 # find source path
@@ -1118,7 +1109,6 @@ case $targetos in
     fi ;;
   sunos)
     dv1394="no"
-    FFLDFLAGS=""
     FFSERVERLDFLAGS=""
     SHFLAGS="-shared -Wl,-h,\$@"
     add_extralibs "-lsocket -lnsl"
