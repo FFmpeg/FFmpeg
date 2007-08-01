@@ -338,23 +338,20 @@ static int mpeg_decode_mb(MpegEncContext *s,
         if (mb_type & MB_TYPE_ZERO_MV){
             assert(mb_type & MB_TYPE_CBP);
 
-            /* compute dct type */
-            if (s->picture_structure == PICT_FRAME && //FIXME add a interlaced_dct coded var?
-                !s->frame_pred_frame_dct) {
-                s->interlaced_dct = get_bits1(&s->gb);
+            s->mv_dir = MV_DIR_FORWARD;
+            if(s->picture_structure == PICT_FRAME){
+                if(!s->frame_pred_frame_dct)
+                    s->interlaced_dct = get_bits1(&s->gb);
+                s->mv_type = MV_TYPE_16X16;
+            }else{
+                s->mv_type = MV_TYPE_FIELD;
+                mb_type |= MB_TYPE_INTERLACED;
+                s->field_select[0][0]= s->picture_structure - 1;
             }
 
             if (IS_QUANT(mb_type))
                 s->qscale = get_qscale(s);
 
-            s->mv_dir = MV_DIR_FORWARD;
-            if(s->picture_structure == PICT_FRAME)
-                s->mv_type = MV_TYPE_16X16;
-            else{
-                s->mv_type = MV_TYPE_FIELD;
-                mb_type |= MB_TYPE_INTERLACED;
-                s->field_select[0][0]= s->picture_structure - 1;
-            }
             s->last_mv[0][0][0] = 0;
             s->last_mv[0][0][1] = 0;
             s->last_mv[0][1][0] = 0;
