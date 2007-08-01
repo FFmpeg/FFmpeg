@@ -2432,7 +2432,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
         qpix_op[luma_xy](dest_y + delta, src_y + delta, h->mb_linesize);
     }
 
-    if(s->flags&CODEC_FLAG_GRAY) return;
+    if(ENABLE_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
     if(MB_MBAFF){
         // chroma offset when predicting from a field of opposite parity
@@ -3007,7 +3007,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     *(uint64_t*)(h->top_borders[0][s->mb_x]+0)= *(uint64_t*)(src_y +  16*linesize);
     *(uint64_t*)(h->top_borders[0][s->mb_x]+8)= *(uint64_t*)(src_y +8+16*linesize);
 
-    if(simple || !(s->flags&CODEC_FLAG_GRAY)){
+    if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         h->left_border[17  ]= h->top_borders[0][s->mb_x][16+7];
         h->left_border[17+9]= h->top_borders[0][s->mb_x][24+7];
         for(i=1; i<9; i++){
@@ -3060,7 +3060,7 @@ b= t;
         }
     }
 
-    if(simple || !(s->flags&CODEC_FLAG_GRAY)){
+    if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_left){
             for(i = !deblock_top; i<9; i++){
                 XCHG(h->left_border[i+17  ], src_cb[i*uvlinesize], temp8, xchg);
@@ -3095,7 +3095,7 @@ static inline void backup_pair_border(H264Context *h, uint8_t *src_y, uint8_t *s
     *(uint64_t*)(h->top_borders[1][s->mb_x]+0)= *(uint64_t*)(src_y +  33*linesize);
     *(uint64_t*)(h->top_borders[1][s->mb_x]+8)= *(uint64_t*)(src_y +8+33*linesize);
 
-    if(!(s->flags&CODEC_FLAG_GRAY)){
+    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         h->left_border[34     ]= h->top_borders[0][s->mb_x][16+7];
         h->left_border[34+   1]= h->top_borders[1][s->mb_x][16+7];
         h->left_border[34+18  ]= h->top_borders[0][s->mb_x][24+7];
@@ -3147,7 +3147,7 @@ b= t;
         }
     }
 
-    if(!(s->flags&CODEC_FLAG_GRAY)){
+    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_left){
             for(i = (!deblock_top) << 1; i<18; i++){
                 XCHG(h->left_border[i+34   ], src_cb[i*uvlinesize], temp8, xchg);
@@ -3269,7 +3269,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             if(h->deblocking_filter && (simple || !FRAME_MBAFF))
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1, simple);
 
-            if(simple || !(s->flags&CODEC_FLAG_GRAY)){
+            if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                 h->pred8x8[ h->chroma_pred_mode ](dest_cb, uvlinesize);
                 h->pred8x8[ h->chroma_pred_mode ](dest_cr, uvlinesize);
             }
@@ -3370,7 +3370,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }
         }
 
-        if(simple || !(s->flags&CODEC_FLAG_GRAY)){
+        if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
             uint8_t *dest[2] = {dest_cb, dest_cr};
             if(transform_bypass){
                 idct_add = idct_dc_add = s->dsp.add_pixels4;
@@ -3459,7 +3459,7 @@ static void hl_decode_mb(H264Context *h){
     const int mb_y= s->mb_y;
     const int mb_xy= mb_x + mb_y*s->mb_stride;
     const int mb_type= s->current_picture.mb_type[mb_xy];
-    int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 || (s->flags&CODEC_FLAG_GRAY) || s->encoding;
+    int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 || (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || s->encoding;
 
     if(!s->decode)
         return;
