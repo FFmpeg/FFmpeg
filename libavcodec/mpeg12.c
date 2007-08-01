@@ -366,12 +366,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 motion_type = MT_FRAME;
             else{
                 motion_type = get_bits(&s->gb, 2);
-            }
-
-            /* compute dct type */
-            if (s->picture_structure == PICT_FRAME && //FIXME add a interlaced_dct coded var?
-                !s->frame_pred_frame_dct && HAS_CBP(mb_type)) {
-                s->interlaced_dct = get_bits1(&s->gb);
+                if (s->picture_structure == PICT_FRAME && HAS_CBP(mb_type))
+                    s->interlaced_dct = get_bits1(&s->gb);
             }
 
             if (IS_QUANT(mb_type))
