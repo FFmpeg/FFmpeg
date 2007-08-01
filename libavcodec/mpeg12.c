@@ -502,13 +502,13 @@ static int mpeg_decode_mb(MpegEncContext *s,
             }
 
             cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
-            if (cbp < 0 || ((cbp == 0) && (s->chroma_format < 2)) ){
-                av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
-            }
             if(mb_block_count > 6){
                  cbp<<= mb_block_count-6;
                  cbp |= get_bits(&s->gb, mb_block_count-6);
+            }
+            if (cbp <= 0){
+                av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
+                return -1;
             }
 
 #ifdef HAVE_XVMC
