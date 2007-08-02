@@ -139,6 +139,7 @@ show_help(){
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --enable-small           optimize for size instead of speed"
   echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
+  echo "  --enable-fixedpoint      enable the use of fixed point calculations"
   echo "  --disable-encoder=NAME   disables encoder NAME"
   echo "  --enable-encoder=NAME    enables encoder NAME"
   echo "  --disable-decoder=NAME   disables decoder NAME"
@@ -579,6 +580,7 @@ CONFIG_LIST='
     demuxers
     dv1394
     encoders
+    fixedpoint
     ffmpeg
     ffplay
     ffserver
