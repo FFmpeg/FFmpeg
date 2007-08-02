@@ -580,10 +580,10 @@ CONFIG_LIST='
     demuxers
     dv1394
     encoders
-    fixedpoint
     ffmpeg
     ffplay
     ffserver
+    fixedpoint
     gpl
     gprof
     gray
