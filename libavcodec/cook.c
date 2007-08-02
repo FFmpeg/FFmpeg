@@ -830,7 +830,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
     int i,j;
     int decouple_tab[SUBBAND_SIZE];
     float *decode_buffer = q->decode_buffer_0;
-    int idx, cpl_tmp,tmp_idx;
+    int idx, cpl_tmp;
     float f1,f2;
     float* cplscale;
 
