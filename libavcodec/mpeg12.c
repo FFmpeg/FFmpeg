@@ -2160,6 +2160,10 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
                 pc->frame_start_found=1;
                 break;
             }
+            if(state == SEQ_END_CODE){
+                pc->state=-1;
+                return i+1;
+            }
         }
     }
 
@@ -2196,7 +2200,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
     dprintf(avctx, "fill_buffer\n");
 
-    if (buf_size == 0) {
+    if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
         /* special case for last picture */
         if (s2->low_delay==0 && s2->next_picture_ptr) {
             *picture= *(AVFrame*)s2->next_picture_ptr;
