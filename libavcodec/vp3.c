@@ -2372,7 +2372,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     int visible_width, visible_height;
 
     s->theora = get_bits_long(gb, 24);
-    av_log(avctx, AV_LOG_INFO, "Theora bitstream version %X\n", s->theora);
+    av_log(avctx, AV_LOG_VERBOSE, "Theora bitstream version %X\n", s->theora);
 
     /* 3.2.0 aka alpha3 has the same frame orientation as original vp3 */
     /* but previous versions have the image flipped relative to vp3 */
