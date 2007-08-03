@@ -1527,6 +1527,8 @@ static int av_encode(AVFormatContext **output_files,
                 codec->channels = icodec->channels;
                 codec->frame_size = icodec->frame_size;
                 codec->block_align= icodec->block_align;
+                if(codec->block_align == 1 && codec->codec_id == CODEC_ID_MP3)
+                    codec->block_align= 0;
                 break;
             case CODEC_TYPE_VIDEO:
                 if(using_vhook) {
