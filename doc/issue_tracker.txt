@@ -1,11 +1,7 @@
 ffmpegs bug/patch/feature request tracker manual
 ================================================
 
-NOTE, this is a draft, it is not yet recommended to send real bugreports to the
-tracker but rather use the mailing lists.
-Though, if you are brave and do not mind that your bugreport might disappear or
-that you might be mailbombed due to a misconfiguration, you can surely try
-to enter a real bugreport.
+NOTE, this is a draft
 
 Overview:
 ---------
