@@ -400,7 +400,7 @@ static double
 get_sync_ipts(const AVOutputStream *ost)
 {
     const AVInputStream *ist = ost->sync_ist;
-    return (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/AV_TIME_BASE;
+    return (double)(ist->pts - start_time)/AV_TIME_BASE;
 }
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc){
@@ -659,7 +659,7 @@ static void do_subtitle_out(AVFormatContext *s,
         pkt.stream_index = ost->index;
         pkt.data = subtitle_out;
         pkt.size = subtitle_out_size;
-        pkt.pts = av_rescale_q(av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q) + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
+        pkt.pts = av_rescale_q(pts, ist->st->time_base, ost->st->time_base);
         if (enc->codec_id == CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
                it in the codec would be better */
@@ -1226,7 +1226,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         opkt.stream_index= ost->index;
                         if(pkt->pts != AV_NOPTS_VALUE)
-                            opkt.pts= av_rescale_q(av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q) + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
+                            opkt.pts= av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base);
                         else
                             opkt.pts= AV_NOPTS_VALUE;
 
@@ -1236,7 +1236,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 dts = ist->next_pts;
                             else
                                 dts= av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-                            opkt.dts= av_rescale_q(dts + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
+                            opkt.dts= av_rescale_q(dts, AV_TIME_BASE_Q,  ost->st->time_base);
                         }
                         opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
                         opkt.flags= pkt->flags;
@@ -1766,10 +1766,8 @@ static int av_encode(AVFormatContext **output_files,
         ist = ist_table[i];
         is = input_files[ist->file_index];
         ist->pts = 0;
-        ist->next_pts = av_rescale_q(ist->st->start_time, ist->st->time_base, AV_TIME_BASE_Q);
-        if(ist->st->start_time == AV_NOPTS_VALUE)
-            ist->next_pts=0;
-        if(input_files_ts_offset[ist->file_index])
+        ist->next_pts=0;
+        if(input_files_ts_offset[ist->file_index] != -is->start_time)
             ist->next_pts= AV_NOPTS_VALUE;
         ist->is_start = 1;
     }
@@ -1906,6 +1904,11 @@ static int av_encode(AVFormatContext **output_files,
         if (ist->discard)
             goto discard_packet;
 
+        if (pkt.dts != AV_NOPTS_VALUE)
+            pkt.dts += av_rescale_q(input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q, ist->st->time_base);
+        if (pkt.pts != AV_NOPTS_VALUE)
+            pkt.pts += av_rescale_q(input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q, ist->st->time_base);
+
 //        fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n", ist->next_pts, pkt.dts, input_files_ts_offset[ist->file_index], ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE) {
             int64_t delta= av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q) - ist->next_pts;
@@ -1913,11 +1916,9 @@ static int av_encode(AVFormatContext **output_files,
                 input_files_ts_offset[ist->file_index]-= delta;
                 if (verbose > 2)
                     fprintf(stderr, "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n", delta, input_files_ts_offset[ist->file_index]);
-                for(i=0; i<file_table[file_index].nb_streams; i++){
-                    int index= file_table[file_index].ist_index + i;
-                    ist_table[index]->next_pts += delta;
-                    ist_table[index]->is_start=1;
-                }
+                pkt.dts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
+                if(pkt.pts != AV_NOPTS_VALUE)
+                    pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
             }
         }
 
