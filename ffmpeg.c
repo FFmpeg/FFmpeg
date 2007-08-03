@@ -1230,14 +1230,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         else
                             opkt.pts= AV_NOPTS_VALUE;
 
-                        {
-                            int64_t dts;
                             if (pkt->dts == AV_NOPTS_VALUE)
-                                dts = ist->next_pts;
+                                opkt.dts = av_rescale_q(ist->next_pts, AV_TIME_BASE_Q, ost->st->time_base);
                             else
-                                dts= av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-                            opkt.dts= av_rescale_q(dts, AV_TIME_BASE_Q,  ost->st->time_base);
-                        }
+                                opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
+
                         opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
                         opkt.flags= pkt->flags;
 
