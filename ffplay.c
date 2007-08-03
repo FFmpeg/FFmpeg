@@ -1252,10 +1252,11 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         pict.linesize[0] = vp->bmp->pitches[0];
         pict.linesize[1] = vp->bmp->pitches[2];
         pict.linesize[2] = vp->bmp->pitches[1];
-        img_convert_ctx = sws_getCachedContext(img_convert_ctx, is->video_st->codec->width,
-                    is->video_st->codec->height, is->video_st->codec->pix_fmt,
-                    is->video_st->codec->width, is->video_st->codec->height,
-                    dst_pix_fmt, sws_flags, NULL, NULL, NULL);
+        img_convert_ctx = sws_getCachedContext(img_convert_ctx,
+            is->video_st->codec->width, is->video_st->codec->height,
+            is->video_st->codec->pix_fmt,
+            is->video_st->codec->width, is->video_st->codec->height,
+            dst_pix_fmt, sws_flags, NULL, NULL, NULL);
         if (img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
