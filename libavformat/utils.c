@@ -813,6 +813,22 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static AVPacket *add_to_pktbuf(AVFormatContext *s, AVPacket *pkt){
+    AVPacketList *pktl= s->packet_buffer;
+    AVPacketList **plast_pktl= &s->packet_buffer;
+
+    while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
+
+    pktl = av_mallocz(sizeof(AVPacketList));
+    if (!pktl)
+        return NULL;
+
+    /* add the packet in the buffered packet list */
+    *plast_pktl = pktl;
+    pktl->pkt= *pkt;
+    return &pktl->pkt;
+}
+
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     AVPacketList *pktl;
@@ -848,7 +864,6 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             }
         }
         if(genpts){
-            AVPacketList **plast_pktl= &s->packet_buffer;
             int ret= av_read_frame_internal(s, pkt);
             if(ret<0){
                 if(pktl && ret != AVERROR(EAGAIN)){
@@ -858,19 +873,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     return ret;
             }
 
-            /* duplicate the packet */
-            if (av_dup_packet(pkt) < 0)
+            if(av_dup_packet(add_to_pktbuf(s, pkt)) < 0)
                 return AVERROR(ENOMEM);
-
-            while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
-
-            pktl = av_mallocz(sizeof(AVPacketList));
-            if (!pktl)
-                return AVERROR(ENOMEM);
-
-            /* add the packet in the buffered packet list */
-            *plast_pktl = pktl;
-            pktl->pkt= *pkt;
         }else{
             assert(!s->packet_buffer);
             return av_read_frame_internal(s, pkt);
@@ -1712,7 +1716,6 @@ int av_find_stream_info(AVFormatContext *ic)
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
-    AVPacketList *pktl=NULL, **ppktl;
     int64_t last_dts[MAX_STREAMS];
     int duration_count[MAX_STREAMS]={0};
     double (*duration_error)[MAX_STD_TIMEBASES];
@@ -1749,7 +1752,6 @@ int av_find_stream_info(AVFormatContext *ic)
     memset(probe_data, 0, sizeof(probe_data));
     count = 0;
     read_size = 0;
-    ppktl = &ic->packet_buffer;
     for(;;) {
         /* check if one codec still needs to be handled */
         for(i=0;i<ic->nb_streams;i++) {
@@ -1801,24 +1803,9 @@ int av_find_stream_info(AVFormatContext *ic)
             break;
         }
 
-        pktl = av_mallocz(sizeof(AVPacketList));
-        if (!pktl) {
-            ret = AVERROR(ENOMEM);
-            break;
-        }
-
-        /* add the packet in the buffered packet list */
-        *ppktl = pktl;
-        ppktl = &pktl->next;
-
-        pkt = &pktl->pkt;
-        *pkt = pkt1;
-
-        /* duplicate the packet */
-        if (av_dup_packet(pkt) < 0) {
-            ret = AVERROR(ENOMEM);
-            break;
-        }
+        pkt= add_to_pktbuf(ic, &pkt1);
+        if(av_dup_packet(pkt) < 0)
+            return AVERROR(ENOMEM);
 
         read_size += pkt->size;
 
