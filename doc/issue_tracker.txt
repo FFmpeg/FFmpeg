@@ -14,6 +14,8 @@ properly be added to the respective issue.
 (the above does all work already after light testing)
 The subscription URL for the ffmpeg-issues list is:
 http://live.polito.it/mailman/listinfo/ffmpeg-issues
+The URL of the webinterface of the tracker is:
+https://roundup.mplayerhq.hu/roundup/ffmpeg/
 
 note: issue = (bug report || patch || feature request)
 
