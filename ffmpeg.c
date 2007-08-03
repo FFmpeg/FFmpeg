@@ -1210,6 +1210,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         AVPacket opkt;
                         av_init_packet(&opkt);
 
+                        if (!ost->frame_number && !(pkt->flags & PKT_FLAG_KEY))
+                            continue;
+
                         /* no reencoding needed : output the packet directly */
                         /* force the input stream PTS */
 
