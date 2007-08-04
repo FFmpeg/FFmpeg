@@ -33,6 +33,7 @@ typedef struct {
     unsigned int width, height;
     int interlaced;
     unsigned int frame_size;
+    unsigned int coding_unit_size;
     int index_bits;
     int bit_depth;
     const uint8_t *luma_weigth, *chroma_weigth;
@@ -66,13 +67,13 @@ typedef struct {
 } DNXHDContext;
 
 static const CIDEntry cid_table[] = {
-    { 1238, 1920, 1080, 0, 917504, 4, 8,
+    { 1238, 1920, 1080, 0, 917504, 917504, 4, 8,
       dnxhd_1238_luma_weigth, dnxhd_1238_chroma_weigth,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
       dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
-/*     { 1243, 1920, 1080, 1, 917504, 4, 8, */
+/*     { 1243, 1920, 1080, 1, 917504, 458752, 4, 8, */
 /*       dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth, */
 /*       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits, */
 /*       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level, */
@@ -170,7 +171,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
     if (dnxhd_init_vlc(ctx, ctx->cid) < 0)
         return -1;
 
-    if (buf_size < ctx->cid_table->frame_size) {
+    if (buf_size < ctx->cid_table->coding_unit_size) {
         av_log(ctx->avctx, AV_LOG_ERROR, "incorrect frame size\n");
         return -1;
     }
