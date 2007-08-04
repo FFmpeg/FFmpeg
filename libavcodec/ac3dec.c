@@ -69,6 +69,9 @@ static const uint8_t qntztab[16] = {
     5, 6, 7, 8, 9, 10, 11, 12, 14, 16
 };
 
+/** dynamic range table. converts codes to scale factors. */
+static float dynrng_tbl[256];
+
 /* Adjustmens in dB gain */
 #define LEVEL_MINUS_3DB         0.7071067811865476
 #define LEVEL_MINUS_4POINT5DB   0.5946035575013605
@@ -233,6 +236,13 @@ static void ac3_tables_init(void)
     for(i=0; i<15; i++) {
         /* bap=5 mantissas */
         b5_mantissas[i] = symmetric_dequant(i, 15);
+    }
+
+    /* generate dynamic range table
+       reference: Section 7.7.1 Dynamic Range Control */
+    for(i=0; i<256; i++) {
+        int v = (i >> 5) - ((i >> 7) << 3) - 5;
+        dynrng_tbl[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
 
     //generate scale factors
@@ -692,7 +702,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     int bit_alloc_flags = 0;
     int8_t *dexps;
     int mstrcplco, cplcoexp, cplcomant;
-    int dynrng, chbwcod, ngrps, cplabsexp, skipl;
+    int chbwcod, ngrps, cplabsexp, skipl;
 
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw[i] = get_bits1(gb);
@@ -705,16 +715,14 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (get_bits1(gb)) { /* dynamic range */
-        dynrng = get_sbits(gb, 8);
-        ctx->dynrng = (((dynrng & 0x1f) | 0x20) << 13) * pow(2.0, -(18 - (dynrng >> 5)));
+        ctx->dynrng = dynrng_tbl[get_bits(gb, 8)];
     } else if(blk == 0) {
         ctx->dynrng = 1.0;
     }
 
     if(acmod == AC3_ACMOD_DUALMONO) { /* dynamic range 1+1 mode */
         if(get_bits1(gb)) {
-            dynrng = get_sbits(gb, 8);
-            ctx->dynrng2 = (((dynrng & 0x1f) | 0x20) << 13) * pow(2.0, -(18 - (dynrng >> 5)));
+            ctx->dynrng2 = dynrng_tbl[get_bits(gb, 8)];
         } else if(blk == 0) {
             ctx->dynrng2 = 1.0;
         }
