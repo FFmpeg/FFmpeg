@@ -54,11 +54,7 @@ typedef struct {
     unsigned int mb_width, mb_height;
     uint32_t mb_scan_index[68];         /* max for 1080p */
     int cur_field;                      ///< current interlaced field
-    int index_bits;                     ///< length of index value
     VLC ac_vlc, dc_vlc, run_vlc;
-    const uint8_t *ac_level, *run;
-    const uint8_t *ac_run_flag, *ac_index_flag;
-    const uint8_t *luma_weigth, *chroma_weigth;
     int last_dc[3];
     DSPContext dsp;
     DECLARE_ALIGNED_16(DCTELEM, blocks[8][64]);
@@ -123,15 +119,6 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
         init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
                  ctx->cid_table->run_bits, 1, 1,
                  ctx->cid_table->run_codes, 2, 2, 0);
-
-        ctx->run           = ctx->cid_table->run;
-        ctx->ac_level      = ctx->cid_table->ac_level;
-        ctx->ac_run_flag   = ctx->cid_table->ac_run_flag;
-        ctx->ac_index_flag = ctx->cid_table->ac_index_flag;
-        ctx->luma_weigth   = ctx->cid_table->luma_weigth;
-        ctx->chroma_weigth = ctx->cid_table->chroma_weigth;
-
-        ctx->index_bits = ctx->cid_table->index_bits;
 
         ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, ff_zigzag_direct);
     }
@@ -213,10 +200,10 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
 
     if (n&2) {
         component = 1 + (n&1);
-        weigth_matrix = ctx->chroma_weigth;
+        weigth_matrix = ctx->cid_table->chroma_weigth;
     } else {
         component = 0;
-        weigth_matrix = ctx->luma_weigth;
+        weigth_matrix = ctx->cid_table->luma_weigth;
     }
 
     ctx->last_dc[component] += dnxhd_decode_dc(ctx);
@@ -225,20 +212,20 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
     for (i = 1; ; i++) {
         index = get_vlc2(&ctx->gb, ctx->ac_vlc.table, DNXHD_VLC_BITS, 2);
         //av_log(ctx->avctx, AV_LOG_DEBUG, "index %d\n", index);
-        level = ctx->ac_level[index];
+        level = ctx->cid_table->ac_level[index];
         if (!level) { /* EOB */
             //av_log(ctx->avctx, AV_LOG_DEBUG, "EOB\n");
             return;
         }
         sign = get_sbits(&ctx->gb, 1);
 
-        if (ctx->ac_index_flag[index]) {
-            level += get_bits(&ctx->gb, ctx->index_bits)<<6;
+        if (ctx->cid_table->ac_index_flag[index]) {
+            level += get_bits(&ctx->gb, ctx->cid_table->index_bits)<<6;
         }
 
-        if (ctx->ac_run_flag[index]) {
+        if (ctx->cid_table->ac_run_flag[index]) {
             index2 = get_vlc2(&ctx->gb, ctx->run_vlc.table, DNXHD_VLC_BITS, 2);
-            i += ctx->run[index2];
+            i += ctx->cid_table->run[index2];
         }
 
         j = ctx->scantable.permutated[i];
