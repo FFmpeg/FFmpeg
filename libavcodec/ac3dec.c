@@ -52,22 +52,22 @@ static float scale_factors[25];
 /** table for grouping exponents */
 static uint8_t exp_ungroup_tbl[128][3];
 
-static int16_t l3_quantizers_1[32];
-static int16_t l3_quantizers_2[32];
-static int16_t l3_quantizers_3[32];
 
-static int16_t l5_quantizers_1[128];
-static int16_t l5_quantizers_2[128];
-static int16_t l5_quantizers_3[128];
+/** tables for ungrouping mantissas */
+static float b1_mantissas[32][3];
+static float b2_mantissas[128][3];
+static float b3_mantissas[8];
+static float b4_mantissas[128][2];
+static float b5_mantissas[16];
 
-static int16_t l7_quantizers[7];
-
-static int16_t l11_quantizers_1[128];
-static int16_t l11_quantizers_2[128];
-
-static int16_t l15_quantizers[15];
-
-static const uint8_t qntztab[16] = { 0, 5, 7, 3, 7, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16 };
+/**
+ * Quantization table: levels for symmetric. bits for asymmetric.
+ * reference: Table 7.18 Mapping of bap to Quantizer
+ */
+static const uint8_t qntztab[16] = {
+    0, 3, 5, 7, 11, 15,
+    5, 6, 7, 8, 9, 10, 11, 12, 14, 16
+};
 
 /* Adjustmens in dB gain */
 #define LEVEL_MINUS_3DB         0.7071067811865476
@@ -193,58 +193,10 @@ static void ac3_window_init(float *window)
        window[i] = sqrt(local_window[i] / sum);
 }
 
-/*
- * Generate quantizer tables.
- */
-static void generate_quantizers_table(int16_t quantizers[], int level, int length)
+static inline float
+symmetric_dequant(int code, int levels)
 {
-    int i;
-
-    for (i = 0; i < length; i++)
-        quantizers[i] = ((2 * i - level + 1) << 15) / level;
-}
-
-static void generate_quantizers_table_1(int16_t quantizers[], int level, int length1, int length2, int size)
-{
-    int i, j;
-    int16_t v;
-
-    for (i = 0; i < length1; i++) {
-        v = ((2 * i - level + 1) << 15) / level;
-        for (j = 0; j < length2; j++)
-            quantizers[i * length2 + j] = v;
-    }
-
-    for (i = length1 * length2; i < size; i++)
-        quantizers[i] = 0;
-}
-
-static void generate_quantizers_table_2(int16_t quantizers[], int level, int length1, int length2, int size)
-{
-    int i, j;
-    int16_t v;
-
-    for (i = 0; i < length1; i++) {
-        v = ((2 * (i % level) - level + 1) << 15) / level;
-        for (j = 0; j < length2; j++)
-            quantizers[i * length2 + j] = v;
-    }
-
-    for (i = length1 * length2; i < size; i++)
-        quantizers[i] = 0;
-
-}
-
-static void generate_quantizers_table_3(int16_t quantizers[], int level, int length1, int length2, int size)
-{
-    int i, j;
-
-    for (i = 0; i < length1; i++)
-        for (j = 0; j < length2; j++)
-            quantizers[i * length2 + j] = ((2 * (j % level) - level + 1) << 15) / level;
-
-    for (i = length1 * length2; i < size; i++)
-        quantizers[i] = 0;
+    return (code - (levels >> 1)) * (2.0f / levels);
 }
 
 /*
@@ -254,31 +206,38 @@ static void ac3_tables_init(void)
 {
     int i;
 
-    /* Quantizer ungrouping tables. */
-    // for level-3 quantizers
-    generate_quantizers_table_1(l3_quantizers_1, 3, 3, 9, 32);
-    generate_quantizers_table_2(l3_quantizers_2, 3, 9, 3, 32);
-    generate_quantizers_table_3(l3_quantizers_3, 3, 9, 3, 32);
+    /* generate grouped mantissa tables
+       reference: Section 7.3.5 Ungrouping of Mantissas */
+    for(i=0; i<32; i++) {
+        /* bap=1 mantissas */
+        b1_mantissas[i][0] = symmetric_dequant( i / 9     , 3);
+        b1_mantissas[i][1] = symmetric_dequant((i % 9) / 3, 3);
+        b1_mantissas[i][2] = symmetric_dequant((i % 9) % 3, 3);
+    }
+    for(i=0; i<128; i++) {
+        /* bap=2 mantissas */
+        b2_mantissas[i][0] = symmetric_dequant( i / 25     , 5);
+        b2_mantissas[i][1] = symmetric_dequant((i % 25) / 5, 5);
+        b2_mantissas[i][2] = symmetric_dequant((i % 25) % 5, 5);
 
-    //for level-5 quantizers
-    generate_quantizers_table_1(l5_quantizers_1, 5, 5, 25, 128);
-    generate_quantizers_table_2(l5_quantizers_2, 5, 25, 5, 128);
-    generate_quantizers_table_3(l5_quantizers_3, 5, 25, 5, 128);
-
-    //for level-7 quantizers
-    generate_quantizers_table(l7_quantizers, 7, 7);
-
-    //for level-4 quantizers
-    generate_quantizers_table_2(l11_quantizers_1, 11, 11, 11, 128);
-    generate_quantizers_table_3(l11_quantizers_2, 11, 11, 11, 128);
-
-    //for level-15 quantizers
-    generate_quantizers_table(l15_quantizers, 15, 15);
-    /* End Quantizer ungrouping tables. */
+        /* bap=4 mantissas */
+        b4_mantissas[i][0] = symmetric_dequant(i / 11, 11);
+        b4_mantissas[i][1] = symmetric_dequant(i % 11, 11);
+    }
+    /* generate ungrouped mantissa tables
+       reference: Tables 7.21 and 7.23 */
+    for(i=0; i<7; i++) {
+        /* bap=3 mantissas */
+        b3_mantissas[i] = symmetric_dequant(i, 7);
+    }
+    for(i=0; i<15; i++) {
+        /* bap=5 mantissas */
+        b5_mantissas[i] = symmetric_dequant(i, 15);
+    }
 
     //generate scale factors
     for (i = 0; i < 25; i++)
-        scale_factors[i] = pow(2.0, -(i + 15));
+        scale_factors[i] = pow(2.0, -i);
 
     /* generate exponent tables
        reference: Section 7.1.3 Exponent Decoding */
@@ -440,7 +399,7 @@ static void uncouple_channels(AC3DecodeContext *ctx)
             for(j=0; j<12; j++) {
                 for(ch=1; ch<=ctx->nfchans; ch++) {
                     if(ctx->chincpl[ch-1])
-                        ctx->transform_coeffs[ch][i] = ctx->transform_coeffs_cpl[i] * ctx->cplco[ch-1][bnd];
+                        ctx->transform_coeffs[ch][i] = ctx->transform_coeffs_cpl[i] * ctx->cplco[ch-1][bnd] * 8.0f;
                 }
                 i++;
             }
@@ -449,12 +408,12 @@ static void uncouple_channels(AC3DecodeContext *ctx)
 }
 
 typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantization */
-    int16_t l3_quantizers[3];
-    int16_t l5_quantizers[3];
-    int16_t l11_quantizers[2];
-    int l3ptr;
-    int l5ptr;
-    int l11ptr;
+    float b1_mant[3];
+    float b2_mant[3];
+    float b4_mant[2];
+    int b1ptr;
+    int b2ptr;
+    int b4ptr;
 } mant_groups;
 
 /* Get the transform coefficients for particular channel */
@@ -491,51 +450,51 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
         tbap = bap[i];
         switch (tbap) {
             case 0:
-                coeffs[i] = (av_random(&ctx->dith_state) & 0xFFFF) * LEVEL_MINUS_3DB;
+                coeffs[i] = ((av_random(&ctx->dith_state) & 0xFFFF) * LEVEL_MINUS_3DB) / 32768.0f;
                 break;
 
             case 1:
-                if (m->l3ptr > 2) {
+                if(m->b1ptr > 2) {
                     gcode = get_bits(gb, 5);
-                    m->l3_quantizers[0] = l3_quantizers_1[gcode];
-                    m->l3_quantizers[1] = l3_quantizers_2[gcode];
-                    m->l3_quantizers[2] = l3_quantizers_3[gcode];
-                    m->l3ptr = 0;
+                    m->b1_mant[0] = b1_mantissas[gcode][0];
+                    m->b1_mant[1] = b1_mantissas[gcode][1];
+                    m->b1_mant[2] = b1_mantissas[gcode][2];
+                    m->b1ptr = 0;
                 }
-                coeffs[i] = m->l3_quantizers[m->l3ptr++];
+                coeffs[i] = m->b1_mant[m->b1ptr++];
                 break;
 
             case 2:
-                if (m->l5ptr > 2) {
+                if(m->b2ptr > 2) {
                     gcode = get_bits(gb, 7);
-                    m->l5_quantizers[0] = l5_quantizers_1[gcode];
-                    m->l5_quantizers[1] = l5_quantizers_2[gcode];
-                    m->l5_quantizers[2] = l5_quantizers_3[gcode];
-                    m->l5ptr = 0;
+                    m->b2_mant[0] = b2_mantissas[gcode][0];
+                    m->b2_mant[1] = b2_mantissas[gcode][1];
+                    m->b2_mant[2] = b2_mantissas[gcode][2];
+                    m->b2ptr = 0;
                 }
-                coeffs[i] = m->l5_quantizers[m->l5ptr++];
+                coeffs[i] = m->b2_mant[m->b2ptr++];
                 break;
 
             case 3:
-                coeffs[i] = l7_quantizers[get_bits(gb, 3)];
+                coeffs[i] = b3_mantissas[get_bits(gb, 3)];
                 break;
 
             case 4:
-                if (m->l11ptr > 1) {
+                if(m->b4ptr > 1) {
                     gcode = get_bits(gb, 7);
-                    m->l11_quantizers[0] = l11_quantizers_1[gcode];
-                    m->l11_quantizers[1] = l11_quantizers_2[gcode];
-                    m->l11ptr = 0;
+                    m->b4_mant[0] = b4_mantissas[gcode][0];
+                    m->b4_mant[1] = b4_mantissas[gcode][1];
+                    m->b4ptr = 0;
                 }
-                coeffs[i] = m->l11_quantizers[m->l11ptr++];
+                coeffs[i] = m->b4_mant[m->b4ptr++];
                 break;
 
             case 5:
-                coeffs[i] = l15_quantizers[get_bits(gb, 4)];
+                coeffs[i] = b5_mantissas[get_bits(gb, 4)];
                 break;
 
             default:
-                coeffs[i] = get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]);
+                coeffs[i] = get_sbits(gb, qntztab[tbap]) * scale_factors[qntztab[tbap]-1];
                 break;
         }
         coeffs[i] *= scale_factors[exps[i]];
@@ -587,7 +546,7 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
     int got_cplchan = 0;
     mant_groups m;
 
-    m.l3ptr = m.l5ptr = m.l11ptr = 3;
+    m.b1ptr = m.b2ptr = m.b4ptr = 3;
 
     for (i = 0; i < ctx->nfchans; i++) {
         /* transform coefficients for individual channel */
@@ -747,7 +706,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if (get_bits1(gb)) { /* dynamic range */
         dynrng = get_sbits(gb, 8);
-        ctx->dynrng = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
+        ctx->dynrng = (((dynrng & 0x1f) | 0x20) << 13) * pow(2.0, -(18 - (dynrng >> 5)));
     } else if(blk == 0) {
         ctx->dynrng = 1.0;
     }
@@ -755,7 +714,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if(acmod == AC3_ACMOD_DUALMONO) { /* dynamic range 1+1 mode */
         if(get_bits1(gb)) {
             dynrng = get_sbits(gb, 8);
-            ctx->dynrng2 = ((((dynrng & 0x1f) | 0x20) << 13) * scale_factors[3 - (dynrng >> 5)]);
+            ctx->dynrng2 = (((dynrng & 0x1f) | 0x20) << 13) * pow(2.0, -(18 - (dynrng >> 5)));
         } else if(blk == 0) {
             ctx->dynrng2 = 1.0;
         }
@@ -807,10 +766,10 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
                         cplcoexp = get_bits(gb, 4);
                         cplcomant = get_bits(gb, 4);
                         if (cplcoexp == 15)
-                            cplcomant <<= 14;
+                            ctx->cplco[i][bnd] = cplcomant / 16.0f;
                         else
-                            cplcomant = (cplcomant | 0x10) << 13;
-                        ctx->cplco[i][bnd] = cplcomant * scale_factors[cplcoexp + mstrcplco];
+                            ctx->cplco[i][bnd] = (cplcomant + 16.0f) / 32.0f;
+                        ctx->cplco[i][bnd] *= scale_factors[cplcoexp + mstrcplco];
                     }
                 }
 
