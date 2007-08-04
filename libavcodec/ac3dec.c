@@ -92,6 +92,7 @@ typedef struct {
 
     int blksw[AC3_MAX_CHANNELS];
     int dithflag[AC3_MAX_CHANNELS];
+    int dither_all;
     int cplinu;
     int chincpl[AC3_MAX_CHANNELS];
     int phsflginu;
@@ -460,27 +461,24 @@ typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantizati
 static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_groups *m)
 {
     GetBitContext *gb = &ctx->gb;
-    int i, gcode, tbap, dithflag, start, end;
+    int i, gcode, tbap, start, end;
     uint8_t *exps;
     uint8_t *bap;
     float *coeffs;
 
     if (ch_index >= 0) { /* fbw channels */
-        dithflag = ctx->dithflag[ch_index];
         exps = ctx->dexps[ch_index];
         bap = ctx->bap[ch_index];
         coeffs = ctx->transform_coeffs[ch_index + 1];
         start = 0;
         end = ctx->endmant[ch_index];
     } else if (ch_index == -1) {
-        dithflag = 0;
         exps = ctx->dlfeexps;
         bap = ctx->lfebap;
         coeffs = ctx->transform_coeffs[0];
         start = 0;
         end = 7;
     } else {
-        dithflag = 0;
         exps = ctx->dcplexps;
         bap = ctx->cplbap;
         coeffs = ctx->transform_coeffs_cpl;
@@ -493,12 +491,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
         tbap = bap[i];
         switch (tbap) {
             case 0:
-                if (!dithflag) {
-                    coeffs[i] = 0;
-                }
-                else {
                     coeffs[i] = (av_random(&ctx->dith_state) & 0xFFFF) * LEVEL_MINUS_3DB;
-                }
                 break;
 
             case 1:
@@ -551,6 +544,39 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
     return 0;
 }
 
+/**
+ * Removes random dithering from coefficients with zero-bit mantissas
+ * reference: Section 7.3.4 Dither for Zero Bit Mantissas (bap=0)
+ */
+static void remove_dithering(AC3DecodeContext *ctx) {
+    int ch, i;
+    int end=0;
+    float *coeffs;
+    uint8_t *bap;
+
+    for(ch=1; ch<=ctx->nfchans; ch++) {
+        if(!ctx->dithflag[ch-1]) {
+            coeffs = ctx->transform_coeffs[ch];
+            bap = ctx->bap[ch-1];
+            if(ctx->chincpl[ch-1])
+                end = ctx->cplstrtmant;
+            else
+                end = ctx->endmant[ch-1];
+            for(i=0; i<end; i++) {
+                if(bap[i] == 0)
+                    coeffs[i] = 0.0f;
+            }
+            if(ctx->chincpl[ch-1]) {
+                bap = ctx->cplbap;
+                for(; i<ctx->cplendmant; i++) {
+                    if(bap[i] == 0)
+                        coeffs[i] = 0.0f;
+                }
+            }
+        }
+    }
+}
+
 /* Get the transform coefficients.
  * This function extracts the tranform coefficients form the ac3 bitstream.
  * This function is called after bit allocation is performed.
@@ -591,6 +617,10 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
             ctx->transform_coeffs[0][i] = 0;
         }
     }
+
+    /* if any channel doesn't use dithering, zero appropriate coefficients */
+    if(!ctx->dither_all)
+        remove_dithering(ctx);
 
     return 0;
 }
@@ -708,8 +738,12 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw[i] = get_bits1(gb);
 
-    for (i = 0; i < nfchans; i++) /* dithering flag */
+    ctx->dither_all = 1;
+    for (i = 0; i < nfchans; i++) { /* dithering flag */
         ctx->dithflag[i] = get_bits1(gb);
+        if(!ctx->dithflag[i])
+            ctx->dither_all = 0;
+    }
 
     if (get_bits1(gb)) { /* dynamic range */
         dynrng = get_sbits(gb, 8);
