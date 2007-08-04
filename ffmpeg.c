@@ -1503,6 +1503,7 @@ static int av_encode(AVFormatContext **output_files,
     /* for each output stream, we compute the right encoding parameters */
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
+        os = output_files[ost->file_index];
         ist = ist_table[ost->source_index];
 
         codec = ost->st->codec;
@@ -1516,7 +1517,14 @@ static int av_encode(AVFormatContext **output_files,
             /* if stream_copy is selected, no need to decode or encode */
             codec->codec_id = icodec->codec_id;
             codec->codec_type = icodec->codec_type;
-            if(!codec->codec_tag) codec->codec_tag = icodec->codec_tag;
+
+            if(!codec->codec_tag){
+                if(   !os->oformat->codec_tag
+                   || av_codec_get_id (os->oformat->codec_tag, icodec->codec_tag) > 0
+                   || av_codec_get_tag(os->oformat->codec_tag, icodec->codec_id) <= 0)
+                    codec->codec_tag = icodec->codec_tag;
+            }
+
             codec->bit_rate = icodec->bit_rate;
             codec->extradata= icodec->extradata;
             codec->extradata_size= icodec->extradata_size;
