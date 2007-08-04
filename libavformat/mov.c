@@ -844,6 +844,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->codec_type = CODEC_TYPE_AUDIO; /* force type after stsd for m1a hdlr */
         st->need_parsing = AVSTREAM_PARSE_FULL;
         break;
+    case CODEC_ID_ADPCM_MS:
+    case CODEC_ID_ADPCM_IMA_WAV:
+        st->codec->block_align = sc->bytes_per_frame;
+        break;
     default:
         break;
     }
