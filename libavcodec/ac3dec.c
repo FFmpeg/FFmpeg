@@ -495,13 +495,11 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
             case 0:
                 if (!dithflag) {
                     coeffs[i] = 0;
-                    continue;
                 }
                 else {
-                    coeffs[i] = (av_random(&ctx->dith_state) & 0xFFFF) * scale_factors[exps[i]];
-                    coeffs[i] *= LEVEL_MINUS_3DB;
-                    continue;
+                    coeffs[i] = (av_random(&ctx->dith_state) & 0xFFFF) * LEVEL_MINUS_3DB;
                 }
+                break;
 
             case 1:
                 if (m->l3ptr > 2) {
@@ -511,8 +509,8 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l3_quantizers[2] = l3_quantizers_3[gcode];
                     m->l3ptr = 0;
                 }
-                coeffs[i] = m->l3_quantizers[m->l3ptr++] * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = m->l3_quantizers[m->l3ptr++];
+                break;
 
             case 2:
                 if (m->l5ptr > 2) {
@@ -522,12 +520,12 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l5_quantizers[2] = l5_quantizers_3[gcode];
                     m->l5ptr = 0;
                 }
-                coeffs[i] = m->l5_quantizers[m->l5ptr++] * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = m->l5_quantizers[m->l5ptr++];
+                break;
 
             case 3:
-                coeffs[i] = l7_quantizers[get_bits(gb, 3)] * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = l7_quantizers[get_bits(gb, 3)];
+                break;
 
             case 4:
                 if (m->l11ptr > 1) {
@@ -536,17 +534,18 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
                     m->l11_quantizers[1] = l11_quantizers_2[gcode];
                     m->l11ptr = 0;
                 }
-                coeffs[i] = m->l11_quantizers[m->l11ptr++] * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = m->l11_quantizers[m->l11ptr++];
+                break;
 
             case 5:
-                coeffs[i] = l15_quantizers[get_bits(gb, 4)] * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = l15_quantizers[get_bits(gb, 4)];
+                break;
 
             default:
-                coeffs[i] = (get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap])) * scale_factors[exps[i]];
-                continue;
+                coeffs[i] = get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]);
+                break;
         }
+        coeffs[i] *= scale_factors[exps[i]];
     }
 
     return 0;
