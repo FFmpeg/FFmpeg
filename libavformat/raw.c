@@ -419,7 +419,7 @@ static int ac3_probe(AVProbeData *p)
 
     max_frames = 0;
     buf = p->buf;
-    end = buf + FFMIN(4096, p->buf_size - 7);
+    end = buf + FFMIN(5120, p->buf_size - 7);
 
     for(; buf < end; buf++) {
         buf2 = buf;
@@ -434,7 +434,7 @@ static int ac3_probe(AVProbeData *p)
             first_frames = frames;
     }
     if   (first_frames>=3) return AVPROBE_SCORE_MAX * 3 / 4;
-    else if(max_frames>=3) return AVPROBE_SCORE_MAX / 2;
+    else if(max_frames>=2) return AVPROBE_SCORE_MAX / 2;
     else if(max_frames>=1) return 1;
     else                   return 0;
 }
