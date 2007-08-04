@@ -700,8 +700,6 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     int i, bnd, seg, ch;
     GetBitContext *gb = &ctx->gb;
     int bit_alloc_flags = 0;
-    int mstrcplco, cplcoexp, cplcomant;
-    int chbwcod, skipl;
 
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw[i] = get_bits1(gb);
@@ -767,6 +765,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         for (i = 0; i < nfchans; i++) {
             if (ctx->chincpl[i]) {
                 if (get_bits1(gb)) { /* coupling co-ordinates */
+                    int mstrcplco, cplcoexp, cplcomant;
                     cplcoe = 1;
                     mstrcplco = 3 * get_bits(gb, 2);
                     for (bnd = 0; bnd < ctx->ncplbnd; bnd++) {
@@ -815,7 +814,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             if (ctx->chincpl[i])
                 ctx->endmant[i] = ctx->cplstrtmant;
             else {
-                chbwcod = get_bits(gb, 6);
+                int chbwcod = get_bits(gb, 6);
                 if (chbwcod > 60) {
                     av_log(NULL, AV_LOG_ERROR, "chbwcod = %d > 60", chbwcod);
                     return -1;
@@ -964,7 +963,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (get_bits1(gb)) { /* unused dummy data */
-        skipl = get_bits(gb, 9);
+        int skipl = get_bits(gb, 9);
         while(skipl--)
             skip_bits(gb, 8);
     }
