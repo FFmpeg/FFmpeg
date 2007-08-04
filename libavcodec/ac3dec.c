@@ -456,101 +456,40 @@ typedef struct { /* grouped mantissas for 3-level 5-leve and 11-level quantizati
     int l11ptr;
 } mant_groups;
 
-/* Get the transform coefficients for coupling channel and uncouple channels.
- * The coupling transform coefficients starts at the the cplstrtmant, which is
- * equal to endmant[ch] for fbw channels. Hence we can uncouple channels before
- * getting transform coefficients for the channel.
- */
-static int get_transform_coeffs_cpling(AC3DecodeContext *ctx, mant_groups *m)
-{
-    GetBitContext *gb = &ctx->gb;
-    int start, gcode, tbap;
-    float cplcoeff;
-    uint8_t *exps = ctx->dcplexps;
-    uint8_t *bap = ctx->cplbap;
-    start = ctx->cplstrtmant;
-
-    while (start < ctx->cplendmant) {
-            tbap = bap[start];
-            switch(tbap) {
-                case 0:
-                                cplcoeff = (av_random(&ctx->dith_state) & 0xFFFF);
-                    break;
-                case 1:
-                    if (m->l3ptr > 2) {
-                        gcode = get_bits(gb, 5);
-                        m->l3_quantizers[0] = l3_quantizers_1[gcode];
-                        m->l3_quantizers[1] = l3_quantizers_2[gcode];
-                        m->l3_quantizers[2] = l3_quantizers_3[gcode];
-                        m->l3ptr = 0;
-                    }
-                    cplcoeff = m->l3_quantizers[m->l3ptr++];
-                    break;
-
-                case 2:
-                    if (m->l5ptr > 2) {
-                        gcode = get_bits(gb, 7);
-                        m->l5_quantizers[0] = l5_quantizers_1[gcode];
-                        m->l5_quantizers[1] = l5_quantizers_2[gcode];
-                        m->l5_quantizers[2] = l5_quantizers_3[gcode];
-                        m->l5ptr = 0;
-                    }
-                    cplcoeff = m->l5_quantizers[m->l5ptr++];
-                    break;
-
-                case 3:
-                    cplcoeff = l7_quantizers[get_bits(gb, 3)];
-                    break;
-
-                case 4:
-                    if (m->l11ptr > 1) {
-                        gcode = get_bits(gb, 7);
-                        m->l11_quantizers[0] = l11_quantizers_1[gcode];
-                        m->l11_quantizers[1] = l11_quantizers_2[gcode];
-                        m->l11ptr = 0;
-                    }
-                    cplcoeff = m->l11_quantizers[m->l11ptr++];
-                    break;
-
-                case 5:
-                    cplcoeff = l15_quantizers[get_bits(gb, 4)];
-                    break;
-
-                default:
-                    cplcoeff = get_sbits(gb, qntztab[tbap]) << (16 - qntztab[tbap]);
-            }
-            ctx->transform_coeffs_cpl[start] = cplcoeff * scale_factors[exps[start]];
-            start++;
-    }
-
-    return 0;
-}
-
 /* Get the transform coefficients for particular channel */
 static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_groups *m)
 {
     GetBitContext *gb = &ctx->gb;
-    int i, gcode, tbap, dithflag, end;
+    int i, gcode, tbap, dithflag, start, end;
     uint8_t *exps;
     uint8_t *bap;
     float *coeffs;
 
-    if (ch_index != -1) { /* fbw channels */
+    if (ch_index >= 0) { /* fbw channels */
         dithflag = ctx->dithflag[ch_index];
         exps = ctx->dexps[ch_index];
         bap = ctx->bap[ch_index];
         coeffs = ctx->transform_coeffs[ch_index + 1];
+        start = 0;
         end = ctx->endmant[ch_index];
     } else if (ch_index == -1) {
         dithflag = 0;
         exps = ctx->dlfeexps;
         bap = ctx->lfebap;
         coeffs = ctx->transform_coeffs[0];
+        start = 0;
         end = 7;
+    } else {
+        dithflag = 0;
+        exps = ctx->dcplexps;
+        bap = ctx->cplbap;
+        coeffs = ctx->transform_coeffs_cpl;
+        start = ctx->cplstrtmant;
+        end = ctx->cplendmant;
     }
 
 
-    for (i = 0; i < end; i++) {
+    for (i = start; i < end; i++) {
         tbap = bap[i];
         switch (tbap) {
             case 0:
@@ -632,7 +571,7 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
         /* tranform coefficients for coupling channels */
         if (ctx->chincpl[i])  {
             if (!got_cplchan) {
-                if (get_transform_coeffs_cpling(ctx, &m)) {
+                if (get_transform_coeffs_ch(ctx, -2, &m)) {
                     av_log(NULL, AV_LOG_ERROR, "error in decoupling channels\n");
                     return -1;
                 }
