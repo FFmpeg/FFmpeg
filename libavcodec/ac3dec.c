@@ -100,7 +100,7 @@ typedef struct {
     int chincpl[AC3_MAX_CHANNELS];
     int phsflginu;
     int cplcoe;
-    uint32_t cplbndstrc;
+    int cplbndstrc[18];
     int rematstr;
     int nrematbnd;
     int rematflg[AC3_MAX_CHANNELS];
@@ -413,7 +413,7 @@ static void uncouple_channels(AC3DecodeContext *ctx)
                 }
                 i++;
             }
-        } while((ctx->cplbndstrc >> subbnd) & 1);
+        } while(ctx->cplbndstrc[subbnd]);
     }
 }
 
@@ -730,7 +730,6 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     if (get_bits1(gb)) { /* coupling strategy */
         ctx->cplinu = get_bits1(gb);
-        ctx->cplbndstrc = 0;
         if (ctx->cplinu) { /* coupling in use */
             int cplbegf, cplendf;
 
@@ -753,7 +752,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             ctx->cplendmant = cplendf * 12 + 73;
             for (i = 0; i < ctx->ncplsubnd - 1; i++) /* coupling band structure */
                 if (get_bits1(gb)) {
-                    ctx->cplbndstrc |= 1 << i;
+                    ctx->cplbndstrc[i] = 1;
                     ctx->ncplbnd--;
                 }
         } else {
