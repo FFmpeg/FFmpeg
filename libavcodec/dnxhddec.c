@@ -336,12 +336,12 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 
     if (first_field) {
-    if (ctx->picture.data[0])
-        avctx->release_buffer(avctx, &ctx->picture);
-    if (avctx->get_buffer(avctx, &ctx->picture) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
+        if (ctx->picture.data[0])
+            avctx->release_buffer(avctx, &ctx->picture);
+        if (avctx->get_buffer(avctx, &ctx->picture) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return -1;
+        }
     }
 
     dnxhd_decode_macroblocks(ctx, buf + 0x280, buf_size - 0x280);
