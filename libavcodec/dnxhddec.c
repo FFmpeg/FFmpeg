@@ -63,6 +63,12 @@ typedef struct {
 } DNXHDContext;
 
 static const CIDEntry cid_table[] = {
+    { 1237, 1920, 1080, 0, 606208, 606208, 4, 8,
+      dnxhd_1237_luma_weigth, dnxhd_1237_chroma_weigth,
+      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
+      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
+      dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
     { 1238, 1920, 1080, 0, 917504, 917504, 4, 8,
       dnxhd_1238_luma_weigth, dnxhd_1238_chroma_weigth,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
