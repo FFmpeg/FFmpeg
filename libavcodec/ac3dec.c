@@ -150,8 +150,11 @@ typedef struct {
     MDCTContext imdct_512;  //for 512 sample imdct transform
     MDCTContext imdct_256;  //for 256 sample imdct transform
     DSPContext  dsp;        //for optimization
+    float       add_bias;   ///< offset for float_to_int16 conversion
+    float       mul_bias;   ///< scaling for float_to_int16 conversion
 
     DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS-1][256]); //output after imdct transform and windowing
+    DECLARE_ALIGNED_16(short, int_output[AC3_MAX_CHANNELS-1][256]); ///< final 16-bit integer output
     DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS-1][256]);  //delay - added to the next block
     DECLARE_ALIGNED_16(float, tmp_imdct[256]);                  //temporary storage for imdct transform
     DECLARE_ALIGNED_16(float, tmp_output[512]);                 //temporary storage for output before windowing
@@ -261,6 +264,14 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ac3_window_init(ctx->window);
     dsputil_init(&ctx->dsp, avctx);
     av_init_random(0, &ctx->dith_state);
+
+    if(ctx->dsp.float_to_int16 == ff_float_to_int16_c) {
+        ctx->add_bias = 385.0f;
+        ctx->mul_bias = 1.0f;
+    } else {
+        ctx->add_bias = 0.0f;
+        ctx->mul_bias = 32767.0f;
+    }
 
     return 0;
 }
@@ -651,7 +662,7 @@ static inline void do_imdct(AC3DecodeContext *ctx)
                                           ctx->tmp_imdct);
         }
         ctx->dsp.vector_fmul_add_add(ctx->output[ch-1], ctx->tmp_output,
-                                     ctx->window, ctx->delay[ch-1], 384, 256, 1);
+                                     ctx->window, ctx->delay[ch-1], ctx->add_bias, 256, 1);
         ctx->dsp.vector_fmul_reverse(ctx->delay[ch-1], ctx->tmp_output+256,
                                      ctx->window, 256);
     }
@@ -921,7 +932,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     /* apply scaling to coefficients (headroom, dynrng) */
     for(ch=1; ch<=ctx->nchans; ch++) {
-        float gain = 2.0f;
+        float gain = 2.0f * ctx->mul_bias;
         if(ctx->acmod == AC3_ACMOD_DUALMONO && ch == 2) {
             gain *= ctx->dynrng2;
         } else {
@@ -934,17 +945,12 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     do_imdct(ctx);
 
-    return 0;
-}
+    /* convert float to 16-bit integer */
+    for(ch=0; ch<ctx->out_channels; ch++) {
+        ctx->dsp.float_to_int16(ctx->int_output[ch], ctx->output[ch], 256);
+    }
 
-static inline int16_t convert(int32_t i)
-{
-    if (i > 0x43c07fff)
-        return 32767;
-    else if (i <= 0x43bf8000)
-        return -32768;
-    else
-        return (i - 0x43c00000);
+    return 0;
 }
 
 /* Decode ac3 frame.
@@ -960,10 +966,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
     int16_t *out_samples = (int16_t *)data;
     int i, blk, ch;
-    int32_t *int_ptr[6];
-
-    for (ch = 0; ch < 6; ch++)
-        int_ptr[ch] = (int32_t *)(&ctx->output[ch]);
 
     //Initialize the GetBitContext with the start of valid AC3 Frame.
     init_get_bits(&ctx->gb, buf, buf_size * 8);
@@ -999,7 +1001,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         }
         for (i = 0; i < 256; i++)
             for (ch = 0; ch < ctx->out_channels; ch++)
-                *(out_samples++) = convert(int_ptr[ch][i]);
+                *(out_samples++) = ctx->int_output[ch][i];
     }
     *data_size = NB_BLOCKS * 256 * avctx->channels * sizeof (int16_t);
     return ctx->frame_size;
