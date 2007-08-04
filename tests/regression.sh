@@ -87,6 +87,7 @@ else
     do_adpcm_yam=y
     do_dv=y
     do_dv50=y
+    do_flashsv=y
 fi
 
 
@@ -509,6 +510,13 @@ fi
 if [ -n "$do_svq1" ] ; then
 # svq1
 do_video_encoding svq1.mov "" pgmyuv "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
+###################################
+if [ -n "$do_flashsv" ] ; then
+# svq1
+do_video_encoding flashsv.flv "" pgmyuv "-an -vcodec flashsv "
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 

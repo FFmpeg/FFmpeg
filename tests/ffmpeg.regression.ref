@@ -161,6 +161,10 @@ stddev:  8.50 PSNR:29.52 bytes:7602176
 1365791 ./tests/data/a-svq1.mov
 fb0a97094a89d6f379535f615783d00c *./tests/data/out.yuv
 stddev: 10.98 PSNR:27.30 bytes:7602176
+7f1f97c37bfff641d0f137f9774c0112 *./tests/data/a-flashsv.flv
+14685499 ./tests/data/a-flashsv.flv
+0f8637e9b861230aff9894825af83720 *./tests/data/out.yuv
+stddev:  2.84 PSNR:39.04 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./tests/data/a-mp2.mp2
 95712 ./tests/data/a-mp2.mp2
 83f8df5d5f84480566af548bb037fceb *./tests/data/out.wav
