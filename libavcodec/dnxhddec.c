@@ -69,12 +69,12 @@ static const CIDEntry cid_table[] = {
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
       dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
-/*     { 1243, 1920, 1080, 1, 917504, 458752, 4, 8, */
-/*       dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth, */
-/*       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits, */
-/*       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level, */
-/*       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag, */
-/*       dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run }, */
+    { 1243, 1920, 1080, 1, 917504, 458752, 4, 8,
+      dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth,
+      dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
+      dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
+      dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
+      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
 };
 
 static int dnxhd_get_cid_table(int cid)
@@ -125,7 +125,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
     return 0;
 }
 
-static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
+static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size, int first_field)
 {
     static const uint8_t header_prefix[] = { 0x00, 0x00, 0x02, 0x80, 0x01 };
     int i;
@@ -137,9 +137,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size)
         av_log(ctx->avctx, AV_LOG_ERROR, "error in header\n");
         return -1;
     }
-    if (buf[5] & 2) {/* interlaced FIXME top or bottom */
+    if (buf[5] & 2) { /* interlaced */
+        ctx->cur_field = buf[5] & 1;
         ctx->picture.interlaced_frame = 1;
-        av_log(ctx->avctx, AV_LOG_DEBUG, "interlaced %d\n", buf[5] & 3);
+        ctx->picture.top_field_first = first_field && ctx->cur_field == 1;
+        av_log(ctx->avctx, AV_LOG_DEBUG, "interlaced %d, cur field %d\n", buf[5] & 3, ctx->cur_field);
     }
 
     ctx->height = AV_RB16(buf + 0x18);
@@ -265,9 +267,21 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
     for (i = 0; i < 8; i++) {
         dnxhd_decode_dct_block(ctx, ctx->blocks[i], i, qscale);
     }
+
+    if (ctx->picture.interlaced_frame) {
+        dct_linesize_luma   <<= 1;
+        dct_linesize_chroma <<= 1;
+    }
+
     dest_y = ctx->picture.data[0] + ((y * dct_linesize_luma)   << 4) + (x << 4);
     dest_u = ctx->picture.data[1] + ((y * dct_linesize_chroma) << 4) + (x << 3);
     dest_v = ctx->picture.data[2] + ((y * dct_linesize_chroma) << 4) + (x << 3);
+
+    if (ctx->cur_field) {
+        dest_y += ctx->picture.linesize[0];
+        dest_u += ctx->picture.linesize[1];
+        dest_v += ctx->picture.linesize[2];
+    }
 
     dct_offset = dct_linesize_luma << 3;
     ctx->dsp.idct_put(dest_y,                  dct_linesize_luma, ctx->blocks[0]);
@@ -308,10 +322,12 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     DNXHDContext *ctx = avctx->priv_data;
     AVFrame *picture = data;
+    int first_field = 1;
 
     dprintf(avctx, "frame size %d\n", buf_size);
 
-    if (dnxhd_decode_header(ctx, buf, buf_size) < 0)
+ decode_coding_unit:
+    if (dnxhd_decode_header(ctx, buf, buf_size, first_field) < 0)
         return -1;
 
     avctx->pix_fmt = PIX_FMT_YUV422P;
@@ -319,14 +335,23 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 
+    if (first_field) {
     if (ctx->picture.data[0])
         avctx->release_buffer(avctx, &ctx->picture);
     if (avctx->get_buffer(avctx, &ctx->picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
+    }
 
     dnxhd_decode_macroblocks(ctx, buf + 0x280, buf_size - 0x280);
+
+    if (first_field && ctx->picture.interlaced_frame) {
+        buf      += ctx->cid_table->coding_unit_size;
+        buf_size -= ctx->cid_table->coding_unit_size;
+        first_field = 0;
+        goto decode_coding_unit;
+    }
 
     *picture = ctx->picture;
     *data_size = sizeof(AVPicture);
