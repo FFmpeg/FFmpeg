@@ -697,12 +697,11 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 {
     int nfchans = ctx->nfchans;
     int acmod = ctx->acmod;
-    int i, bnd, seg, grpsize, ch;
+    int i, bnd, seg, ch;
     GetBitContext *gb = &ctx->gb;
     int bit_alloc_flags = 0;
-    int8_t *dexps;
     int mstrcplco, cplcoexp, cplcomant;
-    int chbwcod, ngrps, cplabsexp, skipl;
+    int chbwcod, skipl;
 
     for (i = 0; i < nfchans; i++) /*block switch flag */
         ctx->blksw[i] = get_bits1(gb);
@@ -827,28 +826,32 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (ctx->cplexpstr != EXP_REUSE) {/* coupling exponents */
+        int grpsize, ngrps, absexp;
         bit_alloc_flags = 64;
-        cplabsexp = get_bits(gb, 4) << 1;
-        ngrps = (ctx->cplendmant - ctx->cplstrtmant) / (3 << (ctx->cplexpstr - 1));
-        decode_exponents(gb, ctx->cplexpstr, ngrps, cplabsexp, ctx->dcplexps + ctx->cplstrtmant);
+        grpsize = 3 << (ctx->cplexpstr - 1);
+        ngrps = (ctx->cplendmant - ctx->cplstrtmant) / grpsize;
+        absexp = get_bits(gb, 4) << 1;
+        decode_exponents(gb, ctx->cplexpstr, ngrps, absexp, &ctx->dcplexps[ctx->cplstrtmant]);
     }
 
     for (i = 0; i < nfchans; i++) { /* fbw channel exponents */
         if (ctx->chexpstr[i] != EXP_REUSE) {
+            int grpsize, ngrps, absexp;
             bit_alloc_flags |= 1 << i;
             grpsize = 3 << (ctx->chexpstr[i] - 1);
             ngrps = (ctx->endmant[i] + grpsize - 4) / grpsize;
-            dexps = ctx->dexps[i];
-            dexps[0] = get_bits(gb, 4);
-            decode_exponents(gb, ctx->chexpstr[i], ngrps, dexps[0], dexps + 1);
+            absexp = ctx->dexps[i][0] = get_bits(gb, 4);
+            decode_exponents(gb, ctx->chexpstr[i], ngrps, absexp, &ctx->dexps[i][1]);
             skip_bits(gb, 2); /* skip gainrng */
         }
     }
 
     if (ctx->lfeexpstr != EXP_REUSE) { /* lfe exponents */
+        int ngrps, absexp;
         bit_alloc_flags |= 32;
-        ctx->dlfeexps[0] = get_bits(gb, 4);
-        decode_exponents(gb, ctx->lfeexpstr, 2, ctx->dlfeexps[0], ctx->dlfeexps + 1);
+        ngrps = 2;
+        absexp = ctx->dlfeexps[0] = get_bits(gb, 4);
+        decode_exponents(gb, ctx->lfeexpstr, ngrps, absexp, &ctx->dlfeexps[1]);
     }
 
     if (get_bits1(gb)) { /* bit allocation information */
