@@ -102,7 +102,7 @@ typedef struct {
     int cplbndstrc[18];
     int rematstr;
     int nrematbnd;
-    int rematflg[AC3_MAX_CHANNELS];
+    int rematflg[4];
     int cplexpstr;
     int lfeexpstr;
     int chexpstr[5];
