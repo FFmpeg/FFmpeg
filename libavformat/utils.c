@@ -608,6 +608,9 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index, int6
 
         if(pktl->pkt.dts != AV_NOPTS_VALUE)
             pktl->pkt.dts += st->first_dts;
+
+        if(st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
+            st->start_time= pktl->pkt.pts;
     }
 }
 
