@@ -34,7 +34,7 @@
 #include "log.h"
 
 #if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)
-#define ALT_BITSTREAM_READER
+#   define ALT_BITSTREAM_READER
 #endif
 
 //#define ALT_BITSTREAM_WRITER
@@ -43,7 +43,7 @@
 #   ifdef ARCH_ARMV4L
 #       define A32_BITSTREAM_READER
 #   else
-#define ALT_BITSTREAM_READER
+#       define ALT_BITSTREAM_READER
 //#define LIBMPEG2_BITSTREAM_READER
 //#define A32_BITSTREAM_READER
 #   endif
