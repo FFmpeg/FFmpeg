@@ -589,6 +589,28 @@ static int is_intra_only(AVCodecContext *enc){
     return 0;
 }
 
+static void update_initial_timestamps(AVFormatContext *s, int stream_index, int64_t dts){
+    AVStream *st= s->streams[stream_index];
+    AVPacketList *pktl= s->packet_buffer;
+
+    if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE)
+        return;
+
+    st->first_dts= dts - st->cur_dts;
+    st->cur_dts= dts;
+
+    for(; pktl; pktl= pktl->next){
+        if(pktl->pkt.stream_index != stream_index)
+            continue;
+        //FIXME think more about this check
+        if(pktl->pkt.pts != AV_NOPTS_VALUE && pktl->pkt.pts == pktl->pkt.dts)
+            pktl->pkt.pts += st->first_dts;
+
+        if(pktl->pkt.dts != AV_NOPTS_VALUE)
+            pktl->pkt.dts += st->first_dts;
+    }
+}
+
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
@@ -633,7 +655,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         presentation_delayed = 1;
 
     if(st->cur_dts == AV_NOPTS_VALUE){
-        st->cur_dts = -delay * pkt->duration;
+        st->cur_dts = 0; //FIXME maybe set it to 0 during init
     }
 
 //    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
@@ -644,6 +666,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* PTS = presentation time stamp */
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->last_IP_pts;
+            update_initial_timestamps(s, pkt->stream_index, pkt->dts);
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->cur_dts;
 
@@ -669,6 +692,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* presentation is not delayed : PTS and DTS are the same */
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = pkt->dts;
+            update_initial_timestamps(s, pkt->stream_index, pkt->pts);
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
@@ -684,6 +708,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
         if(pkt->dts == AV_NOPTS_VALUE)
             pkt->dts= st->pts_buffer[0];
+        if(delay>1){
+            update_initial_timestamps(s, pkt->stream_index, pkt->dts); // this should happen on the first packet
+        }
         if(pkt->dts > st->cur_dts)
             st->cur_dts = pkt->dts;
     }
@@ -1767,6 +1794,8 @@ int av_find_stream_info(AVFormatContext *ic)
             if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
                 st->codec->codec_id == CODEC_ID_NONE)
                 break;
+            if(st->first_dts == AV_NOPTS_VALUE)
+                break;
         }
         if (i == ic->nb_streams) {
             /* NOTE: if the format has no header, then we need to read
@@ -2050,6 +2079,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st->start_time = AV_NOPTS_VALUE;
     st->duration = AV_NOPTS_VALUE;
     st->cur_dts = AV_NOPTS_VALUE;
+    st->first_dts = AV_NOPTS_VALUE;
 
     /* default pts settings is MPEG like */
     av_set_pts_info(st, 33, 1, 90000);

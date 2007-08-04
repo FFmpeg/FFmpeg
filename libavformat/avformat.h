@@ -280,9 +280,10 @@ typedef struct AVStream {
      */
     AVRational r_frame_rate;
     void *priv_data;
-#if LIBAVFORMAT_VERSION_INT < (52<<16)
+
     /* internal data used in av_find_stream_info() */
-    int64_t codec_info_duration;
+    int64_t first_dts;
+#if LIBAVFORMAT_VERSION_INT < (52<<16)
     int codec_info_nb_frames;
 #endif
     /** encoding: PTS generation when outputing stream */
