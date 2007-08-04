@@ -427,11 +427,11 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
     uint8_t *bap;
     float *coeffs;
 
-        exps = ctx->dexps[ch_index];
-        bap = ctx->bap[ch_index];
-        coeffs = ctx->transform_coeffs[ch_index];
-        start = ctx->startmant[ch_index];
-        end = ctx->endmant[ch_index];
+    exps = ctx->dexps[ch_index];
+    bap = ctx->bap[ch_index];
+    coeffs = ctx->transform_coeffs[ch_index];
+    start = ctx->startmant[ch_index];
+    end = ctx->endmant[ch_index];
 
 
     for (i = start; i < end; i++) {
@@ -813,12 +813,12 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             else if(ch == ctx->lfe_ch)
                 ngrps = 2;
             else
-            ngrps = (ctx->endmant[ch] + grpsize - 4) / grpsize;
+                ngrps = (ctx->endmant[ch] + grpsize - 4) / grpsize;
             ctx->dexps[ch][0] = get_bits(gb, 4) << !ch;
             decode_exponents(gb, ctx->expstr[ch], ngrps, ctx->dexps[ch][0],
                              &ctx->dexps[ch][ctx->startmant[ch]+!!ch]);
             if(ch != CPL_CH && ch != ctx->lfe_ch)
-            skip_bits(gb, 2); /* skip gainrng */
+                skip_bits(gb, 2); /* skip gainrng */
         }
     }
 
