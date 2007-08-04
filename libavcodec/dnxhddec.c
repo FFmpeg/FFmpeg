@@ -115,23 +115,23 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
         }
         ctx->cid_table = &cid_table[index];
         init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
-                 cid_table->ac_bits, 1, 1,
-                 cid_table->ac_codes, 2, 2, 0);
+                 ctx->cid_table->ac_bits, 1, 1,
+                 ctx->cid_table->ac_codes, 2, 2, 0);
         init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, 12,
-                 cid_table->dc_bits, 1, 1,
-                 cid_table->dc_codes, 1, 1, 0);
+                 ctx->cid_table->dc_bits, 1, 1,
+                 ctx->cid_table->dc_codes, 1, 1, 0);
         init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
-                 cid_table->run_bits, 1, 1,
-                 cid_table->run_codes, 2, 2, 0);
+                 ctx->cid_table->run_bits, 1, 1,
+                 ctx->cid_table->run_codes, 2, 2, 0);
 
-        ctx->run           = cid_table->run;
-        ctx->ac_level      = cid_table->ac_level;
-        ctx->ac_run_flag   = cid_table->ac_run_flag;
-        ctx->ac_index_flag = cid_table->ac_index_flag;
-        ctx->luma_weigth   = cid_table->luma_weigth;
-        ctx->chroma_weigth = cid_table->chroma_weigth;
+        ctx->run           = ctx->cid_table->run;
+        ctx->ac_level      = ctx->cid_table->ac_level;
+        ctx->ac_run_flag   = ctx->cid_table->ac_run_flag;
+        ctx->ac_index_flag = ctx->cid_table->ac_index_flag;
+        ctx->luma_weigth   = ctx->cid_table->luma_weigth;
+        ctx->chroma_weigth = ctx->cid_table->chroma_weigth;
 
-        ctx->index_bits = cid_table->index_bits;
+        ctx->index_bits = ctx->cid_table->index_bits;
 
         ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, ff_zigzag_direct);
     }
