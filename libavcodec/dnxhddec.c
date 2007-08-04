@@ -29,23 +29,6 @@
 #include "mpegvideo.h"
 
 typedef struct {
-    int cid;
-    unsigned int width, height;
-    int interlaced;
-    unsigned int frame_size;
-    unsigned int coding_unit_size;
-    int index_bits;
-    int bit_depth;
-    const uint8_t *luma_weigth, *chroma_weigth;
-    const uint8_t *dc_codes, *dc_bits;
-    const uint16_t *ac_codes;
-    const uint8_t *ac_bits, *ac_level;
-    const uint8_t *ac_run_flag, *ac_index_flag;
-    const uint16_t *run_codes;
-    const uint8_t *run_bits, *run;
-} CIDEntry;
-
-typedef struct {
     AVCodecContext *avctx;
     AVFrame picture;
     GetBitContext gb;
@@ -61,36 +44,6 @@ typedef struct {
     DECLARE_ALIGNED_8(ScanTable, scantable);
     const CIDEntry *cid_table;
 } DNXHDContext;
-
-static const CIDEntry cid_table[] = {
-    { 1237, 1920, 1080, 0, 606208, 606208, 4, 8,
-      dnxhd_1237_luma_weigth, dnxhd_1237_chroma_weigth,
-      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
-      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
-      dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
-      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
-    { 1238, 1920, 1080, 0, 917504, 917504, 4, 8,
-      dnxhd_1238_luma_weigth, dnxhd_1238_chroma_weigth,
-      dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
-      dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
-      dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
-      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
-    { 1243, 1920, 1080, 1, 917504, 458752, 4, 8,
-      dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth,
-      dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
-      dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
-      dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
-      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
-};
-
-static int dnxhd_get_cid_table(int cid)
-{
-    int i;
-    for (i = 0; i < sizeof(cid_table)/sizeof(CIDEntry); i++)
-        if (cid_table[i].cid == cid)
-            return i;
-    return -1;
-}
 
 #define DNXHD_VLC_BITS 9
 #define DNXHD_DC_VLC_BITS 6
@@ -111,11 +64,11 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
     if (!ctx->cid_table) {
         int index;
 
-        if ((index = dnxhd_get_cid_table(cid)) < 0) {
+        if ((index = ff_dnxhd_get_cid_table(cid)) < 0) {
             av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %d\n", cid);
             return -1;
         }
-        ctx->cid_table = &cid_table[index];
+        ctx->cid_table = &ff_dnxhd_cid_table[index];
         init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
                  ctx->cid_table->ac_codes, 2, 2, 0);
