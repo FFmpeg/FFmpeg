@@ -337,7 +337,7 @@ static int dnxhd_decode_close(AVCodecContext *avctx)
 {
     DNXHDContext *ctx = avctx->priv_data;
 
-    if(ctx->picture.data[0])
+    if (ctx->picture.data[0])
         avctx->release_buffer(avctx, &ctx->picture);
     free_vlc(&ctx->ac_vlc);
     free_vlc(&ctx->dc_vlc);
