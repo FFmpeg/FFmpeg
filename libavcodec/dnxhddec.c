@@ -302,7 +302,9 @@ static int dnxhd_decode_macroblocks(DNXHDContext *ctx, uint8_t *buf, int buf_siz
 {
     int x, y;
     for (y = 0; y < ctx->mb_height; y++) {
-        memset(ctx->last_dc, 4, sizeof(ctx->last_dc)); // 4 for levels +128
+        ctx->last_dc[0] =
+        ctx->last_dc[1] =
+        ctx->last_dc[2] = 1024; // 1024 for levels +128
         init_get_bits(&ctx->gb, buf + ctx->mb_scan_index[y], (buf_size - ctx->mb_scan_index[y]) << 3);
         for (x = 0; x < ctx->mb_width; x++) {
             //START_TIMER;
