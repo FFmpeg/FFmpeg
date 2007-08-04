@@ -99,7 +99,6 @@ typedef struct {
     int cplinu;
     int chincpl[AC3_MAX_CHANNELS];
     int phsflginu;
-    int cplcoe;
     int cplbndstrc[18];
     int rematstr;
     int nrematbnd;
@@ -762,12 +761,12 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     if (ctx->cplinu) {
-        ctx->cplcoe = 0;
+        int cplcoe = 0;
 
         for (i = 0; i < nfchans; i++)
             if (ctx->chincpl[i])
                 if (get_bits1(gb)) { /* coupling co-ordinates */
-                    ctx->cplcoe |= 1 << i;
+                    cplcoe = 1;
                     mstrcplco = 3 * get_bits(gb, 2);
                     for (bnd = 0; bnd < ctx->ncplbnd; bnd++) {
                         cplcoexp = get_bits(gb, 4);
@@ -780,7 +779,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
                     }
                 }
 
-        if (acmod == AC3_ACMOD_STEREO && ctx->phsflginu && (ctx->cplcoe & 1 || ctx->cplcoe & 2))
+        if (acmod == AC3_ACMOD_STEREO && ctx->phsflginu && cplcoe)
             for (bnd = 0; bnd < ctx->ncplbnd; bnd++)
                 if (get_bits1(gb))
                     ctx->cplco[1][bnd] = -ctx->cplco[1][bnd];
