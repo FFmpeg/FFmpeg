@@ -164,4 +164,34 @@ needs_more_info substate
 Topic:
 ------
 A topic is a tag you should add to your issue in order to make grouping them
-easier. Some tags available: avformat, avcodec, avutils, ffmpeg, roundup
+easier.
+
+avcodec
+    issues in libavcodec/*
+
+avformat
+    issues in libavformat/*
+
+avutil
+    issues in libavutil/*
+
+regression test
+    issues in tests/*
+
+ffmpeg
+    issues in or related to ffmpeg.c
+
+ffplay
+    issues in or related to ffplay.c
+
+ffserver
+    issues in or related to ffserver.c
+
+build system
+    issues in or related to configure/Makefile
+
+regression
+    bugs which where working in a past revission
+
+roundup
+    issues related to our issue tracker
