@@ -204,6 +204,7 @@ extern AVCodec ws_snd1_decoder;
 extern AVCodec xan_dpcm_decoder;
 extern AVCodec xan_wc3_decoder;
 extern AVCodec xl_decoder;
+extern AVCodec xsub_decoder;
 extern AVCodec zmbv_decoder;
 
 /* PCM codecs */

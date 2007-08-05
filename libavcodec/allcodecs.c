@@ -160,6 +160,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(WNV1, wnv1);
     REGISTER_DECODER(XAN_WC3, xan_wc3);
     REGISTER_DECODER(XL, xl);
+    REGISTER_DECODER(XSUB, xsub);
     REGISTER_ENCDEC (ZLIB, zlib);
     REGISTER_ENCDEC (ZMBV, zmbv);
 
