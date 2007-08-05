@@ -74,6 +74,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // read palette
     for (i = 0; i < sub->rects[0].nb_colors; i++)
         sub->rects[0].rgba_palette[i] = bytestream_get_be24(&buf);
+    // make all except background (first entry) non-transparent
+    for (i = 1; i < sub->rects[0].nb_colors; i++)
+        sub->rects[0].rgba_palette[i] |= 0xff000000;
 
     // process RLE-compressed data
     rlelen = FFMIN(rlelen, buf_end - buf);
