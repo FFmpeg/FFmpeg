@@ -69,7 +69,7 @@ static int mpegps_probe(AVProbeData *p)
     if(vid || audio)            /* invalid VDR files nd short PES streams */
         score= AVPROBE_SCORE_MAX/4;
 
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d\n", sys, priv1, pspack,vid, audio);
+//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d len:%d\n", sys, priv1, pspack,vid, audio, p->buf_size);
     if(sys && sys*9 <= pspack*10)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
     if((priv1 || vid || audio) && (priv1+vid+audio)*9 <= pspack*10)
