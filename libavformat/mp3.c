@@ -608,7 +608,7 @@ AVOutputFormat mp2_muxer = {
     0,
     CODEC_ID_MP2,
     0,
-    mp3_write_header,
+    NULL,
     mp3_write_packet,
     mp3_write_trailer,
 };
