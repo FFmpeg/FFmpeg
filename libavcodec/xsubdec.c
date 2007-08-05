@@ -83,6 +83,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     init_get_bits(&gb, buf, rlelen * 8);
     bitmap = sub->rects[0].bitmap;
     for (y = 0; y < h; y++) {
+        // interlaced: do odd lines
+        if (y == h / 2) bitmap = sub->rects[0].bitmap + w;
         for (x = 0; x < w; ) {
             int log2 = ff_log2_tab[show_bits(&gb, 8)];
             int run = get_bits(&gb, 14 - 4 * (log2 >> 1));
@@ -94,6 +96,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             bitmap += run;
             x += run;
         }
+        // interlaced, skip every second line
+        bitmap += w;
         align_get_bits(&gb);
     }
     *data_size = 1;
