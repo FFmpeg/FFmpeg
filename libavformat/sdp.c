@@ -21,6 +21,7 @@
 #include "avstring.h"
 #include "avformat.h"
 
+#ifdef CONFIG_RTP_MUXER
 #define MAX_EXTRADATA_SIZE ((INT_MAX - 10) / 2)
 
 struct sdp_session_level {
@@ -215,3 +216,9 @@ char *avf_sdp_create(AVFormatContext *ac[], int n_files)
 
     return buff;
 }
+#else
+char *avf_sdp_create(AVFormatContext *ac[], int n_files)
+{
+    return NULL;
+}
+#endif
