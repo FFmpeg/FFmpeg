@@ -24,8 +24,6 @@ static uint64_t parse_timecode(AVCodecContext *avctx, uint8_t *buf) {
     return ms;
 }
 
-static const uint8_t runbits[8] = { 14, 14, 10, 10, 6, 6, 2, 2 };
-
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         uint8_t *buf, int buf_size) {
     AVSubtitle *sub = data;
@@ -85,7 +83,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; ) {
             int log2 = ff_log2_tab[show_bits(&gb, 8)];
-            int run = get_bits(&gb, runbits[log2]);
+            int run = get_bits(&gb, 14 - 4 * (log2 >> 1));
             int colour = get_bits(&gb, 2);
             run = FFMIN(run, w - x);
             // run length 0 means till end of row
