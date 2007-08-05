@@ -187,17 +187,17 @@ static void put_swf_line_edge(PutBitContext *pb, int dx, int dy)
     mask = (1 << nbits) - 1;
     put_bits(pb, 4, nbits - 2); /* 16 bits precision */
     if (dx == 0) {
-      put_bits(pb, 1, 0);
-      put_bits(pb, 1, 1);
-      put_bits(pb, nbits, dy & mask);
+        put_bits(pb, 1, 0);
+        put_bits(pb, 1, 1);
+        put_bits(pb, nbits, dy & mask);
     } else if (dy == 0) {
-      put_bits(pb, 1, 0);
-      put_bits(pb, 1, 0);
-      put_bits(pb, nbits, dx & mask);
+        put_bits(pb, 1, 0);
+        put_bits(pb, 1, 0);
+        put_bits(pb, nbits, dx & mask);
     } else {
-      put_bits(pb, 1, 1);
-      put_bits(pb, nbits, dx & mask);
-      put_bits(pb, nbits, dy & mask);
+        put_bits(pb, 1, 1);
+        put_bits(pb, nbits, dx & mask);
+        put_bits(pb, nbits, dy & mask);
     }
 }
 
@@ -336,7 +336,7 @@ static int swf_write_header(AVFormatContext *s)
         put_le16(pb, BITMAP_ID); /* bitmap ID */
         /* position of the bitmap */
         put_swf_matrix(pb, (int)(1.0 * (1 << FRAC_BITS)), 0,
-                        0, (int)(1.0 * (1 << FRAC_BITS)), 0, 0);
+                       0, (int)(1.0 * (1 << FRAC_BITS)), 0, 0);
         put_byte(pb, 0); /* no line style */
 
         /* shape drawing */
@@ -416,88 +416,88 @@ static int swf_write_video(AVFormatContext *s,
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
-            if ( swf->video_type == CODEC_ID_VP6F ||
-                 swf->video_type == CODEC_ID_FLV1 ) {
-                if ( swf->video_frame_number == 0 ) {
-                    /* create a new video object */
-                    put_swf_tag(s, TAG_VIDEOSTREAM);
-                    put_le16(pb, VIDEO_ID);
-                    put_le16(pb, 15000 ); /* hard flash player limit */
-                    put_le16(pb, enc->width);
-                    put_le16(pb, enc->height);
-                    put_byte(pb, 0);
-                    put_byte(pb,codec_get_tag(swf_codec_tags,swf->video_type));
-                    put_swf_end_tag(s);
+    if ( swf->video_type == CODEC_ID_VP6F ||
+         swf->video_type == CODEC_ID_FLV1 ) {
+        if ( swf->video_frame_number == 0 ) {
+            /* create a new video object */
+            put_swf_tag(s, TAG_VIDEOSTREAM);
+            put_le16(pb, VIDEO_ID);
+            put_le16(pb, 15000 ); /* hard flash player limit */
+            put_le16(pb, enc->width);
+            put_le16(pb, enc->height);
+            put_byte(pb, 0);
+            put_byte(pb,codec_get_tag(swf_codec_tags,swf->video_type));
+            put_swf_end_tag(s);
 
-                    /* place the video object for the first time */
-                    put_swf_tag(s, TAG_PLACEOBJECT2);
-                    put_byte(pb, 0x36);
-                    put_le16(pb, 1);
-                    put_le16(pb, VIDEO_ID);
-                    put_swf_matrix(pb, 1 << FRAC_BITS, 0, 0, 1 << FRAC_BITS, 0, 0);
-                    put_le16(pb, swf->video_frame_number );
-                    put_byte(pb, 'v');
-                    put_byte(pb, 'i');
-                    put_byte(pb, 'd');
-                    put_byte(pb, 'e');
-                    put_byte(pb, 'o');
-                    put_byte(pb, 0x00);
-                    put_swf_end_tag(s);
-                } else {
-                    /* mark the character for update */
-                    put_swf_tag(s, TAG_PLACEOBJECT2);
-                    put_byte(pb, 0x11);
-                    put_le16(pb, 1);
-                    put_le16(pb, swf->video_frame_number );
-                    put_swf_end_tag(s);
-                }
+            /* place the video object for the first time */
+            put_swf_tag(s, TAG_PLACEOBJECT2);
+            put_byte(pb, 0x36);
+            put_le16(pb, 1);
+            put_le16(pb, VIDEO_ID);
+            put_swf_matrix(pb, 1 << FRAC_BITS, 0, 0, 1 << FRAC_BITS, 0, 0);
+            put_le16(pb, swf->video_frame_number );
+            put_byte(pb, 'v');
+            put_byte(pb, 'i');
+            put_byte(pb, 'd');
+            put_byte(pb, 'e');
+            put_byte(pb, 'o');
+            put_byte(pb, 0x00);
+            put_swf_end_tag(s);
+        } else {
+            /* mark the character for update */
+            put_swf_tag(s, TAG_PLACEOBJECT2);
+            put_byte(pb, 0x11);
+            put_le16(pb, 1);
+            put_le16(pb, swf->video_frame_number );
+            put_swf_end_tag(s);
+        }
 
-                    /* set video frame data */
-                    put_swf_tag(s, TAG_VIDEOFRAME | TAG_LONG);
-                    put_le16(pb, VIDEO_ID);
-                    put_le16(pb, swf->video_frame_number++ );
-                    put_buffer(pb, buf, size);
-                    put_swf_end_tag(s);
-            } else if ( swf->video_type == CODEC_ID_MJPEG ) {
-                if (swf->swf_frame_number > 0) {
-                    /* remove the shape */
-                    put_swf_tag(s, TAG_REMOVEOBJECT);
-                    put_le16(pb, SHAPE_ID); /* shape ID */
-                    put_le16(pb, 1); /* depth */
-                    put_swf_end_tag(s);
+        /* set video frame data */
+        put_swf_tag(s, TAG_VIDEOFRAME | TAG_LONG);
+        put_le16(pb, VIDEO_ID);
+        put_le16(pb, swf->video_frame_number++ );
+        put_buffer(pb, buf, size);
+        put_swf_end_tag(s);
+    } else if ( swf->video_type == CODEC_ID_MJPEG ) {
+        if (swf->swf_frame_number > 0) {
+            /* remove the shape */
+            put_swf_tag(s, TAG_REMOVEOBJECT);
+            put_le16(pb, SHAPE_ID); /* shape ID */
+            put_le16(pb, 1); /* depth */
+            put_swf_end_tag(s);
 
-                    /* free the bitmap */
-                    put_swf_tag(s, TAG_FREECHARACTER);
-                    put_le16(pb, BITMAP_ID);
-                    put_swf_end_tag(s);
-                }
+            /* free the bitmap */
+            put_swf_tag(s, TAG_FREECHARACTER);
+            put_le16(pb, BITMAP_ID);
+            put_swf_end_tag(s);
+        }
 
-                put_swf_tag(s, TAG_JPEG2 | TAG_LONG);
+        put_swf_tag(s, TAG_JPEG2 | TAG_LONG);
 
-                put_le16(pb, BITMAP_ID); /* ID of the image */
+        put_le16(pb, BITMAP_ID); /* ID of the image */
 
-                /* a dummy jpeg header seems to be required */
-                put_byte(pb, 0xff);
-                put_byte(pb, 0xd8);
-                put_byte(pb, 0xff);
-                put_byte(pb, 0xd9);
-                /* write the jpeg image */
-                put_buffer(pb, buf, size);
+        /* a dummy jpeg header seems to be required */
+        put_byte(pb, 0xff);
+        put_byte(pb, 0xd8);
+        put_byte(pb, 0xff);
+        put_byte(pb, 0xd9);
+        /* write the jpeg image */
+        put_buffer(pb, buf, size);
 
-                put_swf_end_tag(s);
+        put_swf_end_tag(s);
 
-                /* draw the shape */
+        /* draw the shape */
 
-                put_swf_tag(s, TAG_PLACEOBJECT);
-                put_le16(pb, SHAPE_ID); /* shape ID */
-                put_le16(pb, 1); /* depth */
-                put_swf_matrix(pb, 20 << FRAC_BITS, 0, 0, 20 << FRAC_BITS, 0, 0);
-                put_swf_end_tag(s);
-            } else {
-                /* invalid codec */
-            }
+        put_swf_tag(s, TAG_PLACEOBJECT);
+        put_le16(pb, SHAPE_ID); /* shape ID */
+        put_le16(pb, 1); /* depth */
+        put_swf_matrix(pb, 20 << FRAC_BITS, 0, 0, 20 << FRAC_BITS, 0, 0);
+        put_swf_end_tag(s);
+    } else {
+        /* invalid codec */
+    }
 
-            swf->swf_frame_number ++;
+    swf->swf_frame_number ++;
 
     /* streaming sound always should be placed just before showframe tags */
     if (swf->audio_type && swf->audio_in_pos) {
@@ -698,8 +698,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ast->codec->sample_rate = 11025 << (sample_rate_code-1);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             len -= 4;
-        } else
-        if (tag == TAG_VIDEOFRAME) {
+        } else if (tag == TAG_VIDEOFRAME) {
             int ch_id = get_le16(pb);
             len -= 2;
             for( i=0; i<s->nb_streams; i++ ) {
@@ -736,18 +735,18 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
                 st = vst;
             }
-                    get_le16(pb); /* BITMAP_ID */
-                    av_new_packet(pkt, len-2);
-                    get_buffer(pb, pkt->data, 4);
-                    if (AV_RB32(pkt->data) == 0xffd8ffd9) {
-                        /* old SWF files containing SOI/EOI as data start */
-                        pkt->size -= 4;
-                        get_buffer(pb, pkt->data, pkt->size);
-                    } else {
-                        get_buffer(pb, pkt->data + 4, pkt->size - 4);
-                    }
-                    pkt->stream_index = st->index;
-                    return pkt->size;
+            get_le16(pb); /* BITMAP_ID */
+            av_new_packet(pkt, len-2);
+            get_buffer(pb, pkt->data, 4);
+            if (AV_RB32(pkt->data) == 0xffd8ffd9) {
+                /* old SWF files containing SOI/EOI as data start */
+                pkt->size -= 4;
+                get_buffer(pb, pkt->data, pkt->size);
+            } else {
+                get_buffer(pb, pkt->data + 4, pkt->size - 4);
+            }
+            pkt->stream_index = st->index;
+            return pkt->size;
         }
         url_fskip(pb, len);
     }
@@ -756,7 +755,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int swf_read_close(AVFormatContext *s)
 {
-     return 0;
+    return 0;
 }
 
 #ifdef CONFIG_SWF_DEMUXER
