@@ -1274,7 +1274,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     {
         GetBitContext gb;
         const int *table;
-        int k0, signmask, nb_bits;
+        int k0, signmask, nb_bits, count;
         int size = buf_size*8;
 
         init_get_bits(&gb, buf, size);
@@ -1286,12 +1286,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         k0 = 1 << (nb_bits-2);
         signmask = 1 << (nb_bits-1);
 
+        while (get_bits_count(&gb) <= size - 22*avctx->channels) {
         for (i = 0; i < avctx->channels; i++) {
             *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
             c->status[i].step_index = get_bits(&gb, 6);
         }
 
-        while (get_bits_count(&gb) < size)
+        for (count = 0; get_bits_count(&gb) <= size - nb_bits*avctx->channels && count < 4095; count++)
         {
             int i;
 
@@ -1326,6 +1327,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                     return -1;
                 }
             }
+        }
         }
         src += buf_size;
         break;
