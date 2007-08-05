@@ -129,7 +129,6 @@ static const uint8_t ac3_default_coeffs[8][5][2] = {
 typedef struct {
     int acmod;
     int dsurmod;
-
     int blksw[AC3_MAX_CHANNELS];
     int dithflag[AC3_MAX_CHANNELS];
     int dither_all;
@@ -199,7 +198,6 @@ typedef struct {
     AVCodecContext *avctx;      ///< parent context
 } AC3DecodeContext;
 
-/*********** BEGIN INIT HELPER FUNCTIONS ***********/
 /**
  * Generate a Kaiser-Bessel Derived Window.
  */
@@ -318,7 +316,6 @@ static int ac3_decode_init(AVCodecContext *avctx)
 
     return 0;
 }
-/*********** END INIT FUNCTIONS ***********/
 
 /**
  * Parses the 'sync info' and 'bit stream info' from the AC-3 bitstream.
@@ -505,7 +502,6 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
     coeffs = ctx->transform_coeffs[ch_index];
     start = ctx->startmant[ch_index];
     end = ctx->endmant[ch_index];
-
 
     for (i = start; i < end; i++) {
         tbap = bap[i];
@@ -955,7 +951,6 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             }
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
         }
-
         for (ch = !ctx->cplinu; ch <= nfchans; ch++) {
             if (ctx->deltbae[ch] == DBA_NEW) {/*channel delta offset, len and bit allocation */
                 ctx->deltnseg[ch] = get_bits(gb, 3);
@@ -1004,6 +999,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         while(skipl--)
             skip_bits(gb, 8);
     }
+
     /* unpack the transform coefficients
      * * this also uncouples channels if coupling is in use.
      */
@@ -1096,8 +1092,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     }
     ctx->out_channels = avctx->channels;
 
-    //av_log(avctx, AV_LOG_INFO, "channels = %d \t bit rate = %d \t sampling rate = %d \n", avctx->channels, avctx->bit_rate * 1000, avctx->sample_rate);
-
     //Parse the Audio Blocks.
     for (blk = 0; blk < NB_BLOCKS; blk++) {
         if (ac3_parse_audio_block(ctx, blk)) {
@@ -1133,4 +1127,3 @@ AVCodec ac3_decoder = {
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
 };
-
