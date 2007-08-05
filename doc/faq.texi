@@ -307,6 +307,11 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
+@section Is there a forum for ffmpeg, i dont like mailinglists?
+
+yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user})
+
+
 @chapter Development
 
 @section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
