@@ -72,6 +72,9 @@ static const uint8_t qntztab[16] = {
 /** dynamic range table. converts codes to scale factors. */
 static float dynrng_tbl[256];
 
+/** dialogue normalization table */
+static float dialnorm_tbl[32];
+
 /* Adjustmens in dB gain */
 #define LEVEL_MINUS_3DB         0.7071067811865476
 #define LEVEL_MINUS_4POINT5DB   0.5946035575013605
@@ -159,6 +162,7 @@ typedef struct {
     int      out_channels;      ///< number of output channels
 
     float    downmix_coeffs[AC3_MAX_CHANNELS][2];   ///< stereo downmix coefficients
+    float    dialnorm[2];                       ///< dialogue normalization
     float    dynrng;            //dynamic range gain
     float    dynrng2;           //dynamic range gain for 1+1 mode
     float    cplco[AC3_MAX_CHANNELS][18];   //coupling coordinates
@@ -269,6 +273,14 @@ static void ac3_tables_init(void)
         dynrng_tbl[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
 
+    /* generate dialogue normalization table
+       references: Section 5.4.2.8 dialnorm
+                   Section 7.6 Dialogue Normalization */
+    for(i=1; i<32; i++) {
+        dialnorm_tbl[i] = expf((i-31) * M_LN10 / 20.0f);
+    }
+    dialnorm_tbl[0] = dialnorm_tbl[31];
+
     //generate scale factors
     for (i = 0; i < 25; i++)
         scale_factors[i] = pow(2.0, -i);
@@ -362,7 +374,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(ctx->acmod);
     do {
-        skip_bits(gb, 5); //skip dialog normalization
+        ctx->dialnorm[i] = dialnorm_tbl[get_bits(gb, 5)]; // dialogue normalization
         if (get_bits1(gb))
             skip_bits(gb, 8); //skip compression
         if (get_bits1(gb))
@@ -1007,13 +1019,13 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if(ctx->acmod == AC3_ACMOD_STEREO)
         do_rematrixing(ctx);
 
-    /* apply scaling to coefficients (headroom, dynrng) */
+    /* apply scaling to coefficients (headroom, dialnorm, dynrng) */
     for(ch=1; ch<=ctx->nchans; ch++) {
         float gain = 2.0f * ctx->mul_bias;
         if(ctx->acmod == AC3_ACMOD_DUALMONO && ch == 2) {
-            gain *= ctx->dynrng2;
+            gain *= ctx->dialnorm[ch-1] * ctx->dynrng2;
         } else {
-            gain *= ctx->dynrng;
+            gain *= ctx->dialnorm[0] * ctx->dynrng;
         }
         for(i=0; i<ctx->endmant[ch]; i++) {
             ctx->transform_coeffs[ch][i] *= gain;
