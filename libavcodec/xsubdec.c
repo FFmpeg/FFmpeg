@@ -20,7 +20,6 @@ static uint64_t parse_timecode(AVCodecContext *avctx, uint8_t *buf) {
         if (c > 9) return AV_NOPTS_VALUE;
         ms = (ms + c) * tc_muls[i];
     }
-    ms = av_rescale_q(ms, (AVRational){1, 1000}, avctx->time_base);
     return ms;
 }
 
