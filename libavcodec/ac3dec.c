@@ -163,8 +163,7 @@ typedef struct {
 
     float    downmix_coeffs[AC3_MAX_CHANNELS][2];   ///< stereo downmix coefficients
     float    dialnorm[2];                       ///< dialogue normalization
-    float    dynrng;            //dynamic range gain
-    float    dynrng2;           //dynamic range gain for 1+1 mode
+    float    dynrng[2];                         ///< dynamic range
     float    cplco[AC3_MAX_CHANNELS][18];   //coupling coordinates
     int      ncplbnd;           //number of coupling bands
     int      ncplsubnd;         //number of coupling sub bands
@@ -782,19 +781,15 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             ctx->dither_all = 0;
     }
 
-    if (get_bits1(gb)) { /* dynamic range */
-        ctx->dynrng = dynrng_tbl[get_bits(gb, 8)];
-    } else if(blk == 0) {
-        ctx->dynrng = 1.0;
-    }
-
-    if(acmod == AC3_ACMOD_DUALMONO) { /* dynamic range 1+1 mode */
+    /* dynamic range */
+    i = !(ctx->acmod);
+    do {
         if(get_bits1(gb)) {
-            ctx->dynrng2 = dynrng_tbl[get_bits(gb, 8)];
+            ctx->dynrng[i] = dynrng_tbl[get_bits(gb, 8)];
         } else if(blk == 0) {
-            ctx->dynrng2 = 1.0;
+            ctx->dynrng[i] = 1.0f;
         }
-    }
+    } while(i--);
 
     if (get_bits1(gb)) { /* coupling strategy */
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
@@ -1022,10 +1017,10 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     /* apply scaling to coefficients (headroom, dialnorm, dynrng) */
     for(ch=1; ch<=ctx->nchans; ch++) {
         float gain = 2.0f * ctx->mul_bias;
-        if(ctx->acmod == AC3_ACMOD_DUALMONO && ch == 2) {
-            gain *= ctx->dialnorm[ch-1] * ctx->dynrng2;
+        if(ctx->acmod == AC3_ACMOD_DUALMONO) {
+            gain *= ctx->dialnorm[ch-1] * ctx->dynrng[ch-1];
         } else {
-            gain *= ctx->dialnorm[0] * ctx->dynrng;
+            gain *= ctx->dialnorm[0] * ctx->dynrng[0];
         }
         for(i=0; i<ctx->endmant[ch]; i++) {
             ctx->transform_coeffs[ch][i] *= gain;
