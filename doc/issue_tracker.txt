@@ -13,9 +13,11 @@ a mail for every change to every issue. Replies to such mails will also
 properly be added to the respective issue.
 (the above does all work already after light testing)
 The subscription URL for the ffmpeg-issues list is:
-http://live.polito.it/mailman/listinfo/ffmpeg-issues
+http://live.polito/mailman/listinfo/ffmpeg-issues
 The URL of the webinterface of the tracker is:
-https://roundup.mplayerhq.hu/roundup/ffmpeg/
+http(s)://roundup.mplayerhq/roundup/ffmpeg/
+Note the use the URLs above you must append top level domain of
+hungary to the tracker, and italy to the mailinglist
 
 note: issue = (bug report || patch || feature request)
 
