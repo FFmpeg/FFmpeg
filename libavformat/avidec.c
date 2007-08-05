@@ -412,6 +412,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrUsed */
                     get_le32(pb); /* ClrImportant */
 
+                    if (tag1 == MKTAG('D', 'X', 'S', 'B')) {
+                        st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+                        st->codec->codec_tag = tag1;
+                        st->codec->codec_id = CODEC_ID_XSUB;
+                        break;
+                    }
+
                     if(size > 10*4 && size<(1<<30)){
                         st->codec->extradata_size= size - 10*4;
                         st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
