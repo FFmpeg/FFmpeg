@@ -311,6 +311,10 @@ rm temp[12].[av] all.[av]
 
 yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user})
 
+@section what is thread hijacking?
+
+see (@url{http://en.wikipedia.org/wiki/Thread_hijacking})
+
 
 @chapter Development
 
