@@ -66,7 +66,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         sub->rects = av_mallocz(sizeof(AVSubtitleRect));
         sub->num_rects = 1;
     }
-    av_freep(sub->rects[0].bitmap);
+    av_freep(&sub->rects[0].bitmap);
     sub->rects[0].x = x; sub->rects[0].y = y;
     sub->rects[0].w = w; sub->rects[0].h = h;
     sub->rects[0].linesize = w;
