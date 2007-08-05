@@ -842,12 +842,13 @@ int av_filename_number_test(const char *filename);
  *           multiple AVStreams (one AVStream per RTP stream). Otherwise,
  *           all the contexts in the array (an AVCodecContext per RTP stream)
  *           must contain only one AVStream
- * @param n_streams number of AVCodecContexts contained in ac
- * @return a pointer to the SDP (an array of chars which is allocated by
- *         avf_sdp_create(), and must be freed by the caller), or NULL in
- *         case of failure.
+ * @param n_files number of AVCodecContexts contained in ac
+ * @param buff buffer where the SDP will be stored (must be allocated by
+ *             the caller
+ * @param size the size of the buffer
+ * @return 0 if OK. AVERROR_xxx if error.
  */
-char *avf_sdp_create(AVFormatContext *ac[], int n_streams);
+int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
 
 #ifdef HAVE_AV_CONFIG_H
 

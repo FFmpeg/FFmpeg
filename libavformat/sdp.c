@@ -169,18 +169,11 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
     sdp_media_attributes(buff, size, c, payload_type);
 }
 
-#define SDP_BUFFER_SIZE 2048
-char *avf_sdp_create(AVFormatContext *ac[], int n_files)
+int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
-    char *buff;
     struct sdp_session_level s;
     int i, j, port, ttl;
     char dst[32];
-
-    buff = av_mallocz(SDP_BUFFER_SIZE);
-    if (buff == NULL) {
-        return NULL;
-    }
 
     memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
@@ -196,7 +189,7 @@ char *avf_sdp_create(AVFormatContext *ac[], int n_files)
             s.ttl = ttl;
         }
     }
-    sdp_write_header(buff, SDP_BUFFER_SIZE, &s);
+    sdp_write_header(buff, size, &s);
 
     dst[0] = 0;
     for (i = 0; i < n_files; i++) {
@@ -204,21 +197,21 @@ char *avf_sdp_create(AVFormatContext *ac[], int n_files)
             port = get_address(dst, sizeof(dst), &ttl, ac[i]->filename);
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
-            sdp_write_media(buff, SDP_BUFFER_SIZE,
+            sdp_write_media(buff, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
                                   (port > 0) ? port + j * 2 : 0, ttl);
             if (port <= 0) {
-                av_strlcatf(buff, SDP_BUFFER_SIZE,
+                av_strlcatf(buff, size,
                                    "a=control:streamid=%d\r\n", i + j);
             }
         }
     }
 
-    return buff;
+    return 0;
 }
 #else
-char *avf_sdp_create(AVFormatContext *ac[], int n_files)
+int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
-    return NULL;
+    return AVERROR(ENOSYS);
 }
 #endif
