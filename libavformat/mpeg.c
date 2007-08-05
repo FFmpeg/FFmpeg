@@ -74,7 +74,7 @@ static int mpegps_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
     if((priv1 || vid || audio) && (priv1+vid+audio)*9 <= pspack*10)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
-    if((!!vid ^ !!audio) && (audio+vid > 1) && !sys && !pspack) /* PES stream */
+    if((!!vid ^ !!audio) && (audio+vid > 1) && !sys && !pspack && p->buf_size>2048) /* PES stream */
         return AVPROBE_SCORE_MAX/2+2;
 
     //02-Penguin.flac has sys:0 priv1:0 pspack:0 vid:0 audio:1
