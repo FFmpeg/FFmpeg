@@ -10,7 +10,7 @@ static int decode_init(AVCodecContext *avctx) {
 static const uint8_t tc_offsets[9] = { 0, 1, 3, 4, 6, 7, 9, 10, 11 };
 static const uint8_t tc_muls[9] = { 10, 6, 10, 6, 10, 6, 10, 10, 1 };
 
-static uint64_t parse_timecode(AVCodecContext *avctx, uint8_t *buf) {
+static uint64_t parse_timecode(uint8_t *buf) {
     int i;
     int64_t ms = 0;
     if (buf[2] != ':' || buf[5] != ':' || buf[8] != '.')
@@ -42,8 +42,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         av_log(avctx, AV_LOG_ERROR, "invalid time code\n");
         return -1;
     }
-    sub->start_display_time = parse_timecode(avctx, buf +  1);
-    sub->end_display_time   = parse_timecode(avctx, buf + 14);
+    sub->start_display_time = parse_timecode(buf +  1);
+    sub->end_display_time   = parse_timecode(buf + 14);
     buf += 27;
 
     // read header
