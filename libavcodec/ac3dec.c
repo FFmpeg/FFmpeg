@@ -196,6 +196,7 @@ typedef struct {
     /* Miscellaneous. */
     GetBitContext gb;
     AVRandomState dith_state;   //for dither generation
+    AVCodecContext *avctx;      ///< parent context
 } AC3DecodeContext;
 
 /*********** BEGIN INIT HELPER FUNCTIONS ***********/
@@ -297,6 +298,7 @@ static void ac3_tables_init(void)
 static int ac3_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeContext *ctx = avctx->priv_data;
+    ctx->avctx = avctx;
 
     ac3_common_init();
     ac3_tables_init();
@@ -615,7 +617,7 @@ static int get_transform_coeffs(AC3DecodeContext * ctx)
         if (ctx->chincpl[ch])  {
             if (!got_cplchan) {
                 if (get_transform_coeffs_ch(ctx, CPL_CH, &m)) {
-                    av_log(NULL, AV_LOG_ERROR, "error in decoupling channels\n");
+                    av_log(ctx->avctx, AV_LOG_ERROR, "error in decoupling channels\n");
                     return -1;
                 }
                 uncouple_channels(ctx);
@@ -807,7 +809,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             cplendf = get_bits(gb, 4);
 
             if (3 + cplendf - cplbegf < 0) {
-                av_log(NULL, AV_LOG_ERROR, "cplendf = %d < cplbegf = %d\n", cplendf, cplbegf);
+                av_log(ctx->avctx, AV_LOG_ERROR, "cplendf = %d < cplbegf = %d\n", cplendf, cplbegf);
                 return -1;
             }
 
@@ -887,7 +889,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             else {
                 int chbwcod = get_bits(gb, 6);
                 if (chbwcod > 60) {
-                    av_log(NULL, AV_LOG_ERROR, "chbwcod = %d > 60", chbwcod);
+                    av_log(ctx->avctx, AV_LOG_ERROR, "chbwcod = %d > 60", chbwcod);
                     return -1;
                 }
                 ctx->endmant[ch] = chbwcod * 3 + 73;
@@ -948,7 +950,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         for (ch = !ctx->cplinu; ch <= nfchans; ch++) {
             ctx->deltbae[ch] = get_bits(gb, 2);
             if (ctx->deltbae[ch] == DBA_RESERVED) {
-                av_log(NULL, AV_LOG_ERROR, "delta bit allocation strategy reserved\n");
+                av_log(ctx->avctx, AV_LOG_ERROR, "delta bit allocation strategy reserved\n");
                 return -1;
             }
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
@@ -1006,7 +1008,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
      * * this also uncouples channels if coupling is in use.
      */
     if (get_transform_coeffs(ctx)) {
-        av_log(NULL, AV_LOG_ERROR, "Error in routine get_transform_coeffs\n");
+        av_log(ctx->avctx, AV_LOG_ERROR, "Error in routine get_transform_coeffs\n");
         return -1;
     }
 
