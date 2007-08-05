@@ -629,10 +629,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int nbits, len, tag, v;
-    offset_t frame_offset = -1;
-    AVStream *ast = 0;
-    AVStream *vst = 0;
+    int nbits, len, tag;
 
     tag = get_be32(pb) & 0xffffff00;
 
