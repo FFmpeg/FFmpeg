@@ -7,6 +7,23 @@ static int decode_init(AVCodecContext *avctx) {
     return 0;
 }
 
+static const uint8_t tc_offsets[9] = { 0, 1, 3, 4, 6, 7, 9, 10, 11 };
+static const uint8_t tc_muls[9] = { 10, 6, 10, 6, 10, 6, 10, 10, 1 };
+
+static uint64_t parse_timecode(AVCodecContext *avctx, uint8_t *buf) {
+    int i;
+    int64_t ms = 0;
+    if (buf[2] != ':' || buf[5] != ':' || buf[8] != '.')
+        return AV_NOPTS_VALUE;
+    for (i = 0; i < sizeof(tc_offsets); i++) {
+        uint8_t c = buf[tc_offsets[i]] - '0';
+        if (c > 9) return AV_NOPTS_VALUE;
+        ms = (ms + c) * tc_muls[i];
+    }
+    ms = av_rescale_q(ms, (AVRational){1, 1000}, avctx->time_base);
+    return ms;
+}
+
 static const uint8_t runbits[8] = { 2, 2, 6, 6, 10, 10, 14, 14 };
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
@@ -22,6 +39,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
         return -1;
     }
+
+    // read start and end time
+    if (buf[0] != '[' || buf[13] != '-' || buf[26] != ']') {
+        av_log(avctx, AV_LOG_ERROR, "invalid time code\n");
+        return -1;
+    }
+    sub->start_display_time = parse_timecode(avctx, buf +  1);
+    sub->end_display_time   = parse_timecode(avctx, buf + 14);
+    buf += 27;
 
     // read header
     w = bytestream_get_le16(&buf);
