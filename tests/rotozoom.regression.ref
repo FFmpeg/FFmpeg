@@ -39,12 +39,12 @@ stddev:  5.33 PSNR:33.58 bytes:7602176
 127680 ./tests/data/a-msmpeg4.avi
 0e1c6e25c71c6a8fa8e506e3d97ca4c9 *./tests/data/out.yuv
 stddev:  5.33 PSNR:33.58 bytes:7602176
-6896c9bdf765953d272c25e34795b934 *./tests/data/a-wmv1.avi
-129548 ./tests/data/a-wmv1.avi
+1011e26e7d351c96d7bbfe106d831b69 *./tests/data/a-wmv1.avi
+129530 ./tests/data/a-wmv1.avi
 81eee429b665254d19a06607463c0b5e *./tests/data/out.yuv
 stddev:  5.33 PSNR:33.59 bytes:7602176
-087ed5da0e7963f7c0a81f15362861a2 *./tests/data/a-wmv2.avi
-129864 ./tests/data/a-wmv2.avi
+1f6598e9776ed00aebdc44cc8d48cb7c *./tests/data/a-wmv2.avi
+129860 ./tests/data/a-wmv2.avi
 81eee429b665254d19a06607463c0b5e *./tests/data/out.yuv
 stddev:  5.33 PSNR:33.59 bytes:7602176
 dfd005d4c9030a0dc889c828a6408b9c *./tests/data/a-h261.avi

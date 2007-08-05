@@ -883,7 +883,7 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
         } else {
             rl = &rl_table[3 + s->rl_chroma_table_index];
         }
-        run_diff = s->msmpeg4_version>=6;
+        run_diff = s->msmpeg4_version>=4;
         scantable= s->intra_scantable.permutated;
     } else {
         i = 0;
@@ -941,6 +941,9 @@ else
                         goto esc3;
                     run1 = run - rl->max_run[last][level] - run_diff;
                     if (run1 < 0)
+                        goto esc3;
+                    code = get_rl_index(rl, last, run1+1, level);
+                    if (s->msmpeg4_version == 4 && code == rl->n)
                         goto esc3;
                     code = get_rl_index(rl, last, run1, level);
                     if (code == rl->n) {
@@ -1641,7 +1644,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         block[0] = level;
 
-        run_diff = 0;
+        run_diff = s->msmpeg4_version >= 4;
         i = 0;
         if (!coded) {
             goto not_coded;
