@@ -76,6 +76,7 @@ typedef struct WavpackContext {
     int terms;
     Decorr decorr[MAX_TERMS];
     int zero, one, zeroes;
+    int and, or, shift;
 } WavpackContext;
 
 // exponent table copied from WavPack source
@@ -235,7 +236,7 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
 {
     int i, j, count = 0;
     int last, t;
-    int A, B, L, L2, R, R2;
+    int A, B, L, L2, R, R2, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
 
@@ -299,9 +300,10 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
         if(s->joint)
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
-        *dst++ = L;
-        *dst++ = R;
-
+        bit = (L & s->and) | s->or;
+        *dst++ = ((L + bit) << s->shift) - bit;
+        bit = (R & s->and) | s->or;
+        *dst++ = ((R + bit) << s->shift) - bit;
         count++;
     }while(!last && count < s->samples);
 
@@ -316,7 +318,7 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
 {
     int i, j, count = 0;
     int last, t;
-    int A, S, T;
+    int A, S, T, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
 
@@ -344,7 +346,8 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
         }
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
-        *dst++ = S;
+        bit = (S & s->and) | s->or;
+        *dst++ = ((S + bit) << s->shift) - bit;
         count++;
     }while(!last && count < s->samples);
 
@@ -389,6 +392,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
+    s->and = s->or = s->shift = 0;
 
     s->samples = AV_RL32(buf); buf += 4;
     if(!s->samples){
@@ -508,6 +512,23 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 buf += 2;
             }
             got_entropy = 1;
+            break;
+        case WP_ID_INT32INFO:
+            if(size != 4 || *buf){
+                av_log(avctx, AV_LOG_ERROR, "Invalid INT32INFO, size = %i, sent_bits = %i\n", size, *buf);
+                buf += ssize;
+                continue;
+            }
+            if(buf[1])
+                s->shift = buf[1];
+            else if(buf[2]){
+                s->and = s->or = 1;
+                s->shift = buf[2];
+            }else if(buf[3]){
+                s->and = 1;
+                s->shift = buf[3];
+            }
+            buf += 4;
             break;
         case WP_ID_DATA:
             init_get_bits(&s->gb, buf, size * 8);
