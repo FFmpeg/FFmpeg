@@ -24,7 +24,7 @@ static uint64_t parse_timecode(AVCodecContext *avctx, uint8_t *buf) {
     return ms;
 }
 
-static const uint8_t runbits[8] = { 2, 2, 6, 6, 10, 10, 14, 14 };
+static const uint8_t runbits[8] = { 14, 14, 10, 10, 6, 6, 2, 2 };
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         uint8_t *buf, int buf_size) {
