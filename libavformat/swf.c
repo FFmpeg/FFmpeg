@@ -652,14 +652,21 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_le16(pb); /* frame count */
 
     swf->samples_per_frame = 0;
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
+    return 0;
+}
+
+static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    SWFContext *swf = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    AVStream *vst = NULL, *ast = NULL, *st = 0;
+    int tag, len, i, frame, v;
 
     for(;;) {
-        offset_t tag_offset = url_ftell(pb);
         tag = get_swf_tag(pb, &len);
-        if (tag < 0 || tag == TAG_VIDEOFRAME || tag == TAG_STREAMBLOCK) {
-            url_fseek(pb, frame_offset == -1 ? tag_offset : frame_offset, SEEK_SET);
-            break;
-        }
+        if (tag < 0)
+            return AVERROR(EIO);
         if ( tag == TAG_VIDEOSTREAM && !vst) {
             int ch_id = get_le16(pb);
             get_le16(pb);
@@ -670,6 +677,9 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             vst = av_new_stream(s, ch_id);
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
+            av_set_pts_info(vst, 64, 256, swf->frame_rate);
+            vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
+            len -= 10;
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {
             /* streaming found */
             int sample_rate_code;
@@ -687,35 +697,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 return AVERROR(EIO);
             ast->codec->sample_rate = 11025 << (sample_rate_code-1);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
-            if (len > 4)
-                url_fskip(pb,len-4);
-
-        } else if (tag == TAG_JPEG2 && !vst) {
-            vst = av_new_stream(s, -2); /* -2 to avoid clash with video stream and audio stream */
-            vst->codec->codec_type = CODEC_TYPE_VIDEO;
-            vst->codec->codec_id = CODEC_ID_MJPEG;
-            url_fskip(pb, len);
-            frame_offset = tag_offset;
-        } else {
-            url_fskip(pb, len);
-        }
-    }
-    if (vst)
-        av_set_pts_info(vst, 64, 256, swf->frame_rate);
-    return 0;
-}
-
-static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
-    AVStream *st = 0;
-    int tag, len, i, frame;
-
-    for(;;) {
-        tag = get_swf_tag(pb, &len);
-        if (tag < 0)
-            return AVERROR(EIO);
+            len -= 4;
+        } else
         if (tag == TAG_VIDEOFRAME) {
             int ch_id = get_le16(pb);
             len -= 2;
@@ -742,7 +725,17 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else if (tag == TAG_JPEG2) {
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->id == -2) {
+                if (st->id == -2)
+                    break;
+            }
+            if (i == s->nb_streams) {
+                vst = av_new_stream(s, -2); /* -2 to avoid clash with video stream and audio stream */
+                vst->codec->codec_type = CODEC_TYPE_VIDEO;
+                vst->codec->codec_id = CODEC_ID_MJPEG;
+                av_set_pts_info(vst, 64, 256, swf->frame_rate);
+                vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
+                st = vst;
+            }
                     get_le16(pb); /* BITMAP_ID */
                     av_new_packet(pkt, len-2);
                     get_buffer(pb, pkt->data, 4);
@@ -755,8 +748,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     }
                     pkt->stream_index = st->index;
                     return pkt->size;
-                }
-            }
         }
         url_fskip(pb, len);
     }
