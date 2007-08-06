@@ -315,6 +315,23 @@ yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user})
 
 see (@url{http://en.wikipedia.org/wiki/Thread_hijacking})
 
+@section ffmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps
+
+Read the mpeg spec, read about video buffer verifer.
+
+@section I want CBR but no matter what i do frame sizes differ
+
+You do not understand what cbr is, please read the mpeg spec.
+Read about video buffer verifer and constant bitrate.
+The 1 sentence summary is that there is a buffer and the input rate is
+constant, the output can vary as needed.
+
+@section How do i check if a stream is CBR?
+
+To quote the MPEG-2 spec:
+"There is no way to tell that a bitstream is constant bitrate without
+examining all of the vbv_delay values and making complicated computations."
+
 
 @chapter Development
 
