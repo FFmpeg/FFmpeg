@@ -1970,11 +1970,20 @@ int av_find_stream_info(AVFormatContext *ic)
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if (codec_identified[st->index]) {
-            av_read_frame_flush(ic);
-            av_seek_frame(ic, st->index, 0.0, 0);
-            url_fseek(&ic->pb, ic->data_offset, SEEK_SET);
+        if (codec_identified[st->index])
+            break;
+    }
+    //FIXME this is a mess
+    if(i!=ic->nb_streams){
+        av_read_frame_flush(ic);
+        for(i=0;i<ic->nb_streams;i++) {
+            st = ic->streams[i];
+            if (codec_identified[st->index]) {
+                av_seek_frame(ic, st->index, 0.0, 0);
+            }
+            st->cur_dts= st->first_dts;
         }
+        url_fseek(&ic->pb, ic->data_offset, SEEK_SET);
     }
 
 #if 0
