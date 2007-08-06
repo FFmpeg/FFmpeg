@@ -1287,47 +1287,46 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         signmask = 1 << (nb_bits-1);
 
         while (get_bits_count(&gb) <= size - 22*avctx->channels) {
-        for (i = 0; i < avctx->channels; i++) {
-            *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
-            c->status[i].step_index = get_bits(&gb, 6);
-        }
-
-        for (count = 0; get_bits_count(&gb) <= size - nb_bits*avctx->channels && count < 4095; count++)
-        {
-            int i;
-
             for (i = 0; i < avctx->channels; i++) {
-                // similar to IMA adpcm
-                int delta = get_bits(&gb, nb_bits);
-                int step = step_table[c->status[i].step_index];
-                long vpdiff = 0; // vpdiff = (delta+0.5)*step/4
-                int k = k0;
+                *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
+                c->status[i].step_index = get_bits(&gb, 6);
+            }
 
-                do {
-                    if (delta & k)
-                        vpdiff += step;
-                    step >>= 1;
-                    k >>= 1;
-                } while(k);
-                vpdiff += step;
+            for (count = 0; get_bits_count(&gb) <= size - nb_bits*avctx->channels && count < 4095; count++) {
+                int i;
 
-                if (delta & signmask)
-                    c->status[i].predictor -= vpdiff;
-                else
-                    c->status[i].predictor += vpdiff;
+                for (i = 0; i < avctx->channels; i++) {
+                    // similar to IMA adpcm
+                    int delta = get_bits(&gb, nb_bits);
+                    int step = step_table[c->status[i].step_index];
+                    long vpdiff = 0; // vpdiff = (delta+0.5)*step/4
+                    int k = k0;
 
-                c->status[i].step_index += table[delta & (~signmask)];
+                    do {
+                        if (delta & k)
+                            vpdiff += step;
+                        step >>= 1;
+                        k >>= 1;
+                    } while(k);
+                    vpdiff += step;
 
-                c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
-                c->status[i].predictor = av_clip(c->status[i].predictor, -32768, 32767);
+                    if (delta & signmask)
+                        c->status[i].predictor -= vpdiff;
+                    else
+                        c->status[i].predictor += vpdiff;
 
-                *samples++ = c->status[i].predictor;
-                if (samples >= samples_end) {
-                    av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
-                    return -1;
+                    c->status[i].step_index += table[delta & (~signmask)];
+
+                    c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
+                    c->status[i].predictor = av_clip(c->status[i].predictor, -32768, 32767);
+
+                    *samples++ = c->status[i].predictor;
+                    if (samples >= samples_end) {
+                        av_log(avctx, AV_LOG_ERROR, "allocated output buffer is too small\n");
+                        return -1;
+                    }
                 }
             }
-        }
         }
         src += buf_size;
         break;
