@@ -829,7 +829,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             /* return packet */
             if (asf_st->ds_span > 1) {
               if(asf_st->pkt.size != asf_st->ds_packet_size * asf_st->ds_span){
-                    av_log(s, AV_LOG_ERROR, "pkt.size != ds_packet_size * ds_span\n");
+                    av_log(s, AV_LOG_ERROR, "pkt.size != ds_packet_size * ds_span (%d %d %d)\n", asf_st->pkt.size, asf_st->ds_packet_size, asf_st->ds_span);
               }else{
                 /* packet descrambling */
                 uint8_t *newdata = av_malloc(asf_st->pkt.size);
