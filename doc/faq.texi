@@ -307,22 +307,22 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section Is there a forum for ffmpeg, i dont like mailinglists?
+@section Is there a forum for FFmpeg, I do not like mailing lists?
 
-yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user})
+Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
 
-@section ffmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps
+@section FFmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps.
 
-Read the mpeg spec, read about video buffer verifer.
+Read the MPEG spec about video buffer verifier.
 
-@section I want CBR but no matter what i do frame sizes differ
+@section I want CBR, but no matter what I do frame sizes differ.
 
-You do not understand what cbr is, please read the mpeg spec.
-Read about video buffer verifer and constant bitrate.
-The 1 sentence summary is that there is a buffer and the input rate is
+You do not understand what CBR is, please read the MPEG spec.
+Read about video buffer verifier and constant bitrate.
+The one sentence summary is that there is a buffer and the input rate is
 constant, the output can vary as needed.
 
-@section How do i check if a stream is CBR?
+@section How do I check if a stream is CBR?
 
 To quote the MPEG-2 spec:
 "There is no way to tell that a bitstream is constant bitrate without

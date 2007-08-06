@@ -390,7 +390,7 @@ Set max video bitrate (in bit/s).
 @item -minrate bitrate
 Set min video bitrate (in bit/s).
 @item -bufsize size
-Set video buffer verifer buffer size (in bits).
+Set video buffer verifier buffer size (in bits).
 @item -vcodec codec
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
@@ -1671,7 +1671,7 @@ Note, these rules are mostly borrowed from the MPlayer project.
 First, (@pxref{Coding Rules}) above if you did not yet.
 
 When you submit your patch, try to send a unified diff (diff '-up'
-option). I cannot read other diffs :-)
+option). We cannot read other diffs :-)
 
 Also please do not submit patches which contain several unrelated changes.
 Split them into individual self-contained patches; this makes reviewing
