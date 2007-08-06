@@ -386,11 +386,11 @@ Disable video recording.
 @item -bt tolerance
 Set video bitrate tolerance (in bit/s).
 @item -maxrate bitrate
-Set max video bitrate tolerance (in bit/s).
+Set max video bitrate (in bit/s).
 @item -minrate bitrate
-Set min video bitrate tolerance (in bit/s).
+Set min video bitrate (in bit/s).
 @item -bufsize size
-Set rate control buffer size (in bits).
+Set video buffer verifer buffer size (in bits).
 @item -vcodec codec
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
