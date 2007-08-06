@@ -311,10 +311,6 @@ rm temp[12].[av] all.[av]
 
 yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user})
 
-@section what is thread hijacking?
-
-see (@url{http://en.wikipedia.org/wiki/Thread_hijacking})
-
 @section ffmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps
 
 Read the mpeg spec, read about video buffer verifer.
