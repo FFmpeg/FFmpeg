@@ -196,7 +196,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int type, type_specific_size, sizeX;
             uint64_t total_size;
             unsigned int tag1;
-            int64_t pos1, pos2;
+            int64_t pos1, pos2, start_time;
             int test_for_ext_stream_audio, is_dvr_ms_audio=0;
 
             pos1 = url_ftell(pb);
@@ -209,10 +209,11 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!asf_st)
                 goto fail;
             st->priv_data = asf_st;
-            st->start_time = asf->hdr.preroll;
+            start_time = asf->hdr.preroll;
+
             if(!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
                 st->duration = asf->hdr.send_time /
-                    (10000000 / 1000) - st->start_time;
+                    (10000000 / 1000) - start_time;
             }
             get_guid(pb, &g);
 
