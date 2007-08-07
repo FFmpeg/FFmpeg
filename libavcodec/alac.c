@@ -400,10 +400,10 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 }
 
 static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
-                           int16_t *buffer_out,
-                           int numchannels, int numsamples,
-                           uint8_t interlacing_shift,
-                           uint8_t interlacing_leftweight)
+                                  int16_t *buffer_out,
+                                  int numchannels, int numsamples,
+                                  uint8_t interlacing_shift,
+                                  uint8_t interlacing_leftweight)
 {
     int i;
     if (numsamples <= 0)
