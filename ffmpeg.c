@@ -3169,7 +3169,7 @@ static int64_t getutime(void)
     GetProcessTimes(proc, &c, &e, &k, &u);
     return ((int64_t) u.dwHighDateTime << 32 | u.dwLowDateTime) / 10;
 #else
-  return av_gettime();
+    return av_gettime();
 #endif
 }
 
