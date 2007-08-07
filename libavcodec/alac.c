@@ -399,7 +399,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     }
 }
 
-static void deinterlace_16(int32_t *buffer[MAX_CHANNELS],
+static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
                            int16_t *buffer_out,
                            int numchannels, int numsamples,
                            uint8_t interlacing_shift,
@@ -598,7 +598,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     switch(alac->setinfo_sample_size) {
     case 16:
         if (channels == 2) {
-            deinterlace_16(alac->outputsamples_buffer,
+            reconstruct_stereo_16(alac->outputsamples_buffer,
                            (int16_t*)outbuffer,
                            alac->numchannels,
                            outputsamples,
