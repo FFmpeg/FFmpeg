@@ -719,6 +719,7 @@ mmx_deps="x86"
 ssse3_deps="x86"
 
 # decoders / encoders
+ac3_decoder_deps="gpl"
 dxa_decoder_deps="zlib"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
@@ -1591,6 +1592,9 @@ enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -l
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
+
+# disable the native AC-3 decoder if liba52 is enabled
+enabled liba52 && disable ac3_decoder
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do

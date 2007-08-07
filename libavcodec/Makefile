@@ -32,6 +32,7 @@ OBJS= bitstream.o \
 HEADERS = avcodec.h opt.h
 
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
+OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o ac3.o mdct.o fft.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o

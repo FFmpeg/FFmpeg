@@ -166,7 +166,7 @@ void avcodec_register_all(void)
 
     /* audio codecs */
     REGISTER_DECODER(MPEG4AAC, mpeg4aac);
-    REGISTER_ENCODER(AC3, ac3);
+    REGISTER_ENCDEC (AC3, ac3);
     REGISTER_DECODER(ALAC, alac);
     REGISTER_DECODER(ATRAC3, atrac3);
     REGISTER_DECODER(COOK, cook);
