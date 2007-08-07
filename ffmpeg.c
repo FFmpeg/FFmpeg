@@ -3711,7 +3711,6 @@ static void show_banner(void)
 
 static void show_license(void)
 {
-    show_banner();
 #ifdef CONFIG_GPL
     printf(
     "FFmpeg is free software; you can redistribute it and/or modify\n"
@@ -3760,7 +3759,6 @@ static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
 static void show_help(void)
 {
     av_log_set_callback(log_callback_help);
-    show_banner();
     printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n"
            "Hyper fast Audio and Video encoder\n");
     printf("\n");
@@ -3812,10 +3810,9 @@ int main(int argc, char **argv)
     avformat_opts = av_alloc_format_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
+    show_banner();
     if (argc <= 1)
         show_help();
-    else
-        show_banner();
 
     /* parse options */
     parse_options(argc, argv, options);
