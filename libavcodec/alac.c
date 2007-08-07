@@ -599,11 +599,11 @@ static int alac_decode_frame(AVCodecContext *avctx,
     case 16:
         if (channels == 2) {
             reconstruct_stereo_16(alac->outputsamples_buffer,
-                           (int16_t*)outbuffer,
-                           alac->numchannels,
-                           outputsamples,
-                           interlacing_shift,
-                           interlacing_leftweight);
+                                  (int16_t*)outbuffer,
+                                  alac->numchannels,
+                                  outputsamples,
+                                  interlacing_shift,
+                                  interlacing_leftweight);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++) {
