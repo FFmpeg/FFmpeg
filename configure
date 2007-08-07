@@ -1234,6 +1234,10 @@ EOF
     exit 1;
 fi
 
+if disabled static; then
+    LIB=""
+fi
+
 if ! enabled libogg; then
     enabled libtheora && die "libogg must be enabled to enable libtheora."
     enabled libvorbis && die "libogg must be enabled to enable libvorbis."
@@ -1896,11 +1900,7 @@ echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
-if enabled static; then
   echo "LIB=$LIB" >> config.mak
-else # Some Make complain if this variable does not exist.
-  echo "LIB=" >> config.mak
-fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
