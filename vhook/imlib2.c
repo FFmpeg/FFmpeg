@@ -2,60 +2,6 @@
  * imlib2 based hook
  * Copyright (c) 2002 Philip Gladstone
  *
- * This module implements a text overlay for a video image. Currently it
- * supports a fixed overlay or reading the text from a file. The string
- * is passed through strftime so that it is easy to imprint the date and
- * time onto the image.
- *
- * You may also overlay an image (even semi-transparent) like TV stations do.
- * You may move either the text or the image around your video to create
- * scrolling credits, for example.
- *
- * Text fonts are being looked for in FONTPATH
- *
- * Options:
- *
- * -C <rgb.txt>         The filename to read RGB color names from
- *                      Defaults if none specified:
- *                      /usr/share/X11/rgb.txt
- *                      /usr/lib/X11/rgb.txt
- * -c <color>           The color of the text
- * -F <fontname>        The font face and size
- * -t <text>            The text
- * -f <filename>        The filename to read text from
- * -x <expression>      X coordinate of text or image
- * -y <expression>      Y coordinate of text or image
- * -i <filename>        The filename to read a image from
- * -R <expression>      Value for R color
- * -G <expression>      Value for G color
- * -B <expression>      Value for B color
- * -A <expression>      Value for Alpha channel
- *
- * Expressions are functions of:
- *      N  // frame number (starting at zero)
- *      H  // frame height
- *      W  // frame width
- *      h  // image height
- *      w  // image width
- *      X  // previous x
- *      Y  // previous y
- *
-
-   Examples:
-
-   FONTPATH="/cygdrive/c/WINDOWS/Fonts/"
-   FONTPATH="$FONTPATH:/usr/share/imlib2/data/fonts/"
-   FONTPATH="$FONTPATH:/usr/X11R6/lib/X11/fonts/TTF/"
-   export FONTPATH
-
-   ffmpeg -i input.avi -vhook \
-     'vhook/imlib2.dll -x W*(0.5+0.25*sin(N/47*PI))-w/2 -y H*(0.5+0.50*cos(N/97*PI))-h/2 -i /usr/share/imlib2/data/images/bulb.png'
-      -acodec copy -sameq output.avi
-
-   ffmpeg -i input.avi -vhook \
-     'vhook/imlib2.dll -c red -F Vera.ttf/20 -x 150+0.5*N -y 70+0.25*N -t Hello'
-      -acodec copy -sameq output.avi
-
  * This module is very much intended as an example of what could be done.
  *
  * One caution is that this is an expensive process -- in particular the
