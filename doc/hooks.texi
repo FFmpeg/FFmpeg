@@ -72,7 +72,7 @@ with the full path to the font file, as in:
 @end example
 where 20 is the point size.
 
-You can specify the filename to read RGB color names from. If none are
+You can specify the filename to read RGB color names from. If it is not
 specified, these defaults are used: @file{/usr/share/X11/rgb.txt} and
 @file{/usr/lib/X11/rgb.txt}
 
@@ -157,7 +157,7 @@ Usage examples:
      -sameq output.avi
 
      This example does the same as the one above, but specifies an rgb.txt file
-     to be used, which has a custom made color in it.
+     to be used, which has a custom-made color in it.
 
    # Variable colors
    ffmpeg -i input.avi -vhook \
