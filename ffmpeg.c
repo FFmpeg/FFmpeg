@@ -178,6 +178,7 @@ static int video_stream_copy = 0;
 static int subtitle_stream_copy = 0;
 static int video_sync_method= 1;
 static int audio_sync_method= 0;
+static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
 static int opt_shortest = 0; //
 static int video_global_header = 0;
@@ -453,7 +454,7 @@ static void do_audio_out(AVFormatContext *s,
 
         //FIXME resample delay
         if(fabs(delta) > 50){
-            if(ist->is_start){
+            if(ist->is_start || fabs(delta) > audio_drift_threshold*enc->sample_rate){
                 if(byte_delta < 0){
                     byte_delta= FFMAX(byte_delta, -size);
                     size += byte_delta;
@@ -3607,6 +3608,7 @@ const OptionDef options[] = {
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
+    { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "" },
     { "vglobal", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_global_header}, "video global header storage type", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
