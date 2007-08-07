@@ -156,8 +156,8 @@ Usage examples:
      'vhook/imlib2.so -C rgb.txt -c CustomColor1 -F VeraBd.ttf/16 -x 100 -y -1.0*N -f credits.txt' \
      -sameq output.avi
 
-   This example does the same as the one above, but specifies an rgb.txt file
-   to be used, which has a custom made color in it.
+     This example does the same as the one above, but specifies an rgb.txt file
+     to be used, which has a custom made color in it.
 
    # Variable colors
    ffmpeg -i input.avi -vhook \
