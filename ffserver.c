@@ -759,7 +759,7 @@ static void close_connection(HTTPContext *c)
     }
 
     for(i=0; i<ctx->nb_streams; i++)
-        av_free(ctx->streams[i]) ;
+        av_free(ctx->streams[i]);
 
     if (c->stream && !c->post && c->stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth -= c->stream->bandwidth;
