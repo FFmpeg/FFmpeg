@@ -695,6 +695,7 @@ HAVE_LIST="
     sys_soundcard_h
     termios_h
     threads
+    winsock2_h
 "
 
 CMDLINE_SELECT="
@@ -1534,6 +1535,7 @@ check_header termios.h
 check_header conio.h
 
 check_header arpa/inet.h
+check_header winsock2.h
 
 check_func inet_aton
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"

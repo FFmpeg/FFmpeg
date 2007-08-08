@@ -43,6 +43,9 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #  define usleep(t)    Sleep((t) / 1000)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
+#endif
+
+#ifdef HAVE_WINSOCK2_H
 #  define HAVE_CLOSESOCKET 1
 #endif
 

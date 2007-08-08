@@ -25,7 +25,7 @@
 #include <fcntl.h>
 
 #ifndef HAVE_SYS_POLL_H
-#if defined(__MINGW32__)
+#ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #else
 #include <sys/select.h>
@@ -70,7 +70,7 @@ int resolve_host(struct in_addr *sin_addr, const char *hostname)
 
 int ff_socket_nonblock(int socket, int enable)
 {
-#ifdef __MINGW32__
+#ifdef HAVE_WINSOCK2_H
    return ioctlsocket(socket, FIONBIO, &enable);
 #else
    if (enable)
@@ -92,7 +92,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     int n;
     int rc;
 
-#ifdef __MINGW32__
+#ifdef HAVE_WINSOCK2_H
     if (numfds >= FD_SETSIZE) {
         errno = EINVAL;
         return -1;
@@ -107,7 +107,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
-#ifndef __MINGW32__
+#ifndef HAVE_WINSOCK2_H
         if (fds[i].fd >= FD_SETSIZE) {
             errno = EINVAL;
             return -1;
