@@ -128,7 +128,7 @@ static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
 static int video_disable = 0;
 static int video_discard = 0;
-static int video_codec_id = CODEC_ID_NONE;
+static char *video_codec_name = NULL;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int do_deinterlace = 0;
@@ -146,12 +146,12 @@ static int audio_sample_rate = 44100;
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 1;
-static int audio_codec_id = CODEC_ID_NONE;
+static char  *audio_codec_name = NULL;
 static int audio_codec_tag = 0;
 static char *audio_language = NULL;
 
 static int subtitle_disable = 0;
-static int subtitle_codec_id = CODEC_ID_NONE;
+static char *subtitle_codec_name = NULL;
 static char *subtitle_language = NULL;
 
 static float mux_preload= 0.5;
@@ -2368,32 +2368,20 @@ static void opt_video_standard(const char *arg)
     video_standard = av_strdup(arg);
 }
 
-static void opt_codec(int *pstream_copy, int *pcodec_id,
+static void opt_codec(int *pstream_copy, char **pcodec_name,
                       int codec_type, const char *arg)
 {
-    AVCodec *p;
-
+    av_freep(pcodec_name);
     if (!strcmp(arg, "copy")) {
         *pstream_copy = 1;
     } else {
-        p = first_avcodec;
-        while (p) {
-            if (!strcmp(p->name, arg) && p->type == codec_type)
-                break;
-            p = p->next;
-        }
-        if (p == NULL) {
-            fprintf(stderr, "Unknown codec '%s'\n", arg);
-            exit(1);
-        } else {
-            *pcodec_id = p->id;
-        }
+        *pcodec_name = av_strdup(arg);
     }
 }
 
 static void opt_audio_codec(const char *arg)
 {
-    opt_codec(&audio_stream_copy, &audio_codec_id, CODEC_TYPE_AUDIO, arg);
+    opt_codec(&audio_stream_copy, &audio_codec_name, CODEC_TYPE_AUDIO, arg);
 }
 
 static void opt_audio_tag(const char *arg)
@@ -2439,12 +2427,12 @@ static void add_frame_hooker(const char *arg)
 
 static void opt_video_codec(const char *arg)
 {
-    opt_codec(&video_stream_copy, &video_codec_id, CODEC_TYPE_VIDEO, arg);
+    opt_codec(&video_stream_copy, &video_codec_name, CODEC_TYPE_VIDEO, arg);
 }
 
 static void opt_subtitle_codec(const char *arg)
 {
-    opt_codec(&subtitle_stream_copy, &subtitle_codec_id, CODEC_TYPE_SUBTITLE, arg);
+    opt_codec(&subtitle_stream_copy, &subtitle_codec_name, CODEC_TYPE_SUBTITLE, arg);
 }
 
 static void opt_map(const char *arg)
@@ -2507,6 +2495,26 @@ static void opt_input_ts_offset(const char *arg)
     input_ts_offset = parse_date(arg, 1);
 }
 
+static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
+{
+    AVCodec *codec;
+
+    if(!name)
+        return CODEC_ID_NONE;
+    codec = encoder ?
+        avcodec_find_encoder_by_name(name) :
+        avcodec_find_decoder_by_name(name);
+    if(!codec) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown codec '%s'\n", name);
+        exit(1);
+    }
+    if(codec->type != type) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid codec type '%s'\n", name);
+        exit(1);
+    }
+    return codec->id;
+}
+
 static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
@@ -2534,8 +2542,8 @@ static void opt_input_file(const char *filename)
     ap->pix_fmt = frame_pix_fmt;
     ap->channel = video_channel;
     ap->standard = video_standard;
-    ap->video_codec_id = video_codec_id;
-    ap->audio_codec_id = audio_codec_id;
+    ap->video_codec_id = find_codec_or_die(video_codec_name, CODEC_TYPE_VIDEO, 0);
+    ap->audio_codec_id = find_codec_or_die(audio_codec_name, CODEC_TYPE_AUDIO, 0);
     if(pgmyuv_compatibility_hack)
         ap->video_codec_id= CODEC_ID_PGMYUV;
 
@@ -2740,8 +2748,8 @@ static void new_video_stream(AVFormatContext *oc)
         AVCodec *codec;
 
         codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, CODEC_TYPE_VIDEO);
-        if (video_codec_id != CODEC_ID_NONE)
-            codec_id = video_codec_id;
+        if (video_codec_name)
+            codec_id = find_codec_or_die(video_codec_name, CODEC_TYPE_VIDEO, 1);
 
         video_enc->codec_id = codec_id;
         codec = avcodec_find_encoder(codec_id);
@@ -2849,7 +2857,7 @@ static void new_video_stream(AVFormatContext *oc)
 
     /* reset some key parameters */
     video_disable = 0;
-    video_codec_id = CODEC_ID_NONE;
+    av_freep(&video_codec_name);
     video_stream_copy = 0;
 }
 
@@ -2896,8 +2904,8 @@ static void new_audio_stream(AVFormatContext *oc)
                 av_set_double(audio_enc, opt_names[i], d);
         }
 
-        if (audio_codec_id != CODEC_ID_NONE)
-            codec_id = audio_codec_id;
+        if (audio_codec_name)
+            codec_id = find_codec_or_die(audio_codec_name, CODEC_TYPE_AUDIO, 1);
         audio_enc->codec_id = codec_id;
 
         if (audio_qscale > QSCALE_NONE) {
@@ -2917,7 +2925,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
     /* reset some key parameters */
     audio_disable = 0;
-    audio_codec_id = CODEC_ID_NONE;
+    av_freep(&audio_codec_name);
     audio_stream_copy = 0;
 }
 
@@ -2945,7 +2953,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
              if(d==d && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(subtitle_enc, opt_names[i], d);
         }
-        subtitle_enc->codec_id = subtitle_codec_id;
+        subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, CODEC_TYPE_SUBTITLE, 1);
     }
 
     if (subtitle_language) {
@@ -2955,7 +2963,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     }
 
     subtitle_disable = 0;
-    subtitle_codec_id = CODEC_ID_NONE;
+    av_freep(&subtitle_codec_name);
     subtitle_stream_copy = 0;
 }
 
@@ -3025,9 +3033,9 @@ static void opt_output_file(const char *filename)
             exit(1);
         }
     } else {
-        use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy || video_codec_id != CODEC_ID_NONE;
-        use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy || audio_codec_id != CODEC_ID_NONE;
-        use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_id != CODEC_ID_NONE;
+        use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy || video_codec_name;
+        use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy || audio_codec_name;
+        use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_name;
 
         /* disable if no corresponding type found and at least one
            input file */
@@ -3862,6 +3870,10 @@ int main(int argc, char **argv)
     av_free(vstats_filename);
 
     av_free(opt_names);
+
+    av_free(video_codec_name);
+    av_free(audio_codec_name);
+    av_free(subtitle_codec_name);
 
     av_free(video_standard);
 
