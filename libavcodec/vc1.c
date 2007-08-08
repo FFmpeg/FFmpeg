@@ -42,52 +42,6 @@
 static const uint16_t table_mb_intra[64][2];
 
 
-/**
- * Get unary code of limited length
- * @todo FIXME Slow and ugly
- * @param gb GetBitContext
- * @param[in] stop The bitstop value (unary code of 1's or 0's)
- * @param[in] len Maximum length
- * @return Unary length/index
- */
-static int get_prefix(GetBitContext *gb, int stop, int len)
-{
-#if 1
-    int i;
-
-    for(i = 0; i < len && get_bits1(gb) != stop; i++);
-    return i;
-/*  int i = 0, tmp = !stop;
-
-  while (i != len && tmp != stop)
-  {
-    tmp = get_bits(gb, 1);
-    i++;
-  }
-  if (i == len && tmp != stop) return len+1;
-  return i;*/
-#else
-  unsigned int buf;
-  int log;
-
-  OPEN_READER(re, gb);
-  UPDATE_CACHE(re, gb);
-  buf=GET_CACHE(re, gb); //Still not sure
-  if (stop) buf = ~buf;
-
-  log= av_log2(-buf); //FIXME: -?
-  if (log < limit){
-    LAST_SKIP_BITS(re, gb, log+1);
-    CLOSE_READER(re, gb);
-    return log;
-  }
-
-  LAST_SKIP_BITS(re, gb, limit);
-  CLOSE_READER(re, gb);
-  return limit;
-#endif
-}
-
 static inline int decode210(GetBitContext *gb){
     if (get_bits1(gb))
         return 0;
@@ -1131,7 +1085,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits(gb, 1);
     v->dquantfrm = 0;
-    if (v->extended_mv == 1) v->mvrange = get_prefix(gb, 0, 3);
+    if (v->extended_mv == 1) v->mvrange = get_unary(gb, 0, 3);
     v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
     v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
     v->range_x = 1 << (v->k_x - 1);
@@ -1158,11 +1112,11 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         else v->tt_index = 2;
 
         lowquant = (v->pq > 12) ? 0 : 1;
-        v->mv_mode = ff_vc1_mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
+        v->mv_mode = ff_vc1_mv_pmode_table[lowquant][get_unary(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         {
             int scale, shift, i;
-            v->mv_mode2 = ff_vc1_mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
+            v->mv_mode2 = ff_vc1_mv_pmode_table2[lowquant][get_unary(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
             v->use_ic = 1;
@@ -1305,7 +1259,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->fcm = decode012(gb);
         if(v->fcm) return -1; // interlaced frames/fields are not implemented
     }
-    switch(get_prefix(gb, 0, 4)) {
+    switch(get_unary(gb, 0, 4)) {
     case 0:
         v->s.pict_type = P_TYPE;
         break;
@@ -1388,7 +1342,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     case P_TYPE:
         if(v->postprocflag)
             v->postproc = get_bits1(gb);
-        if (v->extended_mv) v->mvrange = get_prefix(gb, 0, 3);
+        if (v->extended_mv) v->mvrange = get_unary(gb, 0, 3);
         else v->mvrange = 0;
         v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
         v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
@@ -1400,11 +1354,11 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         else v->tt_index = 2;
 
         lowquant = (v->pq > 12) ? 0 : 1;
-        v->mv_mode = ff_vc1_mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
+        v->mv_mode = ff_vc1_mv_pmode_table[lowquant][get_unary(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         {
             int scale, shift, i;
-            v->mv_mode2 = ff_vc1_mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
+            v->mv_mode2 = ff_vc1_mv_pmode_table2[lowquant][get_unary(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
             /* fill lookup tables for intensity compensation */
@@ -1479,7 +1433,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     case B_TYPE:
         if(v->postprocflag)
             v->postproc = get_bits1(gb);
-        if (v->extended_mv) v->mvrange = get_prefix(gb, 0, 3);
+        if (v->extended_mv) v->mvrange = get_unary(gb, 0, 3);
         else v->mvrange = 0;
         v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
         v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
@@ -2350,7 +2304,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
                     if(!v->s.esc3_level_length)
                         v->s.esc3_level_length = get_bits(gb, 2) + 8;
                 } else { //table 60
-                    v->s.esc3_level_length = get_prefix(gb, 1, 6) + 2;
+                    v->s.esc3_level_length = get_unary(gb, 1, 6) + 2;
                 }
                 v->s.esc3_run_length = 3 + get_bits(gb, 2);
             }
