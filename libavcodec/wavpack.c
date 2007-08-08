@@ -114,12 +114,6 @@ static av_always_inline int wp_exp2(int16_t val)
     return neg ? -res : res;
 }
 
-static inline int get_unary(GetBitContext *gb){
-    int r=0;
-    while(get_bits1(gb) && r<33)r++;
-    return r;
-}
-
 // macros for manipulating median values
 #define GET_MED(n) ((median[n] >> 4) + 1)
 #define DEC_MED(n) median[n] -= ((median[n] + (128>>n) - 2) / (128>>n)) * 2
@@ -165,7 +159,7 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
             if(ctx->zeroes)
                 return 0;
         }else{
-            t = get_unary(gb);
+            t = get_unary(gb, 0, 33);
             if(t >= 2) t = get_bits(gb, t - 1) | (1 << (t-1));
             ctx->zeroes = t;
             if(ctx->zeroes){
@@ -184,13 +178,13 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
         t = 0;
         ctx->zero = 0;
     }else{
-        t = get_unary(gb);
+        t = get_unary(gb, 0, 33);
         if(get_bits_count(gb) >= ctx->data_size){
             *last = 1;
             return 0;
         }
         if(t == 16) {
-            t2 = get_unary(gb);
+            t2 = get_unary(gb, 0, 33);
             if(t2 < 2) t += t2;
             else t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
         }
