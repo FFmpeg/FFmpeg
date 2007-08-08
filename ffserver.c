@@ -1507,11 +1507,8 @@ static int http_parse_request(HTTPContext *c)
                         break;
                 }
 
-                if (wmpc) {
-                    if (modify_current_stream(wmpc, ratebuf)) {
-                        wmpc->switch_pending = 1;
-                    }
-                }
+                if (wmpc && modify_current_stream(wmpc, ratebuf))
+                    wmpc->switch_pending = 1;
             }
 
             snprintf(msg, sizeof(msg), "POST command not handled");
@@ -1840,13 +1837,10 @@ static void compute_stats(HTTPContext *c)
         bitrate = 0;
         if (c1->stream) {
             for (j = 0; j < c1->stream->nb_streams; j++) {
-                if (!c1->stream->feed) {
+                if (!c1->stream->feed)
                     bitrate += c1->stream->streams[j]->codec->bit_rate;
-                } else {
-                    if (c1->feed_streams[j] >= 0) {
-                        bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec->bit_rate;
-                    }
-                }
+                else if (c1->feed_streams[j] >= 0)
+                    bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec->bit_rate;
             }
         }
 
