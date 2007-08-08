@@ -270,7 +270,7 @@ static float *maybe_reformat_buffer32 (COOKContext *q, float *ptr, int n)
         return ptr;
 }
 
-static int init_cplscales_table (COOKContext *q) {
+static void init_cplscales_table (COOKContext *q) {
     int i;
     for (i=0;i<5;i++)
         q->cplscales[i] = maybe_reformat_buffer32 (q, cplscales[i], (1<<(i+2))-1);
