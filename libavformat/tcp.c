@@ -69,7 +69,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (ret < 0) {
         if (ff_neterrno() == FF_NETERROR(EINTR))
             goto redo;
-        if (ff_neterrno() != FF_NETERROR(EINPROGRESS))
+        if (ff_neterrno() != FF_NETERROR(EINPROGRESS) &&
+            ff_neterrno() != FF_NETERROR(EAGAIN))
             goto fail;
 
         /* wait until we are connected or until abort */
