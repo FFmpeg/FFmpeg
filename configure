@@ -659,6 +659,7 @@ HAVE_LIST="
     altivec_h
     arpa_inet_h
     byteswap_h
+    closesocket
     cmov
     conio_h
     dcbzl
@@ -1623,6 +1624,7 @@ check_func getrusage
 check_func2 windows.h GetProcessTimes
 
 check_func fork
+check_func closesocket
 
 test "$vhook" = "default" && vhook="$dlopen"
 
