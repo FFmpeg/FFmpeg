@@ -45,17 +45,10 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#  define HAVE_CLOSESOCKET 1
-#endif
-
 #ifdef __BEOS__
 #  include <sys/socket.h>
 #  include <netinet/in.h>
    /* not net_server ? */
-#  if IPPROTO_TCP != 6
-#    define HAVE_CLOSESOCKET 1
-#  endif
 #  include <BeBuild.h>
    /* R5 didn't have usleep, fake it. Haiku and Zeta has it now. */
 #  if B_BEOS_VERSION <= B_BEOS_VERSION_5
@@ -70,7 +63,7 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #endif
 
 /* most of the time closing a socket is just closing an fd */
-#if HAVE_CLOSESOCKET != 1
+#ifndef HAVE_CLOSESOCKET
 #define closesocket close
 #endif
 

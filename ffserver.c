@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-#if HAVE_CLOSESOCKET != 1
+#ifndef HAVE_CLOSESOCKET
 #define closesocket close
 #endif
 #include <string.h>
