@@ -268,6 +268,7 @@ static inline int ff_get_fourcc(const char *s){
     }
 
 #if defined(ARCH_X86) || defined(ARCH_POWERPC) || defined(ARCH_BFIN)
+#define AV_READ_TIME read_time
 #if defined(ARCH_X86_64)
 static inline uint64_t read_time(void)
 {
@@ -319,13 +320,17 @@ static inline uint64_t read_time(void)
      return (((uint64_t)tbu)<<32) | (uint64_t)tbl;
 }
 #endif
+#elif defined(HAVE_GETHRTIME)
+#define AV_READ_TIME gethrtime
+#endif
 
+#ifdef AV_READ_TIME
 #define START_TIMER \
 uint64_t tend;\
-uint64_t tstart= read_time();\
+uint64_t tstart= AV_READ_TIME();\
 
 #define STOP_TIMER(id) \
-tend= read_time();\
+tend= AV_READ_TIME();\
 {\
   static uint64_t tsum=0;\
   static int tcount=0;\

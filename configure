@@ -687,6 +687,7 @@ HAVE_LIST="
     malloc_h
     memalign
     mkstemp
+    gethrtime
     mlib
     ppc64
     sdl
@@ -1531,6 +1532,7 @@ fi
 check_header byteswap.h
 
 check_func mkstemp
+check_func gethrtime
 
 check_header termios.h
 check_header conio.h
