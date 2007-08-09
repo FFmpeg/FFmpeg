@@ -223,51 +223,11 @@ static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additiona
     return 0;
 }
 
-static int write_header(AVFormatContext *s){
-    NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
-    AVCodecContext *codec;
+static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     int i, j, tmp_pts, tmp_flags, tmp_stream, tmp_mul, tmp_size, tmp_fields;
 
-    nut->avf= s;
-
-    nut->stream   = av_mallocz(sizeof(StreamContext)*s->nb_streams);
-    nut->time_base= av_mallocz(sizeof(AVRational   )*s->nb_streams);
-
-    for(i=0; i<s->nb_streams; i++){
-        AVStream *st= s->streams[i];
-        int ssize;
-        AVRational time_base;
-        ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
-
-        av_set_pts_info(st, 64, time_base.num, time_base.den);
-
-        for(j=0; j<nut->time_base_count; j++){
-            if(!memcmp(&time_base, &nut->time_base[j], sizeof(AVRational))){
-                break;
-            }
-        }
-        nut->time_base[j]= time_base;
-        nut->stream[i].time_base= &nut->time_base[j];
-        if(j==nut->time_base_count)
-            nut->time_base_count++;
-
-        if(av_q2d(time_base) >= 0.001)
-            nut->stream[i].msb_pts_shift = 7;
-        else
-            nut->stream[i].msb_pts_shift = 14;
-        nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(time_base), 1);
-    }
-
-    put_buffer(bc, ID_STRING, strlen(ID_STRING));
-    put_byte(bc, 0);
-
-    /* main header */
-    put_be64(bc, MAIN_STARTCODE);
-    put_packetheader(nut, bc, 120+5*256/*FIXME check*/, 1);
-
     put_v(bc, 2); /* version */
-    put_v(bc, s->nb_streams);
+    put_v(bc, nut->avf->nb_streams);
     put_v(bc, MAX_DISTANCE);
     put_v(bc, nut->time_base_count);
 
@@ -275,9 +235,6 @@ static int write_header(AVFormatContext *s){
         put_v(bc, nut->time_base[i].num);
         put_v(bc, nut->time_base[i].den);
     }
-
-    build_frame_code(s);
-    assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
     tmp_pts=0;
     tmp_mul=1;
@@ -322,7 +279,54 @@ static int write_header(AVFormatContext *s){
         if(tmp_fields>4) put_v(bc, 0 /*tmp_res*/);
         if(tmp_fields>5) put_v(bc, j);
     }
+}
 
+static int write_header(AVFormatContext *s){
+    NUTContext *nut = s->priv_data;
+    ByteIOContext *bc = &s->pb;
+    AVCodecContext *codec;
+    int i, j;
+
+    nut->avf= s;
+
+    nut->stream   = av_mallocz(sizeof(StreamContext)*s->nb_streams);
+    nut->time_base= av_mallocz(sizeof(AVRational   )*s->nb_streams);
+
+    for(i=0; i<s->nb_streams; i++){
+        AVStream *st= s->streams[i];
+        int ssize;
+        AVRational time_base;
+        ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
+
+        av_set_pts_info(st, 64, time_base.num, time_base.den);
+
+        for(j=0; j<nut->time_base_count; j++){
+            if(!memcmp(&time_base, &nut->time_base[j], sizeof(AVRational))){
+                break;
+            }
+        }
+        nut->time_base[j]= time_base;
+        nut->stream[i].time_base= &nut->time_base[j];
+        if(j==nut->time_base_count)
+            nut->time_base_count++;
+
+        if(av_q2d(time_base) >= 0.001)
+            nut->stream[i].msb_pts_shift = 7;
+        else
+            nut->stream[i].msb_pts_shift = 14;
+        nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(time_base), 1);
+    }
+
+    build_frame_code(s);
+    assert(nut->frame_code['N'].flags == FLAG_INVALID);
+
+    put_buffer(bc, ID_STRING, strlen(ID_STRING));
+    put_byte(bc, 0);
+
+    /* main header */
+    put_be64(bc, MAIN_STARTCODE);
+    put_packetheader(nut, bc, 120+5*256/*FIXME check*/, 1);
+    write_mainheader(nut, bc);
     update_packetheader(nut, bc, 0, 1);
 
     for (i=0; i < s->nb_streams; i++){
