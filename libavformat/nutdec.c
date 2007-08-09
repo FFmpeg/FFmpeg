@@ -155,12 +155,6 @@ static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     }
 }
 
-static int64_t lsb2full(StreamContext *stream, int64_t lsb){
-    int64_t mask = (1<<stream->msb_pts_shift)-1;
-    int64_t delta= stream->last_pts - mask/2;
-    return  ((lsb - delta)&mask) + delta;
-}
-
 static int nut_probe(AVProbeData *p){
     int i;
     uint64_t code= 0;
@@ -655,7 +649,7 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
         int coded_pts= get_v(bc);
 //FIXME check last_pts validity?
         if(coded_pts < (1<<stc->msb_pts_shift)){
-            *pts=lsb2full(stc, coded_pts);
+            *pts=ff_lsb2full(stc, coded_pts);
         }else
             *pts=coded_pts - (1<<stc->msb_pts_shift);
     }else

@@ -94,5 +94,6 @@ typedef struct {
 
 unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len);
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val);
+int64_t ff_lsb2full(StreamContext *stream, int64_t lsb);
 
 #endif /* AVFORMAT_NUT_H */
