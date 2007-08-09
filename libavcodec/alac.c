@@ -489,12 +489,12 @@ static int alac_decode_frame(AVCodecContext *avctx,
     get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
 
     /* the output sample size is stored soon */
-    hassize = get_bits(&alac->gb, 1);
+    hassize = get_bits1(&alac->gb);
 
     wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
 
     /* whether the frame is compressed */
-    isnotcompressed = get_bits(&alac->gb, 1);
+    isnotcompressed = get_bits1(&alac->gb);
 
     if (hassize) {
         /* now read the number of samples as a 32bit integer */

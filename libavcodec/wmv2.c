@@ -363,7 +363,7 @@ return -1;
     if(s->picture_number==0)
         decode_ext_header(w);
 
-    s->pict_type = get_bits(&s->gb, 1) + 1;
+    s->pict_type = get_bits1(&s->gb) + 1;
     if(s->pict_type == I_TYPE){
         code = get_bits(&s->gb, 7);
         av_log(s->avctx, AV_LOG_DEBUG, "I7:%X/\n", code);

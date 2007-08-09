@@ -2002,14 +2002,14 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 g->scalefac_compress = get_bits(&s->gb, 9);
             else
                 g->scalefac_compress = get_bits(&s->gb, 4);
-            blocksplit_flag = get_bits(&s->gb, 1);
+            blocksplit_flag = get_bits1(&s->gb);
             if (blocksplit_flag) {
                 g->block_type = get_bits(&s->gb, 2);
                 if (g->block_type == 0){
                     av_log(NULL, AV_LOG_ERROR, "invalid block type\n");
                     return -1;
                 }
-                g->switch_point = get_bits(&s->gb, 1);
+                g->switch_point = get_bits1(&s->gb);
                 for(i=0;i<2;i++)
                     g->table_select[i] = get_bits(&s->gb, 5);
                 for(i=0;i<3;i++)
@@ -2081,9 +2081,9 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
             g->preflag = 0;
             if (!s->lsf)
-                g->preflag = get_bits(&s->gb, 1);
-            g->scalefac_scale = get_bits(&s->gb, 1);
-            g->count1table_select = get_bits(&s->gb, 1);
+                g->preflag = get_bits1(&s->gb);
+            g->scalefac_scale = get_bits1(&s->gb);
+            g->count1table_select = get_bits1(&s->gb);
             dprintf(s->avctx, "block_type=%d switch_point=%d\n",
                     g->block_type, g->switch_point);
         }

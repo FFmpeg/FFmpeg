@@ -363,7 +363,7 @@ static int decodeSpectrum (GetBitContext *gb, float *pOut)
     float SF;
 
     numSubbands = get_bits(gb, 5); // number of coded subbands
-    codingMode = get_bits(gb, 1); // coding Mode: 0 - VLC/ 1-CLC
+    codingMode = get_bits1(gb); // coding Mode: 0 - VLC/ 1-CLC
 
     /* Get the VLC selector table for the subbands, 0 means not coded. */
     for (cnt = 0; cnt <= numSubbands; cnt++)
@@ -811,7 +811,7 @@ static int decodeFrame(ATRAC3Context *q, uint8_t* databuf)
 
         /* Fill the Weighting coeffs delay buffer */
         memmove(q->weighting_delay,&(q->weighting_delay[2]),4*sizeof(int));
-        q->weighting_delay[4] = get_bits(&q->gb,1);
+        q->weighting_delay[4] = get_bits1(&q->gb);
         q->weighting_delay[5] = get_bits(&q->gb,3);
 
         for (i = 0; i < 4; i++) {

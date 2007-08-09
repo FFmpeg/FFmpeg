@@ -5077,7 +5077,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             format = get_bits(&s->gb, 3);
             dprintf(s->avctx, "ufep=1, format: %d\n", format);
             s->custom_pcf= get_bits1(&s->gb);
-            s->umvplus = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
+            s->umvplus = get_bits1(&s->gb); /* Unrestricted Motion Vector */
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Syntax-based Arithmetic Coding (SAC) not supported\n");
             }

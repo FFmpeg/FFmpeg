@@ -149,11 +149,11 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, Ge
     int x, y;
 
     for (y=0; y<height; y++){
-        if (!get_bits(gb, 1)) //rowskip
+        if (!get_bits1(gb)) //rowskip
             memset(plane, 0, width);
         else
             for (x=0; x<width; x++)
-                plane[x] = get_bits(gb, 1);
+                plane[x] = get_bits1(gb);
         plane += stride;
     }
 }
@@ -169,12 +169,12 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, Ge
     int x, y;
 
     for (x=0; x<width; x++){
-        if (!get_bits(gb, 1)) //colskip
+        if (!get_bits1(gb)) //colskip
             for (y=0; y<height; y++)
                 plane[y*stride] = 0;
         else
             for (y=0; y<height; y++)
-                plane[y*stride] = get_bits(gb, 1);
+                plane[y*stride] = get_bits1(gb);
         plane ++;
     }
 }
@@ -196,7 +196,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
     width = v->s.mb_width;
     height = v->s.mb_height;
     stride = v->s.mb_stride;
-    invert = get_bits(gb, 1);
+    invert = get_bits1(gb);
     imode = get_vlc2(gb, ff_vc1_imode_vlc.table, VC1_IMODE_VLC_BITS, 1);
 
     *raw_flag = 0;
@@ -210,7 +210,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
     case IMODE_NORM2:
         if ((height * width) & 1)
         {
-            *planep++ = get_bits(gb, 1);
+            *planep++ = get_bits1(gb);
             offset = 1;
         }
         else offset = 0;
@@ -329,7 +329,7 @@ static int vop_dquant_decoding(VC1Context *v)
     }
     else
     {
-        v->dquantfrm = get_bits(gb, 1);
+        v->dquantfrm = get_bits1(gb);
         if ( v->dquantfrm )
         {
             v->dqprofile = get_bits(gb, 2);
@@ -340,7 +340,7 @@ static int vop_dquant_decoding(VC1Context *v)
                 v->dqsbedge = get_bits(gb, 2);
                 break;
             case DQPROFILE_ALL_MBS:
-                v->dqbilevel = get_bits(gb, 1);
+                v->dqbilevel = get_bits1(gb);
             default: break; //Forbidden ?
             }
             if (v->dqbilevel || v->dqprofile != DQPROFILE_ALL_MBS)
@@ -797,22 +797,22 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->frmrtq_postproc = get_bits(gb, 3); //common
     // (bitrate-32kbps)/64kbps
     v->bitrtq_postproc = get_bits(gb, 5); //common
-    v->s.loop_filter = get_bits(gb, 1); //common
+    v->s.loop_filter = get_bits1(gb); //common
     if(v->s.loop_filter == 1 && v->profile == PROFILE_SIMPLE)
     {
         av_log(avctx, AV_LOG_ERROR,
                "LOOPFILTER shell not be enabled in simple profile\n");
     }
 
-    v->res_x8 = get_bits(gb, 1); //reserved
+    v->res_x8 = get_bits1(gb); //reserved
     if (v->res_x8)
     {
         av_log(avctx, AV_LOG_ERROR,
                "1 for reserved RES_X8 is forbidden\n");
         //return -1;
     }
-    v->multires = get_bits(gb, 1);
-    v->res_fasttx = get_bits(gb, 1);
+    v->multires = get_bits1(gb);
+    v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
     {
         av_log(avctx, AV_LOG_ERROR,
@@ -820,14 +820,14 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         //return -1;
     }
 
-    v->fastuvmc =  get_bits(gb, 1); //common
+    v->fastuvmc =  get_bits1(gb); //common
     if (!v->profile && !v->fastuvmc)
     {
         av_log(avctx, AV_LOG_ERROR,
                "FASTUVMC unavailable in Simple Profile\n");
         return -1;
     }
-    v->extended_mv =  get_bits(gb, 1); //common
+    v->extended_mv =  get_bits1(gb); //common
     if (!v->profile && v->extended_mv)
     {
         av_log(avctx, AV_LOG_ERROR,
@@ -835,9 +835,9 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         return -1;
     }
     v->dquant =  get_bits(gb, 2); //common
-    v->vstransform =  get_bits(gb, 1); //common
+    v->vstransform =  get_bits1(gb); //common
 
-    v->res_transtab = get_bits(gb, 1);
+    v->res_transtab = get_bits1(gb);
     if (v->res_transtab)
     {
         av_log(avctx, AV_LOG_ERROR,
@@ -845,10 +845,10 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         return -1;
     }
 
-    v->overlap = get_bits(gb, 1); //common
+    v->overlap = get_bits1(gb); //common
 
-    v->s.resync_marker = get_bits(gb, 1);
-    v->rangered = get_bits(gb, 1);
+    v->s.resync_marker = get_bits1(gb);
+    v->rangered = get_bits1(gb);
     if (v->rangered && v->profile == PROFILE_SIMPLE)
     {
         av_log(avctx, AV_LOG_INFO,
@@ -858,8 +858,8 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->s.max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
     v->quantizer_mode = get_bits(gb, 2); //common
 
-    v->finterpflag = get_bits(gb, 1); //common
-    v->res_rtm_flag = get_bits(gb, 1); //reserved
+    v->finterpflag = get_bits1(gb); //common
+    v->res_rtm_flag = get_bits1(gb); //reserved
     if (!v->res_rtm_flag)
     {
 //            av_log(avctx, AV_LOG_ERROR,
@@ -903,7 +903,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     v->frmrtq_postproc = get_bits(gb, 3); //common
     // (bitrate-32kbps)/64kbps
     v->bitrtq_postproc = get_bits(gb, 5); //common
-    v->postprocflag = get_bits(gb, 1); //common
+    v->postprocflag = get_bits1(gb); //common
 
     v->s.avctx->coded_width = (get_bits(gb, 12) + 1) << 1;
     v->s.avctx->coded_height = (get_bits(gb, 12) + 1) << 1;
@@ -1038,14 +1038,14 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
 
-    if(v->finterpflag) v->interpfrm = get_bits(gb, 1);
+    if(v->finterpflag) v->interpfrm = get_bits1(gb);
     skip_bits(gb, 2); //framecnt unused
     v->rangeredfrm = 0;
-    if (v->rangered) v->rangeredfrm = get_bits(gb, 1);
-    v->s.pict_type = get_bits(gb, 1);
+    if (v->rangered) v->rangeredfrm = get_bits1(gb);
+    v->s.pict_type = get_bits1(gb);
     if (v->s.avctx->max_b_frames) {
         if (!v->s.pict_type) {
-            if (get_bits(gb, 1)) v->s.pict_type = I_TYPE;
+            if (get_bits1(gb)) v->s.pict_type = I_TYPE;
             else v->s.pict_type = B_TYPE;
         } else v->s.pict_type = P_TYPE;
     } else v->s.pict_type = v->s.pict_type ? P_TYPE : I_TYPE;
@@ -1080,10 +1080,10 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_NON_UNIFORM)
         v->pquantizer = 0;
     v->pqindex = pqindex;
-    if (pqindex < 9) v->halfpq = get_bits(gb, 1);
+    if (pqindex < 9) v->halfpq = get_bits1(gb);
     else v->halfpq = 0;
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
-        v->pquantizer = get_bits(gb, 1);
+        v->pquantizer = get_bits1(gb);
     v->dquantfrm = 0;
     if (v->extended_mv == 1) v->mvrange = get_unary(gb, 0, 3);
     v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
@@ -1092,7 +1092,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     v->range_y = 1 << (v->k_y - 1);
     if (v->profile == PROFILE_ADVANCED)
     {
-        if (v->postprocflag) v->postproc = get_bits(gb, 1);
+        if (v->postprocflag) v->postproc = get_bits1(gb);
     }
     else
         if (v->multires && v->s.pict_type != B_TYPE) v->respic = get_bits(gb, 2);
@@ -1179,7 +1179,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->ttfrm = 0; //FIXME Is that so ?
         if (v->vstransform)
         {
-            v->ttmbf = get_bits(gb, 1);
+            v->ttmbf = get_bits1(gb);
             if (v->ttmbf)
             {
                 v->ttfrm = ff_vc1_ttfrm_to_tt[get_bits(gb, 2)];
@@ -1220,7 +1220,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->ttfrm = 0;
         if (v->vstransform)
         {
-            v->ttmbf = get_bits(gb, 1);
+            v->ttmbf = get_bits1(gb);
             if (v->ttmbf)
             {
                 v->ttfrm = ff_vc1_ttfrm_to_tt[get_bits(gb, 2)];
@@ -1239,7 +1239,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->y_ac_table_index = decode012(gb);
     }
     /* DC Syntax */
-    v->s.dc_table_index = get_bits(gb, 1);
+    v->s.dc_table_index = get_bits1(gb);
 
     if(v->s.pict_type == BI_TYPE) {
         v->s.pict_type = B_TYPE;
@@ -1293,7 +1293,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     v->rnd = get_bits1(gb);
     if(v->interlace)
         v->uvsamp = get_bits1(gb);
-    if(v->finterpflag) v->interpfrm = get_bits(gb, 1);
+    if(v->finterpflag) v->interpfrm = get_bits1(gb);
     if(v->s.pict_type == B_TYPE) {
         v->bfraction = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
         v->bfraction = ff_vc1_bfraction_lut[v->bfraction];
@@ -1314,10 +1314,10 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_NON_UNIFORM)
         v->pquantizer = 0;
     v->pqindex = pqindex;
-    if (pqindex < 9) v->halfpq = get_bits(gb, 1);
+    if (pqindex < 9) v->halfpq = get_bits1(gb);
     else v->halfpq = 0;
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
-        v->pquantizer = get_bits(gb, 1);
+        v->pquantizer = get_bits1(gb);
 
     if(v->s.pict_type == I_TYPE || v->s.pict_type == P_TYPE) v->use_ic = 0;
 
@@ -1420,7 +1420,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->ttfrm = 0; //FIXME Is that so ?
         if (v->vstransform)
         {
-            v->ttmbf = get_bits(gb, 1);
+            v->ttmbf = get_bits1(gb);
             if (v->ttmbf)
             {
                 v->ttfrm = ff_vc1_ttfrm_to_tt[get_bits(gb, 2)];
@@ -1470,7 +1470,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->ttfrm = 0;
         if (v->vstransform)
         {
-            v->ttmbf = get_bits(gb, 1);
+            v->ttmbf = get_bits1(gb);
             if (v->ttmbf)
             {
                 v->ttfrm = ff_vc1_ttfrm_to_tt[get_bits(gb, 2)];
@@ -1489,7 +1489,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->y_ac_table_index = decode012(gb);
     }
     /* DC Syntax */
-    v->s.dc_table_index = get_bits(gb, 1);
+    v->s.dc_table_index = get_bits1(gb);
     if ((v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE) && v->dquant) {
         av_log(v->s.avctx, AV_LOG_DEBUG, "VOP DQuant info\n");
         vop_dquant_decoding(v);
@@ -1522,7 +1522,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     {                                                          \
       if (v->dqbilevel)                                        \
       {                                                        \
-        mquant = (get_bits(gb, 1)) ? v->altpq : v->pq;         \
+        mquant = (get_bits1(gb)) ? v->altpq : v->pq;           \
       }                                                        \
       else                                                     \
       {                                                        \
@@ -2273,7 +2273,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
         run = vc1_index_decode_table[codingset][index][0];
         level = vc1_index_decode_table[codingset][index][1];
         lst = index >= vc1_last_decode_table[codingset];
-        if(get_bits(gb, 1))
+        if(get_bits1(gb))
             level = -level;
     } else {
         escape = decode210(gb);
@@ -2293,11 +2293,11 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
                 else
                     run += vc1_delta_run_table[codingset][level] + 1;
             }
-            if(get_bits(gb, 1))
+            if(get_bits1(gb))
                 level = -level;
         } else {
             int sign;
-            lst = get_bits(gb, 1);
+            lst = get_bits1(gb);
             if(v->s.esc3_level_length == 0) {
                 if(v->pq < 8 || v->dquantfrm) { // table 59
                     v->s.esc3_level_length = get_bits(gb, 3);
@@ -2309,7 +2309,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
                 v->s.esc3_run_length = 3 + get_bits(gb, 2);
             }
             run = get_bits(gb, v->s.esc3_run_length);
-            sign = get_bits(gb, 1);
+            sign = get_bits1(gb);
             level = get_bits(gb, v->s.esc3_level_length);
             if(sign)
                 level = -level;
@@ -2361,9 +2361,9 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
             if (v->pq == 1)
                 dcdiff = (dcdiff<<2) + get_bits(gb, 2) - 3;
             else if (v->pq == 2)
-                dcdiff = (dcdiff<<1) + get_bits(gb, 1) - 1;
+                dcdiff = (dcdiff<<1) + get_bits1(gb)   - 1;
         }
-        if (get_bits(gb, 1))
+        if (get_bits1(gb))
             dcdiff = -dcdiff;
     }
 
@@ -2531,9 +2531,9 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
             if (mquant == 1)
                 dcdiff = (dcdiff<<2) + get_bits(gb, 2) - 3;
             else if (mquant == 2)
-                dcdiff = (dcdiff<<1) + get_bits(gb, 1) - 1;
+                dcdiff = (dcdiff<<1) + get_bits1(gb)   - 1;
         }
-        if (get_bits(gb, 1))
+        if (get_bits1(gb))
             dcdiff = -dcdiff;
     }
 
@@ -2735,9 +2735,9 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             if (mquant == 1)
                 dcdiff = (dcdiff<<2) + get_bits(gb, 2) - 3;
             else if (mquant == 2)
-                dcdiff = (dcdiff<<1) + get_bits(gb, 1) - 1;
+                dcdiff = (dcdiff<<1) + get_bits1(gb)   - 1;
         }
-        if (get_bits(gb, 1))
+        if (get_bits1(gb))
             dcdiff = -dcdiff;
     }
 
@@ -3054,12 +3054,12 @@ static int vc1_decode_p_mb(VC1Context *v)
             if (s->mb_intra && !mb_has_coeffs)
             {
                 GET_MQUANT();
-                s->ac_pred = get_bits(gb, 1);
+                s->ac_pred = get_bits1(gb);
                 cbp = 0;
             }
             else if (mb_has_coeffs)
             {
-                if (s->mb_intra) s->ac_pred = get_bits(gb, 1);
+                if (s->mb_intra) s->ac_pred = get_bits1(gb);
                 cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
                 GET_MQUANT();
             }
@@ -3176,7 +3176,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                             break;
                         }
                     }
-                if(intrapred)s->ac_pred = get_bits(gb, 1);
+                if(intrapred)s->ac_pred = get_bits1(gb);
                 else s->ac_pred = 0;
             }
             if (!v->ttmbf && coded_inter)
@@ -3449,7 +3449,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
             // do actual MB decoding and displaying
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
-            v->s.ac_pred = get_bits(&v->s.gb, 1);
+            v->s.ac_pred = get_bits1(&v->s.gb);
 
             for(k = 0; k < 6; k++) {
                 val = ((cbp >> (5 - k)) & 1);
@@ -3561,13 +3561,13 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             // do actual MB decoding and displaying
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
             if(v->acpred_is_raw)
-                v->s.ac_pred = get_bits(&v->s.gb, 1);
+                v->s.ac_pred = get_bits1(&v->s.gb);
             else
                 v->s.ac_pred = v->acpred_plane[mb_pos];
 
             if(v->condover == CONDOVER_SELECT) {
                 if(v->overflg_is_raw)
-                    overlap = get_bits(&v->s.gb, 1);
+                    overlap = get_bits1(&v->s.gb);
                 else
                     overlap = v->over_flags_plane[mb_pos];
             } else

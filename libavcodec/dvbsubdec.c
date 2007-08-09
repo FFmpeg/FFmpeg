@@ -455,7 +455,7 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
             }
             pixels_read++;
         } else {
-            bits = get_bits(&gb, 1);
+            bits = get_bits1(&gb);
             if (bits == 1) {
                 run_length = get_bits(&gb, 3) + 3;
                 bits = get_bits(&gb, 2);
@@ -471,7 +471,7 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
                     }
                 }
             } else {
-                bits = get_bits(&gb, 1);
+                bits = get_bits1(&gb);
                 if (bits == 0) {
                     bits = get_bits(&gb, 2);
                     if (bits == 2) {
@@ -560,7 +560,7 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
             }
             pixels_read++;
         } else {
-            bits = get_bits(&gb, 1);
+            bits = get_bits1(&gb);
             if (bits == 0) {
                 run_length = get_bits(&gb, 3);
 
@@ -581,7 +581,7 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
                     pixels_read++;
                 }
             } else {
-                bits = get_bits(&gb, 1);
+                bits = get_bits1(&gb);
                 if (bits == 0) {
                     run_length = get_bits(&gb, 2) + 4;
                     bits = get_bits(&gb, 4);

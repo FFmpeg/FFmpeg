@@ -791,7 +791,7 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
     for(i=0;i<vc->mode_count;++i) {
         vorbis_mode *mode_setup=&vc->modes[i];
 
-        mode_setup->blockflag=get_bits(gb, 1);
+        mode_setup->blockflag=get_bits1(gb);
         mode_setup->windowtype=get_bits(gb, 16); //FIXME check
         mode_setup->transformtype=get_bits(gb, 16); //FIXME check
         mode_setup->mapping=get_bits(gb, 8); //FIXME check

@@ -465,9 +465,9 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
       mb_type = MB_TYPE_16x16;
     }
   } else if (mb_type < 8) {     /* INTER */
-    if (h->thirdpel_flag && h->halfpel_flag == !get_bits (&s->gb, 1)) {
+    if (h->thirdpel_flag && h->halfpel_flag == !get_bits1 (&s->gb)) {
       mode = THIRDPEL_MODE;
-    } else if (h->halfpel_flag && h->thirdpel_flag == !get_bits (&s->gb, 1)) {
+    } else if (h->halfpel_flag && h->thirdpel_flag == !get_bits1 (&s->gb)) {
       mode = HALFPEL_MODE;
     } else {
       mode = FULLPEL_MODE;

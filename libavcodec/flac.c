@@ -183,7 +183,7 @@ static int metadata_parse(FLACContext *s)
 
         av_log(s->avctx, AV_LOG_DEBUG, "STREAM HEADER\n");
         do {
-            metadata_last = get_bits(&s->gb, 1);
+            metadata_last = get_bits1(&s->gb);
             metadata_type = get_bits(&s->gb, 7);
             metadata_size = get_bits_long(&s->gb, 24);
 

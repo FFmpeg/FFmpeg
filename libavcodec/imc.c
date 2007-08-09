@@ -454,7 +454,7 @@ static void imc_get_skip_coeff(IMCContext* q) {
             q->skipFlagBits[i] = band_tab[i+1] - band_tab[i];
 
             for(j = band_tab[i]; j < band_tab[i+1]; j++) {
-                if ((q->skipFlags[j] = get_bits(&q->gb,1)))
+                if ((q->skipFlags[j] = get_bits1(&q->gb)))
                     q->skipFlagCount[i]++;
             }
         } else {
@@ -485,7 +485,7 @@ static void imc_get_skip_coeff(IMCContext* q) {
 
             if (j < band_tab[i+1]) {
                 q->skipFlagBits[i]++;
-                if ((q->skipFlags[j] = get_bits(&q->gb,1)))
+                if ((q->skipFlags[j] = get_bits1(&q->gb)))
                     q->skipFlagCount[i]++;
             }
         }

@@ -686,7 +686,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     } else {
 
         /* unpack the list of partially-coded superblocks */
-        bit = get_bits(gb, 1);
+        bit = get_bits1(gb);
         /* toggle the bit because as soon as the first run length is
          * fetched the bit will be toggled again */
         bit ^= 1;
@@ -722,7 +722,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
             current_superblock = 0;
             current_run = 0;
-            bit = get_bits(gb, 1);
+            bit = get_bits1(gb);
             /* toggle the bit because as soon as the first run length is
              * fetched the bit will be toggled again */
             bit ^= 1;
@@ -753,7 +753,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         if (decode_partial_blocks) {
 
             current_run = 0;
-            bit = get_bits(gb, 1);
+            bit = get_bits1(gb);
             /* toggle the bit because as soon as the first run length is
              * fetched the bit will be toggled again */
             bit ^= 1;
@@ -979,7 +979,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
         memset(motion_y, 0, 6 * sizeof(int));
 
         /* coding mode 0 is the VLC scheme; 1 is the fixed code scheme */
-        coding_mode = get_bits(gb, 1);
+        coding_mode = get_bits1(gb);
         debug_vectors("    using %s scheme for unpacking motion vectors\n",
             (coding_mode == 0) ? "VLC" : "fixed-length");
 
@@ -2337,7 +2337,7 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
 
-    if (get_bits(gb, 1)) {
+    if (get_bits1(gb)) {
         int token;
         if (s->entries >= 32) { /* overflow */
             av_log(avctx, AV_LOG_ERROR, "huffman tree overflow\n");
@@ -2488,10 +2488,10 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
         for (plane = 0; plane <= 2; plane++) {
             int newqr= 1;
             if (inter || plane > 0)
-                newqr = get_bits(gb, 1);
+                newqr = get_bits1(gb);
             if (!newqr) {
                 int qtj, plj;
-                if(inter && get_bits(gb, 1)){
+                if(inter && get_bits1(gb)){
                     qtj = 0;
                     plj = plane;
                 }else{
@@ -2532,7 +2532,7 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
     for (s->hti = 0; s->hti < 80; s->hti++) {
         s->entries = 0;
         s->huff_code_size = 1;
-        if (!get_bits(gb, 1)) {
+        if (!get_bits1(gb)) {
             s->hbits = 0;
             read_huffman_tree(avctx, gb);
             s->hbits = 1;

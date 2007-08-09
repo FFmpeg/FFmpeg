@@ -393,11 +393,11 @@ static int wma_decode_block(WMACodecContext *s)
         return -1;
 
     if (s->nb_channels == 2) {
-        s->ms_stereo = get_bits(&s->gb, 1);
+        s->ms_stereo = get_bits1(&s->gb);
     }
     v = 0;
     for(ch = 0; ch < s->nb_channels; ch++) {
-        a = get_bits(&s->gb, 1);
+        a = get_bits1(&s->gb);
         s->channel_coded[ch] = a;
         v |= a;
     }
@@ -433,7 +433,7 @@ static int wma_decode_block(WMACodecContext *s)
                 int i, n, a;
                 n = s->exponent_high_sizes[bsize];
                 for(i=0;i<n;i++) {
-                    a = get_bits(&s->gb, 1);
+                    a = get_bits1(&s->gb);
                     s->high_band_coded[ch][i] = a;
                     /* if noise coding, the coefficients are not transmitted */
                     if (a)
@@ -466,7 +466,7 @@ static int wma_decode_block(WMACodecContext *s)
 
     /* exponents can be reused in short blocks. */
     if ((s->block_len_bits == s->frame_len_bits) ||
-        get_bits(&s->gb, 1)) {
+        get_bits1(&s->gb)) {
         for(ch = 0; ch < s->nb_channels; ch++) {
             if (s->channel_coded[ch]) {
                 if (s->use_exp_vlc) {
@@ -516,7 +516,7 @@ static int wma_decode_block(WMACodecContext *s)
                     run = run_table[code];
                     level = level_table[code];
                 }
-                sign = get_bits(&s->gb, 1);
+                sign = get_bits1(&s->gb);
                 if (!sign)
                     level = -level;
                 ptr += run;
