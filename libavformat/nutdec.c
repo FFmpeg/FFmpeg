@@ -421,25 +421,6 @@ static int decode_info_header(NUTContext *nut){
     return 0;
 }
 
-static int sp_pos_cmp(syncpoint_t *a, syncpoint_t *b){
-    return (a->pos - b->pos>>32) - (b->pos - a->pos>>32);
-}
-
-static int sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
-    return (a->ts - b->ts>>32) - (b->ts - a->ts>>32);
-}
-
-static void add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
-    syncpoint_t *sp2, *sp= av_mallocz(sizeof(syncpoint_t));
-
-    sp->pos= pos;
-    sp->back_ptr= back_ptr;
-    sp->ts= ts;
-    sp2= av_tree_insert(&nut->syncpoints, sp, sp_pos_cmp);
-    if(sp2 && sp2 != sp)
-        av_free(sp);
-}
-
 static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
@@ -464,7 +445,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     }
 
     *ts= tmp / s->nb_streams * av_q2d(nut->time_base[tmp % s->nb_streams])*AV_TIME_BASE;
-    add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts);
+    ff_nut_add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts);
 
     return 0;
 }
@@ -812,7 +793,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= st->index_entries[index].pos;
         ts  = st->index_entries[index].timestamp;
     }else{
-        av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
+        av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pts_cmp, next_node);
         av_log(s, AV_LOG_DEBUG, "%"PRIu64"-%"PRIu64" %"PRId64"-%"PRId64"\n", next_node[0]->pos, next_node[1]->pos,
                                                     next_node[0]->ts , next_node[1]->ts);
         pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
@@ -821,7 +802,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         if(!(flags & AVSEEK_FLAG_BACKWARD)){
             dummy.pos= pos+16;
             next_node[1]= &nopts_sp;
-            av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, next_node);
+            av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, next_node);
             pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
@@ -829,7 +810,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
             //FIXME dir but i think it does not matter
         }
         dummy.pos= pos;
-        sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);
+        sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
 
         assert(sp);
         pos2= sp->back_ptr  - 15;
