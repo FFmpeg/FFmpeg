@@ -30,6 +30,13 @@ static void build_frame_code(AVFormatContext *s){
     int end= 254;
     int keyframe_0_esc= s->nb_streams > 2;
     int pred_table[10];
+    FrameCode *ft;
+
+    ft= &nut->frame_code[start];
+    ft->flags= FLAG_CODED;
+    ft->size_mul=1;
+    ft->pts_delta=1;
+    start++;
 
     if(keyframe_0_esc){
         /* keyframe = 0 escape */
