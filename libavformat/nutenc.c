@@ -191,13 +191,14 @@ static inline void put_s_trace(ByteIOContext *bc, int64_t v, char *file, char *f
 #endif
 
 //FIXME remove calculate_checksum
-static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc, int calculate_checksum){
+static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc, int calculate_checksum, uint64_t startcode){
     uint8_t *dyn_buf=NULL;
     int dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
     int forw_ptr= dyn_size + 4*calculate_checksum;
 
     if(forw_ptr > 4096)
-        init_checksum(bc, av_crc04C11DB7_update, 0); //FIXME this is supposed to include the start code
+        init_checksum(bc, av_crc04C11DB7_update, 0);
+    put_be64(bc, startcode);
     put_v(bc, forw_ptr);
     if(forw_ptr > 4096)
         put_le32(bc, get_checksum(bc));
@@ -315,18 +316,16 @@ static void write_headers(NUTContext *nut, ByteIOContext *bc){
     ByteIOContext dyn_bc;
     int i;
 
-    put_be64(bc, MAIN_STARTCODE);
     url_open_dyn_buf(&dyn_bc);
     write_mainheader(nut, &dyn_bc);
-    put_packet(nut, bc, &dyn_bc, 1);
+    put_packet(nut, bc, &dyn_bc, 1, MAIN_STARTCODE);
 
     for (i=0; i < nut->avf->nb_streams; i++){
         AVCodecContext *codec = nut->avf->streams[i]->codec;
 
-        put_be64(bc, STREAM_STARTCODE);
         url_open_dyn_buf(&dyn_bc);
         write_streamheader(nut, &dyn_bc, codec, i);
-        put_packet(nut, bc, &dyn_bc, 1);
+        put_packet(nut, bc, &dyn_bc, 1, STREAM_STARTCODE);
     }
 }
 
@@ -416,11 +415,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
 
         nut->last_syncpoint_pos= url_ftell(bc);
-        put_be64(bc, SYNCPOINT_STARTCODE);
         url_open_dyn_buf(&dyn_bc);
         put_t(nut, nus, &dyn_bc, pkt->dts);
         put_v(&dyn_bc, 0); //FIXME back_ptr_div16
-        put_packet(nut, bc, &dyn_bc, 1);
+        put_packet(nut, bc, &dyn_bc, 1, SYNCPOINT_STARTCODE);
     }
     assert(nus->last_pts != AV_NOPTS_VALUE);
 
