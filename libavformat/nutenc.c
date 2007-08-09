@@ -497,6 +497,16 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     return 0;
 }
 
+static int write_trailer(AVFormatContext *s){
+    NUTContext *nut= s->priv_data;
+    ByteIOContext *bc= &s->pb;
+
+    write_headers(nut, bc);
+    put_flush_packet(bc);
+
+    return 0;
+}
+
 AVOutputFormat nut_muxer = {
     "nut",
     "nut format",
@@ -513,7 +523,7 @@ AVOutputFormat nut_muxer = {
     CODEC_ID_MPEG4,
     write_header,
     write_packet,
-//    write_trailer,
+    write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag= (const AVCodecTag*[]){codec_bmp_tags, codec_wav_tags, 0},
 };
