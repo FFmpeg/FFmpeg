@@ -236,29 +236,28 @@ static int write_header(AVFormatContext *s){
 
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];
-        int num, denom, ssize;
-        ff_parse_specific_params(st->codec, &num, &ssize, &denom);
+        int ssize;
+        AVRational time_base;
+        ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
 
-        nut->stream[i].time_base= (AVRational){denom, num};
-
-        av_set_pts_info(st, 64, denom, num);
+        av_set_pts_info(st, 64, time_base.num, time_base.den);
 
         for(j=0; j<nut->time_base_count; j++){
-            if(!memcmp(&nut->stream[i].time_base, &nut->time_base[j], sizeof(AVRational))){
+            if(!memcmp(&time_base, &nut->time_base[j], sizeof(AVRational))){
                 break;
             }
         }
-        nut->time_base[j]= nut->stream[i].time_base;
+        nut->time_base[j]= time_base;
+        nut->stream[i].time_base= &nut->time_base[j];
         if(j==nut->time_base_count)
             nut->time_base_count++;
 
-        if(av_q2d(nut->stream[i].time_base) >= 0.001)
+        if(av_q2d(time_base) >= 0.001)
             nut->stream[i].msb_pts_shift = 7;
         else
             nut->stream[i].msb_pts_shift = 14;
-        nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(nut->stream[i].time_base), 1);
+        nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(time_base), 1);
     }
-//FIXME make nut->stream[i].time_base pointers into nut->time_base
 
     put_buffer(bc, ID_STRING, strlen(ID_STRING));
     put_byte(bc, 0);

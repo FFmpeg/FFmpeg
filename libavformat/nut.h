@@ -72,7 +72,7 @@ typedef struct {
     int skip_until_key_frame;
     int64_t last_pts;
     int time_base_id;
-    AVRational time_base;
+    AVRational *time_base;
     int msb_pts_shift;
     int max_pts_distance;
     int decode_delay; //FIXME duplicate of has_b_frames

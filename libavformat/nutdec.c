@@ -288,7 +288,7 @@ static int decode_stream_header(NUTContext *nut){
     end= get_packetheader(nut, bc, 1);
     end += url_ftell(bc);
 
-    GET_V(stream_id, tmp < s->nb_streams && !nut->stream[tmp].time_base.num);
+    GET_V(stream_id, tmp < s->nb_streams && !nut->stream[tmp].time_base);
     stc= &nut->stream[stream_id];
 
     st = s->streams[stream_id];
@@ -358,8 +358,8 @@ static int decode_stream_header(NUTContext *nut){
         av_log(s, AV_LOG_ERROR, "Stream header %d checksum mismatch\n", stream_id);
         return -1;
     }
-    stc->time_base= nut->time_base[stc->time_base_id];
-    av_set_pts_info(s->streams[stream_id], 63, stc->time_base.num, stc->time_base.den);
+    stc->time_base= &nut->time_base[stc->time_base_id];
+    av_set_pts_info(s->streams[stream_id], 63, stc->time_base->num, stc->time_base->den);
     return 0;
 }
 
@@ -461,8 +461,8 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     for(i=0; i<s->nb_streams; i++){
         nut->stream[i].last_pts= av_rescale_rnd(
             tmp / nut->time_base_count,
-            time_base.num * (int64_t)nut->stream[i].time_base.den,
-            time_base.den * (int64_t)nut->stream[i].time_base.num,
+            time_base.num * (int64_t)nut->stream[i].time_base->den,
+            time_base.den * (int64_t)nut->stream[i].time_base->num,
             AV_ROUND_DOWN);
         //last_key_frame ?
     }
