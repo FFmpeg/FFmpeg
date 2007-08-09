@@ -422,7 +422,8 @@ void fill_border(VideoState *s, int x, int y, int w, int h, int color)
 
 #define BPP 1
 
-static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, int imgh)
+static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, int imgh,
+                          float scalex, float scaley)
 {
     int wrap, wrap3, width2, skip2;
     int y, u, v, a, u1, v1, a1, w, h;
@@ -431,9 +432,9 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     const uint32_t *pal;
     int dstx, dsty, dstw, dsth;
 
-    dstx = FFMIN(FFMAX(rect->x, 0), imgw);
+    dstx = FFMIN(scalex * FFMAX(rect->x, 0), imgw);
     dstw = FFMIN(FFMAX(rect->w, 0), imgw - dstx);
-    dsty = FFMIN(FFMAX(rect->y, 0), imgh);
+    dsty = FFMIN(scaley * FFMAX(rect->y, 0), imgh);
     dsth = FFMIN(FFMAX(rect->h, 0), imgh - dsty);
     lum = dst->data[0] + dsty * dst->linesize[0];
     cb = dst->data[1] + (dsty >> 1) * dst->linesize[1];
@@ -699,6 +700,7 @@ static void video_image_display(VideoState *is)
 
                 if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000))
                 {
+                    float scalex = 1, scaley = 1;
                     SDL_LockYUVOverlay (vp->bmp);
 
                     pict.data[0] = vp->bmp->pixels[0];
@@ -709,9 +711,14 @@ static void video_image_display(VideoState *is)
                     pict.linesize[1] = vp->bmp->pitches[2];
                     pict.linesize[2] = vp->bmp->pitches[1];
 
+                    if (is->subtitle_st->codec->width)
+                        scalex = (float)vp->bmp->w / is->subtitle_st->codec->width;
+                    if (is->subtitle_st->codec->height)
+                        scaley = (float)vp->bmp->h / is->subtitle_st->codec->height;
                     for (i = 0; i < sp->sub.num_rects; i++)
                         blend_subrect(&pict, &sp->sub.rects[i],
-                                      vp->bmp->w, vp->bmp->h);
+                                      vp->bmp->w, vp->bmp->h,
+                                      scalex, scaley);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
                 }
