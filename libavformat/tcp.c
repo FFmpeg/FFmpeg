@@ -53,6 +53,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (port <= 0 || port >= 65536)
         goto fail;
 
+    if(!ff_network_init())
+        return AVERROR(EIO);
+
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
     if (resolve_host(&dest_addr.sin_addr, hostname) < 0)
@@ -174,6 +177,7 @@ static int tcp_close(URLContext *h)
 {
     TCPContext *s = h->priv_data;
     closesocket(s->fd);
+    ff_network_close();
     av_free(s);
     return 0;
 }

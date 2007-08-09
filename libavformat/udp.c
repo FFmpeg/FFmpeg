@@ -321,6 +321,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         udp_set_remote_url(h, uri);
     }
 
+    if(!ff_network_init())
+        return AVERROR(EIO);
+
 #ifndef CONFIG_IPV6
     udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd < 0)
@@ -472,6 +475,7 @@ static int udp_close(URLContext *h)
         udp_ipv6_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
 #endif
     closesocket(s->udp_fd);
+    ff_network_close();
     av_free(s);
     return 0;
 }

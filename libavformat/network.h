@@ -44,6 +44,23 @@
 
 int ff_socket_nonblock(int socket, int enable);
 
+static inline int ff_network_init(void)
+{
+#ifdef HAVE_WINSOCK2_H
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(1,1), &wsaData))
+        return 0;
+#endif
+    return 1;
+}
+
+static inline void ff_network_close(void)
+{
+#ifdef HAVE_WINSOCK2_H
+    WSACleanup();
+#endif
+}
+
 #if !defined(HAVE_INET_ATON)
 /* in os_support.c */
 int inet_aton (const char * str, struct in_addr * add);
