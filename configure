@@ -1975,7 +1975,7 @@ fi
 echo "#define restrict $_restrict" >> $TMPH
 
 if enabled small; then
-  echo "#define always_inline"  >> $TMPH
+  echo "#define av_always_inline"  >> $TMPH
 fi
 
 echo "SRC_PATH=\"$source_path\"" >> config.mak
