@@ -311,10 +311,28 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     return 0;
 }
 
+static void write_headers(NUTContext *nut, ByteIOContext *bc){
+    ByteIOContext dyn_bc;
+    int i;
+
+    put_be64(bc, MAIN_STARTCODE);
+    url_open_dyn_buf(&dyn_bc);
+    write_mainheader(nut, &dyn_bc);
+    put_packet(nut, bc, &dyn_bc, 1);
+
+    for (i=0; i < nut->avf->nb_streams; i++){
+        AVCodecContext *codec = nut->avf->streams[i]->codec;
+
+        put_be64(bc, STREAM_STARTCODE);
+        url_open_dyn_buf(&dyn_bc);
+        write_streamheader(nut, &dyn_bc, codec, i);
+        put_packet(nut, bc, &dyn_bc, 1);
+    }
+}
+
 static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb, dyn_bc;
-    AVCodecContext *codec;
+    ByteIOContext *bc = &s->pb;
     int i, j;
 
     nut->avf= s;
@@ -353,20 +371,7 @@ static int write_header(AVFormatContext *s){
     put_buffer(bc, ID_STRING, strlen(ID_STRING));
     put_byte(bc, 0);
 
-    /* main header */
-    put_be64(bc, MAIN_STARTCODE);
-    url_open_dyn_buf(&dyn_bc);
-    write_mainheader(nut, &dyn_bc);
-    put_packet(nut, bc, &dyn_bc, 1);
-
-    for (i=0; i < s->nb_streams; i++){
-        codec = s->streams[i]->codec;
-
-        put_be64(bc, STREAM_STARTCODE);
-        url_open_dyn_buf(&dyn_bc);
-        write_streamheader(nut, &dyn_bc, codec, i);
-        put_packet(nut, bc, &dyn_bc, 1);
-    }
+    write_headers(nut, bc);
 
     put_flush_packet(bc);
 
