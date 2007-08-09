@@ -375,8 +375,120 @@ static int write_header(AVFormatContext *s){
     return 0;
 }
 
+static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc, AVPacket *pkt){
+    int flags= 0;
+
+    if(pkt->flags & PKT_FLAG_KEY                ) flags |= FLAG_KEY;
+    if(pkt->stream_index != fc->stream_id       ) flags |= FLAG_STREAM_ID;
+    if(pkt->size / fc->size_mul                 ) flags |= FLAG_SIZE_MSB;
+    if(pkt->pts - nus->last_pts != fc->pts_delta) flags |= FLAG_CODED_PTS;
+    if(pkt->size > 2*nut->max_distance          ) flags |= FLAG_CHECKSUM;
+    if(FFABS(pkt->pts - nus->last_pts)
+                         > nus->max_pts_distance) flags |= FLAG_CHECKSUM;
+
+    return flags;
+}
+
 static int write_packet(AVFormatContext *s, AVPacket *pkt){
-    //FIXME
+    NUTContext *nut = s->priv_data;
+    StreamContext *nus= &nut->stream[pkt->stream_index];
+    ByteIOContext *bc = &s->pb, dyn_bc;
+    FrameCode *fc;
+    int64_t coded_pts;
+    int best_length, frame_code, flags, needed_flags, i;
+    int key_frame = !!(pkt->flags & PKT_FLAG_KEY);
+    int store_sp=0;
+
+    if(key_frame && !!(nus->last_flags & FLAG_KEY))
+        store_sp= 1;
+
+    if(pkt->size + 30/*FIXME check*/ + url_ftell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
+        store_sp= 1;
+
+//FIXME ensure store_sp is 1 for the first thing
+
+    if(store_sp){
+        ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
+
+        nut->last_syncpoint_pos= url_ftell(bc);
+        put_be64(bc, SYNCPOINT_STARTCODE);
+        url_open_dyn_buf(&dyn_bc);
+        put_t(nut, nus, &dyn_bc, pkt->dts);
+        put_v(&dyn_bc, 0); //FIXME back_ptr_div16
+        put_packet(nut, bc, &dyn_bc, 1);
+    }
+    assert(nus->last_pts != AV_NOPTS_VALUE);
+
+    coded_pts = pkt->pts & ((1<<nus->msb_pts_shift)-1);
+    if(ff_lsb2full(nus, coded_pts) != pkt->pts)
+        coded_pts= pkt->pts + (1<<nus->msb_pts_shift);
+
+    best_length=INT_MAX;
+    frame_code= -1;
+    for(i=0; i<256; i++){
+        int length= 0;
+        FrameCode *fc= &nut->frame_code[i];
+        int flags= fc->flags;
+
+        if(flags & FLAG_INVALID)
+            continue;
+        needed_flags= get_needed_flags(nut, nus, fc, pkt);
+
+        if(flags & FLAG_CODED){
+            length++;
+            flags &= ~needed_flags;
+            flags |=  needed_flags;
+        }
+
+        if((flags & needed_flags) != needed_flags)
+            continue;
+
+        if((flags ^ needed_flags) & FLAG_KEY)
+            continue;
+
+        if(flags & FLAG_STREAM_ID)
+            length+= get_length(pkt->stream_index);
+
+        if(pkt->size % fc->size_mul != fc->size_lsb)
+            continue;
+        if(flags & FLAG_SIZE_MSB)
+            length += get_length(pkt->size / fc->size_mul);
+
+        if(flags & FLAG_CHECKSUM)
+            length+=4;
+
+        if(flags & FLAG_CODED_PTS)
+            length += get_length(coded_pts);
+
+        length*=4;
+        length+= !(flags & FLAG_CODED_PTS);
+        length+= !(flags & FLAG_CHECKSUM);
+
+        if(length < best_length){
+            best_length= length;
+            frame_code=i;
+        }
+    }
+    assert(frame_code != -1);
+    fc= &nut->frame_code[frame_code];
+    flags= fc->flags;
+    needed_flags= get_needed_flags(nut, nus, fc, pkt);
+
+    init_checksum(bc, av_crc04C11DB7_update, 0);
+    put_byte(bc, frame_code);
+    if(flags & FLAG_CODED){
+        put_v(bc, (flags^needed_flags) & ~(FLAG_CODED));
+        flags = needed_flags;
+    }
+    if(flags & FLAG_STREAM_ID)  put_v(bc, pkt->stream_index);
+    if(flags & FLAG_CODED_PTS)  put_v(bc, coded_pts);
+    if(flags & FLAG_SIZE_MSB)   put_v(bc, pkt->size / fc->size_mul);
+
+    if(flags & FLAG_CHECKSUM)   put_le32(bc, get_checksum(bc));
+    else                        get_checksum(bc);
+
+    put_buffer(bc, pkt->data, pkt->size);
+    nus->last_flags= flags;
     return 0;
 }
 
