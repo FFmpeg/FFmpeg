@@ -156,25 +156,25 @@ typedef struct {
     int nchans;                             ///< number of total channels
     int nfchans;                            ///< number of full-bandwidth channels
     int lfeon;                              ///< lfe channel in use
-    int      lfe_ch;            ///< index of LFE channel
-    int      output_mode;       ///< output channel configuration
-    int      out_channels;      ///< number of output channels
+    int lfe_ch;                             ///< index of LFE channel
+    int output_mode;                        ///< output channel configuration
+    int out_channels;                       ///< number of output channels
 
-    float    downmix_coeffs[AC3_MAX_CHANNELS][2];   ///< stereo downmix coefficients
-    float    dialnorm[2];                       ///< dialogue normalization
-    float    dynrng[2];                         ///< dynamic range
+    float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
+    float dialnorm[2];                      ///< dialogue normalization
+    float dynrng[2];                        ///< dynamic range
     float cplco[AC3_MAX_CHANNELS][18];      ///< coupling coordinates
-    int ncplbnd;                            ///< number of coupling bands
-    int ncplsubnd;                          ///< number of coupling sub bands
-    int      startmant[AC3_MAX_CHANNELS];   ///< start frequency bin
-    int endmant[AC3_MAX_CHANNELS];          ///< end frequency bin
+    int   ncplbnd;                          ///< number of coupling bands
+    int   ncplsubnd;                        ///< number of coupling sub bands
+    int   startmant[AC3_MAX_CHANNELS];      ///< start frequency bin
+    int   endmant[AC3_MAX_CHANNELS];        ///< end frequency bin
     AC3BitAllocParameters bit_alloc_params; ///< bit allocation parameters
 
-    int8_t   dexps[AC3_MAX_CHANNELS][256];  ///< decoded exponents
-    uint8_t  bap[AC3_MAX_CHANNELS][256];    ///< bit allocation pointers
-    int16_t  psd[AC3_MAX_CHANNELS][256];    ///< scaled exponents
-    int16_t  bndpsd[AC3_MAX_CHANNELS][50];  ///< interpolated exponents
-    int16_t  mask[AC3_MAX_CHANNELS][50];    ///< masking curve values
+    int8_t  dexps[AC3_MAX_CHANNELS][256];   ///< decoded exponents
+    uint8_t bap[AC3_MAX_CHANNELS][256];     ///< bit allocation pointers
+    int16_t psd[AC3_MAX_CHANNELS][256];     ///< scaled exponents
+    int16_t bndpsd[AC3_MAX_CHANNELS][50];   ///< interpolated exponents
+    int16_t mask[AC3_MAX_CHANNELS][50];     ///< masking curve values
 
     DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][256]);  ///< transform coefficients
 
@@ -182,8 +182,8 @@ typedef struct {
     MDCTContext imdct_512;                  ///< for 512 sample IMDCT
     MDCTContext imdct_256;                  ///< for 256 sample IMDCT
     DSPContext  dsp;                        ///< for optimization
-    float       add_bias;   ///< offset for float_to_int16 conversion
-    float       mul_bias;   ///< scaling for float_to_int16 conversion
+    float       add_bias;                   ///< offset for float_to_int16 conversion
+    float       mul_bias;                   ///< scaling for float_to_int16 conversion
 
     DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS-1][256]);     ///< output after imdct transform and windowing
     DECLARE_ALIGNED_16(short, int_output[AC3_MAX_CHANNELS-1][256]); ///< final 16-bit integer output
@@ -195,7 +195,7 @@ typedef struct {
     /* Miscellaneous. */
     GetBitContext gb;                       ///< bitstream reader
     AVRandomState dith_state;               ///< for dither generation
-    AVCodecContext *avctx;      ///< parent context
+    AVCodecContext *avctx;                  ///< parent context
 } AC3DecodeContext;
 
 /**
