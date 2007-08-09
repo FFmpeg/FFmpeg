@@ -407,7 +407,7 @@ void fill_border(VideoState *s, int x, int y, int w, int h, int color)
 
 #define YUVA_IN(y, u, v, a, s, pal)\
 {\
-    unsigned int val = ((const uint32_t *)(pal))[*(const uint8_t*)s];\
+    unsigned int val = ((const uint32_t *)(pal))[*(const uint8_t*)(s)];\
     a = (val >> 24) & 0xff;\
     y = (val >> 16) & 0xff;\
     u = (val >> 8) & 0xff;\
