@@ -48,7 +48,7 @@
 static void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len);
 
 #ifdef TRACE
-static void dump_shorts(WMADecodeContext *s, const char *name, const short *tab, int n)
+static void dump_shorts(WMACodecContext *s, const char *name, const short *tab, int n)
 {
     int i;
 
@@ -62,7 +62,7 @@ static void dump_shorts(WMADecodeContext *s, const char *name, const short *tab,
     }
 }
 
-static void dump_floats(WMADecodeContext *s, const char *name, int prec, const float *tab, int n)
+static void dump_floats(WMACodecContext *s, const char *name, int prec, const float *tab, int n)
 {
     int i;
 
