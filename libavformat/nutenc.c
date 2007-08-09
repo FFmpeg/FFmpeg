@@ -281,6 +281,48 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     }
 }
 
+static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext *codec, int i){
+    put_v(bc, i);
+    switch(codec->codec_type){
+    case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
+    case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
+//    case CODEC_TYPE_TEXT : put_v(bc, 2); break;
+    default              : put_v(bc, 3); break;
+    }
+    put_v(bc, 4);
+    if (codec->codec_tag){
+        put_le32(bc, codec->codec_tag);
+    }else
+        return -1;
+
+    put_v(bc, (nut->stream[i].time_base - nut->time_base)/sizeof(AVRational));
+    put_v(bc, nut->stream[i].msb_pts_shift);
+    put_v(bc, nut->stream[i].max_pts_distance);
+    put_v(bc, codec->has_b_frames);
+    put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
+
+    put_v(bc, codec->extradata_size);
+    put_buffer(bc, codec->extradata, codec->extradata_size);
+
+    switch(codec->codec_type){
+    case CODEC_TYPE_AUDIO:
+        put_v(bc, codec->sample_rate);
+        put_v(bc, 1);
+        put_v(bc, codec->channels);
+        break;
+    case CODEC_TYPE_VIDEO:
+        put_v(bc, codec->width);
+        put_v(bc, codec->height);
+        put_v(bc, codec->sample_aspect_ratio.num);
+        put_v(bc, codec->sample_aspect_ratio.den);
+        put_v(bc, 0); /* csp type -- unknown */
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
 static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
@@ -334,44 +376,7 @@ static int write_header(AVFormatContext *s){
 
         put_be64(bc, STREAM_STARTCODE);
         put_packetheader(nut, bc, 120/*FIXME check*/ + codec->extradata_size, 1);
-        put_v(bc, i);
-        switch(codec->codec_type){
-        case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
-        case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
-//        case CODEC_TYPE_TEXT : put_v(bc, 2); break;
-        default              : put_v(bc, 3); break;
-        }
-        put_v(bc, 4);
-        if (codec->codec_tag){
-            put_le32(bc, codec->codec_tag);
-        }else
-            return -1;
-
-        put_v(bc, (nut->stream[i].time_base - nut->time_base)/sizeof(AVRational));
-        put_v(bc, nut->stream[i].msb_pts_shift);
-        put_v(bc, nut->stream[i].max_pts_distance);
-        put_v(bc, codec->has_b_frames);
-        put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
-
-        put_v(bc, codec->extradata_size);
-        put_buffer(bc, codec->extradata, codec->extradata_size);
-
-        switch(codec->codec_type){
-        case CODEC_TYPE_AUDIO:
-            put_v(bc, codec->sample_rate);
-            put_v(bc, 1);
-            put_v(bc, codec->channels);
-            break;
-        case CODEC_TYPE_VIDEO:
-            put_v(bc, codec->width);
-            put_v(bc, codec->height);
-            put_v(bc, codec->sample_aspect_ratio.num);
-            put_v(bc, codec->sample_aspect_ratio.den);
-            put_v(bc, 0); /* csp type -- unknown */
-            break;
-        default:
-            break;
-        }
+        write_streamheader(nut, bc, codec, i);
         update_packetheader(nut, bc, 0, 1);
     }
 
