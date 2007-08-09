@@ -422,31 +422,36 @@ void fill_border(VideoState *s, int x, int y, int w, int h, int color)
 
 #define BPP 1
 
-static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
+static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, int imgh)
 {
     int wrap, wrap3, width2, skip2;
     int y, u, v, a, u1, v1, a1, w, h;
     uint8_t *lum, *cb, *cr;
     const uint8_t *p;
     const uint32_t *pal;
+    int dstx, dsty, dstw, dsth;
 
-    lum = dst->data[0] + rect->y * dst->linesize[0];
-    cb = dst->data[1] + (rect->y >> 1) * dst->linesize[1];
-    cr = dst->data[2] + (rect->y >> 1) * dst->linesize[2];
+    dstx = FFMIN(FFMAX(rect->x, 0), imgw);
+    dstw = FFMIN(FFMAX(rect->w, 0), imgw - dstx);
+    dsty = FFMIN(FFMAX(rect->y, 0), imgh);
+    dsth = FFMIN(FFMAX(rect->h, 0), imgh - dsty);
+    lum = dst->data[0] + dsty * dst->linesize[0];
+    cb = dst->data[1] + (dsty >> 1) * dst->linesize[1];
+    cr = dst->data[2] + (dsty >> 1) * dst->linesize[2];
 
-    width2 = (rect->w + 1) >> 1;
-    skip2 = rect->x >> 1;
+    width2 = (dstw + 1) >> 1;
+    skip2 = dstx >> 1;
     wrap = dst->linesize[0];
     wrap3 = rect->linesize;
     p = rect->bitmap;
     pal = rect->rgba_palette;  /* Now in YCrCb! */
 
-    if (rect->y & 1) {
-        lum += rect->x;
+    if (dsty & 1) {
+        lum += dstx;
         cb += skip2;
         cr += skip2;
 
-        if (rect->x & 1) {
+        if (dstx & 1) {
             YUVA_IN(y, u, v, a, p, pal);
             lum[0] = ALPHA_BLEND(a, lum[0], y, 0);
             cb[0] = ALPHA_BLEND(a >> 2, cb[0], u, 0);
@@ -456,7 +461,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
             lum++;
             p += BPP;
         }
-        for(w = rect->w - (rect->x & 1); w >= 2; w -= 2) {
+        for(w = dstw - (dstx & 1); w >= 2; w -= 2) {
             YUVA_IN(y, u, v, a, p, pal);
             u1 = u;
             v1 = v;
@@ -481,17 +486,17 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
             cb[0] = ALPHA_BLEND(a >> 2, cb[0], u, 0);
             cr[0] = ALPHA_BLEND(a >> 2, cr[0], v, 0);
         }
-        p += wrap3 + (wrap3 - rect->w * BPP);
-        lum += wrap + (wrap - rect->w - rect->x);
+        p += wrap3 + (wrap3 - dstw * BPP);
+        lum += wrap + (wrap - dstw - dstx);
         cb += dst->linesize[1] - width2 - skip2;
         cr += dst->linesize[2] - width2 - skip2;
     }
-    for(h = rect->h - (rect->y & 1); h >= 2; h -= 2) {
-        lum += rect->x;
+    for(h = dsth - (dsty & 1); h >= 2; h -= 2) {
+        lum += dstx;
         cb += skip2;
         cr += skip2;
 
-        if (rect->x & 1) {
+        if (dstx & 1) {
             YUVA_IN(y, u, v, a, p, pal);
             u1 = u;
             v1 = v;
@@ -511,7 +516,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
             p += -wrap3 + BPP;
             lum += -wrap + 1;
         }
-        for(w = rect->w - (rect->x & 1); w >= 2; w -= 2) {
+        for(w = dstw - (dstx & 1); w >= 2; w -= 2) {
             YUVA_IN(y, u, v, a, p, pal);
             u1 = u;
             v1 = v;
@@ -566,18 +571,18 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
             p += -wrap3 + BPP;
             lum += -wrap + 1;
         }
-        p += wrap3 + (wrap3 - rect->w * BPP);
-        lum += wrap + (wrap - rect->w - rect->x);
+        p += wrap3 + (wrap3 - dstw * BPP);
+        lum += wrap + (wrap - dstw - dstx);
         cb += dst->linesize[1] - width2 - skip2;
         cr += dst->linesize[2] - width2 - skip2;
     }
     /* handle odd height */
     if (h) {
-        lum += rect->x;
+        lum += dstx;
         cb += skip2;
         cr += skip2;
 
-        if (rect->x & 1) {
+        if (dstx & 1) {
             YUVA_IN(y, u, v, a, p, pal);
             lum[0] = ALPHA_BLEND(a, lum[0], y, 0);
             cb[0] = ALPHA_BLEND(a >> 2, cb[0], u, 0);
@@ -587,7 +592,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect)
             lum++;
             p += BPP;
         }
-        for(w = rect->w - (rect->x & 1); w >= 2; w -= 2) {
+        for(w = dstw - (dstx & 1); w >= 2; w -= 2) {
             YUVA_IN(y, u, v, a, p, pal);
             u1 = u;
             v1 = v;
@@ -705,7 +710,8 @@ static void video_image_display(VideoState *is)
                     pict.linesize[2] = vp->bmp->pitches[1];
 
                     for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(&pict, &sp->sub.rects[i]);
+                        blend_subrect(&pict, &sp->sub.rects[i],
+                                      vp->bmp->w, vp->bmp->h);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
                 }
