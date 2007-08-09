@@ -80,8 +80,8 @@ typedef struct {
 
 typedef struct {
     AVFormatContext *avf;
-    int written_packet_size;
-    int64_t packet_start;
+//    int written_packet_size;
+//    int64_t packet_start;
     FrameCode frame_code[256];
     uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;

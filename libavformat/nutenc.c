@@ -177,50 +177,18 @@ static inline void put_s_trace(ByteIOContext *bc, int64_t v, char *file, char *f
 #define put_s(bc, v)  put_s_trace(bc, v, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #endif
 
-static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, int calculate_checksum){
-    put_flush_packet(bc);
-    nut->packet_start= url_ftell(bc) - 8;
-    nut->written_packet_size = max_size;
+static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc, int calculate_checksum){
+    uint8_t *dyn_buf=NULL;
+    int dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
 
-    /* packet header */
-    put_v(bc, nut->written_packet_size); /* forward ptr */
-
+    put_v(bc, dyn_size + 4*calculate_checksum);
     if(calculate_checksum)
         init_checksum(bc, av_crc04C11DB7_update, 0);
-
-    return 0;
-}
-
-/**
- *
- * must not be called more then once per packet
- */
-static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additional_size, int calculate_checksum){
-    int64_t start= nut->packet_start;
-    int64_t cur= url_ftell(bc);
-    int size= cur - start - get_length(nut->written_packet_size) - 8;
-
+    put_buffer(bc, dyn_buf, dyn_size);
     if(calculate_checksum)
-        size += 4;
+        put_le32(bc, get_checksum(bc));
 
-    if(size != nut->written_packet_size){
-        int i;
-
-        assert( size <= nut->written_packet_size );
-
-        url_fseek(bc, start + 8, SEEK_SET);
-        for(i=get_length(size); i < get_length(nut->written_packet_size); i++)
-            put_byte(bc, 128);
-        put_v(bc, size);
-
-        url_fseek(bc, cur, SEEK_SET);
-        nut->written_packet_size= size; //FIXME may fail if multiple updates with differing sizes, as get_length may differ
-
-        if(calculate_checksum)
-            put_le32(bc, get_checksum(bc));
-    }
-
-    return 0;
+    av_free(dyn_buf);
 }
 
 static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
@@ -325,7 +293,7 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
 
 static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = &s->pb, dyn_bc;
     AVCodecContext *codec;
     int i, j;
 
@@ -367,17 +335,17 @@ static int write_header(AVFormatContext *s){
 
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
-    put_packetheader(nut, bc, 120+5*256/*FIXME check*/, 1);
-    write_mainheader(nut, bc);
-    update_packetheader(nut, bc, 0, 1);
+    url_open_dyn_buf(&dyn_bc);
+    write_mainheader(nut, &dyn_bc);
+    put_packet(nut, bc, &dyn_bc, 1);
 
     for (i=0; i < s->nb_streams; i++){
         codec = s->streams[i]->codec;
 
         put_be64(bc, STREAM_STARTCODE);
-        put_packetheader(nut, bc, 120/*FIXME check*/ + codec->extradata_size, 1);
-        write_streamheader(nut, bc, codec, i);
-        update_packetheader(nut, bc, 0, 1);
+        url_open_dyn_buf(&dyn_bc);
+        write_streamheader(nut, &dyn_bc, codec, i);
+        put_packet(nut, bc, &dyn_bc, 1);
     }
 
     put_flush_packet(bc);
