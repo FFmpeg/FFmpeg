@@ -201,7 +201,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
 
     if(get_bits1(gb)) {
         smacker_decode_tree(gb, &tmp1, 0, 0);
-        get_bits1(gb);
+        skip_bits1(gb);
         res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
                     tmp1.lengths, sizeof(int), sizeof(int),
                     tmp1.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
@@ -214,7 +214,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     }
     if(get_bits1(gb)){
         smacker_decode_tree(gb, &tmp2, 0, 0);
-        get_bits1(gb);
+        skip_bits1(gb);
         res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
                     tmp2.lengths, sizeof(int), sizeof(int),
                     tmp2.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
@@ -250,7 +250,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     huff.values = av_mallocz(huff.length * sizeof(int));
 
     smacker_decode_bigtree(gb, &huff, &ctx);
-    get_bits1(gb);
+    skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
     if(ctx.last[2] == -1) ctx.last[2] = huff.current++;
@@ -601,9 +601,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
         h[i].bits = av_mallocz(256 * 4);
         h[i].lengths = av_mallocz(256 * sizeof(int));
         h[i].values = av_mallocz(256 * sizeof(int));
-        get_bits1(&gb);
+        skip_bits1(&gb);
         smacker_decode_tree(&gb, &h[i], 0, 0);
-        get_bits1(&gb);
+        skip_bits1(&gb);
         if(h[i].current > 1) {
             res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
                     h[i].lengths, sizeof(int), sizeof(int),

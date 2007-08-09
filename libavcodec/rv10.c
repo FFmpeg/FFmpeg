@@ -200,7 +200,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
                 else
                     code = (int8_t)(get_bits(&s->gb, 8));
             } else if (code == 0x7f) {
-                get_bits(&s->gb, 11);
+                skip_bits(&s->gb, 11);
                 code = 1;
             }
         } else {
@@ -216,7 +216,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
             } else if (code == 0x1fd) {
                 code = -128 + get_bits(&s->gb, 7);
             } else if (code == 0x1fe) {
-                get_bits(&s->gb, 9);
+                skip_bits(&s->gb, 9);
                 code = 1;
             } else {
                 av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");

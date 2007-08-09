@@ -201,9 +201,9 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
                 if (extrabits > 1) {
                     x += extrabits - 1;
-                    get_bits(&alac->gb, k);
+                    skip_bits(&alac->gb, k);
                 } else
-                    get_bits(&alac->gb, k - 1);
+                    skip_bits(&alac->gb, k - 1);
             }
         }
 
@@ -250,9 +250,9 @@ static void bastardized_rice_decompress(ALACContext *alac,
                 if (extrabits < 2) {
                     x = 1 - extrabits;
                     block_size += x;
-                    get_bits(&alac->gb, k - 1);
+                    skip_bits(&alac->gb, k - 1);
                 } else {
-                    get_bits(&alac->gb, k);
+                    skip_bits(&alac->gb, k);
                 }
             }
 
@@ -484,9 +484,9 @@ static int alac_decode_frame(AVCodecContext *avctx,
     /* 2^result = something to do with output waiting.
      * perhaps matters if we read > 1 frame in a pass?
      */
-    get_bits(&alac->gb, 4);
+    skip_bits(&alac->gb, 4);
 
-    get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
+    skip_bits(&alac->gb, 12); /* unknown, skip 12 bits */
 
     /* the output sample size is stored soon */
     hassize = get_bits1(&alac->gb);

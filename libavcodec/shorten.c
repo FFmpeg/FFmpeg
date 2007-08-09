@@ -299,7 +299,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         }
     }
     init_get_bits(&s->gb, buf, buf_size*8);
-    get_bits(&s->gb, s->bitindex);
+    skip_bits(&s->gb, s->bitindex);
     if (!s->blocksize)
     {
         int maxnlpc = 0;

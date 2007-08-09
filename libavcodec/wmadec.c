@@ -780,7 +780,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
 
     if (s->use_bit_reservoir) {
         /* read super frame header */
-        get_bits(&s->gb, 4); /* super frame index */
+        skip_bits(&s->gb, 4); /* super frame index */
         nb_frames = get_bits(&s->gb, 4) - 1;
 
         bit_offset = get_bits(&s->gb, s->byte_offset_bits + 3);

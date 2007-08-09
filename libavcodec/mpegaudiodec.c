@@ -2288,7 +2288,7 @@ static int mp_decode_frame(MPADecodeContext *s,
 
     /* skip error protection field */
     if (s->error_protection)
-        get_bits(&s->gb, 16);
+        skip_bits(&s->gb, 16);
 
     dprintf(s->avctx, "frame %d:\n", s->frame_count);
     switch(s->layer) {

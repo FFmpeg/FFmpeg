@@ -729,7 +729,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
         }
 
         for(j=0;j<mapping_setup->submaps;++j) {
-            get_bits(gb, 8); // FIXME check?
+            skip_bits(gb, 8); // FIXME check?
             mapping_setup->submap_floor[j]=get_bits(gb, 8);
             mapping_setup->submap_residue[j]=get_bits(gb, 8);
 
