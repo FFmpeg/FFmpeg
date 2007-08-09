@@ -20,6 +20,7 @@
  */
 
 #include "nut.h"
+#include "tree.h"
 
 #define TRACE
 
@@ -412,13 +413,24 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
 //FIXME ensure store_sp is 1 for the first thing
 
     if(store_sp){
+        syncpoint_t *sp, dummy= {.pos= INT64_MAX};
+
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
+        for(i=0; i<s->nb_streams; i++){
+            AVStream *st= s->streams[i];
+            int index= av_index_search_timestamp(st, pkt->dts, AVSEEK_FLAG_BACKWARD);
+            if(index<0) dummy.pos=0;
+            else        dummy.pos= FFMIN(dummy.pos, st->index_entries[index].pos);
+        }
+        sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
 
         nut->last_syncpoint_pos= url_ftell(bc);
         url_open_dyn_buf(&dyn_bc);
         put_t(nut, nus, &dyn_bc, pkt->dts);
-        put_v(&dyn_bc, 0); //FIXME back_ptr_div16
+        put_v(&dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos)>>4 : 0);
         put_packet(nut, bc, &dyn_bc, 1, SYNCPOINT_STARTCODE);
+
+        ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0/*unused*/, pkt->dts);
     }
     assert(nus->last_pts != AV_NOPTS_VALUE);
 
@@ -492,6 +504,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
 
     put_buffer(bc, pkt->data, pkt->size);
     nus->last_flags= flags;
+
+    //FIXME just store one per syncpoint
+    if(flags & FLAG_KEY)
+        av_add_index_entry(
+            s->streams[pkt->stream_index],
+            nut->last_syncpoint_pos,
+            pkt->pts,
+            0,
+            0,
+            AVINDEX_KEYFRAME);
+
     return 0;
 }
 
