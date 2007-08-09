@@ -98,12 +98,15 @@ static inline uint64_t get_vb_trace(ByteIOContext *bc, char *file, char *func, i
 #define get_vb(bc)  get_vb_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #endif
 
-static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_checksum)
+static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_checksum, uint64_t startcode)
 {
     int64_t size;
 //    start= url_ftell(bc) - 8;
 
-    init_checksum(bc, av_crc04C11DB7_update, 0);
+    startcode= be2me_64(startcode);
+    startcode= av_crc04C11DB7_update(0, &startcode, 8);
+
+    init_checksum(bc, av_crc04C11DB7_update, startcode);
     size= get_v(bc);
     if(size > 4096)
         get_be32(bc);
@@ -194,7 +197,7 @@ static int decode_main_header(NUTContext *nut){
     unsigned int stream_count;
     int i, j, tmp_stream, tmp_mul, tmp_pts, tmp_size, count, tmp_res;
 
-    end= get_packetheader(nut, bc, 1);
+    end= get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += url_ftell(bc);
 
     GET_V(tmp              , tmp >=2 && tmp <= 3)
@@ -282,7 +285,7 @@ static int decode_stream_header(NUTContext *nut){
     uint64_t tmp, end;
     AVStream *st;
 
-    end= get_packetheader(nut, bc, 1);
+    end= get_packetheader(nut, bc, 1, STREAM_STARTCODE);
     end += url_ftell(bc);
 
     GET_V(stream_id, tmp < s->nb_streams && !nut->stream[tmp].time_base);
@@ -369,7 +372,7 @@ static int decode_info_header(NUTContext *nut){
     int64_t value, end;
     char name[256], str_value[1024], type_str[256], *type= type_str;
 
-    end= get_packetheader(nut, bc, 1);
+    end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
 
     GET_V(stream_id_plus1, tmp <= s->nb_streams)
@@ -445,7 +448,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
 
     nut->last_syncpoint_pos= url_ftell(bc)-8;
 
-    end= get_packetheader(nut, bc, 1);
+    end= get_packetheader(nut, bc, 1, SYNCPOINT_STARTCODE);
     end += url_ftell(bc);
 
     tmp= get_v(bc);
@@ -482,7 +485,7 @@ static int find_and_decode_index(NUTContext *nut){
         return -1;
     }
 
-    end= get_packetheader(nut, bc, 1);
+    end= get_packetheader(nut, bc, 1, INDEX_STARTCODE);
     end += url_ftell(bc);
 
     get_v(bc); //max_pts
@@ -737,7 +740,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         case MAIN_STARTCODE:
         case STREAM_STARTCODE:
         case INDEX_STARTCODE:
-            skip= get_packetheader(nut, bc, 0);
+            skip= get_packetheader(nut, bc, 0, tmp);
             url_fseek(bc, skip, SEEK_CUR);
             break;
         case INFO_STARTCODE:
