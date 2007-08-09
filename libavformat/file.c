@@ -110,22 +110,11 @@ static int pipe_read(URLContext *h, unsigned char *buf, int size)
     return read(fd, buf, size);
 }
 
-static int pipe_write(URLContext *h, unsigned char *buf, int size)
-{
-    int fd = (size_t)h->priv_data;
-    return write(fd, buf, size);
-}
-
-static int pipe_close(URLContext *h)
-{
-    return 0;
-}
-
 URLProtocol pipe_protocol = {
     "pipe",
     pipe_open,
-    pipe_read,
-    pipe_write,
+    file_read,
+    file_write,
     NULL,
     pipe_close,
 };
