@@ -679,9 +679,9 @@ static int gxf_write_trailer(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; ++i) {
         if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
             av_fifo_free(&gxf->streams[i].audio_buffer);
-        }
-        if (s->streams[i]->codec->frame_number > gxf->nb_frames)
+        } else if (s->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
             gxf->nb_frames = 2 * s->streams[i]->codec->frame_number;
+        }
     }
 
     gxf_write_eos_packet(pb, gxf);
