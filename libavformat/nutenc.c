@@ -154,6 +154,12 @@ static void put_v(ByteIOContext *bc, uint64_t val){
     put_byte(bc, val&127);
 }
 
+static void put_t(NUTContext *nut, StreamContext *nus, ByteIOContext *bc, uint64_t val){
+    val *= nut->time_base_count;
+    val += nus->time_base - nut->time_base;
+    put_v(bc, val);
+}
+
 /**
  * stores a string as vb.
  */
