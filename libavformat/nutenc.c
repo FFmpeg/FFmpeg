@@ -277,7 +277,7 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     }else
         return -1;
 
-    put_v(bc, (nut->stream[i].time_base - nut->time_base)/sizeof(AVRational));
+    put_v(bc, nut->stream[i].time_base - nut->time_base);
     put_v(bc, nut->stream[i].msb_pts_shift);
     put_v(bc, nut->stream[i].max_pts_distance);
     put_v(bc, codec->has_b_frames);
