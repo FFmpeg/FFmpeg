@@ -76,21 +76,21 @@ static uint64_t get_fourcc(ByteIOContext *bc){
 static inline uint64_t get_v_trace(ByteIOContext *bc, char *file, char *func, int line){
     uint64_t v= get_v(bc);
 
-    printf("get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 
 static inline int64_t get_s_trace(ByteIOContext *bc, char *file, char *func, int line){
     int64_t v= get_s(bc);
 
-    printf("get_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "get_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 
 static inline uint64_t get_vb_trace(ByteIOContext *bc, char *file, char *func, int line){
     uint64_t v= get_vb(bc);
 
-    printf("get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 #define get_v(bc)  get_v_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)

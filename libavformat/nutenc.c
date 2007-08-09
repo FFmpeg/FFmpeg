@@ -176,13 +176,13 @@ static void put_s(ByteIOContext *bc, int64_t val){
 
 #ifdef TRACE
 static inline void put_v_trace(ByteIOContext *bc, uint64_t v, char *file, char *func, int line){
-    printf("get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "put_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
 
     put_v(bc, v);
 }
 
 static inline void put_s_trace(ByteIOContext *bc, int64_t v, char *file, char *func, int line){
-    printf("get_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "put_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
 
     put_s(bc, v);
 }
