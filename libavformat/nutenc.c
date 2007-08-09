@@ -180,8 +180,14 @@ static inline void put_s_trace(ByteIOContext *bc, int64_t v, char *file, char *f
 static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc, int calculate_checksum){
     uint8_t *dyn_buf=NULL;
     int dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
+    int forw_ptr= dyn_size + 4*calculate_checksum;
 
-    put_v(bc, dyn_size + 4*calculate_checksum);
+    if(forw_ptr > 4096)
+        init_checksum(bc, av_crc04C11DB7_update, 0);
+    put_v(bc, forw_ptr);
+    if(forw_ptr > 4096)
+        put_le32(bc, get_checksum(bc));
+
     if(calculate_checksum)
         init_checksum(bc, av_crc04C11DB7_update, 0);
     put_buffer(bc, dyn_buf, dyn_size);
@@ -350,7 +356,7 @@ static int write_header(AVFormatContext *s){
 
     put_flush_packet(bc);
 
-    //FIXME info header, header repeation, header packet CRC, ...
+    //FIXME info header, header repeation, ...
 
     return 0;
 }
