@@ -98,4 +98,6 @@ static unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t
     return av_crc(av_crc04C11DB7, checksum, buf, len);
 }
 
+void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val);
+
 #endif /* AVFORMAT_NUT_H */

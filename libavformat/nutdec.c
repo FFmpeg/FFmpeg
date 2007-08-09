@@ -447,7 +447,6 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
     int64_t end, tmp;
-    int i;
     AVRational time_base;
 
     nut->last_syncpoint_pos= url_ftell(bc)-8;
@@ -460,16 +459,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     if(*back_ptr < 0)
         return -1;
 
-    time_base= nut->time_base[tmp % nut->time_base_count];
-    for(i=0; i<s->nb_streams; i++){
-        nut->stream[i].last_pts= av_rescale_rnd(
-            tmp / nut->time_base_count,
-            time_base.num * (int64_t)nut->stream[i].time_base->den,
-            time_base.den * (int64_t)nut->stream[i].time_base->num,
-            AV_ROUND_DOWN);
-        //last_key_frame ?
-    }
-    //FIXME put this in a reset func maybe
+    ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count], tmp);
 
     if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
