@@ -92,12 +92,7 @@ typedef struct {
     struct AVTreeNode *syncpoints;
 } NUTContext;
 
-
-//FIXME move to a common spot, like crc.c/h
-static unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
-    return av_crc(av_crc04C11DB7, checksum, buf, len);
-}
-
+unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len);
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val);
 
 #endif /* AVFORMAT_NUT_H */
