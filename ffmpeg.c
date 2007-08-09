@@ -3332,6 +3332,12 @@ static void opt_intra_matrix(const char *arg)
     parse_matrix_coeffs(intra_matrix, arg);
 }
 
+static void opt_show_help(void)
+{
+    show_help();
+    exit(0);
+}
+
 static void opt_target(const char *arg)
 {
     int norm = -1;
@@ -3585,7 +3591,7 @@ static int opt_default(const char *opt, const char *arg){
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)show_license}, "show license" },
-    { "h", 0, {(void*)show_help}, "show help" },
+    { "h", 0, {(void*)opt_show_help}, "show help" },
     { "version", 0, {(void*)show_version}, "show version" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
@@ -3797,8 +3803,6 @@ static void show_help(void)
     av_opt_show(avctx_opts[0], NULL);
     av_opt_show(avformat_opts, NULL);
     av_opt_show(sws_opts, NULL);
-
-    exit(1);
 }
 
 void parse_arg_file(const char *filename)
@@ -3820,8 +3824,10 @@ int main(int argc, char **argv)
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     show_banner();
-    if (argc <= 1)
+    if (argc <= 1) {
         show_help();
+        exit(1);
+    }
 
     /* parse options */
     parse_options(argc, argv, options);

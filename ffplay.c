@@ -2412,8 +2412,10 @@ static void opt_sync(const char *arg)
         av_sync_type = AV_SYNC_VIDEO_MASTER;
     else if (!strcmp(arg, "ext"))
         av_sync_type = AV_SYNC_EXTERNAL_CLOCK;
-    else
+    else {
         show_help();
+        exit(1);
+    }
 }
 
 static void opt_seek(const char *arg)
@@ -2440,8 +2442,14 @@ static void opt_thread_count(const char *arg)
 #endif
 }
 
+static void opt_show_help(void)
+{
+    show_help();
+    exit(0);
+}
+
 const OptionDef options[] = {
-    { "h", 0, {(void*)show_help}, "show help" },
+    { "h", 0, {(void*)opt_show_help}, "show help" },
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG, {(void*)opt_height}, "force displayed height", "height" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
@@ -2499,7 +2507,6 @@ void show_help(void)
            "down/up             seek backward/forward 1 minute\n"
            "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
-    exit(1);
 }
 
 void parse_arg_file(const char *filename)
@@ -2519,8 +2526,10 @@ int main(int argc, char **argv)
 
     parse_options(argc, argv, options);
 
-    if (!input_filename)
+    if (!input_filename) {
         show_help();
+        exit(1);
+    }
 
     if (display_disable) {
         video_disable = 1;
