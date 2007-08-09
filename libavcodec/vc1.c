@@ -913,7 +913,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     v->interlace = get_bits1(gb);
     v->tfcntrflag = get_bits1(gb);
     v->finterpflag = get_bits1(gb);
-    get_bits1(gb); // reserved
+    skip_bits1(gb); // reserved
 
     v->s.h_edge_pos = v->s.avctx->coded_width;
     v->s.v_edge_pos = v->s.avctx->coded_height;
@@ -975,11 +975,11 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     if(v->hrd_param_flag) {
         int i;
         v->hrd_num_leaky_buckets = get_bits(gb, 5);
-        get_bits(gb, 4); //bitrate exponent
-        get_bits(gb, 4); //buffer size exponent
+        skip_bits(gb, 4); //bitrate exponent
+        skip_bits(gb, 4); //buffer size exponent
         for(i = 0; i < v->hrd_num_leaky_buckets; i++) {
-            get_bits(gb, 16); //hrd_rate[n]
-            get_bits(gb, 16); //hrd_buffer[n]
+            skip_bits(gb, 16); //hrd_rate[n]
+            skip_bits(gb, 16); //hrd_buffer[n]
         }
     }
     return 0;
@@ -1005,7 +1005,7 @@ static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
 
     if(v->hrd_param_flag){
         for(i = 0; i < v->hrd_num_leaky_buckets; i++) {
-            get_bits(gb, 8); //hrd_full[n]
+            skip_bits(gb, 8); //hrd_full[n]
         }
     }
 
@@ -1059,7 +1059,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         }
     }
     if(v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
-        get_bits(gb, 7); // skip buffer fullness
+        skip_bits(gb, 7); // skip buffer fullness
 
     /* calculate RND */
     if(v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
@@ -1278,7 +1278,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         return 0;
     }
     if(v->tfcntrflag)
-        get_bits(gb, 8);
+        skip_bits(gb, 8);
     if(v->broadcast) {
         if(!v->interlace || v->psf) {
             v->rptfrm = get_bits(gb, 2);

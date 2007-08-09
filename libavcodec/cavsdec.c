@@ -432,7 +432,7 @@ static inline void check_for_slice(AVSContext *h) {
     int align;
     align = (-get_bits_count(gb)) & 7;
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
-        get_bits_long(gb,24+align);
+        skip_bits_long(gb,24+align);
         h->stc = get_bits(gb,8);
         decode_slice_header(h,gb);
     }
@@ -455,7 +455,7 @@ static int decode_pic(AVSContext *h) {
             return -1;
         ff_init_scantable(s->dsp.idct_permutation,&h->scantable,ff_zigzag_direct);
     }
-    get_bits(&s->gb,16);//bbv_dwlay
+    skip_bits(&s->gb,16);//bbv_dwlay
     if(h->stc == PIC_PB_START_CODE) {
         h->pic_type = get_bits(&s->gb,2) + FF_I_TYPE;
         if(h->pic_type > FF_B_TYPE) {
@@ -469,7 +469,7 @@ static int decode_pic(AVSContext *h) {
     } else {
         h->pic_type = FF_I_TYPE;
         if(get_bits1(&s->gb))
-            get_bits(&s->gb,16);//time_code
+            skip_bits(&s->gb,16);//time_code
     }
     /* release last B frame */
     if(h->picture.data[0])
@@ -501,7 +501,7 @@ static int decode_pic(AVSContext *h) {
     if(h->progressive)
         h->pic_structure = 1;
     else if(!(h->pic_structure = get_bits1(&s->gb) && (h->stc == PIC_PB_START_CODE)) )
-        get_bits1(&s->gb);     //advanced_pred_mode_disable
+        skip_bits1(&s->gb);     //advanced_pred_mode_disable
     skip_bits1(&s->gb);        //top_field_first
     skip_bits1(&s->gb);        //repeat_first_field
     h->qp_fixed                = get_bits1(&s->gb);
