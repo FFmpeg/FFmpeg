@@ -675,7 +675,7 @@ static inline void copy_block2(uint8_t *dst, uint8_t *src, int dstStride, int sr
     int i;
     for(i=0; i<h; i++)
     {
-        ST16(dst   , LD16(src   ));
+        AV_WN16(dst   , AV_RN16(src   ));
         dst+=dstStride;
         src+=srcStride;
     }
@@ -686,7 +686,7 @@ static inline void copy_block4(uint8_t *dst, uint8_t *src, int dstStride, int sr
     int i;
     for(i=0; i<h; i++)
     {
-        ST32(dst   , LD32(src   ));
+        AV_WN32(dst   , AV_RN32(src   ));
         dst+=dstStride;
         src+=srcStride;
     }
@@ -697,8 +697,8 @@ static inline void copy_block8(uint8_t *dst, uint8_t *src, int dstStride, int sr
     int i;
     for(i=0; i<h; i++)
     {
-        ST32(dst   , LD32(src   ));
-        ST32(dst+4 , LD32(src+4 ));
+        AV_WN32(dst   , AV_RN32(src   ));
+        AV_WN32(dst+4 , AV_RN32(src+4 ));
         dst+=dstStride;
         src+=srcStride;
     }
@@ -709,8 +709,8 @@ static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int sr
     int i;
     for(i=0; i<h; i++)
     {
-        ST32(dst   , LD32(src   ));
-        ST32(dst+4 , LD32(src+4 ));
+        AV_WN32(dst   , AV_RN32(src   ));
+        AV_WN32(dst+4 , AV_RN32(src+4 ));
         dst[8]= src[8];
         dst+=dstStride;
         src+=srcStride;
@@ -722,10 +722,10 @@ static inline void copy_block16(uint8_t *dst, uint8_t *src, int dstStride, int s
     int i;
     for(i=0; i<h; i++)
     {
-        ST32(dst   , LD32(src   ));
-        ST32(dst+4 , LD32(src+4 ));
-        ST32(dst+8 , LD32(src+8 ));
-        ST32(dst+12, LD32(src+12));
+        AV_WN32(dst   , AV_RN32(src   ));
+        AV_WN32(dst+4 , AV_RN32(src+4 ));
+        AV_WN32(dst+8 , AV_RN32(src+8 ));
+        AV_WN32(dst+12, AV_RN32(src+12));
         dst+=dstStride;
         src+=srcStride;
     }
@@ -736,10 +736,10 @@ static inline void copy_block17(uint8_t *dst, uint8_t *src, int dstStride, int s
     int i;
     for(i=0; i<h; i++)
     {
-        ST32(dst   , LD32(src   ));
-        ST32(dst+4 , LD32(src+4 ));
-        ST32(dst+8 , LD32(src+8 ));
-        ST32(dst+12, LD32(src+12));
+        AV_WN32(dst   , AV_RN32(src   ));
+        AV_WN32(dst+4 , AV_RN32(src+4 ));
+        AV_WN32(dst+8 , AV_RN32(src+8 ));
+        AV_WN32(dst+12, AV_RN32(src+12));
         dst[16]= src[16];
         dst+=dstStride;
         src+=srcStride;

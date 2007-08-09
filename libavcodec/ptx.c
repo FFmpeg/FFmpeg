@@ -81,7 +81,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 #ifdef WORDS_BIGENDIAN
         unsigned int x;
         for (x=0; x<w*bytes_per_pixel; x+=bytes_per_pixel)
-            ST16(ptr+x, AV_RL16(buf+x));
+            AV_WN16(ptr+x, AV_RL16(buf+x));
 #else
         memcpy(ptr, buf, w*bytes_per_pixel);
 #endif
