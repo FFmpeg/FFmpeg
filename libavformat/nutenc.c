@@ -216,7 +216,7 @@ static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc
 static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     int i, j, tmp_pts, tmp_flags, tmp_stream, tmp_mul, tmp_size, tmp_fields;
 
-    put_v(bc, 2); /* version */
+    put_v(bc, 3); /* version */
     put_v(bc, nut->avf->nb_streams);
     put_v(bc, MAX_DISTANCE);
     put_v(bc, nut->time_base_count);
@@ -374,10 +374,6 @@ static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
     int i, j;
-
-    if(s->streams[0]->codec->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
-        return -1;
-    }
 
     nut->avf= s;
 
