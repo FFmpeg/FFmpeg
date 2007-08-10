@@ -78,8 +78,8 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
     assert(h264_data != NULL);
 
     if (!strcmp(attr, "packetization-mode")) {
-        av_log(NULL, AV_LOG_DEBUG, "H.264/RTP Packetization Mode: %d\n", atoi(attr));
-        h264_data->packetization_mode = atoi(attr);
+        av_log(NULL, AV_LOG_DEBUG, "H.264/RTP Packetization Mode: %d\n", atoi(value));
+        h264_data->packetization_mode = atoi(value);
         /*
            Packetization Mode:
            0 or not present: Single NAL mode (Only nals from 1-23 are allowed)
