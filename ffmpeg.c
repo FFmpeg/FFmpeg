@@ -1778,7 +1778,8 @@ static int av_encode(AVFormatContext **output_files,
         is = input_files[ist->file_index];
         ist->pts = 0;
         ist->next_pts=0;
-        if(input_files_ts_offset[ist->file_index] != -is->start_time)
+        if(   input_files_ts_offset[ist->file_index] != -is->start_time
+           && !(is->start_time == AV_NOPTS_VALUE && input_files_ts_offset[ist->file_index]==0))
             ist->next_pts= AV_NOPTS_VALUE;
         ist->is_start = 1;
     }
