@@ -269,7 +269,7 @@ static int vmd_read_packet(AVFormatContext *s,
     }
     pkt->stream_index = frame->stream_index;
     pkt->pts = frame->pts;
-    av_log(NULL, AV_LOG_INFO, " dispatching %s frame with %d bytes and pts %"PRId64"\n",
+    av_log(NULL, AV_LOG_DEBUG, " dispatching %s frame with %d bytes and pts %"PRId64"\n",
             (frame->frame_record[0] == 0x02) ? "video" : "audio",
             frame->frame_size + BYTES_PER_FRAME_RECORD,
             pkt->pts);
