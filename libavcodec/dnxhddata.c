@@ -65,6 +65,28 @@ static const uint8_t dnxhd_1238_chroma_weigth[] = {
     82, 77, 80, 86, 84, 82, 82, 82,
 };
 
+static const uint8_t dnxhd_1242_luma_weigth[] = {
+     0, 32, 33, 33, 34, 35, 36, 35,
+    33, 33, 35, 36, 37, 37, 38, 37,
+    37, 37, 36, 37, 37, 37, 38, 39,
+    37, 36, 37, 40, 42, 45, 46, 44,
+    41, 42, 44, 45, 47, 49, 50, 48,
+    46, 48, 49, 50, 52, 52, 50, 49,
+    47, 48, 50, 50, 51, 51, 50, 49,
+    49, 51, 52, 51, 49, 47, 47, 47,
+};
+
+static const uint8_t dnxhd_1242_chroma_weigth[] = {
+     0, 32, 37, 42, 45, 45, 45, 44,
+    38, 37, 40, 42, 44, 49, 51, 47,
+    41, 40, 43, 44, 46, 48, 51, 54,
+    51, 47, 47, 45, 47, 50, 51, 49,
+    46, 47, 49, 47, 50, 55, 55, 51,
+    48, 49, 51, 51, 52, 52, 54, 54,
+    49, 49, 52, 53, 54, 54, 53, 53,
+    55, 59, 63, 62, 60, 60, 60, 60,
+ };
+
 static const uint8_t dnxhd_1243_luma_weigth[] = {
      0, 32, 32, 33, 33, 35, 35, 35,
     35, 35, 35, 35, 34, 35, 38, 40,
@@ -180,6 +202,12 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
       dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
+    { 1242, 1920, 1080, 1, 606208, 303104, 4, 8,
+      dnxhd_1242_luma_weigth, dnxhd_1242_chroma_weigth,
+      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
+      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
+      dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
     { 1243, 1920, 1080, 1, 917504, 458752, 4, 8,
       dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
