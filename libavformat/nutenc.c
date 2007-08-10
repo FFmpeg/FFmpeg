@@ -365,6 +365,9 @@ static void write_headers(NUTContext *nut, ByteIOContext *bc){
     url_open_dyn_buf(&dyn_bc);
     write_globalinfo(nut, &dyn_bc);
     put_packet(nut, bc, &dyn_bc, 1, INFO_STARTCODE);
+
+    nut->last_syncpoint_pos= INT_MIN;
+    nut->header_count++;
 }
 
 static int write_header(AVFormatContext *s){
@@ -416,7 +419,7 @@ static int write_header(AVFormatContext *s){
 
     put_flush_packet(bc);
 
-    //FIXME header repeation, index
+    //FIXME index
 
     return 0;
 }
@@ -444,6 +447,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     int best_length, frame_code, flags, needed_flags, i;
     int key_frame = !!(pkt->flags & PKT_FLAG_KEY);
     int store_sp=0;
+
+    if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
+        write_headers(nut, bc);
 
     if(key_frame && !!(nus->last_flags & FLAG_KEY))
         store_sp= 1;
@@ -563,7 +569,8 @@ static int write_trailer(AVFormatContext *s){
     NUTContext *nut= s->priv_data;
     ByteIOContext *bc= &s->pb;
 
-    write_headers(nut, bc);
+    while(nut->header_count<3)
+        write_headers(nut, bc);
     put_flush_packet(bc);
 
     return 0;
