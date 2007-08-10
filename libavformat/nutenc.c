@@ -301,8 +301,14 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     case CODEC_TYPE_VIDEO:
         put_v(bc, codec->width);
         put_v(bc, codec->height);
-        put_v(bc, codec->sample_aspect_ratio.num);
-        put_v(bc, codec->sample_aspect_ratio.den);
+
+        if(codec->sample_aspect_ratio.num<=0 || codec->sample_aspect_ratio.den<=0){
+            put_v(bc, 0);
+            put_v(bc, 0);
+        }else{
+            put_v(bc, codec->sample_aspect_ratio.num);
+            put_v(bc, codec->sample_aspect_ratio.den);
+        }
         put_v(bc, 0); /* csp type -- unknown */
         break;
     default:
