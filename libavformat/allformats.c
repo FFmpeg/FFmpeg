@@ -79,8 +79,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (FOURXM, fourxm);
     REGISTER_MUXER   (FRAMECRC, framecrc);
     REGISTER_MUXDEMUX(GIF, gif);
-    REGISTER_DEMUXER (GXF, gxf);
-    REGISTER_MUXER   (GXF, gxf);
+    REGISTER_MUXDEMUX(GXF, gxf);
     REGISTER_MUXDEMUX(H261, h261);
     REGISTER_MUXDEMUX(H263, h263);
     REGISTER_MUXDEMUX(H264, h264);
@@ -119,8 +118,7 @@ void av_register_all(void)
     REGISTER_MUXER   (NULL, null);
     REGISTER_MUXDEMUX(NUT, nut);
     REGISTER_DEMUXER (NUV, nuv);
-    REGISTER_DEMUXER (OGG, ogg);
-    REGISTER_MUXER   (OGG, ogg);
+    REGISTER_MUXDEMUX(OGG, ogg);
     REGISTER_MUXDEMUX(PCM_ALAW,  pcm_alaw);
     REGISTER_MUXDEMUX(PCM_MULAW, pcm_mulaw);
     REGISTER_MUXDEMUX(PCM_S16BE, pcm_s16be);
