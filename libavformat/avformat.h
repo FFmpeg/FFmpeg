@@ -197,7 +197,11 @@ typedef struct AVInputFormat {
     const char *long_name;
     /** size of private data so that it can be allocated in the wrapper */
     int priv_data_size;
-    /** tell if a given file has a chance of being parsed by this format */
+    /**
+     * tell if a given file has a chance of being parsed by this format.
+     * The buffer provided is guranteed to be AVPROBE_PADDING_SIZE bytes big
+     * so you dont have to check for that unless you need more.
+     */
     int (*read_probe)(AVProbeData *);
     /** read the format header and initialize the AVFormatContext
        structure. Return 0 if OK. 'ap' if non NULL contains
