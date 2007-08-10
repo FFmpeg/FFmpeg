@@ -91,6 +91,7 @@ version <next>
 - QTRLE encoder
 - OS/2 support removed
 - AC-3 decoder
+- NUT muxer (since r10052)
 
 version 0.4.9-pre1:
 
