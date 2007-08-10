@@ -160,6 +160,7 @@ extern AVOutputFormat mpeg2vob_muxer;
 extern AVOutputFormat mpegts_muxer;
 extern AVOutputFormat mpjpeg_muxer;
 extern AVOutputFormat null_muxer;
+extern AVOutputFormat nut_muxer;
 extern AVOutputFormat ogg_muxer;
 extern AVOutputFormat pcm_alaw_muxer;
 extern AVOutputFormat pcm_mulaw_muxer;
