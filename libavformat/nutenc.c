@@ -335,6 +335,10 @@ static int write_header(AVFormatContext *s){
     ByteIOContext *bc = &s->pb;
     int i, j;
 
+    if(s->streams[0]->codec->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
+        return -1;
+    }
+
     nut->avf= s;
 
     nut->stream   = av_mallocz(sizeof(StreamContext)*s->nb_streams);
