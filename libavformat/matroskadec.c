@@ -2382,7 +2382,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         int real_v = matroska->tracks[track]->flags & MATROSKA_TRACK_REAL_V;
         uint64_t timecode = AV_NOPTS_VALUE;
 
-        if (cluster_time != (uint64_t)-1 && cluster_time + block_time >= 0)
+        if (cluster_time != (uint64_t)-1
+            && (block_time >= 0 || cluster_time >= -block_time))
             timecode = cluster_time + block_time;
 
         for (n = 0; n < laces; n++) {
