@@ -434,7 +434,7 @@ static int ac3_probe(AVProbeData *p)
 static int flac_probe(AVProbeData *p)
 {
     if(memcmp(p->buf, "fLaC", 4)) return 0;
-    else                          AVPROBE_SCORE_MAX / 2;
+    else                          return AVPROBE_SCORE_MAX / 2;
 }
 
 AVInputFormat shorten_demuxer = {
