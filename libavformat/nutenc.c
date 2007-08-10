@@ -22,8 +22,6 @@
 #include "nut.h"
 #include "tree.h"
 
-#define TRACE
-
 static void build_frame_code(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
     int key_frame, index, pred, stream_id;
