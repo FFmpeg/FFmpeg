@@ -313,6 +313,39 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     return 0;
 }
 
+static int add_info(ByteIOContext *bc, char *type, char *value){
+    put_str(bc, type);
+    put_s(bc, -1);
+    put_str(bc, value);
+    return 1;
+}
+
+static void write_globalinfo(NUTContext *nut, ByteIOContext *bc){
+    AVFormatContext *s= nut->avf;
+    ByteIOContext dyn_bc;
+    uint8_t *dyn_buf=NULL;
+    int count=0, dyn_size;
+
+    url_open_dyn_buf(&dyn_bc);
+
+    if(s->title    [0]) count+= add_info(&dyn_bc, "Title"    , s->title);
+    if(s->author   [0]) count+= add_info(&dyn_bc, "Author"   , s->author);
+    if(s->copyright[0]) count+= add_info(&dyn_bc, "Copyright", s->copyright);
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+                        count+= add_info(&dyn_bc, "Encoder"  , LIBAVFORMAT_IDENT);
+
+    put_v(bc, 0); //stream_if_plus1
+    put_v(bc, 0); //chapter_id
+    put_v(bc, 0); //timestamp_start
+    put_v(bc, 0); //length
+
+    put_v(bc, count);
+
+    dyn_size= url_close_dyn_buf(&dyn_bc, &dyn_buf);
+    put_buffer(bc, dyn_buf, dyn_size);
+    av_free(dyn_buf);
+}
+
 static void write_headers(NUTContext *nut, ByteIOContext *bc){
     ByteIOContext dyn_bc;
     int i;
@@ -328,6 +361,10 @@ static void write_headers(NUTContext *nut, ByteIOContext *bc){
         write_streamheader(nut, &dyn_bc, codec, i);
         put_packet(nut, bc, &dyn_bc, 1, STREAM_STARTCODE);
     }
+
+    url_open_dyn_buf(&dyn_bc);
+    write_globalinfo(nut, &dyn_bc);
+    put_packet(nut, bc, &dyn_bc, 1, INFO_STARTCODE);
 }
 
 static int write_header(AVFormatContext *s){
@@ -379,7 +416,7 @@ static int write_header(AVFormatContext *s){
 
     put_flush_packet(bc);
 
-    //FIXME info header, header repeation, index
+    //FIXME header repeation, index
 
     return 0;
 }
