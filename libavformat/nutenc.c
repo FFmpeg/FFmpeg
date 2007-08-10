@@ -379,7 +379,7 @@ static int write_header(AVFormatContext *s){
 
     put_flush_packet(bc);
 
-    //FIXME info header, header repeation, ...
+    //FIXME info header, header repeation, index
 
     return 0;
 }
