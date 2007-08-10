@@ -147,6 +147,8 @@ typedef struct InternalBuffer{
     uint8_t *base[4];
     uint8_t *data[4];
     int linesize[4];
+    int width, height;
+    enum PixelFormat pix_fmt;
 }InternalBuffer;
 
 #define INTERNAL_BUFFER_SIZE 32
@@ -251,6 +253,13 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     picture_number= &(((InternalBuffer*)s->internal_buffer)[INTERNAL_BUFFER_SIZE-1]).last_pic_num; //FIXME ugly hack
     (*picture_number)++;
 
+    if(buf->base[0] && (buf->width != w || buf->height != h || buf->pix_fmt != s->pix_fmt)){
+        for(i=0; i<4; i++){
+            av_freep(&buf->base[i]);
+            buf->data[i]= NULL;
+        }
+    }
+
     if(buf->base[0]){
         pic->age= *picture_number - buf->last_pic_num;
         buf->last_pic_num= *picture_number;
@@ -306,6 +315,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             else
                 buf->data[i] = buf->base[i] + ALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), STRIDE_ALIGN);
         }
+        buf->width  = s->width;
+        buf->height = s->height;
+        buf->pix_fmt= s->pix_fmt;
         pic->age= 256*256*256*64;
     }
     pic->type= FF_BUFFER_TYPE_INTERNAL;
