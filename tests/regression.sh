@@ -635,6 +635,10 @@ do_libav dv "-ar 48000 -r 25 -s pal -ac 2"
 # gxf
 do_libav gxf "-ar 48000 -r 25 -s pal -ac 1"
 
+# nut
+do_libav nut "-acodec mp2"
+
+
 ####################
 # streamed images
 # mjpeg
