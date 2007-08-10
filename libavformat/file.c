@@ -104,10 +104,9 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     return 0;
 }
 
-static int pipe_read(URLContext *h, unsigned char *buf, int size)
+static int pipe_close(URLContext *h)
 {
-    int fd = (size_t)h->priv_data;
-    return read(fd, buf, size);
+    return 0;
 }
 
 URLProtocol pipe_protocol = {
