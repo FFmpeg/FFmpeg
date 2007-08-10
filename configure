@@ -678,6 +678,7 @@ HAVE_LIST="
     fork
     freetype2
     GetProcessTimes
+    gethrtime
     getrusage
     imlib2
     inet_aton
@@ -687,7 +688,6 @@ HAVE_LIST="
     malloc_h
     memalign
     mkstemp
-    gethrtime
     mlib
     ppc64
     sdl
