@@ -409,9 +409,6 @@ static int ac3_probe(AVProbeData *p)
     uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
 
-    if(p->buf_size < 7)
-        return 0;
-
     max_frames = 0;
     buf = p->buf;
     end = buf + p->buf_size;
