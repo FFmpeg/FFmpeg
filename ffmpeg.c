@@ -80,7 +80,7 @@ typedef struct AVMetaDataMap {
 extern const OptionDef options[];
 
 static void show_help(void);
-static void show_license(void);
+static void opt_show_license(void);
 static int opt_default(const char *opt, const char *arg);
 
 #define MAX_FILES 20
@@ -3187,7 +3187,7 @@ static int64_t getutime(void)
 extern int ffm_nopts;
 #endif
 
-static void show_formats(void)
+static void opt_show_formats(void)
 {
     AVInputFormat *ifmt;
     AVOutputFormat *ofmt;
@@ -3536,7 +3536,7 @@ static void opt_audio_bsf(const char *arg)
     *bsfp= bsfc;
 }
 
-static void show_version(void)
+static void opt_show_version(void)
 {
     /* TODO: add function interface to avutil and avformat */
     fprintf(stderr, "ffmpeg      " FFMPEG_VERSION "\n"
@@ -3591,10 +3591,10 @@ static int opt_default(const char *opt, const char *arg){
 
 const OptionDef options[] = {
     /* main options */
-    { "L", 0, {(void*)show_license}, "show license" },
+    { "L", 0, {(void*)opt_show_license}, "show license" },
     { "h", 0, {(void*)opt_show_help}, "show help" },
-    { "version", 0, {(void*)show_version}, "show version" },
-    { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
+    { "version", 0, {(void*)opt_show_version}, "show version" },
+    { "formats", 0, {(void*)opt_show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
@@ -3725,7 +3725,7 @@ static void show_banner(void)
 #endif
 }
 
-static void show_license(void)
+static void opt_show_license(void)
 {
 #ifdef CONFIG_GPL
     printf(
