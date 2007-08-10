@@ -434,6 +434,12 @@ static int ac3_probe(AVProbeData *p)
     else                   return 0;
 }
 
+static int flac_probe(AVProbeData *p)
+{
+    if(memcmp(p->buf, "fLaC", 4)) return 0;
+    else                          AVPROBE_SCORE_MAX / 2;
+}
+
 AVInputFormat shorten_demuxer = {
     "shn",
     "raw shorten",
@@ -450,7 +456,7 @@ AVInputFormat flac_demuxer = {
     "flac",
     "raw flac",
     0,
-    NULL,
+    flac_probe,
     flac_read_header,
     raw_read_partial_packet,
     raw_read_close,
