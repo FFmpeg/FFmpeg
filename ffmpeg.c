@@ -3760,7 +3760,7 @@ static void opt_show_license(void)
     "Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA\n"
     );
 #endif
-    exit(1);
+    exit(0);
 }
 
 /**

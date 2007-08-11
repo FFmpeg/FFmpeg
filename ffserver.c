@@ -4439,7 +4439,7 @@ int main(int argc, char **argv)
         switch(c) {
         case 'L':
             show_license();
-            exit(1);
+            exit(0);
         case '?':
         case 'h':
             show_help();
