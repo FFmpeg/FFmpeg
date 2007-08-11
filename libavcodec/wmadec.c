@@ -712,7 +712,7 @@ static int wma_decode_block(WMACodecContext *s)
 /* decode a frame of frame_len samples */
 static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
 {
-    int ret, i, n, a, ch, incr;
+    int ret, i, n, ch, incr;
     int16_t *ptr;
     float *iptr;
 
@@ -739,9 +739,7 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
         iptr = s->frame_out[ch];
 
         for(i=0;i<n;i++) {
-            a = lrintf(*iptr++);
-            a = av_clip_int16(a);
-            *ptr = a;
+            *ptr = av_clip_int16(lrintf(*iptr++));
             ptr += incr;
         }
         /* prepare for next block */

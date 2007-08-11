@@ -295,7 +295,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
 
 
 static inline int conv(int samples, float **pcm, char *buf, int channels) {
-    int i, j, val ;
+    int i, j;
     ogg_int16_t *ptr, *data = (ogg_int16_t*)buf ;
     float *mono ;
 
@@ -304,12 +304,7 @@ static inline int conv(int samples, float **pcm, char *buf, int channels) {
         mono = pcm[i] ;
 
         for(j = 0 ; j < samples ; j++) {
-
-            val = mono[j] * 32767.f;
-
-            val = av_clip_int16(val);
-
-            *ptr = val ;
+            *ptr = av_clip_int16(mono[j] * 32767.f);
             ptr += channels;
         }
     }

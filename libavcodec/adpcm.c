@@ -208,7 +208,7 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
 {
     int delta = sample - c->prev_sample;
     int nibble = FFMIN(7, abs(delta)*4/step_table[c->step_index]) + (delta<0)*8;
-    c->prev_sample = c->prev_sample + ((step_table[c->step_index] * yamaha_difflookup[nibble]) / 8);
+    c->prev_sample += ((step_table[c->step_index] * yamaha_difflookup[nibble]) / 8);
     c->prev_sample = av_clip_int16(c->prev_sample);
     c->step_index = av_clip(c->step_index + index_table[nibble], 0, 88);
     return nibble;
@@ -228,10 +228,9 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
     nibble= av_clip(nibble, -8, 7)&0x0F;
 
     predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
-    predictor = av_clip_int16(predictor);
 
     c->sample2 = c->sample1;
-    c->sample1 = predictor;
+    c->sample1 = av_clip_int16(predictor);
 
     c->idelta = (AdaptationTable[(int)nibble] * c->idelta) >> 8;
     if (c->idelta < 16) c->idelta = 16;
@@ -252,7 +251,7 @@ static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, 
 
     nibble = FFMIN(7, abs(delta)*4/c->step) + (delta<0)*8;
 
-    c->predictor = c->predictor + ((c->step * yamaha_difflookup[nibble]) / 8);
+    c->predictor += ((c->step * yamaha_difflookup[nibble]) / 8);
     c->predictor = av_clip_int16(c->predictor);
     c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
     c->step = av_clip(c->step, 127, 24567);
@@ -670,11 +669,10 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble, 
     if (sign) predictor -= diff;
     else predictor += diff;
 
-    predictor = av_clip_int16(predictor);
-    c->predictor = predictor;
+    c->predictor = av_clip_int16(predictor);
     c->step_index = step_index;
 
-    return (short)predictor;
+    return (short)c->predictor;
 }
 
 static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
@@ -683,14 +681,13 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
 
     predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 256;
     predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
-    predictor = av_clip_int16(predictor);
 
     c->sample2 = c->sample1;
-    c->sample1 = predictor;
+    c->sample1 = av_clip_int16(predictor);
     c->idelta = (AdaptationTable[(int)nibble] * c->idelta) >> 8;
     if (c->idelta < 16) c->idelta = 16;
 
-    return (short)predictor;
+    return c->sample1;
 }
 
 static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
@@ -719,9 +716,8 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     if(c->step > 32767)
         c->step = 32767;
 
-    predictor = av_clip_int16(predictor);
-    c->predictor = predictor;
-    return (short)predictor;
+    c->predictor = av_clip_int16(predictor);
+    return (short)c->predictor;
 }
 
 static inline short adpcm_sbpro_expand_nibble(ADPCMChannelStatus *c, char nibble, int size, int shift)
@@ -789,11 +785,10 @@ static void xa_decode(short *out, const unsigned char *in,
 
             t = (signed char)(d<<4)>>4;
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
-            s = av_clip_int16(s);
-            *out = s;
-            out += inc;
             s_2 = s_1;
-            s_1 = s;
+            s_1 = av_clip_int16(s);
+            *out = s_1;
+            out += inc;
         }
 
         if (inc==2) { /* stereo */
@@ -815,11 +810,10 @@ static void xa_decode(short *out, const unsigned char *in,
 
             t = (signed char)d >> 4;
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
-            s = av_clip_int16(s);
-            *out = s;
-            out += inc;
             s_2 = s_1;
-            s_1 = s;
+            s_1 = av_clip_int16(s);
+            *out = s_1;
+            out += inc;
         }
 
         if (inc==2) { /* stereo */
@@ -1181,13 +1175,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 next_right_sample = (next_right_sample +
                     (current_right_sample * coeff1r) +
                     (previous_right_sample * coeff2r) + 0x80) >> 8;
-                next_left_sample = av_clip_int16(next_left_sample);
-                next_right_sample = av_clip_int16(next_right_sample);
 
                 previous_left_sample = current_left_sample;
-                current_left_sample = next_left_sample;
+                current_left_sample = av_clip_int16(next_left_sample);
                 previous_right_sample = current_right_sample;
-                current_right_sample = next_right_sample;
+                current_right_sample = av_clip_int16(next_right_sample);
                 *samples++ = (unsigned short)current_left_sample;
                 *samples++ = (unsigned short)current_right_sample;
             }
@@ -1386,8 +1378,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
                     sampledat = ((prev[ch][0]*factor1
                                 + prev[ch][1]*factor2) >> 11) + (sampledat>>exp);
-                    sampledat = av_clip_int16(sampledat);
-                    *samples = sampledat;
+                    *samples = av_clip_int16(sampledat);
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;
 

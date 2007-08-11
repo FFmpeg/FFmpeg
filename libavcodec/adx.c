@@ -108,19 +108,17 @@ static void adx_decode(short *out,const unsigned char *in,PREV *prev)
         // d>>=4; if (d&8) d-=16;
         d = ((signed char)d >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
-        s0 = av_clip_int16(s0);
-        *out++=s0;
         s2 = s1;
-        s1 = s0;
+        s1 = av_clip_int16(s0);
+        *out++=s1;
 
         d = in[i];
         //d&=15; if (d&8) d-=16;
         d = ((signed char)(d<<4) >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
-        s0 = av_clip_int16(s0);
-        *out++=s0;
         s2 = s1;
-        s1 = s0;
+        s1 = av_clip_int16(s0);
+        *out++=s1;
     }
     prev->s1 = s1;
     prev->s2 = s2;

@@ -120,12 +120,7 @@ static int a52_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/**** the following two functions comes from a52dec */
-static inline int blah (int32_t i)
-{
-    return av_clip_int16(i - 0x43c00000);
-}
-
+/**** the following function comes from a52dec */
 static inline void float_to_int (float * _f, int16_t * s16, int nchannels)
 {
     int i, j, c;
@@ -135,7 +130,7 @@ static inline void float_to_int (float * _f, int16_t * s16, int nchannels)
     nchannels *= 256;
     for (i = 0; i < 256; i++) {
         for (c = 0; c < nchannels; c += 256)
-            s16[j++] = blah (f[i + c]);
+            s16[j++] = av_clip_int16(f[i + c] - 0x43c00000);
     }
 }
 
