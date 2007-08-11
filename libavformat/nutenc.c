@@ -435,7 +435,7 @@ static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc, 
     if(FFABS(pkt->pts - nus->last_pts)
                          > nus->max_pts_distance) flags |= FLAG_CHECKSUM;
 
-    return flags;
+    return flags | (fc->flags & FLAG_CODED);
 }
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt){
