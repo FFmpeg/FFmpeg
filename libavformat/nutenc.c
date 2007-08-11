@@ -498,7 +498,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
 
         if(flags & FLAG_CODED){
             length++;
-            flags |=  needed_flags;
+            flags = needed_flags;
         }
 
         if((flags & needed_flags) != needed_flags)
