@@ -192,6 +192,17 @@ static inline uint8_t av_clip_uint8(int a)
     else          return a;
 }
 
+/**
+ * clip a signed integer value into the -32768,32767 range
+ * @param a value to clip
+ * @return clipped value
+ */
+static inline int16_t av_clip_int16(int a)
+{
+    if ((a+32768) & ~65535) return (a>>31) ^ 32767;
+    else                    return a;
+}
+
 /* math */
 int64_t ff_gcd(int64_t a, int64_t b);
 
