@@ -20,6 +20,7 @@
  */
 
 #include "nut.h"
+#include "tree.h"
 
 unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
     return av_crc(av_crc04C11DB7, checksum, buf, len);
