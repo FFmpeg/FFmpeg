@@ -3544,7 +3544,7 @@ static void opt_show_version(void)
            "libavcodec  %d\n"
            "libavformat %d\n",
            LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD);
-    exit(1);
+    exit(0);
 }
 
 static int opt_default(const char *opt, const char *arg){
