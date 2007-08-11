@@ -3301,7 +3301,7 @@ static void opt_show_formats(void)
 "even though both encoding and decoding are supported. For example, the h263\n"
 "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
 "worse.\n");
-    exit(1);
+    exit(0);
 }
 
 static void parse_matrix_coeffs(uint16_t *dest, const char *str)
