@@ -44,9 +44,15 @@
 #ifndef av_always_inline
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
 #    define av_always_inline __attribute__((always_inline)) inline
-#    define av_noinline __attribute__((noinline))
 #else
 #    define av_always_inline inline
+#endif
+#endif
+
+#ifndef av_noinline
+#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#    define av_noinline __attribute__((noinline))
+#else
 #    define av_noinline
 #endif
 #endif
