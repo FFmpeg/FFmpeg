@@ -706,11 +706,7 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     c->predictor = av_clip_int16(c->predictor);
     /* calculate new step and clamp it to range 511..32767 */
     new_step = (ct_adpcm_table[nibble & 7] * c->step) >> 8;
-    c->step = new_step;
-    if(c->step < 511)
-        c->step = 511;
-    if(c->step > 32767)
-        c->step = 32767;
+    c->step = av_clip(new_step, 511, 32767);
 
     return (short)c->predictor;
 }
@@ -723,16 +719,8 @@ static inline short adpcm_sbpro_expand_nibble(ADPCMChannelStatus *c, char nibble
     delta = nibble & ((1<<(size-1))-1);
     diff = delta << (7 + c->step + shift);
 
-    if (sign)
-        c->predictor -= diff;
-    else
-        c->predictor += diff;
-
     /* clamp result */
-    if (c->predictor > 16256)
-        c->predictor = 16256;
-    else if (c->predictor < -16384)
-        c->predictor = -16384;
+    c->predictor = av_clip(c->predictor + (sign ? -diff : diff), -16384,16256);
 
     /* calculate new step */
     if (delta >= (2*size - 3) && c->step < 3)
