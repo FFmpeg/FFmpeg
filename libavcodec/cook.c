@@ -906,7 +906,7 @@ saturate_output_float (COOKContext *q, int chan, int16_t *out)
      */
     for (j = 0; j < q->samples_per_channel; j++) {
         out[chan + q->nb_channels * j] =
-          av_clip(lrintf(output[j]), -32768, 32767);
+          av_clip_int16(lrintf(output[j]));
     }
 }
 

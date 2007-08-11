@@ -123,11 +123,7 @@ static int a52_decode_init(AVCodecContext *avctx)
 /**** the following two functions comes from a52dec */
 static inline int blah (int32_t i)
 {
-    if (i > 0x43c07fff)
-        return 32767;
-    else if (i < 0x43bf8000)
-        return -32768;
-    return i - 0x43c00000;
+    return av_clip_int16(i - 0x43c00000);
 }
 
 static inline void float_to_int (float * _f, int16_t * s16, int nchannels)

@@ -50,12 +50,6 @@
 
 #define BLKSIZE 1024
 
-#define CLAMP_TO_SHORT(value) \
-if (value > 32767) \
-    value = 32767; \
-else if (value < -32768) \
-    value = -32768; \
-
 /* step_table[] and index_table[] are from the ADPCM reference source */
 /* This is the index table: */
 static const int index_table[16] = {
@@ -215,7 +209,7 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
     int delta = sample - c->prev_sample;
     int nibble = FFMIN(7, abs(delta)*4/step_table[c->step_index]) + (delta<0)*8;
     c->prev_sample = c->prev_sample + ((step_table[c->step_index] * yamaha_difflookup[nibble]) / 8);
-    CLAMP_TO_SHORT(c->prev_sample);
+    c->prev_sample = av_clip_int16(c->prev_sample);
     c->step_index = av_clip(c->step_index + index_table[nibble], 0, 88);
     return nibble;
 }
@@ -234,7 +228,7 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
     nibble= av_clip(nibble, -8, 7)&0x0F;
 
     predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
-    CLAMP_TO_SHORT(predictor);
+    predictor = av_clip_int16(predictor);
 
     c->sample2 = c->sample1;
     c->sample1 = predictor;
@@ -259,7 +253,7 @@ static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, 
     nibble = FFMIN(7, abs(delta)*4/c->step) + (delta<0)*8;
 
     c->predictor = c->predictor + ((c->step * yamaha_difflookup[nibble]) / 8);
-    CLAMP_TO_SHORT(c->predictor);
+    c->predictor = av_clip_int16(c->predictor);
     c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
     c->step = av_clip(c->step, 127, 24567);
 
@@ -339,7 +333,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
 #define STORE_NODE(NAME, STEP_INDEX)\
                     int d;\
                     uint32_t ssd;\
-                    CLAMP_TO_SHORT(dec_sample);\
+                    dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
                     ssd = nodes[j]->ssd + d*d;\
                     if(nodes_next[frontier-1] && ssd >= nodes_next[frontier-1]->ssd)\
@@ -676,7 +670,7 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble, 
     if (sign) predictor -= diff;
     else predictor += diff;
 
-    CLAMP_TO_SHORT(predictor);
+    predictor = av_clip_int16(predictor);
     c->predictor = predictor;
     c->step_index = step_index;
 
@@ -689,7 +683,7 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
 
     predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 256;
     predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
-    CLAMP_TO_SHORT(predictor);
+    predictor = av_clip_int16(predictor);
 
     c->sample2 = c->sample1;
     c->sample1 = predictor;
@@ -725,7 +719,7 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     if(c->step > 32767)
         c->step = 32767;
 
-    CLAMP_TO_SHORT(predictor);
+    predictor = av_clip_int16(predictor);
     c->predictor = predictor;
     return (short)predictor;
 }
@@ -766,7 +760,7 @@ static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned c
     }
 
     c->predictor += (c->step * yamaha_difflookup[nibble]) / 8;
-    CLAMP_TO_SHORT(c->predictor);
+    c->predictor = av_clip_int16(c->predictor);
     c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
     c->step = av_clip(c->step, 127, 24567);
     return c->predictor;
@@ -795,7 +789,7 @@ static void xa_decode(short *out, const unsigned char *in,
 
             t = (signed char)(d<<4)>>4;
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
-            CLAMP_TO_SHORT(s);
+            s = av_clip_int16(s);
             *out = s;
             out += inc;
             s_2 = s_1;
@@ -821,7 +815,7 @@ static void xa_decode(short *out, const unsigned char *in,
 
             t = (signed char)d >> 4;
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
-            CLAMP_TO_SHORT(s);
+            s = av_clip_int16(s);
             *out = s;
             out += inc;
             s_2 = s_1;
@@ -915,7 +909,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if(cs->predictor & 0x8000)
             cs->predictor -= 0x10000;
 
-        CLAMP_TO_SHORT(cs->predictor);
+        cs->predictor = av_clip_int16(cs->predictor);
 
         cs->step_index = (*src++) & 0x7F;
 
@@ -1187,8 +1181,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 next_right_sample = (next_right_sample +
                     (current_right_sample * coeff1r) +
                     (previous_right_sample * coeff2r) + 0x80) >> 8;
-                CLAMP_TO_SHORT(next_left_sample);
-                CLAMP_TO_SHORT(next_right_sample);
+                next_left_sample = av_clip_int16(next_left_sample);
+                next_right_sample = av_clip_int16(next_right_sample);
 
                 previous_left_sample = current_left_sample;
                 current_left_sample = next_left_sample;
@@ -1318,7 +1312,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                     c->status[i].step_index += table[delta & (~signmask)];
 
                     c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
-                    c->status[i].predictor = av_clip(c->status[i].predictor, -32768, 32767);
+                    c->status[i].predictor = av_clip_int16(c->status[i].predictor);
 
                     *samples++ = c->status[i].predictor;
                     if (samples >= samples_end) {
@@ -1392,7 +1386,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
                     sampledat = ((prev[ch][0]*factor1
                                 + prev[ch][1]*factor2) >> 11) + (sampledat>>exp);
-                    CLAMP_TO_SHORT(sampledat);
+                    sampledat = av_clip_int16(sampledat);
                     *samples = sampledat;
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;

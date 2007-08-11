@@ -46,8 +46,6 @@ typedef struct DPCMContext {
     const int *sol_table;//for SOL_DPCM
 } DPCMContext;
 
-#define SATURATE_S16(x)  if (x < -32768) x = -32768; \
-  else if (x > 32767) x = 32767;
 #define SE_16BIT(x)  if (x & 0x8000) x -= 0x10000;
 
 static int interplay_delta_table[] = {
@@ -190,7 +188,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         /* decode the samples */
         for (in = 8, out = 0; in < buf_size; in++, out++) {
             predictor[channel_number] += s->roq_square_array[buf[in]];
-            SATURATE_S16(predictor[channel_number]);
+            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
             output_samples[out] = predictor[channel_number];
 
             /* toggle channel */
@@ -213,7 +211,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
         while (in < buf_size) {
             predictor[channel_number] += interplay_delta_table[buf[in++]];
-            SATURATE_S16(predictor[channel_number]);
+            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
             output_samples[out++] = predictor[channel_number];
 
             /* toggle channel */
@@ -248,7 +246,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             diff >>= shift[channel_number];
             predictor[channel_number] += diff;
 
-            SATURATE_S16(predictor[channel_number]);
+            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
             output_samples[out++] = predictor[channel_number];
 
             /* toggle channel */
@@ -277,7 +275,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
                 n = buf[in++];
                 if (n & 0x80) s->sample[channel_number] -= s->sol_table[n & 0x7F];
                 else s->sample[channel_number] += s->sol_table[n & 0x7F];
-                SATURATE_S16(s->sample[channel_number]);
+                s->sample[channel_number] = av_clip_int16(s->sample[channel_number]);
                 output_samples[out++] = s->sample[channel_number];
                 /* toggle channel */
                 channel_number ^= s->channels - 1;

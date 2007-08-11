@@ -279,7 +279,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         }
 
 #ifdef CONFIG_RESAMPLE_AUDIOPHILE_KIDDY_MODE
-        dst[dst_index] = av_clip(lrintf(val), -32768, 32767);
+        dst[dst_index] = av_clip_int16(lrintf(val));
 #else
         val = (val + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;
         dst[dst_index] = (unsigned)(val + 32768) > 65535 ? (val>>31) ^ 32767 : val;

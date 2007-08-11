@@ -740,10 +740,7 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
 
         for(i=0;i<n;i++) {
             a = lrintf(*iptr++);
-            if (a > 32767)
-                a = 32767;
-            else if (a < -32768)
-                a = -32768;
+            a = av_clip_int16(a);
             *ptr = a;
             ptr += incr;
         }

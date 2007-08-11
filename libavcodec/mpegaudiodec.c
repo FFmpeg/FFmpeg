@@ -822,10 +822,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
 #if FRAC_BITS <= 15
         /* NOTE: can cause a loss in precision if very high amplitude
            sound */
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
+        v = av_clip_int16(v);
 #endif
         synth_buf[j] = v;
     }

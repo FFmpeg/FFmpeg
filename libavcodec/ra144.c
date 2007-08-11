@@ -486,9 +486,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     shptr=glob->output_buffer;
     while (shptr<glob->output_buffer+BLOCKSIZE) {
       s=*(shptr++)<<2;
-      *data=s;
-      if (s>32767) *data=32767;
-      if (s<-32767) *data=-32768;
+      *data=av_clip_int16(s);
       data++;
     }
     b+=30;

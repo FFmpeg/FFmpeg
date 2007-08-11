@@ -895,13 +895,13 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     if (q->channels == 1) {
         /* mono */
         for (i = 0; i<1024; i++)
-            samples[i] = av_clip(round(q->outSamples[i]), -32768, 32767);
+            samples[i] = av_clip_int16(round(q->outSamples[i]));
         *data_size = 1024 * sizeof(int16_t);
     } else {
         /* stereo */
         for (i = 0; i < 1024; i++) {
-            samples[i*2] = av_clip(round(q->outSamples[i]), -32768, 32767);
-            samples[i*2+1] = av_clip(round(q->outSamples[1024+i]), -32768, 32767);
+            samples[i*2] = av_clip_int16(round(q->outSamples[i]));
+            samples[i*2+1] = av_clip_int16(round(q->outSamples[1024+i]));
         }
         *data_size = 2048 * sizeof(int16_t);
     }

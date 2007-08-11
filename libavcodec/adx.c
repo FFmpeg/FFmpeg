@@ -46,8 +46,6 @@ typedef struct {
 #define    SCALE1    0x7298
 #define    SCALE2    0x3350
 
-#define    CLIP(s)    if (s>32767) s=32767; else if (s<-32768) s=-32768
-
 /* 18 bytes <-> 32 samples */
 
 #ifdef CONFIG_ENCODERS
@@ -110,7 +108,7 @@ static void adx_decode(short *out,const unsigned char *in,PREV *prev)
         // d>>=4; if (d&8) d-=16;
         d = ((signed char)d >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
-        CLIP(s0);
+        s0 = av_clip_int16(s0);
         *out++=s0;
         s2 = s1;
         s1 = s0;
@@ -119,7 +117,7 @@ static void adx_decode(short *out,const unsigned char *in,PREV *prev)
         //d&=15; if (d&8) d-=16;
         d = ((signed char)(d<<4) >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
-        CLIP(s0);
+        s0 = av_clip_int16(s0);
         *out++=s0;
         s2 = s1;
         s1 = s0;

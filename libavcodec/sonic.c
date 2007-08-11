@@ -926,14 +926,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
     // internal -> short
     for (i = 0; i < s->frame_size; i++)
-    {
-        if (s->int_samples[i] > 32767)
-            samples[i] = 32767;
-        else if (s->int_samples[i] < -32768)
-            samples[i] = -32768;
-        else
-            samples[i] = s->int_samples[i];
-    }
+        samples[i] = av_clip_int16(s->int_samples[i]);
 
     align_get_bits(&gb);
 

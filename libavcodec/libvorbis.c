@@ -307,8 +307,7 @@ static inline int conv(int samples, float **pcm, char *buf, int channels) {
 
             val = mono[j] * 32767.f;
 
-            if(val > 32767) val = 32767 ;
-            if(val < -32768) val = -32768 ;
+            val = av_clip_int16(val);
 
             *ptr = val ;
             ptr += channels;
