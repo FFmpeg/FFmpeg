@@ -692,7 +692,6 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
 
 static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
 {
-    int predictor;
     int sign, delta, diff;
     int new_step;
 
@@ -702,12 +701,9 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
      * the reference ADPCM implementation since modern CPUs can do the mults
      * quickly enough */
     diff = ((2 * delta + 1) * c->step) >> 3;
-    predictor = c->predictor;
     /* predictor update is not so trivial: predictor is multiplied on 254/256 before updating */
-    if(sign)
-        predictor = ((predictor * 254) >> 8) - diff;
-    else
-            predictor = ((predictor * 254) >> 8) + diff;
+    c->predictor = ((c->predictor * 254) >> 8) + (sign ? -diff : diff);
+    c->predictor = av_clip_int16(c->predictor);
     /* calculate new step and clamp it to range 511..32767 */
     new_step = (ct_adpcm_table[nibble & 7] * c->step) >> 8;
     c->step = new_step;
@@ -716,7 +712,6 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     if(c->step > 32767)
         c->step = 32767;
 
-    c->predictor = av_clip_int16(predictor);
     return (short)c->predictor;
 }
 
