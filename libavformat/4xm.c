@@ -44,6 +44,9 @@
 #define  ifrm_TAG MKTAG('i', 'f', 'r', 'm')
 #define  pfrm_TAG MKTAG('p', 'f', 'r', 'm')
 #define  cfrm_TAG MKTAG('c', 'f', 'r', 'm')
+#define  ifr2_TAG MKTAG('i', 'f', 'r', '2')
+#define  pfr2_TAG MKTAG('p', 'f', 'r', '2')
+#define  cfr2_TAG MKTAG('c', 'f', 'r', '2')
 #define  snd__TAG MKTAG('s', 'n', 'd', '_')
 
 #define vtrk_SIZE 0x44
@@ -248,7 +251,11 @@ static int fourxm_read_packet(AVFormatContext *s,
 
         case ifrm_TAG:
         case pfrm_TAG:
-        case cfrm_TAG:{
+        case cfrm_TAG:
+        case ifr2_TAG:
+        case pfr2_TAG:
+        case cfr2_TAG:
+        {
 
             /* allocate 8 more bytes than 'size' to account for fourcc
              * and size */
