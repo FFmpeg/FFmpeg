@@ -75,8 +75,24 @@ flac_header (AVFormatContext * s, int idx)
     return 1;
 }
 
+static int
+old_flac_header (AVFormatContext * s, int idx)
+{
+    AVStream *st = s->streams[idx];
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_FLAC;
+
+    return 0;
+}
+
 ogg_codec_t flac_codec = {
     .magic = "\177FLAC",
     .magicsize = 5,
     .header = flac_header
+};
+
+ogg_codec_t old_flac_codec = {
+    .magic = "fLaC",
+    .magicsize = 4,
+    .header = old_flac_header
 };
