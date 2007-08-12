@@ -575,6 +575,49 @@ static uint8_t *read_huffman_tables(FourXContext *f, uint8_t * const buf){
     return ptr;
 }
 
+static int mix(int c0, int c1){
+    int blue = 2*(c0&0x001F) + (c1&0x001F);
+    int green= (2*(c0&0x03E0) + (c1&0x03E0))>>5;
+    int red  = 2*(c0>>10) + (c1>>10);
+    return red/3*1024 + green/3*32 + blue/3;
+}
+
+static int decode_i2_frame(FourXContext *f, uint8_t *buf, int length){
+    int x, y, x2, y2;
+    const int width= f->avctx->width;
+    const int height= f->avctx->height;
+    uint16_t *dst= (uint16_t*)f->current_picture.data[0];
+    const int stride= f->current_picture.linesize[0]>>1;
+
+    for(y=0; y<height; y+=16){
+        for(x=0; x<width; x+=16){
+            unsigned int color[4], bits;
+            memset(color, 0, sizeof(color));
+//warning following is purely guessed ...
+            color[0]= AV_RN16(buf); buf+=2; //FIXME use bytestream
+            color[1]= AV_RN16(buf); buf+=2;
+
+            if(color[0]&0x8000) av_log(NULL, AV_LOG_ERROR, "unk bit 1\n");
+            if(color[1]&0x8000) av_log(NULL, AV_LOG_ERROR, "unk bit 2\n");
+
+            color[2]= mix(color[0], color[1]);
+            color[3]= mix(color[1], color[0]);
+
+            bits= AV_RL32(buf); buf+= 4;
+            for(y2=0; y2<16; y2++){
+                for(x2=0; x2<16; x2++){
+                    int index= 2*(x2>>2) + 8*(y2>>2);
+                    dst[y2*stride+x2]= color[(bits>>index)&3];
+                }
+            }
+            dst+=16;
+        }
+        dst += 16*stride - width;
+    }
+
+    return 0;
+}
+
 static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     int x, y;
     const int width= f->avctx->width;
@@ -702,7 +745,11 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(frame_4cc == ff_get_fourcc("ifrm") || frame_4cc == ff_get_fourcc("ifr2")){
+    if(frame_4cc == ff_get_fourcc("ifr2")){
+        p->pict_type= I_TYPE;
+        if(decode_i2_frame(f, buf-4, frame_size) < 0)
+            return -1;
+    }else if(frame_4cc == ff_get_fourcc("ifrm")){
         p->pict_type= I_TYPE;
         if(decode_i_frame(f, buf, frame_size) < 0)
             return -1;
