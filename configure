@@ -677,8 +677,8 @@ HAVE_LIST="
     fast_unaligned
     fork
     freetype2
-    GetProcessTimes
     gethrtime
+    GetProcessTimes
     getrusage
     imlib2
     inet_aton
