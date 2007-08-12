@@ -5689,7 +5689,7 @@ static const attribute_used uint8_t last_coeff_flag_offset_8x8[63] = {
     5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8
 };
 
-static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
+static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     static const int significant_coeff_flag_offset[2][6] = {
       { 105+0, 105+15, 105+29, 105+44, 105+47, 402 },
@@ -5759,7 +5759,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
             h->cabac.low       = cc.low       ;
             h->cabac.bytestream= cc.bytestream;
 #endif
-            return 0;
+            return;
         }
     }
 
@@ -5860,7 +5860,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
             h->cabac.low       = cc.low       ;
             h->cabac.bytestream= cc.bytestream;
 #endif
-    return 0;
+
 }
 
 static inline void compute_mb_neighbors(H264Context *h)
@@ -6306,13 +6306,12 @@ decode_intra_mb:
         if( IS_INTRA16x16( mb_type ) ) {
             int i;
             //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
-            if( decode_cabac_residual( h, h->mb, 0, 0, dc_scan, NULL, 16) < 0)
-                return -1;
+            decode_cabac_residual( h, h->mb, 0, 0, dc_scan, NULL, 16);
+
             if( cbp&15 ) {
                 for( i = 0; i < 16; i++ ) {
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 AC:%d\n", i );
-                    if( decode_cabac_residual(h, h->mb + 16*i, 1, i, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 )
-                        return -1;
+                    decode_cabac_residual(h, h->mb + 16*i, 1, i, scan + 1, h->dequant4_coeff[0][s->qscale], 15);
                 }
             } else {
                 fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
@@ -6322,16 +6321,14 @@ decode_intra_mb:
             for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
                 if( cbp & (1<<i8x8) ) {
                     if( IS_8x8DCT(mb_type) ) {
-                        if( decode_cabac_residual(h, h->mb + 64*i8x8, 5, 4*i8x8,
-                            scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64) < 0 )
-                            return -1;
+                        decode_cabac_residual(h, h->mb + 64*i8x8, 5, 4*i8x8,
+                            scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64);
                     } else
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 4*i8x8 + i4x4;
                         //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
 //START_TIMER
-                        if( decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) < 0 )
-                            return -1;
+                        decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16);
 //STOP_TIMER("decode_residual")
                     }
                 } else {
@@ -6345,8 +6342,7 @@ decode_intra_mb:
             int c;
             for( c = 0; c < 2; c++ ) {
                 //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
-                if( decode_cabac_residual(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, NULL, 4) < 0)
-                    return -1;
+                decode_cabac_residual(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, NULL, 4);
             }
         }
 
@@ -6357,8 +6353,7 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
-                    if( decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, qmul, 15) < 0)
-                        return -1;
+                    decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, qmul, 15);
                 }
             }
         } else {
