@@ -1630,7 +1630,8 @@ check_func getrusage
 check_func2 windows.h GetProcessTimes
 
 check_func fork
-check_func closesocket
+check_func closesocket ||
+    check_func2 winsock2.h closesocket
 
 test "$vhook" = "default" && vhook="$dlopen"
 
