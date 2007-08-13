@@ -9,11 +9,10 @@ FFmpeg README
 2) Licensing
 ------------
 
-* Read the file COPYING. ffmpeg and the associated libraries EXCEPT
-  libpostproc and libswscale are licensed under the GNU Lesser General
+* Read the file COPYING.LGPL. FFmpeg and the associated libraries EXCEPT
+  for libpostproc and libswscale are licensed under the GNU Lesser General
   Public License.
 
 * libpostproc and libswscale are distributed under the GNU General Public
-  License and their compilation and use is optional in ffmpeg.
-
-Fabrice Bellard.
+  License, see the file COPYING.GPL for details. Their compilation and use
+  in FFmpeg is optional.
