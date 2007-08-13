@@ -86,7 +86,6 @@ int frame_count = 0;
 #endif
 
 #include "msmpeg4data.h"
-#include "msmpeg4tab.h"
 
 #ifdef CONFIG_ENCODERS //strangely gcc includes this even if it is not references
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
