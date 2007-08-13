@@ -4443,7 +4443,7 @@ int main(int argc, char **argv)
         case '?':
         case 'h':
             show_help();
-            exit(1);
+            exit(0);
         case 'n':
             no_launch = 1;
             break;
