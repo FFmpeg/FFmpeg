@@ -340,7 +340,7 @@ static int decode_p_frame(FourXContext *f, uint8_t *buf, int length){
     const int stride= f->current_picture.linesize[0]>>1;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra;
 
-    if(!get32(buf-4)){
+    if(f->version){
         extra=20;
         bitstream_size= get32(buf+8);
         wordstream_size= get32(buf+12);
