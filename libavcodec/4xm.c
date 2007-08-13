@@ -138,7 +138,7 @@ typedef struct FourXContext{
     DECLARE_ALIGNED_8(DCTELEM, block[6][64]);
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
-    int vlc_type;
+    int version;
     CFrameBuffer cfrm[CFRAME_BUFFER_COUNT];
 } FourXContext;
 
@@ -296,7 +296,7 @@ static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stri
 static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int log2w, int log2h, int stride){
     const int index= size2index[log2h][log2w];
     const int h= 1<<log2h;
-    int code= get_vlc2(&f->gb, block_type_vlc[f->vlc_type][index].table, BLOCK_TYPE_VLC_BITS, 1);
+    int code= get_vlc2(&f->gb, block_type_vlc[1-f->version][index].table, BLOCK_TYPE_VLC_BITS, 1);
 
     assert(code>=0 && code<=6);
 
@@ -345,13 +345,11 @@ static int decode_p_frame(FourXContext *f, uint8_t *buf, int length){
         bitstream_size= get32(buf+8);
         wordstream_size= get32(buf+12);
         bytestream_size= get32(buf+16);
-        f->vlc_type= 0;
     }else{
         extra=0;
         bitstream_size = AV_RL16(buf-4);
         wordstream_size= AV_RL16(buf-2);
         bytestream_size= FFMAX(length - bitstream_size - wordstream_size, 0);
-        f->vlc_type= 1;
     }
 
     if(bitstream_size+ bytestream_size+ wordstream_size + extra != length
@@ -785,6 +783,7 @@ static void common_init(AVCodecContext *avctx){
 static int decode_init(AVCodecContext *avctx){
     FourXContext * const f = avctx->priv_data;
 
+    f->version= avctx->codec_tag == 0x40000;
     common_init(avctx);
     init_vlcs(f);
 
