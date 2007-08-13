@@ -787,7 +787,8 @@ static int decode_init(AVCodecContext *avctx){
     common_init(avctx);
     init_vlcs(f);
 
-    avctx->pix_fmt= PIX_FMT_RGB565;
+    if(f->version) avctx->pix_fmt= PIX_FMT_RGB565;
+    else           avctx->pix_fmt= PIX_FMT_RGB555;
 
     return 0;
 }
