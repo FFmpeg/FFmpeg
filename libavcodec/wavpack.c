@@ -27,7 +27,7 @@
  * WavPack lossless audio decoder
  */
 
-#define WV_JOINT 0x0010
+#define WV_JOINT_STEREO 0x00000010
 
 enum WP_ID_Flags{
     WP_IDF_MASK   = 0x1F,
@@ -398,7 +398,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
         return -1;
     }
-    s->joint = AV_RL32(buf) & WV_JOINT; buf += 4;
+    s->joint = AV_RL32(buf) & WV_JOINT_STEREO; buf += 4;
     s->CRC = AV_RL32(buf); buf += 4;
     // parse metadata blocks
     while(buf < buf_end){
