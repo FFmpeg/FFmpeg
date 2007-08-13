@@ -89,7 +89,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (INGENIENT, ingenient);
     REGISTER_DEMUXER (IPMOVIE, ipmovie);
     if (!ENABLE_NUT_DEMUXER) REGISTER_DEMUXER (LIBNUT, libnut);
-    REGISTER_MUXER   (LIBNUT, libnut);
+    if (!ENABLE_NUT_MUXER)   REGISTER_MUXER   (LIBNUT, libnut);
     REGISTER_MUXDEMUX(M4V, m4v);
     REGISTER_DEMUXER (MATROSKA, matroska);
     REGISTER_MUXDEMUX(MJPEG, mjpeg);
