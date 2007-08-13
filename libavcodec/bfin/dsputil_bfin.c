@@ -279,10 +279,12 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
     c->put_no_rnd_pixels_tab[0][3] = ff_bfin_put_pixels16_xy2_nornd;
 
     c->idct_permutation_type = FF_NO_IDCT_PERM;
-    c->fdct               = ff_bfin_fdct;
-    c->idct               = ff_bfin_idct;
-    c->idct_add           = bfin_idct_add;
-    c->idct_put           = bfin_idct_put;
+    c->fdct                  = ff_bfin_fdct;
+    if (avctx->idct_algo!=FF_IDCT_VP3) {
+        c->idct               = ff_bfin_idct;
+        c->idct_add           = bfin_idct_add;
+        c->idct_put           = bfin_idct_put;
+    }
 }
 
 
