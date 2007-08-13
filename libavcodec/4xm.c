@@ -314,6 +314,8 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
         log2w--;
         decode_p_block(f, dst             , src             , log2w, log2h, stride);
         decode_p_block(f, dst + (1<<log2w), src + (1<<log2w), log2w, log2h, stride);
+    }else if(code == 3 && f->version==0){
+        mcdc(dst, src, log2w, h, stride, 1, 0);
     }else if(code == 4){
         src += f->mv[ *f->bytestream++ ];
         mcdc(dst, src, log2w, h, stride, 1, le2me_16(*f->wordstream++));
