@@ -3806,11 +3806,6 @@ static void show_help(void)
     av_opt_show(sws_opts, NULL);
 }
 
-void parse_arg_file(const char *filename)
-{
-    opt_output_file(filename);
-}
-
 int main(int argc, char **argv)
 {
     int i;
@@ -3831,7 +3826,7 @@ int main(int argc, char **argv)
     }
 
     /* parse options */
-    parse_options(argc, argv, options);
+    parse_options(argc, argv, options, opt_output_file);
 
     /* file converter / grab */
     if (nb_output_files <= 0) {

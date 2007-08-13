@@ -50,8 +50,18 @@ typedef struct {
 } OptionDef;
 
 void show_help_options(const OptionDef *options, const char *msg, int mask, int value);
-void parse_options(int argc, char **argv, const OptionDef *options);
-void parse_arg_file(const char *filename);
+
+/**
+ * Parses the command line arguments.
+ * @param options Array with the definitions required to interpret every
+ * option of the form: -<option_name> [<argument>]
+ * @param parse_arg_function Name of the function called to process every
+ * argument without a leading option name flag. NULL if such arguments do
+ * not have to be processed.
+ */
+void parse_options(int argc, char **argv, const OptionDef *options,
+                   void (* parse_arg_function)(const char*));
+
 void print_error(const char *filename, int err);
 
 #endif /* _CMD_UTILS_H */

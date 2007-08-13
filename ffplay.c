@@ -2530,7 +2530,7 @@ int main(int argc, char **argv)
     /* register all codecs, demux and protocols */
     av_register_all();
 
-    parse_options(argc, argv, options);
+    parse_options(argc, argv, options, parse_arg_file);
 
     if (!input_filename) {
         show_help();
