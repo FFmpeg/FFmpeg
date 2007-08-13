@@ -138,7 +138,6 @@ static int fourxm_read_header(AVFormatContext *s,
             }
             fourxm->width = AV_RL32(&header[i + 36]);
             fourxm->height = AV_RL32(&header[i + 40]);
-            i += 8 + size;
 
             /* allocate a new AVStream */
             st = av_new_stream(s, 0);
@@ -150,10 +149,11 @@ static int fourxm_read_header(AVFormatContext *s,
 
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_4XM;
-            st->codec->codec_tag = 0;  /* no fourcc */
+            st->codec->codec_tag = AV_RL32(&header[i + 16]);
             st->codec->width = fourxm->width;
             st->codec->height = fourxm->height;
 
+            i += 8 + size;
         } else if (fourcc_tag == strk_TAG) {
             /* check that there is enough data */
             if (size != strk_SIZE) {
