@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(40<<8)+4)
-#define LIBAVCODEC_VERSION      51.40.4
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(41<<8)+0)
+#define LIBAVCODEC_VERSION      51.41.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2705,6 +2705,14 @@ char av_get_pict_type_char(int pict_type);
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
 int av_get_bits_per_sample(enum CodecID codec_id);
+
+/**
+ * Returns sample format bits per sample.
+ *
+ * @param[in] sample_fmt the sample format
+ * @return Number of bits per sample or zero if unknown for the given sample format.
+ */
+int av_get_bits_per_sample_format(enum SampleFormat sample_fmt);
 
 /* frame parsing */
 typedef struct AVCodecParserContext {
