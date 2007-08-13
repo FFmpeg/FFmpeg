@@ -28,6 +28,7 @@
  */
 
 #define WV_JOINT_STEREO 0x00000010
+#define WV_FALSE_STEREO 0x40000000
 
 enum WP_ID_Flags{
     WP_IDF_MASK   = 0x1F,
@@ -66,7 +67,7 @@ typedef struct Decorr {
 
 typedef struct WavpackContext {
     AVCodecContext *avctx;
-    int stereo;
+    int stereo, stereo_in;
     int joint;
     uint32_t CRC;
     GetBitContext gb;
@@ -386,6 +387,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
+    memset(s->median, 0, sizeof(s->median));
     s->and = s->or = s->shift = 0;
 
     s->samples = AV_RL32(buf); buf += 4;
@@ -398,6 +400,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
         return -1;
     }
+    s->stereo_in = (AV_RL32(buf) & WV_FALSE_STEREO) ? 0 : s->stereo;
     s->joint = AV_RL32(buf) & WV_JOINT_STEREO; buf += 4;
     s->CRC = AV_RL32(buf); buf += 4;
     // parse metadata blocks
@@ -443,7 +446,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 av_log(avctx, AV_LOG_ERROR, "No decorrelation terms met\n");
                 continue;
             }
-            weights = size >> s->stereo;
+            weights = size >> s->stereo_in;
             if(weights > MAX_TERMS || weights > s->terms){
                 av_log(avctx, AV_LOG_ERROR, "Too many decorrelation weights\n");
                 buf += ssize;
@@ -454,7 +457,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 s->decorr[s->terms - i - 1].weightA = t << 3;
                 if(s->decorr[s->terms - i - 1].weightA > 0)
                     s->decorr[s->terms - i - 1].weightA += (s->decorr[s->terms - i - 1].weightA + 64) >> 7;
-                if(s->stereo){
+                if(s->stereo_in){
                     t = (int8_t)(*buf++);
                     s->decorr[s->terms - i - 1].weightB = t << 3;
                     if(s->decorr[s->terms - i - 1].weightB > 0)
@@ -473,7 +476,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 if(s->decorr[i].value > 8){
                     s->decorr[i].samplesA[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                     s->decorr[i].samplesA[1] = wp_exp2(AV_RL16(buf)); buf += 2;
-                    if(s->stereo){
+                    if(s->stereo_in){
                         s->decorr[i].samplesB[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                         s->decorr[i].samplesB[1] = wp_exp2(AV_RL16(buf)); buf += 2;
                         t += 4;
@@ -486,22 +489,22 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 }else{
                     for(j = 0; j < s->decorr[i].value; j++){
                         s->decorr[i].samplesA[j] = wp_exp2(AV_RL16(buf)); buf += 2;
-                        if(s->stereo){
+                        if(s->stereo_in){
                             s->decorr[i].samplesB[j] = wp_exp2(AV_RL16(buf)); buf += 2;
                         }
                     }
-                    t += s->decorr[i].value * 2 * avctx->channels;
+                    t += s->decorr[i].value * 2 * (s->stereo_in + 1);
                 }
             }
             got_samples = 1;
             break;
         case WP_ID_ENTROPY:
-            if(size != 6 * avctx->channels){
-                av_log(avctx, AV_LOG_ERROR, "Entropy vars size should be %i, got %i", 6 * avctx->channels, size);
+            if(size != 6 * (s->stereo_in + 1)){
+                av_log(avctx, AV_LOG_ERROR, "Entropy vars size should be %i, got %i", 6 * (s->stereo_in + 1), size);
                 buf += ssize;
                 continue;
             }
-            for(i = 0; i < 3 * avctx->channels; i++){
+            for(i = 0; i < 3 * (s->stereo_in + 1); i++){
                 s->median[i] = wp_exp2(AV_RL16(buf));
                 buf += 2;
             }
@@ -556,10 +559,21 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(s->stereo)
+    if(s->stereo_in)
         samplecount = wv_unpack_stereo(s, &s->gb, samples);
-    else
+    else{
         samplecount = wv_unpack_mono(s, &s->gb, samples);
+        if(s->stereo){
+            int16_t *dst = samples + samplecount * 2;
+            int16_t *src = samples + samplecount;
+            int cnt = samplecount;
+            while(cnt--){
+                *--dst = *--src;
+                *--dst = *src;
+            }
+            samplecount *= 2;
+        }
+    }
     *data_size = samplecount * 2;
 
     return buf_size;

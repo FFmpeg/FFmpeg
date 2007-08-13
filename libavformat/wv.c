@@ -86,7 +86,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     }
     wc->blksize = size;
     ver = get_le16(pb);
-    if(ver < 0x402 || ver > 0x40F){
+    if(ver < 0x402 || ver > 0x410){
         av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
         return -1;
     }
