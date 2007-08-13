@@ -72,7 +72,7 @@ int main(int argc, char **argv)
             printf("ret:%2d", ret);
             if(ret>=0){
                 st= ic->streams[pkt.stream_index];
-                printf(" st:%2d dts:%f pts:%f pos:%Ld size:%d flags:%d", pkt.stream_index, pkt.dts*av_q2d(st->time_base), pkt.pts*av_q2d(st->time_base), pkt.pos, pkt.size, pkt.flags);
+                printf(" st:%2d dts:%f pts:%f pos:%" PRId64 " size:%d flags:%d", pkt.stream_index, pkt.dts*av_q2d(st->time_base), pkt.pts*av_q2d(st->time_base), pkt.pos, pkt.size, pkt.flags);
             }
             printf("\n");
         }
