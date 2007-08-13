@@ -829,7 +829,7 @@ AVFrame *avcodec_alloc_frame(void){
     return pic;
 }
 
-int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
+int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
     int ret= -1;
 
@@ -880,7 +880,7 @@ end:
     return ret;
 }
 
-int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
+int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const short *samples)
 {
     if(buf_size < FF_MIN_BUFFER_SIZE && 0){
@@ -895,7 +895,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return 0;
 }
 
-int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
+int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict)
 {
     if(buf_size < FF_MIN_BUFFER_SIZE){
@@ -923,7 +923,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return ret;
 }
 
-int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
+int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          uint8_t *buf, int buf_size)
 {
@@ -946,7 +946,7 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
     return ret;
 }
 
-int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
+int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size)
 {

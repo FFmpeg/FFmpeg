@@ -42,7 +42,7 @@ typedef struct ThreadContext {
     int done;
 } ThreadContext;
 
-static void* worker(void *v)
+static void* attribute_align_arg worker(void *v)
 {
     AVCodecContext *avctx = v;
     ThreadContext *c = avctx->thread_opaque;

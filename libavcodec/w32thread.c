@@ -36,7 +36,7 @@ typedef struct ThreadContext{
 }ThreadContext;
 
 
-static unsigned __stdcall thread_func(void *v){
+static unsigned __stdcall attribute_align_arg thread_func(void *v){
     ThreadContext *c= v;
 
     for(;;){

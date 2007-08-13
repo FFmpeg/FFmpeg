@@ -34,6 +34,14 @@
 #include <stddef.h>
 #include <assert.h>
 
+#ifndef attribute_align_arg
+#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__>1)
+#    define attribute_align_arg __attribute__((force_align_arg_pointer))
+#else
+#    define attribute_align_arg
+#endif
+#endif
+
 #ifndef attribute_used
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
 #    define attribute_used __attribute__((used))
