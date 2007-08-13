@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "bytestream.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -597,8 +598,8 @@ static int decode_i2_frame(FourXContext *f, uint8_t *buf, int length){
             unsigned int color[4], bits;
             memset(color, 0, sizeof(color));
 //warning following is purely guessed ...
-            color[0]= AV_RN16(buf); buf+=2; //FIXME use bytestream
-            color[1]= AV_RN16(buf); buf+=2;
+            color[0]= bytestream_get_le16(&buf);
+            color[1]= bytestream_get_le16(&buf);
 
             if(color[0]&0x8000) av_log(NULL, AV_LOG_ERROR, "unk bit 1\n");
             if(color[1]&0x8000) av_log(NULL, AV_LOG_ERROR, "unk bit 2\n");
@@ -606,7 +607,7 @@ static int decode_i2_frame(FourXContext *f, uint8_t *buf, int length){
             color[2]= mix(color[0], color[1]);
             color[3]= mix(color[1], color[0]);
 
-            bits= AV_RL32(buf); buf+= 4;
+            bits= bytestream_get_le32(&buf);
             for(y2=0; y2<16; y2++){
                 for(x2=0; x2<16; x2++){
                     int index= 2*(x2>>2) + 8*(y2>>2);
