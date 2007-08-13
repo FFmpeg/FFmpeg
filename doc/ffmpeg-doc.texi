@@ -1673,9 +1673,12 @@ First, (@pxref{Coding Rules}) above if you did not yet.
 When you submit your patch, try to send a unified diff (diff '-up'
 option). We cannot read other diffs :-)
 
-Also please do not submit patches which contain several unrelated changes.
-Split them into individual self-contained patches; this makes reviewing
-them much easier.
+Also please do not submit a patch which contains several unrelated changes.
+Split it into separate, self-contained pieces. This does not mean splitting
+file by file. Instead, make the patch as small as possible while still
+keeping it as a logical unit that contains an individual change, even
+if it spans multiple files. This makes reviewing your patches much easier
+for us and greatly increases your chances of getting your patch applied.
 
 Run the regression tests before submitting a patch so that you can
 verify that there are no big problems.
