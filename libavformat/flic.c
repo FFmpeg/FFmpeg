@@ -94,8 +94,14 @@ static int flic_read_header(AVFormatContext *s,
     st->codec->width = AV_RL16(&header[0x08]);
     st->codec->height = AV_RL16(&header[0x0A]);
 
-    if (!st->codec->width || !st->codec->height)
-        return AVERROR_INVALIDDATA;
+    if (!st->codec->width || !st->codec->height) {
+        /* Ugly hack needed for the following sample: */
+        /* http://samples.mplayerhq.hu/fli-flc/fli-bugs/specular.flc */
+        av_log(s, AV_LOG_WARNING,
+               "File with no specified width/height. Trying 640x480.\n");
+        st->codec->width  = 640;
+        st->codec->height = 480;
+    }
 
     /* send over the whole 128-byte FLIC header */
     st->codec->extradata_size = FLIC_HEADER_SIZE;
