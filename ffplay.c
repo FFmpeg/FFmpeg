@@ -2515,7 +2515,7 @@ void show_help(void)
            );
 }
 
-void parse_arg_file(const char *filename)
+void opt_input_file(const char *filename)
 {
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2530,7 +2530,7 @@ int main(int argc, char **argv)
     /* register all codecs, demux and protocols */
     av_register_all();
 
-    parse_options(argc, argv, options, parse_arg_file);
+    parse_options(argc, argv, options, opt_input_file);
 
     if (!input_filename) {
         show_help();
