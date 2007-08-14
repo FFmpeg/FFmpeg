@@ -674,14 +674,6 @@ resync:
     for(i=sync=url_ftell(pb); !url_feof(pb); i++) {
         int j;
 
-        if (i >= avi->movi_end) {
-            if (avi->is_odml) {
-                url_fskip(pb, avi->riff_end - i);
-                avi->riff_end = avi->movi_end = url_fsize(pb);
-            } else
-                break;
-        }
-
         for(j=0; j<7; j++)
             d[j]= d[j+1];
         d[7]= get_byte(pb);
@@ -701,7 +693,8 @@ resync:
         //parse ix##
         if(  (d[0] == 'i' && d[1] == 'x' && n < s->nb_streams)
         //parse JUNK
-           ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')){
+           ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')
+           ||(d[0] == 'i' && d[1] == 'd' && d[2] == 'x' && d[3] == '1')){
             url_fskip(pb, size);
 //av_log(NULL, AV_LOG_DEBUG, "SKIP\n");
             goto resync;
