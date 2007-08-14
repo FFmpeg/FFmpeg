@@ -48,6 +48,7 @@ typedef struct AVIStream {
 typedef struct {
     int64_t  riff_end;
     int64_t  movi_end;
+    int64_t  fsize;
     offset_t movi_list;
     int index_loaded;
     int is_odml;
@@ -225,6 +226,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (get_riff(avi, pb) < 0)
         return -1;
+
+    avi->fsize = url_fsize(pb);
+    if(avi->fsize<=0)
+        avi->fsize= avi->riff_end;
 
     /* first list tag */
     stream_index = -1;
@@ -690,7 +695,7 @@ resync:
             n= 100; //invalid stream id
         }
 //av_log(NULL, AV_LOG_DEBUG, "%X %X %X %X %X %X %X %X %"PRId64" %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
-        if(i + size > avi->movi_end || d[0]<0)
+        if(i + size > avi->fsize || d[0]<0)
             continue;
 
         //parse ix##
@@ -755,7 +760,7 @@ resync:
         if (   d[0] >= '0' && d[0] <= '9'
             && d[1] >= '0' && d[1] <= '9'
             && ((d[2] == 'p' && d[3] == 'c'))
-            && n < s->nb_streams && i + size <= avi->movi_end) {
+            && n < s->nb_streams && i + size <= avi->fsize) {
 
             AVStream *st;
             int first, clr, flags, k, p;
