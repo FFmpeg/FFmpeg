@@ -2518,7 +2518,7 @@ void show_help(void)
 void parse_arg_file(const char *filename)
 {
     if (!strcmp(filename, "-"))
-                    filename = "pipe:";
+        filename = "pipe:";
     input_filename = filename;
 }
 
