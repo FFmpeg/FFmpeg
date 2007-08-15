@@ -19,6 +19,20 @@ http(s)://roundup.mplayerhq/roundup/ffmpeg/
 Note the use the URLs above you must append top level domain of
 hungary to the tracker, and italy to the mailinglist
 
+Email Interface:
+----------------
+Theres a mailinglist to which all new issues and changes to existing issues
+are sent to, you can subscribe through
+http://live.polito/mailman/listinfo/ffmpeg-issues
+Replies to messages there will have their text added to the specific issues.
+Attachments will be added as if they had been uploaded via the web interface.
+You can change the status, substatus, topic, ... by changing the subject in
+your reply like:
+Re: [issue94] register_avcodec and allcodecs.h [type=patch;status=open;substatus=approved]
+roundup will then change things as you requested and remove the [...] from
+the subject before forwarding the mail to the mailinglist
+
+
 note: issue = (bug report || patch || feature request)
 
 Type:
