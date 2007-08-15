@@ -43,6 +43,7 @@ extern const uint8_t ff_ue_golomb_len[256];
 extern const uint8_t ff_interleaved_golomb_vlc_len[256];
 extern const uint8_t ff_interleaved_ue_golomb_vlc_code[256];
 extern const  int8_t ff_interleaved_se_golomb_vlc_code[256];
+extern const uint8_t ff_interleaved_dirac_golomb_vlc_code[256];
 
 
  /**
@@ -75,7 +76,6 @@ static inline int get_ue_golomb(GetBitContext *gb){
 
 static inline int svq3_get_ue_golomb(GetBitContext *gb){
     uint32_t buf;
-    int log;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
@@ -88,21 +88,24 @@ static inline int svq3_get_ue_golomb(GetBitContext *gb){
 
         return ff_interleaved_ue_golomb_vlc_code[buf];
     }else{
-        LAST_SKIP_BITS(re, gb, 8);
-        UPDATE_CACHE(re, gb);
-        buf |= 1 | (GET_CACHE(re, gb) >> 8);
+        int ret = 1;
 
-        if((buf & 0xAAAAAAAA) == 0)
-            return INVALID_VLC;
+        while (1) {
+            buf >>= 32 - 8;
+            LAST_SKIP_BITS(re, gb, FFMIN(ff_interleaved_golomb_vlc_len[buf], 8));
 
-        for(log=31; (buf & 0x80000000) == 0; log--){
-            buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
+            if (ff_interleaved_golomb_vlc_len[buf] != 9){
+                ret <<= (ff_interleaved_golomb_vlc_len[buf] - 1) >> 1;
+                ret |= ff_interleaved_dirac_golomb_vlc_code[buf];
+                break;
+            }
+            ret = (ret << 4) | ff_interleaved_dirac_golomb_vlc_code[buf];
+            UPDATE_CACHE(re, gb);
+            buf = GET_CACHE(re, gb);
         }
 
-        LAST_SKIP_BITS(re, gb, 63 - 2*log - 8);
         CLOSE_READER(re, gb);
-
-        return ((buf << log) >> log) - 1;
+        return ret - 1;
     }
 }
 
@@ -190,6 +193,24 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
 
         return (signed) (((((buf << log) >> log) - 1) ^ -(buf & 0x1)) + 1) >> 1;
     }
+}
+
+static inline int dirac_get_se_golomb(GetBitContext *gb){
+    uint32_t buf;
+    uint32_t ret;
+
+    ret = svq3_get_ue_golomb(gb);
+
+    if (ret) {
+        OPEN_READER(re, gb);
+        UPDATE_CACHE(re, gb);
+        buf = SHOW_SBITS(re, gb, 1);
+        LAST_SKIP_BITS(re, gb, 1);
+        ret = (ret ^ buf) - buf;
+        CLOSE_READER(re, gb);
+    }
+
+    return ret;
 }
 
 /**
