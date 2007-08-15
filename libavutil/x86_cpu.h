@@ -58,7 +58,7 @@
 #endif
 
 #if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && defined(HAVE_EBX_AVAILABLE) && defined(HAVE_EBP_AVAILABLE))
-#  define CONFIG_7REGS 1
+#  define HAVE_7REGS 1
 #endif
 
 #if defined(ARCH_X86_64) && defined(PIC)
