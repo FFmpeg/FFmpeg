@@ -1100,7 +1100,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                                                        &num)) < 0)
                                 break;
                             if (!track->default_duration)
-                            track->default_duration = 1000000000/num;
+                                track->default_duration = 1000000000/num;
                             break;
                         }
 
