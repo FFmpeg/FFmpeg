@@ -308,7 +308,13 @@ typedef struct AVStream {
     /** quality, as it has been removed from AVCodecContext and put in AVVideoFrame
      * MN: dunno if that is the right place for it */
     float quality;
-    /** decoding: pts of the first frame of the stream, in stream time base. */
+    /**
+     * decoding: pts of the first frame of the stream, in stream time base.
+     * only set this if you are absolutely 100% sure that the value you set
+     * it to really is the pts of the first frame
+     * @note the ASF header does NOT contain a correct start_time the ASF
+     * demuxer must NOT set this
+     */
     int64_t start_time;
     /** decoding: duration of the stream, in stream time base. */
     int64_t duration;
