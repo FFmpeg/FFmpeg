@@ -1089,7 +1089,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             if ((res = ebml_read_uint (matroska, &id,
                                                        &num)) < 0)
                                 break;
-                            track->default_duration = num/matroska->time_scale;
+                            track->default_duration = num;
                             break;
                         }
 
@@ -1100,7 +1100,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                                                        &num)) < 0)
                                 break;
                             if (!track->default_duration)
-                            track->default_duration = 1000000000/(matroska->time_scale*num);
+                            track->default_duration = 1000000000/num;
                             break;
                         }
 
@@ -1407,7 +1407,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                track->default_duration = num / matroska->time_scale;
+                track->default_duration = num;
                 break;
             }
 
@@ -2174,7 +2174,7 @@ matroska_read_header (AVFormatContext    *s,
 
             if (track->default_duration)
                 av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
-                          track->default_duration, 1000, 30000);
+                          track->default_duration, 1000000000, 30000);
 
             if(extradata){
                 st->codec->extradata = extradata;
@@ -2283,7 +2283,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         return res;
     }
     if (duration == AV_NOPTS_VALUE)
-        duration = matroska->tracks[track]->default_duration;
+        duration = matroska->tracks[track]->default_duration / matroska->time_scale;
 
     /* block_time (relative to cluster time) */
     block_time = AV_RB16(data);
