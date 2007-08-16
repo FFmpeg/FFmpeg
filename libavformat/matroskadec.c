@@ -1099,6 +1099,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             if ((res = ebml_read_float(matroska, &id,
                                                        &num)) < 0)
                                 break;
+                            if (!track->default_duration)
                             track->default_duration = 1000000000/(matroska->time_scale*num);
                             break;
                         }
