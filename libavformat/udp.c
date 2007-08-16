@@ -43,6 +43,7 @@ typedef struct {
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
+#define UDP_MAX_PKT_SIZE 65536
 
 #ifdef CONFIG_IPV6
 
@@ -396,6 +397,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             perror("setsockopt sndbuf");
             goto fail;
         }
+    } else {
+        /* set udp recv buffer size to the largest possible udp packet size to
+         * avoid losing data on OSes that set this too low by default. */
+        tmp = UDP_MAX_PKT_SIZE;
+        setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp));
     }
 
     s->udp_fd = udp_fd;
