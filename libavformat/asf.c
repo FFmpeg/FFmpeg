@@ -370,7 +370,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 bitrate= get_le32(pb);
                 stream_id= (flags & 0x7f);
 //                av_log(NULL, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
-                asf->stream_bitrates[stream_id-1]= bitrate;
+                asf->stream_bitrates[stream_id]= bitrate;
             }
        } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
                 int desc_count, i;
