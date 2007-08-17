@@ -91,11 +91,11 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
 {
     int fd;
 
-    if (flags & URL_WRONLY) {
-        fd = 1;
-    } else {
-        fd = 0;
-    }
+        if (flags & URL_WRONLY) {
+            fd = 1;
+        } else {
+            fd = 0;
+        }
 #ifdef O_BINARY
     setmode(fd, O_BINARY);
 #endif
