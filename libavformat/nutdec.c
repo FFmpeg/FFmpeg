@@ -142,7 +142,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
 }
 
 /**
- * find the given startcode.
+ * Find the given startcode.
  * @param code the startcode
  * @param pos the start position of the search, or -1 if the current position
  * @returns the position of the startcode or -1 if not found
@@ -265,7 +265,7 @@ static int decode_main_header(NUTContext *nut){
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
     if(skip_reserved(bc, end) || get_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Main header checksum mismatch\n");
+        av_log(s, AV_LOG_ERROR, "main header checksum mismatch\n");
         return -1;
     }
 
@@ -319,13 +319,13 @@ static int decode_stream_header(NUTContext *nut){
             st->codec->codec_type = CODEC_TYPE_DATA;
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
+            av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
             return -1;
     }
     GET_V(stc->time_base_id    , tmp < nut->time_base_count);
     GET_V(stc->msb_pts_shift   , tmp < 16);
     stc->max_pts_distance= get_v(bc);
-    GET_V(stc->decode_delay    , tmp < 1000); //sanity limit, raise this if moors law is true
+    GET_V(stc->decode_delay    , tmp < 1000); //sanity limit, raise this if Moore's law is true
     st->codec->has_b_frames= stc->decode_delay;
     get_v(bc); //stream flags
 
@@ -349,13 +349,13 @@ static int decode_stream_header(NUTContext *nut){
         GET_V(st->codec->sample_rate , tmp > 0)
         tmp= get_v(bc); // samplerate_den
         if(tmp > st->codec->sample_rate){
-            av_log(s, AV_LOG_ERROR, "bleh, libnut muxed this ;)\n");
+            av_log(s, AV_LOG_ERROR, "Bleh, libnut muxed this ;)\n");
             st->codec->sample_rate= tmp;
         }
         GET_V(st->codec->channels, tmp > 0)
     }
     if(skip_reserved(bc, end) || get_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Stream header %d checksum mismatch\n", stream_id);
+        av_log(s, AV_LOG_ERROR, "stream header %d checksum mismatch\n", stream_id);
         return -1;
     }
     stc->time_base= &nut->time_base[stc->time_base_id];
@@ -415,7 +415,7 @@ static int decode_info_header(NUTContext *nut){
     }
 
     if(skip_reserved(bc, end) || get_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Info header checksum mismatch\n");
+        av_log(s, AV_LOG_ERROR, "info header checksum mismatch\n");
         return -1;
     }
     return 0;
@@ -534,7 +534,7 @@ static int find_and_decode_index(NUTContext *nut){
     }
 
     if(skip_reserved(bc, end) || get_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Index checksum mismatch\n");
+        av_log(s, AV_LOG_ERROR, "index checksum mismatch\n");
         return -1;
     }
     return 0;
@@ -554,7 +554,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     do{
         pos= find_startcode(bc, MAIN_STARTCODE, pos)+1;
         if (pos<0+1){
-            av_log(s, AV_LOG_ERROR, "no main startcode found\n");
+            av_log(s, AV_LOG_ERROR, "No main startcode found.\n");
             return -1;
         }
     }while(decode_main_header(nut) < 0);
@@ -564,7 +564,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(inited_stream_count=0; inited_stream_count < s->nb_streams;){
         pos= find_startcode(bc, STREAM_STARTCODE, pos)+1;
         if (pos<0+1){
-            av_log(s, AV_LOG_ERROR, "not all stream headers found\n");
+            av_log(s, AV_LOG_ERROR, "Not all stream headers found.\n");
             return -1;
         }
         if(decode_stream_header(nut) >= 0)
@@ -610,7 +610,7 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
     uint64_t tmp;
 
     if(url_ftell(bc) > nut->last_syncpoint_pos + nut->max_distance){
-        av_log(s, AV_LOG_ERROR, "last frame must have been damaged %"PRId64" > %"PRId64" + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
+        av_log(s, AV_LOG_ERROR, "Last frame must have been damaged %"PRId64" > %"PRId64" + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
         return -1;
     }
 
@@ -762,7 +762,7 @@ resync:
         pos= find_startcode(bc, SYNCPOINT_STARTCODE, pos)+1;
         if(pos < 1){
             assert(nut->next_startcode == 0);
-            av_log(s, AV_LOG_ERROR, "read_timestamp failed\n");
+            av_log(s, AV_LOG_ERROR, "read_timestamp failed.\n");
             return AV_NOPTS_VALUE;
         }
     }while(decode_syncpoint(nut, &pts, &back_ptr) < 0);

@@ -160,7 +160,7 @@ static void put_t(NUTContext *nut, StreamContext *nus, ByteIOContext *bc, uint64
 }
 
 /**
- * stores a string as vb.
+ * Stores a string as vb.
  */
 static void put_str(ByteIOContext *bc, const char *string){
     int len= strlen(string);
@@ -457,7 +457,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(pkt->size + 30/*FIXME check*/ + url_ftell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
         store_sp= 1;
 
-//FIXME ensure store_sp is 1 for the first thing
+//FIXME: Ensure store_sp is 1 in the first place.
 
     if(store_sp){
         syncpoint_t *sp, dummy= {.pos= INT64_MAX};

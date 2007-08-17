@@ -45,10 +45,10 @@ typedef enum{
     FLAG_CODED_PTS  =   8, ///<if set, coded_pts is in the frame header
     FLAG_STREAM_ID  =  16, ///<if set, stream_id is coded in the frame header
     FLAG_SIZE_MSB   =  32, ///<if set, data_size_msb is at frame header, otherwise data_size_msb is 0
-    FLAG_CHECKSUM   =  64, ///<if set then the frame header contains a checksum
+    FLAG_CHECKSUM   =  64, ///<if set, the frame header contains a checksum
     FLAG_RESERVED   = 128, ///<if set, reserved_count is coded in the frame header
-    FLAG_CODED      =4096, ///<if set, coded_flags are stored in the frame header.
-    FLAG_INVALID    =8192, ///<if set, frame_code is invalid.
+    FLAG_CODED      =4096, ///<if set, coded_flags are stored in the frame header
+    FLAG_INVALID    =8192, ///<if set, frame_code is invalid
 }flag_t;
 
 typedef struct {
