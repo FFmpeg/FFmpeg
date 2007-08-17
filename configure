@@ -1170,7 +1170,6 @@ case $targetos in
         VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
     fi
     ffserver="no"
-    network="no"
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
