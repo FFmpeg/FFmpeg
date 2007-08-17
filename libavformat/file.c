@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <stdlib.h>
 
 
 /* standard file protocol */
@@ -90,12 +91,17 @@ URLProtocol file_protocol = {
 static int pipe_open(URLContext *h, const char *filename, int flags)
 {
     int fd;
+    const char * final;
+    av_strstart(filename, "pipe:", &filename);
 
+    fd = strtol(filename, &final, 10);
+    if((filename == final) || *final ) {/* No digits found, or something like 10ab */
         if (flags & URL_WRONLY) {
             fd = 1;
         } else {
             fd = 0;
         }
+    }
 #ifdef O_BINARY
     setmode(fd, O_BINARY);
 #endif
