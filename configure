@@ -1285,7 +1285,6 @@ check_deps $ARCH_EXT_LIST
 test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
-needmdynamicnopic="no"
 if test $targetos = darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
@@ -1293,10 +1292,9 @@ if test $targetos = darwin; then
         add_cflags "-no-cpp-precomp -pipe"
         check_cflags "-force_cpusubtype_ALL"
         check_cflags "-Wno-sign-compare"
-        disabled shared && needmdynamicnopic="yes"
+        disabled shared && add_cflags -mdynamic-no-pic
     fi
 fi
-enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
 
 disabled optimize || add_cflags -fomit-frame-pointer
 
