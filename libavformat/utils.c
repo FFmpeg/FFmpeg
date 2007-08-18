@@ -1460,11 +1460,8 @@ static void av_estimate_timings_from_bit_rate(AVFormatContext *ic)
             for(i = 0; i < ic->nb_streams; i++) {
                 st = ic->streams[i];
                 duration= av_rescale(8*filesize, st->time_base.den, ic->bit_rate*(int64_t)st->time_base.num);
-                if (st->start_time == AV_NOPTS_VALUE ||
-                    st->duration == AV_NOPTS_VALUE) {
-                    st->start_time = 0;
+                if (st->duration == AV_NOPTS_VALUE)
                     st->duration = duration;
-                }
             }
         }
     }
