@@ -1551,7 +1551,8 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
             break;
         read_size += pkt->size;
         st = ic->streams[pkt->stream_index];
-        if (pkt->pts != AV_NOPTS_VALUE) {
+        if (pkt->pts != AV_NOPTS_VALUE &&
+            st->start_time != AV_NOPTS_VALUE) {
             end_time = pkt->pts;
             duration = end_time - st->start_time;
             if (duration > 0) {
