@@ -1566,6 +1566,10 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
     fill_all_stream_timings(ic);
 
     url_fseek(&ic->pb, old_offset, SEEK_SET);
+    for(i=0; i<ic->nb_streams; i++){
+        st= ic->streams[i];
+        st->cur_dts= st->first_dts;
+    }
 }
 
 static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
