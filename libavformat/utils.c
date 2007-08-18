@@ -1537,14 +1537,6 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
     for(;;) {
         if (read_size >= DURATION_MAX_READ_SIZE)
             break;
-        /* if all info is available, we can stop */
-        for(i = 0;i < ic->nb_streams; i++) {
-            st = ic->streams[i];
-            if (st->duration == AV_NOPTS_VALUE)
-                break;
-        }
-        if (i == ic->nb_streams)
-            break;
 
         ret = av_read_packet(ic, pkt);
         if (ret != 0)
