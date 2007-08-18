@@ -317,7 +317,11 @@ typedef struct AVStream {
      * demuxer must NOT set this
      */
     int64_t start_time;
-    /** decoding: duration of the stream, in stream time base. */
+    /**
+     * decoding: duration of the stream, in stream time base.
+     * If a source file does not specify a duration, but does specify
+     * a bitrate, this value will be estimates from bit rate and file size.
+     */
     int64_t duration;
 
     char language[4]; /** ISO 639 3-letter language code (empty string if undefined) */
