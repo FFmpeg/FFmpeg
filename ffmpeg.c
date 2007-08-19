@@ -2499,6 +2499,7 @@ static void opt_input_ts_offset(const char *arg)
 
 static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
 {
+    char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
 
     if(!name)
@@ -2507,11 +2508,11 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
         avcodec_find_encoder_by_name(name) :
         avcodec_find_decoder_by_name(name);
     if(!codec) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown codec '%s'\n", name);
+        av_log(NULL, AV_LOG_ERROR, "Unknown %s '%s'\n", codec_string, name);
         exit(1);
     }
     if(codec->type != type) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid codec type '%s'\n", name);
+        av_log(NULL, AV_LOG_ERROR, "Invalid %s type '%s'\n", codec_string, name);
         exit(1);
     }
     return codec->id;
