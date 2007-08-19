@@ -543,10 +543,10 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                     put_bits(&pb, 4, buf[1][i]);
             }
         } else {
-        for (i=1; i<avctx->frame_size; i++) {
-            put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
-            if (avctx->channels == 2)
-                put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
+            for (i=1; i<avctx->frame_size; i++) {
+                put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
+                if (avctx->channels == 2)
+                    put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
             }
         }
         flush_put_bits(&pb);
