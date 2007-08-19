@@ -26,6 +26,13 @@
 
 typedef uint32_t AVCRC;
 
+#define AV_CRC_8_ATM      0x07
+#define AV_CRC_16         0x8005
+#define AV_CRC_16_CCITT   0x1021
+#define AV_CRC_32_IEEE    0x04C11DB7L
+//! reversed bitorder version of AV_CRC_32_IEEE
+#define AV_CRC_32_IEEE_LE 0xEDB88320L
+
 #if LIBAVUTIL_VERSION_INT  < (50<<16)
 extern AVCRC *av_crcEDB88320;
 extern AVCRC *av_crc04C11DB7;

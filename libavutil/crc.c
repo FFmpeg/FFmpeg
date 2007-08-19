@@ -94,10 +94,10 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t le
 main(){
     uint8_t buf[1999];
     int i;
-    int p[4][4]={{1, 32, 0xedb88320L, 0x3D5CDD04},
-                 {0, 32, 0x04c11db7L, 0xC0F5BAE0},
-                 {0, 16, 0x8005     , 0x1FBB    },
-                 {0,  8, 0x07       , 0xE3      },};
+    int p[4][4]={{1, 32, AV_CRC_32_IEEE_LE, 0x3D5CDD04},
+                 {0, 32, AV_CRC_32_IEEE   , 0xC0F5BAE0},
+                 {0, 16, AV_CRC_16        , 0x1FBB    },
+                 {0,  8, AV_CRC_8_ATM     , 0xE3      },};
     AVCRC ctx[1 ? 1024:257];
 
     for(i=0; i<sizeof(buf); i++)
