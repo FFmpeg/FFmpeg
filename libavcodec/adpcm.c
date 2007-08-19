@@ -297,7 +297,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
     nodes[0]->step = c->step_index;
     nodes[0]->sample1 = c->sample1;
     nodes[0]->sample2 = c->sample2;
-    if(version == CODEC_ID_ADPCM_IMA_WAV)
+    if((version == CODEC_ID_ADPCM_IMA_WAV) || (version == CODEC_ID_ADPCM_SWF))
         nodes[0]->sample1 = c->prev_sample;
     if(version == CODEC_ID_ADPCM_MS)
         nodes[0]->step = c->idelta;
@@ -368,7 +368,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     next_##NAME:;
                     STORE_NODE(ms, FFMAX(16, (AdaptationTable[nibble] * step) >> 8));
                 }
-            } else if(version == CODEC_ID_ADPCM_IMA_WAV) {
+            } else if((version == CODEC_ID_ADPCM_IMA_WAV)|| (version == CODEC_ID_ADPCM_SWF)) {
 #define LOOP_NODES(NAME, STEP_TABLE, STEP_INDEX)\
                 const int predictor = nodes[j]->sample1;\
                 const int div = (sample - predictor) * 4 / STEP_TABLE;\
@@ -519,6 +519,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
         PutBitContext pb;
         init_put_bits(&pb, dst, buf_size*8);
 
+        n = avctx->frame_size-1;
+
         //Store AdpcmCodeSize
         put_bits(&pb, 2, 2);                //Set 4bits flash adpcm format
 
@@ -530,10 +532,22 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             c->status[i].prev_sample = (signed short)samples[i];
         }
 
+        if(avctx->trellis > 0) {
+            uint8_t buf[2][n];
+            adpcm_compress_trellis(avctx, samples+2, buf[0], &c->status[0], n);
+            if (avctx->channels == 2)
+                adpcm_compress_trellis(avctx, samples+3, buf[1], &c->status[1], n);
+            for(i=0; i<n; i++) {
+                put_bits(&pb, 4, buf[0][i]);
+                if (avctx->channels == 2)
+                    put_bits(&pb, 4, buf[1][i]);
+            }
+        } else {
         for (i=1; i<avctx->frame_size; i++) {
             put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
             if (avctx->channels == 2)
                 put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
+            }
         }
         flush_put_bits(&pb);
         dst += put_bits_count(&pb)>>3;
