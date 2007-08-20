@@ -64,4 +64,10 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 
 void print_error(const char *filename, int err);
 
+/**
+ * Prints on stdout the license of the program, which depends on the license of
+ * the compiled libav* libraries.
+ */
+void show_license(void);
+
 #endif /* _CMD_UTILS_H */
