@@ -294,9 +294,10 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
         DWTELEM * const ref = b+w2 - 1;
 
         i = 1;
-        b[0] = b[0] - (((-2 * ref[1] + W_BO) - 4 * b[0]) >> W_BS);
+        b[0] = b[0] + (((2 * ref[1] + W_BO-1) + 4 * b[0]) >> W_BS);
         asm volatile(
-            "pslld          $1, %%mm7       \n\t" /* xmm7 already holds a '4' from 2 lifts ago. */
+            "pcmpeqd     %%mm7, %%mm7        \n\t"
+            "psrld         $29, %%mm7        \n\t"
            ::);
         for(; i<w_l-3; i+=4){
             asm volatile(
@@ -304,22 +305,18 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
                 "movq    8(%1), %%mm4        \n\t"
                 "paddd   4(%1), %%mm0        \n\t"
                 "paddd  12(%1), %%mm4        \n\t"
-                "movq    %%mm7, %%mm1        \n\t"
-                "movq    %%mm7, %%mm5        \n\t"
-                "psubd   %%mm0, %%mm1        \n\t"
-                "psubd   %%mm4, %%mm5        \n\t"
-                "movq     (%0), %%mm0        \n\t"
-                "movq    8(%0), %%mm4        \n\t"
-                "pslld      $2, %%mm0        \n\t"
-                "pslld      $2, %%mm4        \n\t"
-                "psubd   %%mm0, %%mm1        \n\t"
-                "psubd   %%mm4, %%mm5        \n\t"
-                "psrad      $4, %%mm1        \n\t"
-                "psrad      $4, %%mm5        \n\t"
-                "movq     (%0), %%mm0        \n\t"
-                "movq    8(%0), %%mm4        \n\t"
-                "psubd   %%mm1, %%mm0        \n\t"
-                "psubd   %%mm5, %%mm4        \n\t"
+                "paddd   %%mm7, %%mm0        \n\t"
+                "paddd   %%mm7, %%mm4        \n\t"
+                "psrad      $2, %%mm0        \n\t"
+                "psrad      $2, %%mm4        \n\t"
+                "movq     (%0), %%mm1        \n\t"
+                "movq    8(%0), %%mm5        \n\t"
+                "paddd   %%mm1, %%mm0        \n\t"
+                "paddd   %%mm5, %%mm4        \n\t"
+                "psrad      $2, %%mm0        \n\t"
+                "psrad      $2, %%mm4        \n\t"
+                "paddd   %%mm1, %%mm0        \n\t"
+                "paddd   %%mm5, %%mm4        \n\t"
                 "movq    %%mm0, (%0)         \n\t"
                 "movq    %%mm4, 8(%0)        \n\t"
                 :: "r"(&b[i]), "r"(&ref[i])
