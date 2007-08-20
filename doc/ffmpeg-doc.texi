@@ -212,7 +212,8 @@ input filename
 Overwrite output files.
 
 @item -t duration
-Set the recording time in seconds.
+Restrict the transcoded/captured video sequence
+to the duration specified in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
 @item -fs limit_size
