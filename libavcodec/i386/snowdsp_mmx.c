@@ -118,7 +118,7 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
                 "movdqu   (%1), %%xmm1        \n\t"
                 "movdqu 16(%1), %%xmm5        \n\t"
                 "movdqu  4(%1), %%xmm0        \n\t"
-                "movdqu 20(%1), %%xmm4        \n\t"
+                "movdqu 20(%1), %%xmm4        \n\t" //FIXME try aligned reads and shifts
                 "paddd  %%xmm1, %%xmm0        \n\t"
                 "paddd  %%xmm5, %%xmm4        \n\t"
                 "movdqa %%xmm7, %%xmm1        \n\t"
