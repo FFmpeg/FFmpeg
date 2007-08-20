@@ -1917,6 +1917,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
         return -1;
     }
     c->fmt_in = s;
+    av_find_stream_info(c->fmt_in);
 
     /* open each parser */
     for(i=0;i<s->nb_streams;i++)
