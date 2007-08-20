@@ -291,6 +291,15 @@ disabled_any(){
     done
 }
 
+is_in(){
+    value=$1
+    shift
+    for var in $*; do
+        [ $var = $value ] && return 0
+    done
+    return 1
+}
+
 check_deps(){
     for cfg; do
         enabled ${cfg}_checking && die "Circular dependency for $cfg."
@@ -567,18 +576,25 @@ apply(){
     "$@" < "$file" > "$file.tmp" && mv "$file.tmp" "$file" || rm "$file.tmp"
 }
 
-CONFIG_LIST='
+COMPONENT_LIST="
+    bsfs
+    decoders
+    demuxers
+    encoders
+    muxers
+    parsers
+    protocols
+"
+
+CONFIG_LIST="
+    $COMPONENT_LIST
     audio_beos
     audio_oss
     avisynth
     beos_netserver
     bktr
-    bsfs
     dc1394
-    decoders
-    demuxers
     dv1394
-    encoders
     ffmpeg
     ffplay
     ffserver
@@ -604,12 +620,9 @@ CONFIG_LIST='
     libxvid
     memalign_hack
     mpegaudio_hp
-    muxers
     network
-    parsers
     powerpc_perf
     pp
-    protocols
     small
     swscaler
     vhook
@@ -617,7 +630,7 @@ CONFIG_LIST='
     v4l2
     x11grab
     zlib
-'
+"
 
 THREADS_LIST='
     beosthreads
@@ -995,6 +1008,7 @@ for opt do
   ;;
   --list-*)
     NAME="${opt#--list-}"
+    is_in $NAME $COMPONENT_LIST || die_unknown $opt
     NAME=$(toupper ${NAME%s})
     eval show_list \$${NAME}_LIST
   ;;
