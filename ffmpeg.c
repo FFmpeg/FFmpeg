@@ -1339,6 +1339,13 @@ static int output_packet(AVInputStream *ist, int ist_index,
     return -1;
 }
 
+static void print_sdp(AVFormatContext **avc, int n)
+{
+    char sdp[2048];
+
+    avf_sdp_create(avc, n, sdp, sizeof(sdp));
+    printf("SDP:\n%s\n", sdp);
+}
 
 /*
  * The following code is the main loop of the file converter
@@ -1356,6 +1363,7 @@ static int av_encode(AVFormatContext **output_files,
     AVInputStream *ist, **ist_table = NULL;
     AVInputFile *file_table;
     int key;
+    int want_sdp = 1;
 
     file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
@@ -1823,6 +1831,12 @@ static int av_encode(AVFormatContext **output_files,
             ret = AVERROR(EINVAL);
             goto fail;
         }
+        if (strcmp(output_files[i]->oformat->name, "rtp")) {
+            want_sdp = 0;
+        }
+    }
+    if (want_sdp) {
+        print_sdp(output_files, nb_output_files);
     }
 
     if ( !using_stdin && verbose >= 0) {
