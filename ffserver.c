@@ -2622,94 +2622,38 @@ static int rtsp_parse_request(HTTPContext *c)
     return 0;
 }
 
-/* XXX: move that to rtsp.c, but would need to replace FFStream by
-   AVFormatContext */
 static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
                                    struct in_addr my_ip)
 {
-    ByteIOContext pb1, *pb = &pb1;
-    int i, payload_type, port, private_payload_type, j;
-    const char *ipstr, *title, *mediatype;
-    AVStream *st;
+    AVFormatContext *avc;
+    AVStream avs[MAX_STREAMS];
+    int i;
 
-    if (url_open_dyn_buf(pb) < 0)
+    avc =  av_alloc_format_context();
+    if (avc == NULL) {
         return -1;
-
-    /* general media info */
-
-    url_fprintf(pb, "v=0\n");
-    ipstr = inet_ntoa(my_ip);
-    url_fprintf(pb, "o=- 0 0 IN IP4 %s\n", ipstr);
-    title = stream->title;
-    if (title[0] == '\0')
-        title = "No Title";
-    url_fprintf(pb, "s=%s\n", title);
-    if (stream->comment[0] != '\0')
-        url_fprintf(pb, "i=%s\n", stream->comment);
-    if (stream->is_multicast)
-        url_fprintf(pb, "c=IN IP4 %s\n", inet_ntoa(stream->multicast_ip));
-
-    /* for each stream, we output the necessary info */
-    private_payload_type = RTP_PT_PRIVATE;
-    for(i = 0; i < stream->nb_streams; i++) {
-        st = stream->streams[i];
-        if (st->codec->codec_id == CODEC_ID_MPEG2TS)
-            mediatype = "video";
-        else {
-            switch(st->codec->codec_type) {
-            case CODEC_TYPE_AUDIO:
-                mediatype = "audio";
-                break;
-            case CODEC_TYPE_VIDEO:
-                mediatype = "video";
-                break;
-            default:
-                mediatype = "application";
-                break;
-            }
-        }
-        /* NOTE: the port indication is not correct in case of
-           unicast. It is not an issue because RTSP gives it */
-        payload_type = rtp_get_payload_type(st->codec);
-        if (payload_type < 0)
-            payload_type = private_payload_type++;
-        if (stream->is_multicast)
-            port = stream->multicast_port + 2 * i;
-        else
-            port = 0;
-
-        url_fprintf(pb, "m=%s %d RTP/AVP %d\n",
-                    mediatype, port, payload_type);
-        if (payload_type >= RTP_PT_PRIVATE) {
-            /* for private payload type, we need to give more info */
-            switch(st->codec->codec_id) {
-            case CODEC_ID_MPEG4:
-                {
-                    uint8_t *data;
-                    url_fprintf(pb, "a=rtpmap:%d MP4V-ES/%d\n",
-                                payload_type, 90000);
-                    /* we must also add the mpeg4 header */
-                    data = st->codec->extradata;
-                    if (data) {
-                        url_fprintf(pb, "a=fmtp:%d config=", payload_type);
-                        for(j=0;j<st->codec->extradata_size;j++)
-                            url_fprintf(pb, "%02x", data[j]);
-                        url_fprintf(pb, "\n");
-                    }
-                }
-                break;
-            default:
-                /* XXX: add other codecs ? */
-                goto fail;
-            }
-        }
-        url_fprintf(pb, "a=control:streamid=%d\n", i);
     }
-    return url_close_dyn_buf(pb, pbuffer);
- fail:
-    url_close_dyn_buf(pb, pbuffer);
-    av_free(*pbuffer);
-    return -1;
+    if (stream->title[0] != 0) {
+        av_strlcpy(avc->title, stream->title, sizeof(avc->title));
+    } else {
+        av_strlcpy(avc->title, "No Title", sizeof(avc->title));
+    }
+    avc->nb_streams = stream->nb_streams;
+    if (stream->is_multicast) {
+        snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",
+                 inet_ntoa(stream->multicast_ip),
+                 stream->multicast_port, stream->multicast_ttl);
+    }
+
+    for(i = 0; i < stream->nb_streams; i++) {
+        avc->streams[i] = &avs[i];
+        avc->streams[i]->codec = stream->streams[i]->codec;
+    }
+    *pbuffer = av_mallocz(2048);
+    avf_sdp_create(&avc, 1, *pbuffer, 2048);
+    av_free(avc);
+
+    return strlen(*pbuffer);
 }
 
 static void rtsp_cmd_options(HTTPContext *c, const char *url)
