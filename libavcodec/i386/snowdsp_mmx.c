@@ -483,18 +483,17 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
         snow_vertical_compose_sse2_sub("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_S,"xmm0","xmm2","xmm4","xmm6")
         "mov %2, %%"REG_a"                           \n\t"
-        snow_vertical_compose_sse2_load(REG_c,"xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_add(REG_a,"xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_sll("2","xmm1","xmm3","xmm5","xmm7")\
-        snow_vertical_compose_sse2_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_sra("2","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_add(REG_c,"xmm0","xmm2","xmm4","xmm6")
 
         "pcmpeqd %%xmm1, %%xmm1                      \n\t"
         "pslld $31, %%xmm1                           \n\t"
-        "psrld $28, %%xmm1                           \n\t"
+        "psrld $30, %%xmm1                           \n\t"
         "mov %1, %%"REG_S"                           \n\t"
 
         snow_vertical_compose_sse2_r2r_add("xmm1","xmm1","xmm1","xmm1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_sra("4","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_sra("2","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_c,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_S,"xmm0","xmm2","xmm4","xmm6")
