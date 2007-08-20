@@ -111,7 +111,8 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
 
         i = 0;
         asm volatile(
-            "pslld          $1, %%xmm7       \n\t" /* xmm7 already holds a '4' from 2 lifts ago. */
+            "pcmpeqd    %%xmm7, %%xmm7        \n\t"
+            "psrad         $29, %%xmm7        \n\t"
         ::);
         for(; i<w_l-7; i+=8){
             asm volatile(
@@ -121,22 +122,18 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
                 "movdqu 20(%1), %%xmm4        \n\t" //FIXME try aligned reads and shifts
                 "paddd  %%xmm1, %%xmm0        \n\t"
                 "paddd  %%xmm5, %%xmm4        \n\t"
-                "movdqa %%xmm7, %%xmm1        \n\t"
-                "movdqa %%xmm7, %%xmm5        \n\t"
-                "psubd  %%xmm0, %%xmm1        \n\t"
-                "psubd  %%xmm4, %%xmm5        \n\t"
-                "movdqa   (%0), %%xmm0        \n\t"
-                "movdqa 16(%0), %%xmm4        \n\t"
-                "pslld      $2, %%xmm0        \n\t"
-                "pslld      $2, %%xmm4        \n\t"
-                "psubd  %%xmm0, %%xmm1        \n\t"
-                "psubd  %%xmm4, %%xmm5        \n\t"
-                "psrad      $4, %%xmm1        \n\t"
-                "psrad      $4, %%xmm5        \n\t"
-                "movdqa   (%0), %%xmm0        \n\t"
-                "movdqa 16(%0), %%xmm4        \n\t"
-                "psubd  %%xmm1, %%xmm0        \n\t"
-                "psubd  %%xmm5, %%xmm4        \n\t"
+                "paddd  %%xmm7, %%xmm0        \n\t"
+                "paddd  %%xmm7, %%xmm4        \n\t"
+                "movdqa   (%0), %%xmm1        \n\t"
+                "movdqa 16(%0), %%xmm5        \n\t"
+                "psrad      $2, %%xmm0        \n\t"
+                "psrad      $2, %%xmm4        \n\t"
+                "paddd  %%xmm1, %%xmm0        \n\t"
+                "paddd  %%xmm5, %%xmm4        \n\t"
+                "psrad      $2, %%xmm0        \n\t"
+                "psrad      $2, %%xmm4        \n\t"
+                "paddd  %%xmm1, %%xmm0        \n\t"
+                "paddd  %%xmm5, %%xmm4        \n\t"
                 "movdqa %%xmm0, (%0)          \n\t"
                 "movdqa %%xmm4, 16(%0)        \n\t"
                 :: "r"(&b[i]), "r"(&ref[i])
@@ -144,7 +141,7 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
             );
         }
         snow_horizontal_compose_liftS_lead_out(i, b, b, ref, width, w_l);
-        b[0] = b_0 - (((-2 * ref[1] + W_BO) - 4 * b_0) >> W_BS);
+        b[0] = b_0 + ((2 * ref[1] + W_BO-1 + 4 * b_0) >> W_BS);
     }
 
     { // Lift 3
