@@ -225,6 +225,11 @@ Intra DC Predicton:
 the luma and chroma values of the left block are used as predictors
 
 the used luma and chroma is the sum of the predictor and y_diff, cb_diff, cr_diff
+to reverse this in the decoder apply the following:
+block[y][x].dc[0] += block[y][x-1].dc[0];
+block[y][x].dc[1] += block[y][x-1].dc[1];
+block[y][x].dc[2] += block[y][x-1].dc[2];
+block[*][-1].dc[*]= 128;
 
 
 Motion Compensation:
