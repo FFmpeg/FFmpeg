@@ -255,7 +255,7 @@ The 2D filter is done by first applying a 1D filter in the vertical direction
 and then applying it in the horizontal one.
  ---------------    ---------------    ---------------    ---------------
 |LL0|HL0|       |  |   |   |       |  |       |       |  |       |       |
-|---+---|  HL1  |  | L0|H0 |  HL1  |  |  LL0  |  HL1  |  |       |       |
+|---+---|  HL1  |  | L0|H0 |  HL1  |  |  LL1  |  HL1  |  |       |       |
 |LH0|HH0|       |  |   |   |       |  |       |       |  |       |       |
 |-------+-------|->|-------+-------|->|-------+-------|->|   L1  |  H1   |->...
 |       |       |  |       |       |  |       |       |  |       |       |
