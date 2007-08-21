@@ -2026,6 +2026,7 @@ if enabled source_path_used; then
          libavcodec/i386 \
          libavcodec/mlib \
          libavcodec/ppc \
+         libavcodec/sh4 \
          libavcodec/sparc \
          libavformat \
          libavutil \
