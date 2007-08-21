@@ -323,6 +323,10 @@ snows 9/7 Integer filter:
 / | \|/ | \|/ | \|/ | \|/
   |  +  |  +  |  +  |  +   +3/2
 
+optimization tips:
+following are exactly identical
+(3a)>>1 == a + (a>>1)
+(a + 4b + 8)>>4 == ((a>>2) + b + 2)>>2
 
 TODO:
 =====
