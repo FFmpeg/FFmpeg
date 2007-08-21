@@ -2019,17 +2019,17 @@ rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 if enabled source_path_used; then
     DIRS="\
          doc \
-         libavformat \
          libavcodec \
          libavcodec/alpha \
          libavcodec/armv4l \
          libavcodec/bfin \
          libavcodec/i386 \
-         libavcodec/sparc \
          libavcodec/mlib \
          libavcodec/ppc \
-         libpostproc \
+         libavcodec/sparc \
+         libavformat \
          libavutil \
+         libpostproc \
          libswscale \
          tests \
          tools \
@@ -2038,12 +2038,12 @@ if enabled source_path_used; then
     FILES="\
           Makefile \
           common.mak \
-          libavformat/Makefile \
-          libavcodec/Makefile \
-          libpostproc/Makefile \
-          libavutil/Makefile \
-          libswscale/Makefile \
           doc/texi2pod.pl \
+          libavcodec/Makefile \
+          libavformat/Makefile \
+          libavutil/Makefile \
+          libpostproc/Makefile \
+          libswscale/Makefile \
           "
     for dir in $DIRS ; do
             mkdir -p $dir
