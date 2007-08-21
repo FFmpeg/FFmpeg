@@ -288,4 +288,30 @@ extern AVCodec dvbsub_encoder;
 extern AVCodec dvdsub_decoder;
 extern AVCodec dvdsub_encoder;
 
+/* parsers */
+extern AVCodecParser aac_parser;
+extern AVCodecParser ac3_parser;
+extern AVCodecParser cavsvideo_parser;
+extern AVCodecParser dca_parser;
+extern AVCodecParser dvbsub_parser;
+extern AVCodecParser dvdsub_parser;
+extern AVCodecParser h261_parser;
+extern AVCodecParser h263_parser;
+extern AVCodecParser h264_parser;
+extern AVCodecParser mjpeg_parser;
+extern AVCodecParser mpeg4video_parser;
+extern AVCodecParser mpegaudio_parser;
+extern AVCodecParser mpegvideo_parser;
+extern AVCodecParser pnm_parser;
+extern AVCodecParser vc1_parser;
+
+/* bitstream filters */
+extern AVBitStreamFilter dump_extradata_bsf;
+extern AVBitStreamFilter remove_extradata_bsf;
+extern AVBitStreamFilter noise_bsf;
+extern AVBitStreamFilter mp3_header_compress_bsf;
+extern AVBitStreamFilter mp3_header_decompress_bsf;
+extern AVBitStreamFilter mjpega_dump_header_bsf;
+extern AVBitStreamFilter imx_dump_header_bsf;
+
 #endif /* ALLCODECS_H */

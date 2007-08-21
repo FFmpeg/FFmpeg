@@ -2774,22 +2774,6 @@ int av_parser_change(AVCodecParserContext *s,
                      const uint8_t *buf, int buf_size, int keyframe);
 void av_parser_close(AVCodecParserContext *s);
 
-extern AVCodecParser aac_parser;
-extern AVCodecParser ac3_parser;
-extern AVCodecParser cavsvideo_parser;
-extern AVCodecParser dca_parser;
-extern AVCodecParser dvbsub_parser;
-extern AVCodecParser dvdsub_parser;
-extern AVCodecParser h261_parser;
-extern AVCodecParser h263_parser;
-extern AVCodecParser h264_parser;
-extern AVCodecParser mjpeg_parser;
-extern AVCodecParser mpeg4video_parser;
-extern AVCodecParser mpegaudio_parser;
-extern AVCodecParser mpegvideo_parser;
-extern AVCodecParser pnm_parser;
-extern AVCodecParser vc1_parser;
-
 
 typedef struct AVBitStreamFilterContext {
     void *priv_data;
@@ -2818,14 +2802,6 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                uint8_t **poutbuf, int *poutbuf_size,
                                const uint8_t *buf, int buf_size, int keyframe);
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
-
-extern AVBitStreamFilter dump_extradata_bsf;
-extern AVBitStreamFilter remove_extradata_bsf;
-extern AVBitStreamFilter noise_bsf;
-extern AVBitStreamFilter mp3_header_compress_bsf;
-extern AVBitStreamFilter mp3_header_decompress_bsf;
-extern AVBitStreamFilter mjpega_dump_header_bsf;
-extern AVBitStreamFilter imx_dump_header_bsf;
 
 
 /* memory */
