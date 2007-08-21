@@ -430,12 +430,6 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
         "paddd %%"s2", %%"t2" \n\t"\
         "paddd %%"s3", %%"t3" \n\t"
 
-#define snow_vertical_compose_sse2_sll(n,t0,t1,t2,t3)\
-        "pslld $"n", %%"t0" \n\t"\
-        "pslld $"n", %%"t1" \n\t"\
-        "pslld $"n", %%"t2" \n\t"\
-        "pslld $"n", %%"t3" \n\t"
-
 #define snow_vertical_compose_sse2_move(s0,s1,s2,s3,t0,t1,t2,t3)\
         "movdqa %%"s0", %%"t0" \n\t"\
         "movdqa %%"s1", %%"t1" \n\t"\
@@ -538,9 +532,6 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
 
 #define snow_vertical_compose_mmx_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)\
         snow_vertical_compose_sse2_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)
-
-#define snow_vertical_compose_mmx_sll(n,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_sll(n,t0,t1,t2,t3)
 
 #define snow_vertical_compose_mmx_move(s0,s1,s2,s3,t0,t1,t2,t3)\
         "movq %%"s0", %%"t0" \n\t"\
