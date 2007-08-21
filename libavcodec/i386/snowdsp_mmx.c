@@ -604,9 +604,8 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
         snow_vertical_compose_mmx_store(REG_c,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
-        snow_vertical_compose_mmx_r2r_add("mm0","mm2","mm4","mm6","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_sra("1","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_mmx_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_a,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_store(REG_a,"mm0","mm2","mm4","mm6")
 
