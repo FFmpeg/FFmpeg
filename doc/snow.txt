@@ -233,7 +233,20 @@ FIXME
 
 LL band prediction:
 ===================
-FIXME
+Each sample in the LL0 subband is predicted by the median of the left, top and
+left+top-topleft samples, samples outside the subband shall be considered to
+be 0. To reverse this prediction in the decoder apply the following.
+for(y=0; y<height; y++){
+    for(x=0; x<width; x++){
+        sample[y][x] += median(sample[y-1][x],
+                               sample[y][x-1],
+                               sample[y-1][x]+sample[y][x-1]-sample[y-1][x-1]);
+    }
+}
+sample[-1][*]=sample[*][-1]= 0;
+width,height here are the width and height of the LL0 subband not of the final
+video
+
 
 Dequantizaton:
 ==============
