@@ -775,7 +775,7 @@ static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int
     int i;
 
     assert(shift == 4);
-#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): (16*4*(src) + 4*(ref) + 8 + (5<<27))/(5*16) - (1<<23))
+#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): -((-16*4*(src) + 4*(ref) + add + 5 + (5<<27))/(5*16) - (1<<23)))
     if(mirror_left){
         dst[0] = LIFTS(src[0], mul*2*ref[0]+add, inverse);
         dst += dst_step;
@@ -1113,8 +1113,8 @@ static void horizontal_decompose97i(DWTELEM *b, int width){
     DWTELEM temp[width];
     const int w2= (width+1)>>1;
 
-    lift (temp+w2, b    +1, b      , 1, 2, 2, width, -W_AM, W_AO, W_AS, 1, 0);
-    liftS(temp   , b      , temp+w2, 1, 2, 1, width, -W_BM, W_BO, W_BS, 0, 0);
+    lift (temp+w2, b    +1, b      , 1, 2, 2, width,  W_AM, W_AO, W_AS, 1, 1);
+    liftS(temp   , b      , temp+w2, 1, 2, 1, width,  W_BM, W_BO, W_BS, 0, 0);
     lift5(b   +w2, temp+w2, temp   , 1, 1, 1, width,  W_CM, W_CO, W_CS, 1, 0);
     lift (b      , temp   , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 0);
 }
@@ -1150,7 +1150,7 @@ static void vertical_decompose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int w
 #ifdef liftS
         b1[i] -= (W_BM*(b0[i] + b2[i])+W_BO)>>W_BS;
 #else
-        b1[i] = (16*4*b1[i] - 4*(b0[i] + b2[i]) + 8*5 + (5<<27)) / (5*16) - (1<<23);
+        b1[i] = (16*4*b1[i] - 4*(b0[i] + b2[i]) + W_BO*5 + (5<<27)) / (5*16) - (1<<23);
 #endif
     }
 }
@@ -1344,8 +1344,8 @@ void ff_snow_horizontal_compose97i(DWTELEM *b, int width){
 
     lift (temp   , b      , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 1);
     lift5(temp+w2, b   +w2, temp   , 1, 1, 1, width,  W_CM, W_CO, W_CS, 1, 1);
-    liftS(b      , temp   , temp+w2, 2, 1, 1, width,  W_BM, W_BO-1, W_BS, 0, 1);
-    lift (b+1    , temp+w2, b      , 2, 1, 2, width, -W_AM, W_AO, W_AS, 1, 1);
+    liftS(b      , temp   , temp+w2, 2, 1, 1, width,  W_BM, W_BO, W_BS, 0, 1);
+    lift (b+1    , temp+w2, b      , 2, 1, 2, width,  W_AM, W_AO, W_AS, 1, 0);
 }
 
 static void vertical_compose97iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){

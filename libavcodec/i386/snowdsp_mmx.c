@@ -111,8 +111,7 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
 
         i = 0;
         asm volatile(
-            "pcmpeqd    %%xmm7, %%xmm7        \n\t"
-            "psrad         $29, %%xmm7        \n\t"
+            "pslld          $1, %%xmm7        \n\t"
         ::);
         for(; i<w_l-7; i+=8){
             asm volatile(
@@ -157,25 +156,21 @@ void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
                 "movdqu 20(%1), %%xmm6        \n\t"
                 "paddd    (%1), %%xmm2        \n\t"
                 "paddd  16(%1), %%xmm6        \n\t"
-                "movdqa %%xmm2, %%xmm0        \n\t"
-                "movdqa %%xmm6, %%xmm4        \n\t"
-                "pslld      $2, %%xmm2        \n\t"
-                "pslld      $2, %%xmm6        \n\t"
-                "psubd  %%xmm2, %%xmm0        \n\t"
-                "psubd  %%xmm6, %%xmm4        \n\t"
-                "psrad      $1, %%xmm0        \n\t"
-                "psrad      $1, %%xmm4        \n\t"
-                "movdqu   (%0), %%xmm2        \n\t"
-                "movdqu 16(%0), %%xmm6        \n\t"
-                "psubd  %%xmm0, %%xmm2        \n\t"
-                "psubd  %%xmm4, %%xmm6        \n\t"
+                "movdqu   (%0), %%xmm0        \n\t"
+                "movdqu 16(%0), %%xmm4        \n\t"
+                "paddd  %%xmm2, %%xmm0        \n\t"
+                "paddd  %%xmm6, %%xmm4        \n\t"
+                "psrad      $1, %%xmm2        \n\t"
+                "psrad      $1, %%xmm6        \n\t"
+                "paddd  %%xmm0, %%xmm2        \n\t"
+                "paddd  %%xmm4, %%xmm6        \n\t"
                 "movdqa %%xmm2, (%2)          \n\t"
                 "movdqa %%xmm6, 16(%2)        \n\t"
                 :: "r"(&src[i]), "r"(&b[i]), "r"(&temp[i])
                  : "memory"
                );
         }
-        snow_horizontal_compose_lift_lead_out(i, temp, src, b, width, w_r, 1, -W_AM, W_AO, W_AS);
+        snow_horizontal_compose_lift_lead_out(i, temp, src, b, width, w_r, 1, -W_AM, W_AO+1, W_AS);
     }
 
     {
@@ -291,10 +286,9 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
         DWTELEM * const ref = b+w2 - 1;
 
         i = 1;
-        b[0] = b[0] + (((2 * ref[1] + W_BO-1) + 4 * b[0]) >> W_BS);
+        b[0] = b[0] + (((2 * ref[1] + W_BO) + 4 * b[0]) >> W_BS);
         asm volatile(
-            "pcmpeqd     %%mm7, %%mm7        \n\t"
-            "psrld         $29, %%mm7        \n\t"
+            "pslld          $1, %%mm7        \n\t"
            ::);
         for(; i<w_l-3; i+=4){
             asm volatile(
@@ -333,16 +327,12 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
                 "movq   12(%1), %%mm6        \n\t"
                 "paddd    (%1), %%mm2        \n\t"
                 "paddd   8(%1), %%mm6        \n\t"
-                "pxor    %%mm0, %%mm0        \n\t" //note: the 2 xor could be avoided if we would flip the rounding direction
-                "pxor    %%mm4, %%mm4        \n\t"
-                "psubd   %%mm2, %%mm0        \n\t"
-                "psubd   %%mm6, %%mm4        \n\t"
-                "psrad      $1, %%mm0        \n\t"
-                "psrad      $1, %%mm4        \n\t"
-                "psubd   %%mm0, %%mm2        \n\t"
-                "psubd   %%mm4, %%mm6        \n\t"
                 "movq     (%0), %%mm0        \n\t"
                 "movq    8(%0), %%mm4        \n\t"
+                "paddd   %%mm2, %%mm0        \n\t"
+                "paddd   %%mm6, %%mm4        \n\t"
+                "psrad      $1, %%mm2        \n\t"
+                "psrad      $1, %%mm6        \n\t"
                 "paddd   %%mm0, %%mm2        \n\t"
                 "paddd   %%mm4, %%mm6        \n\t"
                 "movq    %%mm2, (%2)         \n\t"
@@ -351,7 +341,7 @@ void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width){
                  : "memory"
                );
         }
-        snow_horizontal_compose_lift_lead_out(i, temp, src, b, width, w_r, 1, -W_AM, W_AO, W_AS);
+        snow_horizontal_compose_lift_lead_out(i, temp, src, b, width, w_r, 1, -W_AM, W_AO+1, W_AS);
     }
 
     {
