@@ -246,11 +246,65 @@ Snow supports 2 wavelet transforms, the symmetric biorthogonal 5/3 integer
 transform and a integer approximation of the symmetric biorthogonal 9/7
 daubechies wavelet.
 
-5/3 Integer IDWT:
-FIXME
+2D IDWT (inverse discrete wavelet transform)
+--------------------------------------------
+The 2D IDWT applies a 2D filter recursively, each time combining the
+4 lowest frequency subbands into a single subband until only 1 subband
+remains.
+The 2D filter is done by first applying a 1D filter in the vertical direction
+and then applying it in the horizontal one.
+ ---------------    ---------------    ---------------    ---------------
+|LL0|HL0|       |  |   |   |       |  |       |       |  |       |       |
+|---+---|  HL1  |  | L0|H0 |  HL1  |  |  LL0  |  HL1  |  |       |       |
+|LH0|HH0|       |  |   |   |       |  |       |       |  |       |       |
+|-------+-------|->|-------+-------|->|-------+-------|->|   L1  |  H1   |->...
+|       |       |  |       |       |  |       |       |  |       |       |
+|  LH1  |  HH1  |  |  LH1  |  HH1  |  |  LH1  |  HH1  |  |       |       |
+|       |       |  |       |       |  |       |       |  |       |       |
+ ---------------    ---------------    ---------------    ---------------
 
-snows 9/7 Integer IDWT:
-FIXME
+
+1D Filter:
+----------
+1. interleave the samples of the low and high frequency subbands like
+s={L0, H0, L1, H1, L2, H2, L3, H3, ... }
+note, this can end with a L or a H, the number of elements shall be w
+s[-1] shall be considered equivalent to s[1  ]
+s[w ] shall be considered equivalent to s[w-2]
+
+2. perform the lifting steps in order as described below
+
+5/3 Integer filter:
+1. s[i] -= (s[i-1] + s[i+1] + 2)>>2; for all even i < w
+2. s[i] += (s[i-1] + s[i+1]    )>>1; for all odd  i < w
+
+\ | /|\ | /|\ | /|\ | /|\
+ \|/ | \|/ | \|/ | \|/ |
+  +  |  +  |  +  |  +  |   -1/4
+ /|\ | /|\ | /|\ | /|\ |
+/ | \|/ | \|/ | \|/ | \|/
+  |  +  |  +  |  +  |  +   +1/2
+
+
+snows 9/7 Integer filter:
+1. s[i] -= (3*(s[i-1] + s[i+1])         + 4)>>3; for all even i < w
+2. s[i] -=     s[i-1] + s[i+1]                 ; for all odd  i < w
+3. s[i] += (   s[i-1] + s[i+1] + 4*s[i] + 8)>>4; for all even i < w
+4. s[i] += (3*(s[i-1] + s[i+1])            )>>1; for all odd  i < w
+
+\ | /|\ | /|\ | /|\ | /|\
+ \|/ | \|/ | \|/ | \|/ |
+  +  |  +  |  +  |  +  |   -3/8
+ /|\ | /|\ | /|\ | /|\ |
+/ | \|/ | \|/ | \|/ | \|/
+ (|  + (|  + (|  + (|  +   -1
+\ + /|\ + /|\ + /|\ + /|\  +1/4
+ \|/ | \|/ | \|/ | \|/ |
+  +  |  +  |  +  |  +  |   +1/16
+ /|\ | /|\ | /|\ | /|\ |
+/ | \|/ | \|/ | \|/ | \|/
+  |  +  |  +  |  +  |  +   +3/2
+
 
 TODO:
 =====
