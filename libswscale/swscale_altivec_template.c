@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 #define AVV(x...) (x)
 #else
 #define AVV(x...) {x}

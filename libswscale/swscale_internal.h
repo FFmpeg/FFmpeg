@@ -27,7 +27,7 @@
 
 #include "avutil.h"
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 #define AVV(x...) (x)
 #else
 #define AVV(x...) {x}
