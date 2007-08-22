@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _GCC_FIXES_
-#define _GCC_FIXES_
+#ifndef GCC_FIXES_H
+#define GCC_FIXES_H
 
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
@@ -116,4 +116,4 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 #define const_vector vector
 #endif
 
-#endif /* _GCC_FIXES_ */
+#endif /* GCC_FIXES_H */

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _DSPUTIL_ALTIVEC_
-#define _DSPUTIL_ALTIVEC_
+#ifndef DSPUTIL_ALTIVEC_H
+#define DSPUTIL_ALTIVEC_H
 
 #include "dsputil_ppc.h"
 
@@ -114,4 +114,4 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
 
 #endif /* HAVE_ALTIVEC */
 
-#endif /* _DSPUTIL_ALTIVEC_ */
+#endif /* DSPUTIL_ALTIVEC_H */
