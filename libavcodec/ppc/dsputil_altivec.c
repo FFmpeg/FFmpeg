@@ -28,12 +28,11 @@
 
 #ifdef CONFIG_DARWIN
 #include <sys/sysctl.h>
-#else /* CONFIG_DARWIN */
-#ifdef __AMIGAOS4__
+#elif __AMIGAOS4__
 #include <exec/exec.h>
 #include <interfaces/exec.h>
 #include <proto/exec.h>
-#else /* __AMIGAOS4__ */
+#else
 #include <signal.h>
 #include <setjmp.h>
 
@@ -51,7 +50,6 @@ static void sigill_handler (int sig)
     siglongjmp (jmpbuf, 1);
 }
 #endif /* CONFIG_DARWIN */
-#endif /* __AMIGAOS4__ */
 
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
