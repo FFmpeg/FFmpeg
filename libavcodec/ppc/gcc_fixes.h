@@ -27,7 +27,7 @@
 #include <altivec.h>
 #endif
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 # ifndef __MWERKS__
 #  define AVV(x...) (x)
 # else
@@ -108,7 +108,7 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 
 #endif
 
-#endif /* CONFIG_DARWIN */
+#endif /* SYS_DARWIN */
 
 #ifndef __MWERKS__
 #define const_vector const vector

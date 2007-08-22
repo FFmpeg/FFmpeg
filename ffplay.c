@@ -865,7 +865,7 @@ static int video_open(VideoState *is){
         w = 640;
         h = 480;
     }
-#ifndef CONFIG_DARWIN
+#ifndef SYS_DARWIN
     screen = SDL_SetVideoMode(w, h, 0, flags);
 #else
     /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
@@ -2541,7 +2541,7 @@ int main(int argc, char **argv)
         video_disable = 1;
     }
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
-#if !defined(__MINGW32__) && !defined(CONFIG_DARWIN)
+#if !defined(__MINGW32__) && !defined(SYS_DARWIN)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 or darwin */
 #endif
     if (SDL_Init (flags)) {

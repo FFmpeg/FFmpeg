@@ -26,7 +26,7 @@
 
 #include "dsputil_altivec.h"
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 #include <sys/sysctl.h>
 #elif __AMIGAOS4__
 #include <exec/exec.h>
@@ -49,7 +49,7 @@ static void sigill_handler (int sig)
     canjump = 0;
     siglongjmp (jmpbuf, 1);
 }
-#endif /* CONFIG_DARWIN */
+#endif /* SYS_DARWIN */
 
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
@@ -1428,7 +1428,7 @@ int has_altivec(void)
     return 0;
 #else /* __AMIGAOS4__ */
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
     int has_vu = 0;
     size_t len = sizeof(has_vu);
@@ -1437,7 +1437,7 @@ int has_altivec(void)
     err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
 
     if (err == 0) return (has_vu != 0);
-#else /* CONFIG_DARWIN */
+#else /* SYS_DARWIN */
 /* no Darwin, do it the brute-force way */
 /* this is borrowed from the libmpeg2 library */
     {
@@ -1456,7 +1456,7 @@ int has_altivec(void)
         return 1;
       }
     }
-#endif /* CONFIG_DARWIN */
+#endif /* SYS_DARWIN */
     return 0;
 #endif /* __AMIGAOS4__ */
 }

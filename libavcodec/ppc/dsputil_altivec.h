@@ -44,7 +44,7 @@ void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 #define WORD_s2 0x18,0x19,0x1a,0x1b
 #define WORD_s3 0x1c,0x1d,0x1e,0x1f
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 #define vcprm(a,b,c,d) (const vector unsigned char)(WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d)
 #else
 #define vcprm(a,b,c,d) (const vector unsigned char){WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d}
@@ -61,7 +61,7 @@ void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 #define FLOAT_p 1.
 
 
-#ifdef CONFIG_DARWIN
+#ifdef SYS_DARWIN
 #define vcii(a,b,c,d) (const vector float)(FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d)
 #else
 #define vcii(a,b,c,d) (const vector float){FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d}

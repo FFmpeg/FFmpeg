@@ -1975,7 +1975,7 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST   \
                                       $PROTOCOL_LIST \
 
 if test "$targetos" = darwin; then
-  echo "#define CONFIG_DARWIN 1"  >> $TMPH
+  echo "#define SYS_DARWIN 1"  >> $TMPH
 fi
 
 echo "#define restrict $_restrict" >> $TMPH
