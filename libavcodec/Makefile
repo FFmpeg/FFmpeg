@@ -437,6 +437,7 @@ clean::
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
+	   bfin/*.o bfin/*~ \
 	   ppc/*.o ppc/*~ \
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
