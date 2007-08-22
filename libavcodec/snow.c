@@ -775,7 +775,7 @@ static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int
     int i;
 
     assert(shift == 4);
-#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): -((-16*4*(src) + 4*(ref) + add + 5 + (5<<27))/(5*16) - (1<<23)))
+#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): -((-16*(src) + (ref) + add/4 + 1 + (5<<25))/(5*4) - (1<<23)))
     if(mirror_left){
         dst[0] = LIFTS(src[0], mul*2*ref[0]+add, inverse);
         dst += dst_step;
