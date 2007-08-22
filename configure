@@ -1519,20 +1519,10 @@ EOF
 
 # ---
 # big/little-endian test
-if ! enabled cross_compile; then
-    check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
-#include <inttypes.h>
-int main(int argc, char ** argv){
-        volatile uint32_t i=0x01234567;
-        return (*((uint8_t*)(&i))) == 0x67;
-}
+check_cc <<EOF || die "endian test failed"
+unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
-else
-    # programs cannot be launched if cross compiling, so make a static guess
-    if test "$arch" = "powerpc" -o "$arch" = "mips" ; then
-        bigendian="yes"
-    fi
-fi
+strings $TMPO | grep -q BIGE && enable bigendian
 
 # ---
 # check availability of some header files
