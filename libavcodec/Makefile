@@ -433,11 +433,11 @@ include ../common.mak
 
 clean::
 	rm -f \
-	   i386/*.o i386/*~ \
-	   armv4l/*.o armv4l/*~ \
-	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
+	   armv4l/*.o armv4l/*~ \
 	   bfin/*.o bfin/*~ \
+	   i386/*.o i386/*~ \
+	   mlib/*.o mlib/*~ \
 	   ppc/*.o ppc/*~ \
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
