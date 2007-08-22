@@ -645,6 +645,7 @@ ARCH_LIST='
     ia64
     m68k
     mips
+    mipsel
     parisc
     powerpc
     s390
@@ -730,7 +731,7 @@ altivec_deps="powerpc"
 armv5te_deps="armv4l"
 armv6_deps="armv4l"
 iwmmxt_deps="armv4l"
-mmi_deps="mips"
+mmi_deps_any="mips mipsel"
 mmx_deps="x86"
 ssse3_deps="x86"
 
@@ -1051,8 +1052,11 @@ case "$arch" in
     arch="powerpc"
     enable fast_64bit
   ;;
-  mips|mipsel|IP*)
+  mips|IP*)
     arch="mips"
+  ;;
+  mipsel)
+    arch="mipsel"
   ;;
   sun4u|sparc64)
     arch="sparc64"
@@ -1092,6 +1096,7 @@ esac
 enable $arch
 enabled_any x86_32 x86_64 && enable x86
 enabled     sparc64       && enable sparc
+enabled     mipsel        && enable mips
 
 # OS specific
 osextralibs="-lm"
@@ -1823,7 +1828,7 @@ if test $arch = "armv4l"; then
     echo "ARMv6 enabled             ${armv6-no}"
     echo "IWMMXT enabled            ${iwmmxt-no}"
 fi
-if test $arch = "mips"; then
+if test $arch = "mips" -o $arch = "mipsel"; then
     echo "MMI enabled               ${mmi-no}"
 fi
 if test $arch = "powerpc"; then
