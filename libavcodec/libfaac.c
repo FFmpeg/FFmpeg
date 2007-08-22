@@ -20,7 +20,7 @@
  */
 
 /**
- * @file faacaudio.c
+ * @file libfaac.c
  * Interface to libfaac for aac encoding.
  */
 
