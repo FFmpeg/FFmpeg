@@ -49,6 +49,7 @@
 #include "ffserver.h"
 #include "random.h"
 #include "avstring.h"
+#include "cmdutils.h"
 
 #undef exit
 
@@ -4318,26 +4319,6 @@ static void show_help(void)
            );
 }
 
-static void show_license(void)
-{
-    show_banner();
-    printf(
-    "FFmpeg is free software; you can redistribute it and/or\n"
-    "modify it under the terms of the GNU Lesser General Public\n"
-    "License as published by the Free Software Foundation; either\n"
-    "version 2.1 of the License, or (at your option) any later version.\n"
-    "\n"
-    "FFmpeg is distributed in the hope that it will be useful,\n"
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
-    "Lesser General Public License for more details.\n"
-    "\n"
-    "You should have received a copy of the GNU Lesser General Public\n"
-    "License along with FFmpeg; if not, write to the Free Software\n"
-    "Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA\n"
-    );
-}
-
 static void handle_child_exit(int sig)
 {
     pid_t pid;
@@ -4383,6 +4364,7 @@ int main(int argc, char **argv)
             break;
         switch(c) {
         case 'L':
+            show_banner();
             show_license();
             exit(0);
         case '?':

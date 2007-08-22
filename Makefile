@@ -81,8 +81,8 @@ endif
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(EXTRALIBS)
 
-ffserver$(EXESUF): ffserver.o .libs
-	$(CC) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ ffserver.o $(EXTRALIBS)
+ffserver$(EXESUF): ffserver.o cmdutils.o .libs
+	$(CC) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ ffserver.o cmdutils.o $(EXTRALIBS)
 
 ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(EXTRALIBS) $(SDL_LIBS)
