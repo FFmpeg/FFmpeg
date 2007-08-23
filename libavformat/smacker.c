@@ -28,6 +28,7 @@
 #include "bswap.h"
 
 #define SMACKER_PAL 0x01
+#define SMACKER_FLAG_RING_FRAME 0x01
 
 enum SAudFlags {
     SMK_AUD_PACKED  = 0x80000000,
@@ -112,6 +113,8 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     smk->frames = get_le32(pb);
     smk->pts_inc = (int32_t)get_le32(pb);
     smk->flags = get_le32(pb);
+    if(smk->flags & SMACKER_FLAG_RING_FRAME)
+        smk->frames++;
     for(i = 0; i < 7; i++)
         smk->audio[i] = get_le32(pb);
     smk->treesize = get_le32(pb);
