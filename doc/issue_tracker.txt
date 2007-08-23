@@ -132,6 +132,8 @@ bug/open/needs_more_info
     Bugreports which are incomplete and or where more information is needed
     from the submitter or another person who can provide the info.
     This state implicates that the bug has not been analyzed or reproduced.
+    Note, the idea behind needs_more_info is to offload work from the
+    developers to the users whenever possible.
 
 bug/closed/fixed
     Bugs which have to the best of our knowledge been fixed.
