@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(41<<8)+0)
-#define LIBAVCODEC_VERSION      51.41.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(42<<8)+0)
+#define LIBAVCODEC_VERSION      51.42.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2123,6 +2123,13 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int64_t timecode_frame_start;
+
+    /**
+     * Decoder should decode to this many channels if it can (0 for default)
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    int request_channels;
 } AVCodecContext;
 
 /**
