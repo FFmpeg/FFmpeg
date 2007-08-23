@@ -621,7 +621,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     const uint8_t *buf_end;
     const uint8_t *buf_ptr;
     AVFrame *picture = data;
-    uint32_t stc;
+    uint32_t stc = -1;
 
     s->avctx = avctx;
 
