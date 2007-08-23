@@ -1871,7 +1871,7 @@ static int decode_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic;
-    int err, i, ret, video_index, audio_index;
+    int err, i, ret, video_index, audio_index, use_play;
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
 
@@ -1885,6 +1885,8 @@ static int decode_thread(void *arg)
     url_set_interrupt_cb(decode_interrupt_cb);
 
     memset(ap, 0, sizeof(*ap));
+    ap->initial_pause = 1; /* we force a pause when starting an RTSP
+                              stream */
 
     ap->width = frame_width;
     ap->height= frame_height;
@@ -1898,10 +1900,16 @@ static int decode_thread(void *arg)
         goto fail;
     }
     is->ic = ic;
+#ifdef CONFIG_RTSP_DEMUXER
+    use_play = (ic->iformat == &rtsp_demuxer);
+#else
+    use_play = 0;
+#endif
 
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
+    if (!use_play) {
         err = av_find_stream_info(ic);
         if (err < 0) {
             fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
@@ -1909,6 +1917,7 @@ static int decode_thread(void *arg)
             goto fail;
         }
         ic->pb.eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
+    }
 
     /* if seeking requested, we execute it */
     if (start_time != AV_NOPTS_VALUE) {
@@ -1922,6 +1931,18 @@ static int decode_thread(void *arg)
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n",
                     is->filename, (double)timestamp / AV_TIME_BASE);
+        }
+    }
+
+    /* now we can begin to play (RTSP stream only) */
+    av_read_play(ic);
+
+    if (use_play) {
+        err = av_find_stream_info(ic);
+        if (err < 0) {
+            fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
+            ret = -1;
+            goto fail;
         }
     }
 
