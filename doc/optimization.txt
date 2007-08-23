@@ -77,7 +77,7 @@ clear_blocks
 gmc
     Used for MPEG-4 gmc.
     Optimizing this should have a significant effect on the gmc decoding
-    speed but it's very likely impossible to write in SIMD.
+    speed.
 
 gmc1
     Used for chroma blocks in MPEG-4 gmc with 1 warp point
