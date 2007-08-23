@@ -393,6 +393,7 @@ static const BlockNode null_block= { //FIXME add border maybe
 
 #define LOG2_MB_SIZE 4
 #define MB_SIZE (1<<LOG2_MB_SIZE)
+#define ENCODER_EXTRA_BITS 4
 
 typedef struct x_and_coeff{
     int16_t x;
@@ -3402,7 +3403,7 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
     const int w= b->width;
     const int h= b->height;
     const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
-    const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
+    const int qmul= qexp[qlog&(QROOT-1)]<<((qlog>>QSHIFT) + ENCODER_EXTRA_BITS);
     int x,y, thres1, thres2;
 //    START_TIMER
 
@@ -4192,6 +4193,12 @@ redo_frame:
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
                     s->spatial_dwt_buffer[y*w + x]= (s->spatial_dwt_buffer[y*w + x] + (1<<(FRAC_BITS-1))-1)>>FRAC_BITS;
+                }
+            }
+        }else{
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    s->spatial_dwt_buffer[y*w + x]<<=ENCODER_EXTRA_BITS;
                 }
             }
         }
