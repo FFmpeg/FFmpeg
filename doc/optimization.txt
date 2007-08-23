@@ -159,6 +159,11 @@ Instructions timings and optimization guide for ARM9E:
 http://www.arm.com/pdfs/DDI0222B_9EJS_r1p2.pdf
 
 
+SPARC-specific:
+SPARC Joint Programming Specification (JPS1): Commonality
+http://www.fujitsu.com/downloads/PRMPWR/JPS1-R1.0.4-Common-pub.pdf
+
+
 GCC asm links:
 official doc but quite ugly
 http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
