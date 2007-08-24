@@ -544,7 +544,7 @@ static const uint8_t default_scaling8[2][64]={
    24,25,27,28,30,32,33,35
 }};
 
-static const int dequant4_coeff_init[6][3]={
+static const uint8_t dequant4_coeff_init[6][3]={
   {10,13,16},
   {11,14,18},
   {13,16,20},
@@ -553,10 +553,10 @@ static const int dequant4_coeff_init[6][3]={
   {18,23,29},
 };
 
-static const int dequant8_coeff_init_scan[16] = {
+static const uint8_t dequant8_coeff_init_scan[16] = {
   0,3,4,3, 3,1,5,1, 4,5,2,5, 3,1,5,1
 };
-static const int dequant8_coeff_init[6][6]={
+static const uint8_t dequant8_coeff_init[6][6]={
   {20,18,32,19,25,24},
   {22,19,35,21,28,26},
   {26,23,42,24,33,31},
@@ -624,7 +624,7 @@ static const int quant_coeff[52][16]={
 
 
 /* Deblocking filter (p153) */
-static const int alpha_table[52*3] = {
+static const uint8_t alpha_table[52*3] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -640,7 +640,7 @@ static const int alpha_table[52*3] = {
    255,255,255,255,255,255,255,255,255,255,255,255,255,
    255,255,255,255,255,255,255,255,255,255,255,255,255,
 };
-static const int beta_table[52*3] = {
+static const uint8_t beta_table[52*3] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -656,7 +656,7 @@ static const int beta_table[52*3] = {
     18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
     18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
 };
-static const int tc0_table[52*3][3] = {
+static const uint8_t tc0_table[52*3][3] = {
     { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 },
     { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 },
     { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 },
