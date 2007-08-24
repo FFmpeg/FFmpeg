@@ -21,12 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef SYS_DARWIN
-#define AVV(x...) (x)
-#else
-#define AVV(x...) {x}
-#endif
-
 #define vzero vec_splat_s32(0)
 
 static inline void

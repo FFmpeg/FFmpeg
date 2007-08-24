@@ -27,12 +27,6 @@
 
 #include "avutil.h"
 
-#ifdef SYS_DARWIN
-#define AVV(x...) (x)
-#else
-#define AVV(x...) {x}
-#endif
-
 #define MAX_FILTER_SIZE 256
 
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
