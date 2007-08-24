@@ -125,7 +125,6 @@ show_help(){
   echo "  --disable-v4l            disable video4linux grabbing [default=no]"
   echo "  --disable-v4l2           disable video4linux2 grabbing [default=no]"
   echo "  --disable-bktr           disable bktr video grabbing [default=no]"
-  echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
   echo "  --disable-network        disable network support [default=no]"
   echo "  --disable-ipv6           disable ipv6 support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
@@ -594,7 +593,6 @@ CONFIG_LIST="
     beos_netserver
     bktr
     dc1394
-    dv1394
     ffmpeg
     ffplay
     ffserver
@@ -854,7 +852,6 @@ targetos=$(tolower $(uname -s))
 # non-library system interfaces
 audio_oss="yes"
 bktr="yes"
-dv1394="yes"
 v4l2="yes"
 v4l="yes"
 
@@ -1112,8 +1109,6 @@ case $targetos in
     esac
     LDCONFIG="echo ignoring ldconfig"
     SHFLAGS=-nostart
-    # disable Linux things
-    dv1394="no"
     # enable BeOS things
     disabled audio_beos || enable_audio_beos
     # no need for libm, but the inet stuff
@@ -1126,17 +1121,14 @@ case $targetos in
         osextralibs="-lnet"
     fi ;;
   sunos)
-    dv1394="no"
     FFSERVERLDFLAGS=""
     SHFLAGS="-shared -Wl,-h,\$@"
     add_extralibs "-lsocket -lnsl"
     ;;
   netbsd)
-    dv1394="no"
     add_extralibs "-lossaudio"
     ;;
   openbsd)
-    dv1394="no"
     need_memalign="no"
     LIBOBJFLAGS="\$(PIC)"
     LDCONFIG="ldconfig -m \$(SHLIBDIR)"
@@ -1147,21 +1139,17 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   freebsd)
-    dv1394="no"
     need_memalign="no"
     add_cflags "-pthread"
     ;;
   gnu/kfreebsd)
-    dv1394="no"
     add_cflags "-pthread"
     ;;
   bsd/os)
-    dv1394="no"
     osextralibs="-lpoll -lgnugetopt -lm"
     strip="strip -d"
     ;;
   darwin)
-    dv1394="no"
     need_memalign="no"
     SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(SHLIBDIR)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
     VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$@'
@@ -1176,7 +1164,6 @@ case $targetos in
   mingw32*)
     targetos=mingw32
     shlibdir="$bindir"
-    dv1394="no"
     VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
     VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
     if enabled swscaler; then
@@ -1196,7 +1183,6 @@ case $targetos in
   cygwin*)
     targetos=cygwin
     shlibdir="$bindir"
-    dv1394="no"
     VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
     VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
     if enabled swscaler; then
@@ -1213,6 +1199,7 @@ case $targetos in
     ;;
   linux)
     LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
+    dv1394="yes"
     ;;
   irix*)
     targetos=irix
