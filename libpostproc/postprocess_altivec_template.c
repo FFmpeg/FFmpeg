@@ -22,12 +22,6 @@
 
 #include "avutil.h"
 
-#ifdef SYS_DARWIN
-#define AVV(x...) (x)
-#else
-#define AVV(x...) {x}
-#endif
-
 #define ALTIVEC_TRANSPOSE_8x8_SHORT(src_a,src_b,src_c,src_d,src_e,src_f,src_g,src_h) \
   do {                                                                  \
     __typeof__(src_a) tempA1, tempB1, tempC1, tempD1;                   \

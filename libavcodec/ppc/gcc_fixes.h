@@ -28,15 +28,11 @@
 #endif
 
 #ifdef SYS_DARWIN
-# ifndef __MWERKS__
-#  define AVV(x...) (x)
-# else
+# ifdef __MWERKS__
 #  define AVV
 # endif
 #define REG_v(a) asm ( #a )
 #else
-
-#define AVV(x...) {x}
 
 #if (__GNUC__ < 4)
 # define REG_v(a)
