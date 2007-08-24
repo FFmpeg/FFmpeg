@@ -1902,13 +1902,13 @@ static int decode_thread(void *arg)
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
-        err = av_find_stream_info(ic);
-        if (err < 0) {
-            fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
-            ret = -1;
-            goto fail;
-        }
-        ic->pb.eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
+    err = av_find_stream_info(ic);
+    if (err < 0) {
+        fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
+        ret = -1;
+        goto fail;
+    }
+    ic->pb.eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
 
     /* if seeking requested, we execute it */
     if (start_time != AV_NOPTS_VALUE) {
