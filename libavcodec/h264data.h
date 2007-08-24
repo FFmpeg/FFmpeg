@@ -688,7 +688,7 @@ static const int tc0_table[52*3][3] = {
 
 /* Cabac pre state table */
 
-static const int cabac_context_init_I[460][2] =
+static const int8_t cabac_context_init_I[460][2] =
 {
     /* 0 - 10 */
     { 20, -15 }, {  2, 54 },  {  3,  74 }, { 20, -15 },
@@ -857,7 +857,7 @@ static const int cabac_context_init_I[460][2] =
     {  29,   9 }, {  35,  20 }, {  29,  36 }, {  14,  67 }
 };
 
-static const int cabac_context_init_PB[3][460][2] =
+static const int8_t cabac_context_init_PB[3][460][2] =
 {
     /* i_cabac_init_idc == 0 */
     {
