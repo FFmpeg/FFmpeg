@@ -1192,7 +1192,6 @@ case $targetos in
     SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
     SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(SHLIBDIR)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
     SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base"
-    enabled network && add_extralibs -lws2_32
     ;;
   cygwin*)
     targetos=cygwin
@@ -1542,9 +1541,6 @@ check_func gethrtime
 check_header termios.h
 check_header conio.h
 
-check_header arpa/inet.h
-check_header winsock2.h
-
 check_func inet_aton
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 
@@ -1631,8 +1627,6 @@ check_func getrusage
 check_func2 windows.h GetProcessTimes
 
 check_func fork
-check_func closesocket ||
-    check_func2 winsock2.h closesocket
 
 test "$vhook" = "default" && vhook="$dlopen"
 
@@ -1686,6 +1680,19 @@ EOF
 fi
 
 texi2html -version >/dev/null 2>&1 && enable texi2html || disable texi2html
+
+##########################################
+# Network check
+
+if enabled network; then
+    # Prefer arpa/inet.h over winsock2
+    if check_header arpa/inet.h ; then
+        check_func closesocket
+    elif check_header winsock2.h ; then
+        add_extralibs -lws2_32
+        check_func2 winsock2.h closesocket
+    fi
+fi
 
 ##########################################
 # IPv6 check
