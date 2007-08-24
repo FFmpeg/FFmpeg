@@ -28,9 +28,6 @@
 #endif
 
 #ifdef SYS_DARWIN
-# ifdef __MWERKS__
-#  define AVV
-# endif
 #define REG_v(a) asm ( #a )
 #else
 
@@ -110,6 +107,7 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 #define const_vector const vector
 #else
 #define const_vector vector
+#define AVV
 #endif
 
 #endif /* GCC_FIXES_H */
