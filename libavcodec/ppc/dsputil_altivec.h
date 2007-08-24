@@ -25,8 +25,6 @@
 
 #include "dsputil_ppc.h"
 
-#ifdef HAVE_ALTIVEC
-
 extern int has_altivec(void);
 
 void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
@@ -111,7 +109,5 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
     register vector unsigned char mask = vec_lvsl(offset, src);
     return vec_perm(first, second, mask);
 }
-
-#endif /* HAVE_ALTIVEC */
 
 #endif /* DSPUTIL_ALTIVEC_H */

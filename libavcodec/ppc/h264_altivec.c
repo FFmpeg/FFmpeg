@@ -868,7 +868,6 @@ static void h264_h_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha,
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
-#ifdef HAVE_ALTIVEC
   if (has_altivec()) {
     c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
     c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
@@ -899,12 +898,5 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     dspfunc(put_h264_qpel, 0, 16);
     dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
-
-  } else
-#endif /* HAVE_ALTIVEC */
-  {
-    // Non-AltiVec PPC optimisations
-
-    // ... pending ...
   }
 }
