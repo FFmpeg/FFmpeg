@@ -27,10 +27,6 @@
 #include <altivec.h>
 #endif
 
-#ifdef SYS_DARWIN
-#define REG_v(a) asm ( #a )
-#else
-
 #if (__GNUC__ < 4)
 # define REG_v(a)
 #else
@@ -100,8 +96,6 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
     __altivec_link_error_invalid_argument ())))))))
 
 #endif
-
-#endif /* SYS_DARWIN */
 
 #ifndef __MWERKS__
 #define const_vector const vector
