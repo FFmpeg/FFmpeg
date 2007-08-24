@@ -37,6 +37,7 @@ CodecTags ff_mkv_codec_tags[]={
     {"V_REAL/RV30"      , CODEC_ID_RV30},
     {"V_REAL/RV40"      , CODEC_ID_RV40},
     {"V_THEORA"         , CODEC_ID_THEORA},
+    {"V_SNOW"           , CODEC_ID_SNOW},
 /* TODO: Real/Quicktime */
 
 //    {"A_MS/ACM"         , CODEC_ID_NONE},
