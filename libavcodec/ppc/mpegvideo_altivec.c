@@ -66,7 +66,7 @@ do { \
 }
 
 
-#ifdef SYS_DARWIN
+#ifdef __APPLE_CC__
 #define FOUROF(a) (a)
 #else
 // slower, for dumb non-apple GCC
