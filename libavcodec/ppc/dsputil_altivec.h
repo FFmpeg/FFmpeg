@@ -61,7 +61,7 @@ void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 #define FLOAT_p 1.
 
 
-#ifdef SYS_DARWIN
+#ifdef __APPLE_CC__
 #define vcii(a,b,c,d) (const vector float)(FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d)
 #else
 #define vcii(a,b,c,d) (const vector float){FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d}
