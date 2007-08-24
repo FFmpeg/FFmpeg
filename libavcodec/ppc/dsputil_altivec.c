@@ -304,7 +304,7 @@ int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
-    DECLARE_ALIGNED_16(int, s);;
+    DECLARE_ALIGNED_16(int, s);
     const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
