@@ -27,6 +27,7 @@
 
 #include "rtp_internal.h"
 #include "rtp_h264.h"
+#include "rtp_mpv.h"
 
 //#define DEBUG
 
@@ -788,7 +789,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 
 /* send an rtp packet. sequence number is incremented, but the caller
    must update the timestamp itself */
-static void rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
+void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 {
     RTPDemuxContext *s = s1->priv_data;
 
@@ -836,7 +837,7 @@ static void rtp_send_samples(AVFormatContext *s1,
         n = (s->buf_ptr - s->buf);
         /* if buffer full, then send it */
         if (n >= max_packet_size) {
-            rtp_send_data(s1, s->buf, n, 0);
+            ff_rtp_send_data(s1, s->buf, n, 0);
             s->buf_ptr = s->buf;
             /* update timestamp */
             s->timestamp += n / sample_size;
@@ -859,7 +860,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
     len = (s->buf_ptr - s->buf);
     if ((len + size) > max_packet_size) {
         if (len > 4) {
-            rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
+            ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
             s->buf_ptr = s->buf + 4;
             /* 90 KHz time stamp */
             s->timestamp = s->base_timestamp +
@@ -881,7 +882,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
             s->buf[2] = count >> 8;
             s->buf[3] = count;
             memcpy(s->buf + 4, buf1, len);
-            rtp_send_data(s1, s->buf, len + 4, 0);
+            ff_rtp_send_data(s1, s->buf, len + 4, 0);
             size -= len;
             buf1 += len;
             count += len;
@@ -898,55 +899,6 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
         s->buf_ptr += size;
     }
     s->cur_timestamp += st->codec->frame_size;
-}
-
-/* NOTE: a single frame must be passed with sequence header if
-   needed. XXX: use slices. */
-static void rtp_send_mpegvideo(AVFormatContext *s1,
-                               const uint8_t *buf1, int size)
-{
-    RTPDemuxContext *s = s1->priv_data;
-    AVStream *st = s1->streams[0];
-    int len, h, max_packet_size;
-    uint8_t *q;
-
-    max_packet_size = s->max_payload_size;
-
-    while (size > 0) {
-        /* XXX: more correct headers */
-        h = 0;
-        if (st->codec->sub_id == 2)
-            h |= 1 << 26; /* mpeg 2 indicator */
-        q = s->buf;
-        *q++ = h >> 24;
-        *q++ = h >> 16;
-        *q++ = h >> 8;
-        *q++ = h;
-
-        if (st->codec->sub_id == 2) {
-            h = 0;
-            *q++ = h >> 24;
-            *q++ = h >> 16;
-            *q++ = h >> 8;
-            *q++ = h;
-        }
-
-        len = max_packet_size - (q - s->buf);
-        if (len > size)
-            len = size;
-
-        memcpy(q, buf1, len);
-        q += len;
-
-        /* 90 KHz time stamp */
-        s->timestamp = s->base_timestamp +
-            av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
-        rtp_send_data(s1, s->buf, q - s->buf, (len == size));
-
-        buf1 += len;
-        size -= len;
-    }
-    s->cur_timestamp++;
 }
 
 static void rtp_send_raw(AVFormatContext *s1,
@@ -966,7 +918,7 @@ static void rtp_send_raw(AVFormatContext *s1,
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp +
             av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
-        rtp_send_data(s1, buf1, len, (len == size));
+        ff_rtp_send_data(s1, buf1, len, (len == size));
 
         buf1 += len;
         size -= len;
@@ -992,7 +944,7 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
 
         out_len = s->buf_ptr - s->buf;
         if (out_len >= s->max_payload_size) {
-            rtp_send_data(s1, s->buf, out_len, 0);
+            ff_rtp_send_data(s1, s->buf, out_len, 0);
             s->buf_ptr = s->buf;
         }
     }
@@ -1042,7 +994,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_mpegaudio(s1, buf1, size);
         break;
     case CODEC_ID_MPEG1VIDEO:
-        rtp_send_mpegvideo(s1, buf1, size);
+        ff_rtp_send_mpegvideo(s1, buf1, size);
         break;
     case CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, buf1, size);
