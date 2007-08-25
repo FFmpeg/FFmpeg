@@ -31,7 +31,7 @@
 #define QSHIFT 5
 #define QROOT (1<<QSHIFT)
 #define LOSSLESS_QLOG -128
-#define FRAC_BITS 8
+#define FRAC_BITS 4
 #define MAX_REF_FRAMES 8
 
 #define LOG2_OBMC_MAX 8
@@ -43,17 +43,18 @@
 
 /** Used to minimize the amount of memory used in order to optimize cache performance. **/
 struct slice_buffer_s {
-    DWTELEM * * line; ///< For use by idwt and predict_slices.
-    DWTELEM * * data_stack; ///< Used for internal purposes.
+    IDWTELEM * * line; ///< For use by idwt and predict_slices.
+    IDWTELEM * * data_stack; ///< Used for internal purposes.
     int data_stack_top;
     int line_count;
     int line_width;
     int data_count;
-    DWTELEM * base_buffer; ///< Buffer that this structure is caching.
+    IDWTELEM * base_buffer; ///< Buffer that this structure is caching.
 };
 
 #define liftS lift
 #define lift5 lift
+#define inv_lift5 inv_lift
 #if 1
 #define W_AM 3
 #define W_AO 0
@@ -123,8 +124,8 @@ struct slice_buffer_s {
 #define W_DS 9
 #endif
 
-extern void ff_snow_vertical_compose97i(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
-extern void ff_snow_horizontal_compose97i(DWTELEM *b, int width);
+extern void ff_snow_vertical_compose97i(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+extern void ff_snow_horizontal_compose97i(IDWTELEM *b, int width);
 extern void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
 #ifdef CONFIG_SNOW_ENCODER
@@ -137,7 +138,7 @@ static int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
 
 /* C bits used by mmx/sse2/altivec */
 
-static av_always_inline void snow_interleave_line_header(int * i, int width, DWTELEM * low, DWTELEM * high){
+static av_always_inline void snow_interleave_line_header(int * i, int width, IDWTELEM * low, IDWTELEM * high){
     (*i) = (width) - 2;
 
     if (width & 1){
@@ -146,14 +147,14 @@ static av_always_inline void snow_interleave_line_header(int * i, int width, DWT
     }
 }
 
-static av_always_inline void snow_interleave_line_footer(int * i, DWTELEM * low, DWTELEM * high){
+static av_always_inline void snow_interleave_line_footer(int * i, IDWTELEM * low, IDWTELEM * high){
     for (; (*i)>=0; (*i)-=2){
         low[(*i)+1] = high[(*i)>>1];
         low[*i] = low[(*i)>>1];
     }
 }
 
-static av_always_inline void snow_horizontal_compose_lift_lead_out(int i, DWTELEM * dst, DWTELEM * src, DWTELEM * ref, int width, int w, int lift_high, int mul, int add, int shift){
+static av_always_inline void snow_horizontal_compose_lift_lead_out(int i, IDWTELEM * dst, IDWTELEM * src, IDWTELEM * ref, int width, int w, int lift_high, int mul, int add, int shift){
     for(; i<w; i++){
         dst[i] = src[i] - ((mul * (ref[i] + ref[i + 1]) + add) >> shift);
     }
@@ -163,7 +164,7 @@ static av_always_inline void snow_horizontal_compose_lift_lead_out(int i, DWTELE
     }
 }
 
-static av_always_inline void snow_horizontal_compose_liftS_lead_out(int i, DWTELEM * dst, DWTELEM * src, DWTELEM * ref, int width, int w){
+static av_always_inline void snow_horizontal_compose_liftS_lead_out(int i, IDWTELEM * dst, IDWTELEM * src, IDWTELEM * ref, int width, int w){
         for(; i<w; i++){
             dst[i] = src[i] + ((ref[i] + ref[(i+1)]+W_BO + 4 * src[i]) >> W_BS);
         }

@@ -37,6 +37,7 @@
 /* dct code */
 typedef short DCTELEM;
 typedef int DWTELEM;
+typedef short IDWTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void fdct_ifast248 (DCTELEM *data);
@@ -390,8 +391,8 @@ typedef struct DSPContext {
     void (*h264_dct)(DCTELEM block[4][4]);
 
     /* snow wavelet */
-    void (*vertical_compose97i)(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
-    void (*horizontal_compose97i)(DWTELEM *b, int width);
+    void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+    void (*horizontal_compose97i)(IDWTELEM *b, int width);
     void (*inner_add_yblock)(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
     void (*prefetch)(void *mem, int stride, int h);
