@@ -363,14 +363,14 @@ typedef struct RcOverride{
  * streams is not written to for at least s->max_b_frames+1 frames, if
  * this is not set the input will be copied. */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
-#define CODEC_FLAG_PASS1 0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
-#define CODEC_FLAG_PASS2 0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
-#define CODEC_FLAG_EXTERN_HUFF 0x1000 ///< Use external Huffman table (for MJPEG).
-#define CODEC_FLAG_GRAY  0x2000   ///< Only decode/encode grayscale.
-#define CODEC_FLAG_EMU_EDGE 0x4000///< Don't draw edges.
-#define CODEC_FLAG_PSNR           0x8000 ///< error[?] variables will be set during encoding.
-#define CODEC_FLAG_TRUNCATED  0x00010000 /** Input bitstream might be truncated at a random location instead
-                                            of only at frame boundaries. */
+#define CODEC_FLAG_PASS1           0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
+#define CODEC_FLAG_PASS2           0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
+#define CODEC_FLAG_EXTERN_HUFF     0x1000   ///< Use external Huffman table (for MJPEG).
+#define CODEC_FLAG_GRAY            0x2000   ///< Only decode/encode grayscale.
+#define CODEC_FLAG_EMU_EDGE        0x4000   ///< Don't draw edges.
+#define CODEC_FLAG_PSNR            0x8000   ///< error[?] variables will be set during encoding.
+#define CODEC_FLAG_TRUNCATED       0x00010000 /** Input bitstream might be truncated at a random
+                                                  location instead of only at frame boundaries. */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 ///< Normalize adaptive quantization.
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 ///< Use interlaced DCT.
 #define CODEC_FLAG_LOW_DELAY      0x00080000 ///< Force low delay.
@@ -449,7 +449,7 @@ typedef struct RcOverride{
 #define MB_TYPE_8x16       0x0020
 #define MB_TYPE_8x8        0x0040
 #define MB_TYPE_INTERLACED 0x0080
-#define MB_TYPE_DIRECT2     0x0100 //FIXME
+#define MB_TYPE_DIRECT2    0x0100 //FIXME
 #define MB_TYPE_ACPRED     0x0200
 #define MB_TYPE_GMC        0x0400
 #define MB_TYPE_SKIP       0x0800
@@ -711,10 +711,10 @@ typedef struct AVPanScan{
 #define FF_BUFFER_TYPE_COPY     8 ///< Just a (modified) copy of some other buffer, don't deallocate anything.
 
 
-#define FF_I_TYPE 1 // Intra
-#define FF_P_TYPE 2 // Predicted
-#define FF_B_TYPE 3 // Bi-dir predicted
-#define FF_S_TYPE 4 // S(GMC)-VOP MPEG4
+#define FF_I_TYPE  1 // Intra
+#define FF_P_TYPE  2 // Predicted
+#define FF_B_TYPE  3 // Bi-dir predicted
+#define FF_S_TYPE  4 // S(GMC)-VOP MPEG4
 #define FF_SI_TYPE 5
 #define FF_SP_TYPE 6
 
@@ -1263,24 +1263,24 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int idct_algo;
-#define FF_IDCT_AUTO         0
-#define FF_IDCT_INT          1
-#define FF_IDCT_SIMPLE       2
-#define FF_IDCT_SIMPLEMMX    3
-#define FF_IDCT_LIBMPEG2MMX  4
-#define FF_IDCT_PS2          5
-#define FF_IDCT_MLIB         6
-#define FF_IDCT_ARM          7
-#define FF_IDCT_ALTIVEC      8
-#define FF_IDCT_SH4          9
-#define FF_IDCT_SIMPLEARM    10
-#define FF_IDCT_H264         11
-#define FF_IDCT_VP3          12
-#define FF_IDCT_IPP          13
-#define FF_IDCT_XVIDMMX      14
-#define FF_IDCT_CAVS         15
+#define FF_IDCT_AUTO          0
+#define FF_IDCT_INT           1
+#define FF_IDCT_SIMPLE        2
+#define FF_IDCT_SIMPLEMMX     3
+#define FF_IDCT_LIBMPEG2MMX   4
+#define FF_IDCT_PS2           5
+#define FF_IDCT_MLIB          6
+#define FF_IDCT_ARM           7
+#define FF_IDCT_ALTIVEC       8
+#define FF_IDCT_SH4           9
+#define FF_IDCT_SIMPLEARM     10
+#define FF_IDCT_H264          11
+#define FF_IDCT_VP3           12
+#define FF_IDCT_IPP           13
+#define FF_IDCT_XVIDMMX       14
+#define FF_IDCT_CAVS          15
 #define FF_IDCT_SIMPLEARMV5TE 16
-#define FF_IDCT_SIMPLEARMV6  17
+#define FF_IDCT_SIMPLEARMV6   17
 
     /**
      * slice count
@@ -1363,20 +1363,20 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int debug;
-#define FF_DEBUG_PICT_INFO 1
-#define FF_DEBUG_RC        2
-#define FF_DEBUG_BITSTREAM 4
-#define FF_DEBUG_MB_TYPE   8
-#define FF_DEBUG_QP        16
-#define FF_DEBUG_MV        32
-#define FF_DEBUG_DCT_COEFF 0x00000040
-#define FF_DEBUG_SKIP      0x00000080
-#define FF_DEBUG_STARTCODE 0x00000100
-#define FF_DEBUG_PTS       0x00000200
-#define FF_DEBUG_ER        0x00000400
-#define FF_DEBUG_MMCO      0x00000800
-#define FF_DEBUG_BUGS      0x00001000
-#define FF_DEBUG_VIS_QP    0x00002000
+#define FF_DEBUG_PICT_INFO   1
+#define FF_DEBUG_RC          2
+#define FF_DEBUG_BITSTREAM   4
+#define FF_DEBUG_MB_TYPE     8
+#define FF_DEBUG_QP          16
+#define FF_DEBUG_MV          32
+#define FF_DEBUG_DCT_COEFF   0x00000040
+#define FF_DEBUG_SKIP        0x00000080
+#define FF_DEBUG_STARTCODE   0x00000100
+#define FF_DEBUG_PTS         0x00000200
+#define FF_DEBUG_ER          0x00000400
+#define FF_DEBUG_MMCO        0x00000800
+#define FF_DEBUG_BUGS        0x00001000
+#define FF_DEBUG_VIS_QP      0x00002000
 #define FF_DEBUG_VIS_MB_TYPE 0x00004000
 
     /**
@@ -1434,19 +1434,19 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int ildct_cmp;
-#define FF_CMP_SAD  0
-#define FF_CMP_SSE  1
-#define FF_CMP_SATD 2
-#define FF_CMP_DCT  3
-#define FF_CMP_PSNR 4
-#define FF_CMP_BIT  5
-#define FF_CMP_RD   6
-#define FF_CMP_ZERO 7
-#define FF_CMP_VSAD 8
-#define FF_CMP_VSSE 9
-#define FF_CMP_NSSE 10
-#define FF_CMP_W53  11
-#define FF_CMP_W97  12
+#define FF_CMP_SAD    0
+#define FF_CMP_SSE    1
+#define FF_CMP_SATD   2
+#define FF_CMP_DCT    3
+#define FF_CMP_PSNR   4
+#define FF_CMP_BIT    5
+#define FF_CMP_RD     6
+#define FF_CMP_ZERO   7
+#define FF_CMP_VSAD   8
+#define FF_CMP_VSSE   9
+#define FF_CMP_NSSE   10
+#define FF_CMP_W53    11
+#define FF_CMP_W97    12
 #define FF_CMP_DCTMAX 13
 #define FF_CMP_DCT264 14
 #define FF_CMP_CHROMA 256
@@ -1826,9 +1826,9 @@ typedef struct AVCodecContext {
      int profile;
 #define FF_PROFILE_UNKNOWN -99
 #define FF_PROFILE_AAC_MAIN 0
-#define FF_PROFILE_AAC_LOW 1
-#define FF_PROFILE_AAC_SSR 2
-#define FF_PROFILE_AAC_LTP 3
+#define FF_PROFILE_AAC_LOW  1
+#define FF_PROFILE_AAC_SSR  2
+#define FF_PROFILE_AAC_LTP  3
 
     /**
      * level
