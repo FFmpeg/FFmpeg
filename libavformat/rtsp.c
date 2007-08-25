@@ -1267,7 +1267,7 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
 {
     RTSPState *rt = s->priv_data;
 
-    rt->seek_timestamp = timestamp;
+    rt->seek_timestamp = av_rescale_q(timestamp, s->streams[stream_index]->time_base, AV_TIME_BASE_Q);
     switch(rt->state) {
     default:
     case RTSP_STATE_IDLE:
