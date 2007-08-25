@@ -3621,8 +3621,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
 
 #ifdef CONFIG_SNOW_DECODER
-#if 0
-        if(mm_flags & MM_SSE2){
+        if(mm_flags & MM_SSE2 & 0){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
             c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
@@ -3632,7 +3631,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
             c->inner_add_yblock = ff_snow_inner_add_yblock_mmx;
         }
-#endif
 #endif
 
         if(mm_flags & MM_3DNOW){
