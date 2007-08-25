@@ -39,7 +39,6 @@
 
 #define DWT_97 0
 #define DWT_53 1
-#define DWT_X  2
 
 /** Used to minimize the amount of memory used in order to optimize cache performance. **/
 struct slice_buffer_s {
@@ -53,8 +52,6 @@ struct slice_buffer_s {
 };
 
 #define liftS lift
-#define lift5 lift
-#define inv_lift5 inv_lift
 #if 1
 #define W_AM 3
 #define W_AO 0
