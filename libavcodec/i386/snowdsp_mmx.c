@@ -424,6 +424,12 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         "paddw %%"s2", %%"t2" \n\t"\
         "paddw %%"s3", %%"t3" \n\t"
 
+#define snow_vertical_compose_r2r_pmulhw(s0,s1,s2,s3,t0,t1,t2,t3)\
+        "pmulhw %%"s0", %%"t0" \n\t"\
+        "pmulhw %%"s1", %%"t1" \n\t"\
+        "pmulhw %%"s2", %%"t2" \n\t"\
+        "pmulhw %%"s3", %%"t3" \n\t"
+
 #define snow_vertical_compose_sse2_move(s0,s1,s2,s3,t0,t1,t2,t3)\
         "movdqa %%"s0", %%"t0" \n\t"\
         "movdqa %%"s1", %%"t1" \n\t"\
@@ -446,21 +452,18 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
          asm volatile (
         "jmp 2f                                      \n\t"
         "1:                                          \n\t"
-
         snow_vertical_compose_sse2_load("%4","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add("%6","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
 
-        "pcmpeqd %%xmm1, %%xmm1                      \n\t"
-        "psllw $15, %%xmm1                           \n\t"
-        "psrlw $14, %%xmm1                           \n\t"
 
-        snow_vertical_compose_r2r_add("xmm1","xmm1","xmm1","xmm1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sra("2","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_load("%5","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_r2r_sub("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
+        "pcmpeqw    %%xmm0, %%xmm0                   \n\t"
+        "pcmpeqw    %%xmm2, %%xmm2                   \n\t"
+        "paddw      %%xmm2, %%xmm2                   \n\t"
+        "paddw      %%xmm0, %%xmm2                   \n\t"
+        "psllw         $13, %%xmm2                   \n\t"
+        snow_vertical_compose_r2r_add("xmm0","xmm0","xmm0","xmm0","xmm1","xmm3","xmm5","xmm7")
+        snow_vertical_compose_r2r_pmulhw("xmm2","xmm2","xmm2","xmm2","xmm1","xmm3","xmm5","xmm7")
+        snow_vertical_compose_sse2_add("%5","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_store("%5","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_load("%4","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add("%3","xmm1","xmm3","xmm5","xmm7")
@@ -530,6 +533,7 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         "movq %%"s2", %%"t2" \n\t"\
         "movq %%"s3", %%"t3" \n\t"
 
+
 void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width){
     long i = width;
     while(i & 15)
@@ -545,20 +549,16 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         "jmp 2f                                      \n\t"
         "1:                                          \n\t"
 
-        snow_vertical_compose_mmx_load("%4","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_add("%6","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
-        snow_vertical_compose_sra("1","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
-
-        "pcmpeqw %%mm1, %%mm1                        \n\t"
-        "psllw $15, %%mm1                            \n\t"
-        "psrlw $14, %%mm1                            \n\t"
-
-        snow_vertical_compose_r2r_add("mm1","mm1","mm1","mm1","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_sra("2","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_load("%5","mm1","mm3","mm5","mm7")
-        snow_vertical_compose_r2r_sub("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
+        snow_vertical_compose_mmx_load("%4","mm1","mm3","mm5","mm7")
+        snow_vertical_compose_mmx_add("%6","mm1","mm3","mm5","mm7")
+        "pcmpeqw    %%mm0, %%mm0                     \n\t"
+        "pcmpeqw    %%mm2, %%mm2                     \n\t"
+        "paddw      %%mm2, %%mm2                     \n\t"
+        "paddw      %%mm0, %%mm2                     \n\t"
+        "psllw        $13, %%mm2                     \n\t"
+        snow_vertical_compose_r2r_add("mm0","mm0","mm0","mm0","mm1","mm3","mm5","mm7")
+        snow_vertical_compose_r2r_pmulhw("mm2","mm2","mm2","mm2","mm1","mm3","mm5","mm7")
+        snow_vertical_compose_mmx_add("%5","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_store("%5","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_load("%4","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add("%3","mm1","mm3","mm5","mm7")
