@@ -412,7 +412,7 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
 #define snow_vertical_compose_sse2_add(r,t0,t1,t2,t3)\
         snow_vertical_compose_sse2_load_add("paddw",r,t0,t1,t2,t3)
 
-#define snow_vertical_compose_sse2_sub(s0,s1,s2,s3,t0,t1,t2,t3)\
+#define snow_vertical_compose_r2r_sub(s0,s1,s2,s3,t0,t1,t2,t3)\
         "psubw %%"s0", %%"t0" \n\t"\
         "psubw %%"s1", %%"t1" \n\t"\
         "psubw %%"s2", %%"t2" \n\t"\
@@ -424,13 +424,13 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         "movdqa %%"s2", 32(%%"w",%%"REG_d",2)    \n\t"\
         "movdqa %%"s3", 48(%%"w",%%"REG_d",2)    \n\t"
 
-#define snow_vertical_compose_sse2_sra(n,t0,t1,t2,t3)\
+#define snow_vertical_compose_sra(n,t0,t1,t2,t3)\
         "psraw $"n", %%"t0" \n\t"\
         "psraw $"n", %%"t1" \n\t"\
         "psraw $"n", %%"t2" \n\t"\
         "psraw $"n", %%"t3" \n\t"
 
-#define snow_vertical_compose_sse2_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)\
+#define snow_vertical_compose_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)\
         "paddw %%"s0", %%"t0" \n\t"\
         "paddw %%"s1", %%"t1" \n\t"\
         "paddw %%"s2", %%"t2" \n\t"\
@@ -464,23 +464,23 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         snow_vertical_compose_sse2_load(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_a,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_sra("1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
 
         "pcmpeqd %%xmm1, %%xmm1                      \n\t"
         "psllw $15, %%xmm1                           \n\t"
         "psrlw $14, %%xmm1                           \n\t"
         "mov %5, %%"REG_a"                           \n\t"
 
-        snow_vertical_compose_sse2_r2r_add("xmm1","xmm1","xmm1","xmm1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_sra("2","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_add("xmm1","xmm1","xmm1","xmm1","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sra("2","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_load(REG_a,"xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_sub("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
+        snow_vertical_compose_r2r_sub("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_store(REG_a,"xmm1","xmm3","xmm5","xmm7")
         "mov %3, %%"REG_c"                           \n\t"
         snow_vertical_compose_sse2_load(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_sub("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_sub("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_S,"xmm0","xmm2","xmm4","xmm6")
         "mov %2, %%"REG_a"                           \n\t"
 
@@ -489,7 +489,7 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         "psllw $15, %%xmm7                           \n\t"
         "psrlw $13, %%xmm5                           \n\t"
         "paddw %%xmm7, %%xmm5                        \n\t"
-        snow_vertical_compose_sse2_r2r_add("xmm5","xmm5","xmm5","xmm5","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_add("xmm5","xmm5","xmm5","xmm5","xmm0","xmm2","xmm4","xmm6")
         "movq   (%%"REG_a",%%"REG_d",2), %%xmm1      \n\t"
         "movq  8(%%"REG_a",%%"REG_d",2), %%xmm3      \n\t"
         "paddw %%xmm7, %%xmm1                        \n\t"
@@ -502,19 +502,19 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         "paddw %%xmm7, %%xmm3                        \n\t"
         "pavgw %%xmm1, %%xmm4                        \n\t"
         "pavgw %%xmm3, %%xmm6                        \n\t"
-        snow_vertical_compose_sse2_sub("xmm7","xmm7","xmm7","xmm7","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_sra("1","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_sub("xmm7","xmm7","xmm7","xmm7","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm0","xmm2","xmm4","xmm6")
 
         "mov %1, %%"REG_S"                           \n\t"
 
-        snow_vertical_compose_sse2_sra("2","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sra("2","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_c,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_sra("1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_a,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_a,"xmm0","xmm2","xmm4","xmm6")
 
@@ -539,20 +539,11 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
 #define snow_vertical_compose_mmx_add(r,t0,t1,t2,t3)\
         snow_vertical_compose_mmx_load_add("paddw",r,t0,t1,t2,t3)
 
-#define snow_vertical_compose_mmx_sub(s0,s1,s2,s3,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_sub(s0,s1,s2,s3,t0,t1,t2,t3)
-
 #define snow_vertical_compose_mmx_store(w,s0,s1,s2,s3)\
         "movq %%"s0", (%%"w",%%"REG_d",2)   \n\t"\
         "movq %%"s1", 8(%%"w",%%"REG_d",2)  \n\t"\
         "movq %%"s2", 16(%%"w",%%"REG_d",2) \n\t"\
         "movq %%"s3", 24(%%"w",%%"REG_d",2) \n\t"
-
-#define snow_vertical_compose_mmx_sra(n,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_sra(n,t0,t1,t2,t3)
-
-#define snow_vertical_compose_mmx_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_r2r_add(s0,s1,s2,s3,t0,t1,t2,t3)
 
 #define snow_vertical_compose_mmx_move(s0,s1,s2,s3,t0,t1,t2,t3)\
         "movq %%"s0", %%"t0" \n\t"\
@@ -581,23 +572,23 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         snow_vertical_compose_mmx_load(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_a,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
-        snow_vertical_compose_mmx_sra("1","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_sra("1","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
 
         "pcmpeqw %%mm1, %%mm1                        \n\t"
         "psllw $15, %%mm1                            \n\t"
         "psrlw $14, %%mm1                            \n\t"
         "mov %5, %%"REG_a"                           \n\t"
 
-        snow_vertical_compose_mmx_r2r_add("mm1","mm1","mm1","mm1","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_sra("2","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_add("mm1","mm1","mm1","mm1","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_sra("2","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_load(REG_a,"mm1","mm3","mm5","mm7")
-        snow_vertical_compose_mmx_sub("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
+        snow_vertical_compose_r2r_sub("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_store(REG_a,"mm1","mm3","mm5","mm7")
         "mov %3, %%"REG_c"                           \n\t"
         snow_vertical_compose_mmx_load(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_c,"mm1","mm3","mm5","mm7")
-        snow_vertical_compose_mmx_sub("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_sub("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_store(REG_S,"mm0","mm2","mm4","mm6")
         "mov %2, %%"REG_a"                           \n\t"
         "pcmpeqw %%mm7, %%mm7                        \n\t"
@@ -605,7 +596,7 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         "psllw $15, %%mm7                            \n\t"
         "psrlw $13, %%mm5                            \n\t"
         "paddw %%mm7, %%mm5                          \n\t"
-        snow_vertical_compose_mmx_r2r_add("mm5","mm5","mm5","mm5","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_add("mm5","mm5","mm5","mm5","mm0","mm2","mm4","mm6")
         "movq   (%%"REG_a",%%"REG_d",2), %%mm1       \n\t"
         "movq  8(%%"REG_a",%%"REG_d",2), %%mm3       \n\t"
         "paddw %%mm7, %%mm1                          \n\t"
@@ -618,19 +609,19 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         "paddw %%mm7, %%mm3                          \n\t"
         "pavgw %%mm1, %%mm4                          \n\t"
         "pavgw %%mm3, %%mm6                          \n\t"
-        snow_vertical_compose_sse2_sub("mm7","mm7","mm7","mm7","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_sra("1","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_sub("mm7","mm7","mm7","mm7","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_sra("1","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_c,"mm0","mm2","mm4","mm6")
 
         "mov %1, %%"REG_S"                           \n\t"
 
-        snow_vertical_compose_mmx_sra("2","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_sra("2","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_c,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_store(REG_c,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
-        snow_vertical_compose_mmx_sra("1","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_sra("1","mm0","mm2","mm4","mm6")
+        snow_vertical_compose_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_a,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_store(REG_a,"mm0","mm2","mm4","mm6")
 
