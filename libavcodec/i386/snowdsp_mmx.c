@@ -401,10 +401,10 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
 }
 
 #define snow_vertical_compose_sse2_load_add(op,r,t0,t1,t2,t3)\
-        ""op" (%%"r",%%"REG_d",2), %%"t0"      \n\t"\
-        ""op" 16(%%"r",%%"REG_d",2), %%"t1"    \n\t"\
-        ""op" 32(%%"r",%%"REG_d",2), %%"t2"    \n\t"\
-        ""op" 48(%%"r",%%"REG_d",2), %%"t3"    \n\t"
+        ""op" (%%"r",%%"REG_d"), %%"t0"      \n\t"\
+        ""op" 16(%%"r",%%"REG_d"), %%"t1"    \n\t"\
+        ""op" 32(%%"r",%%"REG_d"), %%"t2"    \n\t"\
+        ""op" 48(%%"r",%%"REG_d"), %%"t3"    \n\t"
 
 #define snow_vertical_compose_sse2_load(r,t0,t1,t2,t3)\
         snow_vertical_compose_sse2_load_add("movdqa",r,t0,t1,t2,t3)
@@ -419,10 +419,10 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         "psubw %%"s3", %%"t3" \n\t"
 
 #define snow_vertical_compose_sse2_store(w,s0,s1,s2,s3)\
-        "movdqa %%"s0", (%%"w",%%"REG_d",2)      \n\t"\
-        "movdqa %%"s1", 16(%%"w",%%"REG_d",2)    \n\t"\
-        "movdqa %%"s2", 32(%%"w",%%"REG_d",2)    \n\t"\
-        "movdqa %%"s3", 48(%%"w",%%"REG_d",2)    \n\t"
+        "movdqa %%"s0", (%%"w",%%"REG_d")      \n\t"\
+        "movdqa %%"s1", 16(%%"w",%%"REG_d")    \n\t"\
+        "movdqa %%"s2", 32(%%"w",%%"REG_d")    \n\t"\
+        "movdqa %%"s3", 48(%%"w",%%"REG_d")    \n\t"
 
 #define snow_vertical_compose_sra(n,t0,t1,t2,t3)\
         "psraw $"n", %%"t0" \n\t"\
@@ -453,6 +453,7 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         b2[i] += (W_BM*(b1[i] + b3[i])+4*b2[i]+W_BO)>>W_BS;
         b1[i] += (W_AM*(b0[i] + b2[i])+W_AO)>>W_AS;
     }
+    i+=i;
 
          asm volatile (
         "jmp 2f                                      \n\t"
@@ -490,14 +491,14 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         "psrlw $13, %%xmm5                           \n\t"
         "paddw %%xmm7, %%xmm5                        \n\t"
         snow_vertical_compose_r2r_add("xmm5","xmm5","xmm5","xmm5","xmm0","xmm2","xmm4","xmm6")
-        "movq   (%%"REG_a",%%"REG_d",2), %%xmm1      \n\t"
-        "movq  8(%%"REG_a",%%"REG_d",2), %%xmm3      \n\t"
+        "movq   (%%"REG_a",%%"REG_d"), %%xmm1        \n\t"
+        "movq  8(%%"REG_a",%%"REG_d"), %%xmm3        \n\t"
         "paddw %%xmm7, %%xmm1                        \n\t"
         "paddw %%xmm7, %%xmm3                        \n\t"
         "pavgw %%xmm1, %%xmm0                        \n\t"
         "pavgw %%xmm3, %%xmm2                        \n\t"
-        "movq 16(%%"REG_a",%%"REG_d",2), %%xmm1      \n\t"
-        "movq 24(%%"REG_a",%%"REG_d",2), %%xmm3      \n\t"
+        "movq 16(%%"REG_a",%%"REG_d"), %%xmm1        \n\t"
+        "movq 24(%%"REG_a",%%"REG_d"), %%xmm3        \n\t"
         "paddw %%xmm7, %%xmm1                        \n\t"
         "paddw %%xmm7, %%xmm3                        \n\t"
         "pavgw %%xmm1, %%xmm4                        \n\t"
@@ -519,7 +520,7 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         snow_vertical_compose_sse2_store(REG_a,"xmm0","xmm2","xmm4","xmm6")
 
         "2:                                          \n\t"
-        "sub $32, %%"REG_d"                          \n\t"
+        "sub $64, %%"REG_d"                          \n\t"
         "jge 1b                                      \n\t"
         :"+d"(i)
         :
@@ -528,10 +529,10 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
 }
 
 #define snow_vertical_compose_mmx_load_add(op,r,t0,t1,t2,t3)\
-        ""op" (%%"r",%%"REG_d",2), %%"t0"   \n\t"\
-        ""op" 8(%%"r",%%"REG_d",2), %%"t1"  \n\t"\
-        ""op" 16(%%"r",%%"REG_d",2), %%"t2" \n\t"\
-        ""op" 24(%%"r",%%"REG_d",2), %%"t3" \n\t"
+        ""op" (%%"r",%%"REG_d"), %%"t0"   \n\t"\
+        ""op" 8(%%"r",%%"REG_d"), %%"t1"  \n\t"\
+        ""op" 16(%%"r",%%"REG_d"), %%"t2" \n\t"\
+        ""op" 24(%%"r",%%"REG_d"), %%"t3" \n\t"
 
 #define snow_vertical_compose_mmx_load(r,t0,t1,t2,t3)\
         snow_vertical_compose_mmx_load_add("movq",r,t0,t1,t2,t3)
@@ -540,10 +541,10 @@ void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, 
         snow_vertical_compose_mmx_load_add("paddw",r,t0,t1,t2,t3)
 
 #define snow_vertical_compose_mmx_store(w,s0,s1,s2,s3)\
-        "movq %%"s0", (%%"w",%%"REG_d",2)   \n\t"\
-        "movq %%"s1", 8(%%"w",%%"REG_d",2)  \n\t"\
-        "movq %%"s2", 16(%%"w",%%"REG_d",2) \n\t"\
-        "movq %%"s3", 24(%%"w",%%"REG_d",2) \n\t"
+        "movq %%"s0", (%%"w",%%"REG_d")   \n\t"\
+        "movq %%"s1", 8(%%"w",%%"REG_d")  \n\t"\
+        "movq %%"s2", 16(%%"w",%%"REG_d") \n\t"\
+        "movq %%"s3", 24(%%"w",%%"REG_d") \n\t"
 
 #define snow_vertical_compose_mmx_move(s0,s1,s2,s3,t0,t1,t2,t3)\
         "movq %%"s0", %%"t0" \n\t"\
@@ -561,7 +562,7 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         b2[i] += (W_BM*(b1[i] + b3[i])+4*b2[i]+W_BO)>>W_BS;
         b1[i] += (W_AM*(b0[i] + b2[i])+W_AO)>>W_AS;
     }
-
+    i+=i;
     asm volatile(
         "jmp 2f                                      \n\t"
         "1:                                          \n\t"
@@ -597,14 +598,14 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         "psrlw $13, %%mm5                            \n\t"
         "paddw %%mm7, %%mm5                          \n\t"
         snow_vertical_compose_r2r_add("mm5","mm5","mm5","mm5","mm0","mm2","mm4","mm6")
-        "movq   (%%"REG_a",%%"REG_d",2), %%mm1       \n\t"
-        "movq  8(%%"REG_a",%%"REG_d",2), %%mm3       \n\t"
+        "movq   (%%"REG_a",%%"REG_d"), %%mm1         \n\t"
+        "movq  8(%%"REG_a",%%"REG_d"), %%mm3         \n\t"
         "paddw %%mm7, %%mm1                          \n\t"
         "paddw %%mm7, %%mm3                          \n\t"
         "pavgw %%mm1, %%mm0                          \n\t"
         "pavgw %%mm3, %%mm2                          \n\t"
-        "movq 16(%%"REG_a",%%"REG_d",2), %%mm1       \n\t"
-        "movq 24(%%"REG_a",%%"REG_d",2), %%mm3       \n\t"
+        "movq 16(%%"REG_a",%%"REG_d"), %%mm1         \n\t"
+        "movq 24(%%"REG_a",%%"REG_d"), %%mm3         \n\t"
         "paddw %%mm7, %%mm1                          \n\t"
         "paddw %%mm7, %%mm3                          \n\t"
         "pavgw %%mm1, %%mm4                          \n\t"
@@ -626,7 +627,7 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         snow_vertical_compose_mmx_store(REG_a,"mm0","mm2","mm4","mm6")
 
         "2:                                          \n\t"
-        "sub $16, %%"REG_d"                          \n\t"
+        "sub $32, %%"REG_d"                          \n\t"
         "jge 1b                                      \n\t"
         :"+d"(i)
         :
