@@ -18,6 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//#define DEBUG_ALIGNMENT
+#ifdef DEBUG_ALIGNMENT
+#define ASSERT_ALIGNED(ptr) assert(((unsigned long)ptr&0x0000000F));
+#else
+#define ASSERT_ALIGNED(ptr) ;
+#endif
+
 /* this code assume that stride % 16 == 0 */
 void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
@@ -165,9 +172,6 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
   const vec_u16_t v5us = vec_splat_u16(5);
   const vec_s16_t v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
   const vec_s16_t v16ss = vec_sl(vec_splat_s16(1),vec_splat_u16(4));
-  const vec_u8_t dstperm = vec_lvsr(0, dst);
-  const vec_u8_t neg1 = (const vec_u8_t) vec_splat_s8(-1);
-  const vec_u8_t dstmask = vec_perm(zero_u8v, neg1, dstperm);
 
   vec_u8_t srcM2, srcM1, srcP0, srcP1, srcP2, srcP3;
 
@@ -180,7 +184,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
                       pp1A, pp1B, pp2A, pp2B, pp3A, pp3B,
                       psumA, psumB, sumA, sumB;
 
-  vec_u8_t sum, dst1, dst2, vdst, fsum, rsum, fdst1, fdst2;
+  vec_u8_t sum, vdst, fsum;
 
   POWERPC_PERF_START_COUNT(PREFIX_h264_qpel16_h_lowpass_num, 1);
 
@@ -282,18 +286,12 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
 
     sum = vec_packsu(sumA, sumB);
 
-    dst1 = vec_ld(0, dst);
-    dst2 = vec_ld(16, dst);
-    vdst = vec_perm(dst1, dst2, vec_lvsl(0, dst));
+    ASSERT_ALIGNED(dst);
+    vdst = vec_ld(0, dst);
 
     OP_U8_ALTIVEC(fsum, sum, vdst);
 
-    rsum = vec_perm(fsum, fsum, dstperm);
-    fdst1 = vec_sel(dst1, rsum, dstmask);
-    fdst2 = vec_sel(rsum, dst2, dstmask);
-
-    vec_st(fdst1, 0, dst);
-    vec_st(fdst2, 16, dst);
+    vec_st(fsum, 0, dst);
 
     src += srcStride;
     dst += dstStride;
@@ -313,9 +311,6 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
   const vec_u16_t v5us = vec_splat_u16(5);
   const vec_s16_t v5ss = vec_splat_s16(5);
   const vec_s16_t v16ss = vec_sl(vec_splat_s16(1),vec_splat_u16(4));
-  const vec_u8_t dstperm = vec_lvsr(0, dst);
-  const vec_u8_t neg1 = (const vec_u8_t)vec_splat_s8(-1);
-  const vec_u8_t dstmask = vec_perm(zero_u8v, neg1, dstperm);
 
   uint8_t *srcbis = src - (srcStride * 2);
 
@@ -356,7 +351,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
                       srcP3ssA, srcP3ssB,
                       sum1A, sum1B, sum2A, sum2B, sum3A, sum3B;
 
-  vec_u8_t sum, dst1, dst2, vdst, fsum, rsum, fdst1, fdst2, srcP3a, srcP3b, srcP3;
+  vec_u8_t sum, vdst, fsum, srcP3a, srcP3b, srcP3;
 
   POWERPC_PERF_START_COUNT(PREFIX_h264_qpel16_v_lowpass_num, 1);
 
@@ -403,18 +398,12 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
 
     sum = vec_packsu(sumA, sumB);
 
-    dst1 = vec_ld(0, dst);
-    dst2 = vec_ld(16, dst);
-    vdst = vec_perm(dst1, dst2, vec_lvsl(0, dst));
+    ASSERT_ALIGNED(dst);
+    vdst = vec_ld(0, dst);
 
     OP_U8_ALTIVEC(fsum, sum, vdst);
 
-    rsum = vec_perm(fsum, fsum, dstperm);
-    fdst1 = vec_sel(dst1, rsum, dstmask);
-    fdst2 = vec_sel(rsum, dst2, dstmask);
-
-    vec_st(fdst1, 0, dst);
-    vec_st(fdst2, 16, dst);
+    vec_st(fsum, 0, dst);
 
     dst += dstStride;
   }
@@ -441,17 +430,11 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
 
   register int align = ((((unsigned long)src) - 2) % 16);
 
-  const vec_u8_t neg1 = (const vec_u8_t) vec_splat_s8(-1);
-
   vec_s16_t srcP0A, srcP0B, srcP1A, srcP1B,
                       srcP2A, srcP2B, srcP3A, srcP3B,
                       srcM1A, srcM1B, srcM2A, srcM2B,
                       sum1A, sum1B, sum2A, sum2B, sum3A, sum3B,
                       pp1A, pp1B, pp2A, pp2B, psumA, psumB;
-
-  const vec_u8_t dstperm = vec_lvsr(0, dst);
-
-  const vec_u8_t dstmask = vec_perm(zero_u8v, neg1, dstperm);
 
   const vec_u8_t mperm = (const vec_u8_t)
     AVV(0x00, 0x08, 0x01, 0x09, 0x02, 0x0A, 0x03, 0x0B,
@@ -466,7 +449,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
                     pp3Ae, pp3Ao, pp3Be, pp3Bo, pp1cAe, pp1cAo, pp1cBe, pp1cBo,
                     pp32Ae, pp32Ao, pp32Be, pp32Bo, sumAe, sumAo, sumBe, sumBo,
                     ssumAe, ssumAo, ssumBe, ssumBo;
-  vec_u8_t fsum, sumv, sum, dst1, dst2, vdst, rsum, fdst1, fdst2;
+  vec_u8_t fsum, sumv, sum, vdst;
   vec_s16_t ssume, ssumo;
 
   POWERPC_PERF_START_COUNT(PREFIX_h264_qpel16_hv_lowpass_num, 1);
@@ -650,18 +633,12 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
     sumv = vec_packsu(ssume, ssumo);
     sum = vec_perm(sumv, sumv, mperm);
 
-    dst1 = vec_ld(0, dst);
-    dst2 = vec_ld(16, dst);
-    vdst = vec_perm(dst1, dst2, vec_lvsl(0, dst));
+    ASSERT_ALIGNED(dst);
+    vdst = vec_ld(0, dst);
 
     OP_U8_ALTIVEC(fsum, sum, vdst);
 
-    rsum = vec_perm(fsum, fsum, dstperm);
-    fdst1 = vec_sel(dst1, rsum, dstmask);
-    fdst2 = vec_sel(rsum, dst2, dstmask);
-
-    vec_st(fdst1, 0, dst);
-    vec_st(fdst2, 16, dst);
+    vec_st(fsum, 0, dst);
 
     dst += dstStride;
   }
