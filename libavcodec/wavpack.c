@@ -21,6 +21,7 @@
 #define ALT_BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bitstream.h"
+#include "unary.h"
 
 /**
  * @file wavpack.c

@@ -32,6 +32,7 @@
 #include "vc1data.h"
 #include "vc1acdata.h"
 #include "msmpeg4data.h"
+#include "unary.h"
 
 #undef NDEBUG
 #include <assert.h>
