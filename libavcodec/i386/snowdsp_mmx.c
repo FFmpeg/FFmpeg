@@ -42,8 +42,10 @@ void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
         i = 0;
         asm volatile(
             "pcmpeqd   %%xmm7, %%xmm7         \n\t"
-            "psllw        $15, %%xmm7         \n\t"
-            "psrlw        $14, %%xmm7         \n\t"
+            "pcmpeqd   %%xmm3, %%xmm3         \n\t"
+            "psllw         $1, %%xmm3         \n\t"
+            "paddw     %%xmm7, %%xmm3         \n\t"
+            "psrlw        $13, %%xmm3         \n\t"
         ::);
         for(; i<w_l-15; i+=16){
             asm volatile(
@@ -53,22 +55,14 @@ void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
                 "movdqu 18(%1), %%xmm6        \n\t"
                 "paddw  %%xmm1, %%xmm2        \n\t"
                 "paddw  %%xmm5, %%xmm6        \n\t"
-                "movdqa %%xmm2, %%xmm0        \n\t"
-                "movdqa %%xmm6, %%xmm4        \n\t"
-                "psraw      $1, %%xmm0        \n\t"
-                "psraw      $1, %%xmm4        \n\t"
-                "paddw  %%xmm0, %%xmm2        \n\t"
-                "paddw  %%xmm4, %%xmm6        \n\t"
                 "paddw  %%xmm7, %%xmm2        \n\t"
                 "paddw  %%xmm7, %%xmm6        \n\t"
-                "psraw      $2, %%xmm2        \n\t"
-                "psraw      $2, %%xmm6        \n\t"
-                "movdqa   (%0), %%xmm0        \n\t"
-                "movdqa 16(%0), %%xmm4        \n\t"
-                "psubw  %%xmm2, %%xmm0        \n\t"
-                "psubw  %%xmm6, %%xmm4        \n\t"
-                "movdqa %%xmm0, (%0)          \n\t"
-                "movdqa %%xmm4, 16(%0)        \n\t"
+                "pmulhw %%xmm3, %%xmm2        \n\t"
+                "pmulhw %%xmm3, %%xmm6        \n\t"
+                "paddw    (%0), %%xmm2        \n\t"
+                "paddw  16(%0), %%xmm6        \n\t"
+                "movdqa %%xmm2, (%0)          \n\t"
+                "movdqa %%xmm6, 16(%0)        \n\t"
                 :: "r"(&b[i]), "r"(&ref[i])
                 : "memory"
             );
@@ -111,7 +105,7 @@ void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
 
         i = 0;
         asm volatile(
-            "psllw         $13, %%xmm7        \n\t"
+            "psllw         $15, %%xmm7        \n\t"
             "pcmpeqw    %%xmm6, %%xmm6        \n\t"
             "psrlw         $13, %%xmm6        \n\t"
             "paddw      %%xmm7, %%xmm6        \n\t"
@@ -234,8 +228,10 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         b[0] = b[0] - ((W_DM * 2 * ref[1]+W_DO)>>W_DS);
         asm volatile(
             "pcmpeqw    %%mm7, %%mm7         \n\t"
-            "psllw        $15, %%mm7         \n\t"
-            "psrlw        $14, %%mm7         \n\t"
+            "pcmpeqw    %%mm3, %%mm3         \n\t"
+            "psllw         $1, %%mm3         \n\t"
+            "paddw      %%mm7, %%mm3         \n\t"
+            "psllw        $13, %%mm3         \n\t"
            ::);
         for(; i<w_l-7; i+=8){
             asm volatile(
@@ -243,22 +239,14 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
                 "movq    8(%1), %%mm6        \n\t"
                 "paddw   2(%1), %%mm2        \n\t"
                 "paddw  10(%1), %%mm6        \n\t"
-                "movq    %%mm2, %%mm0        \n\t"
-                "movq    %%mm6, %%mm4        \n\t"
-                "psraw      $1, %%mm2        \n\t"
-                "psraw      $1, %%mm6        \n\t"
-                "paddw   %%mm0, %%mm2        \n\t"
-                "paddw   %%mm4, %%mm6        \n\t"
                 "paddw   %%mm7, %%mm2        \n\t"
                 "paddw   %%mm7, %%mm6        \n\t"
-                "psraw      $2, %%mm2        \n\t"
-                "psraw      $2, %%mm6        \n\t"
-                "movq     (%0), %%mm0        \n\t"
-                "movq    8(%0), %%mm4        \n\t"
-                "psubw   %%mm2, %%mm0        \n\t"
-                "psubw   %%mm6, %%mm4        \n\t"
-                "movq    %%mm0, (%0)         \n\t"
-                "movq    %%mm4, 8(%0)        \n\t"
+                "pmulhw  %%mm3, %%mm2        \n\t"
+                "pmulhw  %%mm3, %%mm6        \n\t"
+                "paddw    (%0), %%mm2        \n\t"
+                "paddw   8(%0), %%mm6        \n\t"
+                "movq    %%mm2, (%0)         \n\t"
+                "movq    %%mm6, 8(%0)        \n\t"
                 :: "r"(&b[i]), "r"(&ref[i])
                  : "memory"
                );
@@ -295,7 +283,7 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         i = 1;
         b[0] = b[0] + (((2 * ref[1] + W_BO) + 4 * b[0]) >> W_BS);
         asm volatile(
-            "psllw         $14, %%mm7        \n\t"
+            "psllw         $15, %%mm7        \n\t"
             "pcmpeqw     %%mm6, %%mm6        \n\t"
             "psrlw         $13, %%mm6        \n\t"
             "paddw       %%mm7, %%mm6        \n\t"
