@@ -1811,6 +1811,8 @@ if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "MMX enabled               ${mmx-no}"
     echo "CMOV enabled              ${cmov-no}"
     echo "CMOV is fast              ${fast_cmov-no}"
+    echo "EBX available             ${ebx_available-no}"
+    echo "EBP available             ${ebp_available-no}"
 fi
 if test $arch = "armv4l"; then
     echo "ARMv5TE enabled           ${armv5te-no}"
