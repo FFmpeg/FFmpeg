@@ -161,7 +161,7 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
             if(ctx->zeroes)
                 return 0;
         }else{
-            t = get_unary(gb, 0, 33);
+            t = get_unary_0_33(gb);
             if(t >= 2) t = get_bits(gb, t - 1) | (1 << (t-1));
             ctx->zeroes = t;
             if(ctx->zeroes){
@@ -180,13 +180,13 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
         t = 0;
         ctx->zero = 0;
     }else{
-        t = get_unary(gb, 0, 33);
+        t = get_unary_0_33(gb);
         if(get_bits_count(gb) >= ctx->data_size){
             *last = 1;
             return 0;
         }
         if(t == 16) {
-            t2 = get_unary(gb, 0, 33);
+            t2 = get_unary_0_33(gb);
             if(t2 < 2) t += t2;
             else t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
         }

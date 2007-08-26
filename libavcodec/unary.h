@@ -38,4 +38,14 @@ static inline int get_unary(GetBitContext *gb, int stop, int len)
     return i;
 }
 
+/**
+ * Get unary code terminated by a 0 with a maximum length of 33
+ * @param gb GetBitContext
+ * @return Unary length/index
+ */
+static inline int get_unary_0_33(GetBitContext *gb)
+{
+    return get_unary(gb, 0, 33);
+}
+
 #endif /* AVCODEC_UNARY_H */
