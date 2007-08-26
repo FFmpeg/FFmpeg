@@ -295,7 +295,7 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
         i = 1;
         b[0] = b[0] + (((2 * ref[1] + W_BO) + 4 * b[0]) >> W_BS);
         asm volatile(
-            "psllw         $13, %%mm7        \n\t"
+            "psllw         $14, %%mm7        \n\t"
             "pcmpeqw     %%mm6, %%mm6        \n\t"
             "psrlw         $13, %%mm6        \n\t"
             "paddw       %%mm7, %%mm6        \n\t"
