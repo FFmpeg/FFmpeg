@@ -555,7 +555,7 @@ extern int mm_flags;
 
 extern int mm_flags;
 
-#if defined(HAVE_ALTIVEC) && !defined(SYS_DARWIN)
+#if defined(HAVE_ALTIVEC) && !defined(__APPLE_CC__)
 #define pixel altivec_pixel
 #include <altivec.h>
 #undef pixel
