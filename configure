@@ -1508,7 +1508,7 @@ EOF
 check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
-strings $TMPO | grep -q BIGE && enable bigendian
+strings - $TMPO | grep -q BIGE && enable bigendian
 
 # ---
 # check availability of some header files
