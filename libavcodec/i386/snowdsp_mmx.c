@@ -388,6 +388,7 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
     }
 }
 
+#ifdef CONFIG_7REGS
 #define snow_vertical_compose_sse2_load_add(op,r,t0,t1,t2,t3)\
         ""op" ("r",%%"REG_d"), %%"t0"      \n\t"\
         ""op" 16("r",%%"REG_d"), %%"t1"    \n\t"\
@@ -602,6 +603,7 @@ void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, I
         :"+d"(i)
         :"r"(b0),"r"(b1),"r"(b2),"r"(b3),"r"(b4),"r"(b5));
 }
+#endif //CONFIG_7REGS
 
 #define snow_inner_add_yblock_sse2_header \
     IDWTELEM * * dst_array = sb->line + src_y;\
