@@ -177,6 +177,8 @@ http://www.fujitsu.com/downloads/PRMPWR/JPS1-R1.0.4-Common-pub.pdf
 UltraSPARC III Processor User's Manual (contains instruction timings)
 http://www.sun.com/processors/manuals/USIIIv2.pdf
 
+VIS Whitepaper (contains optimization guidelines)
+http://www.sun.com/processors/vis/download/vis/vis_whitepaper.pdf
 
 GCC asm links:
 official doc but quite ugly
