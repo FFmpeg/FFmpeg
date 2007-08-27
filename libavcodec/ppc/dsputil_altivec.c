@@ -1426,9 +1426,7 @@ int has_altivec(void)
     IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
     if (result == VECTORTYPE_ALTIVEC) return 1;
     return 0;
-#else /* __AMIGAOS4__ */
-
-#ifdef __APPLE__
+#elif __APPLE__
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
     int has_vu = 0;
     size_t len = sizeof(has_vu);
@@ -1437,9 +1435,9 @@ int has_altivec(void)
     err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
 
     if (err == 0) return (has_vu != 0);
-#else /* __APPLE__ */
-/* no Mac OS X, do it the brute-force way */
-/* this is borrowed from the libmpeg2 library */
+    return 0;
+#else
+/* Do it the brute-force way, borrowed from the libmpeg2 library. */
     {
       signal (SIGILL, sigill_handler);
       if (sigsetjmp (jmpbuf, 1)) {
@@ -1456,7 +1454,6 @@ int has_altivec(void)
         return 1;
       }
     }
-#endif /* __APPLE__ */
     return 0;
 #endif /* __AMIGAOS4__ */
 }
