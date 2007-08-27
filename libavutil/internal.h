@@ -128,7 +128,7 @@
 #else
 #    if defined(ARCH_X86_64) && defined(PIC)
 #        define MANGLE(a) #a"(%%rip)"
-#    elif defined(SYS_DARWIN)
+#    elif defined(__APPLE__)
 #        define MANGLE(a) "_" #a
 #    else
 #        define MANGLE(a) #a
