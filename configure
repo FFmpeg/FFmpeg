@@ -1970,10 +1970,6 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST   \
                                       $MUXER_LIST    \
                                       $PROTOCOL_LIST \
 
-if test "$targetos" = darwin; then
-  echo "#define SYS_DARWIN 1"  >> $TMPH
-fi
-
 echo "#define restrict $_restrict" >> $TMPH
 
 if enabled small; then
