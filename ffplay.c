@@ -2196,9 +2196,9 @@ static void toggle_pause(void)
 static void step_to_next_frame(void)
 {
     if (cur_stream) {
+        /* if the stream is paused unpause it, then step */
         if (cur_stream->paused)
-            cur_stream->paused=0;
-        cur_stream->video_current_pts = get_video_clock(cur_stream);
+            stream_pause(cur_stream);
     }
     step = 1;
 }
