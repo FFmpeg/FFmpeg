@@ -45,7 +45,7 @@ void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
             "pcmpeqd   %%xmm3, %%xmm3         \n\t"
             "psllw         $1, %%xmm3         \n\t"
             "paddw     %%xmm7, %%xmm3         \n\t"
-            "psrlw        $13, %%xmm3         \n\t"
+            "psllw        $13, %%xmm3         \n\t"
         ::);
         for(; i<w_l-15; i+=16){
             asm volatile(
