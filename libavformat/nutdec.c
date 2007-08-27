@@ -425,7 +425,6 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
     int64_t end, tmp;
-    AVRational time_base;
 
     nut->last_syncpoint_pos= url_ftell(bc)-8;
 
