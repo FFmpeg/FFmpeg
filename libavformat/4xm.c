@@ -149,7 +149,9 @@ static int fourxm_read_header(AVFormatContext *s,
 
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_4XM;
-            st->codec->codec_tag = AV_RL32(&header[i + 16]);
+            st->codec->extradata_size = 4;
+            st->codec->extradata = av_malloc(4);
+            AV_WL32(st->codec->extradata, AV_RL32(&header[i + 16]));
             st->codec->width = fourxm->width;
             st->codec->height = fourxm->height;
 

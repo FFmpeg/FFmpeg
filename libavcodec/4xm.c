@@ -789,7 +789,12 @@ static void common_init(AVCodecContext *avctx){
 static int decode_init(AVCodecContext *avctx){
     FourXContext * const f = avctx->priv_data;
 
-    f->version= avctx->codec_tag == 0x40000;
+    if(avctx->extradata_size != 4 || !avctx->extradata) {
+        av_log(avctx, AV_LOG_ERROR, "extradata wrong or missing\n");
+        return 1;
+    }
+
+    f->version= AV_RL32(avctx->extradata) == 0x40000;
     common_init(avctx);
     init_vlcs(f);
 
