@@ -279,7 +279,7 @@ codectest mpeg4 mpeg ac3 snow snowll: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests
 libavtest: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) tests/vsynth1
 
-seektest: tests/seek_test$(EXESUF) .libs
+seektest: tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
 
 ifeq ($(CONFIG_SWSCALER),yes)
@@ -305,7 +305,7 @@ tests/asynth1.sw: tests/audiogen$(EXESUF)
 %$(EXESUF): %.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
-tests/seek_test$(EXESUF): tests/seek_test.c
+tests/seek_test$(EXESUF): tests/seek_test.c .libs
 	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -o $@ $< $(EXTRALIBS)
 
 
