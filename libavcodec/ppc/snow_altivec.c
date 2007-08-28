@@ -58,57 +58,56 @@ static DWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
 
 //altivec code
 
-void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width)
+void ff_snow_horizontal_compose97i_altivec(IDWTELEM *b, int width)
 {
+#if 0
     const int w2= (width+1)>>1;
-    DECLARE_ALIGNED_16(DWTELEM, temp[(width>>1)]);
+    DECLARE_ALIGNED_16(IDWTELEM, temp[(width>>1)]);
     const int w_l= (width>>1);
     const int w_r= w2 - 1;
     int i;
-    vector signed int t1, t2, x, y, tmp1, tmp2;
-    vector signed int *vbuf, *vtmp;
+    vector signed short t1, t2, x, y, tmp1, tmp2;
+    vector signed short *vbuf, *vtmp;
     vector unsigned char align;
 
-
-
     { // Lift 0
-        DWTELEM * const ref = b + w2 - 1;
-        DWTELEM b_0 = b[0];
-        vbuf = (vector signed int *)b;
+        IDWTELEM * const ref = b + w2 - 1;
+        IDWTELEM b_0 = b[0];
+        vector signed short v7 = vec_splat_s16(7);
+        vbuf = (vector signed short *)b;
 
         tmp1 = vec_ld (0, ref);
         align = vec_lvsl (0, ref);
         tmp2 = vec_ld (15, ref);
-        t1= vec_perm(tmp1, tmp2, align);
-
-        i = 0;
+        t1 = vec_perm(tmp1, tmp2, align);
 
         for (i=0; i<w_l-15; i+=16) {
 #if 0
-        b[i+0] = b[i+0] - ((3 * (ref[i+0] + ref[i+1]) + 4) >> 3);
+/*        b[i+0] = b[i+0] - ((3 * (ref[i+0] + ref[i+1]) + 4) >> 3);
         b[i+1] = b[i+1] - ((3 * (ref[i+1] + ref[i+2]) + 4) >> 3);
         b[i+2] = b[i+2] - ((3 * (ref[i+2] + ref[i+3]) + 4) >> 3);
-        b[i+3] = b[i+3] - ((3 * (ref[i+3] + ref[i+4]) + 4) >> 3);
+        b[i+3] = b[i+3] - ((3 * (ref[i+3] + ref[i+4]) + 4) >> 3);*/
+        b[i+0] = b[i+0] + ((7 * (ref[i+0] + ref[i+1])-1) >> 8);
 #else
 
-        tmp1 = vec_ld (0, ref+4+i);
-        tmp2 = vec_ld (15, ref+4+i);
+        tmp1 = vec_ld (0, ref+8+i);
+        tmp2 = vec_ld (15, ref+8+i);
 
         t2 = vec_perm(tmp1, tmp2, align);
 
-        y = vec_add(t1,vec_sld(t1,t2,4));
-        y = vec_add(vec_add(y,y),y);
+        y = vec_add(t1, vec_sld(t1,t2,2));
+//        y = vec_add(vec_add(y,y),y);
 
-        tmp1 = vec_ld (0, ref+8+i);
+        tmp1 = vec_ld (0, ref+12+i);
 
         y = vec_add(y, vec_splat_s32(4));
         y = vec_sra(y, vec_splat_u32(3));
 
-        tmp2 = vec_ld (15, ref+8+i);
+        tmp2 = vec_ld (15, ref+12+i);
 
         *vbuf = vec_sub(*vbuf, y);
 
-        t1=t2;
+        t1 = t2;
 
         vbuf++;
 
@@ -162,6 +161,7 @@ void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width)
         vbuf++;
 
 #endif
+
         }
 
         snow_horizontal_compose_lift_lead_out(i, b, b, ref, width, w_l, 0, W_DM, W_DO, W_DS);
@@ -363,6 +363,7 @@ void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width)
         }
 
     }
+#endif
 }
 
 void ff_snow_vertical_compose97i_altivec(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width)
@@ -780,7 +781,9 @@ void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
 
 void snow_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
+#if 0
         c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
         c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
         c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
+#endif
 }
