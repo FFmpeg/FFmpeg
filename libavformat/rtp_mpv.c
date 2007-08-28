@@ -28,32 +28,39 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
     RTPDemuxContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
     int len, h, max_packet_size;
+    int b=1, e=0;
     uint8_t *q;
 
     max_packet_size = s->max_payload_size;
 
     while (size > 0) {
-        /* XXX: more correct headers */
+        len = max_packet_size - 4;
+
+        if (len >= size) {
+            len = size;
+            e = 1;
+        }
+
         h = 0;
-        if (st->codec->sub_id == 2)
-            h |= 1 << 26; /* mpeg 2 indicator */
+        h |= b << 12;
+        h |= e << 11;
+
+//        if (st->codec->sub_id == 2)
+//            h |= 1 << 26; /* mpeg 2 indicator */
+
         q = s->buf;
         *q++ = h >> 24;
         *q++ = h >> 16;
         *q++ = h >> 8;
         *q++ = h;
 
-        if (st->codec->sub_id == 2) {
+/*        if (st->codec->sub_id == 2) {
             h = 0;
             *q++ = h >> 24;
             *q++ = h >> 16;
             *q++ = h >> 8;
             *q++ = h;
-        }
-
-        len = max_packet_size - (q - s->buf);
-        if (len > size)
-            len = size;
+        } */
 
         memcpy(q, buf1, len);
         q += len;
