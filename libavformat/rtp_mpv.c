@@ -45,22 +45,11 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
         h |= b << 12;
         h |= e << 11;
 
-//        if (st->codec->sub_id == 2)
-//            h |= 1 << 26; /* mpeg 2 indicator */
-
         q = s->buf;
         *q++ = h >> 24;
         *q++ = h >> 16;
         *q++ = h >> 8;
         *q++ = h;
-
-/*        if (st->codec->sub_id == 2) {
-            h = 0;
-            *q++ = h >> 24;
-            *q++ = h >> 16;
-            *q++ = h >> 8;
-            *q++ = h;
-        } */
 
         memcpy(q, buf1, len);
         q += len;
