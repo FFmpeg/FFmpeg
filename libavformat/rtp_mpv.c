@@ -21,6 +21,8 @@
 #include "avformat.h"
 #include "rtp_internal.h"
 
+#include "mpegvideo.h"
+
 /* NOTE: a single frame must be passed with sequence header if
    needed. XXX: use slices. */
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
@@ -28,22 +30,54 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
     RTPDemuxContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
     int len, h, max_packet_size;
-    int b=1, e=0;
     uint8_t *q;
+    int begin_of_slice, end_of_slice;
 
     max_packet_size = s->max_payload_size;
+    begin_of_slice = 1;
+    end_of_slice = 0;
 
     while (size > 0) {
         len = max_packet_size - 4;
 
         if (len >= size) {
             len = size;
-            e = 1;
+            end_of_slice = 1;
+        } else {
+            const uint8_t *r, *r1;
+            int start_code;
+
+            r1 = buf1;
+            while (1) {
+                start_code = -1;
+                r = ff_find_start_code(r1, buf1 + size, &start_code);
+                if((start_code & 0xFFFFFF00) == 0x100) {
+                    /* New start code found */
+                    if (r - buf1 < len) {
+                        /* The current slice fits in the packet */
+                        if (begin_of_slice == 0) {
+                            /* no slice at the beginning of the packet... */
+                            end_of_slice = 1;
+                            len = r - buf1 - 4;
+                            break;
+                        }
+                        r1 = r;
+                    } else {
+                        if (r - r1 < max_packet_size) {
+                            len = r1 - buf1 - 4;
+                            end_of_slice = 1;
+                        }
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
         }
 
         h = 0;
-        h |= b << 12;
-        h |= e << 11;
+        h |= begin_of_slice << 12;
+        h |= end_of_slice << 11;
 
         q = s->buf;
         *q++ = h >> 24;
@@ -61,6 +95,8 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
 
         buf1 += len;
         size -= len;
+        begin_of_slice = end_of_slice;
+        end_of_slice = 0;
     }
     s->cur_timestamp++;
 }
