@@ -269,7 +269,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
     }
 }
 
-static inline int32_t sign_extended32(int32_t val, int bits)
+static inline int32_t extend_sign32(int32_t val, int bits)
 {
     return (val << (32 - bits)) >> (32 - bits);
 }
@@ -313,7 +313,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             prev_value = buffer_out[i];
             error_value = error_buffer[i+1];
             buffer_out[i+1] =
-                sign_extended32((prev_value + error_value), readsamplesize);
+                extend_sign32((prev_value + error_value), readsamplesize);
         }
         return;
     }
@@ -324,7 +324,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             int32_t val;
 
             val = buffer_out[i] + error_buffer[i+1];
-            val = sign_extended32(val, readsamplesize);
+            val = extend_sign32(val, readsamplesize);
             buffer_out[i+1] = val;
         }
 
@@ -359,7 +359,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             outval = (1 << (predictor_quantitization-1)) + sum;
             outval = outval >> predictor_quantitization;
             outval = outval + buffer_out[0] + error_val;
-            outval = sign_extended32(outval, readsamplesize);
+            outval = extend_sign32(outval, readsamplesize);
 
             buffer_out[predictor_coef_num+1] = outval;
 
@@ -573,7 +573,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
                     int32_t audiobits;
 
                     audiobits = get_bits(&alac->gb, alac->setinfo_sample_size);
-                    audiobits = sign_extended32(audiobits, readsamplesize);
+                    audiobits = extend_sign32(audiobits, readsamplesize);
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
