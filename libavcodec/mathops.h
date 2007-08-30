@@ -36,6 +36,10 @@
 
 #include "ppc/mathops.h"
 
+#elif defined(ARCH_BFIN)
+
+#include "bfin/mathops.h"
+
 #endif
 
 /* generic implementation */
