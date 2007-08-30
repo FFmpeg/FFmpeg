@@ -35,6 +35,10 @@
 
 #include "vis.h"
 
+extern void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data);
+extern void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data);
+extern void ff_simple_idct_vis(DCTELEM *data);
+
 /* The trick used in some of this file is the formula from the MMX
  * motion comp code, which is:
  *
@@ -4045,6 +4049,13 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
   int accel = vis_level ();
 
   if (accel & ACCEL_SPARC_VIS) {
+      if(avctx->idct_algo==FF_IDCT_SIMPLEVIS){
+          c->idct_put = ff_simple_idct_put_vis;
+          c->idct_add = ff_simple_idct_add_vis;
+          c->idct     = ff_simple_idct_vis;
+          c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
+      }
+
       c->put_pixels_tab[0][0] = MC_put_o_16_vis;
       c->put_pixels_tab[0][1] = MC_put_x_16_vis;
       c->put_pixels_tab[0][2] = MC_put_y_16_vis;
