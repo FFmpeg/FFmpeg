@@ -25,9 +25,7 @@
 
 void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
     const int w2= (width+1)>>1;
-    // SSE2 code runs faster with pointers aligned on a 32-byte boundary.
-    IDWTELEM temp_buf[(width>>1) + 4];
-    IDWTELEM * const temp = temp_buf + 4 - (((int)temp_buf & 0xF) >> 2);
+    DECLARE_ALIGNED_16(IDWTELEM, temp[width>>1]);
     const int w_l= (width>>1);
     const int w_r= w2 - 1;
     int i;
