@@ -19,8 +19,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef MATHOPS_BFIN
-#define MATHOPS_BFIN
+#ifndef AVCODEC_BFIN_MATHOPS_H
+#define AVCODEC_BFIN_MATHOPS_H
 
 #ifdef CONFIG_MPEGAUDIO_HP
 #define MULH(X,Y) ({ int xxo;                           \
@@ -49,4 +49,4 @@
        : "=W" (xxo) : "d" (a), "d" (b));                \
     xxo; })
 
-#endif
+#endif /* AVCODEC_BFIN_MATHOPS_H */
