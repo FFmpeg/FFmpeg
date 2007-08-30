@@ -4,9 +4,9 @@
 #
 include ../config.mak
 
-CFLAGS+=-I$(SRC_PATH)/libavcodec
+CFLAGS += -I$(SRC_PATH)/libavcodec
 
-OBJS= utils.o cutils.o os_support.o allformats.o sdp.o
+OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
 
 HEADERS = avformat.h avio.h rtp.h rtsp.h rtspcodes.h
 

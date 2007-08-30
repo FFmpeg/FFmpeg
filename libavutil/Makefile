@@ -1,25 +1,37 @@
 include ../config.mak
 
-OBJS= mathematics.o \
-      rational.o \
-      intfloat_readwrite.o \
-      crc.o \
-      md5.o \
-      lls.o \
-      adler32.o \
-      log.o \
-      mem.o \
-      fifo.o \
-      tree.o \
-      lzo.o \
-      random.o \
-      aes.o \
-      base64.o \
-      string.o \
+OBJS = adler32.o \
+       aes.o \
+       base64.o \
+       crc.o \
+       intfloat_readwrite.o \
+       fifo.o \
+       lls.o \
+       log.o \
+       lzo.o \
+       mathematics.o \
+       md5.o \
+       mem.o \
+       random.o \
+       rational.o \
+       string.o \
+       tree.o \
 
-HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
-          intfloat_readwrite.h md5.h adler32.h log.h fifo.h lzo.h \
-          random.h mem.h base64.h avstring.h
+HEADERS = adler32.h \
+          avstring.h \
+          avutil.h \
+          base64.h \
+          common.h \
+          fifo.h \
+          integer.h \
+          intfloat_readwrite.h \
+          log.h \
+          lzo.h \
+          mathematics.h \
+          md5.h \
+          mem.h \
+          random.h \
+          rational.h \
 
 NAME=avutil
 LIBVERSION=$(LAVUVERSION)

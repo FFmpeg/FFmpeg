@@ -4,29 +4,29 @@
 #
 include ../config.mak
 
-CFLAGS+=-I$(SRC_PATH)/libswscale -I$(SRC_PATH)/libavcodec
+CFLAGS += -I$(SRC_PATH)/libswscale -I$(SRC_PATH)/libavcodec
 
-OBJS= bitstream.o \
-      utils.o \
-      allcodecs.o \
-      mpegvideo.o \
-      jrevdct.o \
-      jfdctfst.o \
-      jfdctint.o\
-      resample.o \
-      resample2.o \
-      dsputil.o \
-      imgconvert.o \
-      mpeg12.o mpeg12data.o \
-      simple_idct.o \
-      eval.o \
-      error_resilience.o \
-      raw.o \
-      faandct.o \
-      parser.o \
-      opt.o \
-      bitstream_filter.o \
-      audioconvert.o \
+OBJS = allcodecs.o \
+       audioconvert.o \
+       bitstream.o \
+       bitstream_filter.o \
+       dsputil.o \
+       error_resilience.o \
+       eval.o \
+       faandct.o \
+       imgconvert.o \
+       jrevdct.o \
+       jfdctfst.o \
+       jfdctint.o\
+       mpeg12.o mpeg12data.o \
+       mpegvideo.o \
+       opt.o \
+       parser.o \
+       raw.o \
+       resample.o \
+       resample2.o \
+       simple_idct.o \
+       utils.o \
 
 
 HEADERS = avcodec.h opt.h
@@ -320,17 +320,17 @@ OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += dump_extradata_bsf.o
-OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += remove_extradata_bsf.o
-OBJS-$(CONFIG_NOISE_BSF)               += noise_bsf.o
+OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += imx_dump_header_bsf.o
+OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += mp3_header_compress_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += mp3_header_decompress_bsf.o mpegaudiodata.o
-OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpega_dump_header_bsf.o
-OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += imx_dump_header_bsf.o
+OBJS-$(CONFIG_NOISE_BSF)               += noise_bsf.o
+OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += remove_extradata_bsf.o
 
+OBJS-$(HAVE_BEOSTHREADS)               += beosthread.o
+OBJS-$(HAVE_OS2THREADS)                += os2thread.o
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
-OBJS-$(HAVE_OS2THREADS)                += os2thread.o
-OBJS-$(HAVE_BEOSTHREADS)               += beosthread.o
 
 OBJS-$(HAVE_XVMC_ACCEL)                += xvmcvideo.o
 
@@ -353,11 +353,11 @@ OBJS += i386/fdct_mmx.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
-OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 OBJS-$(CONFIG_VP3_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP5_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6F_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 endif
 
 ASM_OBJS-$(ARCH_ARMV4L)                += armv4l/jrevdct_arm.o     \
@@ -383,9 +383,9 @@ sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o \
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o     \
+                                          alpha/motion_est_alpha.o  \
                                           alpha/mpegvideo_alpha.o   \
                                           alpha/simple_idct_alpha.o \
-                                          alpha/motion_est_alpha.o  \
 
 ASM_OBJS-$(ARCH_ALPHA)                 += alpha/dsputil_alpha_asm.o  \
                                           alpha/motion_est_mvi_asm.o \
@@ -398,17 +398,17 @@ OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o   \
                                           ps2/mpegvideo_mmi.o \
 
 OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o      \
-                                          sh4/dsputil_sh4.o   \
                                           sh4/dsputil_align.o \
+                                          sh4/dsputil_sh4.o   \
 
 OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o      \
-                                          ppc/mpegvideo_altivec.o    \
-                                          ppc/idct_altivec.o         \
-                                          ppc/fft_altivec.o          \
-                                          ppc/gmc_altivec.o          \
                                           ppc/fdct_altivec.o         \
+                                          ppc/fft_altivec.o          \
                                           ppc/float_altivec.o        \
+                                          ppc/gmc_altivec.o          \
+                                          ppc/idct_altivec.o         \
                                           ppc/int_altivec.o          \
+                                          ppc/mpegvideo_altivec.o    \
 
 ifeq ($(HAVE_ALTIVEC),yes)
 OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o
@@ -421,8 +421,8 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o \
                                           bfin/mpegvideo_bfin.o \
 
 ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
-                                          bfin/idct_bfin.o   \
                                           bfin/fdct_bfin.o   \
+                                          bfin/idct_bfin.o   \
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
@@ -457,13 +457,13 @@ apiexample: apiexample.o $(LIB)
 cpuid-test: i386/cputest.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $<
 
+dct-test: dct-test.o fdctref.o $(LIB)
+
+fft-test: fft-test.o $(LIB)
+
 imgresample-test: imgresample.c $(LIB)
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
 
-dct-test: dct-test.o fdctref.o $(LIB)
-
 motion-test: motion-test.o $(LIB)
-
-fft-test: fft-test.o $(LIB)
 
 .PHONY: tests
