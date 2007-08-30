@@ -307,11 +307,11 @@ extern AVCodecParser vc1_parser;
 
 /* bitstream filters */
 extern AVBitStreamFilter dump_extradata_bsf;
-extern AVBitStreamFilter remove_extradata_bsf;
-extern AVBitStreamFilter noise_bsf;
+extern AVBitStreamFilter imx_dump_header_bsf;
+extern AVBitStreamFilter mjpega_dump_header_bsf;
 extern AVBitStreamFilter mp3_header_compress_bsf;
 extern AVBitStreamFilter mp3_header_decompress_bsf;
-extern AVBitStreamFilter mjpega_dump_header_bsf;
-extern AVBitStreamFilter imx_dump_header_bsf;
+extern AVBitStreamFilter noise_bsf;
+extern AVBitStreamFilter remove_extradata_bsf;
 
 #endif /* ALLCODECS_H */
