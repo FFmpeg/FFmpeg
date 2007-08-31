@@ -617,6 +617,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         break;
     case 20:
     case 24:
+        // It is not clear if there exist any encoder that creates 24 bit ALAC
+        // files. iTunes convert 24 bit raw files to 16 bit before encoding.
     case 32:
         av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented sample size %i\n", alac->setinfo_sample_size);
         break;
