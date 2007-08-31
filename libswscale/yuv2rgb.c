@@ -654,7 +654,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     }
 #endif
 
-#ifdef ARCH_BFIN
+#ifdef HAVE_BFIN
     if (c->flags & SWS_CPU_CAPS_BFIN)
     {
         SwsFunc t = ff_bfin_yuv2rgb_get_func_ptr (c);

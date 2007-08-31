@@ -157,7 +157,7 @@ typedef struct SwsContext{
 #endif
 
 
-#ifdef ARCH_BFIN
+#ifdef HAVE_BFIN
     uint32_t oy           __attribute__((aligned(4)));
     uint32_t oc           __attribute__((aligned(4)));
     uint32_t zero         __attribute__((aligned(4)));
