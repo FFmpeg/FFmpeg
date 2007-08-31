@@ -168,7 +168,6 @@ static void bastardized_rice_decompress(ALACContext *alac,
             x++;
         }
 
-
         if (x > 8) { /* RICE THRESHOLD */
             /* use alternative encoding */
             int32_t value;
