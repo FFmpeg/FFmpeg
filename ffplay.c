@@ -1012,7 +1012,7 @@ static void video_refresh_timer(void *opaque)
 
             /* compute nominal delay */
             delay = vp->pts - is->frame_last_pts;
-            if (delay <= 0 || delay >= 1.0) {
+            if (delay <= 0 || delay >= 2.0) {
                 /* if incorrect delay, use previous one */
                 delay = is->frame_last_delay;
             }
