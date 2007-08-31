@@ -2291,7 +2291,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     flags = *data++;
     size -= 3;
     if (is_keyframe == -1)
-        is_keyframe = flags & 1 ? PKT_FLAG_KEY : 0;
+        is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
 
     if (matroska->skip_to_keyframe) {
         if (!is_keyframe || st != matroska->skip_to_stream)
