@@ -126,7 +126,9 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
             s->filter_selection = 16;
     }
 
-    vp56_rac_get(c);
+    if (vp56_rac_get(c))
+        av_log(s->avctx, AV_LOG_WARNING,
+               "alternative entropy decoding not supported\n");
 
     if (coeff_offset) {
         vp56_init_range_decoder(&s->cc, buf+coeff_offset,
