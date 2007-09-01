@@ -55,6 +55,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "bytestream.h"
+#include "unary.h"
 
 #define ALAC_EXTRADATA_SIZE 36
 #define MAX_CHANNELS 2
@@ -159,14 +160,12 @@ static void bastardized_rice_decompress(ALACContext *alac,
     int sign_modifier = 0;
 
     for (output_count = 0; output_count < output_size; output_count++) {
-        int32_t x = 0;
+        int32_t x;
         int32_t x_modified;
         int32_t final_val;
 
         /* read x - number of 1s before 0 represent the rice */
-        while (x <= 8 && get_bits1(&alac->gb)) {
-            x++;
-        }
+        x = get_unary_0_9(&alac->gb);
 
         if (x > 8) { /* RICE THRESHOLD */
             /* use alternative encoding */
@@ -227,10 +226,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
             sign_modifier = 1;
 
-            x = 0;
-            while (x <= 8 && get_bits1(&alac->gb)) {
-                x++;
-            }
+            x = get_unary_0_9(&alac->gb);
 
             if (x > 8) {
                 block_size = get_bits(&alac->gb, 16);

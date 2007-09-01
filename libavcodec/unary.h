@@ -48,4 +48,9 @@ static inline int get_unary_0_33(GetBitContext *gb)
     return get_unary(gb, 0, 33);
 }
 
+static inline int get_unary_0_9(GetBitContext *gb)
+{
+    return get_unary(gb, 0, 9);
+}
+
 #endif /* AVCODEC_UNARY_H */
