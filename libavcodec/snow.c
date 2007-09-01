@@ -716,7 +716,11 @@ static inline int get_symbol2(RangeCoder *c, uint8_t *state, int log2){
     return v;
 }
 
-static av_always_inline void lift(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
+static av_always_inline void
+lift(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
+     int dst_step, int src_step, int ref_step,
+     int width, int mul, int add, int shift,
+     int highpass, int inverse){
     const int mirror_left= !highpass;
     const int mirror_right= (width&1) ^ highpass;
     const int w= (width>>1) - 1 + (highpass & width);
@@ -730,15 +734,25 @@ static av_always_inline void lift(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int 
     }
 
     for(i=0; i<w; i++){
-        dst[i*dst_step] = LIFT(src[i*src_step], ((mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add)>>shift), inverse);
+        dst[i*dst_step] =
+            LIFT(src[i*src_step],
+                 ((mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add)>>shift),
+                 inverse);
     }
 
     if(mirror_right){
-        dst[w*dst_step] = LIFT(src[w*src_step], ((mul*2*ref[w*ref_step]+add)>>shift), inverse);
+        dst[w*dst_step] =
+            LIFT(src[w*src_step],
+                 ((mul*2*ref[w*ref_step]+add)>>shift),
+                 inverse);
     }
 }
 
-static av_always_inline void inv_lift(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
+static av_always_inline void
+inv_lift(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref,
+         int dst_step, int src_step, int ref_step,
+         int width, int mul, int add, int shift,
+         int highpass, int inverse){
     const int mirror_left= !highpass;
     const int mirror_right= (width&1) ^ highpass;
     const int w= (width>>1) - 1 + (highpass & width);
@@ -752,23 +766,36 @@ static av_always_inline void inv_lift(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *re
     }
 
     for(i=0; i<w; i++){
-        dst[i*dst_step] = LIFT(src[i*src_step], ((mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add)>>shift), inverse);
+        dst[i*dst_step] =
+            LIFT(src[i*src_step],
+                 ((mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add)>>shift),
+                 inverse);
     }
 
     if(mirror_right){
-        dst[w*dst_step] = LIFT(src[w*src_step], ((mul*2*ref[w*ref_step]+add)>>shift), inverse);
+        dst[w*dst_step] =
+            LIFT(src[w*src_step],
+                 ((mul*2*ref[w*ref_step]+add)>>shift),
+                 inverse);
     }
 }
 
 #ifndef liftS
-static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
+static av_always_inline void
+liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
+      int dst_step, int src_step, int ref_step,
+      int width, int mul, int add, int shift,
+      int highpass, int inverse){
     const int mirror_left= !highpass;
     const int mirror_right= (width&1) ^ highpass;
     const int w= (width>>1) - 1 + (highpass & width);
     int i;
 
     assert(shift == 4);
-#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): -((-16*(src) + (ref) + add/4 + 1 + (5<<25))/(5*4) - (1<<23)))
+#define LIFTS(src, ref, inv) \
+        ((inv) ? \
+            (src) + (((ref) + 4*(src))>>shift): \
+            -((-16*(src) + (ref) + add/4 + 1 + (5<<25))/(5*4) - (1<<23)))
     if(mirror_left){
         dst[0] = LIFTS(src[0], mul*2*ref[0]+add, inverse);
         dst += dst_step;
@@ -776,21 +803,32 @@ static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int
     }
 
     for(i=0; i<w; i++){
-        dst[i*dst_step] = LIFTS(src[i*src_step], mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add, inverse);
+        dst[i*dst_step] =
+            LIFTS(src[i*src_step],
+                  mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add,
+                  inverse);
     }
 
     if(mirror_right){
-        dst[w*dst_step] = LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
+        dst[w*dst_step] =
+            LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
     }
 }
-static av_always_inline void inv_liftS(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
+static av_always_inline void
+inv_liftS(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref,
+          int dst_step, int src_step, int ref_step,
+          int width, int mul, int add, int shift,
+          int highpass, int inverse){
     const int mirror_left= !highpass;
     const int mirror_right= (width&1) ^ highpass;
     const int w= (width>>1) - 1 + (highpass & width);
     int i;
 
     assert(shift == 4);
-#define LIFTS(src, ref, inv) ((inv) ? (src) + (((ref) + 4*(src))>>shift): -((-16*(src) + (ref) + add/4 + 1 + (5<<25))/(5*4) - (1<<23)))
+#define LIFTS(src, ref, inv) \
+    ((inv) ? \
+        (src) + (((ref) + 4*(src))>>shift): \
+        -((-16*(src) + (ref) + add/4 + 1 + (5<<25))/(5*4) - (1<<23)))
     if(mirror_left){
         dst[0] = LIFTS(src[0], mul*2*ref[0]+add, inverse);
         dst += dst_step;
@@ -798,11 +836,15 @@ static av_always_inline void inv_liftS(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *r
     }
 
     for(i=0; i<w; i++){
-        dst[i*dst_step] = LIFTS(src[i*src_step], mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add, inverse);
+        dst[i*dst_step] =
+            LIFTS(src[i*src_step],
+                  mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add,
+                  inverse);
     }
 
     if(mirror_right){
-        dst[w*dst_step] = LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
+        dst[w*dst_step] =
+            LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
     }
 }
 #endif
