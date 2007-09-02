@@ -826,6 +826,19 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         asf_st->frag_offset += asf->packet_frag_size;
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
+            //workaround for macroshit radio DVR-MS files
+            if(   s->streams[asf->stream_index]->codec->codec_id == CODEC_ID_MPEG2VIDEO
+               && asf_st->pkt.size > 100){
+                int i;
+                for(i=0; i<asf_st->pkt.size && !asf_st->pkt.data[i]; i++);
+                if(i == asf_st->pkt.size){
+                    av_log(s, AV_LOG_DEBUG, "discarding ms fart\n");
+                    asf_st->frag_offset = 0;
+                    av_free_packet(&asf_st->pkt);
+                    continue;
+                }
+            }
+
             /* return packet */
             if (asf_st->ds_span > 1) {
               if(asf_st->pkt.size != asf_st->ds_packet_size * asf_st->ds_span){
