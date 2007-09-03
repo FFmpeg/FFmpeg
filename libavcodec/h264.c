@@ -7968,6 +7968,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
 
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS) && !s->current_picture_ptr){
+        if (avctx->skip_frame >= AVDISCARD_NONREF || s->hurry_up) return 0;
         av_log(avctx, AV_LOG_ERROR, "no frame!\n");
         return -1;
     }
