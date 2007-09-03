@@ -445,6 +445,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             /* read probe data */
             pd->buf= av_realloc(pd->buf, probe_size + AVPROBE_PADDING_SIZE);
             pd->buf_size = get_buffer(pb, pd->buf, probe_size);
+            memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
             if (url_fseek(pb, 0, SEEK_SET) < 0) {
                 url_fclose(pb);
                 if (url_fopen(pb, filename, URL_RDONLY) < 0) {
@@ -1866,9 +1867,10 @@ int av_find_stream_info(AVFormatContext *ic)
 
             if (st->codec->codec_id == CODEC_ID_NONE) {
                 AVProbeData *pd = &(probe_data[st->index]);
-                pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size);
+                pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
                 memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
                 pd->buf_size += pkt->size;
+                memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
             }
         }
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
