@@ -590,7 +590,9 @@ static int is_intra_only(AVCodecContext *enc){
     return 0;
 }
 
-static void update_initial_timestamps(AVFormatContext *s, int stream_index, int64_t dts){
+static void update_initial_timestamps(AVFormatContext *s, int stream_index,
+                                      int64_t dts, int64_t pts)
+{
     AVStream *st= s->streams[stream_index];
     AVPacketList *pktl= s->packet_buffer;
 
@@ -613,6 +615,8 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index, int6
         if(st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
             st->start_time= pktl->pkt.pts;
     }
+    if (st->start_time == AV_NOPTS_VALUE)
+        st->start_time = pts;
 }
 
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
@@ -670,7 +674,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* PTS = presentation time stamp */
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->last_IP_pts;
-            update_initial_timestamps(s, pkt->stream_index, pkt->dts);
+            update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts);
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->cur_dts;
 
@@ -696,7 +700,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* presentation is not delayed : PTS and DTS are the same */
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = pkt->dts;
-            update_initial_timestamps(s, pkt->stream_index, pkt->pts);
+            update_initial_timestamps(s, pkt->stream_index, pkt->pts, pkt->pts);
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
@@ -713,7 +717,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         if(pkt->dts == AV_NOPTS_VALUE)
             pkt->dts= st->pts_buffer[0];
         if(delay>1){
-            update_initial_timestamps(s, pkt->stream_index, pkt->dts); // this should happen on the first packet
+            update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts); // this should happen on the first packet
         }
         if(pkt->dts > st->cur_dts)
             st->cur_dts = pkt->dts;
