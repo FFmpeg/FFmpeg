@@ -31,11 +31,12 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
     AVStream *st = s1->streams[0];
     int len, h, max_packet_size;
     uint8_t *q;
-    int begin_of_slice, end_of_slice;
+    int begin_of_slice, end_of_slice, frame_type;
 
     max_packet_size = s->max_payload_size;
     begin_of_slice = 1;
     end_of_slice = 0;
+    frame_type = 0;
 
     while (size > 0) {
         len = max_packet_size - 4;
@@ -53,6 +54,10 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
                 r = ff_find_start_code(r1, buf1 + size, &start_code);
                 if((start_code & 0xFFFFFF00) == 0x100) {
                     /* New start code found */
+                    if (start_code == 0x100) {
+                        frame_type = (r[1] & 0x38) >> 3;
+                    }
+
                     if (r - buf1 < len) {
                         /* The current slice fits in the packet */
                         if (begin_of_slice == 0) {
@@ -78,6 +83,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
         h = 0;
         h |= begin_of_slice << 12;
         h |= end_of_slice << 11;
+        h |= frame_type << 8;
 
         q = s->buf;
         *q++ = h >> 24;
