@@ -40,6 +40,9 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
     temporal_reference = 0;
 
     while (size > 0) {
+        int begin_of_sequence;
+
+        begin_of_sequence = 0;
         len = max_packet_size - 4;
 
         if (len >= size) {
@@ -58,6 +61,9 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
                     if (start_code == 0x100) {
                         frame_type = (r[1] & 0x38) >> 3;
                         temporal_reference = (int)r[0] << 2 | r[1] >> 6;
+                    }
+                    if (start_code == 0x1B8) {
+                        begin_of_sequence = 1;
                     }
 
                     if (r - buf1 < len) {
@@ -84,6 +90,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
 
         h = 0;
         h |= temporal_reference << 16;
+        h |= begin_of_sequence << 13;
         h |= begin_of_slice << 12;
         h |= end_of_slice << 11;
         h |= frame_type << 8;
