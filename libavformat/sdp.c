@@ -175,6 +175,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     int i, j, port, ttl;
     char dst[32];
 
+    memset(buff, 0, size);
     memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
     s.src_addr = "127.0.0.1";    /* FIXME: Properly set this */
