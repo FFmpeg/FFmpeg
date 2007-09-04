@@ -85,18 +85,21 @@ static int flic_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     s->fli_type = AV_RL16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
-    depth       = AV_RL16(&fli_header[12]);
 
-    if (depth == 0) {
-      depth = 8; /* Some FLC generators set depth to zero, when they mean 8Bpp. Fix up here */
-    }
-
+    depth = 0;
     if (s->avctx->extradata_size == 12) {
         /* special case for magic carpet FLIs */
         s->fli_type = FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE;
+        depth = 8;
     } else if (s->avctx->extradata_size != 128) {
         av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
         return -1;
+    } else {
+        depth = AV_RL16(&fli_header[12]);
+    }
+
+    if (depth == 0) {
+        depth = 8; /* Some FLC generators set depth to zero, when they mean 8Bpp. Fix up here */
     }
 
     if ((s->fli_type == FLC_FLX_TYPE_CODE) && (depth == 16)) {
