@@ -77,13 +77,13 @@ show_help(){
   echo
   echo "External library support:"
   echo "  --enable-sunmlib         use Sun medialib [default=no]"
-  echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
-  echo "                           and libraw1394 [default=no]"
   echo "  --enable-liba52          enable GPLed liba52 support [default=no]"
   echo "  --enable-liba52bin       open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
   echo "  --enable-libamr-nb       enable libamr-nb floating point audio codec"
   echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec"
+  echo "  --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394"
+  echo "                           and libraw1394 [default=no]"
   echo "  --enable-libfaac         enable FAAC support via libfaac [default=no]"
   echo "  --enable-libfaad         enable FAAD support via libfaad [default=no]"
   echo "  --enable-libfaadbin      open libfaad.so.0 at runtime [default=no]"
@@ -592,7 +592,6 @@ CONFIG_LIST="
     avisynth
     beos_netserver
     bktr
-    dc1394
     ffmpeg
     ffplay
     ffserver
@@ -605,6 +604,7 @@ CONFIG_LIST="
     libamr
     libamr_nb
     libamr_wb
+    libdc1394
     libfaac
     libfaad
     libfaadbin
@@ -780,8 +780,8 @@ libxvid_encoder_deps="libxvid"
 ac3_demuxer_deps="ac3_parser"
 audio_demuxer_deps_any="audio_oss audio_beos"
 audio_muxer_deps_any="audio_oss audio_beos"
-dc1394_demuxer_deps="dc1394"
 dv1394_demuxer_deps="dv1394"
+libdc1394_demuxer_deps="libdc1394"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 mp3_demuxer_deps="mpegaudio_parser"
@@ -1576,6 +1576,7 @@ enabled_any libamr_nb libamr_wb && enable libamr
 enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
 enabled libamr_nb  && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
+enabled libdc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
@@ -1584,7 +1585,6 @@ enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
 enabled libx264    && require x264 x264.h x264_encoder_open -lx264
 enabled libxvid    && require Xvid xvid.h xvid_global -lxvidcore
-enabled dc1394     && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
@@ -1792,10 +1792,10 @@ enabled_any $THREADS_LIST  && enable threads
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
     $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
 
+enabled libdc1394 && append pkg_requires "libraw1394"
 enabled libogg    && append pkg_requires "ogg >= 1.1"
 enabled libtheora && append pkg_requires "theora"
 enabled libvorbis && append pkg_requires "vorbis vorbisenc"
-enabled dc1394    && append pkg_requires "libraw1394"
 
 echo "install prefix            $PREFIX"
 echo "source path               $source_path"
@@ -1854,6 +1854,7 @@ echo "liba52 support            ${liba52-no}"
 echo "liba52 dlopened           ${liba52bin-no}"
 echo "libamr-nb support         ${libamr_nb-no}"
 echo "libamr-wb support         ${libamr_wb-no}"
+echo "libdc1394 support         ${libdc1394-no}"
 echo "libfaac enabled           ${libfaac-no}"
 echo "libfaad enabled           ${libfaad-no}"
 echo "libfaad dlopened          ${libfaadbin-no}"

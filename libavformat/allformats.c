@@ -65,7 +65,6 @@ void av_register_all(void)
     REGISTER_DEMUXER (C93, c93);
     REGISTER_MUXER   (CRC, crc);
     REGISTER_DEMUXER (DAUD, daud);
-    REGISTER_DEMUXER (DC1394, dc1394);
     REGISTER_DEMUXER (DSICIN, dsicin);
     REGISTER_DEMUXER (DTS, dts);
     REGISTER_MUXDEMUX(DV, dv);
@@ -88,6 +87,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(IMAGE2PIPE, image2pipe);
     REGISTER_DEMUXER (INGENIENT, ingenient);
     REGISTER_DEMUXER (IPMOVIE, ipmovie);
+    REGISTER_DEMUXER (LIBDC1394, libdc1394);
     if (!ENABLE_NUT_DEMUXER) REGISTER_DEMUXER (LIBNUT, libnut);
     if (!ENABLE_NUT_MUXER)   REGISTER_MUXER   (LIBNUT, libnut);
     REGISTER_MUXDEMUX(M4V, m4v);

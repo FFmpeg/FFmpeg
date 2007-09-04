@@ -182,7 +182,7 @@ static int dc1394_close(AVFormatContext * context)
     return 0;
 }
 
-AVInputFormat dc1394_demuxer = {
+AVInputFormat libdc1394_demuxer = {
     .name           = "dc1394",
     .long_name      = "dc1394 A/V grab",
     .priv_data_size = sizeof(struct dc1394_data),
