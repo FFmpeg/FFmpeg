@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(42<<8)+0)
-#define LIBAVCODEC_VERSION      51.42.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(43<<8)+0)
+#define LIBAVCODEC_VERSION      51.43.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2798,6 +2798,7 @@ typedef struct AVBitStreamFilter {
                   AVCodecContext *avctx, const char *args,
                   uint8_t **poutbuf, int *poutbuf_size,
                   const uint8_t *buf, int buf_size, int keyframe);
+    void (*close)(AVBitStreamFilterContext *bsfc);
     struct AVBitStreamFilter *next;
 } AVBitStreamFilter;
 
