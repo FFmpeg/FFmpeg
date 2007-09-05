@@ -28,6 +28,8 @@ typedef struct MatroskaMuxContext {
     offset_t    segment;
     offset_t    cluster;
     uint64_t    cluster_pts;
+    offset_t    duration_offset;
+    uint64_t    duration;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -155,7 +157,11 @@ static int mkv_write_header(AVFormatContext *s)
         // XXX: both are required; something better for writing app?
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
     }
-    // XXX: segment UID and duration
+    // XXX: segment UID
+    // reserve space for the duration
+    mkv->duration = 0;
+    mkv->duration_offset = url_ftell(pb);
+    put_ebml_void(pb, 11);                  // assumes double-precision float to be written
     end_ebml_master(pb, segment_info);
 
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS);
@@ -290,6 +296,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
     put_buffer(pb, pkt->data, pkt->size);
     end_ebml_master(pb, block);
+
+    mkv->duration = pkt->pts + pkt->duration;
     return 0;
 }
 
@@ -297,7 +305,16 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    offset_t currentpos;
+
     end_ebml_master(pb, mkv->cluster);
+
+    // update the duration
+    currentpos = url_ftell(pb);
+    url_fseek(pb, mkv->duration_offset, SEEK_SET);
+    put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
+    url_fseek(pb, currentpos, SEEK_SET);
+
     end_ebml_master(pb, mkv->segment);
     return 0;
 }
