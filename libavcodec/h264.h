@@ -380,6 +380,35 @@ typedef struct H264Context{
     const uint8_t *field_scan8x8_cavlc_q0;
 
     int x264_build;
+
+    /**
+     * @defgroup multithreading Members for slice based multithreading
+     * @{
+     */
+    struct H264Context *thread_context[MAX_THREADS];
+
+    /**
+     * current slice number, used to initalize slice_num of each thread/context
+     */
+    int current_slice;
+
+    /**
+     * Max number of threads / contexts.
+     * This is equal to AVCodecContext.thread_count unless
+     * multithreaded decoding is impossible, in which case it is
+     * reduced to 1.
+     */
+    int max_contexts;
+
+    /**
+     *  1 if the single thread fallback warning has already been
+     *  displayed, 0 otherwise.
+     */
+    int single_decode_warning;
+
+    int last_slice_type;
+    /** @} */
+
 }H264Context;
 
 #endif /* H264_H */

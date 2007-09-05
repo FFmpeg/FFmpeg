@@ -418,7 +418,7 @@ void MPV_decode_defaults(MpegEncContext *s){
  */
 int MPV_common_init(MpegEncContext *s)
 {
-    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
+    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y, threads;
 
     s->mb_height = (s->height + 15) / 16;
 
@@ -587,12 +587,16 @@ int MPV_common_init(MpegEncContext *s)
     s->context_initialized = 1;
 
     s->thread_context[0]= s;
-    for(i=1; i<s->avctx->thread_count; i++){
+    /* h264 does thread context setup itself, but it needs context[0]
+     * to be fully initialized for the error resilience code */
+    threads = s->codec_id == CODEC_ID_H264 ? 1 : s->avctx->thread_count;
+
+    for(i=1; i<threads; i++){
         s->thread_context[i]= av_malloc(sizeof(MpegEncContext));
         memcpy(s->thread_context[i], s, sizeof(MpegEncContext));
     }
 
-    for(i=0; i<s->avctx->thread_count; i++){
+    for(i=0; i<threads; i++){
         if(init_duplicate_context(s->thread_context[i], s) < 0)
            goto fail;
         s->thread_context[i]->start_mb_y= (s->mb_height*(i  ) + s->avctx->thread_count/2) / s->avctx->thread_count;
