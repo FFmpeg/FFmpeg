@@ -275,7 +275,6 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
     entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
 
     seekhead->entries = entries;
-
     return 0;
 }
 
