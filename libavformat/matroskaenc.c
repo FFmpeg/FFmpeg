@@ -104,7 +104,7 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
  */
 static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 {
-    bytes = FFMIN(bytes, 8);
+    assert(bytes <= 8);
     put_byte(pb, 0x1ff >> bytes);
     while (--bytes)
         put_byte(pb, 0xff);
@@ -140,14 +140,9 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
     if (bytes == 0)
         // don't care how many bytes are used, so use the min
         bytes = needed_bytes;
-    else if (needed_bytes > bytes) {
         // the bytes needed to write the given size would exceed the bytes
         // that we need to use, so write unknown size. This shouldn't happen.
-        av_log(NULL, AV_LOG_WARNING, "Size of %" PRIu64 " needs %d bytes but only %d bytes reserved\n",
-               size, needed_bytes, bytes);
-        put_ebml_size_unknown(pb, bytes);
-        return;
-    }
+    assert(bytes >= needed_bytes);
 
     size |= 1ULL << bytes*7;
     for (i = bytes - 1; i >= 0; i--)
@@ -195,8 +190,7 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
 {
     offset_t currentpos = url_ftell(pb);
 
-    if (size < 2)
-        return;
+    assert(size >= 2);
 
     put_ebml_id(pb, EBML_ID_VOID);
     // we need to subtract the length needed to store the size from the
