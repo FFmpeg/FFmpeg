@@ -470,6 +470,46 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
     }
 }
 
+static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int native_id)
+{
+    int ret;
+
+    if (native_id) {
+        if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
+            ret = put_xiph_codecpriv(pb, codec);
+            if (ret < 0) return ret;
+        } else if (codec->codec_id == CODEC_ID_FLAC) {
+            ret = put_flac_codecpriv(pb, codec);
+            if (ret < 0) return ret;
+        } else if (codec->extradata_size) {
+            put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
+        }
+    } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
+        ebml_master bmp_header;
+
+        if (!codec->codec_tag)
+            codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
+
+        bmp_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
+        put_bmp_header(pb, codec, codec_bmp_tags, 0);
+        end_ebml_master(pb, bmp_header);
+
+    } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
+        ebml_master wav_header;
+
+        codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
+        if (!codec->codec_tag) {
+            av_log(codec, AV_LOG_ERROR, "no wav codec id found");
+            return -1;
+        }
+
+        wav_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
+        put_wav_header(pb, codec);
+        end_ebml_master(pb, wav_header);
+    }
+    return 0;
+}
+
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -516,32 +556,13 @@ static int mkv_write_tracks(AVFormatContext *s)
             }
         }
 
-        if (native_id) {
-            if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
-                ret = put_xiph_codecpriv(pb, codec);
-                if (ret < 0) return ret;
-            } else if (codec->codec_id == CODEC_ID_FLAC) {
-                ret = put_flac_codecpriv(pb, codec);
-                if (ret < 0) return ret;
-            } else if (codec->extradata_size) {
-                put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
-            }
-        }
-
         switch (codec->codec_type) {
             case CODEC_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
                 if (!native_id) {
-                    ebml_master bmp_header;
                     // if there is no mkv-specific codec id, use VFW mode
-                    if (!codec->codec_tag)
-                        codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
-
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
-                    bmp_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
-                    put_bmp_header(pb, codec, codec_bmp_tags, 0);
-                    end_ebml_master(pb, bmp_header);
                 }
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
                 // XXX: interlace flag?
@@ -560,18 +581,8 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
                 if (!native_id) {
-                    ebml_master wav_header;
                     // no mkv-specific ID, use ACM mode
-                    codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
-                    if (!codec->codec_tag) {
-                        av_log(s, AV_LOG_ERROR, "no codec id found for stream %d", i);
-                        return -1;
-                    }
-
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_AUDIO_ACM);
-                    wav_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
-                    put_wav_header(pb, codec);
-                    end_ebml_master(pb, wav_header);
                 }
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 0);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
@@ -590,6 +601,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.");
                 break;
         }
+        ret = mkv_write_codecprivate(pb, codec, native_id);
+        if (ret < 0) return ret;
+
         end_ebml_master(pb, track);
 
         // ms precision is the de-facto standard timescale for mkv files
