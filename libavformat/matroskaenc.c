@@ -689,3 +689,17 @@ AVOutputFormat matroska_muxer = {
     mkv_write_trailer,
     .codec_tag = (const AVCodecTag*[]){codec_bmp_tags, codec_wav_tags, 0},
 };
+
+AVOutputFormat matroska_audio_muxer = {
+    "matroska",
+    "Matroska File Format",
+    "audio/x-matroska",
+    "mka",
+    sizeof(MatroskaMuxContext),
+    CODEC_ID_MP2,
+    CODEC_ID_NONE,
+    mkv_write_header,
+    mkv_write_packet,
+    mkv_write_trailer,
+    .codec_tag = (const AVCodecTag*[]){codec_wav_tags, 0},
+};
