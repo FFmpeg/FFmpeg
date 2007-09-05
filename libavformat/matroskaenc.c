@@ -677,7 +677,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
 
     // start a new cluster every 5 MB or 5 sec
-    if (url_ftell(pb) > mkv->cluster + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
+    if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %llu bytes, pts %llu\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
 
