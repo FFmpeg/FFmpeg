@@ -98,7 +98,7 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 }
 
 /**
- * Write an EBML size meaning "unknown size"
+ * Write an EBML size meaning "unknown size."
  *
  * @param bytes The number of bytes the size should occupy. Maximum of 8.
  */
@@ -235,8 +235,8 @@ static void put_xiph_size(ByteIOContext *pb, int size)
  * that size.
  *
  * @param segment_offset The absolute offset to the position in the file
- *                       where the segment begins
- * @param numelements the maximum number of elements that will be indexed
+ *                       where the segment begins.
+ * @param numelements The maximum number of elements that will be indexed
  *                    by this seek head, 0 if unlimited.
  */
 static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_offset, int numelements)
@@ -284,7 +284,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
  * be written at the location reserved for it. Otherwise, it is written
  * at the current location in the file.
  *
- * @return the file offset where the seekhead was written
+ * @return The file offset where the seekhead was written.
  */
 static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
 {
@@ -442,7 +442,7 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
     int sri;
 
     if (codec->extradata_size < 2) {
-        av_log(s, AV_LOG_WARNING, "no AAC extradata, unable to determine samplerate\n");
+        av_log(s, AV_LOG_WARNING, "No AAC extradata, unable to determine samplerate.\n");
         return;
     }
 
@@ -483,7 +483,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
         if (!codec->codec_tag) {
-            av_log(s, AV_LOG_ERROR, "no bmp codec id found");
+            av_log(s, AV_LOG_ERROR, "No bmp codec ID found.");
             ret = -1;
         }
 
@@ -493,7 +493,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
-            av_log(s, AV_LOG_ERROR, "no wav codec id found");
+            av_log(s, AV_LOG_ERROR, "No wav codec ID found.");
             ret = -1;
         }
 
@@ -543,7 +543,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         else
             put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, "und");
 
-        // look for a codec id string specific to mkv to use,
+        // look for a codec ID string specific to mkv to use,
         // if none are found, use AVI codes
         for (j = 0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++) {
             if (ff_mkv_codec_tags[j].id == codec->codec_id) {
@@ -558,7 +558,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
                 if (!native_id)
-                    // if there is no mkv-specific codec id, use VFW mode
+                    // if there is no mkv-specific codec ID, use VFW mode
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
 
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
