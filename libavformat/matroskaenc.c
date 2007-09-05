@@ -544,7 +544,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_ebml_size(pb, pkt->size + 4, 0);
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
-    put_byte(pb, keyframe);
+    put_byte(pb, keyframe << 7);
     put_buffer(pb, pkt->data, pkt->size);
 
     if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
