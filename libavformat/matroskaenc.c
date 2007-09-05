@@ -31,8 +31,8 @@ typedef struct mkv_seekhead_entry {
 
 typedef struct mkv_seekhead {
     offset_t                filepos;
-    offset_t                segment_offset;     // the file offset to the beginning of the segment
-    int                     reserved_size;      // -1 if appending to file
+    offset_t                segment_offset;     ///< the file offset to the beginning of the segment
+    int                     reserved_size;      ///< -1 if appending to file
     int                     max_entries;
     mkv_seekhead_entry      *entries;
     int                     num_entries;
