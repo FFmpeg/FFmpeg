@@ -67,6 +67,11 @@ typedef struct MatroskaMuxContext {
     struct AVMD5    *md5_ctx;
 } MatroskaMuxContext;
 
+static int ebml_id_size(unsigned int id)
+{
+    return (av_log2(id+1)-1)/7+1;
+}
+
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 {
     if (id >= 0x3fffff)
@@ -76,11 +81,6 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
     if (id >= 0xff)
         put_byte(pb, id >> 8);
     put_byte(pb, id);
-}
-
-static int ebml_id_size(unsigned int id)
-{
-    return (av_log2(id+1)-1)/7+1;
 }
 
 /**
