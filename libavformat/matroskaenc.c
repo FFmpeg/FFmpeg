@@ -128,6 +128,36 @@ static void end_ebml_master(ByteIOContext *pb, offset_t start)
     url_fseek(pb, pos, SEEK_SET);
 }
 
+static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
+{
+    offset_t codecprivate;
+    uint8_t *header_start[3];
+    int header_len[3];
+    int first_header_size;
+    int j, k;
+
+    if (codec->codec_id == CODEC_ID_VORBIS)
+        first_header_size = 30;
+    else
+        first_header_size = 42;
+
+    if (ff_split_xiph_headers(codec->extradata, codec->extradata_size,
+                              first_header_size, header_start, header_len) < 0) {
+        av_log(codec, AV_LOG_ERROR, "Extradata corrupt.\n");
+        return -1;
+    }
+
+    codecprivate = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
+    put_byte(pb, 2);                    // number packets - 1
+    for (j = 0; j < 2; j++) {
+        for (k = 0; k < header_len[j] / 255; k++)
+            put_byte(pb, 255);
+        put_byte(pb, header_len[j] % 255);
+    }
+    for (j = 0; j < 3; j++)
+        put_buffer(pb, header_start[j], header_len[j]);
+    end_ebml_master(pb, codecprivate);
+}
 
 static int mkv_write_header(AVFormatContext *s)
 {
@@ -190,34 +220,9 @@ static int mkv_write_header(AVFormatContext *s)
 
         // XXX: CodecPrivate for vorbis, theora, aac, native mpeg4, ...
         if (native_id) {
-            offset_t codecprivate;
-
             if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
-                uint8_t *header_start[3];
-                int header_len[3];
-                int first_header_size;
-
-                if (codec->codec_id == CODEC_ID_VORBIS)
-                    first_header_size = 30;
-                else
-                    first_header_size = 42;
-
-                if (ff_split_xiph_headers(codec->extradata, codec->extradata_size,
-                                          first_header_size, header_start, header_len) < 0) {
-                    av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
+                if (put_xiph_codecpriv(pb, codec) < 0)
                     return -1;
-                }
-
-                codecprivate = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
-                put_byte(pb, 2);                    // number packets - 1
-                for (j = 0; j < 2; j++) {
-                    for (k = 0; k < header_len[j] / 255; k++)
-                        put_byte(pb, 255);
-                    put_byte(pb, header_len[j] % 255);
-                }
-                for (j = 0; j < 3; j++)
-                    put_buffer(pb, header_start[j], header_len[j]);
-                end_ebml_master(pb, codecprivate);
             } else {
                 put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
             }
