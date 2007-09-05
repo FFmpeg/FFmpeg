@@ -3159,8 +3159,8 @@ static Picture * remove_short(H264Context *h, int frame_num){
             av_log(h->s.avctx, AV_LOG_DEBUG, "%d %d %p\n", i, pic->frame_num, pic);
         if(pic->frame_num == frame_num){
             h->short_ref[i]= NULL;
-            memmove(&h->short_ref[i], &h->short_ref[i+1], (h->short_ref_count - i - 1)*sizeof(Picture*));
-            h->short_ref_count--;
+            if (--h->short_ref_count)
+                memmove(&h->short_ref[i], &h->short_ref[i+1], (h->short_ref_count - i)*sizeof(Picture*));
             return pic;
         }
     }
