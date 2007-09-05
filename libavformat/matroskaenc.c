@@ -457,7 +457,6 @@ static int mkv_write_tracks(AVFormatContext *s)
             }
         }
 
-        // XXX: CodecPrivate for vorbis, theora, aac, native mpeg4, ...
         if (native_id) {
             if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
                 if (put_xiph_codecpriv(pb, codec) < 0)
