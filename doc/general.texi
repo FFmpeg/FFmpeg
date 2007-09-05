@@ -576,23 +576,7 @@ and for a build with shared libraries
 
 @section BeOS
 
-The configure script should guess the configuration itself.
-Networking support is currently not finished.
-errno issues fixed by Andrew Bachmann.
-
-Old stuff:
-
-François Revol - revol at free dot fr - April 2002
-
-The configure script should guess the configuration itself,
-however I still did not test building on the net_server version of BeOS.
-
-FFserver is broken (needs poll() implementation).
-
-There are still issues with errno codes, which are negative in BeOS, and
-that FFmpeg negates when returning. This ends up turning errors into
-valid results, then crashes.
-(To be fixed)
+BeOS support is broken in mysterious ways.
 
 @chapter Developers Guide
 
