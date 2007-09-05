@@ -157,6 +157,8 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     for (j = 0; j < 3; j++)
         put_buffer(pb, header_start[j], header_len[j]);
     end_ebml_master(pb, codecprivate);
+
+    return 0;
 }
 
 static int mkv_write_tracks(AVFormatContext *s)
@@ -245,6 +247,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         av_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
+    return 0;
 }
 
 static int mkv_write_header(AVFormatContext *s)
