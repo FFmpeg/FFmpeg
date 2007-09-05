@@ -90,6 +90,24 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
 
+// this reserves exactly the amount of space specified by size, which must be at least 2
+static void put_ebml_void(ByteIOContext *pb, uint64_t size)
+{
+    offset_t currentpos = url_ftell(pb);
+
+    if (size < 2)
+        return;
+
+    put_ebml_id(pb, EBML_ID_VOID);
+    // we need to subtract the length needed to store the size from the size we need to reserve
+    // so 2 cases, we use 8 bytes to store the size if possible, 1 byte otherwise
+    if (size < 10)
+        put_ebml_size(pb, size-1, 0);
+    else
+        put_ebml_size(pb, size-9, 7);
+    url_fseek(pb, currentpos + size, SEEK_SET);
+}
+
 static offset_t start_ebml_master(ByteIOContext *pb, unsigned int elementid)
 {
     put_ebml_id(pb, elementid);
