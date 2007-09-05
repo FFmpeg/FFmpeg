@@ -394,6 +394,7 @@ static const BlockNode null_block= { //FIXME add border maybe
 #define LOG2_MB_SIZE 4
 #define MB_SIZE (1<<LOG2_MB_SIZE)
 #define ENCODER_EXTRA_BITS 4
+#define HTAPS 6
 
 typedef struct x_and_coeff{
     int16_t x;
@@ -2145,14 +2146,18 @@ static void decode_blocks(SnowContext *s){
 static void mc_block(uint8_t *dst, const uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
     int x, y;
 START_TIMER
-    for(y=0; y < b_h+5; y++){
+    for(y=0; y < b_h+HTAPS-1; y++){
         for(x=0; x < b_w; x++){
-            int a0= src[x    ];
-            int a1= src[x + 1];
-            int a2= src[x + 2];
-            int a3= src[x + 3];
-            int a4= src[x + 4];
-            int a5= src[x + 5];
+            int a_2=src[x + HTAPS/2-5];
+            int a_1=src[x + HTAPS/2-4];
+            int a0= src[x + HTAPS/2-3];
+            int a1= src[x + HTAPS/2-2];
+            int a2= src[x + HTAPS/2-1];
+            int a3= src[x + HTAPS/2+0];
+            int a4= src[x + HTAPS/2+1];
+            int a5= src[x + HTAPS/2+2];
+            int a6= src[x + HTAPS/2+3];
+            int a7= src[x + HTAPS/2+4];
 //            int am= 9*(a1+a2) - (a0+a3);
             int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
 //            int am= 18*(a2+a3) - 2*(a1+a4);
@@ -2177,16 +2182,20 @@ START_TIMER
         tmp += stride;
         src += stride;
     }
-    tmp -= (b_h+5)*stride;
+    tmp -= (b_h+HTAPS-1)*stride;
 
     for(y=0; y < b_h; y++){
         for(x=0; x < b_w; x++){
-            int a0= tmp[x + 0*stride];
-            int a1= tmp[x + 1*stride];
-            int a2= tmp[x + 2*stride];
-            int a3= tmp[x + 3*stride];
-            int a4= tmp[x + 4*stride];
-            int a5= tmp[x + 5*stride];
+            int a_2=tmp[x + (HTAPS/2-5)*stride];
+            int a_1=tmp[x + (HTAPS/2-4)*stride];
+            int a0= tmp[x + (HTAPS/2-3)*stride];
+            int a1= tmp[x + (HTAPS/2-2)*stride];
+            int a2= tmp[x + (HTAPS/2-1)*stride];
+            int a3= tmp[x + (HTAPS/2+0)*stride];
+            int a4= tmp[x + (HTAPS/2+1)*stride];
+            int a5= tmp[x + (HTAPS/2+2)*stride];
+            int a6= tmp[x + (HTAPS/2+3)*stride];
+            int a7= tmp[x + (HTAPS/2+4)*stride];
             int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
 //            int am= 18*(a2+a3) - 2*(a1+a4);
 /*            int aL= (-7*a0 + 105*a1 + 35*a2 - 5*a3)>>3;
@@ -2213,9 +2222,9 @@ STOP_TIMER("mc_block")
 
 #define mca(dx,dy,b_w)\
 static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, int stride, int h){\
-    uint8_t tmp[stride*(b_w+5)];\
+    uint8_t tmp[stride*(b_w+HTAPS-1)];\
     assert(h==b_w);\
-    mc_block(dst, src-2-2*stride, tmp, stride, b_w, b_w, dx, dy);\
+    mc_block(dst, src-(HTAPS/2-1)-(HTAPS/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
 }
 
 mca( 0, 0,16)
@@ -2274,19 +2283,19 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
         const int dx= mx&15;
         const int dy= my&15;
         const int tab_index= 3 - (b_w>>2) + (b_w>>4);
-        sx += (mx>>4) - 2;
-        sy += (my>>4) - 2;
+        sx += (mx>>4) - (HTAPS/2-1);
+        sy += (my>>4) - (HTAPS/2-1);
         src += sx + sy*stride;
-        if(   (unsigned)sx >= w - b_w - 4
-           || (unsigned)sy >= h - b_h - 4){
-            ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+5, b_h+5, sx, sy, w, h);
+        if(   (unsigned)sx >= w - b_w - (HTAPS-2)
+           || (unsigned)sy >= h - b_h - (HTAPS-2)){
+            ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS-1, b_h+HTAPS-1, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
 //        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
 //        assert(!(b_w&(b_w-1)));
         assert(b_w>1 && b_h>1);
         assert(tab_index>=0 && tab_index<4 || b_w==32);
-        if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)))
+        if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || HTAPS != 6)
             mc_block(dst, src, tmp, stride, b_w, b_h, dx, dy);
         else if(b_w==32){
             int y;
@@ -2733,7 +2742,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     uint8_t *src= s->  input_picture.data[plane_index];
     IDWTELEM *pred= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t cur[ref_stride*2*MB_SIZE]; //FIXME alignment
-    uint8_t tmp[ref_stride*(2*MB_SIZE+5)];
+    uint8_t tmp[ref_stride*(2*MB_SIZE+HTAPS-1)];
     const int b_stride = s->b_width << s->block_max_depth;
     const int b_height = s->b_height<< s->block_max_depth;
     const int w= p->width;
