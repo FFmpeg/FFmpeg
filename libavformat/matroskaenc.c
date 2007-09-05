@@ -140,8 +140,8 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
     if (bytes == 0)
         // don't care how many bytes are used, so use the min
         bytes = needed_bytes;
-        // the bytes needed to write the given size would exceed the bytes
-        // that we need to use, so write unknown size. This shouldn't happen.
+    // the bytes needed to write the given size would exceed the bytes
+    // that we need to use, so write unknown size. This shouldn't happen.
     assert(bytes >= needed_bytes);
 
     size |= 1ULL << bytes*7;
@@ -587,9 +587,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 end_ebml_master(pb, subinfo);
                 break;
 
-                case CODEC_TYPE_SUBTITLE:
-                    put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_SUBTITLE);
-                    break;
+            case CODEC_TYPE_SUBTITLE:
+                put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_SUBTITLE);
+                break;
             default:
                 av_log(s, AV_LOG_ERROR, "Only audio and video are supported for Matroska.");
                 break;
