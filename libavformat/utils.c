@@ -1364,19 +1364,18 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
 /*******************************************************/
 
 /**
- * Returns TRUE if the stream has accurate timings in any stream.
+ * Returns TRUE if the stream has accurate duration in any stream.
  *
- * @return TRUE if the stream has accurate timings for at least one component.
+ * @return TRUE if the stream has accurate duration for at least one component.
  */
-static int av_has_timings(AVFormatContext *ic)
+static int av_has_duration(AVFormatContext *ic)
 {
     int i;
     AVStream *st;
 
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
-        if (st->start_time != AV_NOPTS_VALUE &&
-            st->duration != AV_NOPTS_VALUE)
+        if (st->duration != AV_NOPTS_VALUE)
             return 1;
     }
     return 0;
@@ -1390,11 +1389,13 @@ static int av_has_timings(AVFormatContext *ic)
 static void av_update_stream_timings(AVFormatContext *ic)
 {
     int64_t start_time, start_time1, end_time, end_time1;
+    int64_t duration, duration1;
     int i;
     AVStream *st;
 
     start_time = INT64_MAX;
     end_time = INT64_MIN;
+    duration = INT64_MIN;
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE) {
@@ -1408,19 +1409,27 @@ static void av_update_stream_timings(AVFormatContext *ic)
                     end_time = end_time1;
             }
         }
+        if (st->duration != AV_NOPTS_VALUE) {
+            duration1 = av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
+            if (duration1 > duration)
+                duration = duration1;
+        }
     }
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
         if (end_time != INT64_MIN) {
-            ic->duration = end_time - start_time;
-            if (ic->file_size > 0) {
-                /* compute the bit rate */
-                ic->bit_rate = (double)ic->file_size * 8.0 * AV_TIME_BASE /
-                    (double)ic->duration;
-            }
+            if (end_time - start_time > duration)
+                duration = end_time - start_time;
         }
     }
-
+    if (duration != INT64_MIN) {
+        ic->duration = duration;
+        if (ic->file_size > 0) {
+            /* compute the bit rate */
+            ic->bit_rate = (double)ic->file_size * 8.0 * AV_TIME_BASE /
+                (double)ic->duration;
+        }
+    }
 }
 
 static void fill_all_stream_timings(AVFormatContext *ic)
@@ -1587,7 +1596,7 @@ static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
         file_size && !ic->pb.is_streamed) {
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic, old_offset);
-    } else if (av_has_timings(ic)) {
+    } else if (av_has_duration(ic)) {
         /* at least one components has timings - we use them for all
            the components */
         fill_all_stream_timings(ic);
