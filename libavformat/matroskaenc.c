@@ -225,6 +225,7 @@ static int mkv_write_header(AVFormatContext *s)
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
+    offset_t block;
 
     block = start_ebml_master(pb, MATROSKA_ID_SIMPLEBLOCK);
     put_byte(pb, 0x80 | pkt->stream_index);     // this assumes stream_index is less than 127
