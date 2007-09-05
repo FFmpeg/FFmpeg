@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "cabac.h"
 #include "mpegvideo.h"
+#include "h264pred.h"
 
 #define interlaced_dct interlaced_dct_is_a_bad_name
 #define mb_intra mb_intra_is_not_initialized_see_mb_type
@@ -185,10 +186,7 @@ typedef struct H264Context{
 
     int8_t intra4x4_pred_mode_cache[5*8];
     int8_t (*intra4x4_pred_mode)[8];
-    void (*pred4x4  [9+3])(uint8_t *src, uint8_t *topright, int stride);//FIXME move to dsp?
-    void (*pred8x8l [9+3])(uint8_t *src, int topleft, int topright, int stride);
-    void (*pred8x8  [4+3])(uint8_t *src, int stride);
-    void (*pred16x16[4+3])(uint8_t *src, int stride);
+    H264PredContext hpc;
     unsigned int topleft_samples_available;
     unsigned int top_samples_available;
     unsigned int topright_samples_available;

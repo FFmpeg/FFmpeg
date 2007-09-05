@@ -180,34 +180,6 @@ static void svq3_add_idct_c (uint8_t *dst, DCTELEM *block, int stride, int qp, i
     }
 }
 
-static void pred4x4_down_left_svq3_c(uint8_t *src, uint8_t *topright, int stride){
-    LOAD_TOP_EDGE
-    LOAD_LEFT_EDGE
-    const av_unused int unu0= t0;
-    const av_unused int unu1= l0;
-
-    src[0+0*stride]=(l1 + t1)>>1;
-    src[1+0*stride]=
-    src[0+1*stride]=(l2 + t2)>>1;
-    src[2+0*stride]=
-    src[1+1*stride]=
-    src[0+2*stride]=
-    src[3+0*stride]=
-    src[2+1*stride]=
-    src[1+2*stride]=
-    src[0+3*stride]=
-    src[3+1*stride]=
-    src[2+2*stride]=
-    src[1+3*stride]=
-    src[3+2*stride]=
-    src[2+3*stride]=
-    src[3+3*stride]=(l3 + t3)>>1;
-}
-
-static void pred16x16_plane_svq3_c(uint8_t *src, int stride){
-    pred16x16_plane_compat_c(src, stride, 1);
-}
-
 static inline int svq3_decode_block (GetBitContext *gb, DCTELEM *block,
                                      int index, const int type) {
 
@@ -802,8 +774,6 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   if (!s->context_initialized) {
     s->width = avctx->width;
     s->height = avctx->height;
-    h->pred4x4[DIAG_DOWN_LEFT_PRED] = pred4x4_down_left_svq3_c;
-    h->pred16x16[PLANE_PRED8x8] = pred16x16_plane_svq3_c;
     h->halfpel_flag = 1;
     h->thirdpel_flag = 1;
     h->unknown_svq3_flag = 0;
