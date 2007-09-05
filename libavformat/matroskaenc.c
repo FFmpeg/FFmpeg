@@ -525,6 +525,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
 
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
@@ -543,10 +544,10 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_ebml_size(pb, pkt->size + 4, 0);
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
-    put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
+    put_byte(pb, keyframe);
     put_buffer(pb, pkt->data, pkt->size);
 
-    if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && pkt->flags & PKT_FLAG_KEY) {
+    if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
         if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
             return -1;
     }
