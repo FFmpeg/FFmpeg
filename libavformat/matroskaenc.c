@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "riff.h"
+#include "xiph.h"
 #include "matroska.h"
 
 typedef struct MatroskaMuxContext {
@@ -113,7 +114,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t ebml_header, segment_info, tracks;
-    int i, j;
+    int i, j, k;
 
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
@@ -167,7 +168,37 @@ static int mkv_write_header(AVFormatContext *s)
 
         // XXX: CodecPrivate for vorbis, theora, aac, native mpeg4, ...
         if (native_id) {
-            put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
+            offset_t codecprivate;
+
+            if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
+                uint8_t *header_start[3];
+                int header_len[3];
+                int first_header_size;
+
+                if (codec->codec_id == CODEC_ID_VORBIS)
+                    first_header_size = 30;
+                else
+                    first_header_size = 42;
+
+                if (ff_split_xiph_headers(codec->extradata, codec->extradata_size,
+                                          first_header_size, header_start, header_len) < 0) {
+                    av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
+                    return -1;
+                }
+
+                codecprivate = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
+                put_byte(pb, 2);                    // number packets - 1
+                for (j = 0; j < 2; j++) {
+                    for (k = 0; k < header_len[j] / 255; k++)
+                        put_byte(pb, 255);
+                    put_byte(pb, header_len[j]);
+                }
+                for (j = 0; j < 3; j++)
+                    put_buffer(pb, header_start[j], header_len[j]);
+                end_ebml_master(pb, codecprivate);
+            } else {
+                put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
+            }
         }
 
         switch (codec->codec_type) {
