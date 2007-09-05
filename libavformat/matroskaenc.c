@@ -525,7 +525,6 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
-        // XXX: both are required; something better for writing app?
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
     }
     // XXX: segment UID
