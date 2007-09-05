@@ -249,7 +249,7 @@ static void init_mv(FourXContext *f){
     int i;
 
     for(i=0; i<256; i++){
-        if(f->version)
+        if(f->version>1)
             f->mv[i] = mv[i][0]   + mv[i][1]  *f->current_picture.linesize[0]/2;
         else
             f->mv[i] = (i&15) - 8 + ((i>>4)-8)*f->current_picture.linesize[0]/2;
@@ -300,7 +300,7 @@ static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stri
 static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int log2w, int log2h, int stride){
     const int index= size2index[log2h][log2w];
     const int h= 1<<log2h;
-    int code= get_vlc2(&f->gb, block_type_vlc[1-f->version][index].table, BLOCK_TYPE_VLC_BITS, 1);
+    int code= get_vlc2(&f->gb, block_type_vlc[1-(f->version>1)][index].table, BLOCK_TYPE_VLC_BITS, 1);
     uint16_t *start= f->last_picture.data[0];
     uint16_t *end= start + stride*(f->avctx->height-h+1) - (1<<log2w);
 
@@ -321,7 +321,7 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
         log2w--;
         decode_p_block(f, dst             , src             , log2w, log2h, stride);
         decode_p_block(f, dst + (1<<log2w), src + (1<<log2w), log2w, log2h, stride);
-    }else if(code == 3 && f->version==0){
+    }else if(code == 3 && f->version<2){
         mcdc(dst, src, log2w, h, stride, 1, 0);
     }else if(code == 4){
         src += f->mv[ *f->bytestream++ ];
@@ -356,7 +356,7 @@ static int decode_p_frame(FourXContext *f, uint8_t *buf, int length){
     const int stride= f->current_picture.linesize[0]>>1;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra;
 
-    if(f->version){
+    if(f->version>1){
         extra=20;
         bitstream_size= get32(buf+8);
         wordstream_size= get32(buf+12);
@@ -804,12 +804,12 @@ static int decode_init(AVCodecContext *avctx){
         return 1;
     }
 
-    f->version= AV_RL32(avctx->extradata) == 0x40000;
+    f->version= AV_RL32(avctx->extradata)>>16;
     common_init(avctx);
     init_vlcs(f);
 
-    if(f->version) avctx->pix_fmt= PIX_FMT_RGB565;
-    else           avctx->pix_fmt= PIX_FMT_RGB555;
+    if(f->version>2) avctx->pix_fmt= PIX_FMT_RGB565;
+    else             avctx->pix_fmt= PIX_FMT_RGB555;
 
     return 0;
 }
