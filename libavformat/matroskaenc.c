@@ -480,10 +480,10 @@ static int mkv_write_tracks(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     ebml_master tracks;
-    int i, j;
+    int i, j, ret;
 
-    if (mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, url_ftell(pb)) < 0)
-        return -1;
+    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, url_ftell(pb));
+    if (ret < 0) return ret;
 
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS, 0);
     for (i = 0; i < s->nb_streams; i++) {
@@ -523,11 +523,11 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         if (native_id) {
             if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
-                if (put_xiph_codecpriv(pb, codec) < 0)
-                    return -1;
+                ret = put_xiph_codecpriv(pb, codec);
+                if (ret < 0) return ret;
             } else if (codec->codec_id == CODEC_ID_FLAC) {
-                if (put_flac_codecpriv(pb, codec) < 0)
-                    return -1;
+                ret = put_flac_codecpriv(pb, codec);
+                if (ret < 0) return ret;
             } else if (codec->extradata_size) {
                 put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
             }
@@ -608,6 +608,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     ebml_master ebml_header, segment_info;
+    int ret;
 
     mkv->md5_ctx = av_mallocz(av_md5_size);
     av_md5_init(mkv->md5_ctx);
@@ -635,8 +636,8 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv->main_seekhead == NULL || mkv->cluster_seekhead == NULL)
         return AVERROR(ENOMEM);
 
-    if (mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, url_ftell(pb)) < 0)
-        return -1;
+    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, url_ftell(pb));
+    if (ret < 0) return ret;
 
     segment_info = start_ebml_master(pb, MATROSKA_ID_INFO, 0);
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
@@ -657,11 +658,11 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_void(pb, 11);                  // assumes double-precision float to be written
     end_ebml_master(pb, segment_info);
 
-    if (mkv_write_tracks(s) < 0)
-        return -1;
+    ret = mkv_write_tracks(s);
+    if (ret < 0) return ret;
 
-    if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
-        return -1;
+    ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
+    if (ret < 0) return ret;
 
     mkv->cluster_pos = url_ftell(pb);
     mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
@@ -713,14 +714,15 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
+    int ret;
 
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64 " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
 
-        if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
-            return -1;
+        ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
+        if (ret < 0) return ret;
 
         mkv->cluster_pos = url_ftell(pb);
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
@@ -739,8 +741,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
-        if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
-            return -1;
+        ret = mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos);
+        if (ret < 0) return ret;
     }
 
     mkv->duration = pkt->pts + pkt->duration;
