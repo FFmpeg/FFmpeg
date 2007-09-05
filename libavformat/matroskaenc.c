@@ -492,7 +492,7 @@ static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int 
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
         if (!codec->codec_tag)
-        codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
+            codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
             av_log(codec, AV_LOG_ERROR, "no wav codec id found");
             ret = -1;
