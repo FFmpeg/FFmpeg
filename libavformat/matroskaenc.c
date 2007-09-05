@@ -73,15 +73,15 @@ typedef struct MatroskaMuxContext {
 } MatroskaMuxContext;
 
 
-// 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit
-// offset, 4 bytes for target EBML ID
+/** 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit
+ * offset, 4 bytes for target EBML ID */
 #define MAX_SEEKENTRY_SIZE 21
 
-// per-cuepoint-track - 3 1-byte EBML IDs, 3 1-byte EBML sizes, 2
-// 8-byte uint max
+/** per-cuepoint-track - 3 1-byte EBML IDs, 3 1-byte EBML sizes, 2
+ * 8-byte uint max */
 #define MAX_CUETRACKPOS_SIZE 22
 
-// per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max
+/** per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max */
 #define MAX_CUEPOINT_SIZE(num_tracks) 12 + MAX_CUETRACKPOS_SIZE*num_tracks
 
 
