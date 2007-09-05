@@ -104,14 +104,10 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
  */
 static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 {
-    uint64_t value = 0;
-    int i;
-
     bytes = FFMIN(bytes, 8);
-    for (i = 0; i < bytes*7 + 1; i++)
-        value |= 1ULL << i;
-    for (i = bytes-1; i >= 0; i--)
-        put_byte(pb, value >> i*8);
+    put_byte(pb, 0x1ff >> bytes);
+    while (--bytes)
+        put_byte(pb, 0xff);
 }
 
 /**
