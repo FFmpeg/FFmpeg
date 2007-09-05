@@ -145,7 +145,7 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
     else if (needed_bytes > bytes) {
         // the bytes needed to write the given size would exceed the bytes
         // that we need to use, so write unknown size. This shouldn't happen.
-        av_log(NULL, AV_LOG_WARNING, "Size of %llu needs %d bytes but only %d bytes reserved\n",
+        av_log(NULL, AV_LOG_WARNING, "Size of %" PRIu64 " needs %d bytes but only %d bytes reserved\n",
                size, needed_bytes, bytes);
         put_ebml_size_unknown(pb, bytes);
         return;
@@ -692,7 +692,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
-    av_log(s, AV_LOG_DEBUG, "Writing block at offset %llu, size %d, pts %lld, dts %lld, duration %d, flags %d\n",
+    av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
            url_ftell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
     put_ebml_id(pb, blockid);
     put_ebml_size(pb, mkv_block_size(pkt), 0);
@@ -711,7 +711,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
-        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %llu bytes, pts %llu\n", url_ftell(pb), pkt->pts);
+        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64 " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
 
         if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
@@ -758,7 +758,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     mkv_write_seekhead(pb, mkv->main_seekhead);
 
     // update the duration
-    av_log(s, AV_LOG_DEBUG, "end duration = %llu\n", mkv->duration);
+    av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
     currentpos = url_ftell(pb);
     url_fseek(pb, mkv->duration_offset, SEEK_SET);
     put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
