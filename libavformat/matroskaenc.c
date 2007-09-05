@@ -73,10 +73,12 @@ typedef struct MatroskaMuxContext {
 } MatroskaMuxContext;
 
 
-// 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit offset, 4 bytes for target EBML ID
+// 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit
+// offset, 4 bytes for target EBML ID
 #define MAX_SEEKENTRY_SIZE 21
 
-// per-cuepoint-track - 3 1-byte EBML IDs, 3 1-byte EBML sizes, 2 8-byte uint max
+// per-cuepoint-track - 3 1-byte EBML IDs, 3 1-byte EBML sizes, 2
+// 8-byte uint max
 #define MAX_CUETRACKPOS_SIZE 22
 
 // per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max
@@ -188,8 +190,8 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
 }
 
 /**
- * Writes a void element of a given size. Useful for reserving space in the file to be
- * written to later.
+ * Writes a void element of a given size. Useful for reserving space in
+ * the file to be written to later.
  *
  * @param size The number of bytes to reserve, which must be at least 2.
  */
@@ -201,8 +203,9 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
         return;
 
     put_ebml_id(pb, EBML_ID_VOID);
-    // we need to subtract the length needed to store the size from the size we need to reserve
-    // so 2 cases, we use 8 bytes to store the size if possible, 1 byte otherwise
+    // we need to subtract the length needed to store the size from the
+    // size we need to reserve so 2 cases, we use 8 bytes to store the
+    // size if possible, 1 byte otherwise
     if (size < 10)
         put_ebml_size(pb, size-1, 0);
     else
@@ -236,13 +239,15 @@ static void put_xiph_size(ByteIOContext *pb, int size)
 }
 
 /**
- * Initialize a mkv_seekhead element to be ready to index level 1 Matroska elements.
- * If a maximum number of elements is specified, enough space will be reserved at
- * the current file location to write a seek head of that size.
+ * Initialize a mkv_seekhead element to be ready to index level 1 Matroska
+ * elements. If a maximum number of elements is specified, enough space
+ * will be reserved at the current file location to write a seek head of
+ * that size.
  *
- * @param segment_offset The absolute offset to the position in the file where the segment begins
- * @param numelements the maximum number of elements that will be indexed by this
- *                    seek head, 0 if unlimited.
+ * @param segment_offset The absolute offset to the position in the file
+ *                       where the segment begins
+ * @param numelements the maximum number of elements that will be indexed
+ *                    by this seek head, 0 if unlimited.
  */
 static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_offset, int numelements)
 {
@@ -254,8 +259,9 @@ static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_off
 
     if (numelements > 0) {
         new_seekhead->filepos = url_ftell(pb);
-        // 21 bytes max for a seek entry, 10 bytes max for the SeekHead ID and size,
-        // and 3 bytes to guarantee that an EBML void element will fit afterwards
+        // 21 bytes max for a seek entry, 10 bytes max for the SeekHead ID
+        // and size, and 3 bytes to guarantee that an EBML void element
+        // will fit afterwards
         new_seekhead->reserved_size = numelements * MAX_SEEKENTRY_SIZE + 13;
         new_seekhead->max_entries = numelements;
         put_ebml_void(pb, new_seekhead->reserved_size);
@@ -286,9 +292,10 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
 }
 
 /**
- * Write the seek head to the file and free it. If a maximum number of elements was
- * specified to mkv_start_seekhead(), the seek head will be written at the location
- * reserved for it. Otherwise, it is written at the current location in the file.
+ * Write the seek head to the file and free it. If a maximum number of
+ * elements was specified to mkv_start_seekhead(), the seek head will
+ * be written at the location reserved for it. Otherwise, it is written
+ * at the current location in the file.
  *
  * @return the file offset where the seekhead was written
  */
@@ -514,7 +521,8 @@ static int mkv_write_tracks(AVFormatContext *s)
         else
             put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, "und");
 
-        // look for a codec id string specific to mkv to use, if none are found, use AVI codes
+        // look for a codec id string specific to mkv to use,
+        // if none are found, use AVI codes
         for (j = 0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++) {
             if (ff_mkv_codec_tags[j].id == codec->codec_id) {
                 put_ebml_string(pb, MATROSKA_ID_CODECID, ff_mkv_codec_tags[j].str);
@@ -627,10 +635,11 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT, 0);
     mkv->segment_offset = url_ftell(pb);
 
-    // we write 2 seek heads - one at the end of the file to point to each cluster, and
-    // one at the beginning to point to all other level one elements (including the seek
-    // head at the end of the file), which isn't more than 10 elements if we only write one
-    // of each other currently defined level 1 element
+    // we write 2 seek heads - one at the end of the file to point to each
+    // cluster, and one at the beginning to point to all other level one
+    // elements (including the seek head at the end of the file), which
+    // isn't more than 10 elements if we only write one of each other
+    // currently defined level 1 element
     mkv->main_seekhead    = mkv_start_seekhead(pb, mkv->segment_offset, 10);
     mkv->cluster_seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 0);
 
