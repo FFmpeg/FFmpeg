@@ -552,8 +552,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
                 if (codec->sample_aspect_ratio.num) {
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , codec->sample_aspect_ratio.num);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->sample_aspect_ratio.den);
+                    AVRational dar = av_mul_q(codec->sample_aspect_ratio, (AVRational){codec->width, codec->height});
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , dar.num);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, dar.den);
                 }
                 end_ebml_master(pb, subinfo);
                 break;
