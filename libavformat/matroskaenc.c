@@ -421,7 +421,20 @@ static int mkv_write_tracks(AVFormatContext *s)
             case CODEC_TYPE_AUDIO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
-                // XXX: A_MS/ACM
+                if (!native_id) {
+                    offset_t wav_header;
+                    // no mkv-specific ID, use ACM mode
+                    codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
+                    if (!codec->codec_tag) {
+                        av_log(s, AV_LOG_ERROR, "no codec id found for stream %d", i);
+                        return -1;
+                    }
+
+                    put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_AUDIO_ACM);
+                    wav_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
+                    put_wav_header(pb, codec);
+                    end_ebml_master(pb, wav_header);
+                }
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
                 put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, codec->sample_rate);
