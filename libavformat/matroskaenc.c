@@ -178,6 +178,14 @@ static void end_ebml_master(ByteIOContext *pb, offset_t start)
     url_fseek(pb, pos, SEEK_SET);
 }
 
+static void put_xiph_size(ByteIOContext *pb, int size)
+{
+    int i;
+    for (i = 0; i < size / 255; i++)
+        put_byte(pb, 255);
+    put_byte(pb, size % 255);
+}
+
 // initializes a mkv_seekhead element to be ready to index level 1 matroska elements
 // if numelements is greater than 0, it reserves enough space for that many elements
 // at the current file position and writes the seekhead there, otherwise the seekhead
@@ -331,7 +339,7 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     uint8_t *header_start[3];
     int header_len[3];
     int first_header_size;
-    int j, k;
+    int j;
 
     if (codec->codec_id == CODEC_ID_VORBIS)
         first_header_size = 30;
@@ -347,9 +355,7 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     codecprivate = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
     put_byte(pb, 2);                    // number packets - 1
     for (j = 0; j < 2; j++) {
-        for (k = 0; k < header_len[j] / 255; k++)
-            put_byte(pb, 255);
-        put_byte(pb, header_len[j] % 255);
+        put_xiph_size(pb, header_len[j]);
     }
     for (j = 0; j < 3; j++)
         put_buffer(pb, header_start[j], header_len[j]);
