@@ -111,27 +111,27 @@ static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 }
 
 /**
- * Calculate how many bytes are needed to represent a given size in EBML.
+ * Calculate how many bytes are needed to represent a given number in EBML.
  */
-static int ebml_size_bytes(uint64_t size)
+static int ebml_num_size(uint64_t num)
 {
     int bytes = 1;
-    while ((size+1) >> bytes*7) bytes++;
+    while ((num+1) >> bytes*7) bytes++;
     return bytes;
 }
 
 /**
- * Write a size in EBML variable length format.
+ * Write a number in EBML variable length format.
  *
- * @param bytes The number of bytes that need to be used to write the size.
+ * @param bytes The number of bytes that need to be used to write the number.
  *              If zero, any number of bytes can be used.
  */
-static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
+static void put_ebml_num(ByteIOContext *pb, uint64_t num, int bytes)
 {
-    int i, needed_bytes = ebml_size_bytes(size);
+    int i, needed_bytes = ebml_num_size(num);
 
     // sizes larger than this are currently undefined in EBML
-    assert(size < (1ULL<<56)-1);
+    assert(num < (1ULL<<56)-1);
 
     if (bytes == 0)
         // don't care how many bytes are used, so use the min
@@ -140,9 +140,9 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
     // that we need to use, so write unknown size. This shouldn't happen.
     assert(bytes >= needed_bytes);
 
-    size |= 1ULL << bytes*7;
+    num |= 1ULL << bytes*7;
     for (i = bytes - 1; i >= 0; i--)
-        put_byte(pb, size >> i*8);
+        put_byte(pb, num >> i*8);
 }
 
 static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t val)
@@ -151,7 +151,7 @@ static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t va
     while (val >> bytes*8) bytes++;
 
     put_ebml_id(pb, elementid);
-    put_ebml_size(pb, bytes, 0);
+    put_ebml_num(pb, bytes, 0);
     for (i = bytes - 1; i >= 0; i--)
         put_byte(pb, val >> i*8);
 }
@@ -159,7 +159,7 @@ static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t va
 static void put_ebml_float(ByteIOContext *pb, unsigned int elementid, double val)
 {
     put_ebml_id(pb, elementid);
-    put_ebml_size(pb, 8, 0);
+    put_ebml_num(pb, 8, 0);
     put_be64(pb, av_dbl2int(val));
 }
 
@@ -167,7 +167,7 @@ static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
                             const uint8_t *buf, int size)
 {
     put_ebml_id(pb, elementid);
-    put_ebml_size(pb, size, 0);
+    put_ebml_num(pb, size, 0);
     put_buffer(pb, buf, size);
 }
 
@@ -193,15 +193,15 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
     // size we need to reserve so 2 cases, we use 8 bytes to store the
     // size if possible, 1 byte otherwise
     if (size < 10)
-        put_ebml_size(pb, size-1, 0);
+        put_ebml_num(pb, size-1, 0);
     else
-        put_ebml_size(pb, size-9, 8);
+        put_ebml_num(pb, size-9, 8);
     url_fseek(pb, currentpos + size, SEEK_SET);
 }
 
 static ebml_master start_ebml_master(ByteIOContext *pb, unsigned int elementid, uint64_t expectedsize)
 {
-    int bytes = expectedsize ? ebml_size_bytes(expectedsize) : 8;
+    int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
     put_ebml_id(pb, elementid);
     put_ebml_size_unknown(pb, bytes);
     return (ebml_master){ url_ftell(pb), bytes };
@@ -216,7 +216,7 @@ static void end_ebml_master(ByteIOContext *pb, ebml_master master)
         return;
 
     url_fseek(pb, master.pos - master.sizebytes, SEEK_SET);
-    put_ebml_size(pb, pos - master.pos, master.sizebytes);
+    put_ebml_num(pb, pos - master.pos, master.sizebytes);
     url_fseek(pb, pos, SEEK_SET);
 }
 
@@ -304,7 +304,7 @@ static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
         seekentry = start_ebml_master(pb, MATROSKA_ID_SEEKENTRY, MAX_SEEKENTRY_SIZE);
 
         put_ebml_id(pb, MATROSKA_ID_SEEKID);
-        put_ebml_size(pb, ebml_id_size(entry->elementid), 0);
+        put_ebml_num(pb, ebml_id_size(entry->elementid), 0);
         put_ebml_id(pb, entry->elementid);
 
         put_ebml_uint(pb, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
@@ -692,10 +692,10 @@ static int mkv_block_size(AVPacket *pkt)
 static int mkv_blockgroup_size(AVPacket *pkt)
 {
     int size = mkv_block_size(pkt);
-    size += ebml_size_bytes(size);
+    size += ebml_num_size(size);
     size += 2;              // EBML ID for block and block duration
     size += 8;              // max size of block duration
-    size += ebml_size_bytes(size);
+    size += ebml_num_size(size);
     size += 1;              // blockgroup EBML ID
     return size;
 }
@@ -709,7 +709,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
            url_ftell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
     put_ebml_id(pb, blockid);
-    put_ebml_size(pb, mkv_block_size(pkt), 0);
+    put_ebml_num(pb, mkv_block_size(pkt), 0);
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
     put_byte(pb, flags);
