@@ -46,11 +46,12 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
 {
     int bytes = minbytes;
-    while (size >> (bytes*7 + 7)) bytes++;
 
     // sizes larger than this are currently undefined in EBML
-    // XXX: error condition?
-    if (size > (1ULL<<56)-1) return;
+    // so write "unknown" size
+    size = FFMIN(size, (1ULL<<56)-1);
+
+    while (size >> (bytes*7 + 7)) bytes++;
 
     put_byte(pb, (0x80 >> bytes) | (size >> bytes*8));
     for (bytes -= 1; bytes >= 0; bytes--)
