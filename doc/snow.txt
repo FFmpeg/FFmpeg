@@ -328,6 +328,22 @@ following are exactly identical
 (3a)>>1 == a + (a>>1)
 (a + 4b + 8)>>4 == ((a>>2) + b + 2)>>2
 
+16bit implementation note:
+The IDWT can be implemented with 16bits, but this requires some care to
+prevent overflows, the following list, lists the minimum number of bits needed
+for some terms
+1. lifting step
+A= s[i-1] + s[i+1]                              16bit
+3*A + 4                                         18bit
+A + (A>>1) + 2                                  17bit
+
+3. lifting step
+s[i-1] + s[i+1]                                 17bit
+
+4. lifiting step
+3*(s[i-1] + s[i+1])                             17bit
+
+
 TODO:
 =====
 Important:
