@@ -39,12 +39,12 @@ typedef struct mkv_seekhead {
 } mkv_seekhead;
 
 typedef struct MatroskaMuxContext {
-    offset_t    segment;
-    offset_t    segment_offset;
-    offset_t    cluster;
-    uint64_t    cluster_pts;
-    offset_t    duration_offset;
-    uint64_t    duration;
+    offset_t        segment;
+    offset_t        segment_offset;
+    offset_t        cluster;
+    uint64_t        cluster_pts;
+    offset_t        duration_offset;
+    uint64_t        duration;
     mkv_seekhead    *main_seekhead;
     mkv_seekhead    *cluster_seekhead;
 } MatroskaMuxContext;
