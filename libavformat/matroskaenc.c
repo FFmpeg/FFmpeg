@@ -270,7 +270,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
 
     entries = av_realloc(entries, (seekhead->num_entries + 1) * sizeof(mkv_seekhead_entry));
     if (entries == NULL)
-        return -1;
+        return AVERROR(ENOMEM);
 
     entries[new_entry].elementid = elementid;
     entries[new_entry].segmentpos = filepos - seekhead->segment_offset;
@@ -345,7 +345,7 @@ static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, offset_t cluster_pos)
 
     entries = av_realloc(entries, (cues->num_entries + 1) * sizeof(mkv_cuepoint));
     if (entries == NULL)
-        return -1;
+        return AVERROR(ENOMEM);
 
     entries[new_entry].pts = pkt->pts;
     entries[new_entry].tracknum = pkt->stream_index + 1;
@@ -668,7 +668,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
     if (mkv->cues == NULL)
-        return -1;
+        return AVERROR(ENOMEM);
 
     return 0;
 }
