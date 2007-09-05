@@ -262,7 +262,6 @@ static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_off
 static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid, uint64_t filepos)
 {
     mkv_seekhead_entry *entries = seekhead->entries;
-    int new_entry = seekhead->num_entries;
 
     // don't store more elements than we reserved space for
     if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
@@ -272,11 +271,10 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
     if (entries == NULL)
         return AVERROR(ENOMEM);
 
-    entries[new_entry].elementid = elementid;
-    entries[new_entry].segmentpos = filepos - seekhead->segment_offset;
+    entries[seekhead->num_entries  ].elementid = elementid;
+    entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
 
     seekhead->entries = entries;
-    seekhead->num_entries++;
 
     return 0;
 }
@@ -341,18 +339,16 @@ static mkv_cues * mkv_start_cues(offset_t segment_offset)
 static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, offset_t cluster_pos)
 {
     mkv_cuepoint *entries = cues->entries;
-    int new_entry = cues->num_entries;
 
     entries = av_realloc(entries, (cues->num_entries + 1) * sizeof(mkv_cuepoint));
     if (entries == NULL)
         return AVERROR(ENOMEM);
 
-    entries[new_entry].pts = pkt->pts;
-    entries[new_entry].tracknum = pkt->stream_index + 1;
-    entries[new_entry].cluster_pos = cluster_pos - cues->segment_offset;
+    entries[cues->num_entries  ].pts = pkt->pts;
+    entries[cues->num_entries  ].tracknum = pkt->stream_index + 1;
+    entries[cues->num_entries++].cluster_pos = cluster_pos - cues->segment_offset;
 
     cues->entries = entries;
-    cues->num_entries++;
     return 0;
 }
 
