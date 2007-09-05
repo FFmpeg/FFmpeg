@@ -43,7 +43,7 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
 {
     int bytes = minbytes;
-    while (size >> (bytes*8 + 7-bytes) > 0) bytes++;
+    while (size >> (bytes*7 + 7)) bytes++;
 
     // sizes larger than this are currently undefined in EBML
     // XXX: error condition?
