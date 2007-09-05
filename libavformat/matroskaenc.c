@@ -754,14 +754,17 @@ static int mkv_write_trailer(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t currentpos, second_seekhead, cuespos;
+    int ret;
 
     end_ebml_master(pb, mkv->cluster);
 
     cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
     second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
 
-    mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
-    mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
+    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
+    if (ret < 0) return ret;
+    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
+    if (ret < 0) return ret;
     mkv_write_seekhead(pb, mkv->main_seekhead);
 
     // update the duration
