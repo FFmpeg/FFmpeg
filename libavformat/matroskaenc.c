@@ -601,6 +601,8 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
+    av_log(s, AV_LOG_DEBUG, "Writing block at offset %llu, size %d, pts %lld, dts %lld, duration %d, flags %d\n",
+           url_ftell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
     put_ebml_id(pb, blockid);
     put_ebml_size(pb, pkt->size + 4, 0);
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
@@ -618,6 +620,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
+        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %llu bytes, pts %llu\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
 
         if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
@@ -663,6 +666,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     mkv_write_seekhead(pb, mkv->main_seekhead);
 
     // update the duration
+    av_log(s, AV_LOG_DEBUG, "end duration = %llu\n", mkv->duration);
     currentpos = url_ftell(pb);
     url_fseek(pb, mkv->duration_offset, SEEK_SET);
     put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
