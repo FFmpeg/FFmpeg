@@ -96,11 +96,21 @@ static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
         put_byte(pb, value >> i*8);
 }
 
+/**
+ * Calculate how many bytes are needed to represent a given size in EBML
+ */
+static int ebml_size_bytes(uint64_t size)
+{
+    int bytes = 1;
+    while ((size+1) >> bytes*7) bytes++;
+    return bytes;
+}
+
 // XXX: test this thoroughly and get rid of minbytes hack (currently needed to
 // use up all of the space reserved in start_ebml_master)
 static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
 {
-    int i, bytes = minbytes;
+    int i, bytes = FFMAX(minbytes, ebml_size_bytes(size));
 
     // sizes larger than this are currently undefined in EBML
     // so write "unknown" size
@@ -108,8 +118,6 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
         put_ebml_size_unknown(pb, 1);
         return;
     }
-
-    while ((size+1) >> bytes*7) bytes++;
 
     put_byte(pb, (0x80 >> (bytes-1)) | (size >> (bytes-1)*8));
     for (i = bytes - 2; i >= 0; i--)
