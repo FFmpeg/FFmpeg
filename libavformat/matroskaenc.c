@@ -119,8 +119,8 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
         return;
     }
 
-    put_byte(pb, (0x80 >> (bytes-1)) | (size >> (bytes-1)*8));
-    for (i = bytes - 2; i >= 0; i--)
+    size |= 1ULL << bytes*7;
+    for (i = bytes - 1; i >= 0; i--)
         put_byte(pb, size >> i*8);
 }
 
