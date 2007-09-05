@@ -364,6 +364,28 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     return 0;
 }
 
+#define FLAC_STREAMINFO_SIZE 34
+
+static int put_flac_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
+{
+    offset_t codecpriv = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
+
+    // if the extradata_size is greater than FLAC_STREAMINFO_SIZE,
+    // assume that it's in Matroska's format already
+    if (codec->extradata_size < FLAC_STREAMINFO_SIZE) {
+        av_log(codec, AV_LOG_ERROR, "Invalid FLAC extradata\n");
+        return -1;
+    } else if (codec->extradata_size == FLAC_STREAMINFO_SIZE) {
+        // only the streaminfo packet
+        put_byte(pb, 0);
+        put_xiph_size(pb, codec->extradata_size);
+        av_log(codec, AV_LOG_ERROR, "Only one packet\n");
+    }
+    put_buffer(pb, codec->extradata, codec->extradata_size);
+    end_ebml_master(pb, codecpriv);
+    return 0;
+}
+
 static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
     static const int aac_sample_rates[] = {
@@ -439,6 +461,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         if (native_id) {
             if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
                 if (put_xiph_codecpriv(pb, codec) < 0)
+                    return -1;
+            } else if (codec->codec_id == CODEC_ID_FLAC) {
+                if (put_flac_codecpriv(pb, codec) < 0)
                     return -1;
             } else if (codec->extradata_size) {
                 put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
