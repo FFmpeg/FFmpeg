@@ -62,6 +62,7 @@ void av_register_all(void)
 #endif
     REGISTER_DEMUXER (AVS, avs);
     REGISTER_DEMUXER (BETHSOFTVID, bethsoftvid);
+    REGISTER_DEMUXER (BKTR, bktr);
     REGISTER_DEMUXER (C93, c93);
     REGISTER_MUXER   (CRC, crc);
     REGISTER_DEMUXER (DAUD, daud);
@@ -152,9 +153,8 @@ void av_register_all(void)
     REGISTER_DEMUXER (TTA, tta);
     REGISTER_DEMUXER (TXD, txd);
     REGISTER_DEMUXER (V4L2, v4l2);
+    REGISTER_DEMUXER (V4L, v4l);
     REGISTER_DEMUXER (VC1, vc1);
-    REGISTER_DEMUXER (VIDEO_GRAB_BKTR, video_grab_bktr);
-    REGISTER_DEMUXER (VIDEO_GRAB_V4L, video_grab_v4l);
     REGISTER_DEMUXER (VMD, vmd);
     REGISTER_MUXDEMUX(VOC, voc);
     REGISTER_MUXDEMUX(WAV, wav);
