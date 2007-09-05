@@ -19,12 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
- * Some useful links for those who may be interested in optimizing code for ARM.
- * ARM Architecture Reference Manual: http://www.arm.com/community/academy/resources.html
- * Instructions timings and optimization guide for ARM9E: http://www.arm.com/pdfs/DDI0222B_9EJS_r1p2.pdf
- */
-
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "avcodec.h"
