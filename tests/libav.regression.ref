@@ -34,6 +34,9 @@ f8ad5bd78f4d012a8ce9570aa395ac54 *./tests/data/b-libav.flv
 1df60f0160da3aa6502e886591ca95c0 *./tests/data/b-libav.nut
 331017 ./tests/data/b-libav.nut
 ./tests/data/b-libav.nut CRC=0x400c29e9
+526c5c2a84174337506f537a9f5d8076 *./tests/data/b-libav.mkv
+329853 ./tests/data/b-libav.mkv
+./tests/data/b-libav.mkv CRC=0x400c29e9
 9a9da315747599f7718cc9a9a09c21ff *./tests/data/b-libav.pbm
  317075 ./tests/data/b-libav.pbm
 ./tests/data/b-libav.pbm CRC=0xb92906cb

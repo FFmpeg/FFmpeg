@@ -638,6 +638,9 @@ do_libav gxf "-ar 48000 -r 25 -s pal -ac 1"
 # nut
 do_libav nut "-acodec mp2"
 
+# mkv
+do_libav mkv
+
 
 ####################
 # streamed images
