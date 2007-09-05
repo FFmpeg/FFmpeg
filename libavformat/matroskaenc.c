@@ -1,5 +1,5 @@
 /*
- * Matroska file muxer
+ * Matroska muxer
  * Copyright (c) 2007 David Conrad
  *
  * This file is part of FFmpeg.
@@ -115,7 +115,7 @@ static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 }
 
 /**
- * Calculate how many bytes are needed to represent a given size in EBML
+ * Calculate how many bytes are needed to represent a given size in EBML.
  */
 static int ebml_size_bytes(uint64_t size)
 {
@@ -463,13 +463,13 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
     int sri;
 
     if (codec->extradata_size < 2) {
-        av_log(codec, AV_LOG_WARNING, "no aac extradata, unable to determine sample rate\n");
+        av_log(codec, AV_LOG_WARNING, "no AAC extradata, unable to determine samplerate\n");
         return;
     }
 
     sri = ((codec->extradata[0] << 1) & 0xE) | (codec->extradata[1] >> 7);
     if (sri > 12) {
-        av_log(codec, AV_LOG_WARNING, "aac samplerate index out of bounds\n");
+        av_log(codec, AV_LOG_WARNING, "AAC samplerate index out of bounds\n");
         return;
     }
     *sample_rate = aac_sample_rates[sri];
@@ -478,7 +478,7 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
     if (codec->extradata_size == 5) {
         sri = (codec->extradata[4] >> 3) & 0xF;
         if (sri > 12) {
-            av_log(codec, AV_LOG_WARNING, "aac output samplerate index out of bounds\n");
+            av_log(codec, AV_LOG_WARNING, "AAC output samplerate index out of bounds\n");
             return;
         }
         *output_sample_rate = aac_sample_rates[sri];
