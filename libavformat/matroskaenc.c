@@ -76,13 +76,7 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 
 static int ebml_id_size(unsigned int id)
 {
-    if (id >= 0x3fffff)
-        return 4;
-    if (id >= 0x7fff)
-        return 3;
-    if (id >= 0xff)
-        return 2;
-    return 1;
+    return (av_log2(id+1)-1)/7+1;
 }
 
 // XXX: test this thoroughly and get rid of minbytes hack (currently needed to
