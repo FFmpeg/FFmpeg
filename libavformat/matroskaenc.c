@@ -106,16 +106,32 @@ static int ebml_size_bytes(uint64_t size)
     return bytes;
 }
 
-// XXX: test this thoroughly and get rid of minbytes hack (currently needed to
-// use up all of the space reserved in start_ebml_master)
-static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
+/**
+ * Write a size in EBML variable length format.
+ *
+ * @param bytes The number of bytes that need to be used to write the size.
+ *              If zero, any number of bytes can be used.
+ */
+static void put_ebml_size(ByteIOContext *pb, uint64_t size, int bytes)
 {
-    int i, bytes = FFMAX(minbytes, ebml_size_bytes(size));
+    int i, needed_bytes = ebml_size_bytes(size);
 
     // sizes larger than this are currently undefined in EBML
     // so write "unknown" size
     if (size >= (1ULL<<56)-1) {
         put_ebml_size_unknown(pb, 1);
+        return;
+    }
+
+    if (bytes == 0)
+        // don't care how many bytes are used, so use the min
+        bytes = needed_bytes;
+    else if (needed_bytes > bytes) {
+        // the bytes needed to write the given size would exceed the bytes
+        // that we need to use, so write unknown size. This shouldn't happen.
+        av_log(NULL, AV_LOG_WARNING, "Size of %llu needs %d bytes but only %d bytes reserved\n",
+               size, needed_bytes, bytes);
+        put_ebml_size_unknown(pb, bytes);
         return;
     }
 
