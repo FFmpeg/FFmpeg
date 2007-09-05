@@ -772,29 +772,29 @@ static int mkv_write_trailer(AVFormatContext *s)
     end_ebml_master(pb, mkv->cluster);
 
     if (!url_is_streamed(pb)) {
-    cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
-    second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
+        cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
+        second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
 
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
-    if (ret < 0) return ret;
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
-    if (ret < 0) return ret;
-    mkv_write_seekhead(pb, mkv->main_seekhead);
+        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
+        if (ret < 0) return ret;
+        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
+        if (ret < 0) return ret;
+        mkv_write_seekhead(pb, mkv->main_seekhead);
 
-    // update the duration
-    av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
-    currentpos = url_ftell(pb);
-    url_fseek(pb, mkv->duration_offset, SEEK_SET);
-    put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
+        // update the duration
+        av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
+        currentpos = url_ftell(pb);
+        url_fseek(pb, mkv->duration_offset, SEEK_SET);
+        put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
 
-    // write the md5sum of some frames as the segment UID
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        uint8_t segment_uid[16];
-        av_md5_final(mkv->md5_ctx, segment_uid);
-        url_fseek(pb, mkv->segment_uid, SEEK_SET);
-        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
-    }
-    url_fseek(pb, currentpos, SEEK_SET);
+        // write the md5sum of some frames as the segment UID
+        if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+            uint8_t segment_uid[16];
+            av_md5_final(mkv->md5_ctx, segment_uid);
+            url_fseek(pb, mkv->segment_uid, SEEK_SET);
+            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+        }
+        url_fseek(pb, currentpos, SEEK_SET);
     }
 
     end_ebml_master(pb, mkv->segment);
