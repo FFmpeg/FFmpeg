@@ -475,6 +475,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 end_ebml_master(pb, subinfo);
                 break;
 
+                case CODEC_TYPE_SUBTITLE:
+                    put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_SUBTITLE);
+                    break;
             default:
                 av_log(s, AV_LOG_ERROR, "Only audio and video are supported for Matroska.");
                 break;
@@ -583,7 +586,14 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster_pts = pkt->pts;
     }
 
+    if (s->streams[pkt->stream_index]->codec->codec_type != CODEC_TYPE_SUBTITLE) {
     mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
+    } else {
+        offset_t blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP);
+        mkv_write_block(s, MATROSKA_ID_BLOCK, pkt, 0);
+        put_ebml_uint(pb, MATROSKA_ID_DURATION, pkt->duration);
+        end_ebml_master(pb, blockgroup);
+    }
 
     if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
         if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
