@@ -591,7 +591,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_SUBTITLE);
                 break;
             default:
-                av_log(s, AV_LOG_ERROR, "Only audio and video are supported for Matroska.");
+                av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.");
                 break;
         }
         end_ebml_master(pb, track);
