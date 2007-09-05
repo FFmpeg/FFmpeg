@@ -298,7 +298,7 @@ static int nut_read_close(AVFormatContext *s) {
 }
 
 AVInputFormat libnut_demuxer = {
-    "nut",
+    "libnut",
     "nut format",
     sizeof(NUTContext),
     nut_probe,
