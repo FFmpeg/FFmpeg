@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "md5.h"
 #include "riff.h"
 #include "xiph.h"
 #include "matroska.h"
@@ -53,6 +54,7 @@ typedef struct {
 typedef struct MatroskaMuxContext {
     offset_t        segment;
     offset_t        segment_offset;
+    offset_t        segment_uid;
     offset_t        cluster;
     offset_t        cluster_pos;        ///< file offset of the current cluster
     uint64_t        cluster_pts;
@@ -61,6 +63,8 @@ typedef struct MatroskaMuxContext {
     mkv_seekhead    *main_seekhead;
     mkv_seekhead    *cluster_seekhead;
     mkv_cues        *cues;
+
+    struct AVMD5    *md5_ctx;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -547,6 +551,9 @@ static int mkv_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     offset_t ebml_header, segment_info;
 
+    mkv->md5_ctx = av_mallocz(av_md5_size);
+    av_md5_init(mkv->md5_ctx);
+
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
@@ -577,6 +584,10 @@ static int mkv_write_header(AVFormatContext *s)
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
+
+        // reserve space to write the segment UID later
+        mkv->segment_uid = url_ftell(pb);
+        put_ebml_void(pb, 19);
     }
 
     // reserve space for the duration
@@ -637,6 +648,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
         mkv->cluster_pts = pkt->pts;
+        av_md5_update(mkv->md5_ctx, pkt->data, FFMIN(200, pkt->size));
     }
 
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
@@ -677,9 +689,18 @@ static int mkv_write_trailer(AVFormatContext *s)
     currentpos = url_ftell(pb);
     url_fseek(pb, mkv->duration_offset, SEEK_SET);
     put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
+
+    // write the md5sum of some frames as the segment UID
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+        uint8_t segment_uid[16];
+        av_md5_final(mkv->md5_ctx, segment_uid);
+        url_fseek(pb, mkv->segment_uid, SEEK_SET);
+        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+    }
     url_fseek(pb, currentpos, SEEK_SET);
 
     end_ebml_master(pb, mkv->segment);
+    av_free(mkv->md5_ctx);
     return 0;
 }
 
