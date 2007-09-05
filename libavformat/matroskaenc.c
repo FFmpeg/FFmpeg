@@ -748,7 +748,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) return ret;
     }
 
-    mkv->duration = pkt->pts + pkt->duration;
+    mkv->duration = FFMAX(mkv->duration, pkt->pts + pkt->duration);
     return 0;
 }
 
