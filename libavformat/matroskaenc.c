@@ -366,6 +366,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         AVCodecContext *codec = st->codec;
         offset_t subinfo, track;
         int native_id = 0;
+        int bit_depth = 0;
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY);
         put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i + 1);
@@ -382,6 +383,19 @@ static int mkv_write_tracks(AVFormatContext *s)
                 native_id = 1;
                 break;
             }
+        }
+
+        switch (codec->codec_id) {
+            case CODEC_ID_PCM_S16LE:
+            case CODEC_ID_PCM_S16BE:
+            case CODEC_ID_PCM_U16LE:
+            case CODEC_ID_PCM_U16BE:
+                bit_depth = 16;
+                break;
+            case CODEC_ID_PCM_S8:
+            case CODEC_ID_PCM_U8:
+                bit_depth = 8;
+                break;
         }
 
         // XXX: CodecPrivate for vorbis, theora, aac, native mpeg4, ...
@@ -438,7 +452,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
                 put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, codec->sample_rate);
-                // XXX: output sample freq (for sbr) and bitdepth (for pcm)
+                // XXX: output sample freq (for sbr)
+                if (bit_depth)
+                    put_ebml_uint(pb, MATROSKA_ID_AUDIOBITDEPTH, bit_depth);
                 end_ebml_master(pb, subinfo);
                 break;
 
