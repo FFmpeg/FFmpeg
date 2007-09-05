@@ -130,7 +130,12 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
 
-// this reserves exactly the amount of space specified by size, which must be at least 2
+/**
+ * Writes a void element of a given size. Useful for reserving space in the file to be
+ * written to later.
+ *
+ * @param size The amount of space to reserve, which must be at least 2.
+ */
 static void put_ebml_void(ByteIOContext *pb, uint64_t size)
 {
     offset_t currentpos = url_ftell(pb);
@@ -174,10 +179,15 @@ static void put_xiph_size(ByteIOContext *pb, int size)
     put_byte(pb, size % 255);
 }
 
-// initializes a mkv_seekhead element to be ready to index level 1 matroska elements
-// if numelements is greater than 0, it reserves enough space for that many elements
-// at the current file position and writes the seekhead there, otherwise the seekhead
-// will be appended to the file when end_mkv_seekhead() is called
+/**
+ * Initialize a mkv_seekhead element to be ready to index level 1 Matroska elements.
+ * If a maximum number of elements is specified, enough space will be reserved at
+ * the current file location to write a seek head of that size.
+ *
+ * @param segment_offset the absolute offset into the file that the segment begins
+ * @param numelements the maximum number of elements that will be indexed by this
+ *                    seek head, 0 if unlimited.
+ */
 static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_offset, int numelements)
 {
     mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
@@ -220,7 +230,13 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
     return 0;
 }
 
-// returns the file offset where the seekhead was written and frees the seekhead
+/**
+ * Write the seek head to the file and free it. If a maximum number of elements was
+ * specified to mkv_start_seekhead(), the seek head will be written at the location
+ * reserved for it. Otherwise, it is written at the current location in the file.
+ *
+ * @return the file offset where the seekhead was written
+ */
 static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
 {
     offset_t metaseek, seekentry, currentpos;
