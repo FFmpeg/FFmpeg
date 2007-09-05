@@ -551,6 +551,19 @@ static int mkv_write_header(AVFormatContext *s)
     return 0;
 }
 
+static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *pkt, int flags)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+
+    put_ebml_id(pb, blockid);
+    put_ebml_size(pb, pkt->size + 4, 0);
+    put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+    put_be16(pb, pkt->pts - mkv->cluster_pts);
+    put_byte(pb, flags);
+    put_buffer(pb, pkt->data, pkt->size);
+}
+
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -570,12 +583,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster_pts = pkt->pts;
     }
 
-    put_ebml_id(pb, MATROSKA_ID_SIMPLEBLOCK);
-    put_ebml_size(pb, pkt->size + 4, 0);
-    put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
-    put_be16(pb, pkt->pts - mkv->cluster_pts);
-    put_byte(pb, keyframe << 7);
-    put_buffer(pb, pkt->data, pkt->size);
+    mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
 
     if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
         if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
