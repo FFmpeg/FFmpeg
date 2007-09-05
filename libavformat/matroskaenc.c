@@ -27,6 +27,7 @@
 typedef struct MatroskaMuxContext {
     offset_t    segment;
     offset_t    cluster;
+    uint64_t    cluster_pts;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -249,18 +250,28 @@ static int mkv_write_header(AVFormatContext *s)
 
     mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
     put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
+    mkv->cluster_pts = 0;
 
     return 0;
 }
 
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t block;
 
+    // start a new cluster every 5 MB or 5 sec
+    if (url_ftell(pb) > mkv->cluster + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
+        end_ebml_master(pb, mkv->cluster);
+        mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
+        put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
+        mkv->cluster_pts = pkt->pts;
+    }
+
     block = start_ebml_master(pb, MATROSKA_ID_SIMPLEBLOCK);
     put_byte(pb, 0x80 | pkt->stream_index);     // this assumes stream_index is less than 127
-    put_be16(pb, pkt->pts);
+    put_be16(pb, pkt->pts - mkv->cluster_pts);
     put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
     put_buffer(pb, pkt->data, pkt->size);
     end_ebml_master(pb, block);
