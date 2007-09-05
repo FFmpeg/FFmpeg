@@ -553,7 +553,8 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
                 if (codec->sample_aspect_ratio.num) {
-                    AVRational dar = av_mul_q(codec->sample_aspect_ratio, (AVRational){codec->width, codec->height});
+                    AVRational dar = av_mul_q(codec->sample_aspect_ratio,
+                                    (AVRational){codec->width, codec->height});
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , dar.num);
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, dar.den);
                 }
@@ -698,7 +699,8 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
-    av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
+    av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
+           "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
            url_ftell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
     put_ebml_id(pb, blockid);
     put_ebml_size(pb, mkv_block_size(pkt), 0);
@@ -718,7 +720,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
-        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64 " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
+        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
+               " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
 
         ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
