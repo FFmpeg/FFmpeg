@@ -478,7 +478,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     return AVERROR(ENOMEM);
 }
 
-void ff_mpeg_put_ts(ByteIOContext *pb, int id, int64_t timestamp)
+static inline void put_timestamp(ByteIOContext *pb, int id, int64_t timestamp)
 {
     put_byte(pb,
              (id << 4) |
@@ -856,9 +856,9 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             put_byte(&ctx->pb, header_len - 3 + stuffing_size);
 
             if (pes_flags & 0x80)  /*write pts*/
-                ff_mpeg_put_ts(&ctx->pb, (pes_flags & 0x40) ? 0x03 : 0x02, pts);
+                put_timestamp(&ctx->pb, (pes_flags & 0x40) ? 0x03 : 0x02, pts);
             if (pes_flags & 0x40)  /*write dts*/
-                ff_mpeg_put_ts(&ctx->pb, 0x01, dts);
+                put_timestamp(&ctx->pb, 0x01, dts);
 
             if (pes_flags & 0x01) {  /*write pes extension*/
                 put_byte(&ctx->pb, 0x10); /* flags */
@@ -873,10 +873,10 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         } else {
             if (pts != AV_NOPTS_VALUE) {
                 if (dts != pts) {
-                    ff_mpeg_put_ts(&ctx->pb, 0x03, pts);
-                    ff_mpeg_put_ts(&ctx->pb, 0x01, dts);
+                    put_timestamp(&ctx->pb, 0x03, pts);
+                    put_timestamp(&ctx->pb, 0x01, dts);
                 } else {
-                    ff_mpeg_put_ts(&ctx->pb, 0x02, pts);
+                    put_timestamp(&ctx->pb, 0x02, pts);
                 }
             } else {
                 put_byte(&ctx->pb, 0x0f);
