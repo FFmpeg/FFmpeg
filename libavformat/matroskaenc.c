@@ -69,8 +69,6 @@ static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t va
         put_byte(pb, val >> bytes*8);
 }
 
-//static void put_ebml_sint(ByteIOContext *pb, unsigned int elementid, int64_t val)
-
 static void put_ebml_float(ByteIOContext *pb, unsigned int elementid, double val)
 {
     // XXX: single-precision floats?
