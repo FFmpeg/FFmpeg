@@ -254,22 +254,22 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
 #endif
     }
 
-/*     c->put_pixels_tab[0][0] = put_pixels16_arm; */ // NG!
+    c->put_pixels_tab[0][0] = put_pixels16_arm;
     c->put_pixels_tab[0][1] = put_pixels16_x2_arm; //OK!
     c->put_pixels_tab[0][2] = put_pixels16_y2_arm; //OK!
-/*     c->put_pixels_tab[0][3] = put_pixels16_xy2_arm; /\* NG *\/ */
-/*     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_arm; */
+    c->put_pixels_tab[0][3] = put_pixels16_xy2_arm;
+    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_arm;
     c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_arm; // OK
     c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_arm; //OK
-/*     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_arm; //NG */
+    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_arm;
     c->put_pixels_tab[1][0] = put_pixels8_arm; //OK
     c->put_pixels_tab[1][1] = put_pixels8_x2_arm; //OK
-/*     c->put_pixels_tab[1][2] = put_pixels8_y2_arm; //NG */
-/*     c->put_pixels_tab[1][3] = put_pixels8_xy2_arm; //NG */
+    c->put_pixels_tab[1][2] = put_pixels8_y2_arm;
+    c->put_pixels_tab[1][3] = put_pixels8_xy2_arm;
     c->put_no_rnd_pixels_tab[1][0] = put_pixels8_arm;//OK
     c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_arm; //OK
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm; //OK
-/*     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;//NG */
+    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
 
 #ifdef HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);

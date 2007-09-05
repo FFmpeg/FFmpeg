@@ -553,7 +553,7 @@ put_no_rnd_pixels8_y2_arm:
         .word 4b
 
 @ ----------------------------------------------------------------
-.macro  RND_XY2_IT align, rnd
+.macro  RND_XY2_IT align
         @ l1=  (a & 0x03030303) + (b & 0x03030303) ?(+ 0x02020202)
         @ h1= ((a & 0xFCFCFCFCUL) >> 2) + ((b & 0xFCFCFCFCUL) >> 2)
 .if \align == 0
@@ -582,11 +582,7 @@ put_no_rnd_pixels8_y2_arm:
         and r9, r5, r14
         and r10, r6, r14
         and r11, r7, r14
-.if \rnd == 1
-        ldreq r14, [r12, #16]   @ 0x02020202
-.else
-        ldreq r14, [r12, #28]   @ 0x01010101
-.endif
+        ldreq r14, [r12, #16]   @ 0x02020202/0x01010101
         add r8, r8, r10
         add r9, r9, r11
         addeq r8, r8, r14
@@ -598,12 +594,13 @@ put_no_rnd_pixels8_y2_arm:
         and r7, r14, r7, lsr #2
         add r10, r4, r6
         add r11, r5, r7
+        subs r3, r3, #1
 .endm
 
-.macro RND_XY2_EXPAND align, rnd
-        RND_XY2_IT \align, \rnd
+.macro RND_XY2_EXPAND align
+        RND_XY2_IT \align
 6:      stmfd sp!, {r8-r11}
-        RND_XY2_IT \align, \rnd
+        RND_XY2_IT \align
         ldmfd sp!, {r4-r7}
         add r4, r4, r8
         add r5, r5, r9
@@ -614,10 +611,9 @@ put_no_rnd_pixels8_y2_arm:
         and r5, r14, r5, lsr #2
         add r4, r4, r6
         add r5, r5, r7
-        subs r3, r3, #1
         stmia r0, {r4-r5}
         add r0, r0, r2
-        bne 6b
+        bge 6b
         ldmfd sp!, {r4-r11,pc}
 .endm
 
@@ -634,19 +630,19 @@ put_pixels8_xy2_arm:
         bic r1, r1, #3
         ldrne pc, [r5]
 1:
-        RND_XY2_EXPAND 0, 1
+        RND_XY2_EXPAND 0
 
         .align 8
 2:
-        RND_XY2_EXPAND 1, 1
+        RND_XY2_EXPAND 1
 
         .align 8
 3:
-        RND_XY2_EXPAND 2, 1
+        RND_XY2_EXPAND 2
 
         .align 8
 4:
-        RND_XY2_EXPAND 3, 1
+        RND_XY2_EXPAND 3
 
 5:
         .word 0x03030303
@@ -656,7 +652,6 @@ put_pixels8_xy2_arm:
         .word 0x02020202
         .word 0xFCFCFCFC >> 2
         .word 0x0F0F0F0F
-        .word 0x01010101
 
         .align 8
         .global put_no_rnd_pixels8_xy2_arm
@@ -671,26 +666,25 @@ put_no_rnd_pixels8_xy2_arm:
         bic r1, r1, #3
         ldrne pc, [r5]
 1:
-        RND_XY2_EXPAND 0, 0
+        RND_XY2_EXPAND 0
 
         .align 8
 2:
-        RND_XY2_EXPAND 1, 0
+        RND_XY2_EXPAND 1
 
         .align 8
 3:
-        RND_XY2_EXPAND 2, 0
+        RND_XY2_EXPAND 2
 
         .align 8
 4:
-        RND_XY2_EXPAND 3, 0
+        RND_XY2_EXPAND 3
 
 5:
         .word 0x03030303
         .word 2b
         .word 3b
         .word 4b
-        .word 0x02020202
+        .word 0x01010101
         .word 0xFCFCFCFC >> 2
         .word 0x0F0F0F0F
-        .word 0x01010101
