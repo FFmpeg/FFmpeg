@@ -632,6 +632,8 @@ static int mkv_write_header(AVFormatContext *s)
     // currently defined level 1 element
     mkv->main_seekhead    = mkv_start_seekhead(pb, mkv->segment_offset, 10);
     mkv->cluster_seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 0);
+    if (mkv->main_seekhead == NULL || mkv->cluster_seekhead == NULL)
+        return AVERROR(ENOMEM);
 
     if (mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, url_ftell(pb)) < 0)
         return -1;
