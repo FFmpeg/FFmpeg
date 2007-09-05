@@ -149,10 +149,8 @@ static int mkv_write_header(AVFormatContext *s)
         int native_id = 0;
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY);
-        put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i);
-        // XXX: random number for UID? and can we use the same UID when copying
-        // from another MKV as the specs recommend?
-        put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i + 1);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i + 1);
         put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
         if (st->language[0])
@@ -270,7 +268,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     block = start_ebml_master(pb, MATROSKA_ID_SIMPLEBLOCK);
-    put_byte(pb, 0x80 | pkt->stream_index);     // this assumes stream_index is less than 127
+    put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
     put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
     put_buffer(pb, pkt->data, pkt->size);
