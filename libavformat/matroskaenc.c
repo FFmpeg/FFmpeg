@@ -38,15 +38,29 @@ typedef struct mkv_seekhead {
     int                     num_entries;
 } mkv_seekhead;
 
+typedef struct {
+    uint64_t        pts;
+    int             tracknum;
+    offset_t        cluster_pos;        ///< file offset of the cluster containing the block
+} mkv_cuepoint;
+
+typedef struct {
+    offset_t        segment_offset;
+    mkv_cuepoint    *entries;
+    int             num_entries;
+} mkv_cues;
+
 typedef struct MatroskaMuxContext {
     offset_t        segment;
     offset_t        segment_offset;
     offset_t        cluster;
+    offset_t        cluster_pos;        ///< file offset of the current cluster
     uint64_t        cluster_pts;
     offset_t        duration_offset;
     uint64_t        duration;
     mkv_seekhead    *main_seekhead;
     mkv_seekhead    *cluster_seekhead;
+    mkv_cues        *cues;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -241,6 +255,68 @@ static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
     return currentpos;
 }
 
+static mkv_cues * mkv_start_cues(offset_t segment_offset)
+{
+    mkv_cues *cues = av_mallocz(sizeof(mkv_cues));
+    if (cues == NULL)
+        return NULL;
+
+    cues->segment_offset = segment_offset;
+    return cues;
+}
+
+static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, offset_t cluster_pos)
+{
+    mkv_cuepoint *entries = cues->entries;
+    int new_entry = cues->num_entries;
+
+    entries = av_realloc(entries, (cues->num_entries + 1) * sizeof(mkv_cuepoint));
+    if (entries == NULL)
+        return -1;
+
+    entries[new_entry].pts = pkt->pts;
+    entries[new_entry].tracknum = pkt->stream_index + 1;
+    entries[new_entry].cluster_pos = cluster_pos - cues->segment_offset;
+
+    cues->entries = entries;
+    cues->num_entries++;
+    return 0;
+}
+
+static offset_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues)
+{
+    offset_t currentpos, cues_element;
+    int i, j;
+
+    currentpos = url_ftell(pb);
+    cues_element = start_ebml_master(pb, MATROSKA_ID_CUES);
+
+    for (i = 0; i < cues->num_entries; i++) {
+        offset_t cuepoint, track_positions;
+        mkv_cuepoint *entry = &cues->entries[i];
+        uint64_t pts = entry->pts;
+
+        cuepoint = start_ebml_master(pb, MATROSKA_ID_POINTENTRY);
+        put_ebml_uint(pb, MATROSKA_ID_CUETIME, pts);
+
+        // put all the entries from different tracks that have the exact same
+        // timestamp into the same CuePoint
+        for (j = 0; j < cues->num_entries - i && entry[j].pts == pts; j++) {
+            track_positions = start_ebml_master(pb, MATROSKA_ID_CUETRACKPOSITION);
+            put_ebml_uint(pb, MATROSKA_ID_CUETRACK          , entry[j].tracknum   );
+            put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION, entry[j].cluster_pos);
+            end_ebml_master(pb, track_positions);
+        }
+        i += j - 1;
+        end_ebml_master(pb, cuepoint);
+    }
+    end_ebml_master(pb, cues_element);
+
+    av_free(cues->entries);
+    av_free(cues);
+    return currentpos;
+}
+
 static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 {
     offset_t codecprivate;
@@ -417,9 +493,14 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
         return -1;
 
+    mkv->cluster_pos = url_ftell(pb);
     mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
     put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
     mkv->cluster_pts = 0;
+
+    mkv->cues = mkv_start_cues(mkv->segment_offset);
+    if (mkv->cues == NULL)
+        return -1;
 
     return 0;
 }
@@ -436,6 +517,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
             return -1;
 
+        mkv->cluster_pos = url_ftell(pb);
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
         mkv->cluster_pts = pkt->pts;
@@ -448,6 +530,11 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
     put_buffer(pb, pkt->data, pkt->size);
 
+    if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && pkt->flags & PKT_FLAG_KEY) {
+        if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
+            return -1;
+    }
+
     mkv->duration = pkt->pts + pkt->duration;
     return 0;
 }
@@ -456,11 +543,14 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    offset_t currentpos, second_seekhead;
+    offset_t currentpos, second_seekhead, cuespos;
 
     end_ebml_master(pb, mkv->cluster);
 
+    cuespos = mkv_write_cues(pb, mkv->cues);
     second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
+
+    mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
     mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
     mkv_write_seekhead(pb, mkv->main_seekhead);
 
