@@ -352,12 +352,13 @@ OBJS += i386/fdct_mmx.o \
         i386/fft_3dn2.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
+
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
+OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 OBJS-$(CONFIG_VP3_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP5_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6F_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 endif
 
 ASM_OBJS-$(ARCH_ARMV4L)                += armv4l/jrevdct_arm.o     \
