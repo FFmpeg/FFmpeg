@@ -571,6 +571,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
 
     // start a new cluster every 5 MB or 5 sec
@@ -586,7 +587,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster_pts = pkt->pts;
     }
 
-    if (s->streams[pkt->stream_index]->codec->codec_type != CODEC_TYPE_SUBTITLE) {
+    if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
         mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else {
         offset_t blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP);
@@ -595,7 +596,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         end_ebml_master(pb, blockgroup);
     }
 
-    if (s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
+    if (codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
         if (mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos) < 0)
             return -1;
     }
