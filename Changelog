@@ -93,6 +93,7 @@ version <next>
 - AC-3 decoder
 - NUT muxer (since r10052)
 - Matroska muxer
+- Slice-based parallel H.264 decoding
 
 version 0.4.9-pre1:
 
