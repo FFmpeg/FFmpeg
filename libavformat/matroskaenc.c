@@ -386,7 +386,7 @@ static offset_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks
     return currentpos;
 }
 
-static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
+static int put_xiph_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec)
 {
     uint8_t *header_start[3];
     int header_len[3];
@@ -400,7 +400,7 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 
     if (ff_split_xiph_headers(codec->extradata, codec->extradata_size,
                               first_header_size, header_start, header_len) < 0) {
-        av_log(codec, AV_LOG_ERROR, "Extradata corrupt.\n");
+        av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
         return -1;
     }
 
@@ -416,24 +416,24 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 
 #define FLAC_STREAMINFO_SIZE 34
 
-static int put_flac_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
+static int put_flac_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec)
 {
     // if the extradata_size is greater than FLAC_STREAMINFO_SIZE,
     // assume that it's in Matroska's format already
     if (codec->extradata_size < FLAC_STREAMINFO_SIZE) {
-        av_log(codec, AV_LOG_ERROR, "Invalid FLAC extradata\n");
+        av_log(s, AV_LOG_ERROR, "Invalid FLAC extradata\n");
         return -1;
     } else if (codec->extradata_size == FLAC_STREAMINFO_SIZE) {
         // only the streaminfo packet
         put_byte(pb, 0);
         put_xiph_size(pb, codec->extradata_size);
-        av_log(codec, AV_LOG_ERROR, "Only one packet\n");
+        av_log(s, AV_LOG_ERROR, "Only one packet\n");
     }
     put_buffer(pb, codec->extradata, codec->extradata_size);
     return 0;
 }
 
-static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
+static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
     static const int aac_sample_rates[] = {
         96000, 88200, 64000, 48000, 44100, 32000,
@@ -442,13 +442,13 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
     int sri;
 
     if (codec->extradata_size < 2) {
-        av_log(codec, AV_LOG_WARNING, "no AAC extradata, unable to determine samplerate\n");
+        av_log(s, AV_LOG_WARNING, "no AAC extradata, unable to determine samplerate\n");
         return;
     }
 
     sri = ((codec->extradata[0] << 1) & 0xE) | (codec->extradata[1] >> 7);
     if (sri > 12) {
-        av_log(codec, AV_LOG_WARNING, "AAC samplerate index out of bounds\n");
+        av_log(s, AV_LOG_WARNING, "AAC samplerate index out of bounds\n");
         return;
     }
     *sample_rate = aac_sample_rates[sri];
@@ -457,14 +457,14 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
     if (codec->extradata_size == 5) {
         sri = (codec->extradata[4] >> 3) & 0xF;
         if (sri > 12) {
-            av_log(codec, AV_LOG_WARNING, "AAC output samplerate index out of bounds\n");
+            av_log(s, AV_LOG_WARNING, "AAC output samplerate index out of bounds\n");
             return;
         }
         *output_sample_rate = aac_sample_rates[sri];
     }
 }
 
-static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int native_id)
+static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec, int native_id)
 {
     ByteIOContext dyn_cp;
     uint8_t *codecpriv;
@@ -474,16 +474,16 @@ static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int 
 
     if (native_id) {
         if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA)
-            ret = put_xiph_codecpriv(&dyn_cp, codec);
+            ret = put_xiph_codecpriv(s, &dyn_cp, codec);
         else if (codec->codec_id == CODEC_ID_FLAC)
-            ret = put_flac_codecpriv(&dyn_cp, codec);
+            ret = put_flac_codecpriv(s, &dyn_cp, codec);
         else if (codec->extradata_size)
             put_buffer(&dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
         if (!codec->codec_tag) {
-            av_log(codec, AV_LOG_ERROR, "no bmp codec id found");
+            av_log(s, AV_LOG_ERROR, "no bmp codec id found");
             ret = -1;
         }
 
@@ -493,7 +493,7 @@ static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int 
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
-            av_log(codec, AV_LOG_ERROR, "no wav codec id found");
+            av_log(s, AV_LOG_ERROR, "no wav codec id found");
             ret = -1;
         }
 
@@ -531,7 +531,7 @@ static int mkv_write_tracks(AVFormatContext *s)
             bit_depth = av_get_bits_per_sample_format(codec->sample_fmt);
 
         if (codec->codec_id == CODEC_ID_AAC)
-            get_aac_sample_rates(codec, &sample_rate, &output_sample_rate);
+            get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
         put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i + 1);
@@ -598,7 +598,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.");
                 break;
         }
-        ret = mkv_write_codecprivate(pb, codec, native_id);
+        ret = mkv_write_codecprivate(s, pb, codec, native_id);
         if (ret < 0) return ret;
 
         end_ebml_master(pb, track);
