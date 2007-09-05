@@ -2159,7 +2159,11 @@ START_TIMER
             int a6= src[x + HTAPS/2+3];
             int a7= src[x + HTAPS/2+4];
 //            int am= 9*(a1+a2) - (a0+a3);
+#if HTAPS==6
             int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
+#else
+            int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
+#endif
 //            int am= 18*(a2+a3) - 2*(a1+a4);
 //             int aL= (-7*a0 + 105*a1 + 35*a2 - 5*a3)>>3;
 //             int aR= (-7*a3 + 105*a2 + 35*a1 - 5*a0)>>3;
@@ -2196,7 +2200,11 @@ START_TIMER
             int a5= tmp[x + (HTAPS/2+2)*stride];
             int a6= tmp[x + (HTAPS/2+3)*stride];
             int a7= tmp[x + (HTAPS/2+4)*stride];
+#if HTAPS==6
             int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
+#else
+            int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
+#endif
 //            int am= 18*(a2+a3) - 2*(a1+a4);
 /*            int aL= (-7*a0 + 105*a1 + 35*a2 - 5*a3)>>3;
             int aR= (-7*a3 + 105*a2 + 35*a1 - 5*a0)>>3;*/
