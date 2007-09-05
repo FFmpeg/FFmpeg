@@ -215,6 +215,10 @@ static void end_ebml_master(ByteIOContext *pb, ebml_master master)
 {
     offset_t pos = url_ftell(pb);
 
+    // leave the unknown size for masters when streaming
+    if (url_is_streamed(pb))
+        return;
+
     url_fseek(pb, master.pos - master.sizebytes, SEEK_SET);
     put_ebml_size(pb, pos - master.pos, master.sizebytes);
     url_fseek(pb, pos, SEEK_SET);
@@ -767,6 +771,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     end_ebml_master(pb, mkv->cluster);
 
+    if (!url_is_streamed(pb)) {
     cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
     second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
 
@@ -790,6 +795,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
     }
     url_fseek(pb, currentpos, SEEK_SET);
+    }
 
     end_ebml_master(pb, mkv->segment);
     av_free(mkv->md5_ctx);
