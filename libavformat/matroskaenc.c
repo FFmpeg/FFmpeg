@@ -130,18 +130,6 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
 
-// avtime is POSIX time, microseconds
-static void put_ebml_date(ByteIOContext *pb, unsigned int elementid, int64_t avtime)
-{
-    // midnight Jan 1, 1970 in UNIX epoch, microseconds
-    const int64_t ebmlDateStart = 978307200ULL * 1000000;
-    int64_t ebmlTime = (avtime - ebmlDateStart) * 1000;
-
-    put_ebml_id(pb, elementid);
-    put_ebml_size(pb, 8, 0);
-    put_be64(pb, ebmlTime);
-}
-
 // this reserves exactly the amount of space specified by size, which must be at least 2
 static void put_ebml_void(ByteIOContext *pb, uint64_t size)
 {
@@ -578,7 +566,6 @@ static int mkv_write_header(AVFormatContext *s)
 
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-        put_ebml_date  (pb, MATROSKA_ID_DATEUTC   , av_gettime()     );
         put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segmentuid,    16);
     }
 
