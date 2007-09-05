@@ -344,6 +344,37 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     return 0;
 }
 
+static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
+{
+    static const int aac_sample_rates[] = {
+        96000, 88200, 64000, 48000, 44100, 32000,
+        24000, 22050, 16000, 12000, 11025,  8000,
+    };
+    int sri;
+
+    if (codec->extradata_size < 2) {
+        av_log(codec, AV_LOG_WARNING, "no aac extradata, unable to determine sample rate\n");
+        return;
+    }
+
+    sri = ((codec->extradata[0] << 1) & 0xE) | (codec->extradata[1] >> 7);
+    if (sri > 12) {
+        av_log(codec, AV_LOG_WARNING, "aac samplerate index out of bounds\n");
+        return;
+    }
+    *sample_rate = aac_sample_rates[sri];
+
+    // if sbr, get output sample rate as well
+    if (codec->extradata_size == 5) {
+        sri = (codec->extradata[4] >> 3) & 0xF;
+        if (sri > 12) {
+            av_log(codec, AV_LOG_WARNING, "aac output samplerate index out of bounds\n");
+            return;
+        }
+        *output_sample_rate = aac_sample_rates[sri];
+    }
+}
+
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -361,6 +392,11 @@ static int mkv_write_tracks(AVFormatContext *s)
         offset_t subinfo, track;
         int native_id = 0;
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
+        int sample_rate = codec->sample_rate;
+        int output_sample_rate = 0;
+
+        if (codec->codec_id == CODEC_ID_AAC)
+            get_aac_sample_rates(codec, &sample_rate, &output_sample_rate);
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY);
         put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i + 1);
@@ -400,7 +436,6 @@ static int mkv_write_tracks(AVFormatContext *s)
                         codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
 
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
-                    // XXX: codec private isn't a master; is there a better way to re-use put_bmp_header?
                     bmp_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
                     put_bmp_header(pb, codec, codec_bmp_tags, 0);
                     end_ebml_master(pb, bmp_header);
@@ -432,8 +467,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 }
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
-                put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, codec->sample_rate);
-                // XXX: output sample freq (for sbr)
+                put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);
+                if (output_sample_rate)
+                    put_ebml_float(pb, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
                 if (bit_depth)
                     put_ebml_uint(pb, MATROSKA_ID_AUDIOBITDEPTH, bit_depth);
                 end_ebml_master(pb, subinfo);
