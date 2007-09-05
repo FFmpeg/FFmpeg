@@ -74,13 +74,9 @@ static int ebml_id_size(unsigned int id)
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 {
-    if (id >= 0x3fffff)
-        put_byte(pb, id >> 24);
-    if (id >= 0x7fff)
-        put_byte(pb, id >> 16);
-    if (id >= 0xff)
-        put_byte(pb, id >> 8);
-    put_byte(pb, id);
+    int i = ebml_id_size(id);
+    while (i--)
+        put_byte(pb, id >> (i*8));
 }
 
 /**
