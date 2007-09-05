@@ -20,7 +20,6 @@
  */
 
 #include "avformat.h"
-#include "random.h"
 #include "riff.h"
 #include "xiph.h"
 #include "matroska.h"
@@ -62,8 +61,6 @@ typedef struct MatroskaMuxContext {
     mkv_seekhead    *main_seekhead;
     mkv_seekhead    *cluster_seekhead;
     mkv_cues        *cues;
-
-    AVRandomState   rand_state;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -549,9 +546,6 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t ebml_header, segment_info;
-    int i;
-
-    av_init_random(av_gettime(), &mkv->rand_state);
 
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
@@ -581,13 +575,8 @@ static int mkv_write_header(AVFormatContext *s)
     if (strlen(s->title))
         put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        uint8_t segmentuid[16];
-        for (i = 0; i < 16; i++)
-            segmentuid[i] = av_random(&mkv->rand_state);
-
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segmentuid,    16);
     }
 
     // reserve space for the duration
