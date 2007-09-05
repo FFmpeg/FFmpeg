@@ -159,40 +159,12 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
     end_ebml_master(pb, codecprivate);
 }
 
-static int mkv_write_header(AVFormatContext *s)
+static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    offset_t ebml_header, segment_info, tracks;
-    int i, j, k;
-
-    ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
-    put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
-    put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
-    put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
-    put_ebml_uint   (pb, EBML_ID_EBMLMAXSIZELENGTH  ,           8);
-    put_ebml_string (pb, EBML_ID_DOCTYPE            ,  "matroska");
-    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           2);
-    put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           2);
-    end_ebml_master(pb, ebml_header);
-
-    mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT);
-
-    segment_info = start_ebml_master(pb, MATROSKA_ID_INFO);
-    put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
-    if (strlen(s->title))
-        put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
-        // XXX: both are required; something better for writing app?
-        put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-    }
-    // XXX: segment UID
-    // reserve space for the duration
-    mkv->duration = 0;
-    mkv->duration_offset = url_ftell(pb);
-    put_ebml_void(pb, 11);                  // assumes double-precision float to be written
-    end_ebml_master(pb, segment_info);
+    offset_t tracks;
+    int i, j;
 
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS);
     for (i = 0; i < s->nb_streams; i++) {
@@ -273,6 +245,44 @@ static int mkv_write_header(AVFormatContext *s)
         av_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
+}
+
+static int mkv_write_header(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    offset_t ebml_header, segment_info;
+
+    ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
+    put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
+    put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
+    put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
+    put_ebml_uint   (pb, EBML_ID_EBMLMAXSIZELENGTH  ,           8);
+    put_ebml_string (pb, EBML_ID_DOCTYPE            ,  "matroska");
+    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           2);
+    put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           2);
+    end_ebml_master(pb, ebml_header);
+
+    mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT);
+
+    segment_info = start_ebml_master(pb, MATROSKA_ID_INFO);
+    put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
+    if (strlen(s->title))
+        put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+        put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
+        // XXX: both are required; something better for writing app?
+        put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
+    }
+    // XXX: segment UID
+    // reserve space for the duration
+    mkv->duration = 0;
+    mkv->duration_offset = url_ftell(pb);
+    put_ebml_void(pb, 11);                  // assumes double-precision float to be written
+    end_ebml_master(pb, segment_info);
+
+    if (mkv_write_tracks(s) < 0)
+        return -1;
 
     mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
     put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
