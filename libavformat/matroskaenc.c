@@ -476,7 +476,10 @@ static int mkv_write_tracks(AVFormatContext *s)
                 // XXX: interlace flag?
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
-                // XXX: display width/height
+                if (codec->sample_aspect_ratio.num) {
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , codec->sample_aspect_ratio.num);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->sample_aspect_ratio.den);
+                }
                 end_ebml_master(pb, subinfo);
                 break;
 
