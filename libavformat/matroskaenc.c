@@ -100,7 +100,7 @@ static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 // use up all of the space reserved in start_ebml_master)
 static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
 {
-    int bytes = minbytes;
+    int i, bytes = minbytes;
 
     // sizes larger than this are currently undefined in EBML
     // so write "unknown" size
@@ -109,22 +109,22 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
         return;
     }
 
-    while ((size+1) >> (bytes*7 + 7)) bytes++;
+    while ((size+1) >> bytes*7) bytes++;
 
-    put_byte(pb, (0x80 >> bytes) | (size >> bytes*8));
-    for (bytes -= 1; bytes >= 0; bytes--)
-        put_byte(pb, size >> bytes*8);
+    put_byte(pb, (0x80 >> (bytes-1)) | (size >> (bytes-1)*8));
+    for (i = bytes - 2; i >= 0; i--)
+        put_byte(pb, size >> i*8);
 }
 
 static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t val)
 {
-    int bytes = 1;
+    int i, bytes = 1;
     while (val >> bytes*8) bytes++;
 
     put_ebml_id(pb, elementid);
     put_ebml_size(pb, bytes, 0);
-    for (bytes -= 1; bytes >= 0; bytes--)
-        put_byte(pb, val >> bytes*8);
+    for (i = bytes - 1; i >= 0; i--)
+        put_byte(pb, val >> i*8);
 }
 
 static void put_ebml_float(ByteIOContext *pb, unsigned int elementid, double val)
@@ -166,7 +166,7 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
     if (size < 10)
         put_ebml_size(pb, size-1, 0);
     else
-        put_ebml_size(pb, size-9, 7);
+        put_ebml_size(pb, size-9, 8);
     url_fseek(pb, currentpos + size, SEEK_SET);
 }
 
@@ -184,7 +184,7 @@ static void end_ebml_master(ByteIOContext *pb, offset_t start)
     offset_t pos = url_ftell(pb);
 
     url_fseek(pb, start - 8, SEEK_SET);
-    put_ebml_size(pb, pos - start, 7);
+    put_ebml_size(pb, pos - start, 8);
     url_fseek(pb, pos, SEEK_SET);
 }
 
