@@ -68,14 +68,14 @@ static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t va
 //static void put_ebml_sint(ByteIOContext *pb, unsigned int elementid, int64_t val)
 
 static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
-                            uint8_t *buf, int size)
+                            const uint8_t *buf, int size)
 {
     put_ebml_id(pb, elementid);
     put_ebml_size(pb, size, 0);
     put_buffer(pb, buf, size);
 }
 
-static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, char *str)
+static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const char *str)
 {
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
