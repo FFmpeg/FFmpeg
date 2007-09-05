@@ -147,7 +147,6 @@ static int mkv_write_header(AVFormatContext *s)
     }
     end_ebml_master(pb, tracks);
 
-    put_be64(pb, 0xdeadbeef);
     return 0;
 }
 
