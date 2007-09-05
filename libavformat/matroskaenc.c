@@ -587,7 +587,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (s->streams[pkt->stream_index]->codec->codec_type != CODEC_TYPE_SUBTITLE) {
-    mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
+        mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else {
         offset_t blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP);
         mkv_write_block(s, MATROSKA_ID_BLOCK, pkt, 0);
