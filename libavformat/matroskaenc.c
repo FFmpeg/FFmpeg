@@ -191,7 +191,7 @@ static int mkv_write_header(AVFormatContext *s)
                 for (j = 0; j < 2; j++) {
                     for (k = 0; k < header_len[j] / 255; k++)
                         put_byte(pb, 255);
-                    put_byte(pb, header_len[j]);
+                    put_byte(pb, header_len[j] % 255);
                 }
                 for (j = 0; j < 3; j++)
                     put_buffer(pb, header_start[j], header_len[j]);
