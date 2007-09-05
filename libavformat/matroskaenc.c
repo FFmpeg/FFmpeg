@@ -25,6 +25,7 @@
 
 typedef struct MatroskaMuxContext {
     offset_t    segment;
+    offset_t    cluster;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -215,13 +216,22 @@ static int mkv_write_header(AVFormatContext *s)
     }
     end_ebml_master(pb, tracks);
 
+    mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
+    put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
+
     return 0;
 }
 
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
+
+    block = start_ebml_master(pb, MATROSKA_ID_SIMPLEBLOCK);
+    put_byte(pb, 0x80 | pkt->stream_index);     // this assumes stream_index is less than 127
+    put_be16(pb, pkt->pts);
+    put_byte(pb, !!(pkt->flags & PKT_FLAG_KEY));
     put_buffer(pb, pkt->data, pkt->size);
+    end_ebml_master(pb, block);
     return 0;
 }
 
@@ -229,6 +239,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    end_ebml_master(pb, mkv->cluster);
     end_ebml_master(pb, mkv->segment);
     return 0;
 }
