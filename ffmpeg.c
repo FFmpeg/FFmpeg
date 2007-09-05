@@ -2567,7 +2567,7 @@ static void opt_input_file(const char *filename)
     for(i=0; i<opt_name_count; i++){
         const AVOption *opt;
         double d= av_get_double(avformat_opts, opt_names[i], &opt);
-        if(d==d && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+        if(!isnan(d) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
             av_set_double(ic, opt_names[i], d);
     }
     /* open the input file with generic libav function */
@@ -2615,7 +2615,7 @@ static void opt_input_file(const char *filename)
             for(j=0; j<opt_name_count; j++){
                 const AVOption *opt;
                 double d= av_get_double(avctx_opts[CODEC_TYPE_AUDIO], opt_names[j], &opt);
-                if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+                if(!isnan(d) && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
             }
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
@@ -2628,7 +2628,7 @@ static void opt_input_file(const char *filename)
             for(j=0; j<opt_name_count; j++){
                 const AVOption *opt;
                 double d= av_get_double(avctx_opts[CODEC_TYPE_VIDEO], opt_names[j], &opt);
-                if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+                if(!isnan(d) && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
             }
             frame_height = enc->height;
@@ -2774,7 +2774,7 @@ static void new_video_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
              const AVOption *opt;
              double d= av_get_double(avctx_opts[CODEC_TYPE_VIDEO], opt_names[i], &opt);
-             if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+             if(!isnan(d) && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(video_enc, opt_names[i], d);
         }
 
@@ -2917,7 +2917,7 @@ static void new_audio_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
             const AVOption *opt;
             double d= av_get_double(avctx_opts[CODEC_TYPE_AUDIO], opt_names[i], &opt);
-            if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+            if(!isnan(d) && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_double(audio_enc, opt_names[i], d);
         }
 
@@ -2967,7 +2967,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
              const AVOption *opt;
              double d= av_get_double(avctx_opts[CODEC_TYPE_SUBTITLE], opt_names[i], &opt);
-             if(d==d && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+             if(!isnan(d) && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(subtitle_enc, opt_names[i], d);
         }
         subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, CODEC_TYPE_SUBTITLE, 1);
@@ -3159,7 +3159,7 @@ static void opt_output_file(const char *filename)
     for(i=0; i<opt_name_count; i++){
         const AVOption *opt;
         double d = av_get_double(avformat_opts, opt_names[i], &opt);
-        if(d==d && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+        if(!isnan(d) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
             av_set_double(oc, opt_names[i], d);
     }
 
