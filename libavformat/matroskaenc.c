@@ -24,12 +24,29 @@
 #include "xiph.h"
 #include "matroska.h"
 
+typedef struct mkv_seekhead_entry {
+    unsigned int    elementid;
+    uint64_t        segmentpos;
+} mkv_seekhead_entry;
+
+typedef struct mkv_seekhead {
+    offset_t                filepos;
+    offset_t                segment_offset;     // the file offset to the beginning of the segment
+    int                     reserved_size;      // -1 if appending to file
+    int                     max_entries;
+    mkv_seekhead_entry      *entries;
+    int                     num_entries;
+} mkv_seekhead;
+
 typedef struct MatroskaMuxContext {
     offset_t    segment;
+    offset_t    segment_offset;
     offset_t    cluster;
     uint64_t    cluster_pts;
     offset_t    duration_offset;
     uint64_t    duration;
+    mkv_seekhead    *main_seekhead;
+    mkv_seekhead    *cluster_seekhead;
 } MatroskaMuxContext;
 
 static void put_ebml_id(ByteIOContext *pb, unsigned int id)
@@ -41,6 +58,17 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
     if (id >= 0xff)
         put_byte(pb, id >> 8);
     put_byte(pb, id);
+}
+
+static int ebml_id_size(unsigned int id)
+{
+    if (id >= 0x3fffff)
+        return 4;
+    if (id >= 0x7fff)
+        return 3;
+    if (id >= 0xff)
+        return 2;
+    return 1;
 }
 
 // XXX: test this thoroughly and get rid of minbytes hack (currently needed to
@@ -128,6 +156,91 @@ static void end_ebml_master(ByteIOContext *pb, offset_t start)
     url_fseek(pb, pos, SEEK_SET);
 }
 
+// initializes a mkv_seekhead element to be ready to index level 1 matroska elements
+// if numelements is greater than 0, it reserves enough space for that many elements
+// at the current file position and writes the seekhead there, otherwise the seekhead
+// will be appended to the file when end_mkv_seekhead() is called
+static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_offset, int numelements)
+{
+    mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
+    if (new_seekhead == NULL)
+        return NULL;
+
+    new_seekhead->segment_offset = segment_offset;
+
+    if (numelements > 0) {
+        new_seekhead->filepos = url_ftell(pb);
+        // 21 bytes max for a seek entry, 10 bytes max for the SeekHead ID and size,
+        // and 3 bytes to guarantee that an EBML void element will fit afterwards
+        // XXX: 28 bytes right now because begin_ebml_master() reserves more than necessary
+        new_seekhead->reserved_size = numelements * 28 + 13;
+        new_seekhead->max_entries = numelements;
+        put_ebml_void(pb, new_seekhead->reserved_size);
+    }
+    return new_seekhead;
+}
+
+static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid, uint64_t filepos)
+{
+    mkv_seekhead_entry *entries = seekhead->entries;
+    int new_entry = seekhead->num_entries;
+
+    // don't store more elements than we reserved space for
+    if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
+        return -1;
+
+    entries = av_realloc(entries, (seekhead->num_entries + 1) * sizeof(mkv_seekhead_entry));
+    if (entries == NULL)
+        return -1;
+
+    entries[new_entry].elementid = elementid;
+    entries[new_entry].segmentpos = filepos - seekhead->segment_offset;
+
+    seekhead->entries = entries;
+    seekhead->num_entries++;
+
+    return 0;
+}
+
+// returns the file offset where the seekhead was written and frees the seekhead
+static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
+{
+    offset_t metaseek, seekentry, currentpos;
+    int i;
+
+    currentpos = url_ftell(pb);
+
+    if (seekhead->reserved_size > 0)
+        url_fseek(pb, seekhead->filepos, SEEK_SET);
+
+    metaseek = start_ebml_master(pb, MATROSKA_ID_SEEKHEAD);
+    for (i = 0; i < seekhead->num_entries; i++) {
+        mkv_seekhead_entry *entry = &seekhead->entries[i];
+
+        seekentry = start_ebml_master(pb, MATROSKA_ID_SEEKENTRY);
+
+        put_ebml_id(pb, MATROSKA_ID_SEEKID);
+        put_ebml_size(pb, ebml_id_size(entry->elementid), 0);
+        put_ebml_id(pb, entry->elementid);
+
+        put_ebml_uint(pb, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
+        end_ebml_master(pb, seekentry);
+    }
+    end_ebml_master(pb, metaseek);
+
+    if (seekhead->reserved_size > 0) {
+        uint64_t remaining = seekhead->filepos + seekhead->reserved_size - url_ftell(pb);
+        put_ebml_void(pb, remaining);
+        url_fseek(pb, currentpos, SEEK_SET);
+
+        currentpos = seekhead->filepos;
+    }
+    av_free(seekhead->entries);
+    av_free(seekhead);
+
+    return currentpos;
+}
+
 static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 {
     offset_t codecprivate;
@@ -167,6 +280,9 @@ static int mkv_write_tracks(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     offset_t tracks;
     int i, j;
+
+    if (mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, url_ftell(pb)) < 0)
+        return -1;
 
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS);
     for (i = 0; i < s->nb_streams; i++) {
@@ -267,6 +383,17 @@ static int mkv_write_header(AVFormatContext *s)
     end_ebml_master(pb, ebml_header);
 
     mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT);
+    mkv->segment_offset = url_ftell(pb);
+
+    // we write 2 seek heads - one at the end of the file to point to each cluster, and
+    // one at the beginning to point to all other level one elements (including the seek
+    // head at the end of the file), which isn't more than 10 elements if we only write one
+    // of each other currently defined level 1 element
+    mkv->main_seekhead    = mkv_start_seekhead(pb, mkv->segment_offset, 10);
+    mkv->cluster_seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 0);
+
+    if (mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, url_ftell(pb)) < 0)
+        return -1;
 
     segment_info = start_ebml_master(pb, MATROSKA_ID_INFO);
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
@@ -287,6 +414,9 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv_write_tracks(s) < 0)
         return -1;
 
+    if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
+        return -1;
+
     mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
     put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
     mkv->cluster_pts = 0;
@@ -303,6 +433,10 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     // start a new cluster every 5 MB or 5 sec
     if (url_ftell(pb) > mkv->cluster + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
         end_ebml_master(pb, mkv->cluster);
+
+        if (mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb)) < 0)
+            return -1;
+
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
         mkv->cluster_pts = pkt->pts;
@@ -323,9 +457,13 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    offset_t currentpos;
+    offset_t currentpos, second_seekhead;
 
     end_ebml_master(pb, mkv->cluster);
+
+    second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
+    mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
+    mkv_write_seekhead(pb, mkv->main_seekhead);
 
     // update the duration
     currentpos = url_ftell(pb);
