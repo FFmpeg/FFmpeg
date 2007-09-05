@@ -112,7 +112,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t ebml_header, segment_info, tracks;
-    int i;
+    int i, j;
 
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
@@ -141,9 +141,77 @@ static int mkv_write_header(AVFormatContext *s)
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        offset_t track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY);
+        AVCodecContext *codec = st->codec;
+        offset_t subinfo, track;
+        int native_id = 0;
 
+        track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKNUMBER     , i);
+        // XXX: random number for UID? and can we use the same UID when copying
+        // from another MKV as the specs recommend?
+        put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i);
+        put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
+
+        if (st->language[0])
+            put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, st->language);
+
+        // look for a codec id string specific to mkv to use, if none are found, use AVI codes
+        for (j = 0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++) {
+            if (ff_mkv_codec_tags[j].id == codec->codec_id) {
+                put_ebml_string(pb, MATROSKA_ID_CODECID, ff_mkv_codec_tags[j].str);
+                native_id = 1;
+                break;
+            }
+        }
+
+        // XXX: CodecPrivate for vorbis, theora, aac, native mpeg4, ...
+        if (native_id) {
+            put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
+        }
+
+        switch (codec->codec_type) {
+            case CODEC_TYPE_VIDEO:
+                put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
+
+                if (!native_id) {
+                    offset_t bmp_header;
+                    // if there is no mkv-specific codec id, use VFW mode
+                    if (!codec->codec_tag)
+                        codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
+
+                    put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
+                    // XXX: codec private isn't a master; is there a better way to re-use put_bmp_header?
+                    bmp_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE);
+                    put_bmp_header(pb, codec, codec_bmp_tags, 0);
+                    end_ebml_master(pb, bmp_header);
+                }
+                subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO);
+                // XXX: interlace flag?
+                put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
+                put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
+                // XXX: display width/height
+                end_ebml_master(pb, subinfo);
+                break;
+
+            case CODEC_TYPE_AUDIO:
+                put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
+
+                // XXX: A_MS/ACM
+                subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO);
+                put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
+                put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, codec->sample_rate);
+                // XXX: output sample freq (for sbr) and bitdepth (for pcm)
+                end_ebml_master(pb, subinfo);
+                break;
+
+            default:
+                av_log(s, AV_LOG_ERROR, "Only audio and video are supported for Matroska.");
+                break;
+        }
         end_ebml_master(pb, track);
+
+        // ms precision is the de-facto standard timescale for mkv files
+        av_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
 
