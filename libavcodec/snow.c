@@ -432,6 +432,7 @@ typedef struct SnowContext{
     AVFrame input_picture;              ///< new_picture with the internal linesizes
     AVFrame current_picture;
     AVFrame last_picture[MAX_REF_FRAMES];
+    uint8_t *halfpel_plane[MAX_REF_FRAMES][4][4];
     AVFrame mconly_picture;
 //     uint8_t q_context[16];
     uint8_t header_state[32];
@@ -3815,6 +3816,50 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
+    int p,x,y;
+
+    assert(!(s->avctx->flags & CODEC_FLAG_EMU_EDGE));
+
+    for(p=0; p<3; p++){
+        int is_chroma= !!p;
+        int w= s->avctx->width  >>is_chroma;
+        int h= s->avctx->height >>is_chroma;
+        int ls= frame->linesize[p];
+        uint8_t *src= frame->data[p];
+
+        halfpel[1][p]= (uint8_t*)av_malloc(ls * (h+2*EDGE_WIDTH)) + EDGE_WIDTH*(1+ls);
+        halfpel[2][p]= (uint8_t*)av_malloc(ls * (h+2*EDGE_WIDTH)) + EDGE_WIDTH*(1+ls);
+        halfpel[3][p]= (uint8_t*)av_malloc(ls * (h+2*EDGE_WIDTH)) + EDGE_WIDTH*(1+ls);
+
+        halfpel[0][p]= src;
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int i= y*ls + x;
+
+                halfpel[1][p][i]= (20*(src[i] + src[i+1]) - 5*(src[i-1] + src[i+2]) + (src[i-2] + src[i+3]) + 16 )>>5;
+            }
+        }
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int i= y*ls + x;
+
+                halfpel[2][p][i]= (20*(src[i] + src[i+ls]) - 5*(src[i-ls] + src[i+2*ls]) + (src[i-2*ls] + src[i+3*ls]) + 16 )>>5;
+            }
+        }
+        src= halfpel[1][p];
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int i= y*ls + x;
+
+                halfpel[3][p][i]= (20*(src[i] + src[i+ls]) - 5*(src[i-ls] + src[i+2*ls]) + (src[i-2*ls] + src[i+3*ls]) + 16 )>>5;
+            }
+        }
+
+//FIXME border!
+    }
+}
+
 static int frame_start(SnowContext *s){
    AVFrame tmp;
    int w= s->avctx->width; //FIXME round up to x16 ?
@@ -3828,6 +3873,11 @@ static int frame_start(SnowContext *s){
 
     tmp= s->last_picture[s->max_ref_frames-1];
     memmove(s->last_picture+1, s->last_picture, (s->max_ref_frames-1)*sizeof(AVFrame));
+    memmove(s->halfpel_plane+1, s->halfpel_plane, (s->max_ref_frames-1)*sizeof(void*)*4*4);
+#ifdef USE_HALFPEL_PLANE
+    if(s->current_picture.data[0])
+        halfpel_interpol(s, s->halfpel_plane[0], &s->current_picture);
+#endif
     s->last_picture[0]= s->current_picture;
     s->current_picture= tmp;
 
@@ -4083,8 +4133,12 @@ STOP_TIMER("pred-conv")}
         }
     }
 
-    if(s->last_picture[s->max_ref_frames-1].data[0])
+    if(s->last_picture[s->max_ref_frames-1].data[0]){
         avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
+        for(i=0; i<9; i++)
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
+    }
 
     s->current_picture.coded_picture_number = avctx->frame_number;
     s->current_picture.pict_type = pict->pict_type;
@@ -4172,7 +4226,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     RangeCoder * const c= &s->c;
     int bytes_read;
     AVFrame *picture = data;
-    int level, orientation, plane_index;
+    int level, orientation, plane_index, i;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -4304,8 +4358,12 @@ STOP_TIMER("idwt + predict_slices")}
 
     emms_c();
 
-    if(s->last_picture[s->max_ref_frames-1].data[0])
+    if(s->last_picture[s->max_ref_frames-1].data[0]){
         avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
+        for(i=0; i<9; i++)
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
+    }
 
 if(!(s->avctx->debug&2048))
     *picture= s->current_picture;
