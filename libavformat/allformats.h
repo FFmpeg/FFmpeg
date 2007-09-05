@@ -144,6 +144,8 @@ extern AVOutputFormat image_muxer;
 extern AVOutputFormat imagepipe_muxer;
 extern AVOutputFormat libnut_muxer;
 extern AVOutputFormat m4v_muxer;
+extern AVOutputFormat matroska_audio_muxer;
+extern AVOutputFormat matroska_muxer;
 extern AVOutputFormat mjpeg_muxer;
 extern AVOutputFormat mmf_muxer;
 extern AVOutputFormat mov_muxer;

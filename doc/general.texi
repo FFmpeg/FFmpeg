@@ -85,7 +85,7 @@ library:
 @tab Used in Sierra CD-ROM games.
 @item Sierra Online    @tab    @tab X
 @tab .sol files used in Sierra Online games.
-@item Matroska         @tab    @tab X
+@item Matroska         @tab X  @tab X
 @item Electronic Arts Multimedia    @tab    @tab X
 @tab Used in various EA games; files have extensions like WVE and UV2.
 @item Nullsoft Video (NSV) format @tab    @tab X

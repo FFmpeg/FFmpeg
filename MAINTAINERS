@@ -222,6 +222,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   libnut.c                              Oded Shimon
   matroska.c                            Aurelien Jacobs
+  matroskaenc.c                         David Conrad
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpc.c                                 Kostya Shishkov
