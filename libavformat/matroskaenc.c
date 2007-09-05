@@ -75,13 +75,7 @@ static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
     put_buffer(pb, buf, size);
 }
 
-// XXX: should we do any special checking for valid strings for these 2 functions?
 static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, char *str)
-{
-    put_ebml_binary(pb, elementid, str, strlen(str));
-}
-
-static void put_ebml_utf8(ByteIOContext *pb, unsigned int elementid, char *str)
 {
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
@@ -127,11 +121,11 @@ static int mkv_write_header(AVFormatContext *s)
     segment_info = start_ebml_master(pb, MATROSKA_ID_INFO);
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
     if (strlen(s->title))
-        put_ebml_utf8(pb, MATROSKA_ID_TITLE, s->title);
+        put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        put_ebml_utf8(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
+        put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
         // XXX: both are required; something better for writing app?
-        put_ebml_utf8(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
+        put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
     }
     // XXX: segment UID and duration
     end_ebml_master(pb, segment_info);
