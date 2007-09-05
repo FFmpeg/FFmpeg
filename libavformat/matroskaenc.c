@@ -420,7 +420,7 @@ static int mkv_write_tracks(AVFormatContext *s)
             if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
                 if (put_xiph_codecpriv(pb, codec) < 0)
                     return -1;
-            } else {
+            } else if (codec->extradata_size) {
                 put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
             }
         }
