@@ -123,8 +123,8 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
     put_ebml_uint   (pb, EBML_ID_EBMLMAXSIZELENGTH  ,           8);
     put_ebml_string (pb, EBML_ID_DOCTYPE            ,  "matroska");
-    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           1);
-    put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           1);
+    put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           2);
+    put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           2);
     end_ebml_master(pb, ebml_header);
 
     mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT);
