@@ -191,7 +191,7 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
  * Writes a void element of a given size. Useful for reserving space in the file to be
  * written to later.
  *
- * @param size The amount of space to reserve, which must be at least 2.
+ * @param size The number of bytes to reserve, which must be at least 2.
  */
 static void put_ebml_void(ByteIOContext *pb, uint64_t size)
 {
@@ -240,7 +240,7 @@ static void put_xiph_size(ByteIOContext *pb, int size)
  * If a maximum number of elements is specified, enough space will be reserved at
  * the current file location to write a seek head of that size.
  *
- * @param segment_offset the absolute offset into the file that the segment begins
+ * @param segment_offset The absolute offset to the position in the file where the segment begins
  * @param numelements the maximum number of elements that will be indexed by this
  *                    seek head, 0 if unlimited.
  */
