@@ -388,7 +388,6 @@ static offset_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks
 
 static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 {
-    ebml_master codecprivate;
     uint8_t *header_start[3];
     int header_len[3];
     int first_header_size;
@@ -405,14 +404,12 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
         return -1;
     }
 
-    codecprivate = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
     put_byte(pb, 2);                    // number packets - 1
     for (j = 0; j < 2; j++) {
         put_xiph_size(pb, header_len[j]);
     }
     for (j = 0; j < 3; j++)
         put_buffer(pb, header_start[j], header_len[j]);
-    end_ebml_master(pb, codecprivate);
 
     return 0;
 }
@@ -421,8 +418,6 @@ static int put_xiph_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 
 static int put_flac_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
 {
-    ebml_master codecpriv = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
-
     // if the extradata_size is greater than FLAC_STREAMINFO_SIZE,
     // assume that it's in Matroska's format already
     if (codec->extradata_size < FLAC_STREAMINFO_SIZE) {
@@ -435,7 +430,6 @@ static int put_flac_codecpriv(ByteIOContext *pb, AVCodecContext *codec)
         av_log(codec, AV_LOG_ERROR, "Only one packet\n");
     }
     put_buffer(pb, codec->extradata, codec->extradata_size);
-    end_ebml_master(pb, codecpriv);
     return 0;
 }
 
@@ -472,42 +466,41 @@ static void get_aac_sample_rates(AVCodecContext *codec, int *sample_rate, int *o
 
 static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int native_id)
 {
-    int ret;
+    ByteIOContext dyn_cp;
+    uint8_t *codecpriv;
+    int ret = 0, codecpriv_size;
+
+    url_open_dyn_buf(&dyn_cp);
 
     if (native_id) {
         if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
-            ret = put_xiph_codecpriv(pb, codec);
-            if (ret < 0) return ret;
+            ret = put_xiph_codecpriv(&dyn_cp, codec);
         } else if (codec->codec_id == CODEC_ID_FLAC) {
-            ret = put_flac_codecpriv(pb, codec);
-            if (ret < 0) return ret;
+            ret = put_flac_codecpriv(&dyn_cp, codec);
         } else if (codec->extradata_size) {
-            put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codec->extradata, codec->extradata_size);
+            put_buffer(&dyn_cp, codec->extradata, codec->extradata_size);
         }
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
-        ebml_master bmp_header;
-
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
 
-        bmp_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
-        put_bmp_header(pb, codec, codec_bmp_tags, 0);
-        end_ebml_master(pb, bmp_header);
+        put_bmp_header(&dyn_cp, codec, codec_bmp_tags, 0);
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        ebml_master wav_header;
-
         codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
             av_log(codec, AV_LOG_ERROR, "no wav codec id found");
-            return -1;
+            ret = -1;
         }
 
-        wav_header = start_ebml_master(pb, MATROSKA_ID_CODECPRIVATE, 0);
-        put_wav_header(pb, codec);
-        end_ebml_master(pb, wav_header);
+        put_wav_header(&dyn_cp, codec);
     }
-    return 0;
+
+    codecpriv_size = url_close_dyn_buf(&dyn_cp, &codecpriv);
+    if (codecpriv_size)
+        put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv, codecpriv_size);
+    av_free(codecpriv);
+    return ret;
 }
 
 static int mkv_write_tracks(AVFormatContext *s)
