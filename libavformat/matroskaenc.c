@@ -83,6 +83,23 @@ static int ebml_id_size(unsigned int id)
     return (av_log2(id+1)-1)/7+1;
 }
 
+/**
+ * Write an EBML size meaning "unknown size"
+ *
+ * @param bytes The number of bytes the size should occupy. Maximum of 8.
+ */
+static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
+{
+    uint64_t value = 0;
+    int i;
+
+    bytes = FFMIN(bytes, 8);
+    for (i = 0; i < bytes*7 + 1; i++)
+        value |= 1ULL << i;
+    for (i = bytes-1; i >= 0; i--)
+        put_byte(pb, value >> i*8);
+}
+
 // XXX: test this thoroughly and get rid of minbytes hack (currently needed to
 // use up all of the space reserved in start_ebml_master)
 static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
@@ -91,9 +108,12 @@ static void put_ebml_size(ByteIOContext *pb, uint64_t size, int minbytes)
 
     // sizes larger than this are currently undefined in EBML
     // so write "unknown" size
-    size = FFMIN(size, (1ULL<<56)-1);
+    if (size >= (1ULL<<56)-1) {
+        put_ebml_size_unknown(pb, 1);
+        return;
+    }
 
-    while (size >> (bytes*7 + 7)) bytes++;
+    while ((size+1) >> (bytes*7 + 7)) bytes++;
 
     put_byte(pb, (0x80 >> bytes) | (size >> bytes*8));
     for (bytes -= 1; bytes >= 0; bytes--)
@@ -159,7 +179,7 @@ static offset_t start_ebml_master(ByteIOContext *pb, unsigned int elementid)
     put_ebml_id(pb, elementid);
     // XXX: this always reserves the maximum needed space to store any size value
     // we should be smarter (additional parameter for expected size?)
-    put_ebml_size(pb, (1ULL<<56)-1, 0);     // largest unknown size
+    put_ebml_size_unknown(pb, 8);
     return url_ftell(pb);
 }
 
