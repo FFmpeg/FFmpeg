@@ -473,13 +473,12 @@ static int mkv_write_codecprivate(ByteIOContext *pb, AVCodecContext *codec, int 
     url_open_dyn_buf(&dyn_cp);
 
     if (native_id) {
-        if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA) {
+        if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA)
             ret = put_xiph_codecpriv(&dyn_cp, codec);
-        } else if (codec->codec_id == CODEC_ID_FLAC) {
+        else if (codec->codec_id == CODEC_ID_FLAC)
             ret = put_flac_codecpriv(&dyn_cp, codec);
-        } else if (codec->extradata_size) {
+        else if (codec->extradata_size)
             put_buffer(&dyn_cp, codec->extradata, codec->extradata_size);
-        }
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
@@ -558,10 +557,10 @@ static int mkv_write_tracks(AVFormatContext *s)
             case CODEC_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
-                if (!native_id) {
+                if (!native_id)
                     // if there is no mkv-specific codec id, use VFW mode
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
-                }
+
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
                 // XXX: interlace flag?
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
@@ -578,10 +577,10 @@ static int mkv_write_tracks(AVFormatContext *s)
             case CODEC_TYPE_AUDIO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
-                if (!native_id) {
+                if (!native_id)
                     // no mkv-specific ID, use ACM mode
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_AUDIO_ACM);
-                }
+
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 0);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
                 put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);
