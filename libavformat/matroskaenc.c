@@ -98,9 +98,9 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
 }
 
 /**
- * Write an EBML size meaning "unknown size."
+ * Write an EBML size meaning "unknown size".
  *
- * @param bytes The number of bytes the size should occupy. Maximum of 8.
+ * @param bytes The number of bytes the size should occupy (maximum: 8).
  */
 static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
 {
