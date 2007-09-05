@@ -1573,22 +1573,22 @@ EOF
 enabled_any libamr_nb libamr_wb && enable libamr
 
 # these are off by default, so fail if requested and not available
+enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
 enabled liba52     && require liba52 a52dec/a52.h a52_init -la52
 enabled libamr_nb  && require libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled libdc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
+enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
+enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
+enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
 enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
-enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
-enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
 enabled libx264    && require x264 x264.h x264_encoder_open -lx264
 enabled libxvid    && require Xvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
-enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
-enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
 
 # disable the native AC-3 decoder if liba52 is enabled
 enabled liba52 && disable ac3_decoder
