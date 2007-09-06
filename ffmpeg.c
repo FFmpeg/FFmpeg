@@ -183,7 +183,7 @@ static int copy_ts= 0;
 static int opt_shortest = 0; //
 static int video_global_header = 0;
 static char *vstats_filename;
-static FILE *fvstats;
+static FILE *vstats_file;
 
 static int rate_emu = 0;
 
@@ -855,9 +855,9 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     double ti1, bitrate, avg_bitrate;
 
     /* this is executed just the first time do_video_stats is called */
-    if (!fvstats) {
-        fvstats = fopen(vstats_filename, "w");
-        if (!fvstats) {
+    if (!vstats_file) {
+        vstats_file = fopen(vstats_filename, "w");
+        if (!vstats_file) {
             perror("fopen");
             exit(1);
         }
@@ -866,11 +866,11 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     enc = ost->st->codec;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
-        fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality/(float)FF_QP2LAMBDA);
+        fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality/(float)FF_QP2LAMBDA);
         if (enc->flags&CODEC_FLAG_PSNR)
-            fprintf(fvstats, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
+            fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
 
-        fprintf(fvstats,"f_size= %6d ", frame_size);
+        fprintf(vstats_file,"f_size= %6d ", frame_size);
         /* compute pts value */
         ti1 = ost->sync_opts * av_q2d(enc->time_base);
         if (ti1 < 0.01)
@@ -878,9 +878,9 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
 
         bitrate = (frame_size * 8) / av_q2d(enc->time_base) / 1000.0;
         avg_bitrate = (double)(video_size * 8) / ti1 / 1000.0;
-        fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
+        fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
             (double)video_size / 1024, ti1, bitrate, avg_bitrate);
-        fprintf(fvstats,"type= %c\n", av_get_pict_type_char(enc->coded_frame->pict_type));
+        fprintf(vstats_file,"type= %c\n", av_get_pict_type_char(enc->coded_frame->pict_type));
     }
 }
 
@@ -3851,8 +3851,8 @@ int main(int argc, char **argv)
     av_free(intra_matrix);
     av_free(inter_matrix);
 
-    if (fvstats)
-        fclose(fvstats);
+    if (vstats_file)
+        fclose(vstats_file);
     av_free(vstats_filename);
 
     av_free(opt_names);
