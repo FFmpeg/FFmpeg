@@ -307,6 +307,7 @@ extern AVCodecParser vc1_parser;
 
 /* bitstream filters */
 extern AVBitStreamFilter dump_extradata_bsf;
+extern AVBitStreamFilter h264_mp4toannexb_bsf;
 extern AVBitStreamFilter imx_dump_header_bsf;
 extern AVBitStreamFilter mjpega_dump_header_bsf;
 extern AVBitStreamFilter mp3_header_compress_bsf;

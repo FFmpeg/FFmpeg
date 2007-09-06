@@ -320,6 +320,7 @@ OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o
 
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += dump_extradata_bsf.o
+OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)    += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += imx_dump_header_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += mp3_header_compress_bsf.o
