@@ -510,6 +510,8 @@ resync:
             rm->current_stream= st->id;
 
 //            av_log(NULL, AV_LOG_DEBUG, "%X len:%d pos:%d len2:%d pic_num:%d\n",h, len, pos, len2, pic_num);
+            if((h & 0xc0) == 0x80)
+                len=pos;
             if(len2 && len2<len)
                 len=len2;
             rm->remaining_len-= len;
