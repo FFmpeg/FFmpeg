@@ -30,7 +30,7 @@ FFmpeg can grab video and audio from devices given that you specify the input
 format and device.
 
 @example
-ffmpeg -f audio_device -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
+ffmpeg -f oss -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
 @end example
 
 Note that you must activate the right video source and channel before
