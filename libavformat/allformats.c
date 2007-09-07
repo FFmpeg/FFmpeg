@@ -55,7 +55,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (ASF, asf);
     REGISTER_MUXER    (ASF_STREAM, asf_stream);
     REGISTER_MUXDEMUX (AU, au);
-    REGISTER_MUXDEMUX (AUDIO, audio);
+    REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);
     REGISTER_MUXDEMUX (AVI, avi);
 #ifdef CONFIG_AVISYNTH
     av_register_input_format(&avisynth_demuxer);
@@ -121,6 +121,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (NUT, nut);
     REGISTER_DEMUXER  (NUV, nuv);
     REGISTER_MUXDEMUX (OGG, ogg);
+    REGISTER_MUXDEMUX (OSS, oss);
     REGISTER_MUXDEMUX (PCM_ALAW,  pcm_alaw);
     REGISTER_MUXDEMUX (PCM_MULAW, pcm_mulaw);
     REGISTER_MUXDEMUX (PCM_S16BE, pcm_s16be);

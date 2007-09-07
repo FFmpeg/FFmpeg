@@ -307,8 +307,8 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-#ifdef CONFIG_AUDIO_DEMUXER
-AVInputFormat audio_demuxer = {
+#ifdef CONFIG_OSS_DEMUXER
+AVInputFormat oss_demuxer = {
     "audio_device",
     "audio grab and output",
     sizeof(AudioData),
@@ -320,8 +320,8 @@ AVInputFormat audio_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_AUDIO_MUXER
-AVOutputFormat audio_muxer = {
+#ifdef CONFIG_OSS_MUXER
+AVOutputFormat oss_muxer = {
     "audio_device",
     "audio grab and output",
     "",

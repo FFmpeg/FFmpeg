@@ -421,7 +421,7 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-static AVInputFormat audio_demuxer = {
+static AVInputFormat audio_beos_demuxer = {
     "audio_device",
     "audio grab and output",
     sizeof(AudioData),
@@ -433,7 +433,7 @@ static AVInputFormat audio_demuxer = {
     AVFMT_NOFILE,
 };
 
-AVOutputFormat audio_muxer = {
+AVOutputFormat audio_beos_muxer = {
     "audio_device",
     "audio grab and output",
     "",
@@ -456,8 +456,8 @@ extern "C" {
 int audio_init(void)
 {
     main_thid = find_thread(NULL);
-    av_register_input_format(&audio_demuxer);
-    av_register_output_format(&audio_muxer);
+    av_register_input_format(&audio_beos_demuxer);
+    av_register_output_format(&audio_beos_muxer);
     return 0;
 }
 

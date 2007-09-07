@@ -25,8 +25,6 @@ OBJS-$(CONFIG_ASF_MUXER)                 += asf-enc.o riff.o
 OBJS-$(CONFIG_ASF_STREAM_MUXER)          += asf-enc.o riff.o
 OBJS-$(CONFIG_AU_DEMUXER)                += au.o raw.o
 OBJS-$(CONFIG_AU_MUXER)                  += au.o
-OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
-OBJS-$(CONFIG_AUDIO_MUXER)               += audio.o
 OBJS-$(CONFIG_AVI_DEMUXER)               += avidec.o riff.o
 OBJS-$(CONFIG_AVI_MUXER)                 += avienc.o riff.o
 OBJS-$(CONFIG_AVISYNTH)                  += avisynth.o
@@ -113,6 +111,8 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += ogg2.o           \
                                             oggparseogm.o    \
                                             riff.o
 OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
+OBJS-$(CONFIG_OSS_DEMUXER)               += audio.o
+OBJS-$(CONFIG_OSS_MUXER)                 += audio.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
@@ -163,7 +163,8 @@ OBJS-$(CONFIG_VHOOK)                     += framehook.o
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
 
-CPPOBJS-$(CONFIG_AUDIO_BEOS)             += beosaudio.o
+CPPOBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
+CPPOBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
 
 # protocols I/O
 OBJS+= avio.o aviobuf.o
