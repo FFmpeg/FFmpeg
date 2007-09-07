@@ -162,10 +162,6 @@ patch/closed/applied
 patch/closed/rejected
     Patches which have been rejected.
 
-feature_request/open/approved
-    Feature requests which FFmpeg developers agree are likely to be
-    accepted if a good quality patch is submitted.
-
 feature_request/open/needs_more_info
     Feature requests where its not clear what exactly is wanted
     (these also could be closed as invalid ...).
