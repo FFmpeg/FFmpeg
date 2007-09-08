@@ -394,7 +394,7 @@ static const BlockNode null_block= { //FIXME add border maybe
 #define LOG2_MB_SIZE 4
 #define MB_SIZE (1<<LOG2_MB_SIZE)
 #define ENCODER_EXTRA_BITS 4
-#define HTAPS 6
+#define HTAPS 8
 
 typedef struct x_and_coeff{
     int16_t x;
@@ -421,6 +421,15 @@ typedef struct Plane{
     int width;
     int height;
     SubBand band[MAX_DECOMPOSITIONS][4];
+
+    int htaps;
+    int8_t hcoeff[HTAPS/2];
+    int diag_mc;
+    int fast_mc;
+
+    int last_htaps;
+    int8_t last_hcoeff[HTAPS/2];
+    int last_diag_mc;
 }Plane;
 
 typedef struct SnowContext{
@@ -2143,7 +2152,7 @@ static void decode_blocks(SnowContext *s){
     }
 }
 
-static void mc_block(uint8_t *dst, const uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
+static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
     const static uint8_t weight[64]={
     8,7,6,5,4,3,2,1,
     7,7,0,0,0,0,0,1,
@@ -2193,11 +2202,12 @@ START_TIMER
     l= brane[dx + 16*dy]>>4;
 
     b= needs[l] | needs[r];
+    if(p && !p->diag_mc)
+        b= 15;
 
     if(b&5){
         for(y=0; y < b_h+HTAPS-1; y++){
             for(x=0; x < b_w; x++){
-                int a_2=src[x + HTAPS/2-5];
                 int a_1=src[x + HTAPS/2-4];
                 int a0= src[x + HTAPS/2-3];
                 int a1= src[x + HTAPS/2-2];
@@ -2206,15 +2216,17 @@ START_TIMER
                 int a4= src[x + HTAPS/2+1];
                 int a5= src[x + HTAPS/2+2];
                 int a6= src[x + HTAPS/2+3];
-                int a7= src[x + HTAPS/2+4];
-#if HTAPS==6
-                int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
-#else
-                int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
-#endif
+                int am=0;
+                if(!p || p->fast_mc){
+                    am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
+                    tmpI[x]= am;
+                    am= (am+16)>>5;
+                }else{
+                    am= p->hcoeff[0]*(a2+a3) + p->hcoeff[1]*(a1+a4) + p->hcoeff[2]*(a0+a5) + p->hcoeff[3]*(a_1+a6);
+                    tmpI[x]= am;
+                    am= (am+32)>>6;
+                }
 
-                tmpI[x]= am;
-                am= (am+16)>>5;
                 if(am&(~255)) am= ~(am>>31);
                 tmp2[x]= am;
             }
@@ -2230,7 +2242,6 @@ START_TIMER
     if(b&2){
         for(y=0; y < b_h; y++){
             for(x=0; x < b_w+1; x++){
-                int a_2=src[x + (HTAPS/2-5)*stride];
                 int a_1=src[x + (HTAPS/2-4)*stride];
                 int a0= src[x + (HTAPS/2-3)*stride];
                 int a1= src[x + (HTAPS/2-2)*stride];
@@ -2239,14 +2250,12 @@ START_TIMER
                 int a4= src[x + (HTAPS/2+1)*stride];
                 int a5= src[x + (HTAPS/2+2)*stride];
                 int a6= src[x + (HTAPS/2+3)*stride];
-                int a7= src[x + (HTAPS/2+4)*stride];
-#if HTAPS==6
-                int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
-#else
-                int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
-#endif
+                int am=0;
+                if(!p || p->fast_mc)
+                    am= (20*(a2+a3) - 5*(a1+a4) + (a0+a5) + 16)>>5;
+                else
+                    am= (p->hcoeff[0]*(a2+a3) + p->hcoeff[1]*(a1+a4) + p->hcoeff[2]*(a0+a5) + p->hcoeff[3]*(a_1+a6) + 32)>>6;
 
-                am= (am + 16)>>5;
                 if(am&(~255)) am= ~(am>>31);
                 tmp2[x]= am;
             }
@@ -2261,7 +2270,6 @@ START_TIMER
     if(b&4){
         for(y=0; y < b_h; y++){
             for(x=0; x < b_w; x++){
-                int a_2=tmpI[x + (HTAPS/2-5)*64];
                 int a_1=tmpI[x + (HTAPS/2-4)*64];
                 int a0= tmpI[x + (HTAPS/2-3)*64];
                 int a1= tmpI[x + (HTAPS/2-2)*64];
@@ -2270,13 +2278,11 @@ START_TIMER
                 int a4= tmpI[x + (HTAPS/2+1)*64];
                 int a5= tmpI[x + (HTAPS/2+2)*64];
                 int a6= tmpI[x + (HTAPS/2+3)*64];
-                int a7= tmpI[x + (HTAPS/2+4)*64];
-#if HTAPS==6
-                int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
-#else
-                int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
-#endif
-                am= (am + 512)>>10;
+                int am=0;
+                if(!p || p->fast_mc)
+                    am= (20*(a2+a3) - 5*(a1+a4) + (a0+a5) + 512)>>10;
+                else
+                    am= (p->hcoeff[0]*(a2+a3) + p->hcoeff[1]*(a1+a4) + p->hcoeff[2]*(a0+a5) + p->hcoeff[3]*(a_1+a6) + 2048)>>12;
                 if(am&(~255)) am= ~(am>>31);
                 tmp2[x]= am;
             }
@@ -2336,7 +2342,7 @@ STOP_TIMER("mc_block")
 static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, int stride, int h){\
     uint8_t tmp[stride*(b_w+HTAPS-1)];\
     assert(h==b_w);\
-    mc_block(dst, src-(HTAPS/2-1)-(HTAPS/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
+    mc_block(NULL, dst, src-(HTAPS/2-1)-(HTAPS/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
 }
 
 mca( 0, 0,16)
@@ -2407,23 +2413,23 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
 //        assert(!(b_w&(b_w-1)));
         assert(b_w>1 && b_h>1);
         assert(tab_index>=0 && tab_index<4 || b_w==32);
-        if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || HTAPS != 6)
-            mc_block(dst, src, tmp, stride, b_w, b_h, dx, dy);
+        if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || !s->plane[plane_index].fast_mc )
+            mc_block(&s->plane[plane_index], dst, src, tmp, stride, b_w, b_h, dx, dy);
         else if(b_w==32){
             int y;
             for(y=0; y<b_h; y+=16){
-                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 2 + (y+2)*stride,stride);
-                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 18 + (y+2)*stride,stride);
+                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 3 + (y+3)*stride,stride);
+                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 19 + (y+3)*stride,stride);
             }
         }else if(b_w==b_h)
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 2 + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 3 + 3*stride,stride);
         else if(b_w==2*b_h){
-            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 2       + 2*stride,stride);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 2 + b_h + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 3       + 3*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 3 + b_h + 3*stride,stride);
         }else{
             assert(2*b_w==b_h);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 2 + 2*stride           ,stride);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 2 + 2*stride+b_w*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 3 + 3*stride           ,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 3 + 3*stride+b_w*stride,stride);
         }
     }
 }
@@ -3514,7 +3520,7 @@ static void correlate(SnowContext *s, SubBand *b, IDWTELEM *src, int stride, int
 }
 
 static void encode_header(SnowContext *s){
-    int plane_index, level, orientation;
+    int plane_index, level, orientation, i;
     uint8_t kstate[32];
 
     memset(kstate, MID_STATE, sizeof(kstate));
@@ -3527,6 +3533,12 @@ static void encode_header(SnowContext *s){
         s->last_qbias=
         s->last_mv_scale=
         s->last_block_max_depth= 0;
+        for(plane_index=0; plane_index<2; plane_index++){
+            Plane *p= &s->plane[plane_index];
+            p->last_htaps=0;
+            p->last_diag_mc=0;
+            memset(p->last_hcoeff, 0, sizeof(p->last_hcoeff));
+        }
     }
     if(s->keyframe){
         put_symbol(&s->c, s->header_state, s->version, 0);
@@ -3550,6 +3562,32 @@ static void encode_header(SnowContext *s){
             }
         }
     }
+
+    if(!s->keyframe){
+        int update_mc=0;
+        for(plane_index=0; plane_index<2; plane_index++){
+            Plane *p= &s->plane[plane_index];
+            update_mc |= p->last_htaps   != p->htaps;
+            update_mc |= p->last_diag_mc != p->diag_mc;
+            update_mc |= !!memcmp(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
+        }
+        if(!s->always_reset)
+            put_rac(&s->c, s->header_state, update_mc);
+        if(update_mc){
+            for(plane_index=0; plane_index<2; plane_index++){
+                Plane *p= &s->plane[plane_index];
+                put_rac(&s->c, s->header_state, p->diag_mc);
+                put_symbol(&s->c, s->header_state, p->htaps/2-1, 0);
+                for(i= p->htaps/2; i; i--)
+                    put_symbol(&s->c, s->header_state, FFABS(p->hcoeff[i]), 0);
+
+                p->last_diag_mc= p->diag_mc;
+                p->last_htaps= p->htaps;
+                memcpy(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
+            }
+        }
+    }
+
     put_symbol(&s->c, s->header_state, s->spatial_decomposition_type - s->last_spatial_decomposition_type, 1);
     put_symbol(&s->c, s->header_state, s->qlog            - s->last_qlog    , 1);
     put_symbol(&s->c, s->header_state, s->mv_scale        - s->last_mv_scale, 1);
@@ -3605,6 +3643,28 @@ static int decode_header(SnowContext *s){
                     s->plane[plane_index].band[level][orientation].qlog= q;
                 }
             }
+        }
+    }
+
+    if(!s->keyframe){
+        if(s->always_reset || get_rac(&s->c, s->header_state)){
+            for(plane_index=0; plane_index<2; plane_index++){
+                int htaps, i, sum=0, absum=0;
+                Plane *p= &s->plane[plane_index];
+                p->diag_mc= get_rac(&s->c, s->header_state);
+                htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
+                if((unsigned)htaps > HTAPS || htaps==0)
+                    return -1;
+                p->htaps= htaps;
+                for(i= htaps/2; i; i--){
+                    p->hcoeff[i]= get_symbol(&s->c, s->header_state, 0) * (1-2*(i&1));
+                    sum += p->hcoeff[i];
+                }
+                p->hcoeff[0]= 32-sum;
+            }
+            s->plane[2].diag_mc= s->plane[1].diag_mc;
+            s->plane[2].htaps  = s->plane[1].htaps;
+            memcpy(s->plane[2].hcoeff, s->plane[1].hcoeff, sizeof(s->plane[1].hcoeff));
         }
     }
 
@@ -3715,6 +3775,14 @@ static int common_init(AVCodecContext *avctx){
         }
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
+
+        s->plane[plane_index].diag_mc= 1;
+        s->plane[plane_index].htaps= 6;
+        s->plane[plane_index].hcoeff[0]=  40;
+        s->plane[plane_index].hcoeff[1]= -10;
+        s->plane[plane_index].hcoeff[2]=   2;
+        s->plane[plane_index].fast_mc= 1;
+
 //av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
         for(level=s->spatial_decomposition_count-1; level>=0; level--){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
@@ -4354,6 +4422,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
     decode_header(s);
+
+    for(plane_index=0; plane_index<3; plane_index++){
+        Plane *p= &s->plane[plane_index];
+        p->fast_mc= p->diag_mc && p->htaps==6 && p->hcoeff[0]==40
+                                              && p->hcoeff[1]==-10
+                                              && p->hcoeff[2]==2;
+    }
+
     if(!s->block) alloc_blocks(s);
 
     frame_start(s);
