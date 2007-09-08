@@ -2195,23 +2195,23 @@ START_TIMER
     b= needs[l] | needs[r];
 
     if(b&5){
-    for(y=0; y < b_h+HTAPS-1; y++){
-        for(x=0; x < b_w; x++){
-            int a_2=src[x + HTAPS/2-5];
-            int a_1=src[x + HTAPS/2-4];
-            int a0= src[x + HTAPS/2-3];
-            int a1= src[x + HTAPS/2-2];
-            int a2= src[x + HTAPS/2-1];
-            int a3= src[x + HTAPS/2+0];
-            int a4= src[x + HTAPS/2+1];
-            int a5= src[x + HTAPS/2+2];
-            int a6= src[x + HTAPS/2+3];
-            int a7= src[x + HTAPS/2+4];
+        for(y=0; y < b_h+HTAPS-1; y++){
+            for(x=0; x < b_w; x++){
+                int a_2=src[x + HTAPS/2-5];
+                int a_1=src[x + HTAPS/2-4];
+                int a0= src[x + HTAPS/2-3];
+                int a1= src[x + HTAPS/2-2];
+                int a2= src[x + HTAPS/2-1];
+                int a3= src[x + HTAPS/2+0];
+                int a4= src[x + HTAPS/2+1];
+                int a5= src[x + HTAPS/2+2];
+                int a6= src[x + HTAPS/2+3];
+                int a7= src[x + HTAPS/2+4];
 //            int am= 9*(a1+a2) - (a0+a3);
 #if HTAPS==6
-            int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
+                int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
 #else
-            int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
+                int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
 #endif
 //            int am= 18*(a2+a3) - 2*(a1+a4);
 //             int aL= (-7*a0 + 105*a1 + 35*a2 - 5*a3)>>3;
@@ -2219,37 +2219,37 @@ START_TIMER
 
 //            if(b_w==16) am= 8*(a1+a2);
 
-            tmpI[x]= am;
-            am= (am+16)>>5;
-            if(am&(~255)) am= ~(am>>31);
-            tmp2[x]= am;
+                tmpI[x]= am;
+                am= (am+16)>>5;
+                if(am&(~255)) am= ~(am>>31);
+                tmp2[x]= am;
+            }
+            tmpI+= 64;
+            tmp2+= stride;
+            src += stride;
         }
-        tmpI+= 64;
-        tmp2+= stride;
-        src += stride;
-    }
-    src -= stride*y;
+        src -= stride*y;
     }
     src += HTAPS/2 - 1;
     tmp2= tmp2t[1];
 
     if(b&2){
-    for(y=0; y < b_h; y++){
-        for(x=0; x < b_w+1; x++){
-            int a_2=src[x + (HTAPS/2-5)*stride];
-            int a_1=src[x + (HTAPS/2-4)*stride];
-            int a0= src[x + (HTAPS/2-3)*stride];
-            int a1= src[x + (HTAPS/2-2)*stride];
-            int a2= src[x + (HTAPS/2-1)*stride];
-            int a3= src[x + (HTAPS/2+0)*stride];
-            int a4= src[x + (HTAPS/2+1)*stride];
-            int a5= src[x + (HTAPS/2+2)*stride];
-            int a6= src[x + (HTAPS/2+3)*stride];
-            int a7= src[x + (HTAPS/2+4)*stride];
+        for(y=0; y < b_h; y++){
+            for(x=0; x < b_w+1; x++){
+                int a_2=src[x + (HTAPS/2-5)*stride];
+                int a_1=src[x + (HTAPS/2-4)*stride];
+                int a0= src[x + (HTAPS/2-3)*stride];
+                int a1= src[x + (HTAPS/2-2)*stride];
+                int a2= src[x + (HTAPS/2-1)*stride];
+                int a3= src[x + (HTAPS/2+0)*stride];
+                int a4= src[x + (HTAPS/2+1)*stride];
+                int a5= src[x + (HTAPS/2+2)*stride];
+                int a6= src[x + (HTAPS/2+3)*stride];
+                int a7= src[x + (HTAPS/2+4)*stride];
 #if HTAPS==6
-            int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
+                int am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
 #else
-            int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
+                int am= 21*(a2+a3) - 7*(a1+a4) + 3*(a0+a5) - (a_1+a6);
 #endif
 //            int am= 18*(a2+a3) - 2*(a1+a4);
 /*            int aL= (-7*a0 + 105*a1 + 35*a2 - 5*a3)>>3;
@@ -2257,14 +2257,14 @@ START_TIMER
 
 //            if(b_w==16) am= 8*(a1+a2);
 
-            am= (am + 16)>>5;
-            if(am&(~255)) am= ~(am>>31);
-            tmp2[x]= am;
+                am= (am + 16)>>5;
+                if(am&(~255)) am= ~(am>>31);
+                tmp2[x]= am;
+            }
+            src += stride;
+            tmp2+= stride;
         }
-        src += stride;
-        tmp2+= stride;
-    }
-    src -= stride*y;
+        src -= stride*y;
     }
     src += stride*(HTAPS/2 - 1);
     tmp2= tmp2t[2];
