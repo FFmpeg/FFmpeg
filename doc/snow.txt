@@ -55,6 +55,18 @@ header:
         max_ref_frames-1                u   header_state
         qlogs
     }
+    if(!keyframe){
+        if(!always_reset)
+            update_mc                   b   header_state
+        if(always_reset || update_mc){
+            for(plane=0; plane<2; plane++){
+                diag_mc                 b   header_state
+                htaps/2-1               u   header_state
+                for(i= p->htaps/2; i; i--)
+                    |hcoeff[i]|         u   header_state
+            }
+        }
+    }
 
     spatial_decomposition_type          s   header_state
     qlog                                s   header_state
@@ -155,6 +167,35 @@ max_ref_frames
     maximum number of reference frames
     this MUST NOT change within a bitstream
 
+update_mc
+    indicates that motion compensation filter parameters are stored in the
+    header
+
+diag_mc
+    flag to enable faster diagonal interpolation
+    this SHOULD be 1 unless it turns out to be covered by a valid patent
+
+htaps
+    number of half pel interpolation filter taps, MUST be even, >0 and <10
+
+hcoeff
+    half pel interpolation filter coefficients, hcoeff[0] are the 2 middle
+    coefficients [1] are the next outer ones and so on, resulting in a filter
+    like: ...eff[2], hcoeff[1], hcoeff[0], hcoeff[0], hcoeff[1], hcoeff[2] ...
+    the sign of the coefficients is not explicitly stored but alternates
+    after each coeff and coeff[0] is positive, so ...,+,-,+,-,+,+,-,+,-,+,...
+    hcoeff[0] is not explicitly stored but found by subtracting the sum
+    of all stored coefficients with signs from 32
+    hcoeff[0]= 32 - hcoeff[1] - hcoeff[2] - ...
+    a good choice for hcoeff and htaps is
+    htaps= 6
+    hcoeff={40,-10,2}
+    an alternative which requires more computations at both encoder and
+    decoder side and may or may not be better is
+    htaps= 8
+    hcoeff={42,-14,6,-2}
+
+
 ref_frames
     minimum of the number of available reference frames and max_ref_frames
     for example the first frame after a key frame always has ref_frames=1
@@ -234,6 +275,102 @@ block[*][-1].dc[*]= 128;
 
 Motion Compensation:
 ====================
+
+Halfpel interpolation:
+----------------------
+halfpel interpolation is done by convolution with the halfpel filter stored
+in the header:
+
+horizontal halfpel samples are found by
+H1[y][x] =    hcoeff[0]*(F[y][x  ] + F[y][x+1])
+            + hcoeff[1]*(F[y][x-1] + F[y][x+2])
+            + hcoeff[2]*(F[y][x-2] + F[y][x+3])
+            + ...
+h1[y][x] = (H1[y][x] + 32)>>6;
+
+vertical halfpel samples are found by
+H2[y][x] =    hcoeff[0]*(F[y  ][x] + F[y+1][x])
+            + hcoeff[1]*(F[y-1][x] + F[y+2][x])
+            + ...
+h2[y][x] = (H2[y][x] + 32)>>6;
+
+vertical+horizontal halfpel samples are found by
+H3[y][x] =    hcoeff[0]*(H2[y][x  ] + H2[y][x+1])
+            + hcoeff[1]*(H2[y][x-1] + H2[y][x+2])
+            + ...
+H3[y][x] =    hcoeff[0]*(H1[y  ][x] + H1[y+1][x])
+            + hcoeff[1]*(H1[y+1][x] + H1[y+2][x])
+            + ...
+h3[y][x] = (H3[y][x] + 2048)>>12;
+
+
+                   F   H1  F
+                   |   |   |
+                   |   |   |
+                   |   |   |
+                   F   H1  F
+                   |   |   |
+                   |   |   |
+                   |   |   |
+   F-------F-------F-> H1<-F-------F-------F
+                   v   v   v
+                  H2   H3  H2
+                   ^   ^   ^
+   F-------F-------F-> H1<-F-------F-------F
+                   |   |   |
+                   |   |   |
+                   |   |   |
+                   F   H1  F
+                   |   |   |
+                   |   |   |
+                   |   |   |
+                   F   H1  F
+
+
+unavailable fullpel samples (outside the picture for example) shall be equal
+to the closest available fullpel sample
+
+
+Smaller pel interpolation:
+--------------------------
+if diag_mc is set then points which lie on a line between 2 vertically,
+horiziontally or diagonally adjacent halfpel points shall be interpolated
+linearls with rounding to nearest and halfway values rounded up.
+points which lie on 2 diagonals at the same time should only use the one
+diagonal not containing the fullpel point
+
+
+
+           F-->O---q---O<--h1->O---q---O<--F
+           v \           / v \           / v
+           O   O       O   O   O       O   O
+           |         /     |     \         |
+           q       q       q       q       q
+           |     /         |         \     |
+           O   O       O   O   O       O   O
+           ^ /           \ ^ /           \ ^
+          h2-->O---q---O<--h3->O---q---O<--h2
+           v \           / v \           / v
+           O   O       O   O   O       O   O
+           |     \         |         /     |
+           q       q       q       q       q
+           |         \     |     /         |
+           O   O       O   O   O       O   O
+           ^ /           \ ^ /           \ ^
+           F-->O---q---O<--h1->O---q---O<--F
+
+
+
+the remaining points shall be bilinearly interpolated from the
+up to 4 surrounding halfpel points, again rounding should be to nearest and
+halfway values rounded up
+
+compliant snow decoders MUST support 1-1/8 pel luma and 1/2-1/16 pel chroma
+interpolation at least
+
+
+Overlapped block motion compensation:
+-------------------------------------
 FIXME
 
 LL band prediction:
