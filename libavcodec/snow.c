@@ -394,7 +394,7 @@ static const BlockNode null_block= { //FIXME add border maybe
 #define LOG2_MB_SIZE 4
 #define MB_SIZE (1<<LOG2_MB_SIZE)
 #define ENCODER_EXTRA_BITS 4
-#define HTAPS 8
+#define HTAPS_MAX 8
 
 typedef struct x_and_coeff{
     int16_t x;
@@ -423,12 +423,12 @@ typedef struct Plane{
     SubBand band[MAX_DECOMPOSITIONS][4];
 
     int htaps;
-    int8_t hcoeff[HTAPS/2];
+    int8_t hcoeff[HTAPS_MAX/2];
     int diag_mc;
     int fast_mc;
 
     int last_htaps;
-    int8_t last_hcoeff[HTAPS/2];
+    int8_t last_hcoeff[HTAPS_MAX/2];
     int last_diag_mc;
 }Plane;
 
@@ -2191,8 +2191,8 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, i
     };
 
     int x, y, b, r, l;
-    int16_t tmpIt   [64*(32+HTAPS)];
-    uint8_t tmp2t[3][stride*(32+HTAPS)];
+    int16_t tmpIt   [64*(32+HTAPS_MAX)];
+    uint8_t tmp2t[3][stride*(32+HTAPS_MAX)];
     int16_t *tmpI= tmpIt;
     uint8_t *tmp2= tmp2t[0];
     uint8_t *hpel[11];
@@ -2206,16 +2206,16 @@ START_TIMER
         b= 15;
 
     if(b&5){
-        for(y=0; y < b_h+HTAPS-1; y++){
+        for(y=0; y < b_h+HTAPS_MAX-1; y++){
             for(x=0; x < b_w; x++){
-                int a_1=src[x + HTAPS/2-4];
-                int a0= src[x + HTAPS/2-3];
-                int a1= src[x + HTAPS/2-2];
-                int a2= src[x + HTAPS/2-1];
-                int a3= src[x + HTAPS/2+0];
-                int a4= src[x + HTAPS/2+1];
-                int a5= src[x + HTAPS/2+2];
-                int a6= src[x + HTAPS/2+3];
+                int a_1=src[x + HTAPS_MAX/2-4];
+                int a0= src[x + HTAPS_MAX/2-3];
+                int a1= src[x + HTAPS_MAX/2-2];
+                int a2= src[x + HTAPS_MAX/2-1];
+                int a3= src[x + HTAPS_MAX/2+0];
+                int a4= src[x + HTAPS_MAX/2+1];
+                int a5= src[x + HTAPS_MAX/2+2];
+                int a6= src[x + HTAPS_MAX/2+3];
                 int am=0;
                 if(!p || p->fast_mc){
                     am= 20*(a2+a3) - 5*(a1+a4) + (a0+a5);
@@ -2236,20 +2236,20 @@ START_TIMER
         }
         src -= stride*y;
     }
-    src += HTAPS/2 - 1;
+    src += HTAPS_MAX/2 - 1;
     tmp2= tmp2t[1];
 
     if(b&2){
         for(y=0; y < b_h; y++){
             for(x=0; x < b_w+1; x++){
-                int a_1=src[x + (HTAPS/2-4)*stride];
-                int a0= src[x + (HTAPS/2-3)*stride];
-                int a1= src[x + (HTAPS/2-2)*stride];
-                int a2= src[x + (HTAPS/2-1)*stride];
-                int a3= src[x + (HTAPS/2+0)*stride];
-                int a4= src[x + (HTAPS/2+1)*stride];
-                int a5= src[x + (HTAPS/2+2)*stride];
-                int a6= src[x + (HTAPS/2+3)*stride];
+                int a_1=src[x + (HTAPS_MAX/2-4)*stride];
+                int a0= src[x + (HTAPS_MAX/2-3)*stride];
+                int a1= src[x + (HTAPS_MAX/2-2)*stride];
+                int a2= src[x + (HTAPS_MAX/2-1)*stride];
+                int a3= src[x + (HTAPS_MAX/2+0)*stride];
+                int a4= src[x + (HTAPS_MAX/2+1)*stride];
+                int a5= src[x + (HTAPS_MAX/2+2)*stride];
+                int a6= src[x + (HTAPS_MAX/2+3)*stride];
                 int am=0;
                 if(!p || p->fast_mc)
                     am= (20*(a2+a3) - 5*(a1+a4) + (a0+a5) + 16)>>5;
@@ -2264,20 +2264,20 @@ START_TIMER
         }
         src -= stride*y;
     }
-    src += stride*(HTAPS/2 - 1);
+    src += stride*(HTAPS_MAX/2 - 1);
     tmp2= tmp2t[2];
     tmpI= tmpIt;
     if(b&4){
         for(y=0; y < b_h; y++){
             for(x=0; x < b_w; x++){
-                int a_1=tmpI[x + (HTAPS/2-4)*64];
-                int a0= tmpI[x + (HTAPS/2-3)*64];
-                int a1= tmpI[x + (HTAPS/2-2)*64];
-                int a2= tmpI[x + (HTAPS/2-1)*64];
-                int a3= tmpI[x + (HTAPS/2+0)*64];
-                int a4= tmpI[x + (HTAPS/2+1)*64];
-                int a5= tmpI[x + (HTAPS/2+2)*64];
-                int a6= tmpI[x + (HTAPS/2+3)*64];
+                int a_1=tmpI[x + (HTAPS_MAX/2-4)*64];
+                int a0= tmpI[x + (HTAPS_MAX/2-3)*64];
+                int a1= tmpI[x + (HTAPS_MAX/2-2)*64];
+                int a2= tmpI[x + (HTAPS_MAX/2-1)*64];
+                int a3= tmpI[x + (HTAPS_MAX/2+0)*64];
+                int a4= tmpI[x + (HTAPS_MAX/2+1)*64];
+                int a5= tmpI[x + (HTAPS_MAX/2+2)*64];
+                int a6= tmpI[x + (HTAPS_MAX/2+3)*64];
                 int am=0;
                 if(!p || p->fast_mc)
                     am= (20*(a2+a3) - 5*(a1+a4) + (a0+a5) + 512)>>10;
@@ -2292,7 +2292,7 @@ START_TIMER
     }
 
     hpel[ 0]= src;
-    hpel[ 1]= tmp2t[0] + stride*(HTAPS/2-1);
+    hpel[ 1]= tmp2t[0] + stride*(HTAPS_MAX/2-1);
     hpel[ 2]= src + 1;
 
     hpel[ 4]= tmp2t[1];
@@ -2340,9 +2340,9 @@ STOP_TIMER("mc_block")
 
 #define mca(dx,dy,b_w)\
 static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, int stride, int h){\
-    uint8_t tmp[stride*(b_w+HTAPS-1)];\
+    uint8_t tmp[stride*(b_w+HTAPS_MAX-1)];\
     assert(h==b_w);\
-    mc_block(NULL, dst, src-(HTAPS/2-1)-(HTAPS/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
+    mc_block(NULL, dst, src-(HTAPS_MAX/2-1)-(HTAPS_MAX/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
 }
 
 mca( 0, 0,16)
@@ -2401,12 +2401,12 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
         const int dx= mx&15;
         const int dy= my&15;
         const int tab_index= 3 - (b_w>>2) + (b_w>>4);
-        sx += (mx>>4) - (HTAPS/2-1);
-        sy += (my>>4) - (HTAPS/2-1);
+        sx += (mx>>4) - (HTAPS_MAX/2-1);
+        sy += (my>>4) - (HTAPS_MAX/2-1);
         src += sx + sy*stride;
-        if(   (unsigned)sx >= w - b_w - (HTAPS-2)
-           || (unsigned)sy >= h - b_h - (HTAPS-2)){
-            ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS-1, b_h+HTAPS-1, sx, sy, w, h);
+        if(   (unsigned)sx >= w - b_w - (HTAPS_MAX-2)
+           || (unsigned)sy >= h - b_h - (HTAPS_MAX-2)){
+            ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS_MAX-1, b_h+HTAPS_MAX-1, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
 //        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
@@ -2860,7 +2860,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     uint8_t *src= s->  input_picture.data[plane_index];
     IDWTELEM *pred= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t cur[ref_stride*2*MB_SIZE]; //FIXME alignment
-    uint8_t tmp[ref_stride*(2*MB_SIZE+HTAPS-1)];
+    uint8_t tmp[ref_stride*(2*MB_SIZE+HTAPS_MAX-1)];
     const int b_stride = s->b_width << s->block_max_depth;
     const int b_height = s->b_height<< s->block_max_depth;
     const int w= p->width;
@@ -3653,7 +3653,7 @@ static int decode_header(SnowContext *s){
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
                 htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
-                if((unsigned)htaps > HTAPS || htaps==0)
+                if((unsigned)htaps > HTAPS_MAX || htaps==0)
                     return -1;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
