@@ -156,12 +156,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         buf_size = c->decomp_size;
     }
     if (c->codec_frameheader) {
-        get_quant_quality(c, buf[10]);
-        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
         if (buf_size < 12) {
             av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame\n");
             return -1;
         }
+        get_quant_quality(c, buf[10]);
+        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
         buf = &buf[12];
         buf_size -= 12;
     }
