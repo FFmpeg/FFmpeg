@@ -3516,8 +3516,21 @@ static void correlate(SnowContext *s, SubBand *b, IDWTELEM *src, int stride, int
     }
 }
 
+static void encode_qlogs(SnowContext *s){
+    int plane_index, level, orientation;
+
+    for(plane_index=0; plane_index<2; plane_index++){
+        for(level=0; level<s->spatial_decomposition_count; level++){
+            for(orientation=level ? 1:0; orientation<4; orientation++){
+                if(orientation==2) continue;
+                put_symbol(&s->c, s->header_state, s->plane[plane_index].band[level][orientation].qlog, 1);
+            }
+        }
+    }
+}
+
 static void encode_header(SnowContext *s){
-    int plane_index, level, orientation, i;
+    int plane_index, i;
     uint8_t kstate[32];
 
     memset(kstate, MID_STATE, sizeof(kstate));
@@ -3550,14 +3563,7 @@ static void encode_header(SnowContext *s){
 //        put_rac(&s->c, s->header_state, s->rate_scalability);
         put_symbol(&s->c, s->header_state, s->max_ref_frames-1, 0);
 
-        for(plane_index=0; plane_index<2; plane_index++){
-            for(level=0; level<s->spatial_decomposition_count; level++){
-                for(orientation=level ? 1:0; orientation<4; orientation++){
-                    if(orientation==2) continue;
-                    put_symbol(&s->c, s->header_state, s->plane[plane_index].band[level][orientation].qlog, 1);
-                }
-            }
-        }
+        encode_qlogs(s);
     }
 
     if(!s->keyframe){
@@ -3583,6 +3589,11 @@ static void encode_header(SnowContext *s){
                 memcpy(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
             }
         }
+        put_rac(&s->c, s->header_state, 0);
+        if(0){
+            put_symbol(&s->c, s->header_state, s->spatial_decomposition_count, 0);
+            encode_qlogs(s);
+        }
     }
 
     put_symbol(&s->c, s->header_state, s->spatial_decomposition_type - s->last_spatial_decomposition_type, 1);
@@ -3598,8 +3609,24 @@ static void encode_header(SnowContext *s){
     s->last_block_max_depth           = s->block_max_depth;
 }
 
-static int decode_header(SnowContext *s){
+static void decode_qlogs(SnowContext *s){
     int plane_index, level, orientation;
+
+    for(plane_index=0; plane_index<3; plane_index++){
+        for(level=0; level<s->spatial_decomposition_count; level++){
+            for(orientation=level ? 1:0; orientation<4; orientation++){
+                int q;
+                if     (plane_index==2) q= s->plane[1].band[level][orientation].qlog;
+                else if(orientation==2) q= s->plane[plane_index].band[level][1].qlog;
+                else                    q= get_symbol(&s->c, s->header_state, 1);
+                s->plane[plane_index].band[level][orientation].qlog= q;
+            }
+        }
+    }
+}
+
+static int decode_header(SnowContext *s){
+    int plane_index;
     uint8_t kstate[32];
 
     memset(kstate, MID_STATE, sizeof(kstate));
@@ -3630,17 +3657,7 @@ static int decode_header(SnowContext *s){
 //        s->rate_scalability= get_rac(&s->c, s->header_state);
         s->max_ref_frames= get_symbol(&s->c, s->header_state, 0)+1;
 
-        for(plane_index=0; plane_index<3; plane_index++){
-            for(level=0; level<s->spatial_decomposition_count; level++){
-                for(orientation=level ? 1:0; orientation<4; orientation++){
-                    int q;
-                    if     (plane_index==2) q= s->plane[1].band[level][orientation].qlog;
-                    else if(orientation==2) q= s->plane[plane_index].band[level][1].qlog;
-                    else                    q= get_symbol(&s->c, s->header_state, 1);
-                    s->plane[plane_index].band[level][orientation].qlog= q;
-                }
-            }
-        }
+        decode_qlogs(s);
     }
 
     if(!s->keyframe){
@@ -3662,6 +3679,10 @@ static int decode_header(SnowContext *s){
             s->plane[2].diag_mc= s->plane[1].diag_mc;
             s->plane[2].htaps  = s->plane[1].htaps;
             memcpy(s->plane[2].hcoeff, s->plane[1].hcoeff, sizeof(s->plane[1].hcoeff));
+        }
+        if(get_rac(&s->c, s->header_state)){
+            s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
+            decode_qlogs(s);
         }
     }
 
