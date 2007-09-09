@@ -114,11 +114,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // skip rest of the frameheader.
     buf = &buf[12];
     buf_size -= 12;
+    if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {
+        int outlen = c->decomp_size, inlen = buf_size;
+        if (lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
+            av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
+        buf = c->decomp_buf;
+        buf_size = c->decomp_size;
+    }
 
     c->pic.pict_type = FF_I_TYPE;
     c->pic.key_frame = 1;
     // decompress/copy/whatever data
     switch (comptype) {
+        case NUV_LZO:
         case NUV_UNCOMPRESSED: {
             int height = c->height;
             if (buf_size < c->width * height * 3 / 2) {
@@ -128,22 +136,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             copy_frame(&c->pic, buf, c->width, height);
             break;
         }
+        case NUV_RTJPEG_IN_LZO:
         case NUV_RTJPEG: {
             rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
-            break;
-        }
-        case NUV_RTJPEG_IN_LZO: {
-            int outlen = c->decomp_size, inlen = buf_size;
-            if (lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
-                av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
-            rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, c->decomp_buf, c->decomp_size);
-            break;
-        }
-        case NUV_LZO: {
-            int outlen = c->decomp_size, inlen = buf_size;
-            if (lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
-                av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
-            copy_frame(&c->pic, c->decomp_buf, c->width, c->height);
             break;
         }
         case NUV_BLACK: {
