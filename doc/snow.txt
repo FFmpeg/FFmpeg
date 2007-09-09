@@ -56,9 +56,8 @@ header:
         qlogs
     }
     if(!keyframe){
-        if(!always_reset)
-            update_mc                   b   header_state
-        if(always_reset || update_mc){
+        update_mc                       b   header_state
+        if(update_mc){
             for(plane=0; plane<2; plane++){
                 diag_mc                 b   header_state
                 htaps/2-1               u   header_state

@@ -3574,8 +3574,7 @@ static void encode_header(SnowContext *s){
             update_mc |= p->last_diag_mc != p->diag_mc;
             update_mc |= !!memcmp(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
         }
-        if(!s->always_reset)
-            put_rac(&s->c, s->header_state, update_mc);
+        put_rac(&s->c, s->header_state, update_mc);
         if(update_mc){
             for(plane_index=0; plane_index<2; plane_index++){
                 Plane *p= &s->plane[plane_index];
@@ -3661,7 +3660,7 @@ static int decode_header(SnowContext *s){
     }
 
     if(!s->keyframe){
-        if(s->always_reset || get_rac(&s->c, s->header_state)){
+        if(get_rac(&s->c, s->header_state)){
             for(plane_index=0; plane_index<2; plane_index++){
                 int htaps, i, sum=0, absum=0;
                 Plane *p= &s->plane[plane_index];
