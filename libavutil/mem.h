@@ -54,6 +54,13 @@ void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);
 
 void *av_mallocz(unsigned int size);
+
+/**
+ * Duplicates the string \p s.
+ * @param s String to be duplicated.
+ * @return Pointer to a newly allocated string containing a
+ * copy of \p s or NULL if it cannot allocate it.
+ */
 char *av_strdup(const char *s);
 
 /**
