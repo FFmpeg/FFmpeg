@@ -454,6 +454,7 @@ typedef struct SnowContext{
     int last_spatial_decomposition_type;
     int temporal_decomposition_type;
     int spatial_decomposition_count;
+    int last_spatial_decomposition_count;
     int temporal_decomposition_count;
     int max_ref_frames;
     int ref_frames;
@@ -3588,11 +3589,12 @@ static void encode_header(SnowContext *s){
                 memcpy(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
             }
         }
-        put_rac(&s->c, s->header_state, 0);
-        if(0){
+        if(s->last_spatial_decomposition_count != s->spatial_decomposition_count){
+            put_rac(&s->c, s->header_state, 1);
             put_symbol(&s->c, s->header_state, s->spatial_decomposition_count, 0);
             encode_qlogs(s);
-        }
+        }else
+            put_rac(&s->c, s->header_state, 0);
     }
 
     put_symbol(&s->c, s->header_state, s->spatial_decomposition_type - s->last_spatial_decomposition_type, 1);
@@ -3606,6 +3608,7 @@ static void encode_header(SnowContext *s){
     s->last_qbias                     = s->qbias;
     s->last_mv_scale                  = s->mv_scale;
     s->last_block_max_depth           = s->block_max_depth;
+    s->last_spatial_decomposition_count= s->spatial_decomposition_count;
 }
 
 static void decode_qlogs(SnowContext *s){
@@ -3937,7 +3940,6 @@ static int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    s->spatial_decomposition_count= 5;
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
 
     s->chroma_h_shift= 1; //FIXME XXX
@@ -3956,7 +3958,6 @@ static int encode_init(AVCodecContext *avctx)
     }
 
     common_init(avctx);
-    common_init_after_header(avctx);
     alloc_blocks(s);
 
     s->version=0;
@@ -3982,11 +3983,6 @@ static int encode_init(AVCodecContext *avctx)
             return -1;
     }
     s->pass1_rc= !(avctx->flags & (CODEC_FLAG_QSCALE|CODEC_FLAG_PASS2));
-
-    for(plane_index=0; plane_index<3; plane_index++){
-        calculate_vissual_weight(s, &s->plane[plane_index]);
-    }
-
 
     avctx->coded_frame= &s->current_picture;
     switch(avctx->pix_fmt){
@@ -4213,8 +4209,21 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
 redo_frame:
 
+    if(pict->pict_type == I_TYPE)
+        s->spatial_decomposition_count= 5;
+    else
+        s->spatial_decomposition_count= 5;
+
     s->m.pict_type = pict->pict_type;
     s->qbias= pict->pict_type == P_TYPE ? 2 : 0;
+
+    common_init_after_header(avctx);
+
+    if(s->last_spatial_decomposition_count != s->spatial_decomposition_count){
+        for(plane_index=0; plane_index<3; plane_index++){
+            calculate_vissual_weight(s, &s->plane[plane_index]);
+        }
+    }
 
     encode_header(s);
     s->m.misc_bits = 8*(s->c.bytestream - s->c.bytestream_start);
