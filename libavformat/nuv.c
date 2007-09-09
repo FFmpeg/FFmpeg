@@ -149,7 +149,6 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         vst = av_new_stream(s, ctx->v_id);
         vst->codec->codec_type = CODEC_TYPE_VIDEO;
         vst->codec->codec_id = CODEC_ID_NUV;
-        vst->codec->codec_tag = MKTAG('R', 'J', 'P', 'G');
         vst->codec->width = width;
         vst->codec->height = height;
         vst->codec->bits_per_sample = 10;
