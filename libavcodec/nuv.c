@@ -247,9 +247,9 @@ static int decode_init(AVCodecContext *avctx) {
     c->codec_frameheader = avctx->codec_tag == MKTAG('R', 'J', 'P', 'G');
     if (avctx->extradata_size)
         get_quant(avctx, c, avctx->extradata, avctx->extradata_size);
+    dsputil_init(&c->dsp, avctx);
     if (!codec_reinit(avctx, avctx->width, avctx->height, -1))
         return 1;
-    dsputil_init(&c->dsp, avctx);
     return 0;
 }
 
