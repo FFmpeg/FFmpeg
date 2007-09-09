@@ -30,6 +30,7 @@
 
 typedef struct {
     AVFrame pic;
+    int codec_frameheader;
     int width, height;
     unsigned int decomp_size;
     unsigned char* decomp_buf;
@@ -37,6 +38,28 @@ typedef struct {
     RTJpegContext rtj;
     DSPContext dsp;
 } NuvContext;
+
+static const uint8_t fallback_lquant[] = {
+    16,  11,  10,  16,  24,  40,  51,  61,
+    12,  12,  14,  19,  26,  58,  60,  55,
+    14,  13,  16,  24,  40,  57,  69,  56,
+    14,  17,  22,  29,  51,  87,  80,  62,
+    18,  22,  37,  56,  68, 109, 103,  77,
+    24,  35,  55,  64,  81, 104, 113,  92,
+    49,  64,  78,  87, 103, 121, 120, 101,
+    72,  92,  95,  98, 112, 100, 103,  99
+};
+
+static const uint8_t fallback_cquant[] = {
+    17, 18, 24, 47, 99, 99, 99, 99,
+    18, 21, 26, 66, 99, 99, 99, 99,
+    24, 26, 56, 99, 99, 99, 99, 99,
+    47, 66, 99, 99, 99, 99, 99, 99,
+    99, 99, 99, 99, 99, 99, 99, 99,
+    99, 99, 99, 99, 99, 99, 99, 99,
+    99, 99, 99, 99, 99, 99, 99, 99,
+    99, 99, 99, 99, 99, 99, 99, 99
+};
 
 /**
  * \brief copy frame data from buffer to AVFrame, handling stride.
@@ -67,6 +90,17 @@ static int get_quant(AVCodecContext *avctx, NuvContext *c,
     for (i = 0; i < 64; i++, buf += 4)
         c->cq[i] = AV_RL32(buf);
     return 0;
+}
+
+/**
+ * \brief set quantization tables from a quality value
+ */
+static void get_quant_quality(NuvContext *c, int quality) {
+    int i;
+    for (i = 0; i < 64; i++) {
+        c->lq[i] = (fallback_lquant[i] << 7) / quality;
+        c->cq[i] = (fallback_cquant[i] << 7) / quality;
+    }
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
@@ -121,6 +155,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         buf = c->decomp_buf;
         buf_size = c->decomp_size;
     }
+    if (c->codec_frameheader) {
+        get_quant_quality(c, buf[10]);
+        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        buf = &buf[12];
+        buf_size -= 12;
+    }
 
     c->pic.pict_type = FF_I_TYPE;
     c->pic.key_frame = 1;
@@ -172,6 +212,7 @@ static int decode_init(AVCodecContext *avctx) {
     }
     avctx->pix_fmt = PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
+    c->codec_frameheader = avctx->codec_tag == MKTAG('R', 'J', 'P', 'G');
     c->width = avctx->width;
     c->height = avctx->height;
     c->decomp_size = c->height * c->width * 3 / 2;
