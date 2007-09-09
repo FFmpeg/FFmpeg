@@ -66,6 +66,11 @@ header:
                     |hcoeff[i]|         u   header_state
             }
         }
+        update_qlogs                    b   header_state
+        if(update_qlogs){
+            spatial_decomposition_count u   header_state
+            qlogs
+        }
     }
 
     spatial_decomposition_type          s   header_state
