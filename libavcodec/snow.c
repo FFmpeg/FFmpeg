@@ -3818,7 +3818,6 @@ static int common_init(AVCodecContext *avctx){
         for(j=0; j<MAX_REF_FRAMES; j++)
             scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
-    reset_contexts(s);
 /*
     width= s->width= avctx->width;
     height= s->height= avctx->height;
