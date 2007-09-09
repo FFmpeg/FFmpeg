@@ -362,8 +362,8 @@ diagonal not containing the fullpel point
 
 
 the remaining points shall be bilinearly interpolated from the
-up to 4 surrounding halfpel points, again rounding should be to nearest and
-halfway values rounded up
+up to 4 surrounding halfpel and fullpel points, again rounding should be to
+nearest and halfway values rounded up
 
 compliant snow decoders MUST support 1-1/8 pel luma and 1/2-1/16 pel chroma
 interpolation at least
