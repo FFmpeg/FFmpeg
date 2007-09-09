@@ -390,7 +390,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         {
                                 if     (!strcmp(name,"WM/AlbumTitle")) get_str16_nolen(pb, value_len, s->album, sizeof(s->album));
                                 else if(!strcmp(name,"WM/Genre"     )) get_str16_nolen(pb, value_len, s->genre, sizeof(s->genre));
-                                else if(!strcmp(name,"WM/Track")) {
+                                else if(!strcmp(name,"WM/Track") && s->track == 0) {
                                     char track[8];
                                     get_str16_nolen(pb, value_len, track, sizeof(track));
                                     s->track = strtol(track, NULL, 10) + 1;
@@ -405,7 +405,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         if ((value_type >= 2) && (value_type <= 5)) // boolean or DWORD or QWORD or WORD
                         {
                                 value_num= get_value(pb, value_type);
-                                if (!strcmp(name,"WM/Track"      )) s->track = value_num + 1;
+                                if (!strcmp(name,"WM/Track"      ) && s->track == 0) s->track = value_num + 1;
                                 if (!strcmp(name,"WM/TrackNumber")) s->track = value_num;
                         }
                 }
