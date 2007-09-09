@@ -16,3 +16,11 @@ FFmpeg README
 * libpostproc and libswscale are distributed under the GNU General Public
   License, see the file COPYING.GPL for details. Their compilation and use
   in FFmpeg is optional.
+
+* The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
+  are taken from libjpeg, see the top of the files for licensing details.
+
+* The file libavcodec/fdctref.c is copyrighted by the MPEG Software Simulation
+  Group with all rights reserved. It is only used to create a DCT test program
+  and not compiled into libavcodec.
+
