@@ -1656,7 +1656,7 @@ static void reset_contexts(SnowContext *s){ //FIXME better initial contexts
     int plane_index, level, orientation;
 
     for(plane_index=0; plane_index<3; plane_index++){
-        for(level=0; level<s->spatial_decomposition_count; level++){
+        for(level=0; level<MAX_DECOMPOSITIONS; level++){
             for(orientation=level ? 1:0; orientation<4; orientation++){
                 memset(s->plane[plane_index].band[level][orientation].state, MID_STATE, sizeof(s->plane[plane_index].band[level][orientation].state));
             }
@@ -3697,7 +3697,6 @@ static void init_qexp(void){
 static int common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
-    int level, orientation, plane_index;
     int i, j;
 
     s->avctx= avctx;
@@ -3745,12 +3744,6 @@ static int common_init(AVCodecContext *avctx){
     if(!qexp[0])
         init_qexp();
 
-    s->spatial_decomposition_count= 5;
-    s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
-
-    s->chroma_h_shift= 1; //FIXME XXX
-    s->chroma_v_shift= 1;
-
 //    dec += FFMAX(s->chroma_h_shift, s->chroma_v_shift);
 
     width= s->avctx->width;
@@ -3759,8 +3752,18 @@ static int common_init(AVCodecContext *avctx){
     s->spatial_idwt_buffer= av_mallocz(width*height*sizeof(IDWTELEM));
     s->spatial_dwt_buffer= av_mallocz(width*height*sizeof(DWTELEM)); //FIXME this doesnt belong here
 
-    s->mv_scale= (s->avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
-    s->block_max_depth= (s->avctx->flags & CODEC_FLAG_4MV) ? 1 : 0;
+    for(i=0; i<MAX_REF_FRAMES; i++)
+        for(j=0; j<MAX_REF_FRAMES; j++)
+            scale_mv_ref[i][j] = 256*(i+1)/(j+1);
+
+    s->avctx->get_buffer(s->avctx, &s->mconly_picture);
+
+    return 0;
+}
+
+static int common_init_after_header(AVCodecContext *avctx){
+    SnowContext *s = avctx->priv_data;
+    int plane_index, level, orientation;
 
     for(plane_index=0; plane_index<3; plane_index++){
         int w= s->avctx->width;
@@ -3772,13 +3775,6 @@ static int common_init(AVCodecContext *avctx){
         }
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
-
-        s->plane[plane_index].diag_mc= 1;
-        s->plane[plane_index].htaps= 6;
-        s->plane[plane_index].hcoeff[0]=  40;
-        s->plane[plane_index].hcoeff[1]= -10;
-        s->plane[plane_index].hcoeff[2]=   2;
-        s->plane[plane_index].fast_mc= 1;
 
 //av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
         for(level=s->spatial_decomposition_count-1; level>=0; level--){
@@ -3807,24 +3803,14 @@ static int common_init(AVCodecContext *avctx){
 
                 if(level)
                     b->parent= &s->plane[plane_index].band[level-1][orientation];
+                //FIXME avoid this realloc
+                av_freep(&b->x_coeff);
                 b->x_coeff=av_mallocz(((b->width+1) * b->height+1)*sizeof(x_and_coeff));
             }
             w= (w+1)>>1;
             h= (h+1)>>1;
         }
     }
-
-    for(i=0; i<MAX_REF_FRAMES; i++)
-        for(j=0; j<MAX_REF_FRAMES; j++)
-            scale_mv_ref[i][j] = 256*(i+1)/(j+1);
-
-/*
-    width= s->width= avctx->width;
-    height= s->height= avctx->height;
-
-    assert(width && height);
-*/
-    s->avctx->get_buffer(s->avctx, &s->mconly_picture);
 
     return 0;
 }
@@ -3931,7 +3917,26 @@ static int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    s->spatial_decomposition_count= 5;
+    s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
+
+    s->chroma_h_shift= 1; //FIXME XXX
+    s->chroma_v_shift= 1;
+
+    s->mv_scale       = (avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
+    s->block_max_depth= (avctx->flags & CODEC_FLAG_4MV ) ? 1 : 0;
+
+    for(plane_index=0; plane_index<3; plane_index++){
+        s->plane[plane_index].diag_mc= 1;
+        s->plane[plane_index].htaps= 6;
+        s->plane[plane_index].hcoeff[0]=  40;
+        s->plane[plane_index].hcoeff[1]= -10;
+        s->plane[plane_index].hcoeff[2]=   2;
+        s->plane[plane_index].fast_mc= 1;
+    }
+
     common_init(avctx);
+    common_init_after_header(avctx);
     alloc_blocks(s);
 
     s->version=0;
@@ -4414,6 +4419,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
     decode_header(s);
+    common_init_after_header(avctx);
 
     // realloc slice buffer for the case that spatial_decomposition_count changed
     slice_buffer_destroy(&s->sb);
