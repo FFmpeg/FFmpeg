@@ -4438,7 +4438,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
-    decode_header(s);
+    if(decode_header(s)<0)
+        return -1;
     common_init_after_header(avctx);
 
     // realloc slice buffer for the case that spatial_decomposition_count changed
