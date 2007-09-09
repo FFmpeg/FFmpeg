@@ -31,6 +31,7 @@
 typedef struct {
     AVFrame pic;
     int codec_frameheader;
+    int quality;
     int width, height;
     unsigned int decomp_size;
     unsigned char* decomp_buf;
@@ -104,6 +105,29 @@ static void get_quant_quality(NuvContext *c, int quality) {
     }
 }
 
+static int codec_reinit(AVCodecContext *avctx, int width, int height, int quality) {
+    NuvContext *c = avctx->priv_data;
+    width = (width + 1) & ~1;
+    height = (height + 1) & ~1;
+    if (quality >= 0)
+        get_quant_quality(c, quality);
+    if (width != c->width || height != c->height) {
+        if (avcodec_check_dimensions(avctx, height, width) < 0)
+            return 0;
+        avctx->width = c->width = width;
+        avctx->height = c->height = height;
+        c->decomp_size = c->height * c->width * 3 / 2;
+        c->decomp_buf = av_realloc(c->decomp_buf, c->decomp_size + LZO_OUTPUT_PADDING);
+        if (!c->decomp_buf) {
+            av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
+            return 0;
+        }
+        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+    } else if (quality != c->quality)
+        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+    return 1;
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         uint8_t *buf, int buf_size) {
     NuvContext *c = avctx->priv_data;
@@ -115,16 +139,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (buf_size < 12) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
-        return -1;
-    }
-
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
-    c->pic.reference = 1;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
-                          FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->get_buffer(avctx, &c->pic) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
@@ -157,14 +171,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         buf_size = c->decomp_size;
     }
     if (c->codec_frameheader) {
+        int w, h, q;
         if (buf_size < 12) {
             av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame\n");
             return -1;
         }
-        get_quant_quality(c, buf[10]);
-        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        w = AV_RL16(&buf[6]);
+        h = AV_RL16(&buf[8]);
+        q = buf[10];
+        if (!codec_reinit(avctx, w, h, q))
+            return -1;
         buf = &buf[12];
         buf_size -= 12;
+    }
+
+    if (c->pic.data[0])
+        avctx->release_buffer(avctx, &c->pic);
+    c->pic.reference = 1;
+    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
+                          FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->get_buffer(avctx, &c->pic) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return -1;
     }
 
     c->pic.pict_type = FF_I_TYPE;
@@ -210,26 +238,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 static int decode_init(AVCodecContext *avctx) {
     NuvContext *c = avctx->priv_data;
-    avctx->width = (avctx->width + 1) & ~1;
-    avctx->height = (avctx->height + 1) & ~1;
-    if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
-        return 1;
-    }
     avctx->pix_fmt = PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
+    c->decomp_buf = NULL;
+    c->quality = -1;
+    c->width = 0;
+    c->height = 0;
     c->codec_frameheader = avctx->codec_tag == MKTAG('R', 'J', 'P', 'G');
-    c->width = avctx->width;
-    c->height = avctx->height;
-    c->decomp_size = c->height * c->width * 3 / 2;
-    c->decomp_buf = av_malloc(c->decomp_size + LZO_OUTPUT_PADDING);
-    if (!c->decomp_buf) {
-        av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
-        return 1;
-    }
-    dsputil_init(&c->dsp, avctx);
     if (avctx->extradata_size)
         get_quant(avctx, c, avctx->extradata, avctx->extradata_size);
-    rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+    if (!codec_reinit(avctx, avctx->width, avctx->height, -1))
+        return 1;
+    dsputil_init(&c->dsp, avctx);
     return 0;
 }
 
