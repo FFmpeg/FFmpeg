@@ -3697,7 +3697,7 @@ static void init_qexp(void){
 static int common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
-    int level, orientation, plane_index, dec;
+    int level, orientation, plane_index;
     int i, j;
 
     s->avctx= avctx;
@@ -3745,7 +3745,7 @@ static int common_init(AVCodecContext *avctx){
     if(!qexp[0])
         init_qexp();
 
-    dec= s->spatial_decomposition_count= 5;
+    s->spatial_decomposition_count= 5;
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
 
     s->chroma_h_shift= 1; //FIXME XXX
