@@ -24,6 +24,7 @@
 typedef struct {
     int v_id;
     int a_id;
+    int rtjpg_video;
 } NUVContext;
 
 typedef enum {
@@ -173,6 +174,8 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         ctx->a_id = -1;
 
     get_codec_data(pb, vst, ast, is_mythtv);
+    ctx->rtjpg_video = vst->codec->codec_id == CODEC_ID_NUV;
+    ctx->rtjpg_video |= vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G');
     return 0;
 }
 
@@ -185,27 +188,32 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     frametype_t frametype;
     int ret, size;
     while (!url_feof(pb)) {
+        int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         ret = get_buffer(pb, hdr, HDRSIZE);
         if (ret <= 0)
             return ret ? ret : -1;
         frametype = hdr[0];
         size = PKTSIZE(AV_RL32(&hdr[8]));
         switch (frametype) {
-            case NUV_VIDEO:
             case NUV_EXTRADATA:
+                if (!ctx->rtjpg_video) {
+                    url_fskip(pb, size);
+                    break;
+                }
+            case NUV_VIDEO:
                 if (ctx->v_id < 0) {
                     av_log(s, AV_LOG_ERROR, "Video packet in file without video stream!\n");
                     url_fskip(pb, size);
                     break;
                 }
-                ret = av_new_packet(pkt, HDRSIZE + size);
+                ret = av_new_packet(pkt, copyhdrsize + size);
                 if (ret < 0)
                     return ret;
-                pkt->pos = url_ftell(pb);
+                pkt->pos = url_ftell(pb) - copyhdrsize;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
-                memcpy(pkt->data, hdr, HDRSIZE);
-                ret = get_buffer(pb, pkt->data + HDRSIZE, size);
+                memcpy(pkt->data, hdr, copyhdrsize);
+                ret = get_buffer(pb, pkt->data + copyhdrsize, size);
                 return ret;
             case NUV_AUDIO:
                 if (ctx->a_id < 0) {
