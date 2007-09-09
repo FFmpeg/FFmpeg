@@ -4405,8 +4405,8 @@ static int decode_init(AVCodecContext *avctx)
     common_init(avctx);
 
     block_size = MB_SIZE >> s->block_max_depth;
-    slice_buffer_init(&s->sb, s->plane[0].height, (block_size) + (s->spatial_decomposition_count * (s->spatial_decomposition_count + 3)) + 1, s->plane[0].width, s->spatial_idwt_buffer);
 
+    slice_buffer_init(&s->sb, s->plane[0].height, (block_size) + (s->spatial_decomposition_count * 8) + 1, s->plane[0].width, s->spatial_idwt_buffer);
     return 0;
 }
 
