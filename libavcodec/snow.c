@@ -580,12 +580,9 @@ static void slice_buffer_destroy(slice_buffer * buf)
 
     for (i = buf->data_count - 1; i >= 0; i--)
     {
-        assert(buf->data_stack[i]);
         av_freep(&buf->data_stack[i]);
     }
-    assert(buf->data_stack);
     av_freep(&buf->data_stack);
-    assert(buf->line);
     av_freep(&buf->line);
 }
 
@@ -4398,15 +4395,11 @@ static int encode_end(AVCodecContext *avctx)
 static int decode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
-    int block_size;
 
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
     common_init(avctx);
 
-    block_size = MB_SIZE >> s->block_max_depth;
-
-    slice_buffer_init(&s->sb, s->plane[0].height, block_size + s->spatial_decomposition_count * 8 + 1, s->plane[0].width, s->spatial_idwt_buffer);
     return 0;
 }
 
@@ -4422,6 +4415,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
     decode_header(s);
+
+    // realloc slice buffer for the case that spatial_decomposition_count changed
+    slice_buffer_destroy(&s->sb);
+    slice_buffer_init(&s->sb, s->plane[0].height, (MB_SIZE >> s->block_max_depth) + s->spatial_decomposition_count * 8 + 1, s->plane[0].width, s->spatial_idwt_buffer);
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];
