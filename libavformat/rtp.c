@@ -739,6 +739,7 @@ static int rtp_write_header(AVFormatContext *s1)
     s->timestamp = s->base_timestamp;
     s->ssrc = 0; /* FIXME: was random(), what should this be? */
     s->first_packet = 1;
+    s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
 
     max_packet_size = url_fget_max_packet_size(&s1->pb);
     if (max_packet_size <= 12)
@@ -762,6 +763,9 @@ static int rtp_write_header(AVFormatContext *s1)
         s->buf_ptr = s->buf;
         break;
     default:
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+        }
         s->buf_ptr = s->buf;
         break;
     }
@@ -773,15 +777,22 @@ static int rtp_write_header(AVFormatContext *s1)
 static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 {
     RTPDemuxContext *s = s1->priv_data;
+    uint32_t rtp_ts;
+
 #if defined(DEBUG)
     printf("RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
 #endif
+
+    if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) s->first_rtcp_ntp_time = ntp_time;
+    rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, AV_TIME_BASE_Q,
+                          s1->streams[0]->time_base) + s->base_timestamp;
     put_byte(&s1->pb, (RTP_VERSION << 6));
     put_byte(&s1->pb, 200);
     put_be16(&s1->pb, 6); /* length in words - 1 */
     put_be32(&s1->pb, s->ssrc);
-    put_be64(&s1->pb, ntp_time);
-    put_be32(&s1->pb, s->timestamp);
+    put_be32(&s1->pb, ntp_time / 1000000);
+    put_be32(&s1->pb, ((ntp_time % 1000000) << 32) / 1000000);
+    put_be32(&s1->pb, rtp_ts);
     put_be32(&s1->pb, s->packet_count);
     put_be32(&s1->pb, s->octet_count);
     put_flush_packet(&s1->pb);
@@ -956,7 +967,6 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     RTPDemuxContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
     int rtcp_bytes;
-    int64_t ntp_time;
     int size= pkt->size;
     uint8_t *buf1= pkt->data;
 
@@ -968,10 +978,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
     if (s->first_packet || rtcp_bytes >= 28) {
-        /* compute NTP time */
-        /* XXX: 90 kHz timestamp hardcoded */
-        ntp_time = (pkt->pts << 28) / 5625;
-        rtcp_send_sr(s1, ntp_time);
+        rtcp_send_sr(s1, av_gettime());
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
     }
