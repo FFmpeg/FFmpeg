@@ -495,10 +495,10 @@ try the MV length as context for coding the residual coefficients
 use extradata for stuff which is in the keyframes now?
 the MV median predictor is patented IIRC
 implement per picture halfpel interpolation
-compare the 6 tap and 8 tap hpel filters (psnr/bitrate and subjective quality)
 try different range coder state transition tables for different contexts
 
 Not Important:
+compare the 6 tap and 8 tap hpel filters (psnr/bitrate and subjective quality)
 spatial_scalability b vs u (!= 0 breaks syntax anyway so we can add a u later)
 
 
