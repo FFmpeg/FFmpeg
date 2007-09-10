@@ -137,7 +137,7 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
 
     switch (c->codec_id) {
         case CODEC_ID_MPEG4:
-            if (c->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            if (c->extradata_size) {
                 config = extradata2config(c->extradata, c->extradata_size);
             }
             av_strlcatf(buff, size, "a=rtpmap:%d MP4V-ES/90000\r\n"
@@ -146,7 +146,7 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
                                      payload_type, config ? config : "");
             break;
         case CODEC_ID_AAC:
-            if (c->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            if (c->extradata_size) {
                 config = extradata2config(c->extradata, c->extradata_size);
             } else {
                 /* FIXME: maybe we can forge config information based on the
