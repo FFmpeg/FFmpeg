@@ -28,7 +28,6 @@
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
 {
     RTPDemuxContext *s = s1->priv_data;
-    AVStream *st = s1->streams[0];
     int len, h, max_packet_size;
     uint8_t *q;
     int begin_of_slice, end_of_slice, frame_type, temporal_reference;
@@ -105,8 +104,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
         q += len;
 
         /* 90 KHz time stamp */
-        s->timestamp = s->base_timestamp +
-            av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
+        s->timestamp = s->cur_timestamp;
         ff_rtp_send_data(s1, s->buf, q - s->buf, (len == size));
 
         buf1 += len;
@@ -114,7 +112,6 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
         begin_of_slice = end_of_slice;
         end_of_slice = 0;
     }
-    s->cur_timestamp++;
 }
 
 

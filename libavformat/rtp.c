@@ -737,6 +737,7 @@ static int rtp_write_header(AVFormatContext *s1)
 // following 2 FIXMies could be set based on the current time, theres normaly no info leak, as rtp will likely be transmitted immedeatly
     s->base_timestamp = 0; /* FIXME: was random(), what should this be? */
     s->timestamp = s->base_timestamp;
+    s->cur_timestamp = 0;
     s->ssrc = 0; /* FIXME: was random(), what should this be? */
     s->first_packet = 1;
     s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
@@ -746,14 +747,13 @@ static int rtp_write_header(AVFormatContext *s1)
         return AVERROR(EIO);
     s->max_payload_size = max_packet_size - 12;
 
+    av_set_pts_info(st, 32, 1, 90000);
     switch(st->codec->codec_id) {
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
         s->buf_ptr = s->buf + 4;
-        s->cur_timestamp = 0;
         break;
     case CODEC_ID_MPEG1VIDEO:
-        s->cur_timestamp = 0;
         break;
     case CODEC_ID_MPEG2TS:
         n = s->max_payload_size / TS_PACKET_SIZE;
@@ -835,24 +835,19 @@ static void rtp_send_samples(AVFormatContext *s1,
     /* not needed, but who nows */
     if ((size % sample_size) != 0)
         av_abort();
+    n = 0;
     while (size > 0) {
-        len = (max_packet_size - (s->buf_ptr - s->buf));
-        if (len > size)
-            len = size;
+        s->buf_ptr = s->buf;
+        len = FFMIN(max_packet_size, size);
 
         /* copy data */
         memcpy(s->buf_ptr, buf1, len);
         s->buf_ptr += len;
         buf1 += len;
         size -= len;
-        n = (s->buf_ptr - s->buf);
-        /* if buffer full, then send it */
-        if (n >= max_packet_size) {
-            ff_rtp_send_data(s1, s->buf, n, 0);
-            s->buf_ptr = s->buf;
-            /* update timestamp */
-            s->timestamp += n / sample_size;
-        }
+        s->timestamp = s->cur_timestamp + n / sample_size;
+        ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
+        n += (s->buf_ptr - s->buf);
     }
 }
 
@@ -862,7 +857,6 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
                                const uint8_t *buf1, int size)
 {
     RTPDemuxContext *s = s1->priv_data;
-    AVStream *st = s1->streams[0];
     int len, count, max_packet_size;
 
     max_packet_size = s->max_payload_size;
@@ -873,10 +867,10 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
         if (len > 4) {
             ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
             s->buf_ptr = s->buf + 4;
-            /* 90 KHz time stamp */
-            s->timestamp = s->base_timestamp +
-                (s->cur_timestamp * 90000LL) / st->codec->sample_rate;
         }
+    }
+    if (s->buf_ptr == s->buf + 4) {
+        s->timestamp = s->cur_timestamp;
     }
 
     /* add the packet */
@@ -909,14 +903,12 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
         memcpy(s->buf_ptr, buf1, size);
         s->buf_ptr += size;
     }
-    s->cur_timestamp += st->codec->frame_size;
 }
 
 static void rtp_send_raw(AVFormatContext *s1,
                          const uint8_t *buf1, int size)
 {
     RTPDemuxContext *s = s1->priv_data;
-    AVStream *st = s1->streams[0];
     int len, max_packet_size;
 
     max_packet_size = s->max_payload_size;
@@ -926,15 +918,12 @@ static void rtp_send_raw(AVFormatContext *s1,
         if (len > size)
             len = size;
 
-        /* 90 KHz time stamp */
-        s->timestamp = s->base_timestamp +
-            av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
+        s->timestamp = s->cur_timestamp;
         ff_rtp_send_data(s1, buf1, len, (len == size));
 
         buf1 += len;
         size -= len;
     }
-    s->cur_timestamp++;
 }
 
 /* NOTE: size is assumed to be an integer multiple of TS_PACKET_SIZE */
@@ -982,6 +971,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
     }
+    s->cur_timestamp = s->base_timestamp + pkt->pts;
 
     switch(st->codec->codec_id) {
     case CODEC_ID_PCM_MULAW:
