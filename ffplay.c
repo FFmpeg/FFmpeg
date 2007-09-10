@@ -1974,7 +1974,7 @@ static int decode_thread(void *arg)
                 av_read_play(ic);
         }
 #ifdef CONFIG_RTSP_DEMUXER
-        if (is->paused && ic->iformat == &rtsp_demuxer) {
+        if (is->paused && !strcmp(ic->iformat->name, "rtsp")) {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
             SDL_Delay(10);

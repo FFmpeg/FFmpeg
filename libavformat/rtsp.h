@@ -84,7 +84,6 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf);
 extern int rtsp_default_protocols;
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
-extern AVInputFormat rtsp_demuxer;
 
 int rtsp_pause(AVFormatContext *s);
 int rtsp_resume(AVFormatContext *s);
