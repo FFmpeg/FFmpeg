@@ -54,8 +54,6 @@ void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd);
  */
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
 
-extern URLProtocol rtp_protocol;
-
 #define RTP_PT_PRIVATE 96
 #define RTP_VERSION 2
 #define RTP_MAX_SDES 256   /**< maximum text length for SDES */

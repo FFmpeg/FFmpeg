@@ -185,6 +185,13 @@ extern AVOutputFormat voc_muxer;
 extern AVOutputFormat wav_muxer;
 extern AVOutputFormat yuv4mpegpipe_muxer;
 
+extern URLProtocol file_protocol;
+extern URLProtocol http_protocol;
+extern URLProtocol pipe_protocol;
+extern URLProtocol rtp_protocol;
+extern URLProtocol tcp_protocol;
+extern URLProtocol udp_protocol;
+
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags);
