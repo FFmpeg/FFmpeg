@@ -489,13 +489,12 @@ TODO:
 =====
 Important:
 finetune initial contexts
-spatial_decomposition_count per frame?
 flip wavelet?
 try to use the wavelet transformed predicted image (motion compensated image) as context for coding the residual coefficients
 try the MV length as context for coding the residual coefficients
 use extradata for stuff which is in the keyframes now?
 the MV median predictor is patented IIRC
-change MC so per picture halfpel interpolation can be done and finish the implementation of it
+implement per picture halfpel interpolation
 compare the 6 tap and 8 tap hpel filters (psnr/bitrate and subjective quality)
 try different range coder state transition tables for different contexts
 
