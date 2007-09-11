@@ -1540,7 +1540,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             samplesInChunk++;
         }
         if(samplesInChunk > 1){
-            av_log(s, AV_LOG_ERROR, "fatal error, input is not a single packet, inplement a AVParser for it\n");
+            av_log(s, AV_LOG_ERROR, "fatal error, input is not a single packet, implement a AVParser for it\n");
             return -1;
         }
     } else if (trk->sampleSize)
