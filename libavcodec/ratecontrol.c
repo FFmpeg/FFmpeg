@@ -699,8 +699,23 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         rce= &rcc->entry[picture_number];
         wanted_bits= rce->expected_bits;
     }else{
+        Picture *dts_pic;
         rce= &local_rce;
-        wanted_bits= (uint64_t)(s->bit_rate*(double)picture_number/fps);
+
+        //FIXME add a dts field to AVFrame and ensure its set and use it here instead of reordering
+        //but the reordering is simpler for now until h.264 b pyramid must be handeld
+        if(s->pict_type == B_TYPE || s->low_delay)
+            dts_pic= s->current_picture_ptr;
+        else
+            dts_pic= s->last_picture_ptr;
+
+//if(dts_pic)
+//            av_log(NULL, AV_LOG_ERROR, "%Ld %Ld %Ld %d\n", s->current_picture_ptr->pts, s->user_specified_pts, dts_pic->pts, picture_number);
+
+        if(!dts_pic || dts_pic->pts == AV_NOPTS_VALUE)
+            wanted_bits= (uint64_t)(s->bit_rate*(double)picture_number/fps);
+        else
+            wanted_bits= (uint64_t)(s->bit_rate*(double)dts_pic->pts/fps);
     }
 
     diff= s->total_bits - wanted_bits;

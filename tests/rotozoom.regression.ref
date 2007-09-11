@@ -7,10 +7,10 @@ stddev:  4.95 PSNR:34.21 bytes:7602176
 198667 ./tests/data/a-mpeg2.mpg
 b7cae8a1f751b821cddcbe4d5dbc518c *./tests/data/out.yuv
 stddev:  4.96 PSNR:34.19 bytes:7602176
-4dd6e884eeccfb5c0d9b5542349e3d62 *./tests/data/a-mpeg2ivlc-qprd.mpg
-249692 ./tests/data/a-mpeg2ivlc-qprd.mpg
-99214c2a75ece2a0bf4f5afebc0f8ed7 *./tests/data/out.yuv
-stddev:  4.41 PSNR:35.22 bytes:7602176
+9e7542fb0dfea5ffa9de6bfee3d26fdb *./tests/data/a-mpeg2ivlc-qprd.mpg
+248055 ./tests/data/a-mpeg2ivlc-qprd.mpg
+610ec1a25a3f823bf083d8bf20348ebb *./tests/data/out.yuv
+stddev:  4.44 PSNR:35.16 bytes:7602176
 f979bcca866e6e4cad5dc6cb06e56cfb *./tests/data/a-mpeg2.mpg
 198041 ./tests/data/a-mpeg2.mpg
 f6d9bf24ff8676a7f6076c05cd2c81a3 *./tests/data/out.yuv
@@ -67,30 +67,30 @@ a1323da0c8b437cd6961f8c90451880b *./tests/data/a-huffyuv.avi
 6455232 ./tests/data/a-huffyuv.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-968ca132d8cf46f84e657abcf8473b7c *./tests/data/a-mpeg4-rc.avi
-227934 ./tests/data/a-mpeg4-rc.avi
-895773fe8250c806a0d1592a6dd12401 *./tests/data/out.yuv
-stddev:  4.24 PSNR:35.56 bytes:7602176
+b517389e425d3065ab26ef4cc0658237 *./tests/data/a-mpeg4-rc.avi
+227762 ./tests/data/a-mpeg4-rc.avi
+cc947bbac9187bf08d3e2d425556aaa5 *./tests/data/out.yuv
+stddev:  4.26 PSNR:35.53 bytes:7602176
 9001cf571eb7f26fa5592bdec6538583 *./tests/data/a-mpeg4-adv.avi
 173590 ./tests/data/a-mpeg4-adv.avi
 699edf05648fdc42196b7bebef9be269 *./tests/data/out.yuv
 stddev:  4.84 PSNR:34.41 bytes:7602176
-1e12bb209dae0ab4b64265b0a4262257 *./tests/data/a-mpeg4-qprd.avi
-234048 ./tests/data/a-mpeg4-qprd.avi
-1ec355ffb30d2adf302a550cf5812636 *./tests/data/out.yuv
-stddev:  4.23 PSNR:35.58 bytes:7602176
-d581d6f4a331325905b8ffb05cd3bfd3 *./tests/data/a-mpeg4-adap.avi
-204284 ./tests/data/a-mpeg4-adap.avi
-c2c7f1c7844ab92d34247ccb70198c61 *./tests/data/out.yuv
-stddev:  4.04 PSNR:35.99 bytes:7602176
+23a44888361723e233e25147e42aa8d8 *./tests/data/a-mpeg4-qprd.avi
+233288 ./tests/data/a-mpeg4-qprd.avi
+4c8bebe5ceec416d84d99f3afd5fac19 *./tests/data/out.yuv
+stddev:  4.26 PSNR:35.52 bytes:7602176
+3921cc04f007f2ba73ca8a8ccbaf42eb *./tests/data/a-mpeg4-adap.avi
+202438 ./tests/data/a-mpeg4-adap.avi
+82379c0cb726088fc4de7546ae696fa8 *./tests/data/out.yuv
+stddev:  4.05 PSNR:35.95 bytes:7602176
 a5150067914ee1dee50f8fc8dcaee841 *./tests/data/a-mpeg4-Q.avi
 165802 ./tests/data/a-mpeg4-Q.avi
 4dcc71ad79bee90777cf5299044be362 *./tests/data/out.yuv
 stddev:  4.00 PSNR:36.08 bytes:7602176
-8cd8940d7451925784536fe9b2f2a5e3 *./tests/data/a-mpeg4-thread.avi
-254260 ./tests/data/a-mpeg4-thread.avi
-d160a4224ea1af66c85178912f8d3a7c *./tests/data/out.yuv
-stddev:  4.03 PSNR:36.01 bytes:7602176
+b4c8104d9fd36db9ea5c74f231107d70 *./tests/data/a-mpeg4-thread.avi
+251520 ./tests/data/a-mpeg4-thread.avi
+dbe9a74a4ca34f263900002c333eb342 *./tests/data/out.yuv
+stddev:  4.07 PSNR:35.91 bytes:7602176
 5b5b88ce610114e346a5df4f46995bb9 *./tests/data/a-mpeg4-PSP.mp4
 325006 ./tests/data/a-mpeg4-PSP.mp4
 90e65096aa9ebafa3fe3f44a5a47cdc4 *./tests/data/a-error-mpeg4-adv.avi
