@@ -112,5 +112,8 @@ extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
 int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size); ///< from rtsp.c, but used by rtp dynamic protocol handlers.
 
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
+
+void av_register_rtp_dynamic_payload_handlers(void);
+
 #endif /* RTP_INTERNAL_H */
 

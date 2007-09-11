@@ -28,7 +28,7 @@
  */
 
 #include "avformat.h"
-#include "allformats.h"
+#include "raw.h"
 #include "riff.h"
 
 /* if we don't know the size in advance */

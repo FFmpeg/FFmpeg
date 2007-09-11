@@ -195,13 +195,4 @@ extern URLProtocol rtp_protocol;
 extern URLProtocol tcp_protocol;
 extern URLProtocol udp_protocol;
 
-/* raw.c */
-int pcm_read_seek(AVFormatContext *s,
-                  int stream_index, int64_t timestamp, int flags);
-
-/* rtsp.c */
-int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
-/* rtp.c */
-void av_register_rtp_dynamic_payload_handlers(void);
-
 #endif

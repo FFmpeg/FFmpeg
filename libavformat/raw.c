@@ -21,6 +21,7 @@
  */
 #include "avformat.h"
 #include "ac3_parser.h"
+#include "raw.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */

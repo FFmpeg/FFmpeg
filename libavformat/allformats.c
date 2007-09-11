@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "allformats.h"
+#include "rtp_internal.h"
 
 #define REGISTER_MUXER(X,x) \
           if(ENABLE_##X##_MUXER)   av_register_output_format(&x##_muxer)

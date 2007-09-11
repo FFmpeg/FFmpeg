@@ -24,7 +24,7 @@
  */
 
 #include "avformat.h"
-#include "allformats.h"
+#include "raw.h"
 #include "riff.h"
 #include "bswap.h"
 
