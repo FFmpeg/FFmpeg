@@ -96,9 +96,9 @@ prediction:
             block(0)
 
 block(level):
+    mvx_diff=mvy_diff=y_diff=cb_diff=cr_diff=0
     if(keyframe){
         intra=1
-        y_diff=cb_diff=cr_diff=0
     }else{
         if(level!=max_block_depth){
             s_context= 2*left->level + 2*top->level + topleft->level + topright->level
@@ -333,9 +333,9 @@ the luma and chroma values of the left block are used as predictors
 
 the used luma and chroma is the sum of the predictor and y_diff, cb_diff, cr_diff
 to reverse this in the decoder apply the following:
-block[y][x].dc[0] += block[y][x-1].dc[0];
-block[y][x].dc[1] += block[y][x-1].dc[1];
-block[y][x].dc[2] += block[y][x-1].dc[2];
+block[y][x].dc[0] = block[y][x-1].dc[0] +  y_diff;
+block[y][x].dc[1] = block[y][x-1].dc[1] + cb_diff;
+block[y][x].dc[2] = block[y][x-1].dc[2] + cr_diff;
 block[*][-1].dc[*]= 128;
 
 
