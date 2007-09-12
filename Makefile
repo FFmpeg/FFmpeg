@@ -200,12 +200,14 @@ uninstall-libs:
 	$(MAKE) -C libavcodec  uninstall-libs
 	$(MAKE) -C libavformat uninstall-libs
 	$(MAKE) -C libpostproc uninstall-libs
+	$(MAKE) -C libswscale  uninstall-libs
 
 uninstall-headers:
 	$(MAKE) -C libavutil   uninstall-headers
 	$(MAKE) -C libavcodec  uninstall-headers
 	$(MAKE) -C libavformat uninstall-headers
 	$(MAKE) -C libpostproc uninstall-headers
+	$(MAKE) -C libswscale  uninstall-headers
 	-rmdir "$(INCDIR)"
 
 depend dep: .depend .vhookdep
