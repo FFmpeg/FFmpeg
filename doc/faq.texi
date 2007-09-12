@@ -151,7 +151,7 @@ Choose a different codec with the -vcodec command line option.
 @section ffmpeg does not work; What is wrong?
 
 Try a 'make distclean' in the ffmpeg source directory before the build. If this does not help see
-(@url{http://ffmpeg.org/bugreports.php}).
+(@url{http://ffmpeg.org/bugreports.html}).
 
 @section How do I encode XviD or DivX video with ffmpeg?
 
@@ -352,7 +352,7 @@ it implemented is to undertake the task yourself.
 
 Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
 examine the source code for one of the many open source projects that
-already incorporate ffmpeg at (@url{projects.php}).
+already incorporate ffmpeg at (@url{projects.html}).
 
 @section Can you support my C compiler XXX?
 
