@@ -1060,6 +1060,9 @@ static int mov_read_udta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         uint32_t tag      = get_le32(pb);
         uint64_t next     = url_ftell(pb) + tag_size - 8;
 
+        if (next > end) // stop if tag_size is wrong
+            break;
+
         switch (tag) {
         case MKTAG(0xa9,'n','a','m'):
             mov_parse_udta_string(pb, c->fc->title,     sizeof(c->fc->title));
