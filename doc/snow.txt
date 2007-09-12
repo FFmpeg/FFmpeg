@@ -129,6 +129,20 @@ block(level):
 
 
 residual:
+    residual2(luma)
+    residual2(chroma_cr)
+    residual2(chroma_cb)
+
+residual2:
+    for(level=0; level<spatial_decomposition_count; level++){
+        if(level==0)
+            subband(LL, 0)
+        subband(HL, level)
+        subband(LH, level)
+        subband(HH, level)
+    }
+
+subband:
     FIXME
 
 
