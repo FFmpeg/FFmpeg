@@ -447,18 +447,18 @@ see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
 see @url{http://svn.mplayerhq.hu/michael/trunk/docs/}
 
-@section how do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
+@section How do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
 
 Even if peculiar since it is network oriented, RTP is a container like any
 other. You have to @emph{demux} RTP before feeding the payload to libavcodec.
 In this specific case please look at RFC 4629 to see how it should be done.
 
-@section AVStream.r_frame_rate is wrong, its much larger than the frame rate
+@section AVStream.r_frame_rate is wrong, it is much larger than the framerate.
 
 r_frame_rate is NOT the average framerate, it is the smallest framerate
-with which all timestamps can be accurately represented, so no it is not
-wrong if its larger than the average!
-for example if you have 25 and 30 fps content mixed then r_frame_rate
+that can accurately represent all timestamps. So no, it is not
+wrong if it is larger than the average!
+For example, if you have mixed 25 and 30 fps content, then r_frame_rate
 will be 150.
 
 @bye
