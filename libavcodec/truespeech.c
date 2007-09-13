@@ -333,15 +333,17 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 {
     TSContext *c = avctx->priv_data;
 
-    int i;
+    int i, j;
     short *samples = data;
     int consumed = 0;
     int16_t out_buf[240];
+    int iterations;
 
     if (!buf_size)
         return 0;
 
-    while (consumed < buf_size) {
+    iterations = FFMIN(buf_size / 32, *data_size / 480);
+    for(j = 0; j < iterations; j++) {
         truespeech_read_frame(c, buf + consumed);
         consumed += 32;
 
@@ -366,7 +368,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 
     *data_size = consumed * 15;
 
-    return buf_size;
+    return consumed;
 }
 
 AVCodec truespeech_decoder = {
