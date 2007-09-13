@@ -94,6 +94,7 @@ version <next>
 - NUT muxer (since r10052)
 - Matroska muxer
 - Slice-based parallel H.264 decoding
+- Monkey's Audio demuxer and decoder
 
 version 0.4.9-pre1:
 

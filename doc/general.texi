@@ -116,6 +116,7 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used in some games from Bethesda Softworks.
 @item CRYO APC @tab    @tab X
 @tab Audio format used in some games by CRYO Interactive Entertainment.
+@item Monkey's Audio @tab    @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -311,6 +312,7 @@ following image formats are supported:
 @tab Only SV7 is supported
 @item DT$ Coherent Audio     @tab      @tab X
 @item ATRAC 3                @tab      @tab X
+@item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

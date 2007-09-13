@@ -79,6 +79,7 @@ extern AVCodec zmbv_encoder;
 extern AVCodec aasc_decoder;
 extern AVCodec ac3_decoder;
 extern AVCodec alac_decoder;
+extern AVCodec ape_decoder;
 extern AVCodec asv1_decoder;
 extern AVCodec asv2_decoder;
 extern AVCodec atrac3_decoder;

@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(43<<8)+0)
-#define LIBAVCODEC_VERSION      51.43.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(44<<8)+0)
+#define LIBAVCODEC_VERSION      51.44.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -260,6 +260,7 @@ enum CodecID {
     CODEC_ID_GSM_MS, /* as found in WAV */
     CODEC_ID_ATRAC3,
     CODEC_ID_VOXWARE,
+    CODEC_ID_APE,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
