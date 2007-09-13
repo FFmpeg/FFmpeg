@@ -608,7 +608,7 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return AVERROR(EIO);
     }
     if (res < 0) {
-        return AVERROR(EIO);
+        return res;
     }
 
     if (s1->streams[0]->codec->coded_frame) {
