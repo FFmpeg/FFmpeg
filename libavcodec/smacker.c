@@ -590,7 +590,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     }
     stereo = get_bits1(&gb);
     bits = get_bits1(&gb);
-    if ((unp_size << !bits) > *data_size) {
+    if (unp_size & 0xC0000000 || (unp_size << !bits) > *data_size) {
         av_log(avctx, AV_LOG_ERROR, "Frame is too large to fit in buffer\n");
         return -1;
     }
