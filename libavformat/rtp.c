@@ -28,6 +28,7 @@
 #include "rtp_internal.h"
 #include "rtp_h264.h"
 #include "rtp_mpv.h"
+#include "rtp_aac.h"
 
 //#define DEBUG
 
@@ -762,6 +763,8 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case CODEC_ID_AAC:
+        s->read_buf_index = 0;
     default:
         if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             av_set_pts_info(st, 32, 1, st->codec->sample_rate);
@@ -992,6 +995,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case CODEC_ID_MPEG1VIDEO:
         ff_rtp_send_mpegvideo(s1, buf1, size);
+        break;
+    case CODEC_ID_AAC:
+        ff_rtp_send_aac(s1, buf1, size);
         break;
     case CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, buf1, size);

@@ -1,0 +1,72 @@
+/*
+ * copyright (c) 2007 Luca Abeni
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "avformat.h"
+#include "rtp_aac.h"
+#include "rtp_internal.h"
+
+#define MAX_FRAMES_PER_PACKET 5
+#define MAX_AU_HEADERS_SIZE (2 + 2 * MAX_FRAMES_PER_PACKET)
+
+void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
+{
+    RTPDemuxContext *s = s1->priv_data;
+    int len, max_packet_size;
+    uint8_t *p;
+
+    /* skip ADTS header, if present */
+    if ((s1->streams[0]->codec->extradata_size) == 0) {
+        size -= 7;
+        buff += 7;
+    }
+    max_packet_size = s->max_payload_size - MAX_AU_HEADERS_SIZE;
+
+    /* test if the packet must be sent */
+    len = (s->buf_ptr - s->buf);
+    if ((s->read_buf_index == MAX_FRAMES_PER_PACKET) || (len && (len + size) > max_packet_size)) {
+        int au_size = s->read_buf_index * 2;
+
+        p = s->buf + MAX_AU_HEADERS_SIZE - au_size - 2;
+        if (p != s->buf) {
+            memmove(p + 2, s->buf + 2, au_size);
+        }
+        /* Write the AU header size */
+        p[0] = ((au_size * 8) & 0xFF) >> 8;
+        p[1] = (au_size * 8) & 0xFF;
+
+        ff_rtp_send_data(s1, p, s->buf_ptr - p, 1);
+
+        s->read_buf_index = 0;
+    }
+    if (s->read_buf_index == 0) {
+        s->buf_ptr = s->buf + MAX_AU_HEADERS_SIZE;
+        s->timestamp = s->cur_timestamp;
+    }
+
+    if (size < max_packet_size) {
+        p = s->buf + s->read_buf_index++ * 2 + 2;
+        *p++ = size >> 5;
+        *p = (size & 0x1F) << 3;
+        memcpy(s->buf_ptr, buff, size);
+        s->buf_ptr += size;
+    } else {
+        av_log(s1, AV_LOG_ERROR, "Unsupported!\n");
+    }
+}
