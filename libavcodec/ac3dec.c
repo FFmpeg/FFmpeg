@@ -518,7 +518,7 @@ static int get_transform_coeffs_ch(AC3DecodeContext *ctx, int ch_index, mant_gro
         tbap = bap[i];
         switch (tbap) {
             case 0:
-                coeffs[i] = ((av_random(&ctx->dith_state) & 0xFFFF) * LEVEL_MINUS_3DB) / 32768.0f;
+                coeffs[i] = ((av_random(&ctx->dith_state) & 0xFFFF) / 65535.0f) - 0.5f;
                 break;
 
             case 1:
