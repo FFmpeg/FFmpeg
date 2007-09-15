@@ -342,6 +342,8 @@ static int vop_dquant_decoding(VC1Context *v)
                 break;
             case DQPROFILE_ALL_MBS:
                 v->dqbilevel = get_bits1(gb);
+                if(!v->dqbilevel)
+                    v->halfpq = 0;
             default: break; //Forbidden ?
             }
             if (v->dqbilevel || v->dqprofile != DQPROFILE_ALL_MBS)
