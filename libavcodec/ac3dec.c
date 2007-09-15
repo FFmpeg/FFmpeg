@@ -1120,6 +1120,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     avctx->sample_rate = ctx->sampling_rate;
     avctx->bit_rate = ctx->bit_rate;
 
+    /* check that reported frame size fits in input buffer */
+    if(ctx->frame_size > buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
+        return -1;
+    }
+
     /* channel config */
     ctx->out_channels = ctx->nchans;
     if (avctx->channels == 0) {
