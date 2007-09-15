@@ -835,6 +835,7 @@ ranlib="ranlib"
 make="make"
 strip="strip"
 asmalign_pot="unknown"
+ln_s="ln -sf"
 
 # machine
 arch=`uname -m`
@@ -1219,6 +1220,7 @@ cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
+ln_s="${cross_prefix}${ln_s}"
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
@@ -1879,6 +1881,7 @@ echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
+echo "LN_S=$ln_s" >> config.mak
 if enabled dostrip; then
     echo "STRIP=$strip" >> config.mak
 else
@@ -2022,7 +2025,7 @@ if enabled source_path_used; then
             mkdir -p $dir
     done
     for f in $FILES ; do
-        ln -sf "$source_path/$f" $f
+        $ln_s "$source_path/$f" $f
     done
 fi
 
