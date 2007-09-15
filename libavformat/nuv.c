@@ -85,6 +85,8 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                     vst->codec->codec_tag = get_le32(pb);
                     vst->codec->codec_id =
                         codec_get_id(codec_bmp_tags, vst->codec->codec_tag);
+                    if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
+                        vst->codec->codec_id = CODEC_ID_NUV;
                 } else
                     url_fskip(pb, 4);
 
@@ -174,7 +176,6 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     get_codec_data(pb, vst, ast, is_mythtv);
     ctx->rtjpg_video = vst->codec->codec_id == CODEC_ID_NUV;
-    ctx->rtjpg_video |= vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G');
     return 0;
 }
 
