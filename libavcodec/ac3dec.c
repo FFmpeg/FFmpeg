@@ -947,8 +947,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     /* bit allocation information */
     if (get_bits1(gb)) {
-        ctx->bit_alloc_params.sdecay = ff_sdecaytab[get_bits(gb, 2)];
-        ctx->bit_alloc_params.fdecay = ff_fdecaytab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.sdecay = ff_sdecaytab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
+        ctx->bit_alloc_params.fdecay = ff_fdecaytab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
         ctx->bit_alloc_params.sgain  = ff_sgaintab[get_bits(gb, 2)];
         ctx->bit_alloc_params.dbknee = ff_dbkneetab[get_bits(gb, 2)];
         ctx->bit_alloc_params.floor  = ff_floortab[get_bits(gb, 3)];
