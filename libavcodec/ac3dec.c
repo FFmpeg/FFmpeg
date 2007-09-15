@@ -42,7 +42,7 @@
  * Table of bin locations for rematrixing bands
  * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
  */
-static const uint8_t rematrix_band_tbl[5] = { 13, 25, 37, 61, 253 };
+static const uint8_t rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };
 
 /**
  * table for exponent to scale_factor mapping
@@ -51,7 +51,7 @@ static const uint8_t rematrix_band_tbl[5] = { 13, 25, 37, 61, 253 };
 static float scale_factors[25];
 
 /** table for grouping exponents */
-static uint8_t exp_ungroup_tbl[128][3];
+static uint8_t exp_ungroup_tab[128][3];
 
 
 /** tables for ungrouping mantissas */
@@ -71,10 +71,10 @@ static const uint8_t qntztab[16] = {
 };
 
 /** dynamic range table. converts codes to scale factors. */
-static float dynrng_tbl[256];
+static float dynrng_tab[256];
 
 /** dialogue normalization table */
-static float dialnorm_tbl[32];
+static float dialnorm_tab[32];
 
 /** Adjustments in dB gain */
 #define LEVEL_MINUS_3DB         0.7071067811865476
@@ -273,16 +273,16 @@ static void ac3_tables_init(void)
        reference: Section 7.7.1 Dynamic Range Control */
     for(i=0; i<256; i++) {
         int v = (i >> 5) - ((i >> 7) << 3) - 5;
-        dynrng_tbl[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
+        dynrng_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
 
     /* generate dialogue normalization table
        references: Section 5.4.2.8 dialnorm
                    Section 7.6 Dialogue Normalization */
     for(i=1; i<32; i++) {
-        dialnorm_tbl[i] = expf((i-31) * M_LN10 / 20.0f);
+        dialnorm_tab[i] = expf((i-31) * M_LN10 / 20.0f);
     }
-    dialnorm_tbl[0] = dialnorm_tbl[31];
+    dialnorm_tab[0] = dialnorm_tab[31];
 
     /* generate scale factors for exponents and asymmetrical dequantization
        reference: Section 7.3.2 Expansion of Mantissas for Asymmetric Quantization */
@@ -292,9 +292,9 @@ static void ac3_tables_init(void)
     /* generate exponent tables
        reference: Section 7.1.3 Exponent Decoding */
     for(i=0; i<128; i++) {
-        exp_ungroup_tbl[i][0] =  i / 25;
-        exp_ungroup_tbl[i][1] = (i % 25) / 5;
-        exp_ungroup_tbl[i][2] = (i % 25) % 5;
+        exp_ungroup_tab[i][0] =  i / 25;
+        exp_ungroup_tab[i][1] = (i % 25) / 5;
+        exp_ungroup_tab[i][2] = (i % 25) % 5;
     }
 }
 
@@ -382,7 +382,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(ctx->acmod);
     do {
-        ctx->dialnorm[i] = dialnorm_tbl[get_bits(gb, 5)]; // dialogue normalization
+        ctx->dialnorm[i] = dialnorm_tab[get_bits(gb, 5)]; // dialogue normalization
         if (get_bits1(gb))
             skip_bits(gb, 8); //skip compression
         if (get_bits1(gb))
@@ -444,9 +444,9 @@ static void decode_exponents(GetBitContext *gb, int expstr, int ngrps,
     grpsize = expstr + (expstr == EXP_D45);
     for(grp=0,i=0; grp<ngrps; grp++) {
         expacc = get_bits(gb, 7);
-        dexp[i++] = exp_ungroup_tbl[expacc][0];
-        dexp[i++] = exp_ungroup_tbl[expacc][1];
-        dexp[i++] = exp_ungroup_tbl[expacc][2];
+        dexp[i++] = exp_ungroup_tab[expacc][0];
+        dexp[i++] = exp_ungroup_tab[expacc][1];
+        dexp[i++] = exp_ungroup_tab[expacc][2];
     }
 
     /* convert to absolute exps and expand groups */
@@ -661,8 +661,8 @@ static void do_rematrixing(AC3DecodeContext *ctx)
 
     for(bnd=0; bnd<ctx->nrematbnd; bnd++) {
         if(ctx->rematflg[bnd]) {
-            bndend = FFMIN(end, rematrix_band_tbl[bnd+1]);
-            for(i=rematrix_band_tbl[bnd]; i<bndend; i++) {
+            bndend = FFMIN(end, rematrix_band_tab[bnd+1]);
+            for(i=rematrix_band_tab[bnd]; i<bndend; i++) {
                 tmp0 = ctx->transform_coeffs[1][i];
                 tmp1 = ctx->transform_coeffs[2][i];
                 ctx->transform_coeffs[1][i] = tmp0 + tmp1;
@@ -804,7 +804,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     i = !(ctx->acmod);
     do {
         if(get_bits1(gb)) {
-            ctx->dynrng[i] = dynrng_tbl[get_bits(gb, 8)];
+            ctx->dynrng[i] = dynrng_tab[get_bits(gb, 8)];
         } else if(blk == 0) {
             ctx->dynrng[i] = 1.0f;
         }
