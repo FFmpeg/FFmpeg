@@ -1089,16 +1089,32 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
 {
     AC3DecodeContext *ctx = (AC3DecodeContext *)avctx->priv_data;
     int16_t *out_samples = (int16_t *)data;
-    int i, blk, ch;
+    int i, blk, ch, err;
 
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     init_get_bits(&ctx->gb, buf, buf_size * 8);
 
     /* parse the syncinfo */
-    if (ac3_parse_header(ctx)) {
-        av_log(avctx, AV_LOG_ERROR, "\n");
-        *data_size = 0;
-        return buf_size;
+    err = ac3_parse_header(ctx);
+    if(err) {
+        switch(err) {
+            case AC3_PARSE_ERROR_SYNC:
+                av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
+                break;
+            case AC3_PARSE_ERROR_BSID:
+                av_log(avctx, AV_LOG_ERROR, "invalid bitstream id\n");
+                break;
+            case AC3_PARSE_ERROR_SAMPLE_RATE:
+                av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
+                break;
+            case AC3_PARSE_ERROR_FRAME_SIZE:
+                av_log(avctx, AV_LOG_ERROR, "invalid frame size\n");
+                break;
+            default:
+                av_log(avctx, AV_LOG_ERROR, "invalid header\n");
+                break;
+        }
+        return -1;
     }
 
     avctx->sample_rate = ctx->sampling_rate;

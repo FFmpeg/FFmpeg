@@ -44,21 +44,21 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
 
     hdr->sync_word = get_bits(&gbc, 16);
     if(hdr->sync_word != 0x0B77)
-        return -1;
+        return AC3_PARSE_ERROR_SYNC;
 
     /* read ahead to bsid to make sure this is AC-3, not E-AC-3 */
     hdr->bsid = show_bits_long(&gbc, 29) & 0x1F;
     if(hdr->bsid > 10)
-        return -2;
+        return AC3_PARSE_ERROR_BSID;
 
     hdr->crc1 = get_bits(&gbc, 16);
     hdr->fscod = get_bits(&gbc, 2);
     if(hdr->fscod == 3)
-        return -3;
+        return AC3_PARSE_ERROR_SAMPLE_RATE;
 
     hdr->frmsizecod = get_bits(&gbc, 6);
     if(hdr->frmsizecod > 37)
-        return -4;
+        return AC3_PARSE_ERROR_FRAME_SIZE;
 
     skip_bits(&gbc, 5); // skip bsid, already got it
 
