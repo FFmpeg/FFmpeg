@@ -252,7 +252,7 @@ distclean: clean
 	$(MAKE) -C libavformat distclean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
-	rm -f .depend version.h config.* *.pc
+	rm -f .depend .vhookdep version.h config.* *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
