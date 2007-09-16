@@ -61,7 +61,7 @@ show_help(){
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
-  echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
+  echo "  --mandir=DIR             install man page in DIR [PREFIX/share/man]"
   echo "  --enable-static          build static libraries [default=yes]"
   echo "  --disable-static         do not build static libraries [default=no]"
   echo "  --enable-shared          build shared libraries [default=no]"
@@ -825,7 +825,7 @@ PREFIX="/usr/local"
 libdir='$(PREFIX)/lib'
 shlibdir="$libdir"
 incdir='$(PREFIX)/include/ffmpeg'
-mandir='$(PREFIX)/man'
+mandir='$(PREFIX)/share/man'
 bindir='$(PREFIX)/bin'
 
 # toolchain
