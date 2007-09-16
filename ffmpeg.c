@@ -3789,52 +3789,6 @@ static void show_help(void)
     av_opt_show(sws_opts, NULL);
 }
 
-static int av_exit();
-
-int main(int argc, char **argv)
-{
-    int i;
-    int64_t ti;
-
-    av_register_all();
-
-    for(i=0; i<CODEC_TYPE_NB; i++){
-        avctx_opts[i]= avcodec_alloc_context2(i);
-    }
-    avformat_opts = av_alloc_format_context();
-    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-
-    show_banner();
-    if (argc <= 1) {
-        show_help();
-        exit(1);
-    }
-
-    /* parse options */
-    parse_options(argc, argv, options, opt_output_file);
-
-    /* file converter / grab */
-    if (nb_output_files <= 0) {
-        fprintf(stderr, "Must supply at least one output file\n");
-        exit(1);
-    }
-
-    if (nb_input_files == 0) {
-        fprintf(stderr, "Must supply at least one input file\n");
-        exit(1);
-    }
-
-    ti = getutime();
-    av_encode(output_files, nb_output_files, input_files, nb_input_files,
-              stream_maps, nb_stream_maps);
-    ti = getutime() - ti;
-    if (do_benchmark) {
-        printf("bench: utime=%0.3fs\n", ti / 1000000.0);
-    }
-
-    return av_exit();
-}
-
 static int av_exit()
 {
     int i;
@@ -3886,4 +3840,48 @@ static int av_exit()
 
     exit(0); /* not all OS-es handle main() return value */
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    int i;
+    int64_t ti;
+
+    av_register_all();
+
+    for(i=0; i<CODEC_TYPE_NB; i++){
+        avctx_opts[i]= avcodec_alloc_context2(i);
+    }
+    avformat_opts = av_alloc_format_context();
+    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
+
+    show_banner();
+    if (argc <= 1) {
+        show_help();
+        exit(1);
+    }
+
+    /* parse options */
+    parse_options(argc, argv, options, opt_output_file);
+
+    /* file converter / grab */
+    if (nb_output_files <= 0) {
+        fprintf(stderr, "Must supply at least one output file\n");
+        exit(1);
+    }
+
+    if (nb_input_files == 0) {
+        fprintf(stderr, "Must supply at least one input file\n");
+        exit(1);
+    }
+
+    ti = getutime();
+    av_encode(output_files, nb_output_files, input_files, nb_input_files,
+              stream_maps, nb_stream_maps);
+    ti = getutime() - ti;
+    if (do_benchmark) {
+        printf("bench: utime=%0.3fs\n", ti / 1000000.0);
+    }
+
+    return av_exit();
 }
