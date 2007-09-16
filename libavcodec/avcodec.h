@@ -2803,8 +2803,6 @@ typedef struct AVBitStreamFilter {
     struct AVBitStreamFilter *next;
 } AVBitStreamFilter;
 
-extern AVBitStreamFilter *av_first_bitstream_filter;
-
 void av_register_bitstream_filter(AVBitStreamFilter *bsf);
 AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
