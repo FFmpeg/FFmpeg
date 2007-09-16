@@ -806,7 +806,7 @@ static int get_cabac_terminate(CABACContext *c){
 }
 
 /**
- * get (truncated) unnary binarization.
+ * Get (truncated) unary binarization.
  */
 static int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max_index, int truncated){
     int i;
