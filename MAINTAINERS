@@ -108,6 +108,7 @@ Codecs:
   8bps.c                                Roberto Togni
   aasc.c                                Kostya Shishkov
   ac3*                                  Justin Ruggles
+  apedec.c                              Kostya Shishkov
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
   bmp.c                                 Mans Rullgard
@@ -207,6 +208,7 @@ Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Mans Rullgard
   aiff.c                                Baptiste Coudurier
+  ape.c                                 Kostya Shishkov
   avi*                                  Michael Niedermayer
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
