@@ -3789,6 +3789,8 @@ static void show_help(void)
     av_opt_show(sws_opts, NULL);
 }
 
+static int av_exit();
+
 int main(int argc, char **argv)
 {
     int i;
@@ -3829,6 +3831,13 @@ int main(int argc, char **argv)
     if (do_benchmark) {
         printf("bench: utime=%0.3fs\n", ti / 1000000.0);
     }
+
+    return av_exit();
+}
+
+static int av_exit()
+{
+    int i;
 
     /* close files */
     for(i=0;i<nb_output_files;i++) {
