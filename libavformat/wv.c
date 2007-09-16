@@ -20,7 +20,6 @@
  */
 
 #include "avformat.h"
-#include "allformats.h"
 #include "bswap.h"
 
 // specs say that maximum block size is 1Mb

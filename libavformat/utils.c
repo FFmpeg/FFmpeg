@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#include "allformats.h"
 #include "opt.h"
 #include "avstring.h"
 #include "riff.h"
@@ -468,7 +467,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     /* XXX: suppress this hack for redirectors */
 #ifdef CONFIG_REDIR_DEMUXER
-    if (fmt == &redir_demuxer) {
+    if (!strcmp(fmt->name, "redir")) {
         int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
         err = redir_open(ic_ptr, pb);
         url_fclose(pb);

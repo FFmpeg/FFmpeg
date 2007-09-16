@@ -21,7 +21,6 @@
 
 
 #include "avformat.h"
-#include "allformats.h"
 
 typedef struct ThpDemuxContext {
     int              version;

@@ -22,7 +22,6 @@
 #include "avformat.h"
 #include "avcodec.h"
 #include "riff.h"
-#include "allformats.h" // for asf_muxer
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */

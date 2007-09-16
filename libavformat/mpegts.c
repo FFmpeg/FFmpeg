@@ -21,7 +21,6 @@
 #include "avformat.h"
 #include "crc.h"
 #include "mpegts.h"
-#include "allformats.h"
 
 //#define DEBUG_SI
 //#define DEBUG_SEEK
@@ -144,6 +143,8 @@ struct PESContext {
     int64_t pts, dts;
     uint8_t header[MAX_PES_HEADER_SIZE];
 };
+
+extern AVInputFormat mpegts_demuxer;
 
 /**
  *  Assembles PES packets out of TS packets, and then calls the "section_cb"
