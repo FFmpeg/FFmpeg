@@ -39,6 +39,30 @@
 
 #define APE_EXTRADATA_SIZE 6
 
+/* APE tags */
+#define APE_TAG_VERSION               2000
+#define APE_TAG_FOOTER_BYTES          32
+#define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
+#define APE_TAG_FLAG_IS_HEADER        (1 << 29)
+
+#define TAG(name, field)  {name, offsetof(AVFormatContext, field), sizeof(((AVFormatContext *)0)->field)}
+
+static const struct {
+    char *name;
+    int offset;
+    int size;
+} tags[] = {
+    TAG("Title"    , title    ),
+    TAG("Artist"   , author   ),
+    TAG("Copyright", copyright),
+    TAG("Comment"  , comment  ),
+    TAG("Album"    , album    ),
+    TAG("Year"     , year     ),
+    TAG("Track"    , track    ),
+    TAG("Genre"    , genre    ),
+    { NULL }
+};
+
 typedef struct {
     int64_t pos;
     int nblocks;
@@ -81,6 +105,101 @@ typedef struct {
     /* Seektable */
     uint32_t *seektable;
 } APEContext;
+
+static void ape_tag_read_field(AVFormatContext *s)
+{
+    ByteIOContext *pb = &s->pb;
+    uint8_t buf[1024];
+    uint32_t size;
+    int i;
+
+    memset(buf, 0, 1024);
+    size = get_le32(pb);  /* field size */
+    url_fskip(pb, 4);     /* skip field flags */
+
+    for (i=0; pb->buf_ptr[i]!='0' && pb->buf_ptr[i]>=0x20 && pb->buf_ptr[i]<=0x7E; i++);
+
+    get_buffer(pb, buf, FFMIN(i, 1024));
+    url_fskip(pb, 1);
+
+    for (i=0; tags[i].name; i++)
+        if (!strcmp (buf, tags[i].name)) {
+            if (tags[i].size == sizeof(int)) {
+                char tmp[16];
+                get_buffer(pb, tmp, FFMIN(sizeof(tmp), size));
+                *(int *)(((char *)s)+tags[i].offset) = atoi(tmp);
+            } else {
+                get_buffer(pb, ((char *)s) + tags[i].offset,
+                           FFMIN(tags[i].size, size));
+            }
+            break;
+        }
+
+    if (!tags[i].name)
+        url_fskip(pb, size);
+}
+
+static void ape_parse_tag(AVFormatContext *s)
+{
+    ByteIOContext *pb = &s->pb;
+    int file_size = url_fsize(pb);
+    uint32_t val, fields, tag_bytes;
+    uint8_t buf[8];
+    int i;
+
+    if (file_size < APE_TAG_FOOTER_BYTES)
+        return;
+
+    url_fseek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
+
+    get_buffer(pb, buf, 8);    /* APETAGEX */
+    if (strncmp(buf, "APETAGEX", 8)) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid APE Tags\n");
+        return;
+    }
+
+    val = get_le32(pb);        /* APE tag version */
+    if (val > APE_TAG_VERSION) {
+        av_log(NULL, AV_LOG_ERROR, "Unsupported tag version. (>=%d)\n", APE_TAG_VERSION);
+        return;
+    }
+
+    tag_bytes = get_le32(pb);  /* tag size */
+    if (tag_bytes - APE_TAG_FOOTER_BYTES > (1024 * 1024 * 16)) {
+        av_log(NULL, AV_LOG_ERROR, "Tag size is way too big\n");
+        return;
+    }
+
+    fields = get_le32(pb);     /* number of fields */
+    if (fields > 65536) {
+        av_log(NULL, AV_LOG_ERROR, "Too many tag fields (%d)\n", fields);
+        return;
+    }
+
+    val = get_le32(pb);        /* flags */
+    if (val & APE_TAG_FLAG_IS_HEADER) {
+        av_log(NULL, AV_LOG_ERROR, "APE Tag is a header\n");
+        return;
+    }
+
+    if (val & APE_TAG_FLAG_CONTAINS_HEADER)
+        tag_bytes += 2*APE_TAG_FOOTER_BYTES;
+
+    url_fseek(pb, file_size - tag_bytes, SEEK_SET);
+
+    for (i=0; i<fields; i++)
+        ape_tag_read_field(s);
+
+    av_log(NULL, AV_LOG_DEBUG, "\nAPE Tags:\n\n");
+    av_log(NULL, AV_LOG_DEBUG, "title     = %s\n", s->title);
+    av_log(NULL, AV_LOG_DEBUG, "author    = %s\n", s->author);
+    av_log(NULL, AV_LOG_DEBUG, "copyright = %s\n", s->copyright);
+    av_log(NULL, AV_LOG_DEBUG, "comment   = %s\n", s->comment);
+    av_log(NULL, AV_LOG_DEBUG, "album     = %s\n", s->album);
+    av_log(NULL, AV_LOG_DEBUG, "year      = %d\n", s->year);
+    av_log(NULL, AV_LOG_DEBUG, "track     = %d\n", s->track);
+    av_log(NULL, AV_LOG_DEBUG, "genre     = %s\n", s->genre);
+}
 
 static int ape_probe(AVProbeData * p)
 {
@@ -279,6 +398,12 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
 
     ape_dumpinfo(ape);
+
+    /* try to read APE tags */
+    if (!url_is_streamed(pb)) {
+        ape_parse_tag(s);
+        url_fseek(pb, 0, SEEK_SET);
+    }
 
     av_log(s, AV_LOG_DEBUG, "Decoding file - v%d.%02d, compression level %d\n", ape->fileversion / 1000, (ape->fileversion % 1000) / 10, ape->compressiontype);
 
