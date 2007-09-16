@@ -756,7 +756,6 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t 
 av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
 
     pos= *pos_arg;
-resync:
     do{
         pos= find_startcode(bc, SYNCPOINT_STARTCODE, pos)+1;
         if(pos < 1){
