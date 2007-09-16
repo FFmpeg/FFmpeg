@@ -2164,11 +2164,8 @@ static void clone_tables(H264Context *dst, H264Context *src){
     dst->mvd_table[1]             = src->mvd_table[1];
     dst->direct_table             = src->direct_table;
 
-    if(!dst->dequant4_coeff[0])
-        init_dequant_tables(dst);
     dst->s.obmc_scratchpad = NULL;
     ff_h264_pred_init(&dst->hpc, src->s.codec_id);
-    dst->dequant_coeff_pps= -1;
 }
 
 /**
@@ -3522,6 +3519,9 @@ static void clone_slice(H264Context *dst, H264Context *src)
     memcpy(dst->long_ref,         src->long_ref,         sizeof(dst->long_ref));
     memcpy(dst->default_ref_list, src->default_ref_list, sizeof(dst->default_ref_list));
     memcpy(dst->ref_list,         src->ref_list,         sizeof(dst->ref_list));
+
+    memcpy(dst->dequant4_coeff,   src->dequant4_coeff,   sizeof(src->dequant4_coeff));
+    memcpy(dst->dequant8_coeff,   src->dequant8_coeff,   sizeof(src->dequant8_coeff));
 }
 
 /**
@@ -3589,7 +3589,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
     h->sps = *h0->sps_buffers[h->pps.sps_id];
 
-    if(h->dequant_coeff_pps != pps_id){
+    if(h == h0 && h->dequant_coeff_pps != pps_id){
         h->dequant_coeff_pps = pps_id;
         init_dequant_tables(h);
     }
