@@ -1127,10 +1127,6 @@ case $targetos in
     ;;
   freebsd)
     need_memalign="no"
-    add_cflags "-pthread"
-    ;;
-  gnu/kfreebsd)
-    add_cflags "-pthread"
     ;;
   bsd/os)
     osextralibs="-lpoll -lgnugetopt -lm"
