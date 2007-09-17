@@ -1689,13 +1689,13 @@ check_header linux/videodev.h
 check_header linux/videodev2.h
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
-    { check_header dev/bktr/ioctl_meteor.h &&
-      check_header dev/bktr/ioctl_bt848.h; } ||
-    { check_header machine/ioctl_meteor.h &&
-      check_header machine/ioctl_bt848.h; } ||
-    { check_header dev/video/meteor/ioctl_meteor.h &&
-      check_header dev/video/bktr/ioctl_bt848.h; } ||
-    check_header dev/ic/bt8xx.h
+{ check_header dev/bktr/ioctl_meteor.h &&
+  check_header dev/bktr/ioctl_bt848.h; } ||
+{ check_header machine/ioctl_meteor.h &&
+  check_header machine/ioctl_bt848.h; } ||
+{ check_header dev/video/meteor/ioctl_meteor.h &&
+  check_header dev/video/bktr/ioctl_bt848.h; } ||
+check_header dev/ic/bt8xx.h
 
 check_header sys/soundcard.h
 check_header soundcard.h
