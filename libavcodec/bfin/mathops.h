@@ -31,7 +31,7 @@
         "a0 = %1.H * %2.H, a1+= %1.H * %2.L (IS,M);\n\t"\
         "a1 = a1 >>> 16;\n\t"                           \
         "%0 = (a0 += a1);\n\t"                          \
-        : "=d" (xxo) : "d" (X), "d" (Y)); xxo; })
+        : "=d" (xxo) : "d" (X), "d" (Y) : "A0","A1"); xxo; })
 #else
 #define MULH(X,Y) ({ int xxo;                           \
     asm (                                               \
@@ -39,14 +39,14 @@
         "a0 = %1.H * %2.H, a1+= %1.H * %2.L (IS,M);\n\t"\
         "a1 = a1 >>> 16;\n\t"                           \
         "%0 = (a0 += a1);\n\t"                          \
-        : "=d" (xxo) : "d" (X), "d" (Y)); xxo; })
+        : "=d" (xxo) : "d" (X), "d" (Y) : "A0","A1"); xxo; })
 #endif
 
 /* signed 16x16 -> 32 multiply */
 #define MUL16(a, b) ({ int xxo;                         \
     asm (                                               \
        "%0 = %1.l*%2.l (is);\n\t"                       \
-       : "=W" (xxo) : "d" (a), "d" (b));                \
+       : "=W" (xxo) : "d" (a), "d" (b) : "A1");         \
     xxo; })
 
 #endif /* AVCODEC_BFIN_MATHOPS_H */
