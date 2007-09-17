@@ -25,8 +25,6 @@
 
 #include "config.h"
 
-#ifdef ARCH_SPARC
-
 #include <inttypes.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -4097,5 +4095,3 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
       c->avg_no_rnd_pixels_tab[1][3] = MC_avg_no_round_xy_8_vis;
   }
 }
-
-#endif  /* !(ARCH_SPARC) */
