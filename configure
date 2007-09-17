@@ -1220,7 +1220,6 @@ cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
-ln_s="${cross_prefix}${ln_s}"
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
