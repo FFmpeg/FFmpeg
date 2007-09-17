@@ -1488,7 +1488,7 @@ int main(void) {
 EOF
 
 # check if our compiler supports mmi
-enabled mmi && check_cc <<EOF || mmi="no"
+enabled mmi && check_cc <<EOF || disable mmi
 int main(void) {
     __asm__ ("lq \$2, 0(\$2)");
     return 0;
