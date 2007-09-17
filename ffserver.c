@@ -1627,7 +1627,7 @@ static void compute_stats(HTTPContext *c)
                     strcpy(eosf - 4, ".asx");
                 else if (strcmp(eosf - 3, ".rm") == 0)
                     strcpy(eosf - 3, ".ram");
-                else if (!strcmp(stream->fmt->name, "rtp")) {
+                else if (stream->fmt && !strcmp(stream->fmt->name, "rtp")) {
                     /* generate a sample RTSP director if
                        unicast. Generate an SDP redirector if
                        multicast */
@@ -2684,7 +2684,8 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
         path++;
 
     for(stream = first_stream; stream != NULL; stream = stream->next) {
-        if (!stream->is_feed && !strcmp(stream->fmt->name, "rtp") &&
+        if (!stream->is_feed &&
+            stream->fmt && !strcmp(stream->fmt->name, "rtp") &&
             !strcmp(path, stream->filename)) {
             goto found;
         }
@@ -2759,7 +2760,8 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     /* now check each stream */
     for(stream = first_stream; stream != NULL; stream = stream->next) {
-        if (!stream->is_feed && !strcmp(stream->fmt->name, "rtp")) {
+        if (!stream->is_feed &&
+            stream->fmt && !strcmp(stream->fmt->name, "rtp")) {
             /* accept aggregate filenames only if single stream */
             if (!strcmp(path, stream->filename)) {
                 if (stream->nb_streams != 1) {
@@ -3296,7 +3298,7 @@ static void build_file_streams(void)
             /* try to open the file */
             /* open stream */
             stream->ap_in = av_mallocz(sizeof(AVFormatParameters));
-            if (!strcmp(stream->fmt->name, "rtp")) {
+            if (stream->fmt && !strcmp(stream->fmt->name, "rtp")) {
                 /* specific case : if transport stream output to RTP,
                    we use a raw transport stream reader */
                 stream->ap_in->mpeg2ts_raw = 1;
