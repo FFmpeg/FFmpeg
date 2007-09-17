@@ -24,6 +24,8 @@
 
 #include "avformat.h"
 
+#define ENABLE_DEBUG 0
+
 /* The earliest and latest file formats supported by this library */
 #define APE_MIN_VERSION 3970
 #define APE_MAX_VERSION 3990
@@ -190,6 +192,7 @@ static void ape_parse_tag(AVFormatContext *s)
     for (i=0; i<fields; i++)
         ape_tag_read_field(s);
 
+#if ENABLE_DEBUG
     av_log(NULL, AV_LOG_DEBUG, "\nAPE Tags:\n\n");
     av_log(NULL, AV_LOG_DEBUG, "title     = %s\n", s->title);
     av_log(NULL, AV_LOG_DEBUG, "author    = %s\n", s->author);
@@ -199,6 +202,7 @@ static void ape_parse_tag(AVFormatContext *s)
     av_log(NULL, AV_LOG_DEBUG, "year      = %d\n", s->year);
     av_log(NULL, AV_LOG_DEBUG, "track     = %d\n", s->track);
     av_log(NULL, AV_LOG_DEBUG, "genre     = %s\n", s->genre);
+#endif
 }
 
 static int ape_probe(AVProbeData * p)
@@ -211,6 +215,7 @@ static int ape_probe(AVProbeData * p)
 
 static void ape_dumpinfo(APEContext * ape_ctx)
 {
+#if ENABLE_DEBUG
     int i;
 
     av_log(NULL, AV_LOG_DEBUG, "Descriptor Block:\n\n");
@@ -260,6 +265,7 @@ static void ape_dumpinfo(APEContext * ape_ctx)
     av_log(NULL, AV_LOG_DEBUG, "junklength           = %d\n", ape_ctx->junklength);
     av_log(NULL, AV_LOG_DEBUG, "firstframe           = %d\n", ape_ctx->firstframe);
     av_log(NULL, AV_LOG_DEBUG, "totalsamples         = %d\n", ape_ctx->totalsamples);
+#endif
 }
 
 static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
