@@ -1917,6 +1917,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
         http_log("%s not found", input_filename);
         return -1;
     }
+    s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
     av_find_stream_info(c->fmt_in);
 
