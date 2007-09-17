@@ -120,7 +120,6 @@ show_help(){
   echo "  --disable-armv6          disable armv6 usage"
   echo "  --disable-iwmmxt         disable iwmmxt usage"
   echo "  --disable-altivec        disable AltiVec usage"
-  echo "  --disable-bktr           disable bktr video grabbing [default=no]"
   echo "  --disable-network        disable network support [default=no]"
   echo "  --disable-ipv6           disable ipv6 support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
@@ -585,7 +584,6 @@ CONFIG_LIST="
     $COMPONENT_LIST
     avisynth
     beos_netserver
-    bktr
     ffmpeg
     ffplay
     ffserver
@@ -772,7 +770,7 @@ libxvid_encoder_deps="libxvid"
 ac3_demuxer_deps="ac3_parser"
 audio_beos_demuxer_deps="audio_beos"
 audio_beos_muxer_deps="audio_beos"
-bktr_demuxer_deps="bktr"
+bktr_demuxer_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_demuxer_deps="dv1394"
 libdc1394_demuxer_deps="libdc1394"
 libnut_demuxer_deps="libnut"
@@ -843,9 +841,6 @@ cpu="generic"
 
 # OS
 targetos=$(tolower $(uname -s))
-
-# non-library system interfaces
-bktr="yes"
 
 # libraries
 zlib="yes"
@@ -1694,16 +1689,13 @@ check_header linux/videodev.h
 check_header linux/videodev2.h
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
-if enabled bktr; then
     { check_header dev/bktr/ioctl_meteor.h &&
       check_header dev/bktr/ioctl_bt848.h; } ||
     { check_header machine/ioctl_meteor.h &&
       check_header machine/ioctl_bt848.h; } ||
     { check_header dev/video/meteor/ioctl_meteor.h &&
       check_header dev/video/bktr/ioctl_bt848.h; } ||
-    check_header dev/ic/bt8xx.h ||
-    disable bktr
-fi
+    check_header dev/ic/bt8xx.h
 
 check_header sys/soundcard.h
 check_header soundcard.h
