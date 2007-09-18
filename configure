@@ -310,6 +310,11 @@ check_deps(){
         enabled_all $dep_all || disable $cfg
         enabled_any $dep_any || disable $cfg
 
+        if enabled $cfg; then
+            eval dep_extralibs="\$${cfg}_extralibs"
+            test -n "$dep_extralibs" && add_extralibs $dep_extralibs
+        fi
+
         disable ${cfg}_checking
     done
 }
@@ -748,12 +753,14 @@ zmbv_encoder_deps="zlib"
 
 # external libraries
 liba52_decoder_deps="liba52"
+liba52bin_decoder_extralibs='$ldl'
 libamr_nb_decoder_deps="libamr_nb"
 libamr_nb_encoder_deps="libamr_nb"
 libamr_wb_decoder_deps="libamr_wb"
 libamr_wb_encoder_deps="libamr_wb"
 libfaac_encoder_deps="libfaac"
 libfaad_decoder_deps="libfaad"
+libfaadbin_decoder_extralibs='$ldl'
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -769,7 +776,9 @@ mpeg4aac_decoder_deps="libfaad"
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
 audio_beos_demuxer_deps="audio_beos"
+audio_beos_demuxer_extralibs="-lmedia -lbe"
 audio_beos_muxer_deps="audio_beos"
+audio_beos_muxer_extralibs="-lmedia -lbe"
 bktr_demuxer_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_demuxer_deps="dv1394"
 libdc1394_demuxer_deps="libdc1394"
@@ -786,6 +795,7 @@ sdp_demuxer_deps="rtsp_demuxer"
 v4l2_demuxer_deps="linux_videodev2_h"
 v4l_demuxer_deps="linux_videodev_h"
 x11_grab_device_demuxer_deps="x11grab"
+x11_grab_device_demuxer_extralibs="-lX11 -lXext"
 
 # protocols
 http_protocol_deps="network"
@@ -796,6 +806,8 @@ udp_protocol_deps="network"
 # programs
 ffplay_deps="sdl"
 ffserver_deps="muxers rtp_protocol"
+ffserver_extralibs='$ldl'
+vhook_extralibs='$ldl'
 
 
 # set temporary file name
@@ -1101,18 +1113,19 @@ case $targetos in
     # Check for BONE
     # XXX: actually should check for NOT net_server
     if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
-        osextralibs="-lbind -lsocket"
+        network_extralibs="-lbind -lsocket"
     else
         enable beos_netserver
-        osextralibs="-lnet"
+        network_extralibs="-lnet"
     fi ;;
   sunos)
     FFSERVERLDFLAGS=""
     SHFLAGS="-shared -Wl,-h,\$@"
-    add_extralibs "-lsocket -lnsl"
+    network_extralibs="-lsocket -lnsl"
     ;;
   netbsd)
-    add_extralibs "-lossaudio"
+    oss_demuxer_extralibs="-lossaudio"
+    oss_muxer_extralibs="-lossaudio"
     ;;
   openbsd)
     disable need_memalign
@@ -1122,7 +1135,8 @@ case $targetos in
     SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF).$(LIBVERSION)'
     SLIBNAME_WITH_VERSION='$(SLIBNAME)'
     SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
-    add_extralibs "-lossaudio"
+    oss_demuxer_extralibs="-lossaudio"
+    oss_muxer_extralibs="-lossaudio"
     ;;
   freebsd)
     disable need_memalign
@@ -1599,8 +1613,6 @@ check_func fork
 
 test "$vhook" = "default" && vhook="$dlopen"
 
-enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
-
 if test "$targetos" = cygwin -o "$targetos" = mingw32 && enabled_all static vhook ; then
     disable vhook
     echo
@@ -1613,8 +1625,6 @@ if enabled vhook; then
     check_ldflags -rdynamic
     check_ldflags -export-dynamic
 fi
-
-enabled audio_beos && add_extralibs "-lmedia -lbe"
 
 check_foo_config imlib2 imlib2 Imlib2.h imlib_load_font
 check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
@@ -1701,8 +1711,7 @@ enabled x11_grab_device_demuxer         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
 check_func XOpenDisplay -lX11           &&
-check_func XShmCreateImage -lX11 -lXext &&
-add_extralibs -lX11 -lXext              ||
+check_func XShmCreateImage -lX11 -lXext ||
 disable x11_grab_device_demuxer
 
 enabled debug && add_cflags -g
