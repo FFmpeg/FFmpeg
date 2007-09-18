@@ -815,7 +815,7 @@ TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
 
-logging="yes"
+enable logging
 logfile="config.err"
 
 # installation paths
@@ -843,20 +843,20 @@ cpu="generic"
 targetos=$(tolower $(uname -s))
 
 # libraries
-zlib="yes"
+enable zlib
 
 # configurable options
-debug="yes"
-dostrip="yes"
-ffmpeg="yes"
-ffplay="yes"
-ffserver="yes"
-ipv6="yes"
-static="yes"
-mpegaudio_hp="yes"
-network="yes"
-optimize="yes"
-protocols="yes"
+enable debug
+enable dostrip
+enable ffmpeg
+enable ffplay
+enable ffserver
+enable ipv6
+enable static
+enable mpegaudio_hp
+enable network
+enable optimize
+enable protocols
 vhook="default"
 
 # build settings
@@ -877,10 +877,10 @@ LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIB)"'
 
 # find source path
 source_path="`dirname \"$0\"`"
-source_path_used="yes"
+enable source_path_used
 if test -z "$source_path" -o "$source_path" = "." ; then
     source_path="`pwd`"
-    source_path_used="no"
+    disable source_path_used
 else
     source_path="`cd \"$source_path\"; pwd`"
     echo "$source_path" | grep -q '[[:blank:]]' &&
@@ -938,7 +938,7 @@ for opt do
   ;;
   --cross-prefix=*) cross_prefix="$optval"
   ;;
-  --cross-compile) cross_compile="yes"
+  --cross-compile) enable cross_compile
   ;;
   --target-os=*) targetos="$optval"
   ;;
@@ -958,11 +958,11 @@ for opt do
   ;;
   --cpu=*) cpu="$optval"
   ;;
-  --disable-opts) optimize="no"
+  --disable-opts) disable optimize
   ;;
-  --enable-sunmlib) mlib="yes"
+  --enable-sunmlib) enable mlib
   ;;
-  --disable-strip) dostrip="no"
+  --disable-strip) disable dostrip
   ;;
   --disable-encoders) disable $ENCODER_LIST
   ;;
@@ -1087,7 +1087,7 @@ case $targetos in
     gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
     case "$gcc_version" in
       2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
-        mmx="no"
+        disable mmx
         ;;
       *20010315*) echo "BeBits gcc"
         add_cflags "-fno-expensive-optimizations"
@@ -1096,14 +1096,14 @@ case $targetos in
     LDCONFIG="echo ignoring ldconfig"
     SHFLAGS=-nostart
     # enable BeOS things
-    audio_beos="yes"
+    enable audio_beos
     # no need for libm, but the inet stuff
     # Check for BONE
     # XXX: actually should check for NOT net_server
     if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
         osextralibs="-lbind -lsocket"
     else
-        beos_netserver="yes"
+        enable beos_netserver
         osextralibs="-lnet"
     fi ;;
   sunos)
@@ -1115,7 +1115,7 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   openbsd)
-    need_memalign="no"
+    disable need_memalign
     LIBOBJFLAGS="\$(PIC)"
     LDCONFIG="ldconfig -m \$(SHLIBDIR)"
     SHFLAGS='-shared'
@@ -1125,14 +1125,14 @@ case $targetos in
     add_extralibs "-lossaudio"
     ;;
   freebsd)
-    need_memalign="no"
+    disable need_memalign
     ;;
   bsd/os)
     osextralibs="-lpoll -lgnugetopt"
     strip="strip -d"
     ;;
   darwin)
-    need_memalign="no"
+    disable need_memalign
     SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(SHLIBDIR)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
     VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$@'
     strip="strip -x"
@@ -1151,7 +1151,7 @@ case $targetos in
         VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
         VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
     fi
-    ffserver="no"
+    disable ffserver
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
@@ -1179,7 +1179,7 @@ case $targetos in
     ;;
   linux)
     LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
-    dv1394="yes"
+    enable dv1394
     ;;
   irix*)
     targetos=irix
@@ -1205,7 +1205,7 @@ fi
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
-test -n "$cross_prefix" && cross_compile=yes
+test -n "$cross_prefix" && enable cross_compile
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
@@ -1323,19 +1323,19 @@ if test $cpu != "generic"; then
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
             add_cflags "-march=$cpu"
-            cmov="no"
+            disable cmov
         ;;
         # targets that do support conditional mov (cmov)
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
             add_cflags "-march=$cpu"
-            cmov="yes"
-            fast_cmov="yes"
+            enable cmov
+            enable fast_cmov
         ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|prescott|nocona)
             add_cflags "-march=$cpu"
-            cmov="yes"
-            fast_cmov="no"
+            enable cmov
+            disable fast_cmov
         ;;
         sparc64)
             add_cflags "-mcpu=v9"
@@ -1419,7 +1419,7 @@ fi
 # check for assembler specific support
 
 if test $arch = "powerpc"; then
-check_cc <<EOF && dcbzl=yes
+check_cc <<EOF && enable dcbzl
 int main(void) {
     register long zero = 0;
     char data[1024];
@@ -1447,7 +1447,7 @@ if enabled altivec; then
     else
         inc_altivec_h=
     fi
-    check_cc <<EOF || altivec=no
+    check_cc <<EOF || disable altivec
 $inc_altivec_h
 int main(void) {
     vector signed int v1, v2, v3;
@@ -1511,7 +1511,7 @@ check_header termios.h
 check_header conio.h
 
 check_func inet_aton
-enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
+enabled zlib && check_lib zlib.h zlibVersion -lz || disable zlib
 
 # ffserver uses poll(),
 # if it's not found we can emulate it using select().
@@ -1546,7 +1546,7 @@ for thread in $THREADS_LIST; do
 done
 
 # test for lrintf in math.h
-check_exec <<EOF && lrintf=yes || lrintf=no
+check_exec <<EOF && enable lrintf || disable lrintf
 #define _ISOC9X_SOURCE  1
 #include <math.h>
 int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
@@ -1602,7 +1602,7 @@ test "$vhook" = "default" && vhook="$dlopen"
 enabled_any vhook liba52bin libfaadbin ffserver && add_extralibs $ldl
 
 if test "$targetos" = cygwin -o "$targetos" = mingw32 && enabled_all static vhook ; then
-    vhook="no"
+    disable vhook
     echo
     echo "At the moment vhooks don't work on Cygwin or MinGW static builds."
     echo "Patches welcome."
@@ -1622,8 +1622,8 @@ check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
 ##########################################
 # SDL check
 
-sdl_too_old=no
-sdl=no
+disable sdl_too_old
+disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
 if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
     sdl_cflags=`"${SDL_CONFIG}" --cflags`
@@ -1632,9 +1632,9 @@ if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
     if check_lib SDL.h SDL_Init; then
         _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
         if test "$_sdlversion" -lt 121 ; then
-            sdl_too_old=yes
+            enable sdl_too_old
         else
-            sdl=yes
+            enable sdl
             check_cc $sdl_cflags <<EOF && enable sdl_video_size
 #include <SDL.h>
 int main(void){
@@ -1666,7 +1666,7 @@ fi
 ##########################################
 # IPv6 check
 
-enabled network && enabled ipv6 && check_ld <<EOF && ipv6=yes || ipv6=no
+enabled network && enabled ipv6 && check_ld <<EOF && enable ipv6 || disable ipv6
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1753,8 +1753,8 @@ VHOOKCFLAGS="-fPIC"
 
 # find if .align arg is power-of-two or not
 if test $asmalign_pot = "unknown"; then
-    asmalign_pot="no"
-    echo 'asm (".align 3");' | check_cc && asmalign_pot="yes"
+    disable asmalign_pot
+    echo 'asm (".align 3");' | check_cc && enable asmalign_pot
 fi
 
 enabled_any $ENCODER_LIST  && enable encoders
