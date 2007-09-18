@@ -40,7 +40,7 @@
 //#include "xvmc_debug.h"
 
 //set s->block
-inline void XVMC_init_block(MpegEncContext *s){
+void XVMC_init_block(MpegEncContext *s){
 xvmc_render_state_t * render;
     render = (xvmc_render_state_t*)s->current_picture.data[2];
     assert(render != NULL);
