@@ -747,7 +747,6 @@ zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
 # external libraries
-mpeg4aac_decoder_deps="libfaad"
 liba52_decoder_deps="liba52"
 libamr_nb_decoder_deps="libamr_nb"
 libamr_nb_encoder_deps="libamr_nb"
@@ -765,6 +764,7 @@ libvorbis_decoder_deps="libvorbis"
 libvorbis_encoder_deps="libvorbis"
 libx264_encoder_deps="libx264"
 libxvid_encoder_deps="libxvid"
+mpeg4aac_decoder_deps="libfaad"
 
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
