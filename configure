@@ -1078,7 +1078,6 @@ enabled_any x86_32 x86_64 && enable x86
 enabled     sparc64       && enable sparc
 
 # OS specific
-osextralibs="-lm"
 case $targetos in
   beos|haiku|zeta)
     PREFIX="$HOME/config"
@@ -1129,14 +1128,13 @@ case $targetos in
     need_memalign="no"
     ;;
   bsd/os)
-    osextralibs="-lpoll -lgnugetopt -lm"
+    osextralibs="-lpoll -lgnugetopt"
     strip="strip -d"
     ;;
   darwin)
     need_memalign="no"
     SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(SHLIBDIR)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
     VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$@'
-    osextralibs=""
     strip="strip -x"
     FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
     SLIBSUF=".dylib"
@@ -1172,7 +1170,6 @@ case $targetos in
         VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
         VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
     fi
-    osextralibs=""
     EXESUF=".exe"
     SLIBPREF="cyg"
     SLIBSUF=".dll"
@@ -1194,6 +1191,8 @@ case $targetos in
 esac
 
 add_extralibs $osextralibs
+
+check_ldflags -lm
 
 if ! disabled logging ; then
     enabled logging || logfile="$logging"
