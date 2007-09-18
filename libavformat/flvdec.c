@@ -26,6 +26,13 @@
 #include "avformat.h"
 #include "flv.h"
 
+typedef struct {
+    AVStream *alpha_stream;
+    int pts;
+    int flags;
+    int alpha_size;
+} FLVContext;
+
 static int flv_probe(AVProbeData *p)
 {
     const uint8_t *d;
@@ -57,16 +64,32 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
 }
 
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_codecid) {
+    FLVContext *flv = s->priv_data;
     AVCodecContext *vcodec = vstream->codec;
     switch(flv_codecid) {
         case FLV_CODECID_H263  : vcodec->codec_id = CODEC_ID_FLV1   ; break;
         case FLV_CODECID_SCREEN: vcodec->codec_id = CODEC_ID_FLASHSV; break;
+        case FLV_CODECID_VP6A  :
+            if (!flv->alpha_stream) {
+                AVCodecContext *alpha_codec;
+                flv->alpha_stream = av_new_stream(s, 2);
+                if (flv->alpha_stream) {
+                    av_set_pts_info(flv->alpha_stream, 24, 1, 1000);
+                    alpha_codec = flv->alpha_stream->codec;
+                    alpha_codec->codec_type = CODEC_TYPE_VIDEO;
+                    alpha_codec->codec_id = CODEC_ID_VP6F;
+                    alpha_codec->extradata_size = 1;
+                    alpha_codec->extradata = av_malloc(1);
+                }
+            }
         case FLV_CODECID_VP6   : vcodec->codec_id = CODEC_ID_VP6F   ;
             if(vcodec->extradata_size != 1) {
                 vcodec->extradata_size = 1;
                 vcodec->extradata = av_malloc(1);
             }
             vcodec->extradata[0] = get_byte(&s->pb);
+            if (flv->alpha_stream)
+                flv->alpha_stream->codec->extradata[0] = vcodec->extradata[0];
             return 1; // 1 byte body size adjustment for flv_read_packet()
         default:
             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
@@ -259,16 +282,26 @@ static int flv_read_header(AVFormatContext *s,
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, pts, flags, is_audio, next, pos;
+    int ret, i, type, size, flags, is_audio, next, pos;
+    FLVContext *flv = s->priv_data;
     AVStream *st = NULL;
+
+    if (flv->alpha_stream && flv->alpha_size) {
+        is_audio = 0;
+        size = flv->alpha_size;
+        flv->alpha_size = 0;
+        flags = flv->flags;
+        st = flv->alpha_stream;
+        goto packet;
+    }
 
  for(;;){
     pos = url_ftell(&s->pb);
     url_fskip(&s->pb, 4); /* size of previous packet */
     type = get_byte(&s->pb);
     size = get_be24(&s->pb);
-    pts = get_be24(&s->pb);
-//    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, pts);
+    flv->pts = get_be24(&s->pb);
+//    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, flv->pts);
     if (url_feof(&s->pb))
         return AVERROR(EIO);
     url_fskip(&s->pb, 4); /* reserved */
@@ -314,7 +347,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         continue;
     }
     if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
-        av_add_index_entry(st, pos, pts, size, 0, AVINDEX_KEYFRAME);
+        av_add_index_entry(st, pos, flv->pts, size, 0, AVINDEX_KEYFRAME);
     break;
  }
 
@@ -346,6 +379,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK);
     }
 
+    if ((flags & FLV_VIDEO_CODECID_MASK) == FLV_CODECID_VP6A) {
+        int alpha_offset = get_be24(&s->pb);
+        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
+            av_add_index_entry(flv->alpha_stream, pos, flv->pts, size,
+                               0, AVINDEX_KEYFRAME);
+        flv->alpha_size = size - 3 - alpha_offset;
+        size = alpha_offset + 1;
+        flv->flags = flags;
+    }
+packet:
     ret= av_get_packet(&s->pb, pkt, size - 1);
     if (ret <= 0) {
         return AVERROR(EIO);
@@ -353,7 +396,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;
-    pkt->pts = pts;
+    pkt->pts = flv->pts;
     pkt->stream_index = st->index;
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
@@ -381,7 +424,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 AVInputFormat flv_demuxer = {
     "flv",
     "flv format",
-    0,
+    sizeof(FLVContext),
     flv_probe,
     flv_read_header,
     flv_read_packet,
