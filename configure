@@ -1697,7 +1697,6 @@ check_header soundcard.h
 
 # Deal with the x11 frame grabber
 enabled x11grab                         &&
-enabled gpl                             &&
 enabled x11_grab_device_demuxer         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
