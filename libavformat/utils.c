@@ -2579,6 +2579,7 @@ int64_t parse_date(const char *datestr, int duration)
     p = datestr;
     q = NULL;
     if (!duration) {
+        /* parse the year-month-day part */
         for (i = 0; i < sizeof(date_fmt) / sizeof(date_fmt[0]); i++) {
             q = small_strptime(p, date_fmt[i], &dt);
             if (q) {
@@ -2586,6 +2587,8 @@ int64_t parse_date(const char *datestr, int duration)
             }
         }
 
+        /* if the year-month-day part is missing, then take the
+         * current year-month-day time */
         if (!q) {
             if (is_utc) {
                 dt = *gmtime(&now);
@@ -2600,6 +2603,7 @@ int64_t parse_date(const char *datestr, int duration)
         if (*p == 'T' || *p == 't' || *p == ' ')
             p++;
 
+        /* parse the hour-minute-second part */
         for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
             q = small_strptime(p, time_fmt[i], &dt);
             if (q) {
@@ -2607,12 +2611,15 @@ int64_t parse_date(const char *datestr, int duration)
             }
         }
     } else {
+        /* parse datestr as a duration */
         if (p[0] == '-') {
             negative = 1;
             ++p;
         }
+        /* parse datestr as HH:MM:SS */
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
+            /* parse datestr as S+ */
             dt.tm_sec = strtol(p, (char **)&q, 10);
             dt.tm_min = 0;
             dt.tm_hour = 0;
@@ -2640,6 +2647,7 @@ int64_t parse_date(const char *datestr, int duration)
 
     t *= 1000000;
 
+    /* parse the .m... part */
     if (*q == '.') {
         int val, n;
         q++;
