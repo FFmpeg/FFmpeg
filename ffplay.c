@@ -2406,6 +2406,10 @@ static void opt_sync(const char *arg)
 static void opt_seek(const char *arg)
 {
     start_time = parse_date(arg, 1);
+    if (start_time == INT64_MIN) {
+        fprintf(stderr, "Invalid duration specification: %s\n", arg);
+        exit(1);
+    }
 }
 
 static void opt_debug(const char *arg)

@@ -2491,24 +2491,35 @@ static void opt_map_meta_data(const char *arg)
     m->in_file = strtol(p, (char **)&p, 0);
 }
 
+static int64_t parse_time_or_die(const char *timestr, int is_duration)
+{
+    int64_t us = parse_date(timestr, is_duration);
+    if (us == INT64_MIN) {
+        fprintf(stderr, "Invalid %s specification: %s\n",
+                is_duration ? "duration" : "date", timestr);
+        exit(1);
+    }
+    return us;
+}
+
 static void opt_recording_time(const char *arg)
 {
-    recording_time = parse_date(arg, 1);
+    recording_time = parse_time_or_die(arg, 1);
 }
 
 static void opt_start_time(const char *arg)
 {
-    start_time = parse_date(arg, 1);
+    start_time = parse_time_or_die(arg, 1);
 }
 
 static void opt_rec_timestamp(const char *arg)
 {
-    rec_timestamp = parse_date(arg, 0) / 1000000;
+    rec_timestamp = parse_time_or_die(arg, 0) / 1000000;
 }
 
 static void opt_input_ts_offset(const char *arg)
 {
-    input_ts_offset = parse_date(arg, 1);
+    input_ts_offset = parse_time_or_die(arg, 1);
 }
 
 static enum CodecID find_codec_or_die(const char *name, int type, int encoder)

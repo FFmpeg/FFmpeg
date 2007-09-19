@@ -1887,7 +1887,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
         buf_size = FFM_PACKET_SIZE;
         /* compute position (absolute time) */
         if (find_info_tag(buf, sizeof(buf), "date", info))
+        {
             stream_pos = parse_date(buf, 0);
+            if (stream_pos == INT64_MIN)
+                return -1;
+        }
         else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
             stream_pos = av_gettime() - prebuffer * (int64_t)1000000;
@@ -1898,7 +1902,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
         buf_size = 0;
         /* compute position (relative time) */
         if (find_info_tag(buf, sizeof(buf), "date", info))
+        {
             stream_pos = parse_date(buf, 1);
+            if (stream_pos == INT64_MIN)
+                return -1;
+        }
         else
             stream_pos = 0;
     }

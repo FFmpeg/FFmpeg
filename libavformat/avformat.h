@@ -21,8 +21,8 @@
 #ifndef AVFORMAT_H
 #define AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(13<<8)+3)
-#define LIBAVFORMAT_VERSION     51.13.3
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(13<<8)+4)
+#define LIBAVFORMAT_VERSION     51.13.4
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -794,19 +794,30 @@ attribute_deprecated int parse_image_size(int *width_ptr, int *height_ptr, const
 attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
 
 /**
- * Converts date string to number of seconds since Jan 1st, 1970.
- *
+ * Parses \p datestr and returns a corresponding number of microseconds.
+ * @param datestr String representing a date or a duration.
+ * - If a date the syntax is:
  * @code
- * Syntax:
- * - If not a duration:
  *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
- * Time is localtime unless Z is suffixed to the end. In this case GMT
- * Return the date in micro seconds since 1970
- *
- * - If a duration:
- *  HH[:MM[:SS[.m...]]]
- *  S+[.m...]
  * @endcode
+ * Time is localtime unless Z is appended, in which case it is
+ * interpreted as UTC.
+ * If the year-month-day part isn't specified it takes the current
+ * year-month-day.
+ * Returns the number of microseconds since 1st of January, 1970 up to
+ * the time of the parsed date or INT64_MIN if \p datestr cannot be
+ * successfully parsed.
+ * - If a duration the syntax is:
+ * @code
+ *  [-]HH[:MM[:SS[.m...]]]
+ *  [-]S+[.m...]
+ * @endcode
+ * Returns the number of microseconds contained in a time interval
+ * with the specified duration or INT64_MIN if \p datestr cannot be
+ * succesfully parsed.
+ * @param duration Flag which tells how to interpret \p datestr, if
+ * not zero \p datestr is interpreted as a duration, otherwise as a
+ * date.
  */
 int64_t parse_date(const char *datestr, int duration);
 

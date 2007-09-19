@@ -2621,6 +2621,9 @@ int64_t parse_date(const char *datestr, int duration)
         if (!q) {
             /* parse datestr as S+ */
             dt.tm_sec = strtol(p, (char **)&q, 10);
+            if (q == p)
+                /* the parsing didn't succeed */
+                return INT64_MIN;
             dt.tm_min = 0;
             dt.tm_hour = 0;
         }
@@ -2628,10 +2631,7 @@ int64_t parse_date(const char *datestr, int duration)
 
     /* Now we have all the fields that we can get */
     if (!q) {
-        if (duration)
-            return 0;
-        else
-            return now * INT64_C(1000000);
+        return INT64_MIN;
     }
 
     if (duration) {
