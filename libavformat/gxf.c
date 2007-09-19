@@ -151,7 +151,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
 
 /**
  * \brief filters out interesting tags from material information.
- * \param len lenght of tag section, will be adjusted to contain remaining bytes
+ * \param len length of tag section, will be adjusted to contain remaining bytes
  * \param si struct to store collected information into
  */
 static void gxf_material_tags(ByteIOContext *pb, int *len, st_info_t *si) {
