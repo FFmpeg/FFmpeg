@@ -24,18 +24,22 @@
  * Provides registration of all codecs, parsers and bitstream filters for libavcodec.
  */
 
-#include "allcodecs.h"
+#include "avcodec.h"
 
-#define REGISTER_ENCODER(X,x) \
-          if(ENABLE_##X##_ENCODER)  register_avcodec(&x##_encoder)
-#define REGISTER_DECODER(X,x) \
-          if(ENABLE_##X##_DECODER)  register_avcodec(&x##_decoder)
+#define REGISTER_ENCODER(X,x) { \
+          extern AVCodec x##_encoder; \
+          if(ENABLE_##X##_ENCODER)  register_avcodec(&x##_encoder); }
+#define REGISTER_DECODER(X,x) { \
+          extern AVCodec x##_decoder; \
+          if(ENABLE_##X##_DECODER)  register_avcodec(&x##_decoder); }
 #define REGISTER_ENCDEC(X,x)  REGISTER_ENCODER(X,x); REGISTER_DECODER(X,x)
 
-#define REGISTER_PARSER(X,x) \
-          if(ENABLE_##X##_PARSER)  av_register_codec_parser(&x##_parser)
-#define REGISTER_BSF(X,x) \
-          if(ENABLE_##X##_BSF)     av_register_bitstream_filter(&x##_bsf)
+#define REGISTER_PARSER(X,x) { \
+          extern AVCodecParser x##_parser; \
+          if(ENABLE_##X##_PARSER)  av_register_codec_parser(&x##_parser); }
+#define REGISTER_BSF(X,x) { \
+          extern AVBitStreamFilter x##_bsf; \
+          if(ENABLE_##X##_BSF)     av_register_bitstream_filter(&x##_bsf); }
 
 /**
  * Register all the codecs, parsers and bitstream filters which were enabled at

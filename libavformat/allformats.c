@@ -19,16 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#include "allformats.h"
 #include "rtp_internal.h"
 
-#define REGISTER_MUXER(X,x) \
-          if(ENABLE_##X##_MUXER)   av_register_output_format(&x##_muxer)
-#define REGISTER_DEMUXER(X,x) \
-          if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer)
+/* rtp.c */
+void av_register_rtp_dynamic_payload_handlers(void);
+
+#define REGISTER_MUXER(X,x) { \
+          extern AVOutputFormat x##_muxer; \
+          if(ENABLE_##X##_MUXER)   av_register_output_format(&x##_muxer); }
+#define REGISTER_DEMUXER(X,x) { \
+          extern AVInputFormat x##_demuxer; \
+          if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
-#define REGISTER_PROTOCOL(X,x) \
-          if(ENABLE_##X##_PROTOCOL) register_protocol(&x##_protocol)
+#define REGISTER_PROTOCOL(X,x) { \
+          extern URLProtocol x##_protocol; \
+          if(ENABLE_##X##_PROTOCOL) register_protocol(&x##_protocol); }
 
 /* If you do not call this function, then you can select exactly which
    formats you want to support */
