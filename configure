@@ -899,10 +899,6 @@ else
       die "Out of tree builds are impossible with whitespace in source path."
 fi
 
-if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
-    show_help
-fi
-
 FFMPEG_CONFIGURATION="$@"
 
 ENCODER_LIST=`sed -n 's/^[^#]*ENC.*(.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
@@ -1008,7 +1004,7 @@ for opt do
     NAME=$(toupper ${NAME%s})
     eval show_list \$${NAME}_LIST
   ;;
-  --help) show_help
+  --help|-h) show_help
   ;;
   *)
   die_unknown $opt
