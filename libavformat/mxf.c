@@ -47,6 +47,7 @@
 
 #include "avformat.h"
 #include "aes.h"
+#include "bytestream.h"
 
 typedef uint8_t UID[16];
 
@@ -241,6 +242,7 @@ static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pk
 {
     uint8_t buffer[61444];
     uint8_t *buf_ptr, *end_ptr, *data_ptr;
+    int i;
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
         return -1;
@@ -249,17 +251,15 @@ static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pk
     data_ptr = pkt->data;
     end_ptr = buffer + length;
     buf_ptr = buffer + 4; /* skip SMPTE 331M header */
-    for (; buf_ptr < end_ptr; buf_ptr += 4) {
-        if (st->codec->bits_per_sample == 24) {
-            data_ptr[0] = (buf_ptr[2] >> 4) | ((buf_ptr[3] & 0x0f) << 4);
-            data_ptr[1] = (buf_ptr[1] >> 4) | ((buf_ptr[2] & 0x0f) << 4);
-            data_ptr[2] = (buf_ptr[0] >> 4) | ((buf_ptr[1] & 0x0f) << 4);
-            data_ptr += 3;
-        } else {
-            data_ptr[0] = (buf_ptr[2] >> 4) | ((buf_ptr[3] & 0x0f) << 4);
-            data_ptr[1] = (buf_ptr[1] >> 4) | ((buf_ptr[2] & 0x0f) << 4);
-            data_ptr += 2;
+    for (; buf_ptr < end_ptr; ) {
+        for (i = 0; i < st->codec->channels; i++) {
+            uint32_t sample = bytestream_get_le32(&buf_ptr);
+            if (st->codec->bits_per_sample == 24)
+                bytestream_put_le24(&data_ptr, (sample >> 4) & 0xffffff);
+            else
+                bytestream_put_le16(&data_ptr, (sample >> 12) & 0xffff);
         }
+        buf_ptr += 32 - st->codec->channels*4; // always 8 channels stored SMPTE 331M
     }
     pkt->size = data_ptr - pkt->data;
     return 0;
@@ -636,9 +636,9 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x40,0x01 },        CODEC_ID_MP2, Frame }, /* MPEG-ES Frame wrapped, 0x40 ??? stream id */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0xc0,0x01 },        CODEC_ID_MP2, Frame }, /* MPEG-ES Frame wrapped, 0xc0 MPA stream id */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0xc0,0x02 },        CODEC_ID_MP2,  Clip }, /* MPEG-ES Clip wrapped, 0xc0 MPA stream id */
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x05,0x01 },  CODEC_ID_PCM_S16BE, Frame }, /* D-10 Mapping 30Mbps PAL Extended Template */
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x03,0x01 },  CODEC_ID_PCM_S16BE, Frame }, /* D-10 Mapping 40Mbps PAL Extended Template */
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x01,0x01 },  CODEC_ID_PCM_S16BE, Frame }, /* D-10 Mapping 50Mbps PAL Extended Template */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x05,0x01 },  CODEC_ID_PCM_S16LE, Frame }, /* D-10 Mapping 30Mbps PAL Extended Template */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x03,0x01 },  CODEC_ID_PCM_S16LE, Frame }, /* D-10 Mapping 40Mbps PAL Extended Template */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x01,0x01 },  CODEC_ID_PCM_S16LE, Frame }, /* D-10 Mapping 50Mbps PAL Extended Template */
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },       CODEC_ID_NONE, Frame },
 };
 
@@ -858,8 +858,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     st->codec->codec_id = CODEC_ID_PCM_S24BE;
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
-                if (descriptor->essence_container_ul[13] == 0x01) /* D-10 Mapping */
-                    st->codec->channels = 8; /* force channels to 8 */
             } else if (st->codec->codec_id == CODEC_ID_MP2) {
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
