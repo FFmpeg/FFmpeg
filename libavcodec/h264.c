@@ -4795,65 +4795,20 @@ static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
         return 3;
 }
 
-static const uint8_t block_idx_x[16] = {
-    0, 1, 0, 1, 2, 3, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3
-};
-static const uint8_t block_idx_y[16] = {
-    0, 0, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 2, 2, 3, 3
-};
-static const uint8_t block_idx_xy[4][4] = {
-    { 0, 2, 8,  10},
-    { 1, 3, 9,  11},
-    { 4, 6, 12, 14},
-    { 5, 7, 13, 15}
-};
-
 static int decode_cabac_mb_cbp_luma( H264Context *h) {
-    int cbp = 0;
-    int cbp_b = -1;
-    int i8x8;
+    int cbp_b, cbp_a, ctx, cbp = 0;
 
-    if( h->slice_table[h->top_mb_xy] == h->slice_num ) {
-        cbp_b = h->top_cbp;
-        tprintf(h->s.avctx, "cbp_b = top_cbp = %x\n", cbp_b);
-    }
+    cbp_a = h->slice_table[h->left_mb_xy[0]] == h->slice_num ? h->left_cbp : -1;
+    cbp_b = h->slice_table[h->top_mb_xy]     == h->slice_num ? h->top_cbp  : -1;
 
-    for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
-        int cbp_a = -1;
-        int x, y;
-        int ctx = 0;
-
-        x = block_idx_x[4*i8x8];
-        y = block_idx_y[4*i8x8];
-
-        if( x > 0 )
-            cbp_a = cbp;
-        else if( h->slice_table[h->left_mb_xy[0]] == h->slice_num ) {
-            cbp_a = h->left_cbp;
-            tprintf(h->s.avctx, "cbp_a = left_cbp = %x\n", cbp_a);
-        }
-
-        if( y > 0 )
-            cbp_b = cbp;
-
-        /* No need to test for skip as we put 0 for skip block */
-        /* No need to test for IPCM as we put 1 for IPCM block */
-        if( cbp_a >= 0 ) {
-            int i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
-            if( ((cbp_a >> i8x8a)&0x01) == 0 )
-                ctx++;
-        }
-
-        if( cbp_b >= 0 ) {
-            int i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
-            if( ((cbp_b >> i8x8b)&0x01) == 0 )
-                ctx += 2;
-        }
-
-        if( get_cabac( &h->cabac, &h->cabac_state[73 + ctx] ) ) {
-            cbp |= 1 << i8x8;
-        }
-    }
+    ctx = !(cbp_a & 0x02) + 2 * !(cbp_b & 0x04);
+    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]);
+    ctx = !(cbp   & 0x01) + 2 * !(cbp_b & 0x08);
+    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 1;
+    ctx = !(cbp_a & 0x08) + 2 * !(cbp   & 0x01);
+    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 2;
+    ctx = !(cbp   & 0x04) + 2 * !(cbp   & 0x02);
+    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 3;
     return cbp;
 }
 static int decode_cabac_mb_cbp_chroma( H264Context *h) {
