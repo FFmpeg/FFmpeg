@@ -1447,20 +1447,16 @@ fi
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if enabled altivec; then
-    if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
-        add_cflags "-faltivec"
-    else
+    test -n "`$cc -v 2>&1 | grep version | grep Apple`" &&
+        add_cflags "-faltivec" ||
         add_cflags "-maltivec -mabi=altivec"
-    fi
 
     check_header altivec.h
 
     # check if our compiler supports Motorola AltiVec C API
-    if enabled altivec_h; then
-        inc_altivec_h="#include <altivec.h>"
-    else
+    enabled altivec_h &&
+        inc_altivec_h="#include <altivec.h>" ||
         inc_altivec_h=
-    fi
     check_cc <<EOF || disable altivec
 $inc_altivec_h
 int main(void) {
@@ -1551,11 +1547,9 @@ fi
 
 for thread in $THREADS_LIST; do
     if enabled $thread; then
-        if test -n "$thread_type"; then
-            die "ERROR: Only one thread type must be selected."
-        else
+        test -n "$thread_type" &&
+            die "ERROR: Only one thread type must be selected." ||
             thread_type="$thread"
-        fi
     fi
 done
 
@@ -1852,11 +1846,9 @@ echo "libvorbis enabled         ${libvorbis-no}"
 echo "x264 enabled              ${libx264-no}"
 echo "XviD enabled              ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
-if ! enabled gpl; then
+enabled gpl &&
+    echo "License: GPL" ||
     echo "License: LGPL"
-else
-    echo "License: GPL"
-fi
 
 echo "Creating config.mak and config.h..."
 
@@ -1876,11 +1868,9 @@ echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 echo "LN_S=$ln_s" >> config.mak
-if enabled dostrip; then
-    echo "STRIP=$strip" >> config.mak
-else
+enabled dostrip &&
+    echo "STRIP=$strip" >> config.mak ||
     echo "STRIP=echo ignoring strip" >> config.mak
-fi
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "VHOOKCFLAGS=$VHOOKCFLAGS">>config.mak
@@ -1968,19 +1958,15 @@ echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
 # Apparently it's not possible to portably echo a backslash.
-if enabled asmalign_pot; then
-  printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH
-else
+enabled asmalign_pot &&
+  printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH ||
   printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
-fi
 
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
-if ! cmp -s $TMPH config.h; then
-        mv -f $TMPH config.h
-else
-        echo "config.h is unchanged"
-fi
+cmp -s $TMPH config.h &&
+    echo "config.h is unchanged" ||
+    mv -f $TMPH config.h
 
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
