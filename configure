@@ -794,7 +794,7 @@ rtsp_demuxer_deps="rtp_protocol rtp_muxer"
 sdp_demuxer_deps="rtsp_demuxer"
 v4l2_demuxer_deps="linux_videodev2_h"
 v4l_demuxer_deps="linux_videodev_h"
-x11_grab_device_demuxer_deps="x11grab"
+x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
 x11_grab_device_demuxer_extralibs="-lX11 -lXext"
 
 # protocols
@@ -1701,12 +1701,10 @@ check_header soundcard.h
 
 # Deal with the x11 frame grabber
 enabled x11grab                         &&
-enabled x11_grab_device_demuxer         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
 check_func XOpenDisplay -lX11           &&
-check_func XShmCreateImage -lX11 -lXext ||
-disable x11_grab_device_demuxer
+check_func XShmCreateImage -lX11 -lXext
 
 enabled debug && add_cflags -g
 
