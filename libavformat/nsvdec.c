@@ -610,7 +610,7 @@ null_chunk_retry:
 */
     }
     if(st[NSV_ST_VIDEO])
-    ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
+        ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
 
     if (asize/*st[NSV_ST_AUDIO]*/) {
         nst = st[NSV_ST_AUDIO]->priv_data;
