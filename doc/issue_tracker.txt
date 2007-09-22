@@ -113,6 +113,8 @@ Type/Status/Substatus:
     Bugs, patches or feature requests which are duplicates.
     Note that patches dealing with the same thing in a different way are not
     duplicates.
+    Note, if you mark something as duplicate dont forget setting the
+    superseder so bugreports are properly linked
 
 */closed/invalid
     Bugs caused by user errors, random ineligible or otherwise nonsense stuff.
