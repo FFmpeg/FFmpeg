@@ -317,6 +317,8 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
     uint8_t *src = buf;
     int16_t *samples = (int16_t *)data;
 
+    buf_size = FFMIN(buf_size, *data_size/2);
+
     if (cin->initial_decode_frame) {
         cin->initial_decode_frame = 0;
         cin->delta = (int16_t)AV_RL16(src); src += 2;
