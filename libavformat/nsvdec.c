@@ -609,6 +609,7 @@ null_chunk_retry:
             PRINT(("NSV video: [%d] = %02x\n", i, pkt->data[i]));
 */
     }
+    if(st[NSV_ST_VIDEO])
     ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
 
     if (asize/*st[NSV_ST_AUDIO]*/) {
