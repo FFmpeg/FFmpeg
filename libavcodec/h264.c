@@ -3814,6 +3814,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
     }
 
+    if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type != I_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type == B_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
+        h->deblocking_filter= 0;
+
     if(h->deblocking_filter == 1 && h0->max_contexts > 1) {
         if(s->avctx->flags2 & CODEC_FLAG2_FAST) {
             /* Cheat slightly for speed:
@@ -3829,12 +3835,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 return 1; // deblocking switched inside frame
         }
     }
-
-    if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type != I_TYPE)
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type == B_TYPE)
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
-        h->deblocking_filter= 0;
 
 #if 0 //FMO
     if( h->pps.num_slice_groups > 1  && h->pps.mb_slice_group_map_type >= 3 && h->pps.mb_slice_group_map_type <= 5)
