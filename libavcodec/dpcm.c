@@ -173,6 +173,10 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     if (!buf_size)
         return 0;
 
+    // almost every DPCM variant expands one byte of data into two
+    if(*data_size/2 < buf_size)
+        return -1;
+
     switch(avctx->codec->id) {
 
     case CODEC_ID_ROQ_DPCM:
@@ -256,6 +260,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_SOL_DPCM:
         in = 0;
         if (avctx->codec_tag != 3) {
+            if(*data_size/4 < buf_size)
+                return -1;
             while (in < buf_size) {
                 int n1, n2;
                 n1 = (buf[in] >> 4) & 0xF;
