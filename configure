@@ -657,6 +657,7 @@ ARCH_EXT_LIST='
     mmi
     mmx
     ssse3
+    vis
 '
 
 HAVE_LIST="
@@ -726,6 +727,7 @@ iwmmxt_deps="armv4l"
 mmi_deps="mips"
 mmx_deps="x86"
 ssse3_deps="x86"
+vis_deps="sparc"
 
 # decoders / encoders
 ac3_decoder_deps="gpl"
@@ -1488,6 +1490,13 @@ enabled mmi && check_cc <<EOF || disable mmi
 int main(void) {
     __asm__ ("lq \$2, 0(\$2)");
     return 0;
+}
+EOF
+
+# check VIS support
+enabled vis && check_cc -mcpu=ultrasparc <<EOF || disable vis
+int main(void) {
+    __asm__ __volatile__ ("pdist %f0, %f0, %f0");
 }
 EOF
 
