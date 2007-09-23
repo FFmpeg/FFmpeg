@@ -1872,6 +1872,7 @@ echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
+echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "LN_S=$ln_s" >> config.mak
 enabled dostrip &&
     echo "STRIP=$strip" >> config.mak ||
@@ -1880,7 +1881,6 @@ enabled dostrip &&
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "VHOOKCFLAGS=$VHOOKCFLAGS">>config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
-echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
