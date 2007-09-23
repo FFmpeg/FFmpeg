@@ -378,7 +378,7 @@ ASM_OBJS-$(HAVE_ARMV5TE)               += armv4l/simple_idct_armv5te.o \
 
 ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o \
 
-OBJS-$(ARCH_SPARC)                     += sparc/dsputil_vis.o \
+OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o \
                                           sparc/simple_idct_vis.o \
 
 sparc/dsputil_vis.o sparc/simple_idct_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
