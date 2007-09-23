@@ -381,8 +381,6 @@ ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o \
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o \
                                           sparc/simple_idct_vis.o \
 
-sparc/dsputil_vis.o sparc/simple_idct_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
-
 OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o \
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o     \
