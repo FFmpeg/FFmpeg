@@ -3922,6 +3922,123 @@ static void calculate_vissual_weight(SnowContext *s, Plane *p){
     }
 }
 
+#define QUANTIZE2 0
+
+#if QUANTIZE2==1
+#define Q2_STEP 8
+
+static void find_sse(SnowContext *s, Plane *p, int *score, int score_stride, IDWTELEM *r0, IDWTELEM *r1, int level, int orientation){
+    SubBand *b= &p->band[level][orientation];
+    int x, y;
+    int xo=0;
+    int yo=0;
+    int step= 1 << (s->spatial_decomposition_count - level);
+
+    if(orientation&1)
+        xo= step>>1;
+    if(orientation&2)
+        yo= step>>1;
+
+    //FIXME bias for non zero ?
+    //FIXME optimize
+    memset(score, 0, sizeof(*score)*score_stride*((p->height + Q2_STEP-1)/Q2_STEP));
+    for(y=0; y<p->height; y++){
+        for(x=0; x<p->width; x++){
+            int sx= (x-xo + step/2) / step / Q2_STEP;
+            int sy= (y-yo + step/2) / step / Q2_STEP;
+            int v= r0[x + y*p->width] - r1[x + y*p->width];
+            assert(sx>=0 && sy>=0 && sx < score_stride);
+            v= ((v+8)>>4)<<4;
+            score[sx + sy*score_stride] += v*v;
+            assert(score[sx + sy*score_stride] >= 0);
+        }
+    }
+}
+
+static void dequantize_all(SnowContext *s, Plane *p, IDWTELEM *buffer, int width, int height){
+    int level, orientation;
+
+    for(level=0; level<s->spatial_decomposition_count; level++){
+        for(orientation=level ? 1 : 0; orientation<4; orientation++){
+            SubBand *b= &p->band[level][orientation];
+            IDWTELEM *dst= buffer + (b->ibuf - s->spatial_idwt_buffer);
+
+            dequantize(s, b, dst, b->stride);
+        }
+    }
+}
+
+static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, int height, int stride, int type){
+    int level, orientation, ys, xs, x, y, pass;
+    IDWTELEM best_dequant[height * stride];
+    IDWTELEM idwt2_buffer[height * stride];
+    const int score_stride= (width + 10)/Q2_STEP;
+    int best_score[(width + 10)/Q2_STEP * (height + 10)/Q2_STEP]; //FIXME size
+    int score[(width + 10)/Q2_STEP * (height + 10)/Q2_STEP]; //FIXME size
+    int threshold= (s->m.lambda * s->m.lambda) >> 6;
+
+    //FIXME pass the copy cleanly ?
+
+//    memcpy(dwt_buffer, buffer, height * stride * sizeof(DWTELEM));
+    ff_spatial_dwt(buffer, width, height, stride, type, s->spatial_decomposition_count);
+
+    for(level=0; level<s->spatial_decomposition_count; level++){
+        for(orientation=level ? 1 : 0; orientation<4; orientation++){
+            SubBand *b= &p->band[level][orientation];
+            IDWTELEM *dst= best_dequant + (b->ibuf - s->spatial_idwt_buffer);
+             DWTELEM *src=       buffer + (b-> buf - s->spatial_dwt_buffer);
+            assert(src == b->buf); // code doesnt depen on this but its true currently
+
+            quantize(s, b, dst, src, b->stride, s->qbias);
+        }
+    }
+    for(pass=0; pass<1; pass++){
+        if(s->qbias == 0) //keyframe
+            continue;
+        for(level=0; level<s->spatial_decomposition_count; level++){
+            for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                SubBand *b= &p->band[level][orientation];
+                IDWTELEM *dst= idwt2_buffer + (b->ibuf - s->spatial_idwt_buffer);
+                IDWTELEM *best_dst= best_dequant + (b->ibuf - s->spatial_idwt_buffer);
+
+                for(ys= 0; ys<Q2_STEP; ys++){
+                    for(xs= 0; xs<Q2_STEP; xs++){
+                        memcpy(idwt2_buffer, best_dequant, height * stride * sizeof(IDWTELEM));
+                        dequantize_all(s, p, idwt2_buffer, width, height);
+                        ff_spatial_idwt(idwt2_buffer, width, height, stride, type, s->spatial_decomposition_count);
+                        find_sse(s, p, best_score, score_stride, idwt2_buffer, s->spatial_idwt_buffer, level, orientation);
+                        memcpy(idwt2_buffer, best_dequant, height * stride * sizeof(IDWTELEM));
+                        for(y=ys; y<b->height; y+= Q2_STEP){
+                            for(x=xs; x<b->width; x+= Q2_STEP){
+                                if(dst[x + y*b->stride]<0) dst[x + y*b->stride]++;
+                                if(dst[x + y*b->stride]>0) dst[x + y*b->stride]--;
+                                //FIXME try more then just --
+                            }
+                        }
+                        dequantize_all(s, p, idwt2_buffer, width, height);
+                        ff_spatial_idwt(idwt2_buffer, width, height, stride, type, s->spatial_decomposition_count);
+                        find_sse(s, p, score, score_stride, idwt2_buffer, s->spatial_idwt_buffer, level, orientation);
+                        for(y=ys; y<b->height; y+= Q2_STEP){
+                            for(x=xs; x<b->width; x+= Q2_STEP){
+                                int score_idx= x/Q2_STEP + (y/Q2_STEP)*score_stride;
+                                if(score[score_idx] <= best_score[score_idx] + threshold){
+                                    best_score[score_idx]= score[score_idx];
+                                    if(best_dst[x + y*b->stride]<0) best_dst[x + y*b->stride]++;
+                                    if(best_dst[x + y*b->stride]>0) best_dst[x + y*b->stride]--;
+                                    //FIXME copy instead
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    memcpy(s->spatial_idwt_buffer, best_dequant, height * stride * sizeof(IDWTELEM)); //FIXME work with that directly insteda of copy at the end
+}
+
+#endif
+
 static int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
@@ -4273,7 +4390,10 @@ redo_frame:
             }
         }
 
-        ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+        if(QUANTIZE2)
+            dwt_quantize(s, p, s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type);
+        else
+            ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
 
         if(s->pass1_rc && plane_index==0){
             int delta_qlog = ratecontrol_1pass(s, pict);
@@ -4293,7 +4413,8 @@ redo_frame:
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
 
-                quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
+                if(!QUANTIZE2)
+                    quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
                 if(orientation==0)
                     decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == P_TYPE, 0);
                 encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
