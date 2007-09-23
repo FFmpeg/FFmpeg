@@ -4150,7 +4150,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (ENABLE_MMX)      dsputil_init_mmx   (c, avctx);
     if (ENABLE_ARMV4L)   dsputil_init_armv4l(c, avctx);
     if (ENABLE_MLIB)     dsputil_init_mlib  (c, avctx);
-    if (ENABLE_SPARC)    dsputil_init_vis   (c, avctx);
+    if (ENABLE_VIS)      dsputil_init_vis   (c, avctx);
     if (ENABLE_ALPHA)    dsputil_init_alpha (c, avctx);
     if (ENABLE_POWERPC)  dsputil_init_ppc   (c, avctx);
     if (ENABLE_MMI)      dsputil_init_mmi   (c, avctx);

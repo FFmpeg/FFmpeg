@@ -538,7 +538,7 @@ extern int mm_flags;
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
 #define STRIDE_ALIGN 8
 
-#elif defined(ARCH_SPARC)
+#elif defined(HAVE_VIS)
 
 /* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
