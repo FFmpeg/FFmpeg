@@ -410,6 +410,18 @@ check_cpp(){
     check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
 }
 
+check_asm(){
+    log check_asm "$@"
+    name="$1"
+    asm="$2"
+    shift 2
+    check_cc "$@" <<EOF && enable $name || disable $name
+int foo(void){
+    asm volatile($asm);
+}
+EOF
+}
+
 check_ld(){
     log check_ld "$@"
     check_cc || return
@@ -1414,18 +1426,10 @@ if enabled x86; then
 EOF
 
     # check wether EBX is available on x86
-    check_cc <<EOF && enable ebx_available
-int main(){
-    asm volatile ("":::"%ebx");
-}
-EOF
+    check_asm ebx_available '"":::"%ebx"'
 
     # check whether binutils is new enough to compile SSSE3
-    enabled ssse3 && check_cc <<EOF || disable ssse3
-int main(){
-    asm volatile ("pabsw %xmm0, %xmm0");
-}
-EOF
+    enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
 fi
 
 # check for assembler specific support
@@ -1465,40 +1469,11 @@ int main(void) {
 EOF
 fi
 
-# check armv5te instructions support
-enabled armv5te && check_cc <<EOF || disable armv5te
-int main(void) {
-    __asm__ __volatile__ ("qadd r0, r0, r0");
-}
-EOF
-
-enabled armv6 && check_cc <<EOF || disable armv6
-int main(void) {
-    __asm__ __volatile__ ("sadd16 r0, r0, r0");
-}
-EOF
-
-# check iwmmxt support
-enabled iwmmxt && check_cc <<EOF || disable iwmmxt
-int main(void) {
-    __asm__ __volatile__ ("wunpckelub wr6, wr4");
-}
-EOF
-
-# check if our compiler supports mmi
-enabled mmi && check_cc <<EOF || disable mmi
-int main(void) {
-    __asm__ ("lq \$2, 0(\$2)");
-    return 0;
-}
-EOF
-
-# check VIS support
-enabled vis && check_cc -mcpu=ultrasparc <<EOF || disable vis
-int main(void) {
-    __asm__ __volatile__ ("pdist %f0, %f0, %f0");
-}
-EOF
+enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
+enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
+enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'
+enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
+enabled vis     && check_asm vis     '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc
 
 enabled vis && add_cflags "-mcpu=ultrasparc -mtune=ultrasparc"
 
