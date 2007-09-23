@@ -68,6 +68,7 @@ typedef struct VmdVideoContext {
     unsigned char *unpack_buffer;
     int unpack_buffer_size;
 
+    int x_off, y_off;
 } VmdVideoContext;
 
 #define QUEUE_SIZE 0x1000
@@ -206,6 +207,15 @@ static void vmd_decode(VmdVideoContext *s)
     frame_y = AV_RL16(&s->buf[8]);
     frame_width = AV_RL16(&s->buf[10]) - frame_x + 1;
     frame_height = AV_RL16(&s->buf[12]) - frame_y + 1;
+
+    if ((frame_width == s->avctx->width && frame_height == s->avctx->height) &&
+        (frame_x || frame_y)) {
+
+        s->x_off = frame_x;
+        s->y_off = frame_y;
+    }
+    frame_x -= s->x_off;
+    frame_y -= s->y_off;
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
