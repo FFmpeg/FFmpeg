@@ -962,8 +962,7 @@ int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *sa
             return -1;
         }
         if(*frame_size_ptr < FF_MIN_BUFFER_SIZE ||
-        *frame_size_ptr < avctx->channels * avctx->frame_size * sizeof(int16_t) ||
-        *frame_size_ptr < buf_size){
+        *frame_size_ptr < avctx->channels * avctx->frame_size * sizeof(int16_t)){
             av_log(avctx, AV_LOG_ERROR, "buffer %d too small\n", *frame_size_ptr);
             return -1;
         }
