@@ -171,6 +171,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     case PIX_FMT_YUVJ420P:
     case PIX_FMT_YUVJ422P:
     case PIX_FMT_YUVJ444P:
+    case PIX_FMT_YUVA420P:
         w_align= 16; //FIXME check for non mpeg style codecs and use less alignment
         h_align= 16;
         break;
@@ -265,7 +266,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         buf->last_pic_num= *picture_number;
     }else{
         int h_chroma_shift, v_chroma_shift;
-        int pixel_size, size[3];
+        int pixel_size, size[4];
         AVPicture picture;
 
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
@@ -290,16 +291,17 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         size[1] = avpicture_fill(&picture, NULL, s->pix_fmt, w, h);
         size[0] = picture.linesize[0] * h;
         size[1] -= size[0];
+        size[2] = size[3] = 0;
         if(picture.data[2])
             size[1]= size[2]= size[1]/2;
-        else
-            size[2]= 0;
+        if(picture.data[3])
+            size[3] = picture.linesize[3] * h;
 
         buf->last_pic_num= -256*256*256*64;
         memset(buf->base, 0, sizeof(buf->base));
         memset(buf->data, 0, sizeof(buf->data));
 
-        for(i=0; i<3 && size[i]; i++){
+        for(i=0; i<4 && size[i]; i++){
             const int h_shift= i==0 ? 0 : h_chroma_shift;
             const int v_shift= i==0 ? 0 : v_chroma_shift;
 
@@ -351,7 +353,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
 
     FFSWAP(InternalBuffer, *buf, *last);
 
-    for(i=0; i<3; i++){
+    for(i=0; i<4; i++){
         pic->data[i]=NULL;
 //        pic->base[i]=NULL;
     }
