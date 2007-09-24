@@ -488,7 +488,7 @@ static int vp6_decode_init(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 
-    vp56_init(s, avctx, avctx->codec->id == CODEC_ID_VP6);
+    vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6);
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
     s->adjust = vp6_adjust;

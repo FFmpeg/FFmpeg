@@ -322,10 +322,9 @@ static void vp56_deblock_filter(vp56_context_t *s, uint8_t *yuv,
     if (dy)  vp56_edge_filter(s, yuv + stride*(10-dy), stride,      1, t);
 }
 
-static void vp56_mc(vp56_context_t *s, int b, uint8_t *src,
+static void vp56_mc(vp56_context_t *s, int b, int plane, uint8_t *src,
                     int stride, int x, int y)
 {
-    int plane = vp56_b6to3[b];
     uint8_t *dst=s->framep[VP56_FRAME_CURRENT]->data[plane]+s->block_offset[b];
     uint8_t *src_block;
     int src_offset;
@@ -448,7 +447,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
                 int x_off = b==1 || b==3 ? 8 : 0;
                 int y_off = b==2 || b==3 ? 8 : 0;
                 plan = vp56_b6to3[b];
-                vp56_mc(s, b, frame_ref->data[plan], s->stride[plan],
+                vp56_mc(s, b, plan, frame_ref->data[plan], s->stride[plan],
                         16*col+x_off, 16*row+y_off);
                 s->dsp.idct_add(frame_current->data[plan] + s->block_offset[b],
                                 s->stride[plan], s->block_coeff[b]);
@@ -457,21 +456,22 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
     }
 }
 
-static int vp56_size_changed(AVCodecContext *avctx, vp56_context_t *s)
+static int vp56_size_changed(AVCodecContext *avctx)
 {
+    vp56_context_t *s = avctx->priv_data;
     int stride = s->framep[VP56_FRAME_CURRENT]->linesize[0];
     int i;
 
-    s->plane_width[0] = s->avctx->coded_width;
-    s->plane_width[1] = s->plane_width[2] = s->avctx->coded_width/2;
-    s->plane_height[0] = s->avctx->coded_height;
-    s->plane_height[1] = s->plane_height[2] = s->avctx->coded_height/2;
+    s->plane_width[0]  = avctx->coded_width;
+    s->plane_width[1]  = s->plane_width[2]  = avctx->coded_width/2;
+    s->plane_height[0] = avctx->coded_height;
+    s->plane_height[1] = s->plane_height[2] = avctx->coded_height/2;
 
     for (i=0; i<3; i++)
         s->stride[i] = s->flip * s->framep[VP56_FRAME_CURRENT]->linesize[i];
 
-    s->mb_width = (s->avctx->coded_width+15) / 16;
-    s->mb_height = (s->avctx->coded_height+15) / 16;
+    s->mb_width  = (avctx->coded_width +15) / 16;
+    s->mb_height = (avctx->coded_height+15) / 16;
 
     if (s->mb_width > 1000 || s->mb_height > 1000) {
         av_log(avctx, AV_LOG_ERROR, "picture too big\n");
@@ -512,7 +512,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (res == 2)
-        if (vp56_size_changed(avctx, s)) {
+        if (vp56_size_changed(avctx)) {
             avctx->release_buffer(avctx, p);
             return -1;
         }
@@ -612,19 +612,20 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return buf_size;
 }
 
-void vp56_init(vp56_context_t *s, AVCodecContext *avctx, int flip)
+void vp56_init(AVCodecContext *avctx, int flip)
 {
+    vp56_context_t *s = avctx->priv_data;
     int i;
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_YUV420P;
 
-    if (s->avctx->idct_algo == FF_IDCT_AUTO)
-        s->avctx->idct_algo = FF_IDCT_VP3;
-    dsputil_init(&s->dsp, s->avctx);
+    if (avctx->idct_algo == FF_IDCT_AUTO)
+        avctx->idct_algo = FF_IDCT_VP3;
+    dsputil_init(&s->dsp, avctx);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable,ff_zigzag_direct);
 
-    avcodec_set_dimensions(s->avctx, 0, 0);
+    avcodec_set_dimensions(avctx, 0, 0);
 
     for (i=0; i<3; i++)
         s->framep[i] = &s->frames[i];
@@ -656,8 +657,7 @@ int vp56_free(AVCodecContext *avctx)
     av_free(s->above_blocks);
     av_free(s->macroblocks);
     av_free(s->edge_emu_buffer_alloc);
-    if (s->framep[VP56_FRAME_GOLDEN]->data[0]
-        && (s->framep[VP56_FRAME_PREVIOUS] != s->framep[VP56_FRAME_GOLDEN]))
+    if (s->framep[VP56_FRAME_GOLDEN]->data[0])
         avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
     if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
         avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);

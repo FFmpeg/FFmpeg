@@ -153,7 +153,7 @@ struct vp56_context {
 };
 
 
-void vp56_init(vp56_context_t *s, AVCodecContext *avctx, int flip);
+void vp56_init(AVCodecContext *avctx, int flip);
 int vp56_free(AVCodecContext *avctx);
 void vp56_init_dequant(vp56_context_t *s, int quantizer);
 int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
