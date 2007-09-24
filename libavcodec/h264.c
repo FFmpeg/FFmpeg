@@ -5586,6 +5586,7 @@ decode_intra_mb:
 
     if( cbp || IS_INTRA16x16( mb_type ) ) {
         const uint8_t *scan, *scan8x8, *dc_scan;
+        const uint32_t *qmul;
         int dqp;
 
         if(IS_INTERLACED(mb_type)){
@@ -5617,9 +5618,10 @@ decode_intra_mb:
             decode_cabac_residual( h, h->mb, 0, 0, dc_scan, NULL, 16);
 
             if( cbp&15 ) {
+                qmul = h->dequant4_coeff[0][s->qscale];
                 for( i = 0; i < 16; i++ ) {
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 AC:%d\n", i );
-                    decode_cabac_residual(h, h->mb + 16*i, 1, i, scan + 1, h->dequant4_coeff[0][s->qscale], 15);
+                    decode_cabac_residual(h, h->mb + 16*i, 1, i, scan + 1, qmul, 15);
                 }
             } else {
                 fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
@@ -5631,13 +5633,15 @@ decode_intra_mb:
                     if( IS_8x8DCT(mb_type) ) {
                         decode_cabac_residual(h, h->mb + 64*i8x8, 5, 4*i8x8,
                             scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64);
-                    } else
+                    } else {
+                    qmul = h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale];
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 4*i8x8 + i4x4;
                         //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
 //START_TIMER
-                        decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16);
+                        decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
+                    }
                     }
                 } else {
                     uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
@@ -5657,7 +5661,7 @@ decode_intra_mb:
         if( cbp&0x20 ) {
             int c, i;
             for( c = 0; c < 2; c++ ) {
-                const uint32_t *qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[c]];
+                qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[c]];
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
