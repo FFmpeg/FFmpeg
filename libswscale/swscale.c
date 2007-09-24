@@ -102,6 +102,7 @@ untested special converters
 
 #define isSupportedIn(x)    (       \
            (x)==PIX_FMT_YUV420P     \
+        || (x)==PIX_FMT_YUVA420P    \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
         || (x)==PIX_FMT_RGB32       \
@@ -280,6 +281,8 @@ char *sws_format_name(enum PixelFormat format)
     switch (format) {
         case PIX_FMT_YUV420P:
             return "yuv420p";
+        case PIX_FMT_YUVA420P:
+            return "yuva420p";
         case PIX_FMT_YUYV422:
             return "yuyv422";
         case PIX_FMT_RGB24:
@@ -1877,6 +1880,7 @@ static void getSubSampleFactors(int *h, int *v, int format){
         *v=0;
         break;
     case PIX_FMT_YUV420P:
+    case PIX_FMT_YUVA420P:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
     case PIX_FMT_GRAY8: //FIXME remove after different subsamplings are fully implemented
