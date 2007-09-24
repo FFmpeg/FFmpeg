@@ -1487,22 +1487,30 @@ grep -q BIGE $TMPO && enable bigendian
 # ---
 # check availability of some header files
 
-check_header malloc.h
+if check_func dlopen; then
+    ldl=
+elif check_func dlopen -ldl; then
+    ldl=-ldl
+fi
+
+check_func fork
+check_func gethrtime
+check_func getrusage
+check_func inet_aton
 check_func memalign
+check_func mkstemp
+check_func2 windows.h GetProcessTimes
+
+check_header byteswap.h
+check_header conio.h
+check_header dlfcn.h
+check_header malloc.h
+check_header termios.h
 
 if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
-check_header byteswap.h
-
-check_func mkstemp
-check_func gethrtime
-
-check_header termios.h
-check_header conio.h
-
-check_func inet_aton
 enabled zlib && check_lib zlib.h zlibVersion -lz || disable zlib
 
 # ffserver uses poll(),
@@ -1571,21 +1579,6 @@ for restrict_keyword in restrict __restrict__ __restrict; do
 void foo(char * $restrict_keyword p);
 EOF
 done
-
-# dlopen/dlfcn.h probing
-
-check_header dlfcn.h
-
-if check_func dlopen; then
-    ldl=
-elif check_func dlopen -ldl; then
-    ldl=-ldl
-fi
-
-check_func getrusage
-check_func2 windows.h GetProcessTimes
-
-check_func fork
 
 test "$vhook" = "default" && vhook="$dlopen"
 
