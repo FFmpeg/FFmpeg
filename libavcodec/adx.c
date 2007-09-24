@@ -328,6 +328,11 @@ static int adx_decode_frame(AVCodecContext *avctx,
         rest -= hdrsize;
     }
 
+    /* 18 bytes of data are expanded into 32*2 bytes of audio,
+       so guard against buffer overflows */
+    if(rest/18 > *data_size/64)
+        rest = (*data_size/64) * 18;
+
     if (c->in_temp) {
         int copysize = 18*avctx->channels - c->in_temp;
         memcpy(c->dec_temp+c->in_temp,buf,copysize);
