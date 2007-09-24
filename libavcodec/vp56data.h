@@ -51,7 +51,7 @@ typedef struct {
   int8_t prob_idx;
 } vp56_tree_t;
 
-extern const uint8_t vp56_b6to3[];
+extern const uint8_t vp56_b2p[];
 extern const uint8_t vp56_b6to4[];
 extern const uint8_t vp56_coeff_parse_table[6][11];
 extern const uint8_t vp56_def_mb_types_stats[3][10][2];

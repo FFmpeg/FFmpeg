@@ -285,12 +285,12 @@ static void vp56_add_predictors_dc(vp56_context_t *s, vp56_frame_t ref_frame)
             }
         }
         if (count == 0)
-            dc = s->prev_dc[vp56_b6to3[i]][ref_frame];
+            dc = s->prev_dc[vp56_b2p[i]][ref_frame];
         else if (count == 2)
             dc /= 2;
 
         s->block_coeff[i][idx] += dc;
-        s->prev_dc[vp56_b6to3[i]][ref_frame] = s->block_coeff[i][idx];
+        s->prev_dc[vp56_b2p[i]][ref_frame] = s->block_coeff[i][idx];
         ab->dc_coeff = s->block_coeff[i][idx];
         ab->ref_frame = ref_frame;
         lb->dc_coeff = s->block_coeff[i][idx];
@@ -417,7 +417,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
     switch (mb_type) {
         case VP56_MB_INTRA:
             for (b=0; b<6; b++) {
-                plan = vp56_b6to3[b];
+                plan = vp56_b2p[b];
                 s->dsp.idct_put(frame_current->data[plan] + s->block_offset[b],
                                 s->stride[plan], s->block_coeff[b]);
             }
@@ -426,7 +426,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
         case VP56_MB_INTER_NOVEC_PF:
         case VP56_MB_INTER_NOVEC_GF:
             for (b=0; b<6; b++) {
-                plan = vp56_b6to3[b];
+                plan = vp56_b2p[b];
                 off = s->block_offset[b];
                 s->dsp.put_pixels_tab[1][0](frame_current->data[plan] + off,
                                             frame_ref->data[plan] + off,
@@ -446,7 +446,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col)
             for (b=0; b<6; b++) {
                 int x_off = b==1 || b==3 ? 8 : 0;
                 int y_off = b==2 || b==3 ? 8 : 0;
-                plan = vp56_b6to3[b];
+                plan = vp56_b2p[b];
                 vp56_mc(s, b, plan, frame_ref->data[plan], s->stride[plan],
                         16*col+x_off, 16*row+y_off);
                 s->dsp.idct_add(frame_current->data[plan] + s->block_offset[b],
