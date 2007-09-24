@@ -75,13 +75,15 @@ static int vp56_get_vectors_predictors(vp56_context_t *s, int row, int col,
 static void vp56_parse_mb_type_models(vp56_context_t *s)
 {
     vp56_range_coder_t *c = &s->c;
+    vp56_model_t *model = s->modelp;
     int i, ctx, type;
 
     for (ctx=0; ctx<3; ctx++) {
         if (vp56_rac_get_prob(c, 174)) {
             int idx = vp56_rac_gets(c, 4);
-            memcpy(s->mb_types_stats[ctx],vp56_pre_def_mb_type_stats[idx][ctx],
-                   sizeof(s->mb_types_stats[ctx]));
+            memcpy(model->mb_types_stats[ctx],
+                   vp56_pre_def_mb_type_stats[idx][ctx],
+                   sizeof(model->mb_types_stats[ctx]));
         }
         if (vp56_rac_get_prob(c, 254)) {
             for (type=0; type<10; type++) {
@@ -93,7 +95,7 @@ static void vp56_parse_mb_type_models(vp56_context_t *s)
                                                   vp56_mb_type_model_model);
                         if (!delta)
                             delta = 4 * vp56_rac_gets(c, 7);
-                        s->mb_types_stats[ctx][type][i] += (delta ^ -sign) + sign;
+                        model->mb_types_stats[ctx][type][i] += (delta ^ -sign) + sign;
                     }
                 }
             }
@@ -105,13 +107,13 @@ static void vp56_parse_mb_type_models(vp56_context_t *s)
         int p[10];
 
         for (type=0; type<10; type++)
-            p[type] = 100 * s->mb_types_stats[ctx][type][1];
+            p[type] = 100 * model->mb_types_stats[ctx][type][1];
 
         for (type=0; type<10; type++) {
             int p02, p34, p0234, p17, p56, p89, p5689, p156789;
 
             /* conservative MB type probability */
-            s->mb_type_model[ctx][type][0] = 255 - (255 * s->mb_types_stats[ctx][type][0]) / (1 + s->mb_types_stats[ctx][type][0] + s->mb_types_stats[ctx][type][1]);
+            model->mb_type[ctx][type][0] = 255 - (255 * model->mb_types_stats[ctx][type][0]) / (1 + model->mb_types_stats[ctx][type][0] + model->mb_types_stats[ctx][type][1]);
 
             p[type] = 0;    /* same MB type => weight is null */
 
@@ -125,18 +127,18 @@ static void vp56_parse_mb_type_models(vp56_context_t *s)
             p5689 = p56 + p89;
             p156789 = p17 + p5689;
 
-            s->mb_type_model[ctx][type][1] = 1 + 255 * p0234/(1+p0234+p156789);
-            s->mb_type_model[ctx][type][2] = 1 + 255 * p02  / (1+p0234);
-            s->mb_type_model[ctx][type][3] = 1 + 255 * p17  / (1+p156789);
-            s->mb_type_model[ctx][type][4] = 1 + 255 * p[0] / (1+p02);
-            s->mb_type_model[ctx][type][5] = 1 + 255 * p[3] / (1+p34);
-            s->mb_type_model[ctx][type][6] = 1 + 255 * p[1] / (1+p17);
-            s->mb_type_model[ctx][type][7] = 1 + 255 * p56  / (1+p5689);
-            s->mb_type_model[ctx][type][8] = 1 + 255 * p[5] / (1+p56);
-            s->mb_type_model[ctx][type][9] = 1 + 255 * p[8] / (1+p89);
+            model->mb_type[ctx][type][1] = 1 + 255 * p0234/(1+p0234+p156789);
+            model->mb_type[ctx][type][2] = 1 + 255 * p02  / (1+p0234);
+            model->mb_type[ctx][type][3] = 1 + 255 * p17  / (1+p156789);
+            model->mb_type[ctx][type][4] = 1 + 255 * p[0] / (1+p02);
+            model->mb_type[ctx][type][5] = 1 + 255 * p[3] / (1+p34);
+            model->mb_type[ctx][type][6] = 1 + 255 * p[1] / (1+p17);
+            model->mb_type[ctx][type][7] = 1 + 255 * p56  / (1+p5689);
+            model->mb_type[ctx][type][8] = 1 + 255 * p[5] / (1+p56);
+            model->mb_type[ctx][type][9] = 1 + 255 * p[8] / (1+p89);
 
             /* restore initial value */
-            p[type] = 100 * s->mb_types_stats[ctx][type][1];
+            p[type] = 100 * model->mb_types_stats[ctx][type][1];
         }
     }
 }
@@ -144,7 +146,7 @@ static void vp56_parse_mb_type_models(vp56_context_t *s)
 static vp56_mb_t vp56_parse_mb_type(vp56_context_t *s,
                                     vp56_mb_t prev_type, int ctx)
 {
-    uint8_t *mb_type_model = s->mb_type_model[ctx][prev_type];
+    uint8_t *mb_type_model = s->modelp->mb_type[ctx][prev_type];
     vp56_range_coder_t *c = &s->c;
 
     if (vp56_rac_get_prob(c, mb_type_model[0]))
@@ -500,6 +502,8 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int block, y, uv, stride_y, stride_uv;
     int golden_frame = 0;
     int res;
+
+    s->modelp = &s->models;
 
     res = s->parse_header(s, buf, buf_size, &golden_frame);
     if (!res)

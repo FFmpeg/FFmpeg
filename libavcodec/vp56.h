@@ -69,6 +69,23 @@ typedef struct {
     vp56_mv_t mv;
 } vp56_macroblock_t;
 
+typedef struct {
+    uint8_t coeff_reorder[64];       /* used in vp6 only */
+    uint8_t coeff_index_to_pos[64];  /* used in vp6 only */
+    uint8_t vector_sig[2];           /* delta sign */
+    uint8_t vector_dct[2];           /* delta coding types */
+    uint8_t vector_pdi[2][2];        /* predefined delta init */
+    uint8_t vector_pdv[2][7];        /* predefined delta values */
+    uint8_t vector_fdv[2][8];        /* 8 bit delta value definition */
+    uint8_t coeff_dccv[2][11];       /* DC coeff value */
+    uint8_t coeff_ract[2][3][6][11]; /* Run/AC coding type and AC coeff value */
+    uint8_t coeff_acct[2][3][3][6][5];/* vp5 only AC coding type for coding group < 3 */
+    uint8_t coeff_dcct[2][36][5];    /* DC coeff coding type */
+    uint8_t coeff_runv[2][14];       /* run value (vp6 only) */
+    uint8_t mb_type[3][10][10];      /* model for decoding MB type */
+    uint8_t mb_types_stats[3][10][2];/* contextual, next MB type stats */
+} vp56_model_t;
+
 struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
@@ -103,8 +120,6 @@ struct vp56_context {
     vp56_mb_t mb_type;
     vp56_macroblock_t *macroblocks;
     DECLARE_ALIGNED_16(DCTELEM, block_coeff[6][64]);
-    uint8_t coeff_reorder[64];       /* used in vp6 only */
-    uint8_t coeff_index_to_pos[64];  /* used in vp6 only */
 
     /* motion vectors */
     vp56_mv_t mv[6];  /* vectors for each block in MB */
@@ -119,19 +134,6 @@ struct vp56_context {
     int max_vector_length;
     int sample_variance_threshold;
 
-    /* AC models */
-    uint8_t vector_model_sig[2];           /* delta sign */
-    uint8_t vector_model_dct[2];           /* delta coding types */
-    uint8_t vector_model_pdi[2][2];        /* predefined delta init */
-    uint8_t vector_model_pdv[2][7];        /* predefined delta values */
-    uint8_t vector_model_fdv[2][8];        /* 8 bit delta value definition */
-    uint8_t mb_type_model[3][10][10];      /* model for decoding MB type */
-    uint8_t coeff_model_dccv[2][11];       /* DC coeff value */
-    uint8_t coeff_model_ract[2][3][6][11]; /* Run/AC coding type and AC coeff value */
-    uint8_t coeff_model_acct[2][3][3][6][5];/* vp5 only AC coding type for coding group < 3 */
-    uint8_t coeff_model_dcct[2][36][5];    /* DC coeff coding type */
-    uint8_t coeff_model_runv[2][14];       /* run value (vp6 only) */
-    uint8_t mb_types_stats[3][10][2];      /* contextual, next MB type stats */
     uint8_t coeff_ctx[4][64];              /* used in vp5 only */
     uint8_t coeff_ctx_last[4];             /* used in vp5 only */
 
@@ -150,6 +152,9 @@ struct vp56_context {
     vp56_parse_vector_models_t parse_vector_models;
     vp56_parse_coeff_models_t parse_coeff_models;
     vp56_parse_header_t parse_header;
+
+    vp56_model_t *modelp;
+    vp56_model_t models;
 };
 
 
