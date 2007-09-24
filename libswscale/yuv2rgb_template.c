@@ -137,10 +137,10 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
     //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
-        uint8_t *_image = dst[0] + (y+srcSliceY)*dstStride[0];
-        uint8_t *_py = src[0] + y*srcStride[0];
-        uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
-        uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
+        uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
+        uint8_t *py = src[0] + y*srcStride[0];
+        uint8_t *pu = src[1] + (y>>1)*srcStride[1];
+        uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
         b5Dither= dither8[y&1];
@@ -206,8 +206,8 @@ YUV2RGB
         "add  $4, %0    \n\t"
         " js  1b        \n\t"
 
-        : "+r" (index), "+r" (_image)
-        : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
+        : "+r" (index), "+r" (image)
+        : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index)
         );
     }
 
@@ -232,10 +232,10 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
     //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
-        uint8_t *_image = dst[0] + (y+srcSliceY)*dstStride[0];
-        uint8_t *_py = src[0] + y*srcStride[0];
-        uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
-        uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
+        uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
+        uint8_t *py = src[0] + y*srcStride[0];
+        uint8_t *pu = src[1] + (y>>1)*srcStride[1];
+        uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
         b5Dither= dither8[y&1];
@@ -296,8 +296,8 @@ YUV2RGB
         "add $16, %1            \n\t"
         "add $4, %0             \n\t"
         " js 1b                 \n\t"
-        : "+r" (index), "+r" (_image)
-        : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
+        : "+r" (index), "+r" (image)
+        : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index)
         );
     }
 
@@ -320,10 +320,10 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
-        uint8_t *_image = dst[0] + (y+srcSliceY)*dstStride[0];
-        uint8_t *_py = src[0] + y*srcStride[0];
-        uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
-        uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
+        uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
+        uint8_t *py = src[0] + y*srcStride[0];
+        uint8_t *pu = src[1] + (y>>1)*srcStride[1];
+        uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
         /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
@@ -442,8 +442,8 @@ YUV2RGB
         "add  $4, %0    \n\t"
         " js  1b        \n\t"
 
-        : "+r" (index), "+r" (_image)
-        : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
+        : "+r" (index), "+r" (image)
+        : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index)
         );
     }
 
@@ -466,10 +466,10 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
     __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
-        uint8_t *_image = dst[0] + (y+srcSliceY)*dstStride[0];
-        uint8_t *_py = src[0] + y*srcStride[0];
-        uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
-        uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
+        uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
+        uint8_t *py = src[0] + y*srcStride[0];
+        uint8_t *pu = src[1] + (y>>1)*srcStride[1];
+        uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
         /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
@@ -528,8 +528,8 @@ YUV2RGB
         "add  $4, %0    \n\t"
         " js  1b        \n\t"
 
-        : "+r" (index), "+r" (_image)
-        : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
+        : "+r" (index), "+r" (image)
+        : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index)
         );
     }
 
