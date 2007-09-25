@@ -84,7 +84,7 @@ typedef struct FlacSubframe {
     int shift;
     RiceContext rc;
     int32_t samples[FLAC_MAX_BLOCKSIZE];
-    int32_t residual[FLAC_MAX_BLOCKSIZE];
+    int32_t residual[FLAC_MAX_BLOCKSIZE+1];
 } FlacSubframe;
 
 typedef struct FlacFrame {
