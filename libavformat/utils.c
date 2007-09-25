@@ -2067,6 +2067,11 @@ void av_close_input_file(AVFormatContext *s)
         av_free(st->codec);
         av_free(st);
     }
+    for(i=s->nb_programs-1; i>=0; i--) {
+        av_freep(&s->programs[i]->provider_name);
+        av_freep(&s->programs[i]->name);
+        av_freep(&s->programs[i]);
+    }
     flush_packet_queue(s);
     must_open_file = 1;
     if (s->iformat->flags & AVFMT_NOFILE) {
@@ -2112,6 +2117,43 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     s->streams[s->nb_streams++] = st;
     return st;
 }
+
+AVProgram *av_new_program(AVFormatContext *ac, int id)
+{
+    AVProgram *program=NULL;
+    int i;
+
+#ifdef DEBUG_SI
+    av_log(ac, AV_LOG_DEBUG, "new_program: id=0x%04x\n", id);
+#endif
+
+    for(i=0; i<ac->nb_programs; i++)
+        if(ac->programs[i]->id == id)
+            program = ac->programs[i];
+
+    if(!program){
+        program = av_mallocz(sizeof(AVProgram));
+        if (!program)
+            return NULL;
+        dynarray_add(&ac->programs, &ac->nb_programs, program);
+        program->discard = AVDISCARD_NONE;
+    }
+    program->id = id;
+
+    return program;
+}
+
+void av_set_program_name(AVProgram *program, char *provider_name, char *name)
+{
+    assert(!provider_name == !name);
+    if(name){
+        av_free(program->provider_name);
+        av_free(program->         name);
+        program->provider_name = av_strdup(provider_name);
+        program->         name = av_strdup(         name);
+    }
+}
+
 
 /************************************************************/
 /* output media file */

@@ -21,8 +21,8 @@
 #ifndef AVFORMAT_H
 #define AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(13<<8)+4)
-#define LIBAVFORMAT_VERSION     51.13.4
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(14<<8)+0)
+#define LIBAVFORMAT_VERSION     51.14.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -345,6 +345,16 @@ typedef struct AVStream {
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
 } AVStream;
 
+#define AV_PROGRAM_RUNNING 1
+
+typedef struct AVProgram {
+    int            id;
+    char           *provider_name; ///< Network name for DVB streams
+    char           *name;          ///< Service name for DVB streams
+    int            flags;
+    enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
+} AVProgram;
+
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
                                          (streams are added dynamically) */
 
@@ -430,6 +440,9 @@ typedef struct AVFormatContext {
 
     const uint8_t *key;
     int keylen;
+
+    unsigned int nb_programs;
+    AVProgram **programs;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -647,6 +660,7 @@ void av_close_input_file(AVFormatContext *s);
  * @param id file format dependent stream id
  */
 AVStream *av_new_stream(AVFormatContext *s, int id);
+AVProgram *av_new_program(AVFormatContext *s, int id);
 
 /**
  * Set the pts for a given stream.
