@@ -578,8 +578,8 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 s->left_block[block].ref_frame = -1;
                 s->left_block[block].dc_coeff = 0;
                 s->left_block[block].not_null_dc = 0;
-                memset(s->coeff_ctx[block], 0, 64*sizeof(s->coeff_ctx[block][0]));
             }
+            memset(s->coeff_ctx, 0, sizeof(s->coeff_ctx));
             memset(s->coeff_ctx_last, 24, sizeof(s->coeff_ctx_last));
 
             s->above_block_idx[0] = 1;
