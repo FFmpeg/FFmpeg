@@ -400,7 +400,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col, int is_alpha)
     AVFrame *frame_current, *frame_ref;
     vp56_mb_t mb_type;
     vp56_frame_t ref_frame;
-    int b, ab, b_max, plan, off;
+    int b, ab, b_max, plane, off;
 
     if (s->framep[VP56_FRAME_CURRENT]->key_frame)
         mb_type = VP56_MB_INTRA;
@@ -423,22 +423,22 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col, int is_alpha)
     switch (mb_type) {
         case VP56_MB_INTRA:
             for (b=0; b<b_max; b++) {
-                plan = vp56_b2p[b+ab];
-                s->dsp.idct_put(frame_current->data[plan] + s->block_offset[b],
-                                s->stride[plan], s->block_coeff[b]);
+                plane = vp56_b2p[b+ab];
+                s->dsp.idct_put(frame_current->data[plane] + s->block_offset[b],
+                                s->stride[plane], s->block_coeff[b]);
             }
             break;
 
         case VP56_MB_INTER_NOVEC_PF:
         case VP56_MB_INTER_NOVEC_GF:
             for (b=0; b<b_max; b++) {
-                plan = vp56_b2p[b+ab];
+                plane = vp56_b2p[b+ab];
                 off = s->block_offset[b];
-                s->dsp.put_pixels_tab[1][0](frame_current->data[plan] + off,
-                                            frame_ref->data[plan] + off,
-                                            s->stride[plan], 8);
-                s->dsp.idct_add(frame_current->data[plan] + off,
-                                s->stride[plan], s->block_coeff[b]);
+                s->dsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
+                                            frame_ref->data[plane] + off,
+                                            s->stride[plane], 8);
+                s->dsp.idct_add(frame_current->data[plane] + off,
+                                s->stride[plane], s->block_coeff[b]);
             }
             break;
 
@@ -452,11 +452,11 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col, int is_alpha)
             for (b=0; b<b_max; b++) {
                 int x_off = b==1 || b==3 ? 8 : 0;
                 int y_off = b==2 || b==3 ? 8 : 0;
-                plan = vp56_b2p[b+ab];
-                vp56_mc(s, b, plan, frame_ref->data[plan], s->stride[plan],
+                plane = vp56_b2p[b+ab];
+                vp56_mc(s, b, plane, frame_ref->data[plane], s->stride[plane],
                         16*col+x_off, 16*row+y_off);
-                s->dsp.idct_add(frame_current->data[plan] + s->block_offset[b],
-                                s->stride[plan], s->block_coeff[b]);
+                s->dsp.idct_add(frame_current->data[plane] + s->block_offset[b],
+                                s->stride[plane], s->block_coeff[b]);
             }
             break;
     }
