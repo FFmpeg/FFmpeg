@@ -838,17 +838,22 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
                                 int order, const int32_t *coefs, int shift)
 {
     int i, j;
-    int32_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
     }
-    for(i=order; i<n; i++) {
-        pred = 0;
-        for(j=0; j<order; j++) {
-            pred += coefs[j] * smp[i-j-1];
+    for(i=order; i<n; i+=2) {
+        int32_t c = coefs[0];
+        int32_t p0 = 0, p1 = c*smp[i];
+        for(j=1; j<order; j++) {
+            int32_t s = smp[i-j];
+            p0 += c*s;
+            c = coefs[j];
+            p1 += c*s;
         }
-        res[i] = smp[i] - (pred >> shift);
+        p0 += c*smp[i-order];
+        res[i+0] = smp[i+0] - (p0 >> shift);
+        res[i+1] = smp[i+1] - (p1 >> shift);
     }
 }
 
