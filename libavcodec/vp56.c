@@ -268,6 +268,7 @@ static void vp56_add_predictors_dc(vp56_context_t *s, vp56_frame_t ref_frame)
         vp56_ref_dc_t *lb = &s->left_block[vp56_b6to4[b]];
         int count = 0;
         int dc = 0;
+        int i;
 
         if (ref_frame == lb->ref_frame) {
             dc += lb->dc_coeff;
@@ -277,16 +278,12 @@ static void vp56_add_predictors_dc(vp56_context_t *s, vp56_frame_t ref_frame)
             dc += ab->dc_coeff;
             count++;
         }
-        if (s->avctx->codec->id == CODEC_ID_VP5) {
-            if (count < 2 && ref_frame == ab[-1].ref_frame) {
-                dc += ab[-1].dc_coeff;
-                count++;
-            }
-            if (count < 2 && ref_frame == ab[1].ref_frame) {
-                dc += ab[1].dc_coeff;
-                count++;
-            }
-        }
+        if (s->avctx->codec->id == CODEC_ID_VP5)
+            for (i=0; i<2; i++)
+                if (count < 2 && ref_frame == ab[-1+2*i].ref_frame) {
+                    dc += ab[-1+2*i].dc_coeff;
+                    count++;
+                }
         if (count == 0)
             dc = s->prev_dc[vp56_b2p[b]][ref_frame];
         else if (count == 2)
