@@ -76,6 +76,13 @@ struct MpegTSFilter {
     } u;
 };
 
+#define MAX_PIDS_PER_PROGRAM 64
+typedef struct {
+    unsigned int id; //program id/service id
+    unsigned int nb_pids;
+    unsigned int pids[MAX_PIDS_PER_PROGRAM];
+} Program_t;
+
 struct MpegTSContext {
     /* user data */
     AVFormatContext *stream;
@@ -99,6 +106,9 @@ struct MpegTSContext {
     /******************************************/
     /* private mpegts data */
     /* scan context */
+    /** structure to keep track of Program->pids mapping     */
+    unsigned int nb_prg;
+    Program_t *prg;
 
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
@@ -135,6 +145,85 @@ struct PESContext {
 };
 
 extern AVInputFormat mpegts_demuxer;
+
+static void clear_program(MpegTSContext *ts, unsigned int programid)
+{
+    int i;
+
+    for(i=0; i<ts->nb_prg; i++)
+        if(ts->prg[i].id == programid)
+            ts->prg[i].nb_pids = 0;
+}
+
+static void clear_programs(MpegTSContext *ts)
+{
+    av_freep(&ts->prg);
+    ts->nb_prg=0;
+}
+
+static void add_pat_entry(MpegTSContext *ts, unsigned int programid)
+{
+    Program_t *p;
+    void *tmp = av_realloc(ts->prg, (ts->nb_prg+1)*sizeof(Program_t));
+    if(!tmp)
+        return;
+    ts->prg = tmp;
+    p = &ts->prg[ts->nb_prg];
+    p->id = programid;
+    p->nb_pids = 0;
+    ts->nb_prg++;
+}
+
+static void add_pid_to_pmt(MpegTSContext *ts, unsigned int programid, unsigned int pid)
+{
+    int i;
+    Program_t *p = NULL;
+    for(i=0; i<ts->nb_prg; i++) {
+        if(ts->prg[i].id == programid) {
+            p = &ts->prg[i];
+            break;
+        }
+    }
+    if(!p)
+        return;
+
+    if(p->nb_pids >= MAX_PIDS_PER_PROGRAM)
+        return;
+    p->pids[p->nb_pids++] = pid;
+}
+
+/**
+ * \brief discard_pid() decides if the pid is to be discarded according
+ *                      to caller's programs selection
+ * \param ts    : - TS context
+ * \param pid   : - pid
+ * \return 1 if the pid is only comprised in programs that have .discard=AVDISCARD_ALL
+ *         0 otherwise
+ */
+static int discard_pid(MpegTSContext *ts, unsigned int pid)
+{
+    int i, j, k;
+    int used = 0, discarded = 0;
+    Program_t *p;
+    for(i=0; i<ts->nb_prg; i++) {
+        p = &ts->prg[i];
+        for(j=0; j<p->nb_pids; j++) {
+            if(p->pids[j] != pid)
+                continue;
+            //is program with id p->id set to be discarded?
+            for(k=0; k<ts->stream->nb_programs; k++) {
+                if(ts->stream->programs[k]->id == p->id) {
+                    if(ts->stream->programs[k]->discard == AVDISCARD_ALL)
+                        discarded++;
+                    else
+                        used++;
+                }
+            }
+        }
+    }
+
+    return (!used && discarded);
+}
 
 /**
  *  Assembles PES packets out of TS packets, and then calls the "section_cb"
@@ -403,9 +492,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (h->tid != PMT_TID)
         return;
 
+    clear_program(ts, h->id);
     pcr_pid = get16(&p, p_end) & 0x1fff;
     if (pcr_pid < 0)
         return;
+    add_pid_to_pmt(ts, h->id, pcr_pid);
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "pcr_pid=0x%x\n", pcr_pid);
 #endif
@@ -505,6 +596,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (pes)
                     st = new_pes_av_stream(pes, 0);
             }
+            add_pid_to_pmt(ts, h->id, pid);
             break;
         default:
             /* we ignore the other streams */
@@ -544,6 +636,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (h->tid != PAT_TID)
         return;
 
+    clear_programs(ts);
     for(;;) {
         sid = get16(&p, p_end);
         if (sid < 0)
@@ -560,6 +653,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             av_new_program(ts->stream, sid);
             ts->stop_parse--;
             mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
+            add_pat_entry(ts, sid);
+            add_pid_to_pmt(ts, sid, 0); //add pat pid to program
+            add_pid_to_pmt(ts, sid, pmt_pid);
         }
     }
     /* not found */
@@ -887,6 +983,8 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     const uint8_t *p, *p_end;
 
     pid = AV_RB16(packet + 1) & 0x1fff;
+    if(pid && discard_pid(ts, pid))
+        return;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
