@@ -90,8 +90,8 @@ struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
     ScanTable scantable;
-    AVFrame frames[3];
-    AVFrame *framep[4];
+    AVFrame frames[4];
+    AVFrame *framep[6];
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
     vp56_range_coder_t c;
@@ -100,8 +100,8 @@ struct vp56_context {
     int sub_version;
 
     /* frame info */
-    int plane_width[3];
-    int plane_height[3];
+    int plane_width[4];
+    int plane_height[4];
     int mb_width;   /* number of horizontal MB */
     int mb_height;  /* number of vertical MB */
     int block_offset[6];
@@ -137,11 +137,13 @@ struct vp56_context {
     uint8_t coeff_ctx[4][64];              /* used in vp5 only */
     uint8_t coeff_ctx_last[4];             /* used in vp5 only */
 
+    int has_alpha;
+
     /* upside-down flipping hints */
     int flip;  /* are we flipping ? */
     int frbi;  /* first row block index in MB */
     int srbi;  /* second row block index in MB */
-    int stride[3];  /* stride for each plan */
+    int stride[4];  /* stride for each plan */
 
     const uint8_t *vp56_coord_div;
     vp56_parse_vector_adjustment_t parse_vector_adjustment;
@@ -154,11 +156,11 @@ struct vp56_context {
     vp56_parse_header_t parse_header;
 
     vp56_model_t *modelp;
-    vp56_model_t models;
+    vp56_model_t models[2];
 };
 
 
-void vp56_init(AVCodecContext *avctx, int flip);
+void vp56_init(AVCodecContext *avctx, int flip, int has_alpha);
 int vp56_free(AVCodecContext *avctx);
 void vp56_init_dequant(vp56_context_t *s, int quantizer);
 int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,

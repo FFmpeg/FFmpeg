@@ -494,7 +494,8 @@ static int vp6_decode_init(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 
-    vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6);
+    vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6,
+                     avctx->codec->id == CODEC_ID_VP6A);
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
     s->adjust = vp6_adjust;
@@ -525,6 +526,19 @@ AVCodec vp6f_decoder = {
     "vp6f",
     CODEC_TYPE_VIDEO,
     CODEC_ID_VP6F,
+    sizeof(vp56_context_t),
+    vp6_decode_init,
+    NULL,
+    vp56_free,
+    vp56_decode_frame,
+    CODEC_CAP_DR1,
+};
+
+/* flash version, not flipped upside-down, with alpha channel */
+AVCodec vp6a_decoder = {
+    "vp6a",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_VP6A,
     sizeof(vp56_context_t),
     vp6_decode_init,
     NULL,

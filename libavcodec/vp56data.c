@@ -23,7 +23,7 @@
 
 #include "vp56data.h"
 
-const uint8_t vp56_b2p[]   = { 0, 0, 0, 0, 1, 2 };
+const uint8_t vp56_b2p[]   = { 0, 0, 0, 0, 1, 2, 3, 3, 3, 3 };
 const uint8_t vp56_b6to4[] = { 0, 0, 1, 1, 2, 3 };
 
 const uint8_t vp56_coeff_parse_table[6][11] = {

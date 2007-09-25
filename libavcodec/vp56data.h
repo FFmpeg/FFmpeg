@@ -30,7 +30,9 @@ typedef enum {
     VP56_FRAME_CURRENT  = 0,
     VP56_FRAME_PREVIOUS = 1,
     VP56_FRAME_GOLDEN   = 2,
-    VP56_FRAME_UNUSED   = 3,
+    VP56_FRAME_GOLDEN2  = 3,
+    VP56_FRAME_UNUSED   = 4,
+    VP56_FRAME_UNUSED2  = 5,
 } vp56_frame_t;
 
 typedef enum {

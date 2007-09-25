@@ -270,7 +270,7 @@ static int vp5_decode_init(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 
-    vp56_init(avctx, 1);
+    vp56_init(avctx, 1, 0);
     s->vp56_coord_div = vp5_coord_div;
     s->parse_vector_adjustment = vp5_parse_vector_adjustment;
     s->adjust = vp5_adjust;

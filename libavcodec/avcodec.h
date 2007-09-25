@@ -166,6 +166,7 @@ enum CodecID {
     CODEC_ID_BETHSOFTVID,
     CODEC_ID_PTX,
     CODEC_ID_TXD,
+    CODEC_ID_VP6A,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
