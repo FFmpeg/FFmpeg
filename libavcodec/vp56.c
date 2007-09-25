@@ -261,11 +261,11 @@ static vp56_mb_t vp56_decode_mv(vp56_context_t *s, int row, int col)
 static void vp56_add_predictors_dc(vp56_context_t *s, vp56_frame_t ref_frame)
 {
     int idx = s->scantable.permutated[0];
-    int i;
+    int b;
 
-    for (i=0; i<6; i++) {
-        vp56_ref_dc_t *ab = &s->above_blocks[s->above_block_idx[i]];
-        vp56_ref_dc_t *lb = &s->left_block[vp56_b6to4[i]];
+    for (b=0; b<6; b++) {
+        vp56_ref_dc_t *ab = &s->above_blocks[s->above_block_idx[b]];
+        vp56_ref_dc_t *lb = &s->left_block[vp56_b6to4[b]];
         int count = 0;
         int dc = 0;
 
@@ -288,17 +288,17 @@ static void vp56_add_predictors_dc(vp56_context_t *s, vp56_frame_t ref_frame)
             }
         }
         if (count == 0)
-            dc = s->prev_dc[vp56_b2p[i]][ref_frame];
+            dc = s->prev_dc[vp56_b2p[b]][ref_frame];
         else if (count == 2)
             dc /= 2;
 
-        s->block_coeff[i][idx] += dc;
-        s->prev_dc[vp56_b2p[i]][ref_frame] = s->block_coeff[i][idx];
-        ab->dc_coeff = s->block_coeff[i][idx];
+        s->block_coeff[b][idx] += dc;
+        s->prev_dc[vp56_b2p[b]][ref_frame] = s->block_coeff[b][idx];
+        ab->dc_coeff = s->block_coeff[b][idx];
         ab->ref_frame = ref_frame;
-        lb->dc_coeff = s->block_coeff[i][idx];
+        lb->dc_coeff = s->block_coeff[b][idx];
         lb->ref_frame = ref_frame;
-        s->block_coeff[i][idx] *= s->dequant_dc;
+        s->block_coeff[b][idx] *= s->dequant_dc;
     }
 }
 
