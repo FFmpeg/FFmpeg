@@ -5634,14 +5634,14 @@ decode_intra_mb:
                         decode_cabac_residual(h, h->mb + 64*i8x8, 5, 4*i8x8,
                             scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64);
                     } else {
-                    qmul = h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale];
-                    for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
-                        const int index = 4*i8x8 + i4x4;
-                        //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
+                        qmul = h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale];
+                        for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
+                            const int index = 4*i8x8 + i4x4;
+                            //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
 //START_TIMER
-                        decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, qmul, 16);
+                            decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
-                    }
+                        }
                     }
                 } else {
                     uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
