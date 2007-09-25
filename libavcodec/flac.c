@@ -359,10 +359,25 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
             s->decoded[channel][i] += sum >> qlevel;
         }
     } else {
-        int sum;
-        for (i = pred_order; i < s->blocksize; i++)
+        for (i = pred_order; i < s->blocksize-1; i += 2)
         {
-            sum = 0;
+            int c = coeffs[pred_order-1];
+            int s0 = c * s->decoded[channel][i-pred_order];
+            int s1 = 0;
+            for (j = pred_order-1; j > 0; j--)
+            {
+                int d = s->decoded[channel][i-j];
+                s1 += c*d;
+                c = coeffs[j-1];
+                s0 += c*d;
+            }
+            s0 = s->decoded[channel][i] += s0 >> qlevel;
+            s1 += c * s0;
+            s->decoded[channel][i+1] += s1 >> qlevel;
+        }
+        if (i < s->blocksize)
+        {
+            int sum = 0;
             for (j = 0; j < pred_order; j++)
                 sum += coeffs[j] * s->decoded[channel][i-j-1];
             s->decoded[channel][i] += sum >> qlevel;
