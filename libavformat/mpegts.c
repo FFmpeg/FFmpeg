@@ -36,6 +36,7 @@ typedef struct PESContext PESContext;
 
 static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code);
+extern void av_set_program_name(AVProgram *program, char *provider_name, char *name);
 
 enum MpegTSFilterType {
     MPEGTS_PES,
@@ -75,13 +76,6 @@ struct MpegTSFilter {
     } u;
 };
 
-typedef struct MpegTSService {
-    int running:1;
-    int sid;    /**< MPEG Program Number of stream */
-    char *provider_name; /**< DVB Network name, "" if not DVB stream */
-    char *name; /**< DVB Service name, "MPEG Program [sid]" if not DVB stream*/
-} MpegTSService;
-
 struct MpegTSContext {
     /* user data */
     AVFormatContext *stream;
@@ -105,10 +99,6 @@ struct MpegTSContext {
     /******************************************/
     /* private mpegts data */
     /* scan context */
-    /** number of PMTs in the last PAT seen                  */
-    int nb_services;
-    /** list of PMTs in the last PAT seen                    */
-    MpegTSService **services;
 
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
@@ -385,38 +375,6 @@ static int parse_section_header(SectionHeader *h,
     return 0;
 }
 
-static MpegTSService *new_service(MpegTSContext *ts, int sid,
-                                  char *provider_name, char *name)
-{
-    MpegTSService *service=NULL;
-    int i;
-
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "new_service: "
-           "sid=0x%04x provider='%s' name='%s'\n",
-           sid, provider_name, name);
-#endif
-
-    for(i=0; i<ts->nb_services; i++)
-        if(ts->services[i]->sid == sid)
-            service= ts->services[i];
-
-    if(!service){
-        service = av_mallocz(sizeof(MpegTSService));
-        if (!service)
-            return NULL;
-        dynarray_add(&ts->services, &ts->nb_services, service);
-    }
-    service->sid = sid;
-    assert((!provider_name) == (!name));
-    if(name){
-        av_free(service->provider_name);
-        av_free(service->         name);
-        service->provider_name = provider_name;
-        service->         name =          name;
-    }
-    return service;
-}
 
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
@@ -599,7 +557,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (sid == 0x0000) {
             /* NIT info */
         } else {
-            new_service(ts, sid, NULL, NULL);
+            av_new_program(ts->stream, sid);
             ts->stop_parse--;
             mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
         }
@@ -675,9 +633,11 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (!provider_name)
                     break;
                 name = getstr8(&p, p_end);
-                if (!name)
-                    break;
-                new_service(ts, sid, provider_name, name);
+                if (name) {
+                    AVProgram *program = av_new_program(ts->stream, sid);
+                    if(program)
+                        av_set_program_name(program, provider_name, name);
+                }
                 break;
             default:
                 break;
@@ -1278,13 +1238,6 @@ static int mpegts_read_close(AVFormatContext *s)
     int i;
     for(i=0;i<NB_PID_MAX;i++)
         if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
-
-    for(i = 0; i < ts->nb_services; i++){
-        av_free(ts->services[i]->provider_name);
-        av_free(ts->services[i]->name);
-        av_free(ts->services[i]);
-    }
-    av_freep(&ts->services);
 
     return 0;
 }
