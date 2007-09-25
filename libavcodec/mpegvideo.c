@@ -153,7 +153,7 @@ static int DCT_common_init(MpegEncContext *s)
     MPV_common_init_armv4l(s);
 #elif defined(ARCH_POWERPC)
     MPV_common_init_ppc(s);
-#elif defined(HAVE_BFIN)
+#elif defined(ARCH_BFIN)
     MPV_common_init_bfin(s);
 #endif
 
