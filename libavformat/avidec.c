@@ -57,6 +57,13 @@ typedef struct {
     DVDemuxContext* dv_demux;
 } AVIContext;
 
+static const char avi_headers[][8] = {
+    { 'R', 'I', 'F', 'F',    'A', 'V', 'I', ' ' },
+    { 'R', 'I', 'F', 'F',    'A', 'V', 'I', 'X' },
+    { 'R', 'I', 'F', 'F',    'A', 'V', 'I', 0x19},
+    { 0 }
+};
+
 static int avi_load_index(AVFormatContext *s);
 static int guess_ni_flag(AVFormatContext *s);
 
@@ -74,20 +81,23 @@ static void print_tag(const char *str, unsigned int tag, int size)
 
 static int get_riff(AVIContext *avi, ByteIOContext *pb)
 {
-    uint32_t tag;
-    /* check RIFF header */
-    tag = get_le32(pb);
+    char header[8];
+    int i;
 
-    if (tag != MKTAG('R', 'I', 'F', 'F'))
-        return -1;
+    /* check RIFF header */
+    get_buffer(pb, header, 4);
     avi->riff_end = get_le32(pb);   /* RIFF chunk size */
     avi->riff_end += url_ftell(pb); /* RIFF chunk end */
-    tag = get_le32(pb);
-    if(tag == MKTAG('A', 'V', 'I', 0x19))
-        av_log(NULL, AV_LOG_INFO, "file has been generated with a totally broken muxer\n");
-    else
-    if (tag != MKTAG('A', 'V', 'I', ' ') && tag != MKTAG('A', 'V', 'I', 'X'))
+    get_buffer(pb, header+4, 4);
+
+    for(i=0; avi_headers[i][0]; i++)
+        if(!memcmp(header, avi_headers[i], 8))
+            break;
+    if(!avi_headers[i][0])
         return -1;
+
+    if(header[7] == 0x19)
+        av_log(NULL, AV_LOG_INFO, "file has been generated with a totally broken muxer\n");
 
     return 0;
 }
@@ -999,14 +1009,15 @@ static int avi_read_close(AVFormatContext *s)
 
 static int avi_probe(AVProbeData *p)
 {
+    int i;
+
     /* check file header */
-    if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
-        p->buf[2] == 'F' && p->buf[3] == 'F' &&
-        p->buf[8] == 'A' && p->buf[9] == 'V' &&
-        p->buf[10] == 'I' && (p->buf[11] == ' ' || p->buf[11] == 0x19))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
+    for(i=0; avi_headers[i][0]; i++)
+        if(!memcmp(p->buf  , avi_headers[i]  , 4) &&
+           !memcmp(p->buf+8, avi_headers[i]+4, 4))
+            return AVPROBE_SCORE_MAX;
+
+    return 0;
 }
 
 AVInputFormat avi_demuxer = {
