@@ -1637,7 +1637,7 @@ if enabled network; then
     if check_header arpa/inet.h ; then
         check_func closesocket
     elif check_header winsock2.h ; then
-        add_extralibs -lws2_32
+        network_extralibs="-lws2_32"
         check_func2 winsock2.h closesocket
     fi
 fi
