@@ -1369,6 +1369,9 @@ if test $cpu != "generic"; then
             add_cflags "-mfdpic"
             add_ldflags "-mfdpic"
         ;;
+        arm*)
+            add_cflags "-mcpu=$cpu"
+        ;;
         *)
         echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
