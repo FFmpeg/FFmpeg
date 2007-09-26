@@ -64,9 +64,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (AU, au);
     REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);
     REGISTER_MUXDEMUX (AVI, avi);
-#ifdef CONFIG_AVISYNTH
-    av_register_input_format(&avisynth_demuxer);
-#endif
+    REGISTER_DEMUXER  (AVISYNTH, avisynth);
     REGISTER_DEMUXER  (AVS, avs);
     REGISTER_DEMUXER  (BETHSOFTVID, bethsoftvid);
     REGISTER_DEMUXER  (BKTR, bktr);
