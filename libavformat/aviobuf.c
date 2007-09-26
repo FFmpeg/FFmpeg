@@ -263,7 +263,7 @@ void put_tag(ByteIOContext *s, const char *tag)
 
 static void fill_buffer(ByteIOContext *s)
 {
-    int len;
+    int len=0;
 
     /* no need to do anything if EOF already reached */
     if (s->eof_reached)
@@ -275,6 +275,7 @@ static void fill_buffer(ByteIOContext *s)
         s->checksum_ptr= s->buffer;
     }
 
+    if(s->read_packet)
     len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
     if (len <= 0) {
         /* do not modify buffer if EOF reached so that a seek back can
@@ -341,6 +342,7 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
             len = size;
         if (len == 0) {
             if(size > s->buffer_size && !s->update_checksum){
+                if(s->read_packet)
                 len = s->read_packet(s->opaque, buf, size);
                 if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
