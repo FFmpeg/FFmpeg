@@ -38,6 +38,12 @@
 //#undef NDEBUG
 #include <assert.h>
 
+/**
+ * Value of Picture.reference when Picture is not a reference picture, but
+ * is held for delayed output.
+ */
+#define DELAYED_PIC_REF 4
+
 static VLC coeff_token_vlc[4];
 static VLC chroma_dc_coeff_token_vlc;
 
@@ -3091,11 +3097,11 @@ static inline void unreference_pic(H264Context *h, Picture *pic){
     int i;
     pic->reference=0;
     if(pic == h->delayed_output_pic)
-        pic->reference=1;
+        pic->reference=DELAYED_PIC_REF;
     else{
         for(i = 0; h->delayed_pic[i]; i++)
             if(pic == h->delayed_pic[i]){
-                pic->reference=1;
+                pic->reference=DELAYED_PIC_REF;
                 break;
             }
     }
@@ -3542,7 +3548,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     unsigned int slice_type, tmp, i;
     int default_ref_list_done = 0;
 
-    s->current_picture.reference= h->nal_ref_idc != 0;
     s->dropable= h->nal_ref_idc == 0;
 
     first_mb_in_slice= get_ue_golomb(&s->gb);
@@ -3652,14 +3657,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
     }
 
-    if(h0->current_slice == 0){
-        if(frame_start(h) < 0)
-            return -1;
-    }
-    if(h != h0)
-        clone_slice(h, h0);
-
-    s->current_picture_ptr->frame_num= //FIXME frame_num cleanup
     h->frame_num= get_bits(&s->gb, h->sps.log2_max_frame_num);
 
     h->mb_mbaff = 0;
@@ -3675,6 +3672,16 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             h->mb_aff_frame = h->sps.mb_aff;
         }
     }
+
+    if(h0->current_slice == 0){
+        if(frame_start(h) < 0)
+            return -1;
+    }
+    if(h != h0)
+        clone_slice(h, h0);
+
+    s->current_picture_ptr->frame_num= h->frame_num; //FIXME frame_num cleanup
+
     assert(s->mb_num == s->mb_width * s->mb_height);
     if(first_mb_in_slice << h->mb_aff_frame >= s->mb_num ||
        first_mb_in_slice                    >= s->mb_num){
@@ -3763,7 +3770,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     else
         h->use_weight = 0;
 
-    if(s->current_picture.reference)
+    if(h->nal_ref_idc)
         decode_ref_pic_marking(h0, &s->gb);
 
     if(FRAME_MBAFF)
@@ -3863,7 +3870,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                );
     }
 
-    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !s->current_picture.reference){
+    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !h->nal_ref_idc){
         s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
     }else{
@@ -7361,12 +7368,11 @@ static int decode_frame(AVCodecContext *avctx,
 
         h->prev_frame_num_offset= h->frame_num_offset;
         h->prev_frame_num= h->frame_num;
-        if(s->current_picture_ptr->reference){
+        if(s->current_picture_ptr->reference & s->picture_structure){
             h->prev_poc_msb= h->poc_msb;
             h->prev_poc_lsb= h->poc_lsb;
-        }
-        if(s->current_picture_ptr->reference)
             execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+        }
 
         ff_er_frame_end(s);
 
@@ -7392,7 +7398,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         h->delayed_pic[pics++] = cur;
         if(cur->reference == 0)
-            cur->reference = 1;
+            cur->reference = DELAYED_PIC_REF;
 
         cross_idr = 0;
         for(i=0; h->delayed_pic[i]; i++)
@@ -7433,7 +7439,7 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
         else
             *data_size = sizeof(AVFrame);
-        if(prev && prev != out && prev->reference == 1)
+        if(prev && prev != out && prev->reference == DELAYED_PIC_REF)
             prev->reference = 0;
         h->delayed_output_pic = out;
 #endif

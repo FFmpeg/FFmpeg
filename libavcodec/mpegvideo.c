@@ -907,8 +907,13 @@ alloc:
             pic= (AVFrame*)&s->picture[i];
         }
 
-        pic->reference= (s->pict_type != B_TYPE || s->codec_id == CODEC_ID_H264)
-                        && !s->dropable ? 3 : 0;
+        pic->reference= 0;
+        if (!s->dropable){
+            if (s->codec_id == CODEC_ID_H264)
+                pic->reference = s->picture_structure;
+            else if (s->pict_type != B_TYPE)
+                pic->reference = 3;
+        }
 
         pic->coded_picture_number= s->coded_picture_number++;
 
