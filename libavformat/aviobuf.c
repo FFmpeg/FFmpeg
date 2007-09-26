@@ -276,7 +276,7 @@ static void fill_buffer(ByteIOContext *s)
     }
 
     if(s->read_packet)
-    len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
+        len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
     if (len <= 0) {
         /* do not modify buffer if EOF reached so that a seek back can
            be done without rereading data */
@@ -343,7 +343,7 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
         if (len == 0) {
             if(size > s->buffer_size && !s->update_checksum){
                 if(s->read_packet)
-                len = s->read_packet(s->opaque, buf, size);
+                    len = s->read_packet(s->opaque, buf, size);
                 if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
                     be done without rereading data */
