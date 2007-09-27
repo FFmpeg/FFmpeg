@@ -37,6 +37,9 @@
 
 #undef exit
 
+static const char program_name[] = "FFplay";
+static const int program_birth_year = 2003;
+
 //#define DEBUG_SYNC
 
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
@@ -2512,6 +2515,8 @@ int main(int argc, char **argv)
 
     /* register all codecs, demux and protocols */
     av_register_all();
+
+    show_banner(program_name, program_birth_year);
 
     parse_options(argc, argv, options, opt_input_file);
 
