@@ -2045,7 +2045,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     flags |= SWS_CPU_CAPS_MMX;
 #elif defined (HAVE_ALTIVEC)
     flags |= SWS_CPU_CAPS_ALTIVEC;
-#elif defined (HAVE_BFIN)
+#elif defined (ARCH_BFIN)
     flags |= SWS_CPU_CAPS_BFIN;
 #endif
 #endif /* RUNTIME_CPUDETECT */
