@@ -53,6 +53,9 @@
 
 #undef exit
 
+static const char program_name[] = "FFserver";
+static const int program_birth_year = 2000;
+
 /* maximum number of simultaneous HTTP connections */
 #define HTTP_MAX_CONNECTIONS 2000
 
@@ -4313,14 +4316,9 @@ static int parse_ffconfig(const char *filename)
         return 0;
 }
 
-static void show_banner(void)
-{
-    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000-2006 Fabrice Bellard, et al.\n");
-}
-
 static void show_help(void)
 {
-    show_banner();
+    show_banner(program_name, program_birth_year);
     printf("usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
@@ -4375,7 +4373,7 @@ int main(int argc, char **argv)
             break;
         switch(c) {
         case 'L':
-            show_banner();
+            show_banner(program_name, program_birth_year);
             show_license();
             exit(0);
         case '?':

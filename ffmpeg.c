@@ -63,6 +63,9 @@
 
 #undef exit
 
+static const char program_name[] = "FFmpeg";
+static const int program_birth_year = 2000;
+
 /* select an input stream for an output stream */
 typedef struct AVStreamMap {
     int file_index;
@@ -3564,12 +3567,7 @@ static void opt_audio_bsf(const char *arg)
 
 static void opt_show_version(void)
 {
-    /* TODO: add function interface to avutil and avformat */
-    fprintf(stderr, "ffmpeg      " FFMPEG_VERSION "\n"
-           "libavutil   %d\n"
-           "libavcodec  %d\n"
-           "libavformat %d\n",
-           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD);
+    show_version(program_name);
     exit(0);
 }
 
@@ -3736,21 +3734,6 @@ const OptionDef options[] = {
     { NULL, },
 };
 
-static void show_banner(void)
-{
-    fprintf(stderr, "FFmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2007 Fabrice Bellard, et al.\n");
-    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
-    fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
-    fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
-    fprintf(stderr, "  built on " __DATE__ " " __TIME__);
-#ifdef __GNUC__
-    fprintf(stderr, ", gcc: " __VERSION__ "\n");
-#else
-    fprintf(stderr, ", using a non-gcc compiler\n");
-#endif
-}
-
 static void opt_show_license(void)
 {
     show_license();
@@ -3866,7 +3849,7 @@ int main(int argc, char **argv)
     avformat_opts = av_alloc_format_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
-    show_banner();
+    show_banner(program_name, program_birth_year);
     if (argc <= 1) {
         show_help();
         exit(1);

@@ -65,6 +65,23 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 void print_error(const char *filename, int err);
 
 /**
+ * Prints the banner of the program on stderr. The banner message
+ * depends on the current versions of the repository and of the libav*
+ * libraries.
+ * @param program_name Name of the program.
+ * @param program_birth_year Year of birth of the program.
+ */
+void show_banner(const char *program_name, int program_birth_year);
+
+/**
+ * Prints the version of the program on stdout. The version message
+ * depends on the current versions of the repository and of the libav*
+ * libraries.
+ * @param program_name Name of the program.
+ */
+void show_version(const char *program_name);
+
+/**
  * Prints on stdout the license of the program, which depends on the license of
  * the compiled libav* libraries.
  */

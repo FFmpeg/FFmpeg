@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "cmdutils.h"
 #include "avstring.h"
+#include "version.h"
 
 #undef exit
 
@@ -150,6 +151,31 @@ void print_error(const char *filename, int err)
         fprintf(stderr, "%s: Error while opening file\n", filename);
         break;
     }
+}
+
+void show_banner(const char *program_name, int program_birth_year)
+{
+    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2007 Fabrice Bellard, et al.\n",
+            program_name, program_birth_year);
+    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
+    fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
+    fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
+    fprintf(stderr, "  built on " __DATE__ " " __TIME__);
+#ifdef __GNUC__
+    fprintf(stderr, ", gcc: " __VERSION__ "\n");
+#else
+    fprintf(stderr, ", using a non-gcc compiler\n");
+#endif
+}
+
+void show_version(const char *program_name) {
+     /* TODO: add function interface to avutil and avformat */
+    printf("%s " FFMPEG_VERSION "\n", program_name);
+    printf("libavutil   %d\n"
+           "libavcodec  %d\n"
+           "libavformat %d\n",
+           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD);
 }
 
 void show_license(void)
