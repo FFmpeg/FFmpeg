@@ -1182,16 +1182,28 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
+    case CODEC_ID_ADPCM_IMA_AMV:
     case CODEC_ID_ADPCM_IMA_SMJPEG:
         c->status[0].predictor = *src;
         src += 2;
         c->status[0].step_index = *src++;
         src++;  /* skip another byte before getting to the meat */
+
+        if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV)
+            src+=4;
+
         while (src < buf + buf_size) {
+            char hi, lo;
+            lo = *src & 0x0F;
+            hi = (*src >> 4) & 0x0F;
+
+            if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV)
+                FFSWAP(char, hi, lo);
+
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                *src & 0x0F, 3);
+                lo, 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                (*src >> 4) & 0x0F, 3);
+                hi, 3);
             src++;
         }
         break;
@@ -1439,6 +1451,7 @@ ADPCM_ENCODER(id,name) ADPCM_DECODER(id,name)
 ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 ADPCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
