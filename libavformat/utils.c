@@ -2878,68 +2878,49 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url)
 {
-    const char *p;
-    char *q;
-    int port;
+    const char *p, *ls, *at, *col;
 
-    port = -1;
+    if (port_ptr)               *port_ptr = -1;
+    if (proto_size > 0)         proto[0] = 0;
+    if (authorization_size > 0) authorization[0] = 0;
+    if (hostname_size > 0)      hostname[0] = 0;
+    if (path_size > 0)          path[0] = 0;
 
-    p = url;
-    q = proto;
-    while (*p != ':' && *p != '\0') {
-        if ((q - proto) < proto_size - 1)
-            *q++ = *p;
-        p++;
-    }
-    if (proto_size > 0)
-        *q = '\0';
-    if (authorization_size > 0)
-        authorization[0] = '\0';
-    if (*p == '\0') {
-        if (proto_size > 0)
-            proto[0] = '\0';
-        if (hostname_size > 0)
-            hostname[0] = '\0';
-        p = url;
+    /* parse protocol */
+    if ((p = strchr(url, ':'))) {
+        av_strlcpy(proto, url, FFMIN(proto_size, p + 1 - url));
+        p++; /* skip ':' */
+        if (*p == '/') p++;
+        if (*p == '/') p++;
     } else {
-        char *at,*slash; // PETR: position of '@' character and '/' character
-
-        p++;
-        if (*p == '/')
-            p++;
-        if (*p == '/')
-            p++;
-        at = strchr(p,'@'); // PETR: get the position of '@'
-        slash = strchr(p,'/');  // PETR: get position of '/' - end of hostname
-        if (at && slash && at > slash) at = NULL; // PETR: not interested in '@' behind '/'
-
-        q = at ? authorization : hostname;  // PETR: if '@' exists starting with auth.
-
-         while ((at || *p != ':') && *p != '/' && *p != '?' && *p != '\0') { // PETR:
-            if (*p == '@') {    // PETR: passed '@'
-              if (authorization_size > 0)
-                  *q = '\0';
-              q = hostname;
-              at = NULL;
-            } else if (!at) {   // PETR: hostname
-              if ((q - hostname) < hostname_size - 1)
-                  *q++ = *p;
-            } else {
-              if ((q - authorization) < authorization_size - 1)
-                *q++ = *p;
-            }
-            p++;
-        }
-        if (hostname_size > 0)
-            *q = '\0';
-        if (*p == ':') {
-            p++;
-            port = strtoul(p, (char **)&p, 10);
-        }
+        /* no protocol means plain filename */
+        av_strlcpy(path, url, path_size);
+        return;
     }
-    if (port_ptr)
-        *port_ptr = port;
-    av_strlcpy(path, p, path_size);
+
+    /* separate path from hostname */
+    if ((ls = strchr(p, '/')))
+        av_strlcpy(path, ls, path_size);
+    else
+        ls = &p[strlen(p)]; // XXX
+
+    /* the rest is hostname, use that to parse auth/port */
+    if (ls != p) {
+        /* authorization (user[:pass]@hostname) */
+        if ((at = strchr(p, '@')) && at < ls) {
+            av_strlcpy(authorization, p,
+                       FFMIN(authorization_size, at + 1 - p));
+            p = at + 1; /* skip '@' */
+        }
+
+        /* port */
+        if ((col = strchr(p, ':')) && col < ls) {
+            ls = col;
+            if (port_ptr) *port_ptr = atoi(col + 1); /* skip ':' */
+        }
+
+        av_strlcpy(hostname, p, FFMIN(1 + ls - p, hostname_size));
+    }
 }
 
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
