@@ -834,15 +834,83 @@ static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
     }
 }
 
+#define LPC1(x) {\
+    int s = smp[i-(x)+1];\
+    p1 += c*s;\
+    c = coefs[(x)-2];\
+    p0 += c*s;\
+}
+
+static av_always_inline void encode_residual_lpc_unrolled(
+    int32_t *res, const int32_t *smp, int n,
+    int order, const int32_t *coefs, int shift, int big)
+{
+    int i;
+    for(i=order; i<n; i+=2) {
+        int c = coefs[order-1];
+        int p0 = c * smp[i-order];
+        int p1 = 0;
+        if(big) {
+            switch(order) {
+                case 32: LPC1(32)
+                case 31: LPC1(31)
+                case 30: LPC1(30)
+                case 29: LPC1(29)
+                case 28: LPC1(28)
+                case 27: LPC1(27)
+                case 26: LPC1(26)
+                case 25: LPC1(25)
+                case 24: LPC1(24)
+                case 23: LPC1(23)
+                case 22: LPC1(22)
+                case 21: LPC1(21)
+                case 20: LPC1(20)
+                case 19: LPC1(19)
+                case 18: LPC1(18)
+                case 17: LPC1(17)
+                case 16: LPC1(16)
+                case 15: LPC1(15)
+                case 14: LPC1(14)
+                case 13: LPC1(13)
+                case 12: LPC1(12)
+                case 11: LPC1(11)
+                case 10: LPC1(10)
+                case  9: LPC1( 9)
+                         LPC1( 8)
+                         LPC1( 7)
+                         LPC1( 6)
+                         LPC1( 5)
+                         LPC1( 4)
+                         LPC1( 3)
+                         LPC1( 2)
+            }
+        } else {
+            switch(order) {
+                case  8: LPC1( 8)
+                case  7: LPC1( 7)
+                case  6: LPC1( 6)
+                case  5: LPC1( 5)
+                case  4: LPC1( 4)
+                case  3: LPC1( 3)
+                case  2: LPC1( 2)
+            }
+        }
+        p1 += c * smp[i];
+        res[i  ] = smp[i  ] - (p0 >> shift);
+        res[i+1] = smp[i+1] - (p1 >> shift);
+    }
+}
+
 static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
                                 int order, const int32_t *coefs, int shift)
 {
-    int i, j;
-
+    int i;
     for(i=0; i<order; i++) {
         res[i] = smp[i];
     }
+#ifdef CONFIG_SMALL
     for(i=order; i<n; i+=2) {
+        int j;
         int32_t c = coefs[0];
         int32_t p0 = 0, p1 = c*smp[i];
         for(j=1; j<order; j++) {
@@ -855,6 +923,19 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
         res[i+0] = smp[i+0] - (p0 >> shift);
         res[i+1] = smp[i+1] - (p1 >> shift);
     }
+#else
+    switch(order) {
+        case  1: encode_residual_lpc_unrolled(res, smp, n, 1, coefs, shift, 0); break;
+        case  2: encode_residual_lpc_unrolled(res, smp, n, 2, coefs, shift, 0); break;
+        case  3: encode_residual_lpc_unrolled(res, smp, n, 3, coefs, shift, 0); break;
+        case  4: encode_residual_lpc_unrolled(res, smp, n, 4, coefs, shift, 0); break;
+        case  5: encode_residual_lpc_unrolled(res, smp, n, 5, coefs, shift, 0); break;
+        case  6: encode_residual_lpc_unrolled(res, smp, n, 6, coefs, shift, 0); break;
+        case  7: encode_residual_lpc_unrolled(res, smp, n, 7, coefs, shift, 0); break;
+        case  8: encode_residual_lpc_unrolled(res, smp, n, 8, coefs, shift, 0); break;
+        default: encode_residual_lpc_unrolled(res, smp, n, order, coefs, shift, 1); break;
+    }
+#endif
 }
 
 static int encode_residual(FlacEncodeContext *ctx, int ch)

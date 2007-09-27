@@ -670,7 +670,7 @@ static const AVOption options[]={
 {"context", "context model", OFFSET(context_model), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"slice_flags", NULL, OFFSET(slice_flags), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"xvmc_acceleration", NULL, OFFSET(xvmc_acceleration), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
-{"mbd", "macroblock decision algorithm (high quality mode)", OFFSET(mb_decision), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E, "mbd"},
+{"mbd", "macroblock decision algorithm (high quality mode)", OFFSET(mb_decision), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|A|E, "mbd"},
 {"simple", "use mbcmp (default)", 0, FF_OPT_TYPE_CONST, FF_MB_DECISION_SIMPLE, INT_MIN, INT_MAX, V|E, "mbd"},
 {"bits", "use fewest bits", 0, FF_OPT_TYPE_CONST, FF_MB_DECISION_BITS, INT_MIN, INT_MAX, V|E, "mbd"},
 {"rd", "use best rate distortion", 0, FF_OPT_TYPE_CONST, FF_MB_DECISION_RD, INT_MIN, INT_MAX, V|E, "mbd"},
