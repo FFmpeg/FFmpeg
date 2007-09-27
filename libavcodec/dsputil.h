@@ -348,13 +348,13 @@ typedef struct DSPContext {
     /**
      * block -> idct -> clip to unsigned 8 bit -> dest.
      * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
-     * @param line_size size in bytes of a horizotal line of dest
+     * @param line_size size in bytes of a horizontal line of dest
      */
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
     /**
      * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
-     * @param line_size size in bytes of a horizotal line of dest
+     * @param line_size size in bytes of a horizontal line of dest
      */
     void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
