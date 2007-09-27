@@ -240,7 +240,9 @@ Muxers/Demuxers:
   psxstr.c                              Mike Melanson
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
+  rtp*.c (Muxer only)                   Luca Abeni
   rtsp.c                                Luca Barbato
+  sdp.c                                 Luca Abeni
   segafilm.c                            Mike Melanson
   swf.c                                 Baptiste Coudurier
   txd.c                                 Ivo van Poorten
