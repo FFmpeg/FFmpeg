@@ -2613,7 +2613,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 h->hpc.pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
                 if(is_h264){
                     if(!transform_bypass)
-                        h264_luma_dc_dequant_idct_c(h->mb, s->qscale, h->dequant4_coeff[IS_INTRA(mb_type) ? 0:3][s->qscale][0]);
+                        h264_luma_dc_dequant_idct_c(h->mb, s->qscale, h->dequant4_coeff[0][s->qscale][0]);
                 }else
                     svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
             }
