@@ -607,21 +607,30 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
 static void compute_autocorr(const int32_t *data, int len, int lag,
                              double *autoc)
 {
-    int i, lag_ptr;
+    int i, j;
     double tmp[len + lag];
     double *data1= tmp + lag;
 
     apply_welch_window(data, len, data1);
 
-    for(i=0; i<lag; i++){
-        autoc[i] = 1.0;
-        data1[i-lag]= 0.0;
+    for(j=0; j<lag; j++)
+        data1[j-lag]= 0.0;
+
+    for(j=0; j<lag; j+=2){
+        double sum0 = 1.0, sum1 = 1.0;
+        for(i=0; i<len; i++){
+            sum0 += data1[i] * data1[i-j];
+            sum1 += data1[i] * data1[i-j-1];
+        }
+        autoc[j  ] = sum0;
+        autoc[j+1] = sum1;
     }
 
-    for(i=0; i<len; i++){
-        for(lag_ptr= i-lag; lag_ptr<=i; lag_ptr++){
-            autoc[i-lag_ptr] += data1[i] * data1[lag_ptr];
-        }
+    if(j==lag){
+        double sum = 1.0;
+        for(i=0; i<len; i++)
+            sum += data1[i] * data1[i-j];
+        autoc[j] = sum;
     }
 }
 
