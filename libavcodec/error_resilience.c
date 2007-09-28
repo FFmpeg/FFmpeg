@@ -563,6 +563,11 @@ static int is_intra_more_likely(MpegEncContext *s){
 
     if(undamaged_count < 5) return 0; //allmost all MBs damaged -> use temporal prediction
 
+#ifdef HAVE_XVMC
+    //prevent dsp.sad() check, that requires access to the image
+    if(s->avctx->xvmc_acceleration && s->pict_type==I_TYPE) return 1;
+#endif
+
     skip_amount= FFMAX(undamaged_count/50, 1); //check only upto 50 MBs
     is_intra_likely=0;
 
