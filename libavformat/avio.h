@@ -197,13 +197,15 @@ static inline int url_is_streamed(ByteIOContext *s)
     return s->is_streamed;
 }
 
+/** @note when opened as read/write, the buffers are only used for
+   writing */
 int url_fdopen(ByteIOContext *s, URLContext *h);
 
 /** @warning must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size);
 
 /** @note when opened as read/write, the buffers are only used for
-   reading */
+   writing */
 int url_fopen(ByteIOContext *s, const char *filename, int flags);
 int url_fclose(ByteIOContext *s);
 URLContext *url_fileno(ByteIOContext *s);
