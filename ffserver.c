@@ -4361,6 +4361,8 @@ int main(int argc, char **argv)
 
     av_register_all();
 
+    show_banner(program_name, program_birth_year);
+
     config_filename = "/etc/ffserver.conf";
 
     my_program_name = argv[0];
