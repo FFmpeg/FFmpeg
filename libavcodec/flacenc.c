@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "crc.h"
+#include "dsputil.h"
 #include "golomb.h"
 #include "lls.h"
 
@@ -107,6 +108,7 @@ typedef struct FlacEncodeContext {
     FlacFrame frame;
     CompressionOptions options;
     AVCodecContext *avctx;
+    DSPContext dsp;
 } FlacEncodeContext;
 
 static const int flac_samplerates[16] = {
@@ -176,6 +178,8 @@ static int flac_encode_init(AVCodecContext *avctx)
     uint8_t *streaminfo;
 
     s->avctx = avctx;
+
+    dsputil_init(&s->dsp, avctx);
 
     if(avctx->sample_fmt != SAMPLE_FMT_S16) {
         return -1;
@@ -604,8 +608,8 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
  * Calculates autocorrelation data from audio samples
  * A Welch window function is applied before calculation.
  */
-static void compute_autocorr(const int32_t *data, int len, int lag,
-                             double *autoc)
+void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
+                              double *autoc)
 {
     int i, j;
     double tmp[len + lag + 1];
@@ -747,7 +751,8 @@ static int estimate_best_order(double *ref, int max_order)
 /**
  * Calculate LPC coefficients for multiple orders
  */
-static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
+static int lpc_calc_coefs(FlacEncodeContext *s,
+                          const int32_t *samples, int blocksize, int max_order,
                           int precision, int32_t coefs[][MAX_LPC_ORDER],
                           int *shift, int use_lpc, int omethod)
 {
@@ -760,7 +765,7 @@ static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
     assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER);
 
     if(use_lpc == 1){
-        compute_autocorr(samples, blocksize, max_order, autoc);
+        s->dsp.flac_compute_autocorr(samples, blocksize, max_order, autoc);
 
         compute_lpc_coefs(autoc, max_order, lpc, ref);
     }else{
@@ -1017,7 +1022,7 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    opt_order = lpc_calc_coefs(smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc, omethod);
+    opt_order = lpc_calc_coefs(ctx, smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc, omethod);
 
     if(omethod == ORDER_METHOD_2LEVEL ||
        omethod == ORDER_METHOD_4LEVEL ||
