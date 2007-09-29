@@ -95,6 +95,7 @@ version <next>
 - Matroska muxer
 - Slice-based parallel H.264 decoding
 - Monkey's Audio demuxer and decoder
+- additional SPARC (VIS) optimizations
 - AMV audio and video decoder
 
 version 0.4.9-pre1:
