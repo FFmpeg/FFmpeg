@@ -62,6 +62,7 @@ static const char avi_headers[][8] = {
     { 'R', 'I', 'F', 'F',    'A', 'V', 'I', 'X' },
     { 'R', 'I', 'F', 'F',    'A', 'V', 'I', 0x19},
     { 'O', 'N', '2', ' ',    'O', 'N', '2', 'f' },
+    { 'R', 'I', 'F', 'F',    'A', 'M', 'V', ' ' },
     { 0 }
 };
 
@@ -232,6 +233,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     AVIStream *ast = NULL;
     char str_track[4];
+    int avih_width=0, avih_height=0;
+    int amv_file_format=0;
 
     avi->stream_index= -1;
 
@@ -276,6 +279,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             avi->is_odml = 1;
             url_fskip(pb, size + (size & 1));
             break;
+        case MKTAG('a', 'm', 'v', 'h'):
+            amv_file_format=1;
         case MKTAG('a', 'v', 'i', 'h'):
             /* avi header */
             /* using frame_period is bad idea */
@@ -286,8 +291,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             url_fskip(pb, 2 * 4);
             get_le32(pb);
+            get_le32(pb);
+            avih_width=get_le32(pb);
+            avih_height=get_le32(pb);
 
-            url_fskip(pb, size - 7 * 4);
+            url_fskip(pb, size - 10 * 4);
             break;
         case MKTAG('s', 't', 'r', 'h'):
             /* stream header */
@@ -309,6 +317,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     goto fail;
                 st->priv_data = ast;
             }
+            if(amv_file_format)
+                tag1 = stream_index ? MKTAG('a','u','d','s') : MKTAG('v','i','d','s');
 
 #ifdef DEBUG
             print_tag("strh", tag1, -1);
@@ -416,6 +426,14 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st = s->streams[stream_index];
                 switch(codec_type) {
                 case CODEC_TYPE_VIDEO:
+                    if(amv_file_format){
+                        st->codec->width=avih_width;
+                        st->codec->height=avih_height;
+                        st->codec->codec_type = CODEC_TYPE_VIDEO;
+                        st->codec->codec_id = CODEC_ID_AMV;
+                        url_fskip(pb, size);
+                        break;
+                    }
                     get_le32(pb); /* size */
                     st->codec->width = get_le32(pb);
                     st->codec->height = get_le32(pb);
@@ -486,6 +504,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->codec_id  = CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                     }
+                    if (amv_file_format)
+                        st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
                     break;
                 default:
                     st->codec->codec_type = CODEC_TYPE_DATA;
