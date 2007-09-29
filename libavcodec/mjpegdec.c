@@ -660,8 +660,17 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
 static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, int se, int Ah, int Al){
     int i, mb_x, mb_y;
     int EOBRUN = 0;
+    uint8_t* data[MAX_COMPONENTS];
+    int linesize[MAX_COMPONENTS];
 
     if(Ah) return 0; /* TODO decode refinement planes too */
+
+    for(i=0; i < nb_components; i++) {
+        int c = s->comp_index[i];
+        data[c] = s->picture.data[c];
+        linesize[c]=s->linesize[c];
+    }
+
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
             if (s->restart_interval && !s->restart_count)
@@ -691,16 +700,16 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, i
                         return -1;
                     }
 //                    av_log(s->avctx, AV_LOG_DEBUG, "mb: %d %d processed\n", mb_y, mb_x);
-                    ptr = s->picture.data[c] +
-                        (((s->linesize[c] * (v * mb_y + y) * 8) +
+                    ptr = data[c] +
+                        (((linesize[c] * (v * mb_y + y) * 8) +
                         (h * mb_x + x) * 8) >> s->avctx->lowres);
                     if (s->interlaced && s->bottom_field)
-                        ptr += s->linesize[c] >> 1;
+                        ptr += linesize[c] >> 1;
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
                     if(!s->progressive)
-                        s->dsp.idct_put(ptr, s->linesize[c], s->block);
+                        s->dsp.idct_put(ptr, linesize[c], s->block);
                     else
-                        s->dsp.idct_add(ptr, s->linesize[c], s->block);
+                        s->dsp.idct_add(ptr, linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
                         y++;
