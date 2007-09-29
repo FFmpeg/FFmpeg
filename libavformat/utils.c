@@ -2878,7 +2878,7 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url)
 {
-    const char *p, *ls, *at, *col;
+    const char *p, *ls, *at, *col, *brk;
 
     if (port_ptr)               *port_ptr = -1;
     if (proto_size > 0)         proto[0] = 0;
@@ -2913,13 +2913,19 @@ void url_split(char *proto, int proto_size,
             p = at + 1; /* skip '@' */
         }
 
-        /* port */
-        if ((col = strchr(p, ':')) && col < ls) {
-            ls = col;
-            if (port_ptr) *port_ptr = atoi(col + 1); /* skip ':' */
-        }
-
-        av_strlcpy(hostname, p, FFMIN(1 + ls - p, hostname_size));
+        if (*p == '[' && (brk = strchr(p, ']')) && brk < ls) {
+            /* [host]:port */
+            av_strlcpy(hostname, p + 1,
+                       FFMIN(hostname_size, brk - p));
+            if (brk[1] == ':' && port_ptr)
+                *port_ptr = atoi(brk + 2);
+        } else if ((col = strchr(p, ':')) && col < ls) {
+            av_strlcpy(hostname, p,
+                       FFMIN(col + 1 - p, hostname_size));
+            if (port_ptr) *port_ptr = atoi(col + 1);
+        } else
+            av_strlcpy(hostname, p,
+                       FFMIN(ls + 1 - p, hostname_size));
     }
 }
 
