@@ -1217,8 +1217,6 @@ esac
 
 add_extralibs $osextralibs
 
-check_ldflags -lm
-
 if ! disabled logging ; then
     enabled logging || logfile="$logging"
     echo "# $0 $@" >$logfile
@@ -1546,6 +1544,8 @@ for thread in $THREADS_LIST; do
             thread_type="$thread"
     fi
 done
+
+check_lib math.h sin -lm
 
 # test for lrintf in math.h
 check_exec <<EOF && enable lrintf || disable lrintf
