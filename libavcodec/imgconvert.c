@@ -2855,9 +2855,7 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                                         width, height);
         }
     }
-#ifdef HAVE_MMX
-    emms();
-#endif
+    emms_c();
     return 0;
 }
 
