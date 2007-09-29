@@ -27,6 +27,7 @@
 #include "cmdutils.h"
 #include "avstring.h"
 #include "version.h"
+#include "config.h"
 
 #undef exit
 
