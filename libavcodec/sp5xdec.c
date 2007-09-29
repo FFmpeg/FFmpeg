@@ -72,6 +72,10 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     memcpy(recoded+j, &sp5x_data_sos[0], sizeof(sp5x_data_sos));
     j += sizeof(sp5x_data_sos);
 
+    if(avctx->codec_id==CODEC_ID_AMV)
+        for (i = 2; i < buf_size-2 && j < buf_size+1024-2; i++)
+            recoded[j++] = buf[i];
+    else
     for (i = 14; i < buf_size && j < buf_size+1024-2; i++)
     {
         recoded[j++] = buf[i];
@@ -193,4 +197,16 @@ AVCodec sp5x_decoder = {
     sp5x_decode_frame,
     CODEC_CAP_DR1,
     NULL
+};
+
+AVCodec amv_decoder = {
+    "amv",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_AMV,
+    sizeof(MJpegDecodeContext),
+    ff_mjpeg_decode_init,
+    NULL,
+    ff_mjpeg_decode_end,
+    sp5x_decode_frame,
+    CODEC_CAP_DR1
 };
