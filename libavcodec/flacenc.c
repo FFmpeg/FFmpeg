@@ -499,10 +499,11 @@ static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
     res = &data[pred_order];
     res_end = &data[n >> pmax];
     for(i=0; i<parts; i++) {
-        sums[pmax][i] = 0;
+        uint32_t sum = 0;
         while(res < res_end){
-            sums[pmax][i] += *(res++);
+            sum += *(res++);
         }
+        sums[pmax][i] = sum;
         res_end+= n >> pmax;
     }
     /* sums for lower levels */
