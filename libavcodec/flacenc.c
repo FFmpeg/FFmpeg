@@ -840,14 +840,35 @@ static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
         for(i=order; i<n; i++)
             res[i]= smp[i] - smp[i-1];
     }else if(order==2){
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 2*smp[i-1] + smp[i-2];
+        int a = smp[order-1] - smp[order-2];
+        for(i=order; i<n; i++) {
+            int b = smp[i] - smp[i-1];
+            res[i]= b - a;
+            a = b;
+        }
     }else if(order==3){
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
+        int a = smp[order-1] - smp[order-2];
+        int c = smp[order-1] - 2*smp[order-2] + smp[order-3];
+        for(i=order; i<n; i++) {
+            int b = smp[i] - smp[i-1];
+            int d = b - a;
+            res[i]= d - c;
+            a = b;
+            c = d;
+        }
     }else{
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
+        int a = smp[order-1] - smp[order-2];
+        int c = smp[order-1] - 2*smp[order-2] + smp[order-3];
+        int e = smp[order-1] - 3*smp[order-2] + 3*smp[order-3] - smp[order-4];
+        for(i=order; i<n; i++) {
+            int b = smp[i] - smp[i-1];
+            int d = b - a;
+            int f = d - c;
+            res[i]= f - e;
+            a = b;
+            c = d;
+            e = f;
+        }
     }
 }
 
