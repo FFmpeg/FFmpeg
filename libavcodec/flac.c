@@ -315,6 +315,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     int i, j;
     int coeff_prec, qlevel;
     int coeffs[pred_order];
+    int32_t *decoded = s->decoded[channel];
 
 //    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME LPC\n");
 
@@ -323,8 +324,8 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 
     for (i = 0; i < pred_order; i++)
     {
-        s->decoded[channel][i] = get_sbits(&s->gb, s->curr_bps);
-//        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, s->decoded[channel][i]);
+        decoded[i] = get_sbits(&s->gb, s->curr_bps);
+//        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, decoded[i]);
     }
 
     coeff_prec = get_bits(&s->gb, 4) + 1;
@@ -356,32 +357,34 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
         {
             sum = 0;
             for (j = 0; j < pred_order; j++)
-                sum += (int64_t)coeffs[j] * s->decoded[channel][i-j-1];
-            s->decoded[channel][i] += sum >> qlevel;
+                sum += (int64_t)coeffs[j] * decoded[i-j-1];
+            decoded[i] += sum >> qlevel;
         }
     } else {
         for (i = pred_order; i < s->blocksize-1; i += 2)
         {
-            int c = coeffs[pred_order-1];
-            int s0 = c * s->decoded[channel][i-pred_order];
-            int s1 = 0;
+            int c;
+            int d = decoded[i-pred_order];
+            int s0 = 0, s1 = 0;
             for (j = pred_order-1; j > 0; j--)
             {
-                int d = s->decoded[channel][i-j];
-                s1 += c*d;
-                c = coeffs[j-1];
+                c = coeffs[j];
                 s0 += c*d;
+                d = decoded[i-j];
+                s1 += c*d;
             }
-            s0 = s->decoded[channel][i] += s0 >> qlevel;
-            s1 += c * s0;
-            s->decoded[channel][i+1] += s1 >> qlevel;
+            c = coeffs[0];
+            s0 += c*d;
+            d = decoded[i] += s0 >> qlevel;
+            s1 += c*d;
+            decoded[i+1] += s1 >> qlevel;
         }
         if (i < s->blocksize)
         {
             int sum = 0;
             for (j = 0; j < pred_order; j++)
-                sum += coeffs[j] * s->decoded[channel][i-j-1];
-            s->decoded[channel][i] += sum >> qlevel;
+                sum += coeffs[j] * decoded[i-j-1];
+            decoded[i] += sum >> qlevel;
         }
     }
 
