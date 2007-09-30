@@ -876,10 +876,10 @@ static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
 }
 
 #define LPC1(x) {\
-    int s = smp[i-(x)+1];\
-    p1 += c*s;\
-    c = coefs[(x)-2];\
+    int c = coefs[(x)-1];\
     p0 += c*s;\
+    s = smp[i-(x)+1];\
+    p1 += c*s;\
 }
 
 static av_always_inline void encode_residual_lpc_unrolled(
@@ -888,9 +888,8 @@ static av_always_inline void encode_residual_lpc_unrolled(
 {
     int i;
     for(i=order; i<n; i+=2) {
-        int c = coefs[order-1];
-        int p0 = c * smp[i-order];
-        int p1 = 0;
+        int s = smp[i-order];
+        int p0 = 0, p1 = 0;
         if(big) {
             switch(order) {
                 case 32: LPC1(32)
@@ -924,6 +923,7 @@ static av_always_inline void encode_residual_lpc_unrolled(
                          LPC1( 4)
                          LPC1( 3)
                          LPC1( 2)
+                         LPC1( 1)
             }
         } else {
             switch(order) {
@@ -934,9 +934,9 @@ static av_always_inline void encode_residual_lpc_unrolled(
                 case  4: LPC1( 4)
                 case  3: LPC1( 3)
                 case  2: LPC1( 2)
+                case  1: LPC1( 1)
             }
         }
-        p1 += c * smp[i];
         res[i  ] = smp[i  ] - (p0 >> shift);
         res[i+1] = smp[i+1] - (p1 >> shift);
     }
@@ -952,16 +952,15 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
 #ifdef CONFIG_SMALL
     for(i=order; i<n; i+=2) {
         int j;
-        int32_t c = coefs[0];
-        int32_t p0 = 0, p1 = c*smp[i];
-        for(j=1; j<order; j++) {
-            int32_t s = smp[i-j];
-            p0 += c*s;
-            c = coefs[j];
+        int s = smp[i];
+        int p0 = 0, p1 = 0;
+        for(j=0; j<order; j++) {
+            int c = coefs[j];
             p1 += c*s;
+            s = smp[i-j-1];
+            p0 += c*s;
         }
-        p0 += c*smp[i-order];
-        res[i+0] = smp[i+0] - (p0 >> shift);
+        res[i  ] = smp[i  ] - (p0 >> shift);
         res[i+1] = smp[i+1] - (p1 >> shift);
     }
 #else
