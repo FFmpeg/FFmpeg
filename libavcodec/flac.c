@@ -259,7 +259,9 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
 
 static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 {
-    int i;
+    const int blocksize = s->blocksize;
+    int32_t *decoded = s->decoded[channel];
+    int a, b, c, d, i;
 
 //    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME FIXED\n");
 
@@ -268,38 +270,37 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 
     for (i = 0; i < pred_order; i++)
     {
-        s->decoded[channel][i] = get_sbits(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits(&s->gb, s->curr_bps);
 //        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, s->decoded[channel][i]);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
         return -1;
 
+    a = decoded[pred_order-1];
+    b = a - decoded[pred_order-2];
+    c = b - decoded[pred_order-2] + decoded[pred_order-3];
+    d = c - decoded[pred_order-2] + 2*decoded[pred_order-3] - decoded[pred_order-4];
+
     switch(pred_order)
     {
         case 0:
             break;
         case 1:
-            for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] +=   s->decoded[channel][i-1];
+            for (i = pred_order; i < blocksize; i++)
+                decoded[i] = a += decoded[i];
             break;
         case 2:
-            for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] += 2*s->decoded[channel][i-1]
-                                          - s->decoded[channel][i-2];
+            for (i = pred_order; i < blocksize; i++)
+                decoded[i] = a += b += decoded[i];
             break;
         case 3:
-            for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] += 3*s->decoded[channel][i-1]
-                                        - 3*s->decoded[channel][i-2]
-                                        +   s->decoded[channel][i-3];
+            for (i = pred_order; i < blocksize; i++)
+                decoded[i] = a += b += c += decoded[i];
             break;
         case 4:
-            for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] += 4*s->decoded[channel][i-1]
-                                        - 6*s->decoded[channel][i-2]
-                                        + 4*s->decoded[channel][i-3]
-                                        -   s->decoded[channel][i-4];
+            for (i = pred_order; i < blocksize; i++)
+                decoded[i] = a += b += c += d += decoded[i];
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "illegal pred order %d\n", pred_order);
