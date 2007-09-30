@@ -4318,7 +4318,6 @@ static int parse_ffconfig(const char *filename)
 
 static void show_help(void)
 {
-    show_banner(program_name, program_birth_year);
     printf("usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
@@ -4375,7 +4374,6 @@ int main(int argc, char **argv)
             break;
         switch(c) {
         case 'L':
-            show_banner(program_name, program_birth_year);
             show_license();
             exit(0);
         case '?':
