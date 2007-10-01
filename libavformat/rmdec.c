@@ -113,6 +113,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (!strcmp(buf, "dnet")) {
             st->codec->codec_id = CODEC_ID_AC3;
+            st->need_parsing = AVSTREAM_PARSE_FULL;
         } else if (!strcmp(buf, "28_8")) {
             st->codec->codec_id = CODEC_ID_RA_288;
             st->codec->extradata_size= 0;
