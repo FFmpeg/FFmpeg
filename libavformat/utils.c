@@ -1638,7 +1638,7 @@ static int has_codec_parameters(AVCodecContext *enc)
         val = 1;
         break;
     }
-    return (val != 0);
+    return (enc->codec_id != CODEC_ID_NONE && val != 0);
 }
 
 static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
@@ -1802,9 +1802,6 @@ int av_find_stream_info(AVFormatContext *ic)
                && duration_count[i]<20 && st->codec->codec_type == CODEC_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
-                break;
-            if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
-                st->codec->codec_id == CODEC_ID_NONE)
                 break;
             if(st->first_dts == AV_NOPTS_VALUE)
                 break;
