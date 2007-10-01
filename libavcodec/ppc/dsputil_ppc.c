@@ -155,11 +155,7 @@ POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
       i += 16;
     }
     for ( ; i < sizeof(DCTELEM)*6*64-31 ; i += 32) {
-#ifndef __MWERKS__
       asm volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
-#else
-      __dcbz( blocks, i );
-#endif
     }
     if (misal) {
       ((unsigned long*)blocks)[188] = 0L;
