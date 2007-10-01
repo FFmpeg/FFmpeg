@@ -79,7 +79,7 @@ int dct_quantize_altivec(MpegEncContext* s,
     int lastNonZero;
     vector float row0, row1, row2, row3, row4, row5, row6, row7;
     vector float alt0, alt1, alt2, alt3, alt4, alt5, alt6, alt7;
-    const_vector float zero = (const_vector float)FOUROF(0.);
+    const vector float zero = (const vector float)FOUROF(0.);
     // used after quantise step
     int oldBaseValue = 0;
 
@@ -522,7 +522,7 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     }
 
     {
-      register const_vector signed short vczero = (const_vector signed short)vec_splat_s16(0);
+      register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
       DECLARE_ALIGNED_16(short, qmul8[]) =
           {
             qmul, qmul, qmul, qmul,

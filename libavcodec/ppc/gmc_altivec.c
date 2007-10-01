@@ -45,8 +45,8 @@ POWERPC_PERF_DECLARE(altivec_gmc1_num, GMC1_PERF_COND);
         (   x16)*(   y16), /* D */
         0, 0, 0, 0         /* padding */
       };
-    register const_vector unsigned char vczero = (const_vector unsigned char)vec_splat_u8(0);
-    register const_vector unsigned short vcsr8 = (const_vector unsigned short)vec_splat_u16(8);
+    register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+    register const vector unsigned short vcsr8 = (const vector unsigned short)vec_splat_u16(8);
     register vector unsigned char dstv, dstv2, src_0, src_1, srcvA, srcvB, srcvC, srcvD;
     register vector unsigned short Av, Bv, Cv, Dv, rounderV, tempA, tempB, tempC, tempD;
     int i;

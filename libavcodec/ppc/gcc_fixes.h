@@ -97,6 +97,4 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 
 #endif
 
-#define const_vector const vector
-
 #endif /* GCC_FIXES_H */
