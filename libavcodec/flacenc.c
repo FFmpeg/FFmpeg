@@ -770,7 +770,7 @@ static int lpc_calc_coefs(FlacEncodeContext *s,
         compute_lpc_coefs(autoc, max_order, lpc, ref);
     }else{
         LLSModel m[2];
-        double var[MAX_LPC_ORDER+1], eval, weight;
+        double var[MAX_LPC_ORDER+1], weight;
 
         for(pass=0; pass<use_lpc-1; pass++){
             av_init_lls(&m[pass&1], max_order);
@@ -781,11 +781,14 @@ static int lpc_calc_coefs(FlacEncodeContext *s,
                     var[j]= samples[i-j];
 
                 if(pass){
+                    double eval, inv, rinv;
                     eval= av_evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
                     eval= (512>>pass) + fabs(eval - var[0]);
+                    inv = 1/eval;
+                    rinv = sqrt(inv);
                     for(j=0; j<=max_order; j++)
-                        var[j]/= sqrt(eval);
-                    weight += 1/eval;
+                        var[j] *= rinv;
+                    weight += inv;
                 }else
                     weight++;
 
