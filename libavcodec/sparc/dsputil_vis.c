@@ -3990,6 +3990,7 @@ static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
 
 static int vis_level ()
 {
+    int accel = 0;
     accel |= ACCEL_SPARC_VIS;
     accel |= ACCEL_SPARC_VIS2;
     return accel;
