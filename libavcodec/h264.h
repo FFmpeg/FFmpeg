@@ -151,8 +151,8 @@ typedef enum MMCOOpcode{
  */
 typedef struct MMCO{
     MMCOOpcode opcode;
-    int short_frame_num;
-    int long_index;
+    int short_pic_num;  ///< pic_num without wrapping (pic_num & max_pic_num)
+    int long_arg;       ///< index, pic_num, or num long refs depending on opcode
 } MMCO;
 
 /**

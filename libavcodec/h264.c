@@ -3228,47 +3228,47 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
     for(i=0; i<mmco_count; i++){
         if(s->avctx->debug&FF_DEBUG_MMCO)
-            av_log(h->s.avctx, AV_LOG_DEBUG, "mmco:%d %d %d\n", h->mmco[i].opcode, h->mmco[i].short_frame_num, h->mmco[i].long_index);
+            av_log(h->s.avctx, AV_LOG_DEBUG, "mmco:%d %d %d\n", h->mmco[i].opcode, h->mmco[i].short_pic_num, h->mmco[i].long_arg);
 
         switch(mmco[i].opcode){
         case MMCO_SHORT2UNUSED:
-            pic= remove_short(h, mmco[i].short_frame_num);
+            pic= remove_short(h, mmco[i].short_pic_num);
             if(pic)
                 unreference_pic(h, pic);
             else if(s->avctx->debug&FF_DEBUG_MMCO)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: remove_short() failure\n");
             break;
         case MMCO_SHORT2LONG:
-            pic= remove_long(h, mmco[i].long_index);
+            pic= remove_long(h, mmco[i].long_arg);
             if(pic) unreference_pic(h, pic);
 
-            h->long_ref[ mmco[i].long_index ]= remove_short(h, mmco[i].short_frame_num);
-            if (h->long_ref[ mmco[i].long_index ]){
-                h->long_ref[ mmco[i].long_index ]->long_ref=1;
+            h->long_ref[ mmco[i].long_arg ]= remove_short(h, mmco[i].short_pic_num);
+            if (h->long_ref[ mmco[i].long_arg ]){
+                h->long_ref[ mmco[i].long_arg ]->long_ref=1;
                 h->long_ref_count++;
             }
             break;
         case MMCO_LONG2UNUSED:
-            pic= remove_long(h, mmco[i].long_index);
+            pic= remove_long(h, mmco[i].long_arg);
             if(pic)
                 unreference_pic(h, pic);
             else if(s->avctx->debug&FF_DEBUG_MMCO)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: remove_long() failure\n");
             break;
         case MMCO_LONG:
-            pic= remove_long(h, mmco[i].long_index);
+            pic= remove_long(h, mmco[i].long_arg);
             if(pic) unreference_pic(h, pic);
 
-            h->long_ref[ mmco[i].long_index ]= s->current_picture_ptr;
-            h->long_ref[ mmco[i].long_index ]->long_ref=1;
+            h->long_ref[ mmco[i].long_arg ]= s->current_picture_ptr;
+            h->long_ref[ mmco[i].long_arg ]->long_ref=1;
             h->long_ref_count++;
 
             current_is_long=1;
             break;
         case MMCO_SET_MAX_LONG:
-            assert(mmco[i].long_index <= 16);
+            assert(mmco[i].long_arg <= 16);
             // just remove the long term which index is greater than new max
-            for(j = mmco[i].long_index; j<16; j++){
+            for(j = mmco[i].long_arg; j<16; j++){
                 pic = remove_long(h, j);
                 if (pic) unreference_pic(h, pic);
             }
@@ -3313,8 +3313,8 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
 
     if(h->nal_unit_type == NAL_IDR_SLICE){ //FIXME fields
         s->broken_link= get_bits1(gb) -1;
-        h->mmco[0].long_index= get_bits1(gb) - 1; // current_long_term_idx
-        if(h->mmco[0].long_index == -1)
+        h->mmco[0].long_arg= get_bits1(gb) - 1; // current_long_term_idx
+        if(h->mmco[0].long_arg == -1)
             h->mmco_index= 0;
         else{
             h->mmco[0].opcode= MMCO_LONG;
@@ -3327,19 +3327,19 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
 
                 h->mmco[i].opcode= opcode;
                 if(opcode==MMCO_SHORT2UNUSED || opcode==MMCO_SHORT2LONG){
-                    h->mmco[i].short_frame_num= (h->frame_num - get_ue_golomb(gb) - 1) & ((1<<h->sps.log2_max_frame_num)-1); //FIXME fields
-/*                    if(h->mmco[i].short_frame_num >= h->short_ref_count || h->short_ref[ h->mmco[i].short_frame_num ] == NULL){
+                    h->mmco[i].short_pic_num= (h->frame_num - get_ue_golomb(gb) - 1) & ((1<<h->sps.log2_max_frame_num)-1); //FIXME fields
+/*                    if(h->mmco[i].short_pic_num >= h->short_ref_count || h->short_ref[ h->mmco[i].short_pic_num ] == NULL){
                         av_log(s->avctx, AV_LOG_ERROR, "illegal short ref in memory management control operation %d\n", mmco);
                         return -1;
                     }*/
                 }
                 if(opcode==MMCO_SHORT2LONG || opcode==MMCO_LONG2UNUSED || opcode==MMCO_LONG || opcode==MMCO_SET_MAX_LONG){
                     unsigned int long_index= get_ue_golomb(gb);
-                    if(/*h->mmco[i].long_index >= h->long_ref_count || h->long_ref[ h->mmco[i].long_index ] == NULL*/ long_index >= 16){
+                    if(/*h->mmco[i].long_arg >= h->long_ref_count || h->long_ref[ h->mmco[i].long_arg ] == NULL*/ long_index >= 16){
                         av_log(h->s.avctx, AV_LOG_ERROR, "illegal long ref in memory management control operation %d\n", opcode);
                         return -1;
                     }
-                    h->mmco[i].long_index= long_index;
+                    h->mmco[i].long_arg= long_index;
                 }
 
                 if(opcode > (unsigned)MMCO_LONG){
@@ -3355,7 +3355,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
 
             if(h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count){ //FIXME fields
                 h->mmco[0].opcode= MMCO_SHORT2UNUSED;
-                h->mmco[0].short_frame_num= h->short_ref[ h->short_ref_count - 1 ]->frame_num;
+                h->mmco[0].short_pic_num= h->short_ref[ h->short_ref_count - 1 ]->frame_num;
                 h->mmco_index= 1;
             }else
                 h->mmco_index= 0;
