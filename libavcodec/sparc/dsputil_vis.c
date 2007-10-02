@@ -26,8 +26,6 @@
 #include "config.h"
 
 #include <inttypes.h>
-#include <signal.h>
-#include <setjmp.h>
 
 #include "dsputil.h"
 
@@ -3987,56 +3985,13 @@ static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
 
 /* End of no rounding code */
 
-static sigjmp_buf jmpbuf;
-static volatile sig_atomic_t canjump = 0;
-
-static void sigill_handler (int sig)
-{
-    if (!canjump) {
-        signal (sig, SIG_DFL);
-        raise (sig);
-    }
-
-    canjump = 0;
-    siglongjmp (jmpbuf, 1);
-}
-
 #define ACCEL_SPARC_VIS 1
 #define ACCEL_SPARC_VIS2 2
 
 static int vis_level ()
 {
-    int accel = 0;
-
-    signal (SIGILL, sigill_handler);
-    if (sigsetjmp (jmpbuf, 1)) {
-        signal (SIGILL, SIG_DFL);
-        return accel;
-    }
-
-    canjump = 1;
-
-    /* pdist %f0, %f0, %f0 */
-    __asm__ __volatile__(".word\t0x81b007c0");
-
-    canjump = 0;
     accel |= ACCEL_SPARC_VIS;
-
-    if (sigsetjmp (jmpbuf, 1)) {
-        signal (SIGILL, SIG_DFL);
-        return accel;
-    }
-
-    canjump = 1;
-
-    /* edge8n %g0, %g0, %g0 */
-    __asm__ __volatile__(".word\t0x81b00020");
-
-    canjump = 0;
     accel |= ACCEL_SPARC_VIS2;
-
-    signal (SIGILL, SIG_DFL);
-
     return accel;
 }
 

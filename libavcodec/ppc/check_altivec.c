@@ -28,23 +28,6 @@
 #include <exec/exec.h>
 #include <interfaces/exec.h>
 #include <proto/exec.h>
-#else
-#include <signal.h>
-#include <setjmp.h>
-
-static sigjmp_buf jmpbuf;
-static volatile sig_atomic_t canjump = 0;
-
-static void sigill_handler (int sig)
-{
-    if (!canjump) {
-        signal (sig, SIG_DFL);
-        raise (sig);
-    }
-
-    canjump = 0;
-    siglongjmp (jmpbuf, 1);
-}
 #endif /* __APPLE__ */
 
 /**
@@ -72,24 +55,9 @@ int has_altivec(void)
     if (err == 0) return (has_vu != 0);
     return 0;
 #else
-/* Do it the brute-force way, borrowed from the libmpeg2 library. */
-    {
-      signal (SIGILL, sigill_handler);
-      if (sigsetjmp (jmpbuf, 1)) {
-        signal (SIGILL, SIG_DFL);
-      } else {
-        canjump = 1;
-
-        asm volatile ("mtspr 256, %0\n\t"
-                      "vand %%v0, %%v0, %%v0"
-                      :
-                      : "r" (-1));
-
-        signal (SIGILL, SIG_DFL);
-        return 1;
-      }
-    }
-    return 0;
+    // since we were compiled for altivec, just assume we have it
+    // until someone comes up with a proper way (not involving signal hacks).
+    return 1;
 #endif /* __AMIGAOS4__ */
 }
 
