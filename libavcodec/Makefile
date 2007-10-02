@@ -411,7 +411,6 @@ ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o      \
                                           ppc/idct_altivec.o         \
                                           ppc/int_altivec.o          \
                                           ppc/mpegvideo_altivec.o    \
-                                          ppc/mpegvideo_ppc.o        \
 
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
 ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
