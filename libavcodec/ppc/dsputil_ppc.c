@@ -257,7 +257,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
-    // Common optimizations whether Altivec is available or not
+    // Common optimizations whether AltiVec is available or not
     c->prefetch = prefetch_ppc;
     switch (check_dcbzl_effect()) {
         case 32:

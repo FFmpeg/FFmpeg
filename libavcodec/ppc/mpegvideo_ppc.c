@@ -51,14 +51,14 @@ void MPV_common_init_ppc(MpegEncContext *s)
         (((long)(s->q_inter_matrix) & 0x0f) != 0))
     {
         av_log(s->avctx, AV_LOG_INFO, "Internal Error: q-matrix blocks must be 16-byte aligned "
-                "to use Altivec DCT. Reverting to non-altivec version.\n");
+                "to use AltiVec DCT. Reverting to non-AltiVec version.\n");
         return;
     }
 
     if (((long)(s->intra_scantable.inverse) & 0x0f) != 0)
     {
         av_log(s->avctx, AV_LOG_INFO, "Internal Error: scan table blocks must be 16-byte aligned "
-                "to use Altivec DCT. Reverting to non-altivec version.\n");
+                "to use AltiVec DCT. Reverting to non-AltiVec version.\n");
         return;
     }
 

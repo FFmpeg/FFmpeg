@@ -168,10 +168,10 @@ http://download.intel.com/design/intelxscale/27347302.pdf
 
 PowerPC-specific:
 
-PowerPC32/Altivec PIM:
+PowerPC32/AltiVec PIM:
 www.freescale.com/files/32bit/doc/ref_manual/ALTIVECPEM.pdf
 
-PowerPC32/Altivec PEM:
+PowerPC32/AltiVec PEM:
 www.freescale.com/files/32bit/doc/ref_manual/ALTIVECPIM.pdf
 
 CELL/SPU:

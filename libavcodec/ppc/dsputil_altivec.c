@@ -216,7 +216,7 @@ int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int 
         pix3iv = vec_perm(tv[0], tv[1], vec_lvsl(0, &pix3[1]));
 
         /*
-          Note that Altivec does have vec_avg, but this works on vector pairs
+          Note that AltiVec does have vec_avg, but this works on vector pairs
           and rounds up. We could do avg(avg(a,b),avg(c,d)), but the rounding
           would mean that, for example, avg(3,0,0,1) = 2, when it should be 1.
           Instead, we have to split the pixel vectors into vectors of shorts,

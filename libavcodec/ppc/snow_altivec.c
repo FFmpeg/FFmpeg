@@ -1,5 +1,5 @@
 /*
- * Altivec optimized snow DSP utils
+ * AltiVec-optimized snow DSP utils
  * Copyright (c) 2006 Luca Barbato <lu_zero@gentoo.org>
  *
  * This file is part of FFmpeg.
