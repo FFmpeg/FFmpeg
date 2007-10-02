@@ -1,7 +1,7 @@
 /*
   marc.hoffman@analog.com    March 8, 2004
 
-  Altivec Acceleration for Color Space Conversion revision 0.2
+  AltiVec acceleration for colorspace conversion revision 0.2
 
   convert I420 YV12 to RGB in various formats,
     it rejects images that are not in 420 formats
