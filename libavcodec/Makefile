@@ -394,7 +394,6 @@ ASM_OBJS-$(ARCH_ALPHA)                 += alpha/dsputil_alpha_asm.o  \
                                           alpha/motion_est_mvi_asm.o \
 
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o   \
-                                          ppc/mpegvideo_ppc.o \
 
 OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o   \
                                           ps2/idct_mmi.o      \
@@ -412,6 +411,7 @@ OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o      \
                                           ppc/idct_altivec.o         \
                                           ppc/int_altivec.o          \
                                           ppc/mpegvideo_altivec.o    \
+                                          ppc/mpegvideo_ppc.o        \
 
 ifeq ($(HAVE_ALTIVEC),yes)
 OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o

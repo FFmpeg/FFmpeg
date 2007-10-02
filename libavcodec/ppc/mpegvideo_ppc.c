@@ -21,10 +21,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include <time.h>
-
-#ifdef HAVE_ALTIVEC
 #include "dsputil_altivec.h"
-#endif
 
 extern int dct_quantize_altivec(MpegEncContext *s,
         DCTELEM *block, int n,
@@ -38,9 +35,6 @@ extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 void MPV_common_init_ppc(MpegEncContext *s)
 {
-#ifdef HAVE_ALTIVEC
-    if (has_altivec())
-    {
       if (s->avctx->lowres==0)
       {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
@@ -78,10 +72,5 @@ void MPV_common_init_ppc(MpegEncContext *s)
             s->dct_unquantize_h263_intra = dct_unquantize_h263_altivec;
             s->dct_unquantize_h263_inter = dct_unquantize_h263_altivec;
         }
-    } else
-#endif
-    {
-        /* Non-AltiVec PPC optimisations here */
-    }
 }
 
