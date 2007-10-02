@@ -138,8 +138,9 @@ typedef struct Picture{
 
     int field_poc[2];           ///< h264 top/bottom POC
     int poc;                    ///< h264 frame POC
-    int frame_num;              ///< h264 frame_num
-    int pic_id;                 ///< h264 pic_num or long_term_pic_idx
+    int frame_num;              ///< h264 frame_num (raw frame_num from slice header)
+    int pic_id;                 /**< h264 pic_num (short -> no wrap version of pic_num,
+                                     pic_num & max_pic_num; long -> long_pic_num) */
     int long_ref;               ///< 1->long term reference 0->short term reference
     int ref_poc[2][16];         ///< h264 POCs of the frames used as reference
     int ref_count[2];           ///< number of entries in ref_poc

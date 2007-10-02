@@ -84,8 +84,8 @@ typedef struct SPS{
     int poc_cycle_length;              ///< num_ref_frames_in_pic_order_cnt_cycle
     int ref_frame_count;               ///< num_ref_frames
     int gaps_in_frame_num_allowed_flag;
-    int mb_width;                      ///< frame_width_in_mbs_minus1 + 1
-    int mb_height;                     ///< frame_height_in_mbs_minus1 + 1
+    int mb_width;                      ///< pic_width_in_mbs_minus1 + 1
+    int mb_height;                     ///< pic_height_in_map_units_minus1 + 1
     int frame_mbs_only_flag;
     int mb_aff;                        ///<mb_adaptive_frame_field_flag
     int direct_8x8_inference_flag;
@@ -323,8 +323,10 @@ typedef struct H264Context{
     unsigned int list_count;
     Picture *short_ref[32];
     Picture *long_ref[32];
-    Picture default_ref_list[2][32];
-    Picture ref_list[2][48];     ///< 0..15: frame refs, 16..47: mbaff field refs
+    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
+    Picture ref_list[2][48];         /**< 0..15: frame refs, 16..47: mbaff field refs.
+                                          Reordered version of default_ref_list
+                                          according to picture reordering in slice header */
     Picture *delayed_pic[18]; //FIXME size?
     Picture *delayed_output_pic;
 
