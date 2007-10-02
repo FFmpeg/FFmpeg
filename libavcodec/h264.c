@@ -4837,15 +4837,8 @@ static int decode_cabac_mb_cbp_chroma( H264Context *h) {
     return 1 + get_cabac_noinline( &h->cabac, &h->cabac_state[77 + ctx] );
 }
 static int decode_cabac_mb_dqp( H264Context *h) {
-    MpegEncContext * const s = &h->s;
-    int mbn_xy;
     int   ctx = 0;
     int   val = 0;
-
-    if( s->mb_x > 0 )
-        mbn_xy = s->mb_x + s->mb_y*s->mb_stride - 1;
-    else
-        mbn_xy = s->mb_width - 1 + (s->mb_y-1)*s->mb_stride;
 
     if( h->last_qscale_diff != 0 )
         ctx++;
