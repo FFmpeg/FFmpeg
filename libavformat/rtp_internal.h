@@ -105,6 +105,7 @@ struct RTPDemuxContext {
     /* dynamic payload stuff */
     DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure
     void *dynamic_protocol_context;        ///< This is a copy from the values setup from the sdp parsing, in rtsp.c don't free me.
+    int max_frames_per_packet;
 };
 
 extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;

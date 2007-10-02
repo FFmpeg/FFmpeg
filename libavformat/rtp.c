@@ -747,6 +747,21 @@ static int rtp_write_header(AVFormatContext *s1)
         return AVERROR(EIO);
     s->max_payload_size = max_packet_size - 12;
 
+    s->max_frames_per_packet = 0;
+    if (s1->max_delay) {
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if (st->codec->frame_size == 0) {
+                av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
+            } else {
+                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * st->codec->frame_size, AV_ROUND_DOWN);
+            }
+        }
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            /* FIXME: We should round down here... */
+            s->max_frames_per_packet = av_rescale_q(s1->max_delay, AV_TIME_BASE_Q, st->codec->time_base);
+        }
+    }
+
     av_set_pts_info(st, 32, 1, 90000);
     switch(st->codec->codec_id) {
     case CODEC_ID_MP2:
