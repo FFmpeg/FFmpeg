@@ -24,8 +24,8 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
-
+#include "dsputil_ppc.h"
+#include "util_altivec.h"
 /*
   those three macros are from libavcodec/fft.c
   and are required for the reference C code

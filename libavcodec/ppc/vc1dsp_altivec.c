@@ -23,7 +23,7 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
+#include "util_altivec.h"
 
 // main steps of 8x8 transform
 #define STEP8(s0, s1, s2, s3, s4, s5, s6, s7, vec_rnd) \

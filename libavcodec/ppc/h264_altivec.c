@@ -22,7 +22,8 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
+#include "dsputil_ppc.h"
+#include "util_altivec.h"
 #include "types_altivec.h"
 
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s

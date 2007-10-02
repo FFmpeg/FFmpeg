@@ -28,8 +28,8 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
-
+#include "dsputil_ppc.h"
+#include "util_altivec.h"
 // Swaps two variables (used for altivec registers)
 #define SWAP(a,b) \
 do { \

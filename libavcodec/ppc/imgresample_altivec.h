@@ -1,8 +1,4 @@
 /*
- * Copyright (c) 2002 Brian Foley
- * Copyright (c) 2002 Dieter Shirley
- * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,15 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef DSPUTIL_ALTIVEC_H
-#define DSPUTIL_ALTIVEC_H
+#ifndef IMGRESAMPLE_ALTIVEC_H
+#define IMGRESAMPLE_ALTIVEC_H
 
-#include "dsputil_ppc.h"
-
-extern int has_altivec(void);
-
-void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-
-void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-
-#endif /* DSPUTIL_ALTIVEC_H */
+void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
+                          int wrap, int16_t *filter);
+#endif /* IMGRESAMPLE_ALTIVEC_H */

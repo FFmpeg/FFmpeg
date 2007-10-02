@@ -403,7 +403,7 @@ OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o      \
                                           sh4/dsputil_align.o \
                                           sh4/dsputil_sh4.o   \
 
-OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o      \
+ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o      \
                                           ppc/fdct_altivec.o         \
                                           ppc/fft_altivec.o          \
                                           ppc/float_altivec.o        \
@@ -413,12 +413,17 @@ OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o      \
                                           ppc/mpegvideo_altivec.o    \
                                           ppc/mpegvideo_ppc.o        \
 
-ifeq ($(HAVE_ALTIVEC),yes)
-OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o
-OBJS-$(CONFIG_SNOW_DECODER)            += ppc/snow_altivec.o
-OBJS-$(CONFIG_VC1_DECODER)             += ppc/vc1dsp_altivec.o
-OBJS-$(CONFIG_WMV3_DECODER)            += ppc/vc1dsp_altivec.o
-endif
+ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
+ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
+
+# -maltivec is needed in order to build AltiVec code.
+$(ALTIVEC-OBJS-yes): CFLAGS += -maltivec -mabi=altivec
+
+# check_altivec must be built without -maltivec
+OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)       \
+                                          ppc/check_altivec.o
 
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o \
                                           bfin/mpegvideo_bfin.o \

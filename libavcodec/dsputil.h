@@ -557,12 +557,6 @@ extern int mm_flags;
 
 extern int mm_flags;
 
-#if defined(HAVE_ALTIVEC) && !defined(__APPLE_CC__)
-#define pixel altivec_pixel
-#include <altivec.h>
-#undef pixel
-#endif
-
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16
 

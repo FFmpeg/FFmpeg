@@ -25,31 +25,7 @@
 #include "gcc_fixes.h"
 
 #include "dsputil_altivec.h"
-
-#ifdef __APPLE__
-#include <sys/sysctl.h>
-#elif __AMIGAOS4__
-#include <exec/exec.h>
-#include <interfaces/exec.h>
-#include <proto/exec.h>
-#else
-#include <signal.h>
-#include <setjmp.h>
-
-static sigjmp_buf jmpbuf;
-static volatile sig_atomic_t canjump = 0;
-
-static void sigill_handler (int sig)
-{
-    if (!canjump) {
-        signal (sig, SIG_DFL);
-        raise (sig);
-    }
-
-    canjump = 0;
-    siglongjmp (jmpbuf, 1);
-}
-#endif /* __APPLE__ */
+#include "util_altivec.h"
 
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
@@ -1415,47 +1391,6 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff16_num, 1);
     }
 POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff16_num, 1);
     return score;
-}
-
-int has_altivec(void)
-{
-#ifdef __AMIGAOS4__
-    ULONG result = 0;
-    extern struct ExecIFace *IExec;
-
-    IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
-    if (result == VECTORTYPE_ALTIVEC) return 1;
-    return 0;
-#elif __APPLE__
-    int sels[2] = {CTL_HW, HW_VECTORUNIT};
-    int has_vu = 0;
-    size_t len = sizeof(has_vu);
-    int err;
-
-    err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
-
-    if (err == 0) return (has_vu != 0);
-    return 0;
-#else
-/* Do it the brute-force way, borrowed from the libmpeg2 library. */
-    {
-      signal (SIGILL, sigill_handler);
-      if (sigsetjmp (jmpbuf, 1)) {
-        signal (SIGILL, SIG_DFL);
-      } else {
-        canjump = 1;
-
-        asm volatile ("mtspr 256, %0\n\t"
-                      "vand %%v0, %%v0, %%v0"
-                      :
-                      : "r" (-1));
-
-        signal (SIGILL, SIG_DFL);
-        return 1;
-      }
-    }
-    return 0;
-#endif /* __AMIGAOS4__ */
 }
 
 static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
