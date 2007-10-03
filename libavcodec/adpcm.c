@@ -1184,10 +1184,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         break;
     case CODEC_ID_ADPCM_IMA_AMV:
     case CODEC_ID_ADPCM_IMA_SMJPEG:
-        c->status[0].predictor = *src;
-        src += 2;
-        c->status[0].step_index = *src++;
-        src++;  /* skip another byte before getting to the meat */
+        c->status[0].predictor = (signed short)bytestream_get_le16(&src);
+        c->status[0].step_index = bytestream_get_le16(&src);
 
         if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV)
             src+=4;
