@@ -151,7 +151,7 @@ static int DCT_common_init(MpegEncContext *s)
     MPV_common_init_mmi(s);
 #elif defined(ARCH_ARMV4L)
     MPV_common_init_armv4l(s);
-#elif defined(ARCH_POWERPC)
+#elif defined(HAVE_ALTIVEC)
     MPV_common_init_ppc(s);
 #elif defined(ARCH_BFIN)
     MPV_common_init_bfin(s);
