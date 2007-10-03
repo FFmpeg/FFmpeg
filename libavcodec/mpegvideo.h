@@ -699,24 +699,12 @@ void MPV_frame_end(MpegEncContext *s);
 int MPV_encode_init(AVCodecContext *avctx);
 int MPV_encode_end(AVCodecContext *avctx);
 int MPV_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data);
-#ifdef HAVE_MMX
 void MPV_common_init_mmx(MpegEncContext *s);
-#endif
-#ifdef ARCH_ALPHA
 void MPV_common_init_axp(MpegEncContext *s);
-#endif
-#ifdef HAVE_MLIB
 void MPV_common_init_mlib(MpegEncContext *s);
-#endif
-#ifdef HAVE_MMI
 void MPV_common_init_mmi(MpegEncContext *s);
-#endif
-#ifdef ARCH_ARMV4L
 void MPV_common_init_armv4l(MpegEncContext *s);
-#endif
-#ifdef ARCH_POWERPC
 void MPV_common_init_ppc(MpegEncContext *s);
-#endif
 extern void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
