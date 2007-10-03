@@ -1852,9 +1852,6 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
         umv_fcode_tab[mv]= 1;
     }
 }
-#endif
-
-#ifdef CONFIG_ENCODERS
 
 static void init_uni_dc_tab(void)
 {
@@ -1908,9 +1905,6 @@ static void init_uni_dc_tab(void)
     }
 }
 
-#endif //CONFIG_ENCODERS
-
-#ifdef CONFIG_ENCODERS
 static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
     int slevel, run, last;
 
@@ -2259,9 +2253,6 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
         }
     }
 }
-#endif
-
-#ifdef CONFIG_ENCODERS
 
 /***************************************************/
 /**
