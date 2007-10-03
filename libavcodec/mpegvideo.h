@@ -704,7 +704,7 @@ void MPV_common_init_axp(MpegEncContext *s);
 void MPV_common_init_mlib(MpegEncContext *s);
 void MPV_common_init_mmi(MpegEncContext *s);
 void MPV_common_init_armv4l(MpegEncContext *s);
-void MPV_common_init_ppc(MpegEncContext *s);
+void MPV_common_init_altivec(MpegEncContext *s);
 extern void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
