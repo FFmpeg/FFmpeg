@@ -2249,6 +2249,13 @@ static int frame_start(H264Context *h){
     if(MPV_frame_start(s, s->avctx) < 0)
         return -1;
     ff_er_frame_start(s);
+    /*
+     * MPV_frame_start uses pict_type to derive key_frame.
+     * This is incorrect for H.264; IDR markings must be used.
+     * Zero here; IDR markings per slice in frame or fields are OR'd in later.
+     * See decode_nal_units().
+     */
+    s->current_picture_ptr->key_frame= 0;
 
     assert(s->linesize && s->uvlinesize);
 
@@ -7189,7 +7196,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
-            s->current_picture_ptr->key_frame= (hx->nal_unit_type == NAL_IDR_SLICE);
+            s->current_picture_ptr->key_frame|= (hx->nal_unit_type == NAL_IDR_SLICE);
             if(hx->redundant_pic_count==0 && hx->s.hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type!=B_TYPE)
