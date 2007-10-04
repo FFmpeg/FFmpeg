@@ -3742,7 +3742,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->curr_pic_num=   h->frame_num;
         h->max_pic_num= 1<< h->sps.log2_max_frame_num;
     }else{
-        h->curr_pic_num= 2*h->frame_num;
+        h->curr_pic_num= 2*h->frame_num + 1;
         h->max_pic_num= 1<<(h->sps.log2_max_frame_num + 1);
     }
 

@@ -285,7 +285,7 @@ typedef struct H264Context{
     int prev_frame_num;           ///< frame_num of the last pic for POC type 1/2
 
     /**
-     * frame_num for frames or 2*frame_num for field pics.
+     * frame_num for frames or 2*frame_num+1 for field pics.
      */
     int curr_pic_num;
 
