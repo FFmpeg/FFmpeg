@@ -3224,6 +3224,17 @@ static Picture * remove_short(H264Context *h, int frame_num){
 }
 
 /**
+ * Remove a picture from the long term reference list by its index in
+ * that list.  This does no checking on the provided index; it is assumed
+ * to be valid. The removed entry is set to NULL. Other entries are unaffected.
+ * @param i index into h->long_ref of picture to remove.
+ */
+static void remove_long_at_index(H264Context *h, int i){
+    h->long_ref[i]= NULL;
+    h->long_ref_count--;
+}
+
+/**
  *
  * @return the removed picture or NULL if an error occurs
  */
@@ -3231,8 +3242,8 @@ static Picture * remove_long(H264Context *h, int i){
     Picture *pic;
 
     pic= h->long_ref[i];
-    h->long_ref[i]= NULL;
-    if(pic) h->long_ref_count--;
+    if (pic)
+        remove_long_at_index(h, i);
 
     return pic;
 }
