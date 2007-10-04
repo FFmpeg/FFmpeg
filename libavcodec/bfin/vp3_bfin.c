@@ -1,6 +1,7 @@
 /*
- * This file is part of FFmpeg.
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
+ *
+ * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
