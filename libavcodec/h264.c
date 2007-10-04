@@ -3161,28 +3161,59 @@ static void flush_dpb(AVCodecContext *avctx){
 }
 
 /**
- *
- * @return the removed picture or NULL if an error occurs
+ * Find a Picture in the short term reference list by frame number.
+ * @param frame_num frame number to search for
+ * @param idx the index into h->short_ref where returned picture is found
+ *            undefined if no picture found.
+ * @return pointer to the found picture, or NULL if no pic with the provided
+ *                 frame number is found
  */
-static Picture * remove_short(H264Context *h, int frame_num){
+static Picture * find_short(H264Context *h, int frame_num, int *idx){
     MpegEncContext * const s = &h->s;
     int i;
-
-    if(s->avctx->debug&FF_DEBUG_MMCO)
-        av_log(h->s.avctx, AV_LOG_DEBUG, "remove short %d count %d\n", frame_num, h->short_ref_count);
 
     for(i=0; i<h->short_ref_count; i++){
         Picture *pic= h->short_ref[i];
         if(s->avctx->debug&FF_DEBUG_MMCO)
             av_log(h->s.avctx, AV_LOG_DEBUG, "%d %d %p\n", i, pic->frame_num, pic);
-        if(pic->frame_num == frame_num){
-            h->short_ref[i]= NULL;
-            if (--h->short_ref_count)
-                memmove(&h->short_ref[i], &h->short_ref[i+1], (h->short_ref_count - i)*sizeof(Picture*));
+        if(pic->frame_num == frame_num) {
+            *idx = i;
             return pic;
         }
     }
     return NULL;
+}
+
+/**
+ * Remove a picture from the short term reference list by its index in
+ * that list.  This does no checking on the provided index; it is assumed
+ * to be valid. Other list entries are shifted down.
+ * @param i index into h->short_ref of picture to remove.
+ */
+static void remove_short_at_index(H264Context *h, int i){
+    assert(i > 0 && i < h->short_ref_count);
+    h->short_ref[i]= NULL;
+    if (--h->short_ref_count)
+        memmove(&h->short_ref[i], &h->short_ref[i+1], (h->short_ref_count - i)*sizeof(Picture*));
+}
+
+/**
+ *
+ * @return the removed picture or NULL if an error occurs
+ */
+static Picture * remove_short(H264Context *h, int frame_num){
+    MpegEncContext * const s = &h->s;
+    Picture *pic;
+    int i;
+
+    if(s->avctx->debug&FF_DEBUG_MMCO)
+        av_log(h->s.avctx, AV_LOG_DEBUG, "remove short %d count %d\n", frame_num, h->short_ref_count);
+
+    pic = find_short(h, frame_num, &i);
+    if (pic)
+        remove_short_at_index(h, i);
+
+    return pic;
 }
 
 /**
