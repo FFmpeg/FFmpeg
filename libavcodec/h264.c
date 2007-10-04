@@ -1703,7 +1703,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     const int full_mx= mx>>2;
     const int full_my= my>>2;
     const int pic_width  = 16*s->mb_width;
-    const int pic_height = 16*s->mb_height >> MB_MBAFF;
+    const int pic_height = 16*s->mb_height >> (MB_MBAFF || FIELD_PICTURE);
 
     if(!pic->data[0]) //FIXME this is unacceptable, some senseable error concealment must be done for missing reference frames
         return;
@@ -1727,7 +1727,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
 
     if(ENABLE_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
-    if(MB_MBAFF){
+    if(MB_MBAFF || FIELD_PICTURE){
         // chroma offset when predicting from a field of opposite parity
         my += 2 * ((s->mb_y & 1) - (h->ref_cache[list][scan8[n]] & 1));
         emu |= (my>>3) < 0 || (my>>3) + 8 >= (pic_height>>1);
@@ -1762,7 +1762,7 @@ static inline void mc_part_std(H264Context *h, int n, int square, int chroma_hei
     dest_cb +=   x_offset +   y_offset*h->mb_uvlinesize;
     dest_cr +=   x_offset +   y_offset*h->mb_uvlinesize;
     x_offset += 8*s->mb_x;
-    y_offset += 8*(s->mb_y >> MB_MBAFF);
+    y_offset += 8*(s->mb_y >> (MB_MBAFF || FIELD_PICTURE));
 
     if(list0){
         Picture *ref= &h->ref_list[0][ h->ref_cache[0][ scan8[n] ] ];
@@ -1795,7 +1795,7 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int chrom
     dest_cb +=   x_offset +   y_offset*h->mb_uvlinesize;
     dest_cr +=   x_offset +   y_offset*h->mb_uvlinesize;
     x_offset += 8*s->mb_x;
-    y_offset += 8*(s->mb_y >> MB_MBAFF);
+    y_offset += 8*(s->mb_y >> (MB_MBAFF || FIELD_PICTURE));
 
     if(list0 && list1){
         /* don't optimize for luma-only case, since B-frames usually
