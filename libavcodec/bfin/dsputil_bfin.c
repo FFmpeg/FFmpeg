@@ -31,6 +31,9 @@ int off;
 
 extern void ff_bfin_idct (DCTELEM *block) attribute_l1_text;
 extern void ff_bfin_fdct (DCTELEM *block) attribute_l1_text;
+extern void ff_bfin_vp3_idct (DCTELEM *block);
+extern void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, DCTELEM *block);
+extern void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, DCTELEM *block);
 extern void ff_bfin_add_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
 extern void ff_bfin_put_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
 extern void ff_bfin_diff_pixels (DCTELEM *block, uint8_t *s1, uint8_t *s2, int stride)  attribute_l1_text;
@@ -292,7 +295,11 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
 
     c->idct_permutation_type = FF_NO_IDCT_PERM;
     c->fdct                  = ff_bfin_fdct;
-    if (avctx->idct_algo!=FF_IDCT_VP3) {
+    if (avctx->idct_algo==FF_IDCT_VP3) {
+        c->idct               = ff_bfin_vp3_idct;
+        c->idct_add           = ff_bfin_vp3_idct_add;
+        c->idct_put           = ff_bfin_vp3_idct_put;
+    } else {
         c->idct               = ff_bfin_idct;
         c->idct_add           = bfin_idct_add;
         c->idct_put           = bfin_idct_put;
