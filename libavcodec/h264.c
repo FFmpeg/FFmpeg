@@ -3019,9 +3019,33 @@ static int fill_default_ref_list(H264Context *h){
 static void print_short_term(H264Context *h);
 static void print_long_term(H264Context *h);
 
+/**
+ * Extract structure information about the picture described by pic_num in
+ * the current decoding context (frame or field). Note that pic_num is
+ * picture number without wrapping (so, 0<=pic_num<max_pic_num).
+ * @param pic_num picture number for which to extract structure information
+ * @param structure one of PICT_XXX describing structure of picture
+ *                      with pic_num
+ * @return frame number (short term) or long term index of picture
+ *         described by pic_num
+ */
+static int pic_num_extract(H264Context *h, int pic_num, int *structure){
+    MpegEncContext * const s = &h->s;
+
+    *structure = s->picture_structure;
+    if(FIELD_PICTURE){
+        if (!(pic_num & 1))
+            /* opposite field */
+            *structure ^= PICT_FRAME;
+        pic_num >>= 1;
+    }
+
+    return pic_num;
+}
+
 static int decode_ref_pic_list_reordering(H264Context *h){
     MpegEncContext * const s = &h->s;
-    int list, index;
+    int list, index, pic_structure;
 
     print_short_term(h);
     print_long_term(h);
@@ -3050,6 +3074,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                 if(reordering_of_pic_nums_idc<3){
                     if(reordering_of_pic_nums_idc<2){
                         const unsigned int abs_diff_pic_num= get_ue_golomb(&s->gb) + 1;
+                        int frame_num;
 
                         if(abs_diff_pic_num >= h->max_pic_num){
                             av_log(h->s.avctx, AV_LOG_ERROR, "abs_diff_pic_num overflow\n");
@@ -3060,25 +3085,34 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         else                                pred+= abs_diff_pic_num;
                         pred &= h->max_pic_num - 1;
 
+                        frame_num = pic_num_extract(h, pred, &pic_structure);
+
                         for(i= h->short_ref_count-1; i>=0; i--){
                             ref = h->short_ref[i];
-                            assert(ref->reference == 3);
+                            assert(ref->reference);
                             assert(!ref->long_ref);
-                            if(ref->data[0] != NULL && ref->frame_num == pred && ref->long_ref == 0) // ignore non existing pictures by testing data[0] pointer
+                            if(ref->data[0] != NULL &&
+                                   ref->frame_num == frame_num &&
+                                   (ref->reference & pic_structure) &&
+                                   ref->long_ref == 0) // ignore non existing pictures by testing data[0] pointer
                                 break;
                         }
                         if(i>=0)
-                            ref->pic_id= ref->frame_num;
+                            ref->pic_id= pred;
                     }else{
+                        int long_idx;
                         pic_id= get_ue_golomb(&s->gb); //long_term_pic_idx
-                        if(pic_id>31){
+
+                        long_idx= pic_num_extract(h, pic_id, &pic_structure);
+
+                        if(long_idx>31){
                             av_log(h->s.avctx, AV_LOG_ERROR, "long_term_pic_idx overflow\n");
                             return -1;
                         }
-                        ref = h->long_ref[pic_id];
-                        if(ref){
+                        ref = h->long_ref[long_idx];
+                        assert(!(ref && !ref->reference));
+                        if(ref && (ref->reference & pic_structure)){
                             ref->pic_id= pic_id;
-                            assert(ref->reference == 3);
                             assert(ref->long_ref);
                             i=0;
                         }else{
@@ -3098,6 +3132,10 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                             h->ref_list[list][i]= h->ref_list[list][i-1];
                         }
                         h->ref_list[list][index]= *ref;
+                        if (FIELD_PICTURE){
+                            int bot = pic_structure == PICT_BOTTOM_FIELD;
+                            pic_as_field(&h->ref_list[list][index], bot);
+                        }
                     }
                 }else{
                     av_log(h->s.avctx, AV_LOG_ERROR, "illegal reordering_of_pic_nums_idc\n");
