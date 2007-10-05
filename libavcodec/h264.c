@@ -2916,92 +2916,92 @@ static int fill_default_ref_list(H264Context *h){
             }
         }
 
-            tprintf(h->s.avctx, "current poc: %d, smallest_poc_greater_than_current: %d\n", s->current_picture_ptr->poc, smallest_poc_greater_than_current);
+        tprintf(h->s.avctx, "current poc: %d, smallest_poc_greater_than_current: %d\n", s->current_picture_ptr->poc, smallest_poc_greater_than_current);
 
-            // find the largest poc
-            for(list=0; list<2; list++){
-                int index = 0;
-                int j= -99;
-                int step= list ? -1 : 1;
+        // find the largest poc
+        for(list=0; list<2; list++){
+            int index = 0;
+            int j= -99;
+            int step= list ? -1 : 1;
 
-                for(i=0; i<h->short_ref_count && index < h->ref_count[list]; i++, j+=step) {
-                    int sel;
-                    while(j<0 || j>= h->short_ref_count){
-                        if(j != -99 && step == (list ? -1 : 1))
-                            return -1;
-                        step = -step;
-                        j= smallest_poc_greater_than_current + (step>>1);
-                    }
-                    sel = sorted_short_ref[j].reference | structure_sel;
-                    if(sel != PICT_FRAME) continue;
-                    frame_list[list][index  ]= sorted_short_ref[j];
-                    frame_list[list][index++].pic_id= sorted_short_ref[j].frame_num;
-                }
-                short_len[list] = index;
-
-                for(i = 0; i < 16 && index < h->ref_count[ list ]; i++){
-                    int sel;
-                    if(h->long_ref[i] == NULL) continue;
-                    sel = h->long_ref[i]->reference | structure_sel;
-                    if(sel != PICT_FRAME) continue;
-
-                    frame_list[ list ][index  ]= *h->long_ref[i];
-                    frame_list[ list ][index++].pic_id= i;;
-                }
-                len[list] = index;
-
-                if(list && (smallest_poc_greater_than_current<=0 || smallest_poc_greater_than_current>=h->short_ref_count) && (1 < index)){
-                    // swap the two first elements of L1 when
-                    // L0 and L1 are identical
-                    Picture temp= frame_list[1][0];
-                    frame_list[1][0] = frame_list[1][1];
-                    frame_list[1][1] = temp;
-                }
-
-            }
-
-            for(list=0; list<2; list++){
-                if (FIELD_PICTURE)
-                    len[list] = split_field_ref_list(h->default_ref_list[list],
-                                                     h->ref_count[list],
-                                                     frame_list[list],
-                                                     len[list],
-                                                     s->picture_structure,
-                                                     short_len[list]);
-
-                if(len[list] < h->ref_count[ list ])
-                    memset(&h->default_ref_list[list][len[list]], 0, sizeof(Picture)*(h->ref_count[ list ] - len[list]));
-            }
-
-
-        }else{
-            int index=0;
-            int short_len;
-            for(i=0; i<h->short_ref_count; i++){
+            for(i=0; i<h->short_ref_count && index < h->ref_count[list]; i++, j+=step) {
                 int sel;
-                sel = h->short_ref[i]->reference | structure_sel;
+                while(j<0 || j>= h->short_ref_count){
+                    if(j != -99 && step == (list ? -1 : 1))
+                        return -1;
+                    step = -step;
+                    j= smallest_poc_greater_than_current + (step>>1);
+                }
+                sel = sorted_short_ref[j].reference | structure_sel;
                 if(sel != PICT_FRAME) continue;
-                frame_list[0][index  ]= *h->short_ref[i];
-                frame_list[0][index++].pic_id= h->short_ref[i]->frame_num;
+                frame_list[list][index  ]= sorted_short_ref[j];
+                frame_list[list][index++].pic_id= sorted_short_ref[j].frame_num;
             }
-            short_len = index;
-            for(i = 0; i < 16; i++){
+            short_len[list] = index;
+
+            for(i = 0; i < 16 && index < h->ref_count[ list ]; i++){
                 int sel;
                 if(h->long_ref[i] == NULL) continue;
                 sel = h->long_ref[i]->reference | structure_sel;
                 if(sel != PICT_FRAME) continue;
-                frame_list[0][index  ]= *h->long_ref[i];
-                frame_list[0][index++].pic_id= i;;
+
+                frame_list[ list ][index  ]= *h->long_ref[i];
+                frame_list[ list ][index++].pic_id= i;;
+            }
+            len[list] = index;
+
+            if(list && (smallest_poc_greater_than_current<=0 || smallest_poc_greater_than_current>=h->short_ref_count) && (1 < index)){
+                // swap the two first elements of L1 when
+                // L0 and L1 are identical
+                Picture temp= frame_list[1][0];
+                frame_list[1][0] = frame_list[1][1];
+                frame_list[1][1] = temp;
             }
 
-            if (FIELD_PICTURE)
-                index = split_field_ref_list(h->default_ref_list[0],
-                                             h->ref_count[0], frame_list[0],
-                                             index, s->picture_structure,
-                                             short_len);
+        }
 
-            if(index < h->ref_count[0])
-                memset(&h->default_ref_list[0][index], 0, sizeof(Picture)*(h->ref_count[0] - index));
+        for(list=0; list<2; list++){
+            if (FIELD_PICTURE)
+                len[list] = split_field_ref_list(h->default_ref_list[list],
+                                                 h->ref_count[list],
+                                                 frame_list[list],
+                                                 len[list],
+                                                 s->picture_structure,
+                                                 short_len[list]);
+
+            if(len[list] < h->ref_count[ list ])
+                memset(&h->default_ref_list[list][len[list]], 0, sizeof(Picture)*(h->ref_count[ list ] - len[list]));
+        }
+
+
+    }else{
+        int index=0;
+        int short_len;
+        for(i=0; i<h->short_ref_count; i++){
+            int sel;
+            sel = h->short_ref[i]->reference | structure_sel;
+            if(sel != PICT_FRAME) continue;
+            frame_list[0][index  ]= *h->short_ref[i];
+            frame_list[0][index++].pic_id= h->short_ref[i]->frame_num;
+        }
+        short_len = index;
+        for(i = 0; i < 16; i++){
+            int sel;
+            if(h->long_ref[i] == NULL) continue;
+            sel = h->long_ref[i]->reference | structure_sel;
+            if(sel != PICT_FRAME) continue;
+            frame_list[0][index  ]= *h->long_ref[i];
+            frame_list[0][index++].pic_id= i;;
+        }
+
+        if (FIELD_PICTURE)
+            index = split_field_ref_list(h->default_ref_list[0],
+                                         h->ref_count[0], frame_list[0],
+                                         index, s->picture_structure,
+                                         short_len);
+
+        if(index < h->ref_count[0])
+            memset(&h->default_ref_list[0][index], 0, sizeof(Picture)*(h->ref_count[0] - index));
     }
 #ifdef TRACE
     for (i=0; i<h->ref_count[0]; i++) {
