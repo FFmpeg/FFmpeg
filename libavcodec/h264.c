@@ -3458,7 +3458,7 @@ static void print_long_term(H264Context *h) {
 static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
     MpegEncContext * const s = &h->s;
     int i, j;
-    int current_is_long=0;
+    int current_ref_assigned=0;
     Picture *pic;
 
     if((s->avctx->debug&FF_DEBUG_MMCO) && mmco_count==0)
@@ -3501,7 +3501,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             h->long_ref[ mmco[i].long_arg ]->long_ref=1;
             h->long_ref_count++;
 
-            current_is_long=1;
+            current_ref_assigned=1;
             break;
         case MMCO_SET_MAX_LONG:
             assert(mmco[i].long_arg <= 16);
@@ -3525,7 +3525,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         }
     }
 
-    if(!current_is_long){
+    if(!current_ref_assigned){
         pic= remove_short(h, s->current_picture_ptr->frame_num);
         if(pic){
             unreference_pic(h, pic, 0);
