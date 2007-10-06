@@ -178,7 +178,7 @@ log(){
 
 log_file(){
     log BEGIN $1
-    cat -n $1 >>$logfile
+    pr -n -t $1 >>$logfile
     log END $1
 }
 
