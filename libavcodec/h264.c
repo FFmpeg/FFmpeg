@@ -3565,7 +3565,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
 
                 h->mmco[i].opcode= opcode;
                 if(opcode==MMCO_SHORT2UNUSED || opcode==MMCO_SHORT2LONG){
-                    h->mmco[i].short_pic_num= (h->frame_num - get_ue_golomb(gb) - 1) & ((1<<h->sps.log2_max_frame_num)-1); //FIXME fields
+                    h->mmco[i].short_pic_num= (h->curr_pic_num - get_ue_golomb(gb) - 1) & (h->max_pic_num - 1);
 /*                    if(h->mmco[i].short_pic_num >= h->short_ref_count || h->short_ref[ h->mmco[i].short_pic_num ] == NULL){
                         av_log(s->avctx, AV_LOG_ERROR, "illegal short ref in memory management control operation %d\n", mmco);
                         return -1;
@@ -3573,7 +3573,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
                 }
                 if(opcode==MMCO_SHORT2LONG || opcode==MMCO_LONG2UNUSED || opcode==MMCO_LONG || opcode==MMCO_SET_MAX_LONG){
                     unsigned int long_arg= get_ue_golomb(gb);
-                    if(/*h->mmco[i].long_arg >= h->long_ref_count || h->long_ref[ h->mmco[i].long_arg ] == NULL*/ long_arg >= 16){
+                    if(long_arg >= 32 || (long_arg >= 16 && !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE))){
                         av_log(h->s.avctx, AV_LOG_ERROR, "illegal long ref in memory management control operation %d\n", opcode);
                         return -1;
                     }
@@ -3591,10 +3591,17 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
         }else{
             assert(h->long_ref_count + h->short_ref_count <= h->sps.ref_frame_count);
 
-            if(h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count){ //FIXME fields
+            if(h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count &&
+                    !(FIELD_PICTURE && !s->first_field && s->current_picture_ptr->reference)) {
                 h->mmco[0].opcode= MMCO_SHORT2UNUSED;
                 h->mmco[0].short_pic_num= h->short_ref[ h->short_ref_count - 1 ]->frame_num;
                 h->mmco_index= 1;
+                if (FIELD_PICTURE) {
+                    h->mmco[0].short_pic_num *= 2;
+                    h->mmco[1].opcode= MMCO_SHORT2UNUSED;
+                    h->mmco[1].short_pic_num= h->mmco[0].short_pic_num + 1;
+                    h->mmco_index= 2;
+                }
             }else
                 h->mmco_index= 0;
         }
