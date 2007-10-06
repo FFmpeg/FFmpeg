@@ -3682,11 +3682,15 @@ static int init_poc(H264Context *h){
         field_poc[1]= poc;
     }
 
-    if(s->picture_structure != PICT_BOTTOM_FIELD)
+    if(s->picture_structure != PICT_BOTTOM_FIELD) {
         s->current_picture_ptr->field_poc[0]= field_poc[0];
-    if(s->picture_structure != PICT_TOP_FIELD)
+        s->current_picture_ptr->poc = field_poc[0];
+    }
+    if(s->picture_structure != PICT_TOP_FIELD) {
         s->current_picture_ptr->field_poc[1]= field_poc[1];
-    if(s->picture_structure == PICT_FRAME) // FIXME field pix?
+        s->current_picture_ptr->poc = field_poc[1];
+    }
+    if(!FIELD_PICTURE || !s->first_field)
         s->current_picture_ptr->poc= FFMIN(field_poc[0], field_poc[1]);
 
     return 0;
