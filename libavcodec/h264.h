@@ -68,6 +68,7 @@
 #undef  IS_INTERLACED
 #define IS_INTERLACED(mb_type) 0
 #endif
+#define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF || FIELD_PICTURE)
 
 /**
  * Sequence parameter set
