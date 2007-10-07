@@ -3493,10 +3493,10 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 if(pic) unreference_pic(h, pic, 0);
 
                 h->long_ref[ mmco[i].long_arg ]= remove_short(h, frame_num);
-            if (h->long_ref[ mmco[i].long_arg ]){
-                h->long_ref[ mmco[i].long_arg ]->long_ref=1;
-                h->long_ref_count++;
-            }
+                if (h->long_ref[ mmco[i].long_arg ]){
+                    h->long_ref[ mmco[i].long_arg ]->long_ref=1;
+                    h->long_ref_count++;
+                }
             }
             break;
         case MMCO_LONG2UNUSED:
@@ -3530,12 +3530,12 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             }
 
             if (unref_pic) {
-            pic= remove_long(h, mmco[i].long_arg);
-            if(pic) unreference_pic(h, pic, 0);
+                pic= remove_long(h, mmco[i].long_arg);
+                if(pic) unreference_pic(h, pic, 0);
 
-            h->long_ref[ mmco[i].long_arg ]= s->current_picture_ptr;
-            h->long_ref[ mmco[i].long_arg ]->long_ref=1;
-            h->long_ref_count++;
+                h->long_ref[ mmco[i].long_arg ]= s->current_picture_ptr;
+                h->long_ref[ mmco[i].long_arg ]->long_ref=1;
+                h->long_ref_count++;
             }
 
             s->current_picture_ptr->reference |= s->picture_structure;
