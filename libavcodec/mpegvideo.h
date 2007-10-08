@@ -724,6 +724,8 @@ void ff_er_frame_end(MpegEncContext *s);
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status);
 
 int ff_dct_common_init(MpegEncContext *s);
+void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
+                       const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 
 extern enum PixelFormat ff_yuv420p_list[2];
 

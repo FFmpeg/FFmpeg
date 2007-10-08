@@ -66,7 +66,7 @@ static uint8_t default_fcode_tab[MAX_MV*2+1];
 
 enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
 
-static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
+void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                            const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra)
 {
     int qscale;
@@ -716,9 +716,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* precompute matrix */
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
-        convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, avctx->qmin, 31, 1);
-        convert_matrix(&s->dsp, s->q_inter_matrix, s->q_inter_matrix16,
+        ff_convert_matrix(&s->dsp, s->q_inter_matrix, s->q_inter_matrix16,
                        s->inter_matrix, s->inter_quant_bias, avctx->qmin, 31, 0);
     }
 
@@ -2861,7 +2861,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 
             s->intra_matrix[j] = av_clip_uint8((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
-        convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
