@@ -21,7 +21,7 @@
 
 #include "dnxhddata.h"
 
-static const uint8_t dnxhd_1237_luma_weigth[] = {
+static const uint8_t dnxhd_1237_luma_weight[] = {
      0,  32,  33,  34, 34, 36, 37, 36,
     36,  37,  38,  38, 38, 39, 41, 44,
     43,  41,  40,  41, 46, 49, 47, 46,
@@ -32,7 +32,7 @@ static const uint8_t dnxhd_1237_luma_weigth[] = {
     97, 100, 104, 102, 98, 98, 99, 99,
 };
 
-static const uint8_t dnxhd_1237_chroma_weigth[] = {
+static const uint8_t dnxhd_1237_chroma_weight[] = {
      0,  32,  36,  39, 39, 38, 39,  41,
     45,  51,  57,  58, 53, 48, 47,  51,
     55,  58,  66,  75, 81, 83, 82,  78,
@@ -43,7 +43,7 @@ static const uint8_t dnxhd_1237_chroma_weigth[] = {
     97, 100, 104, 102, 98, 98, 99,  99,
 };
 
-static const uint8_t dnxhd_1238_luma_weigth[] = {
+static const uint8_t dnxhd_1238_luma_weight[] = {
      0, 32, 32, 33, 34, 33, 33, 33,
     33, 33, 33, 33, 33, 35, 37, 37,
     36, 36, 35, 36, 38, 38, 36, 35,
@@ -54,7 +54,7 @@ static const uint8_t dnxhd_1238_luma_weigth[] = {
     51, 53, 55, 57, 58, 59, 57, 57,
 };
 
-static const uint8_t dnxhd_1238_chroma_weigth[] = {
+static const uint8_t dnxhd_1238_chroma_weight[] = {
      0, 32, 35, 35, 35, 34, 34, 35,
     39, 43, 45, 45, 41, 39, 40, 41,
     42, 44, 48, 55, 59, 63, 65, 59,
@@ -87,7 +87,7 @@ static const uint8_t dnxhd_1241_chroma_weight[] = {
     48, 46, 48, 49, 48, 49, 49, 49,
 };
 
-static const uint8_t dnxhd_1242_luma_weigth[] = {
+static const uint8_t dnxhd_1242_luma_weight[] = {
      0, 32, 33, 33, 34, 35, 36, 35,
     33, 33, 35, 36, 37, 37, 38, 37,
     37, 37, 36, 37, 37, 37, 38, 39,
@@ -98,7 +98,7 @@ static const uint8_t dnxhd_1242_luma_weigth[] = {
     49, 51, 52, 51, 49, 47, 47, 47,
 };
 
-static const uint8_t dnxhd_1242_chroma_weigth[] = {
+static const uint8_t dnxhd_1242_chroma_weight[] = {
      0, 32, 37, 42, 45, 45, 45, 44,
     38, 37, 40, 42, 44, 49, 51, 47,
     41, 40, 43, 44, 46, 48, 51, 54,
@@ -109,7 +109,7 @@ static const uint8_t dnxhd_1242_chroma_weigth[] = {
     55, 59, 63, 62, 60, 60, 60, 60,
  };
 
-static const uint8_t dnxhd_1243_luma_weigth[] = {
+static const uint8_t dnxhd_1243_luma_weight[] = {
      0, 32, 32, 33, 33, 35, 35, 35,
     35, 35, 35, 35, 34, 35, 38, 40,
     39, 37, 37, 37, 36, 35, 36, 38,
@@ -120,7 +120,7 @@ static const uint8_t dnxhd_1243_luma_weigth[] = {
     46, 44, 45, 47, 47, 48, 47, 47,
 };
 
-static const uint8_t dnxhd_1243_chroma_weigth[] = {
+static const uint8_t dnxhd_1243_chroma_weight[] = {
      0, 32, 36, 37, 36, 37, 39, 39,
     41, 43, 43, 42, 41, 41, 41, 42,
     43, 43, 43, 44, 44, 44, 46, 47,
@@ -252,13 +252,13 @@ static const uint8_t dnxhd_1241_run[62] = {
 
 const CIDEntry ff_dnxhd_cid_table[] = {
     { 1237, 1920, 1080, 0, 606208, 606208, 4, 8,
-      dnxhd_1237_luma_weigth, dnxhd_1237_chroma_weigth,
+      dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
       dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
     { 1238, 1920, 1080, 0, 917504, 917504, 4, 8,
-      dnxhd_1238_luma_weigth, dnxhd_1238_chroma_weigth,
+      dnxhd_1238_luma_weight, dnxhd_1238_chroma_weight,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
@@ -270,13 +270,13 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1241_ac_run_flag, dnxhd_1241_ac_index_flag,
       dnxhd_1241_run_codes, dnxhd_1241_run_bits, dnxhd_1241_run },
     { 1242, 1920, 1080, 1, 606208, 303104, 4, 8,
-      dnxhd_1242_luma_weigth, dnxhd_1242_chroma_weigth,
+      dnxhd_1242_luma_weight, dnxhd_1242_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
       dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
     { 1243, 1920, 1080, 1, 917504, 458752, 4, 8,
-      dnxhd_1243_luma_weigth, dnxhd_1243_chroma_weigth,
+      dnxhd_1243_luma_weight, dnxhd_1243_chroma_weight,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,

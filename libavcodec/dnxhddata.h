@@ -32,7 +32,7 @@ typedef struct {
     unsigned int coding_unit_size;
     int index_bits;
     int bit_depth;
-    const uint8_t *luma_weigth, *chroma_weigth;
+    const uint8_t *luma_weight, *chroma_weight;
     const uint8_t *dc_codes, *dc_bits;
     const uint16_t *ac_codes;
     const uint8_t *ac_bits, *ac_level;

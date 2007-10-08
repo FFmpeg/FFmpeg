@@ -161,10 +161,10 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
 
     if (n&2) {
         component = 1 + (n&1);
-        weigth_matrix = ctx->cid_table->chroma_weigth;
+        weigth_matrix = ctx->cid_table->chroma_weight;
     } else {
         component = 0;
-        weigth_matrix = ctx->cid_table->luma_weigth;
+        weigth_matrix = ctx->cid_table->luma_weight;
     }
 
     ctx->last_dc[component] += dnxhd_decode_dc(ctx);

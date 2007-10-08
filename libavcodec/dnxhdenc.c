@@ -130,13 +130,13 @@ static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
 
     for (i = 1; i < 64; i++) {
         int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
-        weight_matrix[j] = ctx->cid_table->luma_weigth[i];
+        weight_matrix[j] = ctx->cid_table->luma_weight[i];
     }
     ff_convert_matrix(&ctx->m.dsp, ctx->qmatrix_l, ctx->qmatrix_l16, weight_matrix,
                       ctx->m.intra_quant_bias, 1, ctx->m.avctx->qmax, 1);
     for (i = 1; i < 64; i++) {
         int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
-        weight_matrix[j] = ctx->cid_table->chroma_weigth[i];
+        weight_matrix[j] = ctx->cid_table->chroma_weight[i];
     }
     ff_convert_matrix(&ctx->m.dsp, ctx->qmatrix_c, ctx->qmatrix_c16, weight_matrix,
                       ctx->m.intra_quant_bias, 1, ctx->m.avctx->qmax, 1);
@@ -327,25 +327,25 @@ static av_always_inline void dnxhd_encode_block(DNXHDEncContext *ctx, DCTELEM *b
 
 static av_always_inline void dnxhd_unquantize_c(DNXHDEncContext *ctx, DCTELEM *block, int n, int qscale, int last_index)
 {
-    const uint8_t *weigth_matrix;
+    const uint8_t *weight_matrix;
     int level;
     int i;
 
-    weigth_matrix = (n&2) ? ctx->cid_table->chroma_weigth : ctx->cid_table->luma_weigth;
+    weight_matrix = (n&2) ? ctx->cid_table->chroma_weight : ctx->cid_table->luma_weight;
 
     for (i = 1; i <= last_index; i++) {
         int j = ctx->m.intra_scantable.permutated[i];
         level = block[j];
         if (level) {
             if (level < 0) {
-                level = (1-2*level) * qscale * weigth_matrix[i];
-                if (weigth_matrix[i] != 32)
+                level = (1-2*level) * qscale * weight_matrix[i];
+                if (weight_matrix[i] != 32)
                     level += 32;
                 level >>= 6;
                 level = -level;
             } else {
-                level = (2*level+1) * qscale * weigth_matrix[i];
-                if (weigth_matrix[i] != 32)
+                level = (2*level+1) * qscale * weight_matrix[i];
+                if (weight_matrix[i] != 32)
                     level += 32;
                 level >>= 6;
             }
