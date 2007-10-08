@@ -954,7 +954,7 @@ alloc:
 
     assert(s->pict_type == I_TYPE || (s->last_picture_ptr && s->last_picture_ptr->data[0]));
 
-    if(s->picture_structure!=PICT_FRAME){
+    if(s->picture_structure!=PICT_FRAME && s->out_format != FMT_H264){
         int i;
         for(i=0; i<4; i++){
             if(s->picture_structure == PICT_BOTTOM_FIELD){

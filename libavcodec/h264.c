@@ -3339,6 +3339,7 @@ static void flush_dpb(AVCodecContext *avctx){
     idr(h);
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
+    h->s.first_field= 0;
 }
 
 /**
@@ -3830,6 +3831,7 @@ static void clone_slice(H264Context *dst, H264Context *src)
     dst->s.current_picture      = src->s.current_picture;
     dst->s.linesize             = src->s.linesize;
     dst->s.uvlinesize           = src->s.uvlinesize;
+    dst->s.first_field          = src->s.first_field;
 
     dst->prev_poc_msb           = src->prev_poc_msb;
     dst->prev_poc_lsb           = src->prev_poc_lsb;
@@ -3857,12 +3859,14 @@ static void clone_slice(H264Context *dst, H264Context *src)
  */
 static int decode_slice_header(H264Context *h, H264Context *h0){
     MpegEncContext * const s = &h->s;
+    MpegEncContext * const s0 = &h0->s;
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
     int num_ref_idx_active_override_flag;
     static const uint8_t slice_type_map[5]= {P_TYPE, B_TYPE, I_TYPE, SP_TYPE, SI_TYPE};
     unsigned int slice_type, tmp, i;
     int default_ref_list_done = 0;
+    int last_pic_structure;
 
     s->dropable= h->nal_ref_idc == 0;
 
@@ -3870,6 +3874,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     if((s->flags2 & CODEC_FLAG2_CHUNKS) && first_mb_in_slice == 0){
         h0->current_slice = 0;
+        if (!s0->first_field)
         s->current_picture_ptr= NULL;
     }
 
@@ -3939,6 +3944,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             return -1;  // we cant (re-)initialize context during parallel decoding
         if (MPV_common_init(s) < 0)
             return -1;
+        s->first_field = 0;
 
         init_scan_tables(h);
         alloc_tables(h);
@@ -3977,6 +3983,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     h->mb_mbaff = 0;
     h->mb_aff_frame = 0;
+    last_pic_structure = s0->picture_structure;
     if(h->sps.frame_mbs_only_flag){
         s->picture_structure= PICT_FRAME;
     }else{
@@ -3990,8 +3997,50 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     if(h0->current_slice == 0){
-        if(frame_start(h) < 0)
+        /* See if we have a decoded first field looking for a pair... */
+        if (s0->first_field) {
+            assert(s0->current_picture_ptr);
+            assert(s0->current_picture_ptr->data[0]);
+            assert(s0->current_picture_ptr->reference != DELAYED_PIC_REF);
+
+            /* figure out if we have a complementary field pair */
+            if (!FIELD_PICTURE || s->picture_structure == last_pic_structure) {
+                /*
+                 * Previous field is unmatched. Don't display it, but let it
+                 * remain for reference if marked as such.
+                 */
+                s0->current_picture_ptr = NULL;
+                s0->first_field = FIELD_PICTURE;
+
+            } else {
+                if (h->nal_ref_idc &&
+                        s0->current_picture_ptr->reference &&
+                        s0->current_picture_ptr->frame_num != h->frame_num) {
+                    /*
+                     * This and previous field were reference, but had
+                     * different frame_nums. Consider this field first in
+                     * pair. Throw away previous field except for reference
+                     * purposes.
+                     */
+                    s0->first_field = 1;
+                    s0->current_picture_ptr = NULL;
+
+                } else {
+                    /* Second field in complementary pair */
+                    s0->first_field = 0;
+                }
+            }
+
+        } else {
+            /* Frame or first field in a potentially complementary pair */
+            assert(!s0->current_picture_ptr);
+            s0->first_field = FIELD_PICTURE;
+        }
+
+        if((!FIELD_PICTURE || s0->first_field) && frame_start(h) < 0) {
+            s0->first_field = 0;
             return -1;
+        }
     }
     if(h != h0)
         clone_slice(h, h0);
@@ -7363,6 +7412,8 @@ static void execute_decode_slices(H264Context *h, int context_count){
         hx = h->thread_context[context_count - 1];
         s->mb_x = hx->s.mb_x;
         s->mb_y = hx->s.mb_y;
+        s->dropable = hx->s.dropable;
+        s->picture_structure = hx->s.picture_structure;
         for(i = 1; i < context_count; i++)
             h->s.error_count += h->thread_context[i]->s.error_count;
     }
@@ -7385,6 +7436,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 #endif
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS)){
         h->current_slice = 0;
+        if (!s->first_field)
         s->current_picture_ptr= NULL;
     }
 
@@ -7682,16 +7734,34 @@ static int decode_frame(AVCodecContext *avctx,
 
         h->prev_frame_num_offset= h->frame_num_offset;
         h->prev_frame_num= h->frame_num;
-        if(s->current_picture_ptr->reference & s->picture_structure){
+        if(!s->dropable) {
             h->prev_poc_msb= h->poc_msb;
             h->prev_poc_lsb= h->poc_lsb;
             execute_ref_pic_marking(h, h->mmco, h->mmco_index);
         }
 
+        /*
+         * FIXME: Error handling code does not seem to support interlaced
+         * when slices span multiple rows
+         * The ff_er_add_slice calls don't work right for bottom
+         * fields; they cause massive erroneous error concealing
+         * Error marking covers both fields (top and bottom).
+         * This causes a mismatched s->error_count
+         * and a bad error table. Further, the error count goes to
+         * INT_MAX when called for bottom field, because mb_y is
+         * past end by one (callers fault) and resync_mb_y != 0
+         * causes problems for the first MB line, too.
+         */
+        if (!FIELD_PICTURE)
         ff_er_frame_end(s);
 
         MPV_frame_end(s);
 
+        if (s->first_field) {
+            /* Wait for second field. */
+            *data_size = 0;
+
+        } else {
     //FIXME do something with unavailable reference frames
 
 #if 0 //decode order
@@ -7762,6 +7832,7 @@ static int decode_frame(AVCodecContext *avctx,
             *pict= *(AVFrame*)out;
         else
             av_log(avctx, AV_LOG_DEBUG, "no picture\n");
+        }
     }
 
     assert(pict->data[0] || !*data_size);
