@@ -189,6 +189,11 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
             i += ctx->cid_table->run[index2];
         }
 
+        if (i > 63) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", n, i);
+            return;
+        }
+
         j = ctx->scantable.permutated[i];
         //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
         //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weigth %d\n", level, weigth_matrix[i]);
@@ -197,12 +202,6 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
             level += 32;
         level >>= 6;
         level = (level^sign) - sign;
-
-        if (i > 63) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", n, i);
-            return;
-        }
-
         //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
         block[j] = level;
     }
