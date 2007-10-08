@@ -6351,17 +6351,18 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     if( IS_INTRA(mb_type) ) {
         int16_t bS4[4] = {4,4,4,4};
         int16_t bS3[4] = {3,3,3,3};
+        int16_t *bSH = FIELD_PICTURE ? bS3 : bS4;
         if( IS_8x8DCT(mb_type) ) {
             filter_mb_edgev( h, &img_y[4*0], linesize, bS4, qp0 );
             filter_mb_edgev( h, &img_y[4*2], linesize, bS3, qp );
-            filter_mb_edgeh( h, &img_y[4*0*linesize], linesize, bS4, qp1 );
+            filter_mb_edgeh( h, &img_y[4*0*linesize], linesize, bSH, qp1 );
             filter_mb_edgeh( h, &img_y[4*2*linesize], linesize, bS3, qp );
         } else {
             filter_mb_edgev( h, &img_y[4*0], linesize, bS4, qp0 );
             filter_mb_edgev( h, &img_y[4*1], linesize, bS3, qp );
             filter_mb_edgev( h, &img_y[4*2], linesize, bS3, qp );
             filter_mb_edgev( h, &img_y[4*3], linesize, bS3, qp );
-            filter_mb_edgeh( h, &img_y[4*0*linesize], linesize, bS4, qp1 );
+            filter_mb_edgeh( h, &img_y[4*0*linesize], linesize, bSH, qp1 );
             filter_mb_edgeh( h, &img_y[4*1*linesize], linesize, bS3, qp );
             filter_mb_edgeh( h, &img_y[4*2*linesize], linesize, bS3, qp );
             filter_mb_edgeh( h, &img_y[4*3*linesize], linesize, bS3, qp );
@@ -6370,9 +6371,9 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
         filter_mb_edgecv( h, &img_cb[2*2], uvlinesize, bS3, qpc );
         filter_mb_edgecv( h, &img_cr[2*0], uvlinesize, bS4, qpc0 );
         filter_mb_edgecv( h, &img_cr[2*2], uvlinesize, bS3, qpc );
-        filter_mb_edgech( h, &img_cb[2*0*uvlinesize], uvlinesize, bS4, qpc1 );
+        filter_mb_edgech( h, &img_cb[2*0*uvlinesize], uvlinesize, bSH, qpc1 );
         filter_mb_edgech( h, &img_cb[2*2*uvlinesize], uvlinesize, bS3, qpc );
-        filter_mb_edgech( h, &img_cr[2*0*uvlinesize], uvlinesize, bS4, qpc1 );
+        filter_mb_edgech( h, &img_cr[2*0*uvlinesize], uvlinesize, bSH, qpc1 );
         filter_mb_edgech( h, &img_cr[2*2*uvlinesize], uvlinesize, bS3, qpc );
         return;
     } else {
@@ -6394,7 +6395,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
                                               (h->slice_type == B_TYPE), edges, step, mask_edge0, mask_edge1 );
         }
         if( IS_INTRA(s->current_picture.mb_type[mb_xy-1]) )
-            bSv[0][0] = 0x0004000400040004ULL;
+            bSv[0][0] = FIELD_PICTURE ? 0x0003000300030003ULL : 0x0004000400040004ULL;
         if( IS_INTRA(s->current_picture.mb_type[h->top_mb_xy]) )
             bSv[1][0] = 0x0004000400040004ULL;
 
