@@ -201,9 +201,8 @@ static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int
         if (weigth_matrix[i] != 32) // FIXME 10bit
             level += 32;
         level >>= 6;
-        level = (level^sign) - sign;
         //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
-        block[j] = level;
+        block[j] = (level^sign) - sign;
     }
 }
 
