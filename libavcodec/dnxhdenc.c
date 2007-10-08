@@ -181,6 +181,8 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
             ctx->cid = 1237;
         else if (avctx->bit_rate == 185000000)
             ctx->cid = 1238;
+        else if (avctx->bit_rate ==  36000000)
+            ctx->cid = 1253;
     }
     if (!ctx->cid || avctx->width != 1920 || avctx->height != 1080 || avctx->pix_fmt != PIX_FMT_YUV422P) {
         av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD\n");
