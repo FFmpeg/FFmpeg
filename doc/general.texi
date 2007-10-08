@@ -226,7 +226,7 @@ following image formats are supported:
 @item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
 @item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CDROM FlashBack game.
 @item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
-@item AVID DNxHD             @tab     @tab  X @tab aka SMPTE VC3
+@item AVID DNxHD             @tab   X @tab  X @tab aka SMPTE VC3
 @item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
 @item THP                    @tab     @tab  X @tab Used on the Nintendo GameCube.
 @item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.

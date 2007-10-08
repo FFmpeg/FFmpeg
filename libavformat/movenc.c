@@ -516,6 +516,51 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
     return updateSize(pb, pos);
 }
 
+/* also used by all avid codecs (dv, imx, meridien) and their variants */
+static int mov_write_avid_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    int i;
+    put_be32(pb, 24); /* size */
+    put_tag(pb, "ACLR");
+    put_tag(pb, "ACLR");
+    put_tag(pb, "0001");
+    put_be32(pb, 1); /* yuv 1 / rgb 2 ? */
+    put_be32(pb, 0); /* unknown */
+
+    put_be32(pb, 24); /* size */
+    put_tag(pb, "APRG");
+    put_tag(pb, "APRG");
+    put_tag(pb, "0001");
+    put_be32(pb, 1); /* unknown */
+    put_be32(pb, 0); /* unknown */
+
+    put_be32(pb, 120); /* size */
+    put_tag(pb, "ARES");
+    put_tag(pb, "ARES");
+    put_tag(pb, "0001");
+    put_be32(pb, AV_RB32(track->vosData + 0x28)); /* dnxhd cid, some id ? */
+    put_be32(pb, track->enc->width);
+    /* values below are based on samples created with quicktime and avid codecs */
+    if (track->vosData[5] & 2) { // interlaced
+        put_be32(pb, track->enc->height/2);
+        put_be32(pb, 2); /* unknown */
+        put_be32(pb, 0); /* unknown */
+        put_be32(pb, 4); /* unknown */
+    } else {
+        put_be32(pb, track->enc->height);
+        put_be32(pb, 1); /* unknown */
+        put_be32(pb, 0); /* unknown */
+        put_be32(pb, 5); /* unknown */
+    }
+    /* padding */
+    for (i = 0; i < 10; i++)
+        put_be64(pb, 0);
+
+    /* extra padding for stsd needed */
+    put_be32(pb, 0);
+    return 0;
+}
+
 static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
@@ -623,6 +668,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_svq3_tag(pb);
     else if(track->enc->codec_id == CODEC_ID_H264)
         mov_write_avcc_tag(pb, track);
+    else if(track->enc->codec_id == CODEC_ID_DNXHD)
+        mov_write_avid_tag(pb, track);
 
     return updateSize (pb, pos);
 }
@@ -1561,6 +1608,13 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         avc_parse_nal_units(&pkt->data, &pkt->size);
         assert(pkt->size);
         size = pkt->size;
+    } else if (enc->codec_id == CODEC_ID_DNXHD && !trk->vosLen) {
+        /* copy frame header to create needed atoms */
+        if (size < 640)
+            return -1;
+        trk->vosLen = 640;
+        trk->vosData = av_malloc(trk->vosLen);
+        memcpy(trk->vosData, pkt->data, 640);
     }
 
     if (!(trk->entry % MOV_INDEX_CLUSTER_SIZE)) {

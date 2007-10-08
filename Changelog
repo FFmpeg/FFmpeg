@@ -97,6 +97,7 @@ version <next>
 - Monkey's Audio demuxer and decoder
 - additional SPARC (VIS) optimizations
 - AMV audio and video decoder
+- DNxHD encoder
 
 version 0.4.9-pre1:
 
