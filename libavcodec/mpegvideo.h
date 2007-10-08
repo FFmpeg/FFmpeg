@@ -723,6 +723,7 @@ void ff_er_frame_start(MpegEncContext *s);
 void ff_er_frame_end(MpegEncContext *s);
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status);
 
+int ff_dct_common_init(MpegEncContext *s);
 
 extern enum PixelFormat ff_yuv420p_list[2];
 

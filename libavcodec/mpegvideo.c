@@ -130,7 +130,7 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
 }
 
 /* init common dct for both encoder and decoder */
-static int DCT_common_init(MpegEncContext *s)
+int ff_dct_common_init(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
@@ -431,7 +431,7 @@ int MPV_common_init(MpegEncContext *s)
         return -1;
 
     dsputil_init(&s->dsp, s->avctx);
-    DCT_common_init(s);
+    ff_dct_common_init(s);
 
     s->flags= s->avctx->flags;
     s->flags2= s->avctx->flags2;
