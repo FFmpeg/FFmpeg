@@ -108,7 +108,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size, in
 
     dprintf(ctx->avctx, "width %d, heigth %d\n", ctx->width, ctx->height);
 
-    if (buf[0x21] & 0x80) {
+    if (buf[0x21] & 0x40) {
         av_log(ctx->avctx, AV_LOG_ERROR, "10 bit per component\n");
         return -1;
     }
