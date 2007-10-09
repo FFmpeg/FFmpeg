@@ -573,27 +573,23 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg)
 
 static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
 {
-    unsigned lambda, up_lambda, down_lambda;
+    int lambda, up_step, down_step;
+    int last_lower = INT_MAX, last_higher = 0;
     int x, y, q;
 
     for (q = 1; q < avctx->qmax; q++) {
         ctx->qscale = q;
         avctx->execute(avctx, dnxhd_calc_bits_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count);
     }
-    up_lambda = avctx->qmax<<LAMBDA_FRAC_BITS;
-    down_lambda = 1; // higher ?
+    up_step = down_step = 2<<LAMBDA_FRAC_BITS;
     lambda = ctx->lambda;
 
     for (;;) {
         int bits = 0;
         int end = 0;
-        if (lambda == up_lambda) {
-            lambda--;
-            end = 1; // need to set final qscales/bits
-        }
-        if (lambda == down_lambda) {
+        if (lambda == last_higher) {
             lambda++;
-            end = 1;
+            end = 1; // need to set final qscales/bits
         }
         for (y = 0; y < ctx->m.mb_height; y++) {
             for (x = 0; x < ctx->m.mb_width; x++) {
@@ -615,20 +611,35 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
             if (bits > ctx->frame_bits)
                 break;
         }
-        //dprintf(ctx->m.avctx, "lambda %d, up %d, down %d, bits %d, frame %d\n", lambda, up_lambda, down_lambda, bits, ctx->frame_bits);
+        //dprintf(ctx->m.avctx, "lambda %d, up %u, down %u, bits %d, frame %d\n",
+        //        lambda, last_higher, last_lower, bits, ctx->frame_bits);
         if (end) {
             if (bits > ctx->frame_bits)
                 return -1;
             break;
         }
         if (bits < ctx->frame_bits) {
-            up_lambda = lambda;
-            lambda = (down_lambda+lambda)>>1;
+            last_lower = FFMIN(lambda, last_lower);
+            if (last_higher != 0)
+                lambda = (lambda+last_higher)>>1;
+            else
+                lambda -= down_step;
+            down_step *= 5; // XXX tune ?
+            up_step = 1<<LAMBDA_FRAC_BITS;
+            lambda = FFMAX(1, lambda);
+            if (lambda == last_lower)
+                break;
         } else {
-            down_lambda = lambda;
-            lambda = (up_lambda+lambda)>>1;
+            last_higher = FFMAX(lambda, last_higher);
+            if (last_lower != INT_MAX)
+                lambda = (lambda+last_lower)>>1;
+            else
+                lambda += up_step;
+            up_step *= 5;
+            down_step = 1<<LAMBDA_FRAC_BITS;
         }
     }
+    //dprintf(ctx->m.avctx, "out lambda %d\n", lambda);
     ctx->lambda = lambda;
     return 0;
 }
