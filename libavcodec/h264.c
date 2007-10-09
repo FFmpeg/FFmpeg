@@ -3875,7 +3875,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if((s->flags2 & CODEC_FLAG2_CHUNKS) && first_mb_in_slice == 0){
         h0->current_slice = 0;
         if (!s0->first_field)
-        s->current_picture_ptr= NULL;
+            s->current_picture_ptr= NULL;
     }
 
     slice_type= get_ue_golomb(&s->gb);
@@ -7436,7 +7436,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS)){
         h->current_slice = 0;
         if (!s->first_field)
-        s->current_picture_ptr= NULL;
+            s->current_picture_ptr= NULL;
     }
 
     for(;;){
@@ -7752,7 +7752,7 @@ static int decode_frame(AVCodecContext *avctx,
          * causes problems for the first MB line, too.
          */
         if (!FIELD_PICTURE)
-        ff_er_frame_end(s);
+            ff_er_frame_end(s);
 
         MPV_frame_end(s);
 
@@ -7761,76 +7761,76 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
 
         } else {
-    //FIXME do something with unavailable reference frames
+        //FIXME do something with unavailable reference frames
 
 #if 0 //decode order
-        *data_size = sizeof(AVFrame);
+            *data_size = sizeof(AVFrame);
 #else
-        /* Sort B-frames into display order */
+            /* Sort B-frames into display order */
 
-        if(h->sps.bitstream_restriction_flag
-           && s->avctx->has_b_frames < h->sps.num_reorder_frames){
-            s->avctx->has_b_frames = h->sps.num_reorder_frames;
-            s->low_delay = 0;
-        }
-
-        pics = 0;
-        while(h->delayed_pic[pics]) pics++;
-
-        assert(pics+1 < sizeof(h->delayed_pic) / sizeof(h->delayed_pic[0]));
-
-        h->delayed_pic[pics++] = cur;
-        if(cur->reference == 0)
-            cur->reference = DELAYED_PIC_REF;
-
-        cross_idr = 0;
-        for(i=0; h->delayed_pic[i]; i++)
-            if(h->delayed_pic[i]->key_frame || h->delayed_pic[i]->poc==0)
-                cross_idr = 1;
-
-        out = h->delayed_pic[0];
-        out_idx = 0;
-        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
-            if(h->delayed_pic[i]->poc < out->poc){
-                out = h->delayed_pic[i];
-                out_idx = i;
+            if(h->sps.bitstream_restriction_flag
+               && s->avctx->has_b_frames < h->sps.num_reorder_frames){
+                s->avctx->has_b_frames = h->sps.num_reorder_frames;
+                s->low_delay = 0;
             }
 
-        out_of_order = !cross_idr && prev && out->poc < prev->poc;
-        if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
-            { }
-        else if(prev && pics <= s->avctx->has_b_frames)
-            out = prev;
-        else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
-           || (s->low_delay &&
-            ((!cross_idr && prev && out->poc > prev->poc + 2)
-             || cur->pict_type == B_TYPE)))
-        {
-            s->low_delay = 0;
-            s->avctx->has_b_frames++;
-            out = prev;
-        }
-        else if(out_of_order)
-            out = prev;
+            pics = 0;
+            while(h->delayed_pic[pics]) pics++;
 
-        if(out_of_order || pics > s->avctx->has_b_frames){
-            for(i=out_idx; h->delayed_pic[i]; i++)
-                h->delayed_pic[i] = h->delayed_pic[i+1];
-        }
+            assert(pics+1 < sizeof(h->delayed_pic) / sizeof(h->delayed_pic[0]));
 
-        if(prev == out)
-            *data_size = 0;
-        else
-            *data_size = sizeof(AVFrame);
-        if(prev && prev != out && prev->reference == DELAYED_PIC_REF)
-            prev->reference = 0;
-        h->delayed_output_pic = out;
+            h->delayed_pic[pics++] = cur;
+            if(cur->reference == 0)
+                cur->reference = DELAYED_PIC_REF;
+
+            cross_idr = 0;
+            for(i=0; h->delayed_pic[i]; i++)
+                if(h->delayed_pic[i]->key_frame || h->delayed_pic[i]->poc==0)
+                    cross_idr = 1;
+
+            out = h->delayed_pic[0];
+            out_idx = 0;
+            for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+                if(h->delayed_pic[i]->poc < out->poc){
+                    out = h->delayed_pic[i];
+                    out_idx = i;
+                }
+
+            out_of_order = !cross_idr && prev && out->poc < prev->poc;
+            if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
+                { }
+            else if(prev && pics <= s->avctx->has_b_frames)
+                out = prev;
+            else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
+               || (s->low_delay &&
+                ((!cross_idr && prev && out->poc > prev->poc + 2)
+                 || cur->pict_type == B_TYPE)))
+            {
+                s->low_delay = 0;
+                s->avctx->has_b_frames++;
+                out = prev;
+            }
+            else if(out_of_order)
+                out = prev;
+
+            if(out_of_order || pics > s->avctx->has_b_frames){
+                for(i=out_idx; h->delayed_pic[i]; i++)
+                    h->delayed_pic[i] = h->delayed_pic[i+1];
+            }
+
+            if(prev == out)
+                *data_size = 0;
+            else
+                *data_size = sizeof(AVFrame);
+            if(prev && prev != out && prev->reference == DELAYED_PIC_REF)
+                prev->reference = 0;
+            h->delayed_output_pic = out;
 #endif
 
-        if(out)
-            *pict= *(AVFrame*)out;
-        else
-            av_log(avctx, AV_LOG_DEBUG, "no picture\n");
+            if(out)
+                *pict= *(AVFrame*)out;
+            else
+                av_log(avctx, AV_LOG_DEBUG, "no picture\n");
         }
     }
 
