@@ -3989,7 +3989,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }else{
         if(get_bits1(&s->gb)) { //field_pic_flag
             s->picture_structure= PICT_TOP_FIELD + get_bits1(&s->gb); //bottom_field_flag
-            av_log(h->s.avctx, AV_LOG_ERROR, "PAFF interlacing is not implemented\n");
         } else {
             s->picture_structure= PICT_FRAME;
             h->mb_aff_frame = h->sps.mb_aff;
