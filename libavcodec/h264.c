@@ -3076,7 +3076,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         const unsigned int abs_diff_pic_num= get_ue_golomb(&s->gb) + 1;
                         int frame_num;
 
-                        if(abs_diff_pic_num >= h->max_pic_num){
+                        if(abs_diff_pic_num > h->max_pic_num){
                             av_log(h->s.avctx, AV_LOG_ERROR, "abs_diff_pic_num overflow\n");
                             return -1;
                         }
