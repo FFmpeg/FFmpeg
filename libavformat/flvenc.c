@@ -66,8 +66,10 @@ static int get_audio_flags(AVCodecContext *enc){
             break;
         case     8000: //nellymoser only
         case     5512: //not mp3
+            if(enc->codec_id != CODEC_ID_MP3){
             flags |= FLV_SAMPLERATE_SPECIAL;
             break;
+            }
         default:
             av_log(enc, AV_LOG_ERROR, "flv does not support that sample rate, choose from (44100, 22050, 11025).\n");
             return -1;
