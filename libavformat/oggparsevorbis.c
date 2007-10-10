@@ -102,10 +102,6 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
                 as->track = atoi(ct);
             else if (!strcmp(tt, "ALBUM"))
                 av_strlcpy(as->album, ct, sizeof(as->album));
-            else if (!strcmp(tt, "GENRE"))
-                av_strlcpy(as->genre, ct, sizeof(as->genre));
-            else if (!strcmp(tt, "DESCRIPTION"))
-                av_strlcpy(as->comment, ct, sizeof(as->comment));
         }
     }
 
