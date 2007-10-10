@@ -576,89 +576,6 @@ ogg_read_close (AVFormatContext * s)
 }
 
 
-static int
-ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
-               int flags)
-{
-    AVStream *st = s->streams[stream_index];
-    ogg_t *ogg = s->priv_data;
-    ByteIOContext *bc = &s->pb;
-    uint64_t min = 0, max = ogg->size;
-    uint64_t tmin = st->start_time, tmax = st->start_time + st->duration;
-    int64_t pts = AV_NOPTS_VALUE;
-
-    ogg_save (s);
-
-    if ((uint64_t)target_ts < tmin || target_ts < 0)
-        target_ts = tmin;
-    while (min <= max && tmin < tmax){
-        uint64_t p = min + (max - min) * (target_ts - tmin) / (tmax - tmin);
-        int i = -1;
-
-        url_fseek (bc, p, SEEK_SET);
-
-        while (!ogg_read_page (s, &i)){
-            if (i == stream_index && ogg->streams[i].granule != 0 &&
-                ogg->streams[i].granule != -1)
-                break;
-        }
-
-        if (i == -1)
-            break;
-
-        pts = ogg_gptopts (s, i, ogg->streams[i].granule);
-        p = url_ftell (bc);
-
-        if (FFABS (pts - target_ts) * st->time_base.num < st->time_base.den)
-            break;
-
-        if (pts > target_ts){
-            if (max == p && tmax == pts) {
-                // probably our tmin is wrong, causing us to always end up too late in the file
-                tmin = (target_ts + tmin + 1) / 2;
-                if (tmin == target_ts) {
-                    url_fseek(bc, min, SEEK_SET);
-                    break;
-                }
-            }
-            max = p;
-            tmax = pts;
-        }else{
-            if (min == p && tmin == pts) {
-                // probably our tmax is wrong, causing us to always end up too early in the file
-                tmax = (target_ts + tmax) / 2;
-                if (tmax == target_ts) {
-                    url_fseek(bc, max, SEEK_SET);
-                    break;
-                }
-            }
-            min = p;
-            tmin = pts;
-        }
-    }
-
-    if (FFABS (pts - target_ts) * st->time_base.num < st->time_base.den){
-        ogg_restore (s, 1);
-        ogg_reset (ogg);
-    }else{
-        ogg_restore (s, 0);
-        pts = AV_NOPTS_VALUE;
-    }
-
-    av_update_cur_dts(s, st, pts);
-    return 0;
-
-#if 0
-    //later...
-    int64_t pos;
-    if (av_seek_frame_binary (s, stream_index, target_ts, flags) < 0)
-        return -1;
-    pos = url_ftell (&s->pb);
-    ogg_read_timestamp (s, stream_index, &pos, pos - 1);
-#endif
-
-}
-
 static int64_t
 ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
                     int64_t pos_limit)
@@ -700,7 +617,7 @@ AVInputFormat ogg_demuxer = {
     ogg_read_header,
     ogg_read_packet,
     ogg_read_close,
-    ogg_read_seek,
+    NULL,
     ogg_read_timestamp,
     .extensions = "ogg",
 };
