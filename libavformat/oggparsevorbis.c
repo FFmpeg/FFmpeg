@@ -183,15 +183,32 @@ vorbis_header (AVFormatContext * s, int idx)
     priv->packet[os->seq] = av_mallocz(os->psize);
     memcpy(priv->packet[os->seq], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
-        uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
+        uint8_t *p = os->buf + os->pstart + 7; /* skip "\001vorbis" tag */
+        unsigned blocksize, bs0, bs1;
 
         if (os->psize != 30)
+            return -1;
+
+        if (bytestream_get_le32(&p) != 0) /* vorbis_version */
             return -1;
 
         st->codec->channels = bytestream_get_byte(&p);
         st->codec->sample_rate = bytestream_get_le32(&p);
         p += 4; // skip maximum bitrate
         st->codec->bit_rate = bytestream_get_le32(&p); // nominal bitrate
+        p += 4; // skip minimum bitrate
+
+        blocksize = bytestream_get_byte(&p);
+        bs0 = blocksize & 15;
+        bs1 = blocksize >> 4;
+
+        if (bs0 > bs1)
+            return -1;
+        if (bs0 < 6 || bs1 > 13)
+            return -1;
+
+        if (bytestream_get_byte(&p) != 1) /* framing_flag */
+            return -1;
 
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
