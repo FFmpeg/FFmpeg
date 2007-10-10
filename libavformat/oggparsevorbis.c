@@ -32,17 +32,17 @@
 extern int
 vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
 {
-    char *p = buf;
-    int s, n, j;
+    uint8_t *p = buf;
+    unsigned s, n, j;
 
-    if (size < 4)
+    if (size < 8) /* must have vendor_length and user_comment_list_length */
         return -1;
 
     s = AV_RL32(p);
     p += 4;
     size -= 4;
 
-    if (size < s + 4)
+    if (size - 4 < s)
         return -1;
 
     p += s;
@@ -174,12 +174,19 @@ vorbis_header (AVFormatContext * s, int idx)
             return 0;
     }
 
+    if (os->psize < 1)
+        return -1;
+
     priv = os->private;
     priv->len[os->seq] = os->psize;
     priv->packet[os->seq] = av_mallocz(os->psize);
     memcpy(priv->packet[os->seq], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
+
+        if (os->psize != 30)
+            return -1;
+
         st->codec->channels = *p++;
         st->codec->sample_rate = AV_RL32(p);
         p += 8; //skip maximum and and nominal bitrate
@@ -191,7 +198,8 @@ vorbis_header (AVFormatContext * s, int idx)
         st->time_base.num = 1;
         st->time_base.den = st->codec->sample_rate;
     } else if (os->buf[os->pstart] == 3) {
-        vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
+        if (os->psize > 8)
+            vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     } else {
         st->codec->extradata_size =
             fixup_vorbis_headers(s, priv, &st->codec->extradata);
