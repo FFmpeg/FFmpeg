@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include "avformat.h"
 #include "bitstream.h"
+#include "bytestream.h"
 #include "bswap.h"
 #include "ogg2.h"
 #include "avstring.h"
@@ -187,10 +188,10 @@ vorbis_header (AVFormatContext * s, int idx)
         if (os->psize != 30)
             return -1;
 
-        st->codec->channels = *p++;
-        st->codec->sample_rate = AV_RL32(p);
-        p += 8; //skip maximum and and nominal bitrate
-        st->codec->bit_rate = AV_RL32(p); //Minimum bitrate
+        st->codec->channels = bytestream_get_byte(&p);
+        st->codec->sample_rate = bytestream_get_le32(&p);
+        p += 4; // skip maximum bitrate
+        st->codec->bit_rate = bytestream_get_le32(&p); // nominal bitrate
 
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
