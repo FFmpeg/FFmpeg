@@ -659,21 +659,28 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
 
 }
 
-#if 0
 static int64_t
 ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
                     int64_t pos_limit)
 {
     ogg_t *ogg = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int64_t pos, pts;
-
-    if (*pos_arg < 0)
-        return AV_NOPTS_VALUE;
-
-    pos = *pos_arg;
+    int64_t pts = AV_NOPTS_VALUE;
+    int i;
+    url_fseek(bc, *pos_arg, SEEK_SET);
+    while (url_ftell(bc) < pos_limit && !ogg_read_page (s, &i)) {
+        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
+            ogg->streams[i].codec && i == stream_index) {
+            pts = ogg_gptopts(s, i, ogg->streams[i].granule);
+            // FIXME: this is the position of the packet after the one with above
+            // pts.
+            *pos_arg = url_ftell(bc);
+            break;
+        }
+    }
+    ogg_reset(ogg);
+    return pts;
 }
-#endif
 
 static int ogg_probe(AVProbeData *p)
 {
@@ -694,6 +701,6 @@ AVInputFormat ogg_demuxer = {
     ogg_read_packet,
     ogg_read_close,
     ogg_read_seek,
-// ogg_read_timestamp,
+    ogg_read_timestamp,
     .extensions = "ogg",
 };
