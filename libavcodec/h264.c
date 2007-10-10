@@ -7843,6 +7843,7 @@ static int decode_frame(AVCodecContext *avctx,
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 #endif
+    pict->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
     return get_consumed_bytes(s, buf_index, buf_size);
 }
 #if 0
