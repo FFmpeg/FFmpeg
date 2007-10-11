@@ -2824,7 +2824,8 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     if (pix_fmt != PIX_FMT_YUV420P &&
         pix_fmt != PIX_FMT_YUV422P &&
         pix_fmt != PIX_FMT_YUV444P &&
-        pix_fmt != PIX_FMT_YUV411P)
+        pix_fmt != PIX_FMT_YUV411P &&
+        pix_fmt != PIX_FMT_GRAY8)
         return -1;
     if ((width & 3) != 0 || (height & 3) != 0)
         return -1;
@@ -2843,6 +2844,9 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                 width >>= 2;
                 break;
             default:
+                break;
+            }
+            if (pix_fmt == PIX_FMT_GRAY8) {
                 break;
             }
         }
