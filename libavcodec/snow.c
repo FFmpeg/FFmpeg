@@ -3665,7 +3665,7 @@ static int decode_header(SnowContext *s){
     if(!s->keyframe){
         if(get_rac(&s->c, s->header_state)){
             for(plane_index=0; plane_index<2; plane_index++){
-                int htaps, i, sum=0, absum=0;
+                int htaps, i, sum=0;
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
                 htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
@@ -4548,8 +4548,6 @@ static int encode_end(AVCodecContext *avctx)
 
 static int decode_init(AVCodecContext *avctx)
 {
-    SnowContext *s = avctx->priv_data;
-
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
     common_init(avctx);
