@@ -2435,7 +2435,7 @@ void avcodec_init(void);
 void register_avcodec(AVCodec *format);
 
 /**
- * Finds an encoder with a matching codec ID.
+ * Finds a registered encoder with a matching codec ID.
  *
  * @param id CodecID of the requested encoder
  * @return An encoder if one was found, NULL otherwise.
@@ -2443,7 +2443,7 @@ void register_avcodec(AVCodec *format);
 AVCodec *avcodec_find_encoder(enum CodecID id);
 
 /**
- * Finds an encoder with the specified name.
+ * Finds a registered encoder with the specified name.
  *
  * @param name name of the requested encoder
  * @return An encoder if one was found, NULL otherwise.
@@ -2451,7 +2451,7 @@ AVCodec *avcodec_find_encoder(enum CodecID id);
 AVCodec *avcodec_find_encoder_by_name(const char *name);
 
 /**
- * Finds a decoder with a matching codec ID.
+ * Finds a registered decoder with a matching codec ID.
  *
  * @param id CodecID of the requested decoder
  * @return A decoder if one was found, NULL otherwise.
@@ -2459,7 +2459,7 @@ AVCodec *avcodec_find_encoder_by_name(const char *name);
 AVCodec *avcodec_find_decoder(enum CodecID id);
 
 /**
- * Finds an decoder with the specified name.
+ * Finds a registered decoder with the specified name.
  *
  * @param name name of the requested decoder
  * @return A decoder if one was found, NULL otherwise.
