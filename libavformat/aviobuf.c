@@ -38,11 +38,7 @@ int init_put_byte(ByteIOContext *s,
     s->buffer = buffer;
     s->buffer_size = buffer_size;
     s->buf_ptr = buffer;
-    s->write_flag = write_flag;
-    if (!s->write_flag)
-        s->buf_end = buffer;
-    else
-        s->buf_end = buffer + buffer_size;
+    url_resetbuf(s, write_flag ? URL_WRONLY : URL_RDONLY);
     s->opaque = opaque;
     s->write_packet = write_packet;
     s->read_packet = read_packet;
@@ -534,10 +530,23 @@ int url_setbufsize(ByteIOContext *s, int buf_size)
     s->buffer = buffer;
     s->buffer_size = buf_size;
     s->buf_ptr = buffer;
-    if (!s->write_flag)
-        s->buf_end = buffer;
-    else
-        s->buf_end = buffer + buf_size;
+    url_resetbuf(s, s->write_flag ? URL_WRONLY : URL_RDONLY);
+    return 0;
+}
+
+int url_resetbuf(ByteIOContext *s, int flags)
+{
+    URLContext *h = s->opaque;
+    if ((flags & URL_RDWR) || (h && h->flags != flags && !h->flags & URL_RDWR))
+        return AVERROR(EINVAL);
+
+    if (flags & URL_WRONLY) {
+        s->buf_end = s->buffer + s->buffer_size;
+        s->write_flag = 1;
+    } else {
+        s->buf_end = s->buffer;
+        s->write_flag = 0;
+    }
     return 0;
 }
 
