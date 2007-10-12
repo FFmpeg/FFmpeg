@@ -1182,9 +1182,9 @@ case $targetos in
     EXESUF=".exe"
     SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
+    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:\$(SLIBSUF)=.def)"
     SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(SHLIBDIR)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
-    SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base"
+    SHFLAGS="-shared -Wl,--output-def,\$(@:\$(SLIBSUF)=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base"
     ;;
   cygwin*)
     targetos=cygwin
@@ -1861,11 +1861,11 @@ echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
-echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
+echo "LIBSUF=\$(BUILDSUF)$LIBSUF" >> config.mak
 echo "LIB=$LIB" >> config.mak
 echo "SLIBPREF=$SLIBPREF" >> config.mak
-echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
-echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
+echo "SLIBSUF=\$(BUILDSUF)$SLIBSUF" >> config.mak
+echo "EXESUF=\$(BUILDSUF)$EXESUF" >> config.mak
 
 if enabled bigendian; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
