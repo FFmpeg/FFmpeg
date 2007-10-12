@@ -820,7 +820,7 @@ udp_protocol_deps="network"
 
 # programs
 ffplay_deps="sdl"
-ffserver_deps="muxers rtp_protocol"
+ffserver_deps="ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 vhook_extralibs='$ldl'
 
