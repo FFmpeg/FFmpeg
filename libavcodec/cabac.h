@@ -272,7 +272,7 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if 0
+#if ! ( defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) )
 static void refill2(CABACContext *c){
     int i, x;
 
