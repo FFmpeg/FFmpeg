@@ -4098,8 +4098,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->slice_type == P_TYPE || h->slice_type == SP_TYPE || h->slice_type == B_TYPE){
         if(h->slice_type == B_TYPE){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
-            if(h->sps.mb_aff && h->direct_spatial_mv_pred)
-                av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF + spatial direct mode is not implemented\n");
+            if(FIELD_OR_MBAFF_PICTURE && h->direct_spatial_mv_pred)
+                av_log(h->s.avctx, AV_LOG_ERROR, "Interlaced pictures + spatial direct mode is not implemented\n");
         }
         num_ref_idx_active_override_flag= get_bits1(&s->gb);
 
