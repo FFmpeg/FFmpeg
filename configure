@@ -1131,7 +1131,7 @@ case $targetos in
     fi ;;
   sunos)
     FFSERVERLDFLAGS=""
-    SHFLAGS="-shared -Wl,-h,\$@"
+    SHFLAGS='-shared -Wl,-h,$@'
     network_extralibs="-lsocket -lnsl"
     ;;
   netbsd)
@@ -1140,8 +1140,8 @@ case $targetos in
     ;;
   openbsd)
     disable need_memalign
-    LIBOBJFLAGS="\$(PIC)"
-    LDCONFIG="ldconfig -m \$(SHLIBDIR)"
+    LIBOBJFLAGS='$(PIC)'
+    LDCONFIG='ldconfig -m $(SHLIBDIR)'
     SHFLAGS='-shared'
     SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF).$(LIBVERSION)'
     SLIBNAME_WITH_VERSION='$(SLIBNAME)'
@@ -1158,7 +1158,7 @@ case $targetos in
     ;;
   darwin)
     disable need_memalign
-    SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(SHLIBDIR)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION) -Wl,-read_only_relocs,suppress"
+    SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION) -Wl,-read_only_relocs,suppress'
     VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$@'
     strip="strip -x"
     FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
@@ -1182,9 +1182,9 @@ case $targetos in
     EXESUF=".exe"
     SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:\$(SLIBSUF)=.def)"
-    SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"\$(SHLIBDIR)/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
-    SHFLAGS="-shared -Wl,--output-def,\$(@:\$(SLIBSUF)=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base"
+    SLIB_EXTRA_CMD='-lib /machine:i386 /def:$(@:$(SLIBSUF)=.def)'
+    SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"'
+    SHFLAGS='-shared -Wl,--output-def,$(@:$(SLIBSUF)=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
     ;;
   cygwin*)
     targetos=cygwin
@@ -1718,7 +1718,7 @@ if enabled shared; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
         case "$arch" in
-            x86_64|ia64|alpha|sparc*|power*) LIBOBJFLAGS="\$(PIC)" ;;
+            x86_64|ia64|alpha|sparc*|power*) LIBOBJFLAGS='$(PIC)' ;;
         esac
     fi
 fi
