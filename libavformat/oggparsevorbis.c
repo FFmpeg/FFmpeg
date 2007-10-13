@@ -34,36 +34,32 @@ extern int
 vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
 {
     uint8_t *p = buf;
+    uint8_t *end = buf + size;
     unsigned s, n, j;
 
     if (size < 8) /* must have vendor_length and user_comment_list_length */
         return -1;
 
     s = bytestream_get_le32(&p);
-    size -= 4;
 
-    if (size - 4 < s)
+    if (end - p < s)
         return -1;
 
     p += s;
-    size -= s;
 
     n = bytestream_get_le32(&p);
-    size -= 4;
 
-    while (size >= 4) {
+    while (p < end && n > 0) {
         char *t, *v;
         int tl, vl;
 
         s = bytestream_get_le32(&p);
-        size -= 4;
 
-        if (size < s)
+        if (end - p < s)
             break;
 
         t = p;
         p += s;
-        size -= s;
         n--;
 
         v = memchr(t, '=', s);
@@ -103,8 +99,8 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
         }
     }
 
-    if (size > 0)
-        av_log(as, AV_LOG_INFO, "%i bytes of comment header remain\n", size);
+    if (p != end)
+        av_log(as, AV_LOG_INFO, "%ti bytes of comment header remain\n", p-end);
     if (n > 0)
         av_log(as, AV_LOG_INFO,
                "truncated comment header, %i comments not found\n", n);
