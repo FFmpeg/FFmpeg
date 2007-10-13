@@ -37,16 +37,18 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
 
     buf_ptr = buf;
     while (buf_size > 0) {
+        int size_needed= s->frame_size ? s->frame_size : s->header_size;
         len = s->inbuf_ptr - s->inbuf;
-        if (s->frame_size == 0) {
-            /* no header seen : find one. We need at least s->header_size
-               bytes to parse it */
-            len = FFMIN(s->header_size - len, buf_size);
 
+        if(len<size_needed){
+            len = FFMIN(size_needed - len, buf_size);
             memcpy(s->inbuf_ptr, buf_ptr, len);
-            buf_ptr += len;
+            buf_ptr      += len;
             s->inbuf_ptr += len;
-            buf_size -= len;
+            buf_size     -= len;
+        }
+
+        if (s->frame_size == 0) {
             if ((s->inbuf_ptr - s->inbuf) == s->header_size) {
                 len = s->sync(s->inbuf, &channels, &sample_rate, &bit_rate,
                               &samples);
@@ -71,13 +73,6 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                 }
             }
         } else {
-            len = FFMIN(s->frame_size - len, buf_size);
-
-            memcpy(s->inbuf_ptr, buf_ptr, len);
-            buf_ptr += len;
-            s->inbuf_ptr += len;
-            buf_size -= len;
-
             if(s->inbuf_ptr - s->inbuf == s->frame_size){
                 *poutbuf = s->inbuf;
                 *poutbuf_size = s->frame_size;
