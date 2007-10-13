@@ -671,7 +671,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, i
         linesize[c]=s->linesize[c];
         if(s->avctx->codec->id==CODEC_ID_AMV) {
             //picture should be flipped upside-down for this codec
-            data[c] += (linesize[c] * (s->v_scount[i] * 8 * s->mb_height - 1));
+            assert(!(s->avctx->flags & CODEC_FLAG_EMU_EDGE));
+            data[c] += (linesize[c] * (s->v_scount[i] * (8 * s->mb_height -((s->height/s->v_max)&7)) - 1 ));
             linesize[c] *= -1;
         }
     }
