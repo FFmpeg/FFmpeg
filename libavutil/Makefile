@@ -14,6 +14,7 @@ OBJS = adler32.o \
        mem.o \
        random.o \
        rational.o \
+       rc4.o \
        string.o \
        tree.o \
 
