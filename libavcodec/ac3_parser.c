@@ -114,6 +114,9 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
             return 0;   /* Currently don't support additional streams */
 
         frmsiz = get_bits(&bits, 11) + 1;
+        if(frmsiz*2 < AC3_HEADER_SIZE)
+            return 0;
+
         fscod = get_bits(&bits, 2);
         if (fscod == 3) {
             fscod2 = get_bits(&bits, 2);

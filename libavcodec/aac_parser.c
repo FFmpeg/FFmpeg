@@ -67,6 +67,9 @@ static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
     skip_bits1(&bits);          /* copyright_identification_bit */
     skip_bits1(&bits);          /* copyright_identification_start */
     size = get_bits(&bits, 13); /* aac_frame_length */
+    if(size < AAC_HEADER_SIZE)
+        return 0;
+
     skip_bits(&bits, 11);       /* adts_buffer_fullness */
     rdb = get_bits(&bits, 2);   /* number_of_raw_data_blocks_in_frame */
 
