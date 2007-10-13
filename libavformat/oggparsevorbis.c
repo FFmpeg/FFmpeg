@@ -39,8 +39,7 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
     if (size < 8) /* must have vendor_length and user_comment_list_length */
         return -1;
 
-    s = AV_RL32(p);
-    p += 4;
+    s = bytestream_get_le32(&p);
     size -= 4;
 
     if (size - 4 < s)
@@ -49,16 +48,14 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
     p += s;
     size -= s;
 
-    n = AV_RL32(p);
-    p += 4;
+    n = bytestream_get_le32(&p);
     size -= 4;
 
     while (size >= 4) {
         char *t, *v;
         int tl, vl;
 
-        s = AV_RL32(p);
-        p += 4;
+        s = bytestream_get_le32(&p);
         size -= 4;
 
         if (size < s)
