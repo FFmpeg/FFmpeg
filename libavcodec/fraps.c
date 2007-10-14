@@ -33,22 +33,11 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "huffman.h"
+#include "bytestream.h"
 #include "dsputil.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
-
-/* symbol for Huffman tree node */
-#define HNODE -1
-
-/**
- * Huffman node
- * FIXME one day this should belong to one general framework
- */
-typedef struct Node{
-    int16_t sym;
-    int16_t n0;
-    int count;
-}Node;
 
 /**
  * local variable storage
@@ -56,7 +45,6 @@ typedef struct Node{
 typedef struct FrapsContext{
     AVCodecContext *avctx;
     AVFrame frame;
-    Node nodes[512];
     uint8_t *tmpbuf;
     DSPContext dsp;
 } FrapsContext;
@@ -92,36 +80,6 @@ static int huff_cmp(const void *va, const void *vb){
     return (a->count - b->count)*256 + a->sym - b->sym;
 }
 
-static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *nodes, int node, uint32_t pfx, int pl, int *pos)
-{
-    int s;
-
-    s = nodes[node].sym;
-    if(s != HNODE || !nodes[node].count){
-        bits[*pos] = pfx;
-        lens[*pos] = pl;
-        xlat[*pos] = s;
-        (*pos)++;
-    }else{
-        pfx <<= 1;
-        pl++;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl, pos);
-        pfx |= 1;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0+1, pfx, pl, pos);
-    }
-}
-
-static int build_huff_tree(VLC *vlc, Node *nodes, uint8_t *xlat)
-{
-    uint32_t bits[256];
-    int16_t lens[256];
-    int pos = 0;
-
-    get_tree_codes(bits, lens, xlat, nodes, 510, 0, 0, &pos);
-    return init_vlc(vlc, 9, pos, lens, 2, 2, bits, 4, 4, 0);
-}
-
-
 /**
  * decode Fraps v2 packed plane
  */
@@ -129,45 +87,15 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
                                int h, uint8_t *src, int size, int Uoff)
 {
     int i, j;
-    int cur_node;
     GetBitContext gb;
     VLC vlc;
-    int64_t sum = 0;
-    uint8_t recode[256];
+    Node nodes[512];
 
-    for(i = 0; i < 256; i++){
-        s->nodes[i].sym = i;
-        s->nodes[i].count = AV_RL32(src);
-        s->nodes[i].n0 = -2;
-        if(s->nodes[i].count < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Symbol count < 0\n");
-            return -1;
-        }
-        src += 4;
-        sum += s->nodes[i].count;
-    }
+    for(i = 0; i < 256; i++)
+        nodes[i].count = bytestream_get_le32(&src);
     size -= 1024;
-
-    if(sum >> 31) {
-        av_log(s->avctx, AV_LOG_ERROR, "Too high symbol frequencies. Tree construction is not possible\n");
+    if (ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp, 0) < 0)
         return -1;
-    }
-    qsort(s->nodes, 256, sizeof(Node), huff_cmp);
-    cur_node = 256;
-    for(i = 0; i < 511; i += 2){
-        s->nodes[cur_node].sym = HNODE;
-        s->nodes[cur_node].count = s->nodes[i].count + s->nodes[i+1].count;
-        s->nodes[cur_node].n0 = i;
-        for(j = cur_node; j > 0; j--){
-            if(s->nodes[j].count >= s->nodes[j - 1].count) break;
-            FFSWAP(Node, s->nodes[j], s->nodes[j - 1]);
-        }
-        cur_node++;
-    }
-    if(build_huff_tree(&vlc, s->nodes, recode) < 0){
-        av_log(s->avctx, AV_LOG_ERROR, "Error building tree\n");
-        return -1;
-    }
     /* we have built Huffman table and are ready to decode plane */
 
     /* convert bits so they may be used by standard bitreader */
@@ -176,7 +104,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for(j = 0; j < h; j++){
         for(i = 0; i < w; i++){
-            dst[i] = recode[get_vlc2(&gb, vlc.table, 9, 3)];
+            dst[i] = get_vlc2(&gb, vlc.table, 9, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
