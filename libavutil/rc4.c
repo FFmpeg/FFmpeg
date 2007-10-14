@@ -2,6 +2,8 @@
  * RC4 encryption/decryption/pseudo-random number generator
  * Copyright (c) 2007 Reimar Doeffinger
  *
+ * loosely based on LibTomCrypt by Tom St Denis
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,8 +19,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * loosely based on LibTomCrypt by Tom St Denis
  */
 #include "common.h"
 #include "rc4.h"
