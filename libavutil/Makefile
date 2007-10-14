@@ -4,8 +4,8 @@ OBJS = adler32.o \
        aes.o \
        base64.o \
        crc.o \
-       intfloat_readwrite.o \
        fifo.o \
+       intfloat_readwrite.o \
        lls.o \
        log.o \
        lzo.o \
