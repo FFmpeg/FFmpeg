@@ -878,21 +878,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static void asf_reset_header(AVFormatContext *s);
-
-static int asf_read_close(AVFormatContext *s)
-{
-    int i;
-
-    asf_reset_header(s);
-    for(i=0;i<s->nb_streams;i++) {
-        AVStream *st = s->streams[i];
-        av_free(st->priv_data);
-        av_free(st->codec->palctrl);
-    }
-    return 0;
-}
-
 // Added to support seeking after packets have been read
 // If information is not reset, read_packet fails due to
 // leftover information from previous reads
@@ -929,6 +914,19 @@ static void asf_reset_header(AVFormatContext *s)
         asf_st->seq=0;
     }
     asf->asf_st= NULL;
+}
+
+static int asf_read_close(AVFormatContext *s)
+{
+    int i;
+
+    asf_reset_header(s);
+    for(i=0;i<s->nb_streams;i++) {
+        AVStream *st = s->streams[i];
+        av_free(st->priv_data);
+        av_free(st->codec->palctrl);
+    }
+    return 0;
 }
 
 static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos, int64_t pos_limit)
