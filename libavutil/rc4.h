@@ -18,4 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef RC4_H
+#ifndef RC4_H
+
 void ff_rc4_enc(const uint8_t *key, int keylen, uint8_t *data, int datalen);
+
+#endif /* RC4_H */
