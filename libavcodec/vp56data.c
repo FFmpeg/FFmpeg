@@ -62,5 +62,5 @@ const vp56_tree_t vp56_pc_tree[] = {
     { 2,10}, {-4}, {-5},
 };
 
-const uint8_t vp56_coeff_bias[] = { 5, 7, 11, 19, 35, 67 };
+const uint8_t vp56_coeff_bias[] = { 0, 1, 2, 3, 4, 5, 7, 11, 19, 35, 67 };
 const uint8_t vp56_coeff_bit_length[] = { 0, 1, 2, 3, 4, 10 };

@@ -157,6 +157,14 @@ struct vp56_context {
 
     vp56_model_t *modelp;
     vp56_model_t models[2];
+
+    /* huffman decoding */
+    int use_huffman;
+    GetBitContext gb;
+    VLC dccv_vlc[2];
+    VLC runv_vlc[2];
+    VLC ract_vlc[2][3][6];
+    unsigned int nb_null[2][2];       /* number of consecutive NULL DC/AC */
 };
 
 

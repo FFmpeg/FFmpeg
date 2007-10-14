@@ -205,7 +205,7 @@ static void vp5_parse_coeff(vp56_context_t *s)
                         s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 4;
                         idx = vp56_rac_get_tree(c, vp56_pc_tree, model1);
                         sign = vp56_rac_get(c);
-                        coeff = vp56_coeff_bias[idx];
+                        coeff = vp56_coeff_bias[idx+5];
                         for (i=vp56_coeff_bit_length[idx]; i>=0; i--)
                             coeff += vp56_rac_get_prob(c, vp56_coeff_parse_table[idx][i]) << i;
                     } else {
