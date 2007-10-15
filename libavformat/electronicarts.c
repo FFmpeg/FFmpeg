@@ -28,14 +28,19 @@
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
 #define PT00_TAG MKTAG('P', 'T', 0x0, 0x0)
+#define GSTR_TAG MKTAG('G', 'S', 'T', 'R')
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
+#define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
+#define MV0K_TAG MKTAG('M', 'V', '0', 'K')
+#define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 
 #define EA_SAMPLE_RATE 22050
 #define EA_BITS_PER_SAMPLE 16
 #define EA_PREAMBLE_SIZE 8
 
 typedef struct EaDemuxContext {
+    AVRational time_base;
     int video_stream_index;
 
     int audio_stream_index;
@@ -71,14 +76,28 @@ static uint32_t read_arbitary(ByteIOContext *pb) {
  */
 static int process_ea_header(AVFormatContext *s) {
     int inHeader = 1;
-    uint32_t blockid, size;
+    uint32_t blockid, size = 0;
+    int num, den;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
-    if (get_le32(pb) != SCHl_TAG)
+    blockid = get_le32(pb);
+    if (blockid == MVhd_TAG) {
+        size = get_le32(pb);
+        url_fskip(pb, 16);
+        den = get_le32(pb);
+        num = get_le32(pb);
+        ea->time_base = (AVRational) {num, den};
+        url_fskip(pb, size-32);
+        blockid = get_le32(pb);
+    }
+    if (blockid != SCHl_TAG)
         return 0;
-    size = get_le32(pb);
-    if (get_le32(pb) != PT00_TAG) {
+    size += get_le32(pb);
+    blockid = get_le32(pb);
+    if (blockid == GSTR_TAG) {
+        url_fskip(pb, 4);
+    } else if (blockid != PT00_TAG) {
         av_log (s, AV_LOG_ERROR, "PT header missing\n");
         return 0;
     }
@@ -114,6 +133,10 @@ static int process_ea_header(AVFormatContext *s) {
                     av_log (s, AV_LOG_INFO, "exited audio subheader\n");
                     inSubheader = 0;
                     break;
+                case 0xFF:
+                    inSubheader = 0;
+                    inHeader = 0;
+                    break;
                 default:
                     av_log (s, AV_LOG_INFO, "element 0x%02x set to 0x%08x\n", subbyte, read_arbitary(pb));
                     break;
@@ -130,11 +153,6 @@ static int process_ea_header(AVFormatContext *s) {
         }
     }
 
-    if ((ea->num_channels != 2) || (ea->compression_type != 7)) {
-        av_log (s, AV_LOG_ERROR, "unsupported stream type\n");
-        return 0;
-    }
-
     /* skip to the start of the data */
     url_fseek(pb, size, SEEK_SET);
 
@@ -144,10 +162,13 @@ static int process_ea_header(AVFormatContext *s) {
 
 static int ea_probe(AVProbeData *p)
 {
-    if (AV_RL32(&p->buf[0]) != SCHl_TAG)
-        return 0;
+    uint32_t tag;
 
-    return AVPROBE_SCORE_MAX;
+    tag = AV_RL32(&p->buf[0]);
+    if (tag == SCHl_TAG || tag == MVhd_TAG)
+        return AVPROBE_SCORE_MAX;
+
+    return 0;
 }
 
 static int ea_read_header(AVFormatContext *s,
@@ -159,17 +180,17 @@ static int ea_read_header(AVFormatContext *s,
     if (!process_ea_header(s))
         return AVERROR(EIO);
 
-#if 0
+    if (ea->time_base.num && ea->time_base.den) {
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, 90000);
     ea->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_EA_MJPEG;
+    st->codec->codec_id = CODEC_ID_VP6;
     st->codec->codec_tag = 0;  /* no fourcc */
-#endif
+    st->codec->time_base = ea->time_base;
+    }
 
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
@@ -201,6 +222,7 @@ static int ea_read_packet(AVFormatContext *s,
     int packet_read = 0;
     unsigned char preamble[EA_PREAMBLE_SIZE];
     unsigned int chunk_type, chunk_size;
+    int key = 0;
 
     while (!packet_read) {
 
@@ -233,6 +255,19 @@ static int ea_read_packet(AVFormatContext *s,
         /* ending tag */
         case SCEl_TAG:
             ret = AVERROR(EIO);
+            packet_read = 1;
+            break;
+
+        case MV0K_TAG:
+            key = PKT_FLAG_KEY;
+        case MV0F_TAG:
+            ret = av_get_packet(pb, pkt, chunk_size);
+            if (ret != chunk_size)
+                ret = AVERROR_IO;
+            else {
+                pkt->stream_index = ea->video_stream_index;
+                pkt->flags |= key;
+            }
             packet_read = 1;
             break;
 
