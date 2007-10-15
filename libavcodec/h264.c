@@ -6443,9 +6443,9 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
                                               (h->slice_type == B_TYPE), edges, step, mask_edge0, mask_edge1 );
         }
         if( IS_INTRA(s->current_picture.mb_type[mb_xy-1]) )
-            bSv[0][0] = FIELD_PICTURE ? 0x0003000300030003ULL : 0x0004000400040004ULL;
+            bSv[0][0] = 0x0004000400040004ULL;
         if( IS_INTRA(s->current_picture.mb_type[h->top_mb_xy]) )
-            bSv[1][0] = 0x0004000400040004ULL;
+            bSv[1][0] = FIELD_PICTURE ? 0x0003000300030003ULL : 0x0004000400040004ULL;
 
 #define FILTER(hv,dir,edge)\
         if(bSv[dir][edge]) {\
