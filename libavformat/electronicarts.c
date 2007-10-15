@@ -36,18 +36,12 @@
 #define EA_PREAMBLE_SIZE 8
 
 typedef struct EaDemuxContext {
-    int width;
-    int height;
     int video_stream_index;
-    int track_count;
 
     int audio_stream_index;
     int audio_frame_counter;
 
     int64_t audio_pts;
-    int64_t video_pts;
-    int video_pts_inc;
-    float fps;
 
     int num_channels;
     int num_samples;
