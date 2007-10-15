@@ -86,7 +86,7 @@ static int process_ea_header(AVFormatContext *s) {
     while (inHeader) {
         int inSubheader;
         uint8_t byte;
-        byte = get_byte(pb) & 0xFF;
+        byte = get_byte(pb);
 
         switch (byte) {
         case 0xFD:
@@ -94,7 +94,7 @@ static int process_ea_header(AVFormatContext *s) {
             inSubheader = 1;
             while (inSubheader) {
                 uint8_t subbyte;
-                subbyte = get_byte(pb) & 0xFF;
+                subbyte = get_byte(pb);
 
                 switch (subbyte) {
                 case 0x82:
