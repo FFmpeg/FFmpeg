@@ -498,7 +498,10 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_index_count = 0;
     asf->maximum_packet = 0;
 
-    if (asf_write_header1(s, 0, 0) < 0) {
+    /* the data-chunk-size has to be 50, which is data_size - asf->data_offset
+     *  at the moment this function is done. It is needed to use asf as
+     *  streamable format. */
+    if (asf_write_header1(s, 0, 50) < 0) {
         //av_free(asf);
         return -1;
     }
