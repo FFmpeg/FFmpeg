@@ -258,13 +258,6 @@ static int ea_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int ea_read_close(AVFormatContext *s)
-{
-//    EaDemuxContext *ea = s->priv_data;
-
-    return 0;
-}
-
 AVInputFormat ea_demuxer = {
     "ea",
     "Electronic Arts Multimedia Format",
@@ -272,5 +265,4 @@ AVInputFormat ea_demuxer = {
     ea_probe,
     ea_read_header,
     ea_read_packet,
-    ea_read_close,
 };
