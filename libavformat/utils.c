@@ -1072,7 +1072,7 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
     return  m;
 }
 
-#define DEBUG_SEEK
+//#define DEBUG_SEEK
 
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
     AVInputFormat *avif= s->iformat;
