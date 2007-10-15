@@ -29,9 +29,7 @@
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
 #define PT00_TAG MKTAG('P', 'T', 0x0, 0x0)
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
-#define pIQT_TAG MKTAG('p', 'I', 'Q', 'T')
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
-#define _TAG MKTAG('', '', '', '')
 
 #define EA_SAMPLE_RATE 22050
 #define EA_BITS_PER_SAMPLE 16
