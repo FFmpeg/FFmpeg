@@ -70,7 +70,7 @@ static uint32_t read_arbitary(ByteIOContext *pb) {
  * Returns 1 if the WVE file is valid and successfully opened, 0 otherwise
  */
 static int process_ea_header(AVFormatContext *s) {
-    int inHeader;
+    int inHeader = 1;
     uint32_t blockid, size;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -83,7 +83,6 @@ static int process_ea_header(AVFormatContext *s) {
         return 0;
     }
 
-    inHeader = 1;
     while (inHeader) {
         int inSubheader;
         uint8_t byte;
