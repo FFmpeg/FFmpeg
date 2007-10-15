@@ -33,6 +33,6 @@ typedef struct {
 
 typedef int (*huff_cmp_t)(const void *va, const void *vb);
 int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
-                       Node nodes[2*nb_codes], huff_cmp_t cmp, int hnode_first);
+                       Node *nodes, huff_cmp_t cmp, int hnode_first);
 
 #endif /* AVCODEC_HUFFMAN_H */
