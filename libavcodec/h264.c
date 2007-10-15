@@ -1729,7 +1729,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
 
     if(MB_FIELD){
         // chroma offset when predicting from a field of opposite parity
-        my += 2 * ((s->mb_y & 1) - (h->ref_cache[list][scan8[n]] & 1));
+        my += 2 * ((s->mb_y & 1) - (pic->reference - 1));
         emu |= (my>>3) < 0 || (my>>3) + 8 >= (pic_height>>1);
     }
     src_cb= pic->data[1] + (mx>>3) + (my>>3)*h->mb_uvlinesize;
@@ -2764,11 +2764,12 @@ static void hl_decode_mb(H264Context *h){
     else hl_decode_mb_simple(h);
 }
 
-static void pic_as_field(Picture *pic, const int bottom){
+static void pic_as_field(Picture *pic, const int parity){
     int i;
     for (i = 0; i < 4; ++i) {
-        if (bottom)
+        if (parity == PICT_BOTTOM_FIELD)
             pic->data[i] += pic->linesize[i];
+        pic->reference = parity;
         pic->linesize[i] *= 2;
     }
 }
@@ -2779,7 +2780,7 @@ static int split_field_copy(Picture *dest, Picture *src,
 
     if (match) {
         *dest = *src;
-        pic_as_field(dest, parity == PICT_BOTTOM_FIELD);
+        pic_as_field(dest, parity);
         dest->pic_id *= 2;
         dest->pic_id += id_add;
     }
@@ -3133,8 +3134,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         }
                         h->ref_list[list][index]= *ref;
                         if (FIELD_PICTURE){
-                            int bot = pic_structure == PICT_BOTTOM_FIELD;
-                            pic_as_field(&h->ref_list[list][index], bot);
+                            pic_as_field(&h->ref_list[list][index], pic_structure);
                         }
                     }
                 }else{
@@ -3166,9 +3166,11 @@ static void fill_mbaff_ref_list(H264Context *h){
             field[0] = *frame;
             for(j=0; j<3; j++)
                 field[0].linesize[j] <<= 1;
+            field[0].reference = PICT_TOP_FIELD;
             field[1] = field[0];
             for(j=0; j<3; j++)
                 field[1].data[j] += frame->linesize[j];
+            field[1].reference = PICT_BOTTOM_FIELD;
 
             h->luma_weight[list][16+2*i] = h->luma_weight[list][16+2*i+1] = h->luma_weight[list][i];
             h->luma_offset[list][16+2*i] = h->luma_offset[list][16+2*i+1] = h->luma_offset[list][i];
