@@ -181,15 +181,15 @@ static int ea_read_header(AVFormatContext *s,
         return AVERROR(EIO);
 
     if (ea->time_base.num && ea->time_base.den) {
-    /* initialize the video decoder stream */
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-    ea->video_stream_index = st->index;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_VP6;
-    st->codec->codec_tag = 0;  /* no fourcc */
-    st->codec->time_base = ea->time_base;
+        /* initialize the video decoder stream */
+        st = av_new_stream(s, 0);
+        if (!st)
+            return AVERROR(ENOMEM);
+        ea->video_stream_index = st->index;
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        st->codec->codec_id = CODEC_ID_VP6;
+        st->codec->codec_tag = 0;  /* no fourcc */
+        st->codec->time_base = ea->time_base;
     }
 
     /* initialize the audio decoder stream */
