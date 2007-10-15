@@ -50,6 +50,8 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
         case FLV_CODECID_NELLYMOSER_8HZ_MONO:
             acodec->sample_rate = 8000; //in case metadata does not otherwise declare samplerate
         case FLV_CODECID_NELLYMOSER:
+            acodec->codec_id = CODEC_ID_NELLYMOSER;
+            break;
         default:
             av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
             acodec->codec_tag = flv_codecid >> FLV_AUDIO_CODECID_OFFSET;

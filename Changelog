@@ -99,6 +99,7 @@ version <next>
 - AMV audio and video decoder
 - DNxHD encoder
 - H.264 PAFF decoding
+- Nellymoser ASAO decoder
 
 version 0.4.9-pre1:
 
