@@ -3530,7 +3530,7 @@ static void opt_vstats (void)
     opt_vstats_file(filename);
 }
 
-static void opt_video_bsf(const char *arg)
+static void opt_bsf(const char *opt, const char *arg)
 {
     AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
     AVBitStreamFilterContext **bsfp;
@@ -3540,25 +3540,7 @@ static void opt_video_bsf(const char *arg)
         exit(1);
     }
 
-    bsfp= &video_bitstream_filters;
-    while(*bsfp)
-        bsfp= &(*bsfp)->next;
-
-    *bsfp= bsfc;
-}
-
-//FIXME avoid audio - video code duplication
-static void opt_audio_bsf(const char *arg)
-{
-    AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
-    AVBitStreamFilterContext **bsfp;
-
-    if(!bsfc){
-        fprintf(stderr, "Unknown bitstream filter %s\n", arg);
-        exit(1);
-    }
-
-    bsfp= &audio_bitstream_filters;
+    bsfp= *opt == 'v' ? &video_bitstream_filters : &audio_bitstream_filters;
     while(*bsfp)
         bsfp= &(*bsfp)->next;
 
@@ -3727,8 +3709,8 @@ const OptionDef options[] = {
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
 
-    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_audio_bsf}, "", "bitstream filter" },
-    { "vbsf", HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_video_bsf}, "", "bitstream filter" },
+    { "absf", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream filter" },
+    { "vbsf", OPT_FUNC2 | HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream filter" },
 
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
