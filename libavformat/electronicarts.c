@@ -83,22 +83,10 @@ static int process_ea_header(AVFormatContext *s) {
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
-    if (get_buffer(pb, (void*)&blockid, 4) != 4) {
+    if (get_le32(pb) != SCHl_TAG)
         return 0;
-    }
-    if (le2me_32(blockid) != SCHl_TAG) {
-        return 0;
-    }
-
-    if (get_buffer(pb, (void*)&size, 4) != 4) {
-        return 0;
-    }
-    size = le2me_32(size);
-
-    if (get_buffer(pb, (void*)&blockid, 4) != 4) {
-        return 0;
-    }
-    if (le2me_32(blockid) != PT00_TAG) {
+    size = get_le32(pb);
+    if (get_le32(pb) != PT00_TAG) {
         av_log (s, AV_LOG_ERROR, "PT header missing\n");
         return 0;
     }
