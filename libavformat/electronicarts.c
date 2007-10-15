@@ -247,10 +247,6 @@ static int ea_read_packet(AVFormatContext *s,
             url_fseek(pb, chunk_size, SEEK_CUR);
             break;
         }
-
-        /* ending packet */
-        if (chunk_type == SCEl_TAG) {
-        }
     }
 
     return ret;
