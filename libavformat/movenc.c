@@ -1383,7 +1383,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
 
     if (mov->mode == MODE_PSP)
         mov_write_uuidusmt_tag(pb, s);
-    else
+    else if (mov->mode != MODE_3GP && mov->mode != MODE_3G2)
         mov_write_udta_tag(pb, mov, s);
 
     return updateSize(pb, pos);
