@@ -1730,7 +1730,7 @@ fi
 
 VHOOKCFLAGS="-fPIC"
 
-# find if .align arg is power-of-two or not
+# Find out if the .align argument is a power of two or not.
 if test $asmalign_pot = "unknown"; then
     disable asmalign_pot
     echo 'asm (".align 3");' | check_cc && enable asmalign_pot
