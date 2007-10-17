@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* This header has no multiple inclusion guards as it gets
+ * included multiple times. */
+
 #ifndef RGB_OUT
 #define RGB_OUT(d, r, g, b) RGBA_OUT(d, r, g, b, 0xff)
 #endif
