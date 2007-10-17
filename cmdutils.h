@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef CMD_UTILS_H
-#define CMD_UTILS_H
+#ifndef CMDUTILS_H
+#define CMDUTILS_H
 
 typedef struct {
     const char *name;
@@ -87,4 +87,4 @@ void show_version(const char *program_name);
  */
 void show_license(void);
 
-#endif /* CMD_UTILS_H */
+#endif /* CMDUTILS_H */
