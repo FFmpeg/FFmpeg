@@ -24,6 +24,9 @@
  * Various defines for YUV<->RGB conversion
  */
 
+#ifndef FFMPEG_COLORSPACE_H
+#define FFMPEG_COLORSPACE_H
+
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
@@ -105,3 +108,4 @@ static inline int C_JPEG_TO_CCIR(int y) {
 (((FIX(0.50000*224.0/255.0) * r1 - FIX(0.41869*224.0/255.0) * g1 -           \
    FIX(0.08131*224.0/255.0) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
+#endif /* FFMPEG_COLORSPACE_H */

@@ -24,6 +24,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef FFMPEG_DSPUTIL_MMX_AVG_H
+#define FFMPEG_DSPUTIL_MMX_AVG_H
+
 /* XXX: we use explicit registers to avoid a gcc 2.95.2 register asm
    clobber bug - now it will work with 2.95.2 and also with -fPIC
  */
@@ -869,3 +872,5 @@ QPEL_2TAP_L3(avg_)
 QPEL_2TAP_L3(put_)
 #undef STORE_OP
 #undef QPEL_2TAP_L3
+
+#endif /* FFMPEG_DSPUTIL_MMX_AVG_H */

@@ -22,6 +22,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef FFMPEG_DSPUTIL_MMX_QNS_H
+#define FFMPEG_DSPUTIL_MMX_QNS_H
+
 #define MAX_ABS (512 >> (SCALE_OFFSET>0 ? SCALE_OFFSET : 0))
 
 static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale)
@@ -100,3 +103,4 @@ static void DEF(add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale)
     }
 }
 
+#endif /* FFMPEG_DSPUTIL_MMX_QNS_H */

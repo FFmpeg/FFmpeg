@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef FFMPEG_DSPUTIL_IWMMXT_RND_H
+#define FFMPEG_DSPUTIL_IWMMXT_RND_H
+
 void DEF(put, pixels8)(uint8_t *block, const uint8_t *pixels, const int line_size, int h)
 {
     int stride = line_size;
@@ -1112,3 +1115,5 @@ void DEF(avg, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, const int lin
         : [line_size]"r"(line_size)
         : "r12", "memory");
 }
+
+#endif /* FFMPEG_DSPUTIL_IWMMXT_RND_H */
