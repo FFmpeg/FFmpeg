@@ -24,8 +24,8 @@
  * mpeg audio layer common tables.
  */
 
-#ifndef MPEGAUDIODATA_H
-#define MPEGAUDIODATA_H
+#ifndef FFMPEG_MPEGAUDIODATA_H
+#define FFMPEG_MPEGAUDIODATA_H
 
 #include "common.h"
 
@@ -37,4 +37,4 @@ extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];
 extern const unsigned char *ff_mpa_alloc_tables[5];
 
-#endif /* MPEGAUDIODATA_H */
+#endif /* FFMPEG_MPEGAUDIODATA_H */

@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef RTP_H
-#define RTP_H
+#ifndef FFMPEG_RTP_H
+#define FFMPEG_RTP_H
 
 #include "avcodec.h"
 #include "avformat.h"
@@ -122,4 +122,4 @@ typedef enum {
 #endif
 
 extern AVRtpPayloadType_t AVRtpPayloadTypes[];
-#endif /* RTP_H */
+#endif /* FFMPEG_RTP_H */

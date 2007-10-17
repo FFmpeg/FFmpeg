@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MPEG12_H
-#define AVCODEC_MPEG12_H
+#ifndef FFMPEG_MPEG12_H
+#define FFMPEG_MPEG12_H
 
 #include "mpegvideo.h"
 
@@ -28,4 +28,4 @@ extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 void ff_mpeg12_common_init(MpegEncContext *s);
 
-#endif /* AVCODEC_MPEG12_H */
+#endif /* FFMPEG_MPEG12_H */

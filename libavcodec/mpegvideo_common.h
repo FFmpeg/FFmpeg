@@ -27,8 +27,8 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 
-#ifndef MPEGVIDEO_COMMON_H
-#define MPEGVIDEO_COMMON_H
+#ifndef FFMPEG_MPEGVIDEO_COMMON_H
+#define FFMPEG_MPEGVIDEO_COMMON_H
 
 #include "avcodec.h"
 #include "dsputil.h"
@@ -833,4 +833,4 @@ static inline void MPV_motion(MpegEncContext *s,
     }
 }
 
-#endif /* MPEGVIDEO_COMMON_H */
+#endif /* FFMPEG_MPEGVIDEO_COMMON_H */

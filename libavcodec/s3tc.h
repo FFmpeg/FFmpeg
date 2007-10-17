@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FF_S3TC_H
-#define FF_S3TC_H
+#ifndef FFMPEG_S3TC_H
+#define FFMPEG_S3TC_H
 
 #include <stdint.h>
 
@@ -50,4 +50,4 @@ void ff_decode_dxt3(const uint8_t *src, uint8_t *dst,
                     const unsigned int w, const unsigned int h,
                     const unsigned int stride);
 
-#endif
+#endif /* FFMPEG_S3TC_H */

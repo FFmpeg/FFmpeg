@@ -25,8 +25,8 @@
  * JPEG-LS decoder.
  */
 
-#ifndef JPEGLSDEC_H
-#define JPEGLSDEC_H
+#ifndef FFMPEG_JPEGLSDEC_H
+#define FFMPEG_JPEGLSDEC_H
 
 #include "mjpeg.h"
 #include "mjpegdec.h"
@@ -38,4 +38,4 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s);
 
 int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transform, int ilv);
 
-#endif /* JPEGLSDEC_H */
+#endif /* FFMPEG_JPEGLSDEC_H */

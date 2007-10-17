@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LZO_H
-#define LZO_H
+#ifndef FFMPEG_LZO_H
+#define FFMPEG_LZO_H
 
 #define LZO_INPUT_DEPLETED 1
 #define LZO_OUTPUT_FULL 2
@@ -32,4 +32,4 @@
 
 int lzo1x_decode(void *out, int *outlen, void *in, int *inlen);
 
-#endif
+#endif /* FFMPEG_LZO_H */

@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RAW_H
-#define AVFORMAT_RAW_H
+#ifndef FFMPEG_RAW_H
+#define FFMPEG_RAW_H
 
 #include "avformat.h"
 
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags);
 
-#endif /* AVFORMAT_RAW_H */
+#endif /* FFMPEG_RAW_H */

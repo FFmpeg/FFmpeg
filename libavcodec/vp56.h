@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef VP56_H
-#define VP56_H
+#ifndef FFMPEG_VP56_H
+#define FFMPEG_VP56_H
 
 #include "vp56data.h"
 #include "dsputil.h"
@@ -265,4 +265,4 @@ static inline int vp56_rac_get_tree(vp56_range_coder_t *c,
     return -tree->val;
 }
 
-#endif /* VP56_H */
+#endif /* FFMPEG_VP56_H */

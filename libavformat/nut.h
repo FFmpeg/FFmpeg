@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_NUT_H
-#define AVFORMAT_NUT_H
+#ifndef FFMPEG_NUT_H
+#define FFMPEG_NUT_H
 
 //#include <limits.h>
 #include "avformat.h"
@@ -100,4 +100,4 @@ int ff_nut_sp_pos_cmp(syncpoint_t *a, syncpoint_t *b);
 int ff_nut_sp_pts_cmp(syncpoint_t *a, syncpoint_t *b);
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts);
 
-#endif /* AVFORMAT_NUT_H */
+#endif /* FFMPEG_NUT_H */

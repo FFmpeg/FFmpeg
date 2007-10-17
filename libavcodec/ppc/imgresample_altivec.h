@@ -16,9 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef IMGRESAMPLE_ALTIVEC_H
-#define IMGRESAMPLE_ALTIVEC_H
+#ifndef FFMPEG_IMGRESAMPLE_ALTIVEC_H
+#define FFMPEG_IMGRESAMPLE_ALTIVEC_H
 
 void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
                           int wrap, int16_t *filter);
-#endif /* IMGRESAMPLE_ALTIVEC_H */
+#endif /* FFMPEG_IMGRESAMPLE_ALTIVEC_H */

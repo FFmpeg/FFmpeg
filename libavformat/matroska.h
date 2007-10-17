@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MATROSKA_H
-#define MATROSKA_H
+#ifndef FFMPEG_MATROSKA_H
+#define FFMPEG_MATROSKA_H
 
 #include "avcodec.h"
 
@@ -194,4 +194,4 @@ typedef struct CodecTags{
 
 extern CodecTags ff_mkv_codec_tags[];
 
-#endif /* MATROSKA_H */
+#endif /* FFMPEG_MATROSKA_H */

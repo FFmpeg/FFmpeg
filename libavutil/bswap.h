@@ -23,8 +23,8 @@
  * byte swap.
  */
 
-#ifndef BSWAP_H
-#define BSWAP_H
+#ifndef FFMPEG_BSWAP_H
+#define FFMPEG_BSWAP_H
 
 #include <stdint.h>
 #include "common.h"
@@ -138,4 +138,4 @@ static inline uint64_t bswap_64(uint64_t x)
 #define le2me_64(x) (x)
 #endif
 
-#endif /* BSWAP_H */
+#endif /* FFMPEG_BSWAP_H */

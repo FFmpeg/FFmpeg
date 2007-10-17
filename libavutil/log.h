@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef FFMPEG_LOG_H
+#define FFMPEG_LOG_H
 
 #include <stdarg.h>
 
@@ -113,4 +113,4 @@ extern void av_log_default_callback(void* ptr, int level, const char* fmt, va_li
 extern void (*av_vlog)(void*, int, const char*, va_list);
 #endif
 
-#endif /* LOG_H */
+#endif /* FFMPEG_LOG_H */

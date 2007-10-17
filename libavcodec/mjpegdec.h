@@ -26,8 +26,8 @@
  * MJPEG decoder.
  */
 
-#ifndef MJPEGDEC_H
-#define MJPEGDEC_H
+#ifndef FFMPEG_MJPEGDEC_H
+#define FFMPEG_MJPEGDEC_H
 
 #include "avcodec.h"
 #include "bitstream.h"
@@ -109,4 +109,4 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sos(MJpegDecodeContext *s);
 
-#endif /* MJPEGDEC_H */
+#endif /* FFMPEG_MJPEGDEC_H */

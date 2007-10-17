@@ -24,8 +24,8 @@
  * Common code between AC3 encoder and decoder.
  */
 
-#ifndef AC3_H
-#define AC3_H
+#ifndef FFMPEG_AC3_H
+#define FFMPEG_AC3_H
 
 #include "ac3tab.h"
 
@@ -172,4 +172,4 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    int deltbae,int deltnseg,
                                    uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba);
 
-#endif /* AC3_H */
+#endif /* FFMPEG_AC3_H */

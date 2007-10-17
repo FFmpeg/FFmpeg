@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef RM_H
-#define RM_H
+#ifndef FFMPEG_RM_H
+#define FFMPEG_RM_H
 
 #include "avformat.h"
 
@@ -57,4 +57,4 @@ typedef struct {
     int sub_packet_lengths[16]; /// Length of each aac subpacket
 } RMContext;
 
-#endif /* RM_H */
+#endif /* FFMPEG_RM_H */

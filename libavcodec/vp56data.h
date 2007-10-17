@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef VP56DATA_H
-#define VP56DATA_H
+#ifndef FFMPEG_VP56DATA_H
+#define FFMPEG_VP56DATA_H
 
 #include "common.h"
 
@@ -248,4 +248,4 @@ static const int8_t vp56_candidate_predictor_pos[12][2] = {
     {  2, -2 },
 };
 
-#endif /* VP56DATA */
+#endif /* FFMPEG_VP56DATA_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef DSPUTIL_PPC_H
-#define DSPUTIL_PPC_H
+#ifndef FFMPEG_DSPUTIL_PPC_H
+#define FFMPEG_DSPUTIL_PPC_H
 
 #ifdef CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void);
@@ -152,4 +152,4 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
 #define POWERPC_PERF_STOP_COUNT(a, cond)     do {} while (0)
 #endif /* CONFIG_POWERPC_PERF */
 
-#endif /*  DSPUTIL_PPC_H */
+#endif /*  FFMPEG_DSPUTIL_PPC_H */

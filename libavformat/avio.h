@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef AVIO_H
-#define AVIO_H
+#ifndef FFMPEG_AVIO_H
+#define FFMPEG_AVIO_H
 
 #include <stdint.h>
 
@@ -266,5 +266,4 @@ int udp_set_remote_url(URLContext *h, const char *uri);
 int udp_get_local_port(URLContext *h);
 int udp_get_file_handle(URLContext *h);
 
-#endif
-
+#endif /* FFMPEG_AVIO_H */

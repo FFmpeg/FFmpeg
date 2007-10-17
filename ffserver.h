@@ -18,11 +18,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFSERVER_H
-#define FFSERVER_H
+#ifndef FFMPEG_FFSERVER_H
+#define FFMPEG_FFSERVER_H
 
 /* interface between ffserver and modules */
 
 void ffserver_module_init(void);
 
-#endif
+#endif /* FFMPEG_FFSERVER_H */

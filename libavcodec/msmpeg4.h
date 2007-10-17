@@ -23,8 +23,8 @@
  * @file msmpeg4.h
  */
 
-#ifndef MSMPEG4_H
-#define MSMPEG4_H
+#ifndef FFMPEG_MSMPEG4_H
+#define FFMPEG_MSMPEG4_H
 
 #include "config.h"
 
@@ -41,4 +41,4 @@
 #define ENABLE_WMV_DECODER (ENABLE_WMV1_DECODER || ENABLE_WMV2_DECODER)
 #define ENABLE_WMV_ENCODER (ENABLE_WMV1_ENCODER || ENABLE_WMV2_ENCODER)
 
-#endif /* MSMPEG4_H */
+#endif /* FFMPEG_MSMPEG4_H */

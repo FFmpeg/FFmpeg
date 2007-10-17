@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef RTJPEG_H
-#define RTJPEG_H
+#ifndef FFMPEG_RTJPEG_H
+#define FFMPEG_RTJPEG_H
 
 #include <stdint.h>
 #include <dsputil.h>
@@ -39,4 +39,4 @@ void rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,
 
 int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
                                uint8_t *buf, int buf_size);
-#endif
+#endif /* FFMPEG_RTJPEG_H */

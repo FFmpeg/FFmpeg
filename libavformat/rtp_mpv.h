@@ -17,9 +17,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef RTP_MPV_H
-#define RTP_MPV_H
+#ifndef FFMPEG_RTP_MPV_H
+#define FFMPEG_RTP_MPV_H
 
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
 
-#endif /* RTP_MPV_H */
+#endif /* FFMPEG_RTP_MPV_H */

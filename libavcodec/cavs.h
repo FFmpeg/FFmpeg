@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef CAVS_H
-#define CAVS_H
+#ifndef FFMPEG_CAVS_H
+#define FFMPEG_CAVS_H
 
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -311,4 +311,4 @@ void ff_cavs_init_top_lines(AVSContext *h);
 int ff_cavs_init(AVCodecContext *avctx);
 int ff_cavs_end (AVCodecContext *avctx);
 
-#endif /* CAVS_H */
+#endif /* FFMPEG_CAVS_H */

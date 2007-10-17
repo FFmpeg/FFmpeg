@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SVQ1_VLC_H
-#define SVQ1_VLC_H
+#ifndef FFMPEG_SVQ1_VLC_H
+#define FFMPEG_SVQ1_VLC_H
 
 #include <stdint.h>
 
@@ -280,4 +280,4 @@ const uint16_t ff_svq1_inter_mean_vlc[512][2] = {
     { 0x3, 22 },  { 0x2, 22 },  { 0x1, 22 },  { 0x0, 22 }
 };
 
-#endif
+#endif /* FFMPEG_SVQ1_VLC_H */

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef PNM_H
-#define PNM_H
+#ifndef FFMPEG_PNM_H
+#define FFMPEG_PNM_H
 
 #include "avcodec.h"
 
@@ -34,4 +34,4 @@ typedef struct PNMContext {
 
 int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s);
 
-#endif /* PNM_H */
+#endif /* FFMPEG_PNM_H */

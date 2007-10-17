@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_BMP_H
-#define AVCODEC_BMP_H
+#ifndef FFMPEG_BMP_H
+#define FFMPEG_BMP_H
 
 #include "avcodec.h"
 
@@ -35,4 +35,4 @@ typedef enum {
     BMP_BITFIELDS   =3,
 } BiCompression;
 
-#endif // AVCODEC_BMP_H
+#endif /* FFMPEG_BMP_H */

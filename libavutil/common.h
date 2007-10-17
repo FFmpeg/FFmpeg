@@ -23,8 +23,8 @@
  * common internal and external api header.
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef FFMPEG_COMMON_H
+#define FFMPEG_COMMON_H
 
 #include <inttypes.h>
 
@@ -366,4 +366,4 @@ tend= AV_READ_TIME();\
 #define STOP_TIMER(id) {}
 #endif
 
-#endif /* COMMON_H */
+#endif /* FFMPEG_COMMON_H */

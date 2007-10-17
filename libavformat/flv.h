@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FLV_H
-#define FLV_H
+#ifndef FFMPEG_FLV_H
+#define FFMPEG_FLV_H
 
 /* offsets for packed values */
 #define FLV_AUDIO_SAMPLESSIZE_OFFSET 1
@@ -107,4 +107,4 @@ typedef enum {
     AMF_DATA_TYPE_UNSUPPORTED = 0x0d,
 } AMFDataType;
 
-#endif /* FLV_H */
+#endif /* FFMPEG_FLV_H */

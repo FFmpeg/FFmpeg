@@ -23,8 +23,8 @@
  * common internal api header.
  */
 
-#ifndef INTERNAL_H
-#define INTERNAL_H
+#ifndef FFMPEG_INTERNAL_H
+#define FFMPEG_INTERNAL_H
 
 #if !defined(DEBUG) && !defined(NDEBUG)
 #    define NDEBUG
@@ -278,4 +278,4 @@ static av_always_inline long int lrintf(float x)
 }
 #endif /* HAVE_LRINTF */
 
-#endif /* INTERNAL_H */
+#endif /* FFMPEG_INTERNAL_H */

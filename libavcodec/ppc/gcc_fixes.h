@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef GCC_FIXES_H
-#define GCC_FIXES_H
+#ifndef FFMPEG_GCC_FIXES_H
+#define FFMPEG_GCC_FIXES_H
 
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
@@ -97,4 +97,4 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 
 #endif
 
-#endif /* GCC_FIXES_H */
+#endif /* FFMPEG_GCC_FIXES_H */

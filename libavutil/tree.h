@@ -24,8 +24,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef TREE_H
-#define TREE_H
+#ifndef FFMPEG_TREE_H
+#define FFMPEG_TREE_H
 
 struct AVTreeNode;
 
@@ -55,4 +55,4 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
 void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b));
 void av_tree_destroy(struct AVTreeNode *t);
 
-#endif /* TREE_H */
+#endif /* FFMPEG_TREE_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef INTFLOAT_READWRITE_H
-#define INTFLOAT_READWRITE_H
+#ifndef FFMPEG_INTFLOAT_READWRITE_H
+#define FFMPEG_INTFLOAT_READWRITE_H
 
 #include "common.h"
 
@@ -36,4 +36,4 @@ int64_t av_dbl2int(double d);
 int32_t av_flt2int(float d);
 AVExtFloat av_dbl2ext(double d);
 
-#endif /* INTFLOAT_READWRITE_H */
+#endif /* FFMPEG_INTFLOAT_READWRITE_H */

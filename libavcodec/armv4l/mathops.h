@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_MATHOPS_H
-#define AVCODEC_ARM_MATHOPS_H
+#ifndef FFMPEG_ARMV4L_MATHOPS_H
+#define FFMPEG_ARMV4L_MATHOPS_H
 
 #ifdef FRAC_BITS
 #   define MULL(a, b) \
@@ -51,4 +51,4 @@
 
 #endif
 
-#endif // AVCODEC_ARM_MATHOPS_H
+#endif /* FFMPEG_ARMV4L_MATHOPS_H */

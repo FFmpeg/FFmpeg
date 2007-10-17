@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef VP3DATA_H
-#define VP3DATA_H
+#ifndef FFMPEG_VP3DATA_H
+#define FFMPEG_VP3DATA_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -3178,4 +3178,4 @@ static const uint16_t ac_bias_3[16][32][2] = {
   }
 };
 
-#endif /* VP3DATA_H */
+#endif /* FFMPEG_VP3DATA_H */

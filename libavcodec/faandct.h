@@ -26,8 +26,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef AVCODEC_FAANDCT_H
-#define AVCODEC_FAANDCT_H
+#ifndef FFMPEG_FAANDCT_H
+#define FFMPEG_FAANDCT_H
 
 #include "dsputil.h"
 
@@ -36,4 +36,4 @@
 void ff_faandct(DCTELEM * data);
 void ff_faandct248(DCTELEM * data);
 
-#endif // AVCODEC_FAANDCT_H
+#endif /* FFMPEG_FAANDCT_H */

@@ -21,8 +21,8 @@
  * Contains misc utility macros and inline functions
  */
 
-#ifndef UTIL_ALTIVEC_H
-#define UTIL_ALTIVEC_H
+#ifndef FFMPEG_UTIL_ALTIVEC_H
+#define FFMPEG_UTIL_ALTIVEC_H
 
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector
@@ -103,4 +103,4 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
     return vec_perm(first, second, mask);
 }
 
-#endif /* UTIL_ALTIVEC_H */
+#endif /* FFMPEG_UTIL_ALTIVEC_H */

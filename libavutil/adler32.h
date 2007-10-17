@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef ADLER32_H
-#define ADLER32_H
+#ifndef FFMPEG_ADLER32_H
+#define FFMPEG_ADLER32_H
 
 #include <stdint.h>
 
 unsigned long av_adler32_update(unsigned long adler, const uint8_t *buf,
                                 unsigned int len);
 
-#endif
+#endif /* FFMPEG_ADLER32_H */

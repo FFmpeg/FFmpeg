@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AES_H
-#define AES_H
+#ifndef FFMPEG_AES_H
+#define FFMPEG_AES_H
 
 #include <stdint.h>
 
@@ -44,4 +44,4 @@ int av_aes_init(struct AVAES *a, const uint8_t *key, int key_bits, int decrypt);
  */
 void av_aes_crypt(struct AVAES *a, uint8_t *dst, uint8_t *src, int count, uint8_t *iv, int decrypt);
 
-#endif /* AES_H */
+#endif /* FFMPEG_AES_H */

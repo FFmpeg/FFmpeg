@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef H264_PARSER_H
-#define H264_PARSER_H
+#ifndef FFMPEG_H264_PARSER_H
+#define FFMPEG_H264_PARSER_H
 
 #include "h264.h"
 
@@ -36,4 +36,4 @@
  */
 int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size);
 
-#endif /* H264_PARSER_H */
+#endif /* FFMPEG_H264_PARSER_H */

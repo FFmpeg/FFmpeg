@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef RLE_H
-#define RLE_H
+#ifndef FFMPEG_RLE_H
+#define FFMPEG_RLE_H
 
 #include <stdint.h>
 
@@ -36,4 +36,4 @@
 int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *inbuf, int bpp, int w,
                   int add_rep, int xor_rep, int add_raw, int xor_raw);
 
-#endif /* RLE_H */
+#endif /* FFMPEG_RLE_H */

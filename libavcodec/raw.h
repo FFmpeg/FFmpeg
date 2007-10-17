@@ -24,8 +24,8 @@
  * Raw Video Codec
  */
 
-#ifndef AVCODEC_RAW_H
-#define AVCODEC_RAW_H
+#ifndef FFMPEG_RAW_H
+#define FFMPEG_RAW_H
 
 #include "avcodec.h"
 
@@ -36,4 +36,4 @@ typedef struct PixelFormatTag {
 
 extern const PixelFormatTag ff_raw_pixelFormatTags[];
 
-#endif /* AVCODEC_RAW_H */
+#endif /* FFMPEG_RAW_H */

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef QTPALETTE_H
-#define QTPALETTE_H
+#ifndef FFMPEG_QTPALETTE_H
+#define FFMPEG_QTPALETTE_H
 
 unsigned char ff_qt_default_palette_4[4 * 4] = {
   0x93, 0x65, 0x5E, 0x00,
@@ -308,4 +308,4 @@ unsigned char ff_qt_default_palette_256[256 * 4] = {
   /* 255, 0xFF */  0x00, 0x00, 0x00, 0x00
 };
 
-#endif
+#endif /* FFMPEG_QTPALETTE_H */

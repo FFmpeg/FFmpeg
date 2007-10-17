@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MATHEMATICS_H
-#define MATHEMATICS_H
+#ifndef FFMPEG_MATHEMATICS_H
+#define FFMPEG_MATHEMATICS_H
 
 #include "rational.h"
 
@@ -48,4 +48,4 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding);
  */
 int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq);
 
-#endif /* MATHEMATICS_H */
+#endif /* FFMPEG_MATHEMATICS_H */

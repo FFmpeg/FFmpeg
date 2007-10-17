@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_IMCDATA_H
-#define AVCODEC_IMCDATA_H
+#ifndef FFMPEG_IMCDATA_H
+#define FFMPEG_IMCDATA_H
 
 #include <stdint.h>
 
@@ -166,4 +166,4 @@ static const uint16_t imc_huffman_bits[4][4][18] = {
     }
 };
 
-#endif // AVCODEC_IMCDATA_H
+#endif /* FFMPEG_IMCDATA_H */

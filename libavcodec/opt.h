@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVOPT_H
-#define AVOPT_H
+#ifndef FFMPEG_OPT_H
+#define FFMPEG_OPT_H
 
 /**
  * @file opt.h
@@ -84,4 +84,4 @@ int av_opt_show(void *obj, void *av_log_obj);
 void av_opt_set_defaults(void *s);
 void av_opt_set_defaults2(void *s, int mask, int flags);
 
-#endif
+#endif /* FFMPEG_OPT_H */

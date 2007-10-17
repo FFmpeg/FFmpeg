@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef RA144TABLES_H
-#define RA144TABLES_H
+#ifndef FFMPEG_RA144_H
+#define FFMPEG_RA144_H
 
 /* 14.4 data tables */
 static const unsigned short sqrt_table[4096]={
@@ -2425,4 +2425,4 @@ decodetable1,decodetable2,decodetable3,decodetable4,decodetable5,
 decodetable6,decodetable7,decodetable8,decodetable9,decodetable10,
 decodetable11};
 
-#endif /* RA144TABLES_H */
+#endif /* FFMPEG_RA144_H */

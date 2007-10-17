@@ -25,8 +25,8 @@
  * eval header.
  */
 
-#ifndef AVCODEC_EVAL_H
-#define AVCODEC_EVAL_H
+#ifndef FFMPEG_EVAL_H
+#define FFMPEG_EVAL_H
 
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /**
@@ -84,4 +84,4 @@ AVEvalExpr * ff_parse(char *s, const char **const_name,
 double ff_parse_eval(AVEvalExpr * e, double *const_value, void *opaque);
 void ff_eval_free(AVEvalExpr * e);
 
-#endif /* AVCODEC_EVAL_H */
+#endif /* FFMPEG_EVAL_H */

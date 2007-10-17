@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBXVID_INTERNAL_H
-#define LIBXVID_INTERNAL_H
+#ifndef FFMPEG_LIBXVID_INTERNAL_H
+#define FFMPEG_LIBXVID_INTERNAL_H
 
 /**
  * @file libxvid_internal.h
@@ -29,4 +29,4 @@
 
 int av_tempfile(char *prefix, char **filename);
 
-#endif /* LIBXVID_INTERNAL_H */
+#endif /* FFMPEG_LIBXVID_INTERNAL_H */

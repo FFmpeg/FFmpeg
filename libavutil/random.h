@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AV_RANDOM_H
-#define AV_RANDOM_H
+#ifndef FFMPEG_RANDOM_H
+#define FFMPEG_RANDOM_H
 
 #define AV_RANDOM_N 624
 
@@ -65,5 +65,5 @@ static inline double av_random_real1(AVRandomState *state)
 
 // only available if DEBUG is defined in the .c file
 void av_benchmark_random(void);
-#endif // AV_RANDOM_H
 
+#endif /* FFMPEG_RANDOM_H */

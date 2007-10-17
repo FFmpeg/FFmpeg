@@ -24,8 +24,8 @@
  * Context Adaptive Binary Arithmetic Coder.
  */
 
-#ifndef CABAC_H
-#define CABAC_H
+#ifndef FFMPEG_CABAC_H
+#define FFMPEG_CABAC_H
 
 #include "bitstream.h"
 
@@ -867,4 +867,4 @@ static int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signe
 }
 #endif /* 0 */
 
-#endif /* CABAC_H */
+#endif /* FFMPEG_CABAC_H */

@@ -20,8 +20,8 @@
  */
 
 // this is a bit of a misnomer, because rtp & rtsp internal structures and prototypes are in here.
-#ifndef RTP_INTERNAL_H
-#define RTP_INTERNAL_H
+#ifndef FFMPEG_RTP_INTERNAL_H
+#define FFMPEG_RTP_INTERNAL_H
 
 #include <stdint.h>
 #include "avcodec.h"
@@ -116,5 +116,5 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
 
 void av_register_rtp_dynamic_payload_handlers(void);
 
-#endif /* RTP_INTERNAL_H */
+#endif /* FFMPEG_RTP_INTERNAL_H */
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef WMA_H
-#define WMA_H
+#ifndef FFMPEG_WMA_H
+#define FFMPEG_WMA_H
 
 #include "bitstream.h"
 #include "dsputil.h"
@@ -147,4 +147,4 @@ int ff_wma_init(AVCodecContext * avctx, int flags2);
 int ff_wma_total_gain_to_bits(int total_gain);
 int ff_wma_end(AVCodecContext *avctx);
 
-#endif
+#endif /* FFMPEG_WMA_H */

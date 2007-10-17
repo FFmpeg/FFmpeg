@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DCAHUFF_H
-#define AVCODEC_DCAHUFF_H
+#ifndef FFMPEG_DCAHUFF_H
+#define FFMPEG_DCAHUFF_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -1073,4 +1073,4 @@ static const uint8_t* bitalloc_bits[10][8] = {
     bitalloc_129_bits_e, bitalloc_129_bits_f, bitalloc_129_bits_g, NULL }
 };
 
-#endif // AVCODEC_DCAHUFF_H
+#endif /* FFMPEG_DCAHUFF_H */

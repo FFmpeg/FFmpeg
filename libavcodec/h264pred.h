@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef H264PRED_H
-#define H264PRED_H
+#ifndef FFMPEG_H264PRED_H
+#define FFMPEG_H264PRED_H
 
 #include "common.h"
 
@@ -73,4 +73,4 @@ typedef struct H264PredContext{
 
 void ff_h264_pred_init(H264PredContext *h, int codec_id);
 
-#endif /* H264PRED_H */
+#endif /* FFMPEG_H264PRED_H */

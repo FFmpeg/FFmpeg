@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_X86CPU_H
-#define AVUTIL_X86CPU_H
+#ifndef FFMPEG_X86CPU_H
+#define FFMPEG_X86CPU_H
 
 #ifdef ARCH_X86_64
 #  define REG_a "rax"
@@ -65,4 +65,4 @@
 #  define BROKEN_RELOCATIONS 1
 #endif
 
-#endif /* AVUTIL_X86CPU_H */
+#endif /* FFMPEG_X86CPU_H */

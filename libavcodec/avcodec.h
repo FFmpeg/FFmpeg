@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_H
-#define AVCODEC_H
+#ifndef FFMPEG_AVCODEC_H
+#define FFMPEG_AVCODEC_H
 
 /**
  * @file avcodec.h
@@ -2933,4 +2933,4 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
 #define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
 #define AVERROR_PATCHWELCOME    -MKTAG('P','A','W','E') /**< Not yet implemented in FFmpeg. Patches welcome. */
 
-#endif /* AVCODEC_H */
+#endif /* FFMPEG_AVCODEC_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_SOFTFLOAT_H
-#define AVUTIL_SOFTFLOAT_H
+#ifndef FFMPEG_SOFTFLOAT_H
+#define FFMPEG_SOFTFLOAT_H
 
 #include <stdint.h>
 
@@ -125,4 +125,4 @@ static inline int av_sf2int(SoftFloat v, int frac_bits){
     else           return v.mant >>(-v.exp);
 }
 
-#endif // AVUTIL_SOFTFLOAT_H
+#endif /* FFMPEG_SOFTFLOAT_H */

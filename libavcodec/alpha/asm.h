@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBAVCODEC_ALPHA_ASM_H
-#define LIBAVCODEC_ALPHA_ASM_H
+#ifndef FFMPEG_ASM_H
+#define FFMPEG_ASM_H
 
 #include <inttypes.h>
 
@@ -188,4 +188,4 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #error "Unknown compiler!"
 #endif
 
-#endif /* LIBAVCODEC_ALPHA_ASM_H */
+#endif /* FFMPEG_ASM_H */
