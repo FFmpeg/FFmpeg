@@ -483,17 +483,17 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                 }
             } else
             for (; n>0; n--) {
-                *dst = adpcm_ima_compress_sample(&c->status[0], samples[0]) & 0x0F;
-                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels]) << 4) & 0xF0;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[0]);
+                *dst |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels]) << 4;
                 dst++;
-                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 2]) & 0x0F;
-                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 3]) << 4) & 0xF0;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 2]);
+                *dst |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 3]) << 4;
                 dst++;
-                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 4]) & 0x0F;
-                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 5]) << 4) & 0xF0;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 4]);
+                *dst |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 5]) << 4;
                 dst++;
-                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 6]) & 0x0F;
-                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 7]) << 4) & 0xF0;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 6]);
+                *dst |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 7]) << 4;
                 dst++;
                 /* right channel */
                 if (avctx->channels == 2) {
@@ -544,9 +544,9 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             }
         } else {
             for (i=1; i<avctx->frame_size; i++) {
-                put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]) & 0xF);
+                put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels*i]));
                 if (avctx->channels == 2)
-                    put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]) & 0xF);
+                    put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[1], samples[2*i+1]));
             }
         }
         flush_put_bits(&pb);
