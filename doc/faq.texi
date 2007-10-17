@@ -434,6 +434,10 @@ and libmpdemux/demux_lavf.c in MPlayer sources.
 
 The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
 
+@section I get "./configure: line <xxx>: pr: command not found" in MSys.
+
+The standard MSys install doesn't come with pr. You need to get it from the coreutils package.
+
 @section I tried to pass RTP packets into a decoder, but it doesn't work.
 
 RTP is a container format like any other, you must first depacketize the
