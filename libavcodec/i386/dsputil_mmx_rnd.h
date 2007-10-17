@@ -24,9 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_DSPUTIL_MMX_RND_H
-#define FFMPEG_DSPUTIL_MMX_RND_H
-
 // put_pixels
 static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -591,5 +588,3 @@ static void DEF(avg, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, int li
     DEF(avg, pixels8_xy2)(block  , pixels  , line_size, h);
     DEF(avg, pixels8_xy2)(block+8, pixels+8, line_size, h);
 }
-
-#endif /* FFMPEG_DSPUTIL_MMX_RND_H */
