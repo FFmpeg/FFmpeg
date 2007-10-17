@@ -96,6 +96,7 @@ uninstall-libs:
 	-rm -f "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
 	       "$(SHLIBDIR)/$(SLIBNAME)"            \
 	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
+	-$(SLIB_UNINSTALL_EXTRA_CMD)
 	-rm -f "$(LIBDIR)/$(LIB)"
 
 uninstall-headers::
