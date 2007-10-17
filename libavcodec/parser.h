@@ -59,4 +59,4 @@ int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf,
 void ff_parse_close(AVCodecParserContext *s);
 void ff_parse1_close(AVCodecParserContext *s);
 
-#endif /* !FFMPEG_PARSER_H */
+#endif /* FFMPEG_PARSER_H */
