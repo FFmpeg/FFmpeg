@@ -22,8 +22,8 @@
     DEALINGS IN THE SOFTWARE.
 **/
 
-#ifndef OGG_H
-#define OGG_H
+#ifndef OGG2_H
+#define OGG2_H
 
 #include "avformat.h"
 
@@ -84,4 +84,4 @@ extern ogg_codec_t ogm_old_codec;
 
 extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
-#endif
+#endif /* OGG2_H */

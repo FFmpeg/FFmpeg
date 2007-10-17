@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_STRING_H
-#define AVUTIL_STRING_H
+#ifndef AVUTIL_AVSTRING_H
+#define AVUTIL_AVSTRING_H
 
 #include <stddef.h>
 
@@ -87,4 +87,4 @@ size_t av_strlcat(char *dst, const char *src, size_t size);
  */
 size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...);
 
-#endif /* AVUTIL_STRING_H */
+#endif /* AVUTIL_AVSTRING_H */

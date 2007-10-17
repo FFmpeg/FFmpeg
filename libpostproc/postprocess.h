@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef NEWPOSTPROCESS_H
-#define NEWPOSTPROCESS_H
+#ifndef POSTPROCESS_H
+#define POSTPROCESS_H
 
 /**
  * @file postprocess.h
@@ -75,4 +75,4 @@ void pp_free_context(pp_context_t *ppContext);
 
 #define PP_PICT_TYPE_QP2  0x00000010 ///< MPEG2 style QScale
 
-#endif
+#endif /* POSTPROCESS_H */
