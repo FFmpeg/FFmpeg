@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SWSCALE_INTERNAL_H
-#define SWSCALE_INTERNAL_H
+#ifndef FFMPEG_SWSCALE_INTERNAL_H
+#define FFMPEG_SWSCALE_INTERNAL_H
 
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
@@ -263,4 +263,4 @@ static inline int fmt_depth(int fmt)
     }
 }
 
-#endif
+#endif /* FFMPEG_SWSCALE_INTERNAL_H */

@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef RGB2RGB_INCLUDED
-#define RGB2RGB_INCLUDED
+#ifndef FFMPEG_RGB2RGB_H
+#define FFMPEG_RGB2RGB_H
 
 #include <inttypes.h>
 
@@ -143,4 +143,4 @@ extern void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint
 
 void sws_rgb2rgb_init(int flags);
 
-#endif
+#endif /* RGB2RGB_INCLUDED */
