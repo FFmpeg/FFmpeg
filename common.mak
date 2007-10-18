@@ -19,9 +19,9 @@ OBJS := $(OBJS) $(ASM_OBJS) $(CPPOBJS)
 STATIC_OBJS := $(OBJS) $(STATIC_OBJS)
 SHARED_OBJS := $(OBJS) $(SHARED_OBJS)
 
-all: $(LIB) $(SLIBNAME)
+all: $(LIBNAME) $(SLIBNAME)
 
-$(LIB): $(STATIC_OBJS)
+$(LIBNAME): $(STATIC_OBJS)
 	rm -f $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
@@ -39,7 +39,7 @@ $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 %.o: %.S
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
-%: %.o $(LIB)
+%: %.o $(LIBNAME)
 	$(CC) $(LDFLAGS) -o $@ $^ $(EXTRALIBS)
 
 %.ho: %.h
@@ -79,9 +79,9 @@ install-lib-shared: $(SLIBNAME)
 		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME)
 	$(SLIB_INSTALL_EXTRA_CMD)
 
-install-lib-static: $(LIB)
+install-lib-static: $(LIBNAME)
 	install -d "$(LIBDIR)"
-	install -m 644 $(LIB) "$(LIBDIR)"
+	install -m 644 $(LIBNAME) "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
 install-headers:
@@ -97,7 +97,7 @@ uninstall-libs:
 	       "$(SHLIBDIR)/$(SLIBNAME)"            \
 	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	-$(SLIB_UNINSTALL_EXTRA_CMD)
-	-rm -f "$(LIBDIR)/$(LIB)"
+	-rm -f "$(LIBDIR)/$(LIBNAME)"
 
 uninstall-headers::
 	rm -f $(addprefix "$(INCDIR)/",$(HEADERS))

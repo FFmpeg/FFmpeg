@@ -465,18 +465,18 @@ endif
 
 tests: apiexample $(TESTS)
 
-apiexample: apiexample.o $(LIB)
+apiexample: apiexample.o $(LIBNAME)
 
 cpuid-test: i386/cputest.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $<
 
-dct-test: dct-test.o fdctref.o $(LIB)
+dct-test: dct-test.o fdctref.o $(LIBNAME)
 
-fft-test: fft-test.o $(LIB)
+fft-test: fft-test.o $(LIBNAME)
 
-imgresample-test: imgresample.c $(LIB)
+imgresample-test: imgresample.c $(LIBNAME)
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
 
-motion-test: motion-test.o $(LIB)
+motion-test: motion-test.o $(LIBNAME)
 
 .PHONY: tests

@@ -894,13 +894,13 @@ FFSERVERLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
 LIBPREF="lib"
 LIBSUF=".a"
-LIB='$(LIBPREF)$(NAME)$(LIBSUF)'
+LIBNAME='$(LIBPREF)$(NAME)$(LIBSUF)'
 SLIBPREF="lib"
 SLIBSUF=".so"
 SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF)'
 SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
-LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIB)"'
+LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 # find source path
 source_path="`dirname \"$0\"`"
@@ -1247,7 +1247,7 @@ EOF
 fi
 
 if disabled static; then
-    LIB=""
+    LIBNAME=""
 fi
 
 if ! enabled libogg; then
@@ -1865,7 +1865,7 @@ echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\$(BUILDSUF)$LIBSUF" >> config.mak
-echo "LIB=$LIB" >> config.mak
+echo "LIBNAME=$LIBNAME" >> config.mak
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\$(BUILDSUF)$SLIBSUF" >> config.mak
 echo "EXESUF=\$(BUILDSUF)$EXESUF" >> config.mak
