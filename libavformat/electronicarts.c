@@ -257,6 +257,7 @@ static int ea_read_header(AVFormatContext *s,
         st->codec->time_base = ea->time_base;
     }
 
+    if (ea->audio_codec) {
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
@@ -274,6 +275,7 @@ static int ea_read_header(AVFormatContext *s,
 
     ea->audio_stream_index = st->index;
     ea->audio_frame_counter = 0;
+    }
 
     return 1;
 }
