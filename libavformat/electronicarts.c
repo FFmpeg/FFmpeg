@@ -137,6 +137,18 @@ static int process_audio_header_elements(AVFormatContext *s)
     return 1;
 }
 
+static int process_video_header_vp6(AVFormatContext *s)
+{
+    EaDemuxContext *ea = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+
+    url_fskip(pb, 16);
+    ea->time_base.den = get_le32(pb);
+    ea->time_base.num = get_le32(pb);
+
+    return 1;
+}
+
 /*
  * Process EA file header
  * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
@@ -149,9 +161,7 @@ static int process_ea_header(AVFormatContext *s) {
     blockid = get_le32(pb);
     if (blockid == MVhd_TAG) {
         size = get_le32(pb);
-        url_fskip(pb, 16);
-        ea->time_base.den = get_le32(pb);
-        ea->time_base.num = get_le32(pb);
+        process_video_header_vp6(s);
         url_fskip(pb, size-32);
         blockid = get_le32(pb);
     }
