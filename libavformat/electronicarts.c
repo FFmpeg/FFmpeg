@@ -167,20 +167,19 @@ static int process_ea_header(AVFormatContext *s) {
     for (i=0; i<5 && (!ea->audio_codec || !ea->video_codec); i++) {
         unsigned int startpos = url_ftell(pb);
 
-    blockid = get_le32(pb);
+        blockid = get_le32(pb);
         size = get_le32(pb);
 
         switch (blockid) {
             case SCHl_TAG :
-    blockid = get_le32(pb);
-    if (blockid == GSTR_TAG) {
-        url_fskip(pb, 4);
-    } else if (blockid != PT00_TAG) {
-        av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
-        return 0;
-    }
-
-    process_audio_header_elements(s);
+                blockid = get_le32(pb);
+                if (blockid == GSTR_TAG) {
+                    url_fskip(pb, 4);
+                } else if (blockid != PT00_TAG) {
+                    av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
+                    return 0;
+                }
+                process_audio_header_elements(s);
                 break;
 
             case MVhd_TAG :
