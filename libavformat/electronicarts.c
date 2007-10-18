@@ -290,7 +290,7 @@ static int ea_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
         chunk_type = get_le32(pb);
-        chunk_size = get_le32(pb) - 8;
+        chunk_size = (ea->big_endian ? get_be32(pb) : get_le32(pb)) - 8;
 
         switch (chunk_type) {
         /* audio data */
