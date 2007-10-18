@@ -43,9 +43,9 @@ void av_register_rtp_dynamic_payload_handlers(void);
  */
 void av_register_all(void)
 {
-    static int inited = 0;
+    static int inited;
 
-    if (inited != 0)
+    if (inited)
         return;
     inited = 1;
 

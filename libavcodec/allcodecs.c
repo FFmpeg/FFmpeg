@@ -53,9 +53,9 @@
  */
 void avcodec_register_all(void)
 {
-    static int inited = 0;
+    static int inited;
 
-    if (inited != 0)
+    if (inited)
         return;
     inited = 1;
 
