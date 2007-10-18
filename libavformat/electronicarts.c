@@ -162,17 +162,16 @@ static int process_ea_header(AVFormatContext *s) {
     uint32_t blockid, size = 0;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    int i;
+
+    for (i=0; i<5 && (!ea->audio_codec || !ea->video_codec); i++) {
+        unsigned int startpos = url_ftell(pb);
 
     blockid = get_le32(pb);
-    if (blockid == MVhd_TAG) {
         size = get_le32(pb);
-        process_video_header_vp6(s);
-        url_fskip(pb, size-32);
-        blockid = get_le32(pb);
-    }
-    if (blockid != SCHl_TAG)
-        return 0;
-    size += get_le32(pb);
+
+        switch (blockid) {
+            case SCHl_TAG :
     blockid = get_le32(pb);
     if (blockid == GSTR_TAG) {
         url_fskip(pb, 4);
@@ -182,9 +181,17 @@ static int process_ea_header(AVFormatContext *s) {
     }
 
     process_audio_header_elements(s);
+                break;
 
-    /* skip to the start of the data */
-    url_fseek(pb, size, SEEK_SET);
+            case MVhd_TAG :
+                process_video_header_vp6(s);
+                break;
+        }
+
+        url_fseek(pb, startpos + size, SEEK_SET);
+    }
+
+    url_fseek(pb, 0, SEEK_SET);
 
     return 1;
 }
