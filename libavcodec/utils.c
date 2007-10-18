@@ -1075,6 +1075,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     char buf1[32];
     char channels_str[100];
     int bitrate;
+    AVRational display_aspect_ratio;
 
     if (encode)
         p = avcodec_find_encoder(enc->codec_id);
@@ -1125,6 +1126,14 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %dx%d",
                      enc->width, enc->height);
+            av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
+                      enc->width*enc->sample_aspect_ratio.num,
+                      enc->height*enc->sample_aspect_ratio.den,
+                      1024*1024);
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     " [PAR %d:%d DAR %d:%d]",
+                     enc->sample_aspect_ratio.num, enc->sample_aspect_ratio.den,
+                     display_aspect_ratio.num, display_aspect_ratio.den);
             if(av_log_level >= AV_LOG_DEBUG){
                 int g= ff_gcd(enc->time_base.num, enc->time_base.den);
                 snprintf(buf + strlen(buf), buf_size - strlen(buf),
