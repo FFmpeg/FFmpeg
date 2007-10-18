@@ -296,6 +296,10 @@ static int ea_read_packet(AVFormatContext *s,
         switch (chunk_type) {
         /* audio data */
         case SCDl_TAG:
+            if (!ea->audio_codec) {
+                url_fskip(pb, chunk_size);
+                break;
+            }
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret != chunk_size)
                 ret = AVERROR(EIO);
