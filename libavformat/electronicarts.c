@@ -166,6 +166,7 @@ static int process_ea_header(AVFormatContext *s) {
 
     for (i=0; i<5 && (!ea->audio_codec || !ea->video_codec); i++) {
         unsigned int startpos = url_ftell(pb);
+        int err = 0;
 
         blockid = get_le32(pb);
         size = get_le32(pb);
@@ -179,12 +180,17 @@ static int process_ea_header(AVFormatContext *s) {
                     av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
                     return 0;
                 }
-                process_audio_header_elements(s);
+                err = process_audio_header_elements(s);
                 break;
 
             case MVhd_TAG :
-                process_video_header_vp6(s);
+                err = process_video_header_vp6(s);
                 break;
+        }
+
+        if (err < 0) {
+            av_log(s, AV_LOG_ERROR, "error parsing header: %i\n", err);
+            return err;
         }
 
         url_fseek(pb, startpos + size, SEEK_SET);
