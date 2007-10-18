@@ -82,7 +82,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     int inHeader = 1;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int compression_type;
+    int compression_type = -1;
 
     ea->num_channels = 1;
 
@@ -138,7 +138,12 @@ static int process_audio_header_elements(AVFormatContext *s)
         }
     }
 
-    ea->audio_codec = CODEC_ID_ADPCM_EA;
+    switch (compression_type) {
+    case  7: ea->audio_codec = CODEC_ID_ADPCM_EA; break;
+    default:
+        av_log(s, AV_LOG_ERROR, "unsupported stream type; compression_type=%i\n", compression_type);
+        return 0;
+    }
 
     return 1;
 }
