@@ -91,7 +91,7 @@ static const int16_t nelly_delta_table[32] = {
 
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
-    float           float_buf[NELLY_SAMPLES];
+    DECLARE_ALIGNED_16(float,float_buf[NELLY_SAMPLES]);
     float           state[64];
     AVRandomState   random_state;
     GetBitContext   gb;
