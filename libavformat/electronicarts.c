@@ -35,7 +35,6 @@
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 
-#define EA_SAMPLE_RATE 22050
 #define EA_BITS_PER_SAMPLE 16
 #define EA_PREAMBLE_SIZE 8
 
@@ -52,6 +51,7 @@ typedef struct EaDemuxContext {
 
     int64_t audio_pts;
 
+    int sample_rate;
     int num_channels;
     int num_samples;
 } EaDemuxContext;
@@ -82,8 +82,9 @@ static int process_audio_header_elements(AVFormatContext *s)
     int inHeader = 1;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int compression_type = -1;
+    int compression_type = -1, revision = -1;
 
+    ea->sample_rate = -1;
     ea->num_channels = 1;
 
     while (inHeader) {
@@ -100,6 +101,10 @@ static int process_audio_header_elements(AVFormatContext *s)
                 subbyte = get_byte(pb);
 
                 switch (subbyte) {
+                case 0x80:
+                    revision = read_arbitary(pb);
+                    av_log (s, AV_LOG_INFO, "revision (element 0x80) set to 0x%08x\n", revision);
+                    break;
                 case 0x82:
                     ea->num_channels = read_arbitary(pb);
                     av_log (s, AV_LOG_INFO, "num_channels (element 0x82) set to 0x%08x\n", ea->num_channels);
@@ -107,6 +112,10 @@ static int process_audio_header_elements(AVFormatContext *s)
                 case 0x83:
                     compression_type = read_arbitary(pb);
                     av_log (s, AV_LOG_INFO, "compression_type (element 0x83) set to 0x%08x\n", compression_type);
+                    break;
+                case 0x84:
+                    ea->sample_rate = read_arbitary(pb);
+                    av_log (s, AV_LOG_INFO, "sample_rate (element 0x84) set to %i\n", ea->sample_rate);
                     break;
                 case 0x85:
                     ea->num_samples = read_arbitary(pb);
@@ -145,6 +154,9 @@ static int process_audio_header_elements(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "unsupported stream type; compression_type=%i\n", compression_type);
         return 0;
     }
+
+    if (ea->sample_rate == -1)
+        ea->sample_rate = revision==3 ? 48000 : 22050;
 
     return 1;
 }
@@ -250,12 +262,12 @@ static int ea_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, EA_SAMPLE_RATE);
+    av_set_pts_info(st, 33, 1, ea->sample_rate);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = ea->audio_codec;
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = ea->num_channels;
-    st->codec->sample_rate = EA_SAMPLE_RATE;
+    st->codec->sample_rate = ea->sample_rate;
     st->codec->bits_per_sample = EA_BITS_PER_SAMPLE;
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
         st->codec->bits_per_sample / 4;
@@ -295,7 +307,7 @@ static int ea_read_packet(AVFormatContext *s,
                     pkt->stream_index = ea->audio_stream_index;
                     pkt->pts = 90000;
                     pkt->pts *= ea->audio_frame_counter;
-                    pkt->pts /= EA_SAMPLE_RATE;
+                    pkt->pts /= ea->sample_rate;
 
                     /* 2 samples/byte, 1 or 2 samples per frame depending
                      * on stereo; chunk also has 12-byte header */
