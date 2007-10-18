@@ -842,7 +842,19 @@ int ff_find_unused_picture(MpegEncContext *s, int shared){
         }
     }
 
-    assert(0);
+    av_log(s->avctx, AV_LOG_FATAL, "Internal error, picture buffer overflow\n");
+    /*we could return -1 but the codec would crash anyway, trying to draw
+      into, a non existing frame, this is safer than waiting for a random crash
+      also the return of this is never usefull, a encoder must only allocate
+      as many as allowed in the spec which has no relation to how many lavc
+      could allocate (and MAX_PICTURE_COUNT is always large enough for such
+      valid streams)
+      and a decoder has to check stream validity and remove frames if too many
+      reference frames are around. waiting for "OOM" is not correct at all, it
+      similarely has to replace missing reference frames by (interpolated/MC)
+      frames anything else is a bug in the codec ...
+    */
+    abort();
     return -1;
 }
 
