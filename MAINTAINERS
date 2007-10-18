@@ -152,6 +152,7 @@ Codecs:
   msmpeg4.c, msmpeg4data.h              Michael Niedermayer
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
+  nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
   qdm2.c, qdm2data.h                    Roberto Togni
