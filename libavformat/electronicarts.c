@@ -40,9 +40,11 @@
 #define EA_PREAMBLE_SIZE 8
 
 typedef struct EaDemuxContext {
+    int video_codec;
     AVRational time_base;
     int video_stream_index;
 
+    int audio_codec;
     int audio_stream_index;
     int audio_frame_counter;
 
@@ -134,6 +136,8 @@ static int process_audio_header_elements(AVFormatContext *s)
         }
     }
 
+    ea->audio_codec = CODEC_ID_ADPCM_EA;
+
     return 1;
 }
 
@@ -145,6 +149,7 @@ static int process_video_header_vp6(AVFormatContext *s)
     url_fskip(pb, 16);
     ea->time_base.den = get_le32(pb);
     ea->time_base.num = get_le32(pb);
+    ea->video_codec = CODEC_ID_VP6;
 
     return 1;
 }
@@ -212,7 +217,7 @@ static int ea_read_header(AVFormatContext *s,
             return AVERROR(ENOMEM);
         ea->video_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_VIDEO;
-        st->codec->codec_id = CODEC_ID_VP6;
+        st->codec->codec_id = ea->video_codec;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->time_base = ea->time_base;
     }
@@ -223,7 +228,7 @@ static int ea_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, EA_SAMPLE_RATE);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_ADPCM_EA;
+    st->codec->codec_id = ea->audio_codec;
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = ea->num_channels;
     st->codec->sample_rate = EA_SAMPLE_RATE;
