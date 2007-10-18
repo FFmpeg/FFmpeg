@@ -1246,9 +1246,7 @@ EOF
     exit 1;
 fi
 
-if disabled static; then
-    LIBNAME=""
-fi
+disabled static && LIBNAME=""
 
 if ! enabled libogg; then
     enabled libtheora && die "libogg must be enabled to enable libtheora."
