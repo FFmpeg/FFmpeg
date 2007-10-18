@@ -35,8 +35,6 @@
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 
-#define EA_BITS_PER_SAMPLE 16
-
 typedef struct EaDemuxContext {
     int big_endian;
 
@@ -50,6 +48,7 @@ typedef struct EaDemuxContext {
 
     int64_t audio_pts;
 
+    int bytes;
     int sample_rate;
     int num_channels;
     int num_samples;
@@ -83,6 +82,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     int compression_type = -1, revision = -1;
 
+    ea->bytes = 2;
     ea->sample_rate = -1;
     ea->num_channels = 1;
 
@@ -267,7 +267,7 @@ static int ea_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = ea->num_channels;
     st->codec->sample_rate = ea->sample_rate;
-    st->codec->bits_per_sample = EA_BITS_PER_SAMPLE;
+    st->codec->bits_per_sample = ea->bytes * 8;
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
         st->codec->bits_per_sample / 4;
     st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
