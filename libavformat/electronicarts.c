@@ -40,6 +40,8 @@
 #define EA_PREAMBLE_SIZE 8
 
 typedef struct EaDemuxContext {
+    int big_endian;
+
     int video_codec;
     AVRational time_base;
     int video_stream_index;
@@ -170,6 +172,10 @@ static int process_ea_header(AVFormatContext *s) {
 
         blockid = get_le32(pb);
         size = get_le32(pb);
+        if (i == 0)
+            ea->big_endian = size > 0x000FFFFF;
+        if (ea->big_endian)
+            size = bswap_32(size);
 
         switch (blockid) {
             case SCHl_TAG :
