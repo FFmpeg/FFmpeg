@@ -36,7 +36,6 @@
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 
 #define EA_BITS_PER_SAMPLE 16
-#define EA_PREAMBLE_SIZE 8
 
 typedef struct EaDemuxContext {
     int big_endian;
@@ -286,16 +285,12 @@ static int ea_read_packet(AVFormatContext *s,
     ByteIOContext *pb = &s->pb;
     int ret = 0;
     int packet_read = 0;
-    unsigned char preamble[EA_PREAMBLE_SIZE];
     unsigned int chunk_type, chunk_size;
     int key = 0;
 
     while (!packet_read) {
-
-        if (get_buffer(pb, preamble, EA_PREAMBLE_SIZE) != EA_PREAMBLE_SIZE)
-            return AVERROR(EIO);
-        chunk_type = AV_RL32(&preamble[0]);
-        chunk_size = AV_RL32(&preamble[4]) - EA_PREAMBLE_SIZE;
+        chunk_type = get_le32(pb);
+        chunk_size = get_le32(pb) - 8;
 
         switch (chunk_type) {
         /* audio data */
