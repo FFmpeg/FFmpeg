@@ -54,7 +54,6 @@ typedef struct EaDemuxContext {
 
     int num_channels;
     int num_samples;
-    int compression_type;
 } EaDemuxContext;
 
 static uint32_t read_arbitary(ByteIOContext *pb) {
@@ -83,6 +82,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     int inHeader = 1;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
+    int compression_type;
 
     ea->num_channels = 1;
 
@@ -105,8 +105,8 @@ static int process_audio_header_elements(AVFormatContext *s)
                     av_log (s, AV_LOG_INFO, "num_channels (element 0x82) set to 0x%08x\n", ea->num_channels);
                     break;
                 case 0x83:
-                    ea->compression_type = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "compression_type (element 0x83) set to 0x%08x\n", ea->compression_type);
+                    compression_type = read_arbitary(pb);
+                    av_log (s, AV_LOG_INFO, "compression_type (element 0x83) set to 0x%08x\n", compression_type);
                     break;
                 case 0x85:
                     ea->num_samples = read_arbitary(pb);
