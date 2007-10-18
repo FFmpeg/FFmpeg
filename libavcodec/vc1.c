@@ -818,9 +818,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
     {
-        av_log(avctx, AV_LOG_ERROR,
-               "0 for reserved RES_FASTTX is forbidden\n");
-        //return -1;
+        v->s.dsp.vc1_inv_trans_8x8 = v->s.dsp.idct;
     }
 
     v->fastuvmc =  get_bits1(gb); //common
