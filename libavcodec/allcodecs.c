@@ -190,8 +190,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
     REGISTER_ENCODER (LIBTHEORA, libtheora);
-    if (!ENABLE_VORBIS_ENCODER)  REGISTER_ENCODER (LIBVORBIS, libvorbis);
-    if (!ENABLE_VORBIS_DECODER)  REGISTER_DECODER (LIBVORBIS, libvorbis);
+    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
     REGISTER_DECODER (MACE3, mace3);
     REGISTER_DECODER (MACE6, mace6);
     REGISTER_ENCDEC  (MP2, mp2);
