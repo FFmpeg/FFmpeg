@@ -80,6 +80,8 @@ static int process_audio_header_elements(AVFormatContext *s)
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
+    ea->num_channels = 1;
+
     while (inHeader) {
         int inSubheader;
         uint8_t byte;
