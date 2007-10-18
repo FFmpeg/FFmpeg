@@ -134,6 +134,7 @@ static int process_ea_header(AVFormatContext *s) {
                     inSubheader = 0;
                     break;
                 case 0xFF:
+                    av_log (s, AV_LOG_INFO, "end of header block reached (within audio subheader)\n");
                     inSubheader = 0;
                     inHeader = 0;
                     break;
