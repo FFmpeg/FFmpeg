@@ -143,4 +143,4 @@ extern void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint
 
 void sws_rgb2rgb_init(int flags);
 
-#endif /* RGB2RGB_INCLUDED */
+#endif /* FFMPEG_RGB2RGB_H */
