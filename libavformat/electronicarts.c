@@ -143,7 +143,6 @@ static int process_audio_header_elements(AVFormatContext *s)
  */
 static int process_ea_header(AVFormatContext *s) {
     uint32_t blockid, size = 0;
-    int num, den;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
@@ -151,9 +150,8 @@ static int process_ea_header(AVFormatContext *s) {
     if (blockid == MVhd_TAG) {
         size = get_le32(pb);
         url_fskip(pb, 16);
-        den = get_le32(pb);
-        num = get_le32(pb);
-        ea->time_base = (AVRational) {num, den};
+        ea->time_base.den = get_le32(pb);
+        ea->time_base.num = get_le32(pb);
         url_fskip(pb, size-32);
         blockid = get_le32(pb);
     }
