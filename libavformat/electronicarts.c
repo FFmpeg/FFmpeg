@@ -172,7 +172,7 @@ static int process_ea_header(AVFormatContext *s) {
     if (blockid == GSTR_TAG) {
         url_fskip(pb, 4);
     } else if (blockid != PT00_TAG) {
-        av_log (s, AV_LOG_ERROR, "PT header missing\n");
+        av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
         return 0;
     }
 
