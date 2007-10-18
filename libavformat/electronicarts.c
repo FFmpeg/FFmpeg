@@ -245,7 +245,7 @@ static int ea_read_header(AVFormatContext *s,
     if (!process_ea_header(s))
         return AVERROR(EIO);
 
-    if (ea->time_base.num && ea->time_base.den) {
+    if (ea->video_codec) {
         /* initialize the video decoder stream */
         st = av_new_stream(s, 0);
         if (!st)
