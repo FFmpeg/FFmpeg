@@ -304,10 +304,17 @@ static int ea_read_packet(AVFormatContext *s,
                     pkt->pts *= ea->audio_frame_counter;
                     pkt->pts /= ea->sample_rate;
 
+                    switch (ea->audio_codec) {
+                    case CODEC_ID_ADPCM_EA:
                     /* 2 samples/byte, 1 or 2 samples per frame depending
                      * on stereo; chunk also has 12-byte header */
                     ea->audio_frame_counter += ((chunk_size - 12) * 2) /
                         ea->num_channels;
+                        break;
+                    default:
+                        ea->audio_frame_counter += chunk_size /
+                            (ea->bytes * ea->num_channels);
+                    }
             }
 
             packet_read = 1;
