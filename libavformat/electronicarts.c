@@ -71,36 +71,14 @@ static uint32_t read_arbitary(ByteIOContext *pb) {
 }
 
 /*
- * Process EA file header
- * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
+ * Process PT/GSTR sound header
+ * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
  */
-static int process_ea_header(AVFormatContext *s) {
+static int process_audio_header_elements(AVFormatContext *s)
+{
     int inHeader = 1;
-    uint32_t blockid, size = 0;
-    int num, den;
     EaDemuxContext *ea = s->priv_data;
     ByteIOContext *pb = &s->pb;
-
-    blockid = get_le32(pb);
-    if (blockid == MVhd_TAG) {
-        size = get_le32(pb);
-        url_fskip(pb, 16);
-        den = get_le32(pb);
-        num = get_le32(pb);
-        ea->time_base = (AVRational) {num, den};
-        url_fskip(pb, size-32);
-        blockid = get_le32(pb);
-    }
-    if (blockid != SCHl_TAG)
-        return 0;
-    size += get_le32(pb);
-    blockid = get_le32(pb);
-    if (blockid == GSTR_TAG) {
-        url_fskip(pb, 4);
-    } else if (blockid != PT00_TAG) {
-        av_log (s, AV_LOG_ERROR, "PT header missing\n");
-        return 0;
-    }
 
     while (inHeader) {
         int inSubheader;
@@ -153,6 +131,42 @@ static int process_ea_header(AVFormatContext *s) {
             break;
         }
     }
+
+    return 1;
+}
+
+/*
+ * Process EA file header
+ * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
+ */
+static int process_ea_header(AVFormatContext *s) {
+    uint32_t blockid, size = 0;
+    int num, den;
+    EaDemuxContext *ea = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+
+    blockid = get_le32(pb);
+    if (blockid == MVhd_TAG) {
+        size = get_le32(pb);
+        url_fskip(pb, 16);
+        den = get_le32(pb);
+        num = get_le32(pb);
+        ea->time_base = (AVRational) {num, den};
+        url_fskip(pb, size-32);
+        blockid = get_le32(pb);
+    }
+    if (blockid != SCHl_TAG)
+        return 0;
+    size += get_le32(pb);
+    blockid = get_le32(pb);
+    if (blockid == GSTR_TAG) {
+        url_fskip(pb, 4);
+    } else if (blockid != PT00_TAG) {
+        av_log (s, AV_LOG_ERROR, "PT header missing\n");
+        return 0;
+    }
+
+    process_audio_header_elements(s);
 
     /* skip to the start of the data */
     url_fseek(pb, size, SEEK_SET);
