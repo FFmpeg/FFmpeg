@@ -71,8 +71,8 @@ static uint32_t read_arbitary(ByteIOContext *pb) {
 }
 
 /*
- * Process WVE file header
- * Returns 1 if the WVE file is valid and successfully opened, 0 otherwise
+ * Process EA file header
+ * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
  */
 static int process_ea_header(AVFormatContext *s) {
     int inHeader = 1;
