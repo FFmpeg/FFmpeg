@@ -24,4 +24,4 @@
 
 uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt);
 
-#endif
+#endif /* FFMPEG_DES_H */
