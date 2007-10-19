@@ -307,7 +307,7 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section Is there a forum for FFmpeg, I do not like mailing lists?
+@section Is there a forum for FFmpeg? I do not like mailing lists.
 
 Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
 
