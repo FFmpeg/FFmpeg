@@ -22,6 +22,16 @@
 #ifndef FFMPEG_DES_H
 #define FFMPEG_DES_H
 
+/**
+ * \brief en- or decrypt an 64-bit block of data with DES
+ * \param in data to process.
+ * \param key key to use for en-/decryption.
+ * \param decrypt if 0 encrypt, else decrypt.
+ * \return processed data
+ *
+ * If your input data is in 8-bit blocks treat it as big-endian
+ * (use e.g. AV_RB64 and AV_WB64).
+ */
 uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt);
 
 #endif /* FFMPEG_DES_H */
