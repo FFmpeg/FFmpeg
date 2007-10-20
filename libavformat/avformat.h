@@ -21,8 +21,8 @@
 #ifndef FFMPEG_AVFORMAT_H
 #define FFMPEG_AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(15<<8)+0)
-#define LIBAVFORMAT_VERSION     51.15.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(16<<8)+0)
+#define LIBAVFORMAT_VERSION     51.16.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -353,6 +353,8 @@ typedef struct AVProgram {
     char           *name;          ///< Service name for DVB streams
     int            flags;
     enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
+    unsigned int   *stream_index;
+    unsigned int   nb_stream_indexes;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present

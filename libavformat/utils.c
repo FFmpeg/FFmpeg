@@ -2067,6 +2067,7 @@ void av_close_input_file(AVFormatContext *s)
     for(i=s->nb_programs-1; i>=0; i--) {
         av_freep(&s->programs[i]->provider_name);
         av_freep(&s->programs[i]->name);
+        av_freep(&s->programs[i]->stream_index);
         av_freep(&s->programs[i]);
     }
     flush_packet_queue(s);
@@ -2483,6 +2484,29 @@ fail:
     return ret;
 }
 
+void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx)
+{
+    int i, j;
+    AVProgram *program=NULL;
+    void *tmp;
+
+    for(i=0; i<ac->nb_programs; i++){
+        if(ac->programs[i]->id != progid)
+            continue;
+        program = ac->programs[i];
+        for(j=0; j<program->nb_stream_indexes; j++)
+            if(program->stream_index[j] == idx)
+                return;
+
+        tmp = av_realloc(program->stream_index, sizeof(unsigned int)*(program->nb_stream_indexes+1));
+        if(!tmp)
+            return;
+        program->stream_index = tmp;
+        program->stream_index[program->nb_stream_indexes++] = idx;
+        return;
+    }
+}
+
 /* "user interface" functions */
 static void dump_stream_format(AVFormatContext *ic, int i, int index, char *buf, int is_output)
 {
@@ -2554,6 +2578,16 @@ void dump_format(AVFormatContext *ic,
         }
         av_log(NULL, AV_LOG_INFO, "\n");
     }
+    if(ic->nb_programs) {
+        int j, k;
+        for(j=0; j<ic->nb_programs; j++) {
+            av_log(NULL, AV_LOG_INFO, "  Program %d", ic->programs[j]->id);
+            if(ic->programs[j]->name)
+                av_log(NULL, AV_LOG_INFO, " \"%s\"\n", ic->programs[j]->name);
+            for(k=0; k<ic->programs[j]->nb_stream_indexes; k++)
+                dump_stream_format(ic, ic->programs[j]->stream_index[k], index, buf, is_output);
+         }
+    } else
     for(i=0;i<ic->nb_streams;i++)
         dump_stream_format(ic, i, index, buf, is_output);
 }
