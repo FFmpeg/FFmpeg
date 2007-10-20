@@ -23,6 +23,7 @@
 #include "mpegaudio.h"
 #include "asf.h"
 #include "common.h"
+#include "asfcrypt.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -823,6 +824,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
                    asf->packet_frag_size);
+        if (s->key && s->keylen == 20)
+            ff_asfcrypt_dec(s->key, asf_st->pkt.data + asf->packet_frag_offset,
+                            asf->packet_frag_size);
         asf_st->frag_offset += asf->packet_frag_size;
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
