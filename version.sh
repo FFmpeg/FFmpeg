@@ -6,6 +6,12 @@ test $revision || revision=`cd "$1" && grep revision .svn/entries 2>/dev/null | 
 test $revision || revision=`cd "$1" && sed -n -e '/^dir$/{n;p;q}' .svn/entries 2>/dev/null`
 test $revision && revision=SVN-r$revision
 
+# check for git short hash
+if ! test $revision; then
+    revision=`cd "$1" && git log -1 --pretty=format:%h`
+    test $revision && revision=git-$revision
+fi
+
 # no version number found
 test $revision || revision=UNKNOWN
 
