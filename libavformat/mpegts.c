@@ -37,6 +37,7 @@ typedef struct PESContext PESContext;
 static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code);
 extern void av_set_program_name(AVProgram *program, char *provider_name, char *name);
+extern void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
 
 enum MpegTSFilterType {
     MPEGTS_PES,
@@ -597,6 +598,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                     st = new_pes_av_stream(pes, 0);
             }
             add_pid_to_pmt(ts, h->id, pid);
+            if(st)
+                av_program_add_stream_index(ts->stream, h->id, st->index);
             break;
         default:
             /* we ignore the other streams */
