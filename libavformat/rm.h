@@ -46,6 +46,11 @@ typedef struct {
     int old_format;
     int current_stream;
     int remaining_len;
+    uint8_t *videobuf; ///< place to store merged video frame
+    int videobufsize;  ///< current assembled frame size
+    int videobufpos;   ///< position for the next slice in the video buffer
+    int curpic_num;    ///< picture number of current frame
+    int cur_slice, slices;
     /// Audio descrambling matrix parameters
     uint8_t *audiobuf; ///< place to store reordered audio data
     int64_t audiotimestamp; ///< Audio packet timestamp

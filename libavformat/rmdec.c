@@ -350,6 +350,7 @@ skip:
     if (!rm->nb_packets && (flags & 4))
         rm->nb_packets = 3600 * 25;
     get_be32(pb); /* next data header */
+    rm->curpic_num = -1;
     return 0;
 
  fail:
@@ -365,6 +366,7 @@ static int get_num(ByteIOContext *pb, int *len)
 
     n = get_be16(pb);
     (*len)-=2;
+    n &= 0x7FFF;
     if (n >= 0x4000) {
         return n - 0x4000;
     } else {
@@ -433,6 +435,89 @@ skip:
     return -1;
 }
 
+static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *pkt, int len)
+{
+    ByteIOContext *pb = &s->pb;
+    int hdr, seq, pic_num, len2, pos;
+    int type;
+    int ssize;
+
+    hdr = get_byte(pb); len--;
+    type = hdr >> 6;
+    switch(type){
+    case 0: // slice
+    case 2: // last slice
+        seq = get_byte(pb); len--;
+        len2 = get_num(pb, &len);
+        pos = get_num(pb, &len);
+        pic_num = get_byte(pb); len--;
+        rm->remaining_len = len;
+        break;
+    case 1: //whole frame
+        seq = get_byte(pb); len--;
+        if(av_new_packet(pkt, len + 9) < 0)
+            return AVERROR(EIO);
+        pkt->data[0] = 0;
+        AV_WL32(pkt->data + 1, 1);
+        AV_WL32(pkt->data + 5, 0);
+        get_buffer(pb, pkt->data + 9, len);
+        rm->remaining_len = 0;
+        return 0;
+    case 3: //frame as a part of packet
+        len2 = get_num(pb, &len);
+        pos = get_num(pb, &len);
+        pic_num = get_byte(pb); len--;
+        rm->remaining_len = len - len2;
+        if(av_new_packet(pkt, len2 + 9) < 0)
+            return AVERROR(EIO);
+        pkt->data[0] = 0;
+        AV_WL32(pkt->data + 1, 1);
+        AV_WL32(pkt->data + 5, 0);
+        get_buffer(pb, pkt->data + 9, len2);
+        return 0;
+    }
+    //now we have to deal with single slice
+
+    if((seq & 0x7F) == 1 || rm->curpic_num != pic_num){
+        rm->slices = ((hdr & 0x3F) << 1) + 1;
+        ssize = len2 + 8*rm->slices + 1;
+        rm->videobuf = av_realloc(rm->videobuf, ssize);
+        rm->videobufsize = ssize;
+        rm->videobufpos = 8*rm->slices + 1;
+        rm->cur_slice = 0;
+        rm->curpic_num = pic_num;
+    }
+    if(type == 2){
+        len = FFMIN(len, pos);
+        pos = len2 - pos;
+    }
+
+    if(++rm->cur_slice > rm->cur_slice)
+        return 1;
+    AV_WL32(rm->videobuf - 7 + 8*rm->cur_slice, 1);
+    AV_WL32(rm->videobuf - 3 + 8*rm->cur_slice, rm->videobufpos - 8*rm->slices - 1);
+    if(rm->videobufpos + len > rm->videobufsize)
+        return 1;
+    if (get_buffer(pb, rm->videobuf + rm->videobufpos, len) != len)
+        return AVERROR(EIO);
+    rm->videobufpos += len,
+    rm->remaining_len-= len;
+
+    if(type == 2 || (rm->videobufpos) == rm->videobufsize){
+         //adjust slice headers
+         memmove(rm->videobuf + 1 + 8*rm->cur_slice, rm->videobuf + 1 + 8*rm->slices, rm->videobufsize - 1 - 8*rm->slices);
+         ssize = rm->videobufsize - 8*(rm->slices - rm->cur_slice);
+
+         rm->videobuf[0] = rm->cur_slice-1;
+         if(av_new_packet(pkt, ssize) < 0)
+             return AVERROR(ENOMEM);
+         memcpy(pkt->data, rm->videobuf, ssize);
+         return 0;
+    }
+
+    return 1;
+}
+
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMContext *rm = s->priv_data;
@@ -492,32 +577,9 @@ resync:
         st = s->streams[i];
 
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-            int h, pic_num, len2, pos;
-
-            h= get_byte(pb); len--;
-            if(!(h & 0x40)){
-                seq = get_byte(pb); len--;
-            }
-
-            if((h & 0xc0) == 0x40){
-                len2= pos= 0;
-            }else{
-                len2 = get_num(pb, &len);
-                pos = get_num(pb, &len);
-            }
-            /* picture number */
-            pic_num= get_byte(pb); len--;
-            rm->remaining_len= len;
             rm->current_stream= st->id;
-
-//            av_log(NULL, AV_LOG_DEBUG, "%X len:%d pos:%d len2:%d pic_num:%d\n",h, len, pos, len2, pic_num);
-            if((h & 0xc0) == 0x80)
-                len=pos;
-            if(len2 && len2<len)
-                len=len2;
-            rm->remaining_len-= len;
-            av_get_packet(pb, pkt, len);
-
+            if(rm_assemble_video_frame(s, rm, pkt, len) == 1)
+                goto resync;//got partial frame
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if ((st->codec->codec_id == CODEC_ID_RA_288) ||
                 (st->codec->codec_id == CODEC_ID_COOK) ||
@@ -620,6 +682,7 @@ static int rm_read_close(AVFormatContext *s)
     RMContext *rm = s->priv_data;
 
     av_free(rm->audiobuf);
+    av_free(rm->videobuf);
     return 0;
 }
 
