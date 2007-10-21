@@ -2508,8 +2508,9 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
 }
 
 /* "user interface" functions */
-static void dump_stream_format(AVFormatContext *ic, int i, int index, char *buf, int is_output)
+static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_output)
 {
+    char buf[256];
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
     int g = ff_gcd(st->time_base.num, st->time_base.den);
@@ -2540,7 +2541,6 @@ void dump_format(AVFormatContext *ic,
                  int is_output)
 {
     int i, flags;
-    char buf[256];
 
     av_log(NULL, AV_LOG_INFO, "%s #%d, %s, %s '%s':\n",
             is_output ? "Output" : "Input",
@@ -2585,11 +2585,11 @@ void dump_format(AVFormatContext *ic,
             if(ic->programs[j]->name)
                 av_log(NULL, AV_LOG_INFO, " \"%s\"\n", ic->programs[j]->name);
             for(k=0; k<ic->programs[j]->nb_stream_indexes; k++)
-                dump_stream_format(ic, ic->programs[j]->stream_index[k], index, buf, is_output);
+                dump_stream_format(ic, ic->programs[j]->stream_index[k], index, is_output);
          }
     } else
     for(i=0;i<ic->nb_streams;i++)
-        dump_stream_format(ic, i, index, buf, is_output);
+        dump_stream_format(ic, i, index, is_output);
 }
 
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
