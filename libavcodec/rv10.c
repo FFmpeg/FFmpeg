@@ -711,6 +711,12 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     return buf_size;
 }
 
+static int get_slice_offset(AVCodecContext *avctx, uint8_t *buf, int n)
+{
+    if(avctx->slice_count) return avctx->slice_offset[n];
+    else                   return AV_RL32(buf + n*8);
+}
+
 static int rv10_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
@@ -718,6 +724,8 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = avctx->priv_data;
     int i;
     AVFrame *pict = data;
+    int slice_count;
+    uint8_t *slices_hdr = NULL;
 
 #ifdef DEBUG
     av_log(avctx, AV_LOG_DEBUG, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
@@ -728,21 +736,24 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
-    if(avctx->slice_count){
-        for(i=0; i<avctx->slice_count; i++){
-            int offset= avctx->slice_offset[i];
+    if(!avctx->slice_count){
+        slice_count = (*buf++) + 1;
+        slices_hdr = buf + 4;
+        buf += 8 * slice_count;
+    }else
+        slice_count = avctx->slice_count;
+
+        for(i=0; i<slice_count; i++){
+            int offset= get_slice_offset(avctx, slices_hdr, i);
             int size;
 
-            if(i+1 == avctx->slice_count)
+            if(i+1 == slice_count)
                 size= buf_size - offset;
             else
-                size= avctx->slice_offset[i+1] - offset;
+                size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
             rv10_decode_packet(avctx, buf+offset, size);
         }
-    }else{
-        rv10_decode_packet(avctx, buf, buf_size);
-    }
 
     if(s->current_picture_ptr != NULL && s->mb_y>=s->mb_height){
         ff_er_frame_end(s);
