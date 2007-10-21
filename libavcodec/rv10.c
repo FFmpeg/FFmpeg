@@ -743,17 +743,17 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     }else
         slice_count = avctx->slice_count;
 
-        for(i=0; i<slice_count; i++){
-            int offset= get_slice_offset(avctx, slices_hdr, i);
-            int size;
+    for(i=0; i<slice_count; i++){
+        int offset= get_slice_offset(avctx, slices_hdr, i);
+        int size;
 
-            if(i+1 == slice_count)
-                size= buf_size - offset;
-            else
-                size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
+        if(i+1 == slice_count)
+            size= buf_size - offset;
+        else
+            size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
-            rv10_decode_packet(avctx, buf+offset, size);
-        }
+        rv10_decode_packet(avctx, buf+offset, size);
+    }
 
     if(s->current_picture_ptr != NULL && s->mb_y>=s->mb_height){
         ff_er_frame_end(s);
