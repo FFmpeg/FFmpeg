@@ -145,7 +145,6 @@ typedef struct ADPCMChannelStatus {
 typedef struct ADPCMContext {
     int channel; /* for stereo MOVs, decode left, then decode right, then tell it's decoded */
     ADPCMChannelStatus status[2];
-    short sample_buffer[32]; /* hold left samples while waiting for right samples */
 } ADPCMContext;
 
 /* XXX: implement encoding */
