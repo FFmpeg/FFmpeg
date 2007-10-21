@@ -640,11 +640,6 @@ static int adpcm_decode_init(AVCodecContext * avctx)
         return -1;
     }
 
-    c->channel = 0;
-    c->status[0].predictor = c->status[1].predictor = 0;
-    c->status[0].step_index = c->status[1].step_index = 0;
-    c->status[0].step = c->status[1].step = 0;
-
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_CT:
         c->status[0].step = c->status[1].step = 511;
