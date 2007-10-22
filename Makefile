@@ -194,7 +194,7 @@ uninstall-man:
 	rm -f $(addprefix $(MANDIR)/man1/,$(ALLMANPAGES))
 
 uninstall-vhook:
-	rm -f $(addprefix $(SHLIBDIR)/vhook/,$(ALLHOOKS))
+	rm -f $(addprefix $(SHLIBDIR)/,$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
 
 uninstall-libs:
