@@ -227,12 +227,11 @@ static int process_ea_header(AVFormatContext *s) {
 
 static int ea_probe(AVProbeData *p)
 {
-    uint32_t tag;
-
-    tag = AV_RL32(&p->buf[0]);
-    if (tag == SCHl_TAG || tag == MVhd_TAG)
+    switch (AV_RL32(&p->buf[0])) {
+    case SCHl_TAG:
+    case MVhd_TAG:
         return AVPROBE_SCORE_MAX;
-
+    }
     return 0;
 }
 
