@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(46<<8)+1)
-#define LIBAVCODEC_VERSION      51.46.1
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(47<<8)+0)
+#define LIBAVCODEC_VERSION      51.47.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -168,6 +168,7 @@ enum CodecID {
     CODEC_ID_TXD,
     CODEC_ID_VP6A,
     CODEC_ID_AMV,
+    CODEC_ID_VB,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,

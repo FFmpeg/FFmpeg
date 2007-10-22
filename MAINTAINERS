@@ -177,6 +177,7 @@ Codecs:
   tscc.c                                Kostya Shishkov
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
+  vb.c                                  Kostya Shishkov
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vmnc.c                                Kostya Shishkov
@@ -245,6 +246,7 @@ Muxers/Demuxers:
   rtsp.c                                Luca Barbato
   sdp.c                                 Luca Abeni
   segafilm.c                            Mike Melanson
+  siff.c                                Kostya Shishkov
   swf.c                                 Baptiste Coudurier
   txd.c                                 Ivo van Poorten
   v4l2.c                                Luca Abeni

@@ -147,6 +147,7 @@ void av_register_all(void)
 #endif
     REGISTER_DEMUXER  (SEGAFILM, segafilm);
     REGISTER_DEMUXER  (SHORTEN, shorten);
+    REGISTER_DEMUXER  (SIFF, siff);
     REGISTER_DEMUXER  (SMACKER, smacker);
     REGISTER_DEMUXER  (SOL, sol);
     REGISTER_DEMUXER  (STR, str);

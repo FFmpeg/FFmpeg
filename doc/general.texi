@@ -117,6 +117,8 @@ different game cutscenes repacked for use with ScummVM.
 @item CRYO APC @tab    @tab X
 @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item Monkey's Audio @tab    @tab X
+@item SIFF @tab    @tab X
+@tab Audio and video format used in some games by Beam Software
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
