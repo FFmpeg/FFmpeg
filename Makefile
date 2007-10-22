@@ -140,7 +140,7 @@ doc/%.1: doc/%.pod
 install: install-progs install-libs install-headers $(INSTALL_TARGETS-yes)
 
 ifeq ($(BUILD_SHARED),yes)
-install-progs: $(PROGS) install-libs
+install-progs: install-libs
 endif
 install-progs: $(PROGS)
 	install -d "$(BINDIR)"
