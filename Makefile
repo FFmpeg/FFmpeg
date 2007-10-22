@@ -34,9 +34,9 @@ ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
 
 INSTALL_TARGETS-$(CONFIG_VHOOK) += install-vhook
-INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 ifneq ($(PROGS),)
 INSTALL_TARGETS-yes             += install-progs
+INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
