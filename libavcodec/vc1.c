@@ -33,6 +33,7 @@
 #include "vc1acdata.h"
 #include "msmpeg4data.h"
 #include "unary.h"
+#include "simple_idct.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -818,7 +819,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
     {
-        v->s.dsp.vc1_inv_trans_8x8 = v->s.dsp.idct;
+        v->s.dsp.vc1_inv_trans_8x8 = simple_idct;
     }
 
     v->fastuvmc =  get_bits1(gb); //common
