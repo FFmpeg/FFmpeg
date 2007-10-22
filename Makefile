@@ -141,9 +141,8 @@ install: install-progs install-libs install-headers $(INSTALL_TARGETS-yes)
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: $(PROGS) install-libs
-else
-install-progs: $(PROGS)
 endif
+install-progs: $(PROGS)
 	install -d "$(BINDIR)"
 	install -c -m 755 $(PROGS) "$(BINDIR)"
 
