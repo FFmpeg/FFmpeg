@@ -35,6 +35,9 @@ ALL_TARGETS-$(BUILD_DOC)    += documentation
 
 INSTALL_TARGETS-$(CONFIG_VHOOK) += install-vhook
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
+ifneq ($(PROGS),)
+INSTALL_TARGETS-yes             += install-progs
+endif
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
@@ -137,7 +140,7 @@ doc/%.pod: doc/%-doc.texi
 doc/%.1: doc/%.pod
 	pod2man --section=1 --center=" " --release=" " $< > $@
 
-install: install-progs install-libs install-headers $(INSTALL_TARGETS-yes)
+install: install-libs install-headers $(INSTALL_TARGETS-yes)
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: install-libs
