@@ -437,19 +437,19 @@ static void mp3_parse_xing(AVFormatContext *s, AVStream *st)
 
     ff_mpegaudio_decode_header(&c, get_be32(&s->pb));
     if(c.layer != 3)
-      return;
+        return;
 
     /* Check for Xing / Info tag */
     url_fseek(&s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
     v = get_be32(&s->pb);
     if(v == MKBETAG('X', 'i', 'n', 'g') || v == MKBETAG('I', 'n', 'f', 'o')) {
-      v = get_be32(&s->pb);
-      if(v & 0x1)
-        frames = get_be32(&s->pb);
+        v = get_be32(&s->pb);
+        if(v & 0x1)
+            frames = get_be32(&s->pb);
     }
 
     if(frames < 0)
-      return;
+        return;
 
     spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
     st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
