@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "mpegaudio.h"
 #include "avstring.h"
+#include "mpegaudiodecheader.h"
 
 #define ID3v2_HEADER_SIZE 10
 #define ID3v1_TAG_SIZE 128
@@ -424,12 +425,40 @@ static int mp3_read_probe(AVProbeData *p)
     else                   return 0;
 }
 
+/**
+ * Try to extract a xing tag from the stream and if found, decode it
+ */
+static void mp3_parse_xing(AVFormatContext *s, AVStream *st)
+{
+    uint32_t v, frames, spf;
+    const offset_t offtbl[2][2] = {{32, 17}, {17,9}};
+    MPADecodeContext c;
+
+    ff_mpegaudio_decode_header(&c, get_be32(&s->pb));
+    url_fseek(&s->pb, offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
+    v = get_be32(&s->pb);
+    if(c.layer != 3 ||
+       (v != MKBETAG('X', 'i', 'n', 'g') &&
+        v != MKBETAG('I', 'n', 'f', 'o')))
+        return;
+
+    v = get_be32(&s->pb);
+    if(v & 0x1) {
+        frames = get_be32(&s->pb);   /* Total number of frames in file */
+        spf    = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
+
+        st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
+                                    st->time_base);
+    }
+}
+
 static int mp3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *st;
     uint8_t buf[ID3v1_TAG_SIZE];
     int len, ret, filesize;
+    offset_t off;
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -468,6 +497,10 @@ static int mp3_read_header(AVFormatContext *s,
     } else {
         url_fseek(&s->pb, 0, SEEK_SET);
     }
+
+    off = url_ftell(&s->pb);
+    mp3_parse_xing(s, st);
+    url_fseek(&s->pb, off, SEEK_SET);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
