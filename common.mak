@@ -58,16 +58,12 @@ clean::
 distclean: clean
 	rm -f .depend
 
-ifeq ($(BUILD_SHARED),yes)
-INSTLIBTARGETS += install-lib-shared
-endif
-ifeq ($(BUILD_STATIC),yes)
-INSTLIBTARGETS += install-lib-static
-endif
+INSTALL_TARGETS-$(BUILD_SHARED) += install-lib-shared
+INSTALL_TARGETS-$(BUILD_STATIC) += install-lib-static
 
 install: install-libs install-headers
 
-install-libs: $(INSTLIBTARGETS)
+install-libs: $(INSTALL_TARGETS-yes)
 
 install-lib-shared: $(SLIBNAME)
 	install -d "$(SHLIBDIR)"
