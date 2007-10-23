@@ -430,26 +430,30 @@ static int mp3_read_probe(AVProbeData *p)
  */
 static void mp3_parse_xing(AVFormatContext *s, AVStream *st)
 {
-    uint32_t v, frames, spf;
-    const offset_t offtbl[2][2] = {{32, 17}, {17,9}};
+    uint32_t v, spf;
+    int frames = -1; /* Total number of frames in file */
+    const offset_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeContext c;
 
     ff_mpegaudio_decode_header(&c, get_be32(&s->pb));
-    url_fseek(&s->pb, offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
-    v = get_be32(&s->pb);
-    if(c.layer != 3 ||
-       (v != MKBETAG('X', 'i', 'n', 'g') &&
-        v != MKBETAG('I', 'n', 'f', 'o')))
-        return;
+    if(c.layer != 3)
+      return;
 
+    /* Check for Xing / Info tag */
+    url_fseek(&s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
     v = get_be32(&s->pb);
-    if(v & 0x1) {
-        frames = get_be32(&s->pb);   /* Total number of frames in file */
-        spf    = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
-
-        st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
-                                    st->time_base);
+    if(v == MKBETAG('X', 'i', 'n', 'g') || v == MKBETAG('I', 'n', 'f', 'o')) {
+      v = get_be32(&s->pb);
+      if(v & 0x1)
+        frames = get_be32(&s->pb);
     }
+
+    if(frames < 0)
+      return;
+
+    spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
+    st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
+                                st->time_base);
 }
 
 static int mp3_read_header(AVFormatContext *s,
