@@ -181,8 +181,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         a.size -= 8;
         if(a.size < 0)
             break;
-        if (a.size > atom.size - total_size)
-            a.size = atom.size - total_size;
+        a.size = FFMIN(a.size, atom.size - total_size);
 
         for (i = 0; c->parse_table[i].type != 0L
              && c->parse_table[i].type != a.type; i++)
