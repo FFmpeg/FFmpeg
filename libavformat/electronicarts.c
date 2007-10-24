@@ -149,6 +149,16 @@ static int process_audio_header_elements(AVFormatContext *s)
     switch (compression_type) {
     case  0: ea->audio_codec = CODEC_ID_PCM_S16LE; break;
     case  7: ea->audio_codec = CODEC_ID_ADPCM_EA; break;
+    case -1:
+        switch (revision) {
+        case  1: ea->audio_codec = CODEC_ID_ADPCM_EA_R1; break;
+        case  2: ea->audio_codec = CODEC_ID_ADPCM_EA_R2; break;
+        case  3: ea->audio_codec = CODEC_ID_ADPCM_EA_R3; break;
+        default:
+            av_log(s, AV_LOG_ERROR, "unsupported stream type; revision=%i\n", revision);
+            return 0;
+        }
+        break;
     default:
         av_log(s, AV_LOG_ERROR, "unsupported stream type; compression_type=%i\n", compression_type);
         return 0;
