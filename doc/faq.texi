@@ -360,27 +360,27 @@ It depends. If your compiler is C99-compliant, then patches to support
 it are likely to be welcome if they do not pollute the source code
 with @code{#ifdef}s related to the compiler.
 
-@section Visual C++ produces many errors.
+@section Microsoft Visual C++ produces many errors.
 
-Visual C++ is not compliant to the C standard and does not support
+Microsoft Visual C++ is not compliant to the C standard and does not support
 the inline assembly used in FFmpeg.
-If you wish - for whatever weird reason - to use Visual C++ for your
-project then you can link the Visual C++ code with libav* as long as
+If you wish - for whatever weird reason - to use MSVC++ for your
+project then you can link the MSVC++ code with libav* as long as
 you compile the latter with a working C compiler. For more information, see
-the @emph{Visual C++ compatibility} section in the FFmpeg documentation.
+the @emph{Microsoft Visual C++ compatibility} section in the FFmpeg
+documentation.
 
-There have been efforts to make FFmpeg compatible with Visual C++ in the
+There have been efforts to make FFmpeg compatible with MSVC++ in the
 past. However, they have all been rejected as too intrusive, especially
 since MinGW does the job perfectly adequately. None of the core developers
-work with Visual C++ and thus this item is low priority. Should you find
+work with MSVC++ and thus this item is low priority. Should you find
 the silver bullet that solves this problem, feel free to shoot it at us.
 
 @section Can I use FFmpeg or libavcodec under Windows?
 
-Yes, but the MinGW tools @emph{must} be used to compile FFmpeg. You
-can link the resulting DLLs with any other Windows program. Read the
-@emph{Native Windows Compilation} and @emph{Visual C++ compatibility}
-sections in the FFmpeg documentation to find more information.
+Yes, but the Cygwin or MinGW tools @emph{must} be used to compile FFmpeg.
+Read the @emph{Windows} section in the FFmpeg documentation to find more
+information.
 
 To get help and instructions for using FFmpeg under Windows, check out
 the FFmpeg Windows Help Forum at
