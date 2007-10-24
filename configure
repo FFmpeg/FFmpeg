@@ -882,7 +882,7 @@ enable ipv6
 enable static
 enable mpegaudio_hp
 enable network
-enable optimize
+enable optimizations
 enable protocols
 vhook="default"
 
@@ -982,7 +982,7 @@ for opt do
   ;;
   --cpu=*) cpu="$optval"
   ;;
-  --disable-opts) disable optimize
+  --disable-opts) disable optimizations
   ;;
   --enable-sunmlib) enable mlib
   ;;
@@ -1301,7 +1301,7 @@ if test $targetos = darwin; then
     fi
 fi
 
-disabled optimize || add_cflags -fomit-frame-pointer
+disabled optimizations || add_cflags -fomit-frame-pointer
 
 # Add processor-specific flags
 if test $cpu != "generic"; then
@@ -1703,8 +1703,8 @@ check_ldflags $LDLATEFLAGS
 
 if enabled small; then
     check_cflags -Os            # not all compilers support -Os
-    optimize="small"
-elif enabled optimize; then
+    optimizations="small"
+elif enabled optimizations; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags  "-O5"
         add_ldflags "-O5"
@@ -1785,7 +1785,7 @@ fi
 echo "gprof enabled             ${gprof-no}"
 echo "debug symbols             ${debug-no}"
 echo "strip symbols             ${dostrip-no}"
-echo "optimize                  ${optimize-no}"
+echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
 echo "postprocessing support    ${pp-no}"
