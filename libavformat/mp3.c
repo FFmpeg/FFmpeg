@@ -426,9 +426,9 @@ static int mp3_read_probe(AVProbeData *p)
 }
 
 /**
- * Try to extract a xing tag from the stream and if found, decode it
+ * Try to find Xing/Info/VBRI tags and compute duration from info therein
  */
-static void mp3_parse_xing(AVFormatContext *s, AVStream *st)
+static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, offset_t base)
 {
     uint32_t v, spf;
     int frames = -1; /* Total number of frames in file */
@@ -446,6 +446,18 @@ static void mp3_parse_xing(AVFormatContext *s, AVStream *st)
         v = get_be32(&s->pb);
         if(v & 0x1)
             frames = get_be32(&s->pb);
+    }
+
+    /* Check for VBRI tag (always 32 bytes after end of mpegaudio header) */
+    url_fseek(&s->pb, base + 4 + 32, SEEK_SET);
+    v = get_be32(&s->pb);
+    if(v == MKBETAG('V', 'B', 'R', 'I')) {
+        /* Check tag version */
+        if(get_be16(&s->pb) == 1) {
+            /* skip delay, quality and total bytes */
+            url_fseek(&s->pb, 8, SEEK_CUR);
+            frames = get_be32(&s->pb);
+        }
     }
 
     if(frames < 0)
@@ -503,7 +515,7 @@ static int mp3_read_header(AVFormatContext *s,
     }
 
     off = url_ftell(&s->pb);
-    mp3_parse_xing(s, st);
+    mp3_parse_vbr_tags(s, st, off);
     url_fseek(&s->pb, off, SEEK_SET);
 
     /* the parameters will be extracted from the compressed bitstream */
