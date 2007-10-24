@@ -164,7 +164,7 @@ show_help(){
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
-  echo "  --disable-opts           disable compiler optimizations"
+  echo "  --disable-optimizations  disable compiler optimizations"
   echo "  --enable-extra-warnings  enable more compiler warnings"
   echo "  --disable-strip          disable stripping of executables and shared libraries"
   echo ""
@@ -725,6 +725,7 @@ CMDLINE_SELECT="
     $THREADS_LIST
     debug
     extra_warnings
+    optimizations
     shared
     static
 "
@@ -981,8 +982,6 @@ for opt do
   --arch=*) arch="$optval"
   ;;
   --cpu=*) cpu="$optval"
-  ;;
-  --disable-opts) disable optimizations
   ;;
   --enable-sunmlib) enable mlib
   ;;
