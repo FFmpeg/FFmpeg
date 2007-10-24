@@ -335,6 +335,7 @@ static int ea_read_packet(AVFormatContext *s,
             break;
 
         /* ending tag */
+        case 0:
         case SCEl_TAG:
             ret = AVERROR(EIO);
             packet_read = 1;
