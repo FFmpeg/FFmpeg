@@ -647,9 +647,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts += offset;
     }
 
-    if(is_intra_only(st->codec))
-        pkt->flags |= PKT_FLAG_KEY;
-
     /* do we have a video B frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
@@ -726,7 +723,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 //    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, delay, pkt->pts, pkt->dts, st->cur_dts);
 
     /* update flags */
-    if (pc) {
+    if(is_intra_only(st->codec))
+        pkt->flags |= PKT_FLAG_KEY;
+    else if (pc) {
         pkt->flags = 0;
         /* key frame computation */
             if (pc->pict_type == FF_I_TYPE)
