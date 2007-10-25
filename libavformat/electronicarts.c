@@ -281,6 +281,7 @@ static int process_ea_header(AVFormatContext *s) {
 static int ea_probe(AVProbeData *p)
 {
     switch (AV_RL32(&p->buf[0])) {
+    case ISNh_TAG:
     case SCHl_TAG:
     case MVhd_TAG:
         return AVPROBE_SCORE_MAX;
