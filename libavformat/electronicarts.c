@@ -27,10 +27,10 @@
 #include "avformat.h"
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
-#define _SNh_TAG MKTAG('1', 'S', 'N', 'h')    /* 1SNx header */
+#define ISNh_TAG MKTAG('1', 'S', 'N', 'h')    /* 1SNx header */
 #define EACS_TAG MKTAG('E', 'A', 'C', 'S')
-#define _SNd_TAG MKTAG('1', 'S', 'N', 'd')    /* 1SNx data */
-#define _SNe_TAG MKTAG('1', 'S', 'N', 'e')    /* 1SNx end */
+#define ISNd_TAG MKTAG('1', 'S', 'N', 'd')    /* 1SNx data */
+#define ISNe_TAG MKTAG('1', 'S', 'N', 'e')    /* 1SNx end */
 #define PT00_TAG MKTAG('P', 'T', 0x0, 0x0)
 #define GSTR_TAG MKTAG('G', 'S', 'T', 'R')
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
@@ -240,7 +240,7 @@ static int process_ea_header(AVFormatContext *s) {
             size = bswap_32(size);
 
         switch (blockid) {
-            case _SNh_TAG:
+            case ISNh_TAG:
                 if (get_le32(pb) != EACS_TAG) {
                     av_log (s, AV_LOG_ERROR, "unknown 1SNh headerid\n");
                     return 0;
@@ -347,11 +347,11 @@ static int ea_read_packet(AVFormatContext *s,
 
         switch (chunk_type) {
         /* audio data */
-        case _SNh_TAG:
+        case ISNh_TAG:
             /* header chunk also contains data; skip over the header portion*/
             url_fskip(pb, 32);
             chunk_size -= 32;
-        case _SNd_TAG:
+        case ISNd_TAG:
         case SCDl_TAG:
             if (!ea->audio_codec) {
                 url_fskip(pb, chunk_size);
@@ -384,7 +384,7 @@ static int ea_read_packet(AVFormatContext *s,
 
         /* ending tag */
         case 0:
-        case _SNe_TAG:
+        case ISNe_TAG:
         case SCEl_TAG:
             ret = AVERROR(EIO);
             packet_read = 1;
