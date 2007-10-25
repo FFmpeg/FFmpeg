@@ -27,6 +27,10 @@
 #include "avformat.h"
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
+#define _SNh_TAG MKTAG('1', 'S', 'N', 'h')    /* 1SNx header */
+#define EACS_TAG MKTAG('E', 'A', 'C', 'S')
+#define _SNd_TAG MKTAG('1', 'S', 'N', 'd')    /* 1SNx data */
+#define _SNe_TAG MKTAG('1', 'S', 'N', 'e')    /* 1SNx end */
 #define PT00_TAG MKTAG('P', 'T', 0x0, 0x0)
 #define GSTR_TAG MKTAG('G', 'S', 'T', 'R')
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
@@ -170,6 +174,37 @@ static int process_audio_header_elements(AVFormatContext *s)
     return 1;
 }
 
+/*
+ * Process EACS sound header
+ * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
+ */
+static int process_audio_header_eacs(AVFormatContext *s)
+{
+    EaDemuxContext *ea = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    int compression_type;
+
+    ea->sample_rate  = ea->big_endian ? get_be32(pb) : get_le32(pb);
+    ea->bytes        = get_byte(pb);   /* 1=8-bit, 2=16-bit */
+    ea->num_channels = get_byte(pb);
+    compression_type = get_byte(pb);
+    url_fskip(pb, 13);
+
+    switch (compression_type) {
+    case 0:
+        switch (ea->bytes) {
+        case 1: ea->audio_codec = CODEC_ID_PCM_S8;    break;
+        case 2: ea->audio_codec = CODEC_ID_PCM_S16LE; break;
+        }
+        break;
+    case 1: ea->audio_codec = CODEC_ID_PCM_MULAW; ea->bytes = 1; break;
+    default:
+        av_log (s, AV_LOG_ERROR, "unsupported stream type; audio compression_type=%i\n", compression_type);
+    }
+
+    return 1;
+}
+
 static int process_video_header_vp6(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
@@ -205,6 +240,14 @@ static int process_ea_header(AVFormatContext *s) {
             size = bswap_32(size);
 
         switch (blockid) {
+            case _SNh_TAG:
+                if (get_le32(pb) != EACS_TAG) {
+                    av_log (s, AV_LOG_ERROR, "unknown 1SNh headerid\n");
+                    return 0;
+                }
+                err = process_audio_header_eacs(s);
+                break;
+
             case SCHl_TAG :
                 blockid = get_le32(pb);
                 if (blockid == GSTR_TAG) {
@@ -304,6 +347,11 @@ static int ea_read_packet(AVFormatContext *s,
 
         switch (chunk_type) {
         /* audio data */
+        case _SNh_TAG:
+            /* header chunk also contains data; skip over the header portion*/
+            url_fskip(pb, 32);
+            chunk_size -= 32;
+        case _SNd_TAG:
         case SCDl_TAG:
             if (!ea->audio_codec) {
                 url_fskip(pb, chunk_size);
@@ -336,6 +384,7 @@ static int ea_read_packet(AVFormatContext *s,
 
         /* ending tag */
         case 0:
+        case _SNe_TAG:
         case SCEl_TAG:
             ret = AVERROR(EIO);
             packet_read = 1;
