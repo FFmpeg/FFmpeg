@@ -2539,7 +2539,7 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output)
 {
-    int i, flags;
+    int i;
 
     av_log(NULL, AV_LOG_INFO, "%s #%d, %s, %s '%s':\n",
             is_output ? "Output" : "Input",
