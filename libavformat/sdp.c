@@ -20,6 +20,7 @@
 
 #include "avstring.h"
 #include "avformat.h"
+#include "rtp.h"
 
 #ifdef CONFIG_RTP_MUXER
 #define MAX_EXTRADATA_SIZE ((INT_MAX - 10) / 2)
