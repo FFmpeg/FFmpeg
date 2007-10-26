@@ -27,7 +27,6 @@
 #define RTP_MIN_PACKET_LENGTH 12
 #define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
 
-int rtp_init(void);
 int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
 
 /** return < 0 if unknown payload type */
