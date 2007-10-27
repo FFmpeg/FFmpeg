@@ -1512,29 +1512,29 @@ static int av_encode(AVFormatContext **output_files,
                         found = 1;
                     }
                 } else {
-                /* get corresponding input stream index : we select the first one with the right type */
-                found = 0;
-                for(j=0;j<nb_istreams;j++) {
-                    ist = ist_table[j];
-                    if (ist->discard &&
-                        ist->st->codec->codec_type == ost->st->codec->codec_type) {
-                        ost->source_index = j;
-                        found = 1;
-                        break;
+                    /* get corresponding input stream index : we select the first one with the right type */
+                    found = 0;
+                    for(j=0;j<nb_istreams;j++) {
+                        ist = ist_table[j];
+                        if (ist->discard &&
+                            ist->st->codec->codec_type == ost->st->codec->codec_type) {
+                            ost->source_index = j;
+                            found = 1;
+                            break;
+                        }
                     }
-                }
                 }
 
                 if (!found) {
                     if(! opt_programid) {
-                    /* try again and reuse existing stream */
-                    for(j=0;j<nb_istreams;j++) {
-                        ist = ist_table[j];
-                        if (ist->st->codec->codec_type == ost->st->codec->codec_type) {
-                            ost->source_index = j;
-                            found = 1;
+                        /* try again and reuse existing stream */
+                        for(j=0;j<nb_istreams;j++) {
+                            ist = ist_table[j];
+                            if (ist->st->codec->codec_type == ost->st->codec->codec_type) {
+                                ost->source_index = j;
+                                found = 1;
+                            }
                         }
-                    }
                     }
                     if (!found) {
                         fprintf(stderr, "Could not find input stream matching output stream #%d.%d\n",
