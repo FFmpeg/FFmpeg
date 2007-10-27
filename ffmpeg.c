@@ -187,6 +187,7 @@ static int opt_shortest = 0; //
 static int video_global_header = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
+static int opt_programid = 0;
 
 static int rate_emu = 0;
 
@@ -1350,6 +1351,33 @@ static void print_sdp(AVFormatContext **avc, int n)
     printf("SDP:\n%s\n", sdp);
 }
 
+static int stream_index_from_inputs(AVFormatContext **input_files,
+                                    int nb_input_files,
+                                    AVInputFile *file_table,
+                                    AVInputStream **ist_table,
+                                    enum CodecType type,
+                                    int programid)
+{
+    int p, q, r, s, z;
+    AVInputStream *ist;
+    for(z=0; z<nb_input_files; z++) {
+        AVFormatContext *ic = input_files[z];
+        for(p=0; p<ic->nb_programs; p++) {
+            AVProgram *program = ic->programs[p];
+            if(program->id != programid)
+                continue;
+            for(q=0; q<program->nb_stream_indexes; q++) {
+                int sidx = program->stream_index[q];
+                int ris = file_table[z].ist_index + sidx;
+                if(ist_table[ris]->discard && ic->streams[sidx]->codec->codec_type == type)
+                    return ris;
+            }
+        }
+    }
+
+    return -1;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -1476,6 +1504,14 @@ static int av_encode(AVFormatContext **output_files,
                 }
 
             } else {
+                if(opt_programid) {
+                    found = 0;
+                    j = stream_index_from_inputs(input_files, nb_input_files, file_table, ist_table, ost->st->codec->codec_type, opt_programid);
+                    if(j != -1) {
+                        ost->source_index = j;
+                        found = 1;
+                    }
+                } else {
                 /* get corresponding input stream index : we select the first one with the right type */
                 found = 0;
                 for(j=0;j<nb_istreams;j++) {
@@ -1487,8 +1523,10 @@ static int av_encode(AVFormatContext **output_files,
                         break;
                     }
                 }
+                }
 
                 if (!found) {
+                    if(! opt_programid) {
                     /* try again and reuse existing stream */
                     for(j=0;j<nb_istreams;j++) {
                         ist = ist_table[j];
@@ -1496,6 +1534,7 @@ static int av_encode(AVFormatContext **output_files,
                             ost->source_index = j;
                             found = 1;
                         }
+                    }
                     }
                     if (!found) {
                         fprintf(stderr, "Could not find input stream matching output stream #%d.%d\n",
@@ -2590,6 +2629,12 @@ static void opt_input_file(const char *filename)
         print_error(filename, err);
         exit(1);
     }
+    if(opt_programid) {
+        int i;
+        for(i=0; i<ic->nb_programs; i++)
+            if(ic->programs[i]->id != opt_programid)
+                ic->programs[i]->discard = AVDISCARD_ALL;
+    }
 
     ic->loop_input = loop_input;
 
@@ -3635,6 +3680,7 @@ const OptionDef options[] = {
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "" },
+    { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
 
     /* video options */
     { "vframes", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&max_frames[CODEC_TYPE_VIDEO]}, "set the number of video frames to record", "number" },
