@@ -1,5 +1,5 @@
 /*
- * CRC encoder (for codec/format testing)
+ * frame CRC encoder (for codec/format testing)
  * Copyright (c) 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,47 +21,26 @@
 #include "avformat.h"
 #include "adler32.h"
 
-typedef struct CRCState {
-    uint32_t crcval;
-} CRCState;
-
-static int crc_write_header(struct AVFormatContext *s)
+static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    CRCState *crc = s->priv_data;
+    uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
+    char buf[256];
 
-    /* init CRC */
-    crc->crcval = 1;
-
-    return 0;
-}
-
-static int crc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
-{
-    CRCState *crc = s->priv_data;
-    crc->crcval = av_adler32_update(crc->crcval, pkt->data, pkt->size);
-    return 0;
-}
-
-static int crc_write_trailer(struct AVFormatContext *s)
-{
-    CRCState *crc = s->priv_data;
-    char buf[64];
-
-    snprintf(buf, sizeof(buf), "CRC=0x%08x\n", crc->crcval);
+    snprintf(buf, sizeof(buf), "%d, %"PRId64", %d, 0x%08x\n", pkt->stream_index, pkt->dts, pkt->size, crc);
     put_buffer(&s->pb, buf, strlen(buf));
     put_flush_packet(&s->pb);
     return 0;
 }
 
-AVOutputFormat crc_muxer = {
-    "crc",
-    "crc testing format",
+AVOutputFormat framecrc_muxer = {
+    "framecrc",
+    "framecrc testing format",
     NULL,
     "",
-    sizeof(CRCState),
+    0,
     CODEC_ID_PCM_S16LE,
     CODEC_ID_RAWVIDEO,
-    crc_write_header,
-    crc_write_packet,
-    crc_write_trailer,
+    NULL,
+    framecrc_write_packet,
+    NULL,
 };
