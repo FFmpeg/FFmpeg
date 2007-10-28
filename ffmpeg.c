@@ -1358,8 +1358,7 @@ static int stream_index_from_inputs(AVFormatContext **input_files,
                                     enum CodecType type,
                                     int programid)
 {
-    int p, q, r, s, z;
-    AVInputStream *ist;
+    int p, q, z;
     for(z=0; z<nb_input_files; z++) {
         AVFormatContext *ic = input_files[z];
         for(p=0; p<ic->nb_programs; p++) {
