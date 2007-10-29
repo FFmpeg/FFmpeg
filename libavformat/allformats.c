@@ -21,9 +21,6 @@
 #include "avformat.h"
 #include "rtp_internal.h"
 
-/* rtp.c */
-void av_register_rtp_dynamic_payload_handlers(void);
-
 #define REGISTER_MUXER(X,x) { \
           extern AVOutputFormat x##_muxer; \
           if(ENABLE_##X##_MUXER)   av_register_output_format(&x##_muxer); }
