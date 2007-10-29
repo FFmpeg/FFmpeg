@@ -22,6 +22,7 @@
 #include <math.h>
 #include <limits.h>
 #include "avformat.h"
+#include "rtsp.h"
 #include "swscale.h"
 #include "avstring.h"
 

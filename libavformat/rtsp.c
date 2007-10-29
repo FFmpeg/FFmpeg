@@ -24,6 +24,7 @@
 #include <unistd.h> /* for select() prototype */
 #include "network.h"
 #include "avstring.h"
+#include "rtsp.h"
 
 #include "rtp_internal.h"
 

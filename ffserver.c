@@ -26,6 +26,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "avformat.h"
+#include "rtsp.h"
+#include "rtp.h"
 
 #include <stdarg.h>
 #include <unistd.h>
