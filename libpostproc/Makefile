@@ -10,12 +10,12 @@ NAME=postproc
 LIBVERSION=$(SPPVERSION)
 LIBMAJOR=$(SPPMAJOR)
 
-STATIC_OBJS=postprocess.o
-SHARED_OBJS=postprocess_pic.o
-
 HEADERS = postprocess.h
 
 include ../common.mak
+
+$(LIBNAME): postprocess.o
+$(SLIBNAME_WITH_MAJOR): postprocess_pic.o
 
 depend dep: postprocess.c
 
