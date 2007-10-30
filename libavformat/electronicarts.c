@@ -201,6 +201,7 @@ static int process_audio_header_eacs(AVFormatContext *s)
         }
         break;
     case 1: ea->audio_codec = CODEC_ID_PCM_MULAW; ea->bytes = 1; break;
+    case 2: ea->audio_codec = CODEC_ID_ADPCM_IMA_EA_EACS; break;
     default:
         av_log (s, AV_LOG_ERROR, "unsupported stream type; audio compression_type=%i\n", compression_type);
     }
