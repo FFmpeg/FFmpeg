@@ -31,6 +31,7 @@
  * CD-ROM XA ADPCM codec by BERO
  * EA ADPCM decoder by Robin Kay (komadori@myrealbox.com)
  * EA ADPCM R1/R2/R3 decoder by Peter Ross (pross@xvid.org)
+ * EA IMA SEAD decoder by Peter Ross (pross@xvid.org)
  * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
  *
  * Features and limitations:
@@ -1137,6 +1138,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             buf_size -= 128;
         }
         break;
+    case CODEC_ID_ADPCM_IMA_EA_SEAD:
+        for (; src < buf+buf_size; src++) {
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] >> 4, 6);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st],src[0]&0x0F, 6);
+        }
+        break;
     case CODEC_ID_ADPCM_EA:
         samples_in_chunk = AV_RL32(src);
         if (samples_in_chunk >= ((buf_size - 12) * 2)) {
@@ -1535,6 +1542,7 @@ ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);

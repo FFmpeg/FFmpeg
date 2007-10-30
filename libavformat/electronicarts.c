@@ -27,6 +27,9 @@
 #include "avformat.h"
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
+#define SEAD_TAG MKTAG('S', 'E', 'A', 'D')    /* Sxxx header */
+#define SNDC_TAG MKTAG('S', 'N', 'D', 'C')    /* Sxxx data */
+#define SEND_TAG MKTAG('S', 'E', 'N', 'D')    /* Sxxx end */
 #define ISNh_TAG MKTAG('1', 'S', 'N', 'h')    /* 1SNx header */
 #define EACS_TAG MKTAG('E', 'A', 'C', 'S')
 #define ISNd_TAG MKTAG('1', 'S', 'N', 'd')    /* 1SNx data */
@@ -205,6 +208,23 @@ static int process_audio_header_eacs(AVFormatContext *s)
     return 1;
 }
 
+/*
+ * Process SEAD sound header
+ * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
+ */
+static int process_audio_header_sead(AVFormatContext *s)
+{
+    EaDemuxContext *ea = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+
+    ea->sample_rate  = get_le32(pb);
+    ea->bytes        = get_le32(pb);  /* 1=8-bit, 2=16-bit */
+    ea->num_channels = get_le32(pb);
+    ea->audio_codec  = CODEC_ID_ADPCM_IMA_EA_SEAD;
+
+    return 1;
+}
+
 static int process_video_header_vp6(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
@@ -259,6 +279,10 @@ static int process_ea_header(AVFormatContext *s) {
                 err = process_audio_header_elements(s);
                 break;
 
+            case SEAD_TAG:
+                err = process_audio_header_sead(s);
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -283,6 +307,7 @@ static int ea_probe(AVProbeData *p)
     switch (AV_RL32(&p->buf[0])) {
     case ISNh_TAG:
     case SCHl_TAG:
+    case SEAD_TAG:
     case MVhd_TAG:
         return AVPROBE_SCORE_MAX;
     }
@@ -354,6 +379,7 @@ static int ea_read_packet(AVFormatContext *s,
             chunk_size -= 32;
         case ISNd_TAG:
         case SCDl_TAG:
+        case SNDC_TAG:
             if (!ea->audio_codec) {
                 url_fskip(pb, chunk_size);
                 break;
@@ -387,6 +413,7 @@ static int ea_read_packet(AVFormatContext *s,
         case 0:
         case ISNe_TAG:
         case SCEl_TAG:
+        case SEND_TAG:
             ret = AVERROR(EIO);
             packet_read = 1;
             break;
