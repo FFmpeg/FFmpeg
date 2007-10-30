@@ -934,8 +934,8 @@ static int rtsp_read_header(AVFormatContext *s,
             if (RTSP_RTP_PORT_MIN != 0) {
                 while(j <= RTSP_RTP_PORT_MAX) {
                     snprintf(buf, sizeof(buf), "rtp://?localport=%d", j);
+                    j += 2; /* we will use two port by rtp stream (rtp and rtcp) */
                     if (url_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0) {
-                        j += 2; /* we will use two port by rtp stream (rtp and rtcp) */
                         goto rtp_opened;
                     }
                 }
