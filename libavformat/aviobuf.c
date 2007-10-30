@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "avio.h"
+#include "crc.h"
 #include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
@@ -284,6 +285,10 @@ static void fill_buffer(ByteIOContext *s)
         s->buf_ptr = s->buffer;
         s->buf_end = s->buffer + len;
     }
+}
+
+unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
+    return av_crc(av_crc04C11DB7, checksum, buf, len);
 }
 
 unsigned long get_checksum(ByteIOContext *s){

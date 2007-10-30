@@ -196,14 +196,14 @@ static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc
     int forw_ptr= dyn_size + 4*calculate_checksum;
 
     if(forw_ptr > 4096)
-        init_checksum(bc, av_crc04C11DB7_update, 0);
+        init_checksum(bc, ff_crc04C11DB7_update, 0);
     put_be64(bc, startcode);
     put_v(bc, forw_ptr);
     if(forw_ptr > 4096)
         put_le32(bc, get_checksum(bc));
 
     if(calculate_checksum)
-        init_checksum(bc, av_crc04C11DB7_update, 0);
+        init_checksum(bc, ff_crc04C11DB7_update, 0);
     put_buffer(bc, dyn_buf, dyn_size);
     if(calculate_checksum)
         put_le32(bc, get_checksum(bc));
@@ -535,7 +535,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     flags= fc->flags;
     needed_flags= get_needed_flags(nut, nus, fc, pkt);
 
-    init_checksum(bc, av_crc04C11DB7_update, 0);
+    init_checksum(bc, ff_crc04C11DB7_update, 0);
     put_byte(bc, frame_code);
     if(flags & FLAG_CODED){
         put_v(bc, (flags^needed_flags) & ~(FLAG_CODED));

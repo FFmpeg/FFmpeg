@@ -258,6 +258,7 @@ int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size);
  */
 int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
 
+unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len);
 unsigned long get_checksum(ByteIOContext *s);
 void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum);
 

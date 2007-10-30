@@ -104,16 +104,16 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
 //    start= url_ftell(bc) - 8;
 
     startcode= be2me_64(startcode);
-    startcode= av_crc04C11DB7_update(0, &startcode, 8);
+    startcode= ff_crc04C11DB7_update(0, &startcode, 8);
 
-    init_checksum(bc, av_crc04C11DB7_update, startcode);
+    init_checksum(bc, ff_crc04C11DB7_update, startcode);
     size= get_v(bc);
     if(size > 4096)
         get_be32(bc);
     if(get_checksum(bc) && size > 4096)
         return -1;
 
-    init_checksum(bc, calculate_checksum ? av_crc04C11DB7_update : NULL, 0);
+    init_checksum(bc, calculate_checksum ? ff_crc04C11DB7_update : NULL, 0);
 
     return size;
 }

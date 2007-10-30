@@ -24,7 +24,6 @@
 
 //#include <limits.h>
 #include "avformat.h"
-#include "crc.h"
 //#include "mpegaudio.h"
 #include "riff.h"
 //#include "adler32.h"
@@ -93,7 +92,6 @@ typedef struct {
     struct AVTreeNode *syncpoints;
 } NUTContext;
 
-unsigned long av_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len);
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val);
 int64_t ff_lsb2full(StreamContext *stream, int64_t lsb);
 int ff_nut_sp_pos_cmp(syncpoint_t *a, syncpoint_t *b);
