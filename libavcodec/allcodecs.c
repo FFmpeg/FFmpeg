@@ -191,7 +191,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
     REGISTER_ENCODER (LIBTHEORA, libtheora);
-    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
     REGISTER_DECODER (MACE3, mace3);
     REGISTER_DECODER (MACE6, mace6);
     REGISTER_ENCDEC  (MP2, mp2);
@@ -215,6 +214,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (WMAV1, wmav1);
     REGISTER_ENCDEC  (WMAV2, wmav2);
     REGISTER_DECODER (WS_SND1, ws_snd1);
+    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
 
     /* pcm codecs */
     REGISTER_ENCDEC  (PCM_ALAW, pcm_alaw);
