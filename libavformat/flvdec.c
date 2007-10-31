@@ -224,11 +224,19 @@ static int flv_read_metabody(AVFormatContext *s, unsigned int next_pos) {
     return 0;
 }
 
+static AVStream *create_stream(AVFormatContext *s, int is_audio){
+    AVStream *st = av_new_stream(s, is_audio);
+    if (!st)
+        return NULL;
+    st->codec->codec_type = is_audio ? CODEC_TYPE_AUDIO : CODEC_TYPE_VIDEO;
+    av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
+    return st;
+}
+
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     int offset, flags;
-    AVStream *st;
 
     url_fskip(&s->pb, 4);
     flags = get_byte(&s->pb);
@@ -240,18 +248,12 @@ static int flv_read_header(AVFormatContext *s,
     }
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
-        st = av_new_stream(s, 0);
-        if (!st)
+        if(!create_stream(s, 0))
             return AVERROR(ENOMEM);
-        st->codec->codec_type = CODEC_TYPE_VIDEO;
-        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
     }
     if(flags & FLV_HEADER_FLAG_HASAUDIO){
-        st = av_new_stream(s, 1);
-        if (!st)
+        if(!create_stream(s, 1))
             return AVERROR(ENOMEM);
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
-        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
     }
 
     offset = get_be32(&s->pb);
