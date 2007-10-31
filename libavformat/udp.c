@@ -120,13 +120,14 @@ static struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, in
     if ((hostname) && (hostname[0] != '\0') && (hostname[0] != '?')) {
         node = hostname;
     }
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_socktype = type;
-        hints.ai_family   = family;
-        hints.ai_flags = flags;
-        if ((error = getaddrinfo(node, service, &hints, &res))) {
-            av_log(NULL, AV_LOG_ERROR, "udp_ipv6_resolve_host: %s\n", gai_strerror(error));
-        }
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_socktype = type;
+    hints.ai_family   = family;
+    hints.ai_flags = flags;
+    if ((error = getaddrinfo(node, service, &hints, &res))) {
+        av_log(NULL, AV_LOG_ERROR, "udp_ipv6_resolve_host: %s\n", gai_strerror(error));
+    }
+
     return res;
 }
 
@@ -153,23 +154,23 @@ static int udp_ipv6_set_local(URLContext *h) {
     char hbuf[NI_MAXHOST];
     struct addrinfo *res0 = NULL, *res = NULL;
 
-        res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, AF_UNSPEC, AI_PASSIVE);
-        if (res0 == 0)
-            goto fail;
-        for (res = res0; res; res=res->ai_next) {
-            udp_fd = socket(res->ai_family, SOCK_DGRAM, 0);
-            if (udp_fd > 0) break;
-            perror("socket");
-        }
+    res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, AF_UNSPEC, AI_PASSIVE);
+    if (res0 == 0)
+        goto fail;
+    for (res = res0; res; res=res->ai_next) {
+        udp_fd = socket(res->ai_family, SOCK_DGRAM, 0);
+        if (udp_fd > 0) break;
+        perror("socket");
+    }
 
     if (udp_fd < 0)
         goto fail;
 
-        if (bind(udp_fd, res0->ai_addr, res0->ai_addrlen) < 0) {
-            perror("bind");
-            goto fail;
-        }
-        freeaddrinfo(res0);
+    if (bind(udp_fd, res0->ai_addr, res0->ai_addrlen) < 0) {
+        perror("bind");
+        goto fail;
+    }
+    freeaddrinfo(res0);
         res0 = NULL;
 
     addrlen = sizeof(clientaddr);
