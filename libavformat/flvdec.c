@@ -309,8 +309,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if(i == s->nb_streams){
         av_log(NULL, AV_LOG_ERROR, "invalid stream\n");
-        url_fseek(&s->pb, next, SEEK_SET);
-        continue;
+        st= create_stream(s, is_audio);
     }
 //    av_log(NULL, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||         is_audio))
