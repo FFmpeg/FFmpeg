@@ -183,8 +183,7 @@ static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SIFFContext *c = s->priv_data;
-    int size, size2;
-    uint8_t *snddata;
+    int size;
 
     if (c->has_video){
         if (c->cur_frame >= c->frames)
