@@ -310,7 +310,7 @@ tests/asynth1.sw: tests/audiogen$(EXESUF)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 tests/seek_test$(EXESUF): tests/seek_test.c .libs
-	$(CC) $(LDFLAGS) $(CFLAGS) -DHAVE_AV_CONFIG_H -o $@ $< $(EXTRALIBS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $< $(EXTRALIBS)
 
 
 .PHONY: all lib videohook documentation install* wininstaller uninstall*
