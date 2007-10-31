@@ -1006,6 +1006,7 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
         if ( book_idx >= vf->num_books ) {
             av_log( vc->avccontext, AV_LOG_ERROR,
                     "floor0 dec: booknumber too high!\n" );
+            book_idx= 0;
             //FIXME: look above
         }
         AV_DEBUG( "floor0 dec: booknumber: %u\n", book_idx );
