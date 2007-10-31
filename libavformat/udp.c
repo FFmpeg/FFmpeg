@@ -153,8 +153,11 @@ static int udp_ipv6_set_local(URLContext *h) {
     char sbuf[NI_MAXSERV];
     char hbuf[NI_MAXHOST];
     struct addrinfo *res0 = NULL, *res = NULL;
+    int family = AF_UNSPEC;
 
-    res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, AF_UNSPEC, AI_PASSIVE);
+    if (((struct sockaddr *) &s->dest_addr)->sa_family)
+        family = ((struct sockaddr *) &s->dest_addr)->sa_family;
+    res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, family, AI_PASSIVE);
     if (res0 == 0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {
@@ -277,7 +280,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     is_output = (flags & URL_WRONLY);
 
-    s = av_malloc(sizeof(UDPContext));
+    s = av_mallocz(sizeof(UDPContext));
     if (!s)
         return AVERROR(ENOMEM);
 
