@@ -259,7 +259,7 @@ OBJS-$(CONFIG_PCM_MULAW_DECODER)       += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_ENCODER)       += pcm.o
 
 OBJS-$(CONFIG_ADPCM_4XM_DECODER)       += adpcm.o
-OBJS-$(CONFIG_ADPCM_ADX_DECODER)       += adx.o
+OBJS-$(CONFIG_ADPCM_ADX_DECODER)       += adxdec.o
 OBJS-$(CONFIG_ADPCM_ADX_ENCODER)       += adxenc.o
 OBJS-$(CONFIG_ADPCM_CT_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_DECODER)        += adpcm.o
