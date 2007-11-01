@@ -249,35 +249,18 @@ static int adx_encode_frame(AVCodecContext *avctx,
 
 #endif //CONFIG_ENCODERS
 
-static int is_adx(const unsigned char *buf,size_t bufsize)
+/* return data offset or 0 */
+static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size_t bufsize)
 {
-    int    offset;
+    int offset;
 
     if (buf[0]!=0x80) return 0;
     offset = (AV_RB32(buf)^0x80000000)+4;
     if (bufsize<offset || memcmp(buf+offset-6,"(c)CRI",6)) return 0;
-    return offset;
-}
 
-/* return data offset or 6 */
-static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size_t bufsize)
-{
-    int offset;
-    int channels,freq,size;
-
-    offset = is_adx(buf,bufsize);
-    if (offset==0) return 0;
-
-    channels = buf[7];
-    freq = AV_RB32(buf+8);
-    size = AV_RB32(buf+12);
-
-//    printf("freq=%d ch=%d\n",freq,channels);
-
-    avctx->sample_rate = freq;
-    avctx->channels = channels;
-    avctx->bit_rate = freq*channels*18*8/32;
-//    avctx->frame_size = 18*channels;
+    avctx->channels    = buf[7];
+    avctx->sample_rate = AV_RB32(buf+8);
+    avctx->bit_rate    = avctx->sample_rate*avctx->channels*18*8/32;
 
     return offset;
 }
