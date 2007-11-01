@@ -243,30 +243,30 @@ void avcodec_register_all(void)
     REGISTER_DECODER (XAN_DPCM, xan_dpcm);
 
     /* adpcm codecs */
-    REGISTER_ENCDEC  (ADPCM_4XM, adpcm_4xm);
+    REGISTER_DECODER (ADPCM_4XM, adpcm_4xm);
     REGISTER_ENCDEC  (ADPCM_ADX, adpcm_adx);
-    REGISTER_ENCDEC  (ADPCM_CT, adpcm_ct);
-    REGISTER_ENCDEC  (ADPCM_EA, adpcm_ea);
+    REGISTER_DECODER (ADPCM_CT, adpcm_ct);
+    REGISTER_DECODER (ADPCM_EA, adpcm_ea);
     REGISTER_DECODER (ADPCM_EA_R1, adpcm_ea_r1);
     REGISTER_DECODER (ADPCM_EA_R2, adpcm_ea_r2);
     REGISTER_DECODER (ADPCM_EA_R3, adpcm_ea_r3);
     REGISTER_ENCDEC  (ADPCM_G726, adpcm_g726);
     REGISTER_DECODER (ADPCM_IMA_AMV, adpcm_ima_amv);
-    REGISTER_ENCDEC  (ADPCM_IMA_DK3, adpcm_ima_dk3);
-    REGISTER_ENCDEC  (ADPCM_IMA_DK4, adpcm_ima_dk4);
+    REGISTER_DECODER (ADPCM_IMA_DK3, adpcm_ima_dk3);
+    REGISTER_DECODER (ADPCM_IMA_DK4, adpcm_ima_dk4);
     REGISTER_DECODER (ADPCM_IMA_EA_EACS, adpcm_ima_ea_eacs);
     REGISTER_DECODER (ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead);
-    REGISTER_ENCDEC  (ADPCM_IMA_QT, adpcm_ima_qt);
-    REGISTER_ENCDEC  (ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
+    REGISTER_DECODER (ADPCM_IMA_QT, adpcm_ima_qt);
+    REGISTER_DECODER (ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
     REGISTER_ENCDEC  (ADPCM_IMA_WAV, adpcm_ima_wav);
-    REGISTER_ENCDEC  (ADPCM_IMA_WS, adpcm_ima_ws);
+    REGISTER_DECODER (ADPCM_IMA_WS, adpcm_ima_ws);
     REGISTER_ENCDEC  (ADPCM_MS, adpcm_ms);
-    REGISTER_ENCDEC  (ADPCM_SBPRO_2, adpcm_sbpro_2);
-    REGISTER_ENCDEC  (ADPCM_SBPRO_3, adpcm_sbpro_3);
-    REGISTER_ENCDEC  (ADPCM_SBPRO_4, adpcm_sbpro_4);
+    REGISTER_DECODER (ADPCM_SBPRO_2, adpcm_sbpro_2);
+    REGISTER_DECODER (ADPCM_SBPRO_3, adpcm_sbpro_3);
+    REGISTER_DECODER (ADPCM_SBPRO_4, adpcm_sbpro_4);
     REGISTER_ENCDEC  (ADPCM_SWF, adpcm_swf);
     REGISTER_DECODER (ADPCM_THP, adpcm_thp);
-    REGISTER_ENCDEC  (ADPCM_XA, adpcm_xa);
+    REGISTER_DECODER (ADPCM_XA, adpcm_xa);
     REGISTER_ENCDEC  (ADPCM_YAMAHA, adpcm_yamaha);
 
     /* subtitles */
