@@ -48,8 +48,8 @@ void *av_realloc(void *ptr, unsigned int size);
 
 /**
  * Free memory which has been allocated with av_malloc(z)() or av_realloc().
- * NOTE: ptr = NULL is explicitly allowed.
- * Note2: It is recommended that you use av_freep() instead.
+ * @note ptr = NULL is explicitly allowed.
+ * @note It is recommended that you use av_freep() instead.
  */
 void av_free(void *ptr);
 
@@ -65,7 +65,7 @@ char *av_strdup(const char *s);
 
 /**
  * Free memory and set the pointer to NULL.
- * @param ptr pointer to the pointer which should be freed.
+ * @param ptr Pointer to the pointer which should be freed.
  */
 void av_freep(void *ptr);
 
