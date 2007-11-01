@@ -265,19 +265,6 @@ static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size
     return offset;
 }
 
-#if 0
-static void dump(unsigned char *buf,size_t len)
-{
-    int i;
-    for(i=0;i<len;i++) {
-        if ((i&15)==0) av_log(NULL, AV_LOG_DEBUG, "%04x  ",i);
-        av_log(NULL, AV_LOG_DEBUG, "%02x ",buf[i]);
-        if ((i&15)==15) av_log(NULL, AV_LOG_DEBUG, "\n");
-    }
-    av_log(NULL, AV_LOG_ERROR, "\n");
-}
-#endif
-
 static int adx_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
                 uint8_t *buf0, int buf_size)
