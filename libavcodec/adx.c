@@ -176,7 +176,6 @@ static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t buf
     return 0x20+4;
 }
 
-static int adx_decode_init(AVCodecContext *avctx);
 static int adx_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
@@ -189,7 +188,6 @@ static int adx_encode_init(AVCodecContext *avctx)
 //    avctx->bit_rate = avctx->sample_rate*avctx->channels*18*8/32;
 
     av_log(avctx, AV_LOG_DEBUG, "adx encode init\n");
-    adx_decode_init(avctx);
 
     return 0;
 }
@@ -282,20 +280,6 @@ static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size
 //    avctx->frame_size = 18*channels;
 
     return offset;
-}
-
-static int adx_decode_init(AVCodecContext * avctx)
-{
-    ADXContext *c = avctx->priv_data;
-
-//    printf("adx_decode_init\n"); fflush(stdout);
-    c->prev[0].s1 = 0;
-    c->prev[0].s2 = 0;
-    c->prev[1].s1 = 0;
-    c->prev[1].s2 = 0;
-    c->header_parsed = 0;
-    c->in_temp = 0;
-    return 0;
 }
 
 #if 0
@@ -391,7 +375,7 @@ AVCodec adpcm_adx_decoder = {
     CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,
     sizeof(ADXContext),
-    adx_decode_init,
+    NULL,
     NULL,
     NULL,
     adx_decode_frame,
