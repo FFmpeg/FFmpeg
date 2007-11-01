@@ -158,11 +158,6 @@ static int adpcm_encode_init(AVCodecContext *avctx)
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
     switch(avctx->codec->id) {
-    case CODEC_ID_ADPCM_IMA_QT:
-        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec adpcm_ima_qt unsupported for encoding !\n");
-        avctx->frame_size = 64; /* XXX: can multiple of avctx->channels * 64 (left and right blocks are interleaved) */
-        return -1;
-        break;
     case CODEC_ID_ADPCM_IMA_WAV:
         avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
                                                              /* and we have 4 bytes per channel overhead */
@@ -446,8 +441,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 /*    n = (BLKSIZE - 4 * avctx->channels) / (2 * 8 * avctx->channels); */
 
     switch(avctx->codec->id) {
-    case CODEC_ID_ADPCM_IMA_QT: /* XXX: can't test until we get .mov writer */
-        break;
     case CODEC_ID_ADPCM_IMA_WAV:
         n = avctx->frame_size / 8;
             c->status[0].prev_sample = (signed short)samples[0]; /* XXX */
