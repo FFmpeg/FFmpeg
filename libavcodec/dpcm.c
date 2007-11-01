@@ -294,46 +294,19 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec roq_dpcm_decoder = {
-    "roq_dpcm",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_ROQ_DPCM,
-    sizeof(DPCMContext),
-    dpcm_decode_init,
-    NULL,
-    NULL,
-    dpcm_decode_frame,
+#define DPCM_DECODER(id, name)                  \
+AVCodec name ## _decoder = {                    \
+    #name,                                      \
+    CODEC_TYPE_AUDIO,                           \
+    id,                                         \
+    sizeof(DPCMContext),                        \
+    dpcm_decode_init,                           \
+    NULL,                                       \
+    NULL,                                       \
+    dpcm_decode_frame,                          \
 };
 
-AVCodec interplay_dpcm_decoder = {
-    "interplay_dpcm",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_INTERPLAY_DPCM,
-    sizeof(DPCMContext),
-    dpcm_decode_init,
-    NULL,
-    NULL,
-    dpcm_decode_frame,
-};
-
-AVCodec xan_dpcm_decoder = {
-    "xan_dpcm",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_XAN_DPCM,
-    sizeof(DPCMContext),
-    dpcm_decode_init,
-    NULL,
-    NULL,
-    dpcm_decode_frame,
-};
-
-AVCodec sol_dpcm_decoder = {
-    "sol_dpcm",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_SOL_DPCM,
-    sizeof(DPCMContext),
-    dpcm_decode_init,
-    NULL,
-    NULL,
-    dpcm_decode_frame,
-};
+DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm);
+DPCM_DECODER(CODEC_ID_ROQ_DPCM, roq_dpcm);
+DPCM_DECODER(CODEC_ID_SOL_DPCM, sol_dpcm);
+DPCM_DECODER(CODEC_ID_XAN_DPCM, xan_dpcm);
