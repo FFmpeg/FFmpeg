@@ -409,6 +409,8 @@ get_sync_ipts(const AVOutputStream *ost)
 }
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc){
+    int ret;
+
     while(bsfc){
         AVPacket new_pkt= *pkt;
         int a= av_bitstream_filter_filter(bsfc, avctx, NULL,
@@ -424,7 +426,11 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
         bsfc= bsfc->next;
     }
 
-    av_interleaved_write_frame(s, pkt);
+    ret= av_interleaved_write_frame(s, pkt);
+    if(ret < 0){
+        print_error("av_interleaved_write_frame()", ret);
+        exit(1);
+    }
 }
 
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
