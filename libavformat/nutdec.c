@@ -28,7 +28,7 @@
 #include <assert.h>
 
 static int get_str(ByteIOContext *bc, char *string, unsigned int maxlen){
-    unsigned int len= get_v(bc);
+    unsigned int len= ff_get_v(bc);
 
     if(len && maxlen)
         get_buffer(bc, string, FFMIN(len, maxlen));
@@ -47,14 +47,14 @@ static int get_str(ByteIOContext *bc, char *string, unsigned int maxlen){
 }
 
 static int64_t get_s(ByteIOContext *bc){
-    int64_t v = get_v(bc) + 1;
+    int64_t v = ff_get_v(bc) + 1;
 
     if (v&1) return -(v>>1);
     else     return  (v>>1);
 }
 
 static uint64_t get_fourcc(ByteIOContext *bc){
-    unsigned int len= get_v(bc);
+    unsigned int len= ff_get_v(bc);
 
     if     (len==2) return get_le16(bc);
     else if(len==4) return get_le32(bc);
@@ -63,7 +63,7 @@ static uint64_t get_fourcc(ByteIOContext *bc){
 
 #ifdef TRACE
 static inline uint64_t get_v_trace(ByteIOContext *bc, char *file, char *func, int line){
-    uint64_t v= get_v(bc);
+    uint64_t v= ff_get_v(bc);
 
     av_log(NULL, AV_LOG_DEBUG, "get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
@@ -82,7 +82,7 @@ static inline uint64_t get_vb_trace(ByteIOContext *bc, char *file, char *func, i
     av_log(NULL, AV_LOG_DEBUG, "get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
-#define get_v(bc)  get_v_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define ff_get_v(bc)  get_v_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_s(bc)  get_s_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vb(bc)  get_vb_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #endif
@@ -96,7 +96,7 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
     startcode= ff_crc04C11DB7_update(0, &startcode, 8);
 
     init_checksum(bc, ff_crc04C11DB7_update, startcode);
-    size= get_v(bc);
+    size= ff_get_v(bc);
     if(size > 4096)
         get_be32(bc);
     if(get_checksum(bc) && size > 4096)
@@ -160,7 +160,7 @@ static int nut_probe(AVProbeData *p){
 }
 
 #define GET_V(dst, check) \
-    tmp= get_v(bc);\
+    tmp= ff_get_v(bc);\
     if(!(check)){\
         av_log(s, AV_LOG_ERROR, "Error " #dst " is (%"PRId64")\n", tmp);\
         return -1;\
@@ -192,7 +192,7 @@ static int decode_main_header(NUTContext *nut){
     GET_V(tmp              , tmp >=2 && tmp <= 3)
     GET_V(stream_count     , tmp > 0 && tmp <=MAX_STREAMS)
 
-    nut->max_distance = get_v(bc);
+    nut->max_distance = ff_get_v(bc);
     if(nut->max_distance > 65536){
         av_log(s, AV_LOG_DEBUG, "max_distance %d\n", nut->max_distance);
         nut->max_distance= 65536;
@@ -213,20 +213,20 @@ static int decode_main_header(NUTContext *nut){
     tmp_mul=1;
     tmp_stream=0;
     for(i=0; i<256;){
-        int tmp_flags = get_v(bc);
-        int tmp_fields= get_v(bc);
+        int tmp_flags = ff_get_v(bc);
+        int tmp_fields= ff_get_v(bc);
         if(tmp_fields>0) tmp_pts   = get_s(bc);
-        if(tmp_fields>1) tmp_mul   = get_v(bc);
-        if(tmp_fields>2) tmp_stream= get_v(bc);
-        if(tmp_fields>3) tmp_size  = get_v(bc);
+        if(tmp_fields>1) tmp_mul   = ff_get_v(bc);
+        if(tmp_fields>2) tmp_stream= ff_get_v(bc);
+        if(tmp_fields>3) tmp_size  = ff_get_v(bc);
         else             tmp_size  = 0;
-        if(tmp_fields>4) tmp_res   = get_v(bc);
+        if(tmp_fields>4) tmp_res   = ff_get_v(bc);
         else             tmp_res   = 0;
-        if(tmp_fields>5) count     = get_v(bc);
+        if(tmp_fields>5) count     = ff_get_v(bc);
         else             count     = tmp_mul - tmp_size;
 
         while(tmp_fields-- > 6)
-           get_v(bc);
+           ff_get_v(bc);
 
         if(count == 0 || i+count > 256){
             av_log(s, AV_LOG_ERROR, "illegal count %d at %d\n", count, i);
@@ -284,7 +284,7 @@ static int decode_stream_header(NUTContext *nut){
     if (!st)
         return AVERROR(ENOMEM);
 
-    class = get_v(bc);
+    class = ff_get_v(bc);
     tmp = get_fourcc(bc);
     st->codec->codec_tag= tmp;
     switch(class)
@@ -313,10 +313,10 @@ static int decode_stream_header(NUTContext *nut){
     }
     GET_V(stc->time_base_id    , tmp < nut->time_base_count);
     GET_V(stc->msb_pts_shift   , tmp < 16);
-    stc->max_pts_distance= get_v(bc);
+    stc->max_pts_distance= ff_get_v(bc);
     GET_V(stc->decode_delay    , tmp < 1000); //sanity limit, raise this if Moore's law is true
     st->codec->has_b_frames= stc->decode_delay;
-    get_v(bc); //stream flags
+    ff_get_v(bc); //stream flags
 
     GET_V(st->codec->extradata_size, tmp < (1<<30));
     if(st->codec->extradata_size){
@@ -327,16 +327,16 @@ static int decode_stream_header(NUTContext *nut){
     if (st->codec->codec_type == CODEC_TYPE_VIDEO){
         GET_V(st->codec->width , tmp > 0)
         GET_V(st->codec->height, tmp > 0)
-        st->codec->sample_aspect_ratio.num= get_v(bc);
-        st->codec->sample_aspect_ratio.den= get_v(bc);
+        st->codec->sample_aspect_ratio.num= ff_get_v(bc);
+        st->codec->sample_aspect_ratio.den= ff_get_v(bc);
         if((!st->codec->sample_aspect_ratio.num) != (!st->codec->sample_aspect_ratio.den)){
             av_log(s, AV_LOG_ERROR, "invalid aspect ratio\n");
             return -1;
         }
-        get_v(bc); /* csp type */
+        ff_get_v(bc); /* csp type */
     }else if (st->codec->codec_type == CODEC_TYPE_AUDIO){
         GET_V(st->codec->sample_rate , tmp > 0)
-        tmp= get_v(bc); // samplerate_den
+        tmp= ff_get_v(bc); // samplerate_den
         if(tmp > st->codec->sample_rate){
             av_log(s, AV_LOG_ERROR, "Bleh, libnut muxed this ;)\n");
             st->codec->sample_rate= tmp;
@@ -366,9 +366,9 @@ static int decode_info_header(NUTContext *nut){
 
     GET_V(stream_id_plus1, tmp <= s->nb_streams)
     chapter_id   = get_s(bc);
-    chapter_start= get_v(bc);
-    chapter_len  = get_v(bc);
-    count        = get_v(bc);
+    chapter_start= ff_get_v(bc);
+    chapter_len  = ff_get_v(bc);
+    count        = ff_get_v(bc);
     for(i=0; i<count; i++){
         get_str(bc, name, sizeof(name));
         value= get_s(bc);
@@ -383,7 +383,7 @@ static int decode_info_header(NUTContext *nut){
             value= get_s(bc);
         }else if(value == -4){
             type= "t";
-            value= get_v(bc);
+            value= ff_get_v(bc);
         }else if(value < -4){
             type= "r";
             get_s(bc);
@@ -420,8 +420,8 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     end= get_packetheader(nut, bc, 1, SYNCPOINT_STARTCODE);
     end += url_ftell(bc);
 
-    tmp= get_v(bc);
-    *back_ptr= nut->last_syncpoint_pos - 16*get_v(bc);
+    tmp= ff_get_v(bc);
+    *back_ptr= nut->last_syncpoint_pos - 16*ff_get_v(bc);
     if(*back_ptr < 0)
         return -1;
 
@@ -457,7 +457,7 @@ static int find_and_decode_index(NUTContext *nut){
     end= get_packetheader(nut, bc, 1, INDEX_STARTCODE);
     end += url_ftell(bc);
 
-    get_v(bc); //max_pts
+    ff_get_v(bc); //max_pts
     GET_V(syncpoint_count, tmp < INT_MAX/8 && tmp > 0)
     syncpoints= av_malloc(sizeof(int64_t)*syncpoint_count);
     has_keyframe= av_malloc(sizeof(int8_t)*(syncpoint_count+1));
@@ -470,7 +470,7 @@ static int find_and_decode_index(NUTContext *nut){
     for(i=0; i<s->nb_streams; i++){
         int64_t last_pts= -1;
         for(j=0; j<syncpoint_count;){
-            uint64_t x= get_v(bc);
+            uint64_t x= ff_get_v(bc);
             int type= x&1;
             int n= j;
             x>>=1;
@@ -501,10 +501,10 @@ static int find_and_decode_index(NUTContext *nut){
             assert(n<=syncpoint_count+1);
             for(; j<n; j++){
                 if(has_keyframe[j]){
-                    uint64_t B, A= get_v(bc);
+                    uint64_t B, A= ff_get_v(bc);
                     if(!A){
-                        A= get_v(bc);
-                        B= get_v(bc);
+                        A= ff_get_v(bc);
+                        B= ff_get_v(bc);
                         //eor_pts[j][i] = last_pts + A + B
                     }else
                         B= 0;
@@ -612,13 +612,13 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
     if(flags & FLAG_INVALID)
         return -1;
     if(flags & FLAG_CODED)
-        flags ^= get_v(bc);
+        flags ^= ff_get_v(bc);
     if(flags & FLAG_STREAM_ID){
         GET_V(*stream_id, tmp < s->nb_streams)
     }
     stc= &nut->stream[*stream_id];
     if(flags&FLAG_CODED_PTS){
-        int coded_pts= get_v(bc);
+        int coded_pts= ff_get_v(bc);
 //FIXME check last_pts validity?
         if(coded_pts < (1<<stc->msb_pts_shift)){
             *pts=ff_lsb2full(stc, coded_pts);
@@ -627,12 +627,12 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
     }else
         *pts= stc->last_pts + pts_delta;
     if(flags&FLAG_SIZE_MSB){
-        size += size_mul*get_v(bc);
+        size += size_mul*ff_get_v(bc);
     }
     if(flags&FLAG_RESERVED)
-        reserved_count= get_v(bc);
+        reserved_count= ff_get_v(bc);
     for(i=0; i<reserved_count; i++)
-        get_v(bc);
+        ff_get_v(bc);
     if(flags&FLAG_CHECKSUM){
         get_be32(bc); //FIXME check this
     }else if(size > 2*nut->max_distance || FFABS(stc->last_pts - *pts) > stc->max_pts_distance){

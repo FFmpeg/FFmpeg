@@ -472,7 +472,7 @@ uint64_t get_be64(ByteIOContext *s)
     return val;
 }
 
-uint64_t get_v(ByteIOContext *bc){
+uint64_t ff_get_v(ByteIOContext *bc){
     uint64_t val = 0;
     int tmp;
 
