@@ -27,17 +27,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-static uint64_t get_v(ByteIOContext *bc){
-    uint64_t val = 0;
-    int tmp;
-
-    do{
-        tmp = get_byte(bc);
-        val= (val<<7) + (tmp&127);
-    }while(tmp&128);
-    return val;
-}
-
 static int get_str(ByteIOContext *bc, char *string, unsigned int maxlen){
     unsigned int len= get_v(bc);
 

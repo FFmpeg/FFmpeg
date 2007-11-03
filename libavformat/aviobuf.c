@@ -472,6 +472,17 @@ uint64_t get_be64(ByteIOContext *s)
     return val;
 }
 
+uint64_t get_v(ByteIOContext *bc){
+    uint64_t val = 0;
+    int tmp;
+
+    do{
+        tmp = get_byte(bc);
+        val= (val<<7) + (tmp&127);
+    }while(tmp&128);
+    return val;
+}
+
 /* link with avio functions */
 
 #ifdef CONFIG_MUXERS
