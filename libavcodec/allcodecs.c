@@ -250,6 +250,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (ADPCM_EA_R1, adpcm_ea_r1);
     REGISTER_DECODER (ADPCM_EA_R2, adpcm_ea_r2);
     REGISTER_DECODER (ADPCM_EA_R3, adpcm_ea_r3);
+    REGISTER_DECODER (ADPCM_EA_XAS, adpcm_ea_xas);
     REGISTER_ENCDEC  (ADPCM_G726, adpcm_g726);
     REGISTER_DECODER (ADPCM_IMA_AMV, adpcm_ima_amv);
     REGISTER_DECODER (ADPCM_IMA_DK3, adpcm_ima_dk3);

@@ -33,6 +33,7 @@
  * EA ADPCM R1/R2/R3 decoder by Peter Ross (pross@xvid.org)
  * EA IMA EACS decoder by Peter Ross (pross@xvid.org)
  * EA IMA SEAD decoder by Peter Ross (pross@xvid.org)
+ * EA ADPCM XAS decoder by Peter Ross (pross@xvid.org)
  * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
  *
  * Features and limitations:
@@ -1284,6 +1285,37 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         samples += 28 * samples_in_chunk * avctx->channels;
         break;
     }
+    case CODEC_ID_ADPCM_EA_XAS:
+        if (samples_end-samples < 32*4*avctx->channels
+            || buf_size < (4+15)*4*avctx->channels) {
+            src += buf_size;
+            break;
+        }
+        for (channel=0; channel<avctx->channels; channel++) {
+            int coeff[2][4], shift[4];
+            short *s2, *s = &samples[channel];
+            for (n=0; n<4; n++, s+=32*avctx->channels) {
+                for (i=0; i<2; i++)
+                    coeff[i][n] = ea_adpcm_table[(src[0]&0x0F)+4*i];
+                shift[n] = (src[2]&0x0F) + 8;
+                for (s2=s, i=0; i<2; i++, src+=2, s2+=avctx->channels)
+                    s2[0] = (src[0]&0xF0) + (src[1]<<8);
+            }
+
+            for (m=2; m<32; m+=2) {
+                s = &samples[m*avctx->channels + channel];
+                for (n=0; n<4; n++, src++, s+=32*avctx->channels) {
+                    for (s2=s, i=0; i<8; i+=4, s2+=avctx->channels) {
+                        int level = ((*src & (0xF0>>i)) << (24+i)) >> shift[n];
+                        int pred  = s2[-1*avctx->channels] * coeff[0][n]
+                                  + s2[-2*avctx->channels] * coeff[1][n];
+                        s2[0] = av_clip_int16((level + pred + 0x80) >> 8);
+                    }
+                }
+            }
+        }
+        samples += 32*4*avctx->channels;
+        break;
     case CODEC_ID_ADPCM_IMA_AMV:
     case CODEC_ID_ADPCM_IMA_SMJPEG:
         c->status[0].predictor = (int16_t)bytestream_get_le16(&src);
@@ -1554,6 +1586,7 @@ ADPCM_DECODER(CODEC_ID_ADPCM_EA, adpcm_ea);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R1, adpcm_ea_r1);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R2, adpcm_ea_r2);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R3, adpcm_ea_r3);
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_XAS, adpcm_ea_xas);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
