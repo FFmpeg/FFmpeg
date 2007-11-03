@@ -486,6 +486,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
         rm->videobufpos = 8*rm->slices + 1;
         rm->cur_slice = 0;
         rm->curpic_num = pic_num;
+        rm->pktpos = url_ftell(pb);
     }
     if(type == 2){
         len = FFMIN(len, pos);
@@ -512,6 +513,8 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
          if(av_new_packet(pkt, ssize) < 0)
              return AVERROR(ENOMEM);
          memcpy(pkt->data, rm->videobuf, ssize);
+         pkt->pts = AV_NOPTS_VALUE;
+         pkt->pos = rm->pktpos;
          return 0;
     }
 

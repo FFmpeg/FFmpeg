@@ -51,6 +51,7 @@ typedef struct {
     int videobufpos;   ///< position for the next slice in the video buffer
     int curpic_num;    ///< picture number of current frame
     int cur_slice, slices;
+    int64_t pktpos;    ///< first slice position in file
     /// Audio descrambling matrix parameters
     uint8_t *audiobuf; ///< place to store reordered audio data
     int64_t audiotimestamp; ///< Audio packet timestamp

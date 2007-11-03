@@ -1936,114 +1936,114 @@ ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:23263 size:8524 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-rv10.rm
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:10379 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:10388 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2040 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2049 flags:0
 ret: 0 st: 0 ts:0.788000 flags:0
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1630 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1639 flags:0
 ret: 0 st: 0 ts:-0.317000 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st:-1 ts:2.576668 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2040 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2049 flags:0
 ret: 0 st: 0 ts:0.365000 flags:0
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1391 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1400 flags:0
 ret: 0 st: 0 ts:-0.741000 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st:-1 ts:2.153336 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1630 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1639 flags:0
 ret: 0 st: 0 ts:-0.058000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st: 0 ts:2.836000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1391 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1400 flags:0
 ret: 0 st: 0 ts:-0.482000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st: 0 ts:2.413000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2040 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2049 flags:0
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st: 0 ts:-0.905000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st: 0 ts:1.989000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1630 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:72737 size:1639 flags:0
 ret: 0 st:-1 ts:-0.222493 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ret: 0 st: 0 ts:2.672000 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:1998 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:152304 size:2007 flags:0
 ret: 0 st: 0 ts:1.566000 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2040 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:110921 size:2049 flags:0
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1391 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:41239 size:1400 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1562 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:10637 size:1571 flags:0
 ----------------
 tests/data/a-rv20.rm
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:9352 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:9361 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1891 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1900 flags:0
 ret: 0 st: 0 ts:0.788000 flags:0
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1648 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1657 flags:0
 ret: 0 st: 0 ts:-0.317000 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st:-1 ts:2.576668 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1891 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1900 flags:0
 ret: 0 st: 0 ts:0.365000 flags:0
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1438 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1447 flags:0
 ret: 0 st: 0 ts:-0.741000 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st:-1 ts:2.153336 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1648 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1657 flags:0
 ret: 0 st: 0 ts:-0.058000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st: 0 ts:2.836000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1438 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1447 flags:0
 ret: 0 st: 0 ts:-0.482000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st: 0 ts:2.413000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1891 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1900 flags:0
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st: 0 ts:-0.905000 flags:0
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st: 0 ts:1.989000 flags:1
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1648 flags:0
+ret: 0 st: 0 dts:1.000000 pts:1.000000 pos:63237 size:1657 flags:0
 ret: 0 st:-1 ts:-0.222493 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ret: 0 st: 0 ts:2.672000 flags:0
-ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1905 flags:0
+ret: 0 st: 0 dts:1.960000 pts:1.960000 pos:130821 size:1914 flags:0
 ret: 0 st: 0 ts:1.566000 flags:1
-ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1891 flags:0
+ret: 0 st: 0 dts:1.480000 pts:1.480000 pos:95674 size:1900 flags:0
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1438 flags:0
+ret: 0 st: 0 dts:0.520000 pts:0.520000 pos:35101 size:1447 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1075 flags:0
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:9610 size:1084 flags:0
 ----------------
 tests/data/a-snow.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:2987 flags:1
@@ -3216,7 +3216,7 @@ ret:-1 st:-1 ts:0.460008 flags:0
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-libav.rm
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:394 size:31384 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:394 size:31393 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:31790 size:278 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
