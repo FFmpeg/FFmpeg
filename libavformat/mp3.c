@@ -435,7 +435,11 @@ static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, offset_t base)
     const offset_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeContext c;
 
-    ff_mpegaudio_decode_header(&c, get_be32(&s->pb));
+    v = get_be32(&s->pb);
+    if(ff_mpa_check_header(v) < 0)
+      return;
+
+    ff_mpegaudio_decode_header(&c, v);
     if(c.layer != 3)
         return;
 
