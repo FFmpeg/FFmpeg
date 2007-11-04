@@ -382,7 +382,7 @@ Yes, but the Cygwin or MinGW tools @emph{must} be used to compile FFmpeg.
 Read the @emph{Windows} section in the FFmpeg documentation to find more
 information.
 
-To get help and instructions for using FFmpeg under Windows, check out
+To get help and instructions for building FFmpeg under Windows, check out
 the FFmpeg Windows Help Forum at
 @url{http://arrozcru.no-ip.org/ffmpeg/}.
 
