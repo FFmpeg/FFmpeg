@@ -101,6 +101,7 @@ version <next>
 - H.264 PAFF decoding
 - Nellymoser ASAO decoder
 - Beam Software SIFF demuxer and decoder
+- libvorbis Vorbis decoding removed in favor of native decoder
 
 version 0.4.9-pre1:
 

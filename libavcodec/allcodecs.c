@@ -272,7 +272,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
     REGISTER_ENCODER (LIBTHEORA, libtheora);
-    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
+    REGISTER_ENCODER (LIBVORBIS, libvorbis);
     REGISTER_ENCODER (LIBX264, libx264);
     REGISTER_ENCODER (LIBXVID, libxvid);
 
