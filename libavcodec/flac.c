@@ -628,9 +628,9 @@ static int flac_decode_frame(AVCodecContext *avctx,
     if (!metadata_parse(s))
     {
         tmp = show_bits(&s->gb, 16);
-        if(tmp != 0xFFF8){
+        if((tmp & 0xFFFE) != 0xFFF8){
             av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
-            while(get_bits_count(&s->gb)/8+2 < buf_size && show_bits(&s->gb, 16) != 0xFFF8)
+            while(get_bits_count(&s->gb)/8+2 < buf_size && (show_bits(&s->gb, 16) & 0xFFFE) != 0xFFF8)
                 skip_bits(&s->gb, 8);
             goto end; // we may not have enough bits left to decode a frame, so try next time
         }
