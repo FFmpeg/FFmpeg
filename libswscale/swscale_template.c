@@ -2073,7 +2073,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     assert(src1 == src2);
 }
 
-static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
+static inline void RENAME(rgb16ToY)(uint8_t *dst, uint8_t *src, int width)
 {
     int i;
     for (i=0; i<width; i++)
@@ -2087,7 +2087,7 @@ static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
     }
 }
 
-static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
     int i;
     assert(src1==src2);
@@ -2109,7 +2109,7 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     }
 }
 
-static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
+static inline void RENAME(rgb15ToY)(uint8_t *dst, uint8_t *src, int width)
 {
     int i;
     for (i=0; i<width; i++)
@@ -2123,7 +2123,7 @@ static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
     }
 }
 
-static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+static inline void RENAME(rgb15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
     int i;
     assert(src1==src2);
@@ -2206,7 +2206,7 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     }
 }
 
-static inline void RENAME(rgb16ToY)(uint8_t *dst, uint8_t *src, int width)
+static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
 {
     int i;
     for (i=0; i<width; i++)
@@ -2220,7 +2220,7 @@ static inline void RENAME(rgb16ToY)(uint8_t *dst, uint8_t *src, int width)
     }
 }
 
-static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
     int i;
     assert(src1 == src2);
@@ -2239,7 +2239,7 @@ static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     }
 }
 
-static inline void RENAME(rgb15ToY)(uint8_t *dst, uint8_t *src, int width)
+static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
 {
     int i;
     for (i=0; i<width; i++)
@@ -2253,7 +2253,7 @@ static inline void RENAME(rgb15ToY)(uint8_t *dst, uint8_t *src, int width)
     }
 }
 
-static inline void RENAME(rgb15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
     int i;
     assert(src1 == src2);
