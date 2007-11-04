@@ -188,13 +188,13 @@ endif
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 
 uninstall-progs:
-	rm -f $(addprefix $(BINDIR)/, $(ALLPROGS))
+	rm -f $(addprefix "$(BINDIR)/", $(ALLPROGS))
 
 uninstall-man:
-	rm -f $(addprefix $(MANDIR)/man1/,$(ALLMANPAGES))
+	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 uninstall-vhook:
-	rm -f $(addprefix $(SHLIBDIR)/,$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
+	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
 
 uninstall-libs:
