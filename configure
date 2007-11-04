@@ -936,9 +936,9 @@ die_unknown(){
 }
 
 show_list() {
-    for part in $*; do
-        echo $part | sed 's/_[^_]*$//'
-    done | sort
+    suffix=_$1
+    shift
+    echo $* | sed s/$suffix//g | tr ' ' '\n' | sort
     exit 0
 }
 
@@ -1016,8 +1016,8 @@ for opt do
   --list-*)
     NAME="${opt#--list-}"
     is_in $NAME $COMPONENT_LIST || die_unknown $opt
-    NAME=$(toupper ${NAME%s})
-    eval show_list \$${NAME}_LIST
+    NAME=${NAME%s}
+    eval show_list $NAME \$$(toupper $NAME)_LIST
   ;;
   --help|-h) show_help
   ;;
