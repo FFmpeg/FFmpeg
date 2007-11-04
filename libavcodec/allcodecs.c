@@ -98,8 +98,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER (INTERPLAY_VIDEO, interplay_video);
     REGISTER_ENCDEC  (JPEGLS, jpegls);
     REGISTER_DECODER (KMVC, kmvc);
-    REGISTER_ENCODER (LIBX264, libx264);
-    REGISTER_ENCODER (LIBXVID, libxvid);
     REGISTER_ENCODER (LJPEG, ljpeg);
     REGISTER_DECODER (LOCO, loco);
     REGISTER_DECODER (MDEC, mdec);
@@ -182,15 +180,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER (DSICINAUDIO, dsicinaudio);
     REGISTER_ENCDEC  (FLAC, flac);
     REGISTER_DECODER (IMC, imc);
-    REGISTER_ENCDEC  (LIBAMR_NB, libamr_nb);
-    REGISTER_ENCDEC  (LIBAMR_WB, libamr_wb);
-    REGISTER_DECODER (LIBA52, liba52);
-    REGISTER_ENCODER (LIBFAAC, libfaac);
-    REGISTER_DECODER (LIBFAAD, libfaad);
-    REGISTER_ENCDEC  (LIBGSM, libgsm);
-    REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
-    REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
-    REGISTER_ENCODER (LIBTHEORA, libtheora);
     REGISTER_DECODER (MACE3, mace3);
     REGISTER_DECODER (MACE6, mace6);
     REGISTER_ENCDEC  (MP2, mp2);
@@ -214,7 +203,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (WMAV1, wmav1);
     REGISTER_ENCDEC  (WMAV2, wmav2);
     REGISTER_DECODER (WS_SND1, ws_snd1);
-    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
 
     /* pcm codecs */
     REGISTER_ENCDEC  (PCM_ALAW, pcm_alaw);
@@ -273,6 +261,20 @@ void avcodec_register_all(void)
     /* subtitles */
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
+
+    /* external libraries */
+    REGISTER_DECODER (LIBA52, liba52);
+    REGISTER_ENCDEC  (LIBAMR_NB, libamr_nb);
+    REGISTER_ENCDEC  (LIBAMR_WB, libamr_wb);
+    REGISTER_ENCODER (LIBFAAC, libfaac);
+    REGISTER_DECODER (LIBFAAD, libfaad);
+    REGISTER_ENCDEC  (LIBGSM, libgsm);
+    REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
+    REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
+    REGISTER_ENCODER (LIBTHEORA, libtheora);
+    REGISTER_ENCDEC  (LIBVORBIS, libvorbis);
+    REGISTER_ENCODER (LIBX264, libx264);
+    REGISTER_ENCODER (LIBXVID, libxvid);
 
     /* parsers */
     REGISTER_PARSER  (AAC, aac);
