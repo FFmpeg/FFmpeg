@@ -802,6 +802,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 #endif
 
     if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) s->first_rtcp_ntp_time = ntp_time;
+    s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, AV_TIME_BASE_Q,
                           s1->streams[0]->time_base) + s->base_timestamp;
     put_byte(&s1->pb, (RTP_VERSION << 6));
@@ -984,7 +985,8 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     /* XXX: mpeg pts hardcoded. RTCP send every 0.5 seconds */
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
-    if (s->first_packet || rtcp_bytes >= RTCP_SR_SIZE) {
+    if (s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
+                           (av_gettime() - s->last_rtcp_ntp_time > 5000000))) {
         rtcp_send_sr(s1, av_gettime());
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
