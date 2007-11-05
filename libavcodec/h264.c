@@ -7763,6 +7763,8 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
 
         } else {
+            cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
+
         //FIXME do something with unavailable reference frames
 
 #if 0 //decode order
@@ -7845,7 +7847,6 @@ static int decode_frame(AVCodecContext *avctx,
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 #endif
-    pict->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
     return get_consumed_bytes(s, buf_index, buf_size);
 }
 #if 0
