@@ -451,7 +451,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             *dst++ = 0; /* unknown */
             samples++;
             if (avctx->channels == 2) {
-                c->status[1].prev_sample = (signed short)samples[1];
+                c->status[1].prev_sample = (signed short)samples[0];
 /*                c->status[1].step_index = 0; */
                 bytestream_put_le16(&dst, c->status[1].prev_sample);
                 *dst++ = (unsigned char)c->status[1].step_index;
@@ -936,10 +936,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         for(i=0; i<avctx->channels; i++){
             cs = &(c->status[i]);
-            cs->predictor = (int16_t)(src[0] + (src[1]<<8));
+            cs->predictor = *samples++ = (int16_t)(src[0] + (src[1]<<8));
             src+=2;
-
-        // XXX: is this correct ??: *samples++ = cs->predictor;
 
             cs->step_index = *src++;
             if (cs->step_index > 88){

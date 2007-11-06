@@ -176,10 +176,10 @@ aefe11ab5067621a1c674859d6413891 *./tests/data/a-ac3.rm
 24279 ./tests/data/a-g726.wav
 888f2f016e608d044a1bacbca5497ed2 *./tests/data/out.wav
 stddev:8368.02 PSNR:17.87 bytes:96256
-de3f0e1f50b19bd8572fdd3dee2e72c4 *./tests/data/a-adpcm_ima.wav
+3b969c43e45582f713e3c35faee9e0cc *./tests/data/a-adpcm_ima.wav
 266300 ./tests/data/a-adpcm_ima.wav
-60178d48204f5662d91776e36eddc82e *./tests/data/out.wav
-stddev:11441.89 PSNR:15.15 bytes:1054720
+947196b1739a9d6fe0c29424cf61cd8c *./tests/data/out.wav
+stddev:904.20 PSNR:37.19 bytes:1056768
 628d4789cf9ee16a756ac54b7fd8650d *./tests/data/a-adpcm_ms.wav
 267320 ./tests/data/a-adpcm_ms.wav
 91a84bb4f319a3a0bf0c0441b3d3a529 *./tests/data/out.wav
