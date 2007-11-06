@@ -188,6 +188,75 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
     return 0;
 }
 
+static int
+ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
+{
+    ByteIOContext *pb = &s->pb;
+    unsigned int v;
+    int codec_data_size, size, res = -1;
+    int64_t codec_pos;
+
+    codec_data_size = get_be32(pb);
+    codec_pos = url_ftell(pb);
+    v = get_be32(pb);
+    if (v == MKTAG(0xfd, 'a', 'r', '.')) {
+        /* ra type header */
+        if (rm_read_audio_stream_info(s, st, 0))
+            return -1;
+    } else {
+        int fps, fps2;
+        if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
+        fail1:
+            av_log(st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
+            goto skip;
+        }
+        st->codec->codec_tag = get_le32(pb);
+//        av_log(NULL, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
+        if (   st->codec->codec_tag != MKTAG('R', 'V', '1', '0')
+            && st->codec->codec_tag != MKTAG('R', 'V', '2', '0')
+            && st->codec->codec_tag != MKTAG('R', 'V', '3', '0')
+            && st->codec->codec_tag != MKTAG('R', 'V', '4', '0'))
+            goto fail1;
+        st->codec->width = get_be16(pb);
+        st->codec->height = get_be16(pb);
+        st->codec->time_base.num= 1;
+        fps= get_be16(pb);
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        get_be32(pb);
+        fps2= get_be16(pb);
+        get_be16(pb);
+
+        st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
+
+        if(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
+            //check is redundant as get_buffer() will catch this
+            av_log(s, AV_LOG_ERROR, "st->codec->extradata_size too large\n");
+            return -1;
+        }
+        st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+
+//        av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
+        st->codec->time_base.den = fps * st->codec->time_base.num;
+        switch(((uint8_t*)st->codec->extradata)[4]>>4){
+        case 1: st->codec->codec_id = CODEC_ID_RV10; break;
+        case 2: st->codec->codec_id = CODEC_ID_RV20; break;
+        case 3: st->codec->codec_id = CODEC_ID_RV30; break;
+        case 4: st->codec->codec_id = CODEC_ID_RV40; break;
+        default: goto fail1;
+        }
+    }
+
+    res = 0;
+skip:
+    /* skip codec info */
+    size = url_ftell(pb) - codec_pos;
+    url_fskip(pb, codec_data_size - size);
+
+    return res;
+}
+
+
 static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
 {
     RMContext *rm = s->priv_data;
@@ -205,9 +274,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     RMContext *rm = s->priv_data;
     AVStream *st;
     ByteIOContext *pb = &s->pb;
-    unsigned int tag, v;
-    int tag_size, size, codec_data_size, i;
-    int64_t codec_pos;
+    unsigned int tag;
+    int tag_size, i;
     unsigned int start_time, duration;
     char buf[128];
     int flags = 0;
@@ -279,63 +347,10 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->duration = duration;
             get_str8(pb, buf, sizeof(buf)); /* desc */
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
-            codec_data_size = get_be32(pb);
-            codec_pos = url_ftell(pb);
             st->codec->codec_type = CODEC_TYPE_DATA;
             av_set_pts_info(st, 64, 1, 1000);
-
-            v = get_be32(pb);
-            if (v == MKTAG(0xfd, 'a', 'r', '.')) {
-                /* ra type header */
-                if (rm_read_audio_stream_info(s, st, 0))
-                    return -1;
-            } else {
-                int fps, fps2;
-                if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
-                fail1:
-                    av_log(st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
-                    goto skip;
-                }
-                st->codec->codec_tag = get_le32(pb);
-//                av_log(NULL, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
-                if (   st->codec->codec_tag != MKTAG('R', 'V', '1', '0')
-                    && st->codec->codec_tag != MKTAG('R', 'V', '2', '0')
-                    && st->codec->codec_tag != MKTAG('R', 'V', '3', '0')
-                    && st->codec->codec_tag != MKTAG('R', 'V', '4', '0'))
-                    goto fail1;
-                st->codec->width = get_be16(pb);
-                st->codec->height = get_be16(pb);
-                st->codec->time_base.num= 1;
-                fps= get_be16(pb);
-                st->codec->codec_type = CODEC_TYPE_VIDEO;
-                get_be32(pb);
-                fps2= get_be16(pb);
-                get_be16(pb);
-
-                st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
-
-                if(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
-                    //check is redundant as get_buffer() will catch this
-                    av_log(s, AV_LOG_ERROR, "st->codec->extradata_size too large\n");
-                    return -1;
-                }
-                st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-
-//                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
-                st->codec->time_base.den = fps * st->codec->time_base.num;
-                switch(((uint8_t*)st->codec->extradata)[4]>>4){
-                case 1: st->codec->codec_id = CODEC_ID_RV10; break;
-                case 2: st->codec->codec_id = CODEC_ID_RV20; break;
-                case 3: st->codec->codec_id = CODEC_ID_RV30; break;
-                case 4: st->codec->codec_id = CODEC_ID_RV40; break;
-                default: goto fail1;
-                }
-            }
-skip:
-            /* skip codec info */
-            size = url_ftell(pb) - codec_pos;
-            url_fskip(pb, codec_data_size - size);
+            if (ff_rm_read_mdpr_codecdata(s, st) < 0)
+                return -1;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
             goto header_end;
