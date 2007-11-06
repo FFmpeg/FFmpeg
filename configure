@@ -1567,7 +1567,7 @@ enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
 enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
-enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -logg
+enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
 enabled libx264    && require x264 x264.h x264_encoder_open -lx264
 enabled libxvid    && require Xvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
