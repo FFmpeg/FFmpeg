@@ -3767,8 +3767,10 @@ static int init_poc(H264Context *h){
         s->current_picture_ptr->field_poc[1]= field_poc[1];
         s->current_picture_ptr->poc = field_poc[1];
     }
-    if(!FIELD_PICTURE || !s->first_field)
-        s->current_picture_ptr->poc= FFMIN(field_poc[0], field_poc[1]);
+    if(!FIELD_PICTURE || !s->first_field) {
+        Picture *cur = s->current_picture_ptr;
+        cur->poc= FFMIN(cur->field_poc[0], cur->field_poc[1]);
+    }
 
     return 0;
 }
