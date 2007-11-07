@@ -27,7 +27,7 @@
 #include "bitstream.h"
 #include "bytestream.h"
 #include "bswap.h"
-#include "ogg2.h"
+#include "oggdec.h"
 #include "avstring.h"
 
 extern int

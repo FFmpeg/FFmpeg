@@ -27,7 +27,7 @@
 #include "bitstream.h"
 #include "bytestream.h"
 #include "intreadwrite.h"
-#include "ogg2.h"
+#include "oggdec.h"
 #include "riff.h"
 
 static int

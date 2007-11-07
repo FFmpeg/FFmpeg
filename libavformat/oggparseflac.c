@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include "avformat.h"
 #include "bitstream.h"
-#include "ogg2.h"
+#include "oggdec.h"
 
 #define FLAC_STREAMINFO_SIZE 0x22
 

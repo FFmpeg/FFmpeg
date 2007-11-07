@@ -31,7 +31,7 @@
 
 
 #include <stdio.h>
-#include "ogg2.h"
+#include "oggdec.h"
 #include "avformat.h"
 
 #define MAX_PAGE_SIZE 65307

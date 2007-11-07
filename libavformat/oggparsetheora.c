@@ -26,7 +26,7 @@
 #include "avformat.h"
 #include "bitstream.h"
 #include "bswap.h"
-#include "ogg2.h"
+#include "oggdec.h"
 
 typedef struct theora_params {
     int gpshift;
