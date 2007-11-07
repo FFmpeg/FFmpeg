@@ -48,38 +48,6 @@ static ogg_codec_t *ogg_codecs[] = {
     NULL
 };
 
-#if 0                           // CONFIG_MUXERS
-static int
-ogg_write_header (AVFormatContext * avfcontext)
-{
-}
-
-static int
-ogg_write_packet (AVFormatContext * avfcontext, AVPacket * pkt)
-{
-}
-
-
-static int
-ogg_write_trailer (AVFormatContext * avfcontext)
-{
-}
-
-
-AVOutputFormat ogg_muxer = {
-    "ogg",
-    "Ogg format",
-    "application/ogg",
-    "ogg",
-    sizeof (OggContext),
-    CODEC_ID_VORBIS,
-    0,
-    ogg_write_header,
-    ogg_write_packet,
-    ogg_write_trailer,
-};
-#endif //CONFIG_MUXERS
-
 //FIXME We could avoid some structure duplication
 static int
 ogg_save (AVFormatContext * s)
