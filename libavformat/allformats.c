@@ -49,6 +49,7 @@ void av_register_all(void)
     avcodec_init();
     avcodec_register_all();
 
+    /* (de)muxers */
     REGISTER_DEMUXER  (AAC, aac);
     REGISTER_MUXDEMUX (AC3, ac3);
     REGISTER_MUXER    (ADTS, adts);
@@ -170,6 +171,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (X11_GRAB_DEVICE, x11_grab_device);
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
+    /* protocols */
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (HTTP, http);
     REGISTER_PROTOCOL (PIPE, pipe);
