@@ -314,7 +314,7 @@ following image formats are supported:
 @tab Codec used in Delphine Software games.
 @item Intel Music Coder      @tab      @tab X
 @item Musepack               @tab      @tab X
-@tab Only SV7 is supported
+@tab SV7 and SV8 are supported
 @item DT$ Coherent Audio     @tab      @tab X
 @item ATRAC 3                @tab      @tab X
 @item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported

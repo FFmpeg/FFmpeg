@@ -86,6 +86,7 @@ OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3.o
 OBJS-$(CONFIG_MP4_MUXER)                 += movenc.o riff.o isom.o
 OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o
+OBJS-$(CONFIG_MPC8_DEMUXER)              += mpc8.o
 OBJS-$(CONFIG_MPEG1SYSTEM_MUXER)         += mpegenc.o
 OBJS-$(CONFIG_MPEG1VCD_MUXER)            += mpegenc.o
 OBJS-$(CONFIG_MPEG2DVD_MUXER)            += mpegenc.o
