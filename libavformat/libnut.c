@@ -151,7 +151,7 @@ static int nut_write_trailer(AVFormatContext * avf) {
 }
 
 AVOutputFormat libnut_muxer = {
-    "nut",
+    "libnut",
     "nut format",
     "video/x-nut",
     "nut",
