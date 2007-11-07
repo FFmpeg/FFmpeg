@@ -38,9 +38,13 @@
 #define GSTR_TAG MKTAG('G', 'S', 'T', 'R')
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
+#define kVGT_TAG MKTAG('k', 'V', 'G', 'T')    /* TGV i-frame */
+#define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
+#define MPCh_TAG MKTAG('M', 'P', 'C', 'h')    /* MPEG2 */
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
+#define MVIh_TAG MKTAG('M', 'V', 'I', 'h')    /* CMV header */
 
 typedef struct EaDemuxContext {
     int big_endian;
@@ -309,7 +313,11 @@ static int ea_probe(AVProbeData *p)
     case ISNh_TAG:
     case SCHl_TAG:
     case SEAD_TAG:
+    case kVGT_TAG:
+    case MADk_TAG:
+    case MPCh_TAG:
     case MVhd_TAG:
+    case MVIh_TAG:
         return AVPROBE_SCORE_MAX;
     }
     return 0;
