@@ -107,14 +107,24 @@ static int mpegps_probe(AVProbeData *p)
 typedef struct MpegDemuxContext {
     int32_t header_state;
     unsigned char psm_es_type[256];
+    int sofdec;
 } MpegDemuxContext;
 
 static int mpegps_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
     MpegDemuxContext *m = s->priv_data;
+    uint8_t buffer[8192];
+    char *p;
+
     m->header_state = 0xff;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
+
+    get_buffer(&s->pb, buffer, sizeof(buffer));
+    if ((p=memchr(buffer, 'S', sizeof(buffer))))
+        if (!memcmp(p, "Sofdec", 6))
+            m->sofdec = 1;
+    url_fseek(&s->pb, -sizeof(buffer), SEEK_CUR);
 
     /* no need to do more */
     return 0;
@@ -449,7 +459,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         type = CODEC_TYPE_VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_MP2;
+        codec_id = m->sofdec ? CODEC_ID_ADPCM_ADX : CODEC_ID_MP2;
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_AC3;
