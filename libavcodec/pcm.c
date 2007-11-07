@@ -483,7 +483,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     return src - buf;
 }
 
-#define PCM_CODEC(id, name)                     \
+#ifdef CONFIG_ENCODERS
+#define PCM_ENCODER(id,name)                    \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -493,7 +494,13 @@ AVCodec name ## _encoder = {                    \
     pcm_encode_frame,                           \
     pcm_encode_close,                           \
     NULL,                                       \
-};                                              \
+};
+#else
+#define PCM_ENCODER(id,name)
+#endif
+
+#ifdef CONFIG_DECODERS
+#define PCM_DECODER(id,name)                    \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -503,7 +510,13 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     pcm_decode_frame,                           \
-}
+};
+#else
+#define PCM_DECODER(id,name)
+#endif
+
+#define PCM_CODEC(id, name)                     \
+PCM_ENCODER(id,name) PCM_DECODER(id,name)
 
 PCM_CODEC(CODEC_ID_PCM_S32LE, pcm_s32le);
 PCM_CODEC(CODEC_ID_PCM_S32BE, pcm_s32be);
