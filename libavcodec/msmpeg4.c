@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "msmpeg4.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist !
@@ -42,7 +43,6 @@
 
 #define DC_VLC_BITS 9
 #define CBPY_VLC_BITS 6
-#define INTER_INTRA_VLC_BITS 3
 #define V1_INTRA_CBPC_VLC_BITS 6
 #define V1_INTER_CBPC_VLC_BITS 6
 #define V2_INTRA_CBPC_VLC_BITS 3
@@ -50,8 +50,6 @@
 #define MV_VLC_BITS 9
 #define V2_MV_VLC_BITS 9
 #define TEX_VLC_BITS 9
-#define MB_NON_INTRA_VLC_BITS 9
-#define MB_INTRA_VLC_BITS 9
 
 #define II_BITRATE 128*1024
 #define MBAC_BITRATE 50*1024
@@ -61,12 +59,7 @@
 static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
 
-void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
-int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
-                                       int n, int coded, const uint8_t *scantable);
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
-int ff_msmpeg4_decode_motion(MpegEncContext * s,
-                                 int *mx_ptr, int *my_ptr);
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
 #ifdef CONFIG_ENCODERS
@@ -75,7 +68,6 @@ static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, 
 #endif //CONFIG_ENCODERS
 static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
-int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
 /* vc1 externs */
 extern uint8_t wmv3_dc_scale_table[32];
@@ -1145,6 +1137,7 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         s->decode_mb= msmpeg4v34_decode_mb;
         break;
     case 5:
+        if (ENABLE_WMV2_DECODER)
         s->decode_mb= ff_wmv2_decode_mb;
     case 6:
         //FIXME + TODO VC1 decode mb
@@ -1949,9 +1942,3 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
     *my_ptr = my;
     return 0;
 }
-
-/* cleanest way to support it
- * there is too much shared between versions so that we cant have 1 file per version & 1 common
- * as allmost everything would be in the common file
- */
-#include "wmv2.c"

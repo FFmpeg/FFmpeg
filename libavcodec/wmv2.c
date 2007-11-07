@@ -23,6 +23,11 @@
  * wmv2 codec.
  */
 
+#include "avcodec.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "msmpeg4.h"
+#include "msmpeg4data.h"
 #include "simple_idct.h"
 
 #define SKIP_TYPE_NONE 0
