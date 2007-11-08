@@ -124,7 +124,7 @@ static int mpegps_read_header(AVFormatContext *s,
     if ((p=memchr(buffer, 'S', sizeof(buffer))))
         if (!memcmp(p, "Sofdec", 6))
             m->sofdec = 1;
-    url_fseek(&s->pb, -sizeof(buffer), SEEK_CUR);
+    url_fseek(&s->pb, -(offset_t)sizeof(buffer), SEEK_CUR);
 
     /* no need to do more */
     return 0;
