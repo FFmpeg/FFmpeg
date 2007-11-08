@@ -85,9 +85,6 @@ typedef struct GranuleDef {
     int32_t sb_hybrid[SBLIMIT * 18]; /* 576 samples */
 } GranuleDef;
 
-#define MODE_EXT_MS_STEREO 2
-#define MODE_EXT_I_STEREO  1
-
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
 

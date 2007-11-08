@@ -29,6 +29,9 @@
 
 #include "common.h"
 
+#define MODE_EXT_MS_STEREO 2
+#define MODE_EXT_I_STEREO  1
+
 extern const uint16_t ff_mpa_bitrate_tab[2][3][15];
 extern const uint16_t ff_mpa_freq_tab[3];
 extern const int32_t ff_mpa_enwindow[257];
