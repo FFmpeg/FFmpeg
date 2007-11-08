@@ -83,18 +83,18 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
         buf_len < len * 4 / 3 + 12)
         return NULL;
     ret = dst = buf;
-        while (bytes_remaining) {
-            i_bits = (i_bits << 8) + *src++;
-            bytes_remaining--;
-            i_shift += 8;
+    while (bytes_remaining) {
+        i_bits = (i_bits << 8) + *src++;
+        bytes_remaining--;
+        i_shift += 8;
 
-            do {
-                *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
-                i_shift -= 6;
-            } while (i_shift > 6 || (bytes_remaining == 0 && i_shift > 0));
-        }
-        while ((dst - ret) & 3)
-            *dst++ = '=';
+        do {
+            *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
+            i_shift -= 6;
+        } while (i_shift > 6 || (bytes_remaining == 0 && i_shift > 0));
+    }
+    while ((dst - ret) & 3)
+        *dst++ = '=';
     *dst = '\0';
 
     return ret;
