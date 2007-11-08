@@ -629,7 +629,7 @@ resync:
                     goto resync;
                 else {
                     rm->sub_packet_cnt = 0;
-                    rm->audio_stream_num = i;
+                    rm->audio_stream_num = st->index;
                     rm->audio_pkt_cnt = h * w / st->codec->block_align - 1;
                     // Release first audio packet
                     av_new_packet(pkt, st->codec->block_align);
@@ -639,7 +639,7 @@ resync:
                 }
             } else if (st->codec->codec_id == CODEC_ID_AAC) {
                 int x;
-                rm->audio_stream_num = i;
+                rm->audio_stream_num = st->index;
                 rm->sub_packet_cnt = (get_be16(pb) & 0xf0) >> 4;
                 if (rm->sub_packet_cnt) {
                     for (x = 0; x < rm->sub_packet_cnt; x++)
@@ -661,7 +661,7 @@ resync:
             goto resync;
         }
 
-        pkt->stream_index = i;
+        pkt->stream_index = st->index;
 
 #if 0
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
