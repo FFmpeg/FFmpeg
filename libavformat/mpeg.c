@@ -114,17 +114,18 @@ static int mpegps_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
     MpegDemuxContext *m = s->priv_data;
-    uint8_t buffer[8192];
-    char *p;
+    const char *sofdec = "Sofdec";
+    int v, i = 0;
 
     m->header_state = 0xff;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    get_buffer(&s->pb, buffer, sizeof(buffer));
-    if ((p=memchr(buffer, 'S', sizeof(buffer)-5)))
-        if (!memcmp(p, "Sofdec", 6))
-            m->sofdec = 1;
-    url_fseek(&s->pb, -(offset_t)sizeof(buffer), SEEK_CUR);
+    m->sofdec = -1;
+    do {
+        v = get_byte(&s->pb);
+        m->header_state = m->header_state << 8 | v;
+        m->sofdec++;
+    } while (v == sofdec[i] && i++ < 6);
 
     /* no need to do more */
     return 0;
@@ -269,10 +270,24 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         goto redo;
     if (startcode == SYSTEM_HEADER_START_CODE)
         goto redo;
-    if (startcode == PADDING_STREAM ||
-        startcode == PRIVATE_STREAM_2) {
-        /* skip them */
+    if (startcode == PADDING_STREAM) {
+        url_fskip(&s->pb, get_be16(&s->pb));
+        goto redo;
+    }
+    if (startcode == PRIVATE_STREAM_2) {
         len = get_be16(&s->pb);
+        if (!m->sofdec) {
+            while (len-- >= 6) {
+                if (get_byte(&s->pb) == 'S') {
+                    uint8_t buf[5];
+                    get_buffer(&s->pb, buf, sizeof(buf));
+                    m->sofdec = !memcmp(buf, "ofdec", 5);
+                    len -= sizeof(buf);
+                    break;
+                }
+            }
+            m->sofdec -= !m->sofdec;
+        }
         url_fskip(&s->pb, len);
         goto redo;
     }
@@ -459,7 +474,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         type = CODEC_TYPE_VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
-        codec_id = m->sofdec ? CODEC_ID_ADPCM_ADX : CODEC_ID_MP2;
+        codec_id = m->sofdec > 0 ? CODEC_ID_ADPCM_ADX : CODEC_ID_MP2;
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_AC3;
