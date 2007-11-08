@@ -535,6 +535,21 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
     return 1;
 }
 
+static inline void
+rm_ac3_swap_bytes (AVStream *st, AVPacket *pkt)
+{
+    uint8_t *ptr;
+    int j;
+
+    if (st->codec->codec_id == CODEC_ID_AC3) {
+        ptr = pkt->data;
+        for (j=0;j<pkt->size;j+=2) {
+            FFSWAP(int, ptr[0], ptr[1]);
+            ptr += 2;
+        }
+    }
+}
+
 static int
 ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
                     int *seq, int *flags, int64_t *timestamp)
@@ -658,9 +673,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
-    int i, len, j;
+    int i, len;
     int64_t timestamp, pos;
-    uint8_t *ptr;
     int flags;
 
     if (rm->audio_pkt_cnt) {
@@ -710,14 +724,7 @@ resync:
         }
     }
 
-    /* for AC3, needs to swap bytes */
-    if (st->codec->codec_id == CODEC_ID_AC3) {
-        ptr = pkt->data;
-        for(j=0;j<pkt->size;j+=2) {
-            FFSWAP(int, ptr[0], ptr[1]);
-            ptr += 2;
-        }
-    }
+    rm_ac3_swap_bytes(st, pkt);
     return 0;
 }
 
