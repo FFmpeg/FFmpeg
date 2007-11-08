@@ -113,7 +113,6 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
                                             riff.o
-OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
 OBJS-$(CONFIG_OSS_DEMUXER)               += audio.o
 OBJS-$(CONFIG_OSS_MUXER)                 += audio.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o
@@ -161,6 +160,7 @@ OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 OBJS-$(CONFIG_LIBDC1394_DEMUXER)         += libdc1394.o
 OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
 OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
+OBJS-$(CONFIG_LIBOGG_MUXER)              += libogg.o
 
 OBJS-$(CONFIG_VHOOK)                     += framehook.o
 

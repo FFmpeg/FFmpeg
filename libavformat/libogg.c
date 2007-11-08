@@ -151,8 +151,8 @@ static int ogg_write_trailer(AVFormatContext *avfcontext) {
 }
 
 
-AVOutputFormat ogg_muxer = {
-    "ogg",
+AVOutputFormat libogg_muxer = {
+    "libogg",
     "Ogg format",
     "application/ogg",
     "ogg",
