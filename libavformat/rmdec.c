@@ -632,6 +632,27 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
     return 0;
 }
 
+static void
+ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    ByteIOContext *pb = &s->pb;
+    RMContext *rm = s->priv_data;
+
+    assert (rm->audio_pkt_cnt > 0);
+
+    if (st->codec->codec_id == CODEC_ID_AAC)
+        av_get_packet(pb, pkt, rm->sub_packet_lengths[rm->sub_packet_cnt - rm->audio_pkt_cnt]);
+    else {
+        av_new_packet(pkt, st->codec->block_align);
+        memcpy(pkt->data, rm->audiobuf + st->codec->block_align *
+               (rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
+               st->codec->block_align);
+    }
+    rm->audio_pkt_cnt--;
+    pkt->flags = 0;
+    pkt->stream_index = st->index;
+}
+
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMContext *rm = s->priv_data;
@@ -645,17 +666,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
         st = s->streams[rm->audio_stream_num];
-        if (st->codec->codec_id == CODEC_ID_AAC)
-            av_get_packet(pb, pkt, rm->sub_packet_lengths[rm->sub_packet_cnt - rm->audio_pkt_cnt]);
-        else {
-        av_new_packet(pkt, st->codec->block_align);
-        memcpy(pkt->data, rm->audiobuf + st->codec->block_align *
-               (rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
-               st->codec->block_align);
-        }
-        rm->audio_pkt_cnt--;
-        pkt->flags = 0;
-        pkt->stream_index = st->index;
+        ff_rm_retrieve_cache(s, st, pkt);
     } else if (rm->old_format) {
         st = s->streams[0];
         if (st->codec->codec_id == CODEC_ID_RA_288) {
