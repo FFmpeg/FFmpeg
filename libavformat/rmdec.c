@@ -193,7 +193,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = &s->pb;
     unsigned int v;
-    int codec_data_size, size, res = -1;
+    int codec_data_size, size;
     int64_t codec_pos;
 
     codec_data_size = get_be32(pb);
@@ -247,13 +247,12 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
         }
     }
 
-    res = 0;
 skip:
     /* skip codec info */
     size = url_ftell(pb) - codec_pos;
     url_fskip(pb, codec_data_size - size);
 
-    return res;
+    return 0;
 }
 
 
