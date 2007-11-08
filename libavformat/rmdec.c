@@ -655,7 +655,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         rm->audio_pkt_cnt--;
         pkt->flags = 0;
-        pkt->stream_index = rm->audio_stream_num;
+        pkt->stream_index = st->index;
     } else if (rm->old_format) {
         st = s->streams[0];
         if (st->codec->codec_id == CODEC_ID_RA_288) {
