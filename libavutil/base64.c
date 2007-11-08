@@ -83,7 +83,6 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
         buf_len < len * 4 / 3 + 12)
         return NULL;
     ret = dst = buf;
-    if (len) {                  // special edge case, what should we really do here?
         while (bytes_remaining) {
             i_bits = (i_bits << 8) + *src++;
             bytes_remaining--;
@@ -96,7 +95,6 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
         }
         while ((dst - ret) & 3)
             *dst++ = '=';
-    }
     *dst = '\0';
 
     return ret;
