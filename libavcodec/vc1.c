@@ -3762,29 +3762,29 @@ static void vc1_decode_blocks(VC1Context *v)
         ff_intrax8_decode_picture(&v->x8, 2*v->pq+v->halfpq, v->pq*(!v->pquantizer) );
     }else
 
-    switch(v->s.pict_type) {
-    case I_TYPE:
-        if(v->profile == PROFILE_ADVANCED)
-            vc1_decode_i_blocks_adv(v);
-        else
-            vc1_decode_i_blocks(v);
-        break;
-    case P_TYPE:
-        if(v->p_frame_skipped)
-            vc1_decode_skip_blocks(v);
-        else
-            vc1_decode_p_blocks(v);
-        break;
-    case B_TYPE:
-        if(v->bi_type){
+        switch(v->s.pict_type) {
+        case I_TYPE:
             if(v->profile == PROFILE_ADVANCED)
                 vc1_decode_i_blocks_adv(v);
             else
                 vc1_decode_i_blocks(v);
-        }else
-            vc1_decode_b_blocks(v);
-        break;
-    }
+            break;
+        case P_TYPE:
+            if(v->p_frame_skipped)
+                vc1_decode_skip_blocks(v);
+            else
+                vc1_decode_p_blocks(v);
+            break;
+        case B_TYPE:
+            if(v->bi_type){
+                if(v->profile == PROFILE_ADVANCED)
+                    vc1_decode_i_blocks_adv(v);
+                else
+                    vc1_decode_i_blocks(v);
+            }else
+                vc1_decode_b_blocks(v);
+            break;
+        }
 }
 
 /** Find VC-1 marker in buffer
