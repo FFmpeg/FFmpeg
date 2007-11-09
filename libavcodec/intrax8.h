@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef FFMPEG_INTRAX8_H
+#define FFMPEG_INTRAX8_H
+
 typedef struct{
     VLC * j_ac_vlc[4];//they point to the static j_mb_vlc
     VLC * j_orient_vlc;
@@ -46,3 +49,5 @@ typedef struct{
 
 void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s);
 int  ff_intrax8_decode_picture(IntraX8Context * w, int quant, int halfpq);
+
+#endif /* FFMPEG_INTRAX8_H */
