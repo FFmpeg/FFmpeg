@@ -2561,14 +2561,10 @@ void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
 }
 #endif /* CONFIG_VC1_DECODER||CONFIG_WMV3_DECODER */
 
-#if defined(CONFIG_WMV2_DECODER) || defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER)
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
-#endif
 
-#if defined(CONFIG_H264_ENCODER)
 /* H264 specific */
 void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx);
-#endif /* CONFIG_H264_ENCODER */
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
