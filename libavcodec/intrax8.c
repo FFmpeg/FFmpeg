@@ -380,7 +380,7 @@ static void x8_get_prediction(IntraX8Context * const w){
     c= w->prediction_table[2*s->mb_x-2 + !(s->mb_y&1) ];//block[x-1][y-1]
 
     w->est_run = FFMIN(b,a);
-    /*this condition have nothing to do with w->edges, even if it looks similar
+    /*this condition has nothing to do with w->edges, even if it looks similar
       it would triger if e.g. x=3;y=2;
       I guess somebody wrote something wrong and it became standard */
     if( (s->mb_x & s->mb_y) != 0 ) w->est_run=FFMIN(c,w->est_run);
