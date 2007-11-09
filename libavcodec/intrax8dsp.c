@@ -118,15 +118,13 @@ static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesi
     }
 //now calc the stuff we need
     if(edges&3){//mb_x==0 || mb_y==0){
+        int avg=(sum+4)>>3;
         if(edges&1){ //(mb_x==0) {//implies mb_y!=0
-            int avg=(sum+4)>>3;
             memset(dst+area1,avg,8+8+1);//areas 1,2 and 3 are averaged
-            sum+=avg*9;//8+1(egde pixel)
         }else{//implies y==0 x!=0
-            int avg=(sum+4)>>3;
             memset(dst+area3,avg, 1+16+8);//areas 3, 4,5,6
-            sum+=avg*9;
         }
+        sum+=avg*9;
     }else{
         uint8_t c;
         c=*(src-1-linesize);//the edge pixel,in the top line and left column
