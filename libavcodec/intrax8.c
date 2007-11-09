@@ -653,11 +653,9 @@ static inline void x8_init_block_index(MpegEncContext *s){ //FIXME maybe merge w
     s->dest[1] = s->current_picture.data[1];
     s->dest[2] = s->current_picture.data[2];
 
-    {
         s->dest[0] += s->mb_y *   linesize << 3;
         s->dest[1] += ( s->mb_y&(~1) ) * uvlinesize << 2;//chroma blocks are on add rows
         s->dest[2] += ( s->mb_y&(~1) ) * uvlinesize << 2;
-    }
 }
 
 /**
