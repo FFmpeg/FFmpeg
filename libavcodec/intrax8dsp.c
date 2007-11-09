@@ -126,8 +126,7 @@ static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesi
         }
         sum+=avg*9;
     }else{
-        uint8_t c;
-        c=*(src-1-linesize);//the edge pixel,in the top line and left column
+        uint8_t c=*(src-1-linesize);//the edge pixel,in the top line and left column
         dst[area3]=c;
         sum+=c;
         //edge pixel is not part of min/max
