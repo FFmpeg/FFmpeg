@@ -89,7 +89,7 @@ static void x8_vlc_init(){
 }
 #undef init_or_vlc
 
-static inline void x8_reset_vlc_tables(IntraX8Context * w){
+static void x8_reset_vlc_tables(IntraX8Context * w){
     memset(w->j_dc_vlc,0,sizeof(w->j_dc_vlc));
     memset(w->j_ac_vlc,0,sizeof(w->j_ac_vlc));
     w->j_orient_vlc=NULL;
@@ -643,7 +643,7 @@ block_placed:
     return 0;
 }
 
-static inline void x8_init_block_index(MpegEncContext *s){ //FIXME maybe merge with ff_*
+static void x8_init_block_index(MpegEncContext *s){ //FIXME maybe merge with ff_*
 //not s->linesize as this would be wrong for field pics
 //not that IntraX8 have interlace support ;)
     const int linesize  = s->current_picture.linesize[0];
