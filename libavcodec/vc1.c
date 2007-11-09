@@ -1234,17 +1234,17 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         break;
     }
 
-  if(!v->x8_type)
-  {
-    /* AC Syntax */
-    v->c_ac_table_index = decode012(gb);
-    if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
+    if(!v->x8_type)
     {
-        v->y_ac_table_index = decode012(gb);
+        /* AC Syntax */
+        v->c_ac_table_index = decode012(gb);
+        if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
+        {
+            v->y_ac_table_index = decode012(gb);
+        }
+        /* DC Syntax */
+        v->s.dc_table_index = get_bits1(gb);
     }
-    /* DC Syntax */
-    v->s.dc_table_index = get_bits1(gb);
-  }
 
     if(v->s.pict_type == BI_TYPE) {
         v->s.pict_type = B_TYPE;
