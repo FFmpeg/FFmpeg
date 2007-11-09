@@ -166,6 +166,24 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
                                      payload_type, c->sample_rate, c->channels,
                                      payload_type, config);
             break;
+        case CODEC_ID_PCM_S16BE:
+            if (payload_type >= 96)
+                av_strlcatf(buff, size, "a=rtpmap:%d L16/%d/%d\r\n",
+                                         payload_type,
+                                         c->sample_rate, c->channels);
+            break;
+        case CODEC_ID_PCM_MULAW:
+            if (payload_type >= 96)
+                av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",
+                                         payload_type,
+                                         c->sample_rate, c->channels);
+            break;
+        case CODEC_ID_PCM_ALAW:
+            if (payload_type >= 96)
+                av_strlcatf(buff, size, "a=rtpmap:%d PCMA/%d/%d\r\n",
+                                         payload_type,
+                                         c->sample_rate, c->channels);
+            break;
         default:
             /* Nothing special to do, here... */
             break;
