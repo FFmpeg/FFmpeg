@@ -3760,7 +3760,7 @@ static void vc1_decode_blocks(VC1Context *v)
     v->s.esc3_level_length = 0;
     if(v->x8_type){
         ff_intrax8_decode_picture(&v->x8, 2*v->pq+v->halfpq, v->pq*(!v->pquantizer) );
-    }else
+    }else{
 
         switch(v->s.pict_type) {
         case I_TYPE:
@@ -3785,6 +3785,7 @@ static void vc1_decode_blocks(VC1Context *v)
                 vc1_decode_b_blocks(v);
             break;
         }
+    }
 }
 
 /** Find VC-1 marker in buffer
