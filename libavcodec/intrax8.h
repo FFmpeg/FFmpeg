@@ -42,9 +42,6 @@ typedef struct{
     int chroma_orient;
     int orient;
     int est_run;
-//#ifdef DEBUG
-    int mode_index[10];//debug only
-//#endif
 } IntraX8Context;
 
 void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s);
