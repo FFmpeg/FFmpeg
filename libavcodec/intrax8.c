@@ -500,7 +500,7 @@ static const int16_t quant_table[64] = {
 };
 
 static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
-MpegEncContext * const s= w->s;
+    MpegEncContext * const s= w->s;
 
     uint8_t * scantable;
     int final,run,level;
