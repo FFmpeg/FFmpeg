@@ -339,7 +339,7 @@ static const uint8_t obmc16[256]={
   0,  0,  0,  0,  0,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0,
 //error:0.000022
 };
-#endif
+#endif /* 0 */
 
 //linear *64
 static const uint8_t obmc8[64]={
@@ -657,7 +657,7 @@ static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signe
             if(is_signed)
                 put_rac(c, state+11 + FFMIN(e,10), v < 0); //11..21
         }
-#endif
+#endif /* 1 */
     }else{
         put_rac(c, state+0, 1);
     }
@@ -1078,7 +1078,7 @@ static void horizontal_compose53i(IDWTELEM *b, int width){
 #else
     inv_lift(temp   , b   , b+w2, 1, 1, 1, width,  1, 2, 2, 0, 1);
     inv_lift(temp+w2, b+w2, temp, 1, 1, 1, width, -1, 0, 1, 1, 1);
-#endif
+#endif /* 0 */
     for(x=0; x<width2; x++){
         b[2*x    ]= temp[x   ];
         b[2*x + 1]= temp[x+w2];
@@ -2621,7 +2621,7 @@ assert(src_stride > 2*MB_SIZE + 5);
             }
         }
     }
-#endif
+#endif /* 0 */
 }
 
 static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * sb, IDWTELEM * old_buffer, int plane_index, int add, int mb_y){
@@ -4037,7 +4037,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
     memcpy(s->spatial_idwt_buffer, best_dequant, height * stride * sizeof(IDWTELEM)); //FIXME work with that directly insteda of copy at the end
 }
 
-#endif
+#endif /* QUANTIZE2==1 */
 
 static int encode_init(AVCodecContext *avctx)
 {
@@ -4912,5 +4912,4 @@ int64_t g=0;
 }
     return 0;
 }
-#endif
-
+#endif /* 0 */
