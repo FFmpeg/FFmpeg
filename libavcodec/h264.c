@@ -7767,6 +7767,8 @@ static int decode_frame(AVCodecContext *avctx,
 
         } else {
             cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
+            /* Derive top_field_first from field pocs. */
+            cur->top_field_first = cur->field_poc[0] < cur->field_poc[1];
 
         //FIXME do something with unavailable reference frames
 
