@@ -53,10 +53,10 @@ static void x8_vlc_init(){
               1)
 //set ac tables
     for(i=0;i<8;i++){
-        init_ac_vlc( j_ac_vlc[0][0][i], ff_x8_ac0_highquant_table[i][0] );
-        init_ac_vlc( j_ac_vlc[0][1][i], ff_x8_ac1_highquant_table[i][0] );
-        init_ac_vlc( j_ac_vlc[1][0][i], ff_x8_ac0_lowquant_table [i][0] );
-        init_ac_vlc( j_ac_vlc[1][1][i], ff_x8_ac1_lowquant_table [i][0] );
+        init_ac_vlc( j_ac_vlc[0][0][i], x8_ac0_highquant_table[i][0] );
+        init_ac_vlc( j_ac_vlc[0][1][i], x8_ac1_highquant_table[i][0] );
+        init_ac_vlc( j_ac_vlc[1][0][i], x8_ac0_lowquant_table [i][0] );
+        init_ac_vlc( j_ac_vlc[1][1][i], x8_ac1_lowquant_table [i][0] );
     }
 #undef init_ac_vlc
 
@@ -68,8 +68,8 @@ static void x8_vlc_init(){
         &src[0],4,2, \
         1);
     for(i=0;i<8;i++){
-        init_dc_vlc( j_dc_vlc[0][i], ff_x8_dc_highquant_table[i][0]);
-        init_dc_vlc( j_dc_vlc[1][i], ff_x8_dc_lowquant_table [i][0]);
+        init_dc_vlc( j_dc_vlc[0][i], x8_dc_highquant_table[i][0]);
+        init_dc_vlc( j_dc_vlc[1][i], x8_dc_lowquant_table [i][0]);
     }
 #undef init_dc_vlc
 
@@ -81,10 +81,10 @@ static void x8_vlc_init(){
     &src[0],4,2, \
     1);
     for(i=0;i<2;i++){
-        init_or_vlc( j_orient_vlc[0][i], ff_x8_orient_highquant_table[i][0]);
+        init_or_vlc( j_orient_vlc[0][i], x8_orient_highquant_table[i][0]);
     }
     for(i=0;i<4;i++){
-        init_or_vlc( j_orient_vlc[1][i], ff_x8_orient_lowquant_table [i][0])
+        init_or_vlc( j_orient_vlc[1][i], x8_orient_lowquant_table [i][0])
     }
 }
 #undef init_or_vlc

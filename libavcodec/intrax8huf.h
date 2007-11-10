@@ -22,7 +22,7 @@
 #include <inttypes.h>
 
 
-const uint16_t ff_x8_orient_lowquant_table[4][12][2]={
+static const uint16_t x8_orient_lowquant_table[4][12][2]={
     {//0
         {0x0000,  1}, {0x0004,  3}, {0x0005,  3}, {0x000C,  4},
         {0x000D,  4}, {0x0038,  6}, {0x001D,  5}, {0x0039,  6},
@@ -42,7 +42,7 @@ const uint16_t ff_x8_orient_lowquant_table[4][12][2]={
     }
 };
 
-const uint16_t ff_x8_orient_highquant_table[2][12][2]={
+static const uint16_t x8_orient_highquant_table[2][12][2]={
     {//0
         {0x0000,  2}, {0x0001,  2}, {0x0004,  3}, {0x0005,  3},
         {0x0006,  3}, {0x0038,  6}, {0x001D,  5}, {0x0039,  6},
@@ -56,7 +56,7 @@ const uint16_t ff_x8_orient_highquant_table[2][12][2]={
 #define MAX_OR_VLC_BITS 7
 
 
-const uint16_t ff_x8_dc_lowquant_table[8][34][2]={
+static const uint16_t x8_dc_lowquant_table[8][34][2]={
     {//0
         {0x0000,  5}, {0x0001,  4}, {0x0001,  5}, {0x0004,  5},
         {0x0005,  5}, {0x0006,  5}, {0x000E,  6}, {0x000F,  6},
@@ -140,7 +140,7 @@ const uint16_t ff_x8_dc_lowquant_table[8][34][2]={
     }
 };
 
-const uint16_t ff_x8_dc_highquant_table[8][34][2]={
+static const uint16_t x8_dc_highquant_table[8][34][2]={
     {//0
         {0x0000,  5}, {0x0001,  4}, {0x0002,  4}, {0x0001,  5},
         {0x0006,  5}, {0x0004,  4}, {0x0007,  5}, {0x000A,  5},
@@ -226,7 +226,7 @@ const uint16_t ff_x8_dc_highquant_table[8][34][2]={
 #define MAX_DC_VLC_BITS 14
 
 
-const uint16_t ff_x8_ac0_lowquant_table[8][77][2]={
+static const uint16_t x8_ac0_lowquant_table[8][77][2]={
     {//0
         {0x0000,  2}, {0x0002,  3}, {0x0006,  4}, {0x000E,  5},
         {0x001E,  6}, {0x003E,  7}, {0x003F,  7}, {0x0040,  7},
@@ -398,7 +398,7 @@ const uint16_t ff_x8_ac0_lowquant_table[8][77][2]={
     }
 };
 
-const uint16_t ff_x8_ac0_highquant_table[8][77][2]={
+static const uint16_t x8_ac0_highquant_table[8][77][2]={
     {//0
         {0x0000,  3}, {0x0002,  4}, {0x000C,  6}, {0x000D,  6},
         {0x001C,  7}, {0x000F,  6}, {0x1D00, 15}, {0x003B,  8},
@@ -570,7 +570,7 @@ const uint16_t ff_x8_ac0_highquant_table[8][77][2]={
     }
 };
 
-const uint16_t ff_x8_ac1_lowquant_table[8][77][2]={
+static const uint16_t x8_ac1_lowquant_table[8][77][2]={
     {//0
         {0x0000,  3}, {0x0002,  4}, {0x0003,  4}, {0x0008,  5},
         {0x0012,  6}, {0x0026,  7}, {0x0014,  6}, {0x004E,  8},
@@ -742,7 +742,7 @@ const uint16_t ff_x8_ac1_lowquant_table[8][77][2]={
     }
 };
 
-const uint16_t ff_x8_ac1_highquant_table[8][77][2]={
+static const uint16_t x8_ac1_highquant_table[8][77][2]={
     {//0
         {0x0000,  3}, {0x0002,  4}, {0x0006,  5}, {0x0007,  5},
         {0x0008,  5}, {0x0009,  5}, {0x0014,  6}, {0x002A,  7},
