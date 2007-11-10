@@ -236,7 +236,7 @@ Muxers/Demuxers:
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
-  ogg2.c, ogg2.h                        Mans Rullgard
+  oggdec.c, oggdec.h                    Mans Rullgard
   oggenc.c                              Baptiste Coudurier
   oggparsevorbis.c                      Mans Rullgard
   oggparseogm.c                         Mans Rullgard
