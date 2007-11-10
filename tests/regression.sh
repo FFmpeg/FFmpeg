@@ -715,6 +715,9 @@ do_audio_only aif
 # voc
 do_audio_only voc
 
+# ogg
+do_audio_only ogg
+
 ####################
 # pix_fmt conversions
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \

@@ -237,6 +237,7 @@ Muxers/Demuxers:
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
   ogg2.c, ogg2.h                        Mans Rullgard
+  oggenc.c                              Baptiste Coudurier
   oggparsevorbis.c                      Mans Rullgard
   oggparseogm.c                         Mans Rullgard
   psxstr.c                              Mike Melanson

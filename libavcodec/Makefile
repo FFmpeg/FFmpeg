@@ -292,6 +292,9 @@ OBJS-$(CONFIG_ADPCM_XA_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
+# libavformat dependencies
+OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
+
 # external codec libraries
 OBJS-$(CONFIG_LIBA52)                  += liba52.o
 OBJS-$(CONFIG_LIBAMR)                  += libamr.o

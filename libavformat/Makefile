@@ -113,6 +113,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
                                             riff.o
+OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
 OBJS-$(CONFIG_OSS_DEMUXER)               += audio.o
 OBJS-$(CONFIG_OSS_MUXER)                 += audio.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o
