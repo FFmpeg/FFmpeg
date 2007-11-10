@@ -18,8 +18,7 @@
 
 /**
 * @file intrax8dsp.c
- *@brief IntraX8 frame sub-decoder image manipulation routines
- *
+ *@brief IntraX8 frame subdecoder image manipulation routines
  */
 
 #include "dsputil.h"
@@ -48,19 +47,19 @@ area positions, #3 is 1 pixel only, other are 8 pixels
 #define area6 (8+8+1+16)
 
 /**
- Collect statistics and prepare the edge pixels required by the other spacial compensation functions.
+ Collect statistics and prepare the edge pixels required by the other spatial compensation functions.
 
  * @param src pointer to the beginning of the processed block
- * @param dst pointer to emu_edge, edge pixels are stored in way other compensation routines use.
+ * @param dst pointer to emu_edge, edge pixels are stored the way other compensation routines do.
  * @param linesize byte offset between 2 vertical pixels in the source image
- * @param range pointer to the variable where the range of edge pixels is to be stored (max-min values)
- * @param psum  pointer to the variable where the sum of edge pixels is to be stored
- * @param edges informs this routine that the block is on image border, so it have to interpolate the missing edge pixels.
-                and some of the edge pixels should be interpolated, flag have following meaning:
+ * @param range pointer to the variable where the edge pixel range is to be stored (max-min values)
+ * @param psum  pointer to the variable where the edge pixel sum is to be stored
+ * @param edges Informs this routine that the block is on an image border, so it has to interpolate the missing edge pixels.
+                and some of the edge pixels should be interpolated, the flag has the following meaning:
                 1   - mb_x==0 - first block in the row, interpolate area #1,#2,#3;
                 2   - mb_y==0 - first row, interpolate area #3,#4,#5,#6;
         note:   1|2 - mb_x==mb_y==0 - first block, use 0x80 value for all areas;
-                4   - mb_x>= (mb_width-1) last block on the row, interpolate area #5;
+                4   - mb_x>= (mb_width-1) last block in the row, interpolate area #5;
 */
 static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesize,
            int * range, int * psum,  int edges){
@@ -116,7 +115,7 @@ static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesi
         }
         memcpy(dst+area6, ptr-linesize, 8);//area6 always present in the above block
     }
-//now calc the stuff we need
+    //now calculate the stuff we need
     if(edges&3){//mb_x==0 || mb_y==0){
         int avg=(sum+4)>>3;
         if(edges&1){ //(mb_x==0) {//implies mb_y!=0
@@ -126,7 +125,7 @@ static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesi
         }
         sum+=avg*9;
     }else{
-        uint8_t c=*(src-1-linesize);//the edge pixel,in the top line and left column
+        uint8_t c=*(src-1-linesize);//the edge pixel, in the top line and left column
         dst[area3]=c;
         sum+=c;
         //edge pixel is not part of min/max
@@ -344,7 +343,7 @@ static void x8_loop_filter(uint8_t * ptr, const int a_stride, const int b_stride
             (FFABS(p2-p3) <= ql) +
             (FFABS(p3-p4) <= ql) +
             (FFABS(p4-p5) <= ql);
-        if(t>0){//you need at least 1 to be able to reach total score of 6.
+        if(t>0){//You need at least 1 to be able to reach a total score of 6.
             t+=
                 (FFABS(p5-p6) <= ql) +
                 (FFABS(p6-p7) <= ql) +

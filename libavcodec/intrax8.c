@@ -18,7 +18,7 @@
 
 /**
  * @file intrax8.c
- * @brief IntraX8 (J-Frame) sub-decoder, used by wmv2 and vc1
+ * @brief IntraX8 (J-Frame) subdecoder, used by WMV2 and VC-1
  */
 
 #include "avcodec.h"
@@ -194,7 +194,7 @@ static void x8_get_ac_rlf(IntraX8Context * const w, const int mode,
   i==20-21 r=0-1  l=2 ;r=i& %00001
   i==22    r=0    l=3 ;r=i& %00000
 l=lut_l[i/2]={0,0,0,0,0,0,0,0,1,1,2,3}[i>>1];// 11 10'01 01'00 00'00 00'00 00'00 00 => 0xE50000
-t=lut_mask[l]={0x0f,0x03,0x01,0x00}[l]; as i<256 the higher bits doesn't matter */
+t=lut_mask[l]={0x0f,0x03,0x01,0x00}[l]; as i<256 the higher bits do not matter */
         l=(0xE50000>>(i&(0x1E)))&3;/*0x1E or (~1) or ((i>>1)<<1)*/
         t=(0x01030F>>(l<<3));
 
@@ -291,7 +291,7 @@ static int x8_setup_spatial_predictor(IntraX8Context * const w, const int chroma
     w->flat_dc=0;
     if(range < quant || range < 3){
         w->orient=0;
-        if(range < 3){//yep you read right, idct error of +-1 may break decoding!
+        if(range < 3){//yep you read right, a +-1 idct error may break decoding!
             w->flat_dc=1;
             sum+=9;
             w->predicted_dc = (sum*6899)>>17;//((1<<17)+9)/(8+8+1+2)=6899
@@ -374,15 +374,15 @@ static void x8_get_prediction(IntraX8Context * const w){
             w->orient  = 0;
             return;
     }
-    //no edge cases.
+    //no edge cases
     b= w->prediction_table[2*s->mb_x   + !(s->mb_y&1) ];//block[x  ][y-1]
     a= w->prediction_table[2*s->mb_x-2 +  (s->mb_y&1) ];//block[x-1][y  ]
     c= w->prediction_table[2*s->mb_x-2 + !(s->mb_y&1) ];//block[x-1][y-1]
 
     w->est_run = FFMIN(b,a);
-    /*this condition has nothing to do with w->edges, even if it looks similar
-      it would triger if e.g. x=3;y=2;
-      I guess somebody wrote something wrong and it became standard */
+    /* This condition has nothing to do with w->edges, even if it looks
+       similar it would trigger if e.g. x=3;y=2;
+       I guess somebody wrote something wrong and it became standard. */
     if( (s->mb_x & s->mb_y) != 0 ) w->est_run=FFMIN(c,w->est_run);
     w->est_run>>=2;
 
@@ -645,7 +645,7 @@ block_placed:
 
 static void x8_init_block_index(MpegEncContext *s){ //FIXME maybe merge with ff_*
 //not s->linesize as this would be wrong for field pics
-//not that IntraX8 have interlace support ;)
+//not that IntraX8 has interlacing support ;)
     const int linesize  = s->current_picture.linesize[0];
     const int uvlinesize= s->current_picture.linesize[1];
 
@@ -679,13 +679,13 @@ void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s){
 /**
  * Decode single IntraX8 frame.
  * The parent codec must fill s->loopfilter and s->gb (bitstream).
- * The parent codec must call MPV_frame_start(), ff_er_frame_start() before calling this function
+ * The parent codec must call MPV_frame_start(), ff_er_frame_start() before calling this function.
  * The parent codec must call ff_er_frame_end(), MPV_frame_end() after calling this function.
  * This function does not use MPV_decode_mb().
  * lowres decoding is theoretically impossible.
  * @param w pointer to IntraX8Context
- * @param dquant doubled quantizer, it would be odd in case of vc1 halfpq==1
- * @param quant_offset offset away from zero.
+ * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
+ * @param quant_offset offset away from zero
  */
 //FIXME extern uint8_t wmv3_dc_scale_table[32];
 int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_offset){
@@ -724,7 +724,7 @@ int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_of
                 x8_get_prediction_chroma(w);
 
                 /*when setting up chroma, no vlc is read,
-                so no error condition could be reached*/
+                so no error condition can be reached*/
                 x8_setup_spatial_predictor(w,1);
                 if(x8_decode_intra_mb(w,1)) goto error;
 
