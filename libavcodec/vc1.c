@@ -809,12 +809,6 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     }
 
     v->res_x8 = get_bits1(gb); //reserved
-    if (v->res_x8)
-    {
-        av_log(avctx, AV_LOG_ERROR,
-               "1 for reserved RES_X8 is forbidden\n");
-        //return -1;
-    }
     v->multires = get_bits1(gb);
     v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
