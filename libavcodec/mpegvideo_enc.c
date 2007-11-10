@@ -1422,7 +1422,7 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
         av_log(s->avctx, AV_LOG_INFO, "warning, clipping %d dct coefficients to %d..%d\n", overflow, minlevel, maxlevel);
 }
 
-static void get_vissual_weight(int16_t *weight, uint8_t *ptr, int stride){
+static void get_visual_weight(int16_t *weight, uint8_t *ptr, int stride){
     int x, y;
 //FIXME optimize
     for(y=0; y<8; y++){
@@ -1626,15 +1626,15 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     }
 
     if(s->avctx->quantizer_noise_shaping){
-        if(!skip_dct[0]) get_vissual_weight(weight[0], ptr_y                 , wrap_y);
-        if(!skip_dct[1]) get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
-        if(!skip_dct[2]) get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
-        if(!skip_dct[3]) get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
-        if(!skip_dct[4]) get_vissual_weight(weight[4], ptr_cb                , wrap_c);
-        if(!skip_dct[5]) get_vissual_weight(weight[5], ptr_cr                , wrap_c);
+        if(!skip_dct[0]) get_visual_weight(weight[0], ptr_y                 , wrap_y);
+        if(!skip_dct[1]) get_visual_weight(weight[1], ptr_y              + 8, wrap_y);
+        if(!skip_dct[2]) get_visual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
+        if(!skip_dct[3]) get_visual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
+        if(!skip_dct[4]) get_visual_weight(weight[4], ptr_cb                , wrap_c);
+        if(!skip_dct[5]) get_visual_weight(weight[5], ptr_cr                , wrap_c);
         if(!s->chroma_y_shift){ /* 422 */
-            if(!skip_dct[6]) get_vissual_weight(weight[6], ptr_cb + (dct_offset>>1), wrap_c);
-            if(!skip_dct[7]) get_vissual_weight(weight[7], ptr_cr + (dct_offset>>1), wrap_c);
+            if(!skip_dct[6]) get_visual_weight(weight[6], ptr_cb + (dct_offset>>1), wrap_c);
+            if(!skip_dct[7]) get_visual_weight(weight[7], ptr_cr + (dct_offset>>1), wrap_c);
         }
         memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*mb_block_count);
     }

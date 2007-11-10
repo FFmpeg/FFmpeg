@@ -3895,7 +3895,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     return delta_qlog;
 }
 
-static void calculate_vissual_weight(SnowContext *s, Plane *p){
+static void calculate_visual_weight(SnowContext *s, Plane *p){
     int width = p->width;
     int height= p->height;
     int level, orientation, x, y;
@@ -4338,7 +4338,7 @@ redo_frame:
 
     if(s->last_spatial_decomposition_count != s->spatial_decomposition_count){
         for(plane_index=0; plane_index<3; plane_index++){
-            calculate_vissual_weight(s, &s->plane[plane_index]);
+            calculate_visual_weight(s, &s->plane[plane_index]);
         }
     }
 

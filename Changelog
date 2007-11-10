@@ -171,7 +171,7 @@ version 0.4.9-pre1:
 - SGI image format, encoding and decoding
 - H.264 loop filter support
 - H.264 CABAC support
-- nicer looking arrows for the motion vector vissualization
+- nicer looking arrows for the motion vector visualization
 - improved VCD support
 - audio timestamp drift compensation
 - MPEG-2 YUV 422/444 support
