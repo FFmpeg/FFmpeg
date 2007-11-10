@@ -632,7 +632,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be16(pb); /* revision level */
             get_be32(pb); /* vendor */
             get_be32(pb); /* temporal quality */
-            get_be32(pb); /* spacial quality */
+            get_be32(pb); /* spatial quality */
 
             st->codec->width = get_be16(pb); /* width */
             st->codec->height = get_be16(pb); /* height */
