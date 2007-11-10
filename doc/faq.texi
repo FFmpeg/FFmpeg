@@ -364,7 +364,7 @@ with @code{#ifdef}s related to the compiler.
 
 No. Microsoft Visual C++ is not compliant to the C99 standard and does
 not - among other things - support the inline assembly used in FFmpeg.
-If you wish - for whatever weird reason - to use MSVC++ for your
+If you wish to use MSVC++ for your
 project then you can link the MSVC++ code with libav* as long as
 you compile the latter with a working C compiler. For more information, see
 the @emph{Microsoft Visual C++ compatibility} section in the FFmpeg
@@ -375,6 +375,8 @@ past. However, they have all been rejected as too intrusive, especially
 since MinGW does the job adequately. None of the core developers
 work with MSVC++ and thus this item is low priority. Should you find
 the silver bullet that solves this problem, feel free to shoot it at us.
+
+We strongly recommend you to move over from MSVC++ to MinGW tools.
 
 @section Can I use FFmpeg or libavcodec under Windows?
 
