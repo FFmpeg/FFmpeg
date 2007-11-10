@@ -418,8 +418,8 @@ typedef struct DSPContext {
     op_pixels_func put_vc1_mspel_pixels_tab[16];
 
     /* intrax8 functions */
-    void (*x8_spacial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
-    void (*x8_setup_spacial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
+    void (*x8_spatial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
+    void (*x8_setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
            int * range, int * sum,  int edges);
 
 } DSPContext;

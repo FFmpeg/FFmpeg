@@ -61,7 +61,7 @@ area positions, #3 is 1 pixel only, other are 8 pixels
         note:   1|2 - mb_x==mb_y==0 - first block, use 0x80 value for all areas;
                 4   - mb_x>= (mb_width-1) last block in the row, interpolate area #5;
 */
-static void x8_setup_spacial_compensation(uint8_t *src, uint8_t *dst, int linesize,
+static void x8_setup_spatial_compensation(uint8_t *src, uint8_t *dst, int linesize,
            int * range, int * psum,  int edges){
     uint8_t * ptr;
     int sum;
@@ -147,7 +147,7 @@ static const uint16_t zero_prediction_weights[64*2] = {
     110, 1172,  144, 1107,  193, 1028,  254, 932,  317, 846,  366, 731,  458, 611,  499, 499
 };
 
-static void spacial_compensation_0(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_0(uint8_t *src , uint8_t *dst, int linesize){
     int i,j;
     int x,y;
     unsigned int p;//power divided by 2
@@ -202,7 +202,7 @@ static void spacial_compensation_0(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_1(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_1(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -212,7 +212,7 @@ static void spacial_compensation_1(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_2(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_2(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -222,7 +222,7 @@ static void spacial_compensation_2(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_3(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_3(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -232,7 +232,7 @@ static void spacial_compensation_3(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_4(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_4(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -242,7 +242,7 @@ static void spacial_compensation_4(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_5(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_5(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -256,7 +256,7 @@ static void spacial_compensation_5(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_6(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_6(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -266,7 +266,7 @@ static void spacial_compensation_6(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_7(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_7(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -280,7 +280,7 @@ static void spacial_compensation_7(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_8(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_8(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -290,7 +290,7 @@ static void spacial_compensation_8(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_9(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_9(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -300,7 +300,7 @@ static void spacial_compensation_9(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_10(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_10(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -310,7 +310,7 @@ static void spacial_compensation_10(uint8_t *src , uint8_t *dst, int linesize){
         dst+=linesize;
     }
 }
-static void spacial_compensation_11(uint8_t *src , uint8_t *dst, int linesize){
+static void spatial_compensation_11(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
 
     for(y=0;y<8;y++){
@@ -416,17 +416,17 @@ static void x8_v_loop_filter(uint8_t *src, int stride, int qscale){
 void ff_intrax8dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->x8_h_loop_filter=x8_h_loop_filter;
     dsp->x8_v_loop_filter=x8_v_loop_filter;
-    dsp->x8_setup_spacial_compensation=x8_setup_spacial_compensation;
-    dsp->x8_spacial_compensation[0]=spacial_compensation_0;
-    dsp->x8_spacial_compensation[1]=spacial_compensation_1;
-    dsp->x8_spacial_compensation[2]=spacial_compensation_2;
-    dsp->x8_spacial_compensation[3]=spacial_compensation_3;
-    dsp->x8_spacial_compensation[4]=spacial_compensation_4;
-    dsp->x8_spacial_compensation[5]=spacial_compensation_5;
-    dsp->x8_spacial_compensation[6]=spacial_compensation_6;
-    dsp->x8_spacial_compensation[7]=spacial_compensation_7;
-    dsp->x8_spacial_compensation[8]=spacial_compensation_8;
-    dsp->x8_spacial_compensation[9]=spacial_compensation_9;
-    dsp->x8_spacial_compensation[10]=spacial_compensation_10;
-    dsp->x8_spacial_compensation[11]=spacial_compensation_11;
+    dsp->x8_setup_spatial_compensation=x8_setup_spatial_compensation;
+    dsp->x8_spatial_compensation[0]=spatial_compensation_0;
+    dsp->x8_spatial_compensation[1]=spatial_compensation_1;
+    dsp->x8_spatial_compensation[2]=spatial_compensation_2;
+    dsp->x8_spatial_compensation[3]=spatial_compensation_3;
+    dsp->x8_spatial_compensation[4]=spatial_compensation_4;
+    dsp->x8_spatial_compensation[5]=spatial_compensation_5;
+    dsp->x8_spatial_compensation[6]=spatial_compensation_6;
+    dsp->x8_spatial_compensation[7]=spatial_compensation_7;
+    dsp->x8_spatial_compensation[8]=spatial_compensation_8;
+    dsp->x8_spatial_compensation[9]=spatial_compensation_9;
+    dsp->x8_spatial_compensation[10]=spatial_compensation_10;
+    dsp->x8_spatial_compensation[11]=spatial_compensation_11;
 }
