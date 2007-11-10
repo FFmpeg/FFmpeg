@@ -4115,7 +4115,7 @@ static int encode_init(AVCodecContext *avctx)
         s->colorspace= 1;
         break;*/
     default:
-        av_log(avctx, AV_LOG_ERROR, "format not supported\n");
+        av_log(avctx, AV_LOG_ERROR, "pixel format not supported\n");
         return -1;
     }
 //    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
