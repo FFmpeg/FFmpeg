@@ -42,6 +42,7 @@ typedef struct ogg_stream {
     unsigned int bufpos;
     unsigned int pstart;
     unsigned int psize;
+    unsigned int pflags;
     uint32_t serial;
     uint32_t seq;
     uint64_t granule, lastgp;
