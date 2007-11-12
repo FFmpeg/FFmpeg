@@ -91,7 +91,6 @@ show_help(){
   echo "  --enable-libmp3lame      enable MP3 encoding via libmp3lame [default=no]"
   echo "  --enable-libnut          enable NUT (de)muxing via libnut,"
   echo "                           native demuxer exists [default=no]"
-  echo "  --enable-libogg          enable Ogg muxing via libogg [default=no]"
   echo "  --enable-libtheora       enable Theora encoding via libtheora [default=no]"
   echo "  --enable-libvorbis       enable Vorbis encoding via libvorbis,"
   echo "                           native implementation exists [default=no]"
@@ -620,7 +619,6 @@ CONFIG_LIST="
     libgsm
     libmp3lame
     libnut
-    libogg
     libtheora
     libvorbis
     libx264
@@ -799,7 +797,6 @@ dv1394_demuxer_deps="dv1394"
 libdc1394_demuxer_deps="libdc1394"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
-libogg_muxer_deps="libogg"
 mp3_demuxer_deps="mpegaudio_parser"
 oss_demuxer_deps_any="soundcard_h sys_soundcard_h"
 oss_muxer_deps_any="soundcard_h sys_soundcard_h"
@@ -1247,11 +1244,6 @@ fi
 
 disabled static && LIBNAME=""
 
-if ! enabled libogg; then
-    enabled libtheora && die "libogg must be enabled to enable libtheora."
-    enabled libvorbis && die "libogg must be enabled to enable libvorbis."
-fi
-
 if enabled_any libfaad libfaadbin ; then
     if check_header faad.h; then
         check_cc << EOF
@@ -1565,7 +1557,6 @@ enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
-enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
 enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
 enabled libx264    && require x264 x264.h x264_encoder_open -lx264
@@ -1747,7 +1738,6 @@ check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
     $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
 
 enabled libdc1394 && append pkg_requires "libraw1394"
-enabled libogg    && append pkg_requires "ogg >= 1.1"
 enabled libtheora && append pkg_requires "theora"
 enabled libvorbis && append pkg_requires "vorbisenc"
 
@@ -1815,7 +1805,6 @@ echo "libfaad dlopened          ${libfaadbin-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
-echo "libogg enabled            ${libogg-no}"
 echo "libtheora enabled         ${libtheora-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
 echo "x264 enabled              ${libx264-no}"

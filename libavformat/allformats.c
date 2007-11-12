@@ -172,7 +172,6 @@ void av_register_all(void)
     /* external libraries */
     REGISTER_DEMUXER  (LIBDC1394, libdc1394);
     REGISTER_MUXDEMUX (LIBNUT, libnut);
-    REGISTER_MUXER    (LIBOGG, libogg);
 
     /* protocols */
     REGISTER_PROTOCOL (FILE, file);
