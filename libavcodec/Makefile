@@ -18,7 +18,8 @@ OBJS = allcodecs.o \
        jrevdct.o \
        jfdctfst.o \
        jfdctint.o\
-       mpeg12.o mpeg12data.o \
+       mpeg12.o \
+       mpeg12data.o \
        mpegvideo.o \
        opt.o \
        parser.o \
