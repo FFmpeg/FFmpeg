@@ -1534,10 +1534,11 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         "mov"#m1" "#mm"0, %0          \n\t"\
         DIFF_PIXELS_1(m0, mm##7, mm##0, (%1,%3,4), (%2,%3,4))\
         "mov"#m1" %0, "#mm"0          \n\t"\
-        : "=m"(temp), "+r"(p1b), "+r"(p2b)\
+        : "+m"(temp), "+r"(p1b), "+r"(p2b)\
         : "r"((long)stride), "r"((long)stride*3)\
     );\
 }
+    //the "+m"(temp) is needed as gcc 2.95 sometimes fails to compile "=m"(temp)
 
 #define DIFF_PIXELS_4x8(p1,p2,stride,temp) DIFF_PIXELS_8(d, q,   %%mm,  p1, p2, stride, temp)
 #define DIFF_PIXELS_8x8(p1,p2,stride,temp) DIFF_PIXELS_8(q, dqa, %%xmm, p1, p2, stride, temp)
