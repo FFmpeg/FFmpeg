@@ -38,8 +38,8 @@ typedef struct {
     struct sockaddr_in dest_addr;
 #else
     struct sockaddr_storage dest_addr;
-    size_t dest_addr_len;
 #endif
+    size_t dest_addr_len;
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
@@ -234,6 +234,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
         return AVERROR(EIO);
     s->dest_addr.sin_family = AF_INET;
     s->dest_addr.sin_port = htons(port);
+    s->dest_addr_len = sizeof(s->dest_addr);
     return 0;
 #endif
 }
@@ -441,11 +442,7 @@ static int udp_write(URLContext *h, uint8_t *buf, int size)
     for(;;) {
         ret = sendto (s->udp_fd, buf, size, 0,
                       (struct sockaddr *) &s->dest_addr,
-#ifndef CONFIG_IPV6
-                      sizeof (s->dest_addr));
-#else
                       s->dest_addr_len);
-#endif
         if (ret < 0) {
             if (ff_neterrno() != FF_NETERROR(EINTR) &&
                 ff_neterrno() != FF_NETERROR(EAGAIN))
