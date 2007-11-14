@@ -243,7 +243,7 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1 .1 .7
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item MPEG audio layer 2     @tab  IX  @tab  IX
-@item MPEG audio layer 1/3   @tab IX   @tab  IX
+@item MPEG audio layer 1/3   @tab X   @tab  IX
 @tab MP3 encoding is supported through the external library LAME.
 @item AC3                    @tab  IX  @tab  IX
 @tab liba52 is used internally for decoding.
