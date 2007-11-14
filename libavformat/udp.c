@@ -34,7 +34,6 @@ typedef struct {
     int local_port;
     int reuse_socket;
 #ifndef CONFIG_IPV6
-    struct ip_mreq mreq;
     struct sockaddr_in dest_addr;
 #else
     struct sockaddr_storage dest_addr;
