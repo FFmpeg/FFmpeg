@@ -83,7 +83,6 @@ typedef struct AVMetaDataMap {
 extern const OptionDef options[];
 
 static void show_help(void);
-static void opt_show_license(void);
 static int opt_default(const char *opt, const char *arg);
 
 #define MAX_FILES 20
@@ -3607,6 +3606,12 @@ static void opt_bsf(const char *opt, const char *arg)
     *bsfp= bsfc;
 }
 
+static void opt_show_license(void)
+{
+    show_license();
+    exit(0);
+}
+
 static void opt_show_version(void)
 {
     show_version(program_name);
@@ -3779,12 +3784,6 @@ const OptionDef options[] = {
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
-
-static void opt_show_license(void)
-{
-    show_license();
-    exit(0);
-}
 
 /**
  * Trivial log callback.
