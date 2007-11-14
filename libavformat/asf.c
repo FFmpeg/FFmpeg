@@ -399,6 +399,11 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         {
                                 if     (!strcmp(name,"WM/AlbumTitle")) get_str16_nolen(pb, value_len, s->album, sizeof(s->album));
                                 else if(!strcmp(name,"WM/Genre"     )) get_str16_nolen(pb, value_len, s->genre, sizeof(s->genre));
+                                else if(!strcmp(name,"WM/Year"      )) {
+                                    char year[8];
+                                    get_str16_nolen(pb, value_len, year, sizeof(year));
+                                    s->year = atoi(year);
+                                }
                                 else if(!strcmp(name,"WM/Track") && s->track == 0) {
                                     char track[8];
                                     get_str16_nolen(pb, value_len, track, sizeof(track));
