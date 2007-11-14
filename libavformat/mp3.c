@@ -585,9 +585,9 @@ static int mp3_write_header(struct AVFormatContext *s)
     char yeartxt[10];
 
     if(s->track)
-        snprintf(tracktxt, sizeof(tracktxt)    , "%d", s->track);
+        snprintf(tracktxt, sizeof(tracktxt), "%d", s->track);
     if(s->year)
-        snprintf( yeartxt, sizeof(yeartxt)     , "%d", s->year );
+        snprintf( yeartxt, sizeof(yeartxt) , "%d", s->year );
 
     if(s->title[0])     totlen += 11 + strlen(s->title);
     if(s->author[0])    totlen += 11 + strlen(s->author);
