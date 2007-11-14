@@ -234,7 +234,3 @@ AVCodec dvdsub_encoder = {
     dvdsub_encode,
     dvdsub_close_encoder,
 };
-
-/* Local Variables: */
-/* c-basic-offset:4 */
-/* End: */
