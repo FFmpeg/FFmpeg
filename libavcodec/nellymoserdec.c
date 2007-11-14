@@ -390,7 +390,7 @@ static int decode_tag(AVCodecContext * avctx,
         *data_size += NELLY_SAMPLES*sizeof(int16_t);
     }
 
-    return blocks*NELLY_SAMPLES*sizeof(int16_t);
+    return buf_size;
 }
 
 static int decode_end(AVCodecContext * avctx) {
