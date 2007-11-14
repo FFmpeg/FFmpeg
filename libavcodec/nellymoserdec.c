@@ -103,7 +103,7 @@ typedef struct NellyMoserDecodeContext {
     DECLARE_ALIGNED_16(float,imdct_out[NELLY_BUF_LEN * 2]);
 } NellyMoserDecodeContext;
 
-DECLARE_ALIGNED_16(float,sine_window[128]);
+static DECLARE_ALIGNED_16(float,sine_window[128]);
 
 static inline int signed_shift(int i, int shift) {
     if (shift > 0)
