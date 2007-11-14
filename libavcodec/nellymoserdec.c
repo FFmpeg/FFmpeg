@@ -123,9 +123,9 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
 
     while (bot < NELLY_BUF_LEN/4) {
         s_bot = audio[bot];
-        s_top = audio[top];
-        audio[bot] =  (audio[mid_up]*sine_window[bot]-state[bot   ]*sine_window[top])/s->scale_bias + s->add_bias;
-        audio[top] = (-state[bot   ]*sine_window[bot]-audio[mid_up]*sine_window[top])/s->scale_bias + s->add_bias;
+        s_top = -audio[top];
+        audio[bot] =  (-audio[mid_up]*sine_window[bot]-state[bot   ]*sine_window[top])/s->scale_bias + s->add_bias;
+        audio[top] = (-state[bot   ]*sine_window[bot]+audio[mid_up]*sine_window[top])/s->scale_bias + s->add_bias;
         state[bot] =  audio[mid_down];
 
         audio[mid_down] =  (s_top          *sine_window[mid_down]-state[mid_down]*sine_window[mid_up])/s->scale_bias + s->add_bias;
@@ -281,7 +281,6 @@ void nelly_decode_block(NellyMoserDecodeContext *s, unsigned char block[NELLY_BL
     float *aptr, *bptr, *pptr, val, pval;
     int bits[NELLY_BUF_LEN];
     unsigned char v;
-    float a;
 
     init_get_bits(&s->gb, block, NELLY_BLOCK_LEN * 8);
 
@@ -324,10 +323,9 @@ void nelly_decode_block(NellyMoserDecodeContext *s, unsigned char block[NELLY_BL
                                     aptr, s->imdct_tmp);
         /* XXX: overlapping and windowing should be part of a more
            generic imdct function */
-        a = 1.0 / 8.0;
         for(j = 0; j < NELLY_BUF_LEN / 2; j++) {
-            aptr[j] = s->imdct_out[j + NELLY_BUF_LEN + NELLY_BUF_LEN / 2] * a;
-            aptr[j + NELLY_BUF_LEN / 2] = -s->imdct_out[j] * a;
+            aptr[j] = s->imdct_out[j + NELLY_BUF_LEN + NELLY_BUF_LEN / 2];
+            aptr[j + NELLY_BUF_LEN / 2] = s->imdct_out[j];
         }
         overlap_and_window(s, s->state, aptr);
     }
@@ -345,10 +343,10 @@ static int decode_init(AVCodecContext * avctx) {
 
     if(s->dsp.float_to_int16 == ff_float_to_int16_c) {
         s->add_bias = 385;
-        s->scale_bias = 32768;
+        s->scale_bias = 8*32768;
     } else {
         s->add_bias = 0;
-        s->scale_bias = 1;
+        s->scale_bias = 1*8;
     }
 
     /* Generate overlap window */
