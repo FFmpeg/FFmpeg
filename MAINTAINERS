@@ -175,6 +175,7 @@ Codecs:
   truemotion2*                          Kostya Shishkov
   truespeech.c                          Kostya Shishkov
   tscc.c                                Kostya Shishkov
+  tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
   vb.c                                  Kostya Shishkov
@@ -249,6 +250,7 @@ Muxers/Demuxers:
   segafilm.c                            Mike Melanson
   siff.c                                Kostya Shishkov
   swf.c                                 Baptiste Coudurier
+  tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   v4l2.c                                Luca Abeni
   voc.c                                 Aurelien Jacobs
