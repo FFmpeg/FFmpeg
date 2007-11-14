@@ -145,18 +145,17 @@ static struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, in
     return res;
 }
 
-static int udp_ipv6_set_remote_url(URLContext *h, const char *uri) {
-    UDPContext *s = h->priv_data;
-    char hostname[256];
-    int port;
+static int udp_set_url(struct sockaddr_storage *addr, const char *hostname, int port) {
     struct addrinfo *res0;
-    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
+    int addr_len;
+
     res0 = udp_ipv6_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
     if (res0 == 0) return AVERROR(EIO);
-    memcpy(&s->dest_addr, res0->ai_addr, res0->ai_addrlen);
-    s->dest_addr_len = res0->ai_addrlen;
+    memcpy(addr, res0->ai_addr, res0->ai_addrlen);
+    addr_len = res0->ai_addrlen;
     freeaddrinfo(res0);
-    return 0;
+
+    return addr_len;
 }
 
 static int udp_ipv6_set_local(URLContext *h) {
@@ -213,6 +212,19 @@ static int udp_ipv6_set_local(URLContext *h) {
     return -1;
 }
 
+#else
+
+static int udp_set_url(struct sockaddr_in *addr, const char *hostname, int port)
+{
+    /* set the destination address */
+    if (resolve_host(&addr->sin_addr, hostname) < 0)
+        return AVERROR(EIO);
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(port);
+
+    return sizeof(struct sockaddr_in);
+}
+
 #endif /* CONFIG_IPV6 */
 
 
@@ -234,9 +246,6 @@ static int udp_ipv6_set_local(URLContext *h) {
  */
 int udp_set_remote_url(URLContext *h, const char *uri)
 {
-#ifdef CONFIG_IPV6
-    return udp_ipv6_set_remote_url(h, uri);
-#else
     UDPContext *s = h->priv_data;
     char hostname[256];
     int port;
@@ -244,13 +253,12 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
 
     /* set the destination address */
-    if (resolve_host(&s->dest_addr.sin_addr, hostname) < 0)
+    s->dest_addr_len = udp_set_url(&s->dest_addr, hostname, port);
+    if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
-    s->dest_addr.sin_family = AF_INET;
-    s->dest_addr.sin_port = htons(port);
-    s->dest_addr_len = sizeof(s->dest_addr);
+    }
+
     return 0;
-#endif
 }
 
 /**
