@@ -582,9 +582,12 @@ static int mp3_write_header(struct AVFormatContext *s)
 {
     int totlen = 0;
     char tracktxt[10];
+    char yeartxt[10];
 
     if(s->track)
         snprintf(tracktxt, sizeof(tracktxt) - 1, "%d", s->track);
+    if(s->year)
+        snprintf( yeartxt, sizeof(yeartxt)     , "%d", s->year );
 
     if(s->title[0])     totlen += 11 + strlen(s->title);
     if(s->author[0])    totlen += 11 + strlen(s->author);
@@ -592,6 +595,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     if(s->genre[0])     totlen += 11 + strlen(s->genre);
     if(s->copyright[0]) totlen += 11 + strlen(s->copyright);
     if(s->track)        totlen += 11 + strlen(tracktxt);
+    if(s->year)         totlen += 11 + strlen(yeartxt);
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         totlen += strlen(LIBAVFORMAT_IDENT) + 11;
 
@@ -610,6 +614,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     if(s->genre[0])     id3v2_put_ttag(s, s->genre,     MKBETAG('T', 'C', 'O', 'N'));
     if(s->copyright[0]) id3v2_put_ttag(s, s->copyright, MKBETAG('T', 'C', 'O', 'P'));
     if(s->track)        id3v2_put_ttag(s, tracktxt,     MKBETAG('T', 'R', 'C', 'K'));
+    if(s->year)         id3v2_put_ttag(s, yeartxt,      MKBETAG('T', 'Y', 'E', 'R'));
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         id3v2_put_ttag(s, LIBAVFORMAT_IDENT,            MKBETAG('T', 'E', 'N', 'C'));
     return 0;
