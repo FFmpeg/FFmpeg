@@ -577,7 +577,7 @@ AVFormatContext *av_alloc_format_context(void);
  *
  * @param ic media file handle
  * @return >=0 if OK. AVERROR_xxx if error.
- * @todo Let user decide somehow what information is needed so we do not waste time geting stuff the user does not need.
+ * @todo Let user decide somehow what information is needed so we do not waste time getting stuff the user does not need.
  */
 int av_find_stream_info(AVFormatContext *ic);
 
