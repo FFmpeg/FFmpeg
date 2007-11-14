@@ -404,18 +404,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
-#ifndef CONFIG_IPV6
-    struct sockaddr_in from;
-#else
-    struct sockaddr_storage from;
-#endif
-    socklen_t from_len;
     int len;
 
     for(;;) {
-        from_len = sizeof(from);
-        len = recvfrom (s->udp_fd, buf, size, 0,
-                        (struct sockaddr *)&from, &from_len);
+        len = recv(s->udp_fd, buf, size, 0);
         if (len < 0) {
             if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
                 ff_neterrno() != FF_NETERROR(EINTR))
