@@ -379,6 +379,8 @@ static int decode_tag(AVCodecContext * avctx,
             blocks = 2; break;
         case 256:   // 22050Hz
             blocks = 4; break;
+        case 512:   // 44100Hz
+            blocks = 8; break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Tag size %d unknown, report sample!\n", buf_size);
             return buf_size;
