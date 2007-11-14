@@ -45,7 +45,7 @@ typedef struct {
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
 
-static int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
+static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
 #ifdef IP_MULTICAST_TTL
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
@@ -65,7 +65,7 @@ static int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr 
     return 0;
 }
 
-static int udp_ipv6_join_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
 #ifdef IP_ADD_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -93,7 +93,7 @@ static int udp_ipv6_join_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-static int udp_ipv6_leave_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
 #ifdef IP_DROP_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -370,11 +370,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (s->is_multicast) {
         if (h->flags & URL_WRONLY) {
             /* output */
-            if (udp_ipv6_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
+            if (udp_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
         } else {
             /* input */
-            if (udp_ipv6_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
+            if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
         }
     }
@@ -453,7 +453,7 @@ static int udp_close(URLContext *h)
     UDPContext *s = h->priv_data;
 
     if (s->is_multicast && !(h->flags & URL_WRONLY))
-        udp_ipv6_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
+        udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
     ff_network_close();
     av_free(s);
