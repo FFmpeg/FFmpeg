@@ -507,7 +507,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
         pos = len2 - pos;
     }
 
-    if(++rm->cur_slice > rm->cur_slice)
+    if(++rm->cur_slice > rm->slices)
         return 1;
     AV_WL32(rm->videobuf - 7 + 8*rm->cur_slice, 1);
     AV_WL32(rm->videobuf - 3 + 8*rm->cur_slice, rm->videobufpos - 8*rm->slices - 1);
