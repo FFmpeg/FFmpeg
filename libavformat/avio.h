@@ -255,7 +255,7 @@ int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size);
  * Return the written size and a pointer to the buffer. The buffer
  *  must be freed with av_free().
  * @param s IO context
- * @param pointer to a byte buffer
+ * @param pbuffer pointer to a byte buffer
  * @return the length of the byte buffer
  */
 int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
