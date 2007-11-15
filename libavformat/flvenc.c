@@ -330,7 +330,7 @@ AVOutputFormat flv_muxer = {
 #ifdef CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else // CONFIG_LIBMP3LAME
-    CODEC_ID_NONE,
+    CODEC_ID_ADPCM_SWF,
 #endif // CONFIG_LIBMP3LAME
     CODEC_ID_FLV1,
     flv_write_header,
