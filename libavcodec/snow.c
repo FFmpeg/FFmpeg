@@ -4139,7 +4139,8 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#ifdef USE_HALFPEL_PLANE
+#define USE_HALFPEL_PLANE 0
+
 static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
     int p,x,y;
 
@@ -4183,7 +4184,6 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
 //FIXME border!
     }
 }
-#endif /* USE_HALFPEL_PLANE */
 
 static int frame_start(SnowContext *s){
    AVFrame tmp;
@@ -4199,10 +4199,8 @@ static int frame_start(SnowContext *s){
     tmp= s->last_picture[s->max_ref_frames-1];
     memmove(s->last_picture+1, s->last_picture, (s->max_ref_frames-1)*sizeof(AVFrame));
     memmove(s->halfpel_plane+1, s->halfpel_plane, (s->max_ref_frames-1)*sizeof(void*)*4*4);
-#ifdef USE_HALFPEL_PLANE
-    if(s->current_picture.data[0])
+    if(USE_HALFPEL_PLANE && s->current_picture.data[0])
         halfpel_interpol(s, s->halfpel_plane[0], &s->current_picture);
-#endif
     s->last_picture[0]= s->current_picture;
     s->current_picture= tmp;
 
