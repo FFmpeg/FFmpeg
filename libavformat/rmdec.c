@@ -615,6 +615,7 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
             }
         } else
             av_get_packet(pb, pkt, len);
+            rm_ac3_swap_bytes(st, pkt);
 
     } else
         av_get_packet(pb, pkt, len);
@@ -707,6 +708,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->size = len;
         }
+        rm_ac3_swap_bytes(st, pkt);
     } else {
         int seq=1;
 resync:
@@ -724,7 +726,6 @@ resync:
         }
     }
 
-    rm_ac3_swap_bytes(st, pkt);
     return 0;
 }
 
