@@ -294,7 +294,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     const char *p;
     char buf[256];
 #ifndef CONFIG_IPV6
-    struct sockaddr_in my_addr, my_addr1;
+    struct sockaddr_in my_addr;
     int len;
 #endif
 
@@ -358,9 +358,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (bind(udp_fd,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
         goto fail;
 
-    len = sizeof(my_addr1);
-    getsockname(udp_fd, (struct sockaddr *)&my_addr1, &len);
-    s->local_port = ntohs(my_addr1.sin_port);
+    len = sizeof(my_addr);
+    getsockname(udp_fd, (struct sockaddr *)&my_addr, &len);
+    s->local_port = ntohs(my_addr.sin_port);
 #else
     udp_fd = udp_ipv6_set_local(h);
     if (udp_fd < 0)
