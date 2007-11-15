@@ -4139,6 +4139,7 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#ifdef USE_HALFPEL_PLANE
 static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
     int p,x,y;
 
@@ -4182,6 +4183,7 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
 //FIXME border!
     }
 }
+#endif /* USE_HALFPEL_PLANE */
 
 static int frame_start(SnowContext *s){
    AVFrame tmp;
