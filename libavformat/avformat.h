@@ -858,7 +858,7 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
  * @param buf destination buffer
  * @param buf_size destination buffer size
  * @param path numbered sequence string
- * @number frame number
+ * @param number frame number
  * @return 0 if OK, -1 if format error.
  */
 int av_get_frame_filename(char *buf, int buf_size,
