@@ -222,7 +222,7 @@ URLContext *url_fileno(ByteIOContext *s);
  * handle. If the file is not packetized (stream like http or file on
  * disk), then 0 is returned.
  *
- * @param h buffered file handle
+ * @param s buffered file handle
  * @return maximum packet size in bytes
  */
 int url_fget_max_packet_size(ByteIOContext *s);
