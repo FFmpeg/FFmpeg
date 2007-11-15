@@ -2392,9 +2392,9 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
  * Print in buf the string corresponding to the pixel format with
  * number pix_fmt, or an header if pix_fmt is negative.
  *
- * @param buf[in] the buffer where to write the string
- * @param buf_size[in] the size of buf
- * @param pix_fmt[in] the number of the pixel format to print the corresponding info string, or
+ * @param[in] buf the buffer where to write the string
+ * @param[in] buf_size the size of buf
+ * @param[in] pix_fmt the number of the pixel format to print the corresponding info string, or
  * a negative value to print the corresponding header.
  * Meaningful values for obtaining a pixel format info vary from 0 to PIX_FMT_NB -1.
  */
