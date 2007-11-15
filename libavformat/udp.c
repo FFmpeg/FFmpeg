@@ -158,13 +158,9 @@ static int udp_set_url(struct sockaddr_storage *addr, const char *hostname, int 
     return addr_len;
 }
 
-static int udp_ipv6_set_local(URLContext *h) {
-    UDPContext *s = h->priv_data;
+static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *addr_len)
+{
     int udp_fd = -1;
-    struct sockaddr_storage clientaddr;
-    socklen_t addrlen;
-    char sbuf[NI_MAXSERV];
-    char hbuf[NI_MAXHOST];
     struct addrinfo *res0 = NULL, *res = NULL;
     int family = AF_UNSPEC;
 
@@ -182,25 +178,10 @@ static int udp_ipv6_set_local(URLContext *h) {
     if (udp_fd < 0)
         goto fail;
 
-    if (bind(udp_fd, res0->ai_addr, res0->ai_addrlen) < 0) {
-        perror("bind");
-        goto fail;
-    }
+    memcpy(addr, res->ai_addr, res->ai_addrlen);
+    *addr_len = res->ai_addrlen;
+
     freeaddrinfo(res0);
-        res0 = NULL;
-
-    addrlen = sizeof(clientaddr);
-    if (getsockname(udp_fd, (struct sockaddr *)&clientaddr, &addrlen) < 0) {
-        perror("getsockname");
-        goto fail;
-    }
-
-    if (getnameinfo((struct sockaddr *)&clientaddr, addrlen, hbuf, sizeof(hbuf),  sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
-        perror("getnameinfo");
-        goto fail;
-    }
-
-    s->local_port = strtol(sbuf, NULL, 10);
 
     return udp_fd;
 
@@ -210,6 +191,19 @@ static int udp_ipv6_set_local(URLContext *h) {
     if(res0)
         freeaddrinfo(res0);
     return -1;
+}
+
+static int udp_port(struct sockaddr_storage *addr, int addr_len)
+{
+    char sbuf[NI_MAXSERV];
+    char hbuf[NI_MAXHOST];
+
+    if (getnameinfo((struct sockaddr *)addr, addr_len, hbuf, sizeof(hbuf),  sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
+        perror("getnameinfo");
+        return -1;
+    }
+
+    return strtol(sbuf, NULL, 10);
 }
 
 #else
@@ -225,6 +219,26 @@ static int udp_set_url(struct sockaddr_in *addr, const char *hostname, int port)
     return sizeof(struct sockaddr_in);
 }
 
+static int udp_socket_create(UDPContext *s, struct sockaddr_in *addr, int *addr_len)
+{
+    int fd;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return -1;
+
+    addr->sin_family = AF_INET;
+    addr->sin_addr.s_addr = htonl (INADDR_ANY);
+    addr->sin_port = htons(s->local_port);
+    *addr_len = sizeof(struct sockaddr_in);
+
+    return fd;
+}
+
+static int udp_port(struct sockaddr_in *addr, int len)
+{
+    return ntohs(addr->sin_port);
+}
 #endif /* CONFIG_IPV6 */
 
 
@@ -295,8 +309,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
 #ifndef CONFIG_IPV6
     struct sockaddr_in my_addr;
-    int len;
+#else
+    struct sockaddr_storage my_addr;
 #endif
+    int len;
 
     h->is_streamed = 1;
     h->max_packet_size = 1472;
@@ -341,31 +357,22 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if (s->is_multicast && !(h->flags & URL_WRONLY))
         s->local_port = port;
-#ifndef CONFIG_IPV6
-    udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    udp_fd = udp_socket_create(s, &my_addr, &len);
     if (udp_fd < 0)
         goto fail;
-
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_addr.s_addr = htonl (INADDR_ANY);
-    my_addr.sin_port = htons(s->local_port);
 
     if (s->reuse_socket)
         if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
             goto fail;
 
     /* the bind is needed to give a port to the socket now */
-    if (bind(udp_fd,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
+    if (bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0)
         goto fail;
 
     len = sizeof(my_addr);
     getsockname(udp_fd, (struct sockaddr *)&my_addr, &len);
-    s->local_port = ntohs(my_addr.sin_port);
-#else
-    udp_fd = udp_ipv6_set_local(h);
-    if (udp_fd < 0)
-        goto fail;
-#endif /* CONFIG_IPV6 */
+    s->local_port = udp_port(&my_addr, len);
+
     if (s->is_multicast) {
         if (h->flags & URL_WRONLY) {
             /* output */
