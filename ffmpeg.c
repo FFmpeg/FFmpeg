@@ -82,9 +82,6 @@ typedef struct AVMetaDataMap {
 
 extern const OptionDef options[];
 
-static void show_help(void);
-static int opt_default(const char *opt, const char *arg);
-
 #define MAX_FILES 20
 
 static AVFormatContext *input_files[MAX_FILES];
@@ -2129,6 +2126,52 @@ static void opt_format(const char *arg)
     }
 }
 
+#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
+extern int ffm_nopts;
+#endif
+
+static int opt_default(const char *opt, const char *arg){
+    int type;
+    const AVOption *o= NULL;
+    int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
+
+    for(type=0; type<CODEC_TYPE_NB; type++){
+        const AVOption *o2 = av_find_opt(avctx_opts[0], opt, NULL, opt_types[type], opt_types[type]);
+        if(o2)
+            o = av_set_string(avctx_opts[type], opt, arg);
+    }
+    if(!o)
+        o = av_set_string(avformat_opts, opt, arg);
+    if(!o)
+        o = av_set_string(sws_opts, opt, arg);
+    if(!o){
+        if(opt[0] == 'a')
+            o = av_set_string(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg);
+        else if(opt[0] == 'v')
+            o = av_set_string(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg);
+        else if(opt[0] == 's')
+            o = av_set_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg);
+    }
+    if(!o)
+        return -1;
+
+//    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avctx_opts, opt, NULL), (int)av_get_int(avctx_opts, opt, NULL));
+
+    //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
+    opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
+    opt_names[opt_name_count++]= o->name;
+
+#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
+    /* disable generate of real time pts in ffm (need to be supressed anyway) */
+    if(avctx_opts[0]->flags & CODEC_FLAG_BITEXACT)
+        ffm_nopts = 1;
+#endif
+
+    if(avctx_opts[0]->debug)
+        av_log_level = AV_LOG_DEBUG;
+    return 0;
+}
+
 static void opt_video_rc_eq(char *arg)
 {
     video_rc_eq = arg;
@@ -3271,10 +3314,6 @@ static int64_t getutime(void)
 #endif
 }
 
-#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
-extern int ffm_nopts;
-#endif
-
 static void opt_show_formats(void)
 {
     AVInputFormat *ifmt;
@@ -3419,6 +3458,49 @@ static void opt_intra_matrix(const char *arg)
 {
     intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(intra_matrix, arg);
+}
+
+/**
+ * Trivial log callback.
+ * Only suitable for show_help and similar since it lacks prefix handling.
+ */
+static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
+{
+    vfprintf(stdout, fmt, vl);
+}
+
+static void show_help(void)
+{
+    av_log_set_callback(log_callback_help);
+    printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n"
+           "Hyper fast Audio and Video encoder\n");
+    printf("\n");
+    show_help_options(options, "Main options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO, 0);
+    show_help_options(options, "\nVideo options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_VIDEO);
+    show_help_options(options, "\nAdvanced Video options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_VIDEO | OPT_EXPERT);
+    show_help_options(options, "\nAudio options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_AUDIO);
+    show_help_options(options, "\nAdvanced Audio options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_AUDIO | OPT_EXPERT);
+    show_help_options(options, "\nSubtitle options:\n",
+                      OPT_SUBTITLE | OPT_GRAB,
+                      OPT_SUBTITLE);
+    show_help_options(options, "\nAudio/Video grab options:\n",
+                      OPT_GRAB,
+                      OPT_GRAB);
+    show_help_options(options, "\nAdvanced options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_EXPERT);
+    av_opt_show(avctx_opts[0], NULL);
+    av_opt_show(avformat_opts, NULL);
+    av_opt_show(sws_opts, NULL);
 }
 
 static void opt_show_help(void)
@@ -3618,48 +3700,6 @@ static void opt_show_version(void)
     exit(0);
 }
 
-static int opt_default(const char *opt, const char *arg){
-    int type;
-    const AVOption *o= NULL;
-    int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
-
-    for(type=0; type<CODEC_TYPE_NB; type++){
-        const AVOption *o2 = av_find_opt(avctx_opts[0], opt, NULL, opt_types[type], opt_types[type]);
-        if(o2)
-            o = av_set_string(avctx_opts[type], opt, arg);
-    }
-    if(!o)
-        o = av_set_string(avformat_opts, opt, arg);
-    if(!o)
-        o = av_set_string(sws_opts, opt, arg);
-    if(!o){
-        if(opt[0] == 'a')
-            o = av_set_string(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg);
-        else if(opt[0] == 'v')
-            o = av_set_string(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg);
-        else if(opt[0] == 's')
-            o = av_set_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg);
-    }
-    if(!o)
-        return -1;
-
-//    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avctx_opts, opt, NULL), (int)av_get_int(avctx_opts, opt, NULL));
-
-    //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
-    opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++]= o->name;
-
-#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
-    /* disable generate of real time pts in ffm (need to be supressed anyway) */
-    if(avctx_opts[0]->flags & CODEC_FLAG_BITEXACT)
-        ffm_nopts = 1;
-#endif
-
-    if(avctx_opts[0]->debug)
-        av_log_level = AV_LOG_DEBUG;
-    return 0;
-}
-
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)opt_show_license}, "show license" },
@@ -3784,49 +3824,6 @@ const OptionDef options[] = {
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
-
-/**
- * Trivial log callback.
- * Only suitable for show_help and similar since it lacks prefix handling.
- */
-static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
-{
-    vfprintf(stdout, fmt, vl);
-}
-
-static void show_help(void)
-{
-    av_log_set_callback(log_callback_help);
-    printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n"
-           "Hyper fast Audio and Video encoder\n");
-    printf("\n");
-    show_help_options(options, "Main options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO, 0);
-    show_help_options(options, "\nVideo options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO);
-    show_help_options(options, "\nAdvanced Video options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO | OPT_EXPERT);
-    show_help_options(options, "\nAudio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO);
-    show_help_options(options, "\nAdvanced Audio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO | OPT_EXPERT);
-    show_help_options(options, "\nSubtitle options:\n",
-                      OPT_SUBTITLE | OPT_GRAB,
-                      OPT_SUBTITLE);
-    show_help_options(options, "\nAudio/Video grab options:\n",
-                      OPT_GRAB,
-                      OPT_GRAB);
-    show_help_options(options, "\nAdvanced options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_EXPERT);
-    av_opt_show(avctx_opts[0], NULL);
-    av_opt_show(avformat_opts, NULL);
-    av_opt_show(sws_opts, NULL);
-}
 
 static int av_exit()
 {
