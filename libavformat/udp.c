@@ -339,6 +339,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if(!ff_network_init())
         return AVERROR(EIO);
 
+    if (s->is_multicast && !(h->flags & URL_WRONLY))
+        s->local_port = port;
 #ifndef CONFIG_IPV6
     udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd < 0)
@@ -346,12 +348,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     my_addr.sin_family = AF_INET;
     my_addr.sin_addr.s_addr = htonl (INADDR_ANY);
-    if (s->is_multicast && !(h->flags & URL_WRONLY)) {
-        /* special case: the bind must be done on the multicast address port */
-        my_addr.sin_port = s->dest_addr.sin_port;
-    } else {
-        my_addr.sin_port = htons(s->local_port);
-    }
+    my_addr.sin_port = htons(s->local_port);
 
     if (s->reuse_socket)
         if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
@@ -365,8 +362,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     getsockname(udp_fd, (struct sockaddr *)&my_addr1, &len);
     s->local_port = ntohs(my_addr1.sin_port);
 #else
-    if (s->is_multicast && !(h->flags & URL_WRONLY))
-        s->local_port = port;
     udp_fd = udp_ipv6_set_local(h);
     if (udp_fd < 0)
         goto fail;
