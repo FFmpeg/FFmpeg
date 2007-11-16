@@ -132,10 +132,11 @@ offset_t url_seek(URLContext *h, offset_t pos, int whence)
 
 int url_close(URLContext *h)
 {
-    int ret;
+    int ret = 0;
     if (!h) return 0; /* can happen when url_open fails */
 
-    ret = h->prot->url_close(h);
+    if (h->prot->url_close)
+        ret = h->prot->url_close(h);
     av_free(h);
     return ret;
 }
