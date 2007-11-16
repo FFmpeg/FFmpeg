@@ -307,7 +307,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     put_be24(pb,size + flags_size);
     put_be24(pb,pkt->pts);
-    put_be32(pb,flv->reserved);
+    put_byte(pb,pkt->pts >> 24);
+    put_be24(pb,flv->reserved);
     put_byte(pb,flags);
     if (enc->codec_id == CODEC_ID_VP6)
         put_byte(pb,0);

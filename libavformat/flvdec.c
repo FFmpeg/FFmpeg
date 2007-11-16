@@ -275,10 +275,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     type = get_byte(&s->pb);
     size = get_be24(&s->pb);
     pts = get_be24(&s->pb);
+    pts |= get_byte(&s->pb) << 24;
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, pts);
     if (url_feof(&s->pb))
         return AVERROR(EIO);
-    url_fskip(&s->pb, 4); /* reserved */
+    url_fskip(&s->pb, 3); /* stream id, always 0 */
     flags = 0;
 
     if(size == 0)
