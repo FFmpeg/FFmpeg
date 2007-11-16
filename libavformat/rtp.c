@@ -79,6 +79,7 @@ AVRtpPayloadType_t AVRtpPayloadTypes[]=
   {30, "unassigned", CODEC_TYPE_VIDEO,   CODEC_ID_NONE, -1, -1},
   {31, "H261",       CODEC_TYPE_VIDEO,   CODEC_ID_H261, 90000, -1},
   {32, "MPV",        CODEC_TYPE_VIDEO,   CODEC_ID_MPEG1VIDEO, 90000, -1},
+  {32, "MPV",        CODEC_TYPE_VIDEO,   CODEC_ID_MPEG2VIDEO, 90000, -1},
   {33, "MP2T",       CODEC_TYPE_DATA,    CODEC_ID_MPEG2TS, 90000, -1},
   {34, "H263",       CODEC_TYPE_VIDEO,   CODEC_ID_H263, 90000, -1},
   {35, "unassigned", CODEC_TYPE_UNKNOWN, CODEC_ID_NONE, -1, -1},
@@ -559,6 +560,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     switch(s->st->codec->codec_id) {
         case CODEC_ID_MP2:
         case CODEC_ID_MPEG1VIDEO:
+        case CODEC_ID_MPEG2VIDEO:
             if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
                 int64_t addend;
 
@@ -683,6 +685,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             memcpy(pkt->data, buf, len);
             break;
         case CODEC_ID_MPEG1VIDEO:
+        case CODEC_ID_MPEG2VIDEO:
             /* better than nothing: skip mpeg video RTP header */
             if (len <= 4)
                 return -1;
@@ -799,6 +802,7 @@ static int rtp_write_header(AVFormatContext *s1)
         s->buf_ptr = s->buf + 4;
         break;
     case CODEC_ID_MPEG1VIDEO:
+    case CODEC_ID_MPEG2VIDEO:
         break;
     case CODEC_ID_MPEG2TS:
         n = s->max_payload_size / TS_PACKET_SIZE;
@@ -1040,6 +1044,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_mpegaudio(s1, buf1, size);
         break;
     case CODEC_ID_MPEG1VIDEO:
+    case CODEC_ID_MPEG2VIDEO:
         ff_rtp_send_mpegvideo(s1, buf1, size);
         break;
     case CODEC_ID_AAC:
