@@ -198,15 +198,20 @@ void av_register_rtp_dynamic_payload_handlers(void)
 
 int rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 {
-    if (AVRtpPayloadTypes[payload_type].codec_id != CODEC_ID_NONE) {
-        codec->codec_type = AVRtpPayloadTypes[payload_type].codec_type;
-        codec->codec_id = AVRtpPayloadTypes[payload_type].codec_id;
-        if (AVRtpPayloadTypes[payload_type].audio_channels > 0)
-            codec->channels = AVRtpPayloadTypes[payload_type].audio_channels;
-        if (AVRtpPayloadTypes[payload_type].clock_rate > 0)
-            codec->sample_rate = AVRtpPayloadTypes[payload_type].clock_rate;
-        return 0;
-    }
+    int i = 0;
+
+    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
+        if (AVRtpPayloadTypes[i].pt == payload_type) {
+            if (AVRtpPayloadTypes[i].codec_id != CODEC_ID_NONE) {
+                codec->codec_type = AVRtpPayloadTypes[i].codec_type;
+                codec->codec_id = AVRtpPayloadTypes[i].codec_id;
+                if (AVRtpPayloadTypes[i].audio_channels > 0)
+                    codec->channels = AVRtpPayloadTypes[i].audio_channels;
+                if (AVRtpPayloadTypes[i].clock_rate > 0)
+                    codec->sample_rate = AVRtpPayloadTypes[i].clock_rate;
+                return 0;
+            }
+        }
     return -1;
 }
 
@@ -223,6 +228,30 @@ int rtp_get_payload_type(AVCodecContext *codec)
             payload_type = AVRtpPayloadTypes[i].pt;
         }
     return payload_type;
+}
+
+const char *ff_rtp_enc_name(int payload_type)
+{
+    int i;
+
+    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
+        if (AVRtpPayloadTypes[i].pt == payload_type) {
+            return AVRtpPayloadTypes[i].enc_name;
+        }
+
+    return "";
+}
+
+enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type)
+{
+    int i;
+
+    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
+        if (!strcmp(buf, AVRtpPayloadTypes[i].enc_name) && (codec_type == AVRtpPayloadTypes[i].codec_type)){
+            return AVRtpPayloadTypes[i].codec_id;
+        }
+
+    return CODEC_ID_NONE;
 }
 
 static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int len)
@@ -448,7 +477,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
     s->st = st;
     s->rtp_payload_data = rtp_payload_data;
     rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
-    if (!strcmp(AVRtpPayloadTypes[payload_type].enc_name, "MP2T")) {
+    if (!strcmp(ff_rtp_enc_name(payload_type), "MP2T")) {
         s->ts = mpegts_parse_open(s->ic);
         if (s->ts == NULL) {
             av_free(s);
@@ -712,7 +741,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 void rtp_parse_close(RTPDemuxContext *s)
 {
     // TODO: fold this into the protocol specific data fields.
-    if (!strcmp(AVRtpPayloadTypes[s->payload_type].enc_name, "MP2T")) {
+    if (!strcmp(ff_rtp_enc_name(s->payload_type), "MP2T")) {
         mpegts_parse_close(s->ts);
     }
     av_free(s);

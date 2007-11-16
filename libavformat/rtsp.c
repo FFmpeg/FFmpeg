@@ -167,11 +167,7 @@ static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st, int payl
     } else {
         /* We are in a standard case ( from http://www.iana.org/assignments/rtp-parameters) */
         /* search into AVRtpPayloadTypes[] */
-        for (i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
-            if (!strcmp(buf, AVRtpPayloadTypes[i].enc_name) && (codec->codec_type == AVRtpPayloadTypes[i].codec_type)){
-                codec->codec_id = AVRtpPayloadTypes[i].codec_id;
-                break;
-            }
+        codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
     }
 
     c = avcodec_find_decoder(codec->codec_id);
@@ -443,7 +439,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         get_word(buf1, sizeof(buf1), &p); /* format list */
         rtsp_st->sdp_payload_type = atoi(buf1);
 
-        if (!strcmp(AVRtpPayloadTypes[rtsp_st->sdp_payload_type].enc_name, "MP2T")) {
+        if (!strcmp(ff_rtp_enc_name(rtsp_st->sdp_payload_type), "MP2T")) {
             /* no corresponding stream */
         } else {
             st = av_new_stream(s, 0);
