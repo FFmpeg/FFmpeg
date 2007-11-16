@@ -110,16 +110,9 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     return 0;
 }
 
-static int pipe_close(URLContext *h)
-{
-    return 0;
-}
-
 URLProtocol pipe_protocol = {
     "pipe",
     pipe_open,
     file_read,
     file_write,
-    NULL,
-    pipe_close,
 };
