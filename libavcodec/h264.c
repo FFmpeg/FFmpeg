@@ -3342,6 +3342,7 @@ static void flush_dpb(AVCodecContext *avctx){
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
     h->s.first_field= 0;
+    ff_mpeg_flush(avctx);
 }
 
 /**
