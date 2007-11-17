@@ -588,11 +588,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         case STREAM_TYPE_AUDIO_AC3:
         case STREAM_TYPE_AUDIO_DTS:
         case STREAM_TYPE_SUBTITLE_DVB:
-            if(ts->pids[pid]){
-                assert(ts->pids[pid]->type == MPEGTS_PES);
+            if(ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES){
                 pes= ts->pids[pid]->u.pes_filter.opaque;
                 st= pes->st;
             }else{
+                if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
                 pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
                 if (pes)
                     st = new_pes_av_stream(pes, 0);
