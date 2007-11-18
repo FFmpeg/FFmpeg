@@ -519,14 +519,11 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
     rm->remaining_len-= len;
 
     if(type == 2 || (rm->videobufpos) == rm->videobufsize){
-         //adjust slice headers
-         memmove(rm->videobuf + 1 + 8*rm->cur_slice, rm->videobuf + 1 + 8*rm->slices, rm->videobufsize - 1 - 8*rm->slices);
-         ssize = rm->videobufsize - 8*(rm->slices - rm->cur_slice);
-
          rm->videobuf[0] = rm->cur_slice-1;
-         if(av_new_packet(pkt, ssize) < 0)
+         if(av_new_packet(pkt, rm->videobufpos - 8*(rm->slices - rm->cur_slice)) < 0)
              return AVERROR(ENOMEM);
-         memcpy(pkt->data, rm->videobuf, ssize);
+         memcpy(pkt->data, rm->videobuf, 1 + 8*rm->cur_slice);
+         memcpy(pkt->data + 1 + 8*rm->cur_slice, rm->videobuf + 1 + 8*rm->slices, rm->videobufpos - 1 - 8*rm->slices);
          pkt->pts = AV_NOPTS_VALUE;
          pkt->pos = rm->pktpos;
          return 0;
