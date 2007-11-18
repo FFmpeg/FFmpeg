@@ -323,10 +323,8 @@ void nelly_decode_block(NellyMoserDecodeContext *s, unsigned char block[NELLY_BL
                                     aptr, s->imdct_tmp);
         /* XXX: overlapping and windowing should be part of a more
            generic imdct function */
-        for(j = 0; j < NELLY_BUF_LEN / 2; j++) {
-            aptr[j] = s->imdct_out[j + NELLY_BUF_LEN + NELLY_BUF_LEN / 2];
-            aptr[j + NELLY_BUF_LEN / 2] = s->imdct_out[j];
-        }
+        memcpy(&aptr[0],&s->imdct_out[NELLY_BUF_LEN+NELLY_BUF_LEN/2], (NELLY_BUF_LEN/2)*sizeof(float));
+        memcpy(&aptr[NELLY_BUF_LEN / 2],&s->imdct_out[0],(NELLY_BUF_LEN/2)*sizeof(float));
         overlap_and_window(s, s->state, aptr);
     }
 }
