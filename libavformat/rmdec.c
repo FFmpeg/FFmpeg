@@ -454,7 +454,6 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
     ByteIOContext *pb = &s->pb;
     int hdr, seq, pic_num, len2, pos;
     int type;
-    int ssize;
 
     hdr = get_byte(pb); len--;
     type = hdr >> 6;
@@ -494,10 +493,9 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
 
     if((seq & 0x7F) == 1 || rm->curpic_num != pic_num){
         rm->slices = ((hdr & 0x3F) << 1) + 1;
-        ssize = len2 + 8*rm->slices + 1;
-        if(!(rm->videobuf = av_realloc(rm->videobuf, ssize)))
+        rm->videobufsize = len2 + 8*rm->slices + 1;
+        if(!(rm->videobuf = av_realloc(rm->videobuf, rm->videobufsize)))
             return AVERROR(ENOMEM);
-        rm->videobufsize = ssize;
         rm->videobufpos = 8*rm->slices + 1;
         rm->cur_slice = 0;
         rm->curpic_num = pic_num;
