@@ -1035,6 +1035,10 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     }
 
     region->depth = 1 << (((*buf++) >> 2) & 7);
+    if(region->depth<2 || region->depth>8){
+        av_log(avctx, AV_LOG_ERROR, "region depth %d is invalid\n", region->depth);
+        region->depth= 4;
+    }
     region->clut = *buf++;
 
     if (region->depth == 8)
