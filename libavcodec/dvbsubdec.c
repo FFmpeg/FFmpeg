@@ -313,8 +313,7 @@ static void delete_state(DVBSubContext *ctx)
     DVBSubRegion *region;
     DVBSubCLUT *clut;
 
-    while (ctx->region_list)
-    {
+    while (ctx->region_list) {
         region = ctx->region_list;
 
         ctx->region_list = region->next;
@@ -326,8 +325,7 @@ static void delete_state(DVBSubContext *ctx)
         av_free(region);
     }
 
-    while (ctx->clut_list)
-    {
+    while (ctx->clut_list) {
         clut = ctx->clut_list;
 
         ctx->clut_list = clut->next;
@@ -420,8 +418,7 @@ static int dvbsub_close_decoder(AVCodecContext *avctx)
 
     delete_state(ctx);
 
-    while (ctx->display_list)
-    {
+    while (ctx->display_list) {
         display = ctx->display_list;
         ctx->display_list = display->next;
 
@@ -739,8 +736,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
 #endif
 
 #ifdef DEBUG_PACKET_CONTENTS
-    for (i = 0; i < buf_size; i++)
-    {
+    for (i = 0; i < buf_size; i++) {
         if (i % 16 == 0)
             av_log(avctx, AV_LOG_INFO, "0x%08p: ", buf+i);
 
@@ -912,8 +908,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_INFO, "DVB clut packet:\n");
 
-    for (i=0; i < buf_size; i++)
-    {
+    for (i=0; i < buf_size; i++) {
         av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
         if (i % 16 == 15)
             av_log(avctx, AV_LOG_INFO, "\n");
@@ -940,8 +935,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
         ctx->clut_list = clut;
     }
 
-    while (buf + 4 < buf_end)
-    {
+    while (buf + 4 < buf_end) {
         entry_id = *buf++;
 
         depth = (*buf) & 0xe0;
@@ -1006,8 +1000,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
     region = get_region(ctx, region_id);
 
-    if (region == NULL)
-    {
+    if (region == NULL) {
         region = av_mallocz(sizeof(DVBSubRegion));
 
         region->id = region_id;
@@ -1125,8 +1118,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_INFO, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 #endif
 
-    if (page_state == 2)
-    {
+    if (page_state == 2) {
         delete_state(ctx);
     }
 
@@ -1363,8 +1355,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_INFO, "DVB sub packet:\n");
 
-    for (i=0; i < buf_size; i++)
-    {
+    for (i=0; i < buf_size; i++) {
         av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
         if (i % 16 == 15)
             av_log(avctx, AV_LOG_INFO, "\n");
@@ -1381,8 +1372,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
     p = buf;
     p_end = buf + buf_size;
 
-    while (p < p_end && *p == 0x0f)
-    {
+    while (p < p_end && *p == 0x0f) {
         p += 1;
         segment_type = *p++;
         page_id = AV_RB16(p);
@@ -1419,8 +1409,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
         p += segment_length;
     }
 
-    if (p != p_end)
-    {
+    if (p != p_end) {
 #ifdef DEBUG
         av_log(avctx, AV_LOG_INFO, "Junk at end of packet\n");
 #endif
