@@ -48,7 +48,7 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr
 #ifdef IP_MULTICAST_TTL
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            perror("setsockopt(IP_MULTICAST_TTL)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IP_MULTICAST_TTL): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -56,7 +56,7 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr
 #ifdef CONFIG_IPV6
     if (addr->sa_family == AF_INET6) {
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            perror("setsockopt(IPV6_MULTICAST_HOPS)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IPV6_MULTICAST_HOPS): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -72,7 +72,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
-            perror("setsockopt(IP_ADD_MEMBERSHIP)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -84,7 +84,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
-            perror("setsockopt(IPV6_ADD_MEMBERSHIP)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -100,7 +100,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
-            perror("setsockopt(IP_DROP_MEMBERSHIP)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IP_DROP_MEMBERSHIP): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -112,7 +112,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
-            perror("setsockopt(IPV6_DROP_MEMBERSHIP)");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(IPV6_DROP_MEMBERSHIP): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -172,7 +172,7 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *
     for (res = res0; res; res=res->ai_next) {
         udp_fd = socket(res->ai_family, SOCK_DGRAM, 0);
         if (udp_fd > 0) break;
-        perror("socket");
+        av_log(NULL, AV_LOG_ERROR, "socket: %s\n", strerror(errno));
     }
 
     if (udp_fd < 0)
@@ -199,7 +199,7 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
     char hbuf[NI_MAXHOST];
 
     if (getnameinfo((struct sockaddr *)addr, addr_len, hbuf, sizeof(hbuf),  sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
-        perror("getnameinfo");
+        av_log(NULL, AV_LOG_ERROR, "getnameinfo: %s\n", strerror(errno));
         return -1;
     }
 
@@ -389,7 +389,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         /* limit the tx buf size to limit latency */
         tmp = UDP_TX_BUF_SIZE;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp)) < 0) {
-            perror("setsockopt sndbuf");
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(SO_SNDBUF): %s\n", strerror(errno));
             goto fail;
         }
     } else {
