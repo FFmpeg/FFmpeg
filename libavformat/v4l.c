@@ -119,12 +119,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     video_fd = open(s1->filename, O_RDWR);
     if (video_fd < 0) {
-        perror(s1->filename);
+        av_log(s1, AV_LOG_ERROR, "%s: %s\n", s1->filename, strerror(errno));
         goto fail;
     }
 
     if (ioctl(video_fd,VIDIOCGCAP, &s->video_cap) < 0) {
-        perror("VIDIOCGCAP");
+        av_log(s1, AV_LOG_ERROR, "VIDIOCGCAP: %s\n", strerror(errno));
         goto fail;
     }
 
@@ -221,7 +221,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         if ((unsigned char*)-1 == s->video_buf) {
             s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_PRIVATE,video_fd,0);
             if ((unsigned char*)-1 == s->video_buf) {
-                perror("mmap");
+                av_log(s1, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
                 goto fail;
             }
         }
@@ -298,7 +298,7 @@ static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
         if (errno == EAGAIN)
             av_log(NULL, AV_LOG_ERROR, "Cannot Sync\n");
         else
-            perror("VIDIOCMCAPTURE");
+            av_log(NULL, AV_LOG_ERROR, "VIDIOCMCAPTURE: %s\n", strerror(errno));
         return AVERROR(EIO);
     }
 

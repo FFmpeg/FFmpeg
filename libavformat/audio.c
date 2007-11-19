@@ -58,7 +58,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     else
         audio_fd = open(audio_device, O_RDONLY);
     if (audio_fd < 0) {
-        perror(audio_device);
+        av_log(NULL, AV_LOG_ERROR, "%s: %s\n", audio_device, strerror(errno));
         return AVERROR(EIO);
     }
 
@@ -114,14 +114,14 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     }
     err=ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp);
     if (err < 0) {
-        perror("SNDCTL_DSP_SETFMT");
+        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_SETFMT: %s\n", strerror(errno));
         goto fail;
     }
 
     tmp = (s->channels == 2);
     err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
     if (err < 0) {
-        perror("SNDCTL_DSP_STEREO");
+        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
         goto fail;
     }
     if (tmp)
@@ -130,7 +130,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
     if (err < 0) {
-        perror("SNDCTL_DSP_SPEED");
+        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_SPEED: %s\n", strerror(errno));
         goto fail;
     }
     s->sample_rate = tmp; /* store real sample rate */

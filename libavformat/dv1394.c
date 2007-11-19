@@ -74,7 +74,7 @@ static int dv1394_start(struct dv1394_data *dv)
 {
     /* Tell DV1394 driver to enable receiver */
     if (ioctl(dv->fd, DV1394_START_RECEIVE, 0) < 0) {
-        perror("Failed to start receiver");
+        av_log(NULL, AV_LOG_ERROR, "Failed to start receiver: %s\n", strerror(errno));
         return -1;
     }
     return 0;
@@ -101,19 +101,19 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     /* Open and initialize DV1394 device */
     dv->fd = open(context->filename, O_RDONLY);
     if (dv->fd < 0) {
-        perror("Failed to open DV interface");
+        av_log(context, AV_LOG_ERROR, "Failed to open DV interface: %s\n", strerror(errno));
         goto failed;
     }
 
     if (dv1394_reset(dv) < 0) {
-        perror("Failed to initialize DV interface");
+        av_log(context, AV_LOG_ERROR, "Failed to initialize DV interface: %s\n", strerror(errno));
         goto failed;
     }
 
     dv->ring = mmap(NULL, DV1394_PAL_FRAME_SIZE * DV1394_RING_FRAMES,
                     PROT_READ, MAP_PRIVATE, dv->fd, 0);
     if (dv->ring == MAP_FAILED) {
-        perror("Failed to mmap DV ring buffer");
+        av_log(context, AV_LOG_ERROR, "Failed to mmap DV ring buffer: %s\n", strerror(errno));
         goto failed;
     }
 
@@ -162,12 +162,12 @@ restart_poll:
         if (poll(&p, 1, -1) < 0) {
             if (errno == EAGAIN || errno == EINTR)
                 goto restart_poll;
-            perror("Poll failed");
+            av_log(context, AV_LOG_ERROR, "Poll failed: %s\n", strerror(errno));
             return AVERROR(EIO);
         }
 
         if (ioctl(dv->fd, DV1394_GET_STATUS, &s) < 0) {
-            perror("Failed to get status");
+            av_log(context, AV_LOG_ERROR, "Failed to get status: %s\n", strerror(errno));
             return AVERROR(EIO);
         }
 #ifdef DV1394_DEBUG
@@ -213,11 +213,11 @@ static int dv1394_close(AVFormatContext * context)
 
     /* Shutdown DV1394 receiver */
     if (ioctl(dv->fd, DV1394_SHUTDOWN, 0) < 0)
-        perror("Failed to shutdown DV1394");
+        av_log(context, AV_LOG_ERROR, "Failed to shutdown DV1394: %s\n", strerror(errno));
 
     /* Unmap ring buffer */
     if (munmap(dv->ring, DV1394_NTSC_FRAME_SIZE * DV1394_RING_FRAMES) < 0)
-        perror("Failed to munmap DV1394 ring buffer");
+        av_log(context, AV_LOG_ERROR, "Failed to munmap DV1394 ring buffer: %s\n", strerror(errno));
 
     close(dv->fd);
     av_free(dv->dv_demux);
