@@ -130,11 +130,11 @@ static int bktr_init(const char *video_device, int width, int height,
 
     *tuner_fd = open("/dev/tuner0", O_RDONLY);
     if (*tuner_fd < 0)
-        perror("Warning: Tuner not opened, continuing");
+        av_log(NULL, AV_LOG_ERROR, "Warning. Tuner not opened, continuing: %s\n", strerror(errno));
 
     *video_fd = open(video_device, O_RDONLY);
     if (*video_fd < 0) {
-        perror(video_device);
+        av_log(NULL, AV_LOG_ERROR, "%s: %s\n", video_device, strerror(errno));
         return -1;
     }
 
@@ -157,18 +157,18 @@ static int bktr_init(const char *video_device, int width, int height,
         geo.oformat |= METEOR_GEO_EVEN_ONLY;
 
     if (ioctl(*video_fd, METEORSETGEO, &geo) < 0) {
-        perror("METEORSETGEO");
+        av_log(NULL, AV_LOG_ERROR, "METEORSETGEO: %s\n", strerror(errno));
         return -1;
     }
 
     if (ioctl(*video_fd, BT848SFMT, &c) < 0) {
-        perror("BT848SFMT");
+        av_log(NULL, AV_LOG_ERROR, "BT848SFMT: %s\n", strerror(errno));
         return -1;
     }
 
     c = bktr_dev[idev];
     if (ioctl(*video_fd, METEORSINPUT, &c) < 0) {
-        perror("METEORSINPUT");
+        av_log(NULL, AV_LOG_ERROR, "METEORSINPUT: %s\n", strerror(errno));
         return -1;
     }
 
@@ -177,19 +177,19 @@ static int bktr_init(const char *video_device, int width, int height,
     video_buf = (uint8_t *)mmap((caddr_t)0, video_buf_size,
         PROT_READ, MAP_SHARED, *video_fd, (off_t)0);
     if (video_buf == MAP_FAILED) {
-        perror("mmap");
+        av_log(NULL, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
         return -1;
     }
 
     if (frequency != 0.0) {
         ioctl_frequency  = (unsigned long)(frequency*16);
         if (ioctl(*tuner_fd, TVTUNER_SETFREQ, &ioctl_frequency) < 0)
-            perror("TVTUNER_SETFREQ");
+            av_log(NULL, AV_LOG_ERROR, "TVTUNER_SETFREQ: %s\n", strerror(errno));
     }
 
     c = AUDIO_UNMUTE;
     if (ioctl(*tuner_fd, BT848_SAUDIO, &c) < 0)
-        perror("TVTUNER_SAUDIO");
+        av_log(NULL, AV_LOG_ERROR, "TVTUNER_SAUDIO: %s\n", strerror(errno));
 
     c = METEOR_CAP_CONTINOUS;
     ioctl(*video_fd, METEORCAPTUR, &c);
