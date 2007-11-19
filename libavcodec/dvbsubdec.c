@@ -102,7 +102,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
     char fname[40], fname2[40];
     char command[1024];
 
-    snprintf(fname, 40, "%s.ppm", filename);
+    snprintf(fname, sizeof(fname), "%s.ppm", filename);
 
     f = fopen(fname, "w");
     if (!f) {
@@ -124,7 +124,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
     fclose(f);
 
 
-    snprintf(fname2, 40, "%s-a.pgm", filename);
+    snprintf(fname2, sizeof(fname2), "%s-a.pgm", filename);
 
     f = fopen(fname2, "w");
     if (!f) {
@@ -143,10 +143,10 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
     }
     fclose(f);
 
-    snprintf(command, 1024, "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
+    snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
     system(command);
 
-    snprintf(command, 1024, "rm %s %s", fname, fname2);
+    snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
     system(command);
 }
 #endif
@@ -1262,7 +1262,7 @@ static void save_display_set(DVBSubContext *ctx)
 
         }
 
-        snprintf(filename, 32, "dvbs.%d", fileno_index);
+        snprintf(filename, sizeof(filename), "dvbs.%d", fileno_index);
 
         png_save2(filename, pbuf, width, height);
 
