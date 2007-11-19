@@ -263,7 +263,7 @@ if((y)<(x)){\
 {\
     p= av_mallocz(size);\
     if(p==NULL && (size)!=0){\
-        perror("malloc");\
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
         goto fail;\
     }\
 }
