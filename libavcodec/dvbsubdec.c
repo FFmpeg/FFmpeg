@@ -285,7 +285,7 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
             if (obj_disp) {
                 *obj_disp_ptr = obj_disp->object_list_next;
 
-                if (object->display_list == NULL) {
+                if (!object->display_list) {
                     obj2 = ctx->object_list;
                     obj2_ptr = &ctx->object_list;
 
@@ -924,7 +924,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     clut = get_clut(ctx, clut_id);
 
-    if (clut == NULL) {
+    if (!clut) {
         clut = av_malloc(sizeof(DVBSubCLUT));
 
         memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
@@ -1000,7 +1000,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
     region = get_region(ctx, region_id);
 
-    if (region == NULL) {
+    if (!region) {
         region = av_mallocz(sizeof(DVBSubRegion));
 
         region->id = region_id;
@@ -1064,7 +1064,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
         object = get_object(ctx, object_id);
 
-        if (object == NULL) {
+        if (!object) {
             object = av_mallocz(sizeof(DVBSubObject));
 
             object->id = object_id;
@@ -1138,7 +1138,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
             display = display->next;
         }
 
-        if (display == NULL)
+        if (!display)
             display = av_mallocz(sizeof(DVBSubRegionDisplay));
 
         display->region_id = region_id;
@@ -1293,7 +1293,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, uint8_t *buf,
         region = get_region(ctx, display->region_id);
         rect = &sub->rects[i];
 
-        if (region == NULL)
+        if (!region)
             continue;
 
         rect->x = display->x_pos;
@@ -1305,7 +1305,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, uint8_t *buf,
 
         clut = get_clut(ctx, region->clut);
 
-        if (clut == NULL)
+        if (!clut)
             clut = &default_clut;
 
         switch (region->depth) {
