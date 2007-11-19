@@ -503,7 +503,6 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
     }
     if(type == 2){
         len = FFMIN(len, pos);
-        pos = len2 - pos;
     }
 
     if(++rm->cur_slice > rm->slices)
