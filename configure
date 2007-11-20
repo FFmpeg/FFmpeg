@@ -442,7 +442,7 @@ EOF
 check_ldflags(){
     log check_ldflags "$@"
     check_ld "$@" <<EOF && add_ldflags "$@"
-int main(){
+int main(void){
     return 0;
 }
 EOF
@@ -467,7 +467,7 @@ check_func(){
     disable $func
     check_ld "$@" <<EOF && enable $func
 extern int $func();
-int main(){
+int main(void){
     $func();
 }
 EOF
@@ -486,7 +486,7 @@ check_func2(){
     done
     check_ld "$@" <<EOF && enable $func
 $incs
-int main(){
+int main(void){
     (void) $func;
     return 0;
 }
@@ -535,7 +535,7 @@ check_exec_crash(){
 static void sighandler(int sig){
     raise(SIGTERM);
 }
-int main(){
+int main(void){
     signal(SIGILL, sighandler);
     signal(SIGFPE, sighandler);
     signal(SIGSEGV, sighandler);
@@ -1391,7 +1391,7 @@ rm $TMPE
 
 # compiler sanity check
 check_exec <<EOF
-int main(){
+int main(void){
     return 0;
 }
 EOF
