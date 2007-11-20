@@ -1251,7 +1251,7 @@ if enabled_any libfaad libfaadbin ; then
 #ifndef FAAD2_VERSION
 ok faad1
 #endif
-int main( void ) { return 0; }
+int main(void) { return 0; }
 EOF
         test $? = 0 && enable libfaad2
     else
@@ -1541,7 +1541,7 @@ check_lib math.h sin -lm
 check_exec <<EOF && enable lrintf || disable lrintf
 #define _ISOC9X_SOURCE  1
 #include <math.h>
-int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
+int main(void) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
 enabled_any libamr_nb libamr_wb && enable libamr
@@ -1643,7 +1643,7 @@ enabled network && enabled ipv6 && check_ld <<EOF && enable ipv6 || disable ipv6
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-int main( void ) {
+int main(void) {
   struct sockaddr_storage saddr;
   struct ipv6_mreq mreq6;
   getaddrinfo(0,0,0,0);
