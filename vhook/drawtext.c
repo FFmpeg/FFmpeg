@@ -203,7 +203,7 @@ int Configure(void **ctxp, int argc, char *argv[])
       case 'C':
         if (ParseColor(optarg, ci->bgcolor) == -1)
           {
-            av_log(NULL, AV_LOG_ERROR, "Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n", optarg);
+            av_log(NULL, AV_LOG_ERROR, "Invalid background color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -C #ffffff (for white background)\n", optarg);
             return -1;
           }
         break;
