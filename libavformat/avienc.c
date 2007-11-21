@@ -105,7 +105,7 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
 
 static int avi_write_counters(AVFormatContext* s, int riff_id)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     int n, au_byterate, au_ssize, au_scale, nb_frames = 0;
     offset_t file_size;
@@ -138,7 +138,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
 static int avi_write_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
     offset_t list1, list2, strh, strf;
@@ -332,7 +332,7 @@ static int avi_write_header(AVFormatContext *s)
 
 static int avi_write_ix(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     char tag[5];
     char ix_tag[] = "ix00";
@@ -389,7 +389,7 @@ static int avi_write_ix(AVFormatContext *s)
 
 static int avi_write_idx1(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     offset_t idx_chunk;
     int i;
@@ -435,7 +435,7 @@ static int avi_write_idx1(AVFormatContext *s)
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned char tag[5];
     unsigned int flags=0;
     const int stream_index= pkt->stream_index;
@@ -476,7 +476,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
        avi->audio_strm_length[stream_index] += size;
     }
 
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         AVIIndex* idx = &avi->indexes[stream_index];
         int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
         int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
@@ -509,7 +509,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int avi_write_trailer(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int res = 0;
     int i, j, n, nb_frames;
     offset_t file_size;

@@ -120,7 +120,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
 
 static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     NUVContext *ctx = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     char id_string[12], version_string[5];
     double aspect, fps;
     int is_mythtv, width, height, v_packs, a_packs;
@@ -183,7 +183,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 
 static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     NUVContext *ctx = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint8_t hdr[HDRSIZE];
     frametype_t frametype;
     int ret, size;

@@ -64,7 +64,7 @@ static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
     int fill_size, h;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
@@ -128,7 +128,7 @@ static int ffm_write_header(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     FFMStream *fst;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *codec;
     int bit_rate, i;
 
@@ -278,7 +278,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int ffm_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     FFMContext *ffm = s->priv_data;
 
     /* flush packets */
@@ -314,7 +314,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
         if (size <= len)
             return 1;
     }
-    pos = url_ftell(&s->pb);
+    pos = url_ftell(s->pb);
     if (pos == ffm->write_index) {
         /* exactly at the end of stream */
         return 0;
@@ -335,7 +335,7 @@ static int ffm_read_data(AVFormatContext *s,
                          uint8_t *buf, int size, int first)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int len, fill_size, size1, frame_offset;
 
     size1 = size;
@@ -393,7 +393,7 @@ static int ffm_read_data(AVFormatContext *s,
 static void adjust_write_index(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int64_t pts;
     //offset_t orig_write_index = ffm->write_index;
     offset_t pos_min, pos_max;
@@ -452,7 +452,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     FFMStream *fst;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *codec;
     int i, nb_streams;
     uint32_t tag;
@@ -585,7 +585,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 #if 0
         printf("pos=%08"PRIx64" spos=%"PRIx64", write_index=%"PRIx64" size=%"PRIx64"\n",
-               url_ftell(&s->pb), s->pb.pos, ffm->write_index, ffm->file_size);
+               url_ftell(s->pb), s->pb.pos, ffm->write_index, ffm->file_size);
 #endif
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
@@ -610,7 +610,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
-        pkt->pos = url_ftell(&s->pb);
+        pkt->pos = url_ftell(s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= PKT_FLAG_KEY;
 
@@ -638,7 +638,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 static void ffm_seek1(AVFormatContext *s, offset_t pos1)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t pos;
 
     pos = pos1 + ffm->write_index;
@@ -652,7 +652,7 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
 
 static int64_t get_pts(AVFormatContext *s, offset_t pos)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int64_t pts;
 
     ffm_seek1(s, pos);

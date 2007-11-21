@@ -201,7 +201,7 @@ static inline int url_is_streamed(ByteIOContext *s)
 
 /** @note when opened as read/write, the buffers are only used for
    writing */
-int url_fdopen(ByteIOContext *s, URLContext *h);
+int url_fdopen(ByteIOContext **s, URLContext *h);
 
 /** @warning must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size);
@@ -213,7 +213,7 @@ int url_resetbuf(ByteIOContext *s, int flags);
 
 /** @note when opened as read/write, the buffers are only used for
    writing */
-int url_fopen(ByteIOContext *s, const char *filename, int flags);
+int url_fopen(ByteIOContext **s, const char *filename, int flags);
 int url_fclose(ByteIOContext *s);
 URLContext *url_fileno(ByteIOContext *s);
 
@@ -227,7 +227,7 @@ URLContext *url_fileno(ByteIOContext *s);
  */
 int url_fget_max_packet_size(ByteIOContext *s);
 
-int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags);
+int url_open_buf(ByteIOContext **s, uint8_t *buf, int buf_size, int flags);
 
 /** return the written or read size */
 int url_close_buf(ByteIOContext *s);
@@ -238,7 +238,7 @@ int url_close_buf(ByteIOContext *s);
  * @param s new IO context
  * @return zero if no error.
  */
-int url_open_dyn_buf(ByteIOContext *s);
+int url_open_dyn_buf(ByteIOContext **s);
 
 /**
  * Open a write only packetized memory stream with a maximum packet
@@ -249,7 +249,7 @@ int url_open_dyn_buf(ByteIOContext *s);
  * @param max_packet_size maximum packet size (must be > 0)
  * @return zero if no error.
  */
-int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size);
+int url_open_dyn_packet_buf(ByteIOContext **s, int max_packet_size);
 
 /**
  * Return the written size and a pointer to the buffer. The buffer

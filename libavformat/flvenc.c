@@ -126,7 +126,7 @@ static void put_amf_bool(ByteIOContext *pb, int b) {
 
 static int flv_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
     int i, width, height, samplerate, samplesize, channels, audiocodecid, videocodecid;
     double framerate = 0.0;
@@ -256,7 +256,7 @@ static int flv_write_trailer(AVFormatContext *s)
 {
     int64_t file_size;
 
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
 
     file_size = url_ftell(pb);
@@ -273,7 +273,7 @@ static int flv_write_trailer(AVFormatContext *s)
 
 static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
     FLVContext *flv = s->priv_data;
     int size= pkt->size;

@@ -84,7 +84,7 @@ static int adts_write_frame_header(AVFormatContext *s, int size)
     put_bits(&pb, 2, 0);        /* number_of_raw_data_blocks_in_frame */
 
     flush_put_bits(&pb);
-    put_buffer(&s->pb, buf, ADTS_HEADER_SIZE);
+    put_buffer(s->pb, buf, ADTS_HEADER_SIZE);
 
     return 0;
 }
@@ -92,7 +92,7 @@ static int adts_write_frame_header(AVFormatContext *s, int size)
 static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADTSContext *adts = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     if (!pkt->size)
         return 0;

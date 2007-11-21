@@ -466,19 +466,21 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
 
 static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec, int native_id)
 {
-    ByteIOContext dyn_cp;
+    ByteIOContext *dyn_cp;
     uint8_t *codecpriv;
-    int ret = 0, codecpriv_size;
+    int ret, codecpriv_size;
 
-    url_open_dyn_buf(&dyn_cp);
+    ret = url_open_dyn_buf(&dyn_cp);
+    if(ret < 0)
+        return ret;
 
     if (native_id) {
         if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA)
-            ret = put_xiph_codecpriv(s, &dyn_cp, codec);
+            ret = put_xiph_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == CODEC_ID_FLAC)
-            ret = put_flac_codecpriv(s, &dyn_cp, codec);
+            ret = put_flac_codecpriv(s, dyn_cp, codec);
         else if (codec->extradata_size)
-            put_buffer(&dyn_cp, codec->extradata, codec->extradata_size);
+            put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
@@ -487,7 +489,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
             ret = -1;
         }
 
-        put_bmp_header(&dyn_cp, codec, codec_bmp_tags, 0);
+        put_bmp_header(dyn_cp, codec, codec_bmp_tags, 0);
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
         if (!codec->codec_tag)
@@ -497,10 +499,10 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
             ret = -1;
         }
 
-        put_wav_header(&dyn_cp, codec);
+        put_wav_header(dyn_cp, codec);
     }
 
-    codecpriv_size = url_close_dyn_buf(&dyn_cp, &codecpriv);
+    codecpriv_size = url_close_dyn_buf(dyn_cp, &codecpriv);
     if (codecpriv_size)
         put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv, codecpriv_size);
     av_free(codecpriv);
@@ -510,7 +512,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     ebml_master tracks;
     int i, j, ret;
 
@@ -613,7 +615,7 @@ static int mkv_write_tracks(AVFormatContext *s)
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     ebml_master ebml_header, segment_info;
     int ret;
 
@@ -703,7 +705,7 @@ static int mkv_blockgroup_size(AVPacket *pkt)
 static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *pkt, int flags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
@@ -719,7 +721,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
     int ret;
@@ -761,7 +763,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t currentpos, second_seekhead, cuespos;
     int ret;
 

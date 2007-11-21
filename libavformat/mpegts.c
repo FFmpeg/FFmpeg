@@ -1098,7 +1098,7 @@ static int read_packet(ByteIOContext *pb, uint8_t *buf, int raw_packet_size)
 static int handle_packets(MpegTSContext *ts, int nb_packets)
 {
     AVFormatContext *s = ts->stream;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint8_t packet[TS_PACKET_SIZE];
     int packet_num, ret;
 
@@ -1180,7 +1180,7 @@ static int mpegts_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
     MpegTSContext *ts = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint8_t buf[1024];
     int len;
     int64_t pos;
@@ -1243,7 +1243,7 @@ static int mpegts_read_header(AVFormatContext *s,
         nb_pcrs = 0;
         nb_packets = 0;
         for(;;) {
-            ret = read_packet(&s->pb, packet, ts->raw_packet_size);
+            ret = read_packet(s->pb, packet, ts->raw_packet_size);
             if (ret < 0)
                 return -1;
             pid = AV_RB16(packet + 1) & 0x1fff;
@@ -1291,8 +1291,8 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
 
     if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
         return AVERROR(ENOMEM);
-    pkt->pos= url_ftell(&s->pb);
-    ret = read_packet(&s->pb, pkt->data, ts->raw_packet_size);
+    pkt->pos= url_ftell(s->pb);
+    ret = read_packet(s->pb, pkt->data, ts->raw_packet_size);
     if (ret < 0) {
         av_free_packet(pkt);
         return ret;
@@ -1301,10 +1301,10 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
         /* compute exact PCR for each packet */
         if (parse_pcr(&pcr_h, &pcr_l, pkt->data) == 0) {
             /* we read the next PCR (XXX: optimize it by using a bigger buffer */
-            pos = url_ftell(&s->pb);
+            pos = url_ftell(s->pb);
             for(i = 0; i < MAX_PACKET_READAHEAD; i++) {
-                url_fseek(&s->pb, pos + i * ts->raw_packet_size, SEEK_SET);
-                get_buffer(&s->pb, pcr_buf, 12);
+                url_fseek(s->pb, pos + i * ts->raw_packet_size, SEEK_SET);
+                get_buffer(s->pb, pcr_buf, 12);
                 if (parse_pcr(&next_pcr_h, &next_pcr_l, pcr_buf) == 0) {
                     /* XXX: not precise enough */
                     ts->pcr_incr = ((next_pcr_h - pcr_h) * 300 + (next_pcr_l - pcr_l)) /
@@ -1312,7 +1312,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
                     break;
                 }
             }
-            url_fseek(&s->pb, pos, SEEK_SET);
+            url_fseek(s->pb, pos, SEEK_SET);
             /* no next PCR found: we use previous increment */
             ts->cur_pcr = pcr_h * 300 + pcr_l;
         }
@@ -1354,8 +1354,8 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     pos = ((*ppos  + ts->raw_packet_size - 1) / ts->raw_packet_size) * ts->raw_packet_size;
     if (find_next) {
         for(;;) {
-            url_fseek(&s->pb, pos, SEEK_SET);
-            if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            url_fseek(s->pb, pos, SEEK_SET);
+            if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
             if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
@@ -1368,8 +1368,8 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             pos -= ts->raw_packet_size;
             if (pos < 0)
                 return AV_NOPTS_VALUE;
-            url_fseek(&s->pb, pos, SEEK_SET);
-            if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            url_fseek(s->pb, pos, SEEK_SET);
+            if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
             if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
@@ -1390,17 +1390,17 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
 
-    pos= url_ftell(&s->pb);
+    pos= url_ftell(s->pb);
 
     for(;;) {
-        url_fseek(&s->pb, pos, SEEK_SET);
-        if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+        url_fseek(s->pb, pos, SEEK_SET);
+        if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return -1;
 //        pid = AV_RB16(buf + 1) & 0x1fff;
         if(buf[1] & 0x40) break;
         pos += ts->raw_packet_size;
     }
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
 
     return 0;
 }

@@ -54,7 +54,7 @@ static int av_write(void * h, size_t len, const uint8_t * buf) {
 
 static int nut_write_header(AVFormatContext * avf) {
     NUTContext * priv = avf->priv_data;
-    ByteIOContext * bc = &avf->pb;
+    ByteIOContext * bc = avf->pb;
     nut_muxer_opts_t mopts = {
         .output = {
             .priv = bc,
@@ -137,7 +137,7 @@ static int nut_write_packet(AVFormatContext * avf, AVPacket * pkt) {
 }
 
 static int nut_write_trailer(AVFormatContext * avf) {
-    ByteIOContext * bc = &avf->pb;
+    ByteIOContext * bc = avf->pb;
     NUTContext * priv = avf->priv_data;
     int i;
 
@@ -187,7 +187,7 @@ static off_t av_seek(void * h, long long pos, int whence) {
 
 static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     NUTContext * priv = avf->priv_data;
-    ByteIOContext * bc = &avf->pb;
+    ByteIOContext * bc = avf->pb;
     nut_demuxer_opts_t dopts = {
         .input = {
             .priv = bc,
@@ -272,7 +272,7 @@ static int nut_read_packet(AVFormatContext * avf, AVPacket * pkt) {
     if (pd.flags & NUT_FLAG_KEY) pkt->flags |= PKT_FLAG_KEY;
     pkt->pts = pd.pts;
     pkt->stream_index = pd.stream;
-    pkt->pos = url_ftell(&avf->pb);
+    pkt->pos = url_ftell(avf->pb);
 
     ret = nut_read_frame(priv->nut, &pd.len, pkt->data);
 

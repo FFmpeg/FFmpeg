@@ -690,19 +690,19 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                     size = put_system_header(ctx, buf_ptr, 0);
                     buf_ptr += size;
                     size = buf_ptr - buffer;
-                    put_buffer(&ctx->pb, buffer, size);
+                    put_buffer(ctx->pb, buffer, size);
 
-                    put_be32(&ctx->pb, PRIVATE_STREAM_2);
-                    put_be16(&ctx->pb, 0x03d4);         // length
-                    put_byte(&ctx->pb, 0x00);           // substream ID, 00=PCI
+                    put_be32(ctx->pb, PRIVATE_STREAM_2);
+                    put_be16(ctx->pb, 0x03d4);         // length
+                    put_byte(ctx->pb, 0x00);           // substream ID, 00=PCI
                     for (i = 0; i < 979; i++)
-                        put_byte(&ctx->pb, 0x00);
+                        put_byte(ctx->pb, 0x00);
 
-                    put_be32(&ctx->pb, PRIVATE_STREAM_2);
-                    put_be16(&ctx->pb, 0x03fa);         // length
-                    put_byte(&ctx->pb, 0x01);           // substream ID, 01=DSI
+                    put_be32(ctx->pb, PRIVATE_STREAM_2);
+                    put_be16(ctx->pb, 0x03fa);         // length
+                    put_byte(ctx->pb, 0x01);           // substream ID, 01=DSI
                     for (i = 0; i < 1017; i++)
-                        put_byte(&ctx->pb, 0x00);
+                        put_byte(ctx->pb, 0x00);
 
                     memset(buffer, 0, 128);
                     buf_ptr = buffer;
@@ -725,7 +725,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         }
     }
     size = buf_ptr - buffer;
-    put_buffer(&ctx->pb, buffer, size);
+    put_buffer(ctx->pb, buffer, size);
 
     packet_size = s->packet_size - size;
 
@@ -830,16 +830,16 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
         nb_frames= get_nb_frames(ctx, stream, payload_size - stuffing_size);
 
-        put_be32(&ctx->pb, startcode);
+        put_be32(ctx->pb, startcode);
 
-        put_be16(&ctx->pb, packet_size);
+        put_be16(ctx->pb, packet_size);
 
         if (!s->is_mpeg2)
             for(i=0;i<stuffing_size;i++)
-                put_byte(&ctx->pb, 0xff);
+                put_byte(ctx->pb, 0xff);
 
         if (s->is_mpeg2) {
-            put_byte(&ctx->pb, 0x80); /* mpeg2 id */
+            put_byte(ctx->pb, 0x80); /* mpeg2 id */
 
             pes_flags=0;
 
@@ -856,64 +856,64 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             if (stream->packet_number == 0)
                 pes_flags |= 0x01;
 
-            put_byte(&ctx->pb, pes_flags); /* flags */
-            put_byte(&ctx->pb, header_len - 3 + stuffing_size);
+            put_byte(ctx->pb, pes_flags); /* flags */
+            put_byte(ctx->pb, header_len - 3 + stuffing_size);
 
             if (pes_flags & 0x80)  /*write pts*/
-                put_timestamp(&ctx->pb, (pes_flags & 0x40) ? 0x03 : 0x02, pts);
+                put_timestamp(ctx->pb, (pes_flags & 0x40) ? 0x03 : 0x02, pts);
             if (pes_flags & 0x40)  /*write dts*/
-                put_timestamp(&ctx->pb, 0x01, dts);
+                put_timestamp(ctx->pb, 0x01, dts);
 
             if (pes_flags & 0x01) {  /*write pes extension*/
-                put_byte(&ctx->pb, 0x10); /* flags */
+                put_byte(ctx->pb, 0x10); /* flags */
 
                 /* P-STD buffer info */
                 if (id == AUDIO_ID)
-                    put_be16(&ctx->pb, 0x4000 | stream->max_buffer_size/128);
+                    put_be16(ctx->pb, 0x4000 | stream->max_buffer_size/128);
                 else
-                    put_be16(&ctx->pb, 0x6000 | stream->max_buffer_size/1024);
+                    put_be16(ctx->pb, 0x6000 | stream->max_buffer_size/1024);
             }
 
         } else {
             if (pts != AV_NOPTS_VALUE) {
                 if (dts != pts) {
-                    put_timestamp(&ctx->pb, 0x03, pts);
-                    put_timestamp(&ctx->pb, 0x01, dts);
+                    put_timestamp(ctx->pb, 0x03, pts);
+                    put_timestamp(ctx->pb, 0x01, dts);
                 } else {
-                    put_timestamp(&ctx->pb, 0x02, pts);
+                    put_timestamp(ctx->pb, 0x02, pts);
                 }
             } else {
-                put_byte(&ctx->pb, 0x0f);
+                put_byte(ctx->pb, 0x0f);
             }
         }
 
         if (s->is_mpeg2) {
             /* special stuffing byte that is always written
                to prevent accidental generation of start codes. */
-            put_byte(&ctx->pb, 0xff);
+            put_byte(ctx->pb, 0xff);
 
             for(i=0;i<stuffing_size;i++)
-                put_byte(&ctx->pb, 0xff);
+                put_byte(ctx->pb, 0xff);
         }
 
         if (startcode == PRIVATE_STREAM_1) {
-            put_byte(&ctx->pb, id);
+            put_byte(ctx->pb, id);
             if (id >= 0xa0) {
                 /* LPCM (XXX: check nb_frames) */
-                put_byte(&ctx->pb, 7);
-                put_be16(&ctx->pb, 4); /* skip 3 header bytes */
-                put_byte(&ctx->pb, stream->lpcm_header[0]);
-                put_byte(&ctx->pb, stream->lpcm_header[1]);
-                put_byte(&ctx->pb, stream->lpcm_header[2]);
+                put_byte(ctx->pb, 7);
+                put_be16(ctx->pb, 4); /* skip 3 header bytes */
+                put_byte(ctx->pb, stream->lpcm_header[0]);
+                put_byte(ctx->pb, stream->lpcm_header[1]);
+                put_byte(ctx->pb, stream->lpcm_header[2]);
             } else if (id >= 0x40) {
                 /* AC3 */
-                put_byte(&ctx->pb, nb_frames);
-                put_be16(&ctx->pb, trailer_size+1);
+                put_byte(ctx->pb, nb_frames);
+                put_be16(ctx->pb, trailer_size+1);
             }
         }
 
         /* output data */
-        if(av_fifo_generic_read(&stream->fifo, payload_size - stuffing_size, &put_buffer, &ctx->pb) < 0)
+        if(av_fifo_generic_read(&stream->fifo, payload_size - stuffing_size, &put_buffer, ctx->pb) < 0)
             return -1;
         stream->bytes_to_iframe -= payload_size - stuffing_size;
     }else{
@@ -922,12 +922,12 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
     }
 
     if (pad_packet_bytes > 0)
-        put_padding_packet(ctx,&ctx->pb, pad_packet_bytes);
+        put_padding_packet(ctx,ctx->pb, pad_packet_bytes);
 
     for(i=0;i<zero_trail_bytes;i++)
-        put_byte(&ctx->pb, 0x00);
+        put_byte(ctx->pb, 0x00);
 
-    put_flush_packet(&ctx->pb);
+    put_flush_packet(ctx->pb);
 
     s->packet_number++;
 
@@ -952,11 +952,11 @@ static void put_vcd_padding_sector(AVFormatContext *ctx)
     int i;
 
     for(i=0;i<s->packet_size;i++)
-        put_byte(&ctx->pb, 0);
+        put_byte(ctx->pb, 0);
 
     s->vcd_padding_bytes_written += s->packet_size;
 
-    put_flush_packet(&ctx->pb);
+    put_flush_packet(ctx->pb);
 
     /* increasing the packet number is correct. The SCR of the following packs
        is calculated from the packet_number and it has to include the padding
@@ -1206,8 +1206,8 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     /* End header according to MPEG1 systems standard. We do not write
        it as it is usually not needed by decoders and because it
        complicates MPEG stream concatenation. */
-    //put_be32(&ctx->pb, ISO_11172_END_CODE);
-    //put_flush_packet(&ctx->pb);
+    //put_be32(ctx->pb, ISO_11172_END_CODE);
+    //put_flush_packet(ctx->pb);
 
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;

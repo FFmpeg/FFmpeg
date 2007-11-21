@@ -313,7 +313,7 @@ typedef struct {
 static int gif_write_header(AVFormatContext *s)
 {
     GIFContext *gif = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *enc, *video_enc;
     int i, width, height, loop_count /*, rate*/;
 
@@ -348,14 +348,14 @@ static int gif_write_header(AVFormatContext *s)
 
     gif_image_write_header(pb, width, height, loop_count, NULL);
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return 0;
 }
 
 static int gif_write_video(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     GIFContext *gif = s->priv_data;
     int jiffies;
     int64_t delay;
@@ -383,7 +383,7 @@ static int gif_write_video(AVFormatContext *s,
     gif_image_write_image(pb, 0, 0, enc->width, enc->height,
                           buf, enc->width * 3, PIX_FMT_RGB24);
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return 0;
 }
 
@@ -398,10 +398,10 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int gif_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     put_byte(pb, 0x3b);
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return 0;
 }
 

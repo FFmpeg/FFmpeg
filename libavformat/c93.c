@@ -56,7 +56,7 @@ static int read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *video;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     C93DemuxContext *c93 = s->priv_data;
     int i;
     int framecount = 0;
@@ -101,7 +101,7 @@ static int read_header(AVFormatContext *s,
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     C93DemuxContext *c93 = s->priv_data;
     C93BlockRecord *br = &c93->block_records[c93->current_block];
     int datasize;

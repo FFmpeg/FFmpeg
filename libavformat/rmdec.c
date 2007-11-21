@@ -50,7 +50,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                                       int read_all)
 {
     RMContext *rm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     char buf[256];
     uint32_t version;
     int i;
@@ -191,7 +191,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
 static int
 ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int v;
     int codec_data_size, size;
     int64_t codec_pos;
@@ -272,7 +272,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     RMContext *rm = s->priv_data;
     AVStream *st;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int tag;
     int tag_size, i;
     unsigned int start_time, duration;
@@ -395,7 +395,7 @@ static int get_num(ByteIOContext *pb, int *len)
 
 static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index, int64_t *pos){
     RMContext *rm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int len, num, res, i;
     AVStream *st;
     uint32_t state=0xFFFFFFFF;
@@ -451,7 +451,7 @@ skip:
 
 static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *pkt, int len)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int hdr, seq, pic_num, len2, pos;
     int type;
 
@@ -550,7 +550,7 @@ static int
 ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
                     int *seq, int *flags, int64_t *timestamp)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     RMContext *rm = s->priv_data;
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
@@ -647,7 +647,7 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
 static void
 ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     RMContext *rm = s->priv_data;
 
     assert (rm->audio_pkt_cnt > 0);
@@ -668,7 +668,7 @@ ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt)
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMContext *rm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     int i, len;
     int64_t timestamp, pos;
@@ -759,7 +759,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     if(rm->old_format)
         return AV_NOPTS_VALUE;
 
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
     rm->remaining_len=0;
     for(;;){
         int seq=1;
@@ -771,9 +771,9 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
         st = s->streams[stream_index2];
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-            h= get_byte(&s->pb); len--;
+            h= get_byte(s->pb); len--;
             if(!(h & 0x40)){
-                seq = get_byte(&s->pb); len--;
+                seq = get_byte(s->pb); len--;
             }
         }
 
@@ -784,7 +784,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
                 break;
         }
 
-        url_fskip(&s->pb, len);
+        url_fskip(s->pb, len);
     }
     *ppos = pos;
     return dts;

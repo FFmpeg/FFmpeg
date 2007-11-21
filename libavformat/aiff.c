@@ -161,7 +161,7 @@ typedef struct {
 static int aiff_write_header(AVFormatContext *s)
 {
     AIFFOutputContext *aiff = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     AVExtFloat sample_rate;
     int aifc = 0;
@@ -231,14 +231,14 @@ static int aiff_write_header(AVFormatContext *s)
 
 static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
 
 static int aiff_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AIFFOutputContext *aiff = s->priv_data;
     AVCodecContext *enc = s->streams[0]->codec;
 
@@ -250,7 +250,7 @@ static int aiff_write_trailer(AVFormatContext *s)
         end_size++;
     }
 
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         /* File length */
         url_fseek(pb, aiff->form, SEEK_SET);
         put_be32(pb, (uint32_t)(file_size - aiff->form - 4));
@@ -293,7 +293,7 @@ static int aiff_read_header(AVFormatContext *s,
     offset_t offset = 0;
     uint32_t tag;
     unsigned version = AIFF_C_VERSION1;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream * st = s->streams[0];
 
     /* check FORM header */
@@ -399,11 +399,11 @@ static int aiff_read_packet(AVFormatContext *s,
     int res;
 
     /* End of stream may be reached */
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
 
     /* Now for that packet */
-    res = av_get_packet(&s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
+    res = av_get_packet(s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
     if (res < 0)
         return res;
 

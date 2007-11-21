@@ -60,7 +60,7 @@ static void end_tag_be(ByteIOContext *pb, offset_t start)
 static int mmf_write_header(AVFormatContext *s)
 {
     MMFContext *mmf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t pos;
     int rate;
 
@@ -108,7 +108,7 @@ static int mmf_write_header(AVFormatContext *s)
 
 static int mmf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
@@ -127,12 +127,12 @@ static void put_varlength(ByteIOContext *pb, int val)
 
 static int mmf_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     MMFContext *mmf = s->priv_data;
     offset_t pos, size;
     int gatetime;
 
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         /* Fill in length fields */
         end_tag_be(pb, mmf->awapos);
         end_tag_be(pb, mmf->atrpos);
@@ -183,7 +183,7 @@ static int mmf_read_header(AVFormatContext *s,
 {
     MMFContext *mmf = s->priv_data;
     unsigned int tag;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     offset_t file_size, size;
     int rate, params;
@@ -265,7 +265,7 @@ static int mmf_read_packet(AVFormatContext *s,
     AVStream *st;
     int ret, size;
 
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
     st = s->streams[0];
 
@@ -280,7 +280,7 @@ static int mmf_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     pkt->stream_index = 0;
 
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
+    ret = get_buffer(s->pb, pkt->data, pkt->size);
     if (ret < 0)
         av_free_packet(pkt);
 

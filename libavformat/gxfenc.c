@@ -576,7 +576,7 @@ static int gxf_write_umf_packet(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
     int i;
 
@@ -671,7 +671,7 @@ static int gxf_write_eos_packet(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
     offset_t end;
     int i;
@@ -763,8 +763,8 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     GXFContext *gxf = s->priv_data;
 
-    gxf_write_media_packet(&s->pb, gxf, pkt);
-    put_flush_packet(&s->pb);
+    gxf_write_media_packet(s->pb, gxf, pkt);
+    put_flush_packet(s->pb);
     return 0;
 }
 

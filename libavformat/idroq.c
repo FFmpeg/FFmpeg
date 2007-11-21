@@ -69,7 +69,7 @@ static int roq_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     RoqDemuxContext *roq = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     unsigned char preamble[RoQ_CHUNK_PREAMBLE_SIZE];
     int i;
@@ -174,7 +174,7 @@ static int roq_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     RoqDemuxContext *roq = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ret = 0;
     unsigned int chunk_size;
     unsigned int chunk_type;
@@ -185,7 +185,7 @@ static int roq_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
 
-        if (url_feof(&s->pb))
+        if (url_feof(s->pb))
             return AVERROR(EIO);
 
         /* get the next chunk preamble */

@@ -239,7 +239,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int i;
     int size[3]={0}, ret[3]={0};
-    ByteIOContext f1[3], *f[3]= {&f1[0], &f1[1], &f1[2]};
+    ByteIOContext *f[3];
     AVCodecContext *codec= s1->streams[0]->codec;
 
     if (!s->is_pipe) {
@@ -251,7 +251,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (url_fopen(f[i], filename, URL_RDONLY) < 0)
+            if (url_fopen(&f[i], filename, URL_RDONLY) < 0)
                 return AVERROR(EIO);
             size[i]= url_fsize(f[i]);
 
@@ -263,7 +263,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if(codec->codec_id == CODEC_ID_RAWVIDEO && !codec->width)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
-        f[0] = &s1->pb;
+        f[0] = s1->pb;
         if (url_feof(f[0]))
             return AVERROR(EIO);
         size[0]= 4096;
@@ -322,7 +322,7 @@ static int img_write_header(AVFormatContext *s)
 static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoData *img = s->priv_data;
-    ByteIOContext pb1[3], *pb[3]= {&pb1[0], &pb1[1], &pb1[2]};
+    ByteIOContext *pb[3];
     char filename[1024];
     AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
     int i;
@@ -332,7 +332,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
                                   img->path, img->img_number) < 0 && img->img_number>1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (url_fopen(pb[i], filename, URL_WRONLY) < 0)
+            if (url_fopen(&pb[i], filename, URL_WRONLY) < 0)
                 return AVERROR(EIO);
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
@@ -340,7 +340,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
             filename[ strlen(filename) - 1 ]= 'U' + i;
         }
     } else {
-        pb[0] = &s->pb;
+        pb[0] = s->pb;
     }
 
     if(codec->codec_id == CODEC_ID_RAWVIDEO){

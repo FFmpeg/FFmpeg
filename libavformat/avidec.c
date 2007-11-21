@@ -106,7 +106,7 @@ static int get_riff(AVIContext *avi, ByteIOContext *pb)
 
 static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int longs_pre_entry= get_le16(pb);
     int index_sub_type = get_byte(pb);
     int index_type     = get_byte(pb);
@@ -118,7 +118,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     AVIStream *ast;
     int i;
     int64_t last_pos= -1;
-    int64_t filesize= url_fsize(&s->pb);
+    int64_t filesize= url_fsize(s->pb);
 
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_ERROR, "longs_pre_entry:%d index_type:%d entries_in_use:%d chunk_id:%X base:%16"PRIX64"\n",
@@ -225,7 +225,7 @@ static int avi_read_tag(ByteIOContext *pb, char *buf, int maxlen,  unsigned int 
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint32_t tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size, nb_frames;
@@ -583,7 +583,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int n, d[8], size;
     offset_t i, sync;
     void* dstr;
@@ -628,7 +628,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(i>=0){
             int64_t pos= best_st->index_entries[i].pos;
             pos += best_ast->packet_size - best_ast->remaining;
-            url_fseek(&s->pb, pos + 8, SEEK_SET);
+            url_fseek(s->pb, pos + 8, SEEK_SET);
 //        av_log(NULL, AV_LOG_DEBUG, "pos=%"PRId64"\n", pos);
 
             assert(best_ast->remaining <= best_ast->packet_size);
@@ -819,7 +819,7 @@ resync:
 static int avi_read_idx1(AVFormatContext *s, int size)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int nb_index_entries, i;
     AVStream *st;
     AVIStream *ast;
@@ -890,7 +890,7 @@ static int guess_ni_flag(AVFormatContext *s){
 static int avi_load_index(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint32_t tag, size;
     offset_t pos= url_ftell(pb);
 
@@ -965,7 +965,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         /* DV demux so it can synth correct timestamps              */
         dv_offset_reset(avi->dv_demux, timestamp);
 
-        url_fseek(&s->pb, pos, SEEK_SET);
+        url_fseek(s->pb, pos, SEEK_SET);
         avi->stream_index= -1;
         return 0;
     }
@@ -1005,7 +1005,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     }
 
     /* do the seek */
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
     avi->stream_index= -1;
     return 0;
 }

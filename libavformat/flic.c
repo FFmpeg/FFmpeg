@@ -67,7 +67,7 @@ static int flic_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     FlicDemuxContext *flic = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned char header[FLIC_HEADER_SIZE];
     AVStream *st;
     int speed;
@@ -142,7 +142,7 @@ static int flic_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
     FlicDemuxContext *flic = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int packet_read = 0;
     unsigned int size;
     int magic;

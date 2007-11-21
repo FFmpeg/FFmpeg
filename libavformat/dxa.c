@@ -45,7 +45,7 @@ static int dxa_probe(AVProbeData *p)
 
 static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     DXAContext *c = s->priv_data;
     AVStream *st, *ast;
     uint32_t tag;
@@ -144,19 +144,19 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if(!c->readvid && c->has_sound && c->bytes_left){
         c->readvid = 1;
-        url_fseek(&s->pb, c->wavpos, SEEK_SET);
+        url_fseek(s->pb, c->wavpos, SEEK_SET);
         size = FFMIN(c->bytes_left, c->bpc);
-        ret = av_get_packet(&s->pb, pkt, size);
+        ret = av_get_packet(s->pb, pkt, size);
         pkt->stream_index = 1;
         if(ret != size)
             return AVERROR(EIO);
         c->bytes_left -= size;
-        c->wavpos = url_ftell(&s->pb);
+        c->wavpos = url_ftell(s->pb);
         return 0;
     }
-    url_fseek(&s->pb, c->vidpos, SEEK_SET);
-    while(!url_feof(&s->pb) && c->frames){
-        get_buffer(&s->pb, buf, 4);
+    url_fseek(s->pb, c->vidpos, SEEK_SET);
+    while(!url_feof(s->pb) && c->frames){
+        get_buffer(s->pb, buf, 4);
         switch(AV_RL32(buf)){
         case MKTAG('N', 'U', 'L', 'L'):
             if(av_new_packet(pkt, 4 + pal_size) < 0)
@@ -165,16 +165,16 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             memcpy(pkt->data + pal_size, buf, 4);
             c->frames--;
-            c->vidpos = url_ftell(&s->pb);
+            c->vidpos = url_ftell(s->pb);
             c->readvid = 0;
             return 0;
         case MKTAG('C', 'M', 'A', 'P'):
             pal_size = 768+4;
             memcpy(pal, buf, 4);
-            get_buffer(&s->pb, pal + 4, 768);
+            get_buffer(s->pb, pal + 4, 768);
             break;
         case MKTAG('F', 'R', 'A', 'M'):
-            get_buffer(&s->pb, buf + 4, DXA_EXTRA_SIZE - 4);
+            get_buffer(s->pb, buf + 4, DXA_EXTRA_SIZE - 4);
             size = AV_RB32(buf + 5);
             if(size > 0xFFFFFF){
                 av_log(s, AV_LOG_ERROR, "Frame size is too big: %d\n", size);
@@ -183,7 +183,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size) < 0)
                 return AVERROR(ENOMEM);
             memcpy(pkt->data + pal_size, buf, DXA_EXTRA_SIZE);
-            ret = get_buffer(&s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
+            ret = get_buffer(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
             if(ret != size){
                 av_free_packet(pkt);
                 return AVERROR(EIO);
@@ -191,7 +191,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             pkt->stream_index = 0;
             c->frames--;
-            c->vidpos = url_ftell(&s->pb);
+            c->vidpos = url_ftell(s->pb);
             c->readvid = 0;
             return 0;
         default:

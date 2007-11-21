@@ -39,7 +39,7 @@ static int voc_probe(AVProbeData *p)
 static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     voc_dec_context_t *voc = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int header_size;
     AVStream *st;
 
@@ -64,7 +64,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
     voc_dec_context_t *voc = s->priv_data;
     AVCodecContext *dec = st->codec;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     voc_type_t type;
     int size;
     int sample_rate = 0;

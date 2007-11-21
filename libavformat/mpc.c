@@ -55,31 +55,31 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     int t;
 
-    t = get_le24(&s->pb);
+    t = get_le24(s->pb);
     if(t != MKTAG('M', 'P', '+', 0)){
         if(t != MKTAG('I', 'D', '3', 0)){
             av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
             return -1;
         }
         /* skip ID3 tags and try again */
-        url_fskip(&s->pb, 3);
-        t  = get_byte(&s->pb) << 21;
-        t |= get_byte(&s->pb) << 14;
-        t |= get_byte(&s->pb) <<  7;
-        t |= get_byte(&s->pb);
+        url_fskip(s->pb, 3);
+        t  = get_byte(s->pb) << 21;
+        t |= get_byte(s->pb) << 14;
+        t |= get_byte(s->pb) <<  7;
+        t |= get_byte(s->pb);
         av_log(s, AV_LOG_DEBUG, "Skipping %d(%X) bytes of ID3 data\n", t, t);
-        url_fskip(&s->pb, t);
-        if(get_le24(&s->pb) != MKTAG('M', 'P', '+', 0)){
+        url_fskip(s->pb, t);
+        if(get_le24(s->pb) != MKTAG('M', 'P', '+', 0)){
             av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
             return -1;
         }
     }
-    c->ver = get_byte(&s->pb);
+    c->ver = get_byte(s->pb);
     if(c->ver != 0x07 && c->ver != 0x17){
         av_log(s, AV_LOG_ERROR, "Can demux Musepack SV7, got version %02X\n", c->ver);
         return -1;
     }
-    c->fcount = get_le32(&s->pb);
+    c->fcount = get_le32(s->pb);
     if((int64_t)c->fcount * sizeof(MPCFrame) >= UINT_MAX){
         av_log(s, AV_LOG_ERROR, "Too many frames, seeking is not possible\n");
         return -1;
@@ -100,7 +100,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st->codec->extradata_size = 16;
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
-    get_buffer(&s->pb, st->codec->extradata, 16);
+    get_buffer(s->pb, st->codec->extradata, 16);
     st->codec->sample_rate = mpc_rate[st->codec->extradata[2] & 3];
     av_set_pts_info(st, 32, MPC_FRAMESIZE, st->codec->sample_rate);
     /* scan for seekpoints */
@@ -120,22 +120,22 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
 
     if(c->curframe != c->lastframe + 1){
-        url_fseek(&s->pb, c->frames[c->curframe].pos, SEEK_SET);
+        url_fseek(s->pb, c->frames[c->curframe].pos, SEEK_SET);
         c->curbits = c->frames[c->curframe].skip;
     }
     c->lastframe = c->curframe;
     c->curframe++;
     curbits = c->curbits;
-    pos = url_ftell(&s->pb);
-    tmp = get_le32(&s->pb);
+    pos = url_ftell(s->pb);
+    tmp = get_le32(s->pb);
     if(curbits <= 12){
         size2 = (tmp >> (12 - curbits)) & 0xFFFFF;
     }else{
-        tmp = (tmp << 32) | get_le32(&s->pb);
+        tmp = (tmp << 32) | get_le32(s->pb);
         size2 = (tmp >> (44 - curbits)) & 0xFFFFF;
     }
     curbits += 20;
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
 
     size = ((size2 + curbits + 31) & ~31) >> 3;
     if(cur == c->frames_noted){
@@ -155,9 +155,9 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     pkt->pts = cur;
-    ret = get_buffer(&s->pb, pkt->data + 4, size);
+    ret = get_buffer(s->pb, pkt->data + 4, size);
     if(c->curbits)
-        url_fseek(&s->pb, -4, SEEK_CUR);
+        url_fseek(s->pb, -4, SEEK_CUR);
     if(ret < size){
         av_free_packet(pkt);
         return AVERROR(EIO);

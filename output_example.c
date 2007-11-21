@@ -538,7 +538,7 @@ int main(int argc, char **argv)
 
     if (!(fmt->flags & AVFMT_NOFILE)) {
         /* close the output file */
-        url_fclose(&oc->pb);
+        url_fclose(oc->pb);
     }
 
     /* free the stream */

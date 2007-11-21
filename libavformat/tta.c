@@ -40,25 +40,25 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, channels, bps, samplerate, datalen, framelen;
     uint64_t framepos;
 
-    if (get_le32(&s->pb) != ff_get_fourcc("TTA1"))
+    if (get_le32(s->pb) != ff_get_fourcc("TTA1"))
         return -1; // not tta file
 
-    url_fskip(&s->pb, 2); // FIXME: flags
-    channels = get_le16(&s->pb);
-    bps = get_le16(&s->pb);
-    samplerate = get_le32(&s->pb);
+    url_fskip(s->pb, 2); // FIXME: flags
+    channels = get_le16(s->pb);
+    bps = get_le16(s->pb);
+    samplerate = get_le32(s->pb);
     if(samplerate <= 0 || samplerate > 1000000){
         av_log(s, AV_LOG_ERROR, "nonsense samplerate\n");
         return -1;
     }
 
-    datalen = get_le32(&s->pb);
+    datalen = get_le32(s->pb);
     if(datalen < 0){
         av_log(s, AV_LOG_ERROR, "nonsense datalen\n");
         return -1;
     }
 
-    url_fskip(&s->pb, 4); // header crc
+    url_fskip(s->pb, 4); // header crc
 
     framelen = samplerate*256/245;
     c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
@@ -77,14 +77,14 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->start_time = 0;
     st->duration = datalen;
 
-    framepos = url_ftell(&s->pb) + 4*c->totalframes + 4;
+    framepos = url_ftell(s->pb) + 4*c->totalframes + 4;
 
     for (i = 0; i < c->totalframes; i++) {
-        uint32_t size = get_le32(&s->pb);
+        uint32_t size = get_le32(s->pb);
         av_add_index_entry(st, framepos, i*framelen, size, 0, AVINDEX_KEYFRAME);
         framepos += size;
     }
-    url_fskip(&s->pb, 4); // seektable crc
+    url_fskip(s->pb, 4); // seektable crc
 
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_TTA;
@@ -92,15 +92,15 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->sample_rate = samplerate;
     st->codec->bits_per_sample = bps;
 
-    st->codec->extradata_size = url_ftell(&s->pb);
+    st->codec->extradata_size = url_ftell(s->pb);
     if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
         //this check is redundant as get_buffer should fail
         av_log(s, AV_LOG_ERROR, "extradata_size too large\n");
         return -1;
     }
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
-    url_fseek(&s->pb, 0, SEEK_SET);
-    get_buffer(&s->pb, st->codec->extradata, st->codec->extradata_size);
+    url_fseek(s->pb, 0, SEEK_SET);
+    get_buffer(s->pb, st->codec->extradata, st->codec->extradata_size);
 
     return 0;
 }
@@ -117,7 +117,7 @@ static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = st->index_entries[c->currentframe].size;
 
-    ret = av_get_packet(&s->pb, pkt, size);
+    ret = av_get_packet(s->pb, pkt, size);
     pkt->dts = st->index_entries[c->currentframe++].timestamp;
     return ret;
 }
@@ -131,7 +131,7 @@ static int tta_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         return -1;
 
     c->currentframe = index;
-    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
 
     return 0;
 }

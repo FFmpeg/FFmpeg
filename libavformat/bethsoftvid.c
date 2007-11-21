@@ -59,7 +59,7 @@ static int vid_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     BVID_DemuxContext *vid = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *stream;
 
     /* load main header. Contents:
@@ -173,7 +173,7 @@ static int vid_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     BVID_DemuxContext *vid = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned char block_type;
     int audio_length;
     int ret_value;

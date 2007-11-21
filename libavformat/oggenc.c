@@ -37,11 +37,11 @@ typedef struct {
 
 static void ogg_update_checksum(AVFormatContext *s, offset_t crc_offset)
 {
-    offset_t pos = url_ftell(&s->pb);
-    uint32_t checksum = get_checksum(&s->pb);
-    url_fseek(&s->pb, crc_offset, SEEK_SET);
-    put_be32(&s->pb, checksum);
-    url_fseek(&s->pb, pos, SEEK_SET);
+    offset_t pos = url_ftell(s->pb);
+    uint32_t checksum = get_checksum(s->pb);
+    url_fseek(s->pb, crc_offset, SEEK_SET);
+    put_be32(s->pb, checksum);
+    url_fseek(s->pb, pos, SEEK_SET);
 }
 
 static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
@@ -54,24 +54,24 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     size = FFMIN(size, 255*255);
     page_segments = FFMIN((size/255)+!!size, 255);
 
-    init_checksum(&s->pb, ff_crc04C11DB7_update, 0);
-    put_tag(&s->pb, "OggS");
-    put_byte(&s->pb, 0);
-    put_byte(&s->pb, flags);
-    put_le64(&s->pb, granule);
-    put_le32(&s->pb, stream_index);
-    put_le32(&s->pb, oggstream->page_counter++);
-    crc_offset = url_ftell(&s->pb);
-    put_le32(&s->pb, 0); // crc
-    put_byte(&s->pb, page_segments);
+    init_checksum(s->pb, ff_crc04C11DB7_update, 0);
+    put_tag(s->pb, "OggS");
+    put_byte(s->pb, 0);
+    put_byte(s->pb, flags);
+    put_le64(s->pb, granule);
+    put_le32(s->pb, stream_index);
+    put_le32(s->pb, oggstream->page_counter++);
+    crc_offset = url_ftell(s->pb);
+    put_le32(s->pb, 0); // crc
+    put_byte(s->pb, page_segments);
     for (i = 0; i < page_segments-1; i++)
-        put_byte(&s->pb, 255);
+        put_byte(s->pb, 255);
     if (size) {
-        put_byte(&s->pb, size - (page_segments-1)*255);
-        put_buffer(&s->pb, data, size);
+        put_byte(s->pb, size - (page_segments-1)*255);
+        put_buffer(s->pb, data, size);
     }
     ogg_update_checksum(s, crc_offset);
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return size;
 }
 

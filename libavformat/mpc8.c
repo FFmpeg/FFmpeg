@@ -90,15 +90,15 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
-    url_fseek(&s->pb, off, SEEK_SET);
-    mpc8_get_chunk_header(&s->pb, &tag, &size);
+    url_fseek(s->pb, off, SEEK_SET);
+    mpc8_get_chunk_header(s->pb, &tag, &size);
     if(tag != TAG_SEEKTABLE){
         av_log(s, AV_LOG_ERROR, "No seek table at given position\n");
         return;
     }
     if(!(buf = av_malloc(size)))
         return;
-    get_buffer(&s->pb, buf, size);
+    get_buffer(s->pb, buf, size);
     init_get_bits(&gb, buf, size * 8);
     size = gb_get_v(&gb);
     if(size > UINT_MAX/4 || size > c->samples/1152){
@@ -126,7 +126,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
 
 static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, int64_t size)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int64_t pos, off;
 
     switch(tag){
@@ -144,7 +144,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
 static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MPCContext *c = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     int tag = 0;
     int64_t size, pos;
@@ -202,11 +202,11 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag;
     int64_t pos, size;
 
-    while(!url_feof(&s->pb)){
-        pos = url_ftell(&s->pb);
-        mpc8_get_chunk_header(&s->pb, &tag, &size);
+    while(!url_feof(s->pb)){
+        pos = url_ftell(s->pb);
+        mpc8_get_chunk_header(s->pb, &tag, &size);
         if(tag == TAG_AUDIOPACKET){
-            if(av_get_packet(&s->pb, pkt, size) < 0)
+            if(av_get_packet(s->pb, pkt, size) < 0)
                 return AVERROR(ENOMEM);
             pkt->stream_index = 0;
             pkt->pts = c->frame;
@@ -226,7 +226,7 @@ static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     int index = av_index_search_timestamp(st, timestamp, flags);
 
     if(index < 0) return -1;
-    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     c->frame = st->index_entries[index].timestamp;
     return 0;
 }

@@ -752,7 +752,7 @@ static void close_connection(HTTPContext *c)
             /* prepare header */
             if (url_open_dyn_buf(&ctx->pb) >= 0) {
                 av_write_trailer(ctx);
-                url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+                url_close_dyn_buf(ctx->pb, &c->pb_buffer);
             }
         }
     }
@@ -1596,9 +1596,9 @@ static void compute_stats(HTTPContext *c)
     char *p;
     time_t ti;
     int i, len;
-    ByteIOContext pb1, *pb = &pb1;
+    ByteIOContext *pb;
 
-    if (url_open_dyn_buf(pb) < 0) {
+    if (url_open_dyn_buf(&pb) < 0) {
         /* XXX: return an error ? */
         c->buffer_ptr = c->buffer;
         c->buffer_end = c->buffer;
@@ -2032,13 +2032,13 @@ static int http_prepare_data(HTTPContext *c)
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb.is_streamed = 1;
+        c->fmt_ctx.pb->is_streamed = 1;
 
         av_set_parameters(&c->fmt_ctx, NULL);
         if (av_write_header(&c->fmt_ctx) < 0)
             return -1;
 
-        len = url_close_dyn_buf(&c->fmt_ctx.pb, &c->pb_buffer);
+        len = url_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2182,7 +2182,7 @@ static int http_prepare_data(HTTPContext *c)
                         if (av_write_frame(ctx, &pkt))
                             c->state = HTTPSTATE_SEND_DATA_TRAILER;
 
-                        len = url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+                        len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
                         c->cur_frame_bytes = len;
                         c->buffer_ptr = c->pb_buffer;
                         c->buffer_end = c->pb_buffer + len;
@@ -2208,7 +2208,7 @@ static int http_prepare_data(HTTPContext *c)
             return -1;
         }
         av_write_trailer(ctx);
-        len = url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+        len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2261,7 +2261,7 @@ static int http_send_data(HTTPContext *c)
 
                 if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP) {
                     /* RTP packets are sent inside the RTSP TCP connection */
-                    ByteIOContext pb1, *pb = &pb1;
+                    ByteIOContext *pb;
                     int interleaved_index, size;
                     uint8_t header[4];
                     HTTPContext *rtsp_c;
@@ -2273,7 +2273,7 @@ static int http_send_data(HTTPContext *c)
                     /* if already sending something, then wait. */
                     if (rtsp_c->state != RTSPSTATE_WAIT_REQUEST)
                         break;
-                    if (url_open_dyn_buf(pb) < 0)
+                    if (url_open_dyn_buf(&pb) < 0)
                         goto fail1;
                     interleaved_index = c->packet_stream_index * 2;
                     /* RTCP packets are sent at odd indexes */
@@ -2432,14 +2432,13 @@ static int http_receive_data(HTTPContext *c)
             /* We have a header in our hands that contains useful data */
             AVFormatContext s;
             AVInputFormat *fmt_in;
-            ByteIOContext *pb = &s.pb;
             int i;
 
             memset(&s, 0, sizeof(s));
 
-            url_open_buf(pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
-            pb->buf_end = c->buffer_end;        /* ?? */
-            pb->is_streamed = 1;
+            url_open_buf(&s.pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
+            s.pb->buf_end = c->buffer_end;        /* ?? */
+            s.pb->is_streamed = 1;
 
             /* use feed output format name to find corresponding input format */
             fmt_in = av_find_input_format(feed->fmt->name);
@@ -2553,7 +2552,6 @@ static int rtsp_parse_request(HTTPContext *c)
     char url[1024];
     char protocol[32];
     char line[1024];
-    ByteIOContext pb1;
     int len;
     RTSPHeader header1, *header = &header1;
 
@@ -2568,8 +2566,7 @@ static int rtsp_parse_request(HTTPContext *c)
     av_strlcpy(c->url, url, sizeof(c->url));
     av_strlcpy(c->protocol, protocol, sizeof(c->protocol));
 
-    c->pb = &pb1;
-    if (url_open_dyn_buf(c->pb) < 0) {
+    if (url_open_dyn_buf(&c->pb) < 0) {
         /* XXX: cannot do more */
         c->pb = NULL; /* safety */
         return -1;
@@ -3164,7 +3161,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         av_free(ctx);
         return -1;
     }
-    url_close_dyn_buf(&ctx->pb, &dummy_buf);
+    url_close_dyn_buf(ctx->pb, &dummy_buf);
     av_free(dummy_buf);
 
     c->rtp_ctx[stream_index] = ctx;
@@ -3479,7 +3476,7 @@ static void build_feed_streams(void)
             }
             /* XXX: need better api */
             av_freep(&s->priv_data);
-            url_fclose(&s->pb);
+            url_fclose(s->pb);
         }
         /* get feed size and write index */
         fd = open(feed->feed_filename, O_RDONLY);

@@ -125,7 +125,7 @@ static void dump(unsigned char *buf,size_t len)
 static int str_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
     AVStream *st;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
@@ -249,7 +249,7 @@ if (str->audio_channel != -1)
 static int str_read_packet(AVFormatContext *s,
                            AVPacket *ret_pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int channel;

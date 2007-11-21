@@ -153,7 +153,7 @@ static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, ByteIOContext *pb
 
 static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     SIFFContext *c = s->priv_data;
     uint32_t tag;
 
@@ -189,12 +189,12 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (c->cur_frame >= c->frames)
             return AVERROR(EIO);
         if (c->curstrm == -1){
-            c->pktsize = get_le32(&s->pb) - 4;
-            c->flags = get_le16(&s->pb);
+            c->pktsize = get_le32(s->pb) - 4;
+            c->flags = get_le16(s->pb);
             c->gmcsize = (c->flags & VB_HAS_GMC) ? 4 : 0;
             if (c->gmcsize)
-                get_buffer(&s->pb, c->gmc, c->gmcsize);
-            c->sndsize = (c->flags & VB_HAS_AUDIO) ? get_le32(&s->pb): 0;
+                get_buffer(s->pb, c->gmc, c->gmcsize);
+            c->sndsize = (c->flags & VB_HAS_AUDIO) ? get_le32(s->pb): 0;
             c->curstrm = !!(c->flags & VB_HAS_AUDIO);
         }
 
@@ -205,11 +205,11 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             AV_WL16(pkt->data, c->flags);
             if (c->gmcsize)
                 memcpy(pkt->data + 2, c->gmc, c->gmcsize);
-            get_buffer(&s->pb, pkt->data + 2 + c->gmcsize, size - c->gmcsize - 2);
+            get_buffer(s->pb, pkt->data + 2 + c->gmcsize, size - c->gmcsize - 2);
             pkt->stream_index = 0;
             c->curstrm = -1;
         }else{
-            if (av_get_packet(&s->pb, pkt, c->sndsize - 4) < 0)
+            if (av_get_packet(s->pb, pkt, c->sndsize - 4) < 0)
                 return AVERROR(EIO);
             pkt->stream_index = 1;
             c->curstrm = 0;
@@ -219,7 +219,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (c->curstrm == -1)
             c->cur_frame++;
     }else{
-        size = av_get_packet(&s->pb, pkt, c->block_align);
+        size = av_get_packet(s->pb, pkt, c->block_align);
         if(size <= 0)
             return AVERROR(EIO);
     }

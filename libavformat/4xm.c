@@ -92,7 +92,7 @@ static int fourxm_probe(AVProbeData *p)
 static int fourxm_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
     int header_size;
@@ -224,7 +224,7 @@ static int fourxm_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
     FourxmDemuxContext *fourxm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size, out_size;
     int ret = 0;
@@ -235,7 +235,7 @@ static int fourxm_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
 
-        if ((ret = get_buffer(&s->pb, header, 8)) < 0)
+        if ((ret = get_buffer(s->pb, header, 8)) < 0)
             return ret;
         fourcc_tag = AV_RL32(&header[0]);
         size = AV_RL32(&header[4]);
@@ -265,9 +265,9 @@ static int fourxm_read_packet(AVFormatContext *s,
                 return AVERROR(EIO);
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;
-            pkt->pos = url_ftell(&s->pb);
+            pkt->pos = url_ftell(s->pb);
             memcpy(pkt->data, header, 8);
-            ret = get_buffer(&s->pb, &pkt->data[8], size);
+            ret = get_buffer(s->pb, &pkt->data[8], size);
 
             if (ret < 0)
                 av_free_packet(pkt);
@@ -282,7 +282,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             size-=8;
 
             if (track_number == fourxm->selected_track) {
-                ret= av_get_packet(&s->pb, pkt, size);
+                ret= av_get_packet(s->pb, pkt, size);
                 if(ret<0)
                     return AVERROR(EIO);
                 pkt->stream_index =

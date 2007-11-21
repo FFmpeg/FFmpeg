@@ -65,7 +65,7 @@ static int mtv_probe(AVProbeData *p)
 static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MTVDemuxContext    *mtv = s->priv_data;
-    ByteIOContext      *pb  = &s->pb;
+    ByteIOContext      *pb  = s->pb;
     AVStream           *st;
 
 
@@ -131,7 +131,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MTVDemuxContext *mtv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ret;
 #ifndef WORDS_BIGENDIAN
     int i;

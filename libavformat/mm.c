@@ -72,7 +72,7 @@ static int mm_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     MmDemuxContext *mm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
 
     unsigned int type, length;
@@ -127,7 +127,7 @@ static int mm_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     MmDemuxContext *mm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned char preamble[MM_PREAMBLE_SIZE];
     unsigned char pal[MM_PALETTE_SIZE];
     unsigned int type, length;
@@ -178,7 +178,7 @@ static int mm_read_packet(AVFormatContext *s,
             return 0;
 
         case MM_TYPE_AUDIO :
-            if (av_get_packet(&s->pb, pkt, length)<0)
+            if (av_get_packet(s->pb, pkt, length)<0)
                 return AVERROR(ENOMEM);
             pkt->size = length;
             pkt->stream_index = 1;

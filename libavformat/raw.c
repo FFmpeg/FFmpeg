@@ -33,8 +33,8 @@ static int flac_write_header(struct AVFormatContext *s)
     uint8_t *streaminfo = s->streams[0]->codec->extradata;
     int len = s->streams[0]->codec->extradata_size;
     if(streaminfo != NULL && len > 0) {
-        put_buffer(&s->pb, header, 8);
-        put_buffer(&s->pb, streaminfo, len);
+        put_buffer(s->pb, header, 8);
+        put_buffer(s->pb, streaminfo, len);
     }
     return 0;
 }
@@ -46,16 +46,16 @@ static int roq_write_header(struct AVFormatContext *s)
         0x84, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x1E, 0x00
     };
 
-    put_buffer(&s->pb, header, 8);
-    put_flush_packet(&s->pb);
+    put_buffer(s->pb, header, 8);
+    put_flush_packet(s->pb);
 
     return 0;
 }
 
 static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(&s->pb, pkt->data, pkt->size);
-    put_flush_packet(&s->pb);
+    put_buffer(s->pb, pkt->data, pkt->size);
+    put_flush_packet(s->pb);
     return 0;
 }
 #endif //CONFIG_MUXERS
@@ -107,7 +107,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size= RAW_PACKET_SIZE;
 
-    ret= av_get_packet(&s->pb, pkt, size);
+    ret= av_get_packet(s->pb, pkt, size);
 
     pkt->stream_index = 0;
     if (ret <= 0) {
@@ -128,9 +128,9 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     if (av_new_packet(pkt, size) < 0)
         return AVERROR(EIO);
 
-    pkt->pos= url_ftell(&s->pb);
+    pkt->pos= url_ftell(s->pb);
     pkt->stream_index = 0;
-    ret = get_partial_buffer(&s->pb, pkt->data, size);
+    ret = get_partial_buffer(s->pb, pkt->data, size);
     if (ret <= 0) {
         av_free_packet(pkt);
         return AVERROR(EIO);
@@ -144,19 +144,19 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size, w, h, unk1, unk2;
 
-    if (get_le32(&s->pb) != MKTAG('M', 'J', 'P', 'G'))
+    if (get_le32(s->pb) != MKTAG('M', 'J', 'P', 'G'))
         return AVERROR(EIO); // FIXME
 
-    size = get_le32(&s->pb);
+    size = get_le32(s->pb);
 
-    w = get_le16(&s->pb);
-    h = get_le16(&s->pb);
+    w = get_le16(s->pb);
+    h = get_le16(s->pb);
 
-    url_fskip(&s->pb, 8); // zero + size (padded?)
-    url_fskip(&s->pb, 2);
-    unk1 = get_le16(&s->pb);
-    unk2 = get_le16(&s->pb);
-    url_fskip(&s->pb, 22); // ascii timestamp
+    url_fskip(s->pb, 8); // zero + size (padded?)
+    url_fskip(s->pb, 2);
+    unk1 = get_le16(s->pb);
+    unk2 = get_le16(s->pb);
+    url_fskip(s->pb, 22); // ascii timestamp
 
     av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
         size, w, h, unk1, unk2);
@@ -164,9 +164,9 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (av_new_packet(pkt, size) < 0)
         return AVERROR(EIO);
 
-    pkt->pos = url_ftell(&s->pb);
+    pkt->pos = url_ftell(s->pb);
     pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, size);
+    ret = get_buffer(s->pb, pkt->data, size);
     if (ret <= 0) {
         av_free_packet(pkt);
         return AVERROR(EIO);
@@ -206,7 +206,7 @@ int pcm_read_seek(AVFormatContext *s,
 
     /* recompute exact position */
     st->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
-    url_fseek(&s->pb, pos + s->data_offset, SEEK_SET);
+    url_fseek(s->pb, pos + s->data_offset, SEEK_SET);
     return 0;
 }
 
@@ -843,7 +843,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (packet_size < 0)
         return -1;
 
-    ret= av_get_packet(&s->pb, pkt, packet_size);
+    ret= av_get_packet(s->pb, pkt, packet_size);
 
     pkt->stream_index = 0;
     if (ret != packet_size) {

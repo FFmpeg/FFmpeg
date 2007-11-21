@@ -21,8 +21,8 @@
 #ifndef FFMPEG_AVFORMAT_H
 #define FFMPEG_AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(19<<8)+0)
-#define LIBAVFORMAT_VERSION     51.19.0
+#define LIBAVFORMAT_VERSION_INT ((52<<16)+(0<<8)+0)
+#define LIBAVFORMAT_VERSION     52.0.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -369,7 +369,7 @@ typedef struct AVFormatContext {
     struct AVInputFormat *iformat;
     struct AVOutputFormat *oformat;
     void *priv_data;
-    ByteIOContext pb;
+    ByteIOContext *pb;
     unsigned int nb_streams;
     AVStream *streams[MAX_STREAMS];
     char filename[1024]; /**< input or output filename */

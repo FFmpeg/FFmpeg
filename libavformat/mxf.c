@@ -269,7 +269,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
 {
     static const uint8_t checkv[16] = {0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b};
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t end = url_ftell(pb) + klv->length;
     uint64_t size;
     uint64_t orig_size;
@@ -326,8 +326,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
 
-    while (!url_feof(&s->pb)) {
-        if (klv_read_packet(&klv, &s->pb) < 0)
+    while (!url_feof(s->pb)) {
+        if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
 #ifdef DEBUG
         PRINT_KEY(s, "read packet", klv.key);
@@ -344,22 +344,22 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             int index = mxf_get_stream_index(s, &klv);
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR, "error getting stream index\n");
-                url_fskip(&s->pb, klv.length);
+                url_fskip(s->pb, klv.length);
                 return -1;
             }
             /* check for 8 channels AES3 element */
             if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
-                if (mxf_get_d10_aes3_packet(&s->pb, s->streams[index], pkt, klv.length) < 0) {
+                if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
                     return -1;
                 }
             } else
-                av_get_packet(&s->pb, pkt, klv.length);
+                av_get_packet(s->pb, pkt, klv.length);
             pkt->stream_index = index;
             pkt->pos = klv.offset;
             return 0;
         } else
-            url_fskip(&s->pb, klv.length);
+            url_fskip(s->pb, klv.length);
     }
     return AVERROR(EIO);
 }
@@ -897,7 +897,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 
 static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child)(), int ctx_size, enum MXFMetadataSetType type)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
+    ByteIOContext *pb = mxf->fc->pb;
     MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
     uint64_t klv_end= url_ftell(pb) + klv->length;
 
@@ -926,16 +926,16 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
-    if (!mxf_read_sync(&s->pb, mxf_header_partition_pack_key, 14)) {
+    if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
         return -1;
     }
-    url_fseek(&s->pb, -14, SEEK_CUR);
+    url_fseek(s->pb, -14, SEEK_CUR);
     mxf->fc = s;
-    while (!url_feof(&s->pb)) {
+    while (!url_feof(s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
 
-        if (klv_read_packet(&klv, &s->pb) < 0)
+        if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
 #ifdef DEBUG
         PRINT_KEY(s, "read header", klv.key);
@@ -943,7 +943,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
-            url_fseek(&s->pb, klv.offset, SEEK_SET);
+            url_fseek(s->pb, klv.offset, SEEK_SET);
             break;
         }
 
@@ -957,7 +957,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         }
         if (!metadata->read)
-            url_fskip(&s->pb, klv.length);
+            url_fskip(s->pb, klv.length);
     }
     return mxf_parse_structural_metadata(mxf);
 }
@@ -1018,7 +1018,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if (sample_time < 0)
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
-    url_fseek(&s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    url_fseek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
     av_update_cur_dts(s, st, sample_time);
     return 0;
 }

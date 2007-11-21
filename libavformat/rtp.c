@@ -360,7 +360,7 @@ static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp, uint32
 
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 {
-    ByteIOContext pb;
+    ByteIOContext *pb;
     uint8_t *buf;
     int len;
     int rtcp_bytes;
@@ -391,11 +391,11 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
         return -1;
 
     // Receiver Report
-    put_byte(&pb, (RTP_VERSION << 6) + 1); /* 1 report block */
-    put_byte(&pb, 201);
-    put_be16(&pb, 7); /* length in words - 1 */
-    put_be32(&pb, s->ssrc); // our own SSRC
-    put_be32(&pb, s->ssrc); // XXX: should be the server's here!
+    put_byte(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
+    put_byte(pb, 201);
+    put_be16(pb, 7); /* length in words - 1 */
+    put_be32(pb, s->ssrc); // our own SSRC
+    put_be32(pb, s->ssrc); // XXX: should be the server's here!
     // some placeholders we should really fill...
     // RFC 1889/p64
     extended_max= stats->cycles + stats->max_seq;
@@ -412,38 +412,38 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 
     fraction= (fraction<<24) | lost;
 
-    put_be32(&pb, fraction); /* 8 bits of fraction, 24 bits of total packets lost */
-    put_be32(&pb, extended_max); /* max sequence received */
-    put_be32(&pb, stats->jitter>>4); /* jitter */
+    put_be32(pb, fraction); /* 8 bits of fraction, 24 bits of total packets lost */
+    put_be32(pb, extended_max); /* max sequence received */
+    put_be32(pb, stats->jitter>>4); /* jitter */
 
     if(s->last_rtcp_ntp_time==AV_NOPTS_VALUE)
     {
-        put_be32(&pb, 0); /* last SR timestamp */
-        put_be32(&pb, 0); /* delay since last SR */
+        put_be32(pb, 0); /* last SR timestamp */
+        put_be32(pb, 0); /* delay since last SR */
     } else {
         uint32_t middle_32_bits= s->last_rtcp_ntp_time>>16; // this is valid, right? do we need to handle 64 bit values special?
         uint32_t delay_since_last= ntp_time - s->last_rtcp_ntp_time;
 
-        put_be32(&pb, middle_32_bits); /* last SR timestamp */
-        put_be32(&pb, delay_since_last); /* delay since last SR */
+        put_be32(pb, middle_32_bits); /* last SR timestamp */
+        put_be32(pb, delay_since_last); /* delay since last SR */
     }
 
     // CNAME
-    put_byte(&pb, (RTP_VERSION << 6) + 1); /* 1 report block */
-    put_byte(&pb, 202);
+    put_byte(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
+    put_byte(pb, 202);
     len = strlen(s->hostname);
-    put_be16(&pb, (6 + len + 3) / 4); /* length in words - 1 */
-    put_be32(&pb, s->ssrc);
-    put_byte(&pb, 0x01);
-    put_byte(&pb, len);
-    put_buffer(&pb, s->hostname, len);
+    put_be16(pb, (6 + len + 3) / 4); /* length in words - 1 */
+    put_be32(pb, s->ssrc);
+    put_byte(pb, 0x01);
+    put_byte(pb, len);
+    put_buffer(pb, s->hostname, len);
     // padding
     for (len = (6 + len) % 4; len % 4; len++) {
-        put_byte(&pb, 0);
+        put_byte(pb, 0);
     }
 
-    put_flush_packet(&pb);
-    len = url_close_dyn_buf(&pb, &buf);
+    put_flush_packet(pb);
+    len = url_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
         int result;
 #if defined(DEBUG)
@@ -775,7 +775,7 @@ static int rtp_write_header(AVFormatContext *s1)
     s->first_packet = 1;
     s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
 
-    max_packet_size = url_fget_max_packet_size(&s1->pb);
+    max_packet_size = url_fget_max_packet_size(s1->pb);
     if (max_packet_size <= 12)
         return AVERROR(EIO);
     s->max_payload_size = max_packet_size - 12;
@@ -838,16 +838,16 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, AV_TIME_BASE_Q,
                           s1->streams[0]->time_base) + s->base_timestamp;
-    put_byte(&s1->pb, (RTP_VERSION << 6));
-    put_byte(&s1->pb, 200);
-    put_be16(&s1->pb, 6); /* length in words - 1 */
-    put_be32(&s1->pb, s->ssrc);
-    put_be32(&s1->pb, ntp_time / 1000000);
-    put_be32(&s1->pb, ((ntp_time % 1000000) << 32) / 1000000);
-    put_be32(&s1->pb, rtp_ts);
-    put_be32(&s1->pb, s->packet_count);
-    put_be32(&s1->pb, s->octet_count);
-    put_flush_packet(&s1->pb);
+    put_byte(s1->pb, (RTP_VERSION << 6));
+    put_byte(s1->pb, 200);
+    put_be16(s1->pb, 6); /* length in words - 1 */
+    put_be32(s1->pb, s->ssrc);
+    put_be32(s1->pb, ntp_time / 1000000);
+    put_be32(s1->pb, ((ntp_time % 1000000) << 32) / 1000000);
+    put_be32(s1->pb, rtp_ts);
+    put_be32(s1->pb, s->packet_count);
+    put_be32(s1->pb, s->octet_count);
+    put_flush_packet(s1->pb);
 }
 
 /* send an rtp packet. sequence number is incremented, but the caller
@@ -861,14 +861,14 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 #endif
 
     /* build the RTP header */
-    put_byte(&s1->pb, (RTP_VERSION << 6));
-    put_byte(&s1->pb, (s->payload_type & 0x7f) | ((m & 0x01) << 7));
-    put_be16(&s1->pb, s->seq);
-    put_be32(&s1->pb, s->timestamp);
-    put_be32(&s1->pb, s->ssrc);
+    put_byte(s1->pb, (RTP_VERSION << 6));
+    put_byte(s1->pb, (s->payload_type & 0x7f) | ((m & 0x01) << 7));
+    put_be16(s1->pb, s->seq);
+    put_be32(s1->pb, s->timestamp);
+    put_be32(s1->pb, s->ssrc);
 
-    put_buffer(&s1->pb, buf1, len);
-    put_flush_packet(&s1->pb);
+    put_buffer(s1->pb, buf1, len);
+    put_flush_packet(s1->pb);
 
     s->seq++;
     s->octet_count += len;

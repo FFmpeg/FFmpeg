@@ -76,7 +76,7 @@ static int film_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     FilmDemuxContext *film = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     unsigned char scratch[256];
     int i;
@@ -204,7 +204,7 @@ static int film_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
     FilmDemuxContext *film = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     film_sample_t *sample;
     int ret = 0;
     int i;

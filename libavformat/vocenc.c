@@ -28,7 +28,7 @@ typedef struct voc_enc_context {
 
 static int voc_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     const int header_size = 26;
     const int version = 0x0114;
 
@@ -48,7 +48,7 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     voc_enc_context_t *voc = s->priv_data;
     AVCodecContext *enc = s->streams[0]->codec;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     if (!voc->param_written) {
         if (enc->codec_tag > 0xFF) {
@@ -84,7 +84,7 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int voc_write_trailer(AVFormatContext *s)
 {
-    put_byte(&s->pb, 0);
+    put_byte(s->pb, 0);
     return 0;
 }
 

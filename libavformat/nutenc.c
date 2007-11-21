@@ -324,19 +324,20 @@ static int add_info(ByteIOContext *bc, char *type, char *value){
     return 1;
 }
 
-static void write_globalinfo(NUTContext *nut, ByteIOContext *bc){
+static int write_globalinfo(NUTContext *nut, ByteIOContext *bc){
     AVFormatContext *s= nut->avf;
-    ByteIOContext dyn_bc;
+    ByteIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size;
+    int ret = url_open_dyn_buf(&dyn_bc);
+    if(ret < 0)
+        return ret;
 
-    url_open_dyn_buf(&dyn_bc);
-
-    if(s->title    [0]) count+= add_info(&dyn_bc, "Title"    , s->title);
-    if(s->author   [0]) count+= add_info(&dyn_bc, "Author"   , s->author);
-    if(s->copyright[0]) count+= add_info(&dyn_bc, "Copyright", s->copyright);
+    if(s->title    [0]) count+= add_info(dyn_bc, "Title"    , s->title);
+    if(s->author   [0]) count+= add_info(dyn_bc, "Author"   , s->author);
+    if(s->copyright[0]) count+= add_info(dyn_bc, "Copyright", s->copyright);
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-                        count+= add_info(&dyn_bc, "Encoder"  , LIBAVFORMAT_IDENT);
+                        count+= add_info(dyn_bc, "Encoder"  , LIBAVFORMAT_IDENT);
 
     put_v(bc, 0); //stream_if_plus1
     put_v(bc, 0); //chapter_id
@@ -345,38 +346,46 @@ static void write_globalinfo(NUTContext *nut, ByteIOContext *bc){
 
     put_v(bc, count);
 
-    dyn_size= url_close_dyn_buf(&dyn_bc, &dyn_buf);
+    dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
     put_buffer(bc, dyn_buf, dyn_size);
     av_free(dyn_buf);
+    return 0;
 }
 
-static void write_headers(NUTContext *nut, ByteIOContext *bc){
-    ByteIOContext dyn_bc;
-    int i;
+static int write_headers(NUTContext *nut, ByteIOContext *bc){
+    ByteIOContext *dyn_bc;
+    int i, ret;
 
-    url_open_dyn_buf(&dyn_bc);
-    write_mainheader(nut, &dyn_bc);
-    put_packet(nut, bc, &dyn_bc, 1, MAIN_STARTCODE);
+    ret = url_open_dyn_buf(&dyn_bc);
+    if(ret < 0)
+        return ret;
+    write_mainheader(nut, dyn_bc);
+    put_packet(nut, bc, dyn_bc, 1, MAIN_STARTCODE);
 
     for (i=0; i < nut->avf->nb_streams; i++){
         AVCodecContext *codec = nut->avf->streams[i]->codec;
 
-        url_open_dyn_buf(&dyn_bc);
-        write_streamheader(nut, &dyn_bc, codec, i);
-        put_packet(nut, bc, &dyn_bc, 1, STREAM_STARTCODE);
+        ret = url_open_dyn_buf(&dyn_bc);
+        if(ret < 0)
+            return ret;
+        write_streamheader(nut, dyn_bc, codec, i);
+        put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 
-    url_open_dyn_buf(&dyn_bc);
-    write_globalinfo(nut, &dyn_bc);
-    put_packet(nut, bc, &dyn_bc, 1, INFO_STARTCODE);
+    ret = url_open_dyn_buf(&dyn_bc);
+    if(ret < 0)
+        return ret;
+    write_globalinfo(nut, dyn_bc);
+    put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
 
     nut->last_syncpoint_pos= INT_MIN;
     nut->header_count++;
+    return 0;
 }
 
 static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int i, j;
 
     nut->avf= s;
@@ -441,12 +450,13 @@ static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc, 
 static int write_packet(AVFormatContext *s, AVPacket *pkt){
     NUTContext *nut = s->priv_data;
     StreamContext *nus= &nut->stream[pkt->stream_index];
-    ByteIOContext *bc = &s->pb, dyn_bc;
+    ByteIOContext *bc = s->pb, *dyn_bc;
     FrameCode *fc;
     int64_t coded_pts;
     int best_length, frame_code, flags, needed_flags, i;
     int key_frame = !!(pkt->flags & PKT_FLAG_KEY);
     int store_sp=0;
+    int ret;
 
     if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
         write_headers(nut, bc);
@@ -472,10 +482,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
 
         nut->last_syncpoint_pos= url_ftell(bc);
-        url_open_dyn_buf(&dyn_bc);
-        put_t(nut, nus, &dyn_bc, pkt->dts);
-        put_v(&dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos)>>4 : 0);
-        put_packet(nut, bc, &dyn_bc, 1, SYNCPOINT_STARTCODE);
+        ret = url_open_dyn_buf(&dyn_bc);
+        if(ret < 0)
+            return ret;
+        put_t(nut, nus, dyn_bc, pkt->dts);
+        put_v(dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos)>>4 : 0);
+        put_packet(nut, bc, dyn_bc, 1, SYNCPOINT_STARTCODE);
 
         ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0/*unused*/, pkt->dts);
     }
@@ -566,7 +578,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
 
 static int write_trailer(AVFormatContext *s){
     NUTContext *nut= s->priv_data;
-    ByteIOContext *bc= &s->pb;
+    ByteIOContext *bc= s->pb;
 
     while(nut->header_count<3)
         write_headers(nut, bc);

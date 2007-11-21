@@ -190,20 +190,20 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstle
     taglen--; /* account for encoding type byte */
     dstlen--; /* Leave space for zero terminator */
 
-    switch(get_byte(&s->pb)) { /* encoding type */
+    switch(get_byte(s->pb)) { /* encoding type */
 
     case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
         q = dst;
         while(taglen--) {
             uint8_t tmp;
-            PUT_UTF8(get_byte(&s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
+            PUT_UTF8(get_byte(s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
         }
         *q = '\0';
         break;
 
     case 3:  /* UTF-8 */
         len = FFMIN(taglen, dstlen);
-        get_buffer(&s->pb, dst, len);
+        get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
     }
@@ -252,23 +252,23 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
     }
 
     if(isv34 && flags & 0x40) /* Extended header present, just skip over it */
-        url_fskip(&s->pb, id3v2_get_size(&s->pb, 4));
+        url_fskip(s->pb, id3v2_get_size(s->pb, 4));
 
     while(len >= taghdrlen) {
         if(isv34) {
-            tag  = get_be32(&s->pb);
-            tlen = id3v2_get_size(&s->pb, 4);
-            get_be16(&s->pb); /* flags */
+            tag  = get_be32(s->pb);
+            tlen = id3v2_get_size(s->pb, 4);
+            get_be16(s->pb); /* flags */
         } else {
-            tag  = get_be24(&s->pb);
-            tlen = id3v2_get_size(&s->pb, 3);
+            tag  = get_be24(s->pb);
+            tlen = id3v2_get_size(s->pb, 3);
         }
         len -= taghdrlen + tlen;
 
         if(len < 0)
             break;
 
-        next = url_ftell(&s->pb) + tlen;
+        next = url_ftell(s->pb) + tlen;
 
         switch(tag) {
         case MKBETAG('T', 'I', 'T', '2'):
@@ -298,21 +298,21 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
             break;
         case 0:
             /* padding, skip to end */
-            url_fskip(&s->pb, len);
+            url_fskip(s->pb, len);
             len = 0;
             continue;
         }
         /* Skip to end of tag */
-        url_fseek(&s->pb, next, SEEK_SET);
+        url_fseek(s->pb, next, SEEK_SET);
     }
 
     if(version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
-        url_fskip(&s->pb, 10);
+        url_fskip(s->pb, 10);
     return;
 
   error:
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
-    url_fskip(&s->pb, len);
+    url_fskip(s->pb, len);
 }
 
 static void id3v1_get_string(char *str, int str_size,
@@ -435,7 +435,7 @@ static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, offset_t base)
     const offset_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeContext c;
 
-    v = get_be32(&s->pb);
+    v = get_be32(s->pb);
     if(ff_mpa_check_header(v) < 0)
       return;
 
@@ -444,23 +444,23 @@ static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, offset_t base)
         return;
 
     /* Check for Xing / Info tag */
-    url_fseek(&s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
-    v = get_be32(&s->pb);
+    url_fseek(s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
+    v = get_be32(s->pb);
     if(v == MKBETAG('X', 'i', 'n', 'g') || v == MKBETAG('I', 'n', 'f', 'o')) {
-        v = get_be32(&s->pb);
+        v = get_be32(s->pb);
         if(v & 0x1)
-            frames = get_be32(&s->pb);
+            frames = get_be32(s->pb);
     }
 
     /* Check for VBRI tag (always 32 bytes after end of mpegaudio header) */
-    url_fseek(&s->pb, base + 4 + 32, SEEK_SET);
-    v = get_be32(&s->pb);
+    url_fseek(s->pb, base + 4 + 32, SEEK_SET);
+    v = get_be32(s->pb);
     if(v == MKBETAG('V', 'B', 'R', 'I')) {
         /* Check tag version */
-        if(get_be16(&s->pb) == 1) {
+        if(get_be16(s->pb) == 1) {
             /* skip delay, quality and total bytes */
-            url_fseek(&s->pb, 8, SEEK_CUR);
-            frames = get_be32(&s->pb);
+            url_fseek(s->pb, 8, SEEK_CUR);
+            frames = get_be32(s->pb);
         }
     }
 
@@ -490,21 +490,21 @@ static int mp3_read_header(AVFormatContext *s,
     st->start_time = 0;
 
     /* try to get the TAG */
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         /* XXX: change that */
-        filesize = url_fsize(&s->pb);
+        filesize = url_fsize(s->pb);
         if (filesize > 128) {
-            url_fseek(&s->pb, filesize - 128, SEEK_SET);
-            ret = get_buffer(&s->pb, buf, ID3v1_TAG_SIZE);
+            url_fseek(s->pb, filesize - 128, SEEK_SET);
+            ret = get_buffer(s->pb, buf, ID3v1_TAG_SIZE);
             if (ret == ID3v1_TAG_SIZE) {
                 id3v1_parse_tag(s, buf);
             }
-            url_fseek(&s->pb, 0, SEEK_SET);
+            url_fseek(s->pb, 0, SEEK_SET);
         }
     }
 
     /* if ID3v2 header found, skip it */
-    ret = get_buffer(&s->pb, buf, ID3v2_HEADER_SIZE);
+    ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
     if (ret != ID3v2_HEADER_SIZE)
         return -1;
     if (id3v2_match(buf)) {
@@ -515,12 +515,12 @@ static int mp3_read_header(AVFormatContext *s,
             (buf[9] & 0x7f);
         id3v2_parse(s, len, buf[3], buf[5]);
     } else {
-        url_fseek(&s->pb, 0, SEEK_SET);
+        url_fseek(s->pb, 0, SEEK_SET);
     }
 
-    off = url_ftell(&s->pb);
+    off = url_ftell(s->pb);
     mp3_parse_vbr_tags(s, st, off);
-    url_fseek(&s->pb, off, SEEK_SET);
+    url_fseek(s->pb, off, SEEK_SET);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -535,7 +535,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size= MP3_PACKET_SIZE;
 
-    ret= av_get_packet(&s->pb, pkt, size);
+    ret= av_get_packet(s->pb, pkt, size);
 
     pkt->stream_index = 0;
     if (ret <= 0) {
@@ -557,20 +557,20 @@ static int mp3_read_close(AVFormatContext *s)
 
 static void id3v2_put_size(AVFormatContext *s, int size)
 {
-    put_byte(&s->pb, size >> 21 & 0x7f);
-    put_byte(&s->pb, size >> 14 & 0x7f);
-    put_byte(&s->pb, size >> 7  & 0x7f);
-    put_byte(&s->pb, size       & 0x7f);
+    put_byte(s->pb, size >> 21 & 0x7f);
+    put_byte(s->pb, size >> 14 & 0x7f);
+    put_byte(s->pb, size >> 7  & 0x7f);
+    put_byte(s->pb, size       & 0x7f);
 }
 
 static void id3v2_put_ttag(AVFormatContext *s, char *string, uint32_t tag)
 {
     int len = strlen(string);
-    put_be32(&s->pb, tag);
+    put_be32(s->pb, tag);
     id3v2_put_size(s, len + 1);
-    put_be16(&s->pb, 0);
-    put_byte(&s->pb, 3); /* UTF-8 */
-    put_buffer(&s->pb, string, len);
+    put_be16(s->pb, 0);
+    put_byte(s->pb, 3); /* UTF-8 */
+    put_buffer(s->pb, string, len);
 }
 
 
@@ -602,9 +602,9 @@ static int mp3_write_header(struct AVFormatContext *s)
     if(totlen == 0)
         return 0;
 
-    put_be32(&s->pb, MKBETAG('I', 'D', '3', 0x04)); /* ID3v2.4 */
-    put_byte(&s->pb, 0);
-    put_byte(&s->pb, 0); /* flags */
+    put_be32(s->pb, MKBETAG('I', 'D', '3', 0x04)); /* ID3v2.4 */
+    put_byte(s->pb, 0);
+    put_byte(s->pb, 0); /* flags */
 
     id3v2_put_size(s, totlen);
 
@@ -622,8 +622,8 @@ static int mp3_write_header(struct AVFormatContext *s)
 
 static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(&s->pb, pkt->data, pkt->size);
-    put_flush_packet(&s->pb);
+    put_buffer(s->pb, pkt->data, pkt->size);
+    put_flush_packet(s->pb);
     return 0;
 }
 
@@ -634,8 +634,8 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     /* write the id3v1 tag */
     if (s->title[0] != '\0') {
         id3v1_create_tag(s, buf);
-        put_buffer(&s->pb, buf, ID3v1_TAG_SIZE);
-        put_flush_packet(&s->pb);
+        put_buffer(s->pb, buf, ID3v1_TAG_SIZE);
+        put_flush_packet(s->pb);
     }
     return 0;
 }

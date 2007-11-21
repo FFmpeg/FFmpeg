@@ -29,8 +29,8 @@ static int mpjpeg_write_header(AVFormatContext *s)
     uint8_t buf1[256];
 
     snprintf(buf1, sizeof(buf1), "--%s\n", BOUNDARY_TAG);
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_flush_packet(&s->pb);
+    put_buffer(s->pb, buf1, strlen(buf1));
+    put_flush_packet(s->pb);
     return 0;
 }
 
@@ -39,12 +39,12 @@ static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t buf1[256];
 
     snprintf(buf1, sizeof(buf1), "Content-type: image/jpeg\n\n");
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_buffer(&s->pb, pkt->data, pkt->size);
+    put_buffer(s->pb, buf1, strlen(buf1));
+    put_buffer(s->pb, pkt->data, pkt->size);
 
     snprintf(buf1, sizeof(buf1), "\n--%s\n", BOUNDARY_TAG);
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_flush_packet(&s->pb);
+    put_buffer(s->pb, buf1, strlen(buf1));
+    put_flush_packet(s->pb);
     return 0;
 }
 

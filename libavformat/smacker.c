@@ -98,7 +98,7 @@ static int smacker_probe(AVProbeData *p)
 
 static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     SmackerContext *smk = s->priv_data;
     AVStream *st, *ast[7];
     int i, ret;
@@ -226,35 +226,35 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
     int palchange = 0;
     int pos;
 
-    if (url_feof(&s->pb) || smk->cur_frame >= smk->frames)
+    if (url_feof(s->pb) || smk->cur_frame >= smk->frames)
         return AVERROR(EIO);
 
     /* if we demuxed all streams, pass another frame */
     if(smk->curstream < 0) {
-        url_fseek(&s->pb, smk->nextpos, 0);
+        url_fseek(s->pb, smk->nextpos, 0);
         frame_size = smk->frm_size[smk->cur_frame] & (~3);
         flags = smk->frm_flags[smk->cur_frame];
         /* handle palette change event */
-        pos = url_ftell(&s->pb);
+        pos = url_ftell(s->pb);
         if(flags & SMACKER_PAL){
             int size, sz, t, off, j, pos;
             uint8_t *pal = smk->pal;
             uint8_t oldpal[768];
 
             memcpy(oldpal, pal, 768);
-            size = get_byte(&s->pb);
+            size = get_byte(s->pb);
             size = size * 4 - 1;
             frame_size -= size;
             frame_size--;
             sz = 0;
-            pos = url_ftell(&s->pb) + size;
+            pos = url_ftell(s->pb) + size;
             while(sz < 256){
-                t = get_byte(&s->pb);
+                t = get_byte(s->pb);
                 if(t & 0x80){ /* skip palette entries */
                     sz += (t & 0x7F) + 1;
                     pal += ((t & 0x7F) + 1) * 3;
                 } else if(t & 0x40){ /* copy with offset */
-                    off = get_byte(&s->pb) * 3;
+                    off = get_byte(s->pb) * 3;
                     j = (t & 0x3F) + 1;
                     while(j-- && sz < 256) {
                         *pal++ = oldpal[off + 0];
@@ -265,12 +265,12 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                     }
                 } else { /* new entries */
                     *pal++ = smk_pal[t];
-                    *pal++ = smk_pal[get_byte(&s->pb) & 0x3F];
-                    *pal++ = smk_pal[get_byte(&s->pb) & 0x3F];
+                    *pal++ = smk_pal[get_byte(s->pb) & 0x3F];
+                    *pal++ = smk_pal[get_byte(s->pb) & 0x3F];
                     sz++;
                 }
             }
-            url_fseek(&s->pb, pos, 0);
+            url_fseek(s->pb, pos, 0);
             palchange |= 1;
         }
         flags >>= 1;
@@ -279,13 +279,13 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         for(i = 0; i < 7; i++) {
             if(flags & 1) {
                 int size;
-                size = get_le32(&s->pb) - 4;
+                size = get_le32(s->pb) - 4;
                 frame_size -= size;
                 frame_size -= 4;
                 smk->curstream++;
                 smk->bufs[smk->curstream] = av_realloc(smk->bufs[smk->curstream], size);
                 smk->buf_sizes[smk->curstream] = size;
-                ret = get_buffer(&s->pb, smk->bufs[smk->curstream], size);
+                ret = get_buffer(s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)
                     return AVERROR(EIO);
                 smk->stream_id[smk->curstream] = smk->indexes[i];
@@ -298,13 +298,13 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             palchange |= 2;
         pkt->data[0] = palchange;
         memcpy(pkt->data + 1, smk->pal, 768);
-        ret = get_buffer(&s->pb, pkt->data + 769, frame_size);
+        ret = get_buffer(s->pb, pkt->data + 769, frame_size);
         if(ret != frame_size)
             return AVERROR(EIO);
         pkt->stream_index = smk->videoindex;
         pkt->size = ret + 769;
         smk->cur_frame++;
-        smk->nextpos = url_ftell(&s->pb);
+        smk->nextpos = url_ftell(s->pb);
     } else {
         if (av_new_packet(pkt, smk->buf_sizes[smk->curstream]))
             return AVERROR(ENOMEM);

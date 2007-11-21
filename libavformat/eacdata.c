@@ -47,7 +47,7 @@ static int cdata_probe(AVProbeData *p)
 static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     CdataDemuxContext *cdata = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int sample_rate, header;
     AVStream *st;
 
@@ -83,7 +83,7 @@ static int cdata_read_packet(AVFormatContext *s, AVPacket *pkt)
     CdataDemuxContext *cdata = s->priv_data;
     int packet_size = 76*cdata->channels;
 
-    if (av_get_packet(&s->pb, pkt, packet_size) != packet_size)
+    if (av_get_packet(s->pb, pkt, packet_size) != packet_size)
         return AVERROR(EIO);
     pkt->pts = cdata->audio_pts++;
     return 1;

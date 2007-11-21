@@ -90,7 +90,7 @@ static int process_audio_header_elements(AVFormatContext *s)
 {
     int inHeader = 1;
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int compression_type = -1, revision = -1;
 
     ea->bytes = 2;
@@ -188,7 +188,7 @@ static int process_audio_header_elements(AVFormatContext *s)
 static int process_audio_header_eacs(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int compression_type;
 
     ea->sample_rate  = ea->big_endian ? get_be32(pb) : get_le32(pb);
@@ -220,7 +220,7 @@ static int process_audio_header_eacs(AVFormatContext *s)
 static int process_audio_header_sead(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     ea->sample_rate  = get_le32(pb);
     ea->bytes        = get_le32(pb);  /* 1=8-bit, 2=16-bit */
@@ -233,7 +233,7 @@ static int process_audio_header_sead(AVFormatContext *s)
 static int process_video_header_vp6(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     url_fskip(pb, 16);
     ea->time_base.den = get_le32(pb);
@@ -250,7 +250,7 @@ static int process_video_header_vp6(AVFormatContext *s)
 static int process_ea_header(AVFormatContext *s) {
     uint32_t blockid, size = 0;
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int i;
 
     for (i=0; i<5 && (!ea->audio_codec || !ea->video_codec); i++) {
@@ -370,7 +370,7 @@ static int ea_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
     EaDemuxContext *ea = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ret = 0;
     int packet_read = 0;
     unsigned int chunk_type, chunk_size;

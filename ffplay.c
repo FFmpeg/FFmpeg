@@ -1912,7 +1912,8 @@ static int decode_thread(void *arg)
         ret = -1;
         goto fail;
     }
-    ic->pb.eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
+    if(ic->pb)
+        ic->pb->eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
 
     /* if seeking requested, we execute it */
     if (start_time != AV_NOPTS_VALUE) {
@@ -1980,7 +1981,7 @@ static int decode_thread(void *arg)
 #if defined(CONFIG_RTSP_DEMUXER) || defined(CONFIG_MMSH_PROTOCOL)
         if (is->paused &&
                 (!strcmp(ic->iformat->name, "rtsp") ||
-                 !strcmp(url_fileno(&ic->pb)->prot->name, "mmsh"))) {
+                 (ic->pb && !strcmp(url_fileno(ic->pb)->prot->name, "mmsh")))) {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
             SDL_Delay(10);
@@ -2023,14 +2024,14 @@ static int decode_thread(void *arg)
         if (is->audioq.size > MAX_AUDIOQ_SIZE ||
             is->videoq.size > MAX_VIDEOQ_SIZE ||
             is->subtitleq.size > MAX_SUBTITLEQ_SIZE ||
-            url_feof(&ic->pb)) {
+            url_feof(ic->pb)) {
             /* wait 10 ms */
             SDL_Delay(10);
             continue;
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            if (url_ferror(&ic->pb) == 0) {
+            if (url_ferror(ic->pb) == 0) {
                 SDL_Delay(100); /* wait for user event */
                 continue;
             } else
@@ -2282,7 +2283,7 @@ static void event_loop(void)
             do_seek:
                 if (cur_stream) {
                     if (seek_by_bytes) {
-                        pos = url_ftell(&cur_stream->ic->pb);
+                        pos = url_ftell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
                             incr *= cur_stream->ic->bit_rate / 60.0;
                         else

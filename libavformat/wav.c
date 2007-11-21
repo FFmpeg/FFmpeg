@@ -34,7 +34,7 @@ typedef struct {
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t fmt, fact;
 
     put_tag(pb, "RIFF");
@@ -50,7 +50,7 @@ static int wav_write_header(AVFormatContext *s)
     end_tag(pb, fmt);
 
     if(s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
-       && !url_is_streamed(&s->pb)) {
+       && !url_is_streamed(s->pb)) {
         fact = start_tag(pb, "fact");
         put_le32(pb, 0);
         end_tag(pb, fact);
@@ -70,7 +70,7 @@ static int wav_write_header(AVFormatContext *s)
 
 static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     WAVContext *wav = s->priv_data;
     put_buffer(pb, pkt->data, pkt->size);
     if(pkt->pts != AV_NOPTS_VALUE) {
@@ -84,11 +84,11 @@ static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int wav_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     WAVContext *wav = s->priv_data;
     offset_t file_size;
 
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         end_tag(pb, wav->data);
 
         /* update file size */
@@ -156,7 +156,7 @@ static int wav_read_header(AVFormatContext *s,
 {
     int size;
     unsigned int tag;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     WAVContext *wav = s->priv_data;
 
@@ -199,17 +199,17 @@ static int wav_read_packet(AVFormatContext *s,
     AVStream *st;
     WAVContext *wav = s->priv_data;
 
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
     st = s->streams[0];
 
-    left= wav->data_end - url_ftell(&s->pb);
+    left= wav->data_end - url_ftell(s->pb);
     if(left <= 0){
-        left = find_tag(&(s->pb), MKTAG('d', 'a', 't', 'a'));
+        left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
         if (left < 0) {
             return AVERROR(EIO);
         }
-        wav->data_end= url_ftell(&s->pb) + left;
+        wav->data_end= url_ftell(s->pb) + left;
     }
 
     size = MAX_SIZE;
@@ -219,7 +219,7 @@ static int wav_read_packet(AVFormatContext *s,
         size = (size / st->codec->block_align) * st->codec->block_align;
     }
     size= FFMIN(size, left);
-    ret= av_get_packet(&s->pb, pkt, size);
+    ret= av_get_packet(s->pb, pkt, size);
     if (ret <= 0)
         return AVERROR(EIO);
     pkt->stream_index = 0;

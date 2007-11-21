@@ -71,7 +71,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
                 vcodec->extradata_size = 1;
                 vcodec->extradata = av_malloc(1);
             }
-            vcodec->extradata[0] = get_byte(&s->pb);
+            vcodec->extradata[0] = get_byte(s->pb);
             return 1; // 1 byte body size adjustment for flv_read_packet()
         default:
             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
@@ -103,7 +103,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
     double num_val;
 
     num_val = 0;
-    ioc = &s->pb;
+    ioc = s->pb;
 
     amf_type = get_byte(ioc);
 
@@ -203,7 +203,7 @@ static int flv_read_metabody(AVFormatContext *s, unsigned int next_pos) {
     astream = NULL;
     vstream = NULL;
     keylen = 0;
-    ioc = &s->pb;
+    ioc = s->pb;
 
     //first object needs to be "onMetaData" string
     type = get_byte(ioc);
@@ -238,8 +238,8 @@ static int flv_read_header(AVFormatContext *s,
 {
     int offset, flags;
 
-    url_fskip(&s->pb, 4);
-    flags = get_byte(&s->pb);
+    url_fskip(s->pb, 4);
+    flags = get_byte(s->pb);
     /* old flvtool cleared this field */
     /* FIXME: better fix needed */
     if (!flags) {
@@ -256,8 +256,8 @@ static int flv_read_header(AVFormatContext *s,
             return AVERROR(ENOMEM);
     }
 
-    offset = get_be32(&s->pb);
-    url_fseek(&s->pb, offset, SEEK_SET);
+    offset = get_be32(s->pb);
+    url_fseek(s->pb, offset, SEEK_SET);
 
     s->start_time = 0;
 
@@ -270,35 +270,35 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = NULL;
 
  for(;;){
-    pos = url_ftell(&s->pb);
-    url_fskip(&s->pb, 4); /* size of previous packet */
-    type = get_byte(&s->pb);
-    size = get_be24(&s->pb);
-    pts = get_be24(&s->pb);
-    pts |= get_byte(&s->pb) << 24;
+    pos = url_ftell(s->pb);
+    url_fskip(s->pb, 4); /* size of previous packet */
+    type = get_byte(s->pb);
+    size = get_be24(s->pb);
+    pts = get_be24(s->pb);
+    pts |= get_byte(s->pb) << 24;
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, pts);
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
-    url_fskip(&s->pb, 3); /* stream id, always 0 */
+    url_fskip(s->pb, 3); /* stream id, always 0 */
     flags = 0;
 
     if(size == 0)
         continue;
 
-    next= size + url_ftell(&s->pb);
+    next= size + url_ftell(s->pb);
 
     if (type == FLV_TAG_TYPE_AUDIO) {
         is_audio=1;
-        flags = get_byte(&s->pb);
+        flags = get_byte(s->pb);
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         is_audio=0;
-        flags = get_byte(&s->pb);
+        flags = get_byte(s->pb);
     } else {
         if (type == FLV_TAG_TYPE_META && size > 13+1+4)
             flv_read_metabody(s, next);
         else /* skip packet */
             av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
-        url_fseek(&s->pb, next, SEEK_SET);
+        url_fseek(s->pb, next, SEEK_SET);
         continue;
     }
 
@@ -317,7 +317,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
        ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && !is_audio))
        || st->discard >= AVDISCARD_ALL
        ){
-        url_fseek(&s->pb, next, SEEK_SET);
+        url_fseek(s->pb, next, SEEK_SET);
         continue;
     }
     if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
@@ -326,17 +326,17 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
  }
 
     // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
-    if(!url_is_streamed(&s->pb) && s->duration==AV_NOPTS_VALUE){
+    if(!url_is_streamed(s->pb) && s->duration==AV_NOPTS_VALUE){
         int size;
-        const int pos= url_ftell(&s->pb);
-        const int fsize= url_fsize(&s->pb);
-        url_fseek(&s->pb, fsize-4, SEEK_SET);
-        size= get_be32(&s->pb);
-        url_fseek(&s->pb, fsize-3-size, SEEK_SET);
-        if(size == get_be24(&s->pb) + 11){
-            s->duration= get_be24(&s->pb) * (int64_t)AV_TIME_BASE / 1000;
+        const int pos= url_ftell(s->pb);
+        const int fsize= url_fsize(s->pb);
+        url_fseek(s->pb, fsize-4, SEEK_SET);
+        size= get_be32(s->pb);
+        url_fseek(s->pb, fsize-3-size, SEEK_SET);
+        if(size == get_be24(s->pb) + 11){
+            s->duration= get_be24(s->pb) * (int64_t)AV_TIME_BASE / 1000;
         }
-        url_fseek(&s->pb, pos, SEEK_SET);
+        url_fseek(s->pb, pos, SEEK_SET);
     }
 
     if(is_audio){
@@ -353,7 +353,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK);
     }
 
-    ret= av_get_packet(&s->pb, pkt, size - 1);
+    ret= av_get_packet(s->pb, pkt, size - 1);
     if (ret <= 0) {
         return AVERROR(EIO);
     }
@@ -380,7 +380,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     int index = av_index_search_timestamp(st, timestamp, flags);
     if (index < 0)
         return -1;
-    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
 
     return 0;
 }

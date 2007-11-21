@@ -353,7 +353,7 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts,
 static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
 {
     AVFormatContext *ctx = s->opaque;
-    put_buffer(&ctx->pb, packet, TS_PACKET_SIZE);
+    put_buffer(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
 static int mpegts_write_header(AVFormatContext *s)
@@ -431,7 +431,7 @@ static int mpegts_write_header(AVFormatContext *s)
     for(i = 0; i < ts->nb_services; i++) {
         mpegts_write_pmt(s, ts->services[i]);
     }
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
     return 0;
 
@@ -608,9 +608,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         memcpy(buf + TS_PACKET_SIZE - len, payload, len);
         payload += len;
         payload_size -= len;
-        put_buffer(&s->pb, buf, TS_PACKET_SIZE);
+        put_buffer(s->pb, buf, TS_PACKET_SIZE);
     }
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 }
 
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -668,7 +668,7 @@ static int mpegts_write_end(AVFormatContext *s)
                              ts_st->payload_pts, ts_st->payload_dts);
         }
     }
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
     for(i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];

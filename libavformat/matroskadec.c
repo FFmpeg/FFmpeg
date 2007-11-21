@@ -176,7 +176,7 @@ typedef struct MatroskaDemuxContext {
 static int
 ebml_read_element_level_up (MatroskaDemuxContext *matroska)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     offset_t pos = url_ftell(pb);
     int num = 0;
 
@@ -208,7 +208,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
                int                   max_size,
                uint64_t             *number)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     int len_mask = 0x80, read = 1, n = 1;
     int64_t total = 0;
 
@@ -325,7 +325,7 @@ static int
 ebml_read_seek (MatroskaDemuxContext *matroska,
                 offset_t              offset)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
 
     /* clear ID cache, if any */
     matroska->peek_id = 0;
@@ -341,7 +341,7 @@ ebml_read_seek (MatroskaDemuxContext *matroska,
 static int
 ebml_read_skip (MatroskaDemuxContext *matroska)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     uint32_t id;
     uint64_t length;
     int res;
@@ -365,7 +365,7 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
                 uint32_t             *id,
                 uint64_t             *num)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     int n = 0, size, res;
     uint64_t rlength;
 
@@ -399,7 +399,7 @@ ebml_read_sint (MatroskaDemuxContext *matroska,
                 uint32_t             *id,
                 int64_t              *num)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     int size, n = 1, negative = 0, res;
     uint64_t rlength;
 
@@ -438,7 +438,7 @@ ebml_read_float (MatroskaDemuxContext *matroska,
                  uint32_t             *id,
                  double               *num)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     int size, res;
     uint64_t rlength;
 
@@ -472,7 +472,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
                  uint32_t             *id,
                  char                **str)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     int size, res;
     uint64_t rlength;
 
@@ -534,7 +534,7 @@ static int
 ebml_read_master (MatroskaDemuxContext *matroska,
                   uint32_t             *id)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     uint64_t length;
     MatroskaLevel *level;
     int res;
@@ -569,7 +569,7 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
                   uint8_t             **binary,
                   int                  *size)
 {
-    ByteIOContext *pb = &matroska->ctx->pb;
+    ByteIOContext *pb = matroska->ctx->pb;
     uint64_t rlength;
     int res;
 
@@ -1748,7 +1748,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
                         /* remember the peeked ID and the current position */
                         peek_id_cache = matroska->peek_id;
-                        before_pos = url_ftell(&matroska->ctx->pb);
+                        before_pos = url_ftell(matroska->ctx->pb);
 
                         /* seek */
                         if ((res = ebml_read_seek(matroska, seek_pos +
@@ -1788,14 +1788,14 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         switch (id) {
                             case MATROSKA_ID_CUES:
                                 if (!(res = matroska_parse_index(matroska)) ||
-                                    url_feof(&matroska->ctx->pb)) {
+                                    url_feof(matroska->ctx->pb)) {
                                     matroska->index_parsed = 1;
                                     res = 0;
                                 }
                                 break;
                             case MATROSKA_ID_TAGS:
                                 if (!(res = matroska_parse_metadata(matroska)) ||
-                                   url_feof(&matroska->ctx->pb)) {
+                                   url_feof(matroska->ctx->pb)) {
                                     matroska->metadata_parsed = 1;
                                     res = 0;
                                 }
@@ -1931,7 +1931,7 @@ matroska_read_header (AVFormatContext    *s,
      * after the segment ID/length. */
     if ((res = ebml_read_master(matroska, &id)) < 0)
         return res;
-    matroska->segment_start = url_ftell(&s->pb);
+    matroska->segment_start = url_ftell(s->pb);
 
     matroska->time_scale = 1000000;
     /* we've found our segment, start reading the different contents in here */
@@ -2485,7 +2485,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
              * of the harder things, so this code is a bit complicated.
              * See http://www.matroska.org/ for documentation. */
             case MATROSKA_ID_BLOCK: {
-                pos = url_ftell(&matroska->ctx->pb);
+                pos = url_ftell(matroska->ctx->pb);
                 res = ebml_read_binary(matroska, &id, &data, &size);
                 break;
             }
@@ -2547,7 +2547,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
     int size;
 
     av_log(matroska->ctx, AV_LOG_DEBUG,
-           "parsing cluster at %"PRId64"\n", url_ftell(&matroska->ctx->pb));
+           "parsing cluster at %"PRId64"\n", url_ftell(matroska->ctx->pb));
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
@@ -2576,7 +2576,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 break;
 
             case MATROSKA_ID_SIMPLEBLOCK:
-                pos = url_ftell(&matroska->ctx->pb);
+                pos = url_ftell(matroska->ctx->pb);
                 res = ebml_read_binary(matroska, &id, &data, &size);
                 if (res == 0)
                     res = matroska_parse_block(matroska, data, size, pos,
@@ -2668,7 +2668,7 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
         return 0;
 
     /* do the seek */
-    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_stream = st;
     matroska->num_packets = 0;

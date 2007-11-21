@@ -361,8 +361,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         goto fail;
     }
     ic->iformat = fmt;
-    if (pb)
-        ic->pb = *pb;
+    ic->pb = pb;
     ic->duration = AV_NOPTS_VALUE;
     ic->start_time = AV_NOPTS_VALUE;
     av_strlcpy(ic->filename, filename, sizeof(ic->filename));
@@ -383,7 +382,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         goto fail;
 
     if (pb && !ic->data_offset)
-        ic->data_offset = url_ftell(&ic->pb);
+        ic->data_offset = url_ftell(ic->pb);
 
     *ic_ptr = ic;
     return 0;
@@ -407,7 +406,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 {
     int err, must_open_file, file_opened, probe_size;
     AVProbeData probe_data, *pd = &probe_data;
-    ByteIOContext pb1, *pb = &pb1;
+    ByteIOContext *pb;
 
     file_opened = 0;
     pd->filename = "";
@@ -431,7 +430,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     if (!fmt || must_open_file) {
         /* if no file needed do not try to open one */
-        if ((err=url_fopen(pb, filename, URL_RDONLY)) < 0) {
+        if ((err=url_fopen(&pb, filename, URL_RDONLY)) < 0) {
             goto fail;
         }
         file_opened = 1;
@@ -447,7 +446,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
             if (url_fseek(pb, 0, SEEK_SET) < 0) {
                 url_fclose(pb);
-                if (url_fopen(pb, filename, URL_RDONLY) < 0) {
+                if (url_fopen(&pb, filename, URL_RDONLY) < 0) {
                     file_opened = 0;
                     err = AVERROR(EIO);
                     goto fail;
@@ -1130,7 +1129,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         return -1;
 
     /* do the seek */
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
 
     av_update_cur_dts(s, st, ts);
 
@@ -1155,7 +1154,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
 
     if(ts_max == AV_NOPTS_VALUE){
         int step= 1024;
-        filesize = url_fsize(&s->pb);
+        filesize = url_fsize(s->pb);
         pos_max = filesize - 1;
         do{
             pos_max -= step;
@@ -1261,12 +1260,12 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 #endif
 
     pos_min = s->data_offset;
-    pos_max = url_fsize(&s->pb) - 1;
+    pos_max = url_fsize(s->pb) - 1;
 
     if     (pos < pos_min) pos= pos_min;
     else if(pos > pos_max) pos= pos_max;
 
-    url_fseek(&s->pb, pos, SEEK_SET);
+    url_fseek(s->pb, pos, SEEK_SET);
 
 #if 0
     av_update_cur_dts(s, st, ts);
@@ -1291,10 +1290,10 @@ static int av_seek_frame_generic(AVFormatContext *s,
 
         if(st->index_entries && st->nb_index_entries){
             ie= &st->index_entries[st->nb_index_entries-1];
-            url_fseek(&s->pb, ie->pos, SEEK_SET);
+            url_fseek(s->pb, ie->pos, SEEK_SET);
             av_update_cur_dts(s, st, ie->timestamp);
         }else
-            url_fseek(&s->pb, 0, SEEK_SET);
+            url_fseek(s->pb, 0, SEEK_SET);
 
         for(i=0;; i++) {
             int ret = av_read_frame(s, &pkt);
@@ -1317,7 +1316,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
             return 0;
     }
     ie = &st->index_entries[index];
-    url_fseek(&s->pb, ie->pos, SEEK_SET);
+    url_fseek(s->pb, ie->pos, SEEK_SET);
 
     av_update_cur_dts(s, st, ie->timestamp);
 
@@ -1509,7 +1508,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
 
     /* we read the first packets to get the first PTS (not fully
        accurate, but it is enough now) */
-    url_fseek(&ic->pb, 0, SEEK_SET);
+    url_fseek(ic->pb, 0, SEEK_SET);
     read_size = 0;
     for(;;) {
         if (read_size >= DURATION_MAX_READ_SIZE)
@@ -1542,7 +1541,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
     if (offset < 0)
         offset = 0;
 
-    url_fseek(&ic->pb, offset, SEEK_SET);
+    url_fseek(ic->pb, offset, SEEK_SET);
     read_size = 0;
     for(;;) {
         if (read_size >= DURATION_MAX_READ_SIZE)
@@ -1568,7 +1567,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
 
     fill_all_stream_timings(ic);
 
-    url_fseek(&ic->pb, old_offset, SEEK_SET);
+    url_fseek(ic->pb, old_offset, SEEK_SET);
     for(i=0; i<ic->nb_streams; i++){
         st= ic->streams[i];
         st->cur_dts= st->first_dts;
@@ -1584,7 +1583,7 @@ static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
     if (ic->iformat->flags & AVFMT_NOFILE) {
         file_size = 0;
     } else {
-        file_size = url_fsize(&ic->pb);
+        file_size = url_fsize(ic->pb);
         if (file_size < 0)
             file_size = 0;
     }
@@ -1592,7 +1591,7 @@ static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
          !strcmp(ic->iformat->name, "mpegts")) &&
-        file_size && !ic->pb.is_streamed) {
+        file_size && !ic->pb->is_streamed) {
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic, old_offset);
     } else if (av_has_duration(ic)) {
@@ -1757,7 +1756,7 @@ int av_find_stream_info(AVFormatContext *ic)
     int64_t last_dts[MAX_STREAMS];
     int duration_count[MAX_STREAMS]={0};
     double (*duration_error)[MAX_STD_TIMEBASES];
-    offset_t old_offset = url_ftell(&ic->pb);
+    offset_t old_offset = url_ftell(ic->pb);
     int64_t codec_info_duration[MAX_STREAMS]={0};
     int codec_info_nb_frames[MAX_STREAMS]={0};
     AVProbeData probe_data[MAX_STREAMS];
@@ -1989,7 +1988,7 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             st->cur_dts= st->first_dts;
         }
-        url_fseek(&ic->pb, ic->data_offset, SEEK_SET);
+        url_fseek(ic->pb, ic->data_offset, SEEK_SET);
     }
 
 #if 0
@@ -2075,7 +2074,7 @@ void av_close_input_file(AVFormatContext *s)
         must_open_file = 0;
     }
     if (must_open_file) {
-        url_fclose(&s->pb);
+        url_fclose(s->pb);
     }
     av_freep(&s->priv_data);
     av_free(s);
@@ -2343,7 +2342,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     ret= s->oformat->write_packet(s, pkt);
     if(!ret)
-        ret= url_ferror(&s->pb);
+        ret= url_ferror(s->pb);
     return ret;
 }
 
@@ -2444,8 +2443,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
 
         if(ret<0)
             return ret;
-        if(url_ferror(&s->pb))
-            return url_ferror(&s->pb);
+        if(url_ferror(s->pb))
+            return url_ferror(s->pb);
     }
 }
 
@@ -2468,7 +2467,7 @@ int av_write_trailer(AVFormatContext *s)
 
         if(ret<0)
             goto fail;
-        if(url_ferror(&s->pb))
+        if(url_ferror(s->pb))
             goto fail;
     }
 
@@ -2476,7 +2475,7 @@ int av_write_trailer(AVFormatContext *s)
         ret = s->oformat->write_trailer(s);
 fail:
     if(ret == 0)
-       ret=url_ferror(&s->pb);
+       ret=url_ferror(s->pb);
     for(i=0;i<s->nb_streams;i++)
         av_freep(&s->streams[i]->priv_data);
     av_freep(&s->priv_data);

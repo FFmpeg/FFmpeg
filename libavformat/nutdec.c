@@ -181,7 +181,7 @@ static int skip_reserved(ByteIOContext *bc, int64_t pos){
 
 static int decode_main_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     uint64_t tmp, end;
     unsigned int stream_count;
     int i, j, tmp_stream, tmp_mul, tmp_pts, tmp_size, count, tmp_res;
@@ -268,7 +268,7 @@ static int decode_main_header(NUTContext *nut){
 
 static int decode_stream_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     StreamContext *stc;
     int class, stream_id;
     uint64_t tmp, end;
@@ -354,7 +354,7 @@ static int decode_stream_header(NUTContext *nut){
 
 static int decode_info_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     uint64_t tmp;
     unsigned int stream_id_plus1, chapter_start, chapter_len, count;
     int chapter_id, i;
@@ -412,7 +412,7 @@ static int decode_info_header(NUTContext *nut){
 
 static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int64_t end, tmp;
 
     nut->last_syncpoint_pos= url_ftell(bc)-8;
@@ -440,7 +440,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
 
 static int find_and_decode_index(NUTContext *nut){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     uint64_t tmp, end;
     int i, j, syncpoint_count;
     int64_t filesize= url_fsize(bc);
@@ -531,7 +531,7 @@ static int find_and_decode_index(NUTContext *nut){
 static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int64_t pos;
     int inited_stream_count;
 
@@ -592,7 +592,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, int frame_code){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     StreamContext *stc;
     int size, flags, size_mul, pts_delta, i, reserved_count;
     uint64_t tmp;
@@ -648,7 +648,7 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
 
 static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
     AVFormatContext *s= nut->avf;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int size, stream_id, discard;
     int64_t pts, last_IP_pts;
     StreamContext *stc;
@@ -684,7 +684,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
 static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int i, frame_code=0, ret, skip;
     int64_t ts, back_ptr;
 
@@ -740,7 +740,7 @@ av_log(s, AV_LOG_DEBUG, "sync\n");
 
 static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t *pos_arg, int64_t pos_limit){
     NUTContext *nut = s->priv_data;
-    ByteIOContext *bc = &s->pb;
+    ByteIOContext *bc = s->pb;
     int64_t pos, pts, back_ptr;
 av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
 
@@ -803,8 +803,8 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= sp->back_ptr  - 15;
     }
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
-    pos= find_startcode(&s->pb, SYNCPOINT_STARTCODE, pos2);
-    url_fseek(&s->pb, pos, SEEK_SET);
+    pos= find_startcode(s->pb, SYNCPOINT_STARTCODE, pos2);
+    url_fseek(s->pb, pos, SEEK_SET);
     av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
     if(pos2 > pos || pos2 + 15 < pos){
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");

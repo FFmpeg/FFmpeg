@@ -45,7 +45,7 @@ static void rv10_write_header(AVFormatContext *ctx,
                               int data_size, int index_pos)
 {
     RMContext *rm = ctx->priv_data;
-    ByteIOContext *s = &ctx->pb;
+    ByteIOContext *s = ctx->pb;
     StreamInfo *stream;
     unsigned char *data_offset_ptr, *start_ptr;
     const char *desc, *mimetype;
@@ -253,7 +253,7 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
                                 int length, int key_frame)
 {
     int timestamp;
-    ByteIOContext *s = &ctx->pb;
+    ByteIOContext *s = ctx->pb;
 
     stream->nb_packets++;
     stream->packet_total_size += length;
@@ -308,7 +308,7 @@ static int rm_write_header(AVFormatContext *s)
     }
 
     rv10_write_header(s, 0, 0);
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return 0;
 }
 
@@ -316,7 +316,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 {
     uint8_t *buf1;
     RMContext *rm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
 
@@ -340,7 +340,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     RMContext *rm = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->video_stream;
     int key_frame = !!(flags & PKT_FLAG_KEY);
 
@@ -390,9 +390,9 @@ static int rm_write_trailer(AVFormatContext *s)
 {
     RMContext *rm = s->priv_data;
     int data_size, index_pos, i;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
-    if (!url_is_streamed(&s->pb)) {
+    if (!url_is_streamed(s->pb)) {
         /* end of file: finish to write header */
         index_pos = url_fseek(pb, 0, SEEK_CUR);
         data_size = index_pos - rm->data_pos;

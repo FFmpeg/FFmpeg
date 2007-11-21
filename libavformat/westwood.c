@@ -118,7 +118,7 @@ static int wsaud_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
     WsAudDemuxContext *wsaud = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     unsigned char header[AUD_HEADER_SIZE];
 
@@ -160,7 +160,7 @@ static int wsaud_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
     WsAudDemuxContext *wsaud = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned char preamble[AUD_CHUNK_PREAMBLE_SIZE];
     unsigned int chunk_size;
     int ret = 0;
@@ -213,7 +213,7 @@ static int wsvqa_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
     WsVqaDemuxContext *wsvqa = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
     unsigned char *header;
     unsigned char scratch[VQA_PREAMBLE_SIZE];
@@ -315,7 +315,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
     WsVqaDemuxContext *wsvqa = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ret = -1;
     unsigned char preamble[VQA_PREAMBLE_SIZE];
     unsigned int chunk_type;

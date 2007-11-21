@@ -244,7 +244,7 @@ static void end_header(ByteIOContext *pb, int64_t pos)
 static void put_chunk(AVFormatContext *s, int type, int payload_length, int flags)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int length;
 
     length = payload_length + 8;
@@ -270,7 +270,7 @@ static int64_t unix_to_file_time(int ti)
 static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data_chunk_size)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
     int has_title;
     AVCodecContext *enc;
@@ -506,7 +506,7 @@ static int asf_write_header(AVFormatContext *s)
         return -1;
     }
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
@@ -535,7 +535,7 @@ static int put_payload_parsing_info(
             )
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ppi_size, i;
     int64_t start= url_ftell(pb);
 
@@ -600,9 +600,9 @@ static void flush_packet(AVFormatContext *s)
     assert(packet_hdr_size <= asf->packet_size_left);
     memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
 
-    put_buffer(&s->pb, asf->packet_buf, asf->packet_size - packet_hdr_size);
+    put_buffer(s->pb, asf->packet_buf, asf->packet_size - packet_hdr_size);
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     asf->nb_packets++;
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
@@ -766,7 +766,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 //
 static int asf_write_index(AVFormatContext *s, ASFIndex *index, uint16_t max, uint32_t count)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int i;
 
     put_guid(pb, &simple_index_header);
@@ -793,22 +793,22 @@ static int asf_write_trailer(AVFormatContext *s)
         flush_packet(s);
 
     /* write index */
-    data_size = url_ftell(&s->pb);
+    data_size = url_ftell(s->pb);
     if ((!asf->is_streamed) && (asf->nb_index_count != 0)) {
         asf_write_index(s, asf->index_ptr, asf->maximum_packet, asf->nb_index_count);
     }
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
-    if (asf->is_streamed || url_is_streamed(&s->pb)) {
+    if (asf->is_streamed || url_is_streamed(s->pb)) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */
     } else {
         /* rewrite an updated header */
-        file_size = url_ftell(&s->pb);
-        url_fseek(&s->pb, 0, SEEK_SET);
+        file_size = url_ftell(s->pb);
+        url_fseek(s->pb, 0, SEEK_SET);
         asf_write_header1(s, file_size, data_size - asf->data_offset);
     }
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     av_free(asf->index_ptr);
     return 0;
 }

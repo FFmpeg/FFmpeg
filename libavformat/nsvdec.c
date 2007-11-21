@@ -228,7 +228,7 @@ static void print_tag(const char *str, unsigned int tag, int size)
 static int nsv_resync(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint32_t v = 0;
     int i;
 
@@ -275,7 +275,7 @@ static int nsv_resync(AVFormatContext *s)
 static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int file_size, size;
     int64_t duration;
     int strings_size;
@@ -394,7 +394,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     uint32_t vtag, atag;
     uint16_t vwidth, vheight;
     AVRational framerate;
@@ -533,7 +533,7 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int nsv_read_chunk(AVFormatContext *s, int fill_header)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st[2] = {NULL, NULL};
     NSVStream *nst;
     AVPacket *pkt;

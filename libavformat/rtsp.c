@@ -1351,7 +1351,7 @@ static int sdp_read_header(AVFormatContext *s,
     /* read the whole sdp file */
     /* XXX: better loading */
     content = av_malloc(SDP_MAX_SIZE);
-    size = get_buffer(&s->pb, content, SDP_MAX_SIZE - 1);
+    size = get_buffer(s->pb, content, SDP_MAX_SIZE - 1);
     if (size <= 0) {
         av_free(content);
         return AVERROR_INVALIDDATA;

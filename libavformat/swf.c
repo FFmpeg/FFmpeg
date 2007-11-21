@@ -96,7 +96,7 @@ static const AVCodecTag swf_audio_codec_tags[] = {
 static void put_swf_tag(AVFormatContext *s, int tag)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     swf->tag_pos = url_ftell(pb);
     swf->tag = tag;
@@ -112,7 +112,7 @@ static void put_swf_tag(AVFormatContext *s, int tag)
 static void put_swf_end_tag(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     offset_t pos;
     int tag_len, tag;
 
@@ -244,7 +244,7 @@ static void put_swf_matrix(ByteIOContext *pb,
 static int swf_write_header(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *enc, *audio_enc, *video_enc;
     PutBitContext p;
     uint8_t buf1[256];
@@ -392,16 +392,16 @@ static int swf_write_header(AVFormatContext *s)
         v |= 0x02; /* 16 bit playback */
         if (audio_enc->channels == 2)
             v |= 0x01; /* stereo playback */
-        put_byte(&s->pb, v);
+        put_byte(s->pb, v);
         v |= 0x20; /* mp3 compressed */
-        put_byte(&s->pb, v);
-        put_le16(&s->pb, swf->samples_per_frame);  /* avg samples per frame */
-        put_le16(&s->pb, 0);
+        put_byte(s->pb, v);
+        put_le16(s->pb, swf->samples_per_frame);  /* avg samples per frame */
+        put_le16(s->pb, 0);
 
         put_swf_end_tag(s);
     }
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
     return 0;
 }
 
@@ -409,7 +409,7 @@ static int swf_write_video(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
 
     /* Flash Player limit */
     if (swf->swf_frame_number == 16000) {
@@ -516,7 +516,7 @@ static int swf_write_video(AVFormatContext *s,
     put_swf_tag(s, TAG_SHOWFRAME);
     put_swf_end_tag(s);
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
     return 0;
 }
@@ -560,7 +560,7 @@ static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int swf_write_trailer(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVCodecContext *enc, *video_enc;
     int file_size, i;
 
@@ -574,10 +574,10 @@ static int swf_write_trailer(AVFormatContext *s)
     put_swf_tag(s, TAG_END);
     put_swf_end_tag(s);
 
-    put_flush_packet(&s->pb);
+    put_flush_packet(s->pb);
 
     /* patch file size and number of frames if not streamed */
-    if (!url_is_streamed(&s->pb) && video_enc) {
+    if (!url_is_streamed(s->pb) && video_enc) {
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
         put_le32(pb, file_size);
@@ -628,7 +628,7 @@ static int swf_probe(AVProbeData *p)
 static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int nbits, len, tag;
 
     tag = get_be32(pb) & 0xffffff00;
@@ -655,7 +655,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *vst = NULL, *ast = NULL, *st = 0;
     int tag, len, i, frame, v;
 

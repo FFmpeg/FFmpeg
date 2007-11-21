@@ -517,7 +517,7 @@ static int ipmovie_read_header(AVFormatContext *s,
                                AVFormatParameters *ap)
 {
     IPMVEContext *ipmovie = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVPacket pkt;
     AVStream *st;
     unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
@@ -589,7 +589,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
                                AVPacket *pkt)
 {
     IPMVEContext *ipmovie = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int ret;
 
     ret = process_ipmovie_chunk(ipmovie, pb, pkt);

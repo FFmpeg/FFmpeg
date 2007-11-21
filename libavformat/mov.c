@@ -1423,7 +1423,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = s->priv_data;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     int i, err;
     MOV_atom_t atom = { 0, 0, 0 };
 
@@ -1516,7 +1516,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
-    if (sample->pos >= url_fsize(&s->pb)) {
+    if (sample->pos >= url_fsize(s->pb)) {
         av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n", sc->ffindex, sample->pos);
         return -1;
     }
@@ -1526,8 +1526,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         dprintf(s, "dv audio pkt size %d\n", pkt->size);
     } else {
 #endif
-        url_fseek(&s->pb, sample->pos, SEEK_SET);
-        av_get_packet(&s->pb, pkt, sample->size);
+        url_fseek(s->pb, sample->pos, SEEK_SET);
+        av_get_packet(s->pb, pkt, sample->size);
 #ifdef CONFIG_DV_DEMUXER
         if (mov->dv_demux) {
             void *pkt_destruct_func = pkt->destruct;

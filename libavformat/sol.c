@@ -88,7 +88,7 @@ static int sol_read_header(AVFormatContext *s,
 {
     int size;
     unsigned int magic,tag;
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int id, codec, channels, rate, type;
     AVStream *st;
 
@@ -130,9 +130,9 @@ static int sol_read_packet(AVFormatContext *s,
 {
     int ret;
 
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
-    ret= av_get_packet(&s->pb, pkt, MAX_SIZE);
+    ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     pkt->stream_index = 0;
 
     /* note: we need to modify the packet size here to handle the last

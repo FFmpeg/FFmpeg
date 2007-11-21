@@ -526,7 +526,7 @@ static int gif_read_header(AVFormatContext * s1,
                            AVFormatParameters * ap)
 {
     GifState *s = s1->priv_data;
-    ByteIOContext *f = &s1->pb;
+    ByteIOContext *f = s1->pb;
     AVStream *st;
 
     s->f = f;

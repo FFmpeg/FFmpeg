@@ -51,7 +51,7 @@ static int txd_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 }
 
 static int txd_read_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     unsigned int id, chunk_size, marker;
     int ret;
 
@@ -60,7 +60,7 @@ next_chunk:
     chunk_size = get_le32(pb);
     marker     = get_le32(pb);
 
-    if (url_feof(&s->pb))
+    if (url_feof(s->pb))
         return AVERROR(EIO);
     if (marker != TXD_MARKER && marker != TXD_MARKER2) {
         av_log(NULL, AV_LOG_ERROR, "marker does not match\n");
@@ -72,7 +72,7 @@ next_chunk:
             if (chunk_size > 100)
                 break;
         case TXD_EXTRA:
-            url_fskip(&s->pb, chunk_size);
+            url_fskip(s->pb, chunk_size);
         case TXD_FILE:
         case TXD_TEXTURE:
             goto next_chunk;
@@ -81,7 +81,7 @@ next_chunk:
             return AVERROR(EIO);
     }
 
-    ret = av_get_packet(&s->pb, pkt, chunk_size);
+    ret = av_get_packet(s->pb, pkt, chunk_size);
     pkt->stream_index = 0;
 
     return ret <= 0 ? AVERROR(EIO) : ret;

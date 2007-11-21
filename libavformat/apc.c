@@ -32,7 +32,7 @@ static int apc_probe(AVProbeData *p)
 
 static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = &s->pb;
+    ByteIOContext *pb = s->pb;
     AVStream *st;
 
     get_le32(pb); /* CRYO */
@@ -74,7 +74,7 @@ static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int apc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    if (av_get_packet(&s->pb, pkt, MAX_READ_SIZE) <= 0)
+    if (av_get_packet(s->pb, pkt, MAX_READ_SIZE) <= 0)
         return AVERROR(EIO);
     pkt->stream_index = 0;
     return 0;
