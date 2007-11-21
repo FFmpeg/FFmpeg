@@ -2838,6 +2838,10 @@ PREFETCH(prefetch_3dnow, prefetch)
 #undef PREFETCH
 
 #include "h264dsp_mmx.c"
+#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER) \
+     || defined(CONFIG_VC1_ENCODER) || defined(CONFIG_WMV3_ENCODER)
+#include "vc1dsp_mmx.c"
+#endif
 
 /* AVS specific */
 void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx);
@@ -3625,6 +3629,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 #ifdef CONFIG_CAVS_DECODER
             ff_cavsdsp_init_mmx2(c, avctx);
+#endif
+
+#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER) \
+     || defined(CONFIG_VC1_ENCODER) || defined(CONFIG_WMV3_ENCODER)
+            ff_vc1dsp_init_mmx(c, avctx);
 #endif
 
 #ifdef CONFIG_ENCODERS
