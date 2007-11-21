@@ -1130,7 +1130,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
 
     for(;;) {
         if (url_interrupt_cb())
-            return -1;
+            return AVERROR(EINTR);
         FD_ZERO(&rfds);
         fd_max = -1;
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
