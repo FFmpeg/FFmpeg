@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include <unistd.h>
 #include <fcntl.h>
+#include "os_support.h"
 
 #ifndef HAVE_SYS_POLL_H
 #ifdef HAVE_WINSOCK2_H
