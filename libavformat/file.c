@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include "os_support.h"
 
 
 /* standard file protocol */

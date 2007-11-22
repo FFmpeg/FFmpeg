@@ -33,6 +33,7 @@
 #include "opt.h"
 #include "fifo.h"
 #include "avstring.h"
+#include "os_support.h"
 
 #if !defined(HAVE_GETRUSAGE) && defined(HAVE_GETPROCESSTIMES)
 #include <windows.h>
