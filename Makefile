@@ -8,6 +8,7 @@ VPATH=$(SRC_PATH_BARE)
 
 CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
+       -I$(SRC_PATH)/libavdevice \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE -DHAVE_AV_CONFIG_H
 LDFLAGS+= -g
 
@@ -25,9 +26,9 @@ ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
 ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF)
+DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF) libavdevice/$(SLIBPREF)avdevice$(SLIBSUF)
 else
-DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
+DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF) libavdevice/$(LIBPREF)avdevice$(LIBSUF)
 endif
 
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
@@ -60,8 +61,8 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
 SRCS = $(addsuffix .c, $(PROGS-yes)) cmdutils.c
-LDFLAGS := -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
-EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
+LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
+EXTRALIBS := -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 ifeq ($(CONFIG_SWSCALER),yes)
 LDFLAGS+=-L$(BUILD_ROOT)/libswscale
@@ -74,6 +75,7 @@ lib:
 	$(MAKE) -C libavutil   all
 	$(MAKE) -C libavcodec  all
 	$(MAKE) -C libavformat all
+	$(MAKE) -C libavdevice all
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc all
 endif
@@ -165,6 +167,7 @@ install-libs:
 	$(MAKE) -C libavutil   install-libs
 	$(MAKE) -C libavcodec  install-libs
 	$(MAKE) -C libavformat install-libs
+	$(MAKE) -C libavdevice install-libs
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc install-libs
 endif
@@ -180,6 +183,7 @@ install-headers:
 	$(MAKE) -C libavutil   install-headers
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers
+	$(MAKE) -C libavdevice install-headers
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc install-headers
 endif
@@ -201,6 +205,7 @@ uninstall-libs:
 	$(MAKE) -C libavutil   uninstall-libs
 	$(MAKE) -C libavcodec  uninstall-libs
 	$(MAKE) -C libavformat uninstall-libs
+	$(MAKE) -C libavdevice uninstall-libs
 	$(MAKE) -C libpostproc uninstall-libs
 	$(MAKE) -C libswscale  uninstall-libs
 
@@ -208,6 +213,7 @@ uninstall-headers:
 	$(MAKE) -C libavutil   uninstall-headers
 	$(MAKE) -C libavcodec  uninstall-headers
 	$(MAKE) -C libavformat uninstall-headers
+	$(MAKE) -C libavdevice uninstall-headers
 	$(MAKE) -C libpostproc uninstall-headers
 	$(MAKE) -C libswscale  uninstall-headers
 	-rmdir "$(INCDIR)"
@@ -216,6 +222,7 @@ depend dep: .depend .vhookdep
 	$(MAKE) -C libavutil   depend
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
+	$(MAKE) -C libavdevice depend
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc depend
 endif
@@ -239,6 +246,7 @@ clean:
 	$(MAKE) -C libavutil   clean
 	$(MAKE) -C libavcodec  clean
 	$(MAKE) -C libavformat clean
+	$(MAKE) -C libavdevice clean
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
 	rm -f *.o *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
@@ -252,6 +260,7 @@ distclean: clean
 	$(MAKE) -C libavutil   distclean
 	$(MAKE) -C libavcodec  distclean
 	$(MAKE) -C libavformat distclean
+	$(MAKE) -C libavdevice distclean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
 	rm -f .depend .vhookdep version.h config.* *.pc

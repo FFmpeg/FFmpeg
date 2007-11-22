@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <limits.h>
 #include "avformat.h"
+#include "avdevice.h"
 #include "swscale.h"
 #include "framehook.h"
 #include "opt.h"
@@ -3884,6 +3885,8 @@ int main(int argc, char **argv)
     int i;
     int64_t ti;
 
+    avcodec_register_all();
+    avdevice_register_all();
     av_register_all();
 
     for(i=0; i<CODEC_TYPE_NB; i++){

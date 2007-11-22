@@ -60,19 +60,16 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (ASF, asf);
     REGISTER_MUXER    (ASF_STREAM, asf_stream);
     REGISTER_MUXDEMUX (AU, au);
-    REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);
     REGISTER_MUXDEMUX (AVI, avi);
     REGISTER_DEMUXER  (AVISYNTH, avisynth);
     REGISTER_DEMUXER  (AVS, avs);
     REGISTER_DEMUXER  (BETHSOFTVID, bethsoftvid);
-    REGISTER_DEMUXER  (BKTR, bktr);
     REGISTER_DEMUXER  (C93, c93);
     REGISTER_MUXER    (CRC, crc);
     REGISTER_DEMUXER  (DAUD, daud);
     REGISTER_DEMUXER  (DSICIN, dsicin);
     REGISTER_DEMUXER  (DTS, dts);
     REGISTER_MUXDEMUX (DV, dv);
-    REGISTER_DEMUXER  (DV1394, dv1394);
     REGISTER_DEMUXER  (DXA, dxa);
     REGISTER_DEMUXER  (EA, ea);
     REGISTER_DEMUXER  (EA_CDATA, ea_cdata);
@@ -123,7 +120,6 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (NUT, nut);
     REGISTER_DEMUXER  (NUV, nuv);
     REGISTER_MUXDEMUX (OGG, ogg);
-    REGISTER_MUXDEMUX (OSS, oss);
     REGISTER_MUXDEMUX (PCM_ALAW,  pcm_alaw);
     REGISTER_MUXDEMUX (PCM_MULAW, pcm_mulaw);
     REGISTER_MUXDEMUX (PCM_S16BE, pcm_s16be);
@@ -156,8 +152,6 @@ void av_register_all(void)
     REGISTER_DEMUXER  (TIERTEXSEQ, tiertexseq);
     REGISTER_DEMUXER  (TTA, tta);
     REGISTER_DEMUXER  (TXD, txd);
-    REGISTER_DEMUXER  (V4L2, v4l2);
-    REGISTER_DEMUXER  (V4L, v4l);
     REGISTER_DEMUXER  (VC1, vc1);
     REGISTER_DEMUXER  (VMD, vmd);
     REGISTER_MUXDEMUX (VOC, voc);
@@ -166,11 +160,9 @@ void av_register_all(void)
     REGISTER_DEMUXER  (WSAUD, wsaud);
     REGISTER_DEMUXER  (WSVQA, wsvqa);
     REGISTER_DEMUXER  (WV, wv);
-    REGISTER_DEMUXER  (X11_GRAB_DEVICE, x11_grab_device);
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
     /* external libraries */
-    REGISTER_DEMUXER  (LIBDC1394, libdc1394);
     REGISTER_MUXDEMUX (LIBNUT, libnut);
 
     /* protocols */

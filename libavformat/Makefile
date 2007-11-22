@@ -31,7 +31,6 @@ OBJS-$(CONFIG_AVI_MUXER)                 += avienc.o riff.o
 OBJS-$(CONFIG_AVISYNTH)                  += avisynth.o
 OBJS-$(CONFIG_AVS_DEMUXER)               += avs.o vocdec.o voc.o
 OBJS-$(CONFIG_BETHSOFTVID_DEMUXER)       += bethsoftvid.o
-OBJS-$(CONFIG_BKTR_DEMUXER)              += bktr.o
 OBJS-$(CONFIG_C93_DEMUXER)               += c93.o vocdec.o voc.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
@@ -39,7 +38,6 @@ OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DTS_DEMUXER)               += raw.o
 OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
-OBJS-$(CONFIG_DV1394_DEMUXER)            += dv1394.o dv.o
 OBJS-$(CONFIG_DXA_DEMUXER)               += dxa.o riff.o
 OBJS-$(CONFIG_EA_CDATA_DEMUXER)          += eacdata.o
 OBJS-$(CONFIG_EA_DEMUXER)                += electronicarts.o
@@ -114,8 +112,6 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparseogm.o    \
                                             riff.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
-OBJS-$(CONFIG_OSS_DEMUXER)               += audio.o
-OBJS-$(CONFIG_OSS_MUXER)                 += audio.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
@@ -141,8 +137,6 @@ OBJS-$(CONFIG_THP_DEMUXER)               += thp.o
 OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
 OBJS-$(CONFIG_TXD_DEMUXER)               += txd.o
-OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
-OBJS-$(CONFIG_V4L_DEMUXER)               += v4l.o
 OBJS-$(CONFIG_VC1_DEMUXER)               += raw.o
 OBJS-$(CONFIG_VMD_DEMUXER)               += sierravmd.o
 OBJS-$(CONFIG_VOC_DEMUXER)               += vocdec.o voc.o
@@ -153,12 +147,10 @@ OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
-OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
 # external libraries
-OBJS-$(CONFIG_LIBDC1394_DEMUXER)         += libdc1394.o
 OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
 OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
@@ -166,9 +158,6 @@ OBJS-$(CONFIG_VHOOK)                     += framehook.o
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
              -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
-
-CPPOBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
-CPPOBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
 
 # protocols I/O
 OBJS+= avio.o aviobuf.o

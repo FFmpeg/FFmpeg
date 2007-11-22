@@ -22,6 +22,7 @@
 #include <math.h>
 #include <limits.h>
 #include "avformat.h"
+#include "avdevice.h"
 #include "rtsp.h"
 #include "swscale.h"
 #include "avstring.h"
@@ -2517,6 +2518,8 @@ int main(int argc, char **argv)
     int flags;
 
     /* register all codecs, demux and protocols */
+    avcodec_register_all();
+    avdevice_register_all();
     av_register_all();
 
     show_banner(program_name, program_birth_year);

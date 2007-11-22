@@ -920,9 +920,11 @@ PARSER_LIST=`sed -n 's/^[^#]*PARSER.*(.*, *\(.*\)).*/\1_parser/p' "$source_path/
 BSF_LIST=`sed -n 's/^[^#]*BSF.*(.*, *\(.*\)).*/\1_bsf/p' "$source_path/libavcodec/allcodecs.c"`
 MUXER_LIST=`sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
 DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
+INDEV_LIST=`sed -n 's/^[^#]*_IN.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavdevice/alldevices.c"`
+OUTDEV_LIST=`sed -n 's/^[^#]*OUTDEV.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavdevice/alldevices.c"`
 PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*(.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
-enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST
+enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST $INDEV_LIST $OUTDEV_LIST
 enable $ARCH_EXT_LIST
 
 die_unknown(){
@@ -1729,13 +1731,16 @@ enabled_any $ENCODER_LIST  && enable encoders
 enabled_any $DECODER_LIST  && enable decoders
 enabled_any $MUXER_LIST    && enable muxers
 enabled_any $DEMUXER_LIST  && enable demuxers
+enabled_any $OUTDEV_LIST   && enable muxers
+enabled_any $INDEV_LIST    && enable demuxers
 enabled_any $PROTOCOL_LIST && enable protocols
 enabled_any $BSF_LIST      && enable bsfs
 
 enabled_any $THREADS_LIST  && enable threads
 
 check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
-    $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST
+    $BSF_LIST $DEMUXER_LIST $MUXER_LIST $PROTOCOL_LIST \
+    $INDEV_LIST $OUTDEV_LIST
 
 enabled libdc1394 && append pkg_requires "libraw1394"
 enabled libtheora && append pkg_requires "theora"
@@ -1888,6 +1893,7 @@ fi
 sws_version=`grep '#define LIBSWSCALE_VERSION ' "$source_path/libswscale/swscale.h" | sed 's/[^0-9\.]//g'`
 pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
 lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
+lavd_version=`grep '#define LIBAVDEVICE_VERSION ' "$source_path/libavdevice/avdevice.h" | sed 's/[^0-9\.]//g'`
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
 
@@ -1900,6 +1906,8 @@ if enabled shared; then
   echo "SPPVERSION=$pp_version" >> config.mak
   echo "LAVCMAJOR=${lavc_version%%.*}" >> config.mak
   echo "LAVCVERSION=$lavc_version" >> config.mak
+  echo "LAVDMAJOR=${lavd_version%%.*}" >> config.mak
+  echo "LAVDVERSION=$lavd_version" >> config.mak
   echo "LAVFMAJOR=${lavf_version%%.*}" >> config.mak
   echo "LAVFVERSION=$lavf_version" >> config.mak
   echo "LAVUMAJOR=${lavu_version%%.*}" >> config.mak
@@ -1926,6 +1934,8 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST   \
                                       $DEMUXER_LIST  \
                                       $MUXER_LIST    \
                                       $PROTOCOL_LIST \
+                                      $INDEV_LIST   \
+                                      $OUTDEV_LIST  \
 
 echo "#define restrict $_restrict" >> $TMPH
 
@@ -2050,6 +2060,8 @@ pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$lavc_version"
 pkgconfig_generate libavformat "FFmpeg container format library" "$lavf_version" "-lavformat $extralibs" "$pkg_requires libavcodec = $lavc_version" ffmpeg
 pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$lavf_version" "$extralibs" "$pkg_requires libavcodec = $lavc_version"
 
+pkgconfig_generate libavdevice "FFmpeg device handling library" "$lavd_version" "-lavdevice $extralibs" "$pkg_requires libavformat = $lavf_version" ffmpeg
+pkgconfig_generate_uninstalled libavdevice "FFmpeg device handling library" "$lavd_version" "$extralibs" "$pkg_requires libavformat = $lavf_version"
 if enabled pp; then
   pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc "" postproc
   pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
