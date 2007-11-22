@@ -1196,7 +1196,7 @@ static int rtsp_read_packet(AVFormatContext *s,
         break;
     }
     if (len < 0)
-        return AVERROR(EIO);
+        return len;
     ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
     if (ret < 0)
         goto redo;
