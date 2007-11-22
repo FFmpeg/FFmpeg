@@ -23,15 +23,15 @@
  * along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * the C code (not assembly, mmx, ...) of this file can be used
- * under the LGPL license too
+ * The C code (not assembly, mmx, ...) of this file can be used
+ * under the LGPL license.
  */
 
 #include <stddef.h>
 #include <inttypes.h> /* for __WORDSIZE */
 
 #ifndef __WORDSIZE
-// #warning You have misconfigured system and probably will lose performance!
+// #warning You have a misconfigured system and will probably lose performance!
 #define __WORDSIZE MP_WORDSIZE
 #endif
 
@@ -68,7 +68,7 @@
 #endif
 
 #ifdef HAVE_3DNOW
-/* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
+/* On K6 femms is faster than emms. On K7 femms is directly mapped on emms. */
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
@@ -232,7 +232,7 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,long src_si
  Original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi
  MMX2, 3DNOW optimization by Nick Kurshev
- 32bit c version, and and&add trick by Michael Niedermayer
+ 32 bit C version, and and&add trick by Michael Niedermayer
 */
 static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,long src_size)
 {
@@ -350,7 +350,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
     end = s + src_size;
 #ifdef HAVE_MMX
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
+#if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     asm volatile(
     "movq           %3, %%mm5   \n\t"
     "movq           %4, %%mm6   \n\t"
@@ -509,7 +509,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
     end = s + src_size;
 #ifdef HAVE_MMX
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
+#if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     asm volatile(
     "movq           %3, %%mm5   \n\t"
     "movq           %4, %%mm6   \n\t"
@@ -910,12 +910,10 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
 }
 
 /*
-  I use here less accurate approximation by simply
- left-shifting the input
-  value and filling the low order bits with
- zeroes. This method improves png's
-  compression but this scheme cannot reproduce white exactly, since it does not
-  generate an all-ones maximum value; the net effect is to darken the
+  I use less accurate approximation here by simply left-shifting the input
+  value and filling the low order bits with zeroes. This method improves PNG
+  compression but this scheme cannot reproduce white exactly, since it does
+  not generate an all-ones maximum value; the net effect is to darken the
   image slightly.
 
   The better method should be "left bit replication":
@@ -1271,7 +1269,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     while (s < end)
     {
-#if 0 //slightly slower on athlon
+#if 0 //slightly slower on Athlon
         int bgr= *s++;
         *((uint32_t*)d)++ = ((bgr&0x1F)<<3) + ((bgr&0x3E0)<<6) + ((bgr&0x7C00)<<9);
 #else
@@ -1507,7 +1505,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
     for (y=0; y<height; y++)
     {
 #ifdef HAVE_MMX
-//FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
+//FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         asm volatile(
         "xor                 %%"REG_a", %%"REG_a"   \n\t"
         ASMALIGN(4)
@@ -1639,9 +1637,8 @@ asm(    EMMS"       \n\t"
 }
 
 /**
- *
- * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
- * problem for anyone then tell me, and ill fix it)
+ * Height should be a multiple of 2 and width should be a multiple of 16 (if
+ * this is a problem for anyone then tell me, and I will fix it).
  */
 static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                                       long width, long height,
@@ -1660,7 +1657,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
     for (y=0; y<height; y++)
     {
 #ifdef HAVE_MMX
-//FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
+//FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         asm volatile(
         "xor                %%"REG_a", %%"REG_a"    \n\t"
         ASMALIGN(4)
@@ -1695,7 +1692,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         : "%"REG_a
         );
 #else
-//FIXME adapt the alpha asm code from yv12->yuy2
+//FIXME adapt the Alpha ASM code from yv12->yuy2
 
 #if __WORDSIZE >= 64
         int i;
@@ -1746,9 +1743,8 @@ asm(    EMMS"       \n\t"
 }
 
 /**
- *
- * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
- * problem for anyone then tell me, and ill fix it)
+ * Height should be a multiple of 2 and width should be a multiple of 16 (if
+ * this is a problem for anyone then tell me, and I will fix it).
  */
 static inline void RENAME(yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                                       long width, long height,
@@ -1759,8 +1755,7 @@ static inline void RENAME(yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, 
 }
 
 /**
- *
- * width should be a multiple of 16
+ * Width should be a multiple of 16.
  */
 static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                                          long width, long height,
@@ -1770,9 +1765,8 @@ static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usr
 }
 
 /**
- *
- * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
- * problem for anyone then tell me, and ill fix it)
+ * Height should be a multiple of 2 and width should be a multiple of 16 (if
+ * this is a problem for anyone then tell me, and I will fix it).
  */
 static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                       long width, long height,
@@ -2007,10 +2001,10 @@ asm volatile(   EMMS"       \n\t"
 }
 
 /**
- *
- * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
- * problem for anyone then tell me, and ill fix it)
- * chrominance data is only taken from every secound line others are ignored FIXME write HQ version
+ * Height should be a multiple of 2 and width should be a multiple of 16 (if
+ * this is a problem for anyone then tell me, and I will fix it).
+ * Chrominance data is only taken from every secound line, others are ignored.
+ * FIXME: Write HQ version.
  */
 static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                       long width, long height,
@@ -2133,10 +2127,11 @@ asm volatile(   EMMS"       \n\t"
 }
 
 /**
- *
- * height should be a multiple of 2 and width should be a multiple of 2 (if this is a
- * problem for anyone then tell me, and ill fix it)
- * chrominance data is only taken from every secound line others are ignored in the C version FIXME write HQ version
+ * Height should be a multiple of 2 and width should be a multiple of 2 (if
+ * this is a problem for anyone then tell me, and I will fix it).
+ * Chrominance data is only taken from every secound line,
+ * others are ignored in the C version.
+ * FIXME: Write HQ version.
  */
 static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        long width, long height,
