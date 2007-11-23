@@ -157,7 +157,7 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 OBJS-$(CONFIG_VHOOK)                     += framehook.o
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) \
-             -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
+             -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) $(EXTRALIBS)
 
 # protocols I/O
 OBJS+= avio.o aviobuf.o
