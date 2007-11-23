@@ -1991,6 +1991,7 @@ if enabled source_path_used; then
         libavcodec/ppc    \
         libavcodec/sh4    \
         libavcodec/sparc  \
+        libavdevice       \
         libavformat       \
         libavutil         \
         libpostproc       \
@@ -2004,6 +2005,7 @@ if enabled source_path_used; then
         common.mak           \
         doc/texi2pod.pl      \
         libavcodec/Makefile  \
+        libavdevice/Makefile \
         libavformat/Makefile \
         libavutil/Makefile   \
         libpostproc/Makefile \
