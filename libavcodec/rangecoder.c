@@ -111,7 +111,7 @@ int ff_rac_terminate(RangeCoder *c){
 
 #if 0 //selftest
 #define SIZE 10240
-int main(){
+int main(void){
     RangeCoder c;
     uint8_t b[9*SIZE];
     uint8_t r[9*SIZE];

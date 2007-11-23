@@ -451,7 +451,7 @@ static const char *const_names[]={
     "E",
     0
 };
-main(){
+main(void){
     int i;
     printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
     printf("%f == 0.931322575\n", ff_eval("80G/80Gi", const_values, const_names, NULL, NULL, NULL, NULL, NULL));

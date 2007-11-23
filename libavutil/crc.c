@@ -107,7 +107,7 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t le
 
 #ifdef TEST
 #undef printf
-main(){
+main(void){
     uint8_t buf[1999];
     int i;
     int p[4][4]={{1, 32, AV_CRC_32_IEEE_LE, 0x3D5CDD04},

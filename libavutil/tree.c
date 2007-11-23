@@ -132,7 +132,7 @@ int cmp(const void *a, const void *b){
     return a-b;
 }
 
-int main(){
+int main(void){
     int i,j,k;
     AVTreeNode *root= NULL;
 

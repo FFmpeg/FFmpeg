@@ -4755,7 +4755,7 @@ AVCodec snow_encoder = {
 #undef printf
 #undef random
 
-int main(){
+int main(void){
     int width=256;
     int height=256;
     int buffer[2][width*height];

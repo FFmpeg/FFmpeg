@@ -54,7 +54,7 @@ unsigned long av_adler32_update(unsigned long adler, const uint8_t *buf, unsigne
 #include "log.h"
 #define LEN 7001
 volatile int checksum;
-int main(){
+int main(void){
     int i;
     char data[LEN];
     av_log_level = AV_LOG_DEBUG;

@@ -27,7 +27,7 @@
 
 #undef printf
 
-int main(){
+int main(void){
     SoftFloat one= av_int2sf(1, 0);
     SoftFloat sf1, sf2;
     double d1, d2;

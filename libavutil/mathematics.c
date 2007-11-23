@@ -113,7 +113,7 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
 #if 0
 #include "integer.h"
 #undef printf
-main(){
+main(void){
     int64_t a,b,c,d,e;
 
     for(a=7; a<(1LL<<62); a+=a/3+1){

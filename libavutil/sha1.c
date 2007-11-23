@@ -149,7 +149,7 @@ void av_sha1_final(AVSHA1* ctx, uint8_t digest[20]){
 #include <stdio.h>
 #undef printf
 
-int main(){
+int main(void){
     int i, k;
     AVSHA1 ctx;
     unsigned char digest[20];

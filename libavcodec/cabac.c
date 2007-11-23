@@ -184,7 +184,7 @@ void ff_init_cabac_states(CABACContext *c){
 
 #include "avcodec.h"
 
-int main(){
+int main(void){
     CABACContext c;
     uint8_t b[9*SIZE];
     uint8_t r[9*SIZE];

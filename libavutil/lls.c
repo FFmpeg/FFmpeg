@@ -113,7 +113,7 @@ double av_evaluate_lls(LLSModel *m, double *param, int order){
 #include <stdlib.h>
 #include <stdio.h>
 
-int main(){
+int main(void){
     LLSModel m;
     int i, order;
 

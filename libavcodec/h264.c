@@ -7879,7 +7879,7 @@ static inline void fill_mb_avail(H264Context *h){
 #undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
-int main(){
+int main(void){
     int i;
     uint8_t temp[SIZE];
     PutBitContext pb;
