@@ -103,8 +103,8 @@ version <next>
 - Nellymoser ASAO decoder
 - Beam Software SIFF demuxer and decoder
 - libvorbis Vorbis decoding removed in favor of native decoder
-- IntraX8 (J-Frame) sub-decoder for WMV2 and VC-1
-- OGG muxer
+- IntraX8 (J-Frame) subdecoder for WMV2 and VC-1
+- Ogg muxer
 
 version 0.4.9-pre1:
 
