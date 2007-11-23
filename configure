@@ -920,8 +920,8 @@ PARSER_LIST=`sed -n 's/^[^#]*PARSER.*(.*, *\(.*\)).*/\1_parser/p' "$source_path/
 BSF_LIST=`sed -n 's/^[^#]*BSF.*(.*, *\(.*\)).*/\1_bsf/p' "$source_path/libavcodec/allcodecs.c"`
 MUXER_LIST=`sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
 DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
-INDEV_LIST=`sed -n 's/^[^#]*_IN.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavdevice/alldevices.c"`
-OUTDEV_LIST=`sed -n 's/^[^#]*OUTDEV.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavdevice/alldevices.c"`
+OUTDEV_LIST=`sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavdevice/alldevices.c"`
+INDEV_LIST=`sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavdevice/alldevices.c"`
 PROTOCOL_LIST=`sed -n 's/^[^#]*PROTOCOL.*(.*, *\(.*\)).*/\1_protocol/p' "$source_path/libavformat/allformats.c"`
 
 enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST $PROTOCOL_LIST $BSF_LIST $INDEV_LIST $OUTDEV_LIST
