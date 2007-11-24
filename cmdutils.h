@@ -22,6 +22,8 @@
 #ifndef FFMPEG_CMDUTILS_H
 #define FFMPEG_CMDUTILS_H
 
+#include <inttypes.h>
+
 typedef struct {
     const char *name;
     int flags;

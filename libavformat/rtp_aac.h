@@ -20,6 +20,8 @@
 #ifndef FFMPEG_RTP_AAC_H
 #define FFMPEG_RTP_AAC_H
 
+#include "avformat.h"
+
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
 
 #endif /* FFMPEG_RTP_AAC_H */

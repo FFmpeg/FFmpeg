@@ -19,6 +19,9 @@
 #ifndef FFMPEG_INTRAX8_H
 #define FFMPEG_INTRAX8_H
 
+#include "bitstream.h"
+#include "mpegvideo.h"
+
 typedef struct{
     VLC * j_ac_vlc[4];//they point to the static j_mb_vlc
     VLC * j_orient_vlc;
