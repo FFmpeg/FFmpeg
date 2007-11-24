@@ -187,3 +187,25 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
         interrupt_cb = default_interrupt_cb;
     url_interrupt_cb = interrupt_cb;
 }
+
+int av_url_read_play(URLContext *h)
+{
+    if (!h->prot->url_read_play)
+        return AVERROR(ENOSYS);
+    return h->prot->url_read_play(h);
+}
+
+int av_url_read_pause(URLContext *h)
+{
+    if (!h->prot->url_read_pause)
+        return AVERROR(ENOSYS);
+    return h->prot->url_read_pause(h);
+}
+
+int av_url_read_seek(URLContext *h,
+        int stream_index, int64_t timestamp, int flags)
+{
+    if (!h->prot->url_read_seek)
+        return AVERROR(ENOSYS);
+    return h->prot->url_read_seek(h, stream_index, timestamp, flags);
+}
