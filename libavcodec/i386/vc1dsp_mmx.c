@@ -175,8 +175,8 @@ static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
         "punpcklbw %%mm0, %%mm2            \n\t"
         "paddw     %%mm1, %%mm3            \n\t"
         "paddw     %%mm2, %%mm4            \n\t"
-        "movd      0(%1,%3), %%mm1         \n\t"
-        "movd      4(%1,%3), %%mm2         \n\t"
+        "movd      0(%1,%4), %%mm1         \n\t"
+        "movd      4(%1,%4), %%mm2         \n\t"
         "pmullw    %%mm6, %%mm3            \n\t" /* 0,9,9,0*/
         "pmullw    %%mm6, %%mm4            \n\t" /* 0,9,9,0*/
         "punpcklbw %%mm0, %%mm1            \n\t"
