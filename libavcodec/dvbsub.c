@@ -390,16 +390,6 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     return q - outbuf;
 }
 
-static int dvbsub_init_decoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
-static int dvbsub_close_decoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 static int dvbsub_encode(AVCodecContext *avctx,
                        unsigned char *buf, int buf_size, void *data)
 {
@@ -416,7 +406,6 @@ AVCodec dvbsub_encoder = {
     CODEC_TYPE_SUBTITLE,
     CODEC_ID_DVB_SUBTITLE,
     sizeof(DVBSubtitleContext),
-    dvbsub_init_decoder,
+    NULL,
     dvbsub_encode,
-    dvbsub_close_decoder,
 };

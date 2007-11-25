@@ -364,13 +364,6 @@ static int wavpack_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int wavpack_decode_close(AVCodecContext *avctx)
-{
-//    WavpackContext *s = avctx->priv_data;
-
-    return 0;
-}
-
 static int wavpack_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
@@ -587,6 +580,6 @@ AVCodec wavpack_decoder = {
     sizeof(WavpackContext),
     wavpack_decode_init,
     NULL,
-    wavpack_decode_close,
+    NULL,
     wavpack_decode_frame,
 };

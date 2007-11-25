@@ -42,11 +42,6 @@ static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *
     }
 }
 
-static int dvdsub_init_decoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 static int decode_run_2bit(GetBitContext *gb, int *color)
 {
     unsigned int v, t;
@@ -443,11 +438,6 @@ static int find_smallest_bounding_rectangle(AVSubtitle *s)
     return 1;
 }
 
-static int dvdsub_close_decoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 #ifdef DEBUG
 #undef fprintf
 static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
@@ -512,8 +502,8 @@ AVCodec dvdsub_decoder = {
     CODEC_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,
     0,
-    dvdsub_init_decoder,
     NULL,
-    dvdsub_close_decoder,
+    NULL,
+    NULL,
     dvdsub_decode,
 };

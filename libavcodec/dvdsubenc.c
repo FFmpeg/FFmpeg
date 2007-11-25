@@ -204,16 +204,6 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
     return q - outbuf;
 }
 
-static int dvdsub_init_encoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
-static int dvdsub_close_encoder(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 static int dvdsub_encode(AVCodecContext *avctx,
                          unsigned char *buf, int buf_size, void *data)
 {
@@ -230,7 +220,6 @@ AVCodec dvdsub_encoder = {
     CODEC_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,
     0,
-    dvdsub_init_encoder,
+    NULL,
     dvdsub_encode,
-    dvdsub_close_encoder,
 };
