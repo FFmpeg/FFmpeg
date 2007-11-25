@@ -189,6 +189,7 @@ enum CodecID {
     CODEC_ID_PCM_U24BE,
     CODEC_ID_PCM_S24DAUD,
     CODEC_ID_PCM_ZORK,
+    CODEC_ID_PCM_S16LE_PLANAR,
 
     /* various ADPCM codecs */
     CODEC_ID_ADPCM_IMA_QT= 0x11000,

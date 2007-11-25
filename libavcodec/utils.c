@@ -1189,6 +1189,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             break;
         case CODEC_ID_PCM_S16LE:
         case CODEC_ID_PCM_S16BE:
+        case CODEC_ID_PCM_S16LE_PLANAR:
         case CODEC_ID_PCM_U16LE:
         case CODEC_ID_PCM_U16BE:
             bitrate = enc->sample_rate * enc->channels * 16;
@@ -1314,6 +1315,7 @@ int av_get_bits_per_sample(enum CodecID codec_id){
         return 8;
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_S16LE:
+    case CODEC_ID_PCM_S16LE_PLANAR:
     case CODEC_ID_PCM_U16BE:
     case CODEC_ID_PCM_U16LE:
         return 16;
