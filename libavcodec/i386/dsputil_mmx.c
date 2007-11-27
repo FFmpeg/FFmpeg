@@ -2843,10 +2843,6 @@ PREFETCH(prefetch_3dnow, prefetch)
 #undef PREFETCH
 
 #include "h264dsp_mmx.c"
-#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER) \
-     || defined(CONFIG_VC1_ENCODER) || defined(CONFIG_WMV3_ENCODER)
-#include "vc1dsp_mmx.c"
-#endif
 
 /* AVS specific */
 void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx);
@@ -2862,6 +2858,13 @@ void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
 }
 void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
     avg_pixels16_mmx(dst, src, stride, 16);
+}
+
+/* VC1 specific */
+void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx);
+
+void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+    put_pixels8_mmx(dst, src, stride, 8);
 }
 
 /* external functions, from idct_mmx.c */
