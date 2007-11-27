@@ -23,14 +23,8 @@
  */
 
 #include "dsputil.h"
+#include "dsputil_mmx.h"
 #include "common.h"
-
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_4 ) = 0x0004000400040004ULL;
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_5 ) = 0x0005000500050005ULL;
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_7 ) = 0x0007000700070007ULL;
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_42) = 0x002A002A002A002AULL;
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_64) = 0x0040004000400040ULL;
-DECLARE_ALIGNED_8(static const uint64_t,ff_pw_96) = 0x0060006000600060ULL;
 
 /*****************************************************************************
  *

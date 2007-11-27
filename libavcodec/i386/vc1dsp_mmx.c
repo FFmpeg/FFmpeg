@@ -25,6 +25,7 @@
  */
 
 #include "dsputil.h"
+#include "dsputil_mmx.h"
 #include "x86_cpu.h"
 
 /** Add rounder from mm7 to mm3 and pack result at destination */
@@ -102,9 +103,6 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
         : "memory"
     );
 }
-
-/** To remove bias allowing use of MMX 16bits arithmetic */
-DECLARE_ALIGNED_16(static const uint64_t, ff_pw_128) = 0x0080008000800080ULL;
 
 /**
  * Data is already unpacked, so some operations can directly be made from
