@@ -28,6 +28,7 @@
 #include "avformat.h"
 #include "rtsp.h"
 #include "rtp.h"
+#include "os_support.h"
 
 #include <stdarg.h>
 #include <unistd.h>
