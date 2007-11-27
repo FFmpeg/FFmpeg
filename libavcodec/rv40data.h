@@ -21,7 +21,7 @@
 
 /**
  * @file rv40data.h
- * Miscellaneous RV40 tables.
+ * miscellaneous RV40 tables
  */
 
 #ifndef FFMPEG_RV40DATA_H
@@ -30,7 +30,7 @@
 #include <stdint.h>
 
 /**
- * Standard widths and heights coded in RV40
+ * standard widths and heights coded in RV40
  */
 //@{
 static const int rv40_standard_widths[]   = { 160, 172, 240, 320, 352, 640, 704, 0};
@@ -40,10 +40,10 @@ static const int rv40_standard_heights2[] = { 180, 360, 576, 0};
 
 #define MODE2_PATTERNS_NUM 20
 /**
- * Intra types table
+ * intra types table
  *
  * These values are actually coded 3-tuples
- * used for detecting standard block configurations
+ * used for detecting standard block configurations.
  */
 static const uint16_t rv40_aic_table_index[MODE2_PATTERNS_NUM] = {
  0x000, 0x100, 0x200,
@@ -55,8 +55,8 @@ static const uint16_t rv40_aic_table_index[MODE2_PATTERNS_NUM] = {
 };
 
 /**
- * Luma quantizer values
- * Second table is used for inter blocks
+ * luma quantizer values
+ * The second table is used for inter blocks.
  */
 static const uint8_t rv40_luma_dc_quant[2][32] = {
  {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
@@ -66,18 +66,18 @@ static const uint8_t rv40_luma_dc_quant[2][32] = {
 };
 
 /**
- * @begingroup loopfilter coefficients used by RV40 loop filter
+ * @begingroup loopfilter coefficients used by the RV40 loop filter
  * @{
  */
 /**
- * Dither values for deblocking filter - left/top values
+ * dither values for deblocking filter - left/top values
  */
 static const uint8_t rv40_dither_l[16] = {
     0x40, 0x50, 0x20, 0x60, 0x30, 0x50, 0x40, 0x30,
     0x50, 0x40, 0x50, 0x30, 0x60, 0x20, 0x50, 0x40
 };
 /**
- * Dither values for deblocking filter - right/bottom values
+ * dither values for deblocking filter - right/bottom values
  */
 static const uint8_t rv40_dither_r[16] = {
     0x40, 0x30, 0x60, 0x20, 0x50, 0x30, 0x30, 0x40,

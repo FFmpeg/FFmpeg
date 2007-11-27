@@ -21,7 +21,7 @@
 
 /**
  * @file rv30data.h
- * Miscellaneous RV30 tables.
+ * miscellaneous RV30 tables
  */
 
 #ifndef FFMPEG_RV30DATA_H
@@ -36,8 +36,8 @@ static const uint8_t rv30_luma_dc_quant[32] = {
 };
 
 /**
- * This table is used for storing differences
- * between predicted and real intra type.
+ * This table is used for storing the differences
+ * between the predicted and the real intra type.
  */
 static const uint8_t rv30_itype_code[9*9*2] = {
     0, 0, 0, 1, 1, 0, 1, 1, 0, 2, 2, 0, 0, 3, 3, 0, 1, 2,
@@ -52,13 +52,13 @@ static const uint8_t rv30_itype_code[9*9*2] = {
 };
 
 /**
- * This table is used for retrieving current intra type
- * basing on its neighbours and adjustment provided by
+ * This table is used for retrieving the current intra type
+ * based on its neighbors and adjustment provided by
  * code read and decoded before.
  *
- * This is really three-dimensional matrix with dimensions
- * [-1..9][-1..9][0..9], first and second coordinates
- * are detemined by top and left neighbours (-1 if unavailable).
+ * This is really a three-dimensional matrix with dimensions
+ * [-1..9][-1..9][0..9]. The first and second coordinates are
+ * detemined by the top and left neighbors (-1 if unavailable).
  */
 static const uint8_t rv30_itype_from_context[900] = {
     0, 9, 9, 9, 9, 9, 9, 9, 9,

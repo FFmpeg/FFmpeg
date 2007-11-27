@@ -21,7 +21,7 @@
 
 /**
  * @file rv40vlc2.h
- * RV40 VLC tables used for macroblock information decoding.
+ * RV40 VLC tables used for macroblock information decoding
  */
 
 #ifndef FFMPEG_RV40VLC2_H
@@ -30,7 +30,7 @@
 #include <stdint.h>
 
 /**
- * Codes used for the first four block types
+ * codes used for the first four block types
  */
 //@{
 #define AIC_TOP_BITS  8
@@ -46,7 +46,7 @@ static const uint8_t rv40_aic_top_vlc_bits[AIC_TOP_SIZE] = {
 //@}
 
 /**
- * Codes used for determining pair of block types
+ * codes used for determining a pair of block types
  */
 //@{
 #define AIC_MODE2_NUM  20
@@ -634,7 +634,7 @@ static const uint8_t aic_mode1_vlc_bits[AIC_MODE1_NUM][AIC_MODE1_SIZE] = {
 
 #define PBTYPE_ESCAPE 0xFF
 
-/** Tables used for P-frame macroblock type decoding */
+/** tables used for P-frame macroblock type decoding */
 //@{
 #define NUM_PTYPE_VLCS 7
 #define PTYPE_VLC_SIZE 8
@@ -670,7 +670,7 @@ static const uint8_t block_num_to_ptype_vlc_num[12] = {
 };
 //@}
 
-/** Tables used for P-frame macroblock type decoding */
+/** tables used for P-frame macroblock type decoding */
 //@{
 #define NUM_BTYPE_VLCS 6
 #define BTYPE_VLC_SIZE 7

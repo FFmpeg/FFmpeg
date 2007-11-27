@@ -21,7 +21,7 @@
 
 /**
  * @file rv34data.h
- * Miscellaneous RV30/40 tables.
+ * miscellaneous RV30/40 tables
  */
 
 #ifndef FFMPEG_RV34DATA_H
@@ -30,14 +30,14 @@
 #include <stdint.h>
 
 /**
- * Number of ones in nibble minus one
+ * number of ones in nibble minus one
  */
 static const uint8_t rv34_count_ones[16] = {
     0, 0, 0, 1, 0, 1, 1, 2, 0, 1, 1, 2, 1, 2, 2, 3
 };
 
 /**
- * Values used to reconstruct coded block pattern
+ * Values used to reconstruct coded block pattern.
  */
 static const uint8_t rv34_cbp_code[16] = {
     0x00, 0x20, 0x10, 0x30, 0x02, 0x22, 0x12, 0x32,
@@ -45,10 +45,10 @@ static const uint8_t rv34_cbp_code[16] = {
 };
 
 /**
- * Precalculated results of division by three and modulo three for values 0-107
+ * precalculated results of division by three and modulo three for values 0-107
  *
- * A lot of four-tuples in RV40 are represented as c0*27+c1*9+c2*3+c3
- * This table allows conversion from value back to vector
+ * A lot of four-tuples in RV40 are represented as c0*27+c1*9+c2*3+c3.
+ * This table allows conversion from a value back to a vector.
  */
 static const uint8_t modulo_three_table[108][4] = {
  { 0, 0, 0, 0 }, { 0, 0, 0, 1 }, { 0, 0, 0, 2 }, { 0, 0, 1, 0 },
@@ -81,7 +81,7 @@ static const uint8_t modulo_three_table[108][4] = {
 };
 
 /**
- * Quantizer values used for AC and DC coefficients in chroma blocks
+ * quantizer values used for AC and DC coefficients in chroma blocks
  */
 static const uint8_t rv34_chroma_quant[2][32] = {
  {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
@@ -91,7 +91,7 @@ static const uint8_t rv34_chroma_quant[2][32] = {
 };
 
 /**
- * This table is used for dequantizing
+ * This table is used for dequantizing.
  */
 static const uint16_t rv34_qscale_tab[32] = {
   60,   67,   76,   85,   96,  108,  121,  136,
@@ -111,8 +111,8 @@ static const uint8_t rv34_dezigzag[16] = {
 };
 
 /**
- * Tables used to translate quantizer value into VLC set for decoding
- * First table is used for intraframes.
+ * tables used to translate a quantizer value into a VLC set for decoding
+ * The first table is used for intraframes.
  */
 static const uint8_t rv34_quant_to_vlc_set[2][31] = {
  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
@@ -122,8 +122,8 @@ static const uint8_t rv34_quant_to_vlc_set[2][31] = {
 };
 
 /**
- * Table for obtaining quantizer difference
- * @todo replace it with modified_quant_tab from h263data.h
+ * table for obtaining the quantizer difference
+ * @todo Replace it with modified_quant_tab from h263data.h.
  */
 static const int8_t rv34_dquant_tab[] = {
   0,  0,  2,  1, -1,  1, -1,  1, -1,  1, -1,  1, -1,  1, -1,  1,
@@ -133,13 +133,13 @@ static const int8_t rv34_dquant_tab[] = {
 };
 
 /**
- * Maximum number of macroblocks for each of the possible slice offset sizes
- * @todo this is the same as ff_mba_max, maybe use it instead
+ * maximum number of macroblocks for each of the possible slice offset sizes
+ * @todo This is the same as ff_mba_max, maybe use it instead.
  */
 static const uint16_t rv34_mb_max_sizes[6] = { 0x2F, 0x68, 0x18B, 0x62F, 0x18BF, 0x23FF };
 /**
- * Bits needed to code slice offset for the given size
- * @todo this is the same as ff_mba_length, maybe use it instead
+ * bits needed to code the slice offset for the given size
+ * @todo This is the same as ff_mba_length, maybe use it instead.
  */
 static const uint8_t rv34_mb_bits_sizes[6] = { 6, 7, 9, 11, 13, 14 };
 
