@@ -364,7 +364,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         "paddusb %%mm3              , %%mm1 \n\t"\
         "paddusb %%mm6              , %%mm2 \n\t"
 
-// in: mm0=p1 mm1=p0 mm2=q0 mm3=q1 mm7=(tc&mask) %8=mm_bone
+// in: mm0=p1 mm1=p0 mm2=q0 mm3=q1 mm7=(tc&mask) %8=ff_bone
 // out: (q1addr) = av_clip( (q2+((p0+q0+1)>>1))>>1, q1-tc0, q1+tc0 )
 // clobbers: q2, tmp, tc0
 #define H264_DEBLOCK_Q1(p1, q2, q2addr, q1addr, tc0, tmp)\
@@ -430,7 +430,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         : "=m"(*tmp0)
         : "r"(pix-3*stride), "r"(pix), "r"((long)stride),
           "m"(*tmp0/*unused*/), "m"(*(uint32_t*)tc0), "m"(alpha1), "m"(beta1),
-          "m"(mm_bone)
+          "m"(ff_bone)
     );
 }
 
@@ -477,7 +477,7 @@ static inline void h264_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int al
 
         :: "r"(pix-2*stride), "r"(pix), "r"((long)stride),
            "r"(*(uint32_t*)tc0),
-           "m"(alpha1), "m"(beta1), "m"(mm_bone), "m"(ff_pb_3F)
+           "m"(alpha1), "m"(beta1), "m"(ff_bone), "m"(ff_pb_3F)
     );
 }
 
@@ -527,7 +527,7 @@ static inline void h264_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, 
         "movq    %%mm1,   (%0,%2)   \n\t"
         "movq    %%mm2,   (%1)      \n\t"
         :: "r"(pix-2*stride), "r"(pix), "r"((long)stride),
-           "m"(alpha1), "m"(beta1), "m"(mm_bone)
+           "m"(alpha1), "m"(beta1), "m"(ff_bone)
     );
 }
 

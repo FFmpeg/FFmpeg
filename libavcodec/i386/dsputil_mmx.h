@@ -22,10 +22,10 @@
 #ifndef FFMPEG_DSPUTIL_MMX_H
 #define FFMPEG_DSPUTIL_MMX_H
 
-extern const uint64_t mm_bone;
-extern const uint64_t mm_wone;
-extern const uint64_t mm_wtwo;
-extern const uint64_t mm_wabs;
+extern const uint64_t ff_bone;
+extern const uint64_t ff_wone;
+extern const uint64_t ff_wtwo;
+extern const uint64_t ff_wabs;
 
 extern const uint64_t ff_pdw_80000000[2];
 

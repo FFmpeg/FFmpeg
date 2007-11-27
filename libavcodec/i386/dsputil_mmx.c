@@ -41,10 +41,10 @@ extern void ff_idct_xvid_mmx2(short *block);
 int mm_flags; /* multimedia extension flags */
 
 /* pixel operations */
-DECLARE_ALIGNED_8 (const uint64_t, mm_bone) = 0x0101010101010101ULL;
-DECLARE_ALIGNED_8 (const uint64_t, mm_wone) = 0x0001000100010001ULL;
-DECLARE_ALIGNED_8 (const uint64_t, mm_wtwo) = 0x0002000200020002ULL;
-DECLARE_ALIGNED_8 (const uint64_t, mm_wabs) = 0xFFFFFFFFFFFFFFFFULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_bone) = 0x0101010101010101ULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_wone) = 0x0001000100010001ULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_wabs) = 0xFFFFFFFFFFFFFFFFULL;
 
 DECLARE_ALIGNED_16(const uint64_t, ff_pdw_80000000[2]) =
 {0x8000000080000000ULL, 0x8000000080000000ULL};
@@ -87,8 +87,8 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
     "paddb %%" #regd ", %%" #regd " \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_BONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_bone))
-#define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wtwo))
+#define MOVQ_BONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_bone))
+#define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_wtwo))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
