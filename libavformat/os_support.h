@@ -25,12 +25,6 @@
 /**
  * @file os_support.h
  * miscellaneous OS support macros and functions.
- *
- * - socklen_t typedef (BeOS, Innotek libc)
- * - usleep() (Win32, BeOS)
- * - lseek() (Win32)
- * - closesocket()
- * - poll() (BeOS, MinGW)
  */
 
 #if defined(__BEOS__) || defined(__INNOTEK_LIBC__)
