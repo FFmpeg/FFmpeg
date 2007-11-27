@@ -23,9 +23,7 @@
 #define FFMPEG_DSPUTIL_MMX_H
 
 extern const uint64_t ff_bone;
-extern const uint64_t ff_wone;
 extern const uint64_t ff_wtwo;
-extern const uint64_t ff_wabs;
 
 extern const uint64_t ff_pdw_80000000[2];
 
@@ -46,7 +44,6 @@ extern const uint64_t ff_pb_1;
 extern const uint64_t ff_pb_3;
 extern const uint64_t ff_pb_7;
 extern const uint64_t ff_pb_3F;
-extern const uint64_t ff_pb_5F;
 extern const uint64_t ff_pb_A1;
 extern const uint64_t ff_pb_FC;
 

@@ -42,9 +42,7 @@ int mm_flags; /* multimedia extension flags */
 
 /* pixel operations */
 DECLARE_ALIGNED_8 (const uint64_t, ff_bone) = 0x0101010101010101ULL;
-DECLARE_ALIGNED_8 (const uint64_t, ff_wone) = 0x0001000100010001ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
-DECLARE_ALIGNED_8 (const uint64_t, ff_wabs) = 0xFFFFFFFFFFFFFFFFULL;
 
 DECLARE_ALIGNED_16(const uint64_t, ff_pdw_80000000[2]) =
 {0x8000000080000000ULL, 0x8000000080000000ULL};
@@ -66,7 +64,6 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pb_1  ) = 0x0101010101010101ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_3  ) = 0x0303030303030303ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_7  ) = 0x0707070707070707ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_3F ) = 0x3F3F3F3F3F3F3F3FULL;
-DECLARE_ALIGNED_8 (const uint64_t, ff_pb_5F ) = 0x5F5F5F5F5F5F5F5FULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_A1 ) = 0xA1A1A1A1A1A1A1A1ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 
