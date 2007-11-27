@@ -138,7 +138,7 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
         buf_size -= coeff_offset;
         if (s->use_huffman) {
             s->parse_coeff = vp6_parse_coeff_huffman;
-            init_get_bits(&s->gb, buf, buf_size);
+            init_get_bits(&s->gb, buf, buf_size<<3);
         } else {
             vp56_init_range_decoder(&s->cc, buf, buf_size);
             s->ccp = &s->cc;
