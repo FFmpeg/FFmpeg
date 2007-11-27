@@ -3635,14 +3635,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
 
-#ifdef CONFIG_CAVS_DECODER
+            if (ENABLE_CAVS_DECODER)
             ff_cavsdsp_init_mmx2(c, avctx);
-#endif
 
-#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER) \
-     || defined(CONFIG_VC1_ENCODER) || defined(CONFIG_WMV3_ENCODER)
+            if (ENABLE_VC1_DECODER || ENABLE_WMV3_DECODER)
             ff_vc1dsp_init_mmx(c, avctx);
-#endif
 
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
