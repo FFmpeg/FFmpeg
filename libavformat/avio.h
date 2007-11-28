@@ -156,6 +156,10 @@ typedef struct {
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;         ///< contains the error code or 0 if no error happened
+    int (*read_play)(void *opaque);
+    int (*read_pause)(void *opaque);
+    int (*read_seek)(void *opaque,
+                     int stream_index, int64_t timestamp, int flags);
 } ByteIOContext;
 
 int init_put_byte(ByteIOContext *s,
@@ -187,6 +191,11 @@ offset_t url_ftell(ByteIOContext *s);
 offset_t url_fsize(ByteIOContext *s);
 int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
+
+int av_url_read_fplay(ByteIOContext *h);
+int av_url_read_fpause(ByteIOContext *h);
+int av_url_read_fseek(ByteIOContext *h,
+                      int stream_index, int64_t timestamp, int flags);
 
 #define URL_EOF (-1)
 /** @note return URL_EOF (-1) if EOF */

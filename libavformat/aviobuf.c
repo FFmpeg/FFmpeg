@@ -55,6 +55,9 @@ int init_put_byte(ByteIOContext *s,
         s->pos = buffer_size;
         s->buf_end = s->buffer + buffer_size;
     }
+    s->read_play  = NULL;
+    s->read_pause = NULL;
+    s->read_seek  = NULL;
     return 0;
 }
 
@@ -551,6 +554,11 @@ int url_fdopen(ByteIOContext **s, URLContext *h)
     }
     (*s)->is_streamed = h->is_streamed;
     (*s)->max_packet_size = max_packet_size;
+    if(h->prot) {
+        (*s)->read_play  = (int (*)(void *))h->prot->url_read_play;
+        (*s)->read_pause = (int (*)(void *))h->prot->url_read_pause;
+        (*s)->read_seek  = (int (*)(void *, int, int64_t, int))h->prot->url_read_seek;
+    }
     return 0;
 }
 
@@ -654,6 +662,35 @@ char *url_fgets(ByteIOContext *s, char *buf, int buf_size)
 int url_fget_max_packet_size(ByteIOContext *s)
 {
     return s->max_packet_size;
+}
+
+int av_url_read_fplay(ByteIOContext *s)
+{
+    if (!s->read_play)
+        return AVERROR(ENOSYS);
+    return s->read_play(s->opaque);
+}
+
+int av_url_read_fpause(ByteIOContext *s)
+{
+    if (!s->read_pause)
+        return AVERROR(ENOSYS);
+    return s->read_pause(s->opaque);
+}
+
+int av_url_read_fseek(ByteIOContext *s,
+        int stream_index, int64_t timestamp, int flags)
+{
+    URLContext *h = s->opaque;
+    int ret;
+    if (!s->read_seek)
+        return AVERROR(ENOSYS);
+    ret = s->read_seek(h, stream_index, timestamp, flags);
+    if(ret >= 0) {
+        s->buf_ptr = s->buf_end; // Flush buffer
+        s->pos = s->seek(h, 0, SEEK_CUR);
+    }
+    return ret;
 }
 
 /* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
