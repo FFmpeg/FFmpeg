@@ -1118,7 +1118,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
             switch(ist->st->codec->codec_type) {
             case CODEC_TYPE_AUDIO:
                 ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
-                    (ist->st->codec->sample_rate * ist->st->codec->channels);
+                    ist->st->codec->sample_rate;
                 break;
             case CODEC_TYPE_VIDEO:
                 if (ist->st->codec->time_base.num != 0) {
