@@ -289,6 +289,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER  (H263, h263);
     REGISTER_PARSER  (H264, h264);
     REGISTER_PARSER  (MJPEG, mjpeg);
+    REGISTER_PARSER  (MLP, mlp);
     REGISTER_PARSER  (MPEG4VIDEO, mpeg4video);
     REGISTER_PARSER  (MPEGAUDIO, mpegaudio);
     REGISTER_PARSER  (MPEGVIDEO, mpegvideo);
