@@ -464,16 +464,6 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         goto fail;
     }
 
-    /* XXX: suppress this hack for redirectors */
-#ifdef CONFIG_REDIR_DEMUXER
-    if (!strcmp(fmt->name, "redir")) {
-        int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
-        err = redir_open(ic_ptr, pb);
-        url_fclose(pb);
-        return err;
-    }
-#endif
-
     /* check filename in case of an image number is expected */
     if (fmt->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(filename)) {

@@ -1435,12 +1435,12 @@ static int redir_probe(AVProbeData *pd)
     return 0;
 }
 
-/* called from utils.c */
-int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f)
+static int redir_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     char buf[4096], *q;
     int c;
     AVFormatContext *ic = NULL;
+    ByteIOContext *f = s->pb;
 
     /* parse each URL and try to open it */
     c = url_fgetc(f);
@@ -1468,11 +1468,13 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f)
         if (av_open_input_file(&ic, buf, NULL, 0, NULL) == 0)
             break;
     }
-    *ic_ptr = ic;
     if (!ic)
         return AVERROR(EIO);
-    else
-        return 0;
+
+    *s = *ic;
+    url_fclose(f);
+
+    return 0;
 }
 
 AVInputFormat redir_demuxer = {
@@ -1480,7 +1482,7 @@ AVInputFormat redir_demuxer = {
     "Redirector format",
     0,
     redir_probe,
-    NULL,
+    redir_read_header,
     NULL,
     NULL,
 };
