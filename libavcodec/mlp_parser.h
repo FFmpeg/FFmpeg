@@ -27,6 +27,8 @@
 #ifndef FFMPEG_MLP_PARSER_H
 #define FFMPEG_MLP_PARSER_H
 
+#include <inttypes.h>
+
 typedef struct MLPHeaderInfo
 {
     int stream_type;            ///< 0xBB for MLP, 0xBA for TrueHD
