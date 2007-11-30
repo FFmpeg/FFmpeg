@@ -957,7 +957,7 @@ yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
             chrFilter, chrSrc, chrFilterSize,
             dest, uDest, vDest, dstW, chrDstW);
 #endif //!HAVE_ALTIVEC
-#endif
+#endif /* HAVE_MMX */
 }
 
 static inline void RENAME(yuv2nv12X)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
@@ -1161,7 +1161,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             return;
         }
     }
-#endif
+#endif /* HAVE_MMX */
 #ifdef HAVE_ALTIVEC
     /* The following list of supported dstFormat values should
        match what's found in the body of altivec_yuv2packedX() */
@@ -1333,7 +1333,7 @@ FULL_YSCALEYUV2RGB
             : "%"REG_a
             );
             break;
-#endif
+#endif /* HAVE_MMX */
         case PIX_FMT_BGR32:
 #ifndef HAVE_MMX
         case PIX_FMT_RGB32:
@@ -1691,7 +1691,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             return;
         }
     }
-#endif
+#endif /* HAVE_MMX */
     if ( uvalpha < 2048 )
     {
         YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C)
@@ -1936,7 +1936,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 
         dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
     }
-#endif
+#endif /* HAVE_MMX */
 }
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
@@ -2069,7 +2069,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
         dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
         dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
     }
-#endif
+#endif /* HAVE_MMX */
     assert(src1 == src2);
 }
 
@@ -2476,8 +2476,8 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
         dst[i] = av_clip(val>>7, 0, (1<<15)-1); // the cubic equation does overflow ...
         //dst[i] = val>>7;
     }
-#endif
-#endif
+#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_MMX */
 }
       // *** horizontal scale Y line to temp buffer
 static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, int srcW, int xInc,
@@ -2594,7 +2594,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
             "add               %%"REG_a", %%"REG_D" \n\t"\
             "xor               %%"REG_a", %%"REG_a" \n\t"\
 
-#endif
+#endif /* ARCH_X86_64 */
 
 FUNNY_Y_CODE
 FUNNY_Y_CODE
@@ -2622,7 +2622,7 @@ FUNNY_Y_CODE
         }
         else
         {
-#endif
+#endif /* HAVE_MMX2 */
         long xInc_shr16 = xInc >> 16;
         uint16_t xInc_mask = xInc & 0xffff;
         //NO MMX just normal asm ...
@@ -2678,7 +2678,7 @@ FUNNY_Y_CODE
             dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
             xpos+=xInc;
         }
-#endif
+#endif /* defined(ARCH_X86) */
     }
 }
 
@@ -2812,7 +2812,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
             "add          %%"REG_a", %%"REG_D"  \n\t"\
             "xor          %%"REG_a", %%"REG_a"  \n\t"\
 
-#endif
+#endif /* ARCH_X86_64 */
 
 FUNNY_UV_CODE
 FUNNY_UV_CODE
@@ -2853,7 +2853,7 @@ FUNNY_UV_CODE
         }
         else
         {
-#endif
+#endif /* HAVE_MMX2 */
             long xInc_shr16 = (long) (xInc >> 16);
             uint16_t xInc_mask = xInc & 0xffff;
             asm volatile(
@@ -2917,7 +2917,7 @@ FUNNY_UV_CODE
             */
             xpos+=xInc;
         }
-#endif
+#endif /* defined(ARCH_X86) */
     }
 }
 
