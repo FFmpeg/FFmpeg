@@ -194,7 +194,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     One could remove the recomputation of the perm
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true. Quite a lot of load/stores
-    can be removed by assuming proper alignement of
+    can be removed by assuming proper alignment of
     src & stride :-(
   */
   uint8_t *src2 = src;
@@ -382,7 +382,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
     One could remove the recomputation of the perm
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true. Quite a lot of load/stores
-    can be removed by assuming proper alignement of
+    can be removed by assuming proper alignment of
     src & stride :-(
   */
   uint8_t *src2 = src;
@@ -469,7 +469,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
   const vector signed short dornotd = vec_sel((vector signed short)zero,
                                               dclampedfinal,
                                               vec_cmplt(absmE, vqp));
-  /* add/substract to l4 and l5 */
+  /* add/subtract to l4 and l5 */
   const vector signed short vb4minusd = vec_sub(vb4, dornotd);
   const vector signed short vb5plusd = vec_add(vb5, dornotd);
   /* finally, stores */
@@ -506,7 +506,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     One could remove the recomputation of the perm
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true. Quite a lot of load/stores
-    can be removed by assuming proper alignement of
+    can be removed by assuming proper alignment of
     src & stride :-(
   */
   uint8_t *srcCopy = src;

@@ -56,7 +56,7 @@ typedef struct {
     uint64_t send_time;         /**< time to send file, in 100-nanosecond units
                                  *   invalid if broadcasting (could be ignored) */
     uint32_t preroll;           /**< timestamp of the first packet, in milliseconds
-                                 *   if nonzero - substract from time */
+                                 *   if nonzero - subtract from time */
     uint32_t ignore;            ///< preroll is 64bit - but let's just ignore it
     uint32_t flags;             /**< 0x01 - broadcast
                                  *   0x02 - seekable

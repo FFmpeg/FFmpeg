@@ -281,7 +281,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     if (ioctl(s->fd, SNDCTL_DSP_GETISPACE, &abufi) == 0) {
         bdelay += abufi.bytes;
     }
-    /* substract time represented by the number of bytes in the audio fifo */
+    /* subtract time represented by the number of bytes in the audio fifo */
     cur_time -= (bdelay * 1000000LL) / (s->sample_rate * s->channels);
 
     /* convert to wanted units */

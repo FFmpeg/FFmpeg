@@ -177,7 +177,7 @@ asm volatile(
                 if (level < -2048 || level > 2047)
                     fprintf(stderr, "unquant error %d %d\n", i, level);
 #endif
-  We can suppose that result of two multiplications can't be greate of 0xFFFF
+  We can suppose that result of two multiplications can't be greater than 0xFFFF
   i.e. is 16-bit, so we use here only PMULLW instruction and can avoid
   a complex multiplication.
 =====================================================

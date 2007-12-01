@@ -506,7 +506,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
       if (
           ( (c == '_') && (text == ci->text) ) || /* skip '_' (consider as space)
                                                      IF text was specified in cmd line
-                                                     (which doesn't like neasted quotes)  */
+                                                     (which doesn't like nested quotes)  */
           ( c == '\n' ) /* Skip new line char, just go to new line */
           )
         continue;

@@ -1935,7 +1935,7 @@ typedef struct ConvertEntry {
 
    - PIX_FMT_422 must convert to and from PIX_FMT_422P.
 
-   The other conversion functions are just optimisations for common cases.
+   The other conversion functions are just optimizations for common cases.
 */
 static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {

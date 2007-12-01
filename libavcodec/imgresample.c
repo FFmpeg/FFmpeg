@@ -285,7 +285,7 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
 }
 #endif /* HAVE_MMX */
 
-/* slow version to handle limit cases. Does not need optimisation */
+/* slow version to handle limit cases. Does not need optimization */
 static void h_resample_slow(uint8_t *dst, int dst_width,
                             const uint8_t *src, int src_width,
                             int src_start, int src_incr, int16_t *filters)

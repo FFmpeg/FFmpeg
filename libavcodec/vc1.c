@@ -4102,7 +4102,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     }
 
     /* Return the Picture timestamp as the frame number */
-    /* we substract 1 because it is added on utils.c    */
+    /* we subtract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
     av_free(buf2);

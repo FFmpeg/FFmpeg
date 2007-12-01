@@ -94,7 +94,7 @@ typedef struct ScanTable{
     uint8_t permutated[64];
     uint8_t raster_end[64];
 #ifdef ARCH_POWERPC
-                /** Used by dct_quantise_alitvec to find last-non-zero */
+                /** Used by dct_quantize_alitvec to find last-non-zero */
     DECLARE_ALIGNED_8(uint8_t, inverse[64]);
 #endif
 } ScanTable;

@@ -29,7 +29,7 @@
 
 /*
   altivec-enhanced gmc1. ATM this code assume stride is a multiple of 8,
-  to preserve proper dst alignement.
+  to preserve proper dst alignment.
 */
 #define GMC1_PERF_COND (h==8)
 void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int stride, int h, int x16, int y16, int rounder)

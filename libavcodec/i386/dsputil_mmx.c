@@ -787,7 +787,7 @@ static int sse8_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
       "movq (%1,%3),%%mm4\n"    /* mm4 = pix2[1][0-7] */
 
       /* todo: mm1-mm2, mm3-mm4 */
-      /* algo: substract mm1 from mm2 with saturation and vice versa */
+      /* algo: subtract mm1 from mm2 with saturation and vice versa */
       /*       OR the results to get absolute difference */
       "movq %%mm1,%%mm5\n"
       "movq %%mm3,%%mm6\n"
@@ -847,7 +847,7 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int
       "movq 8(%1),%%mm4\n"      /* mm4 = pix2[8-15] */
 
       /* todo: mm1-mm2, mm3-mm4 */
-      /* algo: substract mm1 from mm2 with saturation and vice versa */
+      /* algo: subtract mm1 from mm2 with saturation and vice versa */
       /*       OR the results to get absolute difference */
       "movq %%mm1,%%mm5\n"
       "movq %%mm3,%%mm6\n"
@@ -907,7 +907,7 @@ static int sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
       "movdqu (%1,%4),%%xmm4\n" /* mm4 = pix2[1][0-15] */
 
       /* todo: mm1-mm2, mm3-mm4 */
-      /* algo: substract mm1 from mm2 with saturation and vice versa */
+      /* algo: subtract mm1 from mm2 with saturation and vice versa */
       /*       OR the results to get absolute difference */
       "movdqa %%xmm1,%%xmm5\n"
       "movdqa %%xmm3,%%xmm6\n"

@@ -325,15 +325,15 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
 #if 0
     /* 4 and 8 are very common cases (the only ones i've seen). these
-     * should be unrolled and optimised
+     * should be unrolled and optimized
      */
     if (predictor_coef_num == 4) {
-        /* FIXME: optimised general case */
+        /* FIXME: optimized general case */
         return;
     }
 
     if (predictor_coef_table == 8) {
-        /* FIXME: optimised general case */
+        /* FIXME: optimized general case */
         return;
     }
 #endif

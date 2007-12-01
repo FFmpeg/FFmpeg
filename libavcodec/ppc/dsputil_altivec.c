@@ -1094,7 +1094,7 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
       dstV =                                                            \
         (vector signed short)vec_mergeh((vector signed char)vzero,      \
         (vector signed char)dstO);                                      \
-      /* substractions inside the first butterfly */                    \
+      /* subtractions inside the first butterfly */                    \
       but0 = vec_sub(srcV, dstV);                                       \
       op1 = vec_perm(but0, but0, perm1);                                \
       but1 = vec_mladd(but0, vprod1, op1);                              \
@@ -1175,7 +1175,7 @@ POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff8x8_num, 1);
   schedule for the 7450, and its code isn't much faster than
   gcc-3.3 on the 7450 (but uses 25% less instructions...)
 
-  On the 970, the hand-made RA is still a win (arount 690
+  On the 970, the hand-made RA is still a win (around 690
   vs. around 780), but xlc goes to around 660 on the
   regular C code...
 */
@@ -1267,7 +1267,7 @@ static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, 
       dstW =                                                            \
         (vector signed short)vec_mergel((vector signed char)vzero,      \
         (vector signed char)dstO);                                      \
-      /* substractions inside the first butterfly */                    \
+      /* subtractions inside the first butterfly */                    \
       but0 = vec_sub(srcV, dstV);                                       \
       but0S = vec_sub(srcW, dstW);                                      \
       op1 = vec_perm(but0, but0, perm1);                                \

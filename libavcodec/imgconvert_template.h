@@ -414,7 +414,7 @@ static void glue(pal8_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
     }
 }
 
-// RGB24 has optimised routines
+// RGB24 has optimized routines
 #if !defined(FMT_RGB32) && !defined(FMT_RGB24)
 /* alpha support */
 

@@ -112,7 +112,7 @@ void test_motion(const char *name,
         }
     }
     emms_c();
-    dummy = d1; /* avoid optimisation */
+    dummy = d1; /* avoid optimization */
     ti = gettime() - ti;
 
     printf("  %0.0f kop/s\n",

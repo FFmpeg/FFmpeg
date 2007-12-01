@@ -490,7 +490,7 @@ static void init_entropy_decoder(APEContext * ctx)
     /* Keep a count of the blocks decoded in this frame */
     ctx->blocksdecoded = 0;
 
-    /* Initialise the rice structs */
+    /* Initialize the rice structs */
     ctx->riceX.k = 10;
     ctx->riceX.ksum = (1 << ctx->riceX.k) * 16;
     ctx->riceY.k = 10;
@@ -514,7 +514,7 @@ static void init_predictor_decoder(APEContext * ctx)
     memset(p->historybuffer, 0, PREDICTOR_SIZE * sizeof(int32_t));
     p->buf = p->historybuffer;
 
-    /* Initialise and zero the co-efficients */
+    /* Initialize and zero the co-efficients */
     memcpy(p->coeffsA[0], initial_coeffs, sizeof(initial_coeffs));
     memcpy(p->coeffsA[1], initial_coeffs, sizeof(initial_coeffs));
     memset(p->coeffsB, 0, sizeof(p->coeffsB));

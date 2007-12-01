@@ -397,7 +397,7 @@ static inline void idct_col (int16_t * col, int offset)
     static const short _T3[] ATTR_ALIGN(8) = {T3,T3,T3,T3};
     static const short _C4[] ATTR_ALIGN(8) = {C4,C4,C4,C4};
 
-    /* column code adapted from peter gubanov */
+    /* column code adapted from Peter Gubanov */
     /* http://www.elecard.com/peter/idct.shtml */
 
     movq_m2r (*_T1, mm0);               // mm0 = T1

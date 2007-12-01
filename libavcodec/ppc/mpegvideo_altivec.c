@@ -80,7 +80,7 @@ int dct_quantize_altivec(MpegEncContext* s,
     vector float row0, row1, row2, row3, row4, row5, row6, row7;
     vector float alt0, alt1, alt2, alt3, alt4, alt5, alt6, alt7;
     const vector float zero = (const vector float)FOUROF(0.);
-    // used after quantise step
+    // used after quantize step
     int oldBaseValue = 0;
 
     // Load the data into the row/alt vectors
@@ -258,7 +258,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         }
     }
 
-    // perform the quantise step, using the floating point data
+    // perform the quantize step, using the floating point data
     // still in the row/alt registers
     {
         const int* biasAddr;
@@ -474,7 +474,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         data[0] = (oldBaseValue + 4) >> 3;
     }
 
-    // We handled the tranpose permutation above and we don't
+    // We handled the transpose permutation above and we don't
     // need to permute the "no" permutation case.
     if ((lastNonZero > 0) &&
         (s->dsp.idct_permutation_type != FF_TRANSPOSE_IDCT_PERM) &&
