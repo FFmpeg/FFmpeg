@@ -33,7 +33,7 @@
 
 #define FORM_TAG MKTAG('F', 'O', 'R', 'M')
 #define MOVE_TAG MKTAG('M', 'O', 'V', 'E')
-#define _PC__TAG MKTAG('_', 'P', 'C', '_')
+#define  PC__TAG MKTAG('_', 'P', 'C', '_')
 #define SOND_TAG MKTAG('S', 'O', 'N', 'D')
 #define BNAM_TAG MKTAG('B', 'N', 'A', 'M')
 #define SIZE_TAG MKTAG('S', 'I', 'Z', 'E')
@@ -165,7 +165,7 @@ static int wc3_read_header(AVFormatContext *s,
             url_fseek(pb, size, SEEK_CUR);
             break;
 
-        case _PC__TAG:
+        case PC__TAG:
             /* need the number of palettes */
             url_fseek(pb, 8, SEEK_CUR);
             if ((ret = get_buffer(pb, preamble, 4)) != 4)
