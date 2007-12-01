@@ -826,7 +826,7 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  * @endcode
  * Returns the number of microseconds contained in a time interval
  * with the specified duration or INT64_MIN if \p datestr cannot be
- * succesfully parsed.
+ * successfully parsed.
  * @param duration Flag which tells how to interpret \p datestr, if
  * not zero \p datestr is interpreted as a duration, otherwise as a
  * date.
