@@ -422,6 +422,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     s->le = le;
     s->invert = 0;
+    s->compr = TIFF_RAW;
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
     if(tget_short(&buf, le) != 42){
