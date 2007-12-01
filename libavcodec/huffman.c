@@ -82,6 +82,7 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
     }
     qsort(nodes, nb_codes, sizeof(Node), cmp);
     cur_node = nb_codes;
+    nodes[nb_codes*2-1].count = 0;
     for(i = 0; i < nb_codes*2-1; i += 2){
         nodes[cur_node].sym = HNODE;
         nodes[cur_node].count = nodes[i].count + nodes[i+1].count;
