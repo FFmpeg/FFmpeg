@@ -138,7 +138,7 @@ int ff_rate_control_init(MpegEncContext *s)
         i+= s->max_b_frames;
         if(i<=0 || i>=INT_MAX / sizeof(RateControlEntry))
             return -1;
-        rcc->entry = (RateControlEntry*)av_mallocz(i*sizeof(RateControlEntry));
+        rcc->entry = av_mallocz(i*sizeof(RateControlEntry));
         rcc->num_entries= i;
 
         /* init all to skipped p frames (with b frames we might have a not encoded frame at the end FIXME) */

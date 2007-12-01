@@ -1399,7 +1399,7 @@ static int av_encode(AVFormatContext **output_files,
     int key;
     int want_sdp = 1;
 
-    file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
+    file_table= av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
         goto fail;
 

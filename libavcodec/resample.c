@@ -185,15 +185,15 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
 
     /* XXX: move those malloc to resample init code */
     for(i=0; i<s->filter_channels; i++){
-        bufin[i]= (short*) av_malloc( (nb_samples + s->temp_len) * sizeof(short) );
+        bufin[i]= av_malloc( (nb_samples + s->temp_len) * sizeof(short) );
         memcpy(bufin[i], s->temp[i], s->temp_len * sizeof(short));
         buftmp2[i] = bufin[i] + s->temp_len;
     }
 
     /* make some zoom to avoid round pb */
     lenout= (int)(4*nb_samples * s->ratio) + 16;
-    bufout[0]= (short*) av_malloc( lenout * sizeof(short) );
-    bufout[1]= (short*) av_malloc( lenout * sizeof(short) );
+    bufout[0]= av_malloc( lenout * sizeof(short) );
+    bufout[1]= av_malloc( lenout * sizeof(short) );
 
     if (s->input_channels == 2 &&
         s->output_channels == 1) {

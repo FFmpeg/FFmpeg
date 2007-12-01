@@ -493,7 +493,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_packets = 0;
 
     asf->last_indexed_pts = 0;
-    asf->index_ptr = (ASFIndex*)av_malloc( sizeof(ASFIndex) * ASF_INDEX_BLOCK );
+    asf->index_ptr = av_malloc( sizeof(ASFIndex) * ASF_INDEX_BLOCK );
     asf->nb_index_memory_alloc = ASF_INDEX_BLOCK;
     asf->nb_index_count = 0;
     asf->maximum_packet = 0;

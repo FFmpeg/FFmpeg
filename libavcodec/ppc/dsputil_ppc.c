@@ -210,7 +210,7 @@ void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
    knows about dcbzl ... */
 long check_dcbzl_effect(void)
 {
-  register char *fakedata = (char*)av_malloc(1024);
+  register char *fakedata = av_malloc(1024);
   register char *fakedata_middle;
   register long zero = 0;
   register long i = 0;

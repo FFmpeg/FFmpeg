@@ -237,9 +237,9 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
 
     AV_DEBUG(" Codebooks: %d \n", vc->codebook_count);
 
-    vc->codebooks=(vorbis_codebook *)av_mallocz(vc->codebook_count * sizeof(vorbis_codebook));
-    tmp_vlc_bits=(uint8_t *)av_mallocz(V_MAX_VLCS * sizeof(uint8_t));
-    tmp_vlc_codes=(uint32_t *)av_mallocz(V_MAX_VLCS * sizeof(uint32_t));
+    vc->codebooks=av_mallocz(vc->codebook_count * sizeof(vorbis_codebook));
+    tmp_vlc_bits =av_mallocz(V_MAX_VLCS * sizeof(uint8_t));
+    tmp_vlc_codes=av_mallocz(V_MAX_VLCS * sizeof(uint32_t));
 
     for(cb=0;cb<vc->codebook_count;++cb) {
         vorbis_codebook *codebook_setup=&vc->codebooks[cb];
@@ -351,7 +351,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
             }
 
 // Weed out unused vlcs and build codevector vector
-            codebook_setup->codevectors=used_entries ? (float *)av_mallocz(used_entries*codebook_setup->dimensions * sizeof(float)) : NULL;
+            codebook_setup->codevectors=used_entries ? av_mallocz(used_entries*codebook_setup->dimensions * sizeof(float)) : NULL;
             for(j=0, i=0;i<entries;++i) {
                 uint_fast8_t dim=codebook_setup->dimensions;
 
@@ -459,7 +459,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
 
     vc->floor_count=get_bits(gb, 6)+1;
 
-    vc->floors=(vorbis_floor *)av_mallocz(vc->floor_count * sizeof(vorbis_floor));
+    vc->floors=av_mallocz(vc->floor_count * sizeof(vorbis_floor));
 
     for (i=0;i<vc->floor_count;++i) {
         vorbis_floor *floor_setup=&vc->floors[i];
@@ -517,7 +517,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 floor_setup->data.t1.x_list_dim+=floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];
             }
 
-            floor_setup->data.t1.list=(floor1_entry_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(floor1_entry_t));
+            floor_setup->data.t1.list=av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(floor1_entry_t));
 
 
             rangebits=get_bits(gb, 4);
@@ -623,7 +623,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc){
     uint_fast8_t i, j, k;
 
     vc->residue_count=get_bits(gb, 6)+1;
-    vc->residues=(vorbis_residue *)av_mallocz(vc->residue_count * sizeof(vorbis_residue));
+    vc->residues=av_mallocz(vc->residue_count * sizeof(vorbis_residue));
 
     AV_DEBUG(" There are %d residues. \n", vc->residue_count);
 
@@ -684,7 +684,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
     uint_fast8_t i, j;
 
     vc->mapping_count=get_bits(gb, 6)+1;
-    vc->mappings=(vorbis_mapping *)av_mallocz(vc->mapping_count * sizeof(vorbis_mapping));
+    vc->mappings=av_mallocz(vc->mapping_count * sizeof(vorbis_mapping));
 
     AV_DEBUG(" There are %d mappings. \n", vc->mapping_count);
 
@@ -703,8 +703,8 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
 
         if (get_bits1(gb)) {
             mapping_setup->coupling_steps=get_bits(gb, 8)+1;
-            mapping_setup->magnitude=(uint_fast8_t *)av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
-            mapping_setup->angle=(uint_fast8_t *)av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
+            mapping_setup->magnitude=av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
+            mapping_setup->angle    =av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
             for(j=0;j<mapping_setup->coupling_steps;++j) {
                 mapping_setup->magnitude[j]=get_bits(gb, ilog(vc->audio_channels-1));
                 mapping_setup->angle[j]=get_bits(gb, ilog(vc->audio_channels-1));
@@ -722,7 +722,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
         }
 
         if (mapping_setup->submaps>1) {
-            mapping_setup->mux=(uint_fast8_t *)av_mallocz(vc->audio_channels * sizeof(uint_fast8_t));
+            mapping_setup->mux=av_mallocz(vc->audio_channels * sizeof(uint_fast8_t));
             for(j=0;j<vc->audio_channels;++j) {
                 mapping_setup->mux[j]=get_bits(gb, 4);
             }
@@ -784,7 +784,7 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
     uint_fast8_t i;
 
     vc->mode_count=get_bits(gb, 6)+1;
-    vc->modes=(vorbis_mode *)av_mallocz(vc->mode_count * sizeof(vorbis_mode));
+    vc->modes=av_mallocz(vc->mode_count * sizeof(vorbis_mode));
 
     AV_DEBUG(" There are %d modes.\n", vc->mode_count);
 
@@ -897,12 +897,12 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
         return 2;
     }
 
-    vc->channel_residues=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->channel_floors=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->saved=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->ret=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->buf=(float *)av_malloc(vc->blocksize[1] * sizeof(float));
-    vc->buf_tmp=(float *)av_malloc(vc->blocksize[1] * sizeof(float));
+    vc->channel_residues= av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->channel_floors  = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->saved           = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->ret             = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->buf             = av_malloc( vc->blocksize[1]                       * sizeof(float));
+    vc->buf_tmp         = av_malloc( vc->blocksize[1]                       * sizeof(float));
     vc->saved_start=0;
 
     ff_mdct_init(&vc->mdct[0], bl0, 1);

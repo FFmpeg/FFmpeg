@@ -3813,7 +3813,7 @@ static int parse_ffconfig(const char *filename)
             if (feed) {
                 int i;
 
-                feed->child_argv = (char **) av_mallocz(64 * sizeof(char *));
+                feed->child_argv = av_mallocz(64 * sizeof(char *));
 
                 for (i = 0; i < 62; i++) {
                     get_arg(arg, sizeof(arg), &p);
@@ -4190,7 +4190,7 @@ static int parse_ffconfig(const char *filename)
             }
 
             if (!errors) {
-                IPAddressACL *nacl = (IPAddressACL *) av_mallocz(sizeof(*nacl));
+                IPAddressACL *nacl = av_mallocz(sizeof(*nacl));
                 IPAddressACL **naclp = 0;
 
                 acl.next = 0;
