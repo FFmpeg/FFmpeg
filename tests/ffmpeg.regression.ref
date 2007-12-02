@@ -117,12 +117,12 @@ dca9d700da7857217408c310c501b9bc *./tests/data/a-jpegls.avi
 9086676 ./tests/data/a-jpegls.avi
 0f8637e9b861230aff9894825af83720 *./tests/data/out.yuv
 stddev:  2.84 PSNR:39.04 bytes:7602176
-7eee6367442884321e27d15a26bc032a *./tests/data/a-rv10.rm
-667915 ./tests/data/a-rv10.rm
+99ef24bf57718fd29a7a91b22af2b3fe *./tests/data/a-rv10.rm
+667935 ./tests/data/a-rv10.rm
 d507be4253a9c8211a3738c58ba28118 *./tests/data/out.yuv
 stddev:  8.06 PSNR:29.99 bytes:7602176
-55c73229105f35cbb06ee0dda215df2f *./tests/data/a-rv20.rm
-640856 ./tests/data/a-rv20.rm
+d1caf150a7b53db8fd5eb8c1d0701daf *./tests/data/a-rv20.rm
+640876 ./tests/data/a-rv20.rm
 297dc46da1a256c0a97158c036c30c7f *./tests/data/out.yuv
 stddev:  8.26 PSNR:29.77 bytes:7602176
 d13292f4583618d1b7b525a9ee010dff *./tests/data/a-asv1.avi
