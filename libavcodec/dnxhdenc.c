@@ -671,7 +671,7 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
         //        ctx->m.avctx->frame_number, qscale, bits, ctx->frame_bits, last_higher, last_lower);
         if (bits < ctx->frame_bits) {
             if (qscale == 1)
-                break;
+                return 1;
             if (last_higher == qscale - 1) {
                 qscale = last_higher;
                 break;
@@ -710,8 +710,8 @@ static int dnxhd_rc_cmp(const void *a, const void *b)
 static int dnxhd_encode_variance(AVCodecContext *avctx, DNXHDEncContext *ctx)
 {
     int max_bits = 0;
-    int x, y;
-    if (dnxhd_find_qscale(ctx) < 0)
+    int ret, x, y;
+    if ((ret = dnxhd_find_qscale(ctx)) < 0)
         return -1;
     for (y = 0; y < ctx->m.mb_height; y++) {
         for (x = 0; x < ctx->m.mb_width; x++) {
@@ -730,7 +730,7 @@ static int dnxhd_encode_variance(AVCodecContext *avctx, DNXHDEncContext *ctx)
         }
         max_bits += 31; //worst padding
     }
-    if (max_bits > ctx->frame_bits) {
+    if (!ret) {
         if (RC_VARIANCE)
             avctx->execute(avctx, dnxhd_mb_var_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count);
         qsort(ctx->mb_cmp, ctx->m.mb_num, sizeof(RCEntry), dnxhd_rc_cmp);
