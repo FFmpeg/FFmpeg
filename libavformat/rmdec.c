@@ -380,7 +380,7 @@ static int get_num(ByteIOContext *pb, int *len)
 
     n = get_be16(pb);
     (*len)-=2;
-//    n &= 0x7FFF;
+    n &= 0x7FFF;
     if (n >= 0x4000) {
         return n - 0x4000;
     } else {
