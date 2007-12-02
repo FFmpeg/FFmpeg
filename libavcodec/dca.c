@@ -646,7 +646,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
                             float samples_in[32][8], float *samples_out,
                             float scale, float bias)
 {
-    float *prCoeff;
+    const float *prCoeff;
     int i, j, k;
     float praXin[33], *raXin = &praXin[1];
 
@@ -659,9 +659,9 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 
     /* Select filter */
     if (!s->multirate_inter)    /* Non-perfect reconstruction */
-        prCoeff = (float *) fir_32bands_nonperfect;
+        prCoeff = fir_32bands_nonperfect;
     else                        /* Perfect reconstruction */
-        prCoeff = (float *) fir_32bands_perfect;
+        prCoeff = fir_32bands_perfect;
 
     /* Reconstructed channel sample index */
     for (subindex = 0; subindex < 8; subindex++) {
