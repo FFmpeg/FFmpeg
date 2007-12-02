@@ -514,7 +514,7 @@ static void init_predictor_decoder(APEContext * ctx)
     memset(p->historybuffer, 0, PREDICTOR_SIZE * sizeof(int32_t));
     p->buf = p->historybuffer;
 
-    /* Initialize and zero the co-efficients */
+    /* Initialize and zero the coefficients */
     memcpy(p->coeffsA[0], initial_coeffs, sizeof(initial_coeffs));
     memcpy(p->coeffsA[1], initial_coeffs, sizeof(initial_coeffs));
     memset(p->coeffsB, 0, sizeof(p->coeffsB));

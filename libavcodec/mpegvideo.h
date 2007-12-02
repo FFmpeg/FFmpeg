@@ -94,7 +94,7 @@ typedef struct ScanTable{
     uint8_t permutated[64];
     uint8_t raster_end[64];
 #ifdef ARCH_POWERPC
-                /** Used by dct_quantize_alitvec to find last-non-zero */
+                /** Used by dct_quantize_altivec to find last-non-zero */
     DECLARE_ALIGNED_8(uint8_t, inverse[64]);
 #endif
 } ScanTable;
@@ -111,7 +111,7 @@ typedef struct Picture{
     uint8_t *interpolated[3];
     int16_t (*motion_val_base[2])[2];
     uint32_t *mb_type_base;
-#define MB_TYPE_INTRA MB_TYPE_INTRA4x4 //default mb_type if theres just one type
+#define MB_TYPE_INTRA MB_TYPE_INTRA4x4 //default mb_type if there is just one type
 #define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
 #define IS_INTRA16x16(a) ((a)&MB_TYPE_INTRA16x16)
 #define IS_PCM(a)        ((a)&MB_TYPE_INTRA_PCM)
