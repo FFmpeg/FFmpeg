@@ -579,7 +579,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int color_index;
     int color_dec;
     int color_greyscale;
-    unsigned char *color_table;
+    const uint8_t *color_table;
     int j;
     unsigned char r, g, b;
 
