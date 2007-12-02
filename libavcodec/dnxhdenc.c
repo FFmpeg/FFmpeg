@@ -171,6 +171,7 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     DNXHDEncContext *ctx = avctx->priv_data;
     int i, index;
 
+    if (avctx->width == 1920 && avctx->height == 1080) {
     if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
         if      (avctx->bit_rate == 120000000)
             ctx->cid = 1242;
@@ -184,7 +185,14 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
         else if (avctx->bit_rate ==  36000000)
             ctx->cid = 1253;
     }
-    if (!ctx->cid || avctx->width != 1920 || avctx->height != 1080 || avctx->pix_fmt != PIX_FMT_YUV422P) {
+    } else if (avctx->width == 1280 && avctx->height == 720 &&
+               !(avctx->flags & CODEC_FLAG_INTERLACED_DCT)) {
+            if      (avctx->bit_rate ==  90000000)
+                ctx->cid = 1251;
+            else if (avctx->bit_rate ==  60000000)
+                ctx->cid = 1252;
+    }
+    if (!ctx->cid || avctx->pix_fmt != PIX_FMT_YUV422P) {
         av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD\n");
         return -1;
     }
@@ -421,7 +429,7 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
     dsp->get_pixels(ctx->blocks[2], ptr_u    , ctx->m.uvlinesize);
     dsp->get_pixels(ctx->blocks[3], ptr_v    , ctx->m.uvlinesize);
 
-    if (mb_y+1 == ctx->m.mb_height) {
+    if (mb_y+1 == ctx->m.mb_height && ctx->m.avctx->height == 1080) {
         if (ctx->interlaced) {
             dnxhd_get_pixels_4x8(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
             dnxhd_get_pixels_4x8(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
