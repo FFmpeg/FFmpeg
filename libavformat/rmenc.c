@@ -349,7 +349,7 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     /* Well, I spent some time finding the meaning of these bits. I am
        not sure I understood everything, but it works !! */
 #if 1
-    write_packet_header(s, stream, size + 7, key_frame);
+    write_packet_header(s, stream, size + 7 + (size >= 0x4000)*4, key_frame);
     /* bit 7: '1' if final packet of a frame converted in several packets */
     put_byte(pb, 0x81);
     /* bit 7: '1' if I frame. bits 6..0 : sequence number in current
@@ -359,8 +359,13 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     } else {
         put_byte(pb, 0x01);
     }
-    put_be16(pb, 0x4000 + (size)); /* total frame size */
-    put_be16(pb, 0x4000 + (size));              /* offset from the start or the end */
+    if(size >= 0x4000){
+        put_be32(pb, size); /* total frame size */
+        put_be32(pb, size); /* offset from the start or the end */
+    }else{
+        put_be16(pb, 0x4000 | size); /* total frame size */
+        put_be16(pb, 0x4000 | size); /* offset from the start or the end */
+    }
 #else
     /* full frame */
     write_packet_header(s, size + 6);
