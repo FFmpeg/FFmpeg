@@ -654,7 +654,7 @@ LATEX_BATCHMODE        = NO
 #---------------------------------------------------------------------------
 
 # If the GENERATE_RTF tag is set to YES Doxygen will generate RTF output
-# The RTF output is optimised for Word 97 and may not look very pretty with
+# The RTF output is optimized for Word 97 and may not look very pretty with
 # other RTF readers or editors.
 
 GENERATE_RTF           = NO

@@ -2039,11 +2039,11 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int partitions;
-#define X264_PART_I4X4 0x001  /* Analyse i4x4 */
-#define X264_PART_I8X8 0x002  /* Analyse i8x8 (requires 8x8 transform) */
-#define X264_PART_P8X8 0x010  /* Analyse p16x8, p8x16 and p8x8 */
-#define X264_PART_P4X4 0x020  /* Analyse p8x4, p4x8, p4x4 */
-#define X264_PART_B8X8 0x100  /* Analyse b16x8, b8x16 and b8x8 */
+#define X264_PART_I4X4 0x001  /* Analyze i4x4 */
+#define X264_PART_I8X8 0x002  /* Analyze i8x8 (requires 8x8 transform) */
+#define X264_PART_P8X8 0x010  /* Analyze p16x8, p8x16 and p8x8 */
+#define X264_PART_P4X4 0x020  /* Analyze p8x4, p4x8, p4x4 */
+#define X264_PART_B8X8 0x100  /* Analyze b16x8, b8x16 and b8x8 */
 
     /**
      * direct MV prediction mode - 0 (none), 1 (spatial), 2 (temporal)

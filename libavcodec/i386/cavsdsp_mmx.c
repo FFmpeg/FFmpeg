@@ -2,7 +2,7 @@
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder.
  * Copyright (c) 2006  Stefan Gehrer <stefan.gehrer@gmx.de>
  *
- * MMX optimized DSP functions, based on H.264 optimizations by
+ * MMX-optimized DSP functions, based on H.264 optimizations by
  * Michael Niedermayer and Loren Merritt
  *
  * This file is part of FFmpeg.

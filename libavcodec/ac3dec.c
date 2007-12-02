@@ -73,7 +73,7 @@ static const uint8_t qntztab[16] = {
 /** dynamic range table. converts codes to scale factors. */
 static float dynrng_tab[256];
 
-/** dialogue normalization table */
+/** dialog normalization table */
 static float dialnorm_tab[32];
 
 /** Adjustments in dB gain */
@@ -161,7 +161,7 @@ typedef struct {
     int out_channels;                       ///< number of output channels
 
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
-    float dialnorm[2];                      ///< dialogue normalization
+    float dialnorm[2];                      ///< dialog normalization
     float dynrng[2];                        ///< dynamic range
     float cplco[AC3_MAX_CHANNELS][18];      ///< coupling coordinates
     int   ncplbnd;                          ///< number of coupling bands
@@ -276,7 +276,7 @@ static void ac3_tables_init(void)
         dynrng_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
 
-    /* generate dialogue normalization table
+    /* generate dialog normalization table
        references: Section 5.4.2.8 dialnorm
                    Section 7.6 Dialogue Normalization */
     for(i=1; i<32; i++) {
@@ -382,7 +382,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(ctx->acmod);
     do {
-        ctx->dialnorm[i] = dialnorm_tab[get_bits(gb, 5)]; // dialogue normalization
+        ctx->dialnorm[i] = dialnorm_tab[get_bits(gb, 5)]; // dialog normalization
         if (get_bits1(gb))
             skip_bits(gb, 8); //skip compression
         if (get_bits1(gb))

@@ -383,7 +383,7 @@ version 0.4.0:
 - added timeshifting support for live feeds (option ?date=xxx in the
   URL)
 - added high quality image resize code with polyphase filter (need
-  mmx/see optimisation). Enable multiple image size support in ffserver.
+  mmx/see optimization). Enable multiple image size support in ffserver.
 - added multi live feed support in ffserver
 - suppressed master feature from ffserver (it should be done with an
   external program which opens the .ffm url and writes it to another

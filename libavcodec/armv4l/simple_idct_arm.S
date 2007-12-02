@@ -79,7 +79,7 @@ simple_idct_ARM:
 
 
 __row_loop:
-        @@ read the row and check if it is null, almost null, or not, according to strongarm specs, it is not necessary to optimise ldr accesses (i.e. split 32bits in 2 16bits words), at least it gives more usable registers :)
+        @@ read the row and check if it is null, almost null, or not, according to strongarm specs, it is not necessary to optimize ldr accesses (i.e. split 32bits in 2 16bits words), at least it gives more usable registers :)
         ldr r1, [r14, #0]        @ R1=(int32)(R12)[0]=ROWr32[0] (relative row cast to a 32b pointer)
         ldr r2, [r14, #4]        @ R2=(int32)(R12)[1]=ROWr32[1]
         ldr r3, [r14, #8]        @ R3=ROWr32[2]
@@ -421,7 +421,7 @@ __end_a_evaluation2:
         @@ col[40] = ((a2 - b2) >> COL_SHIFT);
         @@ col[48] = ((a1 - b1) >> COL_SHIFT);
         @@ col[56] = ((a0 - b0) >> COL_SHIFT);
-        @@@@@ no optimisation here @@@@@
+        @@@@@ no optimization here @@@@@
         add r8, r6, r0           @ R8=a0+b0
         add r9, r2, r1           @ R9=a1+b1
         mov r8, r8, asr #COL_SHIFT

@@ -169,7 +169,7 @@ static void put_cursor(uint8_t *dst, int stride, VmncContext *c, int dx, int dy)
     }
 }
 
-/* fill rectangle with given colour */
+/* fill rectangle with given color */
 static av_always_inline void paint_rect(uint8_t *dst, int dx, int dy, int w, int h, int color, int bpp, int stride)
 {
     int i, j;

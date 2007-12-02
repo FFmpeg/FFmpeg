@@ -37,7 +37,7 @@ static const uint8_t rv34_count_ones[16] = {
 };
 
 /**
- * Values used to reconstruct coded block pattern.
+ * values used to reconstruct coded block pattern
  */
 static const uint8_t rv34_cbp_code[16] = {
     0x00, 0x20, 0x10, 0x30, 0x02, 0x22, 0x12, 0x32,
