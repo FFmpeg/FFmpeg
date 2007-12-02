@@ -7314,7 +7314,7 @@ static const float fir_32bands_nonperfect[] =
 +1.390191784E-007
 };
 
-//FIXME the coeffs are symetric
+//FIXME the coeffs are symmetric
 static const float lfe_fir_64[] =
 {
 2.6584343868307770E-004,
@@ -7831,7 +7831,7 @@ static const float lfe_fir_64[] =
 2.6584343868307770E-004
 };
 
-//FIXME the coeffs are symetric
+//FIXME the coeffs are symmetric
 
 static const float lfe_fir_128[] =
 {
@@ -8349,7 +8349,7 @@ static const float lfe_fir_128[] =
 0.00053168571
 };
 
-/* 10^-(dB/20), with dB beeing a list of dB values rangeing from 0 to -72 */
+/* 10^-(dB/20), with dB being a list of dB values ranging from 0 to -72 */
 /* do a 20*log10(dca_downmix_coeffs) to reconvert the values */
 
 static const float dca_downmix_coeffs[65] = {
