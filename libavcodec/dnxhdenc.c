@@ -707,7 +707,7 @@ static int dnxhd_rc_cmp(const void *a, const void *b)
     return ((RCCMPEntry *)b)->value - ((RCCMPEntry *)a)->value;
 }
 
-static int dnxhd_encode_variance(AVCodecContext *avctx, DNXHDEncContext *ctx)
+static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
 {
     int max_bits = 0;
     int ret, x, y;
@@ -789,7 +789,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
     if (avctx->mb_decision == FF_MB_DECISION_RD)
         ret = dnxhd_encode_rdo(avctx, ctx);
     else
-        ret = dnxhd_encode_variance(avctx, ctx);
+        ret = dnxhd_encode_fast(avctx, ctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "picture could not fit ratecontrol constraints\n");
         return -1;
