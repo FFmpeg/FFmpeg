@@ -191,6 +191,6 @@ typedef struct CodecTags{
 /* max. depth in the EBML tree structure */
 #define EBML_MAX_DEPTH 16
 
-extern CodecTags ff_mkv_codec_tags[];
+extern const CodecTags ff_mkv_codec_tags[];
 
 #endif /* FFMPEG_MATROSKA_H */
