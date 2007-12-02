@@ -29,8 +29,8 @@ altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW) {
     vector unsigned int altivec_vectorShiftInt19 =
         vec_add(vec_splat_u32(10),vec_splat_u32(9));
     if ((unsigned long)dest % 16) {
-        /* badly aligned store, we force store alignement */
-        /* and will handle load misalignement on val w/ vec_perm */
+        /* badly aligned store, we force store alignment */
+        /* and will handle load misalignment on val w/ vec_perm */
         vector unsigned char perm1;
         vector signed int v1;
         for (i = 0 ; (i < dstW) &&
