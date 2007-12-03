@@ -23,6 +23,8 @@
 #ifndef FFMPEG_QTPALETTE_H
 #define FFMPEG_QTPALETTE_H
 
+#include <inttypes.h>
+
 static const uint8_t ff_qt_default_palette_4[4 * 4] = {
   0x93, 0x65, 0x5E, 0x00,
   0xFF, 0xFF, 0xFF, 0x00,
