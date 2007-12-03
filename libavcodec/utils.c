@@ -559,7 +559,7 @@ static const AVOption options[]={
 {"rc_eq", "set rate control equation", OFFSET(rc_eq), FF_OPT_TYPE_STRING, DEFAULT, CHAR_MIN, CHAR_MAX, V|E},
 {"maxrate", "set max video bitrate tolerance (in bits/s)", OFFSET(rc_max_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"minrate", "set min video bitrate tolerance (in bits/s)", OFFSET(rc_min_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
-{"bufsize", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"bufsize", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, A|V|E},
 {"rc_buf_aggressivity", "currently useless", OFFSET(rc_buffer_aggressivity), FF_OPT_TYPE_FLOAT, 1.0, FLT_MIN, FLT_MAX, V|E},
 {"i_qfactor", "qp factor between p and i frames", OFFSET(i_quant_factor), FF_OPT_TYPE_FLOAT, -0.8, -FLT_MAX, FLT_MAX, V|E},
 {"i_qoffset", "qp offset between p and i frames", OFFSET(i_quant_offset), FF_OPT_TYPE_FLOAT, 0.0, -FLT_MAX, FLT_MAX, V|E},
