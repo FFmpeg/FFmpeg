@@ -172,8 +172,8 @@ typedef struct DVBSubObjectDisplay {
     int x_pos;
     int y_pos;
 
-    int fgcolour;
-    int bgcolour;
+    int fgcolor;
+    int bgcolor;
 
     struct DVBSubObjectDisplay *region_list_next;
     struct DVBSubObjectDisplay *object_list_next;
@@ -206,7 +206,7 @@ typedef struct DVBSubRegion {
     int depth;
 
     int clut;
-    int bgcolour;
+    int bgcolor;
 
     uint8_t *pbuf;
     int buf_size;
@@ -844,7 +844,7 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
     DVBSubObjectDisplay *display;
     int top_field_len, bottom_field_len;
 
-    int coding_method, non_modifying_colour;
+    int coding_method, non_modifying_color;
 
     object_id = AV_RB16(buf);
     buf += 2;
@@ -855,7 +855,7 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
         return;
 
     coding_method = ((*buf) >> 2) & 3;
-    non_modifying_colour = ((*buf++) >> 1) & 1;
+    non_modifying_color = ((*buf++) >> 1) & 1;
 
     if (coding_method == 0) {
         top_field_len = AV_RB16(buf);
@@ -872,7 +872,7 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
             block = buf;
 
             dvbsub_parse_pixel_data_block(avctx, display, block, top_field_len, 0,
-                                            non_modifying_colour);
+                                            non_modifying_color);
 
             if (bottom_field_len > 0)
                 block = buf + top_field_len;
@@ -880,7 +880,7 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
                 bottom_field_len = top_field_len;
 
             dvbsub_parse_pixel_data_block(avctx, display, block, bottom_field_len, 1,
-                                            non_modifying_colour);
+                                            non_modifying_color);
         }
 
 /*  } else if (coding_method == 1) {*/
@@ -1035,14 +1035,14 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     region->clut = *buf++;
 
     if (region->depth == 8)
-        region->bgcolour = *buf++;
+        region->bgcolor = *buf++;
     else {
         buf += 1;
 
         if (region->depth == 4)
-            region->bgcolour = (((*buf++) >> 4) & 15);
+            region->bgcolor = (((*buf++) >> 4) & 15);
         else
-            region->bgcolour = (((*buf++) >> 2) & 3);
+            region->bgcolor = (((*buf++) >> 2) & 3);
     }
 
 #ifdef DEBUG
@@ -1050,9 +1050,9 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 #endif
 
     if (fill) {
-        memset(region->pbuf, region->bgcolour, region->buf_size);
+        memset(region->pbuf, region->bgcolor, region->buf_size);
 #ifdef DEBUG
-        av_log(avctx, AV_LOG_INFO, "Fill region (%d)\n", region->bgcolour);
+        av_log(avctx, AV_LOG_INFO, "Fill region (%d)\n", region->bgcolor);
 #endif
     }
 
@@ -1085,8 +1085,8 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
         buf += 2;
 
         if ((object->type == 1 || object->type == 2) && buf+1 < buf_end) {
-            display->fgcolour = *buf++;
-            display->bgcolour = *buf++;
+            display->fgcolor = *buf++;
+            display->bgcolor = *buf++;
         }
 
         display->region_list_next = region->display_list;

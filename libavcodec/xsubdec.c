@@ -108,11 +108,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (x = 0; x < w; ) {
             int log2 = ff_log2_tab[show_bits(&gb, 8)];
             int run = get_bits(&gb, 14 - 4 * (log2 >> 1));
-            int colour = get_bits(&gb, 2);
+            int color = get_bits(&gb, 2);
             run = FFMIN(run, w - x);
             // run length 0 means till end of row
             if (!run) run = w - x;
-            memset(bitmap, colour, run);
+            memset(bitmap, color, run);
             bitmap += run;
             x += run;
         }

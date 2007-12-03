@@ -1201,7 +1201,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
                         /* colorspace (only matters for raw video)
                          * fourcc */
-                        case MATROSKA_ID_VIDEOCOLOURSPACE: {
+                        case MATROSKA_ID_VIDEOCOLORSPACE: {
                             uint64_t num;
                             if ((res = ebml_read_uint(matroska, &id,
                                                       &num)) < 0)
