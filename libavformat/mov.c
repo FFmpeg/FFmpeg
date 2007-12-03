@@ -345,9 +345,8 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 /* this atom should contain all header atoms */
 static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    int err;
-
-    err = mov_read_default(c, pb, atom);
+    if (mov_read_default(c, pb, atom) < 0)
+        return -1;
     /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
     /* so we don't parse the whole file if over a network */
     c->found_moov=1;
@@ -505,7 +504,8 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         } else
             url_fskip(pb, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
-        mov_read_default(c, pb, atom);
+        if (mov_read_default(c, pb, atom) < 0)
+            return -1;
     } else
         url_fskip(pb, atom.size);
     return 0;
@@ -789,9 +789,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
         /* this will read extra atoms at the end (wave, alac, damr, avcC, SMI ...) */
         a.size = size - (url_ftell(pb) - start_pos);
-        if (a.size > 8)
-            mov_read_default(c, pb, a);
-        else if (a.size > 0)
+        if (a.size > 8) {
+            if (mov_read_default(c, pb, a) < 0)
+                return -1;
+        } else if (a.size > 0)
             url_fskip(pb, a.size);
     }
 
