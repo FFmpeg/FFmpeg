@@ -680,8 +680,6 @@ static void put_frame(
             // multi payloads
             frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS - PACKET_HEADER_MIN_SIZE - 1;
 
-            asf->packet_timestamp_start = timestamp;
-
             if(frag_len1 < payload_len && avst->codec->codec_type == CODEC_TYPE_AUDIO){
                 flush_packet(s);
                 continue;
