@@ -159,7 +159,7 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
         return NULL;
     }
 
-    memcpy(((uint8_t*)obj) + o->offset, val, sizeof(val));
+    memcpy(((uint8_t*)obj) + o->offset, &val, sizeof(val));
     return o;
 }
 
@@ -192,7 +192,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     if(o_out) *o_out= o;
 
     if(o->type == FF_OPT_TYPE_STRING)
-        return dst;
+        return *(void**)dst;
 
     switch(o->type){
     case FF_OPT_TYPE_FLAGS:     snprintf(buf, buf_len, "0x%08X",*(int    *)dst);break;
