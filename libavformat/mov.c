@@ -964,7 +964,8 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->stts_count = entries;
     sc->stts_data = av_malloc(entries * sizeof(MOV_stts_t));
-
+    if (!sc->stts_data)
+        return -1;
     dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 
     sc->time_rate=0;
@@ -1006,7 +1007,8 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->ctts_count = entries;
     sc->ctts_data = av_malloc(entries * sizeof(MOV_stts_t));
-
+    if (!sc->ctts_data)
+        return -1;
     dprintf(c->fc, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
 
     for(i=0; i<entries; i++) {
