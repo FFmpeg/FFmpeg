@@ -553,7 +553,10 @@ static int mov_write_avid_tag(ByteIOContext *pb, MOVTrack *track)
         put_be32(pb, track->enc->height);
         put_be32(pb, 1); /* unknown */
         put_be32(pb, 0); /* unknown */
-        put_be32(pb, 5); /* unknown */
+        if (track->enc->height == 1080)
+            put_be32(pb, 5); /* unknown */
+        else
+            put_be32(pb, 6); /* unknown */
     }
     /* padding */
     for (i = 0; i < 10; i++)
