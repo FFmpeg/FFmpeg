@@ -1007,6 +1007,8 @@ for opt do
     ;;
     --disable-protocols) disable $PROTOCOL_LIST
     ;;
+    --disable-devices) disable "$INDEV_LIST $OUTDEV_LIST"
+    ;;
     --enable-*=*|--disable-*=*)
     eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
     case "$thing" in
