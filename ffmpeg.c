@@ -126,7 +126,6 @@ static float video_rc_qmod_amp=0;
 static int video_rc_qmod_freq=0;
 #endif
 static char *video_rc_override_string=NULL;
-static char *video_rc_eq="tex^qComp";
 static int video_disable = 0;
 static int video_discard = 0;
 static char *video_codec_name = NULL;
@@ -2174,11 +2173,6 @@ static int opt_default(const char *opt, const char *arg){
     return 0;
 }
 
-static void opt_video_rc_eq(char *arg)
-{
-    video_rc_eq = arg;
-}
-
 static void opt_video_rc_override_string(char *arg)
 {
     video_rc_override_string = arg;
@@ -2948,7 +2942,6 @@ static void new_video_stream(AVFormatContext *oc)
             video_enc->inter_matrix = inter_matrix;
 
         video_enc->max_qdiff = video_qdiff;
-        video_enc->rc_eq = video_rc_eq;
         video_enc->thread_count = thread_count;
         p= video_rc_override_string;
         for(i=0; p; i++){
@@ -3774,7 +3767,6 @@ const OptionDef options[] = {
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantizer scale (VBR)", "q" },
-    { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
