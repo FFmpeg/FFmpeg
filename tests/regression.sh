@@ -88,6 +88,7 @@ else
     do_dv=y
     do_dv50=y
     do_flashsv=y
+    do_adpcm_swf=y
 fi
 
 
@@ -560,6 +561,13 @@ fi
 if [ -n "$do_adpcm_yam" ] ; then
 # adpcm yamaha
 do_audio_encoding adpcm_yam.wav "-ar 44100" "-acodec adpcm_yamaha"
+do_audio_decoding
+fi
+
+###################################
+if [ -n "$do_adpcm_swf" ] ; then
+# adpcm adpcm_swf
+do_audio_encoding adpcm_swf.flv "-ar 44100" "-acodec adpcm_swf"
 do_audio_decoding
 fi
 

@@ -188,6 +188,10 @@ ab11d9151644cbff27827b7e89f37aa9 *./tests/data/a-adpcm_yam.wav
 264248 ./tests/data/a-adpcm_yam.wav
 e92cec8c07913ffb91ad2b11f79cdc00 *./tests/data/out.wav
 stddev:18312.68 PSNR:11.06 bytes:1056768
+de1122d20d56c44cf49f028e25a67788 *./tests/data/a-adpcm_swf.flv
+267073 ./tests/data/a-adpcm_swf.flv
+e48b800e2d9be6afcd430d4f08a34eb6 *./tests/data/out.wav
+stddev:934.30 PSNR:36.91 bytes:1056768
 c3382f03ce2efb5d475240d288a33898 *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
 c4228df189aad9567a037727d0e763e4 *./tests/data/out.wav
