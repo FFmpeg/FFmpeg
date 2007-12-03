@@ -2673,7 +2673,7 @@ static void opt_input_file(const char *filename)
     for(i=0; i<opt_name_count; i++){
         char buf[256];
         const AVOption *opt;
-        char *str= av_get_string(avformat_opts, opt_names[i], &opt, buf, sizeof(buf));
+        const char *str= av_get_string(avformat_opts, opt_names[i], &opt, buf, sizeof(buf));
         if(str && (opt->flags & AV_OPT_FLAG_DECODING_PARAM))
             av_set_string(ic, opt_names[i], str);
     }
@@ -2728,7 +2728,7 @@ static void opt_input_file(const char *filename)
             for(j=0; j<opt_name_count; j++){
                 char buf[256];
                 const AVOption *opt;
-                char *str= av_get_string(avctx_opts[CODEC_TYPE_AUDIO], opt_names[j], &opt, buf, sizeof(buf));
+                const char *str= av_get_string(avctx_opts[CODEC_TYPE_AUDIO], opt_names[j], &opt, buf, sizeof(buf));
                 if(str && (opt->flags & AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags & AV_OPT_FLAG_DECODING_PARAM))
                     av_set_string(enc, opt_names[j], str);
             }
@@ -2742,7 +2742,7 @@ static void opt_input_file(const char *filename)
             for(j=0; j<opt_name_count; j++){
                 char buf[256];
                 const AVOption *opt;
-                char *str= av_get_string(avctx_opts[CODEC_TYPE_VIDEO], opt_names[j], &opt, buf, sizeof(buf));
+                const char *str= av_get_string(avctx_opts[CODEC_TYPE_VIDEO], opt_names[j], &opt, buf, sizeof(buf));
                 if(str && (opt->flags & AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags & AV_OPT_FLAG_DECODING_PARAM))
                     av_set_string(enc, opt_names[j], str);
             }
@@ -2889,7 +2889,7 @@ static void new_video_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
             char buf[256];
             const AVOption *opt;
-            char *str= av_get_string(avctx_opts[CODEC_TYPE_VIDEO], opt_names[i], &opt, buf, sizeof(buf));
+            const char *str= av_get_string(avctx_opts[CODEC_TYPE_VIDEO], opt_names[i], &opt, buf, sizeof(buf));
             if(str && (opt->flags & AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags & AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_string(video_enc, opt_names[i], str);
         }
@@ -3032,7 +3032,7 @@ static void new_audio_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
             char buf[256];
             const AVOption *opt;
-            char *str= av_get_string(avctx_opts[CODEC_TYPE_AUDIO], opt_names[i], &opt, buf, sizeof(buf));
+            const char *str= av_get_string(avctx_opts[CODEC_TYPE_AUDIO], opt_names[i], &opt, buf, sizeof(buf));
             if(str && (opt->flags & AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags & AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_string(audio_enc, opt_names[i], str);
         }
@@ -3083,7 +3083,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
         for(i=0; i<opt_name_count; i++){
             char buf[256];
             const AVOption *opt;
-            char *str= av_get_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt_names[i], &opt, buf, sizeof(buf));
+            const char *str= av_get_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt_names[i], &opt, buf, sizeof(buf));
             if(str && (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags & AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_string(subtitle_enc, opt_names[i], str);
         }
@@ -3276,7 +3276,7 @@ static void opt_output_file(const char *filename)
     for(i=0; i<opt_name_count; i++){
         char buf[256];
         const AVOption *opt;
-        char *str= av_get_string(avformat_opts, opt_names[i], &opt, buf, sizeof(buf));
+        const char *str= av_get_string(avformat_opts, opt_names[i], &opt, buf, sizeof(buf));
         if(str && (opt->flags & AV_OPT_FLAG_ENCODING_PARAM))
             av_set_string(oc, opt_names[i], str);
     }
