@@ -66,8 +66,8 @@ static int crc_init = 0;
 static AVCRC crc_2D[1024];
 
 /** MLP uses checksums that seem to be based on the standard CRC algorithm,
- *  but not (in implementation terms, the table lookup and XOR are reversedi).
- *  We can implement this behaviour using a standard av_crc on all but the
+ *  but not (in implementation terms, the table lookup and XOR are reversed).
+ *  We can implement this behavior using a standard av_crc on all but the
  *  last element, then XOR that with the last element.
  */
 
@@ -239,8 +239,8 @@ static int mlp_parse(AVCodecParserContext *s,
     sync_present = (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
 
     if (!sync_present) {
-        // First nibble of a frame is a parity check of the first few nibbles
-        // Only check when this isn't a sync frame - syncs have a checksum
+        // First nibble of a frame is a parity check of the first few nibbles.
+        // Only check when this isn't a sync frame - syncs have a checksum.
 
         parity_bits = 0;
         for (i = 0; i <= mp->num_substreams; i++) {
@@ -254,7 +254,7 @@ static int mlp_parse(AVCodecParserContext *s,
         }
 
         if ((((parity_bits >> 4) ^ parity_bits) & 0xF) != 0xF) {
-            av_log(avctx, AV_LOG_INFO, "mlpparse: parity check failed\n");
+            av_log(avctx, AV_LOG_INFO, "mlpparse: Parity check failed.\n");
             goto lost_sync;
         }
     } else {
