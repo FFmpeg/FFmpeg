@@ -418,6 +418,8 @@ static int mp3_read_probe(AVProbeData *p)
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)
             first_frames= frames;
+        if(buf2 > end)
+            break;
     }
     if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;
     else if(max_frames>=3) return AVPROBE_SCORE_MAX/4;
