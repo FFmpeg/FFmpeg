@@ -1199,7 +1199,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             break;
                         }
 
-                        /* colourspace (only matters for raw video)
+                        /* colorspace (only matters for raw video)
                          * fourcc */
                         case MATROSKA_ID_VIDEOCOLOURSPACE: {
                             uint64_t num;

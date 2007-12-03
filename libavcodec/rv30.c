@@ -21,7 +21,7 @@
 
 /**
  * @file rv30.c
- * RV30 decoder.
+ * RV30 decoder
  */
 
 #include "avcodec.h"
@@ -58,7 +58,7 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
 }
 
 /**
- * Decode 4x4 intra types array
+ * Decode 4x4 intra types array.
  */
 static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int *dst)
 {
@@ -86,7 +86,7 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int *ds
 }
 
 /**
- * Decode macroblock information
+ * Decode macroblock information.
  */
 static int rv30_decode_mb_info(RV34DecContext *r)
 {
@@ -111,7 +111,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
 }
 
 /**
- * Initialize decoder
+ * Initialize decoder.
  */
 static int rv30_decode_init(AVCodecContext *avctx)
 {
@@ -120,7 +120,7 @@ static int rv30_decode_init(AVCodecContext *avctx)
     r->rv30 = 1;
     ff_rv34_decode_init(avctx);
     if(avctx->extradata_size < 2){
-        av_log(avctx, AV_LOG_ERROR, "Extradata is too small\n");
+        av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
         return -1;
     }
     r->rpr = (avctx->extradata[1] & 7) >> 1;
