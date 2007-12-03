@@ -405,7 +405,7 @@ static int mp3_read_probe(AVProbeData *p)
     buf = p->buf;
     end = buf + p->buf_size - sizeof(uint32_t);
 
-    for(; buf < end; buf++) {
+    for(; buf < end; buf= buf2+1) {
         buf2 = buf;
 
         for(frames = 0; buf2 < end; frames++) {
@@ -418,8 +418,6 @@ static int mp3_read_probe(AVProbeData *p)
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)
             first_frames= frames;
-        if(buf2 > end)
-            break;
     }
     if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;
     else if(max_frames>=3) return AVPROBE_SCORE_MAX/4;
