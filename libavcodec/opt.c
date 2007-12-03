@@ -191,9 +191,6 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     dst= ((uint8_t*)obj) + o->offset;
     if(o_out) *o_out= o;
 
-    if(o->type == FF_OPT_TYPE_STRING)
-        return *(void**)dst;
-
     switch(o->type){
     case FF_OPT_TYPE_FLAGS:     snprintf(buf, buf_len, "0x%08X",*(int    *)dst);break;
     case FF_OPT_TYPE_INT:       snprintf(buf, buf_len, "%d" , *(int    *)dst);break;
@@ -201,6 +198,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     case FF_OPT_TYPE_FLOAT:     snprintf(buf, buf_len, "%f" , *(float  *)dst);break;
     case FF_OPT_TYPE_DOUBLE:    snprintf(buf, buf_len, "%f" , *(double *)dst);break;
     case FF_OPT_TYPE_RATIONAL:  snprintf(buf, buf_len, "%d/%d", ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
+    case FF_OPT_TYPE_STRING:    return *(void**)dst;
     default: return NULL;
     }
     return buf;
