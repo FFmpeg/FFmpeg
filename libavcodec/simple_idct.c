@@ -428,7 +428,7 @@ void simple_idct(DCTELEM *block)
    and the butterfly must be multiplied by 0.5 * sqrt(2.0) */
 #define C_SHIFT (4+1+12)
 
-static inline void idct4col(uint8_t *dest, int line_size, const DCTELEM *col)
+static inline void idct4col_put(uint8_t *dest, int line_size, const DCTELEM *col)
 {
     int c0, c1, c2, c3, a0, a1, a2, a3;
     const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -491,8 +491,8 @@ void simple_idct248_put(uint8_t *dest, int line_size, DCTELEM *block)
 
     /* IDCT4 and store */
     for(i=0;i<8;i++) {
-        idct4col(dest + i, 2 * line_size, block + i);
-        idct4col(dest + line_size + i, 2 * line_size, block + 8 + i);
+        idct4col_put(dest + i, 2 * line_size, block + i);
+        idct4col_put(dest + line_size + i, 2 * line_size, block + 8 + i);
     }
 }
 
