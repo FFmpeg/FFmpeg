@@ -584,6 +584,8 @@ static void flush_packet(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     int packet_hdr_size, packet_filled_size;
 
+    assert(asf->packet_timestamp_end >= asf->packet_timestamp_start);
+
     if (asf->is_streamed) {
         put_chunk(s, 0x4424, asf->packet_size, 0);
     }
