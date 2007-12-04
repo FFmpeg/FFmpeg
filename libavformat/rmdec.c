@@ -513,7 +513,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, RMContext *rm, AVPacket *
         return 1;
     if (get_buffer(pb, rm->videobuf + rm->videobufpos, len) != len)
         return AVERROR(EIO);
-    rm->videobufpos += len,
+    rm->videobufpos += len;
     rm->remaining_len-= len;
 
     if(type == 2 || (rm->videobufpos) == rm->videobufsize){
