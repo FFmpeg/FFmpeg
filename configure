@@ -1701,6 +1701,7 @@ enabled extra_warnings && check_cflags -Winline
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags $LDLATEFLAGS
+check_ldflags -Wl,-Bsymbolic
 
 if enabled small; then
     check_cflags -Os            # not all compilers support -Os
