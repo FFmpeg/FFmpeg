@@ -175,9 +175,6 @@ static int decode_frame(AVCodecContext *avctx,
     }
     p->pict_type= I_TYPE;
     p->key_frame= 1;
-    a->last_dc[0]=
-    a->last_dc[1]=
-    a->last_dc[2]= 0;
 
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     for(i=0; i<buf_size; i+=2){
@@ -191,6 +188,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     a->qscale=  get_bits(&a->gb, 16);
     a->version= get_bits(&a->gb, 16);
+
+    a->last_dc[0]=
+    a->last_dc[1]=
+    a->last_dc[2]= 128;
 
 //    printf("qscale:%d (0x%X), version:%d (0x%X)\n", a->qscale, a->qscale, a->version, a->version);
 
