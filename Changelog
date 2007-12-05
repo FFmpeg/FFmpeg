@@ -90,7 +90,7 @@ version <next>
 - codebook generator
 - RoQ video encoder
 - QTRLE encoder
-- OS/2 support removed
+- OS/2 support removed and restored again
 - AC-3 decoder
 - NUT muxer (since r10052)
 - Matroska muxer

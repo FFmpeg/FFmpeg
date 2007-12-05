@@ -28,6 +28,7 @@ $(SLIBNAME): $(SLIBNAME_WITH_MAJOR)
 	$(LN_S) $^ $@
 
 $(SLIBNAME_WITH_MAJOR): $(OBJS)
+	$(SLIB_CREATE_DEF_CMD)
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRALIBS) $(EXTRAOBJS)
 	$(SLIB_EXTRA_CMD)
 
@@ -51,7 +52,7 @@ depend dep: $(SRCS)
 
 clean::
 	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
-	      *.def *.dll.a *.exp *.ho
+	      *.def *.dll.a *.exp *.ho *.map
 
 distclean: clean
 	rm -f .depend
