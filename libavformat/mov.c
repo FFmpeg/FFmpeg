@@ -703,20 +703,20 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     color_end = get_be16(pb);
                     if ((color_start <= 255) &&
                         (color_end <= 255)) {
-                    for (j = color_start; j <= color_end; j++) {
-                        /* each R, G, or B component is 16 bits;
-                         * only use the top 8 bits; skip alpha bytes
-                         * up front */
-                        get_byte(pb);
-                        get_byte(pb);
-                        r = get_byte(pb);
-                        get_byte(pb);
-                        g = get_byte(pb);
-                        get_byte(pb);
-                        b = get_byte(pb);
-                        get_byte(pb);
-                        c->palette_control.palette[j] =
-                            (r << 16) | (g << 8) | (b);
+                        for (j = color_start; j <= color_end; j++) {
+                            /* each R, G, or B component is 16 bits;
+                             * only use the top 8 bits; skip alpha bytes
+                             * up front */
+                            get_byte(pb);
+                            get_byte(pb);
+                            r = get_byte(pb);
+                            get_byte(pb);
+                            g = get_byte(pb);
+                            get_byte(pb);
+                            b = get_byte(pb);
+                            get_byte(pb);
+                            c->palette_control.palette[j] =
+                                (r << 16) | (g << 8) | (b);
                         }
                     }
                 }
