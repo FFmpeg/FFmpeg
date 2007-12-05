@@ -572,10 +572,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     uint8_t codec_name[32];
 
     /* for palette traversal */
-    int color_depth;
-    int color_start;
-    int color_count;
-    int color_end;
+    unsigned int color_depth;
+    unsigned int color_start;
+    unsigned int color_count;
+    unsigned int color_end;
     int color_index;
     int color_dec;
     int color_greyscale;
@@ -701,6 +701,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     color_start = get_be32(pb);
                     color_count = get_be16(pb);
                     color_end = get_be16(pb);
+                    if ((color_start <= 255) &&
+                        (color_end <= 255)) {
                     for (j = color_start; j <= color_end; j++) {
                         /* each R, G, or B component is 16 bits;
                          * only use the top 8 bits; skip alpha bytes
@@ -715,6 +717,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                         get_byte(pb);
                         c->palette_control.palette[j] =
                             (r << 16) | (g << 8) | (b);
+                        }
                     }
                 }
 
