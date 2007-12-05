@@ -109,7 +109,7 @@ read_header:
     if (s->interlaced) {
         s->bottom_field ^= 1;
         /* if not bottom field, do not output image yet */
-        if (s->bottom_field && second_field_offs)
+        if (s->bottom_field != s->interlace_polarity && second_field_offs)
         {
             buf_ptr = buf + second_field_offs;
             second_field_offs = 0;
