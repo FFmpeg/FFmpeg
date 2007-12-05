@@ -3875,6 +3875,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     s->dropable= h->nal_ref_idc == 0;
 
+    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !h->nal_ref_idc){
+        s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
+        s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
+    }else{
+        s->me.qpel_put= s->dsp.put_h264_qpel_pixels_tab;
+        s->me.qpel_avg= s->dsp.avg_h264_qpel_pixels_tab;
+    }
+
     first_mb_in_slice= get_ue_golomb(&s->gb);
 
     if((s->flags2 & CODEC_FLAG2_CHUNKS) && first_mb_in_slice == 0){
@@ -4239,14 +4247,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                h->use_weight,
                h->use_weight==1 && h->use_weight_chroma ? "c" : ""
                );
-    }
-
-    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !h->nal_ref_idc){
-        s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
-        s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
-    }else{
-        s->me.qpel_put= s->dsp.put_h264_qpel_pixels_tab;
-        s->me.qpel_avg= s->dsp.avg_h264_qpel_pixels_tab;
     }
 
     return 0;
