@@ -154,6 +154,7 @@ show_help(){
   echo "  --enable-protocol=NAME   enables protocol NAME"
   echo "  --disable-protocol=NAME  disables protocol NAME"
   echo "  --disable-protocols      disables all protocols"
+  echo "  --disable-devices        disables all devices"
   echo "  --list-decoders          show all available decoders"
   echo "  --list-encoders          show all available encoders"
   echo "  --list-muxers            show all available muxers"
