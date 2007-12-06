@@ -1868,7 +1868,7 @@ enabled gpl &&
     echo "License: GPL" ||
     echo "License: LGPL"
 
-for type in decoder encoder parser demuxer muxer protocol bsf; do
+for type in decoder encoder parser demuxer muxer protocol bsf indev outdev; do
     echo "Enabled ${type}s:"
     ucname="\$`toupper $type`_LIST"
     list="`eval echo $ucname`"
