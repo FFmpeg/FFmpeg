@@ -34,8 +34,7 @@
  */
 //@{
 static const int rv40_standard_widths[]   = { 160, 172, 240, 320, 352, 640, 704, 0};
-static const int rv40_standard_heights[]  = { 120, 132, 144, 240, 288, 480, 0, 0};
-static const int rv40_standard_heights2[] = { 180, 360, 576, 0};
+static const int rv40_standard_heights[]  = { 120, 132, 144, 240, 288, 480, -8, -10, 180, 360, 576, 0};
 //@}
 
 #define MODE2_PATTERNS_NUM 20

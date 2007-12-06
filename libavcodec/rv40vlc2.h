@@ -666,7 +666,7 @@ static const uint8_t ptype_vlc_syms[PTYPE_VLC_SIZE] = {
 
 /** reverse of ptype_vlc_syms */
 static const uint8_t block_num_to_ptype_vlc_num[12] = {
- 0, 1, 2, 3, 0, 0, 0, 0, 4, 5, 0, 6
+ 0, 1, 2, 3, 0, 0, 2, 0, 4, 5, 0, 6
 };
 //@}
 
