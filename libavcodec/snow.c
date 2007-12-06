@@ -1160,7 +1160,7 @@ STOP_TIMER("horizontal_compose53i")}
     cs->y += 2;
 }
 
-static void spatial_compose53i(IDWTELEM *buffer, int width, int height, int stride){
+static void av_unused spatial_compose53i(IDWTELEM *buffer, int width, int height, int stride){
     dwt_compose_t cs;
     spatial_compose53i_init(&cs, buffer, height, stride);
     while(cs.y <= height)
@@ -1310,7 +1310,7 @@ STOP_TIMER("horizontal_compose97i")}}
     cs->y += 2;
 }
 
-static void spatial_compose97i(IDWTELEM *buffer, int width, int height, int stride){
+static void av_unused spatial_compose97i(IDWTELEM *buffer, int width, int height, int stride){
     dwt_compose_t cs;
     spatial_compose97i_init(&cs, buffer, height, stride);
     while(cs.y <= height)
