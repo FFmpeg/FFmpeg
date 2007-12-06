@@ -162,6 +162,8 @@ show_help(){
   echo "  --list-parsers           show all available parsers"
   echo "  --list-protocols         show all available protocols"
   echo "  --list-bsfs              show all available bitstream filters"
+  echo "  --list-indevs            show all available input devices"
+  echo "  --list-outdevs           show all available output devices"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
@@ -593,7 +595,9 @@ COMPONENT_LIST="
     decoders
     demuxers
     encoders
+    indevs
     muxers
+    outdevs
     parsers
     protocols
 "
