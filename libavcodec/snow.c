@@ -1160,6 +1160,13 @@ STOP_TIMER("horizontal_compose53i")}
     cs->y += 2;
 }
 
+static void spatial_compose53i(IDWTELEM *buffer, int width, int height, int stride){
+    dwt_compose_t cs;
+    spatial_compose53i_init(&cs, buffer, height, stride);
+    while(cs.y <= height)
+        spatial_compose53i_dy(&cs, buffer, width, height, stride);
+}
+
 
 void ff_snow_horizontal_compose97i(IDWTELEM *b, int width){
     IDWTELEM temp[width];
@@ -1301,6 +1308,13 @@ STOP_TIMER("horizontal_compose97i")}}
     cs->b2=b4;
     cs->b3=b5;
     cs->y += 2;
+}
+
+static void spatial_compose97i(IDWTELEM *buffer, int width, int height, int stride){
+    dwt_compose_t cs;
+    spatial_compose97i_init(&cs, buffer, height, stride);
+    while(cs.y <= height)
+        spatial_compose97i_dy(&cs, buffer, width, height, stride);
 }
 
 static void ff_spatial_idwt_buffered_init(dwt_compose_t *cs, slice_buffer * sb, int width, int height, int stride_line, int type, int decomposition_count){
