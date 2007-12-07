@@ -60,7 +60,7 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
 /**
  * Decode 4x4 intra types array.
  */
-static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int *dst)
+static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t *dst)
 {
     int i, j, k;
 

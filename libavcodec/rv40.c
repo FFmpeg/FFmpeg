@@ -131,13 +131,13 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
 /**
  * Decode 4x4 intra types array.
  */
-static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int *dst)
+static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t *dst)
 {
     MpegEncContext *s = &r->s;
     int i, j, k, v;
     int A, B, C;
     int pattern;
-    int *ptr;
+    int8_t *ptr;
 
     for(i = 0; i < 4; i++, dst += s->b4_stride){
         if(!i && s->first_slice_line){
