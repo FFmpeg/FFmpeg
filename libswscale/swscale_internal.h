@@ -21,6 +21,8 @@
 #ifndef FFMPEG_SWSCALE_INTERNAL_H
 #define FFMPEG_SWSCALE_INTERNAL_H
 
+#include "config.h"
+
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
