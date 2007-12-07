@@ -164,6 +164,8 @@ Codecs:
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
+  rv3*                                  Kostya Shishkov
+  rv4*                                  Kostya Shishkov
   s3tc*                                 Ivo van Poorten
   smc.c                                 Mike Melanson
   snow.c                                Michael Niedermayer, Loren Merritt
