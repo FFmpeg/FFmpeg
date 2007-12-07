@@ -142,4 +142,5 @@ AVCodec rv30_decoder = {
     NULL,
     ff_rv34_decode_end,
     ff_rv34_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_DELAY,
 };
