@@ -119,6 +119,8 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     t = get_bits(gb, 13); /// ???
     if(!si->type || !get_bits1(gb))
         rv40_parse_picture_size(gb, &w, &h);
+    if(avcodec_check_dimensions(r->s.avctx, w, h) < 0)
+        return -1;
     si->width  = w;
     si->height = h;
     mb_size = ((w + 15) >> 4) * ((h + 15) >> 4);
