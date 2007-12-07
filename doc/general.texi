@@ -595,6 +595,11 @@ and for a build with shared libraries
 
 BeOS support is broken in mysterious ways.
 
+@section OS/2
+
+For information about compiling FFmpeg on OS/2 see
+@url{http://www.edm2.com/index.php/FFmpeg}.
+
 @chapter Developers Guide
 
 @section API
