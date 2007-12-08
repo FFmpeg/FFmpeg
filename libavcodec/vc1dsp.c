@@ -152,16 +152,15 @@ static void vc1_inv_trans_8x8_c(DCTELEM block[64])
 
 /** Do inverse transform on 8x4 part of block
 */
-static void vc1_inv_trans_8x4_c(DCTELEM block[64], int n)
+static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
     DCTELEM *src, *dst;
-    int off;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
-    off = n * 32;
-    src = block + off;
-    dst = block + off;
+    src = block;
+    dst = block;
     for(i = 0; i < 4; i++){
         t1 = 12 * (src[0] + src[4]);
         t2 = 12 * (src[0] - src[4]);
@@ -191,8 +190,7 @@ static void vc1_inv_trans_8x4_c(DCTELEM block[64], int n)
         dst += 8;
     }
 
-    src = block + off;
-    dst = block + off;
+    src = block;
     for(i = 0; i < 8; i++){
         t1 = 17 * (src[ 0] + src[16]);
         t2 = 17 * (src[ 0] - src[16]);
@@ -201,28 +199,27 @@ static void vc1_inv_trans_8x4_c(DCTELEM block[64], int n)
         t5 = 10 * src[ 8];
         t6 = 10 * src[24];
 
-        dst[ 0] = (t1 + t3 + t6 + 64) >> 7;
-        dst[ 8] = (t2 - t4 + t5 + 64) >> 7;
-        dst[16] = (t2 + t4 - t5 + 64) >> 7;
-        dst[24] = (t1 - t3 - t6 + 64) >> 7;
+        dest[0*linesize] = cm[dest[0*linesize] + ((t1 + t3 + t6 + 64) >> 7)];
+        dest[1*linesize] = cm[dest[1*linesize] + ((t2 - t4 + t5 + 64) >> 7)];
+        dest[2*linesize] = cm[dest[2*linesize] + ((t2 + t4 - t5 + 64) >> 7)];
+        dest[3*linesize] = cm[dest[3*linesize] + ((t1 - t3 - t6 + 64) >> 7)];
 
         src ++;
-        dst ++;
+        dest++;
     }
 }
 
 /** Do inverse transform on 4x8 parts of block
 */
-static void vc1_inv_trans_4x8_c(DCTELEM block[64], int n)
+static void vc1_inv_trans_4x8_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
     DCTELEM *src, *dst;
-    int off;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
-    off = n * 4;
-    src = block + off;
-    dst = block + off;
+    src = block;
+    dst = block;
     for(i = 0; i < 8; i++){
         t1 = 17 * (src[0] + src[2]);
         t2 = 17 * (src[0] - src[2]);
@@ -240,8 +237,7 @@ static void vc1_inv_trans_4x8_c(DCTELEM block[64], int n)
         dst += 8;
     }
 
-    src = block + off;
-    dst = block + off;
+    src = block;
     for(i = 0; i < 4; i++){
         t1 = 12 * (src[ 0] + src[32]);
         t2 = 12 * (src[ 0] - src[32]);
@@ -258,32 +254,31 @@ static void vc1_inv_trans_4x8_c(DCTELEM block[64], int n)
         t3 =  9 * src[ 8] - 16 * src[24] +  4 * src[40] + 15 * src[56];
         t4 =  4 * src[ 8] -  9 * src[24] + 15 * src[40] - 16 * src[56];
 
-        dst[ 0] = (t5 + t1 + 64) >> 7;
-        dst[ 8] = (t6 + t2 + 64) >> 7;
-        dst[16] = (t7 + t3 + 64) >> 7;
-        dst[24] = (t8 + t4 + 64) >> 7;
-        dst[32] = (t8 - t4 + 64 + 1) >> 7;
-        dst[40] = (t7 - t3 + 64 + 1) >> 7;
-        dst[48] = (t6 - t2 + 64 + 1) >> 7;
-        dst[56] = (t5 - t1 + 64 + 1) >> 7;
+        dest[0*linesize] = cm[dest[0*linesize] + ((t5 + t1 + 64) >> 7)];
+        dest[1*linesize] = cm[dest[1*linesize] + ((t6 + t2 + 64) >> 7)];
+        dest[2*linesize] = cm[dest[2*linesize] + ((t7 + t3 + 64) >> 7)];
+        dest[3*linesize] = cm[dest[3*linesize] + ((t8 + t4 + 64) >> 7)];
+        dest[4*linesize] = cm[dest[4*linesize] + ((t8 - t4 + 64 + 1) >> 7)];
+        dest[5*linesize] = cm[dest[5*linesize] + ((t7 - t3 + 64 + 1) >> 7)];
+        dest[6*linesize] = cm[dest[6*linesize] + ((t6 - t2 + 64 + 1) >> 7)];
+        dest[7*linesize] = cm[dest[7*linesize] + ((t5 - t1 + 64 + 1) >> 7)];
 
-        src++;
-        dst++;
+        src ++;
+        dest++;
     }
 }
 
 /** Do inverse transform on 4x4 part of block
 */
-static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
+static void vc1_inv_trans_4x4_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     register int t1,t2,t3,t4,t5,t6;
     DCTELEM *src, *dst;
-    int off;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
-    off = (n&1) * 4 + (n&2) * 16;
-    src = block + off;
-    dst = block + off;
+    src = block;
+    dst = block;
     for(i = 0; i < 4; i++){
         t1 = 17 * (src[0] + src[2]);
         t2 = 17 * (src[0] - src[2]);
@@ -301,8 +296,7 @@ static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
         dst += 8;
     }
 
-    src = block + off;
-    dst = block + off;
+    src = block;
     for(i = 0; i < 4; i++){
         t1 = 17 * (src[ 0] + src[16]);
         t2 = 17 * (src[ 0] - src[16]);
@@ -311,13 +305,13 @@ static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
         t5 = 10 * src[ 8];
         t6 = 10 * src[24];
 
-        dst[ 0] = (t1 + t3 + t6 + 64) >> 7;
-        dst[ 8] = (t2 - t4 + t5 + 64) >> 7;
-        dst[16] = (t2 + t4 - t5 + 64) >> 7;
-        dst[24] = (t1 - t3 - t6 + 64) >> 7;
+        dest[0*linesize] = cm[dest[0*linesize] + ((t1 + t3 + t6 + 64) >> 7)];
+        dest[1*linesize] = cm[dest[1*linesize] + ((t2 - t4 + t5 + 64) >> 7)];
+        dest[2*linesize] = cm[dest[2*linesize] + ((t2 + t4 - t5 + 64) >> 7)];
+        dest[3*linesize] = cm[dest[3*linesize] + ((t1 - t3 - t6 + 64) >> 7)];
 
         src ++;
-        dst ++;
+        dest++;
     }
 }
 

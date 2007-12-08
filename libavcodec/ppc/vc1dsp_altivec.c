@@ -332,5 +332,5 @@ static void vc1_inv_trans_8x4_altivec(DCTELEM block[64], int n)
 
 void vc1dsp_init_altivec(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
-    dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
+    //dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
 }
