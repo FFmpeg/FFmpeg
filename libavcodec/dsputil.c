@@ -3497,7 +3497,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
 
     s->block_last_index[0/*FIXME*/]= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
     s->dct_unquantize_inter(s, temp, 0, s->qscale);
-    simple_idct(temp); //FIXME
+    ff_simple_idct(temp); //FIXME
 
     for(i=0; i<64; i++)
         sum+= (temp[i]-bak[i])*(temp[i]-bak[i]);
@@ -3987,9 +3987,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct    = ff_wmv2_idct_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }else{ //accurate/default
-            c->idct_put= simple_idct_put;
-            c->idct_add= simple_idct_add;
-            c->idct    = simple_idct;
+            c->idct_put= ff_simple_idct_put;
+            c->idct_add= ff_simple_idct_add;
+            c->idct    = ff_simple_idct;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }
     }

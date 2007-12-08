@@ -91,7 +91,7 @@ struct algo algos[] = {
   DCT_ERROR("IJG-LLM-INT",     0, ff_jpeg_fdct_islow, fdct, NO_PERM),
   DCT_ERROR("REF-DBL",         1, idct,               idct, NO_PERM),
   DCT_ERROR("INT",             1, j_rev_dct,          idct, MMX_PERM),
-  DCT_ERROR("SIMPLE-C",        1, simple_idct,        idct, NO_PERM),
+  DCT_ERROR("SIMPLE-C",        1, ff_simple_idct,     idct, NO_PERM),
 
 #ifdef HAVE_MMX
   DCT_ERROR("MMX",             0, ff_fdct_mmx,        fdct, NO_PERM),
@@ -559,7 +559,7 @@ int main(int argc, char **argv)
     printf("ffmpeg DCT/IDCT test\n");
 
     if (test_248_dct) {
-        idct248_error("SIMPLE-C", simple_idct248_put);
+        idct248_error("SIMPLE-C", ff_simple_idct248_put);
     } else {
       for (i=0;algos[i].name;i++)
         if (algos[i].is_idct == test_idct) {

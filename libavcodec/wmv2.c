@@ -41,13 +41,13 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
         s->dsp.idct_add (dst, stride, block1);
         break;
     case 1:
-        simple_idct84_add(dst           , stride, block1);
-        simple_idct84_add(dst + 4*stride, stride, w->abt_block2[n]);
+        ff_simple_idct84_add(dst           , stride, block1);
+        ff_simple_idct84_add(dst + 4*stride, stride, w->abt_block2[n]);
         memset(w->abt_block2[n], 0, 64*sizeof(DCTELEM));
         break;
     case 2:
-        simple_idct48_add(dst           , stride, block1);
-        simple_idct48_add(dst + 4       , stride, w->abt_block2[n]);
+        ff_simple_idct48_add(dst           , stride, block1);
+        ff_simple_idct48_add(dst + 4       , stride, w->abt_block2[n]);
         memset(w->abt_block2[n], 0, 64*sizeof(DCTELEM));
         break;
     default:

@@ -387,7 +387,7 @@ static inline void idctSparseCol (DCTELEM * col)
         col[56] = ((a0 - b0) >> COL_SHIFT);
 }
 
-void simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     for(i=0; i<8; i++)
@@ -397,7 +397,7 @@ void simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
         idctSparseColPut(dest + i, line_size, block + i);
 }
 
-void simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     for(i=0; i<8; i++)
@@ -407,7 +407,7 @@ void simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         idctSparseColAdd(dest + i, line_size, block + i);
 }
 
-void simple_idct(DCTELEM *block)
+void ff_simple_idct(DCTELEM *block)
 {
     int i;
     for(i=0; i<8; i++)
@@ -465,7 +465,7 @@ static inline void idct4col_put(uint8_t *dest, int line_size, const DCTELEM *col
 /* XXX: I think a 1.0/sqrt(2) normalization should be needed to
    compensate the extra butterfly stage - I don't have the full DV
    specification */
-void simple_idct248_put(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct248_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     DCTELEM *ptr;
@@ -555,7 +555,7 @@ static inline void idct4row(DCTELEM *row)
     row[3]= (c0 - c1) >> R_SHIFT;
 }
 
-void simple_idct84_add(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct84_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
 
@@ -570,7 +570,7 @@ void simple_idct84_add(uint8_t *dest, int line_size, DCTELEM *block)
     }
 }
 
-void simple_idct48_add(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct48_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
 

@@ -225,7 +225,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 
     /* 248DCT setup */
     s->fdct[1] = dsp.fdct248;
-    s->idct_put[1] = simple_idct248_put;  // FIXME: need to add it to DSP
+    s->idct_put[1] = ff_simple_idct248_put;  // FIXME: need to add it to DSP
     if(avctx->lowres){
         for (i=0; i<64; i++){
             int j= ff_zigzag248_direct[i];
