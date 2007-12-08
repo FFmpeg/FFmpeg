@@ -285,22 +285,22 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, DCTELEM *block)
     src7 = vec_pack(sF, s7);
     TRANSPOSE8(src0, src1, src2, src3, src4, src5, src6, src7);
 
-        s0 = vec_unpackh(src0);
-        s1 = vec_unpackh(src1);
-        s2 = vec_unpackh(src2);
-        s3 = vec_unpackh(src3);
-        s8 = vec_unpackl(src0);
-        s9 = vec_unpackl(src1);
-        sA = vec_unpackl(src2);
-        sB = vec_unpackl(src3);
-        STEP4(s0, s1, s2, s3, vec_64);
-        SHIFT_VERT4(s0, s1, s2, s3);
-        STEP4(s8, s9, sA, sB, vec_64);
-        SHIFT_VERT4(s8, s9, sA, sB);
-        src0 = vec_pack(s0, s8);
-        src1 = vec_pack(s1, s9);
-        src2 = vec_pack(s2, sA);
-        src3 = vec_pack(s3, sB);
+    s0 = vec_unpackh(src0);
+    s1 = vec_unpackh(src1);
+    s2 = vec_unpackh(src2);
+    s3 = vec_unpackh(src3);
+    s8 = vec_unpackl(src0);
+    s9 = vec_unpackl(src1);
+    sA = vec_unpackl(src2);
+    sB = vec_unpackl(src3);
+    STEP4(s0, s1, s2, s3, vec_64);
+    SHIFT_VERT4(s0, s1, s2, s3);
+    STEP4(s8, s9, sA, sB, vec_64);
+    SHIFT_VERT4(s8, s9, sA, sB);
+    src0 = vec_pack(s0, s8);
+    src1 = vec_pack(s1, s9);
+    src2 = vec_pack(s2, sA);
+    src3 = vec_pack(s3, sB);
 
     p0 = vec_lvsl (0, dest);
     p1 = vec_lvsl (stride, dest);
