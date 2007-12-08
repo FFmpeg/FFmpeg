@@ -227,7 +227,7 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64])
 
 /** Do inverse transform on 8x4 part of block
 */
-static void vc1_inv_trans_8x4_altivec(DCTELEM block[64], int n)
+static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, DCTELEM *block)
 {
     vector signed short src0, src1, src2, src3, src4, src5, src6, src7;
     vector signed int s0, s1, s2, s3, s4, s5, s6, s7;
@@ -241,6 +241,9 @@ static void vc1_inv_trans_8x4_altivec(DCTELEM block[64], int n)
     const vector unsigned int vec_3 = vec_splat_u32(3);
     const vector unsigned int vec_2 = vec_splat_u32(2);
     const vector unsigned int vec_1 = vec_splat_u32(1);
+    vector unsigned char tmp;
+    vector signed short tmp2, tmp3;
+    vector unsigned char perm0, perm1, p0, p1, p;
 
     src0 = vec_ld(  0, block);
     src1 = vec_ld( 16, block);
@@ -282,7 +285,6 @@ static void vc1_inv_trans_8x4_altivec(DCTELEM block[64], int n)
     src7 = vec_pack(sF, s7);
     TRANSPOSE8(src0, src1, src2, src3, src4, src5, src6, src7);
 
-    if(!n){ // upper half of block
         s0 = vec_unpackh(src0);
         s1 = vec_unpackh(src1);
         s2 = vec_unpackh(src2);
@@ -300,37 +302,29 @@ static void vc1_inv_trans_8x4_altivec(DCTELEM block[64], int n)
         src2 = vec_pack(s2, sA);
         src3 = vec_pack(s3, sB);
 
-        vec_st(src0,  0, block);
-        vec_st(src1, 16, block);
-        vec_st(src2, 32, block);
-        vec_st(src3, 48, block);
-    } else { //lower half of block
-        s0 = vec_unpackh(src4);
-        s1 = vec_unpackh(src5);
-        s2 = vec_unpackh(src6);
-        s3 = vec_unpackh(src7);
-        s8 = vec_unpackl(src4);
-        s9 = vec_unpackl(src5);
-        sA = vec_unpackl(src6);
-        sB = vec_unpackl(src7);
-        STEP4(s0, s1, s2, s3, vec_64);
-        SHIFT_VERT4(s0, s1, s2, s3);
-        STEP4(s8, s9, sA, sB, vec_64);
-        SHIFT_VERT4(s8, s9, sA, sB);
-        src4 = vec_pack(s0, s8);
-        src5 = vec_pack(s1, s9);
-        src6 = vec_pack(s2, sA);
-        src7 = vec_pack(s3, sB);
+    p0 = vec_lvsl (0, dest);
+    p1 = vec_lvsl (stride, dest);
+    p = vec_splat_u8 (-1);
+    perm0 = vec_mergeh (p, p0);
+    perm1 = vec_mergeh (p, p1);
 
-        vec_st(src4, 64, block);
-        vec_st(src5, 80, block);
-        vec_st(src6, 96, block);
-        vec_st(src7,112, block);
-    }
+#define ADD(dest,src,perm)                                              \
+    /* *(uint64_t *)&tmp = *(uint64_t *)dest; */                        \
+    tmp = vec_ld (0, dest);                                             \
+    tmp2 = (vector unsigned int)vec_perm (tmp, vec_splat_u8(0), perm);  \
+    tmp3 = vec_adds (tmp2, src);                                        \
+    tmp = vec_packsu (tmp3, tmp3);                                      \
+    vec_ste ((vector unsigned int)tmp, 0, (unsigned int *)dest);        \
+    vec_ste ((vector unsigned int)tmp, 4, (unsigned int *)dest);
+
+    ADD (dest, src0, perm0)      dest += stride;
+    ADD (dest, src1, perm1)      dest += stride;
+    ADD (dest, src2, perm0)      dest += stride;
+    ADD (dest, src3, perm1)
 }
 
 
 void vc1dsp_init_altivec(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
-    //dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
+    dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
 }
