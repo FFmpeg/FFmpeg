@@ -30,7 +30,7 @@
  * Possible frame sizes.
  * from ATSC A/52 Table 5.18 Frame Size Code Table.
  */
-const uint16_t ff_ac3_frame_sizes[38][3] = {
+const uint16_t ff_ac3_frame_size_tab[38][3] = {
     { 64,   69,   96   },
     { 64,   70,   96   },
     { 80,   87,   120  },
@@ -75,15 +75,15 @@ const uint16_t ff_ac3_frame_sizes[38][3] = {
  * Maps audio coding mode (acmod) to number of full-bandwidth channels.
  * from ATSC A/52 Table 5.8 Audio Coding Mode
  */
-const uint8_t ff_ac3_channels[8] = {
+const uint8_t ff_ac3_channels_tab[8] = {
     2, 1, 2, 3, 3, 4, 4, 5
 };
 
 /* possible frequencies */
-const uint16_t ff_ac3_freqs[3] = { 48000, 44100, 32000 };
+const uint16_t ff_ac3_sample_rate_tab[3] = { 48000, 44100, 32000 };
 
 /* possible bitrates */
-const uint16_t ff_ac3_bitratetab[19] = {
+const uint16_t ff_ac3_bitrate_tab[19] = {
     32, 40, 48, 56, 64, 80, 96, 112, 128,
     160, 192, 224, 256, 320, 384, 448, 512, 576, 640
 };
@@ -126,7 +126,7 @@ const int16_t ff_ac3_window[256] = {
 32767,32767,32767,32767,32767,32767,32767,32767,
 };
 
-const uint8_t ff_ac3_latab[260]= {
+const uint8_t ff_ac3_log_add_tab[260]= {
 0x40,0x3f,0x3e,0x3d,0x3c,0x3b,0x3a,0x39,0x38,0x37,
 0x36,0x35,0x34,0x34,0x33,0x32,0x31,0x30,0x2f,0x2f,
 0x2e,0x2d,0x2c,0x2c,0x2b,0x2a,0x29,0x29,0x28,0x27,
@@ -155,7 +155,7 @@ const uint8_t ff_ac3_latab[260]= {
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
-const uint16_t ff_ac3_hth[50][3]= {
+const uint16_t ff_ac3_hearing_threshold_tab[50][3]= {
 { 0x04d0,0x04f0,0x0580 },
 { 0x04d0,0x04f0,0x0580 },
 { 0x0440,0x0460,0x04b0 },
@@ -208,7 +208,7 @@ const uint16_t ff_ac3_hth[50][3]= {
 { 0x0840,0x0840,0x04e0 },
 };
 
-const uint8_t ff_ac3_baptab[64]= {
+const uint8_t ff_ac3_bap_tab[64]= {
     0, 1, 1, 1, 1, 1, 2, 2, 3, 3,
     3, 4, 4, 5, 5, 6, 6, 6, 6, 7,
     7, 7, 7, 8, 8, 8, 8, 9, 9, 9,
@@ -218,31 +218,31 @@ const uint8_t ff_ac3_baptab[64]= {
     15, 15, 15, 15,
 };
 
-const uint8_t ff_sdecaytab[4]={
+const uint8_t ff_ac3_slow_decay_tab[4]={
     0x0f, 0x11, 0x13, 0x15,
 };
 
-const uint8_t ff_fdecaytab[4]={
+const uint8_t ff_ac3_fast_decay_tab[4]={
     0x3f, 0x53, 0x67, 0x7b,
 };
 
-const uint16_t ff_sgaintab[4]= {
+const uint16_t ff_ac3_slow_gain_tab[4]= {
     0x540, 0x4d8, 0x478, 0x410,
 };
 
-const uint16_t ff_dbkneetab[4]= {
+const uint16_t ff_ac3_db_per_bit_tab[4]= {
     0x000, 0x700, 0x900, 0xb00,
 };
 
-const int16_t ff_floortab[8]= {
+const int16_t ff_ac3_floor_tab[8]= {
     0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800,
 };
 
-const uint16_t ff_fgaintab[8]= {
+const uint16_t ff_ac3_fast_gain_tab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
-const uint8_t ff_ac3_bndsz[50]={
+const uint8_t ff_ac3_critical_band_size_tab[50]={
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
     3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24

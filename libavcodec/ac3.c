@@ -72,7 +72,7 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
         for(i=j;i<end1;i++) {
             /* logadd */
             int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
-            v = FFMAX(v, psd[j]) + ff_ac3_latab[adr];
+            v = FFMAX(v, psd[j]) + ff_ac3_log_add_tab[adr];
             j++;
         }
         bndpsd[k]=v;
@@ -149,7 +149,7 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
         if (tmp > 0) {
             excite[bin] += tmp >> 2;
         }
-        mask[bin] = FFMAX(ff_ac3_hth[bin >> s->halfratecod][s->fscod], excite[bin]);
+        mask[bin] = FFMAX(ff_ac3_hearing_threshold_tab[bin >> s->halfratecod][s->fscod], excite[bin]);
     }
 
     /* delta bit allocation */
@@ -187,10 +187,10 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
     j = masktab[start];
     do {
         v = (FFMAX(mask[j] - snroffset - floor, 0) & 0x1FE0) + floor;
-        end1 = FFMIN(bndtab[j] + ff_ac3_bndsz[j], end);
+        end1 = FFMIN(bndtab[j] + ff_ac3_critical_band_size_tab[j], end);
         for (k = i; k < end1; k++) {
             address = av_clip((psd[i] - v) >> 5, 0, 63);
-            bap[i] = ff_ac3_baptab[address];
+            bap[i] = ff_ac3_bap_tab[address];
             i++;
         }
     } while (end > bndtab[j++]);
@@ -231,7 +231,7 @@ void ac3_common_init(void)
     l = 0;
     for(i=0;i<50;i++) {
         bndtab[i] = l;
-        v = ff_ac3_bndsz[i];
+        v = ff_ac3_critical_band_size_tab[i];
         for(j=0;j<v;j++) masktab[k++]=i;
         l += v;
     }

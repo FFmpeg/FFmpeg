@@ -76,10 +76,10 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     hdr->lfeon = get_bits1(&gbc);
 
     hdr->halfratecod = FFMAX(hdr->bsid, 8) - 8;
-    hdr->sample_rate = ff_ac3_freqs[hdr->fscod] >> hdr->halfratecod;
-    hdr->bit_rate = (ff_ac3_bitratetab[hdr->frmsizecod>>1] * 1000) >> hdr->halfratecod;
-    hdr->channels = ff_ac3_channels[hdr->acmod] + hdr->lfeon;
-    hdr->frame_size = ff_ac3_frame_sizes[hdr->frmsizecod][hdr->fscod] * 2;
+    hdr->sample_rate = ff_ac3_sample_rate_tab[hdr->fscod] >> hdr->halfratecod;
+    hdr->bit_rate = (ff_ac3_bitrate_tab[hdr->frmsizecod>>1] * 1000) >> hdr->halfratecod;
+    hdr->channels = ff_ac3_channels_tab[hdr->acmod] + hdr->lfeon;
+    hdr->frame_size = ff_ac3_frame_size_tab[hdr->frmsizecod][hdr->fscod] * 2;
 
     return 0;
 }
@@ -125,11 +125,11 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
             if(fscod2 == 3)
                 return 0;
 
-            *sample_rate = ff_ac3_freqs[fscod2] / 2;
+            *sample_rate = ff_ac3_sample_rate_tab[fscod2] / 2;
         } else {
             numblkscod = get_bits(&bits, 2);
 
-            *sample_rate = ff_ac3_freqs[fscod];
+            *sample_rate = ff_ac3_sample_rate_tab[fscod];
         }
 
         acmod = get_bits(&bits, 3);
@@ -137,7 +137,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
 
         *samples = eac3_blocks[numblkscod] * 256;
         *bit_rate = frmsiz * (*sample_rate) * 16 / (*samples);
-        *channels = ff_ac3_channels[acmod] + lfeon;
+        *channels = ff_ac3_channels_tab[acmod] + lfeon;
 
         return frmsiz * 2;
     }

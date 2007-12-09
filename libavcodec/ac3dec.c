@@ -947,11 +947,11 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     /* bit allocation information */
     if (get_bits1(gb)) {
-        ctx->bit_alloc_params.sdecay = ff_sdecaytab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
-        ctx->bit_alloc_params.fdecay = ff_fdecaytab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
-        ctx->bit_alloc_params.sgain  = ff_sgaintab[get_bits(gb, 2)];
-        ctx->bit_alloc_params.dbknee = ff_dbkneetab[get_bits(gb, 2)];
-        ctx->bit_alloc_params.floor  = ff_floortab[get_bits(gb, 3)];
+        ctx->bit_alloc_params.sdecay = ff_ac3_slow_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
+        ctx->bit_alloc_params.fdecay = ff_ac3_fast_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
+        ctx->bit_alloc_params.sgain  = ff_ac3_slow_gain_tab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.dbknee = ff_ac3_db_per_bit_tab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.floor  = ff_ac3_floor_tab[get_bits(gb, 3)];
         for(ch=!ctx->cplinu; ch<=ctx->nchans; ch++) {
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
         }
@@ -963,7 +963,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         csnr = (get_bits(gb, 6) - 15) << 4;
         for (ch = !ctx->cplinu; ch <= ctx->nchans; ch++) { /* snr offset and fast gain */
             ctx->snroffst[ch] = (csnr + get_bits(gb, 4)) << 2;
-            ctx->fgain[ch] = ff_fgaintab[get_bits(gb, 3)];
+            ctx->fgain[ch] = ff_ac3_fast_gain_tab[get_bits(gb, 3)];
         }
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
     }

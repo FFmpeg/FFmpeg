@@ -451,7 +451,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
                                           psd[blk][ch], bndpsd[blk][ch]);
                 ff_ac3_bit_alloc_calc_mask(&s->bit_alloc, bndpsd[blk][ch],
                                            0, s->nb_coefs[ch],
-                                           ff_fgaintab[s->fgaincod[ch]],
+                                           ff_ac3_fast_gain_tab[s->fgaincod[ch]],
                                            ch == s->lfe_channel,
                                            DBA_NONE, 0, NULL, NULL, NULL,
                                            mask[blk][ch]);
@@ -519,11 +519,11 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* compute real values */
     s->bit_alloc.fscod = s->fscod;
     s->bit_alloc.halfratecod = s->halfratecod;
-    s->bit_alloc.sdecay = ff_sdecaytab[s->sdecaycod] >> s->halfratecod;
-    s->bit_alloc.fdecay = ff_fdecaytab[s->fdecaycod] >> s->halfratecod;
-    s->bit_alloc.sgain = ff_sgaintab[s->sgaincod];
-    s->bit_alloc.dbknee = ff_dbkneetab[s->dbkneecod];
-    s->bit_alloc.floor = ff_floortab[s->floorcod];
+    s->bit_alloc.sdecay = ff_ac3_slow_decay_tab[s->sdecaycod] >> s->halfratecod;
+    s->bit_alloc.fdecay = ff_ac3_fast_decay_tab[s->fdecaycod] >> s->halfratecod;
+    s->bit_alloc.sgain = ff_ac3_slow_gain_tab[s->sgaincod];
+    s->bit_alloc.dbknee = ff_ac3_db_per_bit_tab[s->dbkneecod];
+    s->bit_alloc.floor = ff_ac3_floor_tab[s->floorcod];
 
     /* header size */
     frame_bits += 65;
@@ -657,7 +657,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* frequency */
     for(i=0;i<3;i++) {
         for(j=0;j<3;j++)
-            if ((ff_ac3_freqs[j] >> i) == freq)
+            if ((ff_ac3_sample_rate_tab[j] >> i) == freq)
                 goto found;
     }
     return -1;
@@ -671,14 +671,14 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* bitrate & frame size */
     bitrate /= 1000;
     for(i=0;i<19;i++) {
-        if ((ff_ac3_bitratetab[i] >> s->halfratecod) == bitrate)
+        if ((ff_ac3_bitrate_tab[i] >> s->halfratecod) == bitrate)
             break;
     }
     if (i == 19)
         return -1;
     s->bit_rate = bitrate;
     s->frmsizecod = i << 1;
-    s->frame_size_min = ff_ac3_frame_sizes[s->frmsizecod][s->fscod];
+    s->frame_size_min = ff_ac3_frame_size_tab[s->frmsizecod][s->fscod];
     s->bits_written = 0;
     s->samples_written = 0;
     s->frame_size = s->frame_size_min;
