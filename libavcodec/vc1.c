@@ -816,7 +816,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         v->s.dsp.vc1_inv_trans_8x8 = ff_simple_idct;
         v->s.dsp.vc1_inv_trans_8x4 = ff_simple_idct84_add;
         v->s.dsp.vc1_inv_trans_4x8 = ff_simple_idct48_add;
-//        v->s.dsp.vc1_inv_trans_4x4 = ff_simple_idct44_add;
+        v->s.dsp.vc1_inv_trans_4x4 = ff_simple_idct44_add;
     }
 
     v->fastuvmc =  get_bits1(gb); //common
