@@ -130,18 +130,18 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
  * allocation information is provided, it is used for adjusting the masking
  * curve, usually to give a closer match to a better psychoacoustic model.
  *
- * @param[in]  s          adjustable bit allocation parameters
+ * @param[in]  s            adjustable bit allocation parameters
  * @param[in]  band_psd     signal power for each critical band
- * @param[in]  start      starting bin location
- * @param[in]  end        ending bin location
- * @param[in]  fast_gain  fast gain (estimated signal-to-mask ratio)
- * @param[in]  is_lfe     whether or not the channel being processed is the LFE
+ * @param[in]  start        starting bin location
+ * @param[in]  end          ending bin location
+ * @param[in]  fast_gain    fast gain (estimated signal-to-mask ratio)
+ * @param[in]  is_lfe       whether or not the channel being processed is the LFE
  * @param[in]  dba_mode     delta bit allocation mode (none, reuse, or new)
  * @param[in]  dba_nsegs    number of delta segments
  * @param[in]  dba_offsets  location offsets for each segment
  * @param[in]  dba_lengths  length of each segment
  * @param[in]  dba_values   delta bit allocation for each segment
- * @param[out] mask       calculated masking curve
+ * @param[out] mask         calculated masking curve
  */
 void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                 int start, int end, int fast_gain, int is_lfe,
