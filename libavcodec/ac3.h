@@ -53,14 +53,14 @@ typedef enum {
 
 /** Channel mode (audio coding mode) */
 typedef enum {
-    AC3_ACMOD_DUALMONO = 0,
-    AC3_ACMOD_MONO,
-    AC3_ACMOD_STEREO,
-    AC3_ACMOD_3F,
-    AC3_ACMOD_2F1R,
-    AC3_ACMOD_3F1R,
-    AC3_ACMOD_2F2R,
-    AC3_ACMOD_3F2R
+    AC3_CHMODE_DUALMONO = 0,
+    AC3_CHMODE_MONO,
+    AC3_CHMODE_STEREO,
+    AC3_CHMODE_3F,
+    AC3_CHMODE_2F1R,
+    AC3_CHMODE_3F1R,
+    AC3_CHMODE_2F2R,
+    AC3_CHMODE_3F2R
 } AC3ChannelMode;
 
 typedef struct AC3BitAllocParameters {
@@ -81,14 +81,14 @@ typedef struct {
     uint16_t sync_word;
     uint16_t crc1;
     uint8_t sr_code;
-    uint8_t frmsizecod;
-    uint8_t bsid;
-    uint8_t bsmod;
-    uint8_t acmod;
-    uint8_t cmixlev;
-    uint8_t surmixlev;
-    uint8_t dsurmod;
-    uint8_t lfeon;
+    uint8_t frame_size_code;
+    uint8_t bitstream_id;
+    uint8_t bitstream_mode;
+    uint8_t channel_mode;
+    uint8_t center_mix_level;
+    uint8_t surround_mix_level;
+    uint8_t dolby_surround_mode;
+    uint8_t lfe_on;
     /** @} */
 
     /** @defgroup derived Derived values

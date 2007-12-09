@@ -37,17 +37,17 @@ typedef struct AC3EncodeContext {
     int lfe_channel;
     int bit_rate;
     unsigned int sample_rate;
-    unsigned int bsid;
+    unsigned int bitstream_id;
     unsigned int frame_size_min; /* minimum frame size in case rounding is necessary */
     unsigned int frame_size; /* current frame size in words */
     unsigned int bits_written;
     unsigned int samples_written;
     int sr_shift;
-    unsigned int frmsizecod;
+    unsigned int frame_size_code;
     unsigned int sr_code; /* frequency */
-    unsigned int acmod;
+    unsigned int channel_mode;
     int lfe;
-    unsigned int bsmod;
+    unsigned int bitstream_mode;
     short last_samples[AC3_MAX_CHANNELS][256];
     unsigned int chbwcod[AC3_MAX_CHANNELS];
     int nb_coefs[AC3_MAX_CHANNELS];
@@ -527,14 +527,14 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 
     /* header size */
     frame_bits += 65;
-    // if (s->acmod == 2)
+    // if (s->channel_mode == 2)
     //    frame_bits += 2;
-    frame_bits += frame_bits_inc[s->acmod];
+    frame_bits += frame_bits_inc[s->channel_mode];
 
     /* audio blocks */
     for(i=0;i<NB_BLOCKS;i++) {
         frame_bits += s->nb_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->acmod == AC3_ACMOD_STEREO) {
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
             frame_bits++; /* rematstr */
             if(i==0) frame_bits += 4;
         }
@@ -632,7 +632,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
     int i, j, ch;
     float alpha;
-    static const uint8_t acmod_defs[6] = {
+    static const uint8_t channel_mode_defs[6] = {
         0x01, /* C */
         0x02, /* L R */
         0x03, /* L C R */
@@ -648,7 +648,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* number of channels */
     if (channels < 1 || channels > 6)
         return -1;
-    s->acmod = acmod_defs[channels - 1];
+    s->channel_mode = channel_mode_defs[channels - 1];
     s->lfe = (channels == 6) ? 1 : 0;
     s->nb_all_channels = channels;
     s->nb_channels = channels > 5 ? 5 : channels;
@@ -665,8 +665,8 @@ static int AC3_encode_init(AVCodecContext *avctx)
     s->sample_rate = freq;
     s->sr_shift = i;
     s->sr_code = j;
-    s->bsid = 8 + s->sr_shift;
-    s->bsmod = 0; /* complete main audio service */
+    s->bitstream_id = 8 + s->sr_shift;
+    s->bitstream_mode = 0; /* complete main audio service */
 
     /* bitrate & frame size */
     bitrate /= 1000;
@@ -677,8 +677,8 @@ static int AC3_encode_init(AVCodecContext *avctx)
     if (i == 19)
         return -1;
     s->bit_rate = bitrate;
-    s->frmsizecod = i << 1;
-    s->frame_size_min = ff_ac3_frame_size_tab[s->frmsizecod][s->sr_code];
+    s->frame_size_code = i << 1;
+    s->frame_size_min = ff_ac3_frame_size_tab[s->frame_size_code][s->sr_code];
     s->bits_written = 0;
     s->samples_written = 0;
     s->frame_size = s->frame_size_min;
@@ -719,15 +719,15 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 16, 0x0b77); /* frame header */
     put_bits(&s->pb, 16, 0); /* crc1: will be filled later */
     put_bits(&s->pb, 2, s->sr_code);
-    put_bits(&s->pb, 6, s->frmsizecod + (s->frame_size - s->frame_size_min));
-    put_bits(&s->pb, 5, s->bsid);
-    put_bits(&s->pb, 3, s->bsmod);
-    put_bits(&s->pb, 3, s->acmod);
-    if ((s->acmod & 0x01) && s->acmod != AC3_ACMOD_MONO)
+    put_bits(&s->pb, 6, s->frame_size_code + (s->frame_size - s->frame_size_min));
+    put_bits(&s->pb, 5, s->bitstream_id);
+    put_bits(&s->pb, 3, s->bitstream_mode);
+    put_bits(&s->pb, 3, s->channel_mode);
+    if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
         put_bits(&s->pb, 2, 1); /* XXX -4.5 dB */
-    if (s->acmod & 0x04)
+    if (s->channel_mode & 0x04)
         put_bits(&s->pb, 2, 1); /* XXX -6 dB */
-    if (s->acmod == AC3_ACMOD_STEREO)
+    if (s->channel_mode == AC3_CHMODE_STEREO)
         put_bits(&s->pb, 2, 0); /* surround not indicated */
     put_bits(&s->pb, 1, s->lfe); /* LFE */
     put_bits(&s->pb, 5, 31); /* dialog norm: -31 db */
@@ -810,7 +810,7 @@ static void output_audio_block(AC3EncodeContext *s,
         put_bits(&s->pb, 1, 0); /* no new coupling strategy */
     }
 
-    if (s->acmod == AC3_ACMOD_STEREO)
+    if (s->channel_mode == AC3_CHMODE_STEREO)
       {
         if(block_num==0)
           {

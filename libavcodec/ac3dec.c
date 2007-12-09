@@ -97,13 +97,13 @@ static const float gain_levels[6] = {
  * Table for center mix levels
  * reference: Section 5.4.2.4 cmixlev
  */
-static const uint8_t clevs[4] = { 2, 3, 4, 3 };
+static const uint8_t center_levels[4] = { 2, 3, 4, 3 };
 
 /**
  * Table for surround mix levels
  * reference: Section 5.4.2.5 surmixlev
  */
-static const uint8_t slevs[4] = { 2, 4, 0, 4 };
+static const uint8_t surround_levels[4] = { 2, 4, 0, 4 };
 
 /**
  * Table for default stereo downmixing coefficients
@@ -128,8 +128,8 @@ static const uint8_t ac3_default_coeffs[8][5][2] = {
 #define AC3_OUTPUT_LFEON  8
 
 typedef struct {
-    int acmod;                              ///< audio coding mode
-    int dsurmod;                            ///< dolby surround mode
+    int channel_mode;                       ///< channel mode (acmod)
+    int dolby_surround_mode;                ///< dolby surround mode
     int blksw[AC3_MAX_CHANNELS];            ///< block switch flags
     int dithflag[AC3_MAX_CHANNELS];         ///< dither flags
     int dither_all;                         ///< true if all channels are dithered
@@ -155,7 +155,7 @@ typedef struct {
 
     int nchans;                             ///< number of total channels
     int nfchans;                            ///< number of full-bandwidth channels
-    int lfeon;                              ///< lfe channel in use
+    int lfe_on;                             ///< lfe channel in use
     int lfe_ch;                             ///< index of LFE channel
     int output_mode;                        ///< output channel configuration
     int out_channels;                       ///< number of output channels
@@ -336,7 +336,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
 {
     AC3HeaderInfo hdr;
     GetBitContext *gb = &ctx->gb;
-    float cmixlev, surmixlev;
+    float center_mix_level, surround_mix_level;
     int err, i;
 
     err = ff_ac3_parse_header(gb->buffer, &hdr);
@@ -345,23 +345,23 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
 
     /* get decoding parameters from header info */
     ctx->bit_alloc_params.sr_code     = hdr.sr_code;
-    ctx->acmod                        = hdr.acmod;
-    cmixlev                           = gain_levels[clevs[hdr.cmixlev]];
-    surmixlev                         = gain_levels[slevs[hdr.surmixlev]];
-    ctx->dsurmod                      = hdr.dsurmod;
-    ctx->lfeon                        = hdr.lfeon;
+    ctx->channel_mode                 = hdr.channel_mode;
+    center_mix_level                  = gain_levels[center_levels[hdr.center_mix_level]];
+    surround_mix_level                = gain_levels[surround_levels[hdr.surround_mix_level]];
+    ctx->dolby_surround_mode          = hdr.dolby_surround_mode;
+    ctx->lfe_on                        = hdr.lfe_on;
     ctx->bit_alloc_params.sr_shift    = hdr.sr_shift;
     ctx->sampling_rate                = hdr.sample_rate;
     ctx->bit_rate                     = hdr.bit_rate;
     ctx->nchans                       = hdr.channels;
-    ctx->nfchans                      = ctx->nchans - ctx->lfeon;
+    ctx->nfchans                      = ctx->nchans - ctx->lfe_on;
     ctx->lfe_ch                       = ctx->nfchans + 1;
     ctx->frame_size                   = hdr.frame_size;
 
     /* set default output to all source channels */
     ctx->out_channels = ctx->nchans;
-    ctx->output_mode = ctx->acmod;
-    if(ctx->lfeon)
+    ctx->output_mode = ctx->channel_mode;
+    if(ctx->lfe_on)
         ctx->output_mode |= AC3_OUTPUT_LFEON;
 
     /* skip over portion of header which has already been read */
@@ -369,18 +369,18 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     skip_bits(gb, 16); // skip crc1
     skip_bits(gb, 8);  // skip fscod and frmsizecod
     skip_bits(gb, 11); // skip bsid, bsmod, and acmod
-    if(ctx->acmod == AC3_ACMOD_STEREO) {
+    if(ctx->channel_mode == AC3_CHMODE_STEREO) {
         skip_bits(gb, 2); // skip dsurmod
     } else {
-        if((ctx->acmod & 1) && ctx->acmod != AC3_ACMOD_MONO)
+        if((ctx->channel_mode & 1) && ctx->channel_mode != AC3_CHMODE_MONO)
             skip_bits(gb, 2); // skip cmixlev
-        if(ctx->acmod & 4)
+        if(ctx->channel_mode & 4)
             skip_bits(gb, 2); // skip surmixlev
     }
     skip_bits1(gb); // skip lfeon
 
     /* read the rest of the bsi. read twice for dual mono mode. */
-    i = !(ctx->acmod);
+    i = !(ctx->channel_mode);
     do {
         ctx->dialnorm[i] = dialnorm_tab[get_bits(gb, 5)]; // dialog normalization
         if (get_bits1(gb))
@@ -411,19 +411,19 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     /* set stereo downmixing coefficients
        reference: Section 7.8.2 Downmixing Into Two Channels */
     for(i=0; i<ctx->nfchans; i++) {
-        ctx->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[ctx->acmod][i][0]];
-        ctx->downmix_coeffs[i][1] = gain_levels[ac3_default_coeffs[ctx->acmod][i][1]];
+        ctx->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[ctx->channel_mode][i][0]];
+        ctx->downmix_coeffs[i][1] = gain_levels[ac3_default_coeffs[ctx->channel_mode][i][1]];
     }
-    if(ctx->acmod > 1 && ctx->acmod & 1) {
-        ctx->downmix_coeffs[1][0] = ctx->downmix_coeffs[1][1] = cmixlev;
+    if(ctx->channel_mode > 1 && ctx->channel_mode & 1) {
+        ctx->downmix_coeffs[1][0] = ctx->downmix_coeffs[1][1] = center_mix_level;
     }
-    if(ctx->acmod == AC3_ACMOD_2F1R || ctx->acmod == AC3_ACMOD_3F1R) {
-        int nf = ctx->acmod - 2;
-        ctx->downmix_coeffs[nf][0] = ctx->downmix_coeffs[nf][1] = surmixlev * LEVEL_MINUS_3DB;
+    if(ctx->channel_mode == AC3_CHMODE_2F1R || ctx->channel_mode == AC3_CHMODE_3F1R) {
+        int nf = ctx->channel_mode - 2;
+        ctx->downmix_coeffs[nf][0] = ctx->downmix_coeffs[nf][1] = surround_mix_level * LEVEL_MINUS_3DB;
     }
-    if(ctx->acmod == AC3_ACMOD_2F2R || ctx->acmod == AC3_ACMOD_3F2R) {
-        int nf = ctx->acmod - 4;
-        ctx->downmix_coeffs[nf][0] = ctx->downmix_coeffs[nf+1][1] = surmixlev;
+    if(ctx->channel_mode == AC3_CHMODE_2F2R || ctx->channel_mode == AC3_CHMODE_3F2R) {
+        int nf = ctx->channel_mode - 4;
+        ctx->downmix_coeffs[nf][0] = ctx->downmix_coeffs[nf+1][1] = surround_mix_level;
     }
 
     return 0;
@@ -766,9 +766,9 @@ static void ac3_downmix(float samples[AC3_MAX_CHANNELS][256], int nfchans,
         }
         v0 /= s0;
         v1 /= s1;
-        if(output_mode == AC3_ACMOD_MONO) {
+        if(output_mode == AC3_CHMODE_MONO) {
             samples[0][i] = (v0 + v1) * LEVEL_MINUS_3DB;
-        } else if(output_mode == AC3_ACMOD_STEREO) {
+        } else if(output_mode == AC3_CHMODE_STEREO) {
             samples[0][i] = v0;
             samples[1][i] = v1;
         }
@@ -781,7 +781,7 @@ static void ac3_downmix(float samples[AC3_MAX_CHANNELS][256], int nfchans,
 static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 {
     int nfchans = ctx->nfchans;
-    int acmod = ctx->acmod;
+    int channel_mode = ctx->channel_mode;
     int i, bnd, seg, ch;
     GetBitContext *gb = &ctx->gb;
     uint8_t bit_alloc_stages[AC3_MAX_CHANNELS];
@@ -801,7 +801,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     /* dynamic range */
-    i = !(ctx->acmod);
+    i = !(ctx->channel_mode);
     do {
         if(get_bits1(gb)) {
             ctx->dynrng[i] = dynrng_tab[get_bits(gb, 8)];
@@ -823,7 +823,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
                 ctx->chincpl[ch] = get_bits1(gb);
 
             /* phase flags in use */
-            if (acmod == AC3_ACMOD_STEREO)
+            if (channel_mode == AC3_CHMODE_STEREO)
                 ctx->phsflginu = get_bits1(gb);
 
             /* coupling frequency range and band structure */
@@ -872,7 +872,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             }
         }
         /* phase flags */
-        if (acmod == AC3_ACMOD_STEREO && ctx->phsflginu && cplcoe) {
+        if (channel_mode == AC3_CHMODE_STEREO && ctx->phsflginu && cplcoe) {
             for (bnd = 0; bnd < ctx->ncplbnd; bnd++) {
                 if (get_bits1(gb))
                     ctx->cplco[2][bnd] = -ctx->cplco[2][bnd];
@@ -881,7 +881,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     /* stereo rematrixing strategy and band structure */
-    if (acmod == AC3_ACMOD_STEREO) {
+    if (channel_mode == AC3_CHMODE_STEREO) {
         ctx->rematstr = get_bits1(gb);
         if (ctx->rematstr) {
             ctx->nrematbnd = 4;
@@ -1046,13 +1046,13 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     }
 
     /* recover coefficients if rematrixing is in use */
-    if(ctx->acmod == AC3_ACMOD_STEREO)
+    if(ctx->channel_mode == AC3_CHMODE_STEREO)
         do_rematrixing(ctx);
 
     /* apply scaling to coefficients (headroom, dialnorm, dynrng) */
     for(ch=1; ch<=ctx->nchans; ch++) {
         float gain = 2.0f * ctx->mul_bias;
-        if(ctx->acmod == AC3_ACMOD_DUALMONO) {
+        if(ctx->channel_mode == AC3_CHMODE_DUALMONO) {
             gain *= ctx->dialnorm[ch-1] * ctx->dynrng[ch-1];
         } else {
             gain *= ctx->dialnorm[0] * ctx->dynrng[0];
@@ -1136,9 +1136,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         return -1;
     }
     if(avctx->channels == 2) {
-        ctx->output_mode = AC3_ACMOD_STEREO;
+        ctx->output_mode = AC3_CHMODE_STEREO;
     } else if(avctx->channels == 1) {
-        ctx->output_mode = AC3_ACMOD_MONO;
+        ctx->output_mode = AC3_CHMODE_MONO;
     } else if(avctx->channels != ctx->out_channels) {
         av_log(avctx, AV_LOG_ERROR, "Cannot downmix AC3 from %d to %d channels.\n",
                ctx->out_channels, avctx->channels);
