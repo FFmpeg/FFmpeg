@@ -28,8 +28,8 @@
 #include "ac3.h"
 #include "bitstream.h"
 
-static uint8_t bndtab[51];
-static uint8_t masktab[253];
+static uint8_t band_start_tab[51];
+static uint8_t bin_to_band_tab[253];
 
 static inline int calc_lowcomp1(int a, int b0, int b1, int c)
 {
@@ -53,7 +53,7 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 }
 
 void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
-                               int16_t *bndpsd)
+                               int16_t *band_psd)
 {
     int bin, i, j, k, end1, v;
 
@@ -64,26 +64,26 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
 
     /* PSD integration */
     j=start;
-    k=masktab[start];
+    k=bin_to_band_tab[start];
     do {
         v=psd[j];
         j++;
-        end1 = FFMIN(bndtab[k+1], end);
+        end1 = FFMIN(band_start_tab[k+1], end);
         for(i=j;i<end1;i++) {
             /* logadd */
             int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
             v = FFMAX(v, psd[j]) + ff_ac3_log_add_tab[adr];
             j++;
         }
-        bndpsd[k]=v;
+        band_psd[k]=v;
         k++;
-    } while (end > bndtab[k]);
+    } while (end > band_start_tab[k]);
 }
 
-void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
-                                int start, int end, int fgain, int is_lfe,
-                                int deltbae, int deltnseg, uint8_t *deltoffst,
-                                uint8_t *deltlen, uint8_t *deltba,
+void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
+                                int start, int end, int fast_gain, int is_lfe,
+                                int dba_mode, int dba_nsegs, uint8_t *dba_offsets,
+                                uint8_t *dba_lengths, uint8_t *dba_values,
                                 int16_t *mask)
 {
     int16_t excite[50]; /* excitation */
@@ -92,24 +92,24 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
     int lowcomp, fastleak, slowleak;
 
     /* excitation function */
-    bndstrt = masktab[start];
-    bndend = masktab[end-1] + 1;
+    bndstrt = bin_to_band_tab[start];
+    bndend = bin_to_band_tab[end-1] + 1;
 
     if (bndstrt == 0) {
         lowcomp = 0;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1], 384);
-        excite[0] = bndpsd[0] - fgain - lowcomp;
-        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2], 384);
-        excite[1] = bndpsd[1] - fgain - lowcomp;
+        lowcomp = calc_lowcomp1(lowcomp, band_psd[0], band_psd[1], 384);
+        excite[0] = band_psd[0] - fast_gain - lowcomp;
+        lowcomp = calc_lowcomp1(lowcomp, band_psd[1], band_psd[2], 384);
+        excite[1] = band_psd[1] - fast_gain - lowcomp;
         begin = 7;
         for (bin = 2; bin < 7; bin++) {
             if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1], 384);
-            fastleak = bndpsd[bin] - fgain;
-            slowleak = bndpsd[bin] - s->sgain;
+                lowcomp = calc_lowcomp1(lowcomp, band_psd[bin], band_psd[bin+1], 384);
+            fastleak = band_psd[bin] - fast_gain;
+            slowleak = band_psd[bin] - s->slow_gain;
             excite[bin] = fastleak - lowcomp;
             if (!(is_lfe && bin == 6)) {
-                if (bndpsd[bin] <= bndpsd[bin+1]) {
+                if (band_psd[bin] <= band_psd[bin+1]) {
                     begin = bin + 1;
                     break;
                 }
@@ -121,10 +121,10 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
 
         for (bin = begin; bin < end1; bin++) {
             if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin);
+                lowcomp = calc_lowcomp(lowcomp, band_psd[bin], band_psd[bin+1], bin);
 
-            fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
-            slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
+            fastleak = FFMAX(fastleak - s->fast_decay, band_psd[bin] - fast_gain);
+            slowleak = FFMAX(slowleak - s->slow_decay, band_psd[bin] - s->slow_gain);
             excite[bin] = FFMAX(fastleak - lowcomp, slowleak);
         }
         begin = 22;
@@ -132,39 +132,39 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
         /* coupling channel */
         begin = bndstrt;
 
-        fastleak = (s->cplfleak << 8) + 768;
-        slowleak = (s->cplsleak << 8) + 768;
+        fastleak = (s->cpl_fast_leak << 8) + 768;
+        slowleak = (s->cpl_slow_leak << 8) + 768;
     }
 
     for (bin = begin; bin < bndend; bin++) {
-        fastleak = FFMAX(fastleak - s->fdecay, bndpsd[bin] - fgain);
-        slowleak = FFMAX(slowleak - s->sdecay, bndpsd[bin] - s->sgain);
+        fastleak = FFMAX(fastleak - s->fast_decay, band_psd[bin] - fast_gain);
+        slowleak = FFMAX(slowleak - s->slow_decay, band_psd[bin] - s->slow_gain);
         excite[bin] = FFMAX(fastleak, slowleak);
     }
 
     /* compute masking curve */
 
     for (bin = bndstrt; bin < bndend; bin++) {
-        tmp = s->dbknee - bndpsd[bin];
+        tmp = s->db_per_bit - band_psd[bin];
         if (tmp > 0) {
             excite[bin] += tmp >> 2;
         }
-        mask[bin] = FFMAX(ff_ac3_hearing_threshold_tab[bin >> s->halfratecod][s->fscod], excite[bin]);
+        mask[bin] = FFMAX(ff_ac3_hearing_threshold_tab[bin >> s->sr_shift][s->sr_code], excite[bin]);
     }
 
     /* delta bit allocation */
 
-    if (deltbae == DBA_REUSE || deltbae == DBA_NEW) {
+    if (dba_mode == DBA_REUSE || dba_mode == DBA_NEW) {
         int band, seg, delta;
         band = 0;
-        for (seg = 0; seg < deltnseg; seg++) {
-            band += deltoffst[seg];
-            if (deltba[seg] >= 4) {
-                delta = (deltba[seg] - 3) << 7;
+        for (seg = 0; seg < dba_nsegs; seg++) {
+            band += dba_offsets[seg];
+            if (dba_values[seg] >= 4) {
+                delta = (dba_values[seg] - 3) << 7;
             } else {
-                delta = (deltba[seg] - 4) << 7;
+                delta = (dba_values[seg] - 4) << 7;
             }
-            for (k = 0; k < deltlen[seg]; k++) {
+            for (k = 0; k < dba_lengths[seg]; k++) {
                 mask[band] += delta;
                 band++;
             }
@@ -173,49 +173,49 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *bndpsd,
 }
 
 void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
-                               int snroffset, int floor, uint8_t *bap)
+                               int snr_offset, int floor, uint8_t *bap)
 {
     int i, j, k, end1, v, address;
 
-    /* special case, if snroffset is -960, set all bap's to zero */
-    if(snroffset == -960) {
+    /* special case, if snr offset is -960, set all bap's to zero */
+    if(snr_offset == -960) {
         memset(bap, 0, 256);
         return;
     }
 
     i = start;
-    j = masktab[start];
+    j = bin_to_band_tab[start];
     do {
-        v = (FFMAX(mask[j] - snroffset - floor, 0) & 0x1FE0) + floor;
-        end1 = FFMIN(bndtab[j] + ff_ac3_critical_band_size_tab[j], end);
+        v = (FFMAX(mask[j] - snr_offset - floor, 0) & 0x1FE0) + floor;
+        end1 = FFMIN(band_start_tab[j] + ff_ac3_critical_band_size_tab[j], end);
         for (k = i; k < end1; k++) {
             address = av_clip((psd[i] - v) >> 5, 0, 63);
             bap[i] = ff_ac3_bap_tab[address];
             i++;
         }
-    } while (end > bndtab[j++]);
+    } while (end > band_start_tab[j++]);
 }
 
 /* AC3 bit allocation. The algorithm is the one described in the AC3
    spec. */
 void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    int8_t *exp, int start, int end,
-                                   int snroffset, int fgain, int is_lfe,
-                                   int deltbae,int deltnseg,
-                                   uint8_t *deltoffst, uint8_t *deltlen,
-                                   uint8_t *deltba)
+                                   int snr_offset, int fast_gain, int is_lfe,
+                                   int dba_mode, int dba_nsegs,
+                                   uint8_t *dba_offsets, uint8_t *dba_lengths,
+                                   uint8_t *dba_values)
 {
     int16_t psd[256];   /* scaled exponents */
-    int16_t bndpsd[50]; /* interpolated exponents */
+    int16_t band_psd[50]; /* interpolated exponents */
     int16_t mask[50];   /* masking value */
 
-    ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, bndpsd);
+    ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, band_psd);
 
-    ff_ac3_bit_alloc_calc_mask(s, bndpsd, start, end, fgain, is_lfe,
-                               deltbae, deltnseg, deltoffst, deltlen, deltba,
+    ff_ac3_bit_alloc_calc_mask(s, band_psd, start, end, fast_gain, is_lfe,
+                               dba_mode, dba_nsegs, dba_offsets, dba_lengths, dba_values,
                                mask);
 
-    ff_ac3_bit_alloc_calc_bap(mask, psd, start, end, snroffset, s->floor, bap);
+    ff_ac3_bit_alloc_calc_bap(mask, psd, start, end, snr_offset, s->floor, bap);
 }
 
 /**
@@ -230,10 +230,10 @@ void ac3_common_init(void)
     k = 0;
     l = 0;
     for(i=0;i<50;i++) {
-        bndtab[i] = l;
+        band_start_tab[i] = l;
         v = ff_ac3_critical_band_size_tab[i];
-        for(j=0;j<v;j++) masktab[k++]=i;
+        for(j=0;j<v;j++) bin_to_band_tab[k++]=i;
         l += v;
     }
-    bndtab[50] = l;
+    band_start_tab[50] = l;
 }

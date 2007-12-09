@@ -42,9 +42,9 @@ typedef struct AC3EncodeContext {
     unsigned int frame_size; /* current frame size in words */
     unsigned int bits_written;
     unsigned int samples_written;
-    int halfratecod;
+    int sr_shift;
     unsigned int frmsizecod;
-    unsigned int fscod; /* frequency */
+    unsigned int sr_code; /* frequency */
     unsigned int acmod;
     int lfe;
     unsigned int bsmod;
@@ -53,11 +53,11 @@ typedef struct AC3EncodeContext {
     int nb_coefs[AC3_MAX_CHANNELS];
 
     /* bitrate allocation control */
-    int sgaincod, sdecaycod, fdecaycod, dbkneecod, floorcod;
+    int slow_gain_code, slow_decay_code, fast_decay_code, db_per_bit_code, floor_code;
     AC3BitAllocParameters bit_alloc;
-    int csnroffst;
-    int fgaincod[AC3_MAX_CHANNELS];
-    int fsnroffst[AC3_MAX_CHANNELS];
+    int coarse_snr_offset;
+    int fast_gain_code[AC3_MAX_CHANNELS];
+    int fine_snr_offset[AC3_MAX_CHANNELS];
     /* mantissa encoding */
     int mant1_cnt, mant2_cnt, mant4_cnt;
 } AC3EncodeContext;
@@ -438,7 +438,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
                               int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50])
 {
     int blk, ch;
-    int16_t bndpsd[NB_BLOCKS][AC3_MAX_CHANNELS][50];
+    int16_t band_psd[NB_BLOCKS][AC3_MAX_CHANNELS][50];
 
     for(blk=0; blk<NB_BLOCKS; blk++) {
         for(ch=0;ch<s->nb_all_channels;ch++) {
@@ -448,10 +448,10 @@ static void bit_alloc_masking(AC3EncodeContext *s,
             } else {
                 ff_ac3_bit_alloc_calc_psd(encoded_exp[blk][ch], 0,
                                           s->nb_coefs[ch],
-                                          psd[blk][ch], bndpsd[blk][ch]);
-                ff_ac3_bit_alloc_calc_mask(&s->bit_alloc, bndpsd[blk][ch],
+                                          psd[blk][ch], band_psd[blk][ch]);
+                ff_ac3_bit_alloc_calc_mask(&s->bit_alloc, band_psd[blk][ch],
                                            0, s->nb_coefs[ch],
-                                           ff_ac3_fast_gain_tab[s->fgaincod[ch]],
+                                           ff_ac3_fast_gain_tab[s->fast_gain_code[ch]],
                                            ch == s->lfe_channel,
                                            DBA_NONE, 0, NULL, NULL, NULL,
                                            mask[blk][ch]);
@@ -464,12 +464,12 @@ static int bit_alloc(AC3EncodeContext *s,
                      int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50],
                      int16_t psd[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
                      uint8_t bap[NB_BLOCKS][AC3_MAX_CHANNELS][N/2],
-                     int frame_bits, int csnroffst, int fsnroffst)
+                     int frame_bits, int coarse_snr_offset, int fine_snr_offset)
 {
     int i, ch;
-    int snroffset;
+    int snr_offset;
 
-    snroffset = (((csnroffst - 15) << 4) + fsnroffst) << 2;
+    snr_offset = (((coarse_snr_offset - 15) << 4) + fine_snr_offset) << 2;
 
     /* compute size */
     for(i=0;i<NB_BLOCKS;i++) {
@@ -478,7 +478,7 @@ static int bit_alloc(AC3EncodeContext *s,
         s->mant4_cnt = 0;
         for(ch=0;ch<s->nb_all_channels;ch++) {
             ff_ac3_bit_alloc_calc_bap(mask[i][ch], psd[i][ch], 0,
-                                      s->nb_coefs[ch], snroffset,
+                                      s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, bap[i][ch]);
             frame_bits += compute_mantissa_size(s, bap[i][ch],
                                                  s->nb_coefs[ch]);
@@ -486,7 +486,7 @@ static int bit_alloc(AC3EncodeContext *s,
     }
 #if 0
     printf("csnr=%d fsnr=%d frame_bits=%d diff=%d\n",
-           csnroffst, fsnroffst, frame_bits,
+           coarse_snr_offset, fine_snr_offset, frame_bits,
            16 * s->frame_size - ((frame_bits + 7) & ~7));
 #endif
     return 16 * s->frame_size - frame_bits;
@@ -501,29 +501,29 @@ static int compute_bit_allocation(AC3EncodeContext *s,
                                   int frame_bits)
 {
     int i, ch;
-    int csnroffst, fsnroffst;
+    int coarse_snr_offset, fine_snr_offset;
     uint8_t bap1[NB_BLOCKS][AC3_MAX_CHANNELS][N/2];
     int16_t psd[NB_BLOCKS][AC3_MAX_CHANNELS][N/2];
     int16_t mask[NB_BLOCKS][AC3_MAX_CHANNELS][50];
     static int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
 
     /* init default parameters */
-    s->sdecaycod = 2;
-    s->fdecaycod = 1;
-    s->sgaincod = 1;
-    s->dbkneecod = 2;
-    s->floorcod = 4;
+    s->slow_decay_code = 2;
+    s->fast_decay_code = 1;
+    s->slow_gain_code = 1;
+    s->db_per_bit_code = 2;
+    s->floor_code = 4;
     for(ch=0;ch<s->nb_all_channels;ch++)
-        s->fgaincod[ch] = 4;
+        s->fast_gain_code[ch] = 4;
 
     /* compute real values */
-    s->bit_alloc.fscod = s->fscod;
-    s->bit_alloc.halfratecod = s->halfratecod;
-    s->bit_alloc.sdecay = ff_ac3_slow_decay_tab[s->sdecaycod] >> s->halfratecod;
-    s->bit_alloc.fdecay = ff_ac3_fast_decay_tab[s->fdecaycod] >> s->halfratecod;
-    s->bit_alloc.sgain = ff_ac3_slow_gain_tab[s->sgaincod];
-    s->bit_alloc.dbknee = ff_ac3_db_per_bit_tab[s->dbkneecod];
-    s->bit_alloc.floor = ff_ac3_floor_tab[s->floorcod];
+    s->bit_alloc.sr_code = s->sr_code;
+    s->bit_alloc.sr_shift = s->sr_shift;
+    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->sr_shift;
+    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->sr_shift;
+    s->bit_alloc.slow_gain = ff_ac3_slow_gain_tab[s->slow_gain_code];
+    s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
+    s->bit_alloc.floor = ff_ac3_floor_tab[s->floor_code];
 
     /* header size */
     frame_bits += 65;
@@ -568,43 +568,43 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* now the big work begins : do the bit allocation. Modify the snr
        offset until we can pack everything in the requested frame size */
 
-    csnroffst = s->csnroffst;
-    while (csnroffst >= 0 &&
-           bit_alloc(s, mask, psd, bap, frame_bits, csnroffst, 0) < 0)
-        csnroffst -= SNR_INC1;
-    if (csnroffst < 0) {
+    coarse_snr_offset = s->coarse_snr_offset;
+    while (coarse_snr_offset >= 0 &&
+           bit_alloc(s, mask, psd, bap, frame_bits, coarse_snr_offset, 0) < 0)
+        coarse_snr_offset -= SNR_INC1;
+    if (coarse_snr_offset < 0) {
         av_log(NULL, AV_LOG_ERROR, "Bit allocation failed, try increasing the bitrate, -ab 384k for example!\n");
         return -1;
     }
-    while ((csnroffst + SNR_INC1) <= 63 &&
+    while ((coarse_snr_offset + SNR_INC1) <= 63 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
-                     csnroffst + SNR_INC1, 0) >= 0) {
-        csnroffst += SNR_INC1;
+                     coarse_snr_offset + SNR_INC1, 0) >= 0) {
+        coarse_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
-    while ((csnroffst + 1) <= 63 &&
-           bit_alloc(s, mask, psd, bap1, frame_bits, csnroffst + 1, 0) >= 0) {
-        csnroffst++;
+    while ((coarse_snr_offset + 1) <= 63 &&
+           bit_alloc(s, mask, psd, bap1, frame_bits, coarse_snr_offset + 1, 0) >= 0) {
+        coarse_snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
-    fsnroffst = 0;
-    while ((fsnroffst + SNR_INC1) <= 15 &&
+    fine_snr_offset = 0;
+    while ((fine_snr_offset + SNR_INC1) <= 15 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
-                     csnroffst, fsnroffst + SNR_INC1) >= 0) {
-        fsnroffst += SNR_INC1;
+                     coarse_snr_offset, fine_snr_offset + SNR_INC1) >= 0) {
+        fine_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
-    while ((fsnroffst + 1) <= 15 &&
+    while ((fine_snr_offset + 1) <= 15 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
-                     csnroffst, fsnroffst + 1) >= 0) {
-        fsnroffst++;
+                     coarse_snr_offset, fine_snr_offset + 1) >= 0) {
+        fine_snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
-    s->csnroffst = csnroffst;
+    s->coarse_snr_offset = coarse_snr_offset;
     for(ch=0;ch<s->nb_all_channels;ch++)
-        s->fsnroffst[ch] = fsnroffst;
+        s->fine_snr_offset[ch] = fine_snr_offset;
 #if defined(DEBUG_BITALLOC)
     {
         int j;
@@ -663,22 +663,22 @@ static int AC3_encode_init(AVCodecContext *avctx)
     return -1;
  found:
     s->sample_rate = freq;
-    s->halfratecod = i;
-    s->fscod = j;
-    s->bsid = 8 + s->halfratecod;
+    s->sr_shift = i;
+    s->sr_code = j;
+    s->bsid = 8 + s->sr_shift;
     s->bsmod = 0; /* complete main audio service */
 
     /* bitrate & frame size */
     bitrate /= 1000;
     for(i=0;i<19;i++) {
-        if ((ff_ac3_bitrate_tab[i] >> s->halfratecod) == bitrate)
+        if ((ff_ac3_bitrate_tab[i] >> s->sr_shift) == bitrate)
             break;
     }
     if (i == 19)
         return -1;
     s->bit_rate = bitrate;
     s->frmsizecod = i << 1;
-    s->frame_size_min = ff_ac3_frame_size_tab[s->frmsizecod][s->fscod];
+    s->frame_size_min = ff_ac3_frame_size_tab[s->frmsizecod][s->sr_code];
     s->bits_written = 0;
     s->samples_written = 0;
     s->frame_size = s->frame_size_min;
@@ -695,7 +695,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
         s->nb_coefs[s->lfe_channel] = 7; /* fixed */
     }
     /* initial snr offset */
-    s->csnroffst = 40;
+    s->coarse_snr_offset = 40;
 
     /* mdct init */
     fft_init(MDCT_NBITS - 2);
@@ -718,7 +718,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 
     put_bits(&s->pb, 16, 0x0b77); /* frame header */
     put_bits(&s->pb, 16, 0); /* crc1: will be filled later */
-    put_bits(&s->pb, 2, s->fscod);
+    put_bits(&s->pb, 2, s->sr_code);
     put_bits(&s->pb, 6, s->frmsizecod + (s->frame_size - s->frame_size_min));
     put_bits(&s->pb, 5, s->bsid);
     put_bits(&s->pb, 3, s->bsmod);
@@ -900,20 +900,20 @@ static void output_audio_block(AC3EncodeContext *s,
     baie = (block_num == 0);
     put_bits(&s->pb, 1, baie);
     if (baie) {
-        put_bits(&s->pb, 2, s->sdecaycod);
-        put_bits(&s->pb, 2, s->fdecaycod);
-        put_bits(&s->pb, 2, s->sgaincod);
-        put_bits(&s->pb, 2, s->dbkneecod);
-        put_bits(&s->pb, 3, s->floorcod);
+        put_bits(&s->pb, 2, s->slow_decay_code);
+        put_bits(&s->pb, 2, s->fast_decay_code);
+        put_bits(&s->pb, 2, s->slow_gain_code);
+        put_bits(&s->pb, 2, s->db_per_bit_code);
+        put_bits(&s->pb, 3, s->floor_code);
     }
 
     /* snr offset */
     put_bits(&s->pb, 1, baie); /* always present with bai */
     if (baie) {
-        put_bits(&s->pb, 6, s->csnroffst);
+        put_bits(&s->pb, 6, s->coarse_snr_offset);
         for(ch=0;ch<s->nb_all_channels;ch++) {
-            put_bits(&s->pb, 4, s->fsnroffst[ch]);
-            put_bits(&s->pb, 3, s->fgaincod[ch]);
+            put_bits(&s->pb, 4, s->fine_snr_offset[ch]);
+            put_bits(&s->pb, 3, s->fast_gain_code[ch]);
         }
     }
 

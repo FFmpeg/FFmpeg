@@ -141,13 +141,13 @@ typedef struct {
     int nrematbnd;                          ///< number of rematrixing bands
     int rematflg[4];                        ///< rematrixing flags
     int expstr[AC3_MAX_CHANNELS];           ///< exponent strategies
-    int snroffst[AC3_MAX_CHANNELS];         ///< signal-to-noise ratio offsets
-    int fgain[AC3_MAX_CHANNELS];            ///< fast gain values (signal-to-mask ratio)
-    int deltbae[AC3_MAX_CHANNELS];          ///< delta bit allocation exists
-    int deltnseg[AC3_MAX_CHANNELS];         ///< number of delta segments
-    uint8_t deltoffst[AC3_MAX_CHANNELS][8]; ///< delta segment offsets
-    uint8_t deltlen[AC3_MAX_CHANNELS][8];   ///< delta segment lengths
-    uint8_t deltba[AC3_MAX_CHANNELS][8];    ///< delta values for each segment
+    int snr_offset[AC3_MAX_CHANNELS];       ///< signal-to-noise ratio offsets
+    int fast_gain[AC3_MAX_CHANNELS];        ///< fast gain values (signal-to-mask ratio)
+    int dba_mode[AC3_MAX_CHANNELS];         ///< delta bit allocation mode
+    int dba_nsegs[AC3_MAX_CHANNELS];        ///< number of delta segments
+    uint8_t dba_offsets[AC3_MAX_CHANNELS][8]; ///< delta segment offsets
+    uint8_t dba_lengths[AC3_MAX_CHANNELS][8]; ///< delta segment lengths
+    uint8_t dba_values[AC3_MAX_CHANNELS][8];  ///< delta values for each segment
 
     int sampling_rate;                      ///< sample frequency, in Hz
     int bit_rate;                           ///< stream bit rate, in bits-per-second
@@ -173,7 +173,7 @@ typedef struct {
     int8_t  dexps[AC3_MAX_CHANNELS][256];   ///< decoded exponents
     uint8_t bap[AC3_MAX_CHANNELS][256];     ///< bit allocation pointers
     int16_t psd[AC3_MAX_CHANNELS][256];     ///< scaled exponents
-    int16_t bndpsd[AC3_MAX_CHANNELS][50];   ///< interpolated exponents
+    int16_t band_psd[AC3_MAX_CHANNELS][50]; ///< interpolated exponents
     int16_t mask[AC3_MAX_CHANNELS][50];     ///< masking curve values
 
     DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][256]);  ///< transform coefficients
@@ -344,13 +344,13 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
         return err;
 
     /* get decoding parameters from header info */
-    ctx->bit_alloc_params.fscod       = hdr.fscod;
+    ctx->bit_alloc_params.sr_code     = hdr.sr_code;
     ctx->acmod                        = hdr.acmod;
     cmixlev                           = gain_levels[clevs[hdr.cmixlev]];
     surmixlev                         = gain_levels[slevs[hdr.surmixlev]];
     ctx->dsurmod                      = hdr.dsurmod;
     ctx->lfeon                        = hdr.lfeon;
-    ctx->bit_alloc_params.halfratecod = hdr.halfratecod;
+    ctx->bit_alloc_params.sr_shift    = hdr.sr_shift;
     ctx->sampling_rate                = hdr.sample_rate;
     ctx->bit_rate                     = hdr.bit_rate;
     ctx->nchans                       = hdr.channels;
@@ -947,10 +947,10 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
 
     /* bit allocation information */
     if (get_bits1(gb)) {
-        ctx->bit_alloc_params.sdecay = ff_ac3_slow_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
-        ctx->bit_alloc_params.fdecay = ff_ac3_fast_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.halfratecod;
-        ctx->bit_alloc_params.sgain  = ff_ac3_slow_gain_tab[get_bits(gb, 2)];
-        ctx->bit_alloc_params.dbknee = ff_ac3_db_per_bit_tab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.slow_decay = ff_ac3_slow_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.sr_shift;
+        ctx->bit_alloc_params.fast_decay = ff_ac3_fast_decay_tab[get_bits(gb, 2)] >> ctx->bit_alloc_params.sr_shift;
+        ctx->bit_alloc_params.slow_gain  = ff_ac3_slow_gain_tab[get_bits(gb, 2)];
+        ctx->bit_alloc_params.db_per_bit = ff_ac3_db_per_bit_tab[get_bits(gb, 2)];
         ctx->bit_alloc_params.floor  = ff_ac3_floor_tab[get_bits(gb, 3)];
         for(ch=!ctx->cplinu; ch<=ctx->nchans; ch++) {
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
@@ -962,16 +962,16 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         int csnr;
         csnr = (get_bits(gb, 6) - 15) << 4;
         for (ch = !ctx->cplinu; ch <= ctx->nchans; ch++) { /* snr offset and fast gain */
-            ctx->snroffst[ch] = (csnr + get_bits(gb, 4)) << 2;
-            ctx->fgain[ch] = ff_ac3_fast_gain_tab[get_bits(gb, 3)];
+            ctx->snr_offset[ch] = (csnr + get_bits(gb, 4)) << 2;
+            ctx->fast_gain[ch] = ff_ac3_fast_gain_tab[get_bits(gb, 3)];
         }
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
     }
 
     /* coupling leak information */
     if (ctx->cplinu && get_bits1(gb)) {
-        ctx->bit_alloc_params.cplfleak = get_bits(gb, 3);
-        ctx->bit_alloc_params.cplsleak = get_bits(gb, 3);
+        ctx->bit_alloc_params.cpl_fast_leak = get_bits(gb, 3);
+        ctx->bit_alloc_params.cpl_slow_leak = get_bits(gb, 3);
         bit_alloc_stages[CPL_CH] = FFMAX(bit_alloc_stages[CPL_CH], 2);
     }
 
@@ -979,8 +979,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if (get_bits1(gb)) {
         /* delta bit allocation exists (strategy) */
         for (ch = !ctx->cplinu; ch <= nfchans; ch++) {
-            ctx->deltbae[ch] = get_bits(gb, 2);
-            if (ctx->deltbae[ch] == DBA_RESERVED) {
+            ctx->dba_mode[ch] = get_bits(gb, 2);
+            if (ctx->dba_mode[ch] == DBA_RESERVED) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "delta bit allocation strategy reserved\n");
                 return -1;
             }
@@ -988,18 +988,18 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         }
         /* channel delta offset, len and bit allocation */
         for (ch = !ctx->cplinu; ch <= nfchans; ch++) {
-            if (ctx->deltbae[ch] == DBA_NEW) {
-                ctx->deltnseg[ch] = get_bits(gb, 3);
-                for (seg = 0; seg <= ctx->deltnseg[ch]; seg++) {
-                    ctx->deltoffst[ch][seg] = get_bits(gb, 5);
-                    ctx->deltlen[ch][seg] = get_bits(gb, 4);
-                    ctx->deltba[ch][seg] = get_bits(gb, 3);
+            if (ctx->dba_mode[ch] == DBA_NEW) {
+                ctx->dba_nsegs[ch] = get_bits(gb, 3);
+                for (seg = 0; seg <= ctx->dba_nsegs[ch]; seg++) {
+                    ctx->dba_offsets[ch][seg] = get_bits(gb, 5);
+                    ctx->dba_lengths[ch][seg] = get_bits(gb, 4);
+                    ctx->dba_values[ch][seg] = get_bits(gb, 3);
                 }
             }
         }
     } else if(blk == 0) {
         for(ch=0; ch<=ctx->nchans; ch++) {
-            ctx->deltbae[ch] = DBA_NONE;
+            ctx->dba_mode[ch] = DBA_NONE;
         }
     }
 
@@ -1009,23 +1009,23 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
             /* Exponent mapping into PSD and PSD integration */
             ff_ac3_bit_alloc_calc_psd(ctx->dexps[ch],
                                       ctx->startmant[ch], ctx->endmant[ch],
-                                      ctx->psd[ch], ctx->bndpsd[ch]);
+                                      ctx->psd[ch], ctx->band_psd[ch]);
         }
         if(bit_alloc_stages[ch] > 1) {
             /* Compute excitation function, Compute masking curve, and
                Apply delta bit allocation */
-            ff_ac3_bit_alloc_calc_mask(&ctx->bit_alloc_params, ctx->bndpsd[ch],
+            ff_ac3_bit_alloc_calc_mask(&ctx->bit_alloc_params, ctx->band_psd[ch],
                                        ctx->startmant[ch], ctx->endmant[ch],
-                                       ctx->fgain[ch], (ch == ctx->lfe_ch),
-                                       ctx->deltbae[ch], ctx->deltnseg[ch],
-                                       ctx->deltoffst[ch], ctx->deltlen[ch],
-                                       ctx->deltba[ch], ctx->mask[ch]);
+                                       ctx->fast_gain[ch], (ch == ctx->lfe_ch),
+                                       ctx->dba_mode[ch], ctx->dba_nsegs[ch],
+                                       ctx->dba_offsets[ch], ctx->dba_lengths[ch],
+                                       ctx->dba_values[ch], ctx->mask[ch]);
         }
         if(bit_alloc_stages[ch] > 0) {
             /* Compute bit allocation */
             ff_ac3_bit_alloc_calc_bap(ctx->mask[ch], ctx->psd[ch],
                                       ctx->startmant[ch], ctx->endmant[ch],
-                                      ctx->snroffst[ch],
+                                      ctx->snr_offset[ch],
                                       ctx->bit_alloc_params.floor,
                                       ctx->bap[ch]);
         }

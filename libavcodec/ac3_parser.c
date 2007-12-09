@@ -52,8 +52,8 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
         return AC3_PARSE_ERROR_BSID;
 
     hdr->crc1 = get_bits(&gbc, 16);
-    hdr->fscod = get_bits(&gbc, 2);
-    if(hdr->fscod == 3)
+    hdr->sr_code = get_bits(&gbc, 2);
+    if(hdr->sr_code == 3)
         return AC3_PARSE_ERROR_SAMPLE_RATE;
 
     hdr->frmsizecod = get_bits(&gbc, 6);
@@ -75,11 +75,11 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     }
     hdr->lfeon = get_bits1(&gbc);
 
-    hdr->halfratecod = FFMAX(hdr->bsid, 8) - 8;
-    hdr->sample_rate = ff_ac3_sample_rate_tab[hdr->fscod] >> hdr->halfratecod;
-    hdr->bit_rate = (ff_ac3_bitrate_tab[hdr->frmsizecod>>1] * 1000) >> hdr->halfratecod;
+    hdr->sr_shift = FFMAX(hdr->bsid, 8) - 8;
+    hdr->sample_rate = ff_ac3_sample_rate_tab[hdr->sr_code] >> hdr->sr_shift;
+    hdr->bit_rate = (ff_ac3_bitrate_tab[hdr->frmsizecod>>1] * 1000) >> hdr->sr_shift;
     hdr->channels = ff_ac3_channels_tab[hdr->acmod] + hdr->lfeon;
-    hdr->frame_size = ff_ac3_frame_size_tab[hdr->frmsizecod][hdr->fscod] * 2;
+    hdr->frame_size = ff_ac3_frame_size_tab[hdr->frmsizecod][hdr->sr_code] * 2;
 
     return 0;
 }
@@ -88,8 +88,8 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
                     int *bit_rate, int *samples)
 {
     int err;
-    unsigned int fscod, acmod, bsid, lfeon;
-    unsigned int strmtyp, substreamid, frmsiz, fscod2, numblkscod;
+    unsigned int sr_code, acmod, bsid, lfeon;
+    unsigned int strmtyp, substreamid, frmsiz, sr_code2, numblkscod;
     GetBitContext bits;
     AC3HeaderInfo hdr;
 
@@ -117,19 +117,19 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
         if(frmsiz*2 < AC3_HEADER_SIZE)
             return 0;
 
-        fscod = get_bits(&bits, 2);
-        if (fscod == 3) {
-            fscod2 = get_bits(&bits, 2);
+        sr_code = get_bits(&bits, 2);
+        if (sr_code == 3) {
+            sr_code2 = get_bits(&bits, 2);
             numblkscod = 3;
 
-            if(fscod2 == 3)
+            if(sr_code2 == 3)
                 return 0;
 
-            *sample_rate = ff_ac3_sample_rate_tab[fscod2] / 2;
+            *sample_rate = ff_ac3_sample_rate_tab[sr_code2] / 2;
         } else {
             numblkscod = get_bits(&bits, 2);
 
-            *sample_rate = ff_ac3_sample_rate_tab[fscod];
+            *sample_rate = ff_ac3_sample_rate_tab[sr_code];
         }
 
         acmod = get_bits(&bits, 3);
