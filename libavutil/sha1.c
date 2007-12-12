@@ -29,6 +29,8 @@ typedef struct AVSHA1 {
     uint32_t state[5];
 } AVSHA1;
 
+const int av_sha1_size = sizeof(AVSHA1);
+
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */

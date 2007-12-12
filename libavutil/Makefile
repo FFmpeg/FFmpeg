@@ -16,6 +16,7 @@ OBJS = adler32.o \
        random.o \
        rational.o \
        rc4.o \
+       sha1.o \
        string.o \
        tree.o \
 
@@ -34,6 +35,7 @@ HEADERS = adler32.h \
           mem.h \
           random.h \
           rational.h \
+          sha1.h
 
 NAME=avutil
 LIBVERSION=$(LAVUVERSION)
