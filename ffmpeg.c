@@ -3318,9 +3318,9 @@ static int64_t getutime(void)
 
 static void opt_show_formats(void)
 {
-    AVInputFormat *ifmt;
-    AVOutputFormat *ofmt;
-    URLProtocol *up;
+    AVInputFormat *ifmt=NULL;
+    AVOutputFormat *ofmt=NULL;
+    URLProtocol *up=NULL;
     AVCodec *p=NULL, *p2;
     AVBitStreamFilter *bsf=NULL;
     const char *last_name;
@@ -3333,7 +3333,7 @@ static void opt_show_formats(void)
         const char *name=NULL;
         const char *long_name=NULL;
 
-        for(ofmt = first_oformat; ofmt != NULL; ofmt = ofmt->next) {
+        while(ofmt= av_oformat_next(ofmt)) {
             if((name == NULL || strcmp(ofmt->name, name)<0) &&
                 strcmp(ofmt->name, last_name)>0){
                 name= ofmt->name;
@@ -3341,7 +3341,7 @@ static void opt_show_formats(void)
                 encode=1;
             }
         }
-        for(ifmt = first_iformat; ifmt != NULL; ifmt = ifmt->next) {
+        while(ifmt= av_iformat_next(ifmt)) {
             if((name == NULL || strcmp(ifmt->name, name)<0) &&
                 strcmp(ifmt->name, last_name)>0){
                 name= ifmt->name;
@@ -3424,7 +3424,7 @@ static void opt_show_formats(void)
     printf("\n");
 
     printf("Supported file protocols:\n");
-    for(up = first_protocol; up != NULL; up = up->next)
+    while(up = av_protocol_next(up))
         printf(" %s:", up->name);
     printf("\n");
 

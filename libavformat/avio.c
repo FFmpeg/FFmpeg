@@ -26,6 +26,12 @@ static int default_interrupt_cb(void);
 URLProtocol *first_protocol = NULL;
 URLInterruptCB *url_interrupt_cb = default_interrupt_cb;
 
+URLProtocol *av_protocol_next(URLProtocol *p)
+{
+    if(p) return p->next;
+    else  return first_protocol;
+}
+
 int register_protocol(URLProtocol *protocol)
 {
     URLProtocol **p;

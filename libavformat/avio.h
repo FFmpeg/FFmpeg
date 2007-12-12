@@ -136,6 +136,8 @@ typedef struct URLProtocol {
 extern URLProtocol *first_protocol;
 extern URLInterruptCB *url_interrupt_cb;
 
+URLProtocol *av_protocol_next(URLProtocol *p);
+
 int register_protocol(URLProtocol *protocol);
 
 typedef struct {

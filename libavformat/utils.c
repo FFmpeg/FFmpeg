@@ -41,6 +41,18 @@ AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list. */
 AVOutputFormat *first_oformat = NULL;
 
+AVInputFormat  *av_iformat_next(AVInputFormat  *f)
+{
+    if(f) return f->next;
+    else  return first_iformat;
+}
+
+AVOutputFormat *av_oformat_next(AVOutputFormat *f)
+{
+    if(f) return f->next;
+    else  return first_oformat;
+}
+
 void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p;
