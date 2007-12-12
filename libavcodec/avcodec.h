@@ -2827,6 +2827,7 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                const uint8_t *buf, int buf_size, int keyframe);
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 
+extern AVBitStreamFilter *first_bitstream_filter;
 
 /* memory */
 

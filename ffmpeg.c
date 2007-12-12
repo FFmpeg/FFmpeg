@@ -3322,6 +3322,7 @@ static void opt_show_formats(void)
     AVOutputFormat *ofmt;
     URLProtocol *up;
     AVCodec *p, *p2;
+    AVBitStreamFilter *bsf;
     const char *last_name;
 
     printf("File formats:\n");
@@ -3415,6 +3416,11 @@ static void opt_show_formats(void)
             printf(" use %s for decoding", p2->decoder->name);*/
         printf("\n");
     }
+    printf("\n");
+
+    printf("Bitstream filters:\n");
+    for(bsf = first_bitstream_filter; bsf != NULL; bsf = bsf->next)
+        printf(" %s", bsf->name);
     printf("\n");
 
     printf("Supported file protocols:\n");
