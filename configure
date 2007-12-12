@@ -1737,7 +1737,6 @@ enabled extra_warnings && check_cflags -Winline
 check_ldflags -Wl,--warn-common
 check_ldflags $LDLATEFLAGS
 check_ldflags -Wl,-Bsymbolic
-check_ldflags -Wl,-z,nocopyreloc
 
 if enabled small; then
     check_cflags -Os            # not all compilers support -Os
@@ -1753,9 +1752,12 @@ fi
 
 # PIC flags for shared library objects where they are needed
 if enabled shared; then
-    case "$arch" in
-        x86_64|ia64|alpha|sparc*|power*) add_cflags '\$(PIC)' ;;
-    esac
+    # LIBOBJFLAGS may have already been set in the OS configuration
+    if test -z "$LIBOBJFLAGS" ; then
+        case "$arch" in
+            x86_64|ia64|alpha|sparc*|power*) LIBOBJFLAGS='$(PIC)' ;;
+        esac
+    fi
 fi
 
 if enabled gprof; then
