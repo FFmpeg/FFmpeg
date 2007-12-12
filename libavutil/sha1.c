@@ -140,7 +140,7 @@ void av_sha1_final(AVSHA1* ctx, uint8_t digest[20]){
     while ((ctx->count & 63) != 56) {
         av_sha1_update(ctx, "", 1);
     }
-    av_sha1_update(ctx, &finalcount, 8);  /* Should cause a transform() */
+    av_sha1_update(ctx, (uint8_t *)&finalcount, 8); /* Should cause a transform() */
     for(i=0; i<5; i++)
         ((uint32_t*)digest)[i]= be2me_32(ctx->state[i]);
 }
