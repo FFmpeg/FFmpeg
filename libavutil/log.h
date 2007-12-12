@@ -81,7 +81,10 @@ struct AVCLASS {
  */
 #define AV_LOG_DEBUG    48
 #endif
+
+#if LIBAVUTIL_VERSION_INT < (50<<16)
 extern int av_log_level;
+#endif
 
 /**
  * Send the specified message to the log if the level is less than or equal to
@@ -103,14 +106,10 @@ extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__for
 extern void av_log(void*, int level, const char *fmt, ...);
 #endif
 
-#if LIBAVUTIL_VERSION_INT < (50<<16)
 extern void av_vlog(void*, int level, const char *fmt, va_list);
 extern int av_log_get_level(void);
 extern void av_log_set_level(int);
 extern void av_log_set_callback(void (*)(void*, int, const char*, va_list));
 extern void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
-#else
-extern void (*av_vlog)(void*, int, const char*, va_list);
-#endif
 
 #endif /* FFMPEG_LOG_H */

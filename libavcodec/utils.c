@@ -1139,7 +1139,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      " [PAR %d:%d DAR %d:%d]",
                      enc->sample_aspect_ratio.num, enc->sample_aspect_ratio.den,
                      display_aspect_ratio.num, display_aspect_ratio.den);
-            if(av_log_level >= AV_LOG_DEBUG){
+            if(av_log_get_level() >= AV_LOG_DEBUG){
                 int g= ff_gcd(enc->time_base.num, enc->time_base.den);
                 snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %d/%d",

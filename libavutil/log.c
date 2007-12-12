@@ -45,11 +45,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     vfprintf(stderr, fmt, vl);
 }
 
-#if LIBAVUTIL_VERSION_INT < (50<<16)
 static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
-#else
-void (*av_vlog)(void*, int, const char*, va_list) = av_log_default_callback;
-#endif
 
 void av_log(void* avcl, int level, const char *fmt, ...)
 {
@@ -59,7 +55,6 @@ void av_log(void* avcl, int level, const char *fmt, ...)
     va_end(vl);
 }
 
-#if LIBAVUTIL_VERSION_INT < (50<<16)
 void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
     av_log_callback(avcl, level, fmt, vl);
@@ -79,4 +74,3 @@ void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
     av_log_callback = callback;
 }
-#endif
