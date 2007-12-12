@@ -3628,15 +3628,9 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
 
 static int opt_audio_codec(const char *arg)
 {
-    AVCodec *p;
+    AVCodec *p= avcodec_find_encoder_by_name(arg);
 
-    p = first_avcodec;
-    while (p) {
-        if (!strcmp(p->name, arg) && p->type == CODEC_TYPE_AUDIO)
-            break;
-        p = p->next;
-    }
-    if (p == NULL)
+    if (p == NULL || p->type != CODEC_TYPE_AUDIO)
         return CODEC_ID_NONE;
 
     return p->id;
@@ -3644,15 +3638,9 @@ static int opt_audio_codec(const char *arg)
 
 static int opt_video_codec(const char *arg)
 {
-    AVCodec *p;
+    AVCodec *p= avcodec_find_encoder_by_name(arg);
 
-    p = first_avcodec;
-    while (p) {
-        if (!strcmp(p->name, arg) && p->type == CODEC_TYPE_VIDEO)
-            break;
-        p = p->next;
-    }
-    if (p == NULL)
+    if (p == NULL || p->type != CODEC_TYPE_VIDEO)
         return CODEC_ID_NONE;
 
     return p->id;
