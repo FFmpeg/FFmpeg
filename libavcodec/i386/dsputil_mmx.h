@@ -22,6 +22,8 @@
 #ifndef FFMPEG_DSPUTIL_MMX_H
 #define FFMPEG_DSPUTIL_MMX_H
 
+#include <stdint.h>
+
 extern const uint64_t ff_bone;
 extern const uint64_t ff_wtwo;
 
