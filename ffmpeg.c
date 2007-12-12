@@ -3321,8 +3321,8 @@ static void opt_show_formats(void)
     AVInputFormat *ifmt;
     AVOutputFormat *ofmt;
     URLProtocol *up;
-    AVCodec *p, *p2;
-    AVBitStreamFilter *bsf;
+    AVCodec *p=NULL, *p2;
+    AVBitStreamFilter *bsf=NULL;
     const char *last_name;
 
     printf("File formats:\n");
@@ -3373,7 +3373,7 @@ static void opt_show_formats(void)
         const char *type_str;
 
         p2=NULL;
-        for(p = first_avcodec; p != NULL; p = p->next) {
+        while(p= av_codec_next(p)) {
             if((p2==NULL || strcmp(p->name, p2->name)<0) &&
                 strcmp(p->name, last_name)>0){
                 p2= p;
@@ -3419,7 +3419,7 @@ static void opt_show_formats(void)
     printf("\n");
 
     printf("Bitstream filters:\n");
-    for(bsf = first_bitstream_filter; bsf != NULL; bsf = bsf->next)
+    while(bsf = av_bitstream_filter_next(bsf))
         printf(" %s", bsf->name);
     printf("\n");
 

@@ -126,6 +126,11 @@ static void do_free(void)
 /* encoder management */
 AVCodec *first_avcodec = NULL;
 
+AVCodec *av_codec_next(AVCodec *c){
+    if(c) return c->next;
+    else  return first_avcodec;
+}
+
 void register_avcodec(AVCodec *format)
 {
     AVCodec **p;

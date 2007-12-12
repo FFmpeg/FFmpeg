@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(48<<8)+0)
-#define LIBAVCODEC_VERSION      51.48.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(49<<8)+0)
+#define LIBAVCODEC_VERSION      51.49.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2428,7 +2428,10 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
 
 /* external high level API */
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 extern AVCodec *first_avcodec;
+#endif
+AVCodec *av_codec_next(AVCodec *c);
 
 /* returns LIBAVCODEC_VERSION_INT constant */
 unsigned avcodec_version(void);
@@ -2784,7 +2787,10 @@ typedef struct AVCodecParser {
     struct AVCodecParser *next;
 } AVCodecParser;
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 extern AVCodecParser *av_first_parser;
+#endif
+AVCodecParser *av_parser_next(AVCodecParser *c);
 
 void av_register_codec_parser(AVCodecParser *parser);
 AVCodecParserContext *av_parser_init(int codec_id);
@@ -2827,7 +2833,7 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                const uint8_t *buf, int buf_size, int keyframe);
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 
-extern AVBitStreamFilter *first_bitstream_filter;
+AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f);
 
 /* memory */
 

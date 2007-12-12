@@ -24,6 +24,11 @@
 
 AVCodecParser *av_first_parser = NULL;
 
+AVCodecParser* av_parser_next(AVCodecParser *p){
+    if(p) return p->next;
+    else  return av_first_parser;
+}
+
 void av_register_codec_parser(AVCodecParser *parser)
 {
     parser->next = av_first_parser;
