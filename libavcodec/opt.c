@@ -69,6 +69,7 @@ static const AVOption *av_set_number(void *obj, const char *name, double num, in
     case FF_OPT_TYPE_RATIONAL:
         if((int)num == num) *(AVRational*)dst= (AVRational){num*intnum, den};
         else                *(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
+        break;
     default:
         return NULL;
     }
