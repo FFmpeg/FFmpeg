@@ -171,13 +171,14 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     int left_block[8];
     int i;
 
+    top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
+
     //FIXME deblocking could skip the intra and nnz parts.
-    if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[mb_xy-s->mb_stride]) && !FRAME_MBAFF)
+    if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[top_xy]) && !FRAME_MBAFF)
         return;
 
     //wow what a mess, why didn't they simplify the interlacing&intra stuff, i can't imagine that these complex rules are worth it
 
-    top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
     topleft_xy = top_xy - 1;
     topright_xy= top_xy + 1;
     left_xy[1] = left_xy[0] = mb_xy-1;
