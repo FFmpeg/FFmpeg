@@ -3612,6 +3612,29 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         s->current_picture_ptr->reference |= s->picture_structure;
     }
 
+    if (h->sps.ref_frame_count &&
+            h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count){
+
+        /* We have too many reference frames, probably due to corrupted
+         * stream. Need to discard one frame. Prevents overrun of the
+         * short_ref and long_ref buffers.
+         */
+        av_log(h->s.avctx, AV_LOG_ERROR,
+               "number of reference frames exceeds max (probably "
+               "corrupt input), discarding one\n");
+
+        if (h->long_ref_count) {
+            for (i = 0; i < 16; ++i)
+                if (h->long_ref[i])
+                    break;
+
+            assert(i < 16);
+            remove_long_at_index(h, i);
+        } else {
+            remove_short_at_index(h, h->short_ref_count - 1);
+        }
+    }
+
     print_short_term(h);
     print_long_term(h);
     return 0;
