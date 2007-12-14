@@ -7210,8 +7210,9 @@ static inline int decode_seq_parameter_set(H264Context *h){
     }
 
     tmp= get_ue_golomb(&s->gb);
-    if(tmp > MAX_PICTURE_COUNT-2){
+    if(tmp > MAX_PICTURE_COUNT-2 || tmp >= 32){
         av_log(h->s.avctx, AV_LOG_ERROR, "too many reference frames\n");
+        return -1;
     }
     sps->ref_frame_count= tmp;
     sps->gaps_in_frame_num_allowed_flag= get_bits1(&s->gb);
