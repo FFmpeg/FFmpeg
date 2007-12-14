@@ -3612,8 +3612,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         s->current_picture_ptr->reference |= s->picture_structure;
     }
 
-    if (h->sps.ref_frame_count &&
-            h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count){
+    if (h->long_ref_count + h->short_ref_count > h->sps.ref_frame_count){
 
         /* We have too many reference frames, probably due to corrupted
          * stream. Need to discard one frame. Prevents overrun of the
@@ -3629,10 +3628,13 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                     break;
 
             assert(i < 16);
+            pic = h->long_ref[i];
             remove_long_at_index(h, i);
         } else {
+            pic = h->short_ref[h->short_ref_count - 1];
             remove_short_at_index(h, h->short_ref_count - 1);
         }
+        unreference_pic(h, pic, 0);
     }
 
     print_short_term(h);
