@@ -1511,7 +1511,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
 
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
-            if (dts < best_dts) {
+            if (!sample ||
+                ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
+                 (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts))) {
                 sample = current_sample;
                 best_dts = dts;
                 sc = msc;
