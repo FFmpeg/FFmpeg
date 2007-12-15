@@ -569,7 +569,11 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
-/** no av_open for output, so applications will need this: */
+/**
+ * Allocate an AVFormatContext.
+ * can be freed with av_free() but dont forget to free everything you
+ * explicitly allocated as well!
+ */
 AVFormatContext *av_alloc_format_context(void);
 
 /**
