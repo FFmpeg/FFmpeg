@@ -1128,23 +1128,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
 
     /* channel config */
     ctx->out_channels = ctx->channels;
-    if (avctx->channels == 0) {
-        avctx->channels = ctx->out_channels;
-    } else if(ctx->out_channels < avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot upmix AC3 from %d to %d channels.\n",
-               ctx->out_channels, avctx->channels);
-        return -1;
+    if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
+        avctx->request_channels < ctx->channels) {
+        ctx->out_channels = avctx->request_channels;
+        ctx->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
-    if(avctx->channels == 2) {
-        ctx->output_mode = AC3_CHMODE_STEREO;
-    } else if(avctx->channels == 1) {
-        ctx->output_mode = AC3_CHMODE_MONO;
-    } else if(avctx->channels != ctx->out_channels) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot downmix AC3 from %d to %d channels.\n",
-               ctx->out_channels, avctx->channels);
-        return -1;
-    }
-    ctx->out_channels = avctx->channels;
+    avctx->channels = ctx->out_channels;
 
     /* parse the audio blocks */
     for (blk = 0; blk < NB_BLOCKS; blk++) {
