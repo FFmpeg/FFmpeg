@@ -95,7 +95,7 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
         SHIFT2_LINE(168, 4, 1, 2, 3)
         "sub       %8, %1                  \n\t"
         "add       $8, %2                  \n\t"
-        "dec       %0                      \n\t"
+        "decl      %0                      \n\t"
         "jnz 1b                            \n\t"
         : "+g"(w), "+r"(src), "+r"(dst)
         : "r"(stride), "r"(-2*stride), "m"(shift),
@@ -139,7 +139,7 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
         TRANSFER_DO_PACK
         "add       $24, %1                 \n\t"
         "add       %3, %2                  \n\t"
-        "dec       %0                      \n\t"
+        "decl      %0                      \n\t"
         "jnz 1b                            \n\t"
         : "+g"(h), "+r" (src),  "+r" (dst)
         : "g"(stride), "m"(rnd), "m"(fact_9), "m"(ff_pw_128)
@@ -191,7 +191,7 @@ static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
         TRANSFER_DO_PACK
         "add       %7, %1                  \n\t"
         "add       %5, %2                  \n\t"
-        "dec       %0                      \n\t"
+        "decl      %0                      \n\t"
         "jnz 1b                            \n\t"
         : "+g"(h), "+r"(src),  "+r"(dst)
         : "r"(offset), "r"(-2*offset), "g"(stride), "m"(rnd),
@@ -297,7 +297,7 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
         "movq      %%mm3, 16(%2)   \n\t"                                \
         "add       %3, %1          \n\t"                                \
         "add       $24, %2         \n\t"                                \
-        "dec       %0              \n\t"                                \
+        "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
         : "+g"(h), "+r" (src),  "+r" (dst)                              \
         : "r"(src_stride), "r"(3*src_stride),                           \
@@ -336,7 +336,7 @@ vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, long int stride,         \
         TRANSFER_DO_PACK                                                \
         "add       $24, %1         \n\t"                                \
         "add       %3, %2          \n\t"                                \
-        "dec       %0              \n\t"                                \
+        "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
         : "+g"(h), "+r" (src),  "+r" (dst)                              \
         : "g"(stride), "m"(rnd), "m"(fact_53), "m"(fact_18),            \
@@ -372,7 +372,7 @@ vc1_put_## NAME ## _mmx(uint8_t *dst, const uint8_t *src,               \
         TRANSFER_DO_PACK                                                \
         "add       %5, %1          \n\t"                                \
         "add       %5, %2          \n\t"                                \
-        "dec       %0              \n\t"                                \
+        "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
         : "+g"(h), "+r" (src),  "+r" (dst)                              \
         : "r"(offset), "r"(3*offset), "g"(stride), "m"(rnd),            \
