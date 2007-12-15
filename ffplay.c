@@ -1695,10 +1695,12 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (enc->codec_type == CODEC_TYPE_AUDIO) {
         wanted_spec.freq = enc->sample_rate;
         wanted_spec.format = AUDIO_S16SYS;
-        /* hack for AC3. XXX: suppress that */
-        if (enc->channels > 2)
-            enc->channels = 2;
-        wanted_spec.channels = enc->channels;
+        if(enc->channels > 2) {
+            wanted_spec.channels = 2;
+            enc->request_channels = 2;
+        } else {
+            wanted_spec.channels = enc->channels;
+        }
         wanted_spec.silence = 0;
         wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
         wanted_spec.callback = sdl_audio_callback;
