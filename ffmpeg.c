@@ -444,6 +444,7 @@ static void do_audio_out(AVFormatContext *s,
 
     int size_out, frame_bytes, ret;
     AVCodecContext *enc= ost->st->codec;
+    AVCodecContext *dec= ist->st->codec;
 
     /* SC: dynamic allocation of buffers */
     if (!audio_buf)
@@ -452,6 +453,20 @@ static void do_audio_out(AVFormatContext *s,
         audio_out = av_malloc(audio_out_size);
     if (!audio_buf || !audio_out)
         return;               /* Should signal an error ! */
+
+    if (enc->channels != dec->channels)
+        ost->audio_resample = 1;
+
+    if (ost->audio_resample && !ost->resample) {
+        ost->resample = audio_resample_init(enc->channels,    dec->channels,
+                                            enc->sample_rate, dec->sample_rate);
+        if (!ost->resample) {
+            fprintf(stderr, "Can not resample %d channels @ %d Hz to %d channels @ %d Hz\n",
+                    dec->channels, dec->sample_rate,
+                    enc->channels, enc->sample_rate);
+            exit(1);
+        }
+    }
 
     if(audio_sync_method){
         double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts
@@ -1614,38 +1629,8 @@ static int av_encode(AVFormatContext **output_files,
             case CODEC_TYPE_AUDIO:
                 if (av_fifo_init(&ost->fifo, 2 * MAX_AUDIO_PACKET_SIZE))
                     goto fail;
-
-                if (codec->channels == icodec->channels &&
-                    codec->sample_rate == icodec->sample_rate) {
-                    ost->audio_resample = 0;
-                } else {
-                    if (codec->channels != icodec->channels &&
-                        (icodec->codec_id == CODEC_ID_AC3 ||
-                         icodec->codec_id == CODEC_ID_DTS)) {
-                        /* Special case for 5:1 AC3 and DTS input */
-                        /* and mono or stereo output      */
-                        /* Request specific number of channels */
-                        icodec->channels = codec->channels;
-                        if (codec->sample_rate == icodec->sample_rate)
-                            ost->audio_resample = 0;
-                        else {
-                            ost->audio_resample = 1;
-                        }
-                    } else {
-                        ost->audio_resample = 1;
-                    }
-                }
-                if(audio_sync_method>1)
-                    ost->audio_resample = 1;
-
-                if(ost->audio_resample){
-                    ost->resample = audio_resample_init(codec->channels, icodec->channels,
-                                                    codec->sample_rate, icodec->sample_rate);
-                    if(!ost->resample){
-                        printf("Can't resample.  Aborting.\n");
-                        abort();
-                    }
-                }
+                ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
+                icodec->request_channels = codec->channels;
                 ist->decoding_needed = 1;
                 ost->encoding_needed = 1;
                 break;
