@@ -662,9 +662,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             /* if the depth is 2, 4, or 8 bpp, file is palettized */
             if ((color_depth == 2) || (color_depth == 4) ||
                 (color_depth == 8)) {
-
                 if (color_greyscale) {
-
                     /* compute the greyscale palette */
                     color_count = 1 << color_depth;
                     color_index = 255;
@@ -677,9 +675,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                         if (color_index < 0)
                             color_index = 0;
                     }
-
                 } else if (st->codec->color_table_id & 0x08) {
-
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
                     if (color_depth == 2)
@@ -696,9 +692,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                         c->palette_control.palette[j] =
                             (r << 16) | (g << 8) | (b);
                     }
-
                 } else {
-
                     /* load the palette from the file */
                     color_start = get_be32(pb);
                     color_count = get_be16(pb);
@@ -722,7 +716,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                         }
                     }
                 }
-
                 st->codec->palctrl = &c->palette_control;
                 st->codec->palctrl->palette_changed = 1;
             } else
@@ -1364,7 +1357,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         }
     } else { /* read whole chunk */
         unsigned int chunk_samples, chunk_size, chunk_duration;
-
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
             if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
@@ -1379,7 +1371,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->total_streams; j++) {
                     MOVStreamContext *msc = mov->streams[j];
-
                     for (k = msc->next_chunk; k < msc->chunk_count; k++) {
                         if (msc->chunk_offsets[k] > current_offset && msc->chunk_offsets[k] - current_offset < chunk_size) {
                             chunk_size = msc->chunk_offsets[k] - current_offset;
@@ -1507,11 +1498,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     for (i = 0; i < mov->total_streams; i++) {
         MOVStreamContext *msc = mov->streams[i];
-
         if (s->streams[i]->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
             AVIndexEntry *current_sample = &s->streams[i]->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
-
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
                 (!url_is_streamed(s->pb) &&
