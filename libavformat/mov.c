@@ -138,7 +138,7 @@ typedef struct MOVContext {
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
     uint32_t type;
-    int (*func)(MOVContext *ctx, ByteIOContext *pb, MOV_atom_t atom);
+    int (*parse)(MOVContext *ctx, ByteIOContext *pb, MOV_atom_t atom);
 } MOVParseTableEntry;
 
 static const MOVParseTableEntry mov_default_parse_table[];
@@ -188,7 +188,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         } else {
             offset_t start_pos = url_ftell(pb);
             int64_t left;
-            err = (mov_default_parse_table[i].func)(c, pb, a);
+            err = mov_default_parse_table[i].parse(c, pb, a);
             if (c->found_moov && c->found_mdat)
                 break;
             left = a.size - url_ftell(pb) + start_pos;
