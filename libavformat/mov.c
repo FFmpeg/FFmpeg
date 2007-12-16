@@ -116,7 +116,6 @@ typedef struct MOVContext {
     int found_moov; /* when both 'moov' and 'mdat' sections has been found */
     int found_mdat; /* we suppose we have enough data to read the file */
     int64_t mdat_offset;
-    MOVStreamContext *streams[MAX_STREAMS];
     AVPaletteControl palette_control;
     MOV_mdat_t *mdat_list;
     int mdat_count;
@@ -1038,7 +1037,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->priv_data = sc;
     st->codec->codec_type = CODEC_TYPE_DATA;
     st->start_time = 0; /* XXX: check */
-    c->streams[c->fc->nb_streams-1] = sc;
 
     return mov_read_default(c, pb, atom);
 }
@@ -1206,18 +1204,19 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    MOVStreamContext *sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
     int i, edit_count;
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-    edit_count= c->streams[c->fc->nb_streams-1]->edit_count = get_be32(pb);     /* entries */
+    edit_count= sc->edit_count = get_be32(pb);     /* entries */
 
     for(i=0; i<edit_count; i++){
         get_be32(pb); /* Track duration */
         get_be32(pb); /* Media time */
         get_be32(pb); /* Media rate */
     }
-    dprintf(c->fc, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
+    dprintf(c->fc, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, sc->edit_count);
     return 0;
 }
 
@@ -1365,7 +1364,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             else { /* workaround to find nearest next chunk offset */
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->fc->nb_streams; j++) {
-                    MOVStreamContext *msc = mov->streams[j];
+                    MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
                     for (k = msc->next_chunk; k < msc->chunk_count; k++) {
                         if (msc->chunk_offsets[k] > current_offset && msc->chunk_offsets[k] - current_offset < chunk_size) {
                             chunk_size = msc->chunk_offsets[k] - current_offset;
@@ -1384,7 +1383,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 assert(chunk_size != INT_MAX);
                 for (j = 0; j < mov->fc->nb_streams; j++) {
-                    mov->streams[j]->next_chunk = 0;
+                    MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
+                    msc->next_chunk = 0;
                 }
             }
             av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
@@ -1438,8 +1438,8 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
 
     for(i=0; i<s->nb_streams; i++) {
-        MOVStreamContext *sc = mov->streams[i];
         AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
         /* sanity checks */
         if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
            (!sc->sample_size && !sc->sample_count)){
@@ -1465,12 +1465,13 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     for(i=0; i<s->nb_streams; i++) {
+        MOVStreamContext *sc = s->streams[i]->priv_data;
         /* Do not need those anymore. */
-        av_freep(&mov->streams[i]->chunk_offsets);
-        av_freep(&mov->streams[i]->sample_to_chunk);
-        av_freep(&mov->streams[i]->sample_sizes);
-        av_freep(&mov->streams[i]->keyframes);
-        av_freep(&mov->streams[i]->stts_data);
+        av_freep(&sc->chunk_offsets);
+        av_freep(&sc->sample_to_chunk);
+        av_freep(&sc->sample_sizes);
+        av_freep(&sc->keyframes);
+        av_freep(&sc->stts_data);
     }
     av_freep(&mov->mdat_list);
     return 0;
@@ -1485,9 +1486,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
-        MOVStreamContext *msc = mov->streams[i];
-        if (s->streams[i]->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
-            AVIndexEntry *current_sample = &s->streams[i]->index_entries[msc->current_sample];
+        AVStream *st = s->streams[i];
+        MOVStreamContext *msc = st->priv_data;
+        if (st->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
+            AVIndexEntry *current_sample = &st->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
@@ -1605,8 +1607,8 @@ static int mov_read_close(AVFormatContext *s)
     int i;
     MOVContext *mov = s->priv_data;
     for(i=0; i<s->nb_streams; i++) {
-        av_freep(&mov->streams[i]->ctts_data);
-        av_freep(&mov->streams[i]);
+        MOVStreamContext *sc = s->streams[i]->priv_data;
+        av_freep(&sc->ctts_data);
     }
     if(mov->dv_demux){
         for(i=0; i<mov->dv_fctx->nb_streams; i++){
