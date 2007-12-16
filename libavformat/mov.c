@@ -118,10 +118,6 @@ typedef struct MOVContext {
     int64_t mdat_offset;
     int total_streams;
     MOVStreamContext *streams[MAX_STREAMS];
-
-    const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
-    /* NOTE: for recursion save to/ restore from local variable! */
-
     AVPaletteControl palette_control;
     MOV_mdat_t *mdat_list;
     int mdat_count;
@@ -146,6 +142,8 @@ typedef struct MOVParseTableEntry {
     uint32_t type;
     mov_parse_function func;
 } MOVParseTableEntry;
+
+static const MOVParseTableEntry mov_default_parse_table[];
 
 static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -183,16 +181,16 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             break;
         a.size = FFMIN(a.size, atom.size - total_size);
 
-        for (i = 0; c->parse_table[i].type != 0L
-             && c->parse_table[i].type != a.type; i++)
+        for (i = 0; mov_default_parse_table[i].type != 0L
+             && mov_default_parse_table[i].type != a.type; i++)
             /* empty */;
 
-        if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
+        if (mov_default_parse_table[i].type == 0) { /* skip leaf atoms data */
             url_fskip(pb, a.size);
         } else {
             offset_t start_pos = url_ftell(pb);
             int64_t left;
-            err = (c->parse_table[i].func)(c, pb, a);
+            err = (mov_default_parse_table[i].func)(c, pb, a);
             if (c->found_moov && c->found_mdat)
                 break;
             left = a.size - url_ftell(pb) + start_pos;
@@ -1427,7 +1425,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
-    mov->parse_table = mov_default_parse_table;
 
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
         atom.size = url_fsize(pb);
