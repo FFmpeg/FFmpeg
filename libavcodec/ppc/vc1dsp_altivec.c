@@ -311,7 +311,7 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, DCTELEM *block)
 #define ADD(dest,src,perm)                                              \
     /* *(uint64_t *)&tmp = *(uint64_t *)dest; */                        \
     tmp = vec_ld (0, dest);                                             \
-    tmp2 = (vector unsigned int)vec_perm (tmp, vec_splat_u8(0), perm);  \
+    tmp2 = (vector signed short)vec_perm (tmp, vec_splat_u8(0), perm);  \
     tmp3 = vec_adds (tmp2, src);                                        \
     tmp = vec_packsu (tmp3, tmp3);                                      \
     vec_ste ((vector unsigned int)tmp, 0, (unsigned int *)dest);        \
