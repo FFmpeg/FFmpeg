@@ -4153,7 +4153,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->deblocking_filter == 1 && h0->max_contexts > 1) {
         if(s->avctx->flags2 & CODEC_FLAG2_FAST) {
             /* Cheat slightly for speed:
-               Dont bother to deblock across slices */
+               Do not bother to deblock across slices. */
             h->deblocking_filter = 2;
         } else {
             h0->max_contexts = 1;

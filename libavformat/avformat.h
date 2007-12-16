@@ -198,9 +198,9 @@ typedef struct AVInputFormat {
     /** size of private data so that it can be allocated in the wrapper */
     int priv_data_size;
     /**
-     * tell if a given file has a chance of being parsed by this format.
-     * The buffer provided is guranteed to be AVPROBE_PADDING_SIZE bytes big
-     * so you dont have to check for that unless you need more.
+     * Tell if a given file has a chance of being parsed by this format.
+     * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
+     * big so you do not have to check for that unless you need more.
      */
     int (*read_probe)(AVProbeData *);
     /** read the format header and initialize the AVFormatContext
@@ -571,7 +571,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVFormatParameters *ap);
 /**
  * Allocate an AVFormatContext.
- * can be freed with av_free() but dont forget to free everything you
+ * Can be freed with av_free() but do not forget to free everything you
  * explicitly allocated as well!
  */
 AVFormatContext *av_alloc_format_context(void);
