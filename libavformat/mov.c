@@ -135,12 +135,10 @@ typedef struct MOVContext {
  0: continue to parse next atom
  -1: error occured, exit
  */
-typedef int (*mov_parse_function)(MOVContext *ctx, ByteIOContext *pb, MOV_atom_t atom);
-
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
     uint32_t type;
-    mov_parse_function func;
+    int (*func)(MOVContext *ctx, ByteIOContext *pb, MOV_atom_t atom);
 } MOVParseTableEntry;
 
 static const MOVParseTableEntry mov_default_parse_table[];
