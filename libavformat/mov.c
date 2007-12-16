@@ -193,6 +193,8 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             offset_t start_pos = url_ftell(pb);
             int64_t left;
             err = (c->parse_table[i].func)(c, pb, a);
+            if (c->found_moov && c->found_mdat)
+                break;
             left = a.size - url_ftell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
                 url_fskip(pb, left);
@@ -1511,9 +1513,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
 
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
-            if (!sample ||
-                ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
-                 (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts))) {
+            if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
+                (!url_is_streamed(s->pb) &&
+                 ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
+                  (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))) {
                 sample = current_sample;
                 best_dts = dts;
                 sc = msc;
@@ -1524,7 +1527,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
-    if (sample->pos >= url_fsize(s->pb)) {
+    if (url_fseek(s->pb, sample->pos, SEEK_SET) != sample->pos) {
         av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n", sc->ffindex, sample->pos);
         return -1;
     }
@@ -1534,7 +1537,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         dprintf(s, "dv audio pkt size %d\n", pkt->size);
     } else {
 #endif
-        url_fseek(s->pb, sample->pos, SEEK_SET);
         av_get_packet(s->pb, pkt, sample->size);
 #ifdef CONFIG_DV_DEMUXER
         if (mov->dv_demux) {
