@@ -750,27 +750,28 @@ static inline void do_imdct(AC3DecodeContext *ctx)
 /**
  * Downmix the output to mono or stereo.
  */
-static void ac3_downmix(float samples[AC3_MAX_CHANNELS][256], int fbw_channels,
-                        int output_mode, float coef[AC3_MAX_CHANNELS][2])
+static void ac3_downmix(float samples[][256], int fbw_channels,
+                        int output_mode, float coef[AC3_MAX_CHANNELS][2],
+                        int ch_offset)
 {
     int i, j;
     float v0, v1, s0, s1;
 
     for(i=0; i<256; i++) {
         v0 = v1 = s0 = s1 = 0.0f;
-        for(j=0; j<fbw_channels; j++) {
-            v0 += samples[j][i] * coef[j][0];
-            v1 += samples[j][i] * coef[j][1];
-            s0 += coef[j][0];
-            s1 += coef[j][1];
+        for(j=ch_offset; j<fbw_channels+ch_offset; j++) {
+            v0 += samples[j][i] * coef[j-ch_offset][0];
+            v1 += samples[j][i] * coef[j-ch_offset][1];
+            s0 += coef[j-ch_offset][0];
+            s1 += coef[j-ch_offset][1];
         }
         v0 /= s0;
         v1 /= s1;
         if(output_mode == AC3_CHMODE_MONO) {
-            samples[0][i] = (v0 + v1) * LEVEL_MINUS_3DB;
+            samples[ch_offset][i] = (v0 + v1) * LEVEL_MINUS_3DB;
         } else if(output_mode == AC3_CHMODE_STEREO) {
-            samples[0][i] = v0;
-            samples[1][i] = v1;
+            samples[ch_offset][i] = v0;
+            samples[ch_offset+1][i] = v1;
         }
     }
 }
@@ -785,12 +786,16 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     int i, bnd, seg, ch;
     GetBitContext *gb = &ctx->gb;
     uint8_t bit_alloc_stages[AC3_MAX_CHANNELS];
+    int any_block_switching = 0;
+    int num_channels_bak, fbw_channels_bak;
 
     memset(bit_alloc_stages, 0, AC3_MAX_CHANNELS);
 
     /* block switch flags */
-    for (ch = 1; ch <= fbw_channels; ch++)
+    for (ch = 1; ch <= fbw_channels; ch++) {
         ctx->block_switch[ch] = get_bits1(gb);
+        any_block_switching |= ctx->block_switch[ch];
+    }
 
     /* dithering flags */
     ctx->dither_all = 1;
@@ -1062,13 +1067,26 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         }
     }
 
+    /* if no block switching is used, downmixing can be done before IMDCT */
+    num_channels_bak = ctx->channels;
+    fbw_channels_bak = ctx->fbw_channels;
+    if(!any_block_switching) {
+        if(ctx->channels != ctx->out_channels && !((ctx->output_mode & AC3_OUTPUT_LFEON) &&
+                ctx->fbw_channels == ctx->out_channels)) {
+            ac3_downmix(ctx->transform_coeffs, ctx->fbw_channels,
+                        ctx->output_mode, ctx->downmix_coeffs, 1);
+            ctx->channels = ctx->out_channels;
+            ctx->fbw_channels = ctx->channels - (ctx->output_mode & AC3_OUTPUT_LFEON);
+        }
+    }
+
     do_imdct(ctx);
 
-    /* downmix output if needed */
+    /* downmix output now if it wasn't done before IMDCT */
     if(ctx->channels != ctx->out_channels && !((ctx->output_mode & AC3_OUTPUT_LFEON) &&
             ctx->fbw_channels == ctx->out_channels)) {
         ac3_downmix(ctx->output, ctx->fbw_channels, ctx->output_mode,
-                    ctx->downmix_coeffs);
+                    ctx->downmix_coeffs, 0);
     }
 
     /* convert float to 16-bit integer */
@@ -1078,6 +1096,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
         }
         ctx->dsp.float_to_int16(ctx->int_output[ch], ctx->output[ch], 256);
     }
+
+    ctx->channels = num_channels_bak;
+    ctx->fbw_channels = fbw_channels_bak;
 
     return 0;
 }
