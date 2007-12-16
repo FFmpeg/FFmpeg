@@ -153,7 +153,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         atom.size = INT64_MAX;
     while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
         a.size = atom.size;
-        a.type=0L;
+        a.type=0;
         if(atom.size >= 8) {
             a.size = get_be32(pb);
             a.type = get_le32(pb);
@@ -176,7 +176,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             break;
         a.size = FFMIN(a.size, atom.size - total_size);
 
-        for (i = 0; mov_default_parse_table[i].type != 0L
+        for (i = 0; mov_default_parse_table[i].type != 0
              && mov_default_parse_table[i].type != a.type; i++)
             /* empty */;
 
@@ -1252,7 +1252,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
 { MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
 { MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
-{ 0L, NULL }
+{ 0, NULL }
 };
 
 /* XXX: is it sufficient ? */
