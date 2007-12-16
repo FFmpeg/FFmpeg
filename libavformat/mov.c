@@ -1443,10 +1443,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
 
-    /* some cleanup : make sure we are on the mdat atom */
-    if(!url_is_streamed(pb) && (url_ftell(pb) != mov->mdat_offset))
-        url_fseek(pb, mov->mdat_offset, SEEK_SET);
-
     mov->total_streams = s->nb_streams;
 
     for(i=0; i<mov->total_streams; i++) {
