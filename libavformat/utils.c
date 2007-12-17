@@ -417,11 +417,10 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        int buf_size,
                        AVFormatParameters *ap)
 {
-    int err, must_open_file, file_opened, probe_size;
+    int err, probe_size;
     AVProbeData probe_data, *pd = &probe_data;
-    ByteIOContext *pb;
+    ByteIOContext *pb = NULL;
 
-    file_opened = 0;
     pd->filename = "";
     if (filename)
         pd->filename = filename;
@@ -435,18 +434,11 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     /* do not open file if the format does not need it. XXX: specific
        hack needed to handle RTSP/TCP */
-    must_open_file = 1;
-    if (fmt && (fmt->flags & AVFMT_NOFILE)) {
-        must_open_file = 0;
-        pb= NULL; //FIXME this or memset(pb, 0, sizeof(ByteIOContext)); otherwise it is uninitialized
-    }
-
-    if (!fmt || must_open_file) {
+    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
         /* if no file needed do not try to open one */
         if ((err=url_fopen(&pb, filename, URL_RDONLY)) < 0) {
             goto fail;
         }
-        file_opened = 1;
         if (buf_size > 0) {
             url_setbufsize(pb, buf_size);
         }
@@ -460,7 +452,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             if (url_fseek(pb, 0, SEEK_SET) < 0) {
                 url_fclose(pb);
                 if (url_fopen(&pb, filename, URL_RDONLY) < 0) {
-                    file_opened = 0;
+                    pb = NULL;
                     err = AVERROR(EIO);
                     goto fail;
                 }
@@ -490,7 +482,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     return 0;
  fail:
     av_freep(&pd->buf);
-    if (file_opened)
+    if (pb)
         url_fclose(pb);
     *ic_ptr = NULL;
     return err;
