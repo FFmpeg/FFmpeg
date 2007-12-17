@@ -377,9 +377,11 @@ typedef struct RcOverride{
 #define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
 #define CODEC_FLAG_MV0    0x0040  ///< Always try a MB with MV=<0,0>.
 #define CODEC_FLAG_PART   0x0080  ///< Use data partitioning.
-/* The parent program guarantees that the input for B-frames containing
+/**
+ * The parent program guarantees that the input for B-frames containing
  * streams is not written to for at least s->max_b_frames+1 frames, if
- * this is not set the input will be copied. */
+ * this is not set the input will be copied.
+ */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
 #define CODEC_FLAG_PASS1           0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
 #define CODEC_FLAG_PASS2           0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
