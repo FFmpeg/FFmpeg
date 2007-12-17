@@ -58,7 +58,7 @@
 enum CodecID {
     CODEC_ID_NONE,
     CODEC_ID_MPEG1VIDEO,
-    CODEC_ID_MPEG2VIDEO, /* preferred ID for MPEG-1/2 video decoding */
+    CODEC_ID_MPEG2VIDEO, ///< preferred ID for MPEG-1/2 video decoding
     CODEC_ID_MPEG2VIDEO_XVMC,
     CODEC_ID_H261,
     CODEC_ID_H263,
@@ -234,7 +234,7 @@ enum CodecID {
     CODEC_ID_SOL_DPCM,
 
     CODEC_ID_MP2= 0x15000,
-    CODEC_ID_MP3, /* preferred ID for decoding MPEG audio layer 1, 2 or 3 */
+    CODEC_ID_MP3, ///< preferred ID for decoding MPEG audio layer 1, 2 or 3
     CODEC_ID_AAC,
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
     CODEC_ID_MPEG4AAC,
@@ -256,7 +256,7 @@ enum CodecID {
     CODEC_ID_SHORTEN,
     CODEC_ID_ALAC,
     CODEC_ID_WESTWOOD_SND1,
-    CODEC_ID_GSM, /* as in Berlin toast format */
+    CODEC_ID_GSM, ///< as in Berlin toast format
     CODEC_ID_QDM2,
     CODEC_ID_COOK,
     CODEC_ID_TRUESPEECH,
@@ -278,10 +278,10 @@ enum CodecID {
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
     CODEC_ID_DVB_SUBTITLE,
-    CODEC_ID_TEXT,  /* raw UTF-8 text */
+    CODEC_ID_TEXT,  ///< raw UTF-8 text
     CODEC_ID_XSUB,
 
-    CODEC_ID_MPEG2TS= 0x20000, /* _FAKE_ codec to indicate a raw MPEG-2 TS
+    CODEC_ID_MPEG2TS= 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
                                 * stream (only used by libavformat) */
 };
 
@@ -300,8 +300,10 @@ enum CodecType {
     CODEC_TYPE_NB
 };
 
-/* Currently unused, may be used if 24/32 bits samples are ever supported. */
-/* all in native-endian format */
+/**
+ * Currently unused, may be used if 24/32 bits samples are ever supported.
+ * all in native-endian format
+ */
 enum SampleFormat {
     SAMPLE_FMT_NONE = -1,
     SAMPLE_FMT_U8,              ///< unsigned 8 bits
@@ -329,7 +331,9 @@ enum SampleFormat {
  */
 #define FF_MIN_BUFFER_SIZE 16384
 
-/* motion estimation type, EPZS by default */
+/**
+ * motion estimation type, EPZS by default
+ */
 enum Motion_Est_ID {
     ME_ZERO = 1,
     ME_FULL,
