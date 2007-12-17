@@ -37,6 +37,7 @@ enum AVOptionType{
     FF_OPT_TYPE_FLOAT,
     FF_OPT_TYPE_STRING,
     FF_OPT_TYPE_RATIONAL,
+    FF_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
     FF_OPT_TYPE_CONST=128,
 };
 

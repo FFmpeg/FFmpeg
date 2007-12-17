@@ -108,6 +108,13 @@ static const char *const_names[]={
     0
 };
 
+static int hexchar2int(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
 const AVOption *av_set_string(void *obj, const char *name, const char *val){
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
@@ -115,6 +122,29 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
     }
     if(!o || !val || o->offset<=0)
         return NULL;
+    if(o->type == FF_OPT_TYPE_BINARY){
+        uint8_t **dst = (uint8_t **)(((uint8_t*)obj) + o->offset);
+        int *lendst = (int *)(dst + 1);
+        uint8_t *bin, *ptr;
+        int len = strlen(val);
+        av_freep(dst);
+        *lendst = 0;
+        if (len & 1) return NULL;
+        len /= 2;
+        ptr = bin = av_malloc(len);
+        while (*val) {
+            int a = hexchar2int(*val++);
+            int b = hexchar2int(*val++);
+            if (a < 0 || b < 0) {
+                av_free(bin);
+                return NULL;
+            }
+            *ptr++ = (a << 4) | b;
+        }
+        *dst = bin;
+        *lendst = len;
+        return o;
+    }
     if(o->type != FF_OPT_TYPE_STRING){
         for(;;){
             int i;
@@ -184,6 +214,8 @@ const AVOption *av_set_int(void *obj, const char *name, int64_t n){
 const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len){
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
+    uint8_t *bin;
+    int len, i;
     if(!o || o->offset<=0)
         return NULL;
     if(o->type != FF_OPT_TYPE_STRING && (!buf || !buf_len))
@@ -200,6 +232,12 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     case FF_OPT_TYPE_DOUBLE:    snprintf(buf, buf_len, "%f" , *(double *)dst);break;
     case FF_OPT_TYPE_RATIONAL:  snprintf(buf, buf_len, "%d/%d", ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
     case FF_OPT_TYPE_STRING:    return *(void**)dst;
+    case FF_OPT_TYPE_BINARY:
+        len = *(int*)(((uint8_t *)dst) + sizeof(uint8_t *));
+        if(len >= (buf_len + 1)/2) return NULL;
+        bin = *(uint8_t**)dst;
+        for(i = 0; i < len; i++) snprintf(buf + i*2, 3, "%02X", bin[i]);
+        break;
     default: return NULL;
     }
     return buf;
@@ -306,6 +344,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit)
             case FF_OPT_TYPE_RATIONAL:
                 av_log( av_log_obj, AV_LOG_INFO, "%-7s ", "<rational>" );
                 break;
+            case FF_OPT_TYPE_BINARY:
+                av_log( av_log_obj, AV_LOG_INFO, "%-7s ", "<binary>" );
+                break;
             case FF_OPT_TYPE_CONST:
             default:
                 av_log( av_log_obj, AV_LOG_INFO, "%-7s ", "" );
@@ -373,6 +414,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             }
             break;
             case FF_OPT_TYPE_STRING:
+            case FF_OPT_TYPE_BINARY:
                 /* Cannot set default for string as default_val is of type * double */
             break;
             default:
