@@ -2041,7 +2041,7 @@ int av_read_pause(AVFormatContext *s)
 
 void av_close_input_file(AVFormatContext *s)
 {
-    int i, must_open_file;
+    int i;
     AVStream *st;
 
     /* free previous packet */
@@ -2068,13 +2068,8 @@ void av_close_input_file(AVFormatContext *s)
         av_freep(&s->programs[i]);
     }
     flush_packet_queue(s);
-    must_open_file = 1;
-    if (s->iformat->flags & AVFMT_NOFILE) {
-        must_open_file = 0;
-    }
-    if (must_open_file) {
+    if (!(s->iformat->flags & AVFMT_NOFILE))
         url_fclose(s->pb);
-    }
     av_freep(&s->priv_data);
     av_free(s);
 }
