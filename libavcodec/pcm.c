@@ -384,8 +384,12 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     src = buf;
 
     n= av_get_bits_per_sample(avctx->codec_id)/8;
-    if((n && buf_size % n) || avctx->channels > MAX_CHANNELS){
+    if(n && buf_size % n){
         av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
+        return -1;
+    }
+    if(avctx->channels <= 0 || avctx->channels > MAX_CHANNELS){
+        av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
         return -1;
     }
 
