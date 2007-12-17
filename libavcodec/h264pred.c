@@ -288,10 +288,10 @@ static void pred4x4_vertical_left_c(uint8_t *src, uint8_t *topright, int stride)
     src[3+3*stride]=(t4 + 2*t5 + t6 + 2)>>2;
 }
 
-static void pred4x4_vertical_left_rv40_c(uint8_t *src, uint8_t *topright, int stride){
+static void pred4x4_vertical_left_rv40(uint8_t *src, uint8_t *topright, int stride,
+                                      const int l0, const int l1, const int l2, const int l3, const int l4){
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
-    LOAD_LEFT_EDGE
 
     src[0+0*stride]=(2*t0 + 2*t1 + l1 + 2*l2 + l3 + 4)>>3;
     src[1+0*stride]=
@@ -301,7 +301,7 @@ static void pred4x4_vertical_left_rv40_c(uint8_t *src, uint8_t *topright, int st
     src[3+0*stride]=
     src[2+2*stride]=(t3 + t4+ 1)>>1;
     src[3+2*stride]=(t4 + t5+ 1)>>1;
-    src[0+1*stride]=(t0 + 2*t1 + t2 + l2 + 2*l3 + l3 + 4)>>3;
+    src[0+1*stride]=(t0 + 2*t1 + t2 + l2 + 2*l3 + l4 + 4)>>3;
     src[1+1*stride]=
     src[0+3*stride]=(t1 + 2*t2 + t3 + 2)>>2;
     src[2+1*stride]=
@@ -309,6 +309,19 @@ static void pred4x4_vertical_left_rv40_c(uint8_t *src, uint8_t *topright, int st
     src[3+1*stride]=
     src[2+3*stride]=(t3 + 2*t4 + t5 + 2)>>2;
     src[3+3*stride]=(t4 + 2*t5 + t6 + 2)>>2;
+}
+
+static void pred4x4_vertical_left_rv40_c(uint8_t *src, uint8_t *topright, int stride){
+    LOAD_LEFT_EDGE
+    LOAD_DOWN_LEFT_EDGE
+
+    pred4x4_vertical_left_rv40(src, topright, stride, l0, l1, l2, l3, l4);
+}
+
+static void pred4x4_vertical_left_rv40_nodown_c(uint8_t *src, uint8_t *topright, int stride){
+    LOAD_LEFT_EDGE
+
+    pred4x4_vertical_left_rv40(src, topright, stride, l0, l1, l2, l3, l3);
 }
 
 static void pred4x4_horizontal_up_c(uint8_t *src, uint8_t *topright, int stride){
@@ -1010,6 +1023,7 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
         h->pred4x4[DC_128_PRED         ]= pred4x4_128_dc_c;
         h->pred4x4[DIAG_DOWN_LEFT_PRED_RV40_NODOWN]= pred4x4_down_left_rv40_nodown_c;
         h->pred4x4[HOR_UP_PRED_RV40_NODOWN]= pred4x4_horizontal_up_rv40_nodown_c;
+        h->pred4x4[VERT_LEFT_PRED_RV40_NODOWN]= pred4x4_vertical_left_rv40_nodown_c;
     }
 
     h->pred8x8l[VERT_PRED           ]= pred8x8l_vertical_c;
