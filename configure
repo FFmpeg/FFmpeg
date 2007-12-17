@@ -2081,7 +2081,7 @@ Version: $version
 Requires: $requires
 Conflicts:
 Libs: -L\${libdir} $libs
-Cflags: -I\${includedir} -I\${includedir}/$include
+Cflags: -I\${includedir}/$include
 EOF
 }
 
