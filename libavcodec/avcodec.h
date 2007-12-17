@@ -332,7 +332,7 @@ enum SampleFormat {
 #define FF_MIN_BUFFER_SIZE 16384
 
 /**
- * motion estimation type, EPZS by default
+ * motion estimation type.
  */
 enum Motion_Est_ID {
     ME_ZERO = 1,
