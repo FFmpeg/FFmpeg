@@ -73,9 +73,6 @@ static const uint8_t quantization_tab[16] = {
 /** dynamic range table. converts codes to scale factors. */
 static float dynamic_range_tab[256];
 
-/** dialog normalization table */
-static float dialog_norm_tab[32];
-
 /** Adjustments in dB gain */
 #define LEVEL_MINUS_3DB         0.7071067811865476
 #define LEVEL_MINUS_4POINT5DB   0.5946035575013605
@@ -161,7 +158,6 @@ typedef struct {
     int out_channels;                       ///< number of output channels
 
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
-    float dialog_norm[2];                   ///< dialog normalization
     float dynamic_range[2];                 ///< dynamic range
     float cpl_coords[AC3_MAX_CHANNELS][18]; ///< coupling coordinates
     int   num_cpl_bands;                    ///< number of coupling bands
@@ -276,14 +272,6 @@ static void ac3_tables_init(void)
         dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
 
-    /* generate dialog normalization table
-       references: Section 5.4.2.8 dialnorm
-                   Section 7.6 Dialogue Normalization */
-    for(i=1; i<32; i++) {
-        dialog_norm_tab[i] = expf((i-31) * M_LN10 / 20.0f);
-    }
-    dialog_norm_tab[0] = dialog_norm_tab[31];
-
     /* generate scale factors for exponents and asymmetrical dequantization
        reference: Section 7.3.2 Expansion of Mantissas for Asymmetric Quantization */
     for (i = 0; i < 25; i++)
@@ -382,7 +370,7 @@ static int ac3_parse_header(AC3DecodeContext *ctx)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(ctx->channel_mode);
     do {
-        ctx->dialog_norm[i] = dialog_norm_tab[get_bits(gb, 5)]; // dialog normalization
+        skip_bits(gb, 5); // skip dialog normalization
         if (get_bits1(gb))
             skip_bits(gb, 8); //skip compression
         if (get_bits1(gb))
@@ -1049,13 +1037,13 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     if(ctx->channel_mode == AC3_CHMODE_STEREO)
         do_rematrixing(ctx);
 
-    /* apply scaling to coefficients (headroom, dialnorm, dynrng) */
+    /* apply scaling to coefficients (headroom, dynrng) */
     for(ch=1; ch<=ctx->channels; ch++) {
         float gain = 2.0f * ctx->mul_bias;
         if(ctx->channel_mode == AC3_CHMODE_DUALMONO) {
-            gain *= ctx->dialog_norm[ch-1] * ctx->dynamic_range[ch-1];
+            gain *= ctx->dynamic_range[ch-1];
         } else {
-            gain *= ctx->dialog_norm[0] * ctx->dynamic_range[0];
+            gain *= ctx->dynamic_range[0];
         }
         for(i=0; i<ctx->end_freq[ch]; i++) {
             ctx->transform_coeffs[ch][i] *= gain;
