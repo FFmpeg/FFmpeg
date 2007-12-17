@@ -178,7 +178,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     }
 
     for(ch = 0; ch < s->nb_channels; ch++) {
-        if (s->channel_coded[ch]= 1) { //FIXME
+        if (s->channel_coded[ch]= 1) { //FIXME only set channel_coded when needed, instead of always
             init_exp(s, ch, fixed_exp);
         }
     }
