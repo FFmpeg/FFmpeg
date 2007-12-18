@@ -335,15 +335,15 @@ enum SampleFormat {
  * motion estimation type.
  */
 enum Motion_Est_ID {
-    ME_ZERO = 1,
+    ME_ZERO = 1,    ///< no search, that is use 0,0 vector whenever one is needed
     ME_FULL,
     ME_LOG,
     ME_PHODS,
-    ME_EPZS,
-    ME_X1,
-    ME_HEX,
-    ME_UMH,
-    ME_ITER,
+    ME_EPZS,        ///< enhanced predictive zonal search
+    ME_X1,          ///< reserved for experiments
+    ME_HEX,         ///< hexagon based search
+    ME_UMH,         ///< uneven multi-hexagon search
+    ME_ITER,        ///< iterative search
 };
 
 enum AVDiscard{
