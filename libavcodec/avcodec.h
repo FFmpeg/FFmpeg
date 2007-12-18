@@ -1274,8 +1274,10 @@ typedef struct AVCodecContext {
     float dark_masking;
 
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
     /* for binary compatibility */
     int unused;
+#endif
 
     /**
      * IDCT algorithm, see FF_IDCT_* below.
