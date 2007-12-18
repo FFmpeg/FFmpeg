@@ -171,31 +171,12 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     DNXHDEncContext *ctx = avctx->priv_data;
     int i, index;
 
-    if (avctx->width == 1920 && avctx->height == 1080) {
-        if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
-            if      (avctx->bit_rate == 120000000)
-                ctx->cid = 1242;
-            else if (avctx->bit_rate == 185000000)
-                ctx->cid = 1243;
-        } else {
-            if      (avctx->bit_rate == 120000000)
-                ctx->cid = 1237;
-            else if (avctx->bit_rate == 185000000)
-                ctx->cid = 1238;
-            else if (avctx->bit_rate ==  36000000)
-                ctx->cid = 1253;
-        }
-    } else if (avctx->width == 1280 && avctx->height == 720 &&
-               !(avctx->flags & CODEC_FLAG_INTERLACED_DCT)) {
-            if      (avctx->bit_rate ==  90000000)
-                ctx->cid = 1251;
-            else if (avctx->bit_rate ==  60000000)
-                ctx->cid = 1252;
-    }
+    ctx->cid = ff_dnxhd_find_cid(avctx);
     if (!ctx->cid || avctx->pix_fmt != PIX_FMT_YUV422P) {
         av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD\n");
         return -1;
     }
+    av_log(avctx, AV_LOG_DEBUG, "cid %d\n", ctx->cid);
 
     index = ff_dnxhd_get_cid_table(ctx->cid);
     ctx->cid_table = &ff_dnxhd_cid_table[index];

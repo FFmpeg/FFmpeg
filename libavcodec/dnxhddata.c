@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avcodec.h"
 #include "dnxhddata.h"
 
 static const uint8_t dnxhd_1237_luma_weight[] = {
@@ -361,49 +362,57 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
       dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
-      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 115, 120, 145, 240, 290 } },
     { 1238, 1920, 1080, 0, 917504, 917504, 4, 8,
       dnxhd_1238_luma_weight, dnxhd_1238_chroma_weight,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
-      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
+      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run,
+      { 175, 185, 220, 365, 440 } },
     { 1241, 1920, 1080, 1, 917504, 458752, 6, 10,
       dnxhd_1241_luma_weight, dnxhd_1241_chroma_weight,
       dnxhd_1241_dc_codes, dnxhd_1241_dc_bits,
       dnxhd_1241_ac_codes, dnxhd_1241_ac_bits, dnxhd_1241_ac_level,
       dnxhd_1241_ac_run_flag, dnxhd_1241_ac_index_flag,
-      dnxhd_1241_run_codes, dnxhd_1241_run_bits, dnxhd_1241_run },
+      dnxhd_1241_run_codes, dnxhd_1241_run_bits, dnxhd_1241_run,
+      { 185, 220 } },
     { 1242, 1920, 1080, 1, 606208, 303104, 4, 8,
       dnxhd_1242_luma_weight, dnxhd_1242_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
       dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
-      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 120, 145 } },
     { 1243, 1920, 1080, 1, 917504, 458752, 4, 8,
       dnxhd_1243_luma_weight, dnxhd_1243_chroma_weight,
       dnxhd_1238_dc_codes, dnxhd_1238_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_level,
       dnxhd_1238_ac_run_flag, dnxhd_1238_ac_index_flag,
-      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run },
+      dnxhd_1238_run_codes, dnxhd_1238_run_bits, dnxhd_1238_run,
+      { 185, 220 } },
     { 1251, 1280,  720, 0, 458752, 458752, 4, 8,
       dnxhd_1251_luma_weight, dnxhd_1251_chroma_weight,
       dnxhd_1251_dc_codes, dnxhd_1251_dc_bits,
       dnxhd_1251_ac_codes, dnxhd_1251_ac_bits, dnxhd_1251_ac_level,
       dnxhd_1251_ac_run_flag, dnxhd_1251_ac_index_flag,
-      dnxhd_1251_run_codes, dnxhd_1251_run_bits, dnxhd_1251_run },
+      dnxhd_1251_run_codes, dnxhd_1251_run_bits, dnxhd_1251_run,
+      { 90, 110, 175, 220 } },
     { 1252, 1280,  720, 0, 303104, 303104, 4, 8,
       dnxhd_1252_luma_weight, dnxhd_1252_chroma_weight,
       dnxhd_1252_dc_codes, dnxhd_1252_dc_bits,
       dnxhd_1252_ac_codes, dnxhd_1252_ac_bits, dnxhd_1252_ac_level,
       dnxhd_1252_ac_run_flag, dnxhd_1252_ac_index_flag,
-      dnxhd_1252_run_codes, dnxhd_1252_run_bits, dnxhd_1252_run },
+      dnxhd_1252_run_codes, dnxhd_1252_run_bits, dnxhd_1252_run,
+      { 60, 75, 115, 145 } },
     { 1253, 1920, 1080, 0, 188416, 188416, 4, 8,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_level,
       dnxhd_1237_ac_run_flag, dnxhd_1237_ac_index_flag,
-      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run },
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 36, 45, 75, 90 } },
 };
 
 int ff_dnxhd_get_cid_table(int cid)
@@ -413,4 +422,22 @@ int ff_dnxhd_get_cid_table(int cid)
         if (ff_dnxhd_cid_table[i].cid == cid)
             return i;
     return -1;
+}
+
+int ff_dnxhd_find_cid(AVCodecContext *avctx)
+{
+    int i, j;
+    int mbs = avctx->bit_rate/1000000;
+    for (i = 0; i < sizeof(ff_dnxhd_cid_table)/sizeof(CIDEntry); i++) {
+        const CIDEntry *cid = &ff_dnxhd_cid_table[i];
+        if (cid->width == avctx->width && cid->height == avctx->height &&
+            cid->interlaced == !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT) &&
+            cid->bit_depth == 8) { // until 10 bit is supported
+            for (j = 0; j < sizeof(cid->bit_rates); j++) {
+                if (cid->bit_rates[j] == mbs)
+                    return cid->cid;
+            }
+        }
+    }
+    return 0;
 }
