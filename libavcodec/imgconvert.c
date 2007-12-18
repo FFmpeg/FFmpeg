@@ -2555,6 +2555,8 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         else
             int_pix_fmt = PIX_FMT_RGB24;
     }
+    if (src_pix_fmt == int_pix_fmt)
+        return -1;
     if (avpicture_alloc(tmp, int_pix_fmt, dst_width, dst_height) < 0)
         return -1;
     ret = -1;
