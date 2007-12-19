@@ -505,7 +505,11 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
-static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+/**
+ * This function reads atom content and puts data in extradata without tag
+ * nor size unlike mov_read_extradata.
+ */
+static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
 
@@ -1227,6 +1231,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
 { MKTAG( 'f', 'i', 'e', 'l' ), mov_read_extradata },
 { MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
+{ MKTAG( 'g', 'l', 'b', 'l' ), mov_read_glbl },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
 { MKTAG( 'j', 'p', '2', 'h' ), mov_read_extradata },
 { MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
@@ -1237,7 +1242,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
 { MKTAG( 'a', 'l', 'a', 'c' ), mov_read_extradata }, /* alac specific atom */
-{ MKTAG( 'a', 'v', 'c', 'C' ), mov_read_avcC },
+{ MKTAG( 'a', 'v', 'c', 'C' ), mov_read_glbl },
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
 { MKTAG( 's', 't', 's', 'c' ), mov_read_stsc },
