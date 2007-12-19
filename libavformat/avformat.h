@@ -445,6 +445,22 @@ typedef struct AVFormatContext {
 
     unsigned int nb_programs;
     AVProgram **programs;
+
+    /**
+     * Forced video codec_id.
+     * demuxing: set by user
+     */
+    enum CodecID video_codec_id;
+    /**
+     * Forced audio codec_id.
+     * demuxing: set by user
+     */
+    enum CodecID audio_codec_id;
+    /**
+     * Forced subtitle codec_id.
+     * demuxing: set by user
+     */
+    enum CodecID subtitle_codec_id;
 } AVFormatContext;
 
 typedef struct AVPacketList {

@@ -2662,6 +2662,11 @@ static void opt_input_file(const char *filename)
         if(str && (opt->flags & AV_OPT_FLAG_DECODING_PARAM))
             av_set_string(ic, opt_names[i], str);
     }
+
+    ic->video_codec_id   = find_codec_or_die(video_codec_name   , CODEC_TYPE_VIDEO   , 0);
+    ic->audio_codec_id   = find_codec_or_die(audio_codec_name   , CODEC_TYPE_AUDIO   , 0);
+    ic->subtitle_codec_id= find_codec_or_die(subtitle_codec_name, CODEC_TYPE_SUBTITLE, 0);
+
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
     if (err < 0) {

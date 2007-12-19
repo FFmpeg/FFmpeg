@@ -493,8 +493,25 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    int ret;
+    AVStream *st;
     av_init_packet(pkt);
-    return s->iformat->read_packet(s, pkt);
+    ret= s->iformat->read_packet(s, pkt);
+    st= s->streams[pkt->stream_index];
+
+    switch(st->codec->codec_type){
+    case CODEC_TYPE_VIDEO:
+        if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
+        break;
+    case CODEC_TYPE_AUDIO:
+        if(s->audio_codec_id)   st->codec->codec_id= s->audio_codec_id;
+        break;
+    case CODEC_TYPE_SUBTITLE:
+        if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
+        break;
+    }
+
+    return ret;
 }
 
 /**********************************************************/
