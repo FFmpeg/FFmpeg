@@ -192,18 +192,11 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
     url_interrupt_cb = interrupt_cb;
 }
 
-int av_url_read_play(URLContext *h)
-{
-    if (!h->prot->url_read_play)
-        return AVERROR(ENOSYS);
-    return h->prot->url_read_play(h);
-}
-
-int av_url_read_pause(URLContext *h)
+int av_url_read_pause(URLContext *h, int pause)
 {
     if (!h->prot->url_read_pause)
         return AVERROR(ENOSYS);
-    return h->prot->url_read_pause(h);
+    return h->prot->url_read_pause(h, pause);
 }
 
 int av_url_read_seek(URLContext *h,

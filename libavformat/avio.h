@@ -82,12 +82,12 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 /* not implemented */
 int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
-/** Start playing or resume paused playout. Only meaningful if using a network
- * streaming protocol (e.g. MMS). */
-int av_url_read_play(URLContext *h);
-/** Pause playing - only meaningful if using a network streaming protocol
- * (e.g. MMS). */
-int av_url_read_pause(URLContext *h);
+/**
+ * Pause and resume playing - only meaningful if using a network streaming
+ * protocol (e.g. MMS).
+ * @param pause 1 for pause, 0 for resume
+ */
+int av_url_read_pause(URLContext *h, int pause);
 /**
  * Seek to a given timestamp relative to some component stream.
  * Only meaningful if using a network streaming protocol (e.g. MMS.)
@@ -123,8 +123,7 @@ typedef struct URLProtocol {
     offset_t (*url_seek)(URLContext *h, offset_t pos, int whence);
     int (*url_close)(URLContext *h);
     struct URLProtocol *next;
-    int (*url_read_play)(URLContext *h);
-    int (*url_read_pause)(URLContext *h);
+    int (*url_read_pause)(URLContext *h, int pause);
     int (*url_read_seek)(URLContext *h,
                          int stream_index, int64_t timestamp, int flags);
 } URLProtocol;
@@ -154,8 +153,7 @@ typedef struct {
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;         ///< contains the error code or 0 if no error happened
-    int (*read_play)(void *opaque);
-    int (*read_pause)(void *opaque);
+    int (*read_pause)(void *opaque, int pause);
     int (*read_seek)(void *opaque,
                      int stream_index, int64_t timestamp, int flags);
 } ByteIOContext;
@@ -190,8 +188,7 @@ offset_t url_fsize(ByteIOContext *s);
 int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
 
-int av_url_read_fplay(ByteIOContext *h);
-int av_url_read_fpause(ByteIOContext *h);
+int av_url_read_fpause(ByteIOContext *h, int pause);
 int av_url_read_fseek(ByteIOContext *h,
                       int stream_index, int64_t timestamp, int flags);
 
