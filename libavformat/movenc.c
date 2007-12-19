@@ -322,6 +322,14 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
+static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack* track)
+{
+    put_be32(pb, track->vosLen+8);
+    put_tag(pb, "glbl");
+    put_buffer(pb, track->vosData, track->vosLen);
+    return 8+track->vosLen;
+}
+
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
@@ -376,6 +384,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AMR_NB)
         mov_write_amr_tag(pb, track);
+    else if(track->vosLen > 0)
+        mov_write_glbl_tag(pb, track);
 
     return updateSize (pb, pos);
 }
@@ -676,6 +686,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_avcc_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_DNXHD)
         mov_write_avid_tag(pb, track);
+   else if(track->vosLen > 0)
+        mov_write_glbl_tag(pb, track);
 
     return updateSize (pb, pos);
 }
