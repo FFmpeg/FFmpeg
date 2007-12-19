@@ -500,31 +500,6 @@ uint64_t ff_get_v(ByteIOContext *bc){
     return val;
 }
 
-/* link with avio functions */
-
-#ifdef CONFIG_MUXERS
-static int url_write_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    URLContext *h = opaque;
-    return url_write(h, buf, buf_size);
-}
-#else
-#define         url_write_packet NULL
-#endif //CONFIG_MUXERS
-
-static int url_read_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-    URLContext *h = opaque;
-    return url_read(h, buf, buf_size);
-}
-
-static offset_t url_seek_packet(void *opaque, offset_t offset, int whence)
-{
-    URLContext *h = opaque;
-    return url_seek(h, offset, whence);
-    //return 0;
-}
-
 int url_fdopen(ByteIOContext **s, URLContext *h)
 {
     uint8_t *buffer;
@@ -549,7 +524,7 @@ int url_fdopen(ByteIOContext **s, URLContext *h)
 
     if (init_put_byte(*s, buffer, buffer_size,
                       (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
-                      url_read_packet, url_write_packet, url_seek_packet) < 0) {
+                      url_read, url_write, url_seek) < 0) {
         av_free(buffer);
         av_freep(s);
         return AVERROR(EIO);
