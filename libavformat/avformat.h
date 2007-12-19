@@ -147,8 +147,10 @@ typedef struct AVFormatParameters {
     int initial_pause:1;       /**< do not begin to play the stream
                                   immediately (RTSP only) */
     int prealloced_context:1;
+#if LIBAVFORMAT_VERSION_INT < (53<<16)
     enum CodecID video_codec_id;
     enum CodecID audio_codec_id;
+#endif
 } AVFormatParameters;
 
 //! demuxer will use url_fopen, no opened file should be provided by the caller
