@@ -2438,7 +2438,6 @@ static int http_receive_data(HTTPContext *c)
             memset(&s, 0, sizeof(s));
 
             url_open_buf(&s.pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
-            s.pb->buf_end = c->buffer_end;        /* ?? */
             s.pb->is_streamed = 1;
 
             /* use feed output format name to find corresponding input format */
