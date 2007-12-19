@@ -105,7 +105,7 @@ int av_url_read_pause(URLContext *h, int pause);
  * @return >= 0 on success
  * @see AVInputFormat::read_seek
  */
-int av_url_read_seek(URLContext *h,
+offset_t av_url_read_seek(URLContext *h,
                      int stream_index, int64_t timestamp, int flags);
 
 /**
@@ -124,7 +124,7 @@ typedef struct URLProtocol {
     int (*url_close)(URLContext *h);
     struct URLProtocol *next;
     int (*url_read_pause)(URLContext *h, int pause);
-    int (*url_read_seek)(URLContext *h,
+    offset_t (*url_read_seek)(URLContext *h,
                          int stream_index, int64_t timestamp, int flags);
 } URLProtocol;
 
@@ -154,7 +154,7 @@ typedef struct {
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;         ///< contains the error code or 0 if no error happened
     int (*read_pause)(void *opaque, int pause);
-    int (*read_seek)(void *opaque,
+    offset_t (*read_seek)(void *opaque,
                      int stream_index, int64_t timestamp, int flags);
 } ByteIOContext;
 
@@ -189,7 +189,7 @@ int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
 
 int av_url_read_fpause(ByteIOContext *h, int pause);
-int av_url_read_fseek(ByteIOContext *h,
+offset_t av_url_read_fseek(ByteIOContext *h,
                       int stream_index, int64_t timestamp, int flags);
 
 #define URL_EOF (-1)

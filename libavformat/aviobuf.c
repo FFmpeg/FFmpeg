@@ -532,7 +532,7 @@ int url_fdopen(ByteIOContext **s, URLContext *h)
     (*s)->max_packet_size = max_packet_size;
     if(h->prot) {
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
-        (*s)->read_seek  = (int (*)(void *, int, int64_t, int))h->prot->url_read_seek;
+        (*s)->read_seek  = (offset_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
     }
     return 0;
 }
@@ -646,11 +646,11 @@ int av_url_read_fpause(ByteIOContext *s, int pause)
     return s->read_pause(s->opaque, pause);
 }
 
-int av_url_read_fseek(ByteIOContext *s,
+offset_t av_url_read_fseek(ByteIOContext *s,
         int stream_index, int64_t timestamp, int flags)
 {
     URLContext *h = s->opaque;
-    int ret;
+    offset_t ret;
     if (!s->read_seek)
         return AVERROR(ENOSYS);
     ret = s->read_seek(h, stream_index, timestamp, flags);

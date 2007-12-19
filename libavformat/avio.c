@@ -199,7 +199,7 @@ int av_url_read_pause(URLContext *h, int pause)
     return h->prot->url_read_pause(h, pause);
 }
 
-int av_url_read_seek(URLContext *h,
+offset_t av_url_read_seek(URLContext *h,
         int stream_index, int64_t timestamp, int flags)
 {
     if (!h->prot->url_read_seek)
