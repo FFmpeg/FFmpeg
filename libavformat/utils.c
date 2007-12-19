@@ -1603,7 +1603,7 @@ static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
          !strcmp(ic->iformat->name, "mpegts")) &&
-        file_size && !ic->pb->is_streamed) {
+        file_size && !url_is_streamed(ic->pb)) {
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic, old_offset);
     } else if (av_has_duration(ic)) {

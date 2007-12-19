@@ -438,7 +438,7 @@ ogg_get_length (AVFormatContext * s)
     int idx = -1, i;
     offset_t size, end;
 
-    if(s->pb->is_streamed)
+    if(url_is_streamed(s->pb))
         return 0;
 
 // already set
