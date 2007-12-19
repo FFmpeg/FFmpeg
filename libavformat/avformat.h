@@ -136,9 +136,6 @@ typedef struct AVFormatParameters {
     int height;
     enum PixelFormat pix_fmt;
     int channel; /**< used to select dv channel */
-#if LIBAVFORMAT_VERSION_INT < (52<<16)
-    const char *device; /**< video, audio or DV device */
-#endif
     const char *standard; /**< tv standard, NTSC, PAL, SECAM */
     int mpeg2ts_raw:1;  /**< force raw MPEG2 transport stream output, if possible */
     int mpeg2ts_compute_pcr:1; /**< compute exact PCR for each transport
@@ -289,9 +286,6 @@ typedef struct AVStream {
 
     /* internal data used in av_find_stream_info() */
     int64_t first_dts;
-#if LIBAVFORMAT_VERSION_INT < (52<<16)
-    int codec_info_nb_frames;
-#endif
     /** encoding: PTS generation when outputing stream */
     struct AVFrac pts;
 
