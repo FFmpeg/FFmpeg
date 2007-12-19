@@ -2056,7 +2056,7 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
-void av_close_input_file(AVFormatContext *s)
+void av_close_input_stream(AVFormatContext *s)
 {
     int i;
     AVStream *st;
@@ -2085,10 +2085,16 @@ void av_close_input_file(AVFormatContext *s)
         av_freep(&s->programs[i]);
     }
     flush_packet_queue(s);
-    if (!(s->iformat->flags & AVFMT_NOFILE))
-        url_fclose(s->pb);
     av_freep(&s->priv_data);
     av_free(s);
+}
+
+void av_close_input_file(AVFormatContext *s)
+{
+    ByteIOContext *pb = s->iformat->flags & AVFMT_NOFILE ? NULL : s->pb;
+    av_close_input_stream(s);
+    if (pb)
+        url_fclose(pb);
 }
 
 AVStream *av_new_stream(AVFormatContext *s, int id)
