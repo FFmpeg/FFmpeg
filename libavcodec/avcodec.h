@@ -745,6 +745,12 @@ typedef struct AVPanScan{
 
 /**
  * Audio Video Frame.
+ * New fields can be added to the end of FF_COMMON_FRAME with minor version
+ * bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump. No fields should be added into AVFrame before or after
+ * FF_COMMON_FRAME!
+ * sizeof(AVFrame) must not be used outside libav*
  */
 typedef struct AVFrame {
     FF_COMMON_FRAME

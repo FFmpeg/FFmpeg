@@ -269,6 +269,13 @@ typedef struct AVIndexEntry {
     int min_distance;         /**< min distance between this and the previous keyframe, used to avoid unneeded searching */
 } AVIndexEntry;
 
+/**
+ * Stream structure.
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(AVStream) must not be used outside libav*
+ */
 typedef struct AVStream {
     int index;    /**< stream index in AVFormatContext */
     int id;       /**< format specific stream id */
@@ -343,6 +350,13 @@ typedef struct AVStream {
 
 #define AV_PROGRAM_RUNNING 1
 
+/**
+ *
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(AVProgram) must not be used outside libav*
+ */
 typedef struct AVProgram {
     int            id;
     char           *provider_name; ///< Network name for DVB streams
