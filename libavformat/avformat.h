@@ -358,7 +358,13 @@ typedef struct AVProgram {
 
 #define MAX_STREAMS 20
 
-/* format I/O context */
+/**
+ * format I/O context.
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(AVFormatContext) must not be used outside libav*
+ */
 typedef struct AVFormatContext {
     const AVClass *av_class; /**< set by av_alloc_format_context */
     /* can only be iformat or oformat, not both at the same time */

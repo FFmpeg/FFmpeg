@@ -753,7 +753,11 @@ typedef struct AVFrame {
 #define DEFAULT_FRAME_RATE_BASE 1001000
 
 /**
- * main external API structure
+ * main external API structure.
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(AVCodecContext) must not be used outside libav*
  */
 typedef struct AVCodecContext {
     /**
