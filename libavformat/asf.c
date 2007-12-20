@@ -1050,10 +1050,11 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
         return -1;
 
     /* Try using the protocol's read_seek if available */
-    if(s->pb && s->pb->read_seek) {
+    if(s->pb) {
         int ret = av_url_read_fseek(s->pb, stream_index, pts, flags);
         if(ret >= 0)
             asf_reset_header(s);
+        if (ret != AVERROR(ENOSYS))
         return ret;
     }
 
