@@ -686,7 +686,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_avcc_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_DNXHD)
         mov_write_avid_tag(pb, track);
-   else if(track->vosLen > 0)
+    else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
     return updateSize (pb, pos);
