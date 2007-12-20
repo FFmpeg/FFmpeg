@@ -29,6 +29,13 @@ typedef int64_t offset_t;
 
 /* unbuffered I/O */
 
+/**
+ * URL Context.
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(URLContext) must not be used outside libav*
+ */
 struct URLContext {
     struct URLProtocol *prot;
     int flags;
@@ -135,6 +142,13 @@ URLProtocol *av_protocol_next(URLProtocol *p);
 
 int register_protocol(URLProtocol *protocol);
 
+/**
+ * Bytestream IO Context.
+ * New fields can be added to the end with minor version bumps.
+ * Removial, reordering and changes to existing fields require a Major
+ * version bump.
+ * sizeof(ByteIOContext) must not be used outside libav*
+ */
 typedef struct {
     unsigned char *buffer;
     int buffer_size;
