@@ -792,7 +792,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *ctx, int blk)
     i = !(ctx->channel_mode);
     do {
         if(get_bits1(gb)) {
-            ctx->dynamic_range[i] = dynamic_range_tab[get_bits(gb, 8)];
+            ctx->dynamic_range[i] = ((dynamic_range_tab[get_bits(gb, 8)]-1.0) *
+                                    ctx->avctx->drc_scale)+1.0;
         } else if(blk == 0) {
             ctx->dynamic_range[i] = 1.0f;
         }

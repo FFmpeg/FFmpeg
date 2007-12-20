@@ -2154,6 +2154,14 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int request_channels;
+
+    /**
+     * Percentage of dynamic range compression to be applied by the decoder.
+     * The default value is 1.0, corresponding to full compression.
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    float drc_scale;
 } AVCodecContext;
 
 /**
