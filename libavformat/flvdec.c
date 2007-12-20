@@ -180,13 +180,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             else if(!strcmp(key, "audiosamplerate") && acodec && num_val >= 0) {
                 //some tools, like FLVTool2, write consistently approximate metadata sample rates
                 if (!acodec->sample_rate) {
-                switch((int)num_val) {
-                    case 44000: acodec->sample_rate = 44100  ; break;
-                    case 22000: acodec->sample_rate = 22050  ; break;
-                    case 11000: acodec->sample_rate = 11025  ; break;
-                    case 5000 : acodec->sample_rate = 5512   ; break;
-                    default   : acodec->sample_rate = num_val;
-                }
+                    switch((int)num_val) {
+                        case 44000: acodec->sample_rate = 44100  ; break;
+                        case 22000: acodec->sample_rate = 22050  ; break;
+                        case 11000: acodec->sample_rate = 11025  ; break;
+                        case 5000 : acodec->sample_rate = 5512   ; break;
+                        default   : acodec->sample_rate = num_val;
+                    }
                 }
             }
         }
