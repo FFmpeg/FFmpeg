@@ -1681,7 +1681,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 
     if(conv)
     {
-        if (dstStride[0]*srcBpp == srcStride[0]*dstBpp)
+        if (dstStride[0]*srcBpp == srcStride[0]*dstBpp && srcStride[0] > 0)
             conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
         else
         {
