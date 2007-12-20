@@ -1055,7 +1055,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
         if(ret >= 0)
             asf_reset_header(s);
         if (ret != AVERROR(ENOSYS))
-        return ret;
+            return ret;
     }
 
     if (!asf->index_read)
