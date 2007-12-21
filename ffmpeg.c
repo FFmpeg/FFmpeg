@@ -2790,6 +2790,9 @@ static void opt_input_file(const char *filename)
     video_channel = 0;
 
     rate_emu = 0;
+    av_freep(&video_codec_name);
+    av_freep(&audio_codec_name);
+    av_freep(&subtitle_codec_name);
 }
 
 static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
