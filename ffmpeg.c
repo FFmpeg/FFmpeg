@@ -3326,7 +3326,7 @@ static void opt_show_formats(void)
         const char *name=NULL;
         const char *long_name=NULL;
 
-        while(ofmt= av_oformat_next(ofmt)) {
+        while((ofmt= av_oformat_next(ofmt))) {
             if((name == NULL || strcmp(ofmt->name, name)<0) &&
                 strcmp(ofmt->name, last_name)>0){
                 name= ofmt->name;
@@ -3334,7 +3334,7 @@ static void opt_show_formats(void)
                 encode=1;
             }
         }
-        while(ifmt= av_iformat_next(ifmt)) {
+        while((ifmt= av_iformat_next(ifmt))) {
             if((name == NULL || strcmp(ifmt->name, name)<0) &&
                 strcmp(ifmt->name, last_name)>0){
                 name= ifmt->name;
@@ -3366,7 +3366,7 @@ static void opt_show_formats(void)
         const char *type_str;
 
         p2=NULL;
-        while(p= av_codec_next(p)) {
+        while((p= av_codec_next(p))) {
             if((p2==NULL || strcmp(p->name, p2->name)<0) &&
                 strcmp(p->name, last_name)>0){
                 p2= p;
@@ -3412,12 +3412,12 @@ static void opt_show_formats(void)
     printf("\n");
 
     printf("Bitstream filters:\n");
-    while(bsf = av_bitstream_filter_next(bsf))
+    while((bsf = av_bitstream_filter_next(bsf)))
         printf(" %s", bsf->name);
     printf("\n");
 
     printf("Supported file protocols:\n");
-    while(up = av_protocol_next(up))
+    while((up = av_protocol_next(up)))
         printf(" %s:", up->name);
     printf("\n");
 
