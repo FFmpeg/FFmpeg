@@ -25,8 +25,10 @@
  * H264_CHROMA_OP must be defined to empty for put and pavgb/pavgusb for avg
  * H264_CHROMA_MC8_MV0 must be defined to a (put|avg)_pixels8 function
  */
-static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, int rnd)
 {
+    DECLARE_ALIGNED_8(static const uint64_t, ff_pw_28) = 0x001C001C001C001CULL;
+    const uint64_t *rnd_reg;
     DECLARE_ALIGNED_8(uint64_t, AA);
     DECLARE_ALIGNED_8(uint64_t, DD);
     int i;
@@ -44,16 +46,17 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         /* 1 dimensional filter only */
         const int dxy = x ? 1 : stride;
 
+        rnd_reg = rnd ? &ff_pw_4 : &ff_pw_3;
+
         asm volatile(
             "movd %0, %%mm5\n\t"
             "movq %1, %%mm4\n\t"
+            "movq %2, %%mm6\n\t"         /* mm6 = rnd */
             "punpcklwd %%mm5, %%mm5\n\t"
             "punpckldq %%mm5, %%mm5\n\t" /* mm5 = B = x */
-            "movq %%mm4, %%mm6\n\t"
             "pxor %%mm7, %%mm7\n\t"
             "psubw %%mm5, %%mm4\n\t"     /* mm4 = A = 8-x */
-            "psrlw $1, %%mm6\n\t"        /* mm6 = 4 */
-            :: "rm"(x+y), "m"(ff_pw_8));
+            :: "rm"(x+y), "m"(ff_pw_8), "m"(*rnd_reg));
 
         for(i=0; i<h; i++) {
             asm volatile(
@@ -95,6 +98,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 
     /* general case, bilinear */
+    rnd_reg = rnd ? &ff_pw_32 : &ff_pw_28;
     asm volatile("movd %2, %%mm4\n\t"
                  "movd %3, %%mm6\n\t"
                  "punpcklwd %%mm4, %%mm4\n\t"
@@ -177,7 +181,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "packuswb %%mm3, %%mm2\n\t"
             H264_CHROMA_OP(%0, %%mm2)
             "movq %%mm2, %0\n\t"
-            : "=m" (dst[0]) : "m" (ff_pw_32));
+            : "=m" (dst[0]) : "m" (*rnd_reg));
         dst+= stride;
     }
 }
