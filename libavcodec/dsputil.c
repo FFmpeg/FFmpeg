@@ -1478,6 +1478,7 @@ static void OPNAME ## h264_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     \
     assert(x<8 && y<8 && x>=0 && y>=0);\
 \
+    if(D){\
     for(i=0; i<h; i++)\
     {\
         OP(dst[0], (A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1]));\
@@ -1490,6 +1491,23 @@ static void OPNAME ## h264_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
         OP(dst[7], (A*src[7] + B*src[8] + C*src[stride+7] + D*src[stride+8]));\
         dst+= stride;\
         src+= stride;\
+    }\
+    }else{\
+        const int E= B+C;\
+        const int step= C ? stride : 1;\
+        for(i=0; i<h; i++)\
+        {\
+            OP(dst[0], (A*src[0] + E*src[step+0]));\
+            OP(dst[1], (A*src[1] + E*src[step+1]));\
+            OP(dst[2], (A*src[2] + E*src[step+2]));\
+            OP(dst[3], (A*src[3] + E*src[step+3]));\
+            OP(dst[4], (A*src[4] + E*src[step+4]));\
+            OP(dst[5], (A*src[5] + E*src[step+5]));\
+            OP(dst[6], (A*src[6] + E*src[step+6]));\
+            OP(dst[7], (A*src[7] + E*src[step+7]));\
+            dst+= stride;\
+            src+= stride;\
+        }\
     }\
 }
 
