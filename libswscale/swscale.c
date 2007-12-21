@@ -2521,7 +2521,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 }
 
 /**
- * swscale warper, so we don't need to export the SwsContext.
+ * swscale wrapper, so we don't need to export the SwsContext.
  * assumes planar YUV to be in YUV order instead of YVU
  */
 int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -2575,7 +2575,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 }
 
 /**
- * swscale warper, so we don't need to export the SwsContext
+ * swscale wrapper, so we don't need to export the SwsContext
  */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[]){

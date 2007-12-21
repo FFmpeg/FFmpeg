@@ -42,8 +42,8 @@ typedef struct SwsContext{
     AVClass *av_class;
 
     /**
-     *
-     * Note the src,dst,srcStride,dstStride will be copied, in the sws_scale() warper so they can freely be modified here
+     * Note that src, dst, srcStride, dstStride will be copied in the
+     * sws_scale() wrapper so they can be freely modified here.
      */
     SwsFunc swScale;
     int srcW, srcH, dstH;
