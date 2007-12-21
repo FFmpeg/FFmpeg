@@ -119,6 +119,10 @@ Type/Status/Substatus:
 */closed/invalid
     Bugs caused by user errors, random ineligible or otherwise nonsense stuff.
 
+*/closed/needs_more_info
+    Issues for which some information has been requested by the developers,
+    but which has not been provided by anyone within reasonable time.
+
 bug/open/reproduced
     Bugs which have been reproduced.
 
