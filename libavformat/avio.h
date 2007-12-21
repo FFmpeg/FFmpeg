@@ -32,7 +32,7 @@ typedef int64_t offset_t;
 /**
  * URL Context.
  * New fields can be added to the end with minor version bumps.
- * Removial, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a Major
  * version bump.
  * sizeof(URLContext) must not be used outside libav*
  */
@@ -145,7 +145,7 @@ int register_protocol(URLProtocol *protocol);
 /**
  * Bytestream IO Context.
  * New fields can be added to the end with minor version bumps.
- * Removial, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a Major
  * version bump.
  * sizeof(ByteIOContext) must not be used outside libav*
  */

@@ -272,7 +272,7 @@ typedef struct AVIndexEntry {
 /**
  * Stream structure.
  * New fields can be added to the end with minor version bumps.
- * Removial, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a Major
  * version bump.
  * sizeof(AVStream) must not be used outside libav*
  */
@@ -353,7 +353,7 @@ typedef struct AVStream {
 /**
  *
  * New fields can be added to the end with minor version bumps.
- * Removial, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a Major
  * version bump.
  * sizeof(AVProgram) must not be used outside libav*
  */
@@ -375,7 +375,7 @@ typedef struct AVProgram {
 /**
  * format I/O context.
  * New fields can be added to the end with minor version bumps.
- * Removial, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a Major
  * version bump.
  * sizeof(AVFormatContext) must not be used outside libav*
  */
