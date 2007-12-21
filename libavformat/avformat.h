@@ -272,21 +272,21 @@ typedef struct AVIndexEntry {
 /**
  * Stream structure.
  * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(AVStream) must not be used outside libav*
+ * sizeof(AVStream) must not be used outside libav*.
  */
 typedef struct AVStream {
     int index;    /**< stream index in AVFormatContext */
     int id;       /**< format specific stream id */
     AVCodecContext *codec; /**< codec context */
     /**
-     * real base frame rate of the stream.
-     * this is the lowest framerate with which all timestamps can be
+     * Real base frame rate of the stream.
+     * This is the lowest frame rate with which all timestamps can be
      * represented accurately (it is the least common multiple of all
-     * framerates in the stream), Note, this value is just a guess!
-     * for example if the timebase is 1/90000 and all frames have either
-     * approximately 3600 or 1800 timer ticks then r_frame_rate will be 50/1
+     * frame rates in the stream), Note, this value is just a guess!
+     * For example if the timebase is 1/90000 and all frames have either
+     * approximately 3600 or 1800 timer ticks then r_frame_rate will be 50/1.
      */
     AVRational r_frame_rate;
     void *priv_data;
@@ -297,9 +297,9 @@ typedef struct AVStream {
     struct AVFrac pts;
 
     /**
-     * this is the fundamental unit of time (in seconds) in terms
-     * of which frame timestamps are represented. for fixed-fps content,
-     * timebase should be 1/framerate and timestamp increments should be
+     * This is the fundamental unit of time (in seconds) in terms
+     * of which frame timestamps are represented. For fixed-fps content,
+     * timebase should be 1/frame rate and timestamp increments should be
      * identically 1.
      */
     AVRational time_base;
@@ -312,16 +312,16 @@ typedef struct AVStream {
      * MN: dunno if that is the right place for it */
     float quality;
     /**
-     * decoding: pts of the first frame of the stream, in stream time base.
-     * only set this if you are absolutely 100% sure that the value you set
-     * it to really is the pts of the first frame
+     * Decoding: pts of the first frame of the stream, in stream time base.
+     * Only set this if you are absolutely 100% sure that the value you set
+     * it to really is the pts of the first frame.
      * This may be undefined (AV_NOPTS_VALUE).
-     * @note the ASF header does NOT contain a correct start_time the ASF
-     * demuxer must NOT set this
+     * @note The ASF header does NOT contain a correct start_time the ASF
+     * demuxer must NOT set this.
      */
     int64_t start_time;
     /**
-     * decoding: duration of the stream, in stream time base.
+     * Decoding: duration of the stream, in stream time base.
      * If a source file does not specify a duration, but does specify
      * a bitrate, this value will be estimates from bit rate and file size.
      */
@@ -351,11 +351,10 @@ typedef struct AVStream {
 #define AV_PROGRAM_RUNNING 1
 
 /**
- *
  * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(AVProgram) must not be used outside libav*
+ * sizeof(AVProgram) must not be used outside libav*.
  */
 typedef struct AVProgram {
     int            id;
@@ -375,9 +374,9 @@ typedef struct AVProgram {
 /**
  * format I/O context.
  * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(AVFormatContext) must not be used outside libav*
+ * sizeof(AVFormatContext) must not be used outside libav*.
  */
 typedef struct AVFormatContext {
     const AVClass *av_class; /**< set by av_alloc_format_context */

@@ -391,7 +391,7 @@ static void component_resample(ImgReSampleContext *s,
             h_resample(new_line, owidth,
                        src_line, iwidth, - FCENTER * POS_FRAC, s->h_incr,
                        &s->h_filters[0][0]);
-            /* handle ring buffer wraping */
+            /* handle ring buffer wrapping */
             if (ring_y >= LINE_BUF_HEIGHT) {
                 memcpy(s->line_buf + (ring_y - LINE_BUF_HEIGHT) * owidth,
                        new_line, owidth);

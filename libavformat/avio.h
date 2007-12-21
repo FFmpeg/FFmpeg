@@ -32,9 +32,9 @@ typedef int64_t offset_t;
 /**
  * URL Context.
  * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(URLContext) must not be used outside libav*
+ * sizeof(URLContext) must not be used outside libav*.
  */
 struct URLContext {
     struct URLProtocol *prot;
@@ -69,7 +69,7 @@ offset_t url_filesize(URLContext *h);
 
 /**
  * Return the maximum packet size associated to packetized file
- * handle. If the file is not packetized (stream like http or file on
+ * handle. If the file is not packetized (stream like HTTP or file on
  * disk), then 0 is returned.
  *
  * @param h file handle
@@ -79,10 +79,10 @@ int url_get_max_packet_size(URLContext *h);
 void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /**
- * the callback is called in blocking functions to test regulary if
+ * The callback is called in blocking functions to test regulary if
  * asynchronous interruption is needed. AVERROR(EINTR) is returned
  * in this case by the interrupted function. 'NULL' means no interrupt
- * callback is given. i
+ * callback is given.
  */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
@@ -95,9 +95,10 @@ int url_poll(URLPollEntry *poll_table, int n, int timeout);
  * @param pause 1 for pause, 0 for resume
  */
 int av_url_read_pause(URLContext *h, int pause);
+
 /**
  * Seek to a given timestamp relative to some component stream.
- * Only meaningful if using a network streaming protocol (e.g. MMS.)
+ * Only meaningful if using a network streaming protocol (e.g. MMS.).
  * @param stream_index The stream index that the timestamp is relative to.
  *        If stream_index is (-1) the timestamp should be in AV_TIME_BASE
  *        units from the beginning of the presentation.
@@ -145,9 +146,9 @@ int register_protocol(URLProtocol *protocol);
 /**
  * Bytestream IO Context.
  * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a Major
+ * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(ByteIOContext) must not be used outside libav*
+ * sizeof(ByteIOContext) must not be used outside libav*.
  */
 typedef struct {
     unsigned char *buffer;

@@ -234,14 +234,14 @@ typedef struct FFStream {
     int conns_served;
     int64_t bytes_served;
     int64_t feed_max_size;      /* maximum storage size, zero means unlimited */
-    int64_t feed_write_index;   /* current write position in feed (it wraps round) */
+    int64_t feed_write_index;   /* current write position in feed (it wraps around) */
     int64_t feed_size;          /* current size of feed */
     struct FFStream *next_feed;
 } FFStream;
 
 typedef struct FeedData {
     long long data_count;
-    float avg_frame_size;   /* frame size averraged over last frames with exponential mean */
+    float avg_frame_size;   /* frame size averaged over last frames with exponential mean */
 } FeedData;
 
 static struct sockaddr_in my_http_addr;
