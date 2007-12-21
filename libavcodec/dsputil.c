@@ -3752,16 +3752,16 @@ static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
     return score;
 }
 
-WARPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
-WARPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
-WARPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
+WRAPPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
+WRAPPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
+WRAPPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
 #ifdef CONFIG_GPL
-WARPER8_16_SQ(dct264_sad8x8_c, dct264_sad16_c)
+WRAPPER8_16_SQ(dct264_sad8x8_c, dct264_sad16_c)
 #endif
-WARPER8_16_SQ(dct_max8x8_c, dct_max16_c)
-WARPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
-WARPER8_16_SQ(rd8x8_c, rd16_c)
-WARPER8_16_SQ(bit8x8_c, bit16_c)
+WRAPPER8_16_SQ(dct_max8x8_c, dct_max16_c)
+WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
+WRAPPER8_16_SQ(rd8x8_c, rd16_c)
+WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
 static void vector_fmul_c(float *dst, const float *src, int len){
     int i;

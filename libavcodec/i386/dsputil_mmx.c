@@ -1770,7 +1770,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
     );\
     return sum&0xFFFF;\
 }\
-WARPER8_16_SQ(hadamard8_diff_##cpu, hadamard8_diff16_##cpu)
+WRAPPER8_16_SQ(hadamard8_diff_##cpu, hadamard8_diff16_##cpu)
 
 #define HADAMARD8_DIFF_SSE2(cpu) \
 static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){\
@@ -1792,7 +1792,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
     );\
     return sum&0xFFFF;\
 }\
-WARPER8_16_SQ(hadamard8_diff_##cpu, hadamard8_diff16_##cpu)
+WRAPPER8_16_SQ(hadamard8_diff_##cpu, hadamard8_diff16_##cpu)
 
 #define MMABS(a,z)         MMABS_MMX(a,z)
 #define HSUM(a,t,dst)      HSUM_MMX(a,t,dst)
