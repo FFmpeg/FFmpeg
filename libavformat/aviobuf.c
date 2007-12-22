@@ -60,6 +60,20 @@ int init_put_byte(ByteIOContext *s,
     return 0;
 }
 
+ByteIOContext *av_alloc_put_byte(
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  offset_t (*seek)(void *opaque, offset_t offset, int whence)) {
+    ByteIOContext *s = av_mallocz(sizeof(ByteIOContext));
+    init_put_byte(s, buffer, buffer_size, write_flag, opaque,
+                  read_packet, write_packet, seek);
+    return s;
+}
+
 static void flush_buffer(ByteIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
