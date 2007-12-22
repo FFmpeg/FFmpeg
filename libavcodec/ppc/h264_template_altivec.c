@@ -30,9 +30,9 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
     DECLARE_ALIGNED_16(signed int, ABCD[4]) =
                         {((8 - x) * (8 - y)),
-                          ((x) * (8 - y)),
-                          ((8 - x) * (y)),
-                          ((x) * (y))};
+                         ((    x) * (8 - y)),
+                         ((8 - x) * (    y)),
+                         ((    x) * (    y))};
     register int i;
     vec_u8_t fperm;
     const vec_s32_t vABCD = vec_ld(0, ABCD);
