@@ -51,6 +51,27 @@
         dst += stride;\
         src += stride;
 
+#define CHROMA_MC8_ALTIVEC_CORE_SIMPLE \
+        vsrc2ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc2uc);\
+\
+        psum = vec_mladd(vA, vsrc0ssH, v32ss);\
+        psum = vec_mladd(vB, vsrc1ssH, psum);\
+        psum = vec_mladd(vC, vsrc2ssH, psum);\
+        psum = vec_sr(psum, v6us);\
+\
+        vdst = vec_ld(0, dst);\
+        ppsum = (vec_u8_t)vec_pack(psum, psum);\
+        vfdst = vec_perm(vdst, ppsum, fperm);\
+\
+        OP_U8_ALTIVEC(fsum, vfdst, vdst);\
+\
+        vec_st(fsum, 0, dst);\
+\
+        vsrc0ssH = vsrc1ssH;\
+        vsrc1ssH = vsrc2ssH;\
+\
+        dst += stride;\
+        src += stride;
 
 void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
@@ -109,6 +130,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
     vsrc0ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc0uc);
     vsrc1ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc1uc);
 
+    if (ABCD[3]) {
     if (!loadSecond) {// -> !reallyBadAlign
         for (i = 0 ; i < h ; i++) {
             vsrcCuc = vec_ld(stride + 0, src);
@@ -130,6 +152,26 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
 
             CHROMA_MC8_ALTIVEC_CORE
         }
+    }
+    } else {
+    if (!loadSecond) {// -> !reallyBadAlign
+        for (i = 0 ; i < h ; i++) {
+            vsrcCuc = vec_ld(stride + 0, src);
+            vsrc2uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
+
+            CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+        }
+    } else {
+        vec_u8_t vsrcDuc;
+        for (i = 0 ; i < h ; i++) {
+            vsrcCuc = vec_ld(stride + 0, src);
+            vsrcDuc = vec_ld(stride + 16, src);
+            vsrc2uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
+
+            CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+        }
+    }
+
     }
     POWERPC_PERF_STOP_COUNT(PREFIX_h264_chroma_mc8_num, 1);
 }
