@@ -26,6 +26,33 @@
 #endif
 
 /* this code assume that stride % 16 == 0 */
+
+#define CHROMA_MC8_ALTIVEC_CORE \
+        vsrc2ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc2uc);\
+        vsrc3ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc3uc);\
+\
+        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));\
+        psum = vec_mladd(vB, vsrc1ssH, psum);\
+        psum = vec_mladd(vC, vsrc2ssH, psum);\
+        psum = vec_mladd(vD, vsrc3ssH, psum);\
+        psum = vec_add(v32ss, psum);\
+        psum = vec_sr(psum, v6us);\
+\
+        vdst = vec_ld(0, dst);\
+        ppsum = (vec_u8_t)vec_pack(psum, psum);\
+        vfdst = vec_perm(vdst, ppsum, fperm);\
+\
+        OP_U8_ALTIVEC(fsum, vfdst, vdst);\
+\
+        vec_st(fsum, 0, dst);\
+\
+        vsrc0ssH = vsrc2ssH;\
+        vsrc1ssH = vsrc3ssH;\
+\
+        dst += stride;\
+        src += stride;
+
+
 void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
     DECLARE_ALIGNED_16(signed int, ABCD[4]) =
@@ -92,29 +119,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
         vsrc2uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
         vsrc3uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm1);
 
-        vsrc2ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc2uc);
-        vsrc3ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc3uc);
-
-        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
-        psum = vec_mladd(vB, vsrc1ssH, psum);
-        psum = vec_mladd(vC, vsrc2ssH, psum);
-        psum = vec_mladd(vD, vsrc3ssH, psum);
-        psum = vec_add(v32ss, psum);
-        psum = vec_sra(psum, v6us);
-
-        vdst = vec_ld(0, dst);
-        ppsum = (vec_u8_t)vec_packsu(psum, psum);
-        vfdst = vec_perm(vdst, ppsum, fperm);
-
-        OP_U8_ALTIVEC(fsum, vfdst, vdst);
-
-        vec_st(fsum, 0, dst);
-
-        vsrc0ssH = vsrc2ssH;
-        vsrc1ssH = vsrc3ssH;
-
-        dst += stride;
-        src += stride;
+        CHROMA_MC8_ALTIVEC_CORE
       }
     } else {
         vec_u8_t vsrcDuc;
@@ -128,33 +133,13 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
         else
           vsrc3uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
 
-        vsrc2ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc2uc);
-        vsrc3ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc3uc);
-
-        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
-        psum = vec_mladd(vB, vsrc1ssH, psum);
-        psum = vec_mladd(vC, vsrc2ssH, psum);
-        psum = vec_mladd(vD, vsrc3ssH, psum);
-        psum = vec_add(v32ss, psum);
-        psum = vec_sr(psum, v6us);
-
-        vdst = vec_ld(0, dst);
-        ppsum = (vec_u8_t)vec_pack(psum, psum);
-        vfdst = vec_perm(vdst, ppsum, fperm);
-
-        OP_U8_ALTIVEC(fsum, vfdst, vdst);
-
-        vec_st(fsum, 0, dst);
-
-        vsrc0ssH = vsrc2ssH;
-        vsrc1ssH = vsrc3ssH;
-
-        dst += stride;
-        src += stride;
+        CHROMA_MC8_ALTIVEC_CORE
       }
     }
     POWERPC_PERF_STOP_COUNT(PREFIX_h264_chroma_mc8_num, 1);
 }
+
+#undef CHROMA_MC8_ALTIVEC_CORE
 
 /* this code assume stride % 16 == 0 */
 static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, int dstStride, int srcStride) {
