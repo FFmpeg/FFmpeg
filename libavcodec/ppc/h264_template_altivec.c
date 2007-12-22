@@ -31,11 +31,10 @@
         vsrc2ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc2uc);\
         vsrc3ssH = (vec_s16_t)vec_mergeh(zero_u8v,(vec_u8_t)vsrc3uc);\
 \
-        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));\
+        psum = vec_mladd(vA, vsrc0ssH, v32ss);\
         psum = vec_mladd(vB, vsrc1ssH, psum);\
         psum = vec_mladd(vC, vsrc2ssH, psum);\
         psum = vec_mladd(vD, vsrc3ssH, psum);\
-        psum = vec_add(v32ss, psum);\
         psum = vec_sr(psum, v6us);\
 \
         vdst = vec_ld(0, dst);\
