@@ -694,7 +694,7 @@ static int asf_read_frame_header(AVFormatContext *s){
             url_fskip(pb, asf->packet_replic_size - 8);
         rsize += asf->packet_replic_size; // FIXME - check validity
     } else if (asf->packet_replic_size==1){
-        // multipacket - frag_offset is begining timestamp
+        // multipacket - frag_offset is beginning timestamp
         asf->packet_time_start = asf->packet_frag_offset;
         asf->packet_frag_offset = 0;
         asf->packet_frag_timestamp = asf->packet_timestamp;
@@ -778,7 +778,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         asf_st = asf->asf_st;
 
         if (asf->packet_replic_size == 1) {
-            // frag_offset is here used as the begining timestamp
+            // frag_offset is here used as the beginning timestamp
             asf->packet_frag_timestamp = asf->packet_time_start;
             asf->packet_time_start += asf->packet_time_delta;
             asf->packet_obj_size = asf->packet_frag_size = get_byte(pb);
