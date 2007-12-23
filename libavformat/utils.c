@@ -497,6 +497,8 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
     av_init_packet(pkt);
     ret= s->iformat->read_packet(s, pkt);
+    if (ret < 0)
+        return ret;
     st= s->streams[pkt->stream_index];
 
     switch(st->codec->codec_type){
