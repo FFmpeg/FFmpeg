@@ -345,7 +345,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             s->lpcqoffset = V2LPCQOFFSET;
 
         if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
-            av_log(s->avctx, AV_LOG_ERROR, "missing verbatim section at begining of stream\n");
+            av_log(s->avctx, AV_LOG_ERROR, "missing verbatim section at beginning of stream\n");
             return -1;
         }
 
