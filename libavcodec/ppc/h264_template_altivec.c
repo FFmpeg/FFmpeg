@@ -155,48 +155,48 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
     } else {
         const vec_s16_t vE = vec_add(vB, vC);
         if (ABCD[2]) { // x == 0 B == 0
-        if (!loadSecond) {// -> !reallyBadAlign
-            for (i = 0 ; i < h ; i++) {
-                vsrcCuc = vec_ld(stride + 0, src);
-                vsrc1uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
-                CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+            if (!loadSecond) {// -> !reallyBadAlign
+                for (i = 0 ; i < h ; i++) {
+                    vsrcCuc = vec_ld(stride + 0, src);
+                    vsrc1uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
+                    CHROMA_MC8_ALTIVEC_CORE_SIMPLE
 
-                vsrc0uc = vsrc1uc;
-            }
-        } else {
-            vec_u8_t vsrcDuc;
-            for (i = 0 ; i < h ; i++) {
-                vsrcCuc = vec_ld(stride + 0, src);
-                vsrcDuc = vec_ld(stride + 15, src);
-                vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
-                CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+                    vsrc0uc = vsrc1uc;
+                }
+            } else {
+                vec_u8_t vsrcDuc;
+                for (i = 0 ; i < h ; i++) {
+                    vsrcCuc = vec_ld(stride + 0, src);
+                    vsrcDuc = vec_ld(stride + 15, src);
+                    vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
+                    CHROMA_MC8_ALTIVEC_CORE_SIMPLE
 
-                vsrc0uc = vsrc1uc;
+                    vsrc0uc = vsrc1uc;
+                }
             }
-        }
         } else { // y == 0 C == 0
-        if (!loadSecond) {// -> !reallyBadAlign
-            for (i = 0 ; i < h ; i++) {
-                vsrcCuc = vec_ld(0, src);
-                vsrc0uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
-                vsrc1uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm1);
+            if (!loadSecond) {// -> !reallyBadAlign
+                for (i = 0 ; i < h ; i++) {
+                    vsrcCuc = vec_ld(0, src);
+                    vsrc0uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
+                    vsrc1uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm1);
 
-                CHROMA_MC8_ALTIVEC_CORE_SIMPLE
-            }
-        } else {
-            vec_u8_t vsrcDuc;
-            for (i = 0 ; i < h ; i++) {
-                vsrcCuc = vec_ld(0, src);
-                vsrcDuc = vec_ld(15, src);
-                vsrc0uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
-                if (reallyBadAlign)
-                    vsrc1uc = vsrcDuc;
-                else
-                    vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
+                    CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+                }
+            } else {
+                vec_u8_t vsrcDuc;
+                for (i = 0 ; i < h ; i++) {
+                    vsrcCuc = vec_ld(0, src);
+                    vsrcDuc = vec_ld(15, src);
+                    vsrc0uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
+                    if (reallyBadAlign)
+                        vsrc1uc = vsrcDuc;
+                    else
+                        vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
 
-                CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+                    CHROMA_MC8_ALTIVEC_CORE_SIMPLE
+                }
             }
-        }
         }
     }
     POWERPC_PERF_STOP_COUNT(PREFIX_h264_chroma_mc8_num, 1);
