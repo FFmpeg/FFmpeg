@@ -166,8 +166,8 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
         } else {
             vec_u8_t vsrcDuc;
             for (i = 0 ; i < h ; i++) {
-                vsrcCuc = vec_ld(0, src);
-                vsrcDuc = vec_ld(15, src);
+                vsrcCuc = vec_ld(stride + 0, src);
+                vsrcDuc = vec_ld(stride + 15, src);
                 vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
                 CHROMA_MC8_ALTIVEC_CORE_SIMPLE
 
@@ -189,7 +189,10 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
                 vsrcCuc = vec_ld(0, src);
                 vsrcDuc = vec_ld(15, src);
                 vsrc0uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
-                vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
+                if (reallyBadAlign)
+                    vsrc1uc = vsrcDuc;
+                else
+                    vsrc1uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
 
                 CHROMA_MC8_ALTIVEC_CORE_SIMPLE
             }
