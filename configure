@@ -1218,6 +1218,13 @@ case $targetos in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SHFLAGS='-shared -Wl,--enable-auto-image-base'
         ;;
+    *-dos|freedos|opendos)
+        enable memalign_hack
+        disable ffplay ffserver vhook
+        disable $INDEV_LIST $OUTDEV_LIST
+        network_extralibs="-lsocket"
+        EXESUF=".exe"
+        ;;
     linux)
         LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
         enable dv1394

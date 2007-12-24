@@ -118,7 +118,7 @@
 #endif
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
-#if defined(__MINGW32__) || defined(__CYGWIN__) || \
+#if defined(__MINGW32__) || defined(__CYGWIN__) || defined(__DJGPP__) || \
     defined(__OS2__) || (defined (__OpenBSD__) && !defined(__ELF__))
 #    if defined(ARCH_X86_64) && defined(PIC)
 #        define MANGLE(a) "_" #a"(%%rip)"
