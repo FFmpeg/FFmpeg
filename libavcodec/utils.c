@@ -848,7 +848,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         goto end;
     }
 
-    if(avctx->codec)
+    if(avctx->codec || !codec)
         goto end;
 
     if (codec->priv_data_size > 0) {
