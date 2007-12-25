@@ -3228,6 +3228,7 @@ static void opt_output_file(const char *filename)
         /* test if it already exists to avoid loosing precious files */
         if (!file_overwrite &&
             (strchr(filename, ':') == NULL ||
+             filename[1] == ':' ||
              av_strstart(filename, "file:", NULL))) {
             if (url_exist(filename)) {
                 int c;
