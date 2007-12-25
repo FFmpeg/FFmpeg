@@ -32,18 +32,6 @@
 
 #define MAX_SYNC_SIZE 100000
 
-static int cdxa_probe(AVProbeData *p)
-{
-    /* check file header */
-    if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
-        p->buf[2] == 'F' && p->buf[3] == 'F' &&
-        p->buf[8] == 'C' && p->buf[9] == 'D' &&
-        p->buf[10] == 'X' && p->buf[11] == 'A')
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
-
 static int check_pes(uint8_t *p, uint8_t *end){
     int pes1;
     int pes2=      (p[3] & 0xC0) == 0x80
@@ -71,10 +59,6 @@ static int mpegps_probe(AVProbeData *p)
     int i;
     int score=0;
 
-    score = cdxa_probe(p);
-    if (score > 0) return score;
-
-    /* Search for MPEG stream */
     for(i=0; i<p->buf_size; i++){
         code = (code<<8) + p->buf[i];
         if ((code & 0xffffff00) == 0x100) {
