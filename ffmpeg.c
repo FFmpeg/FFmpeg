@@ -796,10 +796,8 @@ static void do_video_out(AVFormatContext *s,
             enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
             pkt.data= (uint8_t *)final_picture;
             pkt.size=  sizeof(AVPicture);
-            if(dec->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
-                pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-            if(dec->coded_frame && dec->coded_frame->key_frame)
-                pkt.flags |= PKT_FLAG_KEY;
+            pkt.pts= av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
+            pkt.flags |= PKT_FLAG_KEY;
 
             write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
             enc->coded_frame = old_frame;
