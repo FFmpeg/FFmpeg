@@ -85,7 +85,10 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
-            av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
+            if(ap->time_base.num)
+                av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
+            else
+                av_set_pts_info(st, 64, 1, 25);
             st->codec->width = ap->width;
             st->codec->height = ap->height;
             st->codec->pix_fmt = ap->pix_fmt;

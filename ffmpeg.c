@@ -115,7 +115,7 @@ static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
 static int frame_rightBand = 0;
 static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
-static AVRational frame_rate = (AVRational) {25,1};
+static AVRational frame_rate = (AVRational) {0,0};
 static float video_qscale = 0;
 static int video_qdiff = 3;
 static uint16_t *intra_matrix = NULL;
@@ -2869,6 +2869,7 @@ static void new_video_stream(AVFormatContext *oc)
         char *p;
         int i;
         AVCodec *codec;
+        AVRational fps= frame_rate.num ? frame_rate : (AVRational){25,1};
 
         codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, CODEC_TYPE_VIDEO);
         if (video_codec_name)
@@ -2885,15 +2886,14 @@ static void new_video_stream(AVFormatContext *oc)
                 av_set_string(video_enc, opt_names[i], str);
         }
 
-        video_enc->time_base.den = frame_rate.num;
-        video_enc->time_base.num = frame_rate.den;
+        video_enc->time_base.den = fps.num;
+        video_enc->time_base.num = fps.den;
         if(codec && codec->supported_framerates){
             const AVRational *p= codec->supported_framerates;
-            AVRational req= (AVRational){frame_rate.num, frame_rate.den};
             const AVRational *best=NULL;
             AVRational best_error= (AVRational){INT_MAX, 1};
             for(; p->den!=0; p++){
-                AVRational error= av_sub_q(req, *p);
+                AVRational error= av_sub_q(fps, *p);
                 if(error.num <0) error.num *= -1;
                 if(av_cmp_q(error, best_error) < 0){
                     best_error= error;
