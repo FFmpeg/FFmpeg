@@ -118,6 +118,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (NUV, nuv);
     REGISTER_ENCODER (PAM, pam);
     REGISTER_ENCODER (PBM, pbm);
+    REGISTER_DECODER (PCX, pcx);
     REGISTER_ENCODER (PGM, pgm);
     REGISTER_ENCODER (PGMYUV, pgmyuv);
     REGISTER_ENCDEC  (PNG, png);

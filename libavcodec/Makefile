@@ -134,6 +134,7 @@ OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_PAM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PBM_ENCODER)             += pnmenc.o pnm.o
+OBJS-$(CONFIG_PCX_DECODER)             += pcx.o
 OBJS-$(CONFIG_PGM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnmenc.o pnm.o
 OBJS-$(CONFIG_PNG_DECODER)             += png.o pngdec.o
