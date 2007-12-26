@@ -30,7 +30,6 @@ static int ptx_init(AVCodecContext *avctx) {
 
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame= &s->picture;
-    s->picture.data[0] = NULL;
 
     return 0;
 }
