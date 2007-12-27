@@ -23,6 +23,8 @@
 #ifndef FFMPEG_DSPUTIL_ALTIVEC_H
 #define FFMPEG_DSPUTIL_ALTIVEC_H
 
+#include <stdint.h>
+
 #include "dsputil_ppc.h"
 
 extern int has_altivec(void);

@@ -24,6 +24,14 @@
 #ifndef FFMPEG_UTIL_ALTIVEC_H
 #define FFMPEG_UTIL_ALTIVEC_H
 
+#include <stdint.h>
+
+#include "config.h"
+
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
+
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector
 #define WORD_0 0x00,0x01,0x02,0x03

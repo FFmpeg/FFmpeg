@@ -19,6 +19,8 @@
 #ifndef FFMPEG_IMGRESAMPLE_ALTIVEC_H
 #define FFMPEG_IMGRESAMPLE_ALTIVEC_H
 
+#include <stdint.h>
+
 void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
                           int wrap, int16_t *filter);
 #endif /* FFMPEG_IMGRESAMPLE_ALTIVEC_H */

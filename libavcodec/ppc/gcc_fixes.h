@@ -23,6 +23,8 @@
 #ifndef FFMPEG_GCC_FIXES_H
 #define FFMPEG_GCC_FIXES_H
 
+#include "config.h"
+
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
