@@ -1121,8 +1121,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_XA:
-        c->status[0].sample1 = c->status[0].sample2 =
-        c->status[1].sample1 = c->status[1].sample2 = 0;
         while (buf_size >= 128) {
             xa_decode(samples, src, &c->status[0], &c->status[1],
                 avctx->channels);
