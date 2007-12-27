@@ -23,6 +23,7 @@
 #include "gcc_fixes.h"
 
 #include "dsputil_ppc.h"
+#include "dsputil_altivec.h"
 #include "util_altivec.h"
 #include "types_altivec.h"
 
