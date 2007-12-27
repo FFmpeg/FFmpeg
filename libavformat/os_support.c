@@ -29,7 +29,7 @@
 #ifndef HAVE_SYS_POLL_H
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
-#else
+#elif defined (HAVE_SYS_SELECT_H)
 #include <sys/select.h>
 #endif
 #endif
