@@ -706,6 +706,8 @@ HAVE_LIST="
     getrusage
     imlib2
     inet_aton
+    llrint
+    lrint
     lrintf
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
@@ -714,6 +716,8 @@ HAVE_LIST="
     mkstemp
     mlib
     ppc64
+    round
+    roundf
     sdl
     sdl_video_size
     soundcard_h
@@ -1593,12 +1597,14 @@ done
 
 check_lib math.h sin -lm
 
-# test for lrintf in math.h
-check_exec <<EOF && enable lrintf || disable lrintf
+# test for C99 functions in math.h
+for func in llrint lrint lrintf round roundf; do
+    check_exec <<EOF && enable $func || disable $func
 #define _ISOC9X_SOURCE  1
 #include <math.h>
-int main(void) { return (lrintf(3.999f) > 0)?0:1; }
+int main(void) { return ($func(3.999f) > 0)?0:1; }
 EOF
+done
 
 enabled_any libamr_nb libamr_wb && enable libamr
 
