@@ -271,9 +271,6 @@ if((y)<(x)){\
 }
 
 #ifndef HAVE_LRINTF
-/* XXX: add ISOC specific test to avoid specific BSD testing. */
-/* better than nothing implementation. */
-/* btw, rintf() is existing on fbsd too -- alex */
 static av_always_inline long int lrintf(float x)
 {
     return (int)(rint(x));
