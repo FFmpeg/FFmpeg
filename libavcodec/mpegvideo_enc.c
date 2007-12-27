@@ -1769,6 +1769,8 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     d->mb_skipped= 0;
     d->qscale= s->qscale;
     d->dquant= s->dquant;
+
+    d->esc3_level_length= s->esc3_level_length;
 }
 
 static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
@@ -1806,6 +1808,8 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
         d->block_last_index[i]= s->block_last_index[i];
     d->interlaced_dct= s->interlaced_dct;
     d->qscale= s->qscale;
+
+    d->esc3_level_length= s->esc3_level_length;
 }
 
 static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegEncContext *best, int type,
