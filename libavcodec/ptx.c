@@ -38,7 +38,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                             uint8_t *buf, int buf_size) {
     PTXContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p = (AVFrame *)&s->picture;
+    AVFrame * const p = &s->picture;
     unsigned int offset, w, h, y, stride, bytes_per_pixel;
     uint8_t *ptr;
 

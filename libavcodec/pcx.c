@@ -73,7 +73,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                             uint8_t *buf, int buf_size) {
     PCXContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p = (AVFrame *)&s->picture;
+    AVFrame * const p = &s->picture;
     int xmin, ymin, xmax, ymax;
     unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,
                  bytes_per_scanline;
