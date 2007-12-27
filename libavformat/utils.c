@@ -1762,6 +1762,24 @@ static int get_std_framerate(int i){
     else        return ((int[]){24,30,60,12,15})[i-60*12]*1000*12;
 }
 
+/*
+ * Is the time base unreliable.
+ * This is a heuristic to balance between quick acceptance of the values in
+ * the headers vs. some extra checks.
+ * Old divx and xvid often have nonsense timebases like 1fps or 2fps.
+ * Mpeg2 commonly misuses field repeat flags to store different framerates.
+ * And there are "variable" fps files this needs to detect as well.
+ */
+static int tb_unreliable(AVCodecContext *c){
+    if(   c->time_base.den >= 101L*c->time_base.num
+       || c->time_base.den <    5L*c->time_base.num
+/*       || c->codec_tag == ff_get_fourcc("DIVX")
+       || c->codec_tag == ff_get_fourcc("XVID")*/
+       || c->codec_id == CODEC_ID_MPEG2VIDEO)
+        return 1;
+    return 0;
+}
+
 int av_find_stream_info(AVFormatContext *ic)
 {
     int i, count, ret, read_size, j;
@@ -1810,7 +1828,7 @@ int av_find_stream_info(AVFormatContext *ic)
             if (!has_codec_parameters(st->codec))
                 break;
             /* variable fps and no guess at the real fps */
-            if(   (st->codec->time_base.den >= 101LL*st->codec->time_base.num || st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
+            if(   tb_unreliable(st->codec)
                && duration_count[i]<20 && st->codec->codec_type == CODEC_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
@@ -1946,7 +1964,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
             if(duration_count[i]
-               && (st->codec->time_base.num*101LL <= st->codec->time_base.den || st->codec->codec_id == CODEC_ID_MPEG2VIDEO) /*&&
+               && tb_unreliable(st->codec) /*&&
                //FIXME we should not special case mpeg2, but this needs testing with non mpeg2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
                 double best_error= 2*av_q2d(st->time_base);
