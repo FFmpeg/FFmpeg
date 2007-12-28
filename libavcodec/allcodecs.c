@@ -139,6 +139,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (SP5X, sp5x);
     REGISTER_ENCDEC  (SVQ1, svq1);
     REGISTER_DECODER (SVQ3, svq3);
+    REGISTER_DECODER (SUNRAST, sunrast);
     REGISTER_ENCDEC  (TARGA, targa);
     REGISTER_DECODER (THEORA, theora);
     REGISTER_DECODER (THP, thp);

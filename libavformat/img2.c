@@ -58,6 +58,13 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_SGI       , "sgi"},
     { CODEC_ID_PTX       , "ptx"},
     { CODEC_ID_PCX       , "pcx"},
+    { CODEC_ID_SUNRAST   , "sun"},
+    { CODEC_ID_SUNRAST   , "ras"},
+    { CODEC_ID_SUNRAST   , "rs"},
+    { CODEC_ID_SUNRAST   , "im1"},
+    { CODEC_ID_SUNRAST   , "im8"},
+    { CODEC_ID_SUNRAST   , "im24"},
+    { CODEC_ID_SUNRAST   , "sunras"},
     {0, NULL}
 };
 

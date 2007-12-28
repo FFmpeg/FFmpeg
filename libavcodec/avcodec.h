@@ -170,6 +170,7 @@ enum CodecID {
     CODEC_ID_AMV,
     CODEC_ID_VB,
     CODEC_ID_PCX,
+    CODEC_ID_SUNRAST,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
