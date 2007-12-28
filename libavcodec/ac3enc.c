@@ -573,7 +573,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
            bit_alloc(s, mask, psd, bap, frame_bits, coarse_snr_offset, 0) < 0)
         coarse_snr_offset -= SNR_INC1;
     if (coarse_snr_offset < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Bit allocation failed, try increasing the bitrate, -ab 384k for example!\n");
+        av_log(NULL, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
         return -1;
     }
     while ((coarse_snr_offset + SNR_INC1) <= 63 &&
