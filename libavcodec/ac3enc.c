@@ -669,9 +669,8 @@ static int AC3_encode_init(AVCodecContext *avctx)
     s->bitstream_mode = 0; /* complete main audio service */
 
     /* bitrate & frame size */
-    bitrate /= 1000;
     for(i=0;i<19;i++) {
-        if ((ff_ac3_bitrate_tab[i] >> s->sr_shift) == bitrate)
+        if ((ff_ac3_bitrate_tab[i] >> s->sr_shift)*1000 == bitrate)
             break;
     }
     if (i == 19)
@@ -1240,11 +1239,11 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     }
 
     /* adjust for fractional frame sizes */
-    while(s->bits_written >= s->bit_rate*1000 && s->samples_written >= s->sample_rate) {
-        s->bits_written -= s->bit_rate*1000;
+    while(s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
+        s->bits_written -= s->bit_rate;
         s->samples_written -= s->sample_rate;
     }
-    s->frame_size = s->frame_size_min + (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate*1000);
+    s->frame_size = s->frame_size_min + (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
     s->bits_written += s->frame_size * 16;
     s->samples_written += AC3_FRAME_SIZE;
 
