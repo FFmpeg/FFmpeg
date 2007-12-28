@@ -120,8 +120,6 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return -1;
         }
 
-        av_log(avctx, AV_LOG_DEBUG, "maplength %u\n", len);
-
         ptr = p->data[1];
         for (x=0; x<len; x++, ptr+=4)
             *(uint32_t *)ptr = (buf[x]<<16) + (buf[len+x]<<8) + buf[len+len+x];
