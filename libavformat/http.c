@@ -247,7 +247,6 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->off = 0;
     s->filesize = -1;
     if (post) {
-        usleep(1000*1000);
         return 0;
     }
 
