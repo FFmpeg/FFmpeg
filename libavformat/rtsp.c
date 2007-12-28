@@ -606,7 +606,7 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
             p++;
         get_word_sep(profile, sizeof(profile), "/;,", &p);
         lower_transport[0] = '\0';
-        if (*p == '/') {
+        if (*p == '/') { /* rtp/avp/<protocol> */
             p++;
             get_word_sep(lower_transport, sizeof(lower_transport),
                          ";,", &p);
