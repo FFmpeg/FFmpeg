@@ -738,7 +738,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 1, 1); /* original bitstream */
     put_bits(&s->pb, 1, 0); /* no time code 1 */
     put_bits(&s->pb, 1, 0); /* no time code 2 */
-    put_bits(&s->pb, 1, 0); /* no addtional bit stream info */
+    put_bits(&s->pb, 1, 0); /* no additional bit stream info */
 }
 
 /* symetric quantization on 'levels' levels */
