@@ -605,14 +605,16 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
         if (*p == '/')
             p++;
         if (!strcasecmp (transport_protocol, "rtp")) {
-        get_word_sep(profile, sizeof(profile), "/;,", &p);
-        lower_transport[0] = '\0';
-        if (*p == '/') { /* rtp/avp/<protocol> */
-            p++;
-            get_word_sep(lower_transport, sizeof(lower_transport),
-                         ";,", &p);
-            }
-        } else if (!strcasecmp (transport_protocol, "x-pn-tng")) { /* x-pn-tng/<protocol> */
+            get_word_sep(profile, sizeof(profile), "/;,", &p);
+            lower_transport[0] = '\0';
+            /* rtp/avp/<protocol> */
+            if (*p == '/') {
+                p++;
+                get_word_sep(lower_transport, sizeof(lower_transport),
+                             ";,", &p);
+                }
+        } else if (!strcasecmp (transport_protocol, "x-pn-tng")) {
+            /* x-pn-tng/<protocol> */
             get_word_sep(lower_transport, sizeof(lower_transport), "/;,", &p);
             profile[0] = '\0';
         }
