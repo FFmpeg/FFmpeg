@@ -2072,7 +2072,7 @@ typedef struct AVCodecContext {
     int directpred;
 
     /**
-     * Audio cutoff bandwidth (0 means "automatic"), currently used only by FAAC.
+     * Audio cutoff bandwidth (0 means "automatic")
      * - encoding: Set by user.
      * - decoding: unused
      */

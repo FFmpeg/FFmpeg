@@ -632,6 +632,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
     int i, j, ch;
     float alpha;
+    int bw_code;
     static const uint8_t channel_mode_defs[6] = {
         0x01, /* C */
         0x02, /* L R */
@@ -683,12 +684,21 @@ static int AC3_encode_init(AVCodecContext *avctx)
     s->frame_size = s->frame_size_min;
 
     /* bit allocation init */
-    for(ch=0;ch<s->nb_channels;ch++) {
-        /* bandwidth for each channel */
+    if(avctx->cutoff) {
+        /* calculate bandwidth based on user-specified cutoff frequency */
+        int cutoff = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
+        int fbw_coeffs = cutoff * 512 / s->sample_rate;
+        bw_code = av_clip((fbw_coeffs - 73) / 3, 0, 60);
+    } else {
+        /* use default bandwidth setting */
         /* XXX: should compute the bandwidth according to the frame
            size, so that we avoid anoying high freq artefacts */
-        s->chbwcod[ch] = 50; /* sample bandwidth as mpeg audio layer 2 table 0 */
-        s->nb_coefs[ch] = ((s->chbwcod[ch] + 12) * 3) + 37;
+        bw_code = 50;
+    }
+    for(ch=0;ch<s->nb_channels;ch++) {
+        /* bandwidth for each channel */
+        s->chbwcod[ch] = bw_code;
+        s->nb_coefs[ch] = bw_code * 3 + 73;
     }
     if (s->lfe) {
         s->nb_coefs[s->lfe_channel] = 7; /* fixed */
