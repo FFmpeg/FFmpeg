@@ -19,8 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_DSPUTIL_IWMMXT_RND_H
-#define FFMPEG_DSPUTIL_IWMMXT_RND_H
+/* This header intentionally has no multiple inclusion guards. It is meant to
+ * be included multiple times and generates different code depending on the
+ * value of certain #defines. */
 
 void DEF(put, pixels8)(uint8_t *block, const uint8_t *pixels, const int line_size, int h)
 {
@@ -1115,5 +1116,3 @@ void DEF(avg, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, const int lin
         : [line_size]"r"(line_size)
         : "r12", "memory");
 }
-
-#endif /* FFMPEG_DSPUTIL_IWMMXT_RND_H */
