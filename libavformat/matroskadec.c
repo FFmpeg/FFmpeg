@@ -846,6 +846,23 @@ matroska_queue_packet (MatroskaDemuxContext *matroska,
     matroska->num_packets++;
 }
 
+/*
+ * Free all packets in our internal queue.
+ */
+static void
+matroska_clear_queue (MatroskaDemuxContext *matroska)
+{
+    if (matroska->packets) {
+        int n;
+        for (n = 0; n < matroska->num_packets; n++) {
+            av_free_packet(matroska->packets[n]);
+            av_free(matroska->packets[n]);
+        }
+        av_free(matroska->packets);
+        matroska->packets = NULL;
+    }
+}
+
 
 /*
  * Autodetecting...
@@ -2690,13 +2707,7 @@ matroska_read_close (AVFormatContext *s)
     av_free(matroska->muxing_app);
     av_free(matroska->index);
 
-    if (matroska->packets != NULL) {
-        for (n = 0; n < matroska->num_packets; n++) {
-            av_free_packet(matroska->packets[n]);
-            av_free(matroska->packets[n]);
-        }
-        av_free(matroska->packets);
-    }
+    matroska_clear_queue(matroska);
 
     for (n = 0; n < matroska->num_tracks; n++) {
         MatroskaTrack *track = matroska->tracks[n];
