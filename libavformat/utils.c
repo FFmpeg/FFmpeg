@@ -2966,7 +2966,7 @@ void url_split(char *proto, int proto_size,
     if(!ls)
         ls = strchr(p, '?');
     if(ls)
-            av_strlcpy(path, ls, path_size);
+        av_strlcpy(path, ls, path_size);
     else
         ls = &p[strlen(p)]; // XXX
 
