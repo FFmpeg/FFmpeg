@@ -2268,8 +2268,10 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
-    if (matroska->tracks[track]->stream_index < 0)
+    if (matroska->tracks[track]->stream_index < 0) {
+        av_free(origdata);
         return res;
+    }
     st = matroska->ctx->streams[matroska->tracks[track]->stream_index];
     if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
@@ -2287,8 +2289,10 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
 
     if (matroska->skip_to_keyframe) {
-        if (!is_keyframe || st != matroska->skip_to_stream)
+        if (!is_keyframe || st != matroska->skip_to_stream) {
+            av_free(origdata);
             return res;
+        }
         matroska->skip_to_keyframe = 0;
     }
 
