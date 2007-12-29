@@ -282,6 +282,7 @@ enum CodecID {
     CODEC_ID_DVB_SUBTITLE,
     CODEC_ID_TEXT,  ///< raw UTF-8 text
     CODEC_ID_XSUB,
+    CODEC_ID_SSA,
 
     CODEC_ID_MPEG2TS= 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
                                 * stream (only used by libavformat) */

@@ -94,8 +94,6 @@ typedef struct MatroskaAudioTrack {
 
 typedef struct MatroskaSubtitleTrack {
     MatroskaTrack track;
-
-    int ass;
     //..
 } MatroskaSubtitleTrack;
 
@@ -2160,15 +2158,6 @@ matroska_read_header (AVFormatContext    *s,
                 }
             }
 
-            else if (codec_id == CODEC_ID_TEXT) {
-                MatroskaSubtitleTrack *subtrack=(MatroskaSubtitleTrack *)track;
-                if (!strcmp(track->codec_id, "S_TEXT/ASS") ||
-                    !strcmp(track->codec_id, "S_TEXT/SSA") ||
-                    !strcmp(track->codec_id, "S_ASS") ||
-                    !strcmp(track->codec_id, "S_SSA"))
-                    subtrack->ass = 1;
-            }
-
             if (codec_id == CODEC_ID_NONE) {
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown/unsupported CodecID %s.\n",
@@ -2437,14 +2426,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 }
             } else {
                 int offset = 0;
-
-                if (st->codec->codec_id == CODEC_ID_TEXT
-                    && ((MatroskaSubtitleTrack *)(matroska->tracks[track]))->ass) {
-                    int i;
-                    for (i=0; i<8 && data[offset]; offset++)
-                        if (data[offset] == ',')
-                            i++;
-                }
 
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
