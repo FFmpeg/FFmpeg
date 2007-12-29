@@ -2688,6 +2688,8 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
     if (index < 0)
         return 0;
 
+    matroska_clear_queue(matroska);
+
     /* do the seek */
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
