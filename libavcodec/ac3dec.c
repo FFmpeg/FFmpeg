@@ -577,13 +577,13 @@ static void remove_dithering(AC3DecodeContext *s) {
             else
                 end = s->end_freq[ch];
             for(i=0; i<end; i++) {
-                if(bap[i] == 0)
+                if(!bap[i])
                     coeffs[i] = 0.0f;
             }
             if(s->channel_in_cpl[ch]) {
                 bap = s->bap[CPL_CH];
                 for(; i<s->end_freq[CPL_CH]; i++) {
-                    if(bap[i] == 0)
+                    if(!bap[i])
                         coeffs[i] = 0.0f;
                 }
             }
