@@ -145,7 +145,7 @@ typedef struct {
     uint8_t dba_lengths[AC3_MAX_CHANNELS][8]; ///< delta segment lengths
     uint8_t dba_values[AC3_MAX_CHANNELS][8];  ///< delta values for each segment
 
-    int sampling_rate;                      ///< sample frequency, in Hz
+    int sample_rate;                        ///< sample frequency, in Hz
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int frame_size;                         ///< current frame size, in bytes
 
@@ -337,7 +337,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
     surround_mix_level              = gain_levels[surround_levels[hdr.surround_mix_level]];
     s->lfe_on                       = hdr.lfe_on;
     s->bit_alloc_params.sr_shift    = hdr.sr_shift;
-    s->sampling_rate                = hdr.sample_rate;
+    s->sample_rate                  = hdr.sample_rate;
     s->bit_rate                     = hdr.bit_rate;
     s->channels                     = hdr.channels;
     s->fbw_channels                 = s->channels - s->lfe_on;
@@ -1103,7 +1103,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         return -1;
     }
 
-    avctx->sample_rate = s->sampling_rate;
+    avctx->sample_rate = s->sample_rate;
     avctx->bit_rate = s->bit_rate;
 
     /* check that reported frame size fits in input buffer */
