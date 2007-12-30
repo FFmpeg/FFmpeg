@@ -1073,7 +1073,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
  */
 static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
 {
-    AC3DecodeContext *s = (AC3DecodeContext *)avctx->priv_data;
+    AC3DecodeContext *s = avctx->priv_data;
     int16_t *out_samples = (int16_t *)data;
     int i, blk, ch, err;
 
@@ -1141,7 +1141,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
  */
 static int ac3_decode_end(AVCodecContext *avctx)
 {
-    AC3DecodeContext *s = (AC3DecodeContext *)avctx->priv_data;
+    AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
 
