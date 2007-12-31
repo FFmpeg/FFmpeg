@@ -474,6 +474,21 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
 }
 
 /**
+ * Calculate motion vector component that should be added for direct blocks.
+ */
+static int calc_add_mv(MpegEncContext *s, int dir, int component)
+{
+    int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
+    int sum;
+
+    sum = (s->next_picture_ptr->motion_val[0][mv_pos][component] +
+           s->next_picture_ptr->motion_val[0][mv_pos + 1][component] +
+           s->next_picture_ptr->motion_val[0][mv_pos + s->b8_stride][component] +
+           s->next_picture_ptr->motion_val[0][mv_pos + s->b8_stride + 1][component]) >> 2;
+    return dir ? -(sum >> 1) : ((sum + 1) >> 1);
+}
+
+/**
  * Predict motion vector for B-frame macroblock.
  */
 static inline void rv34_pred_b_vector(int A[2], int B[2], int C[2],
@@ -536,7 +551,11 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
 
     mx += r->dmv[dir][0];
     my += r->dmv[dir][1];
-    //XXX add vector for bidirectionally predicted blocks
+
+    if(block_type == RV34_MB_B_DIRECT){
+        mx += calc_add_mv(s, dir, 0);
+        my += calc_add_mv(s, dir, 1);
+    }
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
             cur_pic->motion_val[dir][mv_pos + i + j*s->b8_stride][0] = mx;
