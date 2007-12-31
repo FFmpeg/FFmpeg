@@ -330,7 +330,7 @@ static int decode_stream_header(NUTContext *nut){
         st->codec->sample_aspect_ratio.num= ff_get_v(bc);
         st->codec->sample_aspect_ratio.den= ff_get_v(bc);
         if((!st->codec->sample_aspect_ratio.num) != (!st->codec->sample_aspect_ratio.den)){
-            av_log(s, AV_LOG_ERROR, "invalid aspect ratio\n");
+            av_log(s, AV_LOG_ERROR, "invalid aspect ratio %d/%d\n", st->codec->sample_aspect_ratio.num, st->codec->sample_aspect_ratio.den);
             return -1;
         }
         ff_get_v(bc); /* csp type */
