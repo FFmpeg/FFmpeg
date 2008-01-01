@@ -27,7 +27,7 @@
  * miscellaneous OS support macros and functions.
  */
 
-#if defined(__BEOS__) || defined(__INNOTEK_LIBC__) || defined(__DJGPP__)
+#ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
 

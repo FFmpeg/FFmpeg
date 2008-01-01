@@ -551,6 +551,23 @@ int main(void){
 EOF
 }
 
+check_type(){
+    log check_type "$@"
+    headers=$1
+    type=$2
+    shift 2
+    disable $type
+    incs=""
+    for hdr in $headers; do
+        incs="$incs
+#include <$hdr>"
+    done
+    check_cc "$@" <<EOF && enable $type
+$incs
+$type v;
+EOF
+}
+
 require(){
     name="$1"
     header="$2"
@@ -720,6 +737,7 @@ HAVE_LIST="
     roundf
     sdl
     sdl_video_size
+    socklen_t
     soundcard_h
     sys_poll_h
     sys_select_h
@@ -1684,6 +1702,8 @@ fi
 
 texi2html -version >/dev/null 2>&1 && enable texi2html || disable texi2html
 
+check_type sys/socket.h socklen_t
+
 ##########################################
 # Network check
 
@@ -1693,6 +1713,7 @@ if enabled network; then
         check_func closesocket
     elif check_header winsock2.h ; then
         network_extralibs="-lws2_32"
+        check_type ws2tcpip.h socklen_t
         check_func2 winsock2.h closesocket
     fi
 fi
