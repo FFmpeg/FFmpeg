@@ -523,6 +523,31 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             url_fseek(pb, i+size, SEEK_SET);
             break;
+        case MKTAG('v', 'p', 'r', 'p'):
+            if(stream_index < (unsigned)s->nb_streams && size > 9*4){
+                AVRational active, active_aspect;
+
+                st = s->streams[stream_index];
+                get_le32(pb);
+                get_le32(pb);
+                get_le32(pb);
+                get_le32(pb);
+                get_le32(pb);
+
+                active_aspect.num= get_le16(pb);
+                active_aspect.den= get_le16(pb);
+                active.num       = get_le32(pb);
+                active.den       = get_le32(pb);
+                get_le32(pb); //nbFieldsPerFrame
+
+                if(active_aspect.num && active_aspect.den && active.num && active.den){
+                    st->codec->sample_aspect_ratio= av_div_q(active_aspect, active);
+//av_log(s, AV_LOG_ERROR, "vprp %d/%d %d/%d\n", active_aspect.num, active_aspect.den, active.num, active.den);
+                }
+                size -= 9*4;
+            }
+            url_fseek(pb, size, SEEK_CUR);
+            break;
         case MKTAG('I', 'N', 'A', 'M'):
             avi_read_tag(pb, s->title, sizeof(s->title), size);
             break;
