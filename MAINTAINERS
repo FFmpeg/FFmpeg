@@ -246,6 +246,7 @@ Muxers/Demuxers:
   oggparsevorbis.c                      Mans Rullgard
   oggparseogm.c                         Mans Rullgard
   psxstr.c                              Mike Melanson
+  pva.c                                 Ivo van Poorten
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
   rtp*.c (Muxer only)                   Luca Abeni

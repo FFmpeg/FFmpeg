@@ -107,6 +107,7 @@ version <next>
 - Ogg muxer
 - PC Paintbrush PCX decoder
 - Sun Rasterfile decoder
+- TechnoTrend PVA demuxer
 
 version 0.4.9-pre1:
 
