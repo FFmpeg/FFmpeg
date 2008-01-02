@@ -2180,7 +2180,7 @@ static void opt_frame_rate(const char *arg)
     }
 }
 
-static void opt_bitrate(const char *opt, const char *arg)
+static int opt_bitrate(const char *opt, const char *arg)
 {
     int codec_type = opt[0]=='a' ? CODEC_TYPE_AUDIO : CODEC_TYPE_VIDEO;
 
@@ -2188,6 +2188,8 @@ static void opt_bitrate(const char *opt, const char *arg)
 
     if (av_get_int(avctx_opts[codec_type], "b", NULL) < 1000)
         fprintf(stderr, "WARNING: The bitrate parameter is set too low. It takes bits/s as argument, not kbits/s\n");
+
+    return 0;
 }
 
 static void opt_frame_crop_top(const char *arg)
@@ -3671,7 +3673,7 @@ static void opt_vstats (void)
     opt_vstats_file(filename);
 }
 
-static void opt_bsf(const char *opt, const char *arg)
+static int opt_bsf(const char *opt, const char *arg)
 {
     AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
     AVBitStreamFilterContext **bsfp;
@@ -3686,6 +3688,8 @@ static void opt_bsf(const char *opt, const char *arg)
         bsfp= &(*bsfp)->next;
 
     *bsfp= bsfc;
+
+    return 0;
 }
 
 static void opt_show_license(void)
