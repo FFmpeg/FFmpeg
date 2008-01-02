@@ -125,7 +125,7 @@ static float video_rc_qsquish=1.0;
 static float video_rc_qmod_amp=0;
 static int video_rc_qmod_freq=0;
 #endif
-static char *video_rc_override_string=NULL;
+static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
 static char *video_codec_name = NULL;
@@ -2156,7 +2156,7 @@ static int opt_default(const char *opt, const char *arg){
     return 0;
 }
 
-static void opt_video_rc_override_string(char *arg)
+static void opt_video_rc_override_string(const char *arg)
 {
     video_rc_override_string = arg;
 }
@@ -2866,7 +2866,7 @@ static void new_video_stream(AVFormatContext *oc)
         st->stream_copy = 1;
         video_enc->codec_type = CODEC_TYPE_VIDEO;
     } else {
-        char *p;
+        const char *p;
         int i;
         AVCodec *codec;
         AVRational fps= frame_rate.num ? frame_rate : (AVRational){25,1};
