@@ -81,7 +81,9 @@ typedef int FFRTSPCallback(enum RTSPCallbackAction action,
 int rtsp_init(void);
 void rtsp_parse_line(RTSPHeader *reply, const char *buf);
 
+#if LIBAVFORMAT_VERSION_INT < (53 << 16)
 extern int rtsp_default_protocols;
+#endif
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
 
