@@ -858,6 +858,7 @@ matroska_clear_queue (MatroskaDemuxContext *matroska)
         }
         av_free(matroska->packets);
         matroska->packets = NULL;
+        matroska->num_packets = 0;
     }
 }
 
@@ -2675,7 +2676,6 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_stream = st;
-    matroska->num_packets = 0;
     matroska->peek_id = 0;
     return 0;
 }
