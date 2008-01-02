@@ -55,34 +55,33 @@
 
 #define SHIFT2_LINE(OFF, R0,R1,R2,R3)           \
     "paddw     %%mm"#R2", %%mm"#R1"    \n\t"    \
-    "movd      (%1,%4), %%mm"#R0"      \n\t"    \
+    "movd      (%0,%3), %%mm"#R0"      \n\t"    \
     "pmullw    %%mm6, %%mm"#R1"        \n\t"    \
     "punpcklbw %%mm0, %%mm"#R0"        \n\t"    \
-    "movd      (%1,%3), %%mm"#R3"      \n\t"    \
+    "movd      (%0,%2), %%mm"#R3"      \n\t"    \
     "psubw     %%mm"#R0", %%mm"#R1"    \n\t"    \
     "punpcklbw %%mm0, %%mm"#R3"        \n\t"    \
     "paddw     %%mm7, %%mm"#R1"        \n\t"    \
     "psubw     %%mm"#R3", %%mm"#R1"    \n\t"    \
-    "psraw     %5, %%mm"#R1"           \n\t"    \
-    "movq      %%mm"#R1", "#OFF"(%2)   \n\t"    \
-    "add       %3, %1                  \n\t"
+    "psraw     %4, %%mm"#R1"           \n\t"    \
+    "movq      %%mm"#R1", "#OFF"(%1)   \n\t"    \
+    "add       %2, %0                  \n\t"
 
-DECLARE_ALIGNED_16(static const uint64_t, fact_9) = 0x0009000900090009ULL;
+DECLARE_ALIGNED_16(const uint64_t, ff_pw_9) = 0x0009000900090009ULL;
 
 /** Sacrifying mm6 allows to pipeline loads from src */
 static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        const uint8_t *src, long int stride,
                                        int rnd, int64_t shift)
 {
-    int  w = 3;
-
     asm volatile(
-        LOAD_ROUNDER_MMX("%6")
-        "movq      %7, %%mm6               \n\t"
+        "mov       $3, %%"REG_c"           \n\t"
+        LOAD_ROUNDER_MMX("%5")
+        "movq      "MANGLE(ff_pw_9)", %%mm6 \n\t"
         "1:                                \n\t"
-        "movd      (%1), %%mm2             \n\t"
-        "add       %3, %1                  \n\t"
-        "movd      (%1), %%mm3             \n\t"
+        "movd      (%0), %%mm2             \n\t"
+        "add       %2, %0                  \n\t"
+        "movd      (%0), %%mm3             \n\t"
         "punpcklbw %%mm0, %%mm2            \n\t"
         "punpcklbw %%mm0, %%mm3            \n\t"
         SHIFT2_LINE(  0, 1, 2, 3, 4)
@@ -93,14 +92,14 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
         SHIFT2_LINE(120, 2, 3, 4, 1)
         SHIFT2_LINE(144, 3, 4, 1, 2)
         SHIFT2_LINE(168, 4, 1, 2, 3)
-        "sub       %8, %1                  \n\t"
-        "add       $8, %2                  \n\t"
-        "decl      %0                      \n\t"
+        "sub       %6, %0                  \n\t"
+        "add       $8, %1                  \n\t"
+        "dec       %%"REG_c"               \n\t"
         "jnz 1b                            \n\t"
-        : "+g"(w), "+r"(src), "+r"(dst)
-        : "r"(stride), "r"(-2*stride), "m"(shift),
-          "m"(rnd), "m"(fact_9), "g"(9*stride-4)
-        : "memory"
+        : "+r"(src), "+r"(dst)
+        : "r"(stride), "r"(-2*stride),
+          "m"(shift), "m"(rnd), "r"(9*stride-4)
+        : "%"REG_c, "memory"
     );
 }
 
@@ -117,8 +116,8 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
     rnd -= (-1+9+9-1)*1024; /* Add -1024 bias */
     asm volatile(
         LOAD_ROUNDER_MMX("%4")
-        "movq      %6, %%mm6               \n\t"
-        "movq      %5, %%mm5               \n\t"
+        "movq      "MANGLE(ff_pw_128)", %%mm6\n\t"
+        "movq      "MANGLE(ff_pw_9)", %%mm5 \n\t"
         "1:                                \n\t"
         "movq      2*0+0(%1), %%mm1        \n\t"
         "movq      2*0+8(%1), %%mm2        \n\t"
@@ -141,8 +140,8 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
         "add       %3, %2                  \n\t"
         "decl      %0                      \n\t"
         "jnz 1b                            \n\t"
-        : "+g"(h), "+r" (src),  "+r" (dst)
-        : "g"(stride), "m"(rnd), "m"(fact_9), "m"(ff_pw_128)
+        : "+r"(h), "+r" (src),  "+r" (dst)
+        : "r"(stride), "m"(rnd)
         : "memory"
     );
 }
@@ -155,48 +154,48 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
 static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
                                long int stride, int rnd, long int offset)
 {
-    int h = 8;
-
     rnd = 8-rnd;
     asm volatile(
-        LOAD_ROUNDER_MMX("%6")
-        "movq      %8, %%mm6               \n\t"
+        "mov       $8, %%"REG_c"           \n\t"
+        LOAD_ROUNDER_MMX("%5")
+        "movq      "MANGLE(ff_pw_9)", %%mm6\n\t"
         "1:                                \n\t"
-        "movd      0(%1   ), %%mm3         \n\t"
-        "movd      4(%1   ), %%mm4         \n\t"
-        "movd      0(%1,%3), %%mm1         \n\t"
-        "movd      4(%1,%3), %%mm2         \n\t"
-        "add       %3, %1                  \n\t"
+        "movd      0(%0   ), %%mm3         \n\t"
+        "movd      4(%0   ), %%mm4         \n\t"
+        "movd      0(%0,%2), %%mm1         \n\t"
+        "movd      4(%0,%2), %%mm2         \n\t"
+        "add       %2, %0                  \n\t"
         "punpcklbw %%mm0, %%mm3            \n\t"
         "punpcklbw %%mm0, %%mm4            \n\t"
         "punpcklbw %%mm0, %%mm1            \n\t"
         "punpcklbw %%mm0, %%mm2            \n\t"
         "paddw     %%mm1, %%mm3            \n\t"
         "paddw     %%mm2, %%mm4            \n\t"
-        "movd      0(%1,%4), %%mm1         \n\t"
-        "movd      4(%1,%4), %%mm2         \n\t"
+        "movd      0(%0,%3), %%mm1         \n\t"
+        "movd      4(%0,%3), %%mm2         \n\t"
         "pmullw    %%mm6, %%mm3            \n\t" /* 0,9,9,0*/
         "pmullw    %%mm6, %%mm4            \n\t" /* 0,9,9,0*/
         "punpcklbw %%mm0, %%mm1            \n\t"
         "punpcklbw %%mm0, %%mm2            \n\t"
         "psubw     %%mm1, %%mm3            \n\t" /*-1,9,9,0*/
         "psubw     %%mm2, %%mm4            \n\t" /*-1,9,9,0*/
-        "movd      0(%1,%3), %%mm1         \n\t"
-        "movd      4(%1,%3), %%mm2         \n\t"
+        "movd      0(%0,%2), %%mm1         \n\t"
+        "movd      4(%0,%2), %%mm2         \n\t"
         "punpcklbw %%mm0, %%mm1            \n\t"
         "punpcklbw %%mm0, %%mm2            \n\t"
         "psubw     %%mm1, %%mm3            \n\t" /*-1,9,9,-1*/
         "psubw     %%mm2, %%mm4            \n\t" /*-1,9,9,-1*/
         NORMALIZE_MMX("$4")
-        TRANSFER_DO_PACK
-        "add       %7, %1                  \n\t"
-        "add       %5, %2                  \n\t"
-        "decl      %0                      \n\t"
+        "packuswb  %%mm4, %%mm3            \n\t"
+        "movq      %%mm3, (%1)             \n\t"
+        "add       %6, %0                  \n\t"
+        "add       %4, %1                  \n\t"
+        "dec       %%"REG_c"               \n\t"
         "jnz 1b                            \n\t"
-        : "+g"(h), "+r"(src),  "+r"(dst)
+        : "+r"(src),  "+r"(dst)
         : "r"(offset), "r"(-2*offset), "g"(stride), "m"(rnd),
-          "g"(stride-offset), "m"(fact_9)
-        : "memory"
+          "g"(stride-offset)
+        : "%"REG_c, "memory"
     );
 }
 
@@ -204,8 +203,8 @@ static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
  * Filter coefficients made global to allow access by all 1 or 3 quarter shift
  * interpolation functions.
  */
-DECLARE_ALIGNED_16(static const uint64_t, fact_53) = 0x0035003500350035ULL;
-DECLARE_ALIGNED_16(static const uint64_t, fact_18) = 0x0012001200120012ULL;
+DECLARE_ALIGNED_16(const uint64_t, ff_pw_53) = 0x0035003500350035ULL;
+DECLARE_ALIGNED_16(const uint64_t, ff_pw_18) = 0x0012001200120012ULL;
 
 /**
  * Core of the 1/4 and 3/4 shift bicubic interpolation.
@@ -217,13 +216,13 @@ DECLARE_ALIGNED_16(static const uint64_t, fact_18) = 0x0012001200120012ULL;
  * @param A3      Address of 3rd tap
  * @param A4      Address of 4th tap
  */
-#define MSPEL_FILTER13_CORE(UNPACK, MOVQ, A1, A2, A3, A4, POS)  \
+#define MSPEL_FILTER13_CORE(UNPACK, MOVQ, A1, A2, A3, A4)       \
      MOVQ "*0+"A1", %%mm1       \n\t"                           \
      MOVQ "*4+"A1", %%mm2       \n\t"                           \
      UNPACK("%%mm1")                                            \
      UNPACK("%%mm2")                                            \
-     "pmullw    "POS", %%mm1    \n\t"                           \
-     "pmullw    "POS", %%mm2    \n\t"                           \
+     "pmullw    "MANGLE(ff_pw_3)", %%mm1\n\t"                   \
+     "pmullw    "MANGLE(ff_pw_3)", %%mm2\n\t"                   \
      MOVQ "*0+"A2", %%mm3       \n\t"                           \
      MOVQ "*4+"A2", %%mm4       \n\t"                           \
      UNPACK("%%mm3")                                            \
@@ -267,11 +266,11 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
     src -= src_stride;                                                  \
     asm volatile(                                                       \
         LOAD_ROUNDER_MMX("%5")                                          \
-        "movq      %7, %%mm5       \n\t"                                \
-        "movq      %8, %%mm6       \n\t"                                \
+        "movq      "MANGLE(ff_pw_53)", %%mm5\n\t"                       \
+        "movq      "MANGLE(ff_pw_18)", %%mm6\n\t"                       \
         ASMALIGN(3)                                                     \
         "1:                        \n\t"                                \
-        MSPEL_FILTER13_CORE(DO_UNPACK, "movd  1", A1, A2, A3, A4, "%9") \
+        MSPEL_FILTER13_CORE(DO_UNPACK, "movd  1", A1, A2, A3, A4)       \
         NORMALIZE_MMX("%6")                                             \
         TRANSFER_DONT_PACK                                              \
         /* Last 3 (in fact 4) bytes on the line */                      \
@@ -299,10 +298,9 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
         "add       $24, %2         \n\t"                                \
         "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
-        : "+g"(h), "+r" (src),  "+r" (dst)                              \
+        : "+r"(h), "+r" (src),  "+r" (dst)                              \
         : "r"(src_stride), "r"(3*src_stride),                           \
-          "m"(rnd), "m"(shift),                                         \
-          "m"(fact_53), "m"(fact_18), "m"(ff_pw_3)                      \
+          "m"(rnd), "m"(shift)                                          \
         : "memory"                                                      \
     );                                                                  \
 }
@@ -324,23 +322,22 @@ vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, long int stride,         \
     rnd -= (-4+58+13-3)*256; /* Add -256 bias */                        \
     asm volatile(                                                       \
         LOAD_ROUNDER_MMX("%4")                                          \
-        "movq      %6, %%mm6       \n\t"                                \
-        "movq      %5, %%mm5       \n\t"                                \
+        "movq      "MANGLE(ff_pw_18)", %%mm6   \n\t"                    \
+        "movq      "MANGLE(ff_pw_53)", %%mm5   \n\t"                    \
         ASMALIGN(3)                                                     \
         "1:                        \n\t"                                \
-        MSPEL_FILTER13_CORE(DONT_UNPACK, "movq 2", A1, A2, A3, A4, "%8")\
+        MSPEL_FILTER13_CORE(DONT_UNPACK, "movq 2", A1, A2, A3, A4)      \
         NORMALIZE_MMX("$7")                                             \
         /* Remove bias */                                               \
-        "paddw     %7, %%mm3       \n\t"                                \
-        "paddw     %7, %%mm4       \n\t"                                \
+        "paddw     "MANGLE(ff_pw_128)", %%mm3  \n\t"                    \
+        "paddw     "MANGLE(ff_pw_128)", %%mm4  \n\t"                    \
         TRANSFER_DO_PACK                                                \
         "add       $24, %1         \n\t"                                \
         "add       %3, %2          \n\t"                                \
         "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
-        : "+g"(h), "+r" (src),  "+r" (dst)                              \
-        : "g"(stride), "m"(rnd), "m"(fact_53), "m"(fact_18),            \
-          "m"(ff_pw_128), "m"(ff_pw_3)                                  \
+        : "+r"(h), "+r" (src),  "+r" (dst)                              \
+        : "r"(stride), "m"(rnd)                                         \
         : "memory"                                                      \
     );                                                                  \
 }
@@ -363,20 +360,19 @@ vc1_put_## NAME ## _mmx(uint8_t *dst, const uint8_t *src,               \
     rnd = 32-rnd;                                                       \
     asm volatile (                                                      \
         LOAD_ROUNDER_MMX("%6")                                          \
-        "movq      %7, %%mm5       \n\t"                                \
-        "movq      %8, %%mm6       \n\t"                                \
+        "movq      "MANGLE(ff_pw_53)", %%mm5       \n\t"                \
+        "movq      "MANGLE(ff_pw_18)", %%mm6       \n\t"                \
         ASMALIGN(3)                                                     \
         "1:                        \n\t"                                \
-        MSPEL_FILTER13_CORE(DO_UNPACK, "movd   1", A1, A2, A3, A4, "%9")\
+        MSPEL_FILTER13_CORE(DO_UNPACK, "movd   1", A1, A2, A3, A4)      \
         NORMALIZE_MMX("$6")                                             \
         TRANSFER_DO_PACK                                                \
         "add       %5, %1          \n\t"                                \
         "add       %5, %2          \n\t"                                \
         "decl      %0              \n\t"                                \
         "jnz 1b                    \n\t"                                \
-        : "+g"(h), "+r" (src),  "+r" (dst)                              \
-        : "r"(offset), "r"(3*offset), "g"(stride), "m"(rnd),            \
-          "m"(fact_53), "m"(fact_18), "m"(ff_pw_3)                      \
+        : "+r"(h), "+r" (src),  "+r" (dst)                              \
+        : "r"(offset), "r"(3*offset), "g"(stride), "m"(rnd)             \
         : "memory"                                                      \
     );                                                                  \
 }
