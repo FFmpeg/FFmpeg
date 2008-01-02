@@ -113,6 +113,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             riff.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o
+OBJS-$(CONFIG_PVA_DEMUXER)               += pva.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o
 OBJS-$(CONFIG_REDIR_DEMUXER)             += rtsp.o

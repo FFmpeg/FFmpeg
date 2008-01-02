@@ -129,6 +129,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (PCM_U16LE, pcm_u16le);
     REGISTER_MUXDEMUX (PCM_U8,    pcm_u8);
     REGISTER_MUXER    (PSP, psp);
+    REGISTER_DEMUXER  (PVA, pva);
     REGISTER_MUXDEMUX (RAWVIDEO, rawvideo);
     REGISTER_MUXDEMUX (RM, rm);
     REGISTER_MUXDEMUX (ROQ, roq);
