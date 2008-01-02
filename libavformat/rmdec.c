@@ -716,10 +716,8 @@ resync:
         if (ff_rm_parse_packet (s, st, len, pkt, &seq, &flags, &timestamp) < 0)
             goto resync;
 
-        if(flags&2){
-            if((seq&0x7F) == 1)
+        if(flags&2 && (seq&0x7F) == 1)
                 av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
-        }
     }
 
     return 0;
