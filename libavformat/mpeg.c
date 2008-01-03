@@ -125,7 +125,7 @@ static int64_t get_pts(ByteIOContext *pb, int c)
 
     if (c < 0)
         c = get_byte(pb);
-    pts = (int64_t)((c >> 1) & 0x07) << 30;
+    pts = (int64_t)(c & 0x0e) << 29;
     val = get_be16(pb);
     pts |= (int64_t)(val >> 1) << 15;
     val = get_be16(pb);
