@@ -60,14 +60,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                     s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
-                    /* set channels,except if the user explicitly requests 1 or 2 channels, XXX/FIXME this is a bit ugly */
-                    if(avctx->codec_id == CODEC_ID_AC3){
-                        if(avctx->channels!=1 && avctx->channels!=2){
-                            avctx->channels = channels;
-                        }
-                    } else {
                         avctx->channels = channels;
-                    }
                     avctx->bit_rate = bit_rate;
                     avctx->frame_size = samples;
                 }
