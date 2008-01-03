@@ -60,7 +60,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                     s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
-                        avctx->channels = channels;
+                    avctx->channels = channels;
                     avctx->bit_rate = bit_rate;
                     avctx->frame_size = samples;
                 }
