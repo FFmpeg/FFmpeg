@@ -22,7 +22,7 @@
 #ifndef FFMPEG_FRAMEHOOK_H
 #define FFMPEG_FRAMEHOOK_H
 
-#warning VHOOK is deprecated. Please help porting libmpcodecs or a better filter system to FFmpeg instead of wasting your time writing new filters for this crappy one.
+#warning VHOOK is deprecated. Please help finishing libavfilter instead of wasting your time writing new filters for this crappy filter system.
 
 /*
  * Prototypes for interface to .so that implement a video processing hook
