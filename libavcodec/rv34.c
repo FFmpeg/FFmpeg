@@ -359,13 +359,6 @@ static inline void rv34_dequant4x4_16x16(DCTELEM *block, int Qdc, int Q)
  * @{
  */
 
-static inline int decode210(GetBitContext *gb){
-    if (get_bits1(gb))
-        return 0;
-    else
-        return 2 - get_bits1(gb);
-}
-
 /**
  * Decode starting slice position.
  * @todo Maybe replace with ff_h263_decode_mba() ?

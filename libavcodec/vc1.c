@@ -44,13 +44,6 @@
 static const uint16_t table_mb_intra[64][2];
 
 
-static inline int decode210(GetBitContext *gb){
-    if (get_bits1(gb))
-        return 0;
-    else
-        return 2 - get_bits1(gb);
-}
-
 /**
  * Init VC-1 specific tables and VC1Context members
  * @param v The VC1Context to initialize

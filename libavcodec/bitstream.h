@@ -950,4 +950,11 @@ static inline int decode012(GetBitContext *gb){
         return get_bits1(gb) + 1;
 }
 
+static inline int decode210(GetBitContext *gb){
+    if (get_bits1(gb))
+        return 0;
+    else
+        return 2 - get_bits1(gb);
+}
+
 #endif /* FFMPEG_BITSTREAM_H */
