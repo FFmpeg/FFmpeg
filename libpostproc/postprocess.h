@@ -56,7 +56,7 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
  * name is the string after "-pp" on the command line
  * quality is a number from 0 to PP_QUALITY_MAX
  */
-pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality);
+pp_mode_t *pp_get_mode_by_name_and_quality(const char *name, int quality);
 void pp_free_mode(pp_mode_t *mode);
 
 pp_context_t *pp_get_context(int width, int height, int flags);
