@@ -1110,10 +1110,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
 
     /* check for crc mismatch */
     if(avctx->error_resilience > 0) {
-    if(av_crc(av_crc8005, 0, &buf[2], s->frame_size-2)) {
-        av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
-        return -1;
-    }
+        if(av_crc(av_crc8005, 0, &buf[2], s->frame_size-2)) {
+            av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
+            return -1;
+        }
+        /* TODO: error concealment */
     }
 
     avctx->sample_rate = s->sample_rate;
