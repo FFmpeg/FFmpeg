@@ -35,6 +35,10 @@ void *av_tree_find(const AVTreeNode *t, void *key, int (*cmp)(void *key, const v
             if(next) next[(v>>31)^1]= t->elem;
             return av_tree_find(t->child[v>>31], key, cmp, next);
         }else{
+            if(next){
+                av_tree_find(t->child[0], key, cmp, next);
+                av_tree_find(t->child[1], key, cmp, next);
+            }
             return t->elem;
         }
     }
