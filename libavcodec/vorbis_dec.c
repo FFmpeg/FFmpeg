@@ -899,7 +899,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
 
     vc->channel_residues= av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->channel_floors  = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->saved           = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->saved           = av_mallocz((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->ret             = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->buf             = av_malloc( vc->blocksize[1]                       * sizeof(float));
     vc->buf_tmp         = av_malloc( vc->blocksize[1]                       * sizeof(float));
