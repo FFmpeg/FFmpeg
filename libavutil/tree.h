@@ -21,6 +21,8 @@
 /**
  * @file tree.h
  * A tree container.
+ * Insertion, Removial, Finding equal, largest which is smaller than and
+ * smallest which is larger than all have O(log n) worst case time.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
