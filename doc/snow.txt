@@ -309,6 +309,13 @@ Decoding process:
 Range Coder:
 ============
 FIXME
+The implemented range coder is an adapted version based upon "Range encoding:
+an algorithm for removing redundancy from a digitised message." by G. N. N.
+Martin.
+The encoded symbols encoded by the ffmpeg range coder are bits (0|1). The
+associated probabilities are not fix but change depending on the symbol mix
+seen so far.
+
 
 Neighboring Blocks:
 ===================
