@@ -559,6 +559,8 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
         fill_rectangle(cur_pic->motion_val[!dir][mv_pos], 2, 2, s->b8_stride, 0, 4);
 }
 
+static const int chroma_coeffs[3] = { 8, 5, 3 };
+
 /**
  * generic motion compensation function
  *
@@ -584,21 +586,15 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     int is16x16 = 1;
 
     if(thirdpel){
-#if 0 /// todo
         int lx, ly;
 
-        mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] / 3;
-        my = s->current_picture_ptr->motion_val[dir][mv_pos][1] / 3;
-        lx = ((s->current_picture_ptr->motion_val[dir][mv_pos][0] % 3) + 3) % 3;
-        ly = ((s->current_picture_ptr->motion_val[dir][mv_pos][1] % 3) + 3) % 3;
-        dxy = ly*3 + lx;
-        uvmx =
-#endif
-        mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] >> 2;
-        my = s->current_picture_ptr->motion_val[dir][mv_pos][1] >> 2;
-        dxy = ((my & 3) << 2) | (mx & 3);
-        uvmx = mx & 6;
-        uvmy = my & 6;
+        mx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
+        my = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
+        lx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
+        ly = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
+        dxy = ly*4 + lx;
+        uvmx = chroma_coeffs[(3*(mx&1) + lx) >> 1];
+        uvmy = chroma_coeffs[(3*(my&1) + ly) >> 1];
     }else{
         mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] >> 2;
         my = s->current_picture_ptr->motion_val[dir][mv_pos][1] >> 2;
@@ -655,15 +651,21 @@ static void rv34_mc_1mv(RV34DecContext *r, const int block_type,
                         const int width, const int height, int dir)
 {
     rv34_mc(r, block_type, xoff, yoff, mv_off, width, height, dir, r->rv30,
-            r->s.dsp.put_h264_qpel_pixels_tab, r->s.dsp.put_h264_chroma_pixels_tab);
+            r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
+                    : r->s.dsp.put_h264_qpel_pixels_tab,
+            r->s.dsp.put_h264_chroma_pixels_tab);
 }
 
 static void rv34_mc_2mv(RV34DecContext *r, const int block_type)
 {
     rv34_mc(r, block_type, 0, 0, 0, 2, 2, 0, r->rv30,
-            r->s.dsp.put_h264_qpel_pixels_tab, r->s.dsp.put_h264_chroma_pixels_tab);
+            r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
+                    : r->s.dsp.put_h264_qpel_pixels_tab,
+            r->s.dsp.put_h264_chroma_pixels_tab);
     rv34_mc(r, block_type, 0, 0, 0, 2, 2, 1, r->rv30,
-            r->s.dsp.avg_h264_qpel_pixels_tab, r->s.dsp.avg_h264_chroma_pixels_tab);
+            r->rv30 ? r->s.dsp.avg_rv30_tpel_pixels_tab
+                    : r->s.dsp.avg_h264_qpel_pixels_tab,
+            r->s.dsp.avg_h264_chroma_pixels_tab);
 }
 
 /** number of motion vectors in each macroblock type */
