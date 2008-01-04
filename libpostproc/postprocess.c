@@ -697,7 +697,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 
 /* -pp Command line Help
 */
-char *pp_help=
+const char *const pp_help=
 "Available postprocessing filters:\n"
 "Filters                        Options\n"
 "short  long name       short   long option     Description\n"
