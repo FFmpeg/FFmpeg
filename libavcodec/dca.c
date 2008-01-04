@@ -1001,7 +1001,7 @@ static int dca_subsubframe(DCAContext * s)
                               s->lfe_data + lfe_samples +
                               2 * s->lfe * subsubframe,
                               &s->samples[256 * i_channels],
-                              8388608.0, s->bias);
+                              256.0, 0 /* s->bias */);
         /* Outputs 20bits pcm samples */
     }
 
