@@ -63,4 +63,46 @@ typedef struct {
     int sub_packet_lengths[16]; /// Length of each aac subpacket
 } RMContext;
 
+/**
+ * Read the MDPR chunk, which contains stream-specific codec initialization
+ * parameters.
+ *
+ * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param st the stream that the MDPR chunk belongs to and where to store the
+ *           parameters read from the chunk into
+ * @return 0 on success, errno codes on error
+ */
+int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st);
+
+/**
+ * Parse one rm-stream packet from the input bytestream.
+ *
+ * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param st stream to which the packet to be read belongs
+ * @param len packet length to read from the input
+ * @param pkt packet location to store the parsed packet data
+ * @param seq pointer to an integer containing the sequence number, may be
+ *            updated
+ * @param flags pointer to an integer containing the packet flags, may be
+                updated
+ * @param ts pointer to timestamp, may be updated
+ * @return 0 on success, errno codes on error
+ */
+int ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len,
+                        AVPacket *pkt, int *seq, int *flags, int64_t *ts);
+
+/**
+ * Retrieve one cached packet from the rm-context. The real container can
+ * store several packets (as interpreted by the codec) in a single container
+ * packet, which means the demuxer holds some back when the first container
+ * packet is parsed and returned. The result is that rm->audio_pkt_cnt is
+ * a positive number, the amount of cached packets. Using this function, each
+ * of those packets can be retrieved sequentially.
+ *
+ * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param st stream that this packet belongs to
+ * @param pkt location to store the packet data
+ */
+void ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt);
+
 #endif /* FFMPEG_RM_H */

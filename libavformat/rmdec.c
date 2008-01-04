@@ -188,7 +188,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
     return 0;
 }
 
-static int
+int
 ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
@@ -546,7 +546,7 @@ rm_ac3_swap_bytes (AVStream *st, AVPacket *pkt)
     }
 }
 
-static int
+int
 ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
                     int *seq, int *flags, int64_t *timestamp)
 {
@@ -644,7 +644,7 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
     return 0;
 }
 
-static void
+void
 ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     ByteIOContext *pb = s->pb;
