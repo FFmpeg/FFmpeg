@@ -24,7 +24,7 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
+#include "dsputil_ppc.h"
 #include "util_altivec.h"
 
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)

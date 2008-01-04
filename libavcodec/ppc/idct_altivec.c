@@ -42,7 +42,7 @@
 
 #include "gcc_fixes.h"
 
-#include "dsputil_altivec.h"
+#include "dsputil_ppc.h"
 
 #define vector_s16_t vector signed short
 #define const_vector_s16_t const vector signed short

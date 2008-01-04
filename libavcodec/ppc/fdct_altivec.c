@@ -22,7 +22,7 @@
 
 #include "common.h"
 #include "dsputil.h"
-#include "dsputil_altivec.h"
+#include "dsputil_ppc.h"
 #include "gcc_fixes.h"
 
 
