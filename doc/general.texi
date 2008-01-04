@@ -16,9 +16,9 @@ explicitly requested by passing the appropriate flags to @file{./configure}.
 
 @section AMR
 
-AMR comes in two different flavors, WB and NB. FFmpeg can make use of the
-AMR WB (floating-point mode) and the AMR NB (floating-point mode) reference
-decoders and encoders.
+AMR comes in two different flavors, wideband and narrowband. FFmpeg can make
+use of the AMR wideband (floating-point mode) and the AMR narrowband
+(floating-point mode) reference decoders and encoders.
 
 Go to @url{http://www.penguin.cz/~utx/amr} and follow the instructions for
 installing the libraries. Then pass @code{--enable-libamr-nb} and/or
