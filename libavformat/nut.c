@@ -48,12 +48,15 @@ int ff_nut_sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
 }
 
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
-    syncpoint_t *sp2, *sp= av_mallocz(sizeof(syncpoint_t));
+    syncpoint_t *sp= av_mallocz(sizeof(syncpoint_t));
+    struct AVTreeNode *node= av_mallocz(av_tree_node_size);
 
     sp->pos= pos;
     sp->back_ptr= back_ptr;
     sp->ts= ts;
-    sp2= av_tree_insert(&nut->syncpoints, sp, ff_nut_sp_pos_cmp);
-    if(sp2 && sp2 != sp)
+    av_tree_insert(&nut->syncpoints, sp, ff_nut_sp_pos_cmp, &node);
+    if(node){
         av_free(sp);
+        av_free(node);
+    }
 }

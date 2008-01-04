@@ -28,6 +28,8 @@ typedef struct AVTreeNode{
     int state;
 }AVTreeNode;
 
+const int av_tree_node_size = sizeof(AVTreeNode);
+
 void *av_tree_find(const AVTreeNode *t, void *key, int (*cmp)(void *key, const void *b), void *next[2]){
     if(t){
         unsigned int v= cmp(t->elem, key);
@@ -45,14 +47,14 @@ void *av_tree_find(const AVTreeNode *t, void *key, int (*cmp)(void *key, const v
     return NULL;
 }
 
-void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const void *b)){
+void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const void *b), AVTreeNode **next){
     AVTreeNode *t= *tp;
     if(t){
         unsigned int v= cmp(t->elem, key);
         if(v){
             int i= v>>31;
             AVTreeNode **child= &t->child[i];
-            void *ret= av_tree_insert(child, key, cmp);
+            void *ret= av_tree_insert(child, key, cmp, next);
             if(!ret){
                 t->state -= ((int)v>>31)|1;
                 if(!(t->state&1)){
@@ -83,7 +85,7 @@ void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const voi
             return t->elem;
         }
     }else{
-        *tp= av_mallocz(sizeof(AVTreeNode));
+        *tp= *next; *next= NULL;
         (*tp)->elem= key;
         return NULL;
     }

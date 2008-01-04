@@ -28,6 +28,7 @@
 #define FFMPEG_TREE_H
 
 struct AVTreeNode;
+extern const int av_tree_node_size;
 
 /**
  * Finds an element.
@@ -46,13 +47,22 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  * @param rootp A pointer to a pointer to the root node of the tree. Note that
  *              the root node can change during insertions, this is required
  *              to keep the tree balanced.
+ * @param next AVTreeNode used for the inserted element, must be allocated and
+ *             zeroed by the user. And will be set to NULL if used by
+ *             av_tree_insert(). This allows the use of flat arrays, which have
+ *             lower overhead compared to many malloced elements.
+ *             You might want to define a function like:
+ *             void *tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), AVTreeNode **next){
+ *                 if(!*next) *next= av_mallocz(av_tree_node_size);
+ *                 return av_tree_insert(rootp, key, cmp, next);
+ *             }
  *
  * @return If no insertion happened, the found element.
  *         If an insertion happened, then either key or NULL will be returned.
  *         Which one it is depends on the tree state and the implementation. You
  *         should make no assumptions that it's one or the other in the code.
  */
-void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b));
+void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), struct AVTreeNode **next);
 void av_tree_destroy(struct AVTreeNode *t);
 
 #endif /* FFMPEG_TREE_H */
