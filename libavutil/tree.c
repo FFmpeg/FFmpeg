@@ -68,38 +68,38 @@ void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const voi
                 return NULL;
             }
         }
-            ret= av_tree_insert(&t->child[v>>31], key, cmp, next);
-            if(!ret){
-                int i= (v>>31) ^ !!*next;
-                AVTreeNode **child= &t->child[i];
-                t->state += 2*i - 1;
+        ret= av_tree_insert(&t->child[v>>31], key, cmp, next);
+        if(!ret){
+            int i= (v>>31) ^ !!*next;
+            AVTreeNode **child= &t->child[i];
+            t->state += 2*i - 1;
 
-                if(!(t->state&1)){
-                    if(t->state){
-                        if((*child)->state*2 == -t->state){
-                            *tp= (*child)->child[i^1];
-                            (*child)->child[i^1]= (*tp)->child[i];
-                            (*tp)->child[i]= *child;
-                            *child= (*tp)->child[i^1];
-                            (*tp)->child[i^1]= t;
+            if(!(t->state&1)){
+                if(t->state){
+                    if((*child)->state*2 == -t->state){
+                        *tp= (*child)->child[i^1];
+                        (*child)->child[i^1]= (*tp)->child[i];
+                        (*tp)->child[i]= *child;
+                        *child= (*tp)->child[i^1];
+                        (*tp)->child[i^1]= t;
 
-                            (*tp)->child[0]->state= -((*tp)->state>0);
-                            (*tp)->child[1]->state=   (*tp)->state<0 ;
-                            (*tp)->state=0;
-                        }else{
-                            *tp= *child;
-                            *child= (*child)->child[i^1];
-                            (*tp)->child[i^1]= t;
-                            if((*tp)->state) t->state  = 0;
-                            else             t->state>>= 1;
-                            (*tp)->state= -t->state;
-                        }
+                        (*tp)->child[0]->state= -((*tp)->state>0);
+                        (*tp)->child[1]->state=   (*tp)->state<0 ;
+                        (*tp)->state=0;
+                    }else{
+                        *tp= *child;
+                        *child= (*child)->child[i^1];
+                        (*tp)->child[i^1]= t;
+                        if((*tp)->state) t->state  = 0;
+                        else             t->state>>= 1;
+                        (*tp)->state= -t->state;
                     }
                 }
-                if(!(*tp)->state ^ !!*next)
-                    return key;
             }
-            return ret;
+            if(!(*tp)->state ^ !!*next)
+                return key;
+        }
+        return ret;
     }else{
         *tp= *next; *next= NULL;
         (*tp)->elem= key;
