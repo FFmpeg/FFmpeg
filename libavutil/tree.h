@@ -42,23 +42,35 @@ extern const int av_tree_node_size;
 void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *key, const void *b), void *next[2]);
 
 /**
- * Finds a element for which cmp(key, elem)==0, if no such element is found key
- * is inserted into the tree.
+ * Inserts or removes an element.
+ * If *next is NULL then the element supplied will be removed, if no such
+ * element exists behavior is undefined.
+ * If *next is not NULL then the element supplied will be inserted, unless
+ * it already exists in the tree.
  * @param rootp A pointer to a pointer to the root node of the tree. Note that
  *              the root node can change during insertions, this is required
  *              to keep the tree balanced.
- * @param next AVTreeNode used for the inserted element, must be allocated and
- *             zeroed by the user. And will be set to NULL if used by
- *             av_tree_insert(). This allows the use of flat arrays, which have
+ * @param next Used to allocate and free AVTreeNodes. For insertion the user
+ *             must set it to an allocated and zeroed object of at least
+ *             av_tree_node_size bytes size. av_tree_insert() will set it to
+ *             NULL if it has been consumed.
+ *             For deleting elements *next is set to NULL by the user and
+ *             av_tree_node_size() will set it to the AVTreeNode which was
+ *             used for the removed element.
+ *             This allows the use of flat arrays, which have
  *             lower overhead compared to many malloced elements.
  *             You might want to define a function like:
  *             void *tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), AVTreeNode **next){
  *                 if(!*next) *next= av_mallocz(av_tree_node_size);
  *                 return av_tree_insert(rootp, key, cmp, next);
  *             }
+ *             void *tree_remove(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b, AVTreeNode **next)){
+ *                 if(*next) av_freep(next);
+ *                 return av_tree_insert(rootp, key, cmp, next);
+ *             }
  *
  * @return If no insertion happened, the found element.
- *         If an insertion happened, then either key or NULL will be returned.
+ *         If an insertion or removial happened, then either key or NULL will be returned.
  *         Which one it is depends on the tree state and the implementation. You
  *         should make no assumptions that it's one or the other in the code.
  */
