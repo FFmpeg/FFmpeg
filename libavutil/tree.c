@@ -122,7 +122,7 @@ void av_tree_enumerate(AVTreeNode *t, void *opaque, int (*f)(void *opaque, void 
 #endif
 
 #ifdef TEST
-
+#undef random
 static int check(AVTreeNode *t){
     if(t){
         int left= check(t->child[0]);
