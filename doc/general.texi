@@ -24,6 +24,11 @@ Go to @url{http://www.penguin.cz/~utx/amr} and follow the instructions for
 installing the libraries. Then pass @code{--enable-libamr-nb} and/or
 @code{--enable-libamr-wb} to configure to enable the libraries.
 
+Note that libamr is copyrighted without any sort of license grant. This means
+that you can use it if you legally obtained it but you are not allowed to
+redistribute it in any way. @strong{Any FFmpeg binaries with libamr support
+you create are non-free and unredistributable!}
+
 
 @chapter Supported File Formats and Codecs
 
