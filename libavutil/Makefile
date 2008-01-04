@@ -25,6 +25,7 @@ HEADERS = adler32.h \
           avutil.h \
           base64.h \
           common.h \
+          crc.h \
           fifo.h \
           integer.h \
           intfloat_readwrite.h \
