@@ -262,7 +262,8 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
     if (tss->section_h_size != -1 && tss->section_index >= tss->section_h_size) {
         tss->end_of_section_reached = 1;
         if (!tss->check_crc ||
-            av_crc(av_crc04C11DB7, -1, tss->section_buf, tss->section_h_size) == 0)
+            av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1,
+                   tss->section_buf, tss->section_h_size) == 0)
             tss->section_cb(tss1, tss->section_buf, tss->section_h_size);
     }
 }

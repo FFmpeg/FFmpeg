@@ -1247,17 +1247,6 @@ unsigned avcodec_build( void )
   return LIBAVCODEC_BUILD;
 }
 
-static void init_crcs(void){
-#if LIBAVUTIL_VERSION_INT  < (50<<16)
-    av_crc04C11DB7= av_mallocz_static(sizeof(AVCRC) * 257);
-    av_crc8005    = av_mallocz_static(sizeof(AVCRC) * 257);
-    av_crc07      = av_mallocz_static(sizeof(AVCRC) * 257);
-#endif
-    av_crc_init(av_crc04C11DB7, 0, 32, AV_CRC_32_IEEE, sizeof(AVCRC)*257);
-    av_crc_init(av_crc8005    , 0, 16, AV_CRC_16     , sizeof(AVCRC)*257);
-    av_crc_init(av_crc07      , 0,  8, AV_CRC_8_ATM  , sizeof(AVCRC)*257);
-}
-
 void avcodec_init(void)
 {
     static int inited = 0;
@@ -1267,7 +1256,6 @@ void avcodec_init(void)
     inited = 1;
 
     dsputil_static_init();
-    init_crcs();
 }
 
 void avcodec_flush_buffers(AVCodecContext *avctx)

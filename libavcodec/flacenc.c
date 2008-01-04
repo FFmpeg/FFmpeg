@@ -1283,7 +1283,8 @@ static void output_frame_header(FlacEncodeContext *s)
         put_bits(&s->pb, 16, s->sr_code[1]);
     }
     flush_put_bits(&s->pb);
-    crc = av_crc(av_crc07, 0, s->pb.buf, put_bits_count(&s->pb)>>3);
+    crc = av_crc(av_crc_get_table(AV_CRC_8_ATM), 0,
+                 s->pb.buf, put_bits_count(&s->pb)>>3);
     put_bits(&s->pb, 8, crc);
 }
 
@@ -1425,7 +1426,8 @@ static void output_frame_footer(FlacEncodeContext *s)
 {
     int crc;
     flush_put_bits(&s->pb);
-    crc = bswap_16(av_crc(av_crc8005, 0, s->pb.buf, put_bits_count(&s->pb)>>3));
+    crc = bswap_16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
+                          s->pb.buf, put_bits_count(&s->pb)>>3));
     put_bits(&s->pb, 16, crc);
     flush_put_bits(&s->pb);
 }

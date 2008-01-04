@@ -318,7 +318,7 @@ static void fill_buffer(ByteIOContext *s)
 }
 
 unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
-    return av_crc(av_crc04C11DB7, checksum, buf, len);
+    return av_crc(av_crc_get_table(AV_CRC_32_IEEE), checksum, buf, len);
 }
 
 unsigned long get_checksum(ByteIOContext *s){

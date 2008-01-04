@@ -26,26 +26,17 @@
 
 typedef uint32_t AVCRC;
 
-#define AV_CRC_8_ATM      0x07
-#define AV_CRC_16         0x8005
-#define AV_CRC_16_CCITT   0x1021
-#define AV_CRC_32_IEEE    0x04C11DB7L
-//! reversed bitorder version of AV_CRC_32_IEEE
-#define AV_CRC_32_IEEE_LE 0xEDB88320L
-
-#if LIBAVUTIL_VERSION_INT  < (50<<16)
-extern AVCRC *av_crcEDB88320;
-extern AVCRC *av_crc04C11DB7;
-extern AVCRC *av_crc8005    ;
-extern AVCRC *av_crc07      ;
-#else
-extern AVCRC av_crcEDB88320[];
-extern AVCRC av_crc04C11DB7[];
-extern AVCRC av_crc8005    [];
-extern AVCRC av_crc07      [];
-#endif
+typedef enum {
+    AV_CRC_8_ATM,
+    AV_CRC_16_ANSI,
+    AV_CRC_16_CCITT,
+    AV_CRC_32_IEEE,
+    AV_CRC_32_IEEE_LE,  /*< reversed bitorder version of AV_CRC_32_IEEE */
+    AV_CRC_MAX,         /*< not part of public API! don't use outside lavu */
+}AVCRCId;
 
 int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size);
+const AVCRC *av_crc_get_table(AVCRCId crc_id);
 uint32_t av_crc(const AVCRC *ctx, uint32_t start_crc, const uint8_t *buffer, size_t length);
 
 #endif /* FFMPEG_CRC_H */

@@ -132,6 +132,7 @@ show_help(){
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --enable-small           optimize for size instead of speed"
+  echo "  --enable-hardcoded-tables use hardcoded tables instead of runtime generation"
   echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
   echo "  --disable-encoder=NAME   disables encoder NAME"
   echo "  --enable-encoder=NAME    enables encoder NAME"
@@ -629,6 +630,7 @@ CONFIG_LIST="
     gpl
     gprof
     gray
+    hardcoded_tables
     ipv6
     liba52
     liba52bin

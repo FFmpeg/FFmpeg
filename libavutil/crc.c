@@ -21,16 +21,21 @@
 #include "common.h"
 #include "crc.h"
 
-#if LIBAVUTIL_VERSION_INT  < (50<<16)
-AVCRC *av_crcEDB88320;
-AVCRC *av_crc04C11DB7;
-AVCRC *av_crc8005    ;
-AVCRC *av_crc07      ;
+#ifdef CONFIG_HARDCODED_TABLES
+#include "crc_data.h"
 #else
-AVCRC av_crcEDB88320[257];
-AVCRC av_crc04C11DB7[257];
-AVCRC av_crc8005    [257];
-AVCRC av_crc07      [257];
+static struct {
+    uint8_t  le;
+    uint8_t  bits;
+    uint32_t poly;
+} av_crc_table_params[AV_CRC_MAX] = {
+    [AV_CRC_8_ATM]      = { 0,  8,       0x07 },
+    [AV_CRC_16_ANSI]    = { 0, 16,     0x8005 },
+    [AV_CRC_16_CCITT]   = { 0, 16,     0x1021 },
+    [AV_CRC_32_IEEE]    = { 0, 32, 0x04C11DB7 },
+    [AV_CRC_32_IEEE_LE] = { 1, 32, 0xEDB88320 },
+};
+static AVCRC av_crc_table[AV_CRC_MAX][257];
 #endif
 
 /**
@@ -80,6 +85,24 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
 }
 
 /**
+ * Get an initialized standard CRC table.
+ * @param crc_id ID of a standard CRC
+ * @return a pointer to the CRC table or NULL on failure
+ */
+const AVCRC *av_crc_get_table(AVCRCId crc_id){
+#ifndef CONFIG_HARDCODED_TABLES
+    if (!av_crc_table[crc_id][sizeof(av_crc_table[crc_id])-1])
+        if (av_crc_init(av_crc_table[crc_id],
+                        av_crc_table_params[crc_id].le,
+                        av_crc_table_params[crc_id].bits,
+                        av_crc_table_params[crc_id].poly,
+                        sizeof(av_crc_table[crc_id])) < 0)
+            return NULL;
+#endif
+    return av_crc_table[crc_id];
+}
+
+/**
  * Calculate the CRC of a block
  * @param crc CRC of previous blocks if any or initial value for CRC.
  * @return CRC updated with the data from the given block
@@ -110,18 +133,18 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t le
 main(void){
     uint8_t buf[1999];
     int i;
-    int p[4][4]={{1, 32, AV_CRC_32_IEEE_LE, 0x3D5CDD04},
-                 {0, 32, AV_CRC_32_IEEE   , 0xC0F5BAE0},
-                 {0, 16, AV_CRC_16        , 0x1FBB    },
-                 {0,  8, AV_CRC_8_ATM     , 0xE3      },};
-    AVCRC ctx[1 ? 1024:257];
+    int p[4][3]={{AV_CRC_32_IEEE_LE, 0xEDB88320, 0x3D5CDD04},
+                 {AV_CRC_32_IEEE   , 0x04C11DB7, 0xC0F5BAE0},
+                 {AV_CRC_16_ANSI   , 0x8005,     0x1FBB    },
+                 {AV_CRC_8_ATM     , 0x07,       0xE3      },};
+    const AVCRC *ctx;
 
     for(i=0; i<sizeof(buf); i++)
         buf[i]= i+i*i;
 
     for(i=0; i<4; i++){
-        av_crc_init(ctx, p[i][0], p[i][1], p[i][2], sizeof(ctx));
-        printf("crc %08X =%X\n", p[i][2], av_crc(ctx, 0, buf, sizeof(buf)));
+        ctx = av_crc_get_table(p[i][0]);
+        printf("crc %08X =%X\n", p[i][1], av_crc(ctx, 0, buf, sizeof(buf)));
     }
 }
 #endif
