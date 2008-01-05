@@ -186,11 +186,12 @@ static int a52_decode_frame(AVCodecContext *avctx,
                     s->channels = ac3_channels[s->flags & 7];
                     if (s->flags & A52_LFE)
                         s->channels++;
-                        avctx->channels = s->channels;
                     if (avctx->request_channels > 0 &&
                             avctx->request_channels <= 2 &&
                             avctx->request_channels < s->channels) {
                         avctx->channels = avctx->request_channels;
+                    } else {
+                        avctx->channels = s->channels;
                     }
                     avctx->bit_rate = bit_rate;
                 }
