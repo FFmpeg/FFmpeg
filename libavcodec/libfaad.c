@@ -101,6 +101,21 @@ static const unsigned long faac_srates[] =
     24000, 22050, 16000, 12000, 11025, 8000
 };
 
+static void channel_setup(AVCodecContext *avctx)
+{
+#ifdef FAAD2_VERSION
+    FAACContext *s = avctx->priv_data;
+    if (avctx->request_channels > 0 && avctx->request_channels == 2 &&
+            avctx->request_channels < avctx->channels) {
+        faacDecConfigurationPtr faac_cfg;
+        avctx->channels = 2;
+        faac_cfg = s->faacDecGetCurrentConfiguration(s->faac_handle);
+        faac_cfg->downMatrix = 1;
+        s->faacDecSetConfiguration(s->faac_handle, faac_cfg);
+    }
+#endif
+}
+
 static int faac_init_mp4(AVCodecContext *avctx)
 {
     FAACContext *s = avctx->priv_data;
@@ -123,6 +138,7 @@ static int faac_init_mp4(AVCodecContext *avctx)
         } else {
             avctx->sample_rate = samplerate;
             avctx->channels = channels;
+            channel_setup(avctx);
             s->init = 1;
         }
     }
@@ -170,6 +186,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         }
         avctx->sample_rate = srate;
         avctx->channels = channels;
+        channel_setup(avctx);
         s->init = 1;
     }
 
@@ -307,6 +324,9 @@ static int faac_decode_init(AVCodecContext *avctx)
     s->faacDecSetConfiguration(s->faac_handle, faac_cfg);
 
     faac_init_mp4(avctx);
+
+    if(!s->init && avctx->channels > 0)
+        channel_setup(avctx);
 
     return 0;
 }

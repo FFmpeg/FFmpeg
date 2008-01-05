@@ -60,11 +60,12 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                     s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
-                    /* allow downmixing to mono or stereo for AC3 */
+                    /* allow downmixing to stereo (or mono for AC3) */
                     if(avctx->request_channels > 0 &&
                             avctx->request_channels < channels &&
-                            avctx->request_channels <= 2 &&
-                            avctx->codec_id == CODEC_ID_AC3) {
+                            (avctx->request_channels <= 2 ||
+                            (avctx->request_channels == 1 &&
+                            avctx->codec_id == CODEC_ID_AC3))) {
                         avctx->channels = avctx->request_channels;
                     } else {
                         avctx->channels = channels;
