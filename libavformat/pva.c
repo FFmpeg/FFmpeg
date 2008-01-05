@@ -79,6 +79,10 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
         av_log(s, AV_LOG_ERROR, "invalid syncword\n");
         return AVERROR(EIO);
     }
+    if (streamid != PVA_VIDEO_PAYLOAD && streamid != PVA_AUDIO_PAYLOAD) {
+        av_log(s, AV_LOG_ERROR, "invalid streamid\n");
+        return AVERROR(EIO);
+    }
     if (reserved != 0x55) {
         av_log(s, AV_LOG_WARNING, "expected reserved byte to be 0x55\n");
     }
