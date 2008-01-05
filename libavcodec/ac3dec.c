@@ -1130,7 +1130,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     /* channel config */
     s->out_channels = s->channels;
     if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-        avctx->request_channels < s->channels) {
+            avctx->request_channels < s->channels) {
         s->out_channels = avctx->request_channels;
         s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
