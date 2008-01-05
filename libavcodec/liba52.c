@@ -117,6 +117,13 @@ static int a52_decode_init(AVCodecContext *avctx)
     s->inbuf_ptr = s->inbuf;
     s->frame_size = 0;
 
+    /* allow downmixing to stereo or mono */
+    if (avctx->channels > 0 && avctx->request_channels > 0 &&
+            avctx->request_channels < avctx->channels &&
+            avctx->request_channels <= 2) {
+        avctx->channels = avctx->request_channels;
+    }
+
     return 0;
 }
 
@@ -179,12 +186,11 @@ static int a52_decode_frame(AVCodecContext *avctx,
                     s->channels = ac3_channels[s->flags & 7];
                     if (s->flags & A52_LFE)
                         s->channels++;
-                    if (avctx->channels == 0)
-                        /* No specific number of channel requested */
                         avctx->channels = s->channels;
-                    else if (s->channels < avctx->channels) {
-                        av_log(avctx, AV_LOG_ERROR, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
-                        avctx->channels = s->channels;
+                    if (avctx->request_channels > 0 &&
+                            avctx->request_channels <= 2 &&
+                            avctx->request_channels < s->channels) {
+                        avctx->channels = avctx->request_channels;
                     }
                     avctx->bit_rate = bit_rate;
                 }
