@@ -66,6 +66,7 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
     int ret, syncword, streamid, reserved, flags, length, pts_flag;
     int64_t pva_pts = AV_NOPTS_VALUE;
 
+recover:
     syncword = get_be16(pb);
     streamid = get_byte(pb);
     get_byte(pb);               /* counter not used */
@@ -111,8 +112,10 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
             pes_header_data_length = get_byte(pb);
 
             if (pes_signal != 1) {
-                av_log(s, AV_LOG_ERROR, "expected signaled PES packet\n");
-                return AVERROR(EIO);
+                av_log(s, AV_LOG_WARNING, "expected signaled PES packet, "
+                                          "trying to recover\n");
+                url_fskip(pb, length - 9);
+                goto recover;
             }
 
             get_buffer(pb, pes_header_data, pes_header_data_length);
