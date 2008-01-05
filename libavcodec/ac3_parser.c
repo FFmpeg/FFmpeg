@@ -37,6 +37,7 @@ static const uint8_t eac3_blocks[4] = {
 int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
 {
     GetBitContext gbc;
+    int frame_size_code;
 
     memset(hdr, 0, sizeof(*hdr));
 
@@ -56,30 +57,30 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     if(hdr->sr_code == 3)
         return AC3_PARSE_ERROR_SAMPLE_RATE;
 
-    hdr->frame_size_code = get_bits(&gbc, 6);
-    if(hdr->frame_size_code > 37)
+    frame_size_code = get_bits(&gbc, 6);
+    if(frame_size_code > 37)
         return AC3_PARSE_ERROR_FRAME_SIZE;
 
     skip_bits(&gbc, 5); // skip bsid, already got it
 
-    hdr->bitstream_mode = get_bits(&gbc, 3);
+    skip_bits(&gbc, 3); // skip bitstream mode
     hdr->channel_mode = get_bits(&gbc, 3);
     if((hdr->channel_mode & 1) && hdr->channel_mode != AC3_CHMODE_MONO) {
-        hdr->center_mix_level = get_bits(&gbc, 2);
+        skip_bits(&gbc, 2); // skip center mix level
     }
     if(hdr->channel_mode & 4) {
-        hdr->surround_mix_level = get_bits(&gbc, 2);
+        skip_bits(&gbc, 2); // skip surround mix level
     }
     if(hdr->channel_mode == AC3_CHMODE_STEREO) {
-        hdr->dolby_surround_mode = get_bits(&gbc, 2);
+        skip_bits(&gbc, 2); // skip dolby surround mode
     }
     hdr->lfe_on = get_bits1(&gbc);
 
     hdr->sr_shift = FFMAX(hdr->bitstream_id, 8) - 8;
     hdr->sample_rate = ff_ac3_sample_rate_tab[hdr->sr_code] >> hdr->sr_shift;
-    hdr->bit_rate = (ff_ac3_bitrate_tab[hdr->frame_size_code>>1] * 1000) >> hdr->sr_shift;
+    hdr->bit_rate = (ff_ac3_bitrate_tab[frame_size_code>>1] * 1000) >> hdr->sr_shift;
     hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
-    hdr->frame_size = ff_ac3_frame_size_tab[hdr->frame_size_code][hdr->sr_code] * 2;
+    hdr->frame_size = ff_ac3_frame_size_tab[frame_size_code][hdr->sr_code] * 2;
 
     return 0;
 }
