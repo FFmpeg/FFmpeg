@@ -312,6 +312,13 @@ static int ac3_decode_init(AVCodecContext *avctx)
         s->mul_bias = 32767.0f;
     }
 
+    /* allow downmixing to stereo or mono */
+    if (avctx->channels > 0 && avctx->request_channels > 0 &&
+            avctx->request_channels < avctx->channels &&
+            avctx->request_channels <= 2) {
+        avctx->channels = avctx->request_channels;
+    }
+
     return 0;
 }
 
