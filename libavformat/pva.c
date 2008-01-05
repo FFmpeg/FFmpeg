@@ -64,7 +64,7 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
     ByteIOContext *pb = s->pb;
     PVAContext *pvactx = s->priv_data;
     int ret, syncword, streamid, reserved, flags, length, pts_flag;
-    long long pva_pts = 0;
+    int64_t pva_pts = AV_NOPTS_VALUE;
 
     syncword = get_be16(pb);
     streamid = get_byte(pb);
