@@ -249,7 +249,8 @@ Muxers/Demuxers:
   pva.c                                 Ivo van Poorten
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
-  rtp*.c (Muxer only)                   Luca Abeni
+  rtp.c, rtpenc.c                       Luca Abeni
+  rtp_mpv.*, rtp_aac.*                  Luca Abeni
   rtsp.c                                Luca Barbato
   sdp.c                                 Luca Abeni
   segafilm.c                            Mike Melanson
