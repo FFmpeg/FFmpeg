@@ -73,7 +73,7 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
     flags    = get_byte(pb);
     length   = get_be16(pb);
 
-    pts_flag  = (flags & 0x10) >> 4;
+    pts_flag  = flags & 0x10;
 
     if (syncword != PVA_MAGIC) {
         av_log(s, AV_LOG_ERROR, "invalid syncword\n");
