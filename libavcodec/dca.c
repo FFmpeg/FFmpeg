@@ -1230,6 +1230,13 @@ static int dca_decode_init(AVCodecContext * avctx)
     pre_calc_cosmod(s);
 
     dsputil_init(&s->dsp, avctx);
+
+    /* allow downmixing to stereo */
+    if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
+            avctx->request_channels == 2) {
+        avctx->channels = avctx->request_channels;
+    }
+
     return 0;
 }
 
