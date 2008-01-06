@@ -133,6 +133,7 @@ typedef struct {
     int cpl_in_use;                         ///< coupling in use
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling
     int phase_flags_in_use;                 ///< phase flags in use
+    int phase_flags[18];                    ///< phase flags
     int cpl_band_struct[18];                ///< coupling band structure
     int rematrixing_strategy;               ///< rematrixing strategy
     int num_rematrixing_bands;              ///< number of rematrixing bands
@@ -470,8 +471,11 @@ static void uncouple_channels(AC3DecodeContext *s)
             subbnd++;
             for(j=0; j<12; j++) {
                 for(ch=1; ch<=s->fbw_channels; ch++) {
-                    if(s->channel_in_cpl[ch])
+                    if(s->channel_in_cpl[ch]) {
                         s->transform_coeffs[ch][i] = s->transform_coeffs[CPL_CH][i] * s->cpl_coords[ch][bnd] * 8.0f;
+                        if (ch == 2 && s->phase_flags[bnd])
+                            s->transform_coeffs[ch][i] = -s->transform_coeffs[ch][i];
+                    }
                 }
                 i++;
             }
@@ -866,10 +870,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
             }
         }
         /* phase flags */
-        if (channel_mode == AC3_CHMODE_STEREO && s->phase_flags_in_use && cpl_coords_exist) {
+        if (channel_mode == AC3_CHMODE_STEREO && cpl_coords_exist) {
             for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                if (get_bits1(gbc))
-                    s->cpl_coords[2][bnd] = -s->cpl_coords[2][bnd];
+                s->phase_flags[bnd] = s->phase_flags_in_use? get_bits1(gbc) : 0;
             }
         }
     }
