@@ -135,7 +135,6 @@ typedef struct {
     int phase_flags_in_use;                 ///< phase flags in use
     int phase_flags[18];                    ///< phase flags
     int cpl_band_struct[18];                ///< coupling band structure
-    int rematrixing_strategy;               ///< rematrixing strategy
     int num_rematrixing_bands;              ///< number of rematrixing bands
     int rematrixing_flags[4];               ///< rematrixing flags
     int exp_strategy[AC3_MAX_CHANNELS];     ///< exponent strategies
@@ -880,8 +879,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
 
     /* stereo rematrixing strategy and band structure */
     if (channel_mode == AC3_CHMODE_STEREO) {
-        s->rematrixing_strategy = get_bits1(gbc);
-        if (s->rematrixing_strategy) {
+        if (get_bits1(gbc)) {
             s->num_rematrixing_bands = 4;
             if(s->cpl_in_use && s->start_freq[CPL_CH] <= 61)
                 s->num_rematrixing_bands -= 1 + (s->start_freq[CPL_CH] == 37);
