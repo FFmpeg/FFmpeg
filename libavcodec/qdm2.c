@@ -97,9 +97,9 @@ typedef struct {
 /**
  * A node in the subpacket list
  */
-typedef struct _QDM2SubPNode {
+typedef struct QDM2SubPNode {
     QDM2SubPacket *packet;      ///< packet
-    struct _QDM2SubPNode *next; ///< pointer to next packet in the list, NULL if leaf node
+    struct QDM2SubPNode *next; ///< pointer to next packet in the list, NULL if leaf node
 } QDM2SubPNode;
 
 typedef struct {

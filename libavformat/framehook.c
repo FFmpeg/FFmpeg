@@ -28,8 +28,8 @@
 #endif
 
 
-typedef struct _FrameHookEntry {
-    struct _FrameHookEntry *next;
+typedef struct FrameHookEntry {
+    struct FrameHookEntry *next;
     FrameHookConfigureFn Configure;
     FrameHookProcessFn Process;
     FrameHookReleaseFn Release;
