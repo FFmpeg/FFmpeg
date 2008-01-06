@@ -160,7 +160,8 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
         total_size += 8;
         a.offset += 8;
-        dprintf(c->fc, "type: %08x  %.4s  sz: %"PRIx64"  %"PRIx64"   %"PRIx64"\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
+        dprintf(c->fc, "type: %08x  %.4s  sz: %"PRIx64"  %"PRIx64"   %"PRIx64"\n",
+                a.type, (char*)&a.type, a.size, atom.size, total_size);
         if (a.size == 1) { /* 64 bit extended size */
             a.size = get_be64(pb) - 8;
             a.offset += 8;
@@ -217,8 +218,10 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     ctype = get_le32(pb);
     type = get_le32(pb); /* component subtype */
 
-    dprintf(c->fc, "ctype= %c%c%c%c (0x%08x)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (int) ctype);
-    dprintf(c->fc, "stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
+    dprintf(c->fc, "ctype= %c%c%c%c (0x%08x)\n", *((char *)&ctype), ((char *)&ctype)[1],
+            ((char *)&ctype)[2], ((char *)&ctype)[3], (int) ctype);
+    dprintf(c->fc, "stype= %c%c%c%c\n",
+            *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
     if(!ctype)
         c->isom = 1;
     if(type == MKTAG('v', 'i', 'd', 'e'))
@@ -619,10 +622,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec->codec_type = CODEC_TYPE_VIDEO;
         }
 
-        dprintf(c->fc, "size=%d 4CC= %c%c%c%c codec_type=%d\n",
-                size,
-                (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
-                st->codec->codec_type);
+        dprintf(c->fc, "size=%d 4CC= %c%c%c%c codec_type=%d\n", size,
+                (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff,
+                (format >> 24) & 0xff, st->codec->codec_type);
 
         if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
             st->codec->codec_id = id;
@@ -1323,7 +1325,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
+                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
                 stsc_index++;
             for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
                 if (current_sample >= sc->sample_count) {
@@ -1337,9 +1340,11 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                         stss_index++;
                 }
                 sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
-                dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", size %d, distance %d, keyframe %d\n",
-                        st->index, current_sample, current_offset, current_dts, sample_size, distance, keyframe);
-                av_add_index_entry(st, current_offset, current_dts, sample_size, distance, keyframe ? AVINDEX_KEYFRAME : 0);
+                dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                        "size %d, distance %d, keyframe %d\n", st->index, current_sample,
+                        current_offset, current_dts, sample_size, distance, keyframe);
+                av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
+                                   keyframe ? AVINDEX_KEYFRAME : 0);
                 current_offset += sample_size;
                 assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
                 current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
@@ -1356,20 +1361,24 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int chunk_samples, chunk_size, chunk_duration;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
+                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
                 stsc_index++;
             chunk_samples = sc->sample_to_chunk[stsc_index].count;
             /* get chunk size */
-            if (sc->sample_size > 1 || st->codec->codec_id == CODEC_ID_PCM_U8 || st->codec->codec_id == CODEC_ID_PCM_S8)
+            if (sc->sample_size > 1 ||
+                st->codec->codec_id == CODEC_ID_PCM_U8 || st->codec->codec_id == CODEC_ID_PCM_S8)
                 chunk_size = chunk_samples * sc->sample_size;
-            else if (sc->samples_per_frame > 0 && (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0))
+            else if (sc->samples_per_frame > 0 &&
+                     (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0))
                 chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
             else { /* workaround to find nearest next chunk offset */
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->fc->nb_streams; j++) {
                     MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
                     for (k = msc->next_chunk; k < msc->chunk_count; k++) {
-                        if (msc->chunk_offsets[k] > current_offset && msc->chunk_offsets[k] - current_offset < chunk_size) {
+                        if (msc->chunk_offsets[k] > current_offset &&
+                            msc->chunk_offsets[k] - current_offset < chunk_size) {
                             chunk_size = msc->chunk_offsets[k] - current_offset;
                             msc->next_chunk = k;
                             break;
@@ -1381,7 +1390,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     for (j = 0; j < mov->mdat_count; j++) {
                         dprintf(mov->fc, "mdat %d, offset %"PRIx64", size %"PRId64", current offset %"PRIx64"\n",
                                 j, mov->mdat_list[j].offset, mov->mdat_list[j].size, current_offset);
-                        if (mov->mdat_list[j].offset <= current_offset && mov->mdat_list[j].offset + mov->mdat_list[j].size > current_offset)
+                        if (mov->mdat_list[j].offset <= current_offset &&
+                            mov->mdat_list[j].offset + mov->mdat_list[j].size > current_offset)
                             chunk_size = mov->mdat_list[j].offset + mov->mdat_list[j].size - current_offset;
                     }
                 assert(chunk_size != INT_MAX);
@@ -1406,8 +1416,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 }
             }
-            dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, duration %d\n",
-                    st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
+            dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
+                    "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
             assert(chunk_duration % sc->time_rate == 0);
             current_dts += chunk_duration / sc->time_rate;
         }
@@ -1493,7 +1503,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         MOVStreamContext *msc = st->priv_data;
         if (st->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
             AVIndexEntry *current_sample = &st->index_entries[msc->current_sample];
-            int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
+            int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate,
+                                     AV_TIME_BASE, msc->time_scale);
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
                 (!url_is_streamed(s->pb) &&
@@ -1510,7 +1521,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
     if (url_fseek(s->pb, sample->pos, SEEK_SET) != sample->pos) {
-        av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n", sc->ffindex, sample->pos);
+        av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
+               sc->ffindex, sample->pos);
         return -1;
     }
 #ifdef CONFIG_DV_DEMUXER
@@ -1535,7 +1547,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->pts = pkt->dts + sc->ctts_data[sc->sample_to_ctime_index].duration / sc->time_rate;
         /* update ctts context */
         sc->sample_to_ctime_sample++;
-        if (sc->sample_to_ctime_index < sc->ctts_count && sc->ctts_data[sc->sample_to_ctime_index].count == sc->sample_to_ctime_sample) {
+        if (sc->sample_to_ctime_index < sc->ctts_count &&
+            sc->ctts_data[sc->sample_to_ctime_index].count == sc->sample_to_ctime_sample) {
             sc->sample_to_ctime_index++;
             sc->sample_to_ctime_sample = 0;
         }
@@ -1544,7 +1557,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
-    dprintf(s, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n", pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
+    dprintf(s, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n",
+            pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
     return 0;
 }
 
