@@ -840,6 +840,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                     s->num_cpl_bands--;
                 }
             }
+            s->cpl_band_struct[s->num_cpl_subbands-1] = 0;
         } else {
             /* coupling not in use */
             for (ch = 1; ch <= fbw_channels; ch++)
