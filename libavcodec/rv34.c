@@ -581,27 +581,26 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
 {
     MpegEncContext *s = &r->s;
     uint8_t *Y, *U, *V, *srcY, *srcU, *srcV;
-    int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
+    int dxy, mx, my, lx, ly, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride + mv_off;
     int is16x16 = 1;
 
     if(thirdpel){
-        int lx, ly;
-
         mx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
         my = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
         lx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
         ly = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
-        dxy = ly*4 + lx;
         uvmx = chroma_coeffs[(3*(mx&1) + lx) >> 1];
         uvmy = chroma_coeffs[(3*(my&1) + ly) >> 1];
     }else{
         mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] >> 2;
         my = s->current_picture_ptr->motion_val[dir][mv_pos][1] >> 2;
-        dxy = ((my & 3) << 2) | (mx & 3);
+        lx = s->current_picture_ptr->motion_val[dir][mv_pos][0] & 3;
+        ly = s->current_picture_ptr->motion_val[dir][mv_pos][1] & 3;
         uvmx = mx & 6;
         uvmy = my & 6;
     }
+    dxy = ly*4 + lx;
     srcY = dir ? s->next_picture_ptr->data[0] : s->last_picture_ptr->data[0];
     srcU = dir ? s->next_picture_ptr->data[1] : s->last_picture_ptr->data[1];
     srcV = dir ? s->next_picture_ptr->data[2] : s->last_picture_ptr->data[2];
@@ -612,8 +611,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
-    if(   (unsigned)(src_x - !!(mx&3)*2) > s->h_edge_pos - !!(mx&3)*2 - (width <<3) - 3
-       || (unsigned)(src_y - !!(my&3)*2) > s->v_edge_pos - !!(my&3)*2 - (height<<3) - 3){
+    if(   (unsigned)(src_x - !!lx*2) > s->h_edge_pos - !!lx*2 - (width <<3) - 3
+       || (unsigned)(src_y - !!ly*2) > s->v_edge_pos - !!ly*2 - (height<<3) - 3){
         uint8_t *uvbuf= s->edge_emu_buffer + 20 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
