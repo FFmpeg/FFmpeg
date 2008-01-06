@@ -85,16 +85,6 @@ typedef struct rtp_payload_data_s
     int cur_au_index;
 } rtp_payload_data_t;
 
-typedef struct AVRtpPayloadType_s
-{
-    int pt;
-    const char enc_name[50]; /* XXX: why 50 ? */
-    enum CodecType codec_type;
-    enum CodecID codec_id;
-    int clock_rate;
-    int audio_channels;
-} AVRtpPayloadType_t;
-
 #if 0
 typedef enum {
   RTCP_SR   = 200,
@@ -120,5 +110,4 @@ typedef enum {
 } rtcp_sdes_type_t;
 #endif
 
-extern AVRtpPayloadType_t AVRtpPayloadTypes[];
 #endif /* FFMPEG_RTP_H */

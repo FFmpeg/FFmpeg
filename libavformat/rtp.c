@@ -29,7 +29,15 @@
 //#define DEBUG
 
 /* from http://www.iana.org/assignments/rtp-parameters last updated 05 January 2005 */
-AVRtpPayloadType_t AVRtpPayloadTypes[]=
+static const struct
+{
+    int pt;
+    const char enc_name[50]; /* XXX: why 50 ? */
+    enum CodecType codec_type;
+    enum CodecID codec_id;
+    int clock_rate;
+    int audio_channels;
+} AVRtpPayloadTypes[]=
 {
   {0, "PCMU",        CODEC_TYPE_AUDIO,   CODEC_ID_PCM_MULAW, 8000, 1},
   {1, "Reserved",    CODEC_TYPE_UNKNOWN, CODEC_ID_NONE, -1, -1},
