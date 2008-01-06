@@ -1693,23 +1693,11 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (enc->codec_type == CODEC_TYPE_AUDIO) {
-        wanted_spec.freq = enc->sample_rate;
-        wanted_spec.format = AUDIO_S16SYS;
-        if(enc->channels > 2) {
-            wanted_spec.channels = 2;
-            enc->request_channels = 2;
+        if (enc->channels > 0) {
+            enc->request_channels = FFMIN(2, enc->channels);
         } else {
-            wanted_spec.channels = enc->channels;
+            enc->request_channels = 2;
         }
-        wanted_spec.silence = 0;
-        wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
-        wanted_spec.callback = sdl_audio_callback;
-        wanted_spec.userdata = is;
-        if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
-            fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
-            return -1;
-        }
-        is->audio_hw_buf_size = spec.size;
     }
 
     codec = avcodec_find_decoder(enc->codec_id);
@@ -1728,6 +1716,23 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
+
+    /* prepare audio output */
+    if (enc->codec_type == CODEC_TYPE_AUDIO) {
+        wanted_spec.freq = enc->sample_rate;
+        wanted_spec.format = AUDIO_S16SYS;
+        wanted_spec.channels = enc->channels;
+        wanted_spec.silence = 0;
+        wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+        wanted_spec.callback = sdl_audio_callback;
+        wanted_spec.userdata = is;
+        if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
+            fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
+            return -1;
+        }
+        is->audio_hw_buf_size = spec.size;
+    }
+
     if(thread_count>1)
         avcodec_thread_init(enc, thread_count);
     enc->thread_count= thread_count;
