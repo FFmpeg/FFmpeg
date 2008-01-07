@@ -46,7 +46,7 @@ typedef struct {
     int gb_frame;
 } VideoData;
 
-struct {
+static const struct {
     int palette;
     int depth;
     enum PixelFormat pix_fmt;
