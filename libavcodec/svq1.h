@@ -56,6 +56,6 @@ extern const uint8_t ff_svq1_inter_multistage_vlc[6][8][2];
 extern const uint16_t ff_svq1_intra_mean_vlc[256][2];
 extern const uint16_t ff_svq1_inter_mean_vlc[512][2];
 
-extern svq1_frame_size_t ff_svq1_frame_size_table[8];
+extern const svq1_frame_size_t ff_svq1_frame_size_table[8];
 
 #endif /* FFMPEG_SVQ1_H */
