@@ -108,6 +108,7 @@ version <next>
 - PC Paintbrush PCX decoder
 - Sun Rasterfile decoder
 - TechnoTrend PVA demuxer
+- Linux Media Labs MPEG-4 (LMLM4) demuxer
 
 version 0.4.9-pre1:
 

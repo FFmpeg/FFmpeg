@@ -230,6 +230,7 @@ Muxers/Demuxers:
   ipmovie.c                             Mike Melanson
   img2.c                                Michael Niedermayer
   libnut.c                              Oded Shimon
+  lmlm4.c                               Ivo van Poorten
   matroska.c                            Aurelien Jacobs
   matroskaenc.c                         David Conrad
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
