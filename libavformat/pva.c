@@ -142,7 +142,7 @@ recover:
         return AVERROR(EIO);
 
     pkt->stream_index = streamid - 1;
-        pkt->pts = pva_pts;
+    pkt->pts = pva_pts;
 
     return ret;
 }
