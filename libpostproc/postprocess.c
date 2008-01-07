@@ -982,7 +982,7 @@ static const char * context_to_name(void * ptr) {
     return "postproc";
 }
 
-static AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
+static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
         PPContext *c= av_malloc(sizeof(PPContext));

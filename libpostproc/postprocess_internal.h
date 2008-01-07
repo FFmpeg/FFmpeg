@@ -126,7 +126,7 @@ typedef struct PPContext{
         /**
          * info on struct for av_log
          */
-        AVClass *av_class;
+        const AVClass *av_class;
 
         uint8_t *tempBlocks; ///<used for the horizontal code
 
