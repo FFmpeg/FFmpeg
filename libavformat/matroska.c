@@ -68,6 +68,6 @@ const CodecTags ff_mkv_codec_tags[]={
     {"S_SSA"            , CODEC_ID_SSA},
     {"S_VOBSUB"         , CODEC_ID_DVD_SUBTITLE},
 
-    {NULL               , CODEC_ID_NONE}
+    {""                 , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };

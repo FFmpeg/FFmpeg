@@ -2048,7 +2048,7 @@ matroska_read_header (AVFormatContext    *s,
             if (track->codec_id == NULL)
                 continue;
 
-            for(j=0; ff_mkv_codec_tags[j].str; j++){
+            for(j=0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++){
                 if(!strncmp(ff_mkv_codec_tags[j].str, track->codec_id,
                             strlen(ff_mkv_codec_tags[j].str))){
                     codec_id= ff_mkv_codec_tags[j].id;
