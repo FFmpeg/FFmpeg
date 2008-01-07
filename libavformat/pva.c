@@ -142,7 +142,6 @@ recover:
         return AVERROR(EIO);
 
     pkt->stream_index = streamid - 1;
-    if (pva_pts != AV_NOPTS_VALUE)
         pkt->pts = pva_pts;
 
     return ret;
