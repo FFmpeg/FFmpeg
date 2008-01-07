@@ -157,6 +157,8 @@ typedef struct {
     int output_mode;                        ///< output channel configuration
     int out_channels;                       ///< number of output channels
 
+    int center_mix_level;                   ///< Center mix level index
+    int surround_mix_level;                 ///< Surround mix level index
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
     float dynamic_range[2];                 ///< dynamic range
     float cpl_coords[AC3_MAX_CHANNELS][18]; ///< coupling coordinates
@@ -331,7 +333,6 @@ static int ac3_parse_header(AC3DecodeContext *s)
 {
     AC3HeaderInfo hdr;
     GetBitContext *gbc = &s->gbc;
-    float center_mix_level, surround_mix_level;
     int err, i;
 
     err = ff_ac3_parse_header(gbc->buffer, &hdr);
@@ -359,6 +360,10 @@ static int ac3_parse_header(AC3DecodeContext *s)
     if(s->lfe_on)
         s->output_mode |= AC3_OUTPUT_LFEON;
 
+    /* set default mix levels */
+    s->center_mix_level   = 3;  // -4.5dB
+    s->surround_mix_level = 4;  // -6.0dB
+
     /* skip over portion of header which has already been read */
     skip_bits(gbc, 16); // skip the sync_word
     skip_bits(gbc, 16); // skip crc1
@@ -368,9 +373,9 @@ static int ac3_parse_header(AC3DecodeContext *s)
         skip_bits(gbc, 2); // skip dsurmod
     } else {
         if((s->channel_mode & 1) && s->channel_mode != AC3_CHMODE_MONO)
-            center_mix_level = gain_levels[center_levels[get_bits(gbc, 2)]];
+            s->center_mix_level = center_levels[get_bits(gbc, 2)];
         if(s->channel_mode & 4)
-            surround_mix_level = gain_levels[surround_levels[get_bits(gbc, 2)]];
+            s->surround_mix_level = surround_levels[get_bits(gbc, 2)];
     }
     skip_bits1(gbc); // skip lfeon
 
@@ -403,25 +408,34 @@ static int ac3_parse_header(AC3DecodeContext *s)
         } while(i--);
     }
 
-    /* set stereo downmixing coefficients
-       reference: Section 7.8.2 Downmixing Into Two Channels */
+    return 0;
+}
+
+/**
+ * Set stereo downmixing coefficients based on frame header info.
+ * reference: Section 7.8.2 Downmixing Into Two Channels
+ */
+static void set_downmix_coeffs(AC3DecodeContext *s)
+{
+    int i;
+    float cmix = gain_levels[s->center_mix_level];
+    float smix = gain_levels[s->surround_mix_level];
+
     for(i=0; i<s->fbw_channels; i++) {
         s->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
         s->downmix_coeffs[i][1] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
     }
     if(s->channel_mode > 1 && s->channel_mode & 1) {
-        s->downmix_coeffs[1][0] = s->downmix_coeffs[1][1] = center_mix_level;
+        s->downmix_coeffs[1][0] = s->downmix_coeffs[1][1] = cmix;
     }
     if(s->channel_mode == AC3_CHMODE_2F1R || s->channel_mode == AC3_CHMODE_3F1R) {
         int nf = s->channel_mode - 2;
-        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf][1] = surround_mix_level * LEVEL_MINUS_3DB;
+        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf][1] = smix * LEVEL_MINUS_3DB;
     }
     if(s->channel_mode == AC3_CHMODE_2F2R || s->channel_mode == AC3_CHMODE_3F2R) {
         int nf = s->channel_mode - 4;
-        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = surround_mix_level;
+        s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = smix;
     }
-
-    return 0;
 }
 
 /**
@@ -1138,6 +1152,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
         s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
     avctx->channels = s->out_channels;
+
+    /* set downmixing coefficients if needed */
+    if(s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
+            s->fbw_channels == s->out_channels)) {
+        set_downmix_coeffs(s);
+    }
 
     /* parse the audio blocks */
     for (blk = 0; blk < NB_BLOCKS; blk++) {
