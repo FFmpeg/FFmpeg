@@ -49,6 +49,7 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     st->codec->codec_id   = CODEC_ID_MPEG2VIDEO;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     av_set_pts_info(st, 32, 1, 90000);
+    av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
 
     if (!(st = av_new_stream(s, 1)))
         return AVERROR(ENOMEM);
@@ -56,18 +57,24 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     st->codec->codec_id   = CODEC_ID_MP2;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     av_set_pts_info(st, 33, 1, 90000);
+    av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
 
-static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
+#define pva_log if (read_packet) av_log
+
+static int read_part_of_packet(AVFormatContext *s, int64_t *pts,
+                               int *len, int *strid, int read_packet) {
     ByteIOContext *pb = s->pb;
     PVAContext *pvactx = s->priv_data;
-    int ret, syncword, streamid, reserved, flags, length, pts_flag;
-    int64_t pva_pts = AV_NOPTS_VALUE;
+    int syncword, streamid, reserved, flags, length, pts_flag;
+    int64_t pva_pts = AV_NOPTS_VALUE, startpos;
 
 recover:
+    startpos = url_ftell(pb);
+
     syncword = get_be16(pb);
     streamid = get_byte(pb);
     get_byte(pb);               /* counter not used */
@@ -78,18 +85,18 @@ recover:
     pts_flag = flags & 0x10;
 
     if (syncword != PVA_MAGIC) {
-        av_log(s, AV_LOG_ERROR, "invalid syncword\n");
+        pva_log(s, AV_LOG_ERROR, "invalid syncword\n");
         return AVERROR(EIO);
     }
     if (streamid != PVA_VIDEO_PAYLOAD && streamid != PVA_AUDIO_PAYLOAD) {
-        av_log(s, AV_LOG_ERROR, "invalid streamid\n");
+        pva_log(s, AV_LOG_ERROR, "invalid streamid\n");
         return AVERROR(EIO);
     }
     if (reserved != 0x55) {
-        av_log(s, AV_LOG_WARNING, "expected reserved byte to be 0x55\n");
+        pva_log(s, AV_LOG_WARNING, "expected reserved byte to be 0x55\n");
     }
     if (length > PVA_MAX_PAYLOAD_LENGTH) {
-        av_log(s, AV_LOG_ERROR, "invalid payload length %u\n", length);
+        pva_log(s, AV_LOG_ERROR, "invalid payload length %u\n", length);
         return AVERROR(EIO);
     }
 
@@ -113,9 +120,11 @@ recover:
             pes_header_data_length = get_byte(pb);
 
             if (pes_signal != 1) {
-                av_log(s, AV_LOG_WARNING, "expected signaled PES packet, "
+                pva_log(s, AV_LOG_WARNING, "expected signaled PES packet, "
                                           "trying to recover\n");
                 url_fskip(pb, length - 9);
+                if (!read_packet)
+                    return AVERROR(EIO);
                 goto recover;
             }
 
@@ -133,18 +142,62 @@ recover:
         pvactx->continue_pes -= length;
 
         if (pvactx->continue_pes < 0) {
-            av_log(s, AV_LOG_WARNING, "audio data corruption\n");
+            pva_log(s, AV_LOG_WARNING, "audio data corruption\n");
             pvactx->continue_pes = 0;
         }
     }
 
-    if ((ret = av_get_packet(pb, pkt, length)) <= 0)
+    if (pva_pts != AV_NOPTS_VALUE)
+        av_add_index_entry(s->streams[streamid-1], startpos, pva_pts, 0, 0, AVINDEX_KEYFRAME);
+
+    *pts   = pva_pts;
+    *len   = length;
+    *strid = streamid;
+    return 0;
+}
+
+static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
+    ByteIOContext *pb = s->pb;
+    int64_t pva_pts;
+    int ret, length, streamid;
+
+    if (read_part_of_packet(s, &pva_pts, &length, &streamid, 1) < 0 ||
+       (ret = av_get_packet(pb, pkt, length)) <= 0)
         return AVERROR(EIO);
 
     pkt->stream_index = streamid - 1;
     pkt->pts = pva_pts;
 
     return ret;
+}
+
+static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
+                                          int64_t *pos, int64_t pos_limit) {
+    ByteIOContext *pb = s->pb;
+    PVAContext *pvactx = s->priv_data;
+    int length, streamid;
+    int64_t res;
+
+    pos_limit = FFMIN(*pos+PVA_MAX_PAYLOAD_LENGTH*8, (uint64_t)*pos+pos_limit);
+
+    while (*pos < pos_limit) {
+        res = AV_NOPTS_VALUE;
+        url_fseek(pb, *pos, SEEK_SET);
+
+        pvactx->continue_pes = 0;
+        if (read_part_of_packet(s, &res, &length, &streamid, 0)) {
+            (*pos)++;
+            continue;
+        }
+        if (streamid - 1 != stream_index || res == AV_NOPTS_VALUE) {
+            *pos = url_ftell(pb) + length;
+            continue;
+        }
+        break;
+    }
+
+    pvactx->continue_pes = 0;
+    return res;
 }
 
 AVInputFormat pva_demuxer = {
@@ -154,4 +207,5 @@ AVInputFormat pva_demuxer = {
     pva_probe,
     pva_read_header,
     pva_read_packet,
+    .read_timestamp = pva_read_timestamp
 };
