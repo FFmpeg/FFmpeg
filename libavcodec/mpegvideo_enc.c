@@ -64,8 +64,6 @@ static const uint16_t aanscales[64] = {
 static uint8_t default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static uint8_t default_fcode_tab[MAX_MV*2+1];
 
-enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
-
 void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                            const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra)
 {

@@ -727,8 +727,6 @@ int ff_dct_common_init(MpegEncContext *s);
 void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 
-extern enum PixelFormat ff_yuv420p_list[2];
-
 void ff_init_block_index(MpegEncContext *s);
 
 static inline void ff_update_block_index(MpegEncContext *s){
