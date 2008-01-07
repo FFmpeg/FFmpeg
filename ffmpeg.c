@@ -2057,7 +2057,7 @@ static int av_encode(AVFormatContext **output_files,
                 av_free(ost->pict_tmp.data[0]);
                 if (ost->video_resample)
                     sws_freeContext(ost->img_resample_ctx);
-                if (ost->audio_resample)
+                if (ost->resample)
                     audio_resample_close(ost->resample);
                 av_free(ost);
             }
