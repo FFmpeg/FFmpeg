@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "mpeg.h"
 
 #define PVA_MAX_PAYLOAD_LENGTH  0x17f8
 #define PVA_VIDEO_PAYLOAD       0x01
@@ -125,11 +126,8 @@ recover:
 
             pvactx->continue_pes = pes_packet_length;
 
-            if (pes_flags & 0x80 && (pes_header_data[0] & 0xf0) == 0x20) {
-                pva_pts  = ((long long) *pes_header_data & 0x0e) << 29;
-                pva_pts += (AV_RB16(pes_header_data+1) >> 1) << 15;
-                pva_pts +=  AV_RB16(pes_header_data+3) >> 1;
-            }
+            if (pes_flags & 0x80 && (pes_header_data[0] & 0xf0) == 0x20)
+                pva_pts = ff_parse_pes_pts(pes_header_data);
         }
 
         pvactx->continue_pes -= length;
