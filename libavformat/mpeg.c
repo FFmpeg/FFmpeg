@@ -120,17 +120,12 @@ static int mpegps_read_header(AVFormatContext *s,
 
 static int64_t get_pts(ByteIOContext *pb, int c)
 {
-    int64_t pts;
-    int val;
+    uint8_t buf[5];
 
-    if (c < 0)
-        c = get_byte(pb);
-    pts = (int64_t)(c & 0x0e) << 29;
-    val = get_be16(pb);
-    pts |= (int64_t)(val >> 1) << 15;
-    val = get_be16(pb);
-    pts |= (int64_t)(val >> 1);
-    return pts;
+    buf[0] = c<0 ? get_byte(pb) : c;
+    get_buffer(pb, buf+1, 4);
+
+    return ff_parse_pes_pts(buf);
 }
 
 static int find_next_start_code(ByteIOContext *pb, int *size_ptr,
