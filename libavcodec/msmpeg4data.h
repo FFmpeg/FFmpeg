@@ -67,7 +67,7 @@ extern const uint8_t inter_MCBPC_bits[28];
 
 #define WMV1_SCANTABLE_COUNT 4
 
-extern const uint8_t *wmv1_scantable[WMV1_SCANTABLE_COUNT+1];
+extern const uint8_t wmv1_scantable[WMV1_SCANTABLE_COUNT][64];
 
 #define NB_RL_TABLES  6
 
