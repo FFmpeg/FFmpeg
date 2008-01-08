@@ -1133,7 +1133,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, 
     }
 
     /* check for crc mismatch */
-    if(avctx->error_resilience > 0) {
+    if(avctx->error_resilience >= FF_ER_CAREFUL) {
         if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
             av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
             return -1;
