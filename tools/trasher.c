@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     FILE *f= fopen(argv[1], "rb+");
     int count= atoi(argv[2]);
     int maxburst= atoi(argv[3]);
-    int length, i;
+    int length;
 
     srand (time (0));
 
