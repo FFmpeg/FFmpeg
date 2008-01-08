@@ -156,7 +156,7 @@ int64_t av_i2int(AVInteger a){
     return out;
 }
 
-#if 0
+#ifdef TEST
 #undef NDEBUG
 #include <assert.h>
 

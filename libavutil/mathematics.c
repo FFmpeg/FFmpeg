@@ -110,7 +110,8 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
     int64_t c= cq.num * (int64_t)bq.den;
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
-#if 0
+
+#ifdef TEST
 #include "integer.h"
 #undef printf
 main(void){
