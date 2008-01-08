@@ -24,8 +24,8 @@
 static int noise(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
                      uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size, int keyframe){
-    int amount= args ? atoi(args) : 10000;
     unsigned int *state= bsfc->priv_data;
+    int amount= args ? atoi(args) : (*state % 10001+1);
     int i;
 
     *poutbuf= av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
