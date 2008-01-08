@@ -345,7 +345,7 @@ state_transition_table = {
 FIXME
 
 
-Range Coding of intergers:
+Range Coding of integers:
 --------------------------
 FIXME
 

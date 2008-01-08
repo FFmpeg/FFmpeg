@@ -335,7 +335,7 @@ static const uint8_t dv_quant_shifts[22][4] = {
 
 static const uint8_t dv_quant_offset[4] = { 6, 3, 0, 1 };
 
-/* NOTE: I prefer hardcoding the positionning of dv blocks, it is
+/* NOTE: I prefer hardcoding the positioning of dv blocks, it is
    simpler :-) */
 
 static const uint16_t dv_place_420[1620] = {
