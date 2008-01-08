@@ -113,6 +113,9 @@ tools/qt-faststart$(EXESUF): tools/qt-faststart.c
 tools/cws2fws$(EXESUF): tools/cws2fws.c
 	$(CC) $(CFLAGS) $< -o $@ -lz
 
+tools/trasher$(EXESUF): tools/trasher.c
+	$(CC) $(CFLAGS) $< -o $@
+
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
