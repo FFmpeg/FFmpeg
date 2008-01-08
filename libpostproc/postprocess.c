@@ -111,9 +111,6 @@ static DECLARE_ALIGNED(8, uint64_t attribute_used, b08)= 0x0808080808080808LL;
 static DECLARE_ALIGNED(8, uint64_t attribute_used, b80)= 0x8080808080808080LL;
 #endif
 
-static uint8_t clip_table[3*256];
-static uint8_t * const clip_tab= clip_table + 256;
-
 static const int attribute_used deringThreshold= 20;
 
 
@@ -970,14 +967,6 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
         reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
 }
 
-static void global_init(void){
-        int i;
-        memset(clip_table, 0, 256);
-        for(i=256; i<512; i++)
-                clip_table[i]= i;
-        memset(clip_table+512, 0, 256);
-}
-
 static const char * context_to_name(void * ptr) {
     return "postproc";
 }
@@ -988,8 +977,6 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
         PPContext *c= av_malloc(sizeof(PPContext));
         int stride= (width+15)&(~15);    //assumed / will realloc if needed
         int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
-
-        global_init();
 
         memset(c, 0, sizeof(PPContext));
         c->av_class = &av_codec_context_class;
