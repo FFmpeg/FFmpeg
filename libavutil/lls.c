@@ -121,7 +121,7 @@ int main(void){
 
     for(i=0; i<100; i++){
         double var[4];
-        double eval, variance;
+        double eval;
 #if 0
         var[1] = rand() / (double)RAND_MAX;
         var[2] = rand() / (double)RAND_MAX;
