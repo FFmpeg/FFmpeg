@@ -44,7 +44,7 @@ struct dc1394_frame_format {
     { 320, 240, PIX_FMT_UYVY422, MODE_320x240_YUV422 },
     { 640, 480, PIX_FMT_UYYVYY411, MODE_640x480_YUV411 },
     { 640, 480, PIX_FMT_UYVY422, MODE_640x480_YUV422 },
-    {   0,   0, 0, MODE_320x240_YUV422 } /* default -- gotta be the last one */
+    { 0, 0, 0, 0 } /* gotta be the last one */
 };
 
 struct dc1394_frame_rate {
@@ -57,7 +57,7 @@ struct dc1394_frame_rate {
     { 15000, FRAMERATE_15    },
     { 30000, FRAMERATE_30    },
     { 60000, FRAMERATE_60    },
-    {     0, FRAMERATE_30    } /* default -- gotta be the last one */
+    { 0, 0 } /* gotta be the last one */
 };
 
 static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
@@ -68,14 +68,24 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     int res;
     struct dc1394_frame_format *fmt;
     struct dc1394_frame_rate *fps;
+    enum PixelFormat pix_fmt = ap->pix_fmt == PIX_FMT_NONE ? PIX_FMT_UYVY422 : ap->pix_fmt; /* defaults */
+    int width                = !ap->width ? 320 : ap->width;
+    int height               = !ap->height ? 240 : ap->height;
+    int frame_rate           = !ap->time_base.num ? 30000 : av_rescale(1000, ap->time_base.den, ap->time_base.num);
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
-         if (fmt->pix_fmt == ap->pix_fmt && fmt->width == ap->width && fmt->height == ap->height)
+         if (fmt->pix_fmt == pix_fmt && fmt->width == width && fmt->height == height)
              break;
 
     for (fps = dc1394_frame_rates; fps->frame_rate; fps++)
-         if (fps->frame_rate == av_rescale(1000, ap->time_base.den, ap->time_base.num))
+         if (fps->frame_rate == frame_rate)
              break;
+
+    if (!fps->frame_rate || !fmt->width) {
+        av_log(c, AV_LOG_ERROR, "Can't find matching camera format for %s, %dx%d@%d:1000fps\n", avcodec_get_pix_fmt_name(pix_fmt),
+                                                                                                width, height, frame_rate);
+        goto out;
+    }
 
     /* create a video stream */
     vst = av_new_stream(c, 0);
