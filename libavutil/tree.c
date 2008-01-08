@@ -155,7 +155,7 @@ int cmp(const void *a, const void *b){
 }
 
 int main(void){
-    int i,j,k;
+    int i,k;
     AVTreeNode *root= NULL, *node=NULL;
 
     for(i=0; i<10000; i++){
