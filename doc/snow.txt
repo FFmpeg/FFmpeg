@@ -308,7 +308,9 @@ Decoding process:
 
 Range Coder:
 ============
-FIXME
+
+Binary Range Coder:
+-------------------
 The implemented range coder is an adapted version based upon "Range encoding:
 an algorithm for removing redundancy from a digitised message." by G. N. N.
 Martin.
@@ -339,6 +341,13 @@ state_transition_table = {
 210, 211, 212, 213, 215, 215, 216, 217, 218, 219, 220, 220, 222, 223, 224, 225,
 226, 227, 227, 229, 229, 230, 231, 232, 234, 234, 235, 236, 237, 238, 239, 240,
 241, 242, 243, 244, 245, 246, 247, 248, 248,   0,   0,   0,   0,   0,   0,   0};
+
+FIXME
+
+
+Range Coding of intergers:
+--------------------------
+FIXME
 
 
 Neighboring Blocks:
