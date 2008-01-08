@@ -86,7 +86,7 @@ typedef struct {
     int eval_colors;
     double x, y;
     char *fileImage;
-    struct _CachedImage *cache;
+    struct CachedImage *cache;
     Imlib_Image imageOverlaid;
     AVEvalExpr *eval_x, *eval_y;
     char *expr_x, *expr_y;
@@ -99,8 +99,8 @@ typedef struct {
     struct SwsContext *fromRGB_convert_ctx;
 } ContextInfo;
 
-typedef struct _CachedImage {
-    struct _CachedImage *next;
+typedef struct CachedImage {
+    struct CachedImage *next;
     Imlib_Image image;
     int width;
     int height;
