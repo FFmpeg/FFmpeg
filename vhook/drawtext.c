@@ -172,7 +172,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     ci->outline = 0;
     ci->text_height = 0;
 
-    optind = 0;
+    optind = 1;
     while ((c = getopt(argc, argv, "f:t:T:x:y:s:c:C:bo")) > 0) {
       switch (c) {
       case 'f':

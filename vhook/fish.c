@@ -124,7 +124,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     *ctxp = av_mallocz(sizeof(ContextInfo));
     ci = (ContextInfo *) *ctxp;
 
-    optind = 0;
+    optind = 1;
 
     ci->dir = "/tmp";
     ci->threshold = 100;

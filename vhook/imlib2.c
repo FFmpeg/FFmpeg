@@ -160,7 +160,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     ci->expr_x = "0.0";
     ci->expr_y = "0.0";
 
-    optind = 0;
+    optind = 1;
 
     /* Use ':' to split FONTPATH */
     if (fp)
