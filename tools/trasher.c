@@ -6,10 +6,21 @@
 
 int main(int argc, char** argv)
 {
-    FILE *f= fopen(argv[1], "rb+");
-    int count= atoi(argv[2]);
-    int maxburst= atoi(argv[3]);
-    int length;
+    FILE *f;
+    int count, maxburst, length;
+
+    if (argc < 4){
+        printf("USAGE: trasher <filename> <count> <maxburst>\n");
+        return 1;
+    }
+
+    f= fopen(argv[1], "rb+");
+    if (!f){
+        perror(argv[1]);
+        return 2;
+    }
+    count= atoi(argv[2]);
+    maxburst= atoi(argv[3]);
 
     srand (time (0));
 
