@@ -41,8 +41,8 @@ static void alloc_and_copy(uint8_t **poutbuf,          int *poutbuf_size,
     if (!offset)
         AV_WB32(*poutbuf+sps_pps_size, 1);
     else {
-        (*poutbuf+offset)[0] = (*poutbuf+offset)[1] = 0;
-        (*poutbuf+offset)[2] = 1;
+        (*poutbuf+offset+sps_pps_size)[0] = (*poutbuf+offset+sps_pps_size)[1] = 0;
+        (*poutbuf+offset+sps_pps_size)[2] = 1;
     }
 }
 
