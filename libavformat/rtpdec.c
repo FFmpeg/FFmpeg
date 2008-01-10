@@ -531,8 +531,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             rv= 0;
             break;
         default:
-                av_new_packet(pkt, len);
-                memcpy(pkt->data, buf, len);
+            av_new_packet(pkt, len);
+            memcpy(pkt->data, buf, len);
             break;
         }
 
