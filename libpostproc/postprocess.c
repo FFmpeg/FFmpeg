@@ -694,7 +694,11 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 
 /* -pp Command line Help
 */
+#if LIBPOSTPROC_VERSION_INT < (52<<16)
 const char *const pp_help=
+#else
+const char pp_help[] =
+#endif
 "Available postprocessing filters:\n"
 "Filters                        Options\n"
 "short  long name       short   long option     Description\n"
