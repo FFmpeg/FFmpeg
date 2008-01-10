@@ -166,6 +166,7 @@ static char *str_title = NULL;
 static char *str_author = NULL;
 static char *str_copyright = NULL;
 static char *str_comment = NULL;
+static char *str_genre = NULL;
 static char *str_album = NULL;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
@@ -3212,6 +3213,8 @@ static void opt_output_file(const char *filename)
             av_strlcpy(oc->comment, str_comment, sizeof(oc->comment));
         if (str_album)
             av_strlcpy(oc->album, str_album, sizeof(oc->album));
+        if (str_genre)
+            av_strlcpy(oc->genre, str_genre, sizeof(oc->genre));
     }
 
     output_files[nb_output_files++] = oc;
@@ -3724,6 +3727,7 @@ const OptionDef options[] = {
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
+    { "genre", HAS_ARG | OPT_STRING, {(void*)&str_genre}, "set the genre", "string" },
     { "album", HAS_ARG | OPT_STRING, {(void*)&str_album}, "set the album", "string" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },
