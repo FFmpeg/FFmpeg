@@ -111,23 +111,23 @@ static char *data_to_hex(char *buff, const uint8_t *src, int s)
     return buff;
 }
 
-static char *extradata2config(const uint8_t *extradata, int extradata_size)
+static char *extradata2config(AVCodecContext *c)
 {
     char *config;
 
-    if (extradata_size > MAX_EXTRADATA_SIZE) {
-        av_log(NULL, AV_LOG_ERROR, "Too many extra data!\n");
+    if (c->extradata_size > MAX_EXTRADATA_SIZE) {
+        av_log(c, AV_LOG_ERROR, "Too many extra data!\n");
 
         return NULL;
     }
-    config = av_malloc(10 + extradata_size * 2);
+    config = av_malloc(10 + c->extradata_size * 2);
     if (config == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory for the config info\n");
+        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the config info\n");
         return NULL;
     }
     memcpy(config, "; config=", 9);
-    data_to_hex(config + 9, extradata, extradata_size);
-    config[9 + extradata_size * 2] = 0;
+    data_to_hex(config + 9, c->extradata, c->extradata_size);
+    config[9 + c->extradata_size * 2] = 0;
 
     return config;
 }
@@ -139,7 +139,7 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
     switch (c->codec_id) {
         case CODEC_ID_MPEG4:
             if (c->extradata_size) {
-                config = extradata2config(c->extradata, c->extradata_size);
+                config = extradata2config(c);
             }
             av_strlcatf(buff, size, "a=rtpmap:%d MP4V-ES/90000\r\n"
                                     "a=fmtp:%d profile-level-id=1%s\r\n",
@@ -148,12 +148,12 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
             break;
         case CODEC_ID_AAC:
             if (c->extradata_size) {
-                config = extradata2config(c->extradata, c->extradata_size);
+                config = extradata2config(c);
             } else {
                 /* FIXME: maybe we can forge config information based on the
                  *        codec parameters...
                  */
-                av_log(NULL, AV_LOG_ERROR, "AAC with no global headers is currently not supported\n");
+                av_log(c, AV_LOG_ERROR, "AAC with no global headers is currently not supported\n");
                 return NULL;
             }
             if (config == NULL) {
