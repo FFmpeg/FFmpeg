@@ -139,11 +139,11 @@ static struct PPFilter filters[]=
 
 static const char *replaceTable[]=
 {
-        "default",      "hdeblock:a,vdeblock:a,dering:a",
-        "de",           "hdeblock:a,vdeblock:a,dering:a",
-        "fast",         "x1hdeblock:a,x1vdeblock:a,dering:a",
-        "fa",           "x1hdeblock:a,x1vdeblock:a,dering:a",
-        "ac",           "ha:a:128:7,va:a,dering:a",
+        "default",      "hb:a,vb:a,dr:a",
+        "de",           "hb:a,vb:a,dr:a",
+        "fast",         "h1:a,v1:a,dr:a",
+        "fa",           "h1:a,v1:a,dr:a",
+        "ac",           "ha:a:128:7,va:a,dr:a",
         NULL //End Marker
 };
 
