@@ -66,10 +66,6 @@
 #define TEMP_NOISE_FILTER               0x100000
 #define FORCE_QUANT                     0x200000
 
-#if ( defined(__PIC__) || defined(__pic__) ) && ! defined(PIC)
-#    define PIC
-#endif
-
 //use if you want a faster postprocessing code
 //cannot differentiate between chroma & luma filters (both on or both off)
 //obviously the -pp option on the command line has no effect except turning the here selected
