@@ -474,6 +474,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             s->read_buf_index = 0;
             return 1;
         }
+    } else if (s->parse_packet) {
+        rv = s->parse_packet(s, pkt, &timestamp, buf, len);
     } else {
         // at this point, the RTP header has been stripped;  This is ASSUMING that there is only 1 CSRC, which in't wise.
         switch(st->codec->codec_id) {
@@ -529,12 +531,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             rv= 0;
             break;
         default:
-            if(s->parse_packet) {
-                rv= s->parse_packet(s, pkt, &timestamp, buf, len);
-            } else {
                 av_new_packet(pkt, len);
                 memcpy(pkt->data, buf, len);
-            }
             break;
         }
 
