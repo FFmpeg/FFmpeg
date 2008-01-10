@@ -171,7 +171,7 @@ const uint8_t ff_log2_tab[256]={
         7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
 
-main(void){
+int main(void){
     int64_t a,b;
 
     for(a=7; a<256*256*256; a+=13215){
@@ -192,5 +192,6 @@ main(void){
             assert(av_i2int(av_div_i(ai,bi)) == a/b);
         }
     }
+    return 0;
 }
 #endif

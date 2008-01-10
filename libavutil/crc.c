@@ -130,7 +130,7 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t le
 
 #ifdef TEST
 #undef printf
-main(void){
+int main(void){
     uint8_t buf[1999];
     int i;
     int p[4][3]={{AV_CRC_32_IEEE_LE, 0xEDB88320, 0x3D5CDD04},
@@ -146,5 +146,6 @@ main(void){
         ctx = av_crc_get_table(p[i][0]);
         printf("crc %08X =%X\n", p[i][1], av_crc(ctx, 0, buf, sizeof(buf)));
     }
+    return 0;
 }
 #endif

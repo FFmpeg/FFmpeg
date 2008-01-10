@@ -164,7 +164,7 @@ void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len){
 #ifdef TEST
 #include <stdio.h>
 #undef printf
-main(void){
+int main(void){
     uint64_t md5val;
     int i;
     uint8_t in[1000];
@@ -176,5 +176,7 @@ main(void){
     av_md5_sum( (uint8_t*)&md5val, in,  65); printf("%"PRId64"\n", md5val);
     for(i=0; i<1000; i++) in[i]= i % 127;
     av_md5_sum( (uint8_t*)&md5val, in,  999); printf("%"PRId64"\n", md5val);
+
+    return 0;
 }
 #endif

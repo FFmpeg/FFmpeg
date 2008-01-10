@@ -66,5 +66,6 @@ int main(void){
         STOP_TIMER("adler")
     }
     av_log(NULL, AV_LOG_DEBUG, "%X == 50E6E508\n", checksum);
+    return 0;
 }
 #endif
