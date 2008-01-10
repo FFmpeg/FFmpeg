@@ -24,6 +24,7 @@
 #include <errno.h>
 
 #include "avformat.h"
+#include "avdevice.h"
 #include "cmdutils.h"
 #include "avstring.h"
 #include "version.h"
@@ -162,6 +163,7 @@ void show_banner(const char *program_name, int program_birth_year)
     fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
     fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
     fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
+    fprintf(stderr, "  libavdevice version: " AV_STRINGIFY(LIBAVDEVICE_VERSION) "\n");
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
     fprintf(stderr, ", gcc: " __VERSION__ "\n");
@@ -171,12 +173,13 @@ void show_banner(const char *program_name, int program_birth_year)
 }
 
 void show_version(const char *program_name) {
-     /* TODO: add function interface to avutil and avformat */
+     /* TODO: add function interface to avutil and avformat avdevice*/
     printf("%s " FFMPEG_VERSION "\n", program_name);
     printf("libavutil   %d\n"
            "libavcodec  %d\n"
-           "libavformat %d\n",
-           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD);
+           "libavformat %d\n"
+           "libavdevice %d\n",
+           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD, LIBAVDEVICE_BUILD);
 }
 
 void show_license(void)
