@@ -2417,6 +2417,7 @@ retry:
 
 static void flush(AVCodecContext *avctx){
     MPADecodeContext *s = avctx->priv_data;
+    memset(s->synth_buf, 0, sizeof(s->synth_buf));
     s->last_buf_size= 0;
 }
 
