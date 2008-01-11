@@ -321,7 +321,7 @@ seen so far.
 
 
 bit seen | new state
----------+--------------------------------------------
+---------+-----------------------------------------------
     0    | 256 - state_transition_table[256 - old_state];
     1    |       state_transition_table[      old_state];
 
@@ -347,7 +347,7 @@ FIXME
 
 
 Range Coding of integers:
---------------------------
+-------------------------
 FIXME
 
 
