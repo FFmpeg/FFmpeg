@@ -475,24 +475,20 @@ static int avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
     return 0;
 }
 
-static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
+static int isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
 {
-    offset_t pos = url_ftell(pb);
-
-    put_be32(pb, 0);
-    put_tag(pb, "avcC");
-    if (track->vosLen > 6) {
+    if (len > 6) {
         /* check for h264 start code */
-        if (AV_RB32(track->vosData) == 0x00000001) {
-            uint8_t *buf, *end;
+        if (AV_RB32(data) == 0x00000001) {
+            uint8_t *buf=NULL, *end;
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
 
-            int ret = avc_parse_nal_units(track->vosData, &track->vosData, &track->vosLen);
+            int ret = avc_parse_nal_units(data, &buf, &len);
             if (ret < 0)
                 return ret;
-            buf = track->vosData;
-            end = track->vosData + track->vosLen;
+            data = buf;
+            end = buf + len;
 
             /* look for sps and pps */
             while (buf < end) {
@@ -524,10 +520,21 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
             put_byte(pb, 1); /* number of pps */
             put_be16(pb, pps_size);
             put_buffer(pb, pps, pps_size);
+            av_free(data);
         } else {
-            put_buffer(pb, track->vosData, track->vosLen);
+            put_buffer(pb, data, len);
         }
     }
+    return 0;
+}
+
+static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    offset_t pos = url_ftell(pb);
+
+    put_be32(pb, 0);
+    put_tag(pb, "avcC");
+    isom_write_avcc(pb, track->vosData, track->vosLen);
     return updateSize(pb, pos);
 }
 
