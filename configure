@@ -725,6 +725,8 @@ HAVE_LIST="
     getrusage
     imlib2
     inet_aton
+    libdc1394_1
+    libdc1394_2
     llrint
     lrint
     lrintf
@@ -1633,7 +1635,6 @@ enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
 enabled liba52     && require  liba52 a52dec/a52.h a52_init -la52
 enabled libamr_nb  && require  libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require  libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
-enabled libdc1394  && require  libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require  libgsm gsm.h gsm_create -lgsm
@@ -1647,6 +1648,16 @@ enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -
 
 # disable the native AC-3 decoder if liba52 is enabled
 enabled liba52 && disable ac3_decoder
+
+# libdc1394 check
+if enabled libdc1394; then
+    { check_lib dc1394/dc1394.h dc1394_new -ldc1394 -lraw1394 &&
+        enable libdc1394_2; } ||
+    { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
+        enable libdc1394_1; } ||
+    die "ERROR: No version of libdc1394 found "
+fi
+
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
