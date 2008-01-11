@@ -8,7 +8,7 @@ CFLAGS += -I$(SRC_PATH)/libavcodec
 
 OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
 
-HEADERS = avformat.h avio.h rtp.h rtsp.h rtspcodes.h
+HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
 
 # muxers/demuxers
 OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o
