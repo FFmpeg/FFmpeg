@@ -1,17 +1,18 @@
 =============================================
-SNOW Video Codec Specification Draft 20070103
+SNOW Video Codec Specification Draft 20080110
 =============================================
 
-Intro:
-======
-This Specification describes the snow syntax and semmantics as well as
-how to decode snow.
-The decoding process is precissely described and any compliant decoder
-MUST produce the exactly same output for a spec conformant snow stream.
-For encoding though any process which generates a stream compliant to
-the syntactical and semmantical requirements and which is decodeable by
+Introduction:
+=============
+This specification describes the SNOW bitstream syntax and semantics as
+well as the formal SNOW decoding process.
+
+The decoding process is described precisely and any compliant decoder
+MUST produce the exact same output for a spec-conformant SNOW stream.
+For encoding, though, any process which generates a stream compliant to
+the syntactical and semantic requirements and which is decodable by
 the process described in this spec shall be considered a conformant
-snow encoder.
+SNOW encoder.
 
 Definitions:
 ============
