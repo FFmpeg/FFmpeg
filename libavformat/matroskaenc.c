@@ -745,6 +745,16 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_md5_update(mkv->md5_ctx, pkt->data, FFMIN(200, pkt->size));
     }
 
+    if (codec->codec_id == CODEC_ID_H264 &&
+        codec->extradata_size > 0 && AV_RB32(codec->extradata) == 0x00000001) {
+        /* from x264 or from bytestream h264 */
+        /* nal reformating needed */
+        int ret = avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
+        if (ret < 0)
+            return ret;
+        assert(pkt->size);
+    }
+
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
         mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else {
