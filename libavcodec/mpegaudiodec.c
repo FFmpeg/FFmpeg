@@ -126,6 +126,68 @@ static const int32_t scale_factor_mult2[3][3] = {
 
 static DECLARE_ALIGNED_16(MPA_INT, window[512]);
 
+/**
+ * Convert region offsets to region sizes and truncate
+ * size to big_values.
+ */
+void ff_region_offset2size(GranuleDef *g){
+    int i, k, j=0;
+    g->region_size[2] = (576 / 2);
+    for(i=0;i<3;i++) {
+        k = FFMIN(g->region_size[i], g->big_values);
+        g->region_size[i] = k - j;
+        j = k;
+    }
+}
+
+void ff_init_short_region(MPADecodeContext *s, GranuleDef *g){
+    if (g->block_type == 2)
+        g->region_size[0] = (36 / 2);
+    else {
+        if (s->sample_rate_index <= 2)
+            g->region_size[0] = (36 / 2);
+        else if (s->sample_rate_index != 8)
+            g->region_size[0] = (54 / 2);
+        else
+            g->region_size[0] = (108 / 2);
+    }
+    g->region_size[1] = (576 / 2);
+}
+
+void ff_init_long_region(MPADecodeContext *s, GranuleDef *g, int ra1, int ra2){
+    int l;
+    g->region_size[0] =
+        band_index_long[s->sample_rate_index][ra1 + 1] >> 1;
+    /* should not overflow */
+    l = FFMIN(ra1 + ra2 + 2, 22);
+    g->region_size[1] =
+        band_index_long[s->sample_rate_index][l] >> 1;
+}
+
+void ff_compute_band_indexes(MPADecodeContext *s, GranuleDef *g){
+    if (g->block_type == 2) {
+        if (g->switch_point) {
+            /* if switched mode, we handle the 36 first samples as
+                long blocks.  For 8000Hz, we handle the 48 first
+                exponents as long blocks (XXX: check this!) */
+            if (s->sample_rate_index <= 2)
+                g->long_end = 8;
+            else if (s->sample_rate_index != 8)
+                g->long_end = 6;
+            else
+                g->long_end = 4; /* 8000 Hz */
+
+            g->short_start = 2 + (s->sample_rate_index != 8);
+        } else {
+            g->long_end = 0;
+            g->short_start = 0;
+        }
+    } else {
+        g->short_start = 13;
+        g->long_end = 22;
+    }
+}
+
 /* layer 1 unscaling */
 /* n = number of bits of the mantissa minus 1 */
 static inline int l1_unscale(int n, int mant, int scale_factor)
@@ -2008,20 +2070,9 @@ static int mp_decode_layer3(MPADecodeContext *s)
                     g->table_select[i] = get_bits(&s->gb, 5);
                 for(i=0;i<3;i++)
                     g->subblock_gain[i] = get_bits(&s->gb, 3);
-                /* compute huffman coded region sizes */
-                if (g->block_type == 2)
-                    g->region_size[0] = (36 / 2);
-                else {
-                    if (s->sample_rate_index <= 2)
-                        g->region_size[0] = (36 / 2);
-                    else if (s->sample_rate_index != 8)
-                        g->region_size[0] = (54 / 2);
-                    else
-                        g->region_size[0] = (108 / 2);
-                }
-                g->region_size[1] = (576 / 2);
+                ff_init_short_region(s, g);
             } else {
-                int region_address1, region_address2, l;
+                int region_address1, region_address2;
                 g->block_type = 0;
                 g->switch_point = 0;
                 for(i=0;i<3;i++)
@@ -2031,47 +2082,10 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 region_address2 = get_bits(&s->gb, 3);
                 dprintf(s->avctx, "region1=%d region2=%d\n",
                         region_address1, region_address2);
-                g->region_size[0] =
-                    band_index_long[s->sample_rate_index][region_address1 + 1] >> 1;
-                l = region_address1 + region_address2 + 2;
-                /* should not overflow */
-                if (l > 22)
-                    l = 22;
-                g->region_size[1] =
-                    band_index_long[s->sample_rate_index][l] >> 1;
+                ff_init_long_region(s, g, region_address1, region_address2);
             }
-            /* convert region offsets to region sizes and truncate
-               size to big_values */
-            g->region_size[2] = (576 / 2);
-            j = 0;
-            for(i=0;i<3;i++) {
-                k = FFMIN(g->region_size[i], g->big_values);
-                g->region_size[i] = k - j;
-                j = k;
-            }
-
-            /* compute band indexes */
-            if (g->block_type == 2) {
-                if (g->switch_point) {
-                    /* if switched mode, we handle the 36 first samples as
-                       long blocks.  For 8000Hz, we handle the 48 first
-                       exponents as long blocks (XXX: check this!) */
-                    if (s->sample_rate_index <= 2)
-                        g->long_end = 8;
-                    else if (s->sample_rate_index != 8)
-                        g->long_end = 6;
-                    else
-                        g->long_end = 4; /* 8000 Hz */
-
-                    g->short_start = 2 + (s->sample_rate_index != 8);
-                } else {
-                    g->long_end = 0;
-                    g->short_start = 0;
-                }
-            } else {
-                g->short_start = 13;
-                g->long_end = 22;
-            }
+            ff_region_offset2size(g);
+            ff_compute_band_indexes(s, g);
 
             g->preflag = 0;
             if (!s->lsf)
