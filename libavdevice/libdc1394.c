@@ -38,6 +38,8 @@
 #define DC1394_FRAMERATE_15    FRAMERATE_15
 #define DC1394_FRAMERATE_30    FRAMERATE_30
 #define DC1394_FRAMERATE_60    FRAMERATE_60
+#define DC1394_FRAMERATE_120   FRAMERATE_120
+#define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
 
 #undef free
@@ -79,6 +81,8 @@ struct dc1394_frame_rate {
     { 15000, DC1394_FRAMERATE_15    },
     { 30000, DC1394_FRAMERATE_30    },
     { 60000, DC1394_FRAMERATE_60    },
+    {120000, DC1394_FRAMERATE_120   },
+    {240000, DC1394_FRAMERATE_240    },
     { 0, 0 } /* gotta be the last one */
 };
 
