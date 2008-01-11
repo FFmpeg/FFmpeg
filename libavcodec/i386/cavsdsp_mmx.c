@@ -32,22 +32,6 @@
  *
  ****************************************************************************/
 
-#define SUMSUB_BA( a, b ) \
-    "paddw "#b", "#a" \n\t"\
-    "paddw "#b", "#b" \n\t"\
-    "psubw "#a", "#b" \n\t"
-
-#define SBUTTERFLY(a,b,t,n)\
-    "movq " #a ", " #t "              \n\t" /* abcd */\
-    "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
-    "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */
-
-#define TRANSPOSE4(a,b,c,d,t)\
-    SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
-    SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
-    SBUTTERFLY(a,c,d,dq) /* a=aeim d=bfjn */\
-    SBUTTERFLY(t,b,c,dq) /* t=cgko c=dhlp */
-
 static inline void cavs_idct8_1d(int16_t *block, uint64_t bias)
 {
     asm volatile(

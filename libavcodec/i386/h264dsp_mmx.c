@@ -23,12 +23,6 @@
 /***********************************/
 /* IDCT */
 
-/* in/out: mma=mma+mmb, mmb=mmb-mma */
-#define SUMSUB_BA( a, b ) \
-    "paddw "#b", "#a" \n\t"\
-    "paddw "#b", "#b" \n\t"\
-    "psubw "#a", "#b" \n\t"
-
 #define SUMSUB_BADC( a, b, c, d ) \
     "paddw "#b", "#a" \n\t"\
     "paddw "#d", "#c" \n\t"\
