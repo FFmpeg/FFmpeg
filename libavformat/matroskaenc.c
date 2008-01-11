@@ -24,6 +24,7 @@
 #include "riff.h"
 #include "xiph.h"
 #include "matroska.h"
+#include "avc.h"
 
 typedef struct ebml_master {
     offset_t        pos;                ///< absolute offset in the file where the master's elements start
@@ -479,6 +480,8 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
             ret = put_xiph_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == CODEC_ID_FLAC)
             ret = put_flac_codecpriv(s, dyn_cp, codec);
+        else if (codec->codec_id == CODEC_ID_H264)
+            ret = isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
         else if (codec->extradata_size)
             put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
