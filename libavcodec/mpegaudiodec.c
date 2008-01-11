@@ -2642,6 +2642,7 @@ AVCodec mp2_decoder =
     NULL,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
+    .flush= flush,
 };
 #endif
 #ifdef CONFIG_MP3_DECODER
