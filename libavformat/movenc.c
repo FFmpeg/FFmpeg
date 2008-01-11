@@ -422,7 +422,7 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
 
     put_be32(pb, 0);
     put_tag(pb, "avcC");
-    isom_write_avcc(pb, track->vosData, track->vosLen);
+    ff_isom_write_avcc(pb, track->vosData, track->vosLen);
     return updateSize(pb, pos);
 }
 
@@ -1532,7 +1532,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
-        int ret = avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
+        int ret = ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
         if (ret < 0)
             return ret;
         assert(pkt->size);

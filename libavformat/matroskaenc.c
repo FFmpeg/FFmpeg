@@ -481,7 +481,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         else if (codec->codec_id == CODEC_ID_FLAC)
             ret = put_flac_codecpriv(s, dyn_cp, codec);
         else if (codec->codec_id == CODEC_ID_H264)
-            ret = isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
+            ret = ff_isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
         else if (codec->extradata_size)
             put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
@@ -749,7 +749,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         codec->extradata_size > 0 && AV_RB32(codec->extradata) == 0x00000001) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
-        int ret = avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
+        int ret = ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
         if (ret < 0)
             return ret;
         assert(pkt->size);

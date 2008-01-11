@@ -58,7 +58,7 @@ static uint8_t *avc_find_startcode( uint8_t *p, uint8_t *end )
     return end + 3;
 }
 
-int avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
+int ff_avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
 {
     ByteIOContext *pb;
     uint8_t *p = buf_in;
@@ -81,7 +81,7 @@ int avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
     return 0;
 }
 
-int isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
+int ff_isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
 {
     if (len > 6) {
         /* check for h264 start code */
@@ -90,7 +90,7 @@ int isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
 
-            int ret = avc_parse_nal_units(data, &buf, &len);
+            int ret = ff_avc_parse_nal_units(data, &buf, &len);
             if (ret < 0)
                 return ret;
             data = buf;
