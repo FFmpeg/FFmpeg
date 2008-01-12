@@ -105,7 +105,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size;
+    int ret, size, bps;
     //    AVStream *st = s->streams[0];
 
     size= RAW_PACKET_SIZE;
@@ -119,6 +119,12 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;
+
+    bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
+    assert(bps); // if false there IS a bug elsewhere (NOT in this function)
+    pkt->dts=
+    pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
+
     return ret;
 }
 
@@ -847,6 +853,8 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
 
     ret= av_get_packet(s->pb, pkt, packet_size);
+    pkt->pts=
+    pkt->dts= pkt->pos / packet_size;
 
     pkt->stream_index = 0;
     if (ret != packet_size) {
