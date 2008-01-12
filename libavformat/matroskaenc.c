@@ -197,7 +197,8 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
         put_ebml_num(pb, size-1, 0);
     else
         put_ebml_num(pb, size-9, 8);
-    url_fseek(pb, currentpos + size, SEEK_SET);
+    while(url_ftell(pb) < currentpos + size)
+        put_byte(pb, 0);
 }
 
 static ebml_master start_ebml_master(ByteIOContext *pb, unsigned int elementid, uint64_t expectedsize)
