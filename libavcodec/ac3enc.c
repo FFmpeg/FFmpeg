@@ -149,13 +149,9 @@ static void fft(IComplex *z, int ln)
     /* reverse */
     for(j=0;j<np;j++) {
         int k;
-        IComplex tmp;
         k = fft_rev[j];
-        if (k < j) {
-            tmp = z[k];
-            z[k] = z[j];
-            z[j] = tmp;
-        }
+        if (k < j)
+            FFSWAP(IComplex, z[k], z[j]);
     }
 
     /* pass 0 */
