@@ -25,6 +25,28 @@
  * MDCT/IMDCT transforms.
  */
 
+// Generate a Kaiser-Bessel Derived Window.
+void ff_kbd_window_init(float *window)
+{
+   int i, j;
+   double sum = 0.0, bessel, tmp;
+   double local_window[256];
+   double alpha2 = (5.0 * M_PI / 256.0) * (5.0 * M_PI / 256.0);
+
+   for (i = 0; i < 256; i++) {
+       tmp = i * (256 - i) * alpha2;
+       bessel = 1.0;
+       for (j = 100; j > 0; j--) /* default to 100 iterations */
+           bessel = bessel * tmp / (j * j) + 1;
+       sum += bessel;
+       local_window[i] = sum;
+   }
+
+   sum++;
+   for (i = 0; i < 256; i++)
+       window[i] = sqrt(local_window[i] / sum);
+}
+
 /**
  * init MDCT or IMDCT computation.
  */
