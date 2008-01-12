@@ -196,7 +196,7 @@ die(){
     cat <<EOF
 If you think configure made a mistake, make sure you are using the latest
 version from SVN.  If the latest version fails, report the problem to the
-ffmpeg-devel@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
+ffmpeg-user@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
 EOF
     if enabled logging; then
         cat <<EOF
