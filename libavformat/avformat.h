@@ -21,8 +21,8 @@
 #ifndef FFMPEG_AVFORMAT_H
 #define FFMPEG_AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((52<<16)+(3<<8)+0)
-#define LIBAVFORMAT_VERSION     52.3.0
+#define LIBAVFORMAT_VERSION_INT ((52<<16)+(4<<8)+0)
+#define LIBAVFORMAT_VERSION     52.4.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -477,6 +477,18 @@ typedef struct AVFormatContext {
      * demuxing: set by user
      */
     enum CodecID subtitle_codec_id;
+
+    /**
+     * Maximum amount of memory in bytes to use per stream for the index.
+     * If the needed index exceeds this size entries will be discarded as
+     * needed to maintain a smaller size. This can lead to slower or less
+     * accurate seeking (depends on demuxer).
+     * Demuxers for which a full in memory index is mandatory will ignore
+     * this.
+     * muxing  : unused
+     * demuxing: set by user
+     */
+    unsigned int max_index_size;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -734,6 +746,15 @@ int av_find_default_stream_index(AVFormatContext *s);
  * @return < 0 if no such timestamp could be found
  */
 int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
+
+/**
+ * Ensures the index uses less memory than the maximum specified in
+ * AVFormatContext.max_index_size, by discarding entries if it grows
+ * too large.
+ * This function is not part of the public API and should only be called
+ * by demuxers.
+ */
+void ff_reduce_index(AVFormatContext *s, int stream_index);
 
 /**
  * Add a index entry into a sorted list updateing if it is already there.

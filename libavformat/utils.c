@@ -324,6 +324,7 @@ static const AVOption options[]={
 {"year", "set the year", OFFSET(year), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, E},
 {"analyzeduration", "how many microseconds are analyzed to estimate duration", OFFSET(max_analyze_duration), FF_OPT_TYPE_INT, 3*AV_TIME_BASE, 0, INT_MAX, D},
 {"cryptokey", "decryption key", OFFSET(key), FF_OPT_TYPE_BINARY, 0, 0, 0, D},
+{"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), FF_OPT_TYPE_INT, INT_MAX, 0, INT_MAX, D},
 {NULL},
 };
 
@@ -791,6 +792,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     compute_pkt_fields(s, st, st->parser, pkt);
 
                     if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & PKT_FLAG_KEY){
+                        ff_reduce_index(s, st->index);
                         av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
                                            0, 0, AVINDEX_KEYFRAME);
                     }
@@ -1005,6 +1007,19 @@ void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp){
         st->cur_dts = av_rescale(timestamp,
                                  st->time_base.den * (int64_t)ref_st->time_base.num,
                                  st->time_base.num * (int64_t)ref_st->time_base.den);
+    }
+}
+
+void ff_reduce_index(AVFormatContext *s, int stream_index)
+{
+    AVStream *st= s->streams[stream_index];
+    unsigned int max_entries= s->max_index_size / sizeof(AVIndexEntry);
+
+    if((unsigned)st->nb_index_entries >= max_entries){
+        int i;
+        for(i=0; 2*i<st->nb_index_entries; i++)
+            st->index_entries[i]= st->index_entries[2*i];
+        st->nb_index_entries= i;
     }
 }
 
