@@ -35,7 +35,7 @@
 # define REG_v(a) asm ( #a )
 #endif
 
-#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
+#if (__GNUC__ > 2) && (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
 
 /* This code was provided to me by Bartosch Pixa
  * as a separate header file (broken_mergel.h).
