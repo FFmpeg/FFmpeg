@@ -648,8 +648,10 @@ typedef struct MDCTContext {
 /**
  * Generate a Kaiser-Bessel Derived Window.
  * @param   window  pointer to half window
+ * @param   alpha   determines window shape
+ * @param   n       size of half window
  */
-void ff_kbd_window_init(float *window);
+void ff_kbd_window_init(float *window, float alpha, int n);
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
 void ff_imdct_calc(MDCTContext *s, FFTSample *output,

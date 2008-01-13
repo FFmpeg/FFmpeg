@@ -277,7 +277,7 @@ static int ac3_decode_init(AVCodecContext *avctx)
     ac3_tables_init();
     ff_mdct_init(&s->imdct_256, 8, 1);
     ff_mdct_init(&s->imdct_512, 9, 1);
-    ff_kbd_window_init(s->window);
+    ff_kbd_window_init(s->window, 5.0, 256);
     dsputil_init(&s->dsp, avctx);
     av_init_random(0, &s->dith_state);
 
