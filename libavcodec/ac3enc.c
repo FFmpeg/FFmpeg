@@ -64,7 +64,6 @@ typedef struct AC3EncodeContext {
 
 static int16_t costab[64];
 static int16_t sintab[64];
-static int16_t fft_rev[512];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
 
@@ -103,14 +102,6 @@ static void fft_init(int ln)
         costab[i] = fix15(cos(alpha));
         sintab[i] = fix15(sin(alpha));
     }
-
-    for(i=0;i<n;i++) {
-        m=0;
-        for(j=0;j<ln;j++) {
-            m |= ((i >> j) & 1) << (ln-j-1);
-        }
-        fft_rev[i]=m;
-    }
 }
 
 /* butter fly op */
@@ -148,8 +139,7 @@ static void fft(IComplex *z, int ln)
 
     /* reverse */
     for(j=0;j<np;j++) {
-        int k;
-        k = fft_rev[j];
+        int k = ff_reverse[j] >> (8 - ln);
         if (k < j)
             FFSWAP(IComplex, z[k], z[j]);
     }
