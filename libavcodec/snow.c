@@ -3583,10 +3583,6 @@ static void encode_header(SnowContext *s){
                 put_symbol(&s->c, s->header_state, p->htaps/2-1, 0);
                 for(i= p->htaps/2; i; i--)
                     put_symbol(&s->c, s->header_state, FFABS(p->hcoeff[i]), 0);
-
-                p->last_diag_mc= p->diag_mc;
-                p->last_htaps= p->htaps;
-                memcpy(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
             }
         }
         if(s->last_spatial_decomposition_count != s->spatial_decomposition_count){
@@ -3602,6 +3598,20 @@ static void encode_header(SnowContext *s){
     put_symbol(&s->c, s->header_state, s->mv_scale        - s->last_mv_scale, 1);
     put_symbol(&s->c, s->header_state, s->qbias           - s->last_qbias   , 1);
     put_symbol(&s->c, s->header_state, s->block_max_depth - s->last_block_max_depth, 1);
+
+}
+
+static void update_last_header_values(SnowContext *s){
+    int plane_index;
+
+    if(!s->keyframe){
+        for(plane_index=0; plane_index<2; plane_index++){
+            Plane *p= &s->plane[plane_index];
+            p->last_diag_mc= p->diag_mc;
+            p->last_htaps  = p->htaps;
+            memcpy(p->last_hcoeff, p->hcoeff, sizeof(p->hcoeff));
+        }
+    }
 
     s->last_spatial_decomposition_type= s->spatial_decomposition_type;
     s->last_qlog                      = s->qlog;
@@ -4472,6 +4482,8 @@ STOP_TIMER("pred-conv")}
             s->current_picture.error[plane_index] = error;
         }
     }
+
+    update_last_header_values(s);
 
     if(s->last_picture[s->max_ref_frames-1].data[0]){
         avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
