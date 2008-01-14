@@ -70,7 +70,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
 /* vc1 externs */
-extern uint8_t wmv3_dc_scale_table[32];
+extern const uint8_t wmv3_dc_scale_table[32];
 
 #ifdef DEBUG
 int intra_count = 0;
