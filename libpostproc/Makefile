@@ -12,15 +12,9 @@ LIBMAJOR=$(SPPMAJOR)
 
 HEADERS = postprocess.h
 
+OBJS = postprocess.o
+
 include ../common.mak
-
-$(LIBNAME): postprocess.o
-$(SLIBNAME_WITH_MAJOR): postprocess_pic.o
-
-depend dep: postprocess.c
-
-postprocess_pic.o: postprocess.c
-	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
 
 uninstall-headers::
 	-rmdir "$(prefix)/include/postproc"
