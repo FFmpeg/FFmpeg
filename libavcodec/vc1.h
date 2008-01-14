@@ -216,6 +216,8 @@ typedef struct VC1Context{
     int k_y;              ///< Number of bits for MVs (depends on MV range)
     int range_x, range_y; ///< MV range
     uint8_t pq, altpq;    ///< Current/alternate frame quantizer scale
+    const uint8_t* zz_8x4;///< Zigzag scan table for TT_8x4 coding mode
+    const uint8_t* zz_4x8;///< Zigzag scan table for TT_4x8 coding mode
     /** pquant parameters */
     //@{
     uint8_t dquantfrm;

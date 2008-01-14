@@ -777,10 +777,14 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 
     if (v->profile == PROFILE_ADVANCED)
     {
+        v->zz_8x4 = ff_vc1_adv_progressive_8x4_zz;
+        v->zz_4x8 = ff_vc1_adv_progressive_4x8_zz;
         return decode_sequence_header_adv(v, gb);
     }
     else
     {
+        v->zz_8x4 = ff_vc1_simple_progressive_8x4_zz;
+        v->zz_4x8 = ff_vc1_simple_progressive_4x8_zz;
         v->res_sm = get_bits(gb, 2); //reserved
         if (v->res_sm)
         {
@@ -2961,13 +2965,10 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                 i += skip;
                 if(i > 31)
                     break;
-                if(v->profile < PROFILE_ADVANCED)
-                    idx = ff_vc1_simple_progressive_8x4_zz[i++];
-                else
-                    idx = ff_vc1_adv_progressive_8x4_zz[i++];
-                block[idx + off] = value * scale;
+                idx = v->zz_8x4[i++]+off;
+                block[idx] = value * scale;
                 if(!v->pquantizer)
-                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
+                    block[idx] += (block[idx] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block)
                 s->dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
@@ -2983,13 +2984,10 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                 i += skip;
                 if(i > 31)
                     break;
-                if(v->profile < PROFILE_ADVANCED)
-                    idx = ff_vc1_simple_progressive_4x8_zz[i++];
-                else
-                    idx = ff_vc1_adv_progressive_4x8_zz[i++];
-                block[idx + off] = value * scale;
+                idx = v->zz_4x8[i++]+off;
+                block[idx] = value * scale;
                 if(!v->pquantizer)
-                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
+                    block[idx] += (block[idx] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block)
                 s->dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
