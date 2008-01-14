@@ -107,6 +107,9 @@ version.h:
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
+tools/pktdumper$(EXESUF): tools/pktdumper.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $< -o $@ $(EXTRALIBS)
+
 tools/qt-faststart$(EXESUF): tools/qt-faststart.c
 	$(CC) $(CFLAGS) $< -o $@
 
