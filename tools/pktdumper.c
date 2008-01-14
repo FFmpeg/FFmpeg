@@ -28,6 +28,8 @@
 
 #define PKTFILESUFF "_%08"PRId64"_%02d_%010"PRId64"_%06d_%c.bin"
 
+#undef strcat
+
 static int usage(int ret)
 {
     fprintf(stderr, "dump (up to maxpkts) AVPackets as they are demuxed by libavformat.\n");
