@@ -21,7 +21,7 @@
 #include "avformat.h"
 #include "avio.h"
 
-static uint8_t *avc_find_startcode( uint8_t *p, uint8_t *end )
+uint8_t *ff_avc_find_startcode(uint8_t *p, uint8_t *end)
 {
     uint8_t *a = p + 4 - ((long)p & 3);
 
@@ -68,10 +68,10 @@ int ff_avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
     if(ret < 0)
         return ret;
 
-    nal_start = avc_find_startcode(p, end);
+    nal_start = ff_avc_find_startcode(p, end);
     while (nal_start < end) {
         while(!*(nal_start++));
-        nal_end = avc_find_startcode(nal_start, end);
+        nal_end = ff_avc_find_startcode(nal_start, end);
         put_be32(pb, nal_end - nal_start);
         put_buffer(pb, nal_start, nal_end - nal_start);
         nal_start = nal_end;
