@@ -173,6 +173,7 @@ int main(void){
         k= av_tree_find(root, (void*)(j+1), cmp, NULL);
         if(k){
             AVTreeNode *node2=NULL;
+            av_log(NULL, AV_LOG_ERROR, "removing %4d\n", j);
             av_tree_insert(&root, (void*)(j+1), cmp, &node2);
             k= av_tree_find(root, (void*)(j+1), cmp, NULL);
             if(k)
