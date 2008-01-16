@@ -240,7 +240,7 @@ endif
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
 
 # gcc stupidly only outputs the basename of targets with -MM
-.vhookdep: $(ALLHOOKS_SRCS)
+.vhookdep: $(ALLHOOKS_SRCS) version.h
 	$(CC) $(VHOOKCFLAGS) -MM $^ | sed 's,^\([a-z]\),vhook/\1,' > $@
 
 $(DEP_LIBS): lib
