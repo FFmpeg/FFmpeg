@@ -1,5 +1,5 @@
 /*
- * Various utilities for ffmpeg system
+ * various utility functions for use within FFmpeg
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -30,15 +30,15 @@
 
 /**
  * @file libavformat/utils.c
- * Various utility functions for using ffmpeg library.
+ * various utility functions for use within FFmpeg
  */
 
 static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
 static void av_frac_add(AVFrac *f, int64_t incr);
 
-/** head of registered input format linked list. */
+/** head of registered input format linked list */
 AVInputFormat *first_iformat = NULL;
-/** head of registered output format linked list. */
+/** head of registered output format linked list */
 AVOutputFormat *first_oformat = NULL;
 
 AVInputFormat  *av_iformat_next(AVInputFormat  *f)
@@ -112,7 +112,7 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
         return guess_format("image2", NULL, NULL);
     }
 #endif
-    /* find the proper file type */
+    /* Find the proper file type. */
     fmt_found = NULL;
     score_max = 0;
     fmt = first_oformat;
@@ -241,8 +241,7 @@ int av_dup_packet(AVPacket *pkt)
 {
     if (pkt->destruct != av_destruct_packet) {
         uint8_t *data;
-        /* we duplicate the packet and don't forget to put the padding
-           again */
+        /* We duplicate the packet and don't forget to add the padding again. */
         if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
             return AVERROR(ENOMEM);
         data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -409,7 +408,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     return err;
 }
 
-/** Size of probe buffer, for guessing file type from file contents. */
+/** size of probe buffer, for guessing file type from file contents */
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
 
@@ -429,11 +428,11 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     pd->buf_size = 0;
 
     if (!fmt) {
-        /* guess format if no file can be opened  */
+        /* guess format if no file can be opened */
         fmt = av_probe_input_format(pd, 0);
     }
 
-    /* do not open file if the format does not need it. XXX: specific
+    /* Do not open file if the format does not need it. XXX: specific
        hack needed to handle RTSP/TCP */
     if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
         /* if no file needed do not try to open one */
@@ -470,7 +469,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         goto fail;
     }
 
-    /* check filename in case of an image number is expected */
+    /* check filename in case an image number is expected */
     if (fmt->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(filename)) {
             err = AVERROR_NUMEXPECTED;
@@ -520,7 +519,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 /**********************************************************/
 
 /**
- * Get the number of samples of an audio frame. Return (-1) if error.
+ * Get the number of samples of an audio frame. Return -1 on error.
  */
 static int get_audio_frame_size(AVCodecContext *enc, int size)
 {
@@ -547,7 +546,7 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
 
 
 /**
- * Return the frame duration in seconds, return 0 if not available.
+ * Return the frame duration in seconds. Return 0 if not available.
  */
 static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
                                    AVCodecParserContext *pc, AVPacket *pkt)
@@ -651,7 +650,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
-    /* correct timestamps with byte offset if demuxers only have timestamps on packet boundaries */
+    /* correct timestamps with byte offset if demuxers only have timestamps
+       on packet boundaries */
     if(pc && st->need_parsing == AVSTREAM_PARSE_TIMESTAMPS && pkt->size){
         /* this will estimate bitrate based on this frame's duration and size */
         offset = av_rescale(pc->offset, pkt->duration, pkt->size);
@@ -661,7 +661,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts += offset;
     }
 
-    /* do we have a video B frame ? */
+    /* do we have a video B-frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
     /* XXX: need has_b_frame, but cannot get it if the codec is
@@ -681,8 +681,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* interpolate PTS and DTS if they are not present */
     if(delay <=1){
         if (presentation_delayed) {
-            /* DTS = decompression time stamp */
-            /* PTS = presentation time stamp */
+            /* DTS = decompression timestamp */
+            /* PTS = presentation timestamp */
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->last_IP_pts;
             update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts);
@@ -690,14 +690,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 pkt->dts = st->cur_dts;
 
             /* this is tricky: the dts must be incremented by the duration
-            of the frame we are displaying, i.e. the last I or P frame */
+            of the frame we are displaying, i.e. the last I- or P-frame */
             if (st->last_IP_duration == 0)
                 st->last_IP_duration = pkt->duration;
             st->cur_dts = pkt->dts + st->last_IP_duration;
             st->last_IP_duration  = pkt->duration;
             st->last_IP_pts= pkt->pts;
             /* cannot compute PTS if not present (we can compute it only
-            by knowing the futur */
+            by knowing the future */
         } else if(pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE || pkt->duration){
             if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
                 int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
@@ -741,7 +741,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->flags |= PKT_FLAG_KEY;
     else if (pc) {
         pkt->flags = 0;
-        /* key frame computation */
+        /* keyframe computation */
             if (pc->pict_type == FF_I_TYPE)
                 pkt->flags |= PKT_FLAG_KEY;
     }
@@ -822,7 +822,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                             goto got_packet;
                     }
                 }
-                /* no more packets: really terminates parsing */
+                /* no more packets: really terminate parsing */
                 return ret;
             }
 
@@ -840,7 +840,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (st->need_parsing && !st->parser) {
                 st->parser = av_parser_init(st->codec->codec_id);
                 if (!st->parser) {
-                    /* no parser available : just output the raw packets */
+                    /* no parser available: just output the raw packets */
                     st->need_parsing = AVSTREAM_PARSE_NONE;
                 }else if(st->need_parsing == AVSTREAM_PARSE_HEADERS){
                     st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
@@ -1123,7 +1123,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     if(st->index_entries){
         AVIndexEntry *e;
 
-        index= av_index_search_timestamp(st, target_ts, flags | AVSEEK_FLAG_BACKWARD); //FIXME whole func must be checked for non keyframe entries in index case, especially read_timestamp()
+        index= av_index_search_timestamp(st, target_ts, flags | AVSEEK_FLAG_BACKWARD); //FIXME whole func must be checked for non-keyframe entries in index case, especially read_timestamp()
         index= FFMAX(index, 0);
         e= &st->index_entries[index];
 
@@ -1230,7 +1230,8 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
             // bisection, if interpolation failed to change min or max pos last time
             pos = (pos_min + pos_limit)>>1;
         }else{
-            // linear search if bisection failed, can only happen if there are very few or no keframes between min/max
+            /* linear search if bisection failed, can only happen if there
+               are very few or no keyframes between min/max */
             pos=pos_min;
         }
         if(pos <= pos_min)
@@ -1452,7 +1453,7 @@ static void av_update_stream_timings(AVFormatContext *ic)
     if (duration != INT64_MIN) {
         ic->duration = duration;
         if (ic->file_size > 0) {
-            /* compute the bit rate */
+            /* compute the bitrate */
             ic->bit_rate = (double)ic->file_size * 8.0 * AV_TIME_BASE /
                 (double)ic->duration;
         }
@@ -1624,11 +1625,11 @@ static void av_estimate_timings(AVFormatContext *ic, offset_t old_offset)
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic, old_offset);
     } else if (av_has_duration(ic)) {
-        /* at least one components has timings - we use them for all
+        /* at least one component has timings - we use them for all
            the components */
         fill_all_stream_timings(ic);
     } else {
-        /* less precise: use bit rate info */
+        /* less precise: use bitrate info */
         av_estimate_timings_from_bit_rate(ic);
     }
     av_update_stream_timings(ic);
@@ -1781,8 +1782,8 @@ static int get_std_framerate(int i){
  * Is the time base unreliable.
  * This is a heuristic to balance between quick acceptance of the values in
  * the headers vs. some extra checks.
- * Old divx and xvid often have nonsense timebases like 1fps or 2fps.
- * Mpeg2 commonly misuses field repeat flags to store different framerates.
+ * Old DivX and Xvid often have nonsense timebases like 1fps or 2fps.
+ * MPEG-2 commonly misuses field repeat flags to store different framerates.
  * And there are "variable" fps files this needs to detect as well.
  */
 static int tb_unreliable(AVCodecContext *c){
@@ -1941,8 +1942,8 @@ int av_find_stream_info(AVFormatContext *ic)
 
         /* if still no information, we try to open the codec and to
            decompress the frame. We try to avoid that in most cases as
-           it takes longer and uses more memory. For MPEG4, we need to
-           decompress for Quicktime. */
+           it takes longer and uses more memory. For MPEG-4, we need to
+           decompress for QuickTime. */
         if (!has_codec_parameters(st->codec) /*&&
             (st->codec->codec_id == CODEC_ID_FLV1 ||
              st->codec->codec_id == CODEC_ID_H264 ||
@@ -1980,7 +1981,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
             if(duration_count[i]
                && tb_unreliable(st->codec) /*&&
-               //FIXME we should not special case mpeg2, but this needs testing with non mpeg2 ...
+               //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
                 double best_error= 2*av_q2d(st->time_base);
                 best_error= best_error*best_error*duration_count[i]*1000*12*30;
@@ -2039,7 +2040,7 @@ int av_find_stream_info(AVFormatContext *ic)
     }
 
 #if 0
-    /* correct DTS for b frame streams with no timestamps */
+    /* correct DTS for B-frame streams with no timestamps */
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
@@ -2156,7 +2157,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st->cur_dts = AV_NOPTS_VALUE;
     st->first_dts = AV_NOPTS_VALUE;
 
-    /* default pts settings is MPEG like */
+    /* default pts setting is MPEG-like */
     av_set_pts_info(st, 33, 1, 90000);
     st->last_IP_pts = AV_NOPTS_VALUE;
     for(i=0; i<MAX_REORDER_DELAY+1; i++)
@@ -2257,7 +2258,7 @@ int av_write_header(AVFormatContext *s)
             if(st->codec->codec_tag){
                 //FIXME
                 //check that tag + id is in the table
-                //if neither is in the table -> ok
+                //if neither is in the table -> OK
                 //if tag is in the table with another id -> FAIL
                 //if id is in the table with another tag -> FAIL unless strict < ?
             }else
@@ -2355,8 +2356,9 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     case CODEC_TYPE_AUDIO:
         frame_size = get_audio_frame_size(st->codec, pkt->size);
 
-        /* HACK/FIXME, we skip the initial 0-size packets as they are most likely equal to the encoder delay,
-           but it would be better if we had the real timestamps from the encoder */
+        /* HACK/FIXME, we skip the initial 0 size packets as they are most
+           likely equal to the encoder delay, but it would be better if we
+           had the real timestamps from the encoder */
         if (frame_size >= 0 && (pkt->size || st->pts.num!=st->pts.den>>1 || st->pts.val)) {
             av_frac_add(&st->pts, (int64_t)st->time_base.den * frame_size);
         }
@@ -2374,7 +2376,7 @@ static void truncate_ts(AVStream *st, AVPacket *pkt){
     int64_t pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
 
 //    if(pkt->dts < 0)
-//        pkt->dts= 0;  //this happens for low_delay=0 and b frames, FIXME, needs further invstigation about what we should do here
+//        pkt->dts= 0;  //this happens for low_delay=0 and B-frames, FIXME, needs further investigation about what we should do here
 
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt->pts &= pts_mask;
@@ -2411,7 +2413,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
         this_pktl = av_mallocz(sizeof(AVPacketList));
         this_pktl->pkt= *pkt;
         if(pkt->destruct == av_destruct_packet)
-            pkt->destruct= NULL; // non shared -> must keep original from being freed
+            pkt->destruct= NULL; // not shared -> must keep original from being freed
         else
             av_dup_packet(&this_pktl->pkt);  //shared -> must dup
 
@@ -2452,7 +2454,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
 }
 
 /**
- * Interleaves a AVPacket correctly so it can be muxed.
+ * Interleaves an AVPacket correctly so it can be muxed.
  * @param out the interleaved packet will be output here
  * @param in the input packet
  * @param flush 1 if no further packets are available as input and all
@@ -2656,7 +2658,7 @@ int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
 }
 
 /**
- * gets the current time in micro seconds.
+ * Gets the current time in microseconds.
  */
 int64_t av_gettime(void)
 {
@@ -2926,7 +2928,7 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int
         PRINT("N/A");
     else
         PRINT("%0.3f", (double)pkt->dts / AV_TIME_BASE);
-    /* PTS may be not known if B frames are present */
+    /* PTS may not be known if B-frames are present. */
     PRINT("  pts=");
     if (pkt->pts == AV_NOPTS_VALUE)
         PRINT("N/A");
@@ -3043,7 +3045,7 @@ static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
 }
 
 /**
- * Fractionnal addition to f: f = f + (incr / f->den).
+ * Fractional addition to f: f = f + (incr / f->den).
  *
  * @param f fractional number
  * @param incr increment, can be positive or negative
