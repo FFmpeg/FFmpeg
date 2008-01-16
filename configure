@@ -1426,7 +1426,7 @@ if test $cpu != "generic"; then
             enable fast_cmov
         ;;
         # targets that do support conditional mov but on which it's slow
-        pentium4|prescott|nocona)
+        pentium4|pentium4m|prescott|nocona)
             add_cflags "-march=$cpu"
             enable cmov
             disable fast_cmov
