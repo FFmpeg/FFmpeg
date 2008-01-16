@@ -57,9 +57,8 @@ void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const voi
                 return t->elem;
             else if(t->child[0]||t->child[1]){
                 int i= !t->child[0];
-                AVTreeNode **child= &t->child[i];
                 void *next_elem[2];
-                av_tree_find(*child, key, cmp, next_elem);
+                av_tree_find(t->child[i], key, cmp, next_elem);
                 key= t->elem= next_elem[i];
                 v= -i;
             }else{
