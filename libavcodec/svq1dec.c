@@ -540,7 +540,7 @@ static int svq1_decode_delta_block (MpegEncContext *s, GetBitContext *bitbuf,
   return result;
 }
 
-static uint16_t svq1_packet_checksum (uint8_t *data, int length, int value) {
+static uint16_t svq1_packet_checksum (const uint8_t *data, const int length, int value) {
   int i;
 
   for (i=0; i < length; i++) {
