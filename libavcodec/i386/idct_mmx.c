@@ -392,15 +392,15 @@ static inline void idct_col (int16_t * col, int offset)
 #define T3 43790
 #define C4 23170
 
-    static const short _T1[] ATTR_ALIGN(8) = {T1,T1,T1,T1};
-    static const short _T2[] ATTR_ALIGN(8) = {T2,T2,T2,T2};
-    static const short _T3[] ATTR_ALIGN(8) = {T3,T3,T3,T3};
-    static const short _C4[] ATTR_ALIGN(8) = {C4,C4,C4,C4};
+    static const short t1_vector[] ATTR_ALIGN(8) = {T1,T1,T1,T1};
+    static const short t2_vector[] ATTR_ALIGN(8) = {T2,T2,T2,T2};
+    static const short t3_vector[] ATTR_ALIGN(8) = {T3,T3,T3,T3};
+    static const short c4_vector[] ATTR_ALIGN(8) = {C4,C4,C4,C4};
 
     /* column code adapted from Peter Gubanov */
     /* http://www.elecard.com/peter/idct.shtml */
 
-    movq_m2r (*_T1, mm0);               // mm0 = T1
+    movq_m2r (*t1_vector, mm0);         // mm0 = T1
 
     movq_m2r (*(col+offset+1*8), mm1);  // mm1 = x1
     movq_r2r (mm0, mm2);                // mm2 = T1
@@ -408,7 +408,7 @@ static inline void idct_col (int16_t * col, int offset)
     movq_m2r (*(col+offset+7*8), mm4);  // mm4 = x7
     pmulhw_r2r (mm1, mm0);              // mm0 = T1*x1
 
-    movq_m2r (*_T3, mm5);               // mm5 = T3
+    movq_m2r (*t3_vector, mm5);         // mm5 = T3
     pmulhw_r2r (mm4, mm2);              // mm2 = T1*x7
 
     movq_m2r (*(col+offset+5*8), mm6);  // mm6 = x5
@@ -417,7 +417,7 @@ static inline void idct_col (int16_t * col, int offset)
     movq_m2r (*(col+offset+3*8), mm3);  // mm3 = x3
     psubsw_r2r (mm4, mm0);              // mm0 = v17
 
-    movq_m2r (*_T2, mm4);               // mm4 = T2
+    movq_m2r (*t2_vector, mm4);         // mm4 = T2
     pmulhw_r2r (mm3, mm5);              // mm5 = (T3-1)*x3
 
     paddsw_r2r (mm2, mm1);              // mm1 = u17
@@ -455,7 +455,7 @@ static inline void idct_col (int16_t * col, int offset)
     movq_m2r (*(col+offset+0*8), mm3);  // mm3 = x0
     paddsw_r2r (mm5, mm1);              // mm1 = u12+v12
 
-    movq_m2r (*_C4, mm0);               // mm0 = C4/2
+    movq_m2r (*c4_vector, mm0);         // mm0 = C4/2
     psubsw_r2r (mm5, mm7);              // mm7 = u12-v12
 
     movq_r2m (mm6, *(col+offset+5*8));  // save b0 in scratch1
