@@ -1694,7 +1694,7 @@ if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
     sdl_cflags=`"${SDL_CONFIG}" --cflags`
     temp_cflags $sdl_cflags
     temp_extralibs `"${SDL_CONFIG}" --libs`
-    if check_lib SDL.h SDL_Init; then
+    if check_lib2 SDL.h SDL_Init; then
         _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
         if test "$_sdlversion" -lt 121 ; then
             enable sdl_too_old
