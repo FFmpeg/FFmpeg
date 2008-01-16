@@ -133,7 +133,7 @@ return -1;
         av_log(s->avctx, AV_LOG_DEBUG, "I7:%X/\n", code);
     }
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
-    if(s->qscale < 0)
+    if(s->qscale <= 0)
        return -1;
 
     return 0;
