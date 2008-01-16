@@ -1065,6 +1065,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 
     /* Quantizer stuff */
     pqindex = get_bits(gb, 5);
+    if(!pqindex) return -1;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
         v->pq = ff_vc1_pquant_table[0][pqindex];
     else
@@ -1301,6 +1302,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
     }
     pqindex = get_bits(gb, 5);
+    if(!pqindex) return -1;
     v->pqindex = pqindex;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
         v->pq = ff_vc1_pquant_table[0][pqindex];
