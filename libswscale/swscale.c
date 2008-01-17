@@ -388,7 +388,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
         dest[i]= av_clip_uint8(val>>19);
     }
 
-    if (uDest != NULL)
+    if (uDest)
         for (i=0; i<chrDstW; i++)
         {
             int u=1<<18;
@@ -421,7 +421,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         dest[i]= av_clip_uint8(val>>19);
     }
 
-    if (uDest == NULL)
+    if (!uDest)
         return;
 
     if (dstFormat == PIX_FMT_NV12)
@@ -2050,7 +2050,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 #endif
 #endif /* RUNTIME_CPUDETECT */
     if (clip_table[512] != 255) globalInit();
-    if (rgb15to16 == NULL) sws_rgb2rgb_init(flags);
+    if (!rgb15to16) sws_rgb2rgb_init(flags);
 
     unscaled = (srcW == dstW && srcH == dstH);
     needsDither= (isBGR(dstFormat) || isRGB(dstFormat))
@@ -2097,14 +2097,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     c->vRounder= 4* 0x0001000100010001ULL;
 
     usesHFilter= usesVFilter= 0;
-    if (dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesVFilter=1;
-    if (dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesHFilter=1;
-    if (dstFilter->chrV!=NULL && dstFilter->chrV->length>1) usesVFilter=1;
-    if (dstFilter->chrH!=NULL && dstFilter->chrH->length>1) usesHFilter=1;
-    if (srcFilter->lumV!=NULL && srcFilter->lumV->length>1) usesVFilter=1;
-    if (srcFilter->lumH!=NULL && srcFilter->lumH->length>1) usesHFilter=1;
-    if (srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesVFilter=1;
-    if (srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesHFilter=1;
+    if (dstFilter->lumV && dstFilter->lumV->length>1) usesVFilter=1;
+    if (dstFilter->lumH && dstFilter->lumH->length>1) usesHFilter=1;
+    if (dstFilter->chrV && dstFilter->chrV->length>1) usesVFilter=1;
+    if (dstFilter->chrH && dstFilter->chrH->length>1) usesHFilter=1;
+    if (srcFilter->lumV && srcFilter->lumV->length>1) usesVFilter=1;
+    if (srcFilter->lumH && srcFilter->lumH->length>1) usesHFilter=1;
+    if (srcFilter->chrV && srcFilter->chrV->length>1) usesVFilter=1;
+    if (srcFilter->chrH && srcFilter->chrH->length>1) usesHFilter=1;
 
     getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
     getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
@@ -2964,7 +2964,7 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
     if (!param)
         param = default_param;
 
-    if (context != NULL) {
+    if (context) {
         if (context->srcW != srcW || context->srcH != srcH ||
             context->srcFormat != srcFormat ||
             context->dstW != dstW || context->dstH != dstH ||
@@ -2975,7 +2975,7 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
             context = NULL;
         }
     }
-    if (context == NULL) {
+    if (!context) {
         return sws_getContext(srcW, srcH, srcFormat,
                               dstW, dstH, dstFormat, flags,
                               srcFilter, dstFilter, param);

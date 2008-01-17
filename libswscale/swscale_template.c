@@ -973,7 +973,7 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
 #ifdef HAVE_MMX
-    if (uDest != NULL)
+    if (uDest)
     {
         asm volatile(
             YSCALEYUV2YV121
@@ -1010,7 +1010,7 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
         dest[i]= val;
     }
 
-    if (uDest != NULL)
+    if (uDest)
         for (i=0; i<chrDstW; i++)
         {
             int u=chrSrc[i]>>7;

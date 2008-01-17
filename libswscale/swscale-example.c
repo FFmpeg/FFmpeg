@@ -76,7 +76,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
         src[i]= (uint8_t*) malloc(srcStride[i]*srcH);
         dst[i]= (uint8_t*) malloc(dstStride[i]*dstH);
         out[i]= (uint8_t*) malloc(refStride[i]*h);
-        if (src[i] == NULL || dst[i] == NULL || out[i] == NULL) {
+        if (!src[i] || !dst[i] || !out[i]) {
             perror("Malloc");
             res = -1;
 
@@ -86,7 +86,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
 
     dstContext = outContext = NULL;
     srcContext= sws_getContext(w, h, PIX_FMT_YUV420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
-    if (srcContext == NULL) {
+    if (!srcContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
                 sws_format_name(PIX_FMT_YUV420P),
                 sws_format_name(srcFormat));
@@ -95,7 +95,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
         goto end;
     }
     dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
-    if (dstContext == NULL) {
+    if (!dstContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
                 sws_format_name(srcFormat),
                 sws_format_name(dstFormat));
@@ -104,7 +104,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
         goto end;
     }
     outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUV420P, flags, NULL, NULL, NULL);
-    if (outContext == NULL) {
+    if (!outContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
                 sws_format_name(dstFormat),
                 sws_format_name(PIX_FMT_YUV420P));
