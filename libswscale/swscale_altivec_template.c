@@ -387,7 +387,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
 static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                               int srcSliceH, uint8_t* dstParam[], int dstStride_a[]) {
     uint8_t *dst=dstParam[0] + dstStride_a[0]*srcSliceY;
-    // yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+    // yv12toyuy2(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
     uint8_t *ysrc = src[0];
     uint8_t *usrc = src[1];
     uint8_t *vsrc = src[2];
@@ -401,7 +401,7 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
     register unsigned int y;
 
     if (width&15) {
-        yv12toyuy2( ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
+        yv12toyuy2(ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
         return srcSliceH;
     }
 
@@ -450,7 +450,7 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
             vec_st(v_yuy2_0, (i << 1), dst);
             vec_st(v_yuy2_1, (i << 1) + 16, dst);
         }
-        if ( (y&(vertLumPerChroma-1))==(vertLumPerChroma-1) ) {
+        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1)) {
             usrc += chromStride;
             vsrc += chromStride;
         }
@@ -464,7 +464,7 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
 static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                               int srcSliceH, uint8_t* dstParam[], int dstStride_a[]) {
     uint8_t *dst=dstParam[0] + dstStride_a[0]*srcSliceY;
-    // yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+    // yv12toyuy2(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
     uint8_t *ysrc = src[0];
     uint8_t *usrc = src[1];
     uint8_t *vsrc = src[2];
@@ -478,7 +478,7 @@ static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int
     register unsigned int y;
 
     if (width&15) {
-        yv12touyvy( ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
+        yv12touyvy(ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
         return srcSliceH;
     }
 
@@ -527,7 +527,7 @@ static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int
             vec_st(v_uyvy_0, (i << 1), dst);
             vec_st(v_uyvy_1, (i << 1) + 16, dst);
         }
-        if ( (y&(vertLumPerChroma-1))==(vertLumPerChroma-1) ) {
+        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1)) {
             usrc += chromStride;
             vsrc += chromStride;
         }

@@ -1597,9 +1597,9 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
     }
     dst = dstParam[1] + dstStride[1]*srcSliceY/2;
     if (c->dstFormat == PIX_FMT_NV12)
-        interleaveBytes( src[1],src[2],dst,c->srcW/2,srcSliceH/2,srcStride[1],srcStride[2],dstStride[0] );
+        interleaveBytes(src[1],src[2],dst,c->srcW/2,srcSliceH/2,srcStride[1],srcStride[2],dstStride[0]);
     else
-        interleaveBytes( src[2],src[1],dst,c->srcW/2,srcSliceH/2,srcStride[2],srcStride[1],dstStride[0] );
+        interleaveBytes(src[2],src[1],dst,c->srcW/2,srcSliceH/2,srcStride[2],srcStride[1],dstStride[0]);
 
     return srcSliceH;
 }
@@ -1608,7 +1608,7 @@ static int PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
-    yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+    yv12toyuy2(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
 
     return srcSliceH;
 }
@@ -1617,7 +1617,7 @@ static int PlanarToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
-    yv12touyvy( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+    yv12touyvy(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
 
     return srcSliceH;
 }
@@ -2158,7 +2158,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         }
 #endif
 
-        if ( srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P )
+        if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P)
         {
             c->swScale= yvu9toyv12Wrapper;
         }
@@ -2214,7 +2214,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         /* simple copy */
         if (  srcFormat == dstFormat
             || (isPlanarYUV(srcFormat) && isGray(dstFormat))
-            || (isPlanarYUV(dstFormat) && isGray(srcFormat)) )
+            || (isPlanarYUV(dstFormat) && isGray(srcFormat)))
         {
             c->swScale= simpleCopy;
         }
@@ -2373,7 +2373,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         nextSlice>>= c->chrSrcVSubSample;
         nextSlice<<= c->chrSrcVSubSample;
         if (c->vLumFilterPos[i   ] + c->vLumBufSize < nextSlice)
-            c->vLumBufSize= nextSlice - c->vLumFilterPos[i   ];
+            c->vLumBufSize= nextSlice - c->vLumFilterPos[i];
         if (c->vChrFilterPos[chrI] + c->vChrBufSize < (nextSlice>>c->chrSrcVSubSample))
             c->vChrBufSize= (nextSlice>>c->chrSrcVSubSample) - c->vChrFilterPos[chrI];
     }
@@ -2657,7 +2657,7 @@ SwsVector *sws_getGaussianVec(double variance, double quality){
     for (i=0; i<length; i++)
     {
         double dist= i-middle;
-        coeff[i]= exp( -dist*dist/(2*variance*variance) ) / sqrt(2*variance*PI);
+        coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*PI);
     }
 
     sws_normalizeVec(vec, 1.0);

@@ -39,7 +39,7 @@
 #ifdef HAVE_3DNOW
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
-#elif defined ( HAVE_MMX2 )
+#elif defined (HAVE_MMX2)
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #else
@@ -1513,7 +1513,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
     }
 
 #ifdef HAVE_MMX
-    if ( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
+    if (uvalpha < 2048) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
     {
         switch(dstFormat)
         {
@@ -1692,7 +1692,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
         }
     }
 #endif /* HAVE_MMX */
-    if ( uvalpha < 2048 )
+    if (uvalpha < 2048)
     {
         YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C)
     }else{
@@ -1831,7 +1831,7 @@ static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
         int g= (((uint32_t*)src)[i]>>8)&0xFF;
         int r= (((uint32_t*)src)[i]>>16)&0xFF;
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
 }
 
@@ -1934,7 +1934,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
         int g= src[i*3+1];
         int r= src[i*3+2];
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
 #endif /* HAVE_MMX */
 }
@@ -2155,7 +2155,7 @@ static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
         int g= (((uint32_t*)src)[i]>>8)&0xFF;
         int b= (((uint32_t*)src)[i]>>16)&0xFF;
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
 }
 
@@ -2187,7 +2187,7 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, int width)
         int g= src[i*3+1];
         int b= src[i*3+2];
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
 }
 
@@ -2891,7 +2891,7 @@ FUNNY_UV_CODE
 
 /* GCC-3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
    which is needed to support GCC-4.0 */
-#if defined(ARCH_X86_64) && ((__GNUC__ > 3) || ( __GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#if defined(ARCH_X86_64) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
             :: "m" (src1), "m" (dst), "g" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #else
             :: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
@@ -3077,8 +3077,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 lastInChrBuf++;
             }
             //wrap buf index around to stay inside the ring buffer
-            if (lumBufIndex >= vLumBufSize ) lumBufIndex-= vLumBufSize;
-            if (chrBufIndex >= vChrBufSize ) chrBufIndex-= vChrBufSize;
+            if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
+            if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
         }
         else // not enough lines left in this slice -> load the rest in the buffer
         {
@@ -3118,8 +3118,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 lastInChrBuf++;
             }
             //wrap buf index around to stay inside the ring buffer
-            if (lumBufIndex >= vLumBufSize ) lumBufIndex-= vLumBufSize;
-            if (chrBufIndex >= vChrBufSize ) chrBufIndex-= vChrBufSize;
+            if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
+            if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
             break; //we can't output a dstY line so let's try with the next slice
         }
 

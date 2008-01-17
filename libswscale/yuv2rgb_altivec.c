@@ -762,7 +762,7 @@ void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brig
         vector signed short vec;
     } buf;
 
-    buf.tmp[0] =  ( (0xffffLL) * contrast>>8 )>>9;                      //cy
+    buf.tmp[0] =  ((0xffffLL) * contrast>>8)>>9;                        //cy
     buf.tmp[1] =  -256*brightness;                                      //oy
     buf.tmp[2] =  (inv_table[0]>>3) *(contrast>>16)*(saturation>>16);   //crv
     buf.tmp[3] =  (inv_table[1]>>3) *(contrast>>16)*(saturation>>16);   //cbu

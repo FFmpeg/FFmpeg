@@ -217,13 +217,13 @@ int main(int argc, char **argv){
 #else
     sws_rgb2rgb_init(0);
 #endif
-    sws_scale(sws, rgb_src, rgb_stride, 0, H   , src, stride);
+    sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
 
 #if defined(ARCH_X86)
     asm volatile ("emms\n\t");
 #endif
 
-    selfTest(src,  stride, W, H);
+    selfTest(src, stride, W, H);
 
     return 123;
 }

@@ -53,7 +53,7 @@
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
 #define PAVGB     "pavgusb"
-#elif defined ( HAVE_MMX2 )
+#elif defined (HAVE_MMX2)
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #define PAVGB     "pavgb"
@@ -1727,7 +1727,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         }
 #endif
 #endif
-        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1) )
+        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1))
         {
             usrc += chromStride;
             vsrc += chromStride;
