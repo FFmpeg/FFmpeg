@@ -35,7 +35,7 @@
 # define REG_v(a) asm ( #a )
 #endif
 
-#if (__GNUC__ > 2) && (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
+#if (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
 
 /* This code was provided to me by Bartosch Pixa
  * as a separate header file (broken_mergel.h).
@@ -97,6 +97,6 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
       ((vector unsigned int) ff_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
     __altivec_link_error_invalid_argument ())))))))
 
-#endif
+#endif /* (__GNUC__ == 3 && __GNUC_MINOR__ < 3) */
 
 #endif /* FFMPEG_GCC_FIXES_H */
