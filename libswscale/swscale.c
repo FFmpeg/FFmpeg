@@ -2965,11 +2965,11 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
         param = default_param;
 
     if (context != NULL) {
-        if ((context->srcW != srcW) || (context->srcH != srcH) ||
-            (context->srcFormat != srcFormat) ||
-            (context->dstW != dstW) || (context->dstH != dstH) ||
-            (context->dstFormat != dstFormat) || (context->flags != flags) ||
-            (context->param[0] != param[0]) || (context->param[1] != param[1]))
+        if (context->srcW != srcW || context->srcH != srcH ||
+            context->srcFormat != srcFormat ||
+            context->dstW != dstW || context->dstH != dstH ||
+            context->dstFormat != dstFormat || context->flags != flags ||
+            context->param[0] != param[0] || context->param[1] != param[1])
         {
             sws_freeContext(context);
             context = NULL;
