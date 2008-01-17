@@ -494,7 +494,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     uint32_t desired_format, capabilities;
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
-        av_log(s1, AV_LOG_ERROR, "Missing/Wrong parameters\n");
+        av_log(s1, AV_LOG_ERROR, "Missing/Wrong width, height or framerate\n");
 
         return -1;
     }
