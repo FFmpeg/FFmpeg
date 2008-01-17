@@ -76,7 +76,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
         src[i]= (uint8_t*) malloc(srcStride[i]*srcH);
         dst[i]= (uint8_t*) malloc(dstStride[i]*dstH);
         out[i]= (uint8_t*) malloc(refStride[i]*h);
-        if ((src[i] == NULL) || (dst[i] == NULL) || (out[i] == NULL)) {
+        if (src[i] == NULL || dst[i] == NULL || out[i] == NULL) {
             perror("Malloc");
             res = -1;
 

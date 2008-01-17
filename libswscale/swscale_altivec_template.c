@@ -354,7 +354,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
             src_v0 = src_v1;
         }
 
-        if (j < (filterSize-7)) {
+        if (j < filterSize-7) {
             // loading src_v0 is useless, it's already done above
             //vector unsigned char src_v0 = vec_ld(srcPos + j, src);
             vector unsigned char src_v1, src_vF;
@@ -450,7 +450,7 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
             vec_st(v_yuy2_0, (i << 1), dst);
             vec_st(v_yuy2_1, (i << 1) + 16, dst);
         }
-        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1)) {
+        if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1) {
             usrc += chromStride;
             vsrc += chromStride;
         }
@@ -527,7 +527,7 @@ static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int
             vec_st(v_uyvy_0, (i << 1), dst);
             vec_st(v_uyvy_1, (i << 1) + 16, dst);
         }
-        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1)) {
+        if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1) {
             usrc += chromStride;
             vsrc += chromStride;
         }

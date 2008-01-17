@@ -1621,7 +1621,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
         }
 #endif
 #endif
-        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1) )
+        if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1)
         {
             usrc += chromStride;
             vsrc += chromStride;
@@ -1727,7 +1727,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         }
 #endif
 #endif
-        if ((y&(vertLumPerChroma-1))==(vertLumPerChroma-1))
+        if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1)
         {
             usrc += chromStride;
             vsrc += chromStride;
