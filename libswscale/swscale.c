@@ -2959,12 +2959,17 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int dstW, int dstH, int dstFormat, int flags,
                                         SwsFilter *srcFilter, SwsFilter *dstFilter, double *param)
 {
+    static const double default_param[2] = {SWS_PARAM_DEFAULT, SWS_PARAM_DEFAULT};
+
+    if (!param)
+        param = default_param;
+
     if (context != NULL) {
         if ((context->srcW != srcW) || (context->srcH != srcH) ||
             (context->srcFormat != srcFormat) ||
             (context->dstW != dstW) || (context->dstH != dstH) ||
             (context->dstFormat != dstFormat) || (context->flags != flags) ||
-            (context->param != param))
+            (context->param[0] != param[0]) || (context->param[1] != param[1]))
         {
             sws_freeContext(context);
             context = NULL;
