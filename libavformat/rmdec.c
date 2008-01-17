@@ -609,10 +609,10 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
                 av_get_packet(pb, pkt, rm->sub_packet_lengths[0]);
                 *flags = 2; // Mark first packet as keyframe
             }
-        } else
+        } else {
             av_get_packet(pb, pkt, len);
             rm_ac3_swap_bytes(st, pkt);
-
+        }
     } else
         av_get_packet(pb, pkt, len);
 
