@@ -82,7 +82,7 @@
 #define SFENCE " # nop"
 #endif
 
-static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,long src_size)
+static inline void RENAME(rgb24to32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     uint8_t *dest = dst;
     const uint8_t *s = src;
@@ -142,7 +142,7 @@ static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,long src_si
     }
 }
 
-static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,long src_size)
+static inline void RENAME(rgb32to24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     uint8_t *dest = dst;
     const uint8_t *s = src;
@@ -234,7 +234,7 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,long src_si
  MMX2, 3DNOW optimization by Nick Kurshev
  32 bit C version, and and&add trick by Michael Niedermayer
 */
-static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,long src_size)
+static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     register const uint8_t* s=src;
     register uint8_t* d=dst;
@@ -283,7 +283,7 @@ static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,long src_si
     }
 }
 
-static inline void RENAME(rgb16to15)(const uint8_t *src,uint8_t *dst,long src_size)
+static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     register const uint8_t* s=src;
     register uint8_t* d=dst;

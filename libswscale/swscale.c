@@ -1597,9 +1597,9 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
     }
     dst = dstParam[1] + dstStride[1]*srcSliceY/2;
     if (c->dstFormat == PIX_FMT_NV12)
-        interleaveBytes(src[1],src[2],dst,c->srcW/2,srcSliceH/2,srcStride[1],srcStride[2],dstStride[0]);
+        interleaveBytes(src[1], src[2], dst, c->srcW/2, srcSliceH/2, srcStride[1], srcStride[2], dstStride[0]);
     else
-        interleaveBytes(src[2],src[1],dst,c->srcW/2,srcSliceH/2,srcStride[2],srcStride[1],dstStride[0]);
+        interleaveBytes(src[2], src[1], dst, c->srcW/2, srcSliceH/2, srcStride[2], srcStride[1], dstStride[0]);
 
     return srcSliceH;
 }
@@ -1608,7 +1608,7 @@ static int PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
-    yv12toyuy2(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
+    yv12toyuy2(src[0], src[1], src[2], dst, c->srcW, srcSliceH, srcStride[0], srcStride[1], dstStride[0]);
 
     return srcSliceH;
 }
@@ -1617,7 +1617,7 @@ static int PlanarToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
-    yv12touyvy(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
+    yv12touyvy(src[0], src[1], src[2], dst, c->srcW, srcSliceH, srcStride[0], srcStride[1], dstStride[0]);
 
     return srcSliceH;
 }
@@ -2489,7 +2489,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         {
             if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
                 av_log(c, AV_LOG_VERBOSE, "SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
-                       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",(flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
             else if (c->vLumFilterSize==2 && c->vChrFilterSize==2)
                 av_log(c, AV_LOG_VERBOSE, "SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
             else

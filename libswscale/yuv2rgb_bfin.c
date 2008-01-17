@@ -110,12 +110,12 @@ static int core_yuv420_rgb (SwsContext *c,
 
     for (i=0;i<h2;i++) {
 
-        lcscf (py,pu,pv,op,w,&c->oy);
+        lcscf (py, pu, pv, op, w, &c->oy);
 
         py += instrides[0];
         op += outstrides[0];
 
-        lcscf (py,pu,pv,op,w,&c->oy);
+        lcscf (py, pu, pv, op, w, &c->oy);
 
         py += instrides[0];
         pu += instrides[1];
@@ -132,7 +132,7 @@ static int bfin_yuv420_rgb555 (SwsContext *c,
                                int srcSliceY, int srcSliceH,
                                uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb555_line, 1, 555);
 }
 
@@ -141,7 +141,7 @@ static int bfin_yuv420_bgr555 (SwsContext *c,
                                int srcSliceY, int srcSliceH,
                                uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb555_line, 0, 555);
 }
 
@@ -150,7 +150,7 @@ static int bfin_yuv420_rgb24 (SwsContext *c,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb24_line, 1, 888);
 }
 
@@ -159,7 +159,7 @@ static int bfin_yuv420_bgr24 (SwsContext *c,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb24_line, 0, 888);
 }
 
@@ -168,7 +168,7 @@ static int bfin_yuv420_rgb565 (SwsContext *c,
                                int srcSliceY, int srcSliceH,
                                uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb565_line, 1, 565);
 }
 
@@ -177,7 +177,7 @@ static int bfin_yuv420_bgr565 (SwsContext *c,
                                int srcSliceY, int srcSliceH,
                                uint8_t **oplanes, int *outstrides)
 {
-    return core_yuv420_rgb (c,in,instrides,srcSliceY,srcSliceH,oplanes,outstrides,
+    return core_yuv420_rgb (c, in, instrides, srcSliceY, srcSliceH, oplanes, outstrides,
                             ff_bfin_yuv2rgb565_line, 0, 565);
 }
 

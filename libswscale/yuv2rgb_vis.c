@@ -188,7 +188,7 @@ SwsFunc yuv2rgb_init_vis(SwsContext *c) {
     c->sparc_coeffs[8]=c->ubCoeff;
     c->sparc_coeffs[9]=c->ugCoeff;
 
-    c->sparc_coeffs[0]=(((int16_t)c->yOffset*(int16_t)c->yCoeff>>11) & 0xffff) * 0x0001000100010001ULL;
+    c->sparc_coeffs[0]=(((int16_t)c->yOffset*(int16_t)c->yCoeff >>11) & 0xffff) * 0x0001000100010001ULL;
     c->sparc_coeffs[1]=(((int16_t)c->uOffset*(int16_t)c->ubCoeff>>11) & 0xffff) * 0x0001000100010001ULL;
     c->sparc_coeffs[2]=(((int16_t)c->uOffset*(int16_t)c->ugCoeff>>11) & 0xffff) * 0x0001000100010001ULL;
     c->sparc_coeffs[3]=(((int16_t)c->vOffset*(int16_t)c->vgCoeff>>11) & 0xffff) * 0x0001000100010001ULL;
