@@ -476,9 +476,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         for(i=0; i<s->nb_streams; i++){
             AVStream *st= s->streams[i];
             int index= av_index_search_timestamp(st, pkt->dts, AVSEEK_FLAG_BACKWARD);
-            if(index<0) dummy.pos=0;
-            else        dummy.pos= FFMIN(dummy.pos, st->index_entries[index].pos);
+            if(index>=0) dummy.pos= FFMIN(dummy.pos, st->index_entries[index].pos);
         }
+        if(dummy.pos == INT64_MAX)
+            dummy.pos= 0;
         sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
 
         nut->last_syncpoint_pos= url_ftell(bc);
