@@ -257,6 +257,8 @@ if((y)<(x)){\
 #define printf please_use_av_log
 #undef  fprintf
 #define fprintf please_use_av_log
+#undef  puts
+#define puts please_use_av_log
 #undef  perror
 #define perror please_use_av_log_instead_of_perror
 #endif
