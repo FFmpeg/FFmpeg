@@ -41,12 +41,21 @@ typedef struct {
     uint32_t jitter;            ///< estimated jitter.
 } RTPStatistics;
 
-
+/**
+ * Packet parsing for "private" payloads in the RTP specs.
+ *
+ * @param s stream context
+ * @param pkt packet in which to write the parsed data
+ * @param timestamp pointer in which to write the timestamp of this RTP packet
+ * @param buf pointer to raw RTP packet data
+ * @param len length of buf
+ * @param flags flags from the RTP packet header (PKT_FLAG_*)
+ */
 typedef int (*DynamicPayloadPacketHandlerProc) (struct RTPDemuxContext * s,
                                                 AVPacket * pkt,
                                                 uint32_t *timestamp,
                                                 const uint8_t * buf,
-                                                int len);
+                                                int len, int flags);
 
 typedef struct RTPDynamicProtocolHandler_s {
     // fields from AVRtpDynamicPayloadType_s
