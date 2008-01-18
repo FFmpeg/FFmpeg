@@ -99,6 +99,9 @@ typedef struct RV34DecContext{
     int rv30;                ///< indicates which RV variasnt is currently decoded
     int rpr;                 ///< one field size in RV30 slice header
 
+    uint16_t *cbp_luma;      ///< CBP values for luma subblocks
+    uint8_t  *cbp_chroma;    ///< CBP values for chroma subblocks
+
     /** 8x8 block available flags (for MV prediction) */
     DECLARE_ALIGNED_8(uint32_t, avail_cache[3*4]);
 
