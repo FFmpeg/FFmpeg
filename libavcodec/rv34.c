@@ -1014,6 +1014,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     cbp = cbp2 = rv34_decode_mb_header(r, intra_types);
     r->cbp_luma  [s->mb_x + s->mb_y * s->mb_stride] = cbp;
     r->cbp_chroma[s->mb_x + s->mb_y * s->mb_stride] = cbp >> 16;
+    s->current_picture.qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
 
     if(cbp == -1)
         return -1;
