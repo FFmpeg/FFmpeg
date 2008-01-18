@@ -113,7 +113,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
-        av_log(s1, AV_LOG_ERROR, "AVParameters don't have any video size. Use -s.\n");
+        av_log(s1, AV_LOG_ERROR, "AVParameters don't have video size and/or rate. Use -s and -r.\n");
         return AVERROR(EIO);
     }
 
