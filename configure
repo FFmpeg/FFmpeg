@@ -1569,7 +1569,7 @@ fi
 check_func  fork
 check_func  gethrtime
 check_func  getrusage
-check_func  inet_aton
+check_func  inet_aton $network_extralibs
 check_func  memalign
 check_func  mkstemp
 check_func2 windows.h GetProcessTimes
