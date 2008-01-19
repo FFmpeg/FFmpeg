@@ -140,6 +140,8 @@ typedef struct {
     int metadata_sets_count;
     AVFormatContext *fc;
     struct AVAES *aesc;
+    uint8_t *local_tags;
+    int local_tags_count;
 } MXFContext;
 
 typedef struct {
@@ -177,6 +179,8 @@ static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
 static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
 /* complete keys to match */
+static const uint8_t mxf_crypto_context_uid[]              = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x01,0x01,0x15,0x11,0x00,0x00,0x00,0x00 };
+static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x02,0x02,0x00,0x00,0x00 };
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
 static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
 
@@ -367,6 +371,26 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR(EIO);
 }
 
+static int mxf_read_primer_pack(MXFContext *mxf)
+{
+    ByteIOContext *pb = mxf->fc->pb;
+    int item_num = get_be32(pb);
+    int item_len = get_be32(pb);
+
+    if (item_len != 18) {
+        av_log(mxf->fc, AV_LOG_ERROR, "unsupported primer pack item length\n");
+        return -1;
+    }
+    if (item_num > UINT_MAX / item_len)
+        return -1;
+    mxf->local_tags_count = item_num;
+    mxf->local_tags = av_malloc(item_num*item_len);
+    if (!mxf->local_tags)
+        return -1;
+    get_buffer(pb, mxf->local_tags, item_num*item_len);
+    return 0;
+}
+
 static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 {
     mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
@@ -377,16 +401,14 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     return 0;
 }
 
-static int mxf_read_metadata_cryptographic_context(MXFCryptoContext *cryptocontext, ByteIOContext *pb, int tag)
+static int mxf_read_metadata_cryptographic_context(MXFCryptoContext *cryptocontext, ByteIOContext *pb, int tag, int size, UID uid)
 {
-    switch(tag) {
-    case 0xFFFE:
+    if (size != 16)
+        return -1;
+    if (IS_KLV_KEY(uid, mxf_crypto_context_uid))
         get_buffer(pb, cryptocontext->context_uid, 16);
-        break;
-    case 0xFFFD:
+    else if (IS_KLV_KEY(uid, mxf_crypto_source_container_ul))
         get_buffer(pb, cryptocontext->source_container_ul, 16);
-        break;
-    }
     return 0;
 }
 
@@ -876,6 +898,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 }
 
 static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x05,0x01,0x00 }, mxf_read_primer_pack },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_metadata_content_storage, 0, AnyType },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_metadata_source_package, sizeof(MXFPackage), SourcePackage },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_metadata_material_package, sizeof(MXFPackage), MaterialPackage },
@@ -906,15 +929,29 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
         uint64_t next= url_ftell(pb) + size;
+        UID uid;
 
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
             av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
             continue;
         }
+        if (tag > 0x7FFF) { /* dynamic tag */
+            int i;
+            for (i = 0; i < mxf->local_tags_count; i++) {
+                int local_tag = AV_RB16(mxf->local_tags+i*18);
+                if (local_tag == tag) {
+                    memcpy(uid, mxf->local_tags+i*18+2, 16);
+                    dprintf(mxf->fc, "local tag 0x%04X\n", local_tag);
+#ifdef DEBUG
+                    PRINT_KEY(mxf->fc, "uid", uid);
+#endif
+                }
+            }
+        }
         if(ctx_size && tag == 0x3C0A)
             get_buffer(pb, ctx->uid, 16);
         else
-            read_child(ctx, pb, tag, size);
+            read_child(ctx, pb, tag, size, uid);
 
         url_fseek(pb, next, SEEK_SET);
     }
@@ -950,7 +987,8 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
             if (IS_KLV_KEY(klv.key, metadata->key)) {
-                if (mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type) < 0) {
+                int (*read)() = klv.key[5] == 0x53 ? mxf_read_local_tags : metadata->read;
+                if (read(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type) < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
                     return -1;
                 }
@@ -988,6 +1026,7 @@ static int mxf_read_close(AVFormatContext *s)
     }
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
+    av_freep(&mxf->local_tags);
     return 0;
 }
 
