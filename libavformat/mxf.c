@@ -922,7 +922,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
         uint64_t next = url_ftell(pb) + size;
-        UID uid;
+        UID uid = {0};
 
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
             av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
