@@ -939,8 +939,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
         }
         if (ctx_size && tag == 0x3C0A)
             get_buffer(pb, ctx->uid, 16);
-        else
-            read_child(ctx, pb, tag, size, uid);
+        else if (read_child(ctx, pb, tag, size, uid) < 0)
+            return -1;
 
         url_fseek(pb, next, SEEK_SET);
     }
