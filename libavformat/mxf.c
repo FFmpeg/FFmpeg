@@ -917,14 +917,14 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
 {
     ByteIOContext *pb = mxf->fc->pb;
     MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
-    uint64_t klv_end= url_ftell(pb) + klv->length;
+    uint64_t klv_end = url_ftell(pb) + klv->length;
 
     if (!ctx)
         return -1;
     while (url_ftell(pb) + 4 < klv_end) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
-        uint64_t next= url_ftell(pb) + size;
+        uint64_t next = url_ftell(pb) + size;
         UID uid;
 
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
@@ -944,7 +944,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
                 }
             }
         }
-        if(ctx_size && tag == 0x3C0A)
+        if (ctx_size && tag == 0x3C0A)
             get_buffer(pb, ctx->uid, 16);
         else
             read_child(ctx, pb, tag, size, uid);
