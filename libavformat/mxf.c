@@ -180,6 +180,7 @@ static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x02,0x02,0x00,0x00,0x00 };
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
 static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
+static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0e,0x06,0x06,0x02,0x02,0x01,0x00,0x00 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -553,7 +554,7 @@ static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
     } while (code != 0); /* SMPTE 377M E.2.46 */
 }
 
-static int mxf_read_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size)
+static int mxf_read_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size, UID uid)
 {
     switch(tag) {
     case 0x3F01:
@@ -601,12 +602,15 @@ static int mxf_read_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext 
     case 0x3401:
         mxf_read_pixel_layout(pb, descriptor);
         break;
-    case 0x8201: /* Private tag used by SONY C0023S01.mxf */
+    default:
+        /* Private uid used by SONY C0023S01.mxf */
+        if (IS_KLV_KEY(uid, mxf_sony_mpeg4_extradata)) {
         descriptor->extradata = av_malloc(size);
         if (!descriptor->extradata)
             return -1;
         descriptor->extradata_size = size;
         get_buffer(pb, descriptor->extradata, size);
+        }
         break;
     }
     return 0;
