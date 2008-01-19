@@ -54,6 +54,18 @@ int has_altivec(void)
 
     if (err == 0) return (has_vu != 0);
     return 0;
+#elif defined(RUNTIME_CPUDETECT)
+    int proc_ver;
+    // support of mfspr PVR emulation added in Linux 2.6.17
+    asm volatile("mfspr %0, 287" : "=r" (proc_ver));
+    proc_ver >>= 16;
+    if (proc_ver  & 0x8000 ||
+        proc_ver == 0x000c ||
+        proc_ver == 0x0039 || proc_ver == 0x003c ||
+        proc_ver == 0x0044 || proc_ver == 0x0045 ||
+        proc_ver == 0x0070)
+        return 1;
+    return 0;
 #else
     // since we were compiled for altivec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
