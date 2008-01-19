@@ -281,6 +281,8 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
 
     if (!mxf->aesc && s->key && s->keylen == 16) {
         mxf->aesc = av_malloc(av_aes_size);
+        if (!mxf->aesc)
+            return -1;
         av_aes_init(mxf->aesc, s->key, 128, 1);
     }
     // crypto context
@@ -368,6 +370,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 {
     mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
+    if (!mxf->metadata_sets)
+        return -1;
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
     return 0;
@@ -394,6 +398,8 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, ByteIOContext *pb,
         if (mxf->packages_count >= UINT_MAX / sizeof(UID))
             return -1;
         mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
+        if (!mxf->packages_refs)
+            return -1;
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
         break;
@@ -430,6 +436,8 @@ static int mxf_read_metadata_material_package(MXFPackage *package, ByteIOContext
         if (package->tracks_count >= UINT_MAX / sizeof(UID))
             return -1;
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+        if (!package->tracks_refs)
+            return -1;
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
@@ -471,6 +479,8 @@ static int mxf_read_metadata_sequence(MXFSequence *sequence, ByteIOContext *pb, 
         if (sequence->structural_components_count >= UINT_MAX / sizeof(UID))
             return -1;
         sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
+        if (!sequence->structural_components_refs)
+            return -1;
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
         break;
@@ -486,6 +496,8 @@ static int mxf_read_metadata_source_package(MXFPackage *package, ByteIOContext *
         if (package->tracks_count >= UINT_MAX / sizeof(UID))
             return -1;
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+        if (!package->tracks_refs)
+            return -1;
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
@@ -532,6 +544,8 @@ static int mxf_read_metadata_generic_descriptor(MXFDescriptor *descriptor, ByteI
         if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
             return -1;
         descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
+        if (!descriptor->sub_descriptors_refs)
+            return -1;
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
         break;
@@ -572,6 +586,8 @@ static int mxf_read_metadata_generic_descriptor(MXFDescriptor *descriptor, ByteI
         break;
     case 0x8201: /* Private tag used by SONY C0023S01.mxf */
         descriptor->extradata = av_malloc(size);
+        if (!descriptor->extradata)
+            return -1;
         descriptor->extradata_size = size;
         get_buffer(pb, descriptor->extradata, size);
         break;
@@ -884,6 +900,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
     MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
     uint64_t klv_end= url_ftell(pb) + klv->length;
 
+    if (!ctx)
+        return -1;
     while (url_ftell(pb) + 4 < klv_end) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
