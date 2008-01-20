@@ -262,6 +262,8 @@ OBJS-$(CONFIG_PCM_ALAW_DECODER)        += pcm.o
 OBJS-$(CONFIG_PCM_ALAW_ENCODER)        += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_DECODER)       += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_ZORK_DECODER)        += pcm.o
+OBJS-$(CONFIG_PCM_ZORK_ENCODER)        += pcm.o
 
 OBJS-$(CONFIG_ADPCM_4XM_DECODER)       += adpcm.o
 OBJS-$(CONFIG_ADPCM_ADX_DECODER)       += adxdec.o
