@@ -7820,7 +7820,7 @@ static inline void fill_mb_avail(H264Context *h){
 }
 #endif
 
-#if 0 //selftest
+#ifdef TEST
 #undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
@@ -7992,7 +7992,7 @@ int main(void){
 
     return 0;
 }
-#endif
+#endif /* TEST */
 
 
 static int decode_end(AVCodecContext *avctx)

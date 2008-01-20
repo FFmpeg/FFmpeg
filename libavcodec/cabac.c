@@ -178,7 +178,7 @@ void ff_init_cabac_states(CABACContext *c){
     }
 }
 
-#if 0 //selftest
+#ifdef TEST
 #undef random
 #define SIZE 10240
 
@@ -262,4 +262,4 @@ STOP_TIMER("get_cabac_ueg")
     return 0;
 }
 
-#endif
+#endif /* TEST */

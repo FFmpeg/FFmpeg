@@ -109,7 +109,7 @@ int ff_rac_terminate(RangeCoder *c){
     return c->bytestream - c->bytestream_start;
 }
 
-#if 0 //selftest
+#ifdef TEST
 #define SIZE 10240
 int main(void){
     RangeCoder c;
@@ -148,4 +148,4 @@ STOP_TIMER("get_rac")
 
     return 0;
 }
-#endif
+#endif /* TEST */

@@ -4775,7 +4775,7 @@ AVCodec snow_encoder = {
 #endif
 
 
-#if 0
+#ifdef TEST
 #undef malloc
 #undef free
 #undef printf
@@ -4924,4 +4924,4 @@ int64_t g=0;
 }
     return 0;
 }
-#endif /* 0 */
+#endif /* TEST */
