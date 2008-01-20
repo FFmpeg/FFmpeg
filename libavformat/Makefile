@@ -114,6 +114,22 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparsevorbis.o \
                                             riff.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
+OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += raw.o
+OBJS-$(CONFIG_PCM_ALAW_MUXER)            += raw.o
+OBJS-$(CONFIG_PCM_MULAW_DEMUXER)         += raw.o
+OBJS-$(CONFIG_PCM_MULAW_MUXER)           += raw.o
+OBJS-$(CONFIG_PCM_S16BE_DEMUXER)         += raw.o
+OBJS-$(CONFIG_PCM_S16BE_MUXER)           += raw.o
+OBJS-$(CONFIG_PCM_S16LE_DEMUXER)         += raw.o
+OBJS-$(CONFIG_PCM_S16LE_MUXER)           += raw.o
+OBJS-$(CONFIG_PCM_S8_DEMUXER)            += raw.o
+OBJS-$(CONFIG_PCM_S8_MUXER)              += raw.o
+OBJS-$(CONFIG_PCM_U16BE_DEMUXER)         += raw.o
+OBJS-$(CONFIG_PCM_U16BE_MUXER)           += raw.o
+OBJS-$(CONFIG_PCM_U16LE_DEMUXER)         += raw.o
+OBJS-$(CONFIG_PCM_U16LE_MUXER)           += raw.o
+OBJS-$(CONFIG_PCM_U8_DEMUXER)            += raw.o
+OBJS-$(CONFIG_PCM_U8_MUXER)              += raw.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_PVA_DEMUXER)               += pva.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
