@@ -929,8 +929,7 @@ do not attach several unrelated patches to the same mail.
 @item
     Did you test your decoder or demuxer against damaged data? If no, see
     tools/trasher and the noise bitstream filter. Your decoder or demuxer
-    should not crash or end in a (near) infinite loop when feeded with
-    damaged data.
+    should not crash or end in a (near) infinite loop when fed damaged data.
 @end enumerate
 
 @section Patch review process
