@@ -148,6 +148,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (SOL, sol);
     REGISTER_DEMUXER  (STR, str);
     REGISTER_MUXDEMUX (SWF, swf);
+    REGISTER_MUXER    (AVM2, avm2);
     REGISTER_MUXER    (TG2, tg2);
     REGISTER_MUXER    (TGP, tgp);
     REGISTER_DEMUXER  (THP, thp);

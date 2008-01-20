@@ -40,6 +40,7 @@
 #define TAG_STREAMHEAD2   45
 #define TAG_VIDEOSTREAM   60
 #define TAG_VIDEOFRAME    61
+#define TAG_FILEATTRIBUTES 69
 
 #define TAG_LONG         0x100
 
@@ -249,6 +250,7 @@ static int swf_write_header(AVFormatContext *s)
     PutBitContext p;
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
+    int is_avm2;
 
     swf->audio_in_pos = 0;
     swf->sound_samples = 0;
@@ -305,8 +307,12 @@ static int swf_write_header(AVFormatContext *s)
         swf->samples_per_frame = (audio_enc->sample_rate * rate_base) / rate;
     }
 
+    is_avm2 = !strcmp("avm2", s->oformat->name);
+
     put_tag(pb, "FWS");
-    if (video_enc && video_enc->codec_id == CODEC_ID_VP6F) {
+    if (is_avm2) {
+        put_byte(pb, 9);
+    } else if (video_enc && video_enc->codec_id == CODEC_ID_VP6F) {
         put_byte(pb, 8); /* version (version 8 and above support VP6 codec) */
     } else if (video_enc && video_enc->codec_id == CODEC_ID_FLV1) {
         put_byte(pb, 6); /* version (version 6 and above support FLV1 codec) */
@@ -320,6 +326,13 @@ static int swf_write_header(AVFormatContext *s)
     put_le16(pb, (rate * 256) / rate_base); /* frame rate */
     swf->duration_pos = url_ftell(pb);
     put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
+
+    /* avm2/swf v9 (also v8?) files require a file attribute tag */
+    if (is_avm2) {
+        put_swf_tag(s, TAG_FILEATTRIBUTES);
+        put_le32(pb, 1<<3); /* set ActionScript v3/AVM2 flag */
+        put_swf_end_tag(s);
+    }
 
     /* define a shape with the jpeg inside */
     if (video_enc && (video_enc->codec_id == CODEC_ID_VP6F ||
@@ -777,6 +790,20 @@ AVInputFormat swf_demuxer = {
 AVOutputFormat swf_muxer = {
     "swf",
     "Flash format",
+    "application/x-shockwave-flash",
+    "swf",
+    sizeof(SWFContext),
+    CODEC_ID_MP3,
+    CODEC_ID_FLV1,
+    swf_write_header,
+    swf_write_packet,
+    swf_write_trailer,
+};
+#endif
+#ifdef CONFIG_AVM2_MUXER
+AVOutputFormat avm2_muxer = {
+    "avm2",
+    "Flash 9 (AVM2) format",
     "application/x-shockwave-flash",
     "swf",
     sizeof(SWFContext),
