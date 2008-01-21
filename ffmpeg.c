@@ -415,9 +415,15 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
                                           &new_pkt.data, &new_pkt.size,
                                           pkt->data, pkt->size,
                                           pkt->flags & PKT_FLAG_KEY);
-        if(a){
+        if(a>0){
             av_free_packet(pkt);
             new_pkt.destruct= av_destruct_packet;
+        } else if(a<0){
+            fprintf(stderr, "%s failed for stream %d, codec %s"
+                , bsfc->filter->name
+                , pkt->stream_index
+                , avctx->codec ? avctx->codec->name : "copy");
+            print_error("", a);
         }
         *pkt= new_pkt;
 
