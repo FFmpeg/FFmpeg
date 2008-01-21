@@ -52,6 +52,7 @@ library:
 @item AVI@tab X @tab X
 @item WAV@tab X @tab X
 @item Macromedia Flash@tab X @tab X
+@item AVM2 (Flash 9) @tab X @tab X
 @tab Only embedded audio is decoded.
 @item FLV              @tab  X @tab X
 @tab Macromedia Flash video files

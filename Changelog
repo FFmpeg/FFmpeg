@@ -109,6 +109,7 @@ version <next>
 - Sun Rasterfile decoder
 - TechnoTrend PVA demuxer
 - Linux Media Labs MPEG-4 (LMLM4) demuxer
+- AVM2 (Flash 9) SWF muxer
 
 version 0.4.9-pre1:
 
