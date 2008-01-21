@@ -137,6 +137,12 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
     char *config = NULL;
 
     switch (c->codec_id) {
+        case CODEC_ID_H264:
+            av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
+                                    "a=fmtp:%d packetization-mode=1%s\r\n",
+                                     payload_type,
+                                     payload_type, config ? config : "");
+            break;
         case CODEC_ID_MPEG4:
             if (c->extradata_size) {
                 config = extradata2config(c);
