@@ -90,7 +90,7 @@ typedef struct IComplex {
 
 static void fft_init(int ln)
 {
-    int i, j, m, n;
+    int i, n;
     float alpha;
 
     n = 1 << ln;
