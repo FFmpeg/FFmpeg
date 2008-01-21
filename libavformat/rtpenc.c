@@ -28,6 +28,7 @@
 #include "rtp_internal.h"
 #include "rtp_mpv.h"
 #include "rtp_aac.h"
+#include "rtp_h264.h"
 
 //#define DEBUG
 
@@ -333,6 +334,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, buf1, size);
+        break;
+    case CODEC_ID_H264:
+        ff_rtp_send_h264(s1, buf1, size);
         break;
     default:
         /* better than nothing : send the codec raw data */

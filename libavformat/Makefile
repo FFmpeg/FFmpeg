@@ -139,7 +139,12 @@ OBJS-$(CONFIG_RM_DEMUXER)                += rmdec.o
 OBJS-$(CONFIG_RM_MUXER)                  += rmenc.o
 OBJS-$(CONFIG_ROQ_DEMUXER)               += idroq.o
 OBJS-$(CONFIG_ROQ_MUXER)                 += raw.o
-OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o rtpenc.o rtp_mpv.o rtp_aac.o
+OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
+                                            rtpenc.o      \
+                                            rtp_mpv.o     \
+                                            rtp_aac.o     \
+                                            rtpenc_h264.o \
+                                            avc.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
