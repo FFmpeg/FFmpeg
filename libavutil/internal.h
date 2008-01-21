@@ -178,24 +178,28 @@ extern const uint32_t ff_inverse[256];
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif
 
-extern const uint8_t ff_sqrt_tab[128];
+extern const uint8_t ff_sqrt_tab[256];
 
-static inline int ff_sqrt(int a)
+static inline int av_log2_16bit(unsigned int v);
+
+static inline unsigned int ff_sqrt(unsigned int a)
 {
-    int ret=0;
-    int s, b;
+    unsigned int b;
 
-    if(a<128) return ff_sqrt_tab[a];
-
-    for(s=30; s>=0; s-=2){
-        ret+=ret;
-        b= (1+2*ret)<<s;
-        if(b<=a){
-            a-=b;
-            ret++;
-        }
+    if(a<255) return (ff_sqrt_tab[a+1]-1)>>4;
+    else if(a<(1<<12)) b= ff_sqrt_tab[a>>4 ]>>2;
+#ifndef CONFIG_SMALL
+    else if(a<(1<<14)) b= ff_sqrt_tab[a>>6 ]>>1;
+    else if(a<(1<<16)) b= ff_sqrt_tab[a>>8 ]   ;
+#endif
+    else{
+        int s= av_log2_16bit(a>>16)>>1;
+        unsigned int c= a>>(s+2);
+        b= ff_sqrt_tab[c>>(s+8)];
+        b= FASTDIV(c,b) + (b<<s);
     }
-    return ret;
+
+    return b - (a<b*b);
 }
 
 #if defined(ARCH_X86)
