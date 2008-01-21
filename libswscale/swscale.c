@@ -1543,7 +1543,7 @@ static SwsFunc getSwsFunc(int flags){
 
 #if defined(RUNTIME_CPUDETECT) && defined (CONFIG_GPL)
 #if defined(ARCH_X86)
-    // ordered per speed fasterst first
+    // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2)
         return swScale_MMX2;
     else if (flags & SWS_CPU_CAPS_3DNOW)
