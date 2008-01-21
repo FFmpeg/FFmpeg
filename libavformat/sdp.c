@@ -20,6 +20,8 @@
 
 #include "avstring.h"
 #include "avformat.h"
+#include "avc.h"
+#include "base64.h"
 #include "rtp.h"
 
 #ifdef CONFIG_RTP_MUXER
@@ -90,6 +92,49 @@ static int get_address(char *dest_addr, int size, int *ttl, const char *url)
     return port;
 }
 
+#define MAX_PSET_SIZE 1024
+static char *extradata2psets(AVCodecContext *c)
+{
+    char *psets, *p;
+    uint8_t *r;
+    const char *pset_string = "; sprop-parameter-sets=";
+
+    if (c->extradata_size > MAX_EXTRADATA_SIZE) {
+        av_log(c, AV_LOG_ERROR, "Too many extra data!\n");
+
+        return NULL;
+    }
+
+    psets = av_mallocz(MAX_PSET_SIZE);
+    if (psets == NULL) {
+        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets\n");
+        return NULL;
+    }
+    memcpy(psets, pset_string, strlen(pset_string));
+    p = psets + strlen(pset_string);
+    r = ff_avc_find_startcode(c->extradata, c->extradata + c->extradata_size);
+    while (r < c->extradata + c->extradata_size) {
+        uint8_t *r1;
+
+        while (!*(r++));
+        r1 = ff_avc_find_startcode(r, c->extradata + c->extradata_size);
+        if (p != (psets + strlen(pset_string))) {
+            *p = ',';
+            p++;
+        }
+        if (av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r) == NULL) {
+            av_log(c, AV_LOG_ERROR, "Cannot BASE64 encode %d %d!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
+            av_free(psets);
+
+            return NULL;
+        }
+        p += strlen(p);
+        r = r1;
+    }
+
+    return psets;
+}
+
 static void digit_to_char(char *dst, uint8_t src)
 {
     if (src < 10) {
@@ -138,6 +183,9 @@ static char *sdp_media_attributes(char *buff, int size, AVCodecContext *c, int p
 
     switch (c->codec_id) {
         case CODEC_ID_H264:
+            if (c->extradata_size) {
+                config = extradata2psets(c);
+            }
             av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
                                     "a=fmtp:%d packetization-mode=1%s\r\n",
                                      payload_type,
