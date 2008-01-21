@@ -805,7 +805,7 @@ AVOutputFormat avm2_muxer = {
     "avm2",
     "Flash 9 (AVM2) format",
     "application/x-shockwave-flash",
-    "swf",
+    NULL,
     sizeof(SWFContext),
     CODEC_ID_MP3,
     CODEC_ID_FLV1,
