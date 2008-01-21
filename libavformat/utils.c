@@ -1426,7 +1426,7 @@ static void av_update_stream_timings(AVFormatContext *ic)
     duration = INT64_MIN;
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
-        if (st->start_time != AV_NOPTS_VALUE) {
+        if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
             if (start_time1 < start_time)
                 start_time = start_time1;
