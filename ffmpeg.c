@@ -419,10 +419,9 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
             av_free_packet(pkt);
             new_pkt.destruct= av_destruct_packet;
         } else if(a<0){
-            fprintf(stderr, "%s failed for stream %d, codec %s"
-                , bsfc->filter->name
-                , pkt->stream_index
-                , avctx->codec ? avctx->codec->name : "copy");
+            fprintf(stderr, "%s failed for stream %d, codec %s",
+                    bsfc->filter->name, pkt->stream_index,
+                    avctx->codec ? avctx->codec->name : "copy");
             print_error("", a);
         }
         *pkt= new_pkt;
