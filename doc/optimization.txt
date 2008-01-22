@@ -30,15 +30,15 @@ NOTE: If you still don't understand some function, ask at our mailing list!!!
 
 When is an optimization justified?
 ----------------------------------
-Normally, clean & simple optimizations on widely used codecs can achieve
-an overall speedup of 0.1%. These speedups accumulate and can make a big
-difference after awhile. Also, if none of the following factors get
-worse due to an optimization -- speed, binary code size, source size,
-source readability -- and at least one factor improves, then an
-optimization is always a good idea even if the overall gain is less than
-0.1%. For obscure codecs that are not often used, the goal is more
-toward keeping the code clean, small, and readable than to make it 1%
-faster.
+Normally, clean and simple optimizations for widely used codecs are
+justified even if they only achieve an overall speedup of 0.1%. These
+speedups accumulate and can make a big difference after awhile. Also, if
+none of the following factors get worse due to an optimization -- speed,
+binary code size, source size, source readability -- and at least one
+factor improves, then an optimization is always a good idea even if the
+overall gain is less than 0.1%. For obscure codecs that are not often
+used, the goal is more toward keeping the code clean, small, and
+readable instead of making it 1% faster.
 
 
 WTF is that function good for ....:
