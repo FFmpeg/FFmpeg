@@ -23,6 +23,15 @@ and how they can be optimized.
 NOTE: If you still don't understand some function, ask at our mailing list!!!
 (http://lists.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
 
+What speedup justifies an optimizetion?
+Normaly with clean&simple optimizations and widely used codecs a overall
+speedup of the affected codec of 0.1% is enough. These speedups accumulate
+and can make a big difference after a while ...
+Also if none of the following gets worse and at least one gets better then an
+optimization is always a good idea even if the overall gain is less than 0.1%
+(speed, binary code size, source size, source readability)
+For obscure codecs noone uses, the goal is more toward keeping the code clean
+small and readable than to make it 1% faster.
 
 
 WTF is that function good for ....:
