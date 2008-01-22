@@ -4883,9 +4883,8 @@ int64_t g=0;
     printf("};\n");
     {
             int level=2;
-            int orientation=3;
             int w= width  >> (s.spatial_decomposition_count-level);
-            int h= height >> (s.spatial_decomposition_count-level);
+            //int h= height >> (s.spatial_decomposition_count-level);
             int stride= width  << (s.spatial_decomposition_count-level);
             DWTELEM *buf= buffer[0];
             int64_t error=0;
