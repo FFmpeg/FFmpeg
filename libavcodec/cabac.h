@@ -90,7 +90,7 @@ static inline void renorm_cabac_encoder(CABACContext *c){
     }
 }
 
-#if 0
+#ifdef TEST
 static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + *state];
 
@@ -260,7 +260,7 @@ static void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int 
             put_cabac_bypass(c, sign);
     }
 }
-#endif /* 0 */
+#endif /* TEST */
 
 static void refill(CABACContext *c){
 #if CABAC_BITS == 16
