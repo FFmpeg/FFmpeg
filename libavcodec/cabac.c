@@ -183,6 +183,7 @@ void ff_init_cabac_states(CABACContext *c){
 #define SIZE 10240
 
 #include "avcodec.h"
+#include "cabac.h"
 
 int main(void){
     CABACContext c;
@@ -192,7 +193,7 @@ int main(void){
     uint8_t state[10]= {0};
 
     ff_init_cabac_encoder(&c, b, SIZE);
-    ff_init_cabac_states(&c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+    ff_init_cabac_states(&c);
 
     for(i=0; i<SIZE; i++){
         r[i]= random()%7;
