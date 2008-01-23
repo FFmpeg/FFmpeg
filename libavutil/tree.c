@@ -75,6 +75,24 @@ void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const voi
 
             if(!(t->state&1)){
                 if(t->state){
+                    /* The following code is equivalent to
+                    if((*child)->state*2 == -t->state)
+                        rotate(child, i^1);
+                    rotate(tp, i);
+
+                    with rotate():
+                    static void rotate(AVTreeNode **tp, int i){
+                        AVTreeNode *t= *tp;
+
+                        *tp= t->child[i];
+                        t->child[i]= t->child[i]->child[i^1];
+                        (*tp)->child[i^1]= t;
+                        i= 4*t->state + 2*(*tp)->state + 12;
+                          t  ->state=                     ((0x614586 >> i) & 3)-1;
+                        (*tp)->state= ((*tp)->state>>1) + ((0x400EEA >> i) & 3)-1;
+                    }
+                    but such a rotate function is both bigger and slower
+                    */
                     if((*child)->state*2 == -t->state){
                         *tp= (*child)->child[i^1];
                         (*child)->child[i^1]= (*tp)->child[i];
