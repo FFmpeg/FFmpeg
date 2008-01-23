@@ -7821,6 +7821,7 @@ static inline void fill_mb_avail(H264Context *h){
 #endif
 
 #ifdef TEST
+#undef printf
 #undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
@@ -7884,6 +7885,7 @@ int main(void){
         STOP_TIMER("get_se_golomb");
     }
 
+#if 0
     printf("testing 4x4 (I)DCT\n");
 
     DCTELEM block[16];
@@ -7923,14 +7925,12 @@ int main(void){
         }
     }
     printf("error=%f max_error=%d\n", ((float)error)/COUNT/16, (int)max_error );
-#if 0
     printf("testing quantizer\n");
     for(qp=0; qp<52; qp++){
         for(i=0; i<16; i++)
             src1_block[i]= src2_block[i]= random()%255;
 
     }
-#endif
     printf("Testing NAL layer\n");
 
     uint8_t bitstream[COUNT];
@@ -7986,6 +7986,7 @@ int main(void){
             return -1;
         }
     }
+#endif
 
     printf("Testing RBSP\n");
 
