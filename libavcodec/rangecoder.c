@@ -111,6 +111,7 @@ int ff_rac_terminate(RangeCoder *c){
 
 #ifdef TEST
 #define SIZE 10240
+#undef random
 int main(void){
     RangeCoder c;
     uint8_t b[9*SIZE];
@@ -133,7 +134,7 @@ START_TIMER
 STOP_TIMER("put_rac")
     }
 
-    ff_put_rac_terminate(&c);
+    ff_rac_terminate(&c);
 
     ff_init_range_decoder(&c, b, SIZE);
 
