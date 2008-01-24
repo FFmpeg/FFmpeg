@@ -42,7 +42,7 @@
 
 #ifdef CONFIG_LIBFAADBIN
 #include <dlfcn.h>
-static const char* libfaadname = "libfaad.so.0";
+static const char* libfaadname = "libfaad.so";
 #else
 #define dlopen(a)
 #define dlclose(a)
@@ -235,7 +235,7 @@ static int faac_decode_init(AVCodecContext *avctx)
         return -1;
     }
 #define dfaac(a, b) \
-    do { static const char* n = "faacDec" #a; \
+    do { static const char* n = AV_STRINGIFY(faacDec ## a); \
     if ((s->faacDec ## a = b dlsym( s->handle, n )) == NULL) { err = n; break; } } while(0)
     for(;;) {
 #else  /* !CONFIG_LIBFAADBIN */
