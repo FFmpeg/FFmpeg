@@ -234,47 +234,32 @@ static int faac_decode_init(AVCodecContext *avctx)
                libfaadname, dlerror());
         return -1;
     }
-#define dfaac(a, b)                                                     \
-    do { static const char* n = AV_STRINGIFY(faacDec ## a);             \
-        if ((s->faacDec ## a = b dlsym( s->handle, n )) == NULL) { err = n; break; } } while(0)
-    for(;;) {
+
+#define dfaac(a) do {                                                   \
+        const char* n = AV_STRINGIFY(faacDec ## a);                     \
+        if (!err && !(s->faacDec ## a = dlsym(s->handle, n))) {         \
+            err = n;                                                    \
+        }                                                               \
+    } while(0)
 #else  /* !CONFIG_LIBFAADBIN */
-#define dfaac(a, b)     s->faacDec ## a = faacDec ## a
+#define dfaac(a)     s->faacDec ## a = faacDec ## a
 #endif /* CONFIG_LIBFAADBIN */
 
-        // resolve all needed function calls
-        dfaac(Open, (faacDecHandle FAADAPI (*)(void)));
-        dfaac(Close, (void FAADAPI (*)(faacDecHandle hDecoder)));
-        dfaac(GetCurrentConfiguration, (faacDecConfigurationPtr
-                                        FAADAPI (*)(faacDecHandle)));
-#ifndef FAAD2_VERSION
-        dfaac(SetConfiguration, (int FAADAPI (*)(faacDecHandle,
-                                                 faacDecConfigurationPtr)));
-
-        dfaac(Init, (int FAADAPI (*)(faacDecHandle, unsigned char*,
-                                     unsigned long*, unsigned long*)));
-        dfaac(Init2, (int FAADAPI (*)(faacDecHandle, unsigned char*,
-                                      unsigned long, unsigned long*,
-                                      unsigned long*)));
-        dfaac(Decode, (int FAADAPI (*)(faacDecHandle, unsigned char*,
-                                       unsigned long*, short*, unsigned long*)));
-#else
-        dfaac(SetConfiguration, (unsigned char FAADAPI (*)(faacDecHandle,
-                                                           faacDecConfigurationPtr)));
-        dfaac(Init, (long FAADAPI (*)(faacDecHandle, unsigned char*,
-                                      unsigned long, unsigned long*, unsigned char*)));
-        dfaac(Init2, (char FAADAPI (*)(faacDecHandle, unsigned char*,
-                                       unsigned long, unsigned long*,
-                                       unsigned char*)));
-        dfaac(Decode, (void *FAADAPI (*)(faacDecHandle, faacDecFrameInfo*,
-                                         unsigned char*, unsigned long)));
-        dfaac(GetErrorMessage, (char* FAADAPI (*)(unsigned char)));
+    // resolve all needed function calls
+    dfaac(Open);
+    dfaac(Close);
+    dfaac(GetCurrentConfiguration);
+    dfaac(SetConfiguration);
+    dfaac(Init);
+    dfaac(Init2);
+    dfaac(Decode);
+#ifdef FAAD2_VERSION
+    dfaac(GetErrorMessage);
 #endif
-#undef dfacc
+
+#undef dfaac
 
 #ifdef CONFIG_LIBFAADBIN
-        break;
-    }
     if (err) {
         dlclose(s->handle);
         av_log(avctx, AV_LOG_ERROR, "FAAD library: cannot resolve %s in %s!\n",
