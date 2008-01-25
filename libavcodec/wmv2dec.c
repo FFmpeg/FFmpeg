@@ -474,6 +474,14 @@ static int wmv2_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+static int wmv2_decode_end(AVCodecContext *avctx)
+{
+    Wmv2Context *w = avctx->priv_data;
+
+    ff_intrax8_common_end(&w->x8);
+    return ff_h263_decode_end(avctx);
+}
+
 AVCodec wmv2_decoder = {
     "wmv2",
     CODEC_TYPE_VIDEO,
@@ -481,7 +489,7 @@ AVCodec wmv2_decoder = {
     sizeof(Wmv2Context),
     wmv2_decode_init,
     NULL,
-    ff_h263_decode_end,
+    wmv2_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };

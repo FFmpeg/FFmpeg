@@ -677,6 +677,15 @@ void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s){
 }
 
 /**
+ * Destroy IntraX8 frame structure.
+ * @param w pointer to IntraX8Context
+ */
+void ff_intrax8_common_end(IntraX8Context * w)
+{
+    av_freep(&w->prediction_table);
+}
+
+/**
  * Decode single IntraX8 frame.
  * The parent codec must fill s->loopfilter and s->gb (bitstream).
  * The parent codec must call MPV_frame_start(), ff_er_frame_start() before calling this function.
