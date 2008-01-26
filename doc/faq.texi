@@ -8,13 +8,104 @@
 @end titlepage
 
 
-@chapter General Problems
+@chapter General Questions
+
+@section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
+
+Like most open source projects FFmpeg suffers from a certain lack of
+manpower. For this reason the developers have to prioritize the work
+they do and putting out releases is not at the top of the list, fixing
+bugs and reviewing patches takes precedence. Please don't complain or
+request more timely and/or frequent releases unless you are willing to
+help out creating them.
+
+@section I have a problem with an old version of FFmpeg; where should I report it?
+Nowhere. Upgrade to the latest release or if there is no recent release upgrade
+to Subversion HEAD. You could also try to report it. Maybe you will get lucky and
+become the first person in history to get an answer different from "upgrade
+to Subversion HEAD".
+
+@section Why doesn't FFmpeg support feature [xyz]?
+
+Because no one has taken on that task yet. FFmpeg development is
+driven by the tasks that are important to the individual developers.
+If there is a feature that is important to you, the best way to get
+it implemented is to undertake the task yourself.
+
+@section FFmpeg does not support codec XXX. Can you include a Windows DLL loader to support it?
+
+No. FFmpeg only supports open source codecs. Windows DLLs are not
+portable, bloated and often slow.
+
+@section My bugreport/mail to ffmpeg-devel/user has not received any replies.
+
+Likely reasons
+@itemize
+@item We are busy and haven't had time yet to read your report or
+investigate the issue.
+@item You didn't follow bugreports.html.
+@item You didn't use Subversion HEAD.
+@item You reported a segmentation fault without gdb output.
+@item You describe a problem but not how to reproduce it.
+@item It's unclear if you use ffmpeg as command line tool or use
+libav* from another application.
+@item You speak about a video having problems on playback but
+not what you use to play it.
+@item We have no faint clue what you are talking about besides
+that it is related to FFmpeg.
+@end itemize
+
+@section Is there a forum for FFmpeg? I do not like mailing lists.
+
+Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
 
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
 Even if ffmpeg can read the file format, it may not support all its
 codecs. Please consult the supported codec list in the ffmpeg
 documentation.
+
+@section Which codecs are supported by Windows?
+
+Windows does not support standard formats like MPEG very well, unless you
+install some additional codecs
+
+The following list of video codecs should work on most Windows systems:
+@table @option
+@item msmpeg4v2
+.avi/.asf
+@item msmpeg4
+.asf only
+@item wmv1
+.asf only
+@item wmv2
+.asf only
+@item mpeg4
+only if you have some MPEG-4 codec installed like ffdshow or XviD
+@item mpeg1
+.mpg only
+@end table
+Note, ASF files often have .wmv or .wma extensions in Windows. It should also
+be mentioned that Microsoft claims a patent on the ASF format, and may sue
+or threaten users who create ASF files with non-Microsoft software. It is
+strongly advised to avoid ASF where possible.
+
+The following list of audio codecs should work on most Windows systems:
+@table @option
+@item adpcm_ima_wav
+@item adpcm_ms
+@item pcm
+@item mp3
+if some MP3 codec like LAME is installed
+@end table
+
+
+@chapter Usage
+
+@section ffmpeg does not work; What is wrong?
+
+Try a 'make distclean' in the ffmpeg source directory before the build. If this does not help see
+(@url{http://ffmpeg.org/bugreports.html}).
 
 @section How do I encode single pictures to movies?
 
@@ -58,11 +149,6 @@ Applying that to the previous example:
 
 Beware that there is no "jpeg" codec. Use "mjpeg" instead.
 
-@section FFmpeg does not support codec XXX. Can you include a Windows DLL loader to support it?
-
-No. FFmpeg only supports open source codecs. Windows DLLs are not
-portable, bloated and often slow.
-
 @section I get "Unsupported codec (id=86043) for input stream #0.1". What is the problem?
 
 This is the Qcelp codec, FFmpeg has no support for that codec currently. Try mencoder/mplayer it might work.
@@ -85,40 +171,6 @@ Enable AC-3 decoding with @code{./configure --enable-gpl}. Take care: By
 enabling AC-3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
-@section Which codecs are supported by Windows?
-
-Windows does not support standard formats like MPEG very well, unless you
-install some additional codecs
-
-The following list of video codecs should work on most Windows systems:
-@table @option
-@item msmpeg4v2
-.avi/.asf
-@item msmpeg4
-.asf only
-@item wmv1
-.asf only
-@item wmv2
-.asf only
-@item mpeg4
-only if you have some MPEG-4 codec installed like ffdshow or XviD
-@item mpeg1
-.mpg only
-@end table
-Note, ASF files often have .wmv or .wma extensions in Windows. It should also
-be mentioned that Microsoft claims a patent on the ASF format, and may sue
-or threaten users who create ASF files with non-Microsoft software. It is
-strongly advised to avoid ASF where possible.
-
-The following list of audio codecs should work on most Windows systems:
-@table @option
-@item adpcm_ima_wav
-@item adpcm_ms
-@item pcm
-@item mp3
-if some MP3 codec like LAME is installed
-@end table
-
 @section Why does the chrominance data seem to be sampled at a different time from the luminance data on bt8x8 captures on Linux?
 
 This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at
@@ -132,12 +184,6 @@ will cause somewhat too strong filtering. A fix is to apply (@url{http://svn.mpl
 or (@url{http://svn.mplayerhq.hu/michael/trunk/patches/bttv-comb-2.6.6.patch?view=co})
 and pass 'combfilter=2'.
 
-@section I have a problem with an old version of ffmpeg; where should I report it?
-Nowhere. Upgrade to the latest release or if there is no recent release upgrade
-to Subversion HEAD. You could also try to report it. Maybe you will get lucky and
-become the first person in history to get an answer different from "upgrade
-to Subversion HEAD".
-
 @section -f jpeg doesn't work.
 
 Try '-f image2 test%d.jpg'.
@@ -146,11 +192,6 @@ Try '-f image2 test%d.jpg'.
 
 Some codecs, like MPEG-1/2, only allow a small number of fixed framerates.
 Choose a different codec with the -vcodec command line option.
-
-@section ffmpeg does not work; What is wrong?
-
-Try a 'make distclean' in the ffmpeg source directory before the build. If this does not help see
-(@url{http://ffmpeg.org/bugreports.html}).
 
 @section How do I encode XviD or DivX video with ffmpeg?
 
@@ -231,24 +272,6 @@ Just create an "input.avs" text file with this single line ...
 
 For ANY other help on Avisynth, please visit @url{http://www.avisynth.org/}.
 
-@section My bugreport/mail to ffmpeg-devel/user has not received any replies.
-
-Likely reasons
-@itemize
-@item We are busy and haven't had time yet to read your report or
-investigate the issue.
-@item You didn't follow bugreports.html.
-@item You didn't use Subversion HEAD.
-@item You reported a segmentation fault without gdb output.
-@item You describe a problem but not how to reproduce it.
-@item It's unclear if you use ffmpeg as command line tool or use
-libav* from another application.
-@item You speak about a video having problems on playback but
-not what you use to play it.
-@item We have no faint clue what you are talking about besides
-that it is related to FFmpeg.
-@end itemize
-
 @section How can I join video files?
 
 A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to join video files by
@@ -306,10 +329,6 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section Is there a forum for FFmpeg? I do not like mailing lists.
-
-Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
-
 @section FFmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps.
 
 Read the MPEG spec about video buffer verifier.
@@ -329,23 +348,6 @@ examining all of the vbv_delay values and making complicated computations."
 
 
 @chapter Development
-
-@section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
-
-Like most open source projects FFmpeg suffers from a certain lack of
-manpower. For this reason the developers have to prioritize the work
-they do and putting out releases is not at the top of the list, fixing
-bugs and reviewing patches takes precedence. Please don't complain or
-request more timely and/or frequent releases unless you are willing to
-help out creating them.
-
-@section Why doesn't FFmpeg support feature [xyz]?
-
-Because no one has taken on that task yet. FFmpeg development is
-driven by the tasks that are important to the individual developers.
-If there is a feature that is important to you, the best way to get
-it implemented is to undertake the task yourself.
-
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
 
