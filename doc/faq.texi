@@ -77,13 +77,12 @@ quite logical that there is a small reduction of quality. This is not a bug.
 
 Use @file{-} as filename.
 
-@section Why does ffmpeg not decode audio in VOB files?
+@section Why does FFmpeg not decode audio in VOB files?
 
-The audio is AC3 (a.k.a. A/52). AC3 decoding is an optional component in ffmpeg
-as the component that handles AC3 decoding (liba52) is currently released under
-the GPL. If you have liba52 installed on your system, enable AC3 decoding
-with @code{./configure --enable-liba52 --enable-gpl}. Take care: by
-enabling AC3, you automatically change the license of libavcodec from
+The audio is AC-3 (a.k.a. A/52). AC-3 decoding is an optional component in FFmpeg
+as the component that handles AC-3 decoding is currently released under the GPL.
+Enable AC-3 decoding with @code{./configure --enable-gpl}. Take care: By
+enabling AC-3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
 @section Which codecs are supported by Windows?
