@@ -1606,10 +1606,10 @@ if enabled pthreads; then
         :
     elif check_func pthread_create -pthread; then
         add_cflags -pthread
-        add_ldflags -pthread
+        add_extralibs -pthread
     elif check_func pthread_create -pthreads; then
         add_cflags -pthreads
-        add_ldflags -pthreads
+        add_extralibs -pthreads
     elif ! check_lib pthread.h pthread_create -lpthread; then
         die "ERROR: can't find pthreads library"
     fi
