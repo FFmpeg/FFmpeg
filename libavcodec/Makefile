@@ -304,7 +304,8 @@ OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBA52)                  += liba52.o
-OBJS-$(CONFIG_LIBAMR)                  += libamr.o
+OBJS-$(CONFIG_LIBAMR_NB)               += libamr.o
+OBJS-$(CONFIG_LIBAMR_WB)               += libamr.o
 OBJS-$(CONFIG_LIBFAAC)                 += libfaac.o
 OBJS-$(CONFIG_LIBFAAD)                 += libfaad.o
 OBJS-$(CONFIG_LIBGSM)                  += libgsm.o

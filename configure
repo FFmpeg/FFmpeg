@@ -634,7 +634,6 @@ CONFIG_LIST="
     ipv6
     liba52
     liba52bin
-    libamr
     libamr_nb
     libamr_wb
     libdc1394
@@ -1627,8 +1626,6 @@ for func in llrint lrint lrintf round roundf; do
 int main(void) { return ($func(3.999f) > 0)?0:1; }
 EOF
 done
-
-enabled_any libamr_nb libamr_wb && enable libamr
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
