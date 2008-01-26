@@ -46,7 +46,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_PNG       , 109 },
     { CODEC_ID_JPEG2000  , 110 }, /* 15444-1 */
     { CODEC_ID_VC1       , 163 },
-    { CODEC_ID_VORBIS    , 221 },
+    { CODEC_ID_VORBIS    , 221 }, /* non standard, gpac uses it */
     { CODEC_ID_QCELP     , 225 },
     { 0, 0 },
 };
