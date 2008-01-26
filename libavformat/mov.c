@@ -1542,6 +1542,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
 #endif
         av_get_packet(s->pb, pkt, sample->size);
+        if (s->streams[sc->ffindex]->codec->codec_id == CODEC_ID_TEXT) {
+            int textlen = FFMIN(AV_RB16(pkt->data), sample->size - 2);
+            textlen = FFMAX(textlen, 0);
+            memmove(pkt->data, pkt->data + 2, textlen);
+            pkt->size = textlen;
+        }
 #ifdef CONFIG_DV_DEMUXER
         if (mov->dv_demux) {
             void *pkt_destruct_func = pkt->destruct;
