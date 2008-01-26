@@ -107,17 +107,8 @@ version.h:
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
-tools/pktdumper$(EXESUF): tools/pktdumper.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $< -o $@ $(EXTRALIBS)
-
-tools/qt-faststart$(EXESUF): tools/qt-faststart.c
-	$(CC) $(CFLAGS) $< -o $@
-
-tools/cws2fws$(EXESUF): tools/cws2fws.c
-	$(CC) $(CFLAGS) $< -o $@ -lz
-
-tools/trasher$(EXESUF): tools/trasher.c
-	$(CC) $(CFLAGS) $< -o $@
+tools/%$(EXESUF): tools/%.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
