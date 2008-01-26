@@ -30,12 +30,13 @@ to Subversion HEAD".
 Because no one has taken on that task yet. FFmpeg development is
 driven by the tasks that are important to the individual developers.
 If there is a feature that is important to you, the best way to get
-it implemented is to undertake the task yourself.
+it implemented is to undertake the task yourself or sponsor a developer.
 
 @section FFmpeg does not support codec XXX. Can you include a Windows DLL loader to support it?
 
-No. FFmpeg only supports open source codecs. Windows DLLs are not
-portable, bloated and often slow.
+No. Windows DLLs are not portable, bloated and often slow.
+Moreover FFmpeg strives to support all codecs natively.
+A DLL loader is not conducive to that goal.
 
 @section My bugreport/mail to ffmpeg-devel/user has not received any replies.
 
@@ -61,7 +62,7 @@ Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
 
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
-Even if ffmpeg can read the file format, it may not support all its
+Even if ffmpeg can read the container format, it may not support all its
 codecs. Please consult the supported codec list in the ffmpeg
 documentation.
 
@@ -104,7 +105,7 @@ if some MP3 codec like LAME is installed
 
 @section ffmpeg does not work; What is wrong?
 
-Try a 'make distclean' in the ffmpeg source directory before the build. If this does not help see
+Try a @code{make distclean} in the ffmpeg source directory before the build. If this does not help see
 (@url{http://ffmpeg.org/bugreports.html}).
 
 @section How do I encode single pictures to movies?
