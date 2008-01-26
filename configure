@@ -68,6 +68,8 @@ show_help(){
   echo "  --disable-shared         do not build shared libraries [default=yes]"
   echo "  --enable-gpl             allow use of GPL code, the resulting libav*"
   echo "                           and ffmpeg will be under GPL [default=no]"
+  echo "  --enable-nonfree         allow use of nonfree code, the resulting libav*"
+  echo "                           and ffmpeg will be unredistributable [default=no]"
   echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
   echo "  --enable-swscaler        software scaler support [default=no]"
   echo "  --enable-beosthreads     use BeOS threads [default=no]"
@@ -650,6 +652,7 @@ CONFIG_LIST="
     memalign_hack
     mpegaudio_hp
     network
+    nonfree
     powerpc_perf
     pp
     small
@@ -1355,6 +1358,10 @@ if ! enabled gpl; then
     die_gpl_disabled "The software scaler"     swscaler
 fi
 
+if ! enabled nonfree && enabled_any libamr_nb libamr_wb; then
+    die "libamr is nonfree and --enable-nonfree is not specified."
+fi
+
 check_deps $ARCH_EXT_LIST
 
 test -z "$need_memalign" && need_memalign="$mmx"
@@ -1928,9 +1935,11 @@ for type in decoder encoder parser demuxer muxer protocol bsf indev outdev; do
     echo $partlist
 done
 
-enabled gpl &&
-    echo "License: GPL" ||
-    echo "License: LGPL"
+enabled nonfree &&
+    echo "License: unredistributable" ||
+    (enabled gpl &&
+        echo "License: GPL" ||
+        echo "License: LGPL")
 
 echo "Creating config.mak and config.h..."
 
