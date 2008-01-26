@@ -600,8 +600,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
 
-        if (st->codec->codec_tag) {
-            /* multiple fourcc, just skip for now */
+        if (st->codec->codec_tag && st->codec->codec_tag != MKTAG('j', 'p', 'e', 'g')) {
+            /* multiple fourcc, we skip jpeg, this isnt correct, we should export it as
+               seperate AVStream but this needs a few changes in the mov demuxer, patch
+               welcome */
             url_fskip(pb, size - (url_ftell(pb) - start_pos));
             continue;
         }
