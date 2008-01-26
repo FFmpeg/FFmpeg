@@ -624,6 +624,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 id = codec_get_id(codec_bmp_tags, format);
             if (id > 0)
                 st->codec->codec_type = CODEC_TYPE_VIDEO;
+            else if(st->codec->codec_type == CODEC_TYPE_DATA){
+                id = codec_get_id(ff_codec_movsubtitle_tags, format);
+                if(id > 0)
+                    st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+            }
         }
 
         dprintf(c->fc, "size=%d 4CC= %c%c%c%c codec_type=%d\n", size,
