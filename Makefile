@@ -69,6 +69,9 @@ LDFLAGS+=-L$(BUILD_ROOT)/libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
+MAKE-yes = $(MAKE)
+MAKE-    = : $(MAKE)
+
 all: lib $(PROGS) $(ALL_TARGETS-yes)
 
 lib:
@@ -76,12 +79,8 @@ lib:
 	$(MAKE) -C libavcodec  all
 	$(MAKE) -C libavformat all
 	$(MAKE) -C libavdevice all
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc all
-endif
-ifeq ($(CONFIG_SWSCALER),yes)
-	$(MAKE) -C libswscale  all
-endif
+	$(MAKE-$(CONFIG_PP)) -C libpostproc all
+	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  all
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(EXTRALIBS)
@@ -165,12 +164,8 @@ install-libs:
 	$(MAKE) -C libavcodec  install-libs
 	$(MAKE) -C libavformat install-libs
 	$(MAKE) -C libavdevice install-libs
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc install-libs
-endif
-ifeq ($(CONFIG_SWSCALER),yes)
-	$(MAKE) -C libswscale  install-libs
-endif
+	$(MAKE-$(CONFIG_PP)) -C libpostproc install-libs
+	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  install-libs
 
 ifeq ($(BUILD_SHARED),yes)
 	-$(LDCONFIG)
@@ -181,9 +176,7 @@ install-headers:
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers
 	$(MAKE) -C libavdevice install-headers
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc install-headers
-endif
+	$(MAKE-$(CONFIG_PP)) -C libpostproc install-headers
 	$(MAKE) -C libswscale  install-headers
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
@@ -220,12 +213,8 @@ depend dep: .depend .vhookdep
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
 	$(MAKE) -C libavdevice depend
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc depend
-endif
-ifeq ($(CONFIG_SWSCALER),yes)
-	$(MAKE) -C libswscale  depend
-endif
+	$(MAKE-$(CONFIG_PP)) -C libpostproc depend
+	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  depend
 
 .depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
