@@ -210,50 +210,50 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
     if (avctx->lowres == 0) {
-    if(idct_algo == FF_IDCT_AUTO){
+        if(idct_algo == FF_IDCT_AUTO){
 #if defined(HAVE_IPP)
-        idct_algo = FF_IDCT_IPP;
+            idct_algo = FF_IDCT_IPP;
 #elif defined(HAVE_ARMV6)
-        idct_algo = FF_IDCT_SIMPLEARMV6;
+            idct_algo = FF_IDCT_SIMPLEARMV6;
 #elif defined(HAVE_ARMV5TE)
-        idct_algo = FF_IDCT_SIMPLEARMV5TE;
+            idct_algo = FF_IDCT_SIMPLEARMV5TE;
 #else
-        idct_algo = FF_IDCT_ARM;
+            idct_algo = FF_IDCT_ARM;
 #endif
-    }
+        }
 
-    if(idct_algo==FF_IDCT_ARM){
-        c->idct_put= j_rev_dct_ARM_put;
-        c->idct_add= j_rev_dct_ARM_add;
-        c->idct    = j_rev_dct_ARM;
-        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;/* FF_NO_IDCT_PERM */
-    } else if (idct_algo==FF_IDCT_SIMPLEARM){
-        c->idct_put= simple_idct_ARM_put;
-        c->idct_add= simple_idct_ARM_add;
-        c->idct    = simple_idct_ARM;
-        c->idct_permutation_type= FF_NO_IDCT_PERM;
+        if(idct_algo==FF_IDCT_ARM){
+            c->idct_put= j_rev_dct_ARM_put;
+            c->idct_add= j_rev_dct_ARM_add;
+            c->idct    = j_rev_dct_ARM;
+            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;/* FF_NO_IDCT_PERM */
+        } else if (idct_algo==FF_IDCT_SIMPLEARM){
+            c->idct_put= simple_idct_ARM_put;
+            c->idct_add= simple_idct_ARM_add;
+            c->idct    = simple_idct_ARM;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
 #ifdef HAVE_ARMV6
-    } else if (idct_algo==FF_IDCT_SIMPLEARMV6){
-        c->idct_put= ff_simple_idct_put_armv6;
-        c->idct_add= ff_simple_idct_add_armv6;
-        c->idct    = ff_simple_idct_armv6;
-        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+        } else if (idct_algo==FF_IDCT_SIMPLEARMV6){
+            c->idct_put= ff_simple_idct_put_armv6;
+            c->idct_add= ff_simple_idct_add_armv6;
+            c->idct    = ff_simple_idct_armv6;
+            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
 #endif
 #ifdef HAVE_ARMV5TE
-    } else if (idct_algo==FF_IDCT_SIMPLEARMV5TE){
-        c->idct_put= simple_idct_put_armv5te;
-        c->idct_add= simple_idct_add_armv5te;
-        c->idct    = simple_idct_armv5te;
-        c->idct_permutation_type = FF_NO_IDCT_PERM;
+        } else if (idct_algo==FF_IDCT_SIMPLEARMV5TE){
+            c->idct_put= simple_idct_put_armv5te;
+            c->idct_add= simple_idct_add_armv5te;
+            c->idct    = simple_idct_armv5te;
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
 #endif
 #ifdef HAVE_IPP
-    } else if (idct_algo==FF_IDCT_IPP){
-        c->idct_put= simple_idct_ipp_put;
-        c->idct_add= simple_idct_ipp_add;
-        c->idct    = simple_idct_ipp;
-        c->idct_permutation_type= FF_NO_IDCT_PERM;
+        } else if (idct_algo==FF_IDCT_IPP){
+            c->idct_put= simple_idct_ipp_put;
+            c->idct_add= simple_idct_ipp_add;
+            c->idct    = simple_idct_ipp;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
 #endif
-    }
+        }
     }
 
     c->put_pixels_tab[0][0] = put_pixels16_arm;
