@@ -523,7 +523,7 @@ AVCodec libamr_nb_encoder =
 #ifdef CONFIG_LIBAMR_WB
 
 #ifdef _TYPEDEF_H
-//To avoid duplicate typedefs from typdef in amr-nb
+//To avoid duplicate typedefs from typedef in amr-nb
 #define typedef_h
 #endif
 
