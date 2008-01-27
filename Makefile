@@ -75,11 +75,11 @@ MAKE-    = : $(MAKE)
 all: lib $(PROGS) $(ALL_TARGETS-yes)
 
 lib:
-	$(MAKE) -C libavutil   all
-	$(MAKE) -C libavcodec  all
-	$(MAKE) -C libavformat all
-	$(MAKE) -C libavdevice all
-	$(MAKE-$(CONFIG_PP)) -C libpostproc all
+	$(MAKE)                    -C libavutil   all
+	$(MAKE)                    -C libavcodec  all
+	$(MAKE)                    -C libavformat all
+	$(MAKE)                    -C libavdevice all
+	$(MAKE-$(CONFIG_PP))       -C libpostproc all
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  all
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
@@ -160,24 +160,23 @@ install-vhook: videohook
 	install -m 755 $(HOOKS) "$(SHLIBDIR)/vhook"
 
 install-libs:
-	$(MAKE) -C libavutil   install-libs
-	$(MAKE) -C libavcodec  install-libs
-	$(MAKE) -C libavformat install-libs
-	$(MAKE) -C libavdevice install-libs
-	$(MAKE-$(CONFIG_PP)) -C libpostproc install-libs
+	$(MAKE)                    -C libavutil   install-libs
+	$(MAKE)                    -C libavcodec  install-libs
+	$(MAKE)                    -C libavformat install-libs
+	$(MAKE)                    -C libavdevice install-libs
+	$(MAKE-$(CONFIG_PP))       -C libpostproc install-libs
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  install-libs
-
 ifeq ($(BUILD_SHARED),yes)
 	-$(LDCONFIG)
 endif
 
 install-headers:
-	$(MAKE) -C libavutil   install-headers
-	$(MAKE) -C libavcodec  install-headers
-	$(MAKE) -C libavformat install-headers
-	$(MAKE) -C libavdevice install-headers
+	$(MAKE)              -C libavutil   install-headers
+	$(MAKE)              -C libavcodec  install-headers
+	$(MAKE)              -C libavformat install-headers
+	$(MAKE)              -C libavdevice install-headers
 	$(MAKE-$(CONFIG_PP)) -C libpostproc install-headers
-	$(MAKE) -C libswscale  install-headers
+	$(MAKE)              -C libswscale  install-headers
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 
@@ -209,11 +208,11 @@ uninstall-headers:
 	-rmdir "$(INCDIR)"
 
 depend dep: .depend .vhookdep
-	$(MAKE) -C libavutil   depend
-	$(MAKE) -C libavcodec  depend
-	$(MAKE) -C libavformat depend
-	$(MAKE) -C libavdevice depend
-	$(MAKE-$(CONFIG_PP)) -C libpostproc depend
+	$(MAKE)                    -C libavutil   depend
+	$(MAKE)                    -C libavcodec  depend
+	$(MAKE)                    -C libavformat depend
+	$(MAKE)                    -C libavdevice depend
+	$(MAKE-$(CONFIG_PP))       -C libpostproc depend
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  depend
 
 .depend: $(SRCS) version.h
