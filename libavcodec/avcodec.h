@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(49<<8)+0)
-#define LIBAVCODEC_VERSION      51.49.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(50<<8)+0)
+#define LIBAVCODEC_VERSION      51.50.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -284,6 +284,9 @@ enum CodecID {
     CODEC_ID_XSUB,
     CODEC_ID_SSA,
 
+    /* other specific kind of codecs (generaly used for attachments) */
+    CODEC_ID_TTF= 0x18000,
+
     CODEC_ID_MPEG2TS= 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
                                 * stream (only used by libavformat) */
 };
@@ -300,6 +303,7 @@ enum CodecType {
     CODEC_TYPE_AUDIO,
     CODEC_TYPE_DATA,
     CODEC_TYPE_SUBTITLE,
+    CODEC_TYPE_ATTACHMENT,
     CODEC_TYPE_NB
 };
 

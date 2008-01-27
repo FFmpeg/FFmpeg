@@ -2776,6 +2776,7 @@ static void opt_input_file(const char *filename)
             if(subtitle_disable)
                 ic->streams[i]->discard = AVDISCARD_ALL;
             break;
+        case CODEC_TYPE_ATTACHMENT:
         case CODEC_TYPE_UNKNOWN:
             break;
         default:
@@ -2825,6 +2826,7 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
                 has_subtitle = 1;
                 break;
             case CODEC_TYPE_DATA:
+            case CODEC_TYPE_ATTACHMENT:
             case CODEC_TYPE_UNKNOWN:
                 break;
             default:

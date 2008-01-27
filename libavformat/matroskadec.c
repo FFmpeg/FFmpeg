@@ -1865,6 +1865,119 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
     return res;
 }
 
+static int
+matroska_parse_attachments(AVFormatContext *s)
+{
+    MatroskaDemuxContext *matroska = s->priv_data;
+    int res = 0;
+    uint32_t id;
+
+    av_log(matroska->ctx, AV_LOG_DEBUG, "parsing attachments...\n");
+
+    while (res == 0) {
+        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+            res = AVERROR(EIO);
+            break;
+        } else if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+
+        switch (id) {
+        case MATROSKA_ID_ATTACHEDFILE: {
+            char* name = NULL;
+            char* mime = NULL;
+            uint8_t* data = NULL;
+            int i, data_size = 0;
+            AVStream *st;
+
+            if ((res = ebml_read_master(matroska, &id)) < 0)
+                break;
+
+            while (res == 0) {
+                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+                    res = AVERROR(EIO);
+                    break;
+                } else if (matroska->level_up) {
+                    matroska->level_up--;
+                    break;
+                }
+
+                switch (id) {
+                case MATROSKA_ID_FILENAME:
+                    res = ebml_read_utf8 (matroska, &id, &name);
+                    break;
+
+                case MATROSKA_ID_FILEMIMETYPE:
+                    res = ebml_read_ascii (matroska, &id, &mime);
+                    break;
+
+                case MATROSKA_ID_FILEDATA:
+                    res = ebml_read_binary(matroska, &id, &data, &data_size);
+                    break;
+
+                default:
+                    av_log(matroska->ctx, AV_LOG_INFO,
+                           "Unknown attachedfile ID 0x%x\n", id);
+                case EBML_ID_VOID:
+                    res = ebml_read_skip(matroska);
+                    break;
+                }
+
+                if (matroska->level_up) {
+                    matroska->level_up--;
+                    break;
+                }
+            }
+
+            if (!(name && mime && data && data_size > 0)) {
+                av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
+                break;
+            }
+
+            st = av_new_stream(s, matroska->num_streams++);
+            if (st == NULL)
+                return AVERROR(ENOMEM);
+            st->filename = av_strdup(name);
+            st->codec->codec_id = CODEC_ID_NONE;
+            st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
+            st->codec->extradata = av_malloc(data_size);
+            if(st->codec->extradata == NULL)
+                return AVERROR(ENOMEM);
+            st->codec->extradata_size = data_size;
+            memcpy(st->codec->extradata, data, data_size);
+
+            for (i=0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++) {
+                if (!strncmp(ff_mkv_mime_tags[i].str, mime,
+                             strlen(ff_mkv_mime_tags[i].str))) {
+                    st->codec->codec_id = ff_mkv_mime_tags[i].id;
+                    break;
+                }
+            }
+
+            av_log(matroska->ctx, AV_LOG_DEBUG, "new attachment: %s, %s, size %d \n", name, mime, data_size);
+            break;
+        }
+
+        default:
+            av_log(matroska->ctx, AV_LOG_INFO,
+                   "Unknown attachments ID 0x%x\n", id);
+            /* fall-through */
+
+        case EBML_ID_VOID:
+            res = ebml_read_skip(matroska);
+            break;
+        }
+
+        if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+    }
+
+    return res;
+}
+
 #define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
 
 static int
@@ -2004,6 +2117,13 @@ matroska_read_header (AVFormatContext    *s,
                 if ((res = ebml_read_master(matroska, &id)) < 0)
                     break;
                 res = matroska_parse_seekhead(matroska);
+                break;
+            }
+
+            case MATROSKA_ID_ATTACHMENTS: {
+                if ((res = ebml_read_master(matroska, &id)) < 0)
+                    break;
+                res = matroska_parse_attachments(s);
                 break;
             }
 

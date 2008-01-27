@@ -21,8 +21,8 @@
 #ifndef FFMPEG_AVFORMAT_H
 #define FFMPEG_AVFORMAT_H
 
-#define LIBAVFORMAT_VERSION_INT ((52<<16)+(5<<8)+0)
-#define LIBAVFORMAT_VERSION     52.5.0
+#define LIBAVFORMAT_VERSION_INT ((52<<16)+(6<<8)+0)
+#define LIBAVFORMAT_VERSION     52.6.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -347,6 +347,8 @@ typedef struct AVStream {
 
 #define MAX_REORDER_DELAY 4
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
+
+    char *filename; /**< source filename of the stream */
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

@@ -71,3 +71,15 @@ const CodecTags ff_mkv_codec_tags[]={
     {""                 , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };
+
+const CodecMime ff_mkv_mime_tags[] = {
+    {"text/plain"                 , CODEC_ID_TEXT},
+    {"image/gif"                  , CODEC_ID_GIF},
+    {"image/jpeg"                 , CODEC_ID_MJPEG},
+    {"image/png"                  , CODEC_ID_PNG},
+    {"image/tiff"                 , CODEC_ID_TIFF},
+    {"application/x-truetype-font", CODEC_ID_TTF},
+    {"application/x-font"         , CODEC_ID_TTF},
+
+    {""                           , CODEC_ID_NONE}
+};

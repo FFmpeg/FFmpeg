@@ -1219,6 +1219,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         snprintf(buf, buf_size, "Subtitle: %s", codec_name);
         bitrate = enc->bit_rate;
         break;
+    case CODEC_TYPE_ATTACHMENT:
+        snprintf(buf, buf_size, "Attachment: %s", codec_name);
+        bitrate = enc->bit_rate;
+        break;
     default:
         snprintf(buf, buf_size, "Invalid Codec type %d", enc->codec_type);
         return;
