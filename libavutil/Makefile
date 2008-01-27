@@ -45,15 +45,8 @@ TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 sha1 softfloat t
 
 include ../common.mak
 
-tests: $(TESTS)
-
-%-test$(EXESUF): %.c $(LIBNAME)
-	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
-
 lzo-test$(EXESUF): lzo.c $(LIBNAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^ $(EXTRALIBS) -llzo2
 
 clean::
-	rm -f $(TESTS) lzo-test$(EXESUF)
-
-.PHONY: tests
+	rm -f lzo-test$(EXESUF)

@@ -472,17 +472,10 @@ clean::
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
-	   apiexample$(EXESUF) $(TESTS)
-
-tests: apiexample$(EXESUF) $(TESTS)
+	   apiexample$(EXESUF)
 
 cpuid-test$(EXESUF): i386/cputest.c
 apiexample$(EXESUF): apiexample.o $(LIBNAME)
 dct-test$(EXESUF): dct-test.o fdctref.o $(LIBNAME)
 fft-test$(EXESUF): fft-test.o $(LIBNAME)
 motion-test$(EXESUF): motion-test.o $(LIBNAME)
-
-%-test$(EXESUF): %.c $(LIBNAME)
-	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
-
-.PHONY: tests

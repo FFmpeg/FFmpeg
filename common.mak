@@ -52,7 +52,7 @@ depend dep: $(SRCS)
 
 clean::
 	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
-	      *.def *.dll.a *.exp *.ho *.map
+	      *.def *.dll.a *.exp *.ho *.map $(TESTS)
 
 distclean: clean
 	rm -f .depend
@@ -98,6 +98,11 @@ uninstall-headers::
 	rm -f $(addprefix "$(INCDIR)/",$(HEADERS))
 	rm -f "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
 
-.PHONY: all depend dep clean distclean install* uninstall*
+tests: $(TESTS)
+
+%-test$(EXESUF): %.c $(LIBNAME)
+	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
+
+.PHONY: all depend dep clean distclean install* uninstall* tests
 
 -include .depend
