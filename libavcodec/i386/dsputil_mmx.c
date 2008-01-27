@@ -668,7 +668,7 @@ static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int 
 static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
     if(ENABLE_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
-    uint64_t temp[4] __attribute__ ((aligned(8)));
+    DECLARE_ALIGNED(8, uint64_t, temp[4]);
     uint8_t *btemp= (uint8_t*)temp;
 
     src -= 2;

@@ -209,7 +209,7 @@ row[7] = input[13];
 
 static inline void idct(int16_t *block)
 {
-        int64_t __attribute__((aligned(8))) align_tmp[16];
+        DECLARE_ALIGNED(8, int64_t, align_tmp[16]);
         int16_t * const temp= (int16_t*)align_tmp;
 
         asm volatile(
