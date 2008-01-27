@@ -64,13 +64,13 @@
 //-----------------------------------------------------------------------------
 
 
-static const int16_t tg_1_16[4*4] attribute_used __attribute__ ((aligned(8))) = {
+DECLARE_ALIGNED(8, static const int16_t, tg_1_16[4*4]) = {
   13036,13036,13036,13036,        // tg * (2<<16) + 0.5
   27146,27146,27146,27146,        // tg * (2<<16) + 0.5
   -21746,-21746,-21746,-21746,    // tg * (2<<16) + 0.5
   23170,23170,23170,23170};       // cos * (2<<15) + 0.5
 
-static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) = {
+DECLARE_ALIGNED(8, static const int32_t, rounder_0[2*8]) = {
   65536,65536,
   3597,3597,
   2260,2260,
@@ -140,7 +140,7 @@ static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) 
 //-----------------------------------------------------------------------------
 
 // Table for rows 0,4 - constants are multiplied by cos_4_16
-static const int16_t tab_i_04_mmx[32*4] attribute_used __attribute__ ((aligned(8))) = {
+DECLARE_ALIGNED(8, static const int16_t, tab_i_04_mmx[32*4]) = {
   16384,16384,16384,-16384,       // movq-> w06 w04 w02 w00
   21407,8867,8867,-21407,         // w07 w05 w03 w01
   16384,-16384,16384,16384,       // w14 w12 w10 w08
@@ -182,7 +182,7 @@ static const int16_t tab_i_04_mmx[32*4] attribute_used __attribute__ ((aligned(8
 //-----------------------------------------------------------------------------
 
 // %3 for rows 0,4 - constants are multiplied by cos_4_16
-static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8))) = {
+DECLARE_ALIGNED(8, static const int16_t, tab_i_04_xmm[32*4]) = {
   16384,21407,16384,8867,      // movq-> w05 w04 w01 w00
   16384,8867,-16384,-21407,    // w07 w06 w03 w02
   16384,-8867,16384,-21407,    // w13 w12 w09 w08
