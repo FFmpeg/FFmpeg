@@ -51,7 +51,7 @@
 static const uint64_t attribute_used __attribute__((aligned(8))) wm1010= 0xFFFF0000FFFF0000ULL;
 static const uint64_t attribute_used __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
 
-static const int16_t __attribute__((aligned(8))) coeffs[]= {
+DECLARE_ALIGNED(8, static const int16_t, coeffs[])= {
         1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
 //        1<<(COL_SHIFT-1), 0, 1<<(COL_SHIFT-1), 0,
 //        0, 1<<(COL_SHIFT-1-16), 0, 1<<(COL_SHIFT-1-16),
