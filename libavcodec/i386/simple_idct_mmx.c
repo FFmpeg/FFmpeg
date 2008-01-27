@@ -48,8 +48,8 @@
 #define ROW_SHIFT 11
 #define COL_SHIFT 20 // 6
 
-static const uint64_t attribute_used __attribute__((aligned(8))) wm1010= 0xFFFF0000FFFF0000ULL;
-static const uint64_t attribute_used __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
+DECLARE_ASM_CONST(8, uint64_t, wm1010)= 0xFFFF0000FFFF0000ULL;
+DECLARE_ASM_CONST(8, uint64_t, d40000)= 0x0000000000040000ULL;
 
 DECLARE_ALIGNED(8, static const int16_t, coeffs[])= {
         1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,

@@ -28,8 +28,10 @@
 
 #ifdef __GNUC__
   #define DECLARE_ALIGNED(n,t,v)       t v __attribute__ ((aligned (n)))
+  #define DECLARE_ASM_CONST(n,t,v)     static const t v attribute_used __attribute__ ((aligned (n)))
 #else
   #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
+  #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
 #endif
 
 /**
