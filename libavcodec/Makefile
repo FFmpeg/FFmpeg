@@ -467,22 +467,22 @@ clean::
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
-	   apiexample $(TESTS)
+	   apiexample$(EXESUF) $(TESTS)
 
-TESTS = $(addsuffix -test, cabac dct eval fft h264 imgresample rangecoder snow)
+TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 ifeq ($(ARCH_X86),yes)
-TESTS += cpuid-test motion-test
+TESTS += cpuid-test$(EXESUF) motion-test$(EXESUF)
 endif
 
-tests: apiexample $(TESTS)
+tests: apiexample$(EXESUF) $(TESTS)
 
-cpuid-test: i386/cputest.c
-apiexample: apiexample.o $(LIBNAME)
-dct-test: dct-test.o fdctref.o $(LIBNAME)
-fft-test: fft-test.o $(LIBNAME)
-motion-test: motion-test.o $(LIBNAME)
+cpuid-test$(EXESUF): i386/cputest.c
+apiexample$(EXESUF): apiexample.o $(LIBNAME)
+dct-test$(EXESUF): dct-test.o fdctref.o $(LIBNAME)
+fft-test$(EXESUF): fft-test.o $(LIBNAME)
+motion-test$(EXESUF): motion-test.o $(LIBNAME)
 
-%-test: %.c $(LIBNAME)
+%-test$(EXESUF): %.c $(LIBNAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
 
 .PHONY: tests
