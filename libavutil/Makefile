@@ -27,7 +27,6 @@ HEADERS = adler32.h \
           common.h \
           crc.h \
           fifo.h \
-          integer.h \
           intfloat_readwrite.h \
           log.h \
           lzo.h \
