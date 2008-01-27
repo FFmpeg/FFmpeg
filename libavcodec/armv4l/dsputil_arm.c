@@ -209,6 +209,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
+    if (avctx->lowres == 0) {
     if(idct_algo == FF_IDCT_AUTO){
 #if defined(HAVE_IPP)
         idct_algo = FF_IDCT_IPP;
@@ -252,6 +253,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
         c->idct    = simple_idct_ipp;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
 #endif
+    }
     }
 
     c->put_pixels_tab[0][0] = put_pixels16_arm;
