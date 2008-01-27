@@ -169,7 +169,7 @@ const AVCodecTag codec_movaudio_tags[] = {
 };
 
 const AVCodecTag ff_codec_movsubtitle_tags[] = {
-    { CODEC_ID_TEXT, MKTAG('t', 'e', 'x', 't') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t', 'e', 'x', 't') },
     { CODEC_ID_NONE, 0 },
 };
 

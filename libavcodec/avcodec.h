@@ -283,6 +283,7 @@ enum CodecID {
     CODEC_ID_TEXT,  ///< raw UTF-8 text
     CODEC_ID_XSUB,
     CODEC_ID_SSA,
+    CODEC_ID_MOV_TEXT,
 
     /* other specific kind of codecs (generaly used for attachments) */
     CODEC_ID_TTF= 0x18000,
