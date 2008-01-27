@@ -454,6 +454,11 @@ NAME=avcodec
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
 
+TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
+ifeq ($(ARCH_X86),yes)
+TESTS += cpuid-test$(EXESUF) motion-test$(EXESUF)
+endif
+
 include ../common.mak
 
 clean::
@@ -468,11 +473,6 @@ clean::
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
 	   apiexample$(EXESUF) $(TESTS)
-
-TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
-ifeq ($(ARCH_X86),yes)
-TESTS += cpuid-test$(EXESUF) motion-test$(EXESUF)
-endif
 
 tests: apiexample$(EXESUF) $(TESTS)
 
