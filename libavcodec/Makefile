@@ -471,19 +471,15 @@ clean::
 
 TESTS = $(addsuffix -test, cabac dct eval fft h264 imgresample rangecoder snow)
 ifeq ($(ARCH_X86),yes)
-TESTS+= cpuid-test motion-test
+TESTS += cpuid-test motion-test
 endif
 
 tests: apiexample $(TESTS)
 
-apiexample: apiexample.o $(LIBNAME)
-
 cpuid-test: i386/cputest.c
-
+apiexample: apiexample.o $(LIBNAME)
 dct-test: dct-test.o fdctref.o $(LIBNAME)
-
 fft-test: fft-test.o $(LIBNAME)
-
 motion-test: motion-test.o $(LIBNAME)
 
 %-test: %.c $(LIBNAME)
