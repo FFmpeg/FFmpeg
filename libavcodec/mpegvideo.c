@@ -587,9 +587,7 @@ int MPV_common_init(MpegEncContext *s)
     s->context_initialized = 1;
 
     s->thread_context[0]= s;
-    /* h264 does thread context setup itself, but it needs context[0]
-     * to be fully initialized for the error resilience code */
-    threads = s->codec_id == CODEC_ID_H264 ? 1 : s->avctx->thread_count;
+    threads = s->avctx->thread_count;
 
     for(i=1; i<threads; i++){
         s->thread_context[i]= av_malloc(sizeof(MpegEncContext));

@@ -1951,7 +1951,6 @@ static void free_tables(H264Context *h){
         av_freep(&hx->top_borders[1]);
         av_freep(&hx->top_borders[0]);
         av_freep(&hx->s.obmc_scratchpad);
-        av_freep(&hx->s.allocated_edge_emu_buffer);
     }
 }
 
@@ -2096,10 +2095,6 @@ static int context_init(H264Context *h){
     CHECKED_ALLOCZ(h->top_borders[0], h->s.mb_width * (16+8+8) * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->top_borders[1], h->s.mb_width * (16+8+8) * sizeof(uint8_t))
 
-    // edge emu needs blocksize + filter length - 1 (=17x17 for halfpel / 21x21 for h264)
-    CHECKED_ALLOCZ(s->allocated_edge_emu_buffer,
-                   (s->width+64)*2*21*2); //(width + edge + align)*interlaced*MBsize*tolerance
-    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21;
     return 0;
 fail:
     return -1; // free_tables will clean up for us
@@ -3907,7 +3902,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         for(i = 1; i < s->avctx->thread_count; i++) {
             H264Context *c;
             c = h->thread_context[i] = av_malloc(sizeof(H264Context));
-            memcpy(c, h, sizeof(MpegEncContext));
+            memcpy(c, h->s.thread_context[i], sizeof(MpegEncContext));
             memset(&c->s + 1, 0, sizeof(H264Context) - sizeof(MpegEncContext));
             c->sps = h->sps;
             c->pps = h->pps;
