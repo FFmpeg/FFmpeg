@@ -511,24 +511,24 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
             }
         } else {
             if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
-            tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
-    // if no mac fcc found, try with Microsoft tags
-    if (!tag) {
-        tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
-        if (tag) {
-            av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, the file may be unplayable!\n");
-        }
-    }
+                tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+                // if no mac fcc found, try with Microsoft tags
+                if (!tag) {
+                    tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+                    if (tag) {
+                        av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, the file may be unplayable!\n");
+                    }
+                }
             } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
-        tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
-    // if no mac fcc found, try with Microsoft tags
-    if (!tag) {
-        int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
-        if (ms_tag) {
-            tag = MKTAG('m', 's', ((ms_tag >> 8) & 0xff), (ms_tag & 0xff));
-            av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, the file may be unplayable!\n");
-        }
-    }
+                tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
+                // if no mac fcc found, try with Microsoft tags
+                if (!tag) {
+                    int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
+                    if (ms_tag) {
+                        tag = MKTAG('m', 's', ((ms_tag >> 8) & 0xff), (ms_tag & 0xff));
+                        av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, the file may be unplayable!\n");
+                    }
+                }
             }
         }
     }
