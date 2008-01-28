@@ -494,7 +494,8 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
     } else if (track->mode == MODE_3GP || track->mode == MODE_3G2) {
         tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
-    } else if (!tag) { // do not override tag for mov
+    } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
+                        tag == MKTAG('d','v','c','p'))) {
         if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
             if (track->enc->height == 480) { /* NTSC */
                 if (track->enc->pix_fmt == PIX_FMT_YUV422P)
