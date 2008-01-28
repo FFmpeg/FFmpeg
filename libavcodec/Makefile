@@ -337,10 +337,12 @@ OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)      += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)    += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)     += imx_dump_header_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)  += mjpega_dump_header_bsf.o
+OBJS-$(CONFIG_MOV2TEXTSUB_BSF)         += movsub_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF) += mp3_header_compress_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF) += mp3_header_decompress_bsf.o mpegaudiodata.o
 OBJS-$(CONFIG_NOISE_BSF)               += noise_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)    += remove_extradata_bsf.o
+OBJS-$(CONFIG_TEXT2MOVSUB_BSF)         += movsub_bsf.o
 
 OBJS-$(HAVE_BEOSTHREADS)               += beosthread.o
 OBJS-$(HAVE_OS2THREADS)                += os2thread.o

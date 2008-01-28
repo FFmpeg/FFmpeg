@@ -305,7 +305,9 @@ void avcodec_register_all(void)
     REGISTER_BSF     (MJPEGA_DUMP_HEADER, mjpega_dump_header);
     REGISTER_BSF     (MP3_HEADER_COMPRESS, mp3_header_compress);
     REGISTER_BSF     (MP3_HEADER_DECOMPRESS, mp3_header_decompress);
+    REGISTER_BSF     (MOV2TEXTSUB, mov2textsub);
     REGISTER_BSF     (NOISE, noise);
     REGISTER_BSF     (REMOVE_EXTRADATA, remove_extradata);
+    REGISTER_BSF     (TEXT2MOVSUB, text2movsub);
 }
 
