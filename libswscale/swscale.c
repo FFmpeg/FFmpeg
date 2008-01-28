@@ -180,14 +180,14 @@ write special BGR->BGR scaler
 */
 
 #if defined(ARCH_X86) && defined (CONFIG_GPL)
-static uint64_t attribute_used __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
-static uint64_t attribute_used __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
-static uint64_t                __attribute__((aligned(8))) w10=       0x0010001000100010LL;
-static uint64_t attribute_used __attribute__((aligned(8))) w02=       0x0002000200020002LL;
-static uint64_t attribute_used __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
-static uint64_t attribute_used __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
-static uint64_t attribute_used __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
-static uint64_t attribute_used __attribute__((aligned(8))) bm01010101=0x00FF00FF00FF00FFLL;
+DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
+DECLARE_ASM_CONST(8, uint64_t, bFC)=       0xFCFCFCFCFCFCFCFCLL;
+DECLARE_ASM_CONST(8, uint64_t, w10)=       0x0010001000100010LL;
+DECLARE_ASM_CONST(8, uint64_t, w02)=       0x0002000200020002LL;
+DECLARE_ASM_CONST(8, uint64_t, bm00001111)=0x00000000FFFFFFFFLL;
+DECLARE_ASM_CONST(8, uint64_t, bm00000111)=0x0000000000FFFFFFLL;
+DECLARE_ASM_CONST(8, uint64_t, bm11111000)=0xFFFFFFFFFF000000LL;
+DECLARE_ASM_CONST(8, uint64_t, bm01010101)=0x00FF00FF00FF00FFLL;
 
 static volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
@@ -202,29 +202,29 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
         0x0602060206020602LL,
         0x0004000400040004LL,};
 
-static uint64_t                __attribute__((aligned(8))) b16Mask=   0x001F001F001F001FLL;
-static uint64_t attribute_used __attribute__((aligned(8))) g16Mask=   0x07E007E007E007E0LL;
-static uint64_t attribute_used __attribute__((aligned(8))) r16Mask=   0xF800F800F800F800LL;
-static uint64_t                __attribute__((aligned(8))) b15Mask=   0x001F001F001F001FLL;
-static uint64_t attribute_used __attribute__((aligned(8))) g15Mask=   0x03E003E003E003E0LL;
-static uint64_t attribute_used __attribute__((aligned(8))) r15Mask=   0x7C007C007C007C00LL;
+DECLARE_ASM_CONST(8, uint64_t, b16Mask)=   0x001F001F001F001FLL;
+DECLARE_ASM_CONST(8, uint64_t, g16Mask)=   0x07E007E007E007E0LL;
+DECLARE_ASM_CONST(8, uint64_t, r16Mask)=   0xF800F800F800F800LL;
+DECLARE_ASM_CONST(8, uint64_t, b15Mask)=   0x001F001F001F001FLL;
+DECLARE_ASM_CONST(8, uint64_t, g15Mask)=   0x03E003E003E003E0LL;
+DECLARE_ASM_CONST(8, uint64_t, r15Mask)=   0x7C007C007C007C00LL;
 
-static uint64_t attribute_used __attribute__((aligned(8))) M24A=      0x00FF0000FF0000FFLL;
-static uint64_t attribute_used __attribute__((aligned(8))) M24B=      0xFF0000FF0000FF00LL;
-static uint64_t attribute_used __attribute__((aligned(8))) M24C=      0x0000FF0000FF0000LL;
+DECLARE_ASM_CONST(8, uint64_t, M24A)=      0x00FF0000FF0000FFLL;
+DECLARE_ASM_CONST(8, uint64_t, M24B)=      0xFF0000FF0000FF00LL;
+DECLARE_ASM_CONST(8, uint64_t, M24C)=      0x0000FF0000FF0000LL;
 
 #ifdef FAST_BGR2YV12
-static const uint64_t bgr2YCoeff   attribute_used __attribute__((aligned(8))) = 0x000000210041000DULL;
-static const uint64_t bgr2UCoeff   attribute_used __attribute__((aligned(8))) = 0x0000FFEEFFDC0038ULL;
-static const uint64_t bgr2VCoeff   attribute_used __attribute__((aligned(8))) = 0x00000038FFD2FFF8ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000000210041000DULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000FFEEFFDC0038ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00000038FFD2FFF8ULL;
 #else
-static const uint64_t bgr2YCoeff   attribute_used __attribute__((aligned(8))) = 0x000020E540830C8BULL;
-static const uint64_t bgr2UCoeff   attribute_used __attribute__((aligned(8))) = 0x0000ED0FDAC23831ULL;
-static const uint64_t bgr2VCoeff   attribute_used __attribute__((aligned(8))) = 0x00003831D0E6F6EAULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000020E540830C8BULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000ED0FDAC23831ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
 #endif /* FAST_BGR2YV12 */
-static const uint64_t bgr2YOffset  attribute_used __attribute__((aligned(8))) = 0x1010101010101010ULL;
-static const uint64_t bgr2UVOffset attribute_used __attribute__((aligned(8))) = 0x8080808080808080ULL;
-static const uint64_t w1111        attribute_used __attribute__((aligned(8))) = 0x0001000100010001ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YOffset)  = 0x1010101010101010ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UVOffset) = 0x8080808080808080ULL;
+DECLARE_ASM_CONST(8, uint64_t, w1111)        = 0x0001000100010001ULL;
 #endif /* defined(ARCH_X86) */
 
 // clipping helper table for C implementations:

@@ -88,52 +88,52 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
                      long srcStride3, long dstStride);
 
 #if defined(ARCH_X86) && defined(CONFIG_GPL)
-static const uint64_t mmx_null     __attribute__((aligned(8))) = 0x0000000000000000ULL;
-static const uint64_t mmx_one      __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
-static const uint64_t mask32b      attribute_used __attribute__((aligned(8))) = 0x000000FF000000FFULL;
-static const uint64_t mask32g      attribute_used __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
-static const uint64_t mask32r      attribute_used __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
-static const uint64_t mask32       __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
-static const uint64_t mask3216br   __attribute__((aligned(8))) = 0x00F800F800F800F8ULL;
-static const uint64_t mask3216g    __attribute__((aligned(8))) = 0x0000FC000000FC00ULL;
-static const uint64_t mask3215g    __attribute__((aligned(8))) = 0x0000F8000000F800ULL;
-static const uint64_t mul3216      __attribute__((aligned(8))) = 0x2000000420000004ULL;
-static const uint64_t mul3215      __attribute__((aligned(8))) = 0x2000000820000008ULL;
-static const uint64_t mask24b      attribute_used __attribute__((aligned(8))) = 0x00FF0000FF0000FFULL;
-static const uint64_t mask24g      attribute_used __attribute__((aligned(8))) = 0xFF0000FF0000FF00ULL;
-static const uint64_t mask24r      attribute_used __attribute__((aligned(8))) = 0x0000FF0000FF0000ULL;
-static const uint64_t mask24l      __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
-static const uint64_t mask24h      __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
-static const uint64_t mask24hh     __attribute__((aligned(8))) = 0xffff000000000000ULL;
-static const uint64_t mask24hhh    __attribute__((aligned(8))) = 0xffffffff00000000ULL;
-static const uint64_t mask24hhhh   __attribute__((aligned(8))) = 0xffffffffffff0000ULL;
-static const uint64_t mask15b      __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
-static const uint64_t mask15rg     __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
-static const uint64_t mask15s      __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
-static const uint64_t mask15g      __attribute__((aligned(8))) = 0x03E003E003E003E0ULL;
-static const uint64_t mask15r      __attribute__((aligned(8))) = 0x7C007C007C007C00ULL;
+DECLARE_ASM_CONST(8, uint64_t, mmx_null)     = 0x0000000000000000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mmx_one)      = 0xFFFFFFFFFFFFFFFFULL;
+DECLARE_ASM_CONST(8, uint64_t, mask32b)      = 0x000000FF000000FFULL;
+DECLARE_ASM_CONST(8, uint64_t, mask32g)      = 0x0000FF000000FF00ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask32r)      = 0x00FF000000FF0000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask32)       = 0x00FFFFFF00FFFFFFULL;
+DECLARE_ASM_CONST(8, uint64_t, mask3216br)   = 0x00F800F800F800F8ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask3216g)    = 0x0000FC000000FC00ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask3215g)    = 0x0000F8000000F800ULL;
+DECLARE_ASM_CONST(8, uint64_t, mul3216)      = 0x2000000420000004ULL;
+DECLARE_ASM_CONST(8, uint64_t, mul3215)      = 0x2000000820000008ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24b)      = 0x00FF0000FF0000FFULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24g)      = 0xFF0000FF0000FF00ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24r)      = 0x0000FF0000FF0000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24l)      = 0x0000000000FFFFFFULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24h)      = 0x0000FFFFFF000000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24hh)     = 0xffff000000000000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24hhh)    = 0xffffffff00000000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask24hhhh)   = 0xffffffffffff0000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask15b)      = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
+DECLARE_ASM_CONST(8, uint64_t, mask15rg)     = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
+DECLARE_ASM_CONST(8, uint64_t, mask15s)      = 0xFFE0FFE0FFE0FFE0ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask15g)      = 0x03E003E003E003E0ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask15r)      = 0x7C007C007C007C00ULL;
 #define mask16b mask15b
-static const uint64_t mask16g      __attribute__((aligned(8))) = 0x07E007E007E007E0ULL;
-static const uint64_t mask16r      __attribute__((aligned(8))) = 0xF800F800F800F800ULL;
-static const uint64_t red_16mask   __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
-static const uint64_t green_16mask __attribute__((aligned(8))) = 0x000007e0000007e0ULL;
-static const uint64_t blue_16mask  __attribute__((aligned(8))) = 0x0000001f0000001fULL;
-static const uint64_t red_15mask   __attribute__((aligned(8))) = 0x00007c0000007c00ULL;
-static const uint64_t green_15mask __attribute__((aligned(8))) = 0x000003e0000003e0ULL;
-static const uint64_t blue_15mask  __attribute__((aligned(8))) = 0x0000001f0000001fULL;
+DECLARE_ASM_CONST(8, uint64_t, mask16g)      = 0x07E007E007E007E0ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask16r)      = 0xF800F800F800F800ULL;
+DECLARE_ASM_CONST(8, uint64_t, red_16mask)   = 0x0000f8000000f800ULL;
+DECLARE_ASM_CONST(8, uint64_t, green_16mask) = 0x000007e0000007e0ULL;
+DECLARE_ASM_CONST(8, uint64_t, blue_16mask)  = 0x0000001f0000001fULL;
+DECLARE_ASM_CONST(8, uint64_t, red_15mask)   = 0x00007c0000007c00ULL;
+DECLARE_ASM_CONST(8, uint64_t, green_15mask) = 0x000003e0000003e0ULL;
+DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 #ifdef FAST_BGR2YV12
-static const uint64_t bgr2YCoeff   attribute_used __attribute__((aligned(8))) = 0x000000210041000DULL;
-static const uint64_t bgr2UCoeff   attribute_used __attribute__((aligned(8))) = 0x0000FFEEFFDC0038ULL;
-static const uint64_t bgr2VCoeff   attribute_used __attribute__((aligned(8))) = 0x00000038FFD2FFF8ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000000210041000DULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000FFEEFFDC0038ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00000038FFD2FFF8ULL;
 #else
-static const uint64_t bgr2YCoeff   attribute_used __attribute__((aligned(8))) = 0x000020E540830C8BULL;
-static const uint64_t bgr2UCoeff   attribute_used __attribute__((aligned(8))) = 0x0000ED0FDAC23831ULL;
-static const uint64_t bgr2VCoeff   attribute_used __attribute__((aligned(8))) = 0x00003831D0E6F6EAULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000020E540830C8BULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000ED0FDAC23831ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
 #endif
-static const uint64_t bgr2YOffset  attribute_used __attribute__((aligned(8))) = 0x1010101010101010ULL;
-static const uint64_t bgr2UVOffset attribute_used __attribute__((aligned(8))) = 0x8080808080808080ULL;
-static const uint64_t w1111        attribute_used __attribute__((aligned(8))) = 0x0001000100010001ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2YOffset)  = 0x1010101010101010ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UVOffset) = 0x8080808080808080ULL;
+DECLARE_ASM_CONST(8, uint64_t, w1111)        = 0x0001000100010001ULL;
 
 #if 0
 static volatile uint64_t __attribute__((aligned(8))) b5Dither;
