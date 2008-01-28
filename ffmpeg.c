@@ -221,6 +221,7 @@ static int64_t timer_start;
 
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
+static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
 static AVBitStreamFilterContext *bitstream_filters[MAX_FILES][MAX_STREAMS];
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
@@ -3076,6 +3077,9 @@ static void new_subtitle_stream(AVFormatContext *oc)
     }
     avcodec_get_context_defaults2(st->codec, CODEC_TYPE_SUBTITLE);
 
+    bitstream_filters[nb_output_files][oc->nb_streams - 1]= subtitle_bitstream_filters;
+    subtitle_bitstream_filters= NULL;
+
     subtitle_enc = st->codec;
     subtitle_enc->codec_type = CODEC_TYPE_SUBTITLE;
     if (subtitle_stream_copy) {
@@ -3693,7 +3697,9 @@ static int opt_bsf(const char *opt, const char *arg)
         exit(1);
     }
 
-    bsfp= *opt == 'v' ? &video_bitstream_filters : &audio_bitstream_filters;
+    bsfp= *opt == 'v' ? &video_bitstream_filters :
+          *opt == 'a' ? &audio_bitstream_filters :
+                        &subtitle_bitstream_filters;
     while(*bsfp)
         bsfp= &(*bsfp)->next;
 
@@ -3834,6 +3840,7 @@ const OptionDef options[] = {
 
     { "absf", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream filter" },
     { "vbsf", OPT_FUNC2 | HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream filter" },
+    { "sbsf", OPT_FUNC2 | HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream filter" },
 
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
