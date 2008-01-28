@@ -40,7 +40,6 @@
 #include "common.h"
 #include "mathematics.h"
 #include "rational.h"
-#include "integer.h"
 #include "intfloat_readwrite.h"
 #include "log.h"
 
