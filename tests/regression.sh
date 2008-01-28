@@ -502,7 +502,7 @@ fi
 ###################################
 if [ -n "$do_dv50" ] ; then
 # dv50
-do_video_encoding dv.dv "-dct int" pgmyuv "-s pal -pix_fmt yuv422p -an"
+do_video_encoding dv50.dv "-dct int" pgmyuv "-s pal -pix_fmt yuv422p -an"
 do_video_decoding "" "-s cif -pix_fmt yuv420p"
 fi
 
