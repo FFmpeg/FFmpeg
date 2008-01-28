@@ -60,7 +60,7 @@ typedef struct MOVIndex {
     int         hasBframes;
     int         language;
     int         trackID;
-    int         tag;
+    int         tag; ///< stsd fourcc
     AVCodecContext *enc;
 
     int         vosLen;
