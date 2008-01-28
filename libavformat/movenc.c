@@ -474,10 +474,27 @@ static int mov_write_avid_tag(ByteIOContext *pb, MOVTrack *track)
     return 0;
 }
 
-static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
+static const AVCodecTag codec_3gp_tags[] = {
+    { CODEC_ID_H263,   MKTAG('s','2','6','3') },
+    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
+    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
+    { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
+};
+
+static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
-    if (!tag) {
+    if (track->mode == MODE_MP4 || track->mode == MODE_PSP) {
+        if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
+            return 0;
+        if (track->enc->codec_id == CODEC_ID_H264)           tag = MKTAG('a','v','c','1');
+        else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
+        else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
+    } else if (track->mode == MODE_3GP || track->mode == MODE_3G2) {
+        tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
+    } else if (!tag) { // do not override tag for mov
         if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
             if (track->enc->height == 480) { /* NTSC */
                 if (track->enc->pix_fmt == PIX_FMT_YUV422P)
@@ -492,15 +509,9 @@ static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
                 else
                     tag = MKTAG('d', 'v', 'p', 'p');
             }
-        } else if (track->enc->codec_id == CODEC_ID_H263) {
-            if (track->mode == MODE_MOV)
-                tag = MKTAG('h', '2', '6', '3');
-            else
-                tag = MKTAG('s', '2', '6', '3');
         } else {
+            if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
             tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
-        }
-    }
     // if no mac fcc found, try with Microsoft tags
     if (!tag) {
         tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
@@ -508,16 +519,8 @@ static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
             av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, the file may be unplayable!\n");
         }
     }
-    assert(tag);
-    return tag;
-}
-
-static int mov_find_audio_codec_tag(AVFormatContext *s, MOVTrack *track)
-{
-    int tag = track->enc->codec_tag;
-    if (!tag) {
+            } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
         tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
-    }
     // if no mac fcc found, try with Microsoft tags
     if (!tag) {
         int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
@@ -526,7 +529,9 @@ static int mov_find_audio_codec_tag(AVFormatContext *s, MOVTrack *track)
             av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, the file may be unplayable!\n");
         }
     }
-    assert(tag);
+            }
+        }
+    }
     return tag;
 }
 
@@ -1458,8 +1463,12 @@ static int mov_write_header(AVFormatContext *s)
         track->enc = st->codec;
         track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
         track->mode = mov->mode;
+        track->tag = mov_find_codec_tag(s, track);
+        if (!track->tag) {
+            av_log(s, AV_LOG_ERROR, "track %d: could not find tag for codec\n", i);
+            return -1;
+        }
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
-            track->tag = mov_find_video_codec_tag(s, track);
             track->timescale = st->codec->time_base.den;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
             if (track->timescale > 100000)
@@ -1468,7 +1477,6 @@ static int mov_write_header(AVFormatContext *s)
                        "file may not be playable by quicktime. Specify a shorter timebase\n"
                        "or choose different container.\n");
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
-            track->tag = mov_find_audio_codec_tag(s, track);
             track->timescale = st->codec->sample_rate;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if(!st->codec->frame_size){
