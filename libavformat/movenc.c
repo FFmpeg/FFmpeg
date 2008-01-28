@@ -381,7 +381,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
         track->enc->codec_id == CODEC_ID_PCM_S24LE ||
         track->enc->codec_id == CODEC_ID_PCM_S32LE))
         mov_write_wave_tag(pb, track);
-    else if(track->enc->codec_id == CODEC_ID_AAC)
+    else if(track->tag == MKTAG('m','p','4','a'))
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AMR_NB)
         mov_write_amr_tag(pb, track);
@@ -573,7 +573,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 
     put_be16(pb, 0x18); /* Reserved */
     put_be16(pb, 0xffff); /* Reserved */
-    if(track->enc->codec_id == CODEC_ID_MPEG4)
+    if(track->tag == MKTAG('m','p','4','v'))
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_H263)
         mov_write_d263_tag(pb);
