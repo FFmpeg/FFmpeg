@@ -497,19 +497,12 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
                         tag == MKTAG('d','v','c','p'))) {
         if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
-            if (track->enc->height == 480) { /* NTSC */
-                if (track->enc->pix_fmt == PIX_FMT_YUV422P)
-                    tag = MKTAG('d', 'v', '5', 'n');
-                else
-                    tag = MKTAG('d', 'v', 'c', ' ');
-            } else { /* assume PAL */
-                if (track->enc->pix_fmt == PIX_FMT_YUV422P)
-                    tag = MKTAG('d', 'v', '5', 'p');
-                else if (track->enc->pix_fmt == PIX_FMT_YUV420P)
-                    tag = MKTAG('d', 'v', 'c', 'p');
-                else
-                    tag = MKTAG('d', 'v', 'p', 'p');
-            }
+            if (track->enc->height == 480) /* NTSC */
+                if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
+                else                                         tag = MKTAG('d','v','c',' ');
+            else if (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
+            else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
+            else                                             tag = MKTAG('d','v','p','p');
         } else {
             if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
                 tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
