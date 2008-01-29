@@ -855,8 +855,8 @@
 
 #define WRITEBGR24MMX2(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-    "movq "MANGLE(M24A)", %%mm0 \n\t"\
-    "movq "MANGLE(M24C)", %%mm7 \n\t"\
+    "movq "MANGLE(ff_M24A)", %%mm0 \n\t"\
+    "movq "MANGLE(ff_M24C)", %%mm7 \n\t"\
     "pshufw $0x50, %%mm2, %%mm1 \n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */\
     "pshufw $0x50, %%mm4, %%mm3 \n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */\
     "pshufw $0x00, %%mm5, %%mm6 \n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */\
@@ -875,7 +875,7 @@
     "pshufw $0x55, %%mm4, %%mm3 \n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */\
     "pshufw $0xA5, %%mm5, %%mm6 \n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */\
 \
-    "pand "MANGLE(M24B)", %%mm1 \n\t" /* B5       B4        B3    */\
+    "pand "MANGLE(ff_M24B)", %%mm1 \n\t" /* B5       B4        B3    */\
     "pand   %%mm7, %%mm3        \n\t" /*       G4        G3       */\
     "pand   %%mm0, %%mm6        \n\t" /*    R4        R3       R2 */\
 \
@@ -889,7 +889,7 @@
 \
     "pand   %%mm7, %%mm1        \n\t" /*       B7        B6       */\
     "pand   %%mm0, %%mm3        \n\t" /*    G7        G6       G5 */\
-    "pand "MANGLE(M24B)", %%mm6 \n\t" /* R7       R6        R5    */\
+    "pand "MANGLE(ff_M24B)", %%mm6 \n\t" /* R7       R6        R5    */\
 \
     "por    %%mm1, %%mm3        \n\t"\
     "por    %%mm3, %%mm6        \n\t"\
@@ -1859,8 +1859,8 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 #ifdef HAVE_MMX
     asm volatile(
     "mov                        %2, %%"REG_a"   \n\t"
-    "movq     "MANGLE(bgr2YCoeff)", %%mm6       \n\t"
-    "movq          "MANGLE(w1111)", %%mm5       \n\t"
+    "movq  "MANGLE(ff_bgr2YCoeff)", %%mm6       \n\t"
+    "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
     "pxor                    %%mm7, %%mm7       \n\t"
     "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
     ASMALIGN(4)
@@ -1918,7 +1918,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
     "psraw                      $7, %%mm4       \n\t"
 
     "packuswb                %%mm4, %%mm0       \n\t"
-    "paddusb "MANGLE(bgr2YOffset)", %%mm0       \n\t"
+    "paddusb "MANGLE(ff_bgr2YOffset)", %%mm0    \n\t"
 
     "movq                    %%mm0, (%1, %%"REG_a") \n\t"
     "add                        $8, %%"REG_a"   \n\t"
@@ -1944,8 +1944,8 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 #ifdef HAVE_MMX
     asm volatile(
     "mov                        %3, %%"REG_a"   \n\t"
-    "movq          "MANGLE(w1111)", %%mm5       \n\t"
-    "movq     "MANGLE(bgr2UCoeff)", %%mm6       \n\t"
+    "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
+    "movq  "MANGLE(ff_bgr2UCoeff)", %%mm6       \n\t"
     "pxor                    %%mm7, %%mm7       \n\t"
     "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
     "add                 %%"REG_d", %%"REG_d"   \n\t"
@@ -1977,8 +1977,8 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     "psrlw                      $1, %%mm0       \n\t"
     "psrlw                      $1, %%mm2       \n\t"
 #endif
-    "movq     "MANGLE(bgr2VCoeff)", %%mm1       \n\t"
-    "movq     "MANGLE(bgr2VCoeff)", %%mm3       \n\t"
+    "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
+    "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
 
     "pmaddwd                 %%mm0, %%mm1       \n\t"
     "pmaddwd                 %%mm2, %%mm3       \n\t"
@@ -2019,12 +2019,12 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     "punpcklbw              %%mm7, %%mm5       \n\t"
     "punpcklbw              %%mm7, %%mm2       \n\t"
     "paddw                  %%mm5, %%mm2       \n\t"
-    "movq         "MANGLE(w1111)", %%mm5       \n\t"
+    "movq      "MANGLE(ff_w1111)", %%mm5       \n\t"
     "psrlw                     $2, %%mm4       \n\t"
     "psrlw                     $2, %%mm2       \n\t"
 #endif
-    "movq    "MANGLE(bgr2VCoeff)", %%mm1       \n\t"
-    "movq    "MANGLE(bgr2VCoeff)", %%mm3       \n\t"
+    "movq "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
+    "movq "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
 
     "pmaddwd                %%mm4, %%mm1       \n\t"
     "pmaddwd                %%mm2, %%mm3       \n\t"
@@ -2048,7 +2048,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     "punpckldq              %%mm4, %%mm0       \n\t"
     "punpckhdq              %%mm4, %%mm1       \n\t"
     "packsswb               %%mm1, %%mm0       \n\t"
-    "paddb "MANGLE(bgr2UVOffset)", %%mm0       \n\t"
+    "paddb "MANGLE(ff_bgr2UVOffset)", %%mm0    \n\t"
 
     "movd                   %%mm0, (%1, %%"REG_a")  \n\t"
     "punpckhdq              %%mm0, %%mm0            \n\t"

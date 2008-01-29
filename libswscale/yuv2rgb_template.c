@@ -338,8 +338,8 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
 YUV2RGB
         /* mm0=B, %%mm2=G, %%mm1=R */
 #ifdef HAVE_MMX2
-        "movq "MANGLE(M24A)", %%mm4     \n\t"
-        "movq "MANGLE(M24C)", %%mm7     \n\t"
+        "movq "MANGLE(ff_M24A)", %%mm4     \n\t"
+        "movq "MANGLE(ff_M24C)", %%mm7     \n\t"
         "pshufw $0x50, %%mm0, %%mm5     \n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */
         "pshufw $0x50, %%mm2, %%mm3     \n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */
         "pshufw $0x00, %%mm1, %%mm6     \n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */
@@ -358,7 +358,7 @@ YUV2RGB
         "pshufw $0x55, %%mm2, %%mm3     \n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */
         "pshufw $0xA5, %%mm1, %%mm6     \n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */
 
-        "pand "MANGLE(M24B)", %%mm5     \n\t" /* B5       B4        B3    */
+        "pand "MANGLE(ff_M24B)", %%mm5     \n\t" /* B5       B4        B3    */
         "pand          %%mm7, %%mm3     \n\t" /*       G4        G3       */
         "pand          %%mm4, %%mm6     \n\t" /*    R4        R3       R2 */
 
@@ -373,7 +373,7 @@ YUV2RGB
 
         "pand          %%mm7, %%mm5     \n\t" /*       B7        B6       */
         "pand          %%mm4, %%mm3     \n\t" /*    G7        G6       G5 */
-        "pand "MANGLE(M24B)", %%mm6     \n\t" /* R7       R6        R5    */
+        "pand "MANGLE(ff_M24B)", %%mm6     \n\t" /* R7       R6        R5    */
         "movd 4 (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 \
         "por          %%mm5, %%mm3      \n\t"

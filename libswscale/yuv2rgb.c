@@ -163,10 +163,6 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_00ffw)   = 0x00ff00ff00ff00ffULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_redmask) = 0xf8f8f8f8f8f8f8f8ULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 
-DECLARE_ASM_CONST(8, uint64_t, M24A)=   0x00FF0000FF0000FFULL;
-DECLARE_ASM_CONST(8, uint64_t, M24B)=   0xFF0000FF0000FF00ULL;
-DECLARE_ASM_CONST(8, uint64_t, M24C)=   0x0000FF0000FF0000ULL;
-
 // the volatile is required because gcc otherwise optimizes some writes away not knowing that these
 // are read in the asm block
 static volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;

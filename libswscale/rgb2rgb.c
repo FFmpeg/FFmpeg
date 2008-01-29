@@ -122,19 +122,6 @@ DECLARE_ASM_CONST(8, uint64_t, red_15mask)   = 0x00007c0000007c00ULL;
 DECLARE_ASM_CONST(8, uint64_t, green_15mask) = 0x000003e0000003e0ULL;
 DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
-#ifdef FAST_BGR2YV12
-DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000000210041000DULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000FFEEFFDC0038ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00000038FFD2FFF8ULL;
-#else
-DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000020E540830C8BULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000ED0FDAC23831ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
-#endif
-DECLARE_ASM_CONST(8, uint64_t, bgr2YOffset)  = 0x1010101010101010ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UVOffset) = 0x8080808080808080ULL;
-DECLARE_ASM_CONST(8, uint64_t, w1111)        = 0x0001000100010001ULL;
-
 #if 0
 static volatile uint64_t __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t __attribute__((aligned(8))) g5Dither;

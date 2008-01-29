@@ -209,22 +209,22 @@ DECLARE_ASM_CONST(8, uint64_t, b15Mask)=   0x001F001F001F001FLL;
 DECLARE_ASM_CONST(8, uint64_t, g15Mask)=   0x03E003E003E003E0LL;
 DECLARE_ASM_CONST(8, uint64_t, r15Mask)=   0x7C007C007C007C00LL;
 
-DECLARE_ASM_CONST(8, uint64_t, M24A)=      0x00FF0000FF0000FFLL;
-DECLARE_ASM_CONST(8, uint64_t, M24B)=      0xFF0000FF0000FF00LL;
-DECLARE_ASM_CONST(8, uint64_t, M24C)=      0x0000FF0000FF0000LL;
+DECLARE_ALIGNED(8, const uint64_t, ff_M24A)         = 0x00FF0000FF0000FFLL;
+DECLARE_ALIGNED(8, const uint64_t, ff_M24B)         = 0xFF0000FF0000FF00LL;
+DECLARE_ALIGNED(8, const uint64_t, ff_M24C)         = 0x0000FF0000FF0000LL;
 
 #ifdef FAST_BGR2YV12
-DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000000210041000DULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000FFEEFFDC0038ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00000038FFD2FFF8ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YCoeff)   = 0x000000210041000DULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UCoeff)   = 0x0000FFEEFFDC0038ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2VCoeff)   = 0x00000038FFD2FFF8ULL;
 #else
-DECLARE_ASM_CONST(8, uint64_t, bgr2YCoeff)   = 0x000020E540830C8BULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UCoeff)   = 0x0000ED0FDAC23831ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YCoeff)   = 0x000020E540830C8BULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UCoeff)   = 0x0000ED0FDAC23831ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
 #endif /* FAST_BGR2YV12 */
-DECLARE_ASM_CONST(8, uint64_t, bgr2YOffset)  = 0x1010101010101010ULL;
-DECLARE_ASM_CONST(8, uint64_t, bgr2UVOffset) = 0x8080808080808080ULL;
-DECLARE_ASM_CONST(8, uint64_t, w1111)        = 0x0001000100010001ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YOffset)  = 0x1010101010101010ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #endif /* defined(ARCH_X86) */
 
 // clipping helper table for C implementations:
@@ -367,7 +367,7 @@ void in_asm_used_var_warning_killer()
 {
     volatile int i= bF8+bFC+w10+
     bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+
-    M24A+M24B+M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
+    ff_M24A+ff_M24B+ff_M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
     if (i) i=0;
 }
 #endif
