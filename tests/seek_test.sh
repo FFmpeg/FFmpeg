@@ -19,10 +19,10 @@ done
 
 if diff -u "$reffile" "$logfile" ; then
     echo
-    echo Regression test succeeded.
+    echo seek regression test: success
     exit 0
 else
     echo
-    echo Regression test: Error.
+    echo seek regression test: error
     exit 1
 fi

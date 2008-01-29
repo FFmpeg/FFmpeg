@@ -745,10 +745,10 @@ fi #  [ -n "$do_libavtest" ]
 
 if $diff_cmd "$logfile" "$reffile" ; then
     echo
-    echo Regression test succeeded.
+    echo $1 regression test: success
     exit 0
 else
     echo
-    echo Regression test: Error.
+    echo $1 regression test: error
     exit 1
 fi
