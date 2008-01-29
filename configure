@@ -493,7 +493,7 @@ check_func2(){
     done
     check_ld "$@" <<EOF && enable $func
 $incs
-int main(void){
+int main(int argc, char **argv){
     (void) $func;
     return 0;
 }
@@ -1706,7 +1706,7 @@ if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
             enable sdl
             check_cc $sdl_cflags <<EOF && enable sdl_video_size
 #include <SDL.h>
-int main(void){
+int main(int argc, char **argv){
     const SDL_VideoInfo *vi = SDL_GetVideoInfo();
     int w = vi->current_w;
     return 0;
