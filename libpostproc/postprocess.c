@@ -111,7 +111,7 @@ DECLARE_ASM_CONST(8, uint64_t, b08)= 0x0808080808080808LL;
 DECLARE_ASM_CONST(8, uint64_t, b80)= 0x8080808080808080LL;
 #endif
 
-static const int attribute_used deringThreshold= 20;
+DECLARE_ASM_CONST(8, int, deringThreshold)= 20;
 
 
 static struct PPFilter filters[]=
