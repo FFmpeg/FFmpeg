@@ -184,7 +184,12 @@ void show_version(const char *program_name) {
 
 void show_license(void)
 {
-#ifdef CONFIG_GPL
+#ifdef CONFIG_NONFREE
+    printf(
+    "This version of FFmpeg has nonfree parts compiled in.\n"
+    "Therefore it is not legally redistributable.\n"
+    );
+#elif CONFIG_GPL
     printf(
     "FFmpeg is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
