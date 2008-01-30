@@ -634,9 +634,6 @@ do_libav flv -an
 # mov
 do_libav mov "-acodec pcm_alaw"
 
-# nut
-#do_libav nut "-acodec mp2"
-
 # dv
 do_libav dv "-ar 48000 -r 25 -s pal -ac 2"
 
