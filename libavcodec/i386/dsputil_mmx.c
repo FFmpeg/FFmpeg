@@ -2615,8 +2615,8 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
     const int dxh = dxy*(h-1);
     const int dyw = dyx*(w-1);
     if( // non-constant fullpel offset (3% of blocks)
-        (ox^(ox+dxw) | ox^(ox+dxh) | ox^(ox+dxw+dxh) |
-         oy^(oy+dyw) | oy^(oy+dyh) | oy^(oy+dyw+dyh)) >> (16+shift)
+        ((ox^(ox+dxw)) | (ox^(ox+dxh)) | (ox^(ox+dxw+dxh)) |
+         (oy^(oy+dyw)) | (oy^(oy+dyh)) | (oy^(oy+dyw+dyh))) >> (16+shift)
         // uses more than 16 bits of subpel mv (only at huge resolution)
         || (dxx|dxy|dyx|dyy)&15 )
     {
