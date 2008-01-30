@@ -1464,7 +1464,7 @@ static int mov_write_header(AVFormatContext *s)
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
             track->timescale = st->codec->time_base.den;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
-            if (track->timescale > 100000)
+            if (track->mode == MODE_MOV && track->timescale > 100000)
                 av_log(NULL, AV_LOG_WARNING,
                        "WARNING codec timebase is very high. If duration is too long,\n"
                        "file may not be playable by quicktime. Specify a shorter timebase\n"
