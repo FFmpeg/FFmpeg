@@ -145,7 +145,7 @@ typedef struct cook {
     float               decode_buffer_2[1024];
     float               decode_buffer_0[1060]; /* static allocation for joint decode */
 
-    float               *cplscales[5];
+    const float         *cplscales[5];
 } COOKContext;
 
 /* debug functions */
@@ -264,7 +264,7 @@ static int init_cook_mlt(COOKContext *q) {
     return 0;
 }
 
-static float *maybe_reformat_buffer32 (COOKContext *q, float *ptr, int n)
+static const float *maybe_reformat_buffer32 (COOKContext *q, const float *ptr, int n)
 {
     if (1)
         return ptr;
@@ -832,7 +832,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
     float *decode_buffer = q->decode_buffer_0;
     int idx, cpl_tmp;
     float f1,f2;
-    float* cplscale;
+    const float* cplscale;
 
     memset(decouple_tab, 0, sizeof(decouple_tab));
     memset(decode_buffer, 0, sizeof(decode_buffer));
