@@ -53,8 +53,8 @@ void av_update_lls(LLSModel *m, double *var, double decay){
 
 void av_solve_lls(LLSModel *m, double threshold, int min_order){
     int i,j,k;
-    double (*factor)[MAX_VARS+1]= &m->covariance[1][0];
-    double (*covar )[MAX_VARS+1]= &m->covariance[1][1];
+    double (*factor)[MAX_VARS+1]= (void*)&m->covariance[1][0];
+    double (*covar )[MAX_VARS+1]= (void*)&m->covariance[1][1];
     double  *covar_y            =  m->covariance[0];
     int count= m->indep_count;
 
