@@ -99,7 +99,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size, in
     if (buf[5] & 2) { /* interlaced */
         ctx->cur_field = buf[5] & 1;
         ctx->picture.interlaced_frame = 1;
-        ctx->picture.top_field_first = first_field && ctx->cur_field == 1;
+        ctx->picture.top_field_first = first_field ^ ctx->cur_field;
         av_log(ctx->avctx, AV_LOG_DEBUG, "interlaced %d, cur field %d\n", buf[5] & 3, ctx->cur_field);
     }
 
