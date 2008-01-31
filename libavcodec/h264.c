@@ -2090,8 +2090,6 @@ static void clone_tables(H264Context *dst, H264Context *src){
  * Allocate buffers which are not shared amongst multiple threads.
  */
 static int context_init(H264Context *h){
-    MpegEncContext * const s = &h->s;
-
     CHECKED_ALLOCZ(h->top_borders[0], h->s.mb_width * (16+8+8) * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->top_borders[1], h->s.mb_width * (16+8+8) * sizeof(uint8_t))
 
@@ -2403,13 +2401,13 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     continue;
                 if(IS_16X16(mb_type)){
                     int8_t *ref = &h->ref_cache[list][scan8[0]];
-                    fill_rectangle(ref, 4, 4, 8, 16+*ref^(s->mb_y&1), 1);
+                    fill_rectangle(ref, 4, 4, 8, (16+*ref)^(s->mb_y&1), 1);
                 }else{
                     for(i=0; i<16; i+=4){
                         //FIXME can refs be smaller than 8x8 when !direct_8x8_inference ?
                         int ref = h->ref_cache[list][scan8[i]];
                         if(ref >= 0)
-                            fill_rectangle(&h->ref_cache[list][scan8[i]], 2, 2, 8, 16+ref^(s->mb_y&1), 1);
+                            fill_rectangle(&h->ref_cache[list][scan8[i]], 2, 2, 8, (16+ref)^(s->mb_y&1), 1);
                     }
                 }
             }
