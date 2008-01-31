@@ -1901,9 +1901,9 @@ static void gray16_to_gray16(AVPicture *dst, const AVPicture *src,
 {
     int x, y, src_wrap, dst_wrap;
     uint16_t *s, *d;
-    s = src->data[0];
+    s = (uint16_t*)src->data[0];
     src_wrap = (src->linesize[0] - width * 2)/2;
-    d = dst->data[0];
+    d = (uint16_t*)dst->data[0];
     dst_wrap = (dst->linesize[0] - width * 2)/2;
     for(y=0; y<height; y++){
         for(x=0; x<width; x++){
