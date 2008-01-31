@@ -2410,7 +2410,7 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
 //        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
 //        assert(!(b_w&(b_w-1)));
         assert(b_w>1 && b_h>1);
-        assert(tab_index>=0 && tab_index<4 || b_w==32);
+        assert((tab_index>=0 && tab_index<4) || b_w==32);
         if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || !s->plane[plane_index].fast_mc )
             mc_block(&s->plane[plane_index], dst, src, tmp, stride, b_w, b_h, dx, dy);
         else if(b_w==32){
