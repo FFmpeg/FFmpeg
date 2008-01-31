@@ -4754,26 +4754,26 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             i = -1;
             ff_mpeg4_pred_dc(s, n, 0, &dc_pred_dir, 0);
       }
-        if (!coded)
-            goto not_coded;
+      if (!coded)
+          goto not_coded;
 
-        if(rvlc){
-            rl = &rvlc_rl_intra;
-            rl_vlc = rvlc_rl_intra.rl_vlc[0];
-        }else{
-            rl = &rl_intra;
-            rl_vlc = rl_intra.rl_vlc[0];
-        }
-        if (s->ac_pred) {
-            if (dc_pred_dir == 0)
-                scan_table = s->intra_v_scantable.permutated; /* left */
-            else
-                scan_table = s->intra_h_scantable.permutated; /* top */
-        } else {
+      if(rvlc){
+          rl = &rvlc_rl_intra;
+          rl_vlc = rvlc_rl_intra.rl_vlc[0];
+      }else{
+          rl = &rl_intra;
+          rl_vlc = rl_intra.rl_vlc[0];
+      }
+      if (s->ac_pred) {
+          if (dc_pred_dir == 0)
+              scan_table = s->intra_v_scantable.permutated; /* left */
+          else
+              scan_table = s->intra_h_scantable.permutated; /* top */
+      } else {
             scan_table = s->intra_scantable.permutated;
-        }
-        qmul=1;
-        qadd=0;
+      }
+      qmul=1;
+      qadd=0;
     } else {
         i = -1;
         if (!coded) {
