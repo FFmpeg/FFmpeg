@@ -31,6 +31,10 @@ int main(int argc, char **argv)
     AVFormatContext *ic;
     int i, ret, stream_id;
     int64_t timestamp;
+    AVFormatParameters params, *ap= &params;
+    memset(ap, 0, sizeof(params));
+    ap->channels=1;
+    ap->sample_rate= 22050;
 
     /* initialize libavcodec, and register all codecs and formats */
     av_register_all();
@@ -50,7 +54,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    ret = av_open_input_file(&ic, filename, NULL, 0, NULL);
+    ret = av_open_input_file(&ic, filename, NULL, 0, ap);
     if (ret < 0) {
         fprintf(stderr, "cannot open %s\n", filename);
         exit(1);
