@@ -485,7 +485,7 @@ static const AVCodecTag codec_3gp_tags[] = {
 
 static const AVCodecTag mov_pix_fmt_tags[] = {
     { PIX_FMT_YUYV422, MKTAG('y','u','v','s') },
-    { PIX_FMT_YUYV422, MKTAG('2','v','u','y') },
+    { PIX_FMT_UYVY422, MKTAG('2','v','u','y') },
     { PIX_FMT_BGR555,  MKTAG('r','a','w',' ') },
     { PIX_FMT_RGB24,   MKTAG('r','a','w',' ') },
     { PIX_FMT_BGR32_1, MKTAG('r','a','w',' ') },
