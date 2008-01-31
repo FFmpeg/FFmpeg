@@ -483,6 +483,14 @@ static const AVCodecTag codec_3gp_tags[] = {
     { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
 };
 
+static const AVCodecTag mov_pix_fmt_tags[] = {
+    { PIX_FMT_YUYV422, MKTAG('y','u','v','s') },
+    { PIX_FMT_YUYV422, MKTAG('2','v','u','y') },
+    { PIX_FMT_BGR555,  MKTAG('r','a','w',' ') },
+    { PIX_FMT_RGB24,   MKTAG('r','a','w',' ') },
+    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' ') },
+};
+
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
@@ -495,7 +503,8 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     } else if (track->mode == MODE_3GP || track->mode == MODE_3G2) {
         tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
     } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
-                        tag == MKTAG('d','v','c','p'))) {
+                        (tag == MKTAG('d','v','c','p') ||
+                         track->enc->codec_id == CODEC_ID_RAWVIDEO))) {
         if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
             if (track->enc->height == 480) /* NTSC */
                 if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
@@ -503,6 +512,10 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
             else if (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
             else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
             else                                             tag = MKTAG('d','v','p','p');
+        } else if (track->enc->codec_id == CODEC_ID_RAWVIDEO) {
+            tag = codec_get_tag(mov_pix_fmt_tags, track->enc->pix_fmt);
+            if (!tag) // restore tag
+                tag = track->enc->codec_tag;
         } else {
             if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
                 tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
@@ -569,7 +582,10 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     put_byte(pb, strlen(compressor_name));
     put_buffer(pb, compressor_name, 31);
 
-    put_be16(pb, 0x18); /* Reserved */
+    if (track->mode == MODE_MOV && track->enc->bits_per_sample)
+        put_be16(pb, track->enc->bits_per_sample);
+    else
+        put_be16(pb, 0x18); /* Reserved */
     put_be16(pb, 0xffff); /* Reserved */
     if(track->tag == MKTAG('m','p','4','v'))
         mov_write_esds_tag(pb, track);
