@@ -254,7 +254,7 @@ static int encode_frame(QtrleEncContext *s, AVFrame *p, uint8_t *buf)
 
     bytestream_put_be32(&buf, 0);                         // CHUNK SIZE, patched later
 
-    if (start_line == 0 && end_line == s->avctx->height || start_line == s->avctx->height)
+    if ((start_line == 0 && end_line == s->avctx->height) || start_line == s->avctx->height)
         bytestream_put_be16(&buf, 0);                     // header
     else {
         bytestream_put_be16(&buf, 8);                     // header
