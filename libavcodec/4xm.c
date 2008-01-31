@@ -301,7 +301,7 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     const int index= size2index[log2h][log2w];
     const int h= 1<<log2h;
     int code= get_vlc2(&f->gb, block_type_vlc[1-(f->version>1)][index].table, BLOCK_TYPE_VLC_BITS, 1);
-    uint16_t *start= f->last_picture.data[0];
+    uint16_t *start= (uint16_t*)f->last_picture.data[0];
     uint16_t *end= start + stride*(f->avctx->height-h+1) - (1<<log2w);
 
     assert(code>=0 && code<=6);
