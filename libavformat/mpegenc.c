@@ -1019,7 +1019,7 @@ static int output_packet(AVFormatContext *ctx, int flush){
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st;
     StreamInfo *stream;
-    int i, avail_space, es_size, trailer_size;
+    int i, avail_space=0, es_size, trailer_size;
     int best_i= -1;
     int best_score= INT_MIN;
     int ignore_constraints=0;
