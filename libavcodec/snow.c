@@ -2193,7 +2193,7 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, i
     uint8_t tmp2t[3][stride*(32+HTAPS_MAX)];
     int16_t *tmpI= tmpIt;
     uint8_t *tmp2= tmp2t[0];
-    uint8_t *hpel[11];
+    const uint8_t *hpel[11];
 START_TIMER
     assert(dx<16 && dy<16);
     r= brane[dx + 16*dy]&15;
@@ -2302,10 +2302,10 @@ START_TIMER
     hpel[10]= hpel[8] + 1;
 
     if(b==15){
-        uint8_t *src1= hpel[dx/8 + dy/8*4  ];
-        uint8_t *src2= hpel[dx/8 + dy/8*4+1];
-        uint8_t *src3= hpel[dx/8 + dy/8*4+4];
-        uint8_t *src4= hpel[dx/8 + dy/8*4+5];
+        const uint8_t *src1= hpel[dx/8 + dy/8*4  ];
+        const uint8_t *src2= hpel[dx/8 + dy/8*4+1];
+        const uint8_t *src3= hpel[dx/8 + dy/8*4+4];
+        const uint8_t *src4= hpel[dx/8 + dy/8*4+5];
         dx&=7;
         dy&=7;
         for(y=0; y < b_h; y++){
@@ -2320,8 +2320,8 @@ START_TIMER
             dst +=stride;
         }
     }else{
-        uint8_t *src1= hpel[l];
-        uint8_t *src2= hpel[r];
+        const uint8_t *src1= hpel[l];
+        const uint8_t *src2= hpel[r];
         int a= weight[((dx&7) + (8*(dy&7)))];
         int b= 8-a;
         for(y=0; y < b_h; y++){
