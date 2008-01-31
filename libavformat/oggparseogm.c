@@ -55,6 +55,10 @@ ogm_header(AVFormatContext *s, int idx)
         tag = bytestream_get_le32(&p);
         st->codec->codec_id = codec_get_id(codec_bmp_tags, tag);
         st->codec->codec_tag = tag;
+    } else if (*p == 't') {
+        st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+        st->codec->codec_id = CODEC_ID_TEXT;
+        p += 12;
     } else {
         uint8_t acid[5];
         int cid;
@@ -154,6 +158,13 @@ ogg_codec_t ogm_video_codec = {
 ogg_codec_t ogm_audio_codec = {
     .magic = "\001audio",
     .magicsize = 6,
+    .header = ogm_header,
+    .packet = ogm_packet
+};
+
+ogg_codec_t ogm_text_codec = {
+    .magic = "\001text",
+    .magicsize = 5,
     .header = ogm_header,
     .packet = ogm_packet
 };

@@ -44,6 +44,7 @@ static ogg_codec_t *ogg_codecs[] = {
     &old_flac_codec,
     &ogm_video_codec,
     &ogm_audio_codec,
+    &ogm_text_codec,
     &ogm_old_codec,
     NULL
 };

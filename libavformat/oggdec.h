@@ -81,6 +81,7 @@ extern ogg_codec_t flac_codec;
 extern ogg_codec_t old_flac_codec;
 extern ogg_codec_t ogm_video_codec;
 extern ogg_codec_t ogm_audio_codec;
+extern ogg_codec_t ogm_text_codec;
 extern ogg_codec_t ogm_old_codec;
 
 extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
