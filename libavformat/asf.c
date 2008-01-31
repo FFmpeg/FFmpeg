@@ -87,7 +87,7 @@ static void print_guid(const GUID *g)
 static void get_guid(ByteIOContext *s, GUID *g)
 {
     assert(sizeof(*g) == 16);
-    get_buffer(s, g, sizeof(*g));
+    get_buffer(s, *g, sizeof(*g));
 }
 
 #if 0
