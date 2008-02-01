@@ -343,10 +343,6 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     }
 }
 
-static int get32(void *p){
-    return le2me_32(*(uint32_t*)p);
-}
-
 static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
     int x, y;
     const int width= f->avctx->width;
@@ -358,9 +354,9 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
 
     if(f->version>1){
         extra=20;
-        bitstream_size= get32(buf+8);
-        wordstream_size= get32(buf+12);
-        bytestream_size= get32(buf+16);
+        bitstream_size= AV_RL32(buf+8);
+        wordstream_size= AV_RL32(buf+12);
+        bytestream_size= AV_RL32(buf+16);
     }else{
         extra=0;
         bitstream_size = AV_RL16(buf-4);
@@ -638,9 +634,9 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
     const int height= f->avctx->height;
     uint16_t *dst= (uint16_t*)f->current_picture.data[0];
     const int stride= f->current_picture.linesize[0]>>1;
-    const unsigned int bitstream_size= get32(buf);
-    const int token_count av_unused = get32(buf + bitstream_size + 8);
-    unsigned int prestream_size= 4*get32(buf + bitstream_size + 4);
+    const unsigned int bitstream_size= AV_RL32(buf);
+    const int token_count av_unused = AV_RL32(buf + bitstream_size + 8);
+    unsigned int prestream_size= 4*AV_RL32(buf + bitstream_size + 4);
     const uint8_t *prestream= buf + bitstream_size + 12;
 
     if(prestream_size + bitstream_size + 12 != length
@@ -687,16 +683,16 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p, temp;
     int i, frame_4cc, frame_size;
 
-    frame_4cc= get32(buf);
-    if(buf_size != get32(buf+4)+8 || buf_size < 20){
-        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, get32(buf+4));
+    frame_4cc= AV_RL32(buf);
+    if(buf_size != AV_RL32(buf+4)+8 || buf_size < 20){
+        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, AV_RL32(buf+4));
     }
 
     if(frame_4cc == ff_get_fourcc("cfrm")){
         int free_index=-1;
         const int data_size= buf_size - 20;
-        const int id= get32(buf+12);
-        const int whole_size= get32(buf+16);
+        const int id= AV_RL32(buf+12);
+        const int whole_size= AV_RL32(buf+16);
         CFrameBuffer *cfrm;
 
         for(i=0; i<CFRAME_BUFFER_COUNT; i++){
