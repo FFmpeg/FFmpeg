@@ -35,8 +35,8 @@ typedef struct {
 
 void rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,
                         int width, int height,
-                        uint32_t *lquant, uint32_t *cquant);
+                        const uint32_t *lquant, const uint32_t *cquant);
 
 int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
-                               uint8_t *buf, int buf_size);
+                               const uint8_t *buf, int buf_size);
 #endif /* FFMPEG_RTJPEG_H */

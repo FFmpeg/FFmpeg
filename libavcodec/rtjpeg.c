@@ -43,8 +43,8 @@
  * aligned this could be done faster in a different way, e.g. as it is done
  * in MPlayer libmpcodecs/native/RTjpegN.c
  */
-static inline int get_block(GetBitContext *gb, DCTELEM *block, uint8_t *scan,
-                            uint32_t *quant) {
+static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *scan,
+                            const uint32_t *quant) {
     int coeff, i, n;
     int8_t ac;
     uint8_t dc = get_bits(gb, 8);
@@ -97,7 +97,7 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, uint8_t *scan,
  * \return number of bytes consumed from the input buffer
  */
 int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
-                               uint8_t *buf, int buf_size) {
+                               const uint8_t *buf, int buf_size) {
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
@@ -147,7 +147,7 @@ int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
  */
 void rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,
                         int width, int height,
-                        uint32_t *lquant, uint32_t *cquant) {
+                        const uint32_t *lquant, const uint32_t *cquant) {
     int i;
     c->dsp = dsp;
     for (i = 0; i < 64; i++) {
