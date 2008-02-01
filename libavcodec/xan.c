@@ -206,7 +206,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 }
 
 static inline void xan_wc3_output_pixel_run(XanContext *s,
-    unsigned char *pixel_buffer, int x, int y, int pixel_count)
+    const unsigned char *pixel_buffer, int x, int y, int pixel_count)
 {
     int stride;
     int line_inc;
@@ -284,8 +284,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
 
     unsigned char *opcode_buffer = s->buffer1;
     int opcode_buffer_size = s->buffer1_size;
-    unsigned char *imagedata_buffer = s->buffer2;
-    int imagedata_buffer_size = s->buffer2_size;
+    const unsigned char *imagedata_buffer = s->buffer2;
 
     /* pointers to segments inside the compressed chunk */
     const unsigned char *huffman_segment;
@@ -301,8 +300,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
     xan_huffman_decode(opcode_buffer, huffman_segment, opcode_buffer_size);
 
     if (imagedata_segment[0] == 2)
-        xan_unpack(imagedata_buffer, &imagedata_segment[1],
-            imagedata_buffer_size);
+        xan_unpack(s->buffer2, &imagedata_segment[1], s->buffer2_size);
     else
         imagedata_buffer = &imagedata_segment[1];
 
