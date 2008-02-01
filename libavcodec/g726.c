@@ -373,7 +373,7 @@ static int g726_encode_frame(AVCodecContext *avctx,
 
 static int g726_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     AVG726Context *c = avctx->priv_data;
     short *samples = data;
