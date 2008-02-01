@@ -70,7 +70,7 @@ typedef struct VmncContext {
 } VmncContext;
 
 /* read pixel value from stream */
-static av_always_inline int vmnc_get_pixel(uint8_t* buf, int bpp, int be) {
+static av_always_inline int vmnc_get_pixel(const uint8_t* buf, int bpp, int be) {
     switch(bpp * 2 + be) {
     case 2:
     case 3: return *buf;
@@ -82,7 +82,7 @@ static av_always_inline int vmnc_get_pixel(uint8_t* buf, int bpp, int be) {
     }
 }
 
-static void load_cursor(VmncContext *c, uint8_t *src)
+static void load_cursor(VmncContext *c, const uint8_t *src)
 {
     int i, j, p;
     const int bpp = c->bpp2;
@@ -200,7 +200,7 @@ static av_always_inline void paint_rect(uint8_t *dst, int dx, int dy, int w, int
     }
 }
 
-static av_always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src, int bpp, int be, int stride)
+static av_always_inline void paint_raw(uint8_t *dst, int w, int h, const uint8_t* src, int bpp, int be, int stride)
 {
     int i, j, p;
     for(j = 0; j < h; j++) {
@@ -223,14 +223,14 @@ static av_always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src,
     }
 }
 
-static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int ssize, int w, int h, int stride)
+static int decode_hextile(VmncContext *c, uint8_t* dst, const uint8_t* src, int ssize, int w, int h, int stride)
 {
     int i, j, k;
     int bg = 0, fg = 0, rects, color, flags, xy, wh;
     const int bpp = c->bpp2;
     uint8_t *dst2;
     int bw = 16, bh = 16;
-    uint8_t *ssrc=src;
+    const uint8_t *ssrc=src;
 
     for(j = 0; j < h; j += 16) {
         dst2 = dst;
@@ -283,11 +283,11 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int ssize,
     return src - ssrc;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
     VmncContext * const c = avctx->priv_data;
     uint8_t *outptr;
-    uint8_t *src = buf;
+    const uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left;
 
     c->pic.reference = 1;
