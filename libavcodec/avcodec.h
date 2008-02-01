@@ -2200,7 +2200,7 @@ typedef struct AVCodec {
     int (*encode)(AVCodecContext *, uint8_t *buf, int buf_size, void *data);
     int (*close)(AVCodecContext *);
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
-                  uint8_t *buf, int buf_size);
+                  const uint8_t *buf, int buf_size);
     int capabilities;
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
