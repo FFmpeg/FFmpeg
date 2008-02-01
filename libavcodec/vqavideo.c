@@ -104,7 +104,7 @@ typedef struct VqaContext {
     DSPContext dsp;
     AVFrame frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     uint32_t palette[PALETTE_COUNT];
@@ -202,7 +202,7 @@ static int vqa_decode_init(AVCodecContext *avctx)
         return; \
     }
 
-static void decode_format80(unsigned char *src, int src_size,
+static void decode_format80(const unsigned char *src, int src_size,
     unsigned char *dest, int dest_size, int check_size) {
 
     int src_index = 0;
@@ -567,7 +567,7 @@ static void vqa_decode_chunk(VqaContext *s)
 
 static int vqa_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     VqaContext *s = avctx->priv_data;
 
