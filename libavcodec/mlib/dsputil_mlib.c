@@ -374,7 +374,7 @@ static void avg_pixels8_xy2_mlib(uint8_t * dest, const uint8_t * ref,
 
 /* swap byte order of a buffer */
 
-static void bswap_buf_mlib(uint32_t *dst, uint32_t *src, int w)
+static void bswap_buf_mlib(uint32_t *dst, const uint32_t *src, int w)
 {
   mlib_VectorReverseByteOrder_U32_U32(dst, src, w);
 }

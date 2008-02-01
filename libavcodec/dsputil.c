@@ -214,7 +214,7 @@ static int pix_norm1_c(uint8_t * pix, int line_size)
     return s;
 }
 
-static void bswap_buf(uint32_t *dst, uint32_t *src, int w){
+static void bswap_buf(uint32_t *dst, const uint32_t *src, int w){
     int i;
 
     for(i=0; i+8<=w; i+=8){
