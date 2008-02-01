@@ -57,14 +57,14 @@ typedef struct EightBpsContext {
  * Decode a frame
  *
  */
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
         EightBpsContext * const c = avctx->priv_data;
-        unsigned char *encoded = (unsigned char *)buf;
+        const unsigned char *encoded = buf;
         unsigned char *pixptr, *pixptr_end;
         unsigned int height = avctx->height; // Real image height
         unsigned int dlen, p, row;
-        unsigned char *lp, *dp;
+        const unsigned char *lp, *dp;
         unsigned char count;
         unsigned int px_inc;
         unsigned int planes = c->planes;
@@ -97,7 +97,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 for(row = 0; row < height; row++) {
                         pixptr = c->pic.data[0] + row * c->pic.linesize[0] + planemap[p];
                         pixptr_end = pixptr + c->pic.linesize[0];
-                        dlen = be2me_16(*(unsigned short *)(lp+row*2));
+                        dlen = be2me_16(*(const unsigned short *)(lp+row*2));
                         /* Decode a row of this plane */
                         while(dlen > 0) {
                                 if(dp + 1 >= buf+buf_size) return -1;
