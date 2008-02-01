@@ -34,7 +34,7 @@ static int common_init(AVCodecContext *avctx){
 
 static int pnm_decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     PNMContext * const s = avctx->priv_data;
     AVFrame *picture = data;
