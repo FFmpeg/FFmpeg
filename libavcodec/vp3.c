@@ -2126,7 +2126,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
  */
 static int vp3_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
