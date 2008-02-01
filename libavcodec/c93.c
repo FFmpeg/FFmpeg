@@ -113,7 +113,7 @@ static inline void draw_n_color(uint8_t *out, int stride, int width,
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, uint8_t * buf, int buf_size)
+                            int *data_size, const uint8_t * buf, int buf_size)
 {
     C93DecoderContext * const c93 = avctx->priv_data;
     AVFrame * const newpic = &c93->pictures[c93->currentpic];
@@ -144,7 +144,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     if (*buf++ & C93_HAS_PALETTE) {
         uint32_t *palette = (uint32_t *) newpic->data[1];
-        uint8_t *palbuf = buf + buf_size - 768 - 1;
+        const uint8_t *palbuf = buf + buf_size - 768 - 1;
         for (i = 0; i < 256; i++) {
             palette[i] = bytestream_get_be24(&palbuf);
         }
