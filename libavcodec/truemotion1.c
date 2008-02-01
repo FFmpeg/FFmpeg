@@ -48,7 +48,7 @@ typedef struct TrueMotion1Context {
 
     const uint8_t *mb_change_bits;
     int mb_change_bits_row_size;
-    uint8_t *index_stream;
+    const uint8_t *index_stream;
     int index_stream_size;
 
     int flags;
@@ -603,7 +603,7 @@ static void truemotion1_decode_16bit(TrueMotion1Context *s)
     int keyframe = s->flags & FLAG_KEYFRAME;
 
     /* these variables are for managing the stream of macroblock change bits */
-    unsigned char *mb_change_bits = s->mb_change_bits;
+    const unsigned char *mb_change_bits = s->mb_change_bits;
     unsigned char mb_change_byte;
     unsigned char mb_change_byte_mask;
     int mb_change_index;
@@ -729,7 +729,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
     int keyframe = s->flags & FLAG_KEYFRAME;
 
     /* these variables are for managing the stream of macroblock change bits */
-    unsigned char *mb_change_bits = s->mb_change_bits;
+    const unsigned char *mb_change_bits = s->mb_change_bits;
     unsigned char mb_change_byte;
     unsigned char mb_change_byte_mask;
     int mb_change_index;
