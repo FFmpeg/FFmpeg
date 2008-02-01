@@ -1784,6 +1784,7 @@ check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
 check_cflags -Wno-pointer-sign
+check_cflags -Wcast-qual
 enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
