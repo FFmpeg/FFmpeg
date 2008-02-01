@@ -1073,9 +1073,9 @@ static int valid_marker_list[] =
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_marker(uint8_t **pbuf_ptr, uint8_t *buf_end)
+static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
-    uint8_t *buf_ptr;
+    const uint8_t *buf_ptr;
     unsigned int v, v2;
     int val;
 #ifdef DEBUG
@@ -1105,10 +1105,10 @@ found:
 
 int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     MJpegDecodeContext *s = avctx->priv_data;
-    uint8_t *buf_end, *buf_ptr;
+    const uint8_t *buf_end, *buf_ptr;
     int start_code;
     AVFrame *picture = data;
 
@@ -1136,7 +1136,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                 /* unescape buffer of SOS, use special treatment for JPEG-LS */
                 if (start_code == SOS && !s->ls)
                 {
-                    uint8_t *src = buf_ptr;
+                    const uint8_t *src = buf_ptr;
                     uint8_t *dst = s->buffer;
 
                     while (src<buf_end)
@@ -1163,7 +1163,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                            (buf_end - buf_ptr) - (dst - s->buffer));
                 }
                 else if(start_code == SOS && s->ls){
-                    uint8_t *src = buf_ptr;
+                    const uint8_t *src = buf_ptr;
                     uint8_t *dst = s->buffer;
                     int bit_count = 0;
                     int t = 0, b = 0;
