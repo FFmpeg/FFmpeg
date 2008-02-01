@@ -117,7 +117,7 @@ static int qpeg_table_w[16] =
 /* Decodes delta frames */
 static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                             int stride, int width, int height,
-                            int delta, uint8_t *ctable, uint8_t *refdata)
+                            int delta, const uint8_t *ctable, uint8_t *refdata)
 {
     int i, j;
     int code;
