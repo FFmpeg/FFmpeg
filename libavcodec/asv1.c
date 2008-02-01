@@ -387,7 +387,7 @@ static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     ASV1Context * const a = avctx->priv_data;
     AVFrame *picture = data;
@@ -408,7 +408,7 @@ static int decode_frame(AVCodecContext *avctx,
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if(avctx->codec_id == CODEC_ID_ASV1)
-        a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
+        a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
     else{
         int i;
         for(i=0; i<buf_size; i++)
