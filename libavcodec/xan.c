@@ -41,7 +41,7 @@ typedef struct XanContext {
     AVFrame last_frame;
     AVFrame current_frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     /* scratch space */
@@ -87,7 +87,7 @@ static int xan_decode_init(AVCodecContext *avctx)
  * memcpy doesn't like that; it's not uncommon, for example, for
  * dest = src+1, to turn byte A into  pattern AAAAAAAA.
  * This was originally repz movsb in Intel x86 ASM. */
-static inline void bytecopy(unsigned char *dest, unsigned char *src, int count)
+static inline void bytecopy(unsigned char *dest, const unsigned char *src, int count)
 {
     int i;
 
@@ -95,12 +95,12 @@ static inline void bytecopy(unsigned char *dest, unsigned char *src, int count)
         dest[i] = src[i];
 }
 
-static int xan_huffman_decode(unsigned char *dest, unsigned char *src,
+static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
     int dest_len)
 {
     unsigned char byte = *src++;
     unsigned char ival = byte + 0x16;
-    unsigned char * ptr = src + byte*2;
+    const unsigned char * ptr = src + byte*2;
     unsigned char val = ival;
     int counter = 0;
     unsigned char *dest_end = dest + dest_len;
@@ -129,7 +129,7 @@ static int xan_huffman_decode(unsigned char *dest, unsigned char *src,
     return 0;
 }
 
-static void xan_unpack(unsigned char *dest, unsigned char *src, int dest_len)
+static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_len)
 {
     unsigned char opcode;
     int size;
@@ -288,10 +288,10 @@ static void xan_wc3_decode_frame(XanContext *s) {
     int imagedata_buffer_size = s->buffer2_size;
 
     /* pointers to segments inside the compressed chunk */
-    unsigned char *huffman_segment;
-    unsigned char *size_segment;
-    unsigned char *vector_segment;
-    unsigned char *imagedata_segment;
+    const unsigned char *huffman_segment;
+    const unsigned char *size_segment;
+    const unsigned char *vector_segment;
+    const unsigned char *imagedata_segment;
 
     huffman_segment =   s->buf + AV_RL16(&s->buf[0]);
     size_segment =      s->buf + AV_RL16(&s->buf[2]);
@@ -406,7 +406,7 @@ static void xan_wc4_decode_frame(XanContext *s) {
 
 static int xan_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     XanContext *s = avctx->priv_data;
     AVPaletteControl *palette_control = avctx->palctrl;
