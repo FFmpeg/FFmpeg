@@ -127,7 +127,7 @@ static int flic_decode_init(AVCodecContext *avctx)
 
 static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                                   void *data, int *data_size,
-                                  uint8_t *buf, int buf_size)
+                                  const uint8_t *buf, int buf_size)
 {
     FlicDecodeContext *s = avctx->priv_data;
 
@@ -427,7 +427,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
 static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                                       void *data, int *data_size,
-                                      uint8_t *buf, int buf_size)
+                                      const uint8_t *buf, int buf_size)
 {
     /* Note, the only difference between the 15Bpp and 16Bpp */
     /* Format is the pixel format, the packets are processed the same. */
@@ -692,7 +692,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
 static int flic_decode_frame_24BPP(AVCodecContext *avctx,
                                    void *data, int *data_size,
-                                   uint8_t *buf, int buf_size)
+                                   const uint8_t *buf, int buf_size)
 {
   av_log(avctx, AV_LOG_ERROR, "24Bpp FLC Unsupported due to lack of test files.\n");
   return -1;
@@ -700,7 +700,7 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
 
 static int flic_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
       return flic_decode_frame_8BPP(avctx, data, data_size,
