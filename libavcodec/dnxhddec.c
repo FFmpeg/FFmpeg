@@ -84,7 +84,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
     return 0;
 }
 
-static int dnxhd_decode_header(DNXHDContext *ctx, uint8_t *buf, int buf_size, int first_field)
+static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_size, int first_field)
 {
     static const uint8_t header_prefix[] = { 0x00, 0x00, 0x02, 0x80, 0x01 };
     int i;
@@ -263,7 +263,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
     return 0;
 }
 
-static int dnxhd_decode_macroblocks(DNXHDContext *ctx, uint8_t *buf, int buf_size)
+static int dnxhd_decode_macroblocks(DNXHDContext *ctx, const uint8_t *buf, int buf_size)
 {
     int x, y;
     for (y = 0; y < ctx->mb_height; y++) {
@@ -281,7 +281,7 @@ static int dnxhd_decode_macroblocks(DNXHDContext *ctx, uint8_t *buf, int buf_siz
 }
 
 static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     DNXHDContext *ctx = avctx->priv_data;
     AVFrame *picture = data;
