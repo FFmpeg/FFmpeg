@@ -841,7 +841,7 @@ static void xa_decode(short *out, const unsigned char *in,
 
 static int adpcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     ADPCMContext *c = avctx->priv_data;
     ADPCMChannelStatus *cs;
@@ -849,7 +849,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     int block_predictor[2];
     short *samples;
     short *samples_end;
-    uint8_t *src;
+    const uint8_t *src;
     int st; /* stereo */
 
     /* DK3 ADPCM accounting variables */
@@ -1214,7 +1214,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         uint8_t shift;
         unsigned int channel;
         uint16_t *samplesC;
-        uint8_t *srcC;
+        const uint8_t *srcC;
 
         samples_in_chunk = (big_endian ? bytestream_get_be32(&src)
                                        : bytestream_get_le32(&src)) / 28;
