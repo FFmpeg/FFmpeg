@@ -43,10 +43,10 @@ typedef struct TrueMotion1Context {
     AVCodecContext *avctx;
     AVFrame frame;
 
-    uint8_t *buf;
+    const uint8_t *buf;
     int size;
 
-    uint8_t *mb_change_bits;
+    const uint8_t *mb_change_bits;
     int mb_change_bits_row_size;
     uint8_t *index_stream;
     int index_stream_size;
@@ -846,7 +846,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
 
 static int truemotion1_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
-                                    uint8_t *buf, int buf_size)
+                                    const uint8_t *buf, int buf_size)
 {
     TrueMotion1Context *s = avctx->priv_data;
 
