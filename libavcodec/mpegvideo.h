@@ -817,7 +817,7 @@ int ff_h261_get_picture_format(int width, int height);
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size);
+                             const uint8_t *buf, int buf_size);
 int ff_h263_decode_end(AVCodecContext *avctx);
 void h263_encode_mb(MpegEncContext *s,
                     DCTELEM block[6][64],
