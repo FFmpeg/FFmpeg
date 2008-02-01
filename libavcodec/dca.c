@@ -453,15 +453,15 @@ static int dca_subframe_header(DCAContext * s)
     }
 
     for (j = 0; j < s->prim_channels; j++) {
-        uint32_t *scale_table;
+        const uint32_t *scale_table;
         int scale_sum;
 
         memset(s->scale_factor[j], 0, s->subband_activity[j] * sizeof(s->scale_factor[0][0][0]) * 2);
 
         if (s->scalefactor_huffman[j] == 6)
-            scale_table = (uint32_t *) scale_factor_quant7;
+            scale_table = scale_factor_quant7;
         else
-            scale_table = (uint32_t *) scale_factor_quant6;
+            scale_table = scale_factor_quant6;
 
         /* When huffman coded, only the difference is encoded */
         scale_sum = 0;
@@ -842,7 +842,7 @@ static int dca_subsubframe(DCAContext * s)
     int k, l;
     int subsubframe = s->current_subsubframe;
 
-    float *quant_step_table;
+    const float *quant_step_table;
 
     /* FIXME */
     float subband_samples[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
@@ -853,9 +853,9 @@ static int dca_subsubframe(DCAContext * s)
 
     /* Select quantization step size table */
     if (s->bit_rate == 0x1f)
-        quant_step_table = (float *) lossless_quant_d;
+        quant_step_table = lossless_quant_d;
     else
-        quant_step_table = (float *) lossy_quant_d;
+        quant_step_table = lossy_quant_d;
 
     for (k = 0; k < s->prim_channels; k++) {
         for (l = 0; l < s->vq_start_subband[k]; l++) {
@@ -1091,12 +1091,13 @@ static int dca_decode_block(DCAContext * s)
 /**
  * Convert bitstream to one representation based on sync marker
  */
-static int dca_convert_bitstream(uint8_t * src, int src_size, uint8_t * dst,
+static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * dst,
                           int max_size)
 {
     uint32_t mrk;
     int i, tmp;
-    uint16_t *ssrc = (uint16_t *) src, *sdst = (uint16_t *) dst;
+    const uint16_t *ssrc = (const uint16_t *) src;
+    uint16_t *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
     if((unsigned)src_size > (unsigned)max_size) {
@@ -1133,7 +1134,7 @@ static int dca_convert_bitstream(uint8_t * src, int src_size, uint8_t * dst,
  */
 static int dca_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            uint8_t * buf, int buf_size)
+                            const uint8_t * buf, int buf_size)
 {
 
     int i, j, k;
