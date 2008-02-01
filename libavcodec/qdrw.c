@@ -34,7 +34,7 @@ typedef struct QdrawContext{
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     QdrawContext * const a = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&a->pic;
@@ -90,7 +90,7 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 18; /* skip unneeded data */
     for (i = 0; i < avctx->height; i++) {
         int size, left, code, pix;
-        uint8_t *next;
+        const uint8_t *next;
         uint8_t *out;
         int tsize = 0;
 
