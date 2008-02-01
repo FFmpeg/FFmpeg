@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "bytestream.h"
 
 #include "indeo3data.h"
 
@@ -186,28 +187,22 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   buf_pos = buf;
   buf_pos += 18;
 
-  fflags1 = le2me_16(*(uint16_t *)buf_pos);
-  buf_pos += 2;
-  fflags3 = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 4;
+  fflags1 = bytestream_get_le16(&buf_pos);
+  fflags3 = bytestream_get_le32(&buf_pos);
   fflags2 = *buf_pos++;
   buf_pos += 3;
-  hdr_height = le2me_16(*(uint16_t *)buf_pos);
-  buf_pos += 2;
-  hdr_width = le2me_16(*(uint16_t *)buf_pos);
+  hdr_height = bytestream_get_le16(&buf_pos);
+  hdr_width  = bytestream_get_le16(&buf_pos);
 
   if(avcodec_check_dimensions(NULL, hdr_width, hdr_height))
       return -1;
 
-  buf_pos += 2;
   chroma_height = ((hdr_height >> 2) + 3) & 0x7ffc;
   chroma_width = ((hdr_width >> 2) + 3) & 0x7ffc;
-  offs1 = le2me_32(*(uint32_t *)buf_pos);
+  offs1 = bytestream_get_le32(&buf_pos);
+  offs2 = bytestream_get_le32(&buf_pos);
+  offs3 = bytestream_get_le32(&buf_pos);
   buf_pos += 4;
-  offs2 = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 4;
-  offs3 = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 8;
   hdr_pos = buf_pos;
   if(fflags3 == 0x80) return 4;
 
@@ -220,8 +215,7 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   }
 
   buf_pos = buf + 16 + offs1;
-  offs = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 4;
+  offs = bytestream_get_le32(&buf_pos);
 
   iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, hdr_width,
     hdr_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
@@ -231,16 +225,14 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   {
 
   buf_pos = buf + 16 + offs2;
-  offs = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 4;
+  offs = bytestream_get_le32(&buf_pos);
 
   iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width,
     chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
     FFMIN(chroma_width, 40));
 
   buf_pos = buf + 16 + offs3;
-  offs = le2me_32(*(uint32_t *)buf_pos);
-  buf_pos += 4;
+  offs = bytestream_get_le32(&buf_pos);
 
   iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width,
     chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
