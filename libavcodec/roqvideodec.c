@@ -171,7 +171,7 @@ static int roq_decode_init(AVCodecContext *avctx)
 
 static int roq_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     RoqContext *s = avctx->priv_data;
     int copy= !s->current_frame->data[0];
