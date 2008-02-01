@@ -84,7 +84,7 @@ static int huff_cmp(const void *va, const void *vb){
  * decode Fraps v2 packed plane
  */
 static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
-                               int h, uint8_t *src, int size, int Uoff)
+                               int h, const uint8_t *src, int size, int Uoff)
 {
     int i, j;
     GetBitContext gb;
@@ -128,7 +128,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
  */
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     FrapsContext * const s = avctx->priv_data;
     AVFrame *frame = data;
@@ -136,7 +136,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t header;
     unsigned int version,header_size;
     unsigned int x, y;
-    uint32_t *buf32;
+    const uint32_t *buf32;
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
     int i, is_chroma, planes;
@@ -190,7 +190,7 @@ static int decode_frame(AVCodecContext *avctx,
         f->key_frame = f->pict_type == FF_I_TYPE;
 
         if (f->pict_type == FF_I_TYPE) {
-            buf32=(uint32_t*)buf;
+            buf32=(const uint32_t*)buf;
             for(y=0; y<avctx->height/2; y++){
                 luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
                 luma2=(uint32_t*)&f->data[0][ (y*2+1)*f->linesize[0] ];
