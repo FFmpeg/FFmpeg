@@ -43,13 +43,13 @@ typedef void (*vp56_parse_coeff_t)(vp56_context_t *s);
 typedef void (*vp56_default_models_init_t)(vp56_context_t *s);
 typedef void (*vp56_parse_vector_models_t)(vp56_context_t *s);
 typedef void (*vp56_parse_coeff_models_t)(vp56_context_t *s);
-typedef int (*vp56_parse_header_t)(vp56_context_t *s, uint8_t *buf,
+typedef int (*vp56_parse_header_t)(vp56_context_t *s, const uint8_t *buf,
                                    int buf_size, int *golden_frame);
 
 typedef struct {
     int high;
     int bits;
-    uint8_t *buffer;
+    const uint8_t *buffer;
     unsigned long code_word;
 } vp56_range_coder_t;
 
@@ -172,7 +172,7 @@ void vp56_init(AVCodecContext *avctx, int flip, int has_alpha);
 int vp56_free(AVCodecContext *avctx);
 void vp56_init_dequant(vp56_context_t *s, int quantizer);
 int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                      uint8_t *buf, int buf_size);
+                      const uint8_t *buf, int buf_size);
 
 
 /**
@@ -180,7 +180,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
  */
 
 static inline void vp56_init_range_decoder(vp56_range_coder_t *c,
-                                           uint8_t *buf, int buf_size)
+                                           const uint8_t *buf, int buf_size)
 {
     c->high = 255;
     c->bits = 8;

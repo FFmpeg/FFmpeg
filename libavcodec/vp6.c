@@ -41,7 +41,7 @@
 static void vp6_parse_coeff(vp56_context_t *s);
 static void vp6_parse_coeff_huffman(vp56_context_t *s);
 
-static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
+static int vp6_parse_header(vp56_context_t *s, const uint8_t *buf, int buf_size,
                             int *golden_frame)
 {
     vp56_range_coder_t *c = &s->c;

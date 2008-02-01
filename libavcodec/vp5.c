@@ -34,7 +34,7 @@
 #include "vp5data.h"
 
 
-static int vp5_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
+static int vp5_parse_header(vp56_context_t *s, const uint8_t *buf, int buf_size,
                             int *golden_frame)
 {
     vp56_range_coder_t *c = &s->c;
