@@ -344,7 +344,7 @@ static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *la
     return v;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
     SmackVContext * const smk = avctx->priv_data;
     uint8_t *out;
@@ -567,7 +567,7 @@ static int smka_decode_init(AVCodecContext *avctx)
 /**
  * Decode Smacker audio data
  */
-static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
     GetBitContext gb;
     HuffContext h[4];
