@@ -851,7 +851,7 @@ static int sonic_decode_close(AVCodecContext *avctx)
 
 static int sonic_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
