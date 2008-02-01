@@ -251,7 +251,7 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out, int *
 }
 
 /* Decode 20-byte input */
-static void unpack_input(unsigned char *input, unsigned int *output)
+static void unpack_input(const unsigned char *input, unsigned int *output)
 {
   unsigned int outbuffer[28];
   unsigned short inbuffer[10];
@@ -427,7 +427,7 @@ static void dec2(Real144_internal *glob, int *data, int *inp, int n, int f, int 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
 static int ra144_decode_frame(AVCodecContext * avctx,
             void *vdata, int *data_size,
-            uint8_t * buf, int buf_size)
+            const uint8_t * buf, int buf_size)
 {
   unsigned int a,b,c;
   signed short *shptr;
