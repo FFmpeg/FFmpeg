@@ -1308,7 +1308,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
  * @param dst_length is the number of decoded bytes FIXME here or a decode rbsp tailing?
  * @returns decoded bytes, might be src+1 if no escapes
  */
-static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *consumed, int length){
+static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length){
     int i, si, di;
     uint8_t *dst;
     int bufidx;
@@ -1375,7 +1375,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
  * identifies the exact end of the bitstream
  * @return the length of the trailing, or 0 if damaged
  */
-static int decode_rbsp_trailing(H264Context *h, uint8_t *src){
+static int decode_rbsp_trailing(H264Context *h, const uint8_t *src){
     int v= *src;
     int r;
 
@@ -7361,7 +7361,7 @@ static void execute_decode_slices(H264Context *h, int context_count){
 }
 
 
-static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
+static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
     MpegEncContext * const s = &h->s;
     AVCodecContext * const avctx= s->avctx;
     int buf_index=0;
@@ -7385,7 +7385,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         int consumed;
         int dst_length;
         int bit_length;
-        uint8_t *ptr;
+        const uint8_t *ptr;
         int i, nalsize = 0;
         int err;
 
@@ -7563,7 +7563,7 @@ static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
 
 static int decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;

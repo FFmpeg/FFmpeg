@@ -760,7 +760,7 @@ static int svq3_decode_slice_header (H264Context *h) {
 
 static int svq3_decode_frame (AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size) {
+                              const uint8_t *buf, int buf_size) {
   MpegEncContext *const s = avctx->priv_data;
   H264Context *const h = avctx->priv_data;
   int m, mb_type;
