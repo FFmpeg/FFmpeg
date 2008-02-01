@@ -37,7 +37,7 @@ typedef struct SeqVideoContext {
 } SeqVideoContext;
 
 
-static unsigned char *seq_unpack_rle_block(unsigned char *src, unsigned char *dst, int dst_size)
+static const unsigned char *seq_unpack_rle_block(const unsigned char *src, unsigned char *dst, int dst_size)
 {
     int i, len, sz;
     GetBitContext gb;
@@ -67,9 +67,9 @@ static unsigned char *seq_unpack_rle_block(unsigned char *src, unsigned char *ds
     return src;
 }
 
-static unsigned char *seq_decode_op1(SeqVideoContext *seq, unsigned char *src, unsigned char *dst)
+static const unsigned char *seq_decode_op1(SeqVideoContext *seq, const unsigned char *src, unsigned char *dst)
 {
-    unsigned char *color_table;
+    const unsigned char *color_table;
     int b, i, len, bits;
     GetBitContext gb;
 
@@ -107,7 +107,7 @@ static unsigned char *seq_decode_op1(SeqVideoContext *seq, unsigned char *src, u
     return src;
 }
 
-static unsigned char *seq_decode_op2(SeqVideoContext *seq, unsigned char *src, unsigned char *dst)
+static const unsigned char *seq_decode_op2(SeqVideoContext *seq, const unsigned char *src, unsigned char *dst)
 {
     int i;
 
@@ -120,7 +120,7 @@ static unsigned char *seq_decode_op2(SeqVideoContext *seq, unsigned char *src, u
     return src;
 }
 
-static unsigned char *seq_decode_op3(SeqVideoContext *seq, unsigned char *src, unsigned char *dst)
+static const unsigned char *seq_decode_op3(SeqVideoContext *seq, const unsigned char *src, unsigned char *dst)
 {
     int pos, offset;
 
@@ -133,7 +133,7 @@ static unsigned char *seq_decode_op3(SeqVideoContext *seq, unsigned char *src, u
     return src;
 }
 
-static void seqvideo_decode(SeqVideoContext *seq, unsigned char *data, int data_size)
+static void seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int data_size)
 {
     GetBitContext gb;
     int flags, i, j, x, y, op;
@@ -187,7 +187,7 @@ static int seqvideo_decode_init(AVCodecContext *avctx)
 
 static int seqvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
 
     SeqVideoContext *seq = avctx->priv_data;
