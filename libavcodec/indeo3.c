@@ -93,9 +93,9 @@ static void build_modpred(Indeo3DecodeContext *s)
 }
 
 static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
-  unsigned char *ref, int width, int height, unsigned char *buf1,
-  long fflags2, unsigned char *hdr,
-  unsigned char *buf2, int min_width_160);
+  unsigned char *ref, int width, int height, const unsigned char *buf1,
+  long fflags2, const unsigned char *hdr,
+  const unsigned char *buf2, int min_width_160);
 
 /* ---------------------------------------------------------------------- */
 static void iv_alloc_frames(Indeo3DecodeContext *s)
@@ -299,13 +299,13 @@ typedef struct {
 
 static void iv_Decode_Chunk(Indeo3DecodeContext *s,
   unsigned char *cur, unsigned char *ref, int width, int height,
-  unsigned char *buf1, long fflags2, unsigned char *hdr,
-  unsigned char *buf2, int min_width_160)
+  const unsigned char *buf1, long fflags2, const unsigned char *hdr,
+  const unsigned char *buf2, int min_width_160)
 {
   unsigned char bit_buf;
   unsigned long bit_pos, lv, lv1, lv2;
   long *width_tbl, width_tbl_arr[10];
-  signed char *ref_vectors;
+  const signed char *ref_vectors;
   unsigned char *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
   uint32_t *cur_lp, *ref_lp;
   const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
@@ -370,7 +370,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
     } else if(cmd == 3) {
       if(strip->usl7 == 0) {
         strip->usl7 = 1;
-        ref_vectors = (signed char*)buf2 + (*buf1 * 2);
+        ref_vectors = (const signed char*)buf2 + (*buf1 * 2);
         buf1++;
         continue;
       }
