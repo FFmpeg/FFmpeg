@@ -1000,7 +1000,7 @@ int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
 
     *got_sub_ptr = 0;
     ret = avctx->codec->decode(avctx, sub, got_sub_ptr,
-                               (uint8_t *)buf, buf_size);
+                               buf, buf_size);
     if (*got_sub_ptr)
         avctx->frame_number++;
     return ret;
