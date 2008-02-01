@@ -2220,7 +2220,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
     const uint8_t *buf_end;
