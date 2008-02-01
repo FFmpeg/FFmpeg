@@ -31,8 +31,8 @@ static inline void dxt1_decode_pixels(const uint8_t *s, uint32_t *d,
     unsigned int rb0, rb1, rb2, rb3, g0, g1, g2, g3;
     uint32_t colors[4], pixels;
 
-    c0 = le2me_16(*(uint16_t *)(s));
-    c1 = le2me_16(*(uint16_t *)(s+2));
+    c0 = AV_RL16(s);
+    c1 = AV_RL16(s+2);
 
     rb0  = (c0<<3 | c0<<8) & 0xf800f8;
     rb1  = (c1<<3 | c1<<8) & 0xf800f8;
@@ -60,7 +60,7 @@ static inline void dxt1_decode_pixels(const uint8_t *s, uint32_t *d,
 
     colors[2] = rb2 + g2 + a;
 
-    pixels = le2me_32(*(uint32_t *)(s+4));
+    pixels = AV_RL32(s+4);
     for (y=0; y<4; y++) {
         for (x=0; x<4; x++) {
             a        = (alpha & 0x0f) << 28;
