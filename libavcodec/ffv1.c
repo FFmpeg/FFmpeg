@@ -936,7 +936,7 @@ static int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
     FFV1Context *f = avctx->priv_data;
     RangeCoder * const c= &f->c;
     const int width= f->width;

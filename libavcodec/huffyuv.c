@@ -959,7 +959,7 @@ static void draw_slice(HYuvContext *s, int y){
     s->last_slice_end= y + h;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
     HYuvContext *s = avctx->priv_data;
     const int width= s->width;
     const int width2= s->width>>1;
@@ -972,7 +972,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     s->bitstream_buffer= av_fast_realloc(s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
-    s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);
+    s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);
