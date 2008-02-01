@@ -36,7 +36,7 @@ ogm_header(AVFormatContext *s, int idx)
     ogg_t *ogg = s->priv_data;
     ogg_stream_t *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    uint8_t *p = os->buf + os->pstart;
+    const uint8_t *p = os->buf + os->pstart;
     uint64_t time_unit;
     uint64_t spu;
     uint32_t default_len;
