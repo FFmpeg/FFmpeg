@@ -263,7 +263,7 @@ static void chomp3(MACEContext *ctx,
 
 /* /// "Exp1to3()" */
 static void Exp1to3(MACEContext *ctx,
-             uint8_t *inBuffer,
+             const uint8_t *inBuffer,
              void *outBuffer,
              uint32_t cnt,
              uint32_t numChannels,
@@ -347,7 +347,7 @@ static void chomp6(MACEContext *ctx,
 
 /* /// "Exp1to6()" */
 static void Exp1to6(MACEContext *ctx,
-             uint8_t *inBuffer,
+             const uint8_t *inBuffer,
              void *outBuffer,
              uint32_t cnt,
              uint32_t numChannels,
@@ -401,7 +401,7 @@ static int mace_decode_init(AVCodecContext * avctx)
 
 static int mace_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     short *samples;
     MACEContext *c = avctx->priv_data;
