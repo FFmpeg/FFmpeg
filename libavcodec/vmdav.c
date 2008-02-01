@@ -61,7 +61,7 @@ typedef struct VmdVideoContext {
     AVFrame frame;
     AVFrame prev_frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     unsigned char palette[PALETTE_COUNT * 4];
@@ -74,9 +74,9 @@ typedef struct VmdVideoContext {
 #define QUEUE_SIZE 0x1000
 #define QUEUE_MASK 0x0FFF
 
-static void lz_unpack(unsigned char *src, unsigned char *dest, int dest_len)
+static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_len)
 {
-    unsigned char *s;
+    const unsigned char *s;
     unsigned char *d;
     unsigned char *d_end;
     unsigned char queue[QUEUE_SIZE];
@@ -144,10 +144,10 @@ static void lz_unpack(unsigned char *src, unsigned char *dest, int dest_len)
     }
 }
 
-static int rle_unpack(unsigned char *src, unsigned char *dest,
+static int rle_unpack(const unsigned char *src, unsigned char *dest,
     int src_len, int dest_len)
 {
-    unsigned char *ps;
+    const unsigned char *ps;
     unsigned char *pd;
     int i, l;
     unsigned char *dest_end = dest + dest_len;
@@ -190,9 +190,9 @@ static void vmd_decode(VmdVideoContext *s)
     unsigned char r, g, b;
 
     /* point to the start of the encoded data */
-    unsigned char *p = s->buf + 16;
+    const unsigned char *p = s->buf + 16;
 
-    unsigned char *pb;
+    const unsigned char *pb;
     unsigned char meth;
     unsigned char *dp;   /* pointer to current frame */
     unsigned char *pp;   /* pointer to previous frame */
@@ -368,7 +368,7 @@ static int vmdvideo_decode_init(AVCodecContext *avctx)
 
 static int vmdvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     VmdVideoContext *s = avctx->priv_data;
 
@@ -457,7 +457,7 @@ static int vmdaudio_decode_init(AVCodecContext *avctx)
 }
 
 static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
-    uint8_t *buf, int stereo)
+    const uint8_t *buf, int stereo)
 {
     int i;
     int chan = 0;
@@ -475,7 +475,7 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 }
 
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
-    uint8_t *buf, int silence)
+    const uint8_t *buf, int silence)
 {
     int bytes_decoded = 0;
     int i;
@@ -522,13 +522,13 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     VmdAudioContext *s = avctx->priv_data;
     unsigned char *output_samples = (unsigned char *)data;
 
     /* point to the start of the encoded data */
-    unsigned char *p = buf + 16;
+    const unsigned char *p = buf + 16;
 
     if (buf_size < 16)
         return buf_size;
