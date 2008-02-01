@@ -57,7 +57,7 @@ static int truespeech_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void truespeech_read_frame(TSContext *dec, uint8_t *input)
+static void truespeech_read_frame(TSContext *dec, const uint8_t *input)
 {
     uint32_t t;
 
@@ -329,7 +329,7 @@ static void truespeech_save_prevvec(TSContext *c)
 
 static int truespeech_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
-                uint8_t *buf, int buf_size)
+                const uint8_t *buf, int buf_size)
 {
     TSContext *c = avctx->priv_data;
 
