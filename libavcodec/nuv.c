@@ -69,7 +69,7 @@ static const uint8_t fallback_cquant[] = {
  * \param width width of the video frame
  * \param height height of the video frame
  */
-static void copy_frame(AVFrame *f, uint8_t *src,
+static void copy_frame(AVFrame *f, const uint8_t *src,
                        int width, int height) {
     AVPicture pic;
     avpicture_fill(&pic, src, PIX_FMT_YUV420P, width, height);
@@ -80,7 +80,7 @@ static void copy_frame(AVFrame *f, uint8_t *src,
  * \brief extract quantization tables from codec data into our context
  */
 static int get_quant(AVCodecContext *avctx, NuvContext *c,
-                     uint8_t *buf, int size) {
+                     const uint8_t *buf, int size) {
     int i;
     if (size < 2 * 64 * 4) {
         av_log(avctx, AV_LOG_ERROR, "insufficient rtjpeg quant data\n");
