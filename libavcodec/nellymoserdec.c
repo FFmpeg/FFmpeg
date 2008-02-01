@@ -274,7 +274,7 @@ static void get_sample_bits(const float *buf, int *bits)
     }
 }
 
-void nelly_decode_block(NellyMoserDecodeContext *s, unsigned char block[NELLY_BLOCK_LEN], float audio[NELLY_SAMPLES])
+void nelly_decode_block(NellyMoserDecodeContext *s, const unsigned char block[NELLY_BLOCK_LEN], float audio[NELLY_SAMPLES])
 {
     int i,j;
     float buf[NELLY_FILL_LEN], pows[NELLY_FILL_LEN];
@@ -358,7 +358,7 @@ static int decode_init(AVCodecContext * avctx) {
 
 static int decode_tag(AVCodecContext * avctx,
                       void *data, int *data_size,
-                      uint8_t * buf, int buf_size) {
+                      const uint8_t * buf, int buf_size) {
     NellyMoserDecodeContext *s = avctx->priv_data;
     int blocks, i;
     int16_t* samples;

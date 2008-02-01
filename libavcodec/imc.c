@@ -625,7 +625,7 @@ static int imc_get_coeffs (IMCContext* q) {
 
 static int imc_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            uint8_t * buf, int buf_size)
+                            const uint8_t * buf, int buf_size)
 {
 
     IMCContext *q = avctx->priv_data;

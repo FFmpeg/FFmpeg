@@ -158,7 +158,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
 
 static int mpc7_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            uint8_t * buf, int buf_size)
+                            const uint8_t * buf, int buf_size)
 {
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;

@@ -2367,7 +2367,7 @@ static int mp_decode_frame(MPADecodeContext *s,
 
 static int decode_frame(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        uint8_t * buf, int buf_size)
+                        const uint8_t * buf, int buf_size)
 {
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
@@ -2438,7 +2438,7 @@ static void flush(AVCodecContext *avctx){
 #ifdef CONFIG_MP3ADU_DECODER
 static int decode_frame_adu(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        uint8_t * buf, int buf_size)
+                        const uint8_t * buf, int buf_size)
 {
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
@@ -2564,7 +2564,7 @@ static int decode_close_mp3on4(AVCodecContext * avctx)
 
 static int decode_frame_mp3on4(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        uint8_t * buf, int buf_size)
+                        const uint8_t * buf, int buf_size)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     MPADecodeContext *m;
@@ -2574,7 +2574,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
     OUT_INT *outptr, *bp;
     int fsize;
-    unsigned char *start2 = buf, *start;
+    const unsigned char *start2 = buf, *start;
     int fr, i, j, n;
     int off = avctx->channels;
     int *coff = chan_offset[s->chan_cfg];

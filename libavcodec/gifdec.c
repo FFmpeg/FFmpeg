@@ -47,8 +47,8 @@ typedef struct GifState {
     int gce_delay;
 
     /* LZW compatible decoder */
-    uint8_t *bytestream;
-    uint8_t *bytestream_end;
+    const uint8_t *bytestream;
+    const uint8_t *bytestream_end;
     LZWState *lzw;
 
     /* aux buffers */
@@ -285,7 +285,7 @@ static int gif_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
     GifState *s = avctx->priv_data;
     AVFrame *picture = data;

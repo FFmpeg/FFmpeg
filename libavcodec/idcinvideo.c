@@ -69,7 +69,7 @@ typedef struct IdcinContext {
     DSPContext dsp;
     AVFrame frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     hnode_t huff_nodes[256][HUF_TOKENS*2];
@@ -212,7 +212,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
 
 static int idcin_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     IdcinContext *s = avctx->priv_data;
     AVPaletteControl *palette_control = avctx->palctrl;

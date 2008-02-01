@@ -176,12 +176,12 @@ static void iv_free_func(Indeo3DecodeContext *s)
 
 /* ---------------------------------------------------------------------- */
 static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
-                                     unsigned char *buf, int buf_size)
+                                     const unsigned char *buf, int buf_size)
 {
   unsigned int hdr_width, hdr_height,
     chroma_width, chroma_height;
   unsigned long fflags1, fflags2, fflags3, offs1, offs2, offs3, offs;
-  unsigned char *hdr_pos, *buf_pos;
+  const unsigned char *hdr_pos, *buf_pos;
 
   buf_pos = buf;
   buf_pos += 18;
@@ -1074,7 +1074,7 @@ static int indeo3_decode_init(AVCodecContext *avctx)
 
 static int indeo3_decode_frame(AVCodecContext *avctx,
                                void *data, int *data_size,
-                               unsigned char *buf, int buf_size)
+                               const unsigned char *buf, int buf_size)
 {
     Indeo3DecodeContext *s=avctx->priv_data;
     unsigned char *src, *dest;

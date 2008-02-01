@@ -40,7 +40,7 @@ typedef struct SgiState {
  * @param pixelstride pixel stride of input buffer
  * @return size of output in bytes, -1 if buffer overflows
  */
-static int expand_rle_row(uint8_t *in_buf, uint8_t* in_end,
+static int expand_rle_row(const uint8_t *in_buf, const uint8_t* in_end,
             unsigned char *out_buf, uint8_t* out_end, int pixelstride)
 {
     unsigned char pixel, count;
@@ -80,12 +80,12 @@ static int expand_rle_row(uint8_t *in_buf, uint8_t* in_end,
  * @param s the current image state
  * @return 0 if no error, else return error number.
  */
-static int read_rle_sgi(unsigned char* out_buf, uint8_t *in_buf,
-                        uint8_t *in_end, SgiState* s)
+static int read_rle_sgi(unsigned char* out_buf, const uint8_t *in_buf,
+                        const uint8_t *in_end, SgiState* s)
 {
     uint8_t *dest_row;
     unsigned int len = s->height * s->depth * 4;
-    uint8_t *start_table = in_buf;
+    const uint8_t *start_table = in_buf;
     unsigned int y, z;
     unsigned int start_offset;
 
@@ -121,10 +121,10 @@ static int read_rle_sgi(unsigned char* out_buf, uint8_t *in_buf,
  * @return 0 if read success, otherwise return -1.
  */
 static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
-                uint8_t *in_buf, uint8_t *in_end, SgiState* s)
+                const uint8_t *in_buf, const uint8_t *in_end, SgiState* s)
 {
     int x, y, z;
-    uint8_t *ptr;
+    const uint8_t *ptr;
     unsigned int offset = s->height * s->width;
 
     /* Test buffer size. */
@@ -147,12 +147,12 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *in_buf, int buf_size)
+                        const uint8_t *in_buf, int buf_size)
 {
     SgiState *s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *p = &s->picture;
-    uint8_t *in_end = in_buf + buf_size;
+    const uint8_t *in_end = in_buf + buf_size;
     unsigned int dimension, bytes_per_channel, rle;
     int ret = 0;
     uint8_t *out_buf, *out_end;

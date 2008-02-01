@@ -355,7 +355,7 @@ static int pcm_decode_init(AVCodecContext * avctx)
  * \param src_len number of bytes in src
  */
 static inline void decode_to16(int bps, int le, int us,
-                               uint8_t **src, short **samples, int src_len)
+                               const uint8_t **src, short **samples, int src_len)
 {
     int usum = us ? -0x8000 : 0;
     register int n = src_len / bps;
@@ -373,12 +373,12 @@ static inline void decode_to16(int bps, int le, int us,
 
 static int pcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     PCMDecode *s = avctx->priv_data;
     int c, n;
     short *samples;
-    uint8_t *src, *src2[MAX_CHANNELS];
+    const uint8_t *src, *src2[MAX_CHANNELS];
 
     samples = data;
     src = buf;

@@ -182,7 +182,7 @@ static int mpc8_decode_init(AVCodecContext * avctx)
 
 static int mpc8_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            uint8_t * buf, int buf_size)
+                            const uint8_t * buf, int buf_size)
 {
     MPCContext *c = avctx->priv_data;
     GetBitContext gb2, *gb = &gb2;

@@ -1031,7 +1031,7 @@ static int dv_encode_mt(AVCodecContext *avctx, void* sl)
    144000 bytes for PAL - or twice those for 50Mbps) */
 static int dvvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     DVVideoContext *s = avctx->priv_data;
 

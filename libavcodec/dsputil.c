@@ -3785,7 +3785,7 @@ void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1, 
 void ff_float_to_int16_c(int16_t *dst, const float *src, int len){
     int i;
     for(i=0; i<len; i++) {
-        int_fast32_t tmp = ((int32_t*)src)[i];
+        int_fast32_t tmp = ((const int32_t*)src)[i];
         if(tmp & 0xf0000){
             tmp = (0x43c0ffff - tmp)>>31;
             // is this faster on some gcc/cpu combinations?

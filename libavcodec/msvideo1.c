@@ -52,7 +52,7 @@ typedef struct Msvideo1Context {
     DSPContext dsp;
     AVFrame frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     int mode_8bit;  /* if it's not 8-bit, it's 16-bit */
@@ -297,7 +297,7 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
 
 static int msvideo1_decode_frame(AVCodecContext *avctx,
                                 void *data, int *data_size,
-                                uint8_t *buf, int buf_size)
+                                const uint8_t *buf, int buf_size)
 {
     Msvideo1Context *s = avctx->priv_data;
 

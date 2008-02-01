@@ -60,14 +60,14 @@ typedef struct IpvideoContext {
     AVFrame second_last_frame;
     AVFrame last_frame;
     AVFrame current_frame;
-    unsigned char *decoding_map;
+    const unsigned char *decoding_map;
     int decoding_map_size;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
-    unsigned char *stream_ptr;
-    unsigned char *stream_end;
+    const unsigned char *stream_ptr;
+    const unsigned char *stream_end;
     unsigned char *pixel_ptr;
     int line_inc;
     int stride;
@@ -879,7 +879,7 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
 
 static int ipvideo_decode_frame(AVCodecContext *avctx,
                                 void *data, int *data_size,
-                                uint8_t *buf, int buf_size)
+                                const uint8_t *buf, int buf_size)
 {
     IpvideoContext *s = avctx->priv_data;
     AVPaletteControl *palette_control = avctx->palctrl;

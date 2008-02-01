@@ -195,7 +195,7 @@ static void cin_decode_rle(const unsigned char *src, int src_size, unsigned char
 
 static int cinvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     CinVideoContext *cin = avctx->priv_data;
     int i, y, palette_type, palette_colors_count, bitmap_frame_type, bitmap_frame_size;
@@ -311,10 +311,10 @@ static int cinaudio_decode_init(AVCodecContext *avctx)
 
 static int cinaudio_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     CinAudioContext *cin = avctx->priv_data;
-    uint8_t *src = buf;
+    const uint8_t *src = buf;
     int16_t *samples = (int16_t *)data;
 
     buf_size = FFMIN(buf_size, *data_size/2);

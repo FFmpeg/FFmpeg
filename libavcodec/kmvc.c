@@ -67,7 +67,7 @@ typedef struct BitBuf {
     } \
 }
 
-static void kmvc_decode_intra_8x8(KmvcContext * ctx, uint8_t * src, int w, int h)
+static void kmvc_decode_intra_8x8(KmvcContext * ctx, const uint8_t * src, int w, int h)
 {
     BitBuf bb;
     int res, val;
@@ -142,7 +142,7 @@ static void kmvc_decode_intra_8x8(KmvcContext * ctx, uint8_t * src, int w, int h
         }
 }
 
-static void kmvc_decode_inter_8x8(KmvcContext * ctx, uint8_t * src, int w, int h)
+static void kmvc_decode_inter_8x8(KmvcContext * ctx, const uint8_t * src, int w, int h)
 {
     BitBuf bb;
     int res, val;
@@ -224,7 +224,7 @@ static void kmvc_decode_inter_8x8(KmvcContext * ctx, uint8_t * src, int w, int h
         }
 }
 
-static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t * buf,
+static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, const uint8_t * buf,
                         int buf_size)
 {
     KmvcContext *const ctx = avctx->priv_data;

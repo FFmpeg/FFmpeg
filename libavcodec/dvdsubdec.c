@@ -469,7 +469,7 @@ static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
 
 static int dvdsub_decode(AVCodecContext *avctx,
                          void *data, int *data_size,
-                         uint8_t *buf, int buf_size)
+                         const uint8_t *buf, int buf_size)
 {
     AVSubtitle *sub = (void *)data;
     int is_menu;

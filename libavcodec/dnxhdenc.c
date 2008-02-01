@@ -693,7 +693,7 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
 
 static int dnxhd_rc_cmp(const void *a, const void *b)
 {
-    return ((RCCMPEntry *)b)->value - ((RCCMPEntry *)a)->value;
+    return ((const RCCMPEntry *)b)->value - ((const RCCMPEntry *)a)->value;
 }
 
 static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
@@ -733,7 +733,7 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
     return 0;
 }
 
-static void dnxhd_load_picture(DNXHDEncContext *ctx, AVFrame *frame)
+static void dnxhd_load_picture(DNXHDEncContext *ctx, const AVFrame *frame)
 {
     int i;
 
@@ -753,7 +753,7 @@ static void dnxhd_load_picture(DNXHDEncContext *ctx, AVFrame *frame)
     ctx->cur_field = frame->interlaced_frame && !frame->top_field_first;
 }
 
-static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data)
+static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, const void *data)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
     int first_field = 1;

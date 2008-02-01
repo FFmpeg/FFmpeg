@@ -30,7 +30,7 @@ static int decode_init(AVCodecContext *avctx) {
 static const uint8_t tc_offsets[9] = { 0, 1, 3, 4, 6, 7, 9, 10, 11 };
 static const uint8_t tc_muls[9] = { 10, 6, 10, 6, 10, 6, 10, 10, 1 };
 
-static uint64_t parse_timecode(uint8_t *buf) {
+static uint64_t parse_timecode(const uint8_t *buf) {
     int i;
     int64_t ms = 0;
     if (buf[2] != ':' || buf[5] != ':' || buf[8] != '.')
@@ -44,9 +44,9 @@ static uint64_t parse_timecode(uint8_t *buf) {
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                        uint8_t *buf, int buf_size) {
+                        const uint8_t *buf, int buf_size) {
     AVSubtitle *sub = data;
-    uint8_t *buf_end = buf + buf_size;
+    const uint8_t *buf_end = buf + buf_size;
     uint8_t *bitmap;
     int w, h, x, y, rlelen, i;
     GetBitContext gb;

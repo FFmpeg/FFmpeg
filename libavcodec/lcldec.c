@@ -161,7 +161,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
  * Decode a frame
  *
  */
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size)
 {
     LclDecContext * const c = avctx->priv_data;
     unsigned char *encoded = (unsigned char *)buf;

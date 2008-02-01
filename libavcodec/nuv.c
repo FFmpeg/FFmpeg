@@ -129,7 +129,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                        uint8_t *buf, int buf_size) {
+                        const uint8_t *buf, int buf_size) {
     NuvContext *c = avctx->priv_data;
     AVFrame *picture = data;
     int orig_size = buf_size;
