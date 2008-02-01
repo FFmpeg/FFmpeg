@@ -32,13 +32,14 @@
 
 static int sp5x_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
 #if 0
     MJpegDecodeContext *s = avctx->priv_data;
 #endif
     const int qscale = 5;
-    uint8_t *buf_ptr, *buf_end, *recoded;
+    const uint8_t *buf_ptr, *buf_end;
+    uint8_t *recoded;
     int i = 0, j = 0;
 
     if (!avctx->width || !avctx->height)

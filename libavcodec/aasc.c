@@ -58,7 +58,7 @@ static int aasc_decode_init(AVCodecContext *avctx)
 
 static int aasc_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     AascContext *s = avctx->priv_data;
     int stream_ptr = 4;

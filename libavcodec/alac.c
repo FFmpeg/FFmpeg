@@ -107,7 +107,7 @@ static void allocate_buffers(ALACContext *alac)
 
 static int alac_set_info(ALACContext *alac)
 {
-    unsigned char *ptr = alac->avctx->extradata;
+    const unsigned char *ptr = alac->avctx->extradata;
 
     ptr += 4; /* size */
     ptr += 4; /* alac */
@@ -439,7 +439,7 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
 
 static int alac_decode_frame(AVCodecContext *avctx,
                              void *outbuffer, int *outputsize,
-                             uint8_t *inbuffer, int input_buffer_size)
+                             const uint8_t *inbuffer, int input_buffer_size)
 {
     ALACContext *alac = avctx->priv_data;
 
