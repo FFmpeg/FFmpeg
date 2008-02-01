@@ -44,25 +44,25 @@ typedef struct TiffContext {
 
     int strips, rps;
     int sot;
-    uint8_t* stripdata;
-    uint8_t* stripsizes;
+    const uint8_t* stripdata;
+    const uint8_t* stripsizes;
     int stripsize, stripoff;
     LZWState *lzw;
 } TiffContext;
 
-static int tget_short(uint8_t **p, int le){
+static int tget_short(const uint8_t **p, int le){
     int v = le ? AV_RL16(*p) : AV_RB16(*p);
     *p += 2;
     return v;
 }
 
-static int tget_long(uint8_t **p, int le){
+static int tget_long(const uint8_t **p, int le){
     int v = le ? AV_RL32(*p) : AV_RB32(*p);
     *p += 4;
     return v;
 }
 
-static int tget(uint8_t **p, int type, int le){
+static int tget(const uint8_t **p, int type, int le){
     switch(type){
     case TIFF_BYTE : return *(*p)++;
     case TIFF_SHORT: return tget_short(p, le);
@@ -71,9 +71,9 @@ static int tget(uint8_t **p, int type, int le){
     }
 }
 
-static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, uint8_t *src, int size, int lines){
+static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
-    uint8_t *ssrc = src;
+    const uint8_t *ssrc = src;
     int width = s->width * (s->bpp / 8);
 #ifdef CONFIG_ZLIB
     uint8_t *zbuf; unsigned long outlen;
@@ -150,13 +150,14 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, uint8_t *
 }
 
 
-static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t *end_buf, AVFrame *pic)
+static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *buf, const uint8_t *end_buf, AVFrame *pic)
 {
     int tag, type, count, off, value = 0;
-    uint8_t *src, *dst;
+    const uint8_t *src;
+    uint8_t *dst;
     int i, j, ssize, soff, stride;
     uint32_t *pal;
-    uint8_t *rp, *gp, *bp;
+    const uint8_t *rp, *gp, *bp;
 
     tag = tget_short(&buf, s->le);
     type = tget_short(&buf, s->le);
@@ -346,14 +347,14 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             return -1;
         }
         if(value == 2){
-            src = pic->data[0];
+            dst = pic->data[0];
             stride = pic->linesize[0];
             soff = s->bpp >> 3;
             ssize = s->width * soff;
             for(i = 0; i < s->height; i++) {
                 for(j = soff; j < ssize; j++)
-                    src[j] += src[j - soff];
-                src += stride;
+                    dst[j] += dst[j - soff];
+                dst += stride;
             }
         }
         break;
@@ -403,12 +404,12 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     TiffContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
-    uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
+    const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
     int id, le, off;
     int i, entries;
 
