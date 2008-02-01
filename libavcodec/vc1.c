@@ -3776,7 +3776,7 @@ static void vc1_decode_blocks(VC1Context *v)
 /** Find VC-1 marker in buffer
  * @return position where next marker starts or end of buffer if no marker found
  */
-static av_always_inline uint8_t* find_next_marker(uint8_t *src, uint8_t *end)
+static av_always_inline const uint8_t* find_next_marker(const uint8_t *src, const uint8_t *end)
 {
     uint32_t mrk = 0xFFFFFFFF;
 
@@ -3789,7 +3789,7 @@ static av_always_inline uint8_t* find_next_marker(uint8_t *src, uint8_t *end)
     return end;
 }
 
-static av_always_inline int vc1_unescape_buffer(uint8_t *src, int size, uint8_t *dst)
+static av_always_inline int vc1_unescape_buffer(const uint8_t *src, int size, uint8_t *dst)
 {
     int dsize = 0, i;
 
@@ -3862,8 +3862,10 @@ static int vc1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO, "Read %i bits in overflow\n", -count);
         }
     } else { // VC1/WVC1
-        uint8_t *start = avctx->extradata, *end = avctx->extradata + avctx->extradata_size;
-        uint8_t *next; int size, buf2_size;
+        const uint8_t *start = avctx->extradata;
+        uint8_t *end = avctx->extradata + avctx->extradata_size;
+        const uint8_t *next;
+        int size, buf2_size;
         uint8_t *buf2 = NULL;
         int seq_inited = 0, ep_inited = 0;
 
@@ -3998,7 +4000,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
                 }
             }
         }else if(v->interlace && ((buf[0] & 0xC0) == 0xC0)){ /* WVC1 interlaced stores both fields divided by marker */
-            uint8_t *divider;
+            const uint8_t *divider;
 
             divider = find_next_marker(buf, buf + buf_size);
             if((divider == (buf + buf_size)) || AV_RB32(divider) != VC1_CODE_FIELD){
