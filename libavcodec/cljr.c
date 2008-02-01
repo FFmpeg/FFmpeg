@@ -37,7 +37,7 @@ typedef struct CLJRContext{
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     CLJRContext * const a = avctx->priv_data;
     AVFrame *picture = data;
