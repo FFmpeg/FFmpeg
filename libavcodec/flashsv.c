@@ -102,7 +102,7 @@ static int flashsv_decode_init(AVCodecContext *avctx)
 
 static int flashsv_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
-                                    uint8_t *buf, int buf_size)
+                                    const uint8_t *buf, int buf_size)
 {
     FlashSVContext *s = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
