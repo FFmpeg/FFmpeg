@@ -2661,7 +2661,7 @@ enum dv_pack_type {
 /* largest possible DV frame, in bytes (PAL 50Mbps) */
 #define DV_MAX_FRAME_SIZE 288000
 
-static inline const DVprofile* dv_frame_profile(uint8_t* frame)
+static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
 {
     if ((frame[3] & 0x80) == 0) {      /* DSF flag */
         /* it's an NTSC format */
