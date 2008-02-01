@@ -106,7 +106,7 @@ typedef struct {
     float level;
     float *samples_im;
     float *samples_re;
-    float *table;
+    const float *table;
     int   phase;
     int   phase_shift;
     int   duration;
@@ -176,7 +176,7 @@ typedef struct {
     QDM2FFT fft;
 
     /// I/O data
-    uint8_t *compressed_data;
+    const uint8_t *compressed_data;
     int compressed_size;
     float output_buffer[1024];
 
@@ -404,7 +404,7 @@ static int qdm2_get_se_vlc (VLC *vlc, GetBitContext *gb, int depth)
  *
  * @return          0 if checksum is OK
  */
-static uint16_t qdm2_packet_checksum (uint8_t *data, int length, int value) {
+static uint16_t qdm2_packet_checksum (const uint8_t *data, int length, int value) {
     int i;
 
     for (i=0; i < length; i++)
@@ -1598,7 +1598,7 @@ static void qdm2_fft_tone_synthesizer (QDM2Context *q, int sub_packet)
                     tone.level = (q->fft_coefs[j].exp < 0) ? 0.0 : fft_tone_level_table[q->superblocktype_2_3 ? 0 : 1][q->fft_coefs[j].exp & 63];
                     tone.samples_im = &q->fft.samples_im[ch][offset];
                     tone.samples_re = &q->fft.samples_re[ch][offset];
-                    tone.table = (float*)fft_tone_sample_table[i][q->fft_coefs[j].offset - (offset << four_i)];
+                    tone.table = fft_tone_sample_table[i][q->fft_coefs[j].offset - (offset << four_i)];
                     tone.phase = 64 * q->fft_coefs[j].phase - (offset << 8) - 128;
                     tone.phase_shift = (2 * q->fft_coefs[j].offset + 1) << (7 - four_i);
                     tone.duration = i;
@@ -1943,7 +1943,7 @@ static int qdm2_decode_close(AVCodecContext *avctx)
 }
 
 
-static void qdm2_decode (QDM2Context *q, uint8_t *in, int16_t *out)
+static void qdm2_decode (QDM2Context *q, const uint8_t *in, int16_t *out)
 {
     int ch, i;
     const int frame_size = (q->frame_size * q->channels);
@@ -2005,7 +2005,7 @@ static void qdm2_decode (QDM2Context *q, uint8_t *in, int16_t *out)
 
 static int qdm2_decode_frame(AVCodecContext *avctx,
             void *data, int *data_size,
-            uint8_t *buf, int buf_size)
+            const uint8_t *buf, int buf_size)
 {
     QDM2Context *s = avctx->priv_data;
 
