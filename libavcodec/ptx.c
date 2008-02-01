@@ -35,7 +35,7 @@ static int ptx_init(AVCodecContext *avctx) {
 }
 
 static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                            uint8_t *buf, int buf_size) {
+                            const uint8_t *buf, int buf_size) {
     PTXContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
