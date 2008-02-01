@@ -46,7 +46,7 @@ static int bethsoftvid_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void set_palette(AVFrame * frame, uint8_t * palette_buffer)
+static void set_palette(AVFrame * frame, const uint8_t * palette_buffer)
 {
     uint32_t * palette = (uint32_t *)frame->data[1];
     int a;
@@ -58,7 +58,7 @@ static void set_palette(AVFrame * frame, uint8_t * palette_buffer)
 
 static int bethsoftvid_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              uint8_t *buf, int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     BethsoftvidContext * vid = avctx->priv_data;
     char block_type;
