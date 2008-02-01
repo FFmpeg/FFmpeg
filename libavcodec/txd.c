@@ -38,14 +38,16 @@ static int txd_init(AVCodecContext *avctx) {
 }
 
 static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                            uint8_t *buf, int buf_size) {
+                            const uint8_t *buf, int buf_size) {
     TXDContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int version, w, h, d3d_format, depth, stride, mipmap_count, flags;
     unsigned int y, v;
-    uint8_t *ptr, *cur = buf;
-    uint32_t *palette = (uint32_t *)(cur + 88), *pal;
+    uint8_t *ptr;
+    const uint8_t *cur = buf;
+    const uint32_t *palette = (const uint32_t *)(cur + 88);
+    uint32_t *pal;
 
     version         = AV_RL32(cur);
     d3d_format      = AV_RL32(cur+76);
