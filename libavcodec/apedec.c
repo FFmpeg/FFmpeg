@@ -154,8 +154,8 @@ typedef struct APEContext {
 
     uint8_t *data;                           ///< current frame data
     uint8_t *data_end;                       ///< frame data end
-    uint8_t *ptr;                            ///< current position in frame data
-    uint8_t *last_ptr;                       ///< position where last 4608-sample block ended
+    const uint8_t *ptr;                      ///< current position in frame data
+    const uint8_t *last_ptr;                 ///< position where last 4608-sample block ended
 } APEContext;
 
 // TODO: dsputilize
@@ -834,7 +834,7 @@ static void ape_unpack_stereo(APEContext * ctx, int count)
 
 static int ape_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            uint8_t * buf, int buf_size)
+                            const uint8_t * buf, int buf_size)
 {
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
@@ -856,7 +856,7 @@ static int ape_decode_frame(AVCodecContext * avctx,
 
     if(!s->samples){
         s->data = av_realloc(s->data, (buf_size + 3) & ~3);
-        s->dsp.bswap_buf((uint32_t*)s->data, (uint32_t*)buf, buf_size >> 2);
+        s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->last_ptr = s->data;
         s->data_end = s->data + buf_size;
 
