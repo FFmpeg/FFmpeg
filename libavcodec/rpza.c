@@ -48,7 +48,7 @@ typedef struct RpzaContext {
     DSPContext dsp;
     AVFrame frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
 } RpzaContext;
@@ -243,7 +243,7 @@ static int rpza_decode_init(AVCodecContext *avctx)
 
 static int rpza_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     RpzaContext *s = avctx->priv_data;
 
