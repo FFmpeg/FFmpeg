@@ -96,7 +96,7 @@ static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size
 
 static int adx_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
-                uint8_t *buf0, int buf_size)
+                const uint8_t *buf0, int buf_size)
 {
     ADXContext *c = avctx->priv_data;
     short *samples = data;
