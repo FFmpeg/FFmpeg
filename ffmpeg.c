@@ -954,7 +954,8 @@ static void print_report(AVFormatContext **output_files,
         enc = ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ",
-                    enc->coded_frame->quality/(float)FF_QP2LAMBDA);
+                     enc->coded_frame && !ost->st->stream_copy ?
+                     enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             float t = (av_gettime()-timer_start) / 1000000.0;
@@ -962,7 +963,8 @@ static void print_report(AVFormatContext **output_files,
             frame_number = ost->frame_number;
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3d q=%3.1f ",
                      frame_number, (t>1)?(int)(frame_number/t+0.5) : 0,
-                     enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
+                     enc->coded_frame && !ost->st->stream_copy ?
+                     enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
             if(is_last_report)
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
             if(qp_hist && enc->coded_frame){
