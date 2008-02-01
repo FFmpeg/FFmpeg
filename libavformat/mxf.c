@@ -244,7 +244,8 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
 static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pkt, int64_t length)
 {
     uint8_t buffer[61444];
-    uint8_t *buf_ptr, *end_ptr, *data_ptr;
+    const uint8_t *buf_ptr, *end_ptr;
+    uint8_t *data_ptr;
     int i;
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
