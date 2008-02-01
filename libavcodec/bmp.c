@@ -34,7 +34,7 @@ static int bmp_decode_init(AVCodecContext *avctx){
 
 static int bmp_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     BMPContext *s = avctx->priv_data;
     AVFrame *picture = data;
@@ -48,7 +48,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     uint32_t rgb[3];
     uint8_t *ptr;
     int dsize;
-    uint8_t *buf0 = buf;
+    const uint8_t *buf0 = buf;
 
     if(buf_size < 14){
         av_log(avctx, AV_LOG_ERROR, "buf size too small (%d)\n", buf_size);
@@ -193,7 +193,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         break;
     case 16:
         for(i = 0; i < avctx->height; i++){
-            uint16_t *src = (uint16_t *) buf;
+            const uint16_t *src = (const uint16_t *) buf;
             uint16_t *dst = (uint16_t *) ptr;
 
             for(j = 0; j < avctx->width; j++)
@@ -205,7 +205,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         break;
     case 32:
         for(i = 0; i < avctx->height; i++){
-            uint8_t *src = buf;
+            const uint8_t *src = buf;
             uint8_t *dst = ptr;
 
             for(j = 0; j < avctx->width; j++){
