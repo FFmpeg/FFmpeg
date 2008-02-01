@@ -3941,7 +3941,7 @@ static int vc1_decode_init(AVCodecContext *avctx)
  */
 static int vc1_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            uint8_t *buf, int buf_size)
+                            const uint8_t *buf, int buf_size)
 {
     VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
@@ -3974,7 +3974,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
         if(IS_MARKER(AV_RB32(buf))){ /* frame starts with marker and needs to be parsed */
-            uint8_t *start, *end, *next;
+            const uint8_t *start, *end, *next;
             int size;
 
             next = buf;
