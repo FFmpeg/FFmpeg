@@ -48,7 +48,7 @@ typedef struct SmcContext {
     DSPContext dsp;
     AVFrame frame;
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
 
     /* SMC color tables */
@@ -443,7 +443,7 @@ static int smc_decode_init(AVCodecContext *avctx)
 
 static int smc_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             const uint8_t *buf, int buf_size)
 {
     SmcContext *s = avctx->priv_data;
 
