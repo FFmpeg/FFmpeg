@@ -42,12 +42,13 @@ static int sunrast_init(AVCodecContext *avctx) {
 }
 
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
-                                int *data_size, uint8_t *buf, int buf_size) {
+                                int *data_size, const uint8_t *buf, int buf_size) {
     SUNRASTContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
-    uint8_t *ptr, *bufstart = buf;
+    uint8_t *ptr;
+    const uint8_t *bufstart = buf;
 
     if (AV_RB32(buf) != 0x59a66a95) {
         av_log(avctx, AV_LOG_ERROR, "this is not sunras encoded data\n");
