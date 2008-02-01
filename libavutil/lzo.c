@@ -29,7 +29,7 @@
 //! define if we may read up to 8 bytes beyond the input buffer
 #define INBUF_PADDED 1
 typedef struct LZOContext {
-    uint8_t *in, *in_end;
+    const uint8_t *in, *in_end;
     uint8_t *out_start, *out, *out_end;
     int error;
 } LZOContext;
@@ -84,7 +84,7 @@ static inline int get_len(LZOContext *c, int x, int mask) {
  * \param cnt number of bytes to copy, must be >= 0
  */
 static inline void copy(LZOContext *c, int cnt) {
-    register uint8_t *src = c->in;
+    register const uint8_t *src = c->in;
     register uint8_t *dst = c->out;
     if (cnt > c->in_end - src) {
         cnt = FFMAX(c->in_end - src, 0);
@@ -115,7 +115,7 @@ static inline void copy(LZOContext *c, int cnt) {
  * thus creating a repeating pattern with a period length of back.
  */
 static inline void copy_backptr(LZOContext *c, int back, int cnt) {
-    register uint8_t *src = &c->out[-back];
+    register const uint8_t *src = &c->out[-back];
     register uint8_t *dst = c->out;
     if (src < c->out_start || src > dst) {
         c->error |= LZO_INVALID_BACKPTR;
@@ -171,12 +171,12 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
  * make sure all buffers are appropriately padded, in must provide
  * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes
  */
-int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
+int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
     int x;
     LZOContext c;
     c.in = in;
-    c.in_end = (uint8_t *)in + *inlen;
+    c.in_end = (const uint8_t *)in + *inlen;
     c.out = c.out_start = out;
     c.out_end = (uint8_t *)out + * outlen;
     c.error = 0;
