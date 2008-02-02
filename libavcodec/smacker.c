@@ -355,7 +355,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
     int i;
     int stride;
 
-    if(buf_size == 769)
+    if(buf_size <= 769)
         return 0;
     if(smk->pic.data[0])
             avctx->release_buffer(avctx, &smk->pic);
