@@ -35,7 +35,7 @@ typedef struct {
     unsigned char* decomp_buf;
 } CamStudioContext;
 
-static void copy_frame_default(AVFrame *f, uint8_t *src,
+static void copy_frame_default(AVFrame *f, const uint8_t *src,
                                int linelen, int height) {
     int i;
     uint8_t *dst = f->data[0];
@@ -47,7 +47,7 @@ static void copy_frame_default(AVFrame *f, uint8_t *src,
     }
 }
 
-static void add_frame_default(AVFrame *f, uint8_t *src,
+static void add_frame_default(AVFrame *f, const uint8_t *src,
                               int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
@@ -65,7 +65,7 @@ static void add_frame_default(AVFrame *f, uint8_t *src,
 #define add_frame_16 add_frame_default
 #define add_frame_32 add_frame_default
 #else
-static void copy_frame_16(AVFrame *f, uint8_t *src,
+static void copy_frame_16(AVFrame *f, const uint8_t *src,
                           int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
@@ -81,7 +81,7 @@ static void copy_frame_16(AVFrame *f, uint8_t *src,
     }
 }
 
-static void copy_frame_32(AVFrame *f, uint8_t *src,
+static void copy_frame_32(AVFrame *f, const uint8_t *src,
                           int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
@@ -99,7 +99,7 @@ static void copy_frame_32(AVFrame *f, uint8_t *src,
     }
 }
 
-static void add_frame_16(AVFrame *f, uint8_t *src,
+static void add_frame_16(AVFrame *f, const uint8_t *src,
                          int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
@@ -115,7 +115,7 @@ static void add_frame_16(AVFrame *f, uint8_t *src,
     }
 }
 
-static void add_frame_32(AVFrame *f, uint8_t *src,
+static void add_frame_32(AVFrame *f, const uint8_t *src,
                          int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
