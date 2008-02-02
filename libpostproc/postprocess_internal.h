@@ -171,7 +171,7 @@ static inline void linecpy(void *dest, void *src, int lines, int stride)
         if (stride > 0) {
                 memcpy(dest, src, lines*stride);
         } else {
-                memcpy(dest+(lines-1)*stride, src+(lines-1)*stride, -lines*stride);
+                memcpy((uint8_t*)dest+(lines-1)*stride, (const uint8_t*)src+(lines-1)*stride, -lines*stride);
         }
 }
 
