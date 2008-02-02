@@ -108,11 +108,13 @@ static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
 }
 #endif
 
+#ifdef CONFIG_MMSH_PROTOCOL
 static int is_mms(ByteIOContext *pb)
 {
     return url_fileno(pb) && url_fileno(pb)->prot &&
          !strcmp(url_fileno(pb)->prot->name, "mmsh");
 }
+#endif
 
 static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 {
