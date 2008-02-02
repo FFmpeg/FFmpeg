@@ -166,7 +166,7 @@ typedef struct PPContext{
 } PPContext;
 
 
-static inline void linecpy(void *dest, void *src, int lines, int stride)
+static inline void linecpy(void *dest, const void *src, int lines, int stride)
 {
         if (stride > 0) {
                 memcpy(dest, src, lines*stride);
