@@ -1689,7 +1689,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
     switch(st->codec->codec_type) {
     case CODEC_TYPE_VIDEO:
         ret = avcodec_decode_video(st->codec, &picture,
-                                   &got_picture, (uint8_t *)data, size);
+                                   &got_picture, data, size);
         break;
     case CODEC_TYPE_AUDIO:
         data_size = FFMAX(size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
@@ -1697,7 +1697,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
         if (!samples)
             goto fail;
         ret = avcodec_decode_audio2(st->codec, samples,
-                                    &data_size, (uint8_t *)data, size);
+                                    &data_size, data, size);
         av_free(samples);
         break;
     default:
