@@ -3841,12 +3841,12 @@ static int parse_ffconfig(const char *filename)
                 get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
         } else if (!strcasecmp(cmd, "FileMaxSize")) {
             if (feed) {
-                const char *p1;
+                char *p1;
                 double fsize;
 
                 get_arg(arg, sizeof(arg), &p);
                 p1 = arg;
-                fsize = strtod(p1, (char **)&p1);
+                fsize = strtod(p1, &p1);
                 switch(toupper(*p1)) {
                 case 'K':
                     fsize *= 1024;

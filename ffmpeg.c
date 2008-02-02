@@ -2396,16 +2396,17 @@ static void opt_frame_aspect_ratio(const char *arg)
     int x = 0, y = 0;
     double ar = 0;
     const char *p;
+    char *end;
 
     p = strchr(arg, ':');
     if (p) {
-        x = strtol(arg, (char **)&arg, 10);
-        if (arg == p)
-            y = strtol(arg+1, (char **)&arg, 10);
+        x = strtol(arg, &end, 10);
+        if (end == p)
+            y = strtol(end+1, &end, 10);
         if (x > 0 && y > 0)
             ar = (double)x / (double)y;
     } else
-        ar = strtod(arg, (char **)&arg);
+        ar = strtod(arg, NULL);
 
     if (!ar) {
         fprintf(stderr, "Incorrect aspect ratio specification.\n");
@@ -2543,22 +2544,21 @@ static void opt_subtitle_codec(const char *arg)
 static void opt_map(const char *arg)
 {
     AVStreamMap *m;
-    const char *p;
+    char *p;
 
-    p = arg;
     m = &stream_maps[nb_stream_maps++];
 
-    m->file_index = strtol(arg, (char **)&p, 0);
+    m->file_index = strtol(arg, &p, 0);
     if (*p)
         p++;
 
-    m->stream_index = strtol(p, (char **)&p, 0);
+    m->stream_index = strtol(p, &p, 0);
     if (*p) {
         p++;
-        m->sync_file_index = strtol(p, (char **)&p, 0);
+        m->sync_file_index = strtol(p, &p, 0);
         if (*p)
             p++;
-        m->sync_stream_index = strtol(p, (char **)&p, 0);
+        m->sync_stream_index = strtol(p, &p, 0);
     } else {
         m->sync_file_index = m->file_index;
         m->sync_stream_index = m->stream_index;
@@ -2568,16 +2568,15 @@ static void opt_map(const char *arg)
 static void opt_map_meta_data(const char *arg)
 {
     AVMetaDataMap *m;
-    const char *p;
+    char *p;
 
-    p = arg;
     m = &meta_data_maps[nb_meta_data_maps++];
 
-    m->out_file = strtol(arg, (char **)&p, 0);
+    m->out_file = strtol(arg, &p, 0);
     if (*p)
         p++;
 
-    m->in_file = strtol(p, (char **)&p, 0);
+    m->in_file = strtol(p, &p, 0);
 }
 
 static int64_t parse_time_or_die(const char *timestr, int is_duration)
