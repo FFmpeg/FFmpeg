@@ -636,12 +636,12 @@ static int imc_decode_frame(AVCodecContext * avctx,
     int flag;
     int bits, summer;
     int counter, bitscount;
-    uint16_t *buf16 = (uint16_t *) buf;
+    uint16_t buf16[IMC_BLOCK_SIZE / 2];
 
     for(i = 0; i < IMC_BLOCK_SIZE / 2; i++)
-        buf16[i] = bswap_16(buf16[i]);
+        buf16[i] = bswap_16(((const uint16_t*)buf)[i]);
 
-    init_get_bits(&q->gb, buf, IMC_BLOCK_SIZE * 8);
+    init_get_bits(&q->gb, (const uint8_t*)buf16, IMC_BLOCK_SIZE * 8);
 
     /* Check the frame header */
     imc_hdr = get_bits(&q->gb, 9);
