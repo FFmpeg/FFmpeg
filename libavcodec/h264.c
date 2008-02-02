@@ -82,6 +82,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
     int left_block[8];
+    int topleft_partition= -1;
     int i;
 
     top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
@@ -126,6 +127,10 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 : (!curr_mb_frame_flag && !topleft_mb_frame_flag) // top macroblock
                 ) {
             topleft_xy -= s->mb_stride;
+        } else if(bottom && curr_mb_frame_flag && !left_mb_frame_flag) {
+            topleft_xy += s->mb_stride;
+            // take topleft mv from the middle of the mb, as opposed to all other modes which use the bottom-right partition
+            topleft_partition = 0;
         }
         if (bottom
                 ? !curr_mb_frame_flag // bottom macroblock
@@ -403,8 +408,8 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 continue;
 
             if(USES_LIST(topleft_type, list)){
-                const int b_xy = h->mb2b_xy[topleft_xy] + 3 + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + h->b8_stride;
+                const int b_xy = h->mb2b_xy[topleft_xy] + 3 + h->b_stride + (topleft_partition & 2*h->b_stride);
+                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + (topleft_partition & h->b8_stride);
                 *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
                 h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
             }else{
@@ -701,7 +706,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
 #define SET_DIAG_MV(MV_OP, REF_OP, X4, Y4)\
                 const int x4 = X4, y4 = Y4;\
                 const int mb_type = mb_types[(x4>>2)+(y4>>2)*s->mb_stride];\
-                if(!USES_LIST(mb_type,list) && !IS_8X8(mb_type))\
+                if(!USES_LIST(mb_type,list))\
                     return LIST_NOT_USED;\
                 mv = s->current_picture_ptr->motion_val[list][x4 + y4*h->b_stride];\
                 h->mv_cache[list][scan8[0]-2][0] = mv[0];\
@@ -722,7 +727,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
                && !IS_INTERLACED(mb_types[h->left_mb_xy[0]])
                && i >= scan8[0]+8){
                 // leftshift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's ok.
-                SET_DIAG_MV(>>1, <<1, s->mb_x*4-1, (s->mb_y&~1)*4 - 1 + ((i-scan8[0])>>3)*2);
+                SET_DIAG_MV(/2, <<1, s->mb_x*4-1, (s->mb_y&~1)*4 - 1 + ((i-scan8[0])>>3)*2);
             }
         }
 #undef SET_DIAG_MV
