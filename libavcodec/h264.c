@@ -1017,14 +1017,76 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
         }
 
         if(ref[1] < 0){
-            *mb_type &= ~MB_TYPE_P0L1;
-            sub_mb_type &= ~MB_TYPE_P0L1;
+            if(!is_b8x8)
+                *mb_type &= ~MB_TYPE_L1;
+            sub_mb_type &= ~MB_TYPE_L1;
         }else if(ref[0] < 0){
-            *mb_type &= ~MB_TYPE_P0L0;
-            sub_mb_type &= ~MB_TYPE_P0L0;
+            if(!is_b8x8)
+                *mb_type &= ~MB_TYPE_L0;
+            sub_mb_type &= ~MB_TYPE_L0;
         }
 
-        if(IS_16X16(*mb_type)){
+        if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col)){
+            int pair_xy = s->mb_x + (s->mb_y&~1)*s->mb_stride;
+            int mb_types_col[2];
+            int b8_stride = h->b8_stride;
+            int b4_stride = h->b_stride;
+
+            *mb_type = (*mb_type & ~MB_TYPE_16x16) | MB_TYPE_8x8;
+
+            if(IS_INTERLACED(*mb_type)){
+                mb_types_col[0] = h->ref_list[1][0].mb_type[pair_xy];
+                mb_types_col[1] = h->ref_list[1][0].mb_type[pair_xy+s->mb_stride];
+                if(s->mb_y&1){
+                    l1ref0 -= 2*b8_stride;
+                    l1ref1 -= 2*b8_stride;
+                    l1mv0 -= 4*b4_stride;
+                    l1mv1 -= 4*b4_stride;
+                }
+                b8_stride *= 3;
+                b4_stride *= 6;
+            }else{
+                int cur_poc = s->current_picture_ptr->poc;
+                int *col_poc = h->ref_list[1]->field_poc;
+                int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
+                int dy = 2*col_parity - (s->mb_y&1);
+                mb_types_col[0] =
+                mb_types_col[1] = h->ref_list[1][0].mb_type[pair_xy + col_parity*s->mb_stride];
+                l1ref0 += dy*b8_stride;
+                l1ref1 += dy*b8_stride;
+                l1mv0 += 2*dy*b4_stride;
+                l1mv1 += 2*dy*b4_stride;
+                b8_stride = 0;
+            }
+
+            for(i8=0; i8<4; i8++){
+                int x8 = i8&1;
+                int y8 = i8>>1;
+                int xy8 = x8+y8*b8_stride;
+                int xy4 = 3*x8+y8*b4_stride;
+                int a=0, b=0;
+
+                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                    continue;
+                h->sub_mb_type[i8] = sub_mb_type;
+
+                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
+                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
+                if(!IS_INTRA(mb_types_col[y8])
+                   && (   (l1ref0[xy8] == 0 && FFABS(l1mv0[xy4][0]) <= 1 && FFABS(l1mv0[xy4][1]) <= 1)
+                       || (l1ref0[xy8]  < 0 && l1ref1[xy8] == 0 && FFABS(l1mv1[xy4][0]) <= 1 && FFABS(l1mv1[xy4][1]) <= 1))){
+                    if(ref[0] > 0)
+                        a= pack16to32(mv[0][0],mv[0][1]);
+                    if(ref[1] > 0)
+                        b= pack16to32(mv[1][0],mv[1][1]);
+                }else{
+                    a= pack16to32(mv[0][0],mv[0][1]);
+                    b= pack16to32(mv[1][0],mv[1][1]);
+                }
+                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, a, 4);
+                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
+            }
+        }else if(IS_16X16(*mb_type)){
             int a=0, b=0;
 
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
@@ -4046,8 +4108,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->slice_type == P_TYPE || h->slice_type == SP_TYPE || h->slice_type == B_TYPE){
         if(h->slice_type == B_TYPE){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
-            if(FIELD_OR_MBAFF_PICTURE && h->direct_spatial_mv_pred)
-                av_log(h->s.avctx, AV_LOG_ERROR, "Interlaced pictures + spatial direct mode is not implemented\n");
         }
         num_ref_idx_active_override_flag= get_bits1(&s->gb);
 
