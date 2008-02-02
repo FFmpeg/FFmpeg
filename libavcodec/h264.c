@@ -2922,15 +2922,6 @@ static int fill_default_ref_list(H264Context *h){
                 frame_list[ list ][index++].pic_id= i;;
             }
             len[list] = index;
-
-            if(list && (smallest_poc_greater_than_current<=0 || smallest_poc_greater_than_current>=h->short_ref_count) && (1 < index)){
-                // swap the two first elements of L1 when
-                // L0 and L1 are identical
-                Picture temp= frame_list[1][0];
-                frame_list[1][0] = frame_list[1][1];
-                frame_list[1][1] = temp;
-            }
-
         }
 
         for(list=0; list<2; list++){
@@ -2941,6 +2932,14 @@ static int fill_default_ref_list(H264Context *h){
                                                  len[list],
                                                  s->picture_structure,
                                                  short_len[list]);
+
+            // swap the two first elements of L1 when L0 and L1 are identical
+            if(list && len[0] > 1 && len[0] == len[1])
+                for(i=0; h->default_ref_list[0][i].data[0] == h->default_ref_list[1][i].data[0]; i++)
+                    if(i == len[0]){
+                        FFSWAP(Picture, h->default_ref_list[1][0], h->default_ref_list[1][1]);
+                        break;
+                    }
 
             if(len[list] < h->ref_count[ list ])
                 memset(&h->default_ref_list[list][len[list]], 0, sizeof(Picture)*(h->ref_count[ list ] - len[list]));
@@ -2982,7 +2981,7 @@ static int fill_default_ref_list(H264Context *h){
     }
     if(h->slice_type==B_TYPE){
         for (i=0; i<h->ref_count[1]; i++) {
-            tprintf(h->s.avctx, "List1: %s fn:%d 0x%p\n", (h->default_ref_list[1][i].long_ref ? "LT" : "ST"), h->default_ref_list[1][i].pic_id, h->default_ref_list[0][i].data[0]);
+            tprintf(h->s.avctx, "List1: %s fn:%d 0x%p\n", (h->default_ref_list[1][i].long_ref ? "LT" : "ST"), h->default_ref_list[1][i].pic_id, h->default_ref_list[1][i].data[0]);
         }
     }
 #endif
