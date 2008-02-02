@@ -934,7 +934,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 
 int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
-                         uint8_t *buf, int buf_size)
+                         const uint8_t *buf, int buf_size)
 {
     int ret;
 
@@ -957,7 +957,7 @@ int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *pic
 
 int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
-                         uint8_t *buf, int buf_size)
+                         const uint8_t *buf, int buf_size)
 {
     int ret;
 
@@ -986,7 +986,7 @@ int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *sa
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
-                         uint8_t *buf, int buf_size){
+                         const uint8_t *buf, int buf_size){
     *frame_size_ptr= AVCODEC_MAX_AUDIO_FRAME_SIZE;
     return avcodec_decode_audio2(avctx, samples, frame_size_ptr, buf, buf_size);
 }
