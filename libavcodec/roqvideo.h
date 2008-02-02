@@ -51,7 +51,7 @@ typedef struct RoqContext {
     roq_cell cb2x2[256];
     roq_qcell cb4x4[256];
 
-    unsigned char *buf;
+    const unsigned char *buf;
     int size;
     int width, height;
 

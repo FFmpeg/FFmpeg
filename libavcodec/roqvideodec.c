@@ -44,7 +44,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
     int frame_stats[2][4] = {{0},{0}};
     roq_qcell *qcell;
     const unsigned char *buf = ri->buf;
-    unsigned char *buf_end = ri->buf + ri->size;
+    const unsigned char *buf_end = ri->buf + ri->size;
 
     while (buf < buf_end) {
         chunk_id = bytestream_get_le16(&buf);
