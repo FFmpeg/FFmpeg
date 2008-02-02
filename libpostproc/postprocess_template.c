@@ -3180,8 +3180,8 @@ asm volatile(
 }
 #endif //HAVE_MMX
 
-static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-        QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c);
+static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+        const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c);
 
 /**
  * Copies a block from src to dst and fixes the blacklevel.
@@ -3189,7 +3189,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
  */
 #undef SCALED_CPY
 
-static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[], int srcStride,
+static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t src[], int srcStride,
         int levelFix, int64_t *packedOffsetAndScale)
 {
 #ifndef HAVE_MMX
@@ -3346,8 +3346,8 @@ static inline void RENAME(duplicate)(uint8_t src[], int stride)
 /**
  * Filters array of bytes (Y or U or V values)
  */
-static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-        QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2)
+static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+        const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2)
 {
         DECLARE_ALIGNED(8, PPContext, c)= *c2; //copy to stack for faster access
         int x,y;
@@ -3462,7 +3462,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
         /* copy & deinterlace first row of blocks */
         y=-BLOCK_SIZE;
         {
-                uint8_t *srcBlock= &(src[y*srcStride]);
+                const uint8_t *srcBlock= &(src[y*srcStride]);
                 uint8_t *dstBlock= tempDst + dstStride;
 
                 // From this point on it is guaranteed that we can read and write 16 lines downward
@@ -3545,13 +3545,13 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
         for(y=0; y<height; y+=BLOCK_SIZE)
         {
                 //1% speedup if these are here instead of the inner loop
-                uint8_t *srcBlock= &(src[y*srcStride]);
+                const uint8_t *srcBlock= &(src[y*srcStride]);
                 uint8_t *dstBlock= &(dst[y*dstStride]);
 #ifdef HAVE_MMX
                 uint8_t *tempBlock1= c.tempBlocks;
                 uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
-                int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
+                const int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
                 int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*FFABS(QPStride)];
                 int QP=0;
                 /* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards

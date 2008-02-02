@@ -48,10 +48,10 @@ extern const char *const pp_help; ///< a simple help text
 extern const char pp_help[]; ///< a simple help text
 #endif
 
-void  pp_postprocess(uint8_t * src[3], int srcStride[3],
-                 uint8_t * dst[3], int dstStride[3],
+void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
+                 uint8_t * dst[3], const int dstStride[3],
                  int horizontalSize, int verticalSize,
-                 QP_STORE_T *QP_store,  int QP_stride,
+                 const QP_STORE_T *QP_store,  int QP_stride,
                  pp_mode_t *mode, pp_context_t *ppContext, int pict_type);
 
 

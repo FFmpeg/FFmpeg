@@ -643,8 +643,8 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 // minor note: the HAVE_xyz is messed up after that line so do not use it.
 
-static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-        QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
+static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+        const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
 {
         PPContext *c= (PPContext *)vc;
         PPMode *ppMode= (PPMode *)vm;
@@ -1021,10 +1021,10 @@ void pp_free_context(void *vc){
         av_free(c);
 }
 
-void  pp_postprocess(uint8_t * src[3], int srcStride[3],
-                 uint8_t * dst[3], int dstStride[3],
+void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
+                 uint8_t * dst[3], const int dstStride[3],
                  int width, int height,
-                 QP_STORE_T *QP_store,  int QPStride,
+                 const QP_STORE_T *QP_store,  int QPStride,
                  pp_mode_t *vm,  void *vc, int pict_type)
 {
         int mbWidth = (width+15)>>4;
@@ -1046,16 +1046,16 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                 QP_store= c->forcedQPTable;
                 absQPStride = QPStride = 0;
                 if(mode->lumMode & FORCE_QUANT)
-                        for(i=0; i<mbWidth; i++) QP_store[i]= mode->forcedQuant;
+                        for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= mode->forcedQuant;
                 else
-                        for(i=0; i<mbWidth; i++) QP_store[i]= 1;
+                        for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= 1;
         }
 
         if(pict_type & PP_PICT_TYPE_QP2){
                 int i;
                 const int count= mbHeight * absQPStride;
                 for(i=0; i<(count>>2); i++){
-                        ((uint32_t*)c->stdQPTable)[i] = (((uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
+                        ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
                 }
                 for(i<<=2; i<count; i++){
                         c->stdQPTable[i] = QP_store[i]>>1;
@@ -1081,7 +1081,7 @@ for(y=0; y<mbHeight; y++){
                         int i;
                         const int count= mbHeight * QPStride;
                         for(i=0; i<(count>>2); i++){
-                                ((uint32_t*)c->nonBQPTable)[i] = ((uint32_t*)QP_store)[i] & 0x3F3F3F3F;
+                                ((uint32_t*)c->nonBQPTable)[i] = ((const uint32_t*)QP_store)[i] & 0x3F3F3F3F;
                         }
                         for(i<<=2; i<count; i++){
                                 c->nonBQPTable[i] = QP_store[i] & 0x3F;
