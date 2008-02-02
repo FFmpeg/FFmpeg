@@ -41,6 +41,7 @@
 
 #include "imcdata.h"
 
+#define IMC_BLOCK_SIZE 64
 #define IMC_FRAME_ID 0x21
 #define BANDS 32
 #define COEFFS 256
@@ -637,11 +638,10 @@ static int imc_decode_frame(AVCodecContext * avctx,
     int counter, bitscount;
     uint16_t *buf16 = (uint16_t *) buf;
 
-    /* FIXME: input should not be modified */
-    for(i = 0; i < FFMIN(buf_size, avctx->block_align) / 2; i++)
+    for(i = 0; i < IMC_BLOCK_SIZE / 2; i++)
         buf16[i] = bswap_16(buf16[i]);
 
-    init_get_bits(&q->gb, buf, 512);
+    init_get_bits(&q->gb, buf, IMC_BLOCK_SIZE * 8);
 
     /* Check the frame header */
     imc_hdr = get_bits(&q->gb, 9);
@@ -788,7 +788,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
 
     *data_size = COEFFS * sizeof(int16_t);
 
-    return avctx->block_align;
+    return IMC_BLOCK_SIZE;
 }
 
 
