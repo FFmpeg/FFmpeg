@@ -368,7 +368,7 @@ Notes:
 
 @itemize
 
-@item Use at least bash 3.1. Older versions are known to be fail on the
+@item Use at least bash 3.1. Older versions are known to fail on the
 configure script.
 
 @item In order to compile vhooks, you must have a POSIX-compliant libdl in
