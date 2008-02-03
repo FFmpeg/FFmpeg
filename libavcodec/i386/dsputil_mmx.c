@@ -203,6 +203,19 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 #undef DEF
 #undef PAVGB
 
+#define put_pixels16_mmx2 put_pixels16_mmx
+#define put_pixels8_mmx2 put_pixels8_mmx
+#define put_pixels4_mmx2 put_pixels4_mmx
+#define avg_pixels4_mmx2 avg_pixels4_mmx
+#define put_no_rnd_pixels16_mmx2 put_no_rnd_pixels16_mmx
+#define put_no_rnd_pixels8_mmx2 put_no_rnd_pixels8_mmx
+#define put_pixels16_3dnow put_pixels16_mmx
+#define put_pixels8_3dnow put_pixels8_mmx
+#define put_pixels4_3dnow put_pixels4_mmx
+#define avg_pixels4_3dnow avg_pixels4_mmx
+#define put_no_rnd_pixels16_3dnow put_no_rnd_pixels16_mmx
+#define put_no_rnd_pixels8_3dnow put_no_rnd_pixels8_mmx
+
 /***********************************/
 /* standard MMX */
 
@@ -2294,7 +2307,7 @@ static void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, 
 }\
 \
 static void OPNAME ## qpel8_mc00_ ## MMX (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels8_mmx(dst, src, stride, 8);\
+    OPNAME ## pixels8_ ## MMX(dst, src, stride, 8);\
 }\
 \
 static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
@@ -2405,7 +2418,7 @@ static void OPNAME ## qpel8_mc22_ ## MMX(uint8_t *dst, uint8_t *src, int stride)
     OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH, stride, 8);\
 }\
 static void OPNAME ## qpel16_mc00_ ## MMX (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels16_mmx(dst, src, stride, 16);\
+    OPNAME ## pixels16_ ## MMX(dst, src, stride, 16);\
 }\
 \
 static void OPNAME ## qpel16_mc10_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
