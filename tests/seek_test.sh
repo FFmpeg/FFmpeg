@@ -8,7 +8,7 @@ datadir="tests/data"
 logfile="$datadir/seek.regression"
 reffile="$1"
 
-list=`ls tests/data/a-* tests/data/b-* | sort`
+list=`grep '^tests/data/[ab]-' "$reffile"`
 rm -f $logfile
 for i in $list ; do
     echo ---------------- >> $logfile
