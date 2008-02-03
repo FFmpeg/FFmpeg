@@ -264,6 +264,97 @@ LIBAV_REFFILE    = $(SRC_PATH)/tests/libav.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
+CODEC_TESTS = $(addprefix regtest-,             \
+        mpeg                                    \
+        mpeg2                                   \
+        mpeg2thread                             \
+        msmpeg4v2                               \
+        msmpeg4                                 \
+        wmv1                                    \
+        wmv2                                    \
+        h261                                    \
+        h263                                    \
+        h263p                                   \
+        mpeg4                                   \
+        huffyuv                                 \
+        rc                                      \
+        mpeg4adv                                \
+        mpeg4thread                             \
+        mp4psp                                  \
+        error                                   \
+        mpeg4nr                                 \
+        mpeg1b                                  \
+        mjpeg                                   \
+        ljpeg                                   \
+        jpegls                                  \
+        rv10                                    \
+        rv20                                    \
+        asv1                                    \
+        asv2                                    \
+        flv                                     \
+        ffv1                                    \
+        snow                                    \
+        snowll                                  \
+        dv                                      \
+        dv50                                    \
+        svq1                                    \
+        flashsv                                 \
+        mp2                                     \
+        ac3                                     \
+        g726                                    \
+        adpcm_ima_wav                           \
+        adpcm_ms                                \
+        adpcm_yam                               \
+        adpcm_swf                               \
+        flac                                    \
+        wma                                     \
+    )
+
+LAVF_TESTS = regtest-lavf
+
+REGFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
+
+CODEC_ROTOZOOM = $(call REGFILES,rotozoom.regression,$(CODEC_TESTS))
+CODEC_VSYNTH   = $(call REGFILES,vsynth.regression,$(CODEC_TESTS))
+
+LAVF_REGFILES = $(call REGFILES,lavf.regression,$(LAVF_TESTS))
+
+LAVF_REG     = tests/data/lavf.regression
+ROTOZOOM_REG = tests/data/rotozoom.regression
+VSYNTH_REG   = tests/data/vsynth.regression
+
+codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
+	diff -u $(FFMPEG_REFFILE)   $(VSYNTH_REG)
+	diff -u $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
+
+libavtest: $(LAVF_REG)
+	diff -u -w $(LIBAV_REFFILE) $(LAVF_REG)
+
+$(VSYNTH_REG) $(ROTOZOOM_REG) $(LAVF_REG):
+	cat $^ > $@
+
+$(LAVF_REG):     $(LAVF_REGFILES)
+$(ROTOZOOM_REG): $(CODEC_ROTOZOOM)
+$(VSYNTH_REG):   $(CODEC_VSYNTH)
+
+$(CODEC_VSYNTH) $(CODEC_ROTOZOOM): $(CODEC_TESTS)
+
+$(LAVF_REGFILES): $(LAVF_TESTS)
+
+$(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
+
+regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw
+
+$(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(EXESUF)
+	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1
+	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2
+
+$(LAVF_TESTS):
+	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1
+
+seektest: codectest libavtest tests/seek_test$(EXESUF)
+	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
+
 test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	@echo "Unfortunately ffserver is broken and therefore its regression"
@@ -271,18 +362,8 @@ test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
-codectest mpeg4 mpeg ac3 snow snowll: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw tests/tiny_psnr$(EXESUF)
-	$(SRC_PATH)/tests/regression.sh $@ $(FFMPEG_REFFILE)   tests/vsynth1
-	$(SRC_PATH)/tests/regression.sh $@ $(ROTOZOOM_REFFILE) tests/vsynth2
-
-libavtest: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
-	$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) tests/vsynth1
-
-seektest: codectest libavtest tests/seek_test$(EXESUF)
-	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
-
 ifeq ($(CONFIG_SWSCALER),yes)
-test-server codectest mpeg4 mpeg ac3 snow snowll libavtest: swscale_error
+test-server codectest $(CODEC_TESTS) libavtest: swscale_error
 swscale_error:
 	@echo
 	@echo "This regression test is incompatible with --enable-swscaler."
@@ -311,7 +392,7 @@ tests/seek_test$(EXESUF): tests/seek_test.c .libs
 .PHONY: all lib videohook documentation install* wininstaller uninstall*
 .PHONY: dep depend clean distclean TAGS
 .PHONY: codectest libavtest seektest test-server fulltest test
-.PHONY: mpeg4 mpeg ac3 snow snowll swscale-error
+.PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
 
 -include .depend
 -include .vhookdep

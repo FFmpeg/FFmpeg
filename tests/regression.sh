@@ -4,107 +4,35 @@
 #
 #
 #set -x
-# Even in the 21st century some diffs do not support -u.
-diff -u "$0" "$0" > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-  diff_cmd="diff -u"
-else
-  diff_cmd="diff"
-fi
-
-diff -w "$0" "$0" > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-  diff_cmd="$diff_cmd -w"
-fi
 
 set -e
 
 datadir="./tests/data"
 
-logfile="$datadir/ffmpeg.regression"
+test="${1#regtest-}"
+this="$test.$2"
+logfile="$datadir/$this.regression"
 outfile="$datadir/a-"
 
-# tests to run
-if [ "$1" = "mpeg4" ] ; then
-    do_mpeg4=y
-elif [ "$1" = "mpeg" ] ; then
-    do_mpeg=y
-    do_mpeg2=y
-elif [ "$1" = "ac3" ] ; then
-    do_ac3=y
-elif [ "$1" = "huffyuv" ] ; then
-    do_huffyuv=y
-elif [ "$1" = "mpeg2thread" ] ; then
-    do_mpeg2thread=y
-elif [ "$1" = "snow" ] ; then
-    do_snow=y
-elif [ "$1" = "snowll" ] ; then
-    do_snowll=y
-elif [ "$1" = "libavtest" ] ; then
-    do_libavtest=y
-    logfile="$datadir/libav.regression"
+eval do_$test=y
+
+if [ "$test" = "lavf" ] ; then
     outfile="$datadir/b-"
-else
-    do_mpeg=y
-    do_mpeg2=y
-    do_mpeg2thread=y
-    do_msmpeg4v2=y
-    do_msmpeg4=y
-    do_wmv1=y
-    do_wmv2=y
-    do_h261=y
-    do_h263=y
-    do_h263p=y
-    do_mpeg4=y
-    do_mp4psp=y
-    do_huffyuv=y
-    do_mjpeg=y
-    do_ljpeg=y
-    do_jpegls=y
-    do_rv10=y
-    do_rv20=y
-    do_mp2=y
-    do_ac3=y
-    do_g726=y
-    do_adpcm_ima_wav=y
-    do_adpcm_ms=y
-    do_flac=y
-    do_wma=y
-    do_vorbis=y
-    do_rc=y
-    do_mpeg4adv=y
-    do_mpeg4thread=y
-    do_mpeg4nr=y
-    do_mpeg1b=y
-    do_asv1=y
-    do_asv2=y
-    do_flv=y
-    do_ffv1=y
-    do_error=y
-    do_svq1=y
-    do_snow=y
-    do_snowll=y
-    do_adpcm_yam=y
-    do_dv=y
-    do_dv50=y
-    do_flashsv=y
-    do_adpcm_swf=y
 fi
 
 
 # various files
 ffmpeg="./ffmpeg_g"
 tiny_psnr="tests/tiny_psnr"
-reffile="$2"
-benchfile="$datadir/ffmpeg.bench"
-bench="$datadir/bench.tmp"
-bench2="$datadir/bench2.tmp"
+benchfile="$datadir/$this.bench"
+bench="$datadir/$this.bench.tmp"
+bench2="$datadir/$this.bench2.tmp"
 raw_src="$3/%02d.pgm"
-raw_dst="$datadir/out.yuv"
-raw_ref="$datadir/ref.yuv"
+raw_dst="$datadir/$this.out.yuv"
+raw_ref="$datadir/$2.ref.yuv"
 pcm_src="tests/asynth1.sw"
-pcm_dst="$datadir/out.wav"
-pcm_ref="$datadir/ref.wav"
+pcm_dst="$datadir/$this.out.wav"
+pcm_ref="$datadir/$2.ref.wav"
 if [ X"`echo | md5sum 2> /dev/null`" != X ]; then
     do_md5sum() { md5sum -b $1; }
 elif [ -x /sbin/md5 ]; then
@@ -183,6 +111,7 @@ do_ffmpeg_nocheck()
 do_video_decoding()
 {
     do_ffmpeg $raw_dst -y $1 -i $file -f rawvideo $2 $raw_dst
+    rm -f $raw_dst
 }
 
 do_video_encoding()
@@ -232,13 +161,15 @@ do_audio_only()
     do_ffmpeg_crc $file -i $file
 }
 
-echo "ffmpeg regression test" > $logfile
-echo "ffmpeg benchmarks" > $benchfile
+rm -f "$logfile"
+rm -f "$benchfile"
 
 ###################################
 # generate reference for quality check
+if [ -n "$do_ref" ]; then
 do_ffmpeg_nocheck $raw_ref -y -f pgmyuv -i $raw_src -an -f rawvideo $raw_ref
 do_ffmpeg_nocheck $pcm_ref -y -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
+fi
 
 ###################################
 if [ -n "$do_mpeg" ] ; then
@@ -602,7 +533,7 @@ fi
 # libavformat testing
 ###################################
 
-if [ -n "$do_libavtest" ] ; then
+if [ -n "$do_lavf" ] ; then
 
 # avi
 do_libav avi
@@ -736,16 +667,6 @@ for pix_fmt in $conversions ; do
                     -f rawvideo -s 352x288 -pix_fmt yuv444p $file
 done
 
-fi #  [ -n "$do_libavtest" ]
+fi #  [ -n "$do_lavf" ]
 
-
-
-if $diff_cmd "$logfile" "$reffile" ; then
-    echo
-    echo $1 regression test: success
-    exit 0
-else
-    echo
-    echo $1 regression test: error
-    exit 1
-fi
+rm -f "$bench" "$bench2"
