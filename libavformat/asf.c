@@ -108,14 +108,6 @@ static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
 }
 #endif
 
-#ifdef CONFIG_MMSH_PROTOCOL
-static int is_mms(ByteIOContext *pb)
-{
-    return url_fileno(pb) && url_fileno(pb)->prot &&
-         !strcmp(url_fileno(pb)->prot->name, "mmsh");
-}
-#endif
-
 static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 {
     char* q = buf;
@@ -547,12 +539,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
         }
     }
-
-#ifdef CONFIG_MMSH_PROTOCOL
-    /* Give info about ourselves to the mms protocol */
-    if(is_mms(pb))
-        ff_mms_set_stream_selection(url_fileno(pb), s);
-#endif
 
     return 0;
 
