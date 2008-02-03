@@ -795,6 +795,31 @@ static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line
         :"%"REG_a,  "memory");
 }
 
+static void DEF(avg_pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+    do {
+        asm volatile(
+            "movd (%1), %%mm0               \n\t"
+            "movd (%1, %2), %%mm1           \n\t"
+            "movd (%1, %2, 2), %%mm2        \n\t"
+            "movd (%1, %3), %%mm3           \n\t"
+            PAVGB" (%0), %%mm0              \n\t"
+            PAVGB" (%0, %2), %%mm1          \n\t"
+            PAVGB" (%0, %2, 2), %%mm2       \n\t"
+            PAVGB" (%0, %3), %%mm3          \n\t"
+            "movd %%mm0, (%1)               \n\t"
+            "movd %%mm1, (%1, %2)           \n\t"
+            "movd %%mm2, (%1, %2, 2)        \n\t"
+            "movd %%mm3, (%1, %3)           \n\t"
+            ::"S"(pixels), "D"(block),
+             "r" ((long)line_size), "r"(3L*line_size)
+            :"memory");
+        block += 4*line_size;
+        pixels += 4*line_size;
+        h -= 4;
+    } while(h > 0);
+}
+
 //FIXME the following could be optimized too ...
 static void DEF(put_no_rnd_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
     DEF(put_no_rnd_pixels8_x2)(block  , pixels  , line_size, h);

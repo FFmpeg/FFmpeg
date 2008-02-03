@@ -206,13 +206,11 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 #define put_pixels16_mmx2 put_pixels16_mmx
 #define put_pixels8_mmx2 put_pixels8_mmx
 #define put_pixels4_mmx2 put_pixels4_mmx
-#define avg_pixels4_mmx2 avg_pixels4_mmx
 #define put_no_rnd_pixels16_mmx2 put_no_rnd_pixels16_mmx
 #define put_no_rnd_pixels8_mmx2 put_no_rnd_pixels8_mmx
 #define put_pixels16_3dnow put_pixels16_mmx
 #define put_pixels8_3dnow put_pixels8_mmx
 #define put_pixels4_3dnow put_pixels4_mmx
-#define avg_pixels4_3dnow avg_pixels4_mmx
 #define put_no_rnd_pixels16_3dnow put_no_rnd_pixels16_mmx
 #define put_no_rnd_pixels8_3dnow put_no_rnd_pixels8_mmx
 
