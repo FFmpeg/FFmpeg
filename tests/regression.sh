@@ -12,14 +12,9 @@ datadir="./tests/data"
 test="${1#regtest-}"
 this="$test.$2"
 logfile="$datadir/$this.regression"
-outfile="$datadir/a-"
+outfile="$datadir/$4-"
 
 eval do_$test=y
-
-if [ "$test" = "lavf" ] ; then
-    outfile="$datadir/b-"
-fi
-
 
 # various files
 ffmpeg="./ffmpeg_g"
@@ -33,6 +28,8 @@ raw_ref="$datadir/$2.ref.yuv"
 pcm_src="tests/asynth1.sw"
 pcm_dst="$datadir/$this.out.wav"
 pcm_ref="$datadir/$2.ref.wav"
+crcfile="$datadir/$this.crc"
+
 if [ X"`echo | md5sum 2> /dev/null`" != X ]; then
     do_md5sum() { md5sum -b $1; }
 elif [ -x /sbin/md5 ]; then
@@ -89,11 +86,12 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    echo $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc
-    $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
+    echo $ffmpeg $FFMPEG_OPTS $* -f crc "$crcfile"
+    $ffmpeg $FFMPEG_OPTS $* -f crc "$crcfile" > /tmp/ffmpeg$$ 2>&1
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
-    echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
+    echo "$f `cat $crcfile`" >> $logfile
+    rm -f "$crcfile"
 }
 
 do_ffmpeg_nocheck()
@@ -141,7 +139,7 @@ do_libav()
 
 do_streamed_images()
 {
-    file=${outfile}libav.$1
+    file=${outfile}${1}pipe.$1
     do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
     do_ffmpeg_crc $file -f image2pipe -i $file
 }
@@ -533,49 +531,73 @@ fi
 # libavformat testing
 ###################################
 
-if [ -n "$do_lavf" ] ; then
-
+if [ -n "$do_avi" ] ; then
 # avi
 do_libav avi
+fi
 
+if [ -n "$do_asf" ] ; then
 # asf
 do_libav asf "-acodec mp2" "-r 25"
+fi
 
+if [ -n "$do_rm" ] ; then
 # rm
 file=${outfile}libav.rm
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
 # broken
 #do_ffmpeg_crc $file -i $file
+fi
 
+if [ -n "$do_mpg" ] ; then
 # mpegps
 do_libav mpg
+fi
 
+if [ -n "$do_ts" ] ; then
 # mpegts
 do_libav ts
+fi
 
+if [ -n "$do_swf" ] ; then
 # swf
 do_libav swf -an
+fi
 
+if [ -n "$do_ffm" ] ; then
 # ffm
 do_libav ffm
+fi
 
+if [ -n "$do_flv_fmt" ] ; then
 # flv
 do_libav flv -an
+fi
 
+if [ -n "$do_mov" ] ; then
 # mov
 do_libav mov "-acodec pcm_alaw"
+fi
 
+if [ -n "$do_dv_fmt" ] ; then
 # dv
 do_libav dv "-ar 48000 -r 25 -s pal -ac 2"
+fi
 
+if [ -n "$do_gxf" ] ; then
 # gxf
 do_libav gxf "-ar 48000 -r 25 -s pal -ac 1"
+fi
 
+if [ -n "$do_nut" ] ; then
 # nut
 do_libav nut "-acodec mp2"
+fi
 
+if [ -n "$do_mkv" ] ; then
 # mkv
 do_libav mkv
+fi
 
 
 ####################
@@ -585,77 +607,120 @@ do_libav mkv
 #do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
 
+if [ -n "$do_pbmpipe" ] ; then
 # pbmpipe
 do_streamed_images pbm
+fi
 
+if [ -n "$do_pgmpipe" ] ; then
 # pgmpipe
 do_streamed_images pgm
+fi
 
+if [ -n "$do_ppmpipe" ] ; then
 # ppmpipe
 do_streamed_images ppm
+fi
 
+if [ -n "$do_gif" ] ; then
 # gif
 file=${outfile}libav.gif
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -pix_fmt rgb24 $file
 #do_ffmpeg_crc $file -i $file
+fi
 
+if [ -n "$do_yuv4mpeg" ] ; then
 # yuv4mpeg
 file=${outfile}libav.y4m
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
+fi
 
 ####################
 # image formats
+
+if [ -n "$do_pgm" ] ; then
 # pgm
 do_image_formats pgm
+fi
 
+if [ -n "$do_ppm" ] ; then
 # ppm
 do_image_formats ppm
+fi
 
+if [ -n "$do_bmp" ] ; then
 # bmp
 do_image_formats bmp
+fi
 
+if [ -n "$do_tga" ] ; then
 # tga
 do_image_formats tga
+fi
 
+if [ -n "$do_tiff" ] ; then
 # tiff
 do_image_formats tiff "-pix_fmt rgb24"
+fi
 
+if [ -n "$do_sgi" ] ; then
 # sgi
 do_image_formats sgi
+fi
 
+if [ -n "$do_jpg" ] ; then
 # jpeg
 do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
+fi
 
 ####################
 # audio only
 
+if [ -n "$do_wav" ] ; then
 # wav
 do_audio_only wav
+fi
 
+if [ -n "$do_alaw" ] ; then
 # alaw
 do_audio_only al
+fi
 
+if [ -n "$do_mulaw" ] ; then
 # mulaw
 do_audio_only ul
+fi
 
+if [ -n "$do_au" ] ; then
 # au
 do_audio_only au
+fi
 
+if [ -n "$do_mmf" ] ; then
 # mmf
 do_audio_only mmf
+fi
 
+if [ -n "$do_aiff" ] ; then
 # aiff
 do_audio_only aif
+fi
 
+if [ -n "$do_voc" ] ; then
 # voc
 do_audio_only voc
+fi
 
+if [ -n "$do_ogg" ] ; then
 # ogg
 do_audio_only ogg
+fi
 
 ####################
 # pix_fmt conversions
+
+if [ -n "$do_pixfmt" ] ; then
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
              monob pal8 yuv440p yuvj440p"
@@ -666,7 +731,6 @@ for pix_fmt in $conversions ; do
     do_ffmpeg $file -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $raw_dst \
                     -f rawvideo -s 352x288 -pix_fmt yuv444p $file
 done
-
-fi #  [ -n "$do_lavf" ]
+fi
 
 rm -f "$bench" "$bench2"

@@ -310,7 +310,42 @@ CODEC_TESTS = $(addprefix regtest-,             \
         wma                                     \
     )
 
-LAVF_TESTS = regtest-lavf
+LAVF_TESTS = $(addprefix regtest-,              \
+        avi                                     \
+        asf                                     \
+        rm                                      \
+        mpg                                     \
+        ts                                      \
+        swf                                     \
+        ffm                                     \
+        flv_fmt                                 \
+        mov                                     \
+        dv_fmt                                  \
+        gxf                                     \
+        nut                                     \
+        mkv                                     \
+        pbmpipe                                 \
+        pgmpipe                                 \
+        ppmpipe                                 \
+        gif                                     \
+        yuv4mpeg                                \
+        pgm                                     \
+        ppm                                     \
+        bmp                                     \
+        tga                                     \
+        tiff                                    \
+        sgi                                     \
+        jpg                                     \
+        wav                                     \
+        alaw                                    \
+        mulaw                                   \
+        au                                      \
+        mmf                                     \
+        aiff                                    \
+        voc                                     \
+        ogg                                     \
+        pixfmt                                  \
+    )
 
 REGFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
 
@@ -346,11 +381,11 @@ $(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
 regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw
 
 $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(EXESUF)
-	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1
-	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2
+	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1 a
+	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2 a
 
 $(LAVF_TESTS):
-	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1
+	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1 b
 
 seektest: codectest libavtest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)

@@ -36,15 +36,15 @@ b54fe5ee2983506550b4433b63845daf *./tests/data/b-libav.nut
 43238b15f1012aa27536c2be20bb2383 *./tests/data/b-libav.mkv
 329854 ./tests/data/b-libav.mkv
 ./tests/data/b-libav.mkv CRC=0x400c29e9
-9a9da315747599f7718cc9a9a09c21ff *./tests/data/b-libav.pbm
- 317075 ./tests/data/b-libav.pbm
-./tests/data/b-libav.pbm CRC=0xb92906cb
-6ea0e1faf08f6fcdb44db4a104361b57 *./tests/data/b-libav.pgm
-2534775 ./tests/data/b-libav.pgm
-./tests/data/b-libav.pgm CRC=0xf4aa7c47
-0c5fe86621b7377705837f304d4ba1e9 *./tests/data/b-libav.ppm
-7603575 ./tests/data/b-libav.ppm
-./tests/data/b-libav.ppm CRC=0xb2bb8e92
+9a9da315747599f7718cc9a9a09c21ff *./tests/data/b-pbmpipe.pbm
+ 317075 ./tests/data/b-pbmpipe.pbm
+./tests/data/b-pbmpipe.pbm CRC=0xb92906cb
+6ea0e1faf08f6fcdb44db4a104361b57 *./tests/data/b-pgmpipe.pgm
+2534775 ./tests/data/b-pgmpipe.pgm
+./tests/data/b-pgmpipe.pgm CRC=0xf4aa7c47
+0c5fe86621b7377705837f304d4ba1e9 *./tests/data/b-ppmpipe.ppm
+7603575 ./tests/data/b-ppmpipe.ppm
+./tests/data/b-ppmpipe.ppm CRC=0xb2bb8e92
 88a98269295fbfce7816558ad84e1259 *./tests/data/b-libav.gif
 2906382 ./tests/data/b-libav.gif
 b977a4fedff90a79baf70c8e02986820 *./tests/data/b-libav.y4m
