@@ -98,7 +98,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 
     /* general case, bilinear */
-    rnd_reg = rnd ? &ff_pw_32 : &ff_pw_28;
+    rnd_reg = rnd ? ff_pw_32 : &ff_pw_28;
     asm volatile("movd %2, %%mm4\n\t"
                  "movd %3, %%mm6\n\t"
                  "punpcklwd %%mm4, %%mm4\n\t"
@@ -250,7 +250,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "sub $2, %2                 \n\t"
         "jnz 1b                     \n\t"
         : "+r"(dst), "+r"(src), "+r"(h)
-        : "r"((long)stride), "m"(ff_pw_32), "m"(x), "m"(y)
+        : "r"((long)stride), "m"(*ff_pw_32), "m"(x), "m"(y)
     );
 }
 
@@ -301,7 +301,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         "sub $1, %2\n\t"
         "jnz 1b\n\t"
         : "+r" (dst), "+r"(src), "+r"(h)
-        : "m" (ff_pw_32), "r"((long)stride)
+        : "m" (*ff_pw_32), "r"((long)stride)
         : "%esi");
 
 }

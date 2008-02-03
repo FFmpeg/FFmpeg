@@ -75,7 +75,7 @@ static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
         IDCT4_1D( %%mm4, %%mm2, %%mm3, %%mm0, %%mm1 )
 
         "pxor %%mm7, %%mm7    \n\t"
-    :: "m"(ff_pw_32));
+    :: "m"(*ff_pw_32));
 
     asm volatile(
     STORE_DIFF_4P( %%mm0, %%mm1, %%mm7)
@@ -209,6 +209,93 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     }
 
     add_pixels_clamped_mmx(b2, dst, stride);
+}
+
+#define STORE_DIFF_8P( p, d, t, z )\
+        "movq       "#d", "#t" \n"\
+        "psraw       $6,  "#p" \n"\
+        "punpcklbw  "#z", "#t" \n"\
+        "paddsw     "#t", "#p" \n"\
+        "packuswb   "#p", "#p" \n"\
+        "movq       "#p", "#d" \n"
+
+#define H264_IDCT8_1D_SSE2(a,b,c,d,e,f,g,h)\
+        "movdqa     "#c", "#a" \n"\
+        "movdqa     "#g", "#e" \n"\
+        "psraw       $1,  "#c" \n"\
+        "psraw       $1,  "#g" \n"\
+        "psubw      "#e", "#c" \n"\
+        "paddw      "#a", "#g" \n"\
+        "movdqa     "#b", "#e" \n"\
+        "psraw       $1,  "#e" \n"\
+        "paddw      "#b", "#e" \n"\
+        "paddw      "#d", "#e" \n"\
+        "paddw      "#f", "#e" \n"\
+        "movdqa     "#f", "#a" \n"\
+        "psraw       $1,  "#a" \n"\
+        "paddw      "#f", "#a" \n"\
+        "paddw      "#h", "#a" \n"\
+        "psubw      "#b", "#a" \n"\
+        "psubw      "#d", "#b" \n"\
+        "psubw      "#d", "#f" \n"\
+        "paddw      "#h", "#b" \n"\
+        "psubw      "#h", "#f" \n"\
+        "psraw       $1,  "#d" \n"\
+        "psraw       $1,  "#h" \n"\
+        "psubw      "#d", "#b" \n"\
+        "psubw      "#h", "#f" \n"\
+        "movdqa     "#e", "#d" \n"\
+        "movdqa     "#a", "#h" \n"\
+        "psraw       $2,  "#d" \n"\
+        "psraw       $2,  "#h" \n"\
+        "paddw      "#f", "#d" \n"\
+        "paddw      "#b", "#h" \n"\
+        "psraw       $2,  "#f" \n"\
+        "psraw       $2,  "#b" \n"\
+        "psubw      "#f", "#e" \n"\
+        "psubw      "#a", "#b" \n"\
+        "movdqa 0x00(%1), "#a" \n"\
+        "movdqa 0x40(%1), "#f" \n"\
+        SUMSUB_BA(f, a)\
+        SUMSUB_BA(g, f)\
+        SUMSUB_BA(c, a)\
+        SUMSUB_BA(e, g)\
+        SUMSUB_BA(b, c)\
+        SUMSUB_BA(h, a)\
+        SUMSUB_BA(d, f)
+
+static void ff_h264_idct8_add_sse2(uint8_t *dst, int16_t *block, int stride)
+{
+    asm volatile(
+        "movdqa   0x10(%1), %%xmm1 \n"
+        "movdqa   0x20(%1), %%xmm2 \n"
+        "movdqa   0x30(%1), %%xmm3 \n"
+        "movdqa   0x50(%1), %%xmm5 \n"
+        "movdqa   0x60(%1), %%xmm6 \n"
+        "movdqa   0x70(%1), %%xmm7 \n"
+        H264_IDCT8_1D_SSE2(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
+        TRANSPOSE8(%%xmm4, %%xmm1, %%xmm7, %%xmm3, %%xmm5, %%xmm0, %%xmm2, %%xmm6, (%1))
+        "paddw          %4, %%xmm4 \n"
+        "movdqa     %%xmm4, 0x00(%1) \n"
+        "movdqa     %%xmm2, 0x40(%1) \n"
+        H264_IDCT8_1D_SSE2(%%xmm4, %%xmm0, %%xmm6, %%xmm3, %%xmm2, %%xmm5, %%xmm7, %%xmm1)
+        "movdqa     %%xmm6, 0x60(%1) \n"
+        "movdqa     %%xmm7, 0x70(%1) \n"
+        "pxor       %%xmm7, %%xmm7 \n"
+        STORE_DIFF_8P(%%xmm2, (%0),      %%xmm6, %%xmm7)
+        STORE_DIFF_8P(%%xmm0, (%0,%2),   %%xmm6, %%xmm7)
+        STORE_DIFF_8P(%%xmm1, (%0,%2,2), %%xmm6, %%xmm7)
+        STORE_DIFF_8P(%%xmm3, (%0,%3),   %%xmm6, %%xmm7)
+        "lea     (%0,%2,4), %0 \n"
+        STORE_DIFF_8P(%%xmm5, (%0),      %%xmm6, %%xmm7)
+        STORE_DIFF_8P(%%xmm4, (%0,%2),   %%xmm6, %%xmm7)
+        "movdqa   0x60(%1), %%xmm0 \n"
+        "movdqa   0x70(%1), %%xmm1 \n"
+        STORE_DIFF_8P(%%xmm0, (%0,%2,2), %%xmm6, %%xmm7)
+        STORE_DIFF_8P(%%xmm1, (%0,%3),   %%xmm6, %%xmm7)
+        :"+r"(dst)
+        :"r"(block), "r"((long)stride), "r"(3L*stride), "m"(*ff_pw_32)
+    );
 }
 
 static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
@@ -839,7 +926,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(tmp), "+c"(dst), "+m"(h)\
-        : "S"((long)dstStride), "m"(ff_pw_32)\
+        : "S"((long)dstStride), "m"(*ff_pw_32)\
         : "memory"\
     );\
 }\
@@ -1113,7 +1200,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(uint8_t *dst
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(tmp), "+c"(dst), "+m"(h)\
-        : "S"((long)dstStride), "m"(ff_pw_32)\
+        : "S"((long)dstStride), "m"(*ff_pw_32)\
         : "memory"\
     );\
     tmp += 8 - size*24;\
