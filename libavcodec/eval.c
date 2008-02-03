@@ -55,7 +55,7 @@ typedef struct Parser{
     double (**func2)(void *, double a, double b); // NULL terminated
     char **func2_name;          // NULL terminated
     void *opaque;
-    char **error;
+    const char **error;
 #define VARS 10
     double var[VARS];
 } Parser;
@@ -379,7 +379,7 @@ static int verify_expr(AVEvalExpr * e) {
 AVEvalExpr * ff_parse(char *s, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
-               char **error){
+               const char **error){
     Parser p;
     AVEvalExpr * e;
     char w[strlen(s) + 1], * wp = w;
@@ -416,7 +416,7 @@ double ff_parse_eval(AVEvalExpr * e, double *const_value, void *opaque) {
 double ff_eval2(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
-               void *opaque, char **error){
+               void *opaque, const char **error){
     AVEvalExpr * e = ff_parse(s, const_name, func1, func1_name, func2, func2_name, error);
     double d;
     if (!e) return NAN;
@@ -430,7 +430,7 @@ attribute_deprecated double ff_eval(char *s, double *const_value, const char **c
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque){
-    char *error=NULL;
+    const char *error=NULL;
     double ret;
     ret = ff_eval2(s, const_value, const_name, func1, func1_name, func2, func2_name, opaque, &error);
     if (error)

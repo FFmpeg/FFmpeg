@@ -55,7 +55,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
 double ff_eval2(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
-               void *opaque, char **error);
+               void *opaque, const char **error);
 
 typedef struct ff_expr_s AVEvalExpr;
 
@@ -74,7 +74,7 @@ typedef struct ff_expr_s AVEvalExpr;
 AVEvalExpr * ff_parse(char *s, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
-               char **error);
+               const char **error);
 /**
  * Evaluates a previously parsed expression.
  * @param const_value a zero terminated array of values for the identifers from ff_parse const_name
