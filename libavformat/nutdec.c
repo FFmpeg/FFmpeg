@@ -336,11 +336,7 @@ static int decode_stream_header(NUTContext *nut){
         ff_get_v(bc); /* csp type */
     }else if (st->codec->codec_type == CODEC_TYPE_AUDIO){
         GET_V(st->codec->sample_rate , tmp > 0)
-        tmp= ff_get_v(bc); // samplerate_den
-        if(tmp > st->codec->sample_rate){
-            av_log(s, AV_LOG_ERROR, "Bleh, libnut muxed this ;)\n");
-            st->codec->sample_rate= tmp;
-        }
+        ff_get_v(bc); // samplerate_den
         GET_V(st->codec->channels, tmp > 0)
     }
     if(skip_reserved(bc, end) || get_checksum(bc)){
