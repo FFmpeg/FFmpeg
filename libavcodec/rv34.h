@@ -81,8 +81,8 @@ typedef struct RV34DecContext{
     MpegEncContext s;
     int8_t *intra_types_hist;///< old block types, used for prediction
     int8_t *intra_types;     ///< block types
-    uint8_t *luma_dc_quant_i;///< luma subblock DC quantizer for intraframes
-    uint8_t *luma_dc_quant_p;///< luma subblock DC quantizer for interframes
+    const uint8_t *luma_dc_quant_i;///< luma subblock DC quantizer for intraframes
+    const uint8_t *luma_dc_quant_p;///< luma subblock DC quantizer for interframes
 
     RV34VLC *cur_vlcs;       ///< VLC set used for current frame decoding
     int bits;                ///< slice size in bits
