@@ -26,7 +26,7 @@ void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
     int i;
     for(i=0; i<nut->avf->nb_streams; i++){
         nut->stream[i].last_pts= av_rescale_rnd(
-            val / nut->time_base_count,
+            val,
             time_base.num * (int64_t)nut->stream[i].time_base->den,
             time_base.den * (int64_t)nut->stream[i].time_base->num,
             AV_ROUND_DOWN);

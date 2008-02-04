@@ -427,7 +427,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     if(*back_ptr < 0)
         return -1;
 
-    ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count], tmp);
+    ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count], tmp / nut->time_base_count);
 
     if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
