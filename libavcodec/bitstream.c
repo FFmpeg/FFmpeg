@@ -50,7 +50,7 @@ void align_put_bits(PutBitContext *s)
 #endif
 }
 
-void ff_put_string(PutBitContext * pbc, char *s, int put_zero)
+void ff_put_string(PutBitContext * pbc, const char *s, int put_zero)
 {
     while(*s){
         put_bits(pbc, 8, *s);
@@ -60,9 +60,9 @@ void ff_put_string(PutBitContext * pbc, char *s, int put_zero)
         put_bits(pbc, 8, 0);
 }
 
-void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
+void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 {
-    const uint16_t *srcw= (uint16_t*)src;
+    const uint16_t *srcw= (const uint16_t*)src;
     int words= length>>4;
     int bits= length&15;
     int i;
