@@ -476,7 +476,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
         for(i=0; i<s->nb_streams; i++){
             AVStream *st= s->streams[i];
-            int index= av_index_search_timestamp(st, pkt->dts, AVSEEK_FLAG_BACKWARD);
+            int64_t dts_tb = av_rescale_rnd(pkt->dts,
+                nus->time_base->num * (int64_t)nut->stream[i].time_base->den,
+                nus->time_base->den * (int64_t)nut->stream[i].time_base->num,
+                AV_ROUND_DOWN);
+            int index= av_index_search_timestamp(st, dts_tb, AVSEEK_FLAG_BACKWARD);
             if(index>=0) dummy.pos= FFMIN(dummy.pos, st->index_entries[index].pos);
         }
         if(dummy.pos == INT64_MAX)
