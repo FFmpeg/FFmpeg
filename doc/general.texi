@@ -825,7 +825,7 @@ should also be avoided if they don't make the code easier to understand.
     it has a fourcc, add it to @file{libavformat/avienc.c}, even if it
     is only a decoder.
 @item
-    Compiler warnings indicate bugs or code with bad style. If a type of
+    Compiler warnings indicate potential bugs or code with bad style. If a type of
     warning always points to correct and clean code, that warning should
     be disabled, not the code changed.
     Thus the remaining warnings can either be bugs or correct code.
