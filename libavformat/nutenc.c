@@ -317,7 +317,7 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     return 0;
 }
 
-static int add_info(ByteIOContext *bc, char *type, char *value){
+static int add_info(ByteIOContext *bc, const char *type, const char *value){
     put_str(bc, type);
     put_s(bc, -1);
     put_str(bc, value);
