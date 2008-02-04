@@ -360,7 +360,7 @@ static int decode_info_header(NUTContext *nut){
     int chapter_id, i;
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
-    const char *type= type_str;
+    const char *type;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
@@ -377,7 +377,8 @@ static int decode_info_header(NUTContext *nut){
             type= "UTF-8";
             get_str(bc, str_value, sizeof(str_value));
         }else if(value == -2){
-            get_str(bc, type, sizeof(type));
+            get_str(bc, type_str, sizeof(type_str));
+            type= type_str;
             get_str(bc, str_value, sizeof(str_value));
         }else if(value == -3){
             type= "s";
