@@ -2612,7 +2612,7 @@ static void opt_input_ts_offset(const char *arg)
 
 static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
 {
-    char *codec_string = encoder ? "encoder" : "decoder";
+    const char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
 
     if(!name)
