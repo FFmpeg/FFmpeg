@@ -462,7 +462,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
         write_headers(nut, bc);
 
-    if(key_frame && !!(nus->last_flags & FLAG_KEY))
+    if(key_frame && !(nus->last_flags & FLAG_KEY))
         store_sp= 1;
 
     if(pkt->size + 30/*FIXME check*/ + url_ftell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
