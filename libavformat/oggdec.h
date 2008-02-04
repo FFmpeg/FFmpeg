@@ -28,9 +28,9 @@
 #include "avformat.h"
 
 typedef struct ogg_codec {
-    int8_t *magic;
+    const int8_t *magic;
     uint8_t magicsize;
-    int8_t *name;
+    const int8_t *name;
     int (*header)(AVFormatContext *, int);
     int (*packet)(AVFormatContext *, int);
     uint64_t (*gptopts)(AVFormatContext *, int, uint64_t);
