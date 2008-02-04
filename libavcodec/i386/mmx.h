@@ -21,6 +21,8 @@
 #ifndef FFMPEG_MMX_H
 #define FFMPEG_MMX_H
 
+#warning Everything in this header is deprecated, use plain asm()! New code using this header will be rejected.
+
 /*
  * The type of an value that fits in an MMX register (note that long
  * long constant values MUST be suffixed by LL and unsigned long long
