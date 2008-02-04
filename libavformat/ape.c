@@ -50,7 +50,7 @@
 #define TAG(name, field)  {name, offsetof(AVFormatContext, field), sizeof(((AVFormatContext *)0)->field)}
 
 static const struct {
-    char *name;
+    const char *name;
     int offset;
     int size;
 } tags[] = {
