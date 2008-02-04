@@ -564,7 +564,7 @@ static void id3v2_put_size(AVFormatContext *s, int size)
     put_byte(s->pb, size       & 0x7f);
 }
 
-static void id3v2_put_ttag(AVFormatContext *s, char *string, uint32_t tag)
+static void id3v2_put_ttag(AVFormatContext *s, const char *string, uint32_t tag)
 {
     int len = strlen(string);
     put_be32(s->pb, tag);
