@@ -2234,7 +2234,7 @@ matroska_read_header (AVFormatContext    *s,
                     return AVERROR(ENOMEM);
                 init_put_byte(&b, extradata, extradata_size, 1,
                               NULL, NULL, NULL, NULL);
-                put_buffer(&b, (uint8_t *) "TTA1", 4);
+                put_buffer(&b, "TTA1", 4);
                 put_le16(&b, 1);
                 put_le16(&b, audiotrack->channels);
                 put_le16(&b, audiotrack->bitdepth);
