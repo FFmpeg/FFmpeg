@@ -825,8 +825,13 @@ should also be avoided if they don't make the code easier to understand.
     it has a fourcc, add it to @file{libavformat/avienc.c}, even if it
     is only a decoder.
 @item
-    Do not change code to hide warnings without ensuring that the underlying
-    logic is correct and thus the warning was inappropriate.
+    Compiler warnings indicate bugs or code with bad style. If a type of
+    warning always points to correct and clean code, that warning should
+    be disabled, not the code changed.
+    Thus the remaining warnings can either be bugs or correct code.
+    If it is a bug, it has to be fixed. If it is not, the code should
+    be changed to not generate a warning unless that causes a slowdown
+    or obfuscates the code.
 @item
     If you add a new file, give it a proper license header. Do not copy and
     paste it from a random place, use an existing file as template.
