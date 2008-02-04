@@ -501,7 +501,7 @@ static int find_and_decode_index(NUTContext *nut){
                 return -1;
             }
             assert(n<=syncpoint_count+1);
-            for(; j<n; j++){
+            for(; j<n && j<syncpoint_count; j++){
                 if(has_keyframe[j]){
                     uint64_t B, A= ff_get_v(bc);
                     if(!A){
