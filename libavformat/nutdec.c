@@ -359,7 +359,8 @@ static int decode_info_header(NUTContext *nut){
     unsigned int stream_id_plus1, chapter_start, chapter_len, count;
     int chapter_id, i;
     int64_t value, end;
-    char name[256], str_value[1024], type_str[256], *type= type_str;
+    char name[256], str_value[1024], type_str[256];
+    const char *type= type_str;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
