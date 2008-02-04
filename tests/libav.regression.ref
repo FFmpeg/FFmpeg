@@ -30,8 +30,8 @@ f8ad5bd78f4d012a8ce9570aa395ac54 *./tests/data/b-libav.flv
 2ba41cf880aa5cb87e8a08fdb735398d *./tests/data/b-libav.gxf
 814640 ./tests/data/b-libav.gxf
 ./tests/data/b-libav.gxf CRC=0xa376c09e
-79d92ebd1e760575136fb5f0782d5151 *./tests/data/b-libav.nut
-331022 ./tests/data/b-libav.nut
+5b6d03cfa8ccb701bec3c0f0e562e0da *./tests/data/b-libav.nut
+330100 ./tests/data/b-libav.nut
 ./tests/data/b-libav.nut CRC=0x400c29e9
 43238b15f1012aa27536c2be20bb2383 *./tests/data/b-libav.mkv
 329854 ./tests/data/b-libav.mkv

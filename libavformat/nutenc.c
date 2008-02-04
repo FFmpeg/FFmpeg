@@ -216,7 +216,7 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
 
     put_v(bc, 3); /* version */
     put_v(bc, nut->avf->nb_streams);
-    put_v(bc, MAX_DISTANCE);
+    put_v(bc, nut->max_distance);
     put_v(bc, nut->time_base_count);
 
     for(i=0; i<nut->time_base_count; i++){
@@ -418,6 +418,7 @@ static int write_header(AVFormatContext *s){
         nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(time_base), 1);
     }
 
+    nut->max_distance = MAX_DISTANCE;
     build_frame_code(s);
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
