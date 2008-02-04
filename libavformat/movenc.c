@@ -1194,7 +1194,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     return 0;
 }
 
-static int utf8len(uint8_t *b){
+static int utf8len(const uint8_t *b){
     int len=0;
     int val;
     while(*b){
@@ -1204,7 +1204,7 @@ static int utf8len(uint8_t *b){
     return len;
 }
 
-static int ascii_to_wc (ByteIOContext *pb, uint8_t *b)
+static int ascii_to_wc (ByteIOContext *pb, const uint8_t *b)
 {
     int val;
     while(*b){
