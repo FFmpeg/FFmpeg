@@ -73,7 +73,7 @@ static int vmd_read_header(AVFormatContext *s,
 {
     VmdDemuxContext *vmd = s->priv_data;
     ByteIOContext *pb = s->pb;
-    AVStream *st, *vst;
+    AVStream *st = NULL, *vst;
     unsigned int toc_offset;
     unsigned char *raw_frame_table;
     int raw_frame_table_size;
@@ -181,6 +181,7 @@ static int vmd_read_header(AVFormatContext *s,
                 continue;
             switch(type) {
             case 1: /* Audio Chunk */
+                if (!st) break;
                 /* first audio chunk contains several audio buffers */
                 if(current_audio_pts){
                     vmd->frame_table[total_frames].frame_offset = current_offset;
