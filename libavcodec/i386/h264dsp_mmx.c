@@ -75,7 +75,7 @@ static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
         IDCT4_1D( %%mm4, %%mm2, %%mm3, %%mm0, %%mm1 )
 
         "pxor %%mm7, %%mm7    \n\t"
-    :: "m"(*ff_pw_32));
+    :: "m"(ff_pw_32));
 
     asm volatile(
     STORE_DIFF_4P( %%mm0, %%mm1, %%mm7)
@@ -294,7 +294,7 @@ static void ff_h264_idct8_add_sse2(uint8_t *dst, int16_t *block, int stride)
         STORE_DIFF_8P(%%xmm0, (%0,%2,2), %%xmm6, %%xmm7)
         STORE_DIFF_8P(%%xmm1, (%0,%3),   %%xmm6, %%xmm7)
         :"+r"(dst)
-        :"r"(block), "r"((long)stride), "r"(3L*stride), "m"(*ff_pw_32)
+        :"r"(block), "r"((long)stride), "r"(3L*stride), "m"(ff_pw_32)
     );
 }
 
@@ -926,7 +926,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(tmp), "+c"(dst), "+m"(h)\
-        : "S"((long)dstStride), "m"(*ff_pw_32)\
+        : "S"((long)dstStride), "m"(ff_pw_32)\
         : "memory"\
     );\
 }\
@@ -1200,7 +1200,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(uint8_t *dst
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(tmp), "+c"(dst), "+m"(h)\
-        : "S"((long)dstStride), "m"(*ff_pw_32)\
+        : "S"((long)dstStride), "m"(ff_pw_32)\
         : "memory"\
     );\
     tmp += 8 - size*24;\
