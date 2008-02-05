@@ -51,7 +51,11 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     offset_t crc_offset;
     int page_segments, i;
 
-    size = FFMIN(size, 255*255);
+    if (size >= 255*255) {
+        granule = -1;
+        size = 255*255;
+    }
+
     page_segments = FFMIN((size/255)+!!size, 255);
 
     init_checksum(s->pb, ff_crc04C11DB7_update, 0);
