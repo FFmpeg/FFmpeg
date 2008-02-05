@@ -638,6 +638,10 @@ static int imc_decode_frame(AVCodecContext * avctx,
     int counter, bitscount;
     uint16_t buf16[IMC_BLOCK_SIZE / 2];
 
+    if (buf_size < IMC_BLOCK_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "imc frame too small!\n");
+        return -1;
+    }
     for(i = 0; i < IMC_BLOCK_SIZE / 2; i++)
         buf16[i] = bswap_16(((const uint16_t*)buf)[i]);
 
