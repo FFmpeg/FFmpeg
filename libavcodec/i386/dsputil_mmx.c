@@ -49,10 +49,10 @@ DECLARE_ALIGNED_16(const uint64_t, ff_pdw_80000000[2]) =
 
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_3  ) = 0x0003000300030003ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_4  ) = 0x0004000400040004ULL;
-DECLARE_ALIGNED_8 (const uint64_t, ff_pw_5  ) = 0x0005000500050005ULL;
+DECLARE_ALIGNED_16(const xmm_t,    ff_pw_5  ) = {0x0005000500050005ULL, 0x0005000500050005ULL};
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_8  ) = 0x0008000800080008ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_15 ) = 0x000F000F000F000FULL;
-DECLARE_ALIGNED_8 (const uint64_t, ff_pw_16 ) = 0x0010001000100010ULL;
+DECLARE_ALIGNED_16(const xmm_t,    ff_pw_16 ) = {0x0010001000100010ULL, 0x0010001000100010ULL};
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_20 ) = 0x0014001400140014ULL;
 DECLARE_ALIGNED_16(const xmm_t,    ff_pw_32 ) = {0x0020002000200020ULL, 0x0020002000200020ULL};
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_42 ) = 0x002A002A002A002AULL;
@@ -475,6 +475,54 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
          : "+g"(h), "+r" (pixels),  "+r" (block)
          : "r"((long)line_size)
          : "%"REG_a, "memory"
+        );
+}
+
+static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+    __asm __volatile(
+         "1:                            \n\t"
+         "movdqu (%1), %%xmm0           \n\t"
+         "movdqu (%1,%3), %%xmm1        \n\t"
+         "movdqu (%1,%3,2), %%xmm2      \n\t"
+         "movdqu (%1,%4), %%xmm3        \n\t"
+         "movdqa %%xmm0, (%2)           \n\t"
+         "movdqa %%xmm1, (%2,%3)        \n\t"
+         "movdqa %%xmm2, (%2,%3,2)      \n\t"
+         "movdqa %%xmm3, (%2,%4)        \n\t"
+         "subl $4, %0                   \n\t"
+         "lea (%1,%3,4), %1             \n\t"
+         "lea (%2,%3,4), %2             \n\t"
+         "jnz 1b                        \n\t"
+         : "+g"(h), "+r" (pixels),  "+r" (block)
+         : "r"((long)line_size), "r"(3L*line_size)
+         : "memory"
+        );
+}
+
+static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+    __asm __volatile(
+         "1:                            \n\t"
+         "movdqu (%1), %%xmm0           \n\t"
+         "movdqu (%1,%3), %%xmm1        \n\t"
+         "movdqu (%1,%3,2), %%xmm2      \n\t"
+         "movdqu (%1,%4), %%xmm3        \n\t"
+         "pavgb  (%2), %%xmm0           \n\t"
+         "pavgb  (%2,%3), %%xmm1        \n\t"
+         "pavgb  (%2,%3,2), %%xmm2      \n\t"
+         "pavgb  (%2,%4), %%xmm3        \n\t"
+         "movdqa %%xmm0, (%2)           \n\t"
+         "movdqa %%xmm1, (%2,%3)        \n\t"
+         "movdqa %%xmm2, (%2,%3,2)      \n\t"
+         "movdqa %%xmm3, (%2,%4)        \n\t"
+         "subl $4, %0                   \n\t"
+         "lea (%1,%3,4), %1             \n\t"
+         "lea (%2,%3,4), %2             \n\t"
+         "jnz 1b                        \n\t"
+         : "+g"(h), "+r" (pixels),  "+r" (block)
+         : "r"((long)line_size), "r"(3L*line_size)
+         : "memory"
         );
 }
 
@@ -3474,6 +3522,23 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_3dnow_rnd;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
         }
+
+/* FIXME works in most codecs, but crashes svq1 due to unaligned chroma
+        if((mm_flags & MM_SSE2) && !(mm_flags & MM_3DNOW)){
+            // these functions are slower than mmx on AMD, but faster on Intel
+            c->put_pixels_tab[0][0] = put_pixels16_sse2;
+            c->avg_pixels_tab[0][0] = avg_pixels16_sse2;
+        }
+*/
+
+#ifdef HAVE_SSSE3
+        if(mm_flags & MM_SSSE3){
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, ssse3);
+            SET_QPEL_FUNCS(put_h264_qpel, 1, 8, ssse3);
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, ssse3);
+            SET_QPEL_FUNCS(avg_h264_qpel, 1, 8, ssse3);
+        }
+#endif
 
 #ifdef CONFIG_ENCODERS
         if(mm_flags & MM_SSE2){

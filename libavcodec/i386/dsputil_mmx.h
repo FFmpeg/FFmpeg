@@ -33,10 +33,10 @@ extern const uint64_t ff_pdw_80000000[2];
 
 extern const uint64_t ff_pw_3;
 extern const uint64_t ff_pw_4;
-extern const uint64_t ff_pw_5;
+extern const xmm_t    ff_pw_5;
 extern const uint64_t ff_pw_8;
 extern const uint64_t ff_pw_15;
-extern const uint64_t ff_pw_16;
+extern const xmm_t    ff_pw_16;
 extern const uint64_t ff_pw_20;
 extern const xmm_t    ff_pw_32;
 extern const uint64_t ff_pw_42;
