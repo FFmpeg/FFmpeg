@@ -33,6 +33,7 @@ typedef struct {
     int kfgshift;
     int64_t last_kf_pts;
     int vrev;
+    int eos;
 } OGGStreamContext;
 
 static void ogg_update_checksum(AVFormatContext *s, offset_t crc_offset)
@@ -54,7 +55,8 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     if (size >= 255*255) {
         granule = -1;
         size = 255*255;
-    }
+    } else if (oggstream->eos)
+        flags |= 4;
 
     page_segments = FFMIN((size/255)+!!size, 255);
 
@@ -200,6 +202,65 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
+{
+    AVPacketList *pktl, **next_point, *this_pktl;
+    int stream_count = 0;
+    int streams[MAX_STREAMS] = {0};
+    int interleaved = 0;
+
+    if (pkt) {
+        AVStream *st = s->streams[pkt->stream_index];
+        this_pktl = av_mallocz(sizeof(AVPacketList));
+        this_pktl->pkt = *pkt;
+        if (pkt->destruct == av_destruct_packet)
+            pkt->destruct = NULL; // not shared -> must keep original from being freed
+        else
+            av_dup_packet(&this_pktl->pkt); // shared -> must dup
+        next_point = &s->packet_buffer;
+        while (*next_point) {
+            AVStream *st2 = s->streams[(*next_point)->pkt.stream_index];
+            AVPacket *next_pkt = &(*next_point)->pkt;
+            int64_t cur_granule, next_granule;
+            next_granule = av_rescale_q(next_pkt->pts + next_pkt->duration,
+                                        st2->time_base, AV_TIME_BASE_Q);
+            cur_granule = av_rescale_q(pkt->pts + pkt->duration,
+                                        st->time_base, AV_TIME_BASE_Q);
+            if (next_granule > cur_granule)
+                break;
+            next_point= &(*next_point)->next;
+        }
+        this_pktl->next= *next_point;
+        *next_point= this_pktl;
+    }
+
+    pktl = s->packet_buffer;
+    while (pktl) {
+        if (streams[pktl->pkt.stream_index] == 0)
+            stream_count++;
+        streams[pktl->pkt.stream_index]++;
+        // need to buffer at least one packet to set eos flag
+        if (streams[pktl->pkt.stream_index] == 2)
+            interleaved++;
+        pktl = pktl->next;
+    }
+
+    if ((s->nb_streams == stream_count && interleaved == stream_count) ||
+        (flush && stream_count)) {
+        pktl= s->packet_buffer;
+        *out= pktl->pkt;
+        s->packet_buffer = pktl->next;
+        if (flush && streams[out->stream_index] == 1) {
+            OGGStreamContext *ogg = s->streams[out->stream_index]->priv_data;
+            ogg->eos = 1;
+        }
+        av_freep(&pktl);
+        return 1;
+    } else {
+        av_init_packet(out);
+        return 0;
+    }
+}
 
 static int ogg_write_trailer(AVFormatContext *s)
 {
@@ -207,7 +268,6 @@ static int ogg_write_trailer(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         OGGStreamContext *oggstream = st->priv_data;
-        ogg_write_page(s, NULL, 0, oggstream->duration, i, 4); // eos
         if (st->codec->codec_id == CODEC_ID_FLAC) {
             av_free(oggstream->header[0]);
             av_free(oggstream->header[1]);
@@ -228,4 +288,5 @@ AVOutputFormat ogg_muxer = {
     ogg_write_header,
     ogg_write_packet,
     ogg_write_trailer,
+    .interleave_packet = ogg_interleave_per_granule,
 };
