@@ -38,6 +38,7 @@
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
 
 static ogg_codec_t *ogg_codecs[] = {
+    &speex_codec,
     &vorbis_codec,
     &theora_codec,
     &flac_codec,

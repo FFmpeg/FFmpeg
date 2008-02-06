@@ -110,6 +110,7 @@ OBJS-$(CONFIG_NUV_DEMUXER)               += nuv.o riff.o
 OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
+                                            oggparsespeex.o  \
                                             oggparsetheora.o \
                                             oggparsevorbis.o \
                                             riff.o

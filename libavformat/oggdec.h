@@ -81,6 +81,7 @@ extern ogg_codec_t ogm_old_codec;
 extern ogg_codec_t ogm_text_codec;
 extern ogg_codec_t ogm_video_codec;
 extern ogg_codec_t old_flac_codec;
+extern ogg_codec_t speex_codec;
 extern ogg_codec_t theora_codec;
 extern ogg_codec_t vorbis_codec;
 
