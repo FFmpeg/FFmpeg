@@ -600,7 +600,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
 
-        if (st->codec->codec_tag && st->codec->codec_tag != MKTAG('j', 'p', 'e', 'g')) {
+        if (st->codec->codec_tag &&
+            (c->fc->video_codec_id ? codec_get_id(codec_movvideo_tags, format) != c->fc->video_codec_id
+                                   : st->codec->codec_tag != MKTAG('j', 'p', 'e', 'g'))
+           ){
             /* multiple fourcc, we skip jpeg, this isnt correct, we should export it as
                seperate AVStream but this needs a few changes in the mov demuxer, patch
                welcome */
