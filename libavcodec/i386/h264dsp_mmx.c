@@ -796,7 +796,7 @@ static av_noinline void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uin
         "add %4, %1                 \n\t"\
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
-        : "+a"(src), "+c"(dst), "+m"(h)\
+        : "+a"(src), "+c"(dst), "+g"(h)\
         : "d"((long)srcStride), "S"((long)dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
         : "memory"\
     );\
@@ -930,7 +930,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
         "add %3, %1                 \n\t"\
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
-        : "+a"(tmp), "+c"(dst), "+m"(h)\
+        : "+a"(tmp), "+c"(dst), "+g"(h)\
         : "S"((long)dstStride)\
         : "memory"\
     );\
@@ -987,7 +987,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
         "add %4, %1                 \n\t"\
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
-        : "+a"(src), "+c"(dst), "+m"(h)\
+        : "+a"(src), "+c"(dst), "+g"(h)\
         : "d"((long)srcStride), "S"((long)dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
         : "memory"\
     );\
@@ -1201,7 +1201,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(uint8_t *dst
         "add %3, %1                 \n\t"\
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
-        : "+a"(tmp), "+c"(dst), "+m"(h)\
+        : "+a"(tmp), "+c"(dst), "+g"(h)\
         : "S"((long)dstStride)\
         : "memory"\
     );\
