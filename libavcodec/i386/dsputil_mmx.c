@@ -3523,20 +3523,48 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
         }
 
-/* FIXME works in most codecs, but crashes svq1 due to unaligned chroma
+
+#define H264_QPEL_FUNCS(x, y, CPU)\
+            c->put_h264_qpel_pixels_tab[0][x+y*4] = put_h264_qpel16_mc##x##y##_##CPU;\
+            c->put_h264_qpel_pixels_tab[1][x+y*4] = put_h264_qpel8_mc##x##y##_##CPU;\
+            c->avg_h264_qpel_pixels_tab[0][x+y*4] = avg_h264_qpel16_mc##x##y##_##CPU;\
+            c->avg_h264_qpel_pixels_tab[1][x+y*4] = avg_h264_qpel8_mc##x##y##_##CPU;
         if((mm_flags & MM_SSE2) && !(mm_flags & MM_3DNOW)){
             // these functions are slower than mmx on AMD, but faster on Intel
+/* FIXME works in most codecs, but crashes svq1 due to unaligned chroma
             c->put_pixels_tab[0][0] = put_pixels16_sse2;
             c->avg_pixels_tab[0][0] = avg_pixels16_sse2;
-        }
 */
-
+            H264_QPEL_FUNCS(0, 0, sse2);
+        }
+        if(mm_flags & MM_SSE2){
+            H264_QPEL_FUNCS(0, 1, sse2);
+            H264_QPEL_FUNCS(0, 2, sse2);
+            H264_QPEL_FUNCS(0, 3, sse2);
+            H264_QPEL_FUNCS(1, 1, sse2);
+            H264_QPEL_FUNCS(1, 2, sse2);
+            H264_QPEL_FUNCS(1, 3, sse2);
+            H264_QPEL_FUNCS(2, 1, sse2);
+            H264_QPEL_FUNCS(2, 2, sse2);
+            H264_QPEL_FUNCS(2, 3, sse2);
+            H264_QPEL_FUNCS(3, 1, sse2);
+            H264_QPEL_FUNCS(3, 2, sse2);
+            H264_QPEL_FUNCS(3, 3, sse2);
+        }
 #ifdef HAVE_SSSE3
         if(mm_flags & MM_SSSE3){
-            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, ssse3);
-            SET_QPEL_FUNCS(put_h264_qpel, 1, 8, ssse3);
-            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, ssse3);
-            SET_QPEL_FUNCS(avg_h264_qpel, 1, 8, ssse3);
+            H264_QPEL_FUNCS(1, 0, ssse3);
+            H264_QPEL_FUNCS(1, 1, ssse3);
+            H264_QPEL_FUNCS(1, 2, ssse3);
+            H264_QPEL_FUNCS(1, 3, ssse3);
+            H264_QPEL_FUNCS(2, 0, ssse3);
+            H264_QPEL_FUNCS(2, 1, ssse3);
+            H264_QPEL_FUNCS(2, 2, ssse3);
+            H264_QPEL_FUNCS(2, 3, ssse3);
+            H264_QPEL_FUNCS(3, 0, ssse3);
+            H264_QPEL_FUNCS(3, 1, ssse3);
+            H264_QPEL_FUNCS(3, 2, ssse3);
+            H264_QPEL_FUNCS(3, 3, ssse3);
         }
 #endif
 
