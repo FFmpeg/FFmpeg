@@ -1,18 +1,18 @@
 =============================================
-SNOW Video Codec Specification Draft 20080110
+Snow Video Codec Specification Draft 20080110
 =============================================
 
 Introduction:
 =============
-This specification describes the SNOW bitstream syntax and semantics as
-well as the formal SNOW decoding process.
+This specification describes the Snow bitstream syntax and semantics as
+well as the formal Snow decoding process.
 
 The decoding process is described precisely and any compliant decoder
-MUST produce the exact same output for a spec-conformant SNOW stream.
+MUST produce the exact same output for a spec-conformant Snow stream.
 For encoding, though, any process which generates a stream compliant to
 the syntactical and semantic requirements and which is decodable by
 the process described in this spec shall be considered a conformant
-SNOW encoder.
+Snow encoder.
 
 Definitions:
 ============
@@ -315,7 +315,7 @@ Binary Range Coder:
 The implemented range coder is an adapted version based upon "Range encoding:
 an algorithm for removing redundancy from a digitised message." by G. N. N.
 Martin.
-The symbols encoded by the snow range coder are bits (0|1). The
+The symbols encoded by the Snow range coder are bits (0|1). The
 associated probabilities are not fix but change depending on the symbol mix
 seen so far.
 
@@ -486,7 +486,7 @@ the remaining points shall be bilinearly interpolated from the
 up to 4 surrounding halfpel and fullpel points, again rounding should be to
 nearest and halfway values rounded up
 
-compliant snow decoders MUST support 1-1/8 pel luma and 1/2-1/16 pel chroma
+compliant Snow decoders MUST support 1-1/8 pel luma and 1/2-1/16 pel chroma
 interpolation at least
 
 
@@ -562,7 +562,7 @@ s[w ] shall be considered equivalent to s[w-2]
   |  +  |  +  |  +  |  +   +1/2
 
 
-snows 9/7 Integer filter:
+Snow's 9/7 Integer filter:
 1. s[i] -= (3*(s[i-1] + s[i+1])         + 4)>>3; for all even i < w
 2. s[i] -=     s[i-1] + s[i+1]                 ; for all odd  i < w
 3. s[i] += (   s[i-1] + s[i+1] + 4*s[i] + 8)>>4; for all even i < w
