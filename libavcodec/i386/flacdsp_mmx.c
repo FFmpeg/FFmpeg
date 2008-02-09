@@ -36,7 +36,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
         "addsd   %%xmm6, %%xmm7 \n\t"
         ::"m"(c), "m"(*ff_pd_1), "m"(*ff_pd_2)
     );
-#define WELCH(MOVPD)\
+#define WELCH(MOVPD, offset)\
     asm volatile(\
         "1:                         \n\t"\
         "movapd   %%xmm7,  %%xmm1   \n\t"\
@@ -44,24 +44,23 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
         "movapd   %%xmm6,  %%xmm0   \n\t"\
         "subpd    %%xmm1,  %%xmm0   \n\t"\
         "pshufd   $0x4e,   %%xmm0, %%xmm1 \n\t"\
-        "cvtpi2pd (%4,%0), %%xmm2   \n\t"\
-        "cvtpi2pd (%5,%1), %%xmm3   \n\t"\
+        "cvtpi2pd (%3,%0), %%xmm2   \n\t"\
+        "cvtpi2pd "#offset"*4(%3,%1), %%xmm3 \n\t"\
         "mulpd    %%xmm0,  %%xmm2   \n\t"\
         "mulpd    %%xmm1,  %%xmm3   \n\t"\
         "movapd   %%xmm2, (%2,%0,2) \n\t"\
-        MOVPD"    %%xmm3, (%3,%1,2) \n\t"\
+        MOVPD"    %%xmm3, "#offset"*8(%2,%1,2) \n\t"\
         "subpd    %%xmm5,  %%xmm7   \n\t"\
         "sub      $8,      %1       \n\t"\
         "add      $8,      %0       \n\t"\
         "jl 1b                      \n\t"\
         :"+&r"(i), "+&r"(j)\
-        :"r"(w_data+n2), "r"(w_data+len-2-n2),\
-         "r"(data+n2), "r"(data+len-2-n2)\
+        :"r"(w_data+n2), "r"(data+n2)\
     );
     if(len&1)
-        WELCH("movupd")
+        WELCH("movupd", -1)
     else
-        WELCH("movapd")
+        WELCH("movapd", -2)
 #undef WELCH
 }
 
