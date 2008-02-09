@@ -593,6 +593,9 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
     double w;
     double c;
 
+    assert(!(len&1)); //the optimization in r11881 does not support odd len
+                      //if someone wants odd len extend the change in r11881
+
     n2 = (len >> 1);
     c = 2.0 / (len - 1.0);
 
