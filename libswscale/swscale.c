@@ -194,11 +194,11 @@ static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 
-static uint64_t __attribute__((aligned(8))) dither4[2]={
+DECLARE_ASM_CONST(8, uint64_t, dither4[2])={
         0x0103010301030103LL,
         0x0200020002000200LL,};
 
-static uint64_t __attribute__((aligned(8))) dither8[2]={
+DECLARE_ASM_CONST(8, uint64_t, dither8[2])={
         0x0602060206020602LL,
         0x0004000400040004LL,};
 
