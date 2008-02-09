@@ -38,7 +38,7 @@
 #define BUFFER_CAT(x)               (&((x)[strlen(x)]))
 
 /* For PPC Use */
-#if HAVE_ALTIVEC==1
+#ifdef HAVE_ALTIVEC
 extern int has_altivec(void);
 #endif
 
@@ -169,7 +169,7 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
 
 #ifdef ARCH_POWERPC
     /* XviD's PPC support is borked, use libavcodec to detect */
-#if HAVE_ALTIVEC==1
+#ifdef HAVE_ALTIVEC
     if( has_altivec() ) {
         xvid_gbl_init.cpu_flags = XVID_CPU_FORCE | XVID_CPU_ALTIVEC;
     } else
