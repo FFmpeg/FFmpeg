@@ -2119,9 +2119,7 @@ static void opt_format(const char *arg)
     }
 }
 
-#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
 extern int ffm_nopts;
-#endif
 
 static int opt_default(const char *opt, const char *arg){
     int type;
