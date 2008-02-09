@@ -55,11 +55,9 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 
-#ifdef HAVE_XVMC
 extern int  XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx);
 extern void XVMC_field_end(MpegEncContext *s);
 extern void XVMC_decode_mb(MpegEncContext *s);
-#endif
 
 void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
