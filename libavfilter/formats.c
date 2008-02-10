@@ -21,6 +21,16 @@
 
 #include "avfilter.h"
 
+/** merge and update all the references */
+static void merge_ref(AVFilterFormats *ret, AVFilterFormats *a)
+{
+    int i;
+    for(i = 0; i < a->refcount; i ++) {
+        ret->refs[ret->refcount] = a->refs[i];
+        *ret->refs[ret->refcount++] = ret;
+    }
+}
+
 AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 {
     AVFilterFormats *ret;
@@ -43,16 +53,10 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
         return NULL;
     }
 
-    /* merge and update all the references */
     ret->refs = av_malloc(sizeof(AVFilterFormats**)*(a->refcount+b->refcount));
-    for(i = 0; i < a->refcount; i ++) {
-        ret->refs[ret->refcount] = a->refs[i];
-        *ret->refs[ret->refcount++] = ret;
-    }
-    for(i = 0; i < b->refcount; i ++) {
-        ret->refs[ret->refcount] = b->refs[i];
-        *ret->refs[ret->refcount++] = ret;
-    }
+
+    merge_ref(ret, a);
+    merge_ref(ret, b);
 
     av_free(a->refs);
     av_free(a->formats);
