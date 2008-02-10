@@ -1369,7 +1369,7 @@ static av_noinline void OPNAME ## h264_qpel16_h_lowpass_l2_ ## MMX(uint8_t *dst,
         "add %5, %0                 \n\t"\
         "add %5, %1                 \n\t"\
         "add %4, %2                 \n\t"\
-        "dec %3                     \n\t"\
+        "decl %3                    \n\t"\
         "jg 1b                      \n\t"\
         : "+a"(src), "+c"(dst), "+d"(src2), "+g"(h)\
         : "D"((long)src2Stride), "S"((long)dstStride),\
