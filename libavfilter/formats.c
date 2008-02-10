@@ -109,7 +109,7 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
     f->refs[f->refcount-1] = ref;
 }
 
-static int find_ref_index(AVFilterFormats *f, AVFilterFormats **ref)
+static int find_ref_index(AVFilterFormats **ref)
 {
     int i;
     for(i = 0; i < (*ref)->refcount; i ++)
@@ -122,7 +122,7 @@ void avfilter_formats_unref(AVFilterFormats **ref)
 {
     int idx;
 
-    if((idx = find_ref_index(*ref, ref)) >= 0)
+    if((idx = find_ref_index(ref)) >= 0)
         memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
             sizeof(AVFilterFormats**) * ((*ref)->refcount-idx-1));
 
