@@ -29,8 +29,8 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     ret = av_mallocz(sizeof(AVFilterFormats));
 
     /* merge list of formats */
-    ret->formats = av_malloc(sizeof(int) * FFMIN(a->format_count,
-                                                 b->format_count));
+    ret->formats = av_malloc(sizeof(*ret->formats) * FFMIN(a->format_count,
+                                                           b->format_count));
     for(i = 0; i < a->format_count; i ++)
         for(j = 0; j < b->format_count; j ++)
             if(a->formats[i] == b->formats[j])
@@ -72,7 +72,7 @@ AVFilterFormats *avfilter_make_format_list(int len, ...)
     va_list vl;
 
     ret = av_mallocz(sizeof(AVFilterFormats));
-    ret->formats = av_malloc(sizeof(int) * len);
+    ret->formats = av_malloc(sizeof(*ret->formats) * len);
     ret->format_count = len;
 
     va_start(vl, len);
