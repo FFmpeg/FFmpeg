@@ -85,7 +85,7 @@ AVFilterFormats *avfilter_make_format_list(int len, ...)
 
 AVFilterFormats *avfilter_all_colorspaces(void)
 {
-    return avfilter_make_format_list(31,
+    return avfilter_make_format_list(35,
                 PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P,
                 PIX_FMT_YUV411P,  PIX_FMT_YUV410P,
                 PIX_FMT_YUYV422,  PIX_FMT_UYVY422,  PIX_FMT_UYYVYY411,
@@ -99,7 +99,9 @@ AVFilterFormats *avfilter_all_colorspaces(void)
                 PIX_FMT_RGB8,     PIX_FMT_BGR8,
                 PIX_FMT_RGB4_BYTE,PIX_FMT_BGR4_BYTE,
                 PIX_FMT_GRAY16BE, PIX_FMT_GRAY16LE,
-                PIX_FMT_GRAY8,    PIX_FMT_PAL8);
+                PIX_FMT_GRAY8,    PIX_FMT_PAL8,
+                PIX_FMT_MONOWHITE,PIX_FMT_MONOBLACK
+                PIX_FMT_NV12,     PIX_FMT_NV21);
 }
 
 void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
