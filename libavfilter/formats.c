@@ -51,8 +51,9 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
             if(a->formats[i] == b->formats[j])
                 ret->formats[k++] = a->formats[i];
 
+    ret->format_count = k;
     /* check that there was at least one common format */
-    if(!(ret->format_count = k)) {
+    if(!ret->format_count) {
         av_free(ret->formats);
         av_free(ret);
         return NULL;
@@ -117,9 +118,9 @@ static int find_ref_index(AVFilterFormats **ref)
 
 void avfilter_formats_unref(AVFilterFormats **ref)
 {
-    int idx;
+    int idx = find_ref_index(ref);
 
-    if((idx = find_ref_index(ref)) >= 0)
+    if(idx >= 0)
         memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
             sizeof(AVFilterFormats**) * ((*ref)->refcount-idx-1));
 
@@ -134,9 +135,9 @@ void avfilter_formats_unref(AVFilterFormats **ref)
 void avfilter_formats_changeref(AVFilterFormats **oldref,
                                 AVFilterFormats **newref)
 {
-    int idx;
+    int idx = find_ref_index(oldref);
 
-    if((idx = find_ref_index(oldref)) >= 0) {
+    if(idx >= 0) {
         (*oldref)->refs[idx] = newref;
         *newref = *oldref;
         *oldref = NULL;
