@@ -25,10 +25,15 @@
 static void merge_ref(AVFilterFormats *ret, AVFilterFormats *a)
 {
     int i;
+
     for(i = 0; i < a->refcount; i ++) {
         ret->refs[ret->refcount] = a->refs[i];
         *ret->refs[ret->refcount++] = ret;
     }
+
+    av_free(a->refs);
+    av_free(a->formats);
+    av_free(a);
 }
 
 AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
@@ -57,14 +62,6 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 
     merge_ref(ret, a);
     merge_ref(ret, b);
-
-    av_free(a->refs);
-    av_free(a->formats);
-    av_free(a);
-
-    av_free(b->refs);
-    av_free(b->formats);
-    av_free(b);
 
     return ret;
 }
