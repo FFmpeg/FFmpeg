@@ -100,7 +100,7 @@ AVFilterFormats *avfilter_all_colorspaces(void)
                 PIX_FMT_RGB4_BYTE,PIX_FMT_BGR4_BYTE,
                 PIX_FMT_GRAY16BE, PIX_FMT_GRAY16LE,
                 PIX_FMT_GRAY8,    PIX_FMT_PAL8,
-                PIX_FMT_MONOWHITE,PIX_FMT_MONOBLACK
+                PIX_FMT_MONOWHITE,PIX_FMT_MONOBLACK,
                 PIX_FMT_NV12,     PIX_FMT_NV21);
 }
 
