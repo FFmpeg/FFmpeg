@@ -134,3 +134,15 @@ void avfilter_formats_unref(AVFilterFormats **ref)
     *ref = NULL;
 }
 
+void avfilter_formats_changeref(AVFilterFormats **oldref,
+                                AVFilterFormats **newref)
+{
+    int idx;
+
+    if((idx = find_ref_index(oldref)) >= 0) {
+        (*oldref)->refs[idx] = newref;
+        *newref = *oldref;
+        *oldref = NULL;
+    }
+}
+
