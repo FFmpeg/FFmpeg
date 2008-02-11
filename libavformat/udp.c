@@ -196,10 +196,9 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *
 
 static int udp_port(struct sockaddr_storage *addr, int addr_len)
 {
-    char sbuf[NI_MAXSERV];
-    char hbuf[NI_MAXHOST];
+    char sbuf[sizeof(int)*3+1];
 
-    if (getnameinfo((struct sockaddr *)addr, addr_len, hbuf, sizeof(hbuf),  sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
+    if (getnameinfo((struct sockaddr *)addr, addr_len, NULL, 0,  sbuf, sizeof(sbuf), NI_NUMERICSERV) != 0) {
         av_log(NULL, AV_LOG_ERROR, "getnameinfo: %s\n", strerror(errno));
         return -1;
     }
