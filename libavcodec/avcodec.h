@@ -33,8 +33,8 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(50<<8)+0)
-#define LIBAVCODEC_VERSION      51.50.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(50<<8)+1)
+#define LIBAVCODEC_VERSION      51.50.1
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -439,6 +439,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skipping
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
 #define CODEC_FLAG2_NON_LINEAR_QUANT 0x00010000 ///< Use MPEG-2 nonlinear quantizer.
+#define CODEC_FLAG2_BIT_RESERVOIR 0x00020000 ///< Use a bit reservoir when encoding if possible
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
