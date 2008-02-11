@@ -1539,13 +1539,13 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                sc->ffindex, sample->pos);
         return -1;
     }
-        av_get_packet(s->pb, pkt, sample->size);
+    av_get_packet(s->pb, pkt, sample->size);
 #ifdef CONFIG_DV_DEMUXER
-        if (mov->dv_demux && sc->dv_audio_container) {
-            dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
-            av_free(pkt->data);
-            dv_get_packet(mov->dv_demux, pkt);
-        }
+    if (mov->dv_demux && sc->dv_audio_container) {
+        dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
+        av_free(pkt->data);
+        dv_get_packet(mov->dv_demux, pkt);
+    }
 #endif
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
