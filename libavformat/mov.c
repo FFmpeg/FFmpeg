@@ -1375,6 +1375,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         }
     } else { /* read whole chunk */
         unsigned int chunk_samples, chunk_size, chunk_duration;
+        unsigned int frames = 1;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
             if (stsc_index + 1 < sc->sample_to_chunk_sz &&
@@ -1387,7 +1388,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 chunk_size = chunk_samples * sc->sample_size;
             else if (sc->samples_per_frame > 0 &&
                      (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0))
+                {
+                    if (sc->samples_per_frame < 1024)
                 chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
+                    else {
+                        chunk_size = sc->bytes_per_frame;
+                        frames = chunk_samples / sc->samples_per_frame;
+                        chunk_samples = sc->samples_per_frame;
+                    }
+                }
             else { /* workaround to find nearest next chunk offset */
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->fc->nb_streams; j++) {
@@ -1416,6 +1425,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     msc->next_chunk = 0;
                 }
             }
+            for (j = 0; j < frames; j++) {
             av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
             /* get chunk duration */
             chunk_duration = 0;
@@ -1432,10 +1442,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 }
             }
+            current_offset += sc->bytes_per_frame;
             dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
                     "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
             assert(chunk_duration % sc->time_rate == 0);
             current_dts += chunk_duration / sc->time_rate;
+            }
         }
     }
  out:
