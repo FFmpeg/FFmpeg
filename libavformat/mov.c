@@ -741,9 +741,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->channels = get_be16(pb);             /* channel count */
             dprintf(c->fc, "audio channels %d\n", st->codec->channels);
             st->codec->bits_per_sample = get_be16(pb);      /* sample size */
-            /* do we need to force to 16 for AMR ? */
 
-            /* handle specific s8 codec */
             sc->audio_cid = get_be16(pb);
             get_be16(pb); /* packet size = 0 */
 
