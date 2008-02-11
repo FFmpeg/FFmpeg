@@ -1435,9 +1435,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 } else {
                     chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
                     chunk_samples -= sc->stts_data[stts_index].count;
-                    if (stts_index + 1 < sc->stts_count) {
+                    if (stts_index + 1 < sc->stts_count)
                         stts_index++;
-                    }
                 }
             }
             current_offset += sc->bytes_per_frame;
