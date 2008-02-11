@@ -805,10 +805,9 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-              int pix_fmt, int width, int height)
+int av_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
 {
-    int bwidth, bits, i;
+    int bits;
     const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
 
     pf = &pix_fmt_info[pix_fmt];
@@ -830,21 +829,42 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
             bits = pf->depth * pf->nb_channels;
             break;
         }
-        bwidth = (width * bits + 7) >> 3;
-        ff_img_copy_plane(dst->data[0], dst->linesize[0],
-                       src->data[0], src->linesize[0],
-                       bwidth, height);
+        return (width * bits + 7) >> 3;
         break;
+    case FF_PIXEL_PLANAR:
+            if (plane == 1 || plane == 2)
+                width >>= pf->x_chroma_shift;
+
+            return (width * pf->depth + 7) >> 3;
+        break;
+    case FF_PIXEL_PALETTE:
+        if (plane == 0)
+            return width;
+        break;
+    }
+
+    return -1;
+}
+
+void av_picture_copy(AVPicture *dst, const AVPicture *src,
+              int pix_fmt, int width, int height)
+{
+    int i;
+    const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
+
+    pf = &pix_fmt_info[pix_fmt];
+    switch(pf->pixel_type) {
+    case FF_PIXEL_PACKED:
     case FF_PIXEL_PLANAR:
         for(i = 0; i < pf->nb_channels; i++) {
             int w, h;
+            int bwidth = av_get_plane_bytewidth(pix_fmt, width, i);
             w = width;
             h = height;
             if (i == 1 || i == 2) {
                 w >>= pf->x_chroma_shift;
                 h >>= pf->y_chroma_shift;
             }
-            bwidth = (w * pf->depth + 7) >> 3;
             ff_img_copy_plane(dst->data[i], dst->linesize[i],
                            src->data[i], src->linesize[i],
                            bwidth, h);
