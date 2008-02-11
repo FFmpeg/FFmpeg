@@ -215,13 +215,13 @@ EOF
     exit 1
 }
 
-# "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
+# Avoid locale weirdness, besides we really just want to translate ASCII.
 toupper(){
-    echo "$@" | tr '[a-z]' '[A-Z]'
+    echo "$@" | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 }
 
 tolower(){
-    echo "$@" | tr '[A-Z]' '[a-z]'
+    echo "$@" | tr ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz
 }
 
 set_all(){
