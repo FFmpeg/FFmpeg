@@ -1553,7 +1553,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov->dv_demux && sc->dv_audio_container) {
         dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
         av_free(pkt->data);
-        dv_get_packet(mov->dv_demux, pkt);
+        pkt->size = 0;
+        if (dv_get_packet(mov->dv_demux, pkt) < 0)
+            return -1;
     }
 #endif
     pkt->stream_index = sc->ffindex;
