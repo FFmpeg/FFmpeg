@@ -1387,17 +1387,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 st->codec->codec_id == CODEC_ID_PCM_U8 || st->codec->codec_id == CODEC_ID_PCM_S8)
                 chunk_size = chunk_samples * sc->sample_size;
             else if (sc->samples_per_frame > 0 &&
-                     (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0))
-                {
-                    if (sc->samples_per_frame < 1024)
-                chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
-                    else {
-                        chunk_size = sc->bytes_per_frame;
-                        frames = chunk_samples / sc->samples_per_frame;
-                        chunk_samples = sc->samples_per_frame;
-                    }
+                     (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
+                if (sc->samples_per_frame < 1024)
+                    chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
+                else {
+                    chunk_size = sc->bytes_per_frame;
+                    frames = chunk_samples / sc->samples_per_frame;
+                    chunk_samples = sc->samples_per_frame;
                 }
-            else { /* workaround to find nearest next chunk offset */
+            } else { /* workaround to find nearest next chunk offset */
                 chunk_size = INT_MAX;
                 for (j = 0; j < mov->fc->nb_streams; j++) {
                     MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
