@@ -108,6 +108,7 @@ typedef struct MOVStreamContext {
     unsigned int samples_per_frame;
     int dv_audio_container;
     int pseudo_stream_id;
+    int16_t audio_cid; ///< stsd audio compression id
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -743,7 +744,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             /* do we need to force to 16 for AMR ? */
 
             /* handle specific s8 codec */
-            get_be16(pb); /* compression id = 0*/
+            sc->audio_cid = get_be16(pb);
             get_be16(pb); /* packet size = 0 */
 
             st->codec->sample_rate = ((get_be32(pb) >> 16));
@@ -1329,7 +1330,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stss_index = 0;
     unsigned int i, j, k;
 
-    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO || sc->dv_audio_container) {
+    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO ||
+        sc->audio_cid == -2) {
         unsigned int current_sample = 0;
         unsigned int stts_sample = 0;
         unsigned int keyframe, sample_size;
