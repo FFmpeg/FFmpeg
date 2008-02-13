@@ -26,7 +26,7 @@
 #include "os_support.h"
 
 #ifdef CONFIG_NETWORK
-#ifndef HAVE_SYS_POLL_H
+#ifndef HAVE_POLL_H
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #elif defined (HAVE_SYS_SELECT_H)
@@ -83,7 +83,7 @@ int ff_socket_nonblock(int socket, int enable)
 #endif /* CONFIG_NETWORK */
 
 #ifdef CONFIG_FFSERVER
-#ifndef HAVE_SYS_POLL_H
+#ifndef HAVE_POLL_H
 int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 {
     fd_set read_set;
@@ -150,6 +150,6 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 
     return rc;
 }
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H */
 #endif /* CONFIG_FFSERVER */
 

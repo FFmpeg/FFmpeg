@@ -62,7 +62,7 @@ __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 #endif
 
 #ifdef CONFIG_FFSERVER
-#ifndef HAVE_SYS_POLL_H
+#ifndef HAVE_POLL_H
 typedef unsigned long nfds_t;
 
 struct pollfd {
@@ -87,7 +87,7 @@ struct pollfd {
 
 
 extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H */
 #endif /* CONFIG_FFSERVER */
 
 #endif /* FFMPEG_OS_SUPPORT_H */

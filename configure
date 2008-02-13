@@ -745,7 +745,7 @@ HAVE_LIST="
     sdl_video_size
     socklen_t
     soundcard_h
-    sys_poll_h
+    poll_h
     sys_select_h
     sys_soundcard_h
     termios_h
@@ -1595,7 +1595,7 @@ enabled zlib && check_lib zlib.h zlibVersion -lz || disable zlib
 # ffserver uses poll(),
 # if it's not found we can emulate it using select().
 if enabled ffserver; then
-    check_header sys/poll.h
+    check_header poll.h
     check_header sys/select.h
 fi
 
