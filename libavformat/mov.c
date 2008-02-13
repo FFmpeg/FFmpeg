@@ -1230,9 +1230,13 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     edit_count= sc->edit_count = get_be32(pb);     /* entries */
 
     for(i=0; i<edit_count; i++){
+        int time;
         get_be32(pb); /* Track duration */
-        get_be32(pb); /* Media time */
+        time = get_be32(pb); /* Media time */
         get_be32(pb); /* Media rate */
+        if (time != 0)
+            av_log(c->fc, AV_LOG_WARNING, "edit list not starting at 0, "
+                   "a/v desync might occur, patch welcome\n");
     }
     dprintf(c->fc, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, sc->edit_count);
     return 0;
