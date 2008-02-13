@@ -75,11 +75,6 @@ typedef struct {
     int64_t size; /* total size (excluding the size and type fields) */
 } MOV_atom_t;
 
-typedef struct {
-    offset_t offset;
-    int64_t size;
-} MOV_mdat_t;
-
 struct MOVParseTableEntry;
 
 typedef struct MOVStreamContext {
@@ -118,8 +113,6 @@ typedef struct MOVContext {
     int found_moov; /* when both 'moov' and 'mdat' sections has been found */
     int found_mdat; /* we suppose we have enough data to read the file */
     AVPaletteControl palette_control;
-    MOV_mdat_t *mdat_list;
-    int mdat_count;
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
     int isom; /* 1 if file is ISO Media (mp4/3gp) */
@@ -317,10 +310,6 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     if(atom.size == 0) /* wrong one (MP4) */
         return 0;
-    c->mdat_list = av_realloc(c->mdat_list, (c->mdat_count + 1) * sizeof(*c->mdat_list));
-    c->mdat_list[c->mdat_count].offset = atom.offset;
-    c->mdat_list[c->mdat_count].size = atom.size;
-    c->mdat_count++;
     c->found_mdat=1;
     if(c->found_moov)
         return 1; /* found both, just go */
@@ -1498,7 +1487,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_freep(&sc->keyframes);
         av_freep(&sc->stts_data);
     }
-    av_freep(&mov->mdat_list);
     return 0;
 }
 
