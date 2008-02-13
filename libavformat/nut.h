@@ -46,6 +46,8 @@ typedef enum{
     FLAG_SIZE_MSB   =  32, ///<if set, data_size_msb is at frame header, otherwise data_size_msb is 0
     FLAG_CHECKSUM   =  64, ///<if set, the frame header contains a checksum
     FLAG_RESERVED   = 128, ///<if set, reserved_count is coded in the frame header
+    FLAG_HEADER_IDX =1024, ///<If set, header_idx is coded in the frame header.
+    FLAG_MATCH_TIME =2048, ///<If set, match_time_delta is coded in the frame header
     FLAG_CODED      =4096, ///<if set, coded_flags are stored in the frame header
     FLAG_INVALID    =8192, ///<if set, frame_code is invalid
 }flag_t;
