@@ -760,6 +760,19 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 else if (st->codec->bits_per_sample == 24)
                     st->codec->codec_id = CODEC_ID_PCM_S24BE;
                 break;
+            /* set values for old format before stsd version 1 appeared */
+            case CODEC_ID_MACE3:
+                sc->samples_per_frame = 6;
+                sc->bytes_per_frame = 2*st->codec->channels;
+                break;
+            case CODEC_ID_MACE6:
+                sc->samples_per_frame = 6;
+                sc->bytes_per_frame = 1*st->codec->channels;
+                break;
+            case CODEC_ID_ADPCM_IMA_QT:
+                sc->samples_per_frame = 64;
+                sc->bytes_per_frame = 34*st->codec->channels;
+                break;
             default:
                 break;
             }
@@ -1326,7 +1339,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stts_index = 0;
     unsigned int stsc_index = 0;
     unsigned int stss_index = 0;
-    unsigned int i, j, k;
+    unsigned int i, j;
 
     if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO ||
         sc->audio_cid == -2) {
@@ -1393,33 +1406,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     frames = chunk_samples / sc->samples_per_frame;
                     chunk_samples = sc->samples_per_frame;
                 }
-            } else { /* workaround to find nearest next chunk offset */
-                chunk_size = INT_MAX;
-                for (j = 0; j < mov->fc->nb_streams; j++) {
-                    MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
-                    for (k = msc->next_chunk; k < msc->chunk_count; k++) {
-                        if (msc->chunk_offsets[k] > current_offset &&
-                            msc->chunk_offsets[k] - current_offset < chunk_size) {
-                            chunk_size = msc->chunk_offsets[k] - current_offset;
-                            msc->next_chunk = k;
-                            break;
-                        }
-                    }
-                }
-                /* check for last chunk */
-                if (chunk_size == INT_MAX)
-                    for (j = 0; j < mov->mdat_count; j++) {
-                        dprintf(mov->fc, "mdat %d, offset %"PRIx64", size %"PRId64", current offset %"PRIx64"\n",
-                                j, mov->mdat_list[j].offset, mov->mdat_list[j].size, current_offset);
-                        if (mov->mdat_list[j].offset <= current_offset &&
-                            mov->mdat_list[j].offset + mov->mdat_list[j].size > current_offset)
-                            chunk_size = mov->mdat_list[j].offset + mov->mdat_list[j].size - current_offset;
-                    }
-                assert(chunk_size != INT_MAX);
-                for (j = 0; j < mov->fc->nb_streams; j++) {
-                    MOVStreamContext *msc = mov->fc->streams[j]->priv_data;
-                    msc->next_chunk = 0;
-                }
+            } else {
+                av_log(mov->fc, AV_LOG_ERROR, "could not determine chunk size, report problem\n");
+                goto out;
             }
             for (j = 0; j < frames; j++) {
             av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
