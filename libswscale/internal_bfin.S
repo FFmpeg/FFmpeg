@@ -37,7 +37,7 @@
     y,u,v are pre scaled by a factor of 4 i.e. left shifted to gain precision.
 
 
-    New factorization to elliminate the truncation error which was
+    New factorization to eliminate the truncation error which was
     occuring due to the byteop3p.
 
 
