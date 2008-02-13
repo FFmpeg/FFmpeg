@@ -185,6 +185,7 @@ static int decode_main_header(NUTContext *nut){
     uint64_t tmp, end;
     unsigned int stream_count;
     int i, j, tmp_stream, tmp_mul, tmp_pts, tmp_size, count, tmp_res;
+    int64_t tmp_match;
 
     end= get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += url_ftell(bc);
@@ -212,6 +213,7 @@ static int decode_main_header(NUTContext *nut){
     tmp_pts=0;
     tmp_mul=1;
     tmp_stream=0;
+    tmp_match= 1-(1LL<<62);
     for(i=0; i<256;){
         int tmp_flags = ff_get_v(bc);
         int tmp_fields= ff_get_v(bc);
@@ -224,8 +226,9 @@ static int decode_main_header(NUTContext *nut){
         else             tmp_res   = 0;
         if(tmp_fields>5) count     = ff_get_v(bc);
         else             count     = tmp_mul - tmp_size;
+        if(tmp_fields>6) tmp_match = get_s(bc);
 
-        while(tmp_fields-- > 6)
+        while(tmp_fields-- > 7)
            ff_get_v(bc);
 
         if(count == 0 || i+count > 256){
