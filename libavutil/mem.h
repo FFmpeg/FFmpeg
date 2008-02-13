@@ -35,6 +35,10 @@
 #elif _MSVC
   #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
   #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
+#else
+  #warning No align and asm directives, this might fail.
+  #define DECLARE_ALIGNED(n,t,v)      t v
+  #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
 
 /**
