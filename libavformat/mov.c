@@ -1387,8 +1387,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 stsc_index++;
             chunk_samples = sc->sample_to_chunk[stsc_index].count;
             /* get chunk size */
-            if (sc->sample_size > 1 ||
-                st->codec->codec_id == CODEC_ID_PCM_U8 || st->codec->codec_id == CODEC_ID_PCM_S8)
+            if (sc->sample_size > 1 || st->codec->bits_per_sample == 8)
                 chunk_size = chunk_samples * sc->sample_size;
             else if (sc->samples_per_frame > 0 &&
                      (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
