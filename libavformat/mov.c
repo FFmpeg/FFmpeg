@@ -1386,11 +1386,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
                 stsc_index++;
             chunk_samples = sc->sample_to_chunk[stsc_index].count;
-            /* get chunk size */
-            if (sc->sample_size > 1 || st->codec->bits_per_sample == 8)
-                chunk_size = chunk_samples * sc->sample_size;
-            else if (sc->samples_per_frame > 0 &&
-                     (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
+            /* get chunk size, beware of alaw/ulaw/mace */
+            if (sc->samples_per_frame > 0 &&
+                (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
                 if (sc->samples_per_frame < 1024)
                     chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
                 else {
@@ -1398,6 +1396,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     frames = chunk_samples / sc->samples_per_frame;
                     chunk_samples = sc->samples_per_frame;
                 }
+            } else if (sc->sample_size > 1 || st->codec->bits_per_sample == 8) {
+                chunk_size = chunk_samples * sc->sample_size;
             } else {
                 av_log(mov->fc, AV_LOG_ERROR, "could not determine chunk size, report problem\n");
                 goto out;
