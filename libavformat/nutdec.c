@@ -630,6 +630,8 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, in
     if(flags&FLAG_SIZE_MSB){
         size += size_mul*ff_get_v(bc);
     }
+    if(flags&FLAG_MATCH_TIME)
+        get_s(bc);
     if(flags&FLAG_RESERVED)
         reserved_count= ff_get_v(bc);
     for(i=0; i<reserved_count; i++)
