@@ -30,11 +30,11 @@
 
 void avdevice_register_all(void)
 {
-    static int inited;
+    static int initialized;
 
-    if (inited)
+    if (initialized)
         return;
-    inited = 1;
+    initialized = 1;
 
     /* devices */
     REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);

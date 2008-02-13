@@ -87,7 +87,7 @@ static uint8_t static_rl_table_store[NB_RL_TABLES][2][2*MAX_RUN + MAX_LEVEL + 3]
 
 static void common_init(MpegEncContext * s)
 {
-    static int inited=0;
+    static int initialized=0;
 
     switch(s->msmpeg4_version){
     case 1:
@@ -127,8 +127,8 @@ static void common_init(MpegEncContext * s)
     }
     //Note the default tables are set in common_init in mpegvideo.c
 
-    if(!inited){
-        inited=1;
+    if(!initialized){
+        initialized=1;
 
         init_h263_dc_for_msmpeg4();
     }

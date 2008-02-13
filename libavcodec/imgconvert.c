@@ -2350,7 +2350,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
                 const AVPicture *src, int src_pix_fmt,
                 int src_width, int src_height)
 {
-    static int inited;
+    static int initialized;
     int i, ret, dst_width, dst_height, int_pix_fmt;
     const PixFmtInfo *src_pix, *dst_pix;
     const ConvertEntry *ce;
@@ -2362,8 +2362,8 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     if (src_width <= 0 || src_height <= 0)
         return 0;
 
-    if (!inited) {
-        inited = 1;
+    if (!initialized) {
+        initialized = 1;
         img_convert_init();
     }
 

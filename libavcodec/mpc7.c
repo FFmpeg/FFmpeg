@@ -50,7 +50,7 @@ static int mpc7_decode_init(AVCodecContext * avctx)
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     uint8_t buf[16];
-    static int vlc_inited = 0;
+    static int vlc_initialized = 0;
 
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Too small extradata size (%i)!\n", avctx->extradata_size);
@@ -77,7 +77,7 @@ static int mpc7_decode_init(AVCodecContext * avctx)
             c->IS, c->MSS, c->gapless, c->lastframelen, c->maxbands);
     c->frames_to_skip = 0;
 
-    if(vlc_inited) return 0;
+    if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
     if(init_vlc(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
                 &mpc7_scfi[1], 2, 1,
@@ -107,7 +107,7 @@ static int mpc7_decode_init(AVCodecContext * avctx)
             }
         }
     }
-    vlc_inited = 1;
+    vlc_initialized = 1;
     return 0;
 }
 

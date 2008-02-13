@@ -2524,7 +2524,7 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
     /* Init the first mp3 decoder in standard way, so that all tables get builded
      * We replace avctx->priv_data with the context of the first decoder so that
      * decode_init() does not have to be changed.
-     * Other decoders will be inited here copying data from the first context
+     * Other decoders will be initialized here copying data from the first context
      */
     // Allocate zeroed memory for the first decoder context
     s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));

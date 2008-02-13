@@ -40,11 +40,11 @@
  */
 void av_register_all(void)
 {
-    static int inited;
+    static int initialized;
 
-    if (inited)
+    if (initialized)
         return;
-    inited = 1;
+    initialized = 1;
 
     avcodec_init();
     avcodec_register_all();

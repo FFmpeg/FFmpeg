@@ -97,7 +97,7 @@ static int mpc8_decode_init(AVCodecContext * avctx)
     int i;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
-    static int vlc_inited = 0;
+    static int vlc_initialized = 0;
 
     if(avctx->extradata_size < 2){
         av_log(avctx, AV_LOG_ERROR, "Too small extradata size (%i)!\n", avctx->extradata_size);
@@ -117,7 +117,7 @@ static int mpc8_decode_init(AVCodecContext * avctx)
     c->MSS = get_bits1(&gb);
     c->frames = 1 << (get_bits(&gb, 3) * 2);
 
-    if(vlc_inited) return 0;
+    if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
 
     init_vlc(&band_vlc, MPC8_BANDS_BITS, MPC8_BANDS_SIZE,
@@ -176,7 +176,7 @@ static int mpc8_decode_init(AVCodecContext * avctx)
                  &mpc8_q8_bits[i],  1, 1,
                  &mpc8_q8_codes[i], 1, 1, INIT_VLC_USE_STATIC);
     }
-    vlc_inited = 1;
+    vlc_initialized = 1;
     return 0;
 }
 

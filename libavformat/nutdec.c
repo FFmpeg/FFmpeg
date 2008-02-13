@@ -531,7 +531,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = s->pb;
     int64_t pos;
-    int inited_stream_count;
+    int initialized_stream_count;
 
     nut->avf= s;
 
@@ -547,14 +547,14 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* stream headers */
     pos=0;
-    for(inited_stream_count=0; inited_stream_count < s->nb_streams;){
+    for(initialized_stream_count=0; initialized_stream_count < s->nb_streams;){
         pos= find_startcode(bc, STREAM_STARTCODE, pos)+1;
         if (pos<0+1){
             av_log(s, AV_LOG_ERROR, "Not all stream headers found.\n");
             return -1;
         }
         if(decode_stream_header(nut) >= 0)
-            inited_stream_count++;
+            initialized_stream_count++;
     }
 
     /* info headers */

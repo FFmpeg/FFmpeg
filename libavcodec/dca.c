@@ -179,10 +179,10 @@ typedef struct {
 
 static void dca_init_vlcs(void)
 {
-    static int vlcs_inited = 0;
+    static int vlcs_initialized = 0;
     int i, j;
 
-    if (vlcs_inited)
+    if (vlcs_initialized)
         return;
 
     dca_bitalloc_index.offset = 1;
@@ -214,7 +214,7 @@ static void dca_init_vlcs(void)
                      bitalloc_bits[i][j], 1, 1,
                      bitalloc_codes[i][j], 2, 2, 1);
         }
-    vlcs_inited = 1;
+    vlcs_initialized = 1;
 }
 
 static inline void get_array(GetBitContext *gb, int *dst, int len, int bits)
@@ -1195,9 +1195,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
 static void pre_calc_cosmod(DCAContext * s)
 {
     int i, j, k;
-    static int cosmod_inited = 0;
+    static int cosmod_initialized = 0;
 
-    if(cosmod_inited) return;
+    if(cosmod_initialized) return;
     for (j = 0, k = 0; k < 16; k++)
         for (i = 0; i < 16; i++)
             cos_mod[j++] = cos((2 * i + 1) * (2 * k + 1) * M_PI / 64);
@@ -1212,7 +1212,7 @@ static void pre_calc_cosmod(DCAContext * s)
     for (k = 0; k < 16; k++)
         cos_mod[j++] = -0.25 / (2.0 * sin((2 * k + 1) * M_PI / 128));
 
-    cosmod_inited = 1;
+    cosmod_initialized = 1;
 }
 
 

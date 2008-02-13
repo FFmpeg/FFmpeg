@@ -769,7 +769,7 @@ void ff_er_frame_end(MpegEncContext *s){
 
             if(   error2==(VP_START|DC_ERROR|AC_ERROR|MV_ERROR|AC_END|DC_END|MV_END)
                && error1!=(VP_START|DC_ERROR|AC_ERROR|MV_ERROR|AC_END|DC_END|MV_END)
-               && ((error1&AC_END) || (error1&DC_END) || (error1&MV_END))){ //end & uninited
+               && ((error1&AC_END) || (error1&DC_END) || (error1&MV_END))){ //end & uninit
                 end_ok=0;
             }
 

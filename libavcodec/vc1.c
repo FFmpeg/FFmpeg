@@ -3867,7 +3867,7 @@ static int vc1_decode_init(AVCodecContext *avctx)
         const uint8_t *next;
         int size, buf2_size;
         uint8_t *buf2 = NULL;
-        int seq_inited = 0, ep_inited = 0;
+        int seq_initialized = 0, ep_initialized = 0;
 
         if(avctx->extradata_size < 16) {
             av_log(avctx, AV_LOG_ERROR, "Extradata size too small: %i\n", avctx->extradata_size);
@@ -3889,19 +3889,19 @@ static int vc1_decode_init(AVCodecContext *avctx)
                     av_free(buf2);
                     return -1;
                 }
-                seq_inited = 1;
+                seq_initialized = 1;
                 break;
             case VC1_CODE_ENTRYPOINT:
                 if(decode_entry_point(avctx, &gb) < 0){
                     av_free(buf2);
                     return -1;
                 }
-                ep_inited = 1;
+                ep_initialized = 1;
                 break;
             }
         }
         av_free(buf2);
-        if(!seq_inited || !ep_inited){
+        if(!seq_initialized || !ep_initialized){
             av_log(avctx, AV_LOG_ERROR, "Incomplete extradata\n");
             return -1;
         }

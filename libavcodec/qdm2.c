@@ -1692,11 +1692,11 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
  * @param q    context
  */
 static void qdm2_init(QDM2Context *q) {
-    static int inited = 0;
+    static int initialized = 0;
 
-    if (inited != 0)
+    if (initialized != 0)
         return;
-    inited = 1;
+    initialized = 1;
 
     qdm2_init_vlc();
     ff_mpa_synth_init(mpa_window);
