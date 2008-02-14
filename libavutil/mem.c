@@ -55,7 +55,7 @@ void *av_malloc(unsigned int size)
     if(!ptr)
         return ptr;
     diff= ((-(long)ptr - 1)&15) + 1;
-    ptr += diff;
+    ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
 #elif defined (HAVE_MEMALIGN)
     ptr = memalign(16,size);
@@ -105,7 +105,7 @@ void *av_realloc(void *ptr, unsigned int size)
     //FIXME this isn't aligned correctly, though it probably isn't needed
     if(!ptr) return av_malloc(size);
     diff= ((char*)ptr)[-1];
-    return realloc(ptr - diff, size + diff) + diff;
+    return (char*)realloc((char*)ptr - diff, size + diff) + diff;
 #else
     return realloc(ptr, size);
 #endif
@@ -116,7 +116,7 @@ void av_free(void *ptr)
     /* XXX: this test should not be needed on most libcs */
     if (ptr)
 #ifdef CONFIG_MEMALIGN_HACK
-        free(ptr - ((char*)ptr)[-1]);
+        free((char*)ptr - ((char*)ptr)[-1]);
 #else
         free(ptr);
 #endif
