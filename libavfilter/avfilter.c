@@ -309,7 +309,6 @@ AVFilter *avfilter_get_by_name(char *name)
     return NULL;
 }
 
-/* FIXME: insert in order, rather than insert at end + resort */
 void avfilter_register(AVFilter *filter)
 {
     struct FilterList *newfilt = av_malloc(sizeof(struct FilterList));
