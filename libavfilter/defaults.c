@@ -98,8 +98,7 @@ int avfilter_default_config_output_link(AVFilterLink *link)
     } else {
         /* XXX: any non-simple filter which would cause this branch to be taken
          * really should implement its own config_props() for this link. */
-        link->w =
-        link->h = 0;
+        return -1;
     }
 
     return 0;
