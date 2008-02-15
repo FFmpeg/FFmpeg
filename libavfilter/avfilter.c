@@ -64,7 +64,10 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
 
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
-    AVFilterLink *out = link->dst->outputs[0];
+    AVFilterLink *out = NULL;
+
+    if(link->dst->output_count)
+        out = link->dst->outputs[0];
 
     link->cur_pic = picref;
 
@@ -77,7 +80,10 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 
 void avfilter_default_end_frame(AVFilterLink *link)
 {
-    AVFilterLink *out = link->dst->outputs[0];
+    AVFilterLink *out = NULL;
+
+    if(link->dst->output_count)
+        out = link->dst->outputs[0];
 
     avfilter_unref_pic(link->cur_pic);
     link->cur_pic = NULL;
@@ -110,8 +116,15 @@ void avfilter_unref_pic(AVFilterPicRef *ref)
  * the implementation of one input one output video filters */
 static int default_config_output_link(AVFilterLink *link)
 {
+    if(link->src->input_count && link->src->inputs[0]) {
     link->w = link->src->inputs[0]->w;
     link->h = link->src->inputs[0]->h;
+    } else {
+        /* XXX: any non-simple filter which would cause this branch to be taken
+         * really should implement its own config_props() for this link. */
+        link->w =
+        link->h = 0;
+    }
 
     return 0;
 }
@@ -121,7 +134,12 @@ static int default_config_output_link(AVFilterLink *link)
  * the implementation of one input one output video filters */
 static int *default_query_output_formats(AVFilterLink *link)
 {
+    if(link->src->input_count && link->src->inputs[0])
     return avfilter_make_format_list(1, link->src->inputs[0]->format);
+    else
+        /* XXX: any non-simple filter which would cause this branch to be taken
+         * really should implement its own query_formats() for this link */
+        return avfilter_make_format_list(0);
 }
 
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
@@ -130,7 +148,8 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     AVFilterLink *link;
     int *fmts[2], i, j;
 
-    if(src->outputs[srcpad] || dst->inputs[dstpad])
+    if(src->output_count <= srcpad || dst->input_count <= dstpad ||
+       src->outputs[srcpad]        || dst->inputs[dstpad])
         return -1;
 
     src->outputs[srcpad] =
@@ -227,6 +246,9 @@ void avfilter_end_frame(AVFilterLink *link)
 
 void avfilter_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int h)
 {
+    if(!link->dst->filter->inputs[link->dstpad].draw_slice)
+        return;
+
     link->dst->filter->inputs[link->dstpad].draw_slice(link, data, y, h);
 }
 
@@ -296,9 +318,12 @@ AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name)
     ret->av_class->item_name = filter_name;
     ret->filter   = filter;
     ret->name     = inst_name ? av_strdup(inst_name) : NULL;
-    ret->inputs   = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->inputs));
-    ret->outputs  = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->outputs));
     ret->priv     = av_mallocz(filter->priv_size);
+
+    ret->input_count  = pad_count(filter->inputs);
+    ret->inputs       = av_mallocz(sizeof(AVFilterLink*) * ret->input_count);
+    ret->output_count = pad_count(filter->outputs);
+    ret->outputs      = av_mallocz(sizeof(AVFilterLink*) * ret->output_count);
 
     return ret;
 }
