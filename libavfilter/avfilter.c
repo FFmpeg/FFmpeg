@@ -82,13 +82,12 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         return -1;
 
     src->outputs[srcpad] =
-    dst->inputs[dstpad]  = link = av_malloc(sizeof(AVFilterLink));
+    dst->inputs[dstpad]  = link = av_mallocz(sizeof(AVFilterLink));
 
     link->src     = src;
     link->dst     = dst;
     link->srcpad  = srcpad;
     link->dstpad  = dstpad;
-    link->cur_pic = NULL;
     link->format  = -1;
 
     return 0;
@@ -167,12 +166,33 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     if(!start_frame)
         start_frame = avfilter_default_start_frame;
 
-    start_frame(link, picref);
+    /* prepare to copy the picture if it has insufficient permissions */
+    if((link_dpad(link).min_perms & picref->perms) != link_dpad(link).min_perms ||
+        link_dpad(link).rej_perms & picref->perms) {
+        av_log(link->dst, AV_LOG_INFO,
+                "frame copy needed (have perms %x, need %x, reject %x)\n",
+                picref->perms,
+                link_dpad(link).min_perms, link_dpad(link).rej_perms);
+
+        link->cur_pic = avfilter_default_get_video_buffer(link, link_dpad(link).min_perms);
+        link->srcpic = picref;
+    }
+    else
+        link->cur_pic = picref;
+
+    start_frame(link, link->cur_pic);
 }
 
 void avfilter_end_frame(AVFilterLink *link)
 {
     void (*end_frame)(AVFilterLink *);
+
+    /* unreference the source picture if we're feeding the destination filter
+     * a copied version dues to permission issues */
+    if(link->srcpic) {
+        avfilter_unref_pic(link->srcpic);
+        link->srcpic = NULL;
+    }
 
     end_frame = link_dpad(link).end_frame;
     if(!end_frame)
@@ -183,6 +203,38 @@ void avfilter_end_frame(AVFilterLink *link)
 
 void avfilter_draw_slice(AVFilterLink *link, int y, int h)
 {
+    uint8_t *src[4], *dst[4];
+    int i, j, hsub, vsub;
+
+    /* copy the slice if needed for permission reasons */
+    if(link->srcpic) {
+        avcodec_get_chroma_sub_sample(link->format, &hsub, &vsub);
+
+        src[0] = link->srcpic-> data[0] + y * link->srcpic-> linesize[0];
+        dst[0] = link->cur_pic->data[0] + y * link->cur_pic->linesize[0];
+        for(i = 1; i < 4; i ++) {
+            if(link->srcpic->data[i]) {
+                src[i] = link->srcpic-> data[i] + (y >> vsub) * link->srcpic-> linesize[i];
+                dst[i] = link->cur_pic->data[i] + (y >> vsub) * link->cur_pic->linesize[i];
+            } else
+                src[i] = dst[i] = NULL;
+        }
+        for(j = 0; j < h; j ++) {
+            memcpy(dst[0], src[0], link->cur_pic->linesize[0]);
+            src[0] += link->srcpic ->linesize[0];
+            dst[0] += link->cur_pic->linesize[0];
+        }
+        for(i = 1; i < 4; i ++) {
+            if(!src[i]) continue;
+
+            for(j = 0; j < h >> vsub; j ++) {
+                memcpy(dst[i], src[i], link->cur_pic->linesize[i]);
+                src[i] += link->srcpic ->linesize[i];
+                dst[i] += link->cur_pic->linesize[i];
+            }
+        }
+    }
+
     if(!link_dpad(link).draw_slice)
         return;
 
