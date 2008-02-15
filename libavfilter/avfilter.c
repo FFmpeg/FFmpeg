@@ -99,6 +99,8 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned in, unsigned out)
 {
+    AVFilterFormats *formats;
+
     av_log(NULL, AV_LOG_INFO, "auto-inserting filter '%s'\n",
             filt->filter->name);
 
@@ -116,10 +118,9 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
 
     /* if any information on supported colorspaces already exists on the
      * link, we need to preserve that */
-    if(link->out_formats) {
-        filt->outputs[out]->out_formats = link->out_formats;
-        link->out_formats = NULL;
-    }
+    if((formats = link->out_formats))
+        avfilter_formats_changeref(&link->out_formats,
+                                   &filt->outputs[out]->out_formats);
 
     return 0;
 }
