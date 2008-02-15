@@ -222,6 +222,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 
         link->cur_pic = avfilter_default_get_video_buffer(link, link_dpad(link).min_perms);
         link->srcpic = picref;
+        link->cur_pic->pts = link->srcpic->pts;
     }
     else
         link->cur_pic = picref;
@@ -256,7 +257,6 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     if(link->srcpic) {
         avcodec_get_chroma_sub_sample(link->format, &hsub, &vsub);
 
-        link->cur_pic->pts = link->srcpic->pts;
         src[0] = link->srcpic-> data[0] + y * link->srcpic-> linesize[0];
         dst[0] = link->cur_pic->data[0] + y * link->cur_pic->linesize[0];
         for(i = 1; i < 4; i ++) {
