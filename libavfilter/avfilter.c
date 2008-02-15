@@ -179,12 +179,12 @@ void avfilter_end_frame(AVFilterLink *link)
     end_frame(link);
 }
 
-void avfilter_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int h)
+void avfilter_draw_slice(AVFilterLink *link, int y, int h)
 {
     if(!link->dst->input_pads[link->dstpad].draw_slice)
         return;
 
-    link->dst->input_pads[link->dstpad].draw_slice(link, data, y, h);
+    link->dst->input_pads[link->dstpad].draw_slice(link, y, h);
 }
 
 static int filter_cmp(const void *aa, const void *bb)
