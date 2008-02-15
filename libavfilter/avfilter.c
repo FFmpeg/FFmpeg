@@ -364,7 +364,7 @@ AVFilterContext *avfilter_create_by_name(char *name, char *inst_name)
 
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
 {
-    int ret, i;
+    int ret;
 
     if(filter->filter->init)
         if((ret = filter->filter->init(filter, args, opaque))) return ret;
