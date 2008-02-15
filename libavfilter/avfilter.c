@@ -363,7 +363,12 @@ static const char *filter_name(void *p)
 
 AVFilterContext *avfilter_open(AVFilter *filter, char *inst_name)
 {
-    AVFilterContext *ret = av_malloc(sizeof(AVFilterContext));
+    AVFilterContext *ret;
+
+    if (!filter)
+        return 0;
+
+    ret = av_malloc(sizeof(AVFilterContext));
 
     ret->av_class = av_mallocz(sizeof(AVClass));
     ret->av_class->item_name = filter_name;
