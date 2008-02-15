@@ -104,6 +104,16 @@ int avfilter_default_config_output_link(AVFilterLink *link)
 }
 
 /**
+ * default config_link() implementation for input video links to simplify
+ * the implementation of one input one output video filters */
+int avfilter_default_config_input_link(AVFilterLink *link)
+{
+    if(!link->dst->output_count)
+        return 0;
+    return avfilter_config_link(link->dst->outputs[0]);
+}
+
+/**
  * default query_formats() implementation for output video links to simplify
  * the implementation of one input one output video filters */
 int *avfilter_default_query_output_formats(AVFilterLink *link)
