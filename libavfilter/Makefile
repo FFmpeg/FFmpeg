@@ -1,24 +1,36 @@
-CC = gcc
-CFLAGS = -g -I../libavcodec -I../libavutil
-LIBS = ../libavcodec/libavcodec.a ../libavutil/libavutil.a -lm -lSDL
+include ../config.mak
 
-OBJECTS = avfilter.o          \
-          avfiltergraph.o     \
-          vsrc_dummy.o        \
-		  vsrc_ppm.o          \
-		  vo_sdl.o            \
-		  vf_crop.o           \
-		  vf_passthrough.o    \
-		  vf_rgb2bgr.o        \
-		  vf_slicify.o        \
+CFLAGS+=-I$(SRC_PATH)/libavcodec
 
-all: filter_test
+OBJS = avfilter.o \
+       avfiltergraph.o \
 
-clean:
-	rm -f filter_test $(OBJECTS)
+# TODO: real conditional compilation
+OBJS-yes = vsrc_dummy.o \
+           vsrc_ppm.o \
+           vo_sdl.o \
+           vf_crop.o \
+           vf_passthrough.o \
+           vf_rgb2bgr.o \
+           vf_slicify.o \
 
-filter_test: $(OBJECTS) filter_test.c
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+HEADERS = avfilter.h
 
-$(OBJECTS): %.o: %.c
-	$(CC) $(CFLAGS) -c $<
+EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+
+NAME=avfilter
+LIBVERSION=$(LAVFILTERVERSION)
+LIBMAJOR=$(LAVFILTERMAJOR)
+
+include ../common.mak
+
+clean::
+	rm -f \
+	   filter_test $(TESTS)
+
+tests: filter_test
+
+filter_test: filter_test.o $(LIB)
+	$(CC) $(CFLAGS) $< -o $@ $(LIB) -lm -lSDL
+
+.PHONY: tests
