@@ -1055,14 +1055,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
 
-    if(!pkt){
-        ist->pts= ist->next_pts; // needed for last packet if vsync=0
-    } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
-        ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-    } else {
-//        assert(ist->pts == ist->next_pts);
-    }
-
     if (pkt == NULL) {
         /* EOF handling */
         ptr = NULL;
@@ -1074,6 +1066,14 @@ static int output_packet(AVInputStream *ist, int ist_index,
     ptr = pkt->data;
     while (len > 0) {
     handle_eof:
+        if(!pkt || ptr != pkt->data){
+            ist->pts= ist->next_pts; // needed for last packet if vsync=0 and for multi pkt
+        } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
+            ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+        } else {
+    //        assert(ist->pts == ist->next_pts);
+        }
+
         /* decode the packet if needed */
         data_buf = NULL; /* fail safe */
         data_size = 0;
