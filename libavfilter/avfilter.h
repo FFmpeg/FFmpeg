@@ -74,6 +74,8 @@ typedef struct AVFilterPicRef
 
     int64_t pts;                ///< presentation timestamp in units of 1/AV_TIME_BASE
 
+    AVRational pixel_aspect;    ///< pixel aspect ratio
+
     int perms;                  ///< permissions
 #define AV_PERM_READ     0x01   ///< can read from the buffer
 #define AV_PERM_WRITE    0x02   ///< can write to the buffer
