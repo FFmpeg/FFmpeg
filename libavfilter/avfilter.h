@@ -99,6 +99,13 @@ struct AVFilterPad
 #define AV_PAD_VIDEO 0
 
     /**
+     * Callback to get a list of supported formats.  The returned list should
+     * be terminated by -1.  This is used for both input and output pads and
+     * is required for both.
+     */
+    int *(*query_formats)(AVFilterLink *link);
+
+    /**
      * Callback called before passing the first slice of a new frame.  If
      * NULL, the filter layer will default to storing a reference to the
      * picture inside the link structure.
@@ -131,11 +138,15 @@ struct AVFilterPad
     void (*request_frame)(AVFilterLink *link);
 
     /**
-     * Callback to set properties of the link. Only for video output pads.
-     * XXX: this is not acceptable as is.  it needs reworked to allow for
-     * negotiation of colorspace, etc.
+     * Link configuration callback.  For output pads, this should set the link
+     * properties such as width/height.  NOTE: this should not set the format
+     * property - that is negotiated between filters by the filter system using
+     * the query_formats() callback.
+     *
+     * For input pads, this should check the properties of the link, and update
+     * the filter's internal state as necessary.
      */
-    int (*set_video_props)(AVFilterLink *link);
+    int (*config_props)(AVFilterLink *link);
 };
 
 /* the default implementations of start_frame() and end_frame() */
@@ -205,5 +216,7 @@ AVFilterContext *avfilter_create(AVFilter *filter);
 AVFilterContext *avfilter_create_by_name(char *name);
 int avfilter_init_filter(AVFilterContext *filter, const char *args);
 void avfilter_destroy(AVFilterContext *filter);
+
+int *avfilter_make_format_list(int len, ...);
 
 #endif  /* FFMPEG_AVFILTER_H */
