@@ -288,13 +288,14 @@ static const char *filter_name(void *p)
     return filter->filter->name;
 }
 
-AVFilterContext *avfilter_create(AVFilter *filter)
+AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name)
 {
     AVFilterContext *ret = av_malloc(sizeof(AVFilterContext));
 
     ret->av_class = av_mallocz(sizeof(AVClass));
     ret->av_class->item_name = filter_name;
     ret->filter   = filter;
+    ret->name     = inst_name ? strdup(inst_name) : NULL;
     ret->inputs   = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->inputs));
     ret->outputs  = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->outputs));
     ret->priv     = av_mallocz(filter->priv_size);
@@ -320,6 +321,7 @@ void avfilter_destroy(AVFilterContext *filter)
         av_free(filter->outputs[i]);
     }
 
+    free   (filter->name);
     av_free(filter->inputs);
     av_free(filter->outputs);
     av_free(filter->priv);
@@ -327,12 +329,12 @@ void avfilter_destroy(AVFilterContext *filter)
     av_free(filter);
 }
 
-AVFilterContext *avfilter_create_by_name(char *name)
+AVFilterContext *avfilter_create_by_name(char *name, char *inst_name)
 {
     AVFilter *filt;
 
     if(!(filt = avfilter_get_by_name(name))) return NULL;
-    return avfilter_create(filt);
+    return avfilter_create(filt, inst_name);
 }
 
 int avfilter_init_filter(AVFilterContext *filter, const char *args)
