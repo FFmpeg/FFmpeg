@@ -118,6 +118,25 @@ struct AVFilterPad
 #define AV_PAD_VIDEO 0      ///< video pad
 
     /**
+     * Minimum required permissions on incoming buffers.  Any buffers with
+     * insufficient permissions will be automatically copied by the filter
+     * system to a new buffer which provides the needed access permissions.
+     *
+     * Input pads only.
+     */
+    int min_perms;
+
+    /**
+     * Permissions which are not accepted on incoming buffers.  Any buffer
+     * which has any of these permissions set be automatically copied by the
+     * filter system to a new buffer which does not have those permissions.
+     * This can be used to easily disallow buffers with AV_PERM_REUSE.
+     *
+     * Input pads only.
+     */
+    int rej_perms;
+
+    /**
      * Callback to get a list of supported formats.  The returned list should
      * be terminated by -1 (see avfilter_make_format_list for an easy way to
      * create such a list).
@@ -271,6 +290,15 @@ struct AVFilterLink
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     enum PixelFormat format;    ///< agreed upon image colorspace
+
+    /**
+     * The picture reference currently being sent across the link by the source
+     * filter.  This is used internally by the filter system to allow
+     * automatic copying of pictures which d not have sufficient permissions
+     * for the destination.  This should not be accessed directly by the
+     * filters.
+     */
+    AVFilterPicRef *srcpic;
 
     AVFilterPicRef *cur_pic;
     AVFilterPicRef *outpic;
