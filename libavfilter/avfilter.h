@@ -455,7 +455,7 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
  * @param link the input link
  * @return     zero on success
  */
-int  avfilter_request_frame(AVFilterLink *link);
+int avfilter_request_frame(AVFilterLink *link);
 
 /**
  * Poll a frame from the filter chain.
