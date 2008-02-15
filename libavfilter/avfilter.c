@@ -80,7 +80,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         return -1;
 
     src->outputs[srcpad] =
-    dst->inputs[dstpad]  = link = av_mallocz(sizeof(AVFilterLink));
+    dst-> inputs[dstpad] = link = av_mallocz(sizeof(AVFilterLink));
 
     link->src     = src;
     link->dst     = dst;
