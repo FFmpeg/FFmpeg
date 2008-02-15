@@ -841,7 +841,7 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
-int av_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
+int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
 {
     int bits;
     const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
@@ -894,7 +894,7 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
     case FF_PIXEL_PLANAR:
         for(i = 0; i < pf->nb_channels; i++) {
             int w, h;
-            int bwidth = av_get_plane_bytewidth(pix_fmt, width, i);
+            int bwidth = ff_get_plane_bytewidth(pix_fmt, width, i);
             w = width;
             h = height;
             if (i == 1 || i == 2) {
