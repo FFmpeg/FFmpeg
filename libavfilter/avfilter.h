@@ -180,6 +180,8 @@ struct AVFilterContext
 
     AVFilter *filter;
 
+    char *name;
+
     AVFilterLink **inputs;
     AVFilterLink **outputs;
 
@@ -216,8 +218,8 @@ void avfilter_uninit(void);
 void avfilter_register(AVFilter *filter);
 AVFilter *avfilter_get_by_name(char *name);
 
-AVFilterContext *avfilter_create(AVFilter *filter);
-AVFilterContext *avfilter_create_by_name(char *name);
+AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name);
+AVFilterContext *avfilter_create_by_name(char *name, char *inst_name);
 int avfilter_init_filter(AVFilterContext *filter, const char *args);
 void avfilter_destroy(AVFilterContext *filter);
 
