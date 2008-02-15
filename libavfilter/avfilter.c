@@ -144,14 +144,15 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
     return ret;
 }
 
-void avfilter_request_frame(AVFilterLink *link)
+int avfilter_request_frame(AVFilterLink *link)
 {
     const AVFilterPad *pad = &link->src->output_pads[link->srcpad];
 
     if(pad->request_frame)
-        pad->request_frame(link);
+        return pad->request_frame(link);
     else if(link->src->inputs[0])
-        avfilter_request_frame(link->src->inputs[0]);
+        return avfilter_request_frame(link->src->inputs[0]);
+    else return -1;
 }
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
