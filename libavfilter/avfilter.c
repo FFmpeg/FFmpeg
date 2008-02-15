@@ -96,7 +96,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
 {
     AVFilterFormats *formats;
 
-    av_log(NULL, AV_LOG_INFO, "auto-inserting filter '%s'\n",
+    av_log(link->dst, AV_LOG_INFO, "auto-inserting filter '%s'\n",
             filt->filter->name);
 
     link->dst->inputs[link->dstpad] = NULL;
