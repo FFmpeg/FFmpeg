@@ -50,7 +50,8 @@ typedef struct AVFilterPic
 /**
  * A reference to an AVFilterPic.  Since filters can manipulate the origin of
  * a picture to, for example, crop image without any memcpy, the picture origin
- * and dimensions are per-reference properties.
+ * and dimensions are per-reference properties.  Linesize is also useful for
+ * image flipping, frame to field filters, etc, and so is also per-reference.
  *
  * TODO: add pts, and anything necessary for frame reordering
  */
@@ -58,6 +59,7 @@ typedef struct AVFilterPicRef
 {
     AVFilterPic *pic;
     uint8_t *data[4];
+    int linesize[4];
     int w, h;
 
     int perms;                  ///< permissions
