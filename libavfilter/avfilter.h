@@ -184,8 +184,6 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
  */
 void avfilter_formats_unref(AVFilterFormats **ref);
 
-int avfilter_poll_frame(AVFilterLink *link);
-
 /**
  * A filter pad used for either input or output.
  */
@@ -458,6 +456,13 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
  * @return     zero on success
  */
 int  avfilter_request_frame(AVFilterLink *link);
+
+/**
+ * Poll a frame from the filter chain.
+ * @param  link the input link
+ * @return      the number of imediately available frames
+ */
+int avfilter_poll_frame(AVFilterLink *link);
 
 /**
  * Notify the next filter of the start of a frame.
