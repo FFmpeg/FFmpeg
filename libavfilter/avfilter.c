@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include "avfilter.h"
+#include "allfilters.h"
 
 /** list of registered filters, sorted by name */
 static int filter_count = 0;
@@ -184,6 +185,10 @@ void avfilter_register(AVFilter *filter)
 
 void avfilter_init(void)
 {
+    avfilter_register(&vsrc_dummy);
+    avfilter_register(&vf_crop);
+    avfilter_register(&vf_passthrough);
+    avfilter_register(&vo_sdl);
 }
 
 void avfilter_uninit(void)
