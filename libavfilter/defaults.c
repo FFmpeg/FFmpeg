@@ -115,15 +115,40 @@ int avfilter_default_config_input_link(AVFilterLink *link)
 }
 
 /**
- * default query_formats() implementation for output video links to simplify
- * the implementation of one input one output video filters */
-int *avfilter_default_query_output_formats(AVFilterLink *link)
+ * A helper for query_formats() which sets all links to the same list of
+ * formats. If there are no links hooked to this filter, the list of formats is
+ * freed.
+ *
+ * FIXME: this will need changed for filters with a mix of pad types
+ * (video + audio, etc)
+ */
+void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
-    if(link->src->input_count && link->src->inputs[0])
-        return avfilter_make_format_list(1, link->src->inputs[0]->format);
-    else
-        /* XXX: any non-simple filter which would cause this branch to be taken
-         * really should implement its own query_formats() for this link */
-        return avfilter_make_format_list(0);
+    int count = 0, i;
+
+    for(i = 0; i < ctx->input_count; i ++) {
+        if(ctx->inputs[i]) {
+            avfilter_formats_ref(formats, &ctx->inputs[i]->out_formats);
+            count ++;
+        }
+    }
+    for(i = 0; i < ctx->output_count; i ++) {
+        if(ctx->outputs[i]) {
+            avfilter_formats_ref(formats, &ctx->outputs[i]->in_formats);
+            count ++;
+        }
+    }
+
+    if(!count) {
+        av_free(formats->formats);
+        av_free(formats->refs);
+        av_free(formats);
+    }
+}
+
+int avfilter_default_query_formats(AVFilterContext *ctx)
+{
+    avfilter_set_common_formats(ctx, avfilter_all_colorspaces());
+    return 0;
 }
 
