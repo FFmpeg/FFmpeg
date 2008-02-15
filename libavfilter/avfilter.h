@@ -156,6 +156,7 @@ struct AVFilterPad
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
 void avfilter_default_end_frame(AVFilterLink *link);
 int avfilter_default_config_output_link(AVFilterLink *link);
+int avfilter_default_config_input_link (AVFilterLink *link);
 int *avfilter_default_query_output_formats(AVFilterLink *link);
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                   int perms);
@@ -217,6 +218,9 @@ struct AVFilterLink
 /** Link two filters together */
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
+
+/** Configure the colorspace, dimensions, etc of a link */
+int avfilter_config_link(AVFilterLink *link);
 
 AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
 void avfilter_request_frame(AVFilterLink *link);
