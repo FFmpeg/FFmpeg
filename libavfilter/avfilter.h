@@ -370,9 +370,10 @@ void avfilter_init(void);
 void avfilter_uninit(void);
 
 /**
- * Register a filter.  This is only needed if you plan to create an instance of
- * this filter by name later with avfilter_create_by_name.  A filter can still
- * by created with acfilter_create even if it is not registered.
+ * Register a filter.  This is only needed if you plan to use
+ * avfilter_get_by_name later to lookup the AVFilter structure by name. A
+ * filter can still by instantiated with avfilter_open even if it is not
+ * registered.
  * @param filter The filter to register
  */
 void avfilter_register(AVFilter *filter);
@@ -391,15 +392,7 @@ AVFilter *avfilter_get_by_name(char *name);
  * @param inst_name Name to give to the new instance.  Can be NULL for none.
  * @return          Pointer to the new instance on success.  NULL on failure.
  */
-AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name);
-
-/**
- * Creates a filter instace
- * @param name      The name of the filter type which is to be instantiated
- * @param inst_name Name to give to the new instance.  Can be NULL for none.
- * @return          Pointer to the new instance on success.  NULL in failure.
- */
-AVFilterContext *avfilter_create_by_name(char *name, char *inst_name);
+AVFilterContext *avfilter_open(AVFilter *filter, char *inst_name);
 
 /**
  * Initialize a filter
