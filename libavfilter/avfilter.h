@@ -152,9 +152,13 @@ struct AVFilterPad
     int (*config_props)(AVFilterLink *link);
 };
 
-/* the default implementations of start_frame() and end_frame() */
+/* the default implementations of filter entry points */
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
 void avfilter_default_end_frame(AVFilterLink *link);
+int avfilter_default_config_output_link(AVFilterLink *link);
+int *avfilter_default_query_output_formats(AVFilterLink *link);
+AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
+                                                  int perms);
 
 typedef struct
 {
