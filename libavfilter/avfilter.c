@@ -337,21 +337,21 @@ void avfilter_destroy(AVFilterContext *filter)
     for(i = 0; i < filter->input_count; i ++) {
         if(filter->inputs[i])
             filter->inputs[i]->src->outputs[filter->inputs[i]->srcpad] = NULL;
-        av_free(filter->inputs[i]);
+        av_freep(&filter->inputs[i]);
     }
     for(i = 0; i < filter->output_count; i ++) {
         if(filter->outputs[i])
             filter->outputs[i]->dst->inputs[filter->outputs[i]->dstpad] = NULL;
-        av_free(filter->outputs[i]);
+        av_freep(&filter->outputs[i]);
     }
 
-    av_free(filter->name);
-    av_free(filter->input_pads);
-    av_free(filter->output_pads);
-    av_free(filter->inputs);
-    av_free(filter->outputs);
-    av_free(filter->priv);
-    av_free(filter->av_class);
+    av_freep(&filter->name);
+    av_freep(&filter->input_pads);
+    av_freep(&filter->output_pads);
+    av_freep(&filter->inputs);
+    av_freep(&filter->outputs);
+    av_freep(&filter->priv);
+    av_freep(&filter->av_class);
     av_free(filter);
 }
 
