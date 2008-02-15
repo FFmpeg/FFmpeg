@@ -27,9 +27,12 @@
 #include "avfilter.h"
 #include "allfilters.h"
 
-/** list of registered filters, sorted by name */
-static int filter_count = 0;
-static AVFilter **filters = NULL;
+/** list of registered filters */
+struct FilterList
+{
+    AVFilter *filter;
+    struct FilterList *next;
+} *filters = NULL;
 
 /** helper macros to get the in/out pad on the dst/src filter */
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
@@ -239,30 +242,25 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     link_dpad(link).draw_slice(link, y, h);
 }
 
-static int filter_cmp(const void *aa, const void *bb)
-{
-    const AVFilter *a = *(const AVFilter **)aa, *b = *(const AVFilter **)bb;
-    return strcmp(a->name, b->name);
-}
-
 AVFilter *avfilter_get_by_name(char *name)
 {
-    AVFilter key = { .name = name, };
-    AVFilter *key2 = &key;
-    AVFilter **ret;
+    struct FilterList *filt;
 
-    ret = bsearch(&key2, filters, filter_count, sizeof(AVFilter **), filter_cmp);
-    if(ret)
-        return *ret;
+    for(filt = filters; filt; filt = filt->next)
+        if(!strcmp(filt->filter->name, name))
+            return filt->filter;
+
     return NULL;
 }
 
 /* FIXME: insert in order, rather than insert at end + resort */
 void avfilter_register(AVFilter *filter)
 {
-    filters = av_realloc(filters, sizeof(AVFilter*) * (filter_count+1));
-    filters[filter_count] = filter;
-    qsort(filters, ++filter_count, sizeof(AVFilter **), filter_cmp);
+    struct FilterList *newfilt = av_malloc(sizeof(struct FilterList));
+
+    newfilt->filter = filter;
+    newfilt->next   = filters;
+    filters         = newfilt;
 }
 
 void avfilter_init(void)
@@ -283,8 +281,12 @@ void avfilter_init(void)
 
 void avfilter_uninit(void)
 {
-    av_freep(&filters);
-    filter_count = 0;
+    struct FilterList *tmp;
+
+    for(; filters; filters = tmp) {
+        tmp = filters->next;
+        av_free(filters);
+    }
 }
 
 static int pad_count(const AVFilterPad *pads)
