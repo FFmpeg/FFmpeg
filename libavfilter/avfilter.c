@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -91,6 +92,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad)
 {
     AVFilterLink *link;
+    int *fmts[2], i, j;
 
     if(src->outputs[srcpad] || dst->inputs[dstpad])
         return -1;
@@ -104,7 +106,29 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->dstpad = dstpad;
     link->cur_pic = NULL;
 
-    src->filter->outputs[dstpad].set_video_props(link);
+    /* find a format both filters support - TODO: auto-insert conversion filter */
+    fmts[0] = src->filter->outputs[srcpad].query_formats(link);
+    fmts[1] = dst->filter->inputs[dstpad].query_formats(link);
+    for(i = 0; fmts[0][i] != -1; i ++)
+        for(j = 0; fmts[1][j] != -1; j ++)
+            if(fmts[0][i] == fmts[1][j]) {
+                link->format = fmts[0][i];
+                goto format_done;
+            }
+
+format_done:
+    av_free(fmts[0]);
+    av_free(fmts[1]);
+    if(link->format == -1) {
+        /* failed to find a format.  fail at creating the link */
+        av_free(link);
+        src->outputs[srcpad] = NULL;
+        dst->inputs[dstpad]  = NULL;
+        return -1;
+    }
+
+    src->filter->outputs[srcpad].config_props(link);
+    dst->filter->inputs[dstpad].config_props(link);
     return 0;
 }
 
@@ -263,9 +287,21 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args)
 
     if(filter->filter->init)
         if((ret = filter->filter->init(filter, args))) return ret;
-    for(i = 0; i < pad_count(filter->filter->outputs); i ++)
-        if(filter->outputs[i])
-            filter->filter->outputs[i].set_video_props(filter->outputs[i]);
     return 0;
+}
+
+int *avfilter_make_format_list(int len, ...)
+{
+    int *ret, i;
+    va_list vl;
+
+    ret = av_malloc(sizeof(int) * (len + 1));
+    va_start(vl, len);
+    for(i = 0; i < len; i ++)
+        ret[i] = va_arg(vl, int);
+    va_end(vl);
+    ret[len] = -1;
+
+    return ret;
 }
 
