@@ -322,7 +322,6 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
 typedef struct
 {
     const char *name;         ///< filter name
-    const char *author;       ///< filter author
 
     int priv_size;      ///< size of private data to allocate for the filter
 
