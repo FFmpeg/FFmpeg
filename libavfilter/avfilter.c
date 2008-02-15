@@ -114,6 +114,13 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     link->dstpad = in;
     filt->inputs[in] = link;
 
+    /* if any information on supported colorspaces already exists on the
+     * link, we need to preserve that */
+    if(link->out_formats) {
+        filt->outputs[out]->out_formats = link->out_formats;
+        link->out_formats = NULL;
+    }
+
     return 0;
 }
 
