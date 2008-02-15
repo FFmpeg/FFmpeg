@@ -184,7 +184,10 @@ struct AVFilterContext
 
     char *name;
 
+    unsigned input_count;
     AVFilterLink **inputs;
+
+    unsigned output_count;
     AVFilterLink **outputs;
 
     void *priv;
