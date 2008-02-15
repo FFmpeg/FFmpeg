@@ -169,7 +169,7 @@ typedef struct
      * opaque is data provided by the code requesting creation of the filter,
      * and is used to pass data to the filter.
      */
-    int (*init)(AVFilterContext *ctx, const char *args, const void *opaque);
+    int (*init)(AVFilterContext *ctx, const char *args, void *opaque);
     void (*uninit)(AVFilterContext *ctx);
 
     const AVFilterPad *inputs;  /// NULL terminated list of inputs. NULL if none
