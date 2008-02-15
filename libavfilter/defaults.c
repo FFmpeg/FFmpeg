@@ -77,8 +77,10 @@ void avfilter_default_end_frame(AVFilterLink *link)
     link->cur_pic = NULL;
 
     if(out) {
+        if(out->outpic) {
         avfilter_unref_pic(out->outpic);
         out->outpic = NULL;
+        }
         avfilter_end_frame(out);
     }
 }
