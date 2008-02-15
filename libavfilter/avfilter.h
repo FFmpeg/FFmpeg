@@ -22,6 +22,8 @@
 #ifndef FFMPEG_AVFILTER_H
 #define FFMPEG_AVFILTER_H
 
+#define LIBAVFILTER_VERSION      0.0.0
+
 #include <stddef.h>
 #include "avcodec.h"
 
