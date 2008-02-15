@@ -55,10 +55,7 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
     pic->free = avfilter_default_free_video_buffer;
     avpicture_alloc((AVPicture *)pic, pic->format, ref->w, ref->h);
 
-    ref->data[0] = pic->data[0];
-    ref->data[1] = pic->data[1];
-    ref->data[2] = pic->data[2];
-    ref->data[3] = pic->data[3];
+    memcpy(ref->data, pic->data, sizeof(int *) * 4);
 
     return ref;
 }
