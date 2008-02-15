@@ -257,12 +257,12 @@ AVFilterContext *avfilter_create_by_name(char *name)
     return avfilter_create(filt);
 }
 
-int avfilter_init_filter(AVFilterContext *filter)
+int avfilter_init_filter(AVFilterContext *filter, const char *args)
 {
     int ret, i;
 
     if(filter->filter->init)
-        if((ret = filter->filter->init(filter))) return ret;
+        if((ret = filter->filter->init(filter, args))) return ret;
     for(i = 0; i < pad_count(filter->filter->outputs); i ++)
         if(filter->outputs[i])
             filter->filter->outputs[i].set_video_props(filter->outputs[i]);
