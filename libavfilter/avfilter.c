@@ -272,10 +272,8 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
         }
     }
 
-    if(!link_dpad(link).draw_slice)
-        return;
-
-    link_dpad(link).draw_slice(link, y, h);
+    if(link_dpad(link).draw_slice)
+        link_dpad(link).draw_slice(link, y, h);
 }
 
 AVFilter *avfilter_get_by_name(const char *name)
