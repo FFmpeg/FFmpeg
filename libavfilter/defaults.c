@@ -28,6 +28,13 @@ void avfilter_default_free_video_buffer(AVFilterPic *pic)
     av_free(pic);
 }
 
+AVFilterPicRef *avfilter_next_get_video_buffer(AVFilterLink *link, int perms)
+{
+    if(!link->dst->outputs[0])
+        return NULL;
+    return avfilter_get_video_buffer(link->dst->outputs[0], perms);
+}
+
 /* TODO: set the buffer's priv member to a context structure for the whole
  * filter chain.  This will allow for a buffer pool instead of the constant
  * alloc & free cycle currently implemented. */
@@ -40,6 +47,9 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
     ref->w     = link->w;
     ref->h     = link->h;
     ref->perms = perms;
+
+    /* we always give the destination filter read access by default */
+    avfilter_add_pic_perms(ref, link->dst, AV_PERM_READ);
 
     pic->refcount = 1;
     pic->format   = link->format;
@@ -62,7 +72,7 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     if(out) {
         out->outpic      = avfilter_get_video_buffer(out, AV_PERM_WRITE);
         out->outpic->pts = picref->pts;
-        avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
+        avfilter_start_frame(out, avfilter_ref_pic(out->outpic, out->dst, ~0));
     }
 }
 
