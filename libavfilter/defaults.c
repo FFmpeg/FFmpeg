@@ -59,8 +59,6 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     if(link->dst->output_count)
         out = link->dst->outputs[0];
 
-    link->cur_pic = picref;
-
     if(out) {
         out->outpic      = avfilter_get_video_buffer(out, AV_PERM_WRITE);
         out->outpic->pts = picref->pts;
