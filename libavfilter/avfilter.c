@@ -117,8 +117,8 @@ void avfilter_unref_pic(AVFilterPicRef *ref)
 static int default_config_output_link(AVFilterLink *link)
 {
     if(link->src->input_count && link->src->inputs[0]) {
-    link->w = link->src->inputs[0]->w;
-    link->h = link->src->inputs[0]->h;
+        link->w = link->src->inputs[0]->w;
+        link->h = link->src->inputs[0]->h;
     } else {
         /* XXX: any non-simple filter which would cause this branch to be taken
          * really should implement its own config_props() for this link. */
@@ -135,7 +135,7 @@ static int default_config_output_link(AVFilterLink *link)
 static int *default_query_output_formats(AVFilterLink *link)
 {
     if(link->src->input_count && link->src->inputs[0])
-    return avfilter_make_format_list(1, link->src->inputs[0]->format);
+        return avfilter_make_format_list(1, link->src->inputs[0]->format);
     else
         /* XXX: any non-simple filter which would cause this branch to be taken
          * really should implement its own query_formats() for this link */
