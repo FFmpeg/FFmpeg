@@ -17,6 +17,7 @@ OBJS-$(CONFIG_VF_CROP)       += vf_crop.o
 OBJS-$(CONFIG_VF_FPS)        += vf_fps.o
 OBJS-$(CONFIG_VF_HFLIP)      += vf_hflip.o
 OBJS-$(CONFIG_VF_NEGATE)     += vf_negate.o
+OBJS-$(CONFIG_VF_FIFO)       += vf_fifo.o
 OBJS-$(CONFIG_VF_FORMAT)     += vf_format.o
 OBJS-$(CONFIG_VF_OVERLAY)    += vf_overlay.o
 OBJS-$(CONFIG_VF_ROTATE)     += vf_rotate.o
