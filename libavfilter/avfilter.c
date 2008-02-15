@@ -147,14 +147,14 @@ int avfilter_config_links(AVFilterContext *filter)
             if(avfilter_config_links(link->src))
                 return -1;
 
-    if(!(config_link = link_spad(link).config_props))
-        config_link  = avfilter_default_config_output_link;
-    if(config_link(link))
-            return -1;
+            if(!(config_link = link_spad(link).config_props))
+                config_link  = avfilter_default_config_output_link;
+            if(config_link(link))
+                return -1;
 
-    if((config_link = link_dpad(link).config_props))
-    if(config_link(link))
-            return -1;
+            if((config_link = link_dpad(link).config_props))
+            if(config_link(link))
+                return -1;
 
             link->init_state = AVLINK_INIT;
         }
