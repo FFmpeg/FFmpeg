@@ -46,14 +46,14 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
     AVFilterPic *pic = av_mallocz(sizeof(AVFilterPic));
     AVFilterPicRef *ref = av_mallocz(sizeof(AVFilterPicRef));
 
-    ref->pic = pic;
-    ref->w = link->w;
-    ref->h = link->h;
+    ref->pic   = pic;
+    ref->w     = link->w;
+    ref->h     = link->h;
     ref->perms = perms;
 
     pic->refcount = 1;
-    pic->format = link->format;
-    pic->free = avfilter_default_free_video_buffer;
+    pic->format   = link->format;
+    pic->free     = avfilter_default_free_video_buffer;
     avpicture_alloc((AVPicture *)pic, pic->format, ref->w, ref->h);
 
     memcpy(ref->data,     pic->data,     sizeof(pic->data));
@@ -69,7 +69,7 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     link->cur_pic = picref;
 
     if(out) {
-        out->outpic  = avfilter_get_video_buffer(out, AV_PERM_WRITE);
+        out->outpic      = avfilter_get_video_buffer(out, AV_PERM_WRITE);
         out->outpic->pts = picref->pts;
         avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
     }
@@ -136,10 +136,10 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     src->outputs[srcpad] =
     dst->inputs[dstpad]  = link = av_malloc(sizeof(AVFilterLink));
 
-    link->src = src;
-    link->dst = dst;
-    link->srcpad = srcpad;
-    link->dstpad = dstpad;
+    link->src     = src;
+    link->dst     = dst;
+    link->srcpad  = srcpad;
+    link->dstpad  = dstpad;
     link->cur_pic = NULL;
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
