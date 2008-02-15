@@ -265,20 +265,20 @@ void avfilter_register(AVFilter *filter)
 
 void avfilter_init(void)
 {
-    avfilter_register(&vsrc_dummy);
-    avfilter_register(&vsrc_ppm);
-    avfilter_register(&vf_crop);
-    avfilter_register(&vf_fifo);
-    avfilter_register(&vf_fps);
-    avfilter_register(&vf_graph);
-    avfilter_register(&vf_graphdesc);
-    avfilter_register(&vf_graphfile);
-    avfilter_register(&vf_overlay);
-    avfilter_register(&vf_passthrough);
-    avfilter_register(&vf_rgb2bgr);
-    avfilter_register(&vf_slicify);
-    avfilter_register(&vf_split);
-    avfilter_register(&vf_vflip);
+    avfilter_register(&avfilter_vsrc_dummy);
+    avfilter_register(&avfilter_vsrc_ppm);
+    avfilter_register(&avfilter_vf_crop);
+    avfilter_register(&avfilter_vf_fifo);
+    avfilter_register(&avfilter_vf_fps);
+    avfilter_register(&avfilter_vf_graph);
+    avfilter_register(&avfilter_vf_graphdesc);
+    avfilter_register(&avfilter_vf_graphfile);
+    avfilter_register(&avfilter_vf_overlay);
+    avfilter_register(&avfilter_vf_passthrough);
+    avfilter_register(&avfilter_vf_rgb2bgr);
+    avfilter_register(&avfilter_vf_slicify);
+    avfilter_register(&avfilter_vf_split);
+    avfilter_register(&avfilter_vf_vflip);
 }
 
 void avfilter_uninit(void)
