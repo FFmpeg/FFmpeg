@@ -292,6 +292,7 @@ void avfilter_init(void)
 {
     avfilter_register(&avfilter_vf_crop);
     avfilter_register(&avfilter_vf_fifo);
+    avfilter_register(&avfilter_vf_format);
     avfilter_register(&avfilter_vf_fps);
     avfilter_register(&avfilter_vf_graph);
     avfilter_register(&avfilter_vf_graphdesc);
