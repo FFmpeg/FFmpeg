@@ -267,6 +267,7 @@ void avfilter_init(void)
 {
     avfilter_register(&vsrc_dummy);
     avfilter_register(&vsrc_ppm);
+    avfilter_register(&vf_buffer);
     avfilter_register(&vf_crop);
     avfilter_register(&vf_fps);
     avfilter_register(&vf_graph);
