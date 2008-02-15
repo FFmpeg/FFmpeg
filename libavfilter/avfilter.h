@@ -29,6 +29,29 @@ typedef struct AVFilterContext AVFilterContext;
 typedef struct AVFilterLink    AVFilterLink;
 typedef struct AVFilterPad     AVFilterPad;
 
+/**
+ * A linked list of filters which reference this picture and the permissions
+ * they each have.  This is needed for the case that filter A requests a buffer
+ * from filter B.  Filter B gives it a buffer to use with the permissions it
+ * requested, while reserving more permissions for itself to use when filter A
+ * eventually passes the buffer to filter B.  However, filter A does not know
+ * what these permissions are to reinsert them in the reference passed to B,
+ * filter B can't assume that any picture it is passed is one that it allocated.
+ *
+ * Rather than have each filter implement their own code to check for this
+ * case, we store all the permissions here in the picture structure.
+ *
+ * Because the number of filters holding references to any one picture should
+ * be rather low, this should not be a major source of performance problems.
+ */
+typedef struct AVFilterPicPerms
+{
+    AVFilterContext *filter;    ///< the filter
+    int perms;                  ///< the permissions that filter has
+
+    struct AVFilterPicPerms *next;
+} AVFilterPicPerms;
+
 /* TODO: look for other flags which may be useful in this structure (interlace
  * flags, etc)
  */
@@ -44,6 +67,7 @@ typedef struct AVFilterPic
     enum PixelFormat format;    ///< colorspace
 
     unsigned refcount;          ///< number of references to this image
+    AVFilterPicPerms *perms;    ///< list of permissions held by filters
 
     /** private data to be used by a custom free function */
     void *priv;
@@ -81,15 +105,25 @@ typedef struct AVFilterPicRef
 #define AV_PERM_REUSE    0x08   ///< can output the buffer multiple times
 } AVFilterPicRef;
 
+/** Get the permissions the filter has to access the picture. */
+int avfilter_get_pic_perms(AVFilterPicRef *pic, AVFilterContext *filter);
+
+/** Give the filter more permissions to access the picture */
+void avfilter_add_pic_perms(AVFilterPicRef *pic, AVFilterContext *filter,
+                            int perms);
+
 /**
  * Add a new reference to a picture.
  * @param ref   An existing reference to the picture
+ * @param ref   If non-NULL, a pointer to the filter to which the permissions
+ *              to the picture are to be given
  * @param pmask A bitmask containing the allowable permissions in the new
  *              reference
  * @return      A new reference to the picture with the same properties as the
  *              old, excluding any permissions denied by pmask
  */
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask);
+AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, AVFilterContext *filter,
+                                 int pmask);
 
 /**
  * Remove a reference to a picture.  If this is the last reference to the
@@ -222,6 +256,8 @@ int *avfilter_default_query_output_formats(AVFilterLink *link);
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                   int perms);
 
+/** handler for get_video_buffer() which forwards the request down the chain */
+AVFilterPicRef *avfilter_next_get_video_buffer(AVFilterLink *link, int perms);
 /**
  * Filter definition.  This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
