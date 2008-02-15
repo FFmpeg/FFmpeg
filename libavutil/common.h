@@ -172,7 +172,7 @@ static inline int mid_pred(int a, int b, int c)
  */
 static inline int av_clip(int a, int amin, int amax)
 {
-    if (a < amin)      return amin;
+    if      (a < amin) return amin;
     else if (a > amax) return amax;
     else               return a;
 }
@@ -285,20 +285,18 @@ static inline int ff_get_fourcc(const char *s){
 #if defined(ARCH_X86_64)
 static inline uint64_t read_time(void)
 {
-        uint64_t a, d;
-        asm volatile(   "rdtsc\n\t"
-                : "=a" (a), "=d" (d)
-        );
-        return (d << 32) | (a & 0xffffffff);
+    uint64_t a, d;
+    asm volatile("rdtsc\n\t"
+                 : "=a" (a), "=d" (d));
+    return (d << 32) | (a & 0xffffffff);
 }
 #elif defined(ARCH_X86_32)
 static inline long long read_time(void)
 {
-        long long l;
-        asm volatile(   "rdtsc\n\t"
-                : "=A" (l)
-        );
-        return l;
+    long long l;
+    asm volatile("rdtsc\n\t"
+                 : "=A" (l));
+    return l;
 }
 #elif ARCH_BFIN
 static inline uint64_t read_time(void)
@@ -345,17 +343,18 @@ uint64_t tstart= AV_READ_TIME();\
 #define STOP_TIMER(id) \
 tend= AV_READ_TIME();\
 {\
-  static uint64_t tsum=0;\
-  static int tcount=0;\
-  static int tskip_count=0;\
-  if(tcount<2 || tend - tstart < FFMAX(8*tsum/tcount, 2000)){\
-      tsum+= tend - tstart;\
-      tcount++;\
-  }else\
-      tskip_count++;\
-  if(((tcount+tskip_count)&(tcount+tskip_count-1))==0){\
-      av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
-  }\
+    static uint64_t tsum=0;\
+    static int tcount=0;\
+    static int tskip_count=0;\
+    if(tcount<2 || tend - tstart < FFMAX(8*tsum/tcount, 2000)){\
+        tsum+= tend - tstart;\
+        tcount++;\
+    }else\
+        tskip_count++;\
+    if(((tcount+tskip_count)&(tcount+tskip_count-1))==0){\
+        av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" dezicycles in %s, %d runs, %d skips\n",\
+               tsum*10/tcount, id, tcount, tskip_count);\
+    }\
 }
 #else
 #define START_TIMER

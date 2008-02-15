@@ -42,11 +42,11 @@
 static av_always_inline uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
-  __asm("rorw $8, %0"   :
-        LEGACY_REGS (x) :
-        "0" (x));
+    __asm("rorw $8, %0"   :
+          LEGACY_REGS (x) :
+          "0" (x));
 #elif defined(ARCH_SH4)
-        __asm__("swap.b %0,%0":"=r"(x):"0"(x));
+    __asm__("swap.b %0,%0":"=r"(x):"0"(x));
 #else
     x= (x>>8) | (x<<8);
 #endif
@@ -57,35 +57,33 @@ static av_always_inline uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
 #if __CPU__ != 386
- __asm("bswap   %0":
-      "=r" (x)     :
+    __asm("bswap   %0":
+          "=r" (x)    :
 #else
- __asm("xchgb   %b0,%h0\n"
-      "         rorl    $16,%0\n"
-      "         xchgb   %b0,%h0":
-      LEGACY_REGS (x)                :
+    __asm("xchgb   %b0,%h0\n"
+          "rorl    $16,%0 \n"
+          "xchgb   %b0,%h0":
+          LEGACY_REGS (x)  :
 #endif
-      "0" (x));
+          "0" (x));
 #elif defined(ARCH_SH4)
-        __asm__(
-        "swap.b %0,%0\n"
-        "swap.w %0,%0\n"
-        "swap.b %0,%0\n"
-        :"=r"(x):"0"(x));
+    __asm__("swap.b %0,%0\n"
+            "swap.w %0,%0\n"
+            "swap.b %0,%0\n"
+            :"=r"(x):"0"(x));
 #elif defined(ARCH_ARM)
     uint32_t t;
-    __asm__ (
-      "eor %1, %0, %0, ror #16 \n\t"
-      "bic %1, %1, #0xFF0000   \n\t"
-      "mov %0, %0, ror #8      \n\t"
-      "eor %0, %0, %1, lsr #8  \n\t"
-      : "+r"(x), "+r"(t));
+    __asm__ ("eor %1, %0, %0, ror #16 \n\t"
+             "bic %1, %1, #0xFF0000   \n\t"
+             "mov %0, %0, ror #8      \n\t"
+             "eor %0, %0, %1, lsr #8  \n\t"
+             : "+r"(x), "+r"(t));
 #elif defined(ARCH_BFIN)
     unsigned tmp;
-    asm("%1 = %0 >> 8 (V);\n\t"
-        "%0 = %0 << 8 (V);\n\t"
-        "%0 = %0 | %1;\n\t"
-        "%0 = PACK(%0.L, %0.H);\n\t"
+    asm("%1 = %0 >> 8 (V);      \n\t"
+        "%0 = %0 << 8 (V);      \n\t"
+        "%0 = %0 | %1;          \n\t"
+        "%0 = PACK(%0.L, %0.H); \n\t"
         : "+d"(x), "=&d"(tmp));
 #else
     x= ((x<<8)&0xFF00FF00) | ((x>>8)&0x00FF00FF);

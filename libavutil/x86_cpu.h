@@ -22,47 +22,47 @@
 #define FFMPEG_X86CPU_H
 
 #ifdef ARCH_X86_64
-#  define REG_a "rax"
-#  define REG_b "rbx"
-#  define REG_c "rcx"
-#  define REG_d "rdx"
-#  define REG_D "rdi"
-#  define REG_S "rsi"
-#  define PTR_SIZE "8"
+#    define REG_a "rax"
+#    define REG_b "rbx"
+#    define REG_c "rcx"
+#    define REG_d "rdx"
+#    define REG_D "rdi"
+#    define REG_S "rsi"
+#    define PTR_SIZE "8"
 
-#  define REG_SP "rsp"
-#  define REG_BP "rbp"
-#  define REGBP   rbp
-#  define REGa    rax
-#  define REGb    rbx
-#  define REGc    rcx
-#  define REGSP   rsp
+#    define REG_SP "rsp"
+#    define REG_BP "rbp"
+#    define REGBP   rbp
+#    define REGa    rax
+#    define REGb    rbx
+#    define REGc    rcx
+#    define REGSP   rsp
 
 #else
 
-#  define REG_a "eax"
-#  define REG_b "ebx"
-#  define REG_c "ecx"
-#  define REG_d "edx"
-#  define REG_D "edi"
-#  define REG_S "esi"
-#  define PTR_SIZE "4"
+#    define REG_a "eax"
+#    define REG_b "ebx"
+#    define REG_c "ecx"
+#    define REG_d "edx"
+#    define REG_D "edi"
+#    define REG_S "esi"
+#    define PTR_SIZE "4"
 
-#  define REG_SP "esp"
-#  define REG_BP "ebp"
-#  define REGBP   ebp
-#  define REGa    eax
-#  define REGb    ebx
-#  define REGc    ecx
-#  define REGSP   esp
+#    define REG_SP "esp"
+#    define REG_BP "ebp"
+#    define REGBP   ebp
+#    define REGa    eax
+#    define REGb    ebx
+#    define REGc    ecx
+#    define REGSP   esp
 #endif
 
 #if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && defined(HAVE_EBX_AVAILABLE) && defined(HAVE_EBP_AVAILABLE))
-#  define HAVE_7REGS 1
+#    define HAVE_7REGS 1
 #endif
 
 #if defined(ARCH_X86_64) && defined(PIC)
-#  define BROKEN_RELOCATIONS 1
+#    define BROKEN_RELOCATIONS 1
 #endif
 
 #endif /* FFMPEG_X86CPU_H */
