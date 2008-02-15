@@ -298,8 +298,8 @@ void avfilter_init(void)
     avfilter_register(&avfilter_vf_graphfile);
     avfilter_register(&avfilter_vf_hflip);
     avfilter_register(&avfilter_vf_negate);
+    avfilter_register(&avfilter_vf_noformat);
     avfilter_register(&avfilter_vf_overlay);
-    avfilter_register(&avfilter_vf_passthrough);
     avfilter_register(&avfilter_vf_scale);
     avfilter_register(&avfilter_vf_slicify);
     avfilter_register(&avfilter_vf_split);
