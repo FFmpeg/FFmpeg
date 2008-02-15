@@ -125,22 +125,40 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     return 0;
 }
 
-int avfilter_config_link(AVFilterLink *link)
+int avfilter_config_links(AVFilterContext *filter)
 {
     int (*config_link)(AVFilterLink *);
+    unsigned i;
 
-    if(!link)
-        return 0;
+    for(i = 0; i < filter->input_count; i ++) {
+        AVFilterLink *link;
+
+        if(!(link = filter->inputs[i])) continue;
+
+        switch(link->init_state) {
+        case AVLINK_INIT:
+            continue;
+        case AVLINK_STARTINIT:
+            av_log(filter, AV_LOG_ERROR, "circular filter chain detected\n");
+            return -1;
+        case AVLINK_UNINIT:
+            link->init_state = AVLINK_STARTINIT;
+
+            if(avfilter_config_links(link->src))
+                return -1;
 
     if(!(config_link = link_spad(link).config_props))
         config_link  = avfilter_default_config_output_link;
     if(config_link(link))
             return -1;
 
-    if(!(config_link = link_dpad(link).config_props))
-        config_link  = avfilter_default_config_input_link;
+    if((config_link = link_dpad(link).config_props))
     if(config_link(link))
             return -1;
+
+            link->init_state = AVLINK_INIT;
+        }
+    }
 
     return 0;
 }
