@@ -108,6 +108,27 @@ static int common_format(int *fmts0, int *fmts1)
     return -1;
 }
 
+int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
+                           unsigned in, unsigned out)
+{
+    av_log(NULL, AV_LOG_INFO, "auto-inserting filter '%s'\n",
+            filt->filter->name);
+
+    link->dst->inputs[link->dstpad] = NULL;
+    if(avfilter_link(filt, out, link->dst, link->dstpad)) {
+        /* failed to link output filter to new filter */
+        link->dst->inputs[link->dstpad] = link;
+        return -1;
+    }
+
+    /* re-hookup the link to the new destination filter we inserted */
+    link->dst = filt;
+    link->dstpad = in;
+    filt->inputs[in] = link;
+
+    return 0;
+}
+
 int avfilter_config_link(AVFilterLink *link)
 {
     int *fmts[3] = {NULL,NULL,NULL};
@@ -133,16 +154,9 @@ int avfilter_config_link(AVFilterLink *link)
             avfilter_destroy(scale);
             goto format_done;
         }
-
-        link->dst->inputs[link->dstpad] = NULL;
-        if(avfilter_link(scale, 0, link->dst, link->dstpad)) {
-            link->dst->inputs[link->dstpad] = link;
+        if(avfilter_insert_filter(link, scale, 0, 0))
             goto format_done;
-        }
         link2 = scale->outputs[0];
-        link->dst    = scale;
-        link->dstpad = 0;
-        scale->inputs[0] = link;
 
         /* now try again to find working colorspaces.
          * XXX: is it safe to assume that the scale filter always supports the
