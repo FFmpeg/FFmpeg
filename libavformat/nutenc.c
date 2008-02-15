@@ -21,6 +21,108 @@
 
 #include "nut.h"
 #include "tree.h"
+#include "mpegaudiodata.h"
+
+static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint8_t out[64]){
+    int sample_rate= c->sample_rate;
+
+    if(size>4096)
+        return 0;
+
+    AV_WB24(out, 1);
+
+    if(c->codec_id == CODEC_ID_MPEG4){
+        if(key_frame){
+            return 3;
+        }else{
+            out[3]= 0xB6;
+            return 4;
+        }
+    }else if(c->codec_id == CODEC_ID_MPEG1VIDEO || c->codec_id == CODEC_ID_MPEG2VIDEO){
+        return 3;
+    }else if(c->codec_id == CODEC_ID_H264){
+        return 3;
+    }else if(c->codec_id == CODEC_ID_MP3 || c->codec_id == CODEC_ID_MP2){
+        int lsf, mpeg25, sample_rate_index, bitrate_index, frame_size;
+        int layer= c->codec_id == CODEC_ID_MP3 ? 3 : 2;
+        unsigned int header= 0xFFF00000;
+
+        lsf     = sample_rate < (24000+32000)/2;
+        mpeg25  = sample_rate < (12000+16000)/2;
+        sample_rate <<= lsf + mpeg25;
+        if     (sample_rate < (32000 + 44100)/2) sample_rate_index=2;
+        else if(sample_rate < (44100 + 48000)/2) sample_rate_index=0;
+        else                                     sample_rate_index=1;
+
+        sample_rate= ff_mpa_freq_tab[sample_rate_index] >> (lsf + mpeg25);
+
+        for(bitrate_index=2; bitrate_index<30; bitrate_index++){
+            frame_size = ff_mpa_bitrate_tab[lsf][layer-1][bitrate_index>>1];
+            frame_size = (frame_size * 144000) / (sample_rate << lsf) + (bitrate_index&1);
+
+            if(frame_size == size)
+                break;
+        }
+
+        header |= (!lsf)<<19;
+        header |= (4-layer)<<17;
+        header |= 1<<16; //no crc
+        AV_WB32(out, header);
+        if(size <= 0)
+            return 2; //we guess theres no crc, if there is one the user clearly doesnt care about overhead
+        if(bitrate_index == 30)
+            return -1; //something is wrong ...
+
+        header |= (bitrate_index>>1)<<12;
+        header |= sample_rate_index<<10;
+        header |= (bitrate_index&1)<<9;
+
+        return 2; //FIXME actually put the needed ones in build_elision_headers()
+        return 3; //we guess that the private bit isnt set
+//FIXME the above asumtations should be checked, if these turn out false too often something should be done
+    }
+    return 0;
+}
+
+static int find_header_idx(AVFormatContext *s, AVCodecContext *c, int size, int frame_type){
+    NUTContext *nut = s->priv_data;
+    uint8_t out[64];
+    int i;
+    int len= find_expected_header(c, size, frame_type, out);
+
+//av_log(NULL, AV_LOG_ERROR, "expected_h len=%d size=%d codec_id=%d\n", len, size, c->codec_id);
+
+    for(i=1; i<nut->header_count; i++){
+        if(   len == nut->header_len[i]
+           && !memcmp(out, nut->header[i], len)){
+//    av_log(NULL, AV_LOG_ERROR, "found %d\n", i);
+            return i;
+        }
+    }
+//    av_log(NULL, AV_LOG_ERROR, "nothing found\n");
+    return 0;
+}
+
+static void build_elision_headers(AVFormatContext *s){
+    NUTContext *nut = s->priv_data;
+    int i;
+    //FIXME this is lame
+    //FIXME write a 2pass mode to find the maximal headers
+    const static uint8_t headers[][5]={
+        {3, 0x00, 0x00, 0x01},
+        {4, 0x00, 0x00, 0x01, 0xB6},
+        {2, 0xFF, 0xFA}, //mp3+crc
+        {2, 0xFF, 0xFB}, //mp3
+        {2, 0xFF, 0xFC}, //mp2+crc
+        {2, 0xFF, 0xFD}, //mp2
+    };
+
+    nut->header_count= 7;
+    for(i=1; i<nut->header_count; i++){
+        nut->header_len[i]=  headers[i-1][0];
+        nut->header    [i]= &headers[i-1][1];
+    }
+}
 
 static void build_frame_code(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
@@ -63,6 +165,8 @@ static void build_frame_code(AVFormatContext *s){
                 ft->flags|= FLAG_SIZE_MSB | FLAG_CODED_PTS;
                 ft->stream_id= stream_id;
                 ft->size_mul=1;
+                if(is_audio)
+                    ft->header_idx= find_header_idx(s, codec, -1, key_frame);
                 start2++;
             }
         }
@@ -80,6 +184,7 @@ static void build_frame_code(AVFormatContext *s){
                     ft->size_mul=frame_bytes + 2;
                     ft->size_lsb=frame_bytes + pred;
                     ft->pts_delta=pts;
+                    ft->header_idx= find_header_idx(s, codec, frame_bytes + pred, key_frame);
                     start2++;
                 }
             }
@@ -123,6 +228,8 @@ static void build_frame_code(AVFormatContext *s){
                 ft->size_mul= end3-start3;
                 ft->size_lsb= index - start3;
                 ft->pts_delta= pred_table[pred];
+                if(is_audio)
+                    ft->header_idx= find_header_idx(s, codec, -1, key_frame);
             }
         }
     }
@@ -212,7 +319,8 @@ static void put_packet(NUTContext *nut, ByteIOContext *bc, ByteIOContext *dyn_bc
 }
 
 static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
-    int i, j, tmp_pts, tmp_flags, tmp_stream, tmp_mul, tmp_size, tmp_fields;
+    int i, j, tmp_pts, tmp_flags, tmp_stream, tmp_mul, tmp_size, tmp_fields, tmp_head_idx;
+    int64_t tmp_match;
 
     put_v(bc, 3); /* version */
     put_v(bc, nut->avf->nb_streams);
@@ -227,6 +335,8 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     tmp_pts=0;
     tmp_mul=1;
     tmp_stream=0;
+    tmp_match= 1-(1LL<<62);
+    tmp_head_idx= 0;
     for(i=0; i<256;){
         tmp_fields=0;
         tmp_size=0;
@@ -236,6 +346,7 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
         if(tmp_stream != nut->frame_code[i].stream_id) tmp_fields=3;
         if(tmp_size   != nut->frame_code[i].size_lsb ) tmp_fields=4;
 //        if(tmp_res    != nut->frame_code[i].res            ) tmp_fields=5;
+        if(tmp_head_idx!=nut->frame_code[i].header_idx)tmp_fields=8;
 
         tmp_pts   = nut->frame_code[i].pts_delta;
         tmp_flags = nut->frame_code[i].flags;
@@ -243,6 +354,7 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
         tmp_mul   = nut->frame_code[i].size_mul;
         tmp_size  = nut->frame_code[i].size_lsb;
 //        tmp_res   = nut->frame_code[i].res;
+        tmp_head_idx= nut->frame_code[i].header_idx;
 
         for(j=0; i<256; j++,i++){
             if(i == 'N'){
@@ -255,6 +367,7 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
             if(nut->frame_code[i].size_mul  != tmp_mul   ) break;
             if(nut->frame_code[i].size_lsb  != tmp_size+j) break;
 //            if(nut->frame_code[i].res       != tmp_res   ) break;
+            if(nut->frame_code[i].header_idx!= tmp_head_idx) break;
         }
         if(j != tmp_mul - tmp_size) tmp_fields=6;
 
@@ -266,6 +379,13 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
         if(tmp_fields>3) put_v(bc, tmp_size);
         if(tmp_fields>4) put_v(bc, 0 /*tmp_res*/);
         if(tmp_fields>5) put_v(bc, j);
+        if(tmp_fields>6) put_v(bc, tmp_match);
+        if(tmp_fields>7) put_v(bc, tmp_head_idx);
+    }
+    put_v(bc, nut->header_count-1);
+    for(i=1; i<nut->header_count; i++){
+        put_v(bc, nut->header_len[i]);
+        put_buffer(bc, nut->header[i], nut->header_len[i]);
     }
 }
 
@@ -419,6 +539,7 @@ static int write_header(AVFormatContext *s){
     }
 
     nut->max_distance = MAX_DISTANCE;
+    build_elision_headers(s);
     build_frame_code(s);
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
@@ -444,8 +565,31 @@ static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc, 
     if(pkt->size > 2*nut->max_distance          ) flags |= FLAG_CHECKSUM;
     if(FFABS(pkt->pts - nus->last_pts)
                          > nus->max_pts_distance) flags |= FLAG_CHECKSUM;
+    if(   pkt->size < nut->header_len[fc->header_idx]
+       || (pkt->size > 4096 && fc->header_idx)
+       || memcmp(pkt->data, nut->header[fc->header_idx], nut->header_len[fc->header_idx]))
+                                                  flags |= FLAG_HEADER_IDX;
 
     return flags | (fc->flags & FLAG_CODED);
+}
+
+static int find_best_header_idx(NUTContext *nut, AVPacket *pkt){
+    int i;
+    int best_i  = 0;
+    int best_len= 0;
+
+    if(pkt->size > 4096)
+        return 0;
+
+    for(i=1; i<nut->header_count; i++){
+        if(   pkt->size >= nut->header_len[i]
+           &&  nut->header_len[i] > best_len
+           && !memcmp(pkt->data, nut->header[i], nut->header_len[i])){
+            best_i= i;
+            best_len= nut->header_len[i];
+        }
+    }
+    return best_i;
 }
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt){
@@ -454,7 +598,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     ByteIOContext *bc = s->pb, *dyn_bc;
     FrameCode *fc;
     int64_t coded_pts;
-    int best_length, frame_code, flags, needed_flags, i;
+    int best_length, frame_code, flags, needed_flags, i, header_idx, best_header_idx;
     int key_frame = !!(pkt->flags & PKT_FLAG_KEY);
     int store_sp=0;
     int ret;
@@ -503,6 +647,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(ff_lsb2full(nus, coded_pts) != pkt->pts)
         coded_pts= pkt->pts + (1<<nus->msb_pts_shift);
 
+    best_header_idx= find_best_header_idx(nut, pkt);
+
     best_length=INT_MAX;
     frame_code= -1;
     for(i=0; i<256; i++){
@@ -539,6 +685,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         if(flags & FLAG_CODED_PTS)
             length += get_length(coded_pts);
 
+        if(   (flags & FLAG_CODED)
+           && nut->header_len[best_header_idx] > nut->header_len[fc->header_idx]+1){
+            flags |= FLAG_HEADER_IDX;
+        }
+
+        if(flags & FLAG_HEADER_IDX){
+            length += 1 - nut->header_len[best_header_idx];
+        }else{
+            length -= nut->header_len[fc->header_idx];
+        }
+
         length*=4;
         length+= !(flags & FLAG_CODED_PTS);
         length+= !(flags & FLAG_CHECKSUM);
@@ -552,6 +709,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     fc= &nut->frame_code[frame_code];
     flags= fc->flags;
     needed_flags= get_needed_flags(nut, nus, fc, pkt);
+    header_idx= fc->header_idx;
 
     init_checksum(bc, ff_crc04C11DB7_update, 0);
     put_byte(bc, frame_code);
@@ -562,11 +720,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(flags & FLAG_STREAM_ID)  put_v(bc, pkt->stream_index);
     if(flags & FLAG_CODED_PTS)  put_v(bc, coded_pts);
     if(flags & FLAG_SIZE_MSB)   put_v(bc, pkt->size / fc->size_mul);
+    if(flags & FLAG_HEADER_IDX) put_v(bc, header_idx= best_header_idx);
 
     if(flags & FLAG_CHECKSUM)   put_le32(bc, get_checksum(bc));
     else                        get_checksum(bc);
 
-    put_buffer(bc, pkt->data, pkt->size);
+    put_buffer(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
     nus->last_flags= flags;
 
     //FIXME just store one per syncpoint
