@@ -38,7 +38,7 @@ static AVFilter **filters = NULL;
 AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
 {
     AVFilterPicRef *ret = av_malloc(sizeof(AVFilterPicRef));
-    memcpy(ret, ref, sizeof(AVFilterPicRef));
+    *ret = *ref;
     ret->perms &= pmask;
     ret->pic->refcount ++;
     return ret;
