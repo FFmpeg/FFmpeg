@@ -35,19 +35,67 @@ static AVFilter **filters = NULL;
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
 #define link_spad(link)     link->src->output_pads[link->srcpad]
 
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
+/**
+ * helper function to get a pointer to the structure telling the permissions
+ * the filter has on the given picture, or to create the structure if it
+ * does not yet exist.
+ */
+static AVFilterPicPerms *get_perms(AVFilterPic *pic, AVFilterContext *filter)
 {
+    AVFilterPicPerms *ret;
+
+    for(ret = pic->perms; ret; ret = ret->next)
+        if(ret->filter == filter)
+            return ret;
+
+    ret = av_malloc(sizeof(AVFilterPicPerms));
+    ret->filter = filter;
+    ret->perms  = 0;
+    ret->next   = pic->perms;
+    pic->perms  = ret;
+
+    return ret;
+}
+
+int avfilter_get_pic_perms(AVFilterPicRef *pic, AVFilterContext *filter)
+{
+    return get_perms(pic->pic, filter)->perms;
+}
+
+void avfilter_add_pic_perms(AVFilterPicRef *pic, AVFilterContext *filter,
+                            int perms)
+{
+    get_perms(pic->pic, filter)->perms |= perms;
+}
+
+AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, AVFilterContext *filter,
+                                 int pmask)
+{
+    AVFilterPicPerms *pic_perms;
     AVFilterPicRef *ret = av_malloc(sizeof(AVFilterPicRef));
     memcpy(ret, ref, sizeof(AVFilterPicRef));
     ret->perms &= pmask;
     ret->pic->refcount ++;
+
+    if(filter) {
+        pic_perms = get_perms(ref->pic, filter);
+        pic_perms->perms |= ret->perms;
+    }
+
     return ret;
 }
 
 void avfilter_unref_pic(AVFilterPicRef *ref)
 {
-    if(-- ref->pic->refcount == 0)
+    AVFilterPicPerms *perms;
+
+    if(-- ref->pic->refcount == 0) {
+        for(; ref->pic->perms; ref->pic->perms = perms) {
+            perms = ref->pic->perms->next;
+            av_free(ref->pic->perms);
+        }
         ref->pic->free(ref->pic);
+    }
     av_free(ref);
 }
 
@@ -160,6 +208,7 @@ int avfilter_request_frame(AVFilterLink *link)
  * forcing the source filter to do it? */
 void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
+    int perms = get_perms(picref->pic, link->dst)->perms;
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
 
     start_frame = link_dpad(link).start_frame;
@@ -167,11 +216,11 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
         start_frame = avfilter_default_start_frame;
 
     /* prepare to copy the picture if it has insufficient permissions */
-    if((link_dpad(link).min_perms & picref->perms) != link_dpad(link).min_perms ||
-        link_dpad(link).rej_perms & picref->perms) {
+    if((link_dpad(link).min_perms & perms) != link_dpad(link).min_perms ||
+        link_dpad(link).rej_perms & perms) {
         av_log(link->dst, AV_LOG_INFO,
                 "frame copy needed (have perms %x, need %x, reject %x)\n",
-                picref->perms,
+                perms,
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
 
         link->cur_pic = avfilter_default_get_video_buffer(link, link_dpad(link).min_perms);
