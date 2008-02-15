@@ -163,11 +163,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
     link->format = -1;
-    if(src->filter->outputs[srcpad].query_formats)
-        fmts[0] = src->filter->outputs[srcpad].query_formats(link);
+    if(src->output_pads[srcpad].query_formats)
+        fmts[0] = src->output_pads[srcpad].query_formats(link);
     else
         fmts[0] = default_query_output_formats(link);
-    fmts[1] = dst->filter-> inputs[dstpad].query_formats(link);
+    fmts[1] = dst->input_pads[dstpad].query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
             if(fmts[0][i] == fmts[1][j]) {
@@ -186,13 +186,13 @@ format_done:
         return -1;
     }
 
-    if (src->filter->outputs[srcpad].config_props)
-        src->filter->outputs[srcpad].config_props(link);
+    if (src->output_pads[srcpad].config_props)
+        src->output_pads[srcpad].config_props(link);
     else
         default_config_output_link(link);
 
-    if (dst->filter->inputs[dstpad].config_props)
-        dst->filter->inputs[dstpad].config_props(link);
+    if (dst->input_pads[dstpad].config_props)
+        dst->input_pads[dstpad].config_props(link);
 
     return 0;
 }
@@ -201,8 +201,8 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 {
     AVFilterPicRef *ret = NULL;
 
-    if(link->dst->filter->inputs[link->dstpad].get_video_buffer)
-        ret = link->dst->filter->inputs[link->dstpad].get_video_buffer(link, perms);
+    if(link->dst->input_pads[link->dstpad].get_video_buffer)
+        ret = link->dst->input_pads[link->dstpad].get_video_buffer(link, perms);
 
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms);
@@ -212,7 +212,7 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 
 void avfilter_request_frame(AVFilterLink *link)
 {
-    const AVFilterPad *pad = &link->src->filter->outputs[link->srcpad];
+    const AVFilterPad *pad = &link->src->output_pads[link->srcpad];
 
     if(pad->request_frame)
         pad->request_frame(link);
@@ -226,7 +226,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
 
-    start_frame = link->dst->filter->inputs[link->dstpad].start_frame;
+    start_frame = link->dst->input_pads[link->dstpad].start_frame;
     if(!start_frame)
         start_frame = avfilter_default_start_frame;
 
@@ -237,7 +237,7 @@ void avfilter_end_frame(AVFilterLink *link)
 {
     void (*end_frame)(AVFilterLink *);
 
-    end_frame = link->dst->filter->inputs[link->dstpad].end_frame;
+    end_frame = link->dst->input_pads[link->dstpad].end_frame;
     if(!end_frame)
         end_frame = avfilter_default_end_frame;
 
@@ -246,10 +246,10 @@ void avfilter_end_frame(AVFilterLink *link)
 
 void avfilter_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int h)
 {
-    if(!link->dst->filter->inputs[link->dstpad].draw_slice)
+    if(!link->dst->input_pads[link->dstpad].draw_slice)
         return;
 
-    link->dst->filter->inputs[link->dstpad].draw_slice(link, data, y, h);
+    link->dst->input_pads[link->dstpad].draw_slice(link, data, y, h);
 }
 
 static int filter_cmp(const void *aa, const void *bb)
@@ -321,8 +321,13 @@ AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name)
     ret->priv     = av_mallocz(filter->priv_size);
 
     ret->input_count  = pad_count(filter->inputs);
+    ret->input_pads   = av_malloc(sizeof(AVFilterPad) * ret->input_count);
+    memcpy(ret->input_pads, filter->inputs, sizeof(AVFilterPad)*ret->input_count);
     ret->inputs       = av_mallocz(sizeof(AVFilterLink*) * ret->input_count);
+
     ret->output_count = pad_count(filter->outputs);
+    ret->output_pads  = av_malloc(sizeof(AVFilterPad) * ret->output_count);
+    memcpy(ret->output_pads, filter->outputs, sizeof(AVFilterPad)*ret->output_count);
     ret->outputs      = av_mallocz(sizeof(AVFilterLink*) * ret->output_count);
 
     return ret;
@@ -335,18 +340,20 @@ void avfilter_destroy(AVFilterContext *filter)
     if(filter->filter->uninit)
         filter->filter->uninit(filter);
 
-    for(i = 0; i < pad_count(filter->filter->inputs); i ++) {
+    for(i = 0; i < filter->input_count; i ++) {
         if(filter->inputs[i])
             filter->inputs[i]->src->outputs[filter->inputs[i]->srcpad] = NULL;
         av_free(filter->inputs[i]);
     }
-    for(i = 0; i < pad_count(filter->filter->outputs); i ++) {
+    for(i = 0; i < filter->output_count; i ++) {
         if(filter->outputs[i])
             filter->outputs[i]->dst->inputs[filter->outputs[i]->dstpad] = NULL;
         av_free(filter->outputs[i]);
     }
 
     av_free(filter->name);
+    av_free(filter->input_pads);
+    av_free(filter->output_pads);
     av_free(filter->inputs);
     av_free(filter->outputs);
     av_free(filter->priv);
