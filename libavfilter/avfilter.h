@@ -312,7 +312,7 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
 int  avfilter_request_frame(AVFilterLink *link);
 
 /**
- * Notofy the next filter of the start of a frame.
+ * Notify the next filter of the start of a frame.
  * @param link   The output link the frame will be sent over
  * @param picref A reference to the frame about to be sent.  The data for this
  *               frame need only be valid once draw_slice() is called for that
