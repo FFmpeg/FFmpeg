@@ -88,6 +88,25 @@ void avfilter_unref_pic(AVFilterPicRef *ref)
     av_free(ref);
 }
 
+/**
+ * default config_link() implementation for output video links to simplify
+ * the implementation of one input one output video filters */
+static int default_config_output_link(AVFilterLink *link)
+{
+    link->w = link->src->inputs[0]->w;
+    link->h = link->src->inputs[0]->h;
+
+    return 0;
+}
+
+/**
+ * default query_formats() implementation for output video links to simplify
+ * the implementation of one input one output video filters */
+static int *default_query_output_formats(AVFilterLink *link)
+{
+    return avfilter_make_format_list(1, link->src->inputs[0]->format);
+}
+
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad)
 {
@@ -107,7 +126,10 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->cur_pic = NULL;
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
-    fmts[0] = src->filter->outputs[srcpad].query_formats(link);
+    if(src->filter->outputs[srcpad].query_formats)
+        fmts[0] = src->filter->outputs[srcpad].query_formats(link);
+    else
+        fmts[0] = default_query_output_formats(link);
     fmts[1] = dst->filter-> inputs[dstpad].query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
@@ -127,8 +149,14 @@ format_done:
         return -1;
     }
 
-    src->filter->outputs[srcpad].config_props(link);
-    dst->filter-> inputs[dstpad].config_props(link);
+    if (src->filter->outputs[srcpad].config_props)
+        src->filter->outputs[srcpad].config_props(link);
+    else
+        default_config_output_link(link);
+
+    if (dst->filter->inputs[dstpad].config_props)
+        dst->filter->inputs[dstpad].config_props(link);
+
     return 0;
 }
 
