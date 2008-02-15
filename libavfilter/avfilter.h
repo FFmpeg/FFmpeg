@@ -72,9 +72,10 @@ typedef struct AVFilterPicRef
 /**
  * Add a new reference to a picture.
  * @param ref An existing reference to the picture
+ * @param pmask A bitmask containing the allowable permissions in the new reference
  * @return A new reference to the picture with the same properties as the old
  */
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref);
+AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask);
 
 /**
  * Remove a reference to a picture.  If this is the last reference to the
