@@ -20,13 +20,18 @@
  */
 
 #include "avfilter.h"
+#include "imgconvert.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void avfilter_default_free_video_buffer(AVFilterPic *pic)
 {
-    avpicture_free((AVPicture *) pic);
+    av_free(pic->data[0]);
     av_free(pic);
 }
+
+#define ALIGN(a) do{ \
+                     (a) = ((a) + 15) & (~15); \
+                 } while(0);
 
 /* TODO: set the buffer's priv member to a context structure for the whole
  * filter chain.  This will allow for a buffer pool instead of the constant
@@ -35,6 +40,8 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
 {
     AVFilterPic *pic = av_mallocz(sizeof(AVFilterPic));
     AVFilterPicRef *ref = av_mallocz(sizeof(AVFilterPicRef));
+    int i, tempsize;
+    char *buf;
 
     ref->pic   = pic;
     ref->w     = link->w;
@@ -46,9 +53,14 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
     pic->refcount = 1;
     pic->format   = link->format;
     pic->free     = avfilter_default_free_video_buffer;
-    avpicture_alloc((AVPicture *)pic, pic->format,
-                    (ref->w + 15) & (~15), // make linesize a multiple of 16
-                    (ref->h + 15) & (~15));
+    ff_fill_linesize((AVPicture *)pic, pic->format, ref->w);
+
+    for (i=0; i<4;i++)
+        ALIGN(pic->linesize[i]);
+
+    tempsize = ff_fill_pointer((AVPicture *)pic, NULL, pic->format, ref->h);
+    buf = av_malloc(tempsize);
+    ff_fill_pointer((AVPicture *)pic, buf, pic->format, ref->h);
 
     memcpy(ref->data,     pic->data,     sizeof(pic->data));
     memcpy(ref->linesize, pic->linesize, sizeof(pic->linesize));
