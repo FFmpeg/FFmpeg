@@ -321,8 +321,6 @@ void avfilter_register(AVFilter *filter)
 
 void avfilter_init(void)
 {
-    avfilter_register(&avfilter_vsrc_dummy);
-    avfilter_register(&avfilter_vsrc_ppm);
     avfilter_register(&avfilter_vf_crop);
     avfilter_register(&avfilter_vf_fifo);
     avfilter_register(&avfilter_vf_fps);
@@ -332,7 +330,6 @@ void avfilter_init(void)
     avfilter_register(&avfilter_vf_negate);
     avfilter_register(&avfilter_vf_overlay);
     avfilter_register(&avfilter_vf_passthrough);
-    avfilter_register(&avfilter_vf_rgb2bgr);
     avfilter_register(&avfilter_vf_scale);
     avfilter_register(&avfilter_vf_slicify);
     avfilter_register(&avfilter_vf_split);
