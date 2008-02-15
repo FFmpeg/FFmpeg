@@ -608,10 +608,10 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
     if(avcodec_check_dimensions(NULL, width, height))
         return -1;
 
-    if (avpicture_fill_linesize(picture, pix_fmt, width))
+    if (ff_fill_linesize(picture, pix_fmt, width))
         return -1;
 
-    return avpicture_fill_pointer(picture, ptr, pix_fmt, height);
+    return ff_fill_pointer(picture, ptr, pix_fmt, height);
 }
 
 int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
