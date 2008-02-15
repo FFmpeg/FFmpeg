@@ -27,7 +27,7 @@ OBJS-$(CONFIG_VF_SLICIFY)    += vf_slicify.o
 OBJS-$(CONFIG_VF_SPLIT)      += vf_split.o
 OBJS-$(CONFIG_VF_TRANSPOSE)  += vf_transpose.o
 OBJS-$(CONFIG_VF_VFLIP)      += vf_vflip.o
-OBJS-$(CONFIG_AVFILTER_LAVF) += vsrc_movie.o
+OBJS-$(CONFIG_VSRC_MOVIE)    += vsrc_movie.o
 
 HEADERS = avfilter.h
 
