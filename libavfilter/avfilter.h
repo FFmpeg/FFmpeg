@@ -427,7 +427,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 /**
  * Negotiate the colorspace, dimensions, etc of all inputs to a filter.
  * @param filter The filter to negotiate the properties for its inputs
- * @return     Zero on successful negotiation
+ * @return       Zero on successful negotiation
  */
 int avfilter_config_links(AVFilterContext *filter);
 
