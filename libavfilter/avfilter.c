@@ -322,7 +322,7 @@ AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name)
     ret->av_class = av_mallocz(sizeof(AVClass));
     ret->av_class->item_name = filter_name;
     ret->filter   = filter;
-    ret->name     = inst_name ? strdup(inst_name) : NULL;
+    ret->name     = inst_name ? av_strdup(inst_name) : NULL;
     ret->inputs   = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->inputs));
     ret->outputs  = av_mallocz(sizeof(AVFilterLink*) * pad_count(filter->outputs));
     ret->priv     = av_mallocz(filter->priv_size);
@@ -348,7 +348,7 @@ void avfilter_destroy(AVFilterContext *filter)
         av_free(filter->outputs[i]);
     }
 
-    free   (filter->name);
+    av_free(filter->name);
     av_free(filter->inputs);
     av_free(filter->outputs);
     av_free(filter->priv);
