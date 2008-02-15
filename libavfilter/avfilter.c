@@ -96,33 +96,77 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     return 0;
 }
 
+static int common_format(int *fmts0, int *fmts1)
+{
+    int i, j;
+
+    for(i = 0; fmts0[i] != -1; i ++)
+        for(j = 0; fmts1[j] != -1; j ++)
+            if(fmts0[i] == fmts1[j])
+                return fmts0[i];
+
+    return -1;
+}
+
 int avfilter_config_link(AVFilterLink *link)
 {
-    int *fmts[2], i, j;
+    int *fmts[3] = {NULL,NULL,NULL};
     int (*config_link)(AVFilterLink *);
     int *(*query_formats)(AVFilterLink *link);
+
+    AVFilterContext *scale;
+    AVFilterLink *link2 = NULL;
 
     if(!link)
         return 0;
 
-    /* find a format both filters support - TODO: auto-insert conversion filter */
-    link->format = -1;
+    /* find a format both filters support */
     if(!(query_formats = link_spad(link).query_formats))
         query_formats = avfilter_default_query_output_formats;
     fmts[0] = query_formats(link);
     fmts[1] = link_dpad(link).query_formats(link);
-    for(i = 0; fmts[0][i] != -1; i ++)
-        for(j = 0; fmts[1][j] != -1; j ++)
-            if(fmts[0][i] == fmts[1][j]) {
-                link->format = fmts[0][i];
-                goto format_done;
-            }
+    if((link->format = common_format(fmts[0], fmts[1])) == -1) {
+        /* no common format found.  insert scale filter to convert */
+        if(!(scale = avfilter_open(&avfilter_vf_scale, NULL)))
+            goto format_done;
+        if(scale->filter->init(scale, NULL, NULL)) {
+            avfilter_destroy(scale);
+            goto format_done;
+        }
+
+        link->dst->inputs[link->dstpad] = NULL;
+        if(avfilter_link(scale, 0, link->dst, link->dstpad)) {
+            link->dst->inputs[link->dstpad] = link;
+            goto format_done;
+        }
+        link2 = scale->outputs[0];
+        link->dst    = scale;
+        link->dstpad = 0;
+        scale->inputs[0] = link;
+
+        /* now try again to find working colorspaces.
+         * XXX: is it safe to assume that the scale filter always supports the
+         * same input and output colorspaces? */
+        fmts[2] = scale->input_pads[0].query_formats(link);
+        link->format  = common_format(fmts[0], fmts[2]);
+        link2->format = common_format(fmts[1], fmts[2]);
+    }
 
 format_done:
     av_free(fmts[0]);
     av_free(fmts[1]);
-    if(link->format == -1)
+    av_free(fmts[2]);
+    if(link->format == -1 || (link2 && link2->format == -1)) {
+        if(link2) {
+            link->dst    = link2->dst;
+            link->dstpad = link2->dstpad;
+            link->dst->inputs[link->dstpad] = link;
+            link->format = -1;
+            avfilter_destroy(scale);
+            av_free(link2);
+        }
         return -1;
+    }
 
     if(!(config_link = link_spad(link).config_props))
         config_link  = avfilter_default_config_output_link;
@@ -133,6 +177,18 @@ format_done:
         config_link  = avfilter_default_config_input_link;
     if(config_link(link))
             return -1;
+
+    if(link2) {
+        if(!(config_link = link_spad(link2).config_props))
+            config_link  = avfilter_default_config_output_link;
+        if(config_link(link2))
+                return -1;
+
+        if(!(config_link = link_dpad(link2).config_props))
+            config_link  = avfilter_default_config_input_link;
+        if(config_link(link2))
+                return -1;
+    }
 
     return 0;
 }
