@@ -66,6 +66,7 @@ typedef struct {
     uint16_t size_lsb;
     int16_t  pts_delta;
     uint8_t  reserved_count;
+    uint8_t  header_idx;
 } FrameCode; // maybe s/FrameCode/framecode_t/ or change all to Java style but do not mix
 
 typedef struct {
@@ -84,6 +85,8 @@ typedef struct {
 //    int written_packet_size;
 //    int64_t packet_start;
     FrameCode frame_code[256];
+    uint8_t header_len[128];
+    const uint8_t *header[128];
     uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;
     unsigned int max_distance;
