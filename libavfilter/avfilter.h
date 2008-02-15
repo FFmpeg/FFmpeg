@@ -186,6 +186,8 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
  */
 void avfilter_formats_unref(AVFilterFormats **ref);
 
+int avfilter_poll_frame(AVFilterLink *link);
+
 /**
  * A filter pad used for either input or output
  */
@@ -257,6 +259,17 @@ struct AVFilterPad
      * Input video pads only.
      */
     void (*draw_slice)(AVFilterLink *link, int y, int height);
+
+    /**
+     * Frame poll callback.  This returns the number of immediately available
+     * frames. It should return a positive value if the next request_frame()
+     * is guaranteed to return one frame (with no delay).
+     *
+     * Defaults to just calling the source poll_frame() method.
+     *
+     * Output video pads only.
+     */
+    int (*poll_frame)(AVFilterLink *link);
 
     /**
      * Frame request callback.  A call to this should result in at least one
