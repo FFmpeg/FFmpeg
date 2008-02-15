@@ -21,7 +21,7 @@ OBJS-yes = vf_crop.o \
 
 HEADERS = avfilter.h
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) -L$(BUILD_ROOT)/libswscale -lswscale$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) $(EXTRALIBS)
 
 NAME=avfilter
 LIBVERSION=$(LAVFILTERVERSION)
