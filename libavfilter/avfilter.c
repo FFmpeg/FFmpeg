@@ -20,7 +20,6 @@
  */
 
 #include "avfilter.h"
-#include "allfilters.h"
 
 /** list of registered filters */
 struct FilterList
