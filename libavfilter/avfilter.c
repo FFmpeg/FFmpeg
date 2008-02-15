@@ -276,6 +276,7 @@ void avfilter_init(void)
     avfilter_register(&avfilter_vf_overlay);
     avfilter_register(&avfilter_vf_passthrough);
     avfilter_register(&avfilter_vf_rgb2bgr);
+    avfilter_register(&avfilter_vf_scale);
     avfilter_register(&avfilter_vf_slicify);
     avfilter_register(&avfilter_vf_split);
     avfilter_register(&avfilter_vf_vflip);
