@@ -198,7 +198,7 @@ struct AVFilterPad
      * input may have the same name as an output.  This may be NULL if this
      * pad has no need to ever be referenced by name.
      */
-    char *name;
+    const char *name;
 
     /**
      * AVFilterPad type.  Only video supported now, hopefully someone will
@@ -326,8 +326,8 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
  */
 typedef struct
 {
-    char *name;         ///< filter name
-    char *author;       ///< filter author
+    const char *name;         ///< filter name
+    const char *author;       ///< filter author
 
     int priv_size;      ///< size of private data to allocate for the filter
 
@@ -506,7 +506,7 @@ void avfilter_register(AVFilter *filter);
  * @return     The filter definition, if any matching one is registered.
  *             NULL if none found.
  */
-AVFilter *avfilter_get_by_name(char *name);
+AVFilter *avfilter_get_by_name(const char *name);
 
 /**
  * Create a filter instance
@@ -514,7 +514,7 @@ AVFilter *avfilter_get_by_name(char *name);
  * @param inst_name Name to give to the new instance.  Can be NULL for none.
  * @return          Pointer to the new instance on success.  NULL on failure.
  */
-AVFilterContext *avfilter_open(AVFilter *filter, char *inst_name);
+AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name);
 
 /**
  * Initialize a filter
