@@ -73,10 +73,11 @@ void avfilter_default_end_frame(AVFilterLink *link)
     link->cur_pic = NULL;
 }
 
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref)
+AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
 {
     AVFilterPicRef *ret = av_malloc(sizeof(AVFilterPicRef));
     memcpy(ret, ref, sizeof(AVFilterPicRef));
+    ret->perms &= pmask;
     ret->pic->refcount ++;
     return ret;
 }
