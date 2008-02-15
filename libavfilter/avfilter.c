@@ -251,12 +251,12 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     if(link->srcpic) {
         avcodec_get_chroma_sub_sample(link->format, &hsub, &vsub);
 
-        src[0] = link->srcpic-> data[0] + y * link->srcpic-> linesize[0];
-        dst[0] = link->cur_pic->data[0] + y * link->cur_pic->linesize[0];
-        for(i = 1; i < 4; i ++) {
+        for(i = 0; i < 4; i ++) {
             if(link->srcpic->data[i]) {
-                src[i] = link->srcpic-> data[i] + (y >> vsub) * link->srcpic-> linesize[i];
-                dst[i] = link->cur_pic->data[i] + (y >> vsub) * link->cur_pic->linesize[i];
+                src[i] = link->srcpic-> data[i] +
+                    (y >> (i==0 ? 0 : vsub)) * link->srcpic-> linesize[i];
+                dst[i] = link->cur_pic->data[i] +
+                    (y >> (i==0 ? 0 : vsub)) * link->cur_pic->linesize[i];
             } else
                 src[i] = dst[i] = NULL;
         }
