@@ -132,8 +132,8 @@ int avfilter_config_links(AVFilterContext *filter)
         case AVLINK_INIT:
             continue;
         case AVLINK_STARTINIT:
-            av_log(filter, AV_LOG_ERROR, "circular filter chain detected\n");
-            return -1;
+            av_log(filter, AV_LOG_INFO, "circular filter chain detected\n");
+            return 0;
         case AVLINK_UNINIT:
             link->init_state = AVLINK_STARTINIT;
 
