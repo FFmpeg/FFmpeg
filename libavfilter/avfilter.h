@@ -225,24 +225,4 @@ void avfilter_destroy(AVFilterContext *filter);
 
 int *avfilter_make_format_list(int len, ...);
 
-typedef struct AVFilterGraph AVFilterGraph;
-
-/**
- * Create a new filter graph
- */
-AVFilterGraph *avfilter_create_graph(void);
-
-/**
- * Destroy a filter graph, and any filters in it.
- * @param graph The filter graph to destroy
- */
-void avfilter_destroy_graph(AVFilterGraph *graph);
-
-/**
- * Add an existing filter instance to a filter graph.
- * @param graph  The filter graph
- * @param filter The filter to be added
- */
-void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter);
-
 #endif  /* FFMPEG_AVFILTER_H */
