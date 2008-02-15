@@ -151,7 +151,7 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
             char buf[256];
             int cmd=0;
             double d;
-            char *error = NULL;
+            const char *error = NULL;
 
             if(*val == '+' || *val == '-')
                 cmd= *(val++);
