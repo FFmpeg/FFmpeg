@@ -632,6 +632,24 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         st->start_time = pts;
 }
 
+static void update_initial_durations(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    AVPacketList *pktl= s->packet_buffer;
+
+    assert(pkt->duration && !st->cur_dts);
+
+    for(; pktl; pktl= pktl->next){
+        if(pktl->pkt.stream_index != pkt->stream_index)
+            continue;
+        if(pktl->pkt.pts == pktl->pkt.dts && pktl->pkt.dts == AV_NOPTS_VALUE){
+            pktl->pkt.pts= pktl->pkt.dts= st->cur_dts;
+            st->cur_dts += pkt->duration;
+            pktl->pkt.duration= pkt->duration;
+        }else
+            break;
+    }
+}
+
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
@@ -647,6 +665,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
+
+            if(pkt->dts == AV_NOPTS_VALUE && pkt->pts == AV_NOPTS_VALUE && st->cur_dts == 0)
+                update_initial_durations(s, st, pkt);
         }
     }
 
