@@ -191,7 +191,12 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 
 void avfilter_request_frame(AVFilterLink *link)
 {
-    link->src->filter->outputs[link->srcpad].request_frame(link);
+    const AVFilterPad *pad = &link->src->filter->outputs[link->srcpad];
+
+    if(pad->request_frame)
+        pad->request_frame(link);
+    else if(link->src->inputs[0])
+        avfilter_request_frame(link->src->inputs[0]);
 }
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
