@@ -304,6 +304,9 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
 
+void avfilter_formats_changeref(AVFilterFormats **oldref,
+                                AVFilterFormats **newref);
+
 /**
  * Filter definition.  This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
