@@ -166,8 +166,10 @@ typedef struct
     /**
      * Filter initialization function.  Args contains the user-supplied
      * parameters.  FIXME: maybe an AVOption-based system would be better?
+     * opaque is data provided by the code requesting creation of the filter,
+     * and is used to pass data to the filter.
      */
-    int (*init)(AVFilterContext *ctx, const char *args);
+    int (*init)(AVFilterContext *ctx, const char *args, const void *opaque);
     void (*uninit)(AVFilterContext *ctx);
 
     const AVFilterPad *inputs;  /// NULL terminated list of inputs. NULL if none
@@ -220,7 +222,7 @@ AVFilter *avfilter_get_by_name(char *name);
 
 AVFilterContext *avfilter_create(AVFilter *filter, char *inst_name);
 AVFilterContext *avfilter_create_by_name(char *name, char *inst_name);
-int avfilter_init_filter(AVFilterContext *filter, const char *args);
+int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
 void avfilter_destroy(AVFilterContext *filter);
 
 int *avfilter_make_format_list(int len, ...);
