@@ -184,7 +184,6 @@ int avfilter_poll_frame(AVFilterLink *link)
 
     if(link_spad(link).poll_frame)
         return link_spad(link).poll_frame(link);
-    else
         for (i=0; i<link->src->input_count; i++) {
             if(!link->src->inputs[i])
                 return -1;
