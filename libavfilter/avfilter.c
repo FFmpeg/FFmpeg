@@ -108,7 +108,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
     fmts[0] = src->filter->outputs[srcpad].query_formats(link);
-    fmts[1] = dst->filter->inputs[dstpad].query_formats(link);
+    fmts[1] = dst->filter-> inputs[dstpad].query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
             if(fmts[0][i] == fmts[1][j]) {
@@ -128,7 +128,7 @@ format_done:
     }
 
     src->filter->outputs[srcpad].config_props(link);
-    dst->filter->inputs[dstpad].config_props(link);
+    dst->filter-> inputs[dstpad].config_props(link);
     return 0;
 }
 
