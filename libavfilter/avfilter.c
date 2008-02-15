@@ -31,33 +31,6 @@
 static int filter_count = 0;
 static AVFilter **filters = NULL;
 
-struct AVFilterGraph {
-    unsigned filter_count;
-    AVFilterContext **filters;
-};
-
-AVFilterGraph *avfilter_create_graph(void)
-{
-    return av_mallocz(sizeof(AVFilterGraph));
-}
-
-void avfilter_destroy_graph(AVFilterGraph *graph)
-{
-    unsigned i;
-
-    for(i = 0; i < graph->filter_count; i ++)
-        avfilter_destroy(graph->filters[i]);
-    av_free(graph->filters);
-    av_free(graph);
-}
-
-void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
-{
-    graph->filters = av_realloc(graph->filters,
-                                sizeof(AVFilterContext*) * ++graph->filter_count);
-    graph->filters[graph->filter_count - 1] = filter;
-}
-
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void avfilter_default_free_video_buffer(AVFilterPic *pic)
 {
