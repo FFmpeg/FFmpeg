@@ -288,7 +288,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     link_dpad(link).draw_slice(link, y, h);
 }
 
-AVFilter *avfilter_get_by_name(char *name)
+AVFilter *avfilter_get_by_name(const char *name)
 {
     struct FilterList *filt;
 
@@ -345,10 +345,9 @@ void avfilter_uninit(void)
 
 static int pad_count(const AVFilterPad *pads)
 {
-    AVFilterPad *p = (AVFilterPad *) pads;
     int count;
 
-    for(count = 0; p->name; count ++) p ++;
+    for(count = 0; pads->name; count ++) pads ++;
     return count;
 }
 
@@ -358,7 +357,7 @@ static const char *filter_name(void *p)
     return filter->filter->name;
 }
 
-AVFilterContext *avfilter_open(AVFilter *filter, char *inst_name)
+AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
 
