@@ -308,6 +308,9 @@ void avfilter_init(void)
     avfilter_register(&avfilter_vf_split);
     avfilter_register(&avfilter_vf_transpose);
     avfilter_register(&avfilter_vf_vflip);
+#ifdef CONFIG_AVFILTER_LAVF
+    avfilter_register(&avfilter_vsrc_movie);
+#endif //CONFIG_AVFILTER_LAVF
 }
 
 void avfilter_uninit(void)
