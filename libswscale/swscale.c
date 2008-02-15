@@ -2062,12 +2062,12 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
     if (!isSupportedIn(srcFormat))
     {
-        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input format\n", sws_format_name(srcFormat));
+        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input pixel format\n", sws_format_name(srcFormat));
         return NULL;
     }
     if (!isSupportedOut(dstFormat))
     {
-        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output format\n", sws_format_name(dstFormat));
+        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output pixel format\n", sws_format_name(dstFormat));
         return NULL;
     }
 
