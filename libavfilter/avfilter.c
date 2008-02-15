@@ -20,6 +20,7 @@
  */
 
 #include "avfilter.h"
+#include "imgconvert.h"
 
 /** list of registered filters */
 struct FilterList
@@ -261,10 +262,13 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
         }
 
         for(i = 0; i < 4; i ++) {
+            int planew =
+                ff_get_plane_bytewidth(link->format, link->cur_pic->w, i);
+
             if(!src[i]) continue;
 
             for(j = 0; j < h >> (i==0 ? 0 : vsub); j ++) {
-                memcpy(dst[i], src[i], link->cur_pic->linesize[i]);
+                memcpy(dst[i], src[i], planew);
                 src[i] += link->srcpic ->linesize[i];
                 dst[i] += link->cur_pic->linesize[i];
             }
