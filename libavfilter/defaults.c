@@ -105,16 +105,6 @@ int avfilter_default_config_output_link(AVFilterLink *link)
 }
 
 /**
- * default config_link() implementation for input video links to simplify
- * the implementation of one input one output video filters */
-int avfilter_default_config_input_link(AVFilterLink *link)
-{
-    if(!link->dst->output_count)
-        return 0;
-    return avfilter_config_link(link->dst->outputs[0]);
-}
-
-/**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
