@@ -51,7 +51,6 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad)
 {
     AVFilterLink *link;
-    int *fmts[2], i, j;
 
     if(src->output_count <= srcpad || dst->input_count <= dstpad ||
        src->outputs[srcpad]        || dst->inputs[dstpad])
@@ -65,14 +64,26 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->srcpad  = srcpad;
     link->dstpad  = dstpad;
     link->cur_pic = NULL;
+    link->format  = -1;
+
+    return 0;
+}
+
+int avfilter_config_link(AVFilterLink *link)
+{
+    int *fmts[2], i, j;
+    int (*config_link)(AVFilterLink *);
+
+    if(!link)
+        return 0;
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
     link->format = -1;
-    if(src->output_pads[srcpad].query_formats)
-        fmts[0] = src->output_pads[srcpad].query_formats(link);
+    if(link->src->output_pads[link->srcpad].query_formats)
+        fmts[0] = link->src->output_pads[link->srcpad].query_formats(link);
     else
         fmts[0] = avfilter_default_query_output_formats(link);
-    fmts[1] = dst->input_pads[dstpad].query_formats(link);
+    fmts[1] = link->dst->input_pads[link->dstpad].query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
             if(fmts[0][i] == fmts[1][j]) {
@@ -83,21 +94,18 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 format_done:
     av_free(fmts[0]);
     av_free(fmts[1]);
-    if(link->format == -1) {
-        /* failed to find a format.  fail at creating the link */
-        av_free(link);
-        src->outputs[srcpad] = NULL;
-        dst->inputs[dstpad]  = NULL;
+    if(link->format == -1)
         return -1;
-    }
 
-    if (src->output_pads[srcpad].config_props)
-        src->output_pads[srcpad].config_props(link);
-    else
-        avfilter_default_config_output_link(link);
+    if(!(config_link = link->src->output_pads[link->srcpad].config_props))
+        config_link  = avfilter_default_config_output_link;
+    if(config_link(link))
+            return -1;
 
-    if (dst->input_pads[dstpad].config_props)
-        dst->input_pads[dstpad].config_props(link);
+    if(!(config_link = link->dst->input_pads[link->dstpad].config_props))
+        config_link  = avfilter_default_config_input_link;
+    if(config_link(link))
+            return -1;
 
     return 0;
 }
