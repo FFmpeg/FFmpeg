@@ -97,16 +97,16 @@ int avfilter_config_link(AVFilterLink *link)
 {
     int *fmts[2], i, j;
     int (*config_link)(AVFilterLink *);
+    int *(*query_formats)(AVFilterLink *link);
 
     if(!link)
         return 0;
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
     link->format = -1;
-    if(link_spad(link).query_formats)
-        fmts[0] = link_spad(link).query_formats(link);
-    else
-        fmts[0] = avfilter_default_query_output_formats(link);
+    if(!(query_formats = link_spad(link).query_formats))
+        query_formats = avfilter_default_query_output_formats;
+    fmts[0] = query_formats(link);
     fmts[1] = link_dpad(link).query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
@@ -162,8 +162,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
 
-    start_frame = link_dpad(link).start_frame;
-    if(!start_frame)
+    if(!(start_frame = link_dpad(link).start_frame))
         start_frame = avfilter_default_start_frame;
 
     /* prepare to copy the picture if it has insufficient permissions */
@@ -194,8 +193,7 @@ void avfilter_end_frame(AVFilterLink *link)
         link->srcpic = NULL;
     }
 
-    end_frame = link_dpad(link).end_frame;
-    if(!end_frame)
+    if(!(end_frame = link_dpad(link).end_frame))
         end_frame = avfilter_default_end_frame;
 
     end_frame(link);
