@@ -492,7 +492,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h);
 void avfilter_init(void);
 
 /** Initialize the filter system.  Registers all builtin filters */
-void avfilter_register_all(void)
+void avfilter_register_all(void);
 
 /** Uninitialize the filter system.  Unregisters all filters */
 void avfilter_uninit(void);
