@@ -161,7 +161,7 @@ struct AVFilterPad
      *
      * Input video pads only.
      */
-    void (*draw_slice)(AVFilterLink *link, uint8_t *data[4], int y, int height);
+    void (*draw_slice)(AVFilterLink *link, int y, int height);
 
     /**
      * Frame request callback.  A call to this should result in at least one
@@ -330,11 +330,10 @@ void avfilter_end_frame(AVFilterLink *link);
 /**
  * Send a slice to the next filter
  * @param link The output link over which the frame is being sent
- * @param data Start of the picture data for this slice
  * @param y    Offset in pixels from the top of the image for this slice
  * @param h    Height of this slice in pixels
  */
-void avfilter_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int h);
+void avfilter_draw_slice(AVFilterLink *link, int y, int h);
 
 /** Initialize the filter system.  Registers all builtin filters */
 void avfilter_init(void);
