@@ -31,6 +31,10 @@
 static int filter_count = 0;
 static AVFilter **filters = NULL;
 
+/** helper macros to get the in/out pad on the dst/src filter */
+#define link_dpad(link)     link->dst-> input_pads[link->dstpad]
+#define link_spad(link)     link->src->output_pads[link->srcpad]
+
 AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
 {
     AVFilterPicRef *ret = av_malloc(sizeof(AVFilterPicRef));
@@ -100,11 +104,11 @@ int avfilter_config_link(AVFilterLink *link)
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
     link->format = -1;
-    if(link->src->output_pads[link->srcpad].query_formats)
-        fmts[0] = link->src->output_pads[link->srcpad].query_formats(link);
+    if(link_spad(link).query_formats)
+        fmts[0] = link_spad(link).query_formats(link);
     else
         fmts[0] = avfilter_default_query_output_formats(link);
-    fmts[1] = link->dst->input_pads[link->dstpad].query_formats(link);
+    fmts[1] = link_dpad(link).query_formats(link);
     for(i = 0; fmts[0][i] != -1; i ++)
         for(j = 0; fmts[1][j] != -1; j ++)
             if(fmts[0][i] == fmts[1][j]) {
@@ -118,12 +122,12 @@ format_done:
     if(link->format == -1)
         return -1;
 
-    if(!(config_link = link->src->output_pads[link->srcpad].config_props))
+    if(!(config_link = link_spad(link).config_props))
         config_link  = avfilter_default_config_output_link;
     if(config_link(link))
             return -1;
 
-    if(!(config_link = link->dst->input_pads[link->dstpad].config_props))
+    if(!(config_link = link_dpad(link).config_props))
         config_link  = avfilter_default_config_input_link;
     if(config_link(link))
             return -1;
@@ -135,8 +139,8 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 {
     AVFilterPicRef *ret = NULL;
 
-    if(link->dst->input_pads[link->dstpad].get_video_buffer)
-        ret = link->dst->input_pads[link->dstpad].get_video_buffer(link, perms);
+    if(link_dpad(link).get_video_buffer)
+        ret = link_dpad(link).get_video_buffer(link, perms);
 
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms);
@@ -146,10 +150,8 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 
 int avfilter_request_frame(AVFilterLink *link)
 {
-    const AVFilterPad *pad = &link->src->output_pads[link->srcpad];
-
-    if(pad->request_frame)
-        return pad->request_frame(link);
+    if(link_spad(link).request_frame)
+        return link_spad(link).request_frame(link);
     else if(link->src->inputs[0])
         return avfilter_request_frame(link->src->inputs[0]);
     else return -1;
@@ -161,7 +163,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
 
-    start_frame = link->dst->input_pads[link->dstpad].start_frame;
+    start_frame = link_dpad(link).start_frame;
     if(!start_frame)
         start_frame = avfilter_default_start_frame;
 
@@ -172,7 +174,7 @@ void avfilter_end_frame(AVFilterLink *link)
 {
     void (*end_frame)(AVFilterLink *);
 
-    end_frame = link->dst->input_pads[link->dstpad].end_frame;
+    end_frame = link_dpad(link).end_frame;
     if(!end_frame)
         end_frame = avfilter_default_end_frame;
 
@@ -181,10 +183,10 @@ void avfilter_end_frame(AVFilterLink *link)
 
 void avfilter_draw_slice(AVFilterLink *link, int y, int h)
 {
-    if(!link->dst->input_pads[link->dstpad].draw_slice)
+    if(!link_dpad(link).draw_slice)
         return;
 
-    link->dst->input_pads[link->dstpad].draw_slice(link, y, h);
+    link_dpad(link).draw_slice(link, y, h);
 }
 
 static int filter_cmp(const void *aa, const void *bb)
