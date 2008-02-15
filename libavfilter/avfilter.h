@@ -185,9 +185,11 @@ struct AVFilterContext
     char *name;
 
     unsigned input_count;
+    AVFilterPad   *input_pads;
     AVFilterLink **inputs;
 
     unsigned output_count;
+    AVFilterPad   *output_pads;
     AVFilterLink **outputs;
 
     void *priv;
