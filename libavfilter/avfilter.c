@@ -298,27 +298,7 @@ void avfilter_register(AVFilter *filter)
 
 void avfilter_init(void)
 {
-    avfilter_register(&avfilter_vf_crop);
-    avfilter_register(&avfilter_vf_fifo);
-    avfilter_register(&avfilter_vf_format);
-    avfilter_register(&avfilter_vf_fps);
-    avfilter_register(&avfilter_vf_graph);
-    avfilter_register(&avfilter_vf_graphdesc);
-    avfilter_register(&avfilter_vf_graphfile);
-    avfilter_register(&avfilter_vf_hflip);
-    avfilter_register(&avfilter_vf_negate);
-    avfilter_register(&avfilter_vf_noformat);
-    avfilter_register(&avfilter_vf_overlay);
-    avfilter_register(&avfilter_vf_rotate);
-    avfilter_register(&avfilter_vf_scale);
-    avfilter_register(&avfilter_vf_setpts);
-    avfilter_register(&avfilter_vf_slicify);
-    avfilter_register(&avfilter_vf_split);
-    avfilter_register(&avfilter_vf_transpose);
-    avfilter_register(&avfilter_vf_vflip);
-#ifdef CONFIG_AVFILTER_LAVF
-    avfilter_register(&avfilter_vsrc_movie);
-#endif //CONFIG_AVFILTER_LAVF
+    avfilter_register_all();
 }
 
 void avfilter_uninit(void)
