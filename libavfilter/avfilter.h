@@ -139,7 +139,7 @@ struct AVFilterPad
      * Frame request callback.  A call to this should result in at least one
      * frame being output over the given link.  Video output pads only.
      */
-    void (*request_frame)(AVFilterLink *link);
+    int (*request_frame)(AVFilterLink *link);
 
     /**
      * Link configuration callback.  For output pads, this should set the link
@@ -224,7 +224,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 int avfilter_config_link(AVFilterLink *link);
 
 AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
-void avfilter_request_frame(AVFilterLink *link);
+int  avfilter_request_frame(AVFilterLink *link);
 void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
 void avfilter_end_frame(AVFilterLink *link);
 void avfilter_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int h);
