@@ -64,13 +64,28 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
 
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
+    AVFilterLink *out = link->dst->outputs[0];
+
     link->cur_pic = picref;
+
+    if(out) {
+        out->outpic  = avfilter_get_video_buffer(out, AV_PERM_WRITE);
+        avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
+    }
 }
 
 void avfilter_default_end_frame(AVFilterLink *link)
 {
+    AVFilterLink *out = link->dst->outputs[0];
+
     avfilter_unref_pic(link->cur_pic);
     link->cur_pic = NULL;
+
+    if(out) {
+        avfilter_unref_pic(out->outpic);
+        out->outpic = NULL;
+        avfilter_end_frame(out);
+    }
 }
 
 AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
