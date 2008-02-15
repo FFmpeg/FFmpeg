@@ -72,7 +72,7 @@ typedef struct AVFilterPicRef
     int w;                      ///< image width
     int h;                      ///< image height
 
-    int64_t pts;                ///< presentation timestamp in milliseconds
+    int64_t pts;                ///< presentation timestamp in units of 1/AV_TIME_BASE
 
     int perms;                  ///< permissions
 #define AV_PERM_READ     0x01   ///< can read from the buffer
