@@ -14,6 +14,9 @@ OBJECTS = avfilter.o          \
 
 all: filter_test
 
+clean:
+	rm -f filter_test $(OBJECTS)
+
 filter_test: $(OBJECTS) filter_test.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
