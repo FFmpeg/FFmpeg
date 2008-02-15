@@ -161,9 +161,7 @@ struct AVFilterFormats
 AVFilterFormats *avfilter_make_format_list(int len, ...);
 
 /**
- * Returns a fairly comprehensive list of colorspaces which are supported by
- * many of the included filters. This is not truly "all" the colorspaces, but
- * it is most of them, and it is the most commonly supported large subset.
+ * Returns a list of all colorspaces supported by FFmpeg.
  */
 AVFilterFormats *avfilter_all_colorspaces(void);
 
