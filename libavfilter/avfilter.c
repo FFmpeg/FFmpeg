@@ -296,11 +296,6 @@ void avfilter_register(AVFilter *filter)
     filters         = newfilt;
 }
 
-void avfilter_init(void)
-{
-    avfilter_register_all();
-}
-
 void avfilter_uninit(void)
 {
     struct FilterList *tmp;
