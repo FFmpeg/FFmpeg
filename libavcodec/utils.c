@@ -31,6 +31,7 @@
 #include "integer.h"
 #include "opt.h"
 #include "crc.h"
+#include "imgconvert.h"
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
@@ -271,7 +272,8 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         buf->last_pic_num= *picture_number;
     }else{
         int h_chroma_shift, v_chroma_shift;
-        int pixel_size, size[4];
+        int size[4] = {0};
+        int tmpsize;
         AVPicture picture;
 
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
@@ -284,23 +286,23 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         }
         avcodec_align_dimensions(s, &w, &h);
 
-        avpicture_fill(&picture, NULL, s->pix_fmt, w, h);
-        pixel_size= picture.linesize[0]*8 / w;
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", (int)picture.data[1], w, h, s->pix_fmt);
-        assert(pixel_size>=1);
-            //FIXME next ensures that linesize= 2^x uvlinesize, that is needed because some MC code assumes it
-        if(pixel_size == 3*8)
-            w= ALIGN(w, STRIDE_ALIGN<<h_chroma_shift);
+        ff_fill_linesize(&picture, s->pix_fmt, w);
+
+        for (i=1; i<4; i++)
+            picture.linesize[i] = ALIGN(picture.linesize[i], STRIDE_ALIGN);
+
+        /* next ensures that linesize= 2^x uvlinesize, that is needed because
+         * some MC code assumes it */
+        if (picture.linesize[1])
+            picture.linesize[0] = ALIGN(picture.linesize[0], picture.linesize[1]);
         else
-            w= ALIGN(pixel_size*w, STRIDE_ALIGN<<(h_chroma_shift+3)) / pixel_size;
-        size[1] = avpicture_fill(&picture, NULL, s->pix_fmt, w, h);
-        size[0] = picture.linesize[0] * h;
-        size[1] -= size[0];
-        size[2] = size[3] = 0;
-        if(picture.data[2])
-            size[1]= size[2]= size[1]/2;
-        if(picture.data[3])
-            size[3] = picture.linesize[3] * h;
+            picture.linesize[0] = ALIGN(picture.linesize[0], STRIDE_ALIGN);
+
+        tmpsize = ff_fill_pointer(&picture, NULL, s->pix_fmt, h);
+
+        for (i=0; i<3 && picture.data[i+1]; i++)
+            size[i] = picture.data[i+1] - picture.data[i];
+        size[i] = tmpsize - size[i];
 
         buf->last_pic_num= -256*256*256*64;
         memset(buf->base, 0, sizeof(buf->base));
