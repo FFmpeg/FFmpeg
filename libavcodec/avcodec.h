@@ -1197,7 +1197,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    char *rc_eq;
+    const char *rc_eq;
 
     /**
      * maximum bitrate

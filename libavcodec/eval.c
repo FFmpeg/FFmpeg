@@ -376,7 +376,7 @@ static int verify_expr(AVEvalExpr * e) {
     }
 }
 
-AVEvalExpr * ff_parse(char *s, const char **const_name,
+AVEvalExpr * ff_parse(const char *s, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                const char **error){
@@ -413,7 +413,7 @@ double ff_parse_eval(AVEvalExpr * e, double *const_value, void *opaque) {
     return eval_expr(&p, e);
 }
 
-double ff_eval2(char *s, double *const_value, const char **const_name,
+double ff_eval2(const char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque, const char **error){
