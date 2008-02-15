@@ -261,15 +261,11 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
             } else
                 src[i] = dst[i] = NULL;
         }
-        for(j = 0; j < h; j ++) {
-            memcpy(dst[0], src[0], link->cur_pic->linesize[0]);
-            src[0] += link->srcpic ->linesize[0];
-            dst[0] += link->cur_pic->linesize[0];
-        }
-        for(i = 1; i < 4; i ++) {
+
+        for(i = 0; i < 4; i ++) {
             if(!src[i]) continue;
 
-            for(j = 0; j < h >> vsub; j ++) {
+            for(j = 0; j < h >> (i==0 ? 0 : vsub); j ++) {
                 memcpy(dst[i], src[i], link->cur_pic->linesize[i]);
                 src[i] += link->srcpic ->linesize[i];
                 dst[i] += link->cur_pic->linesize[i];
