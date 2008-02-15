@@ -337,12 +337,12 @@ AVFilterContext *avfilter_create_by_name(char *name, char *inst_name)
     return avfilter_create(filt, inst_name);
 }
 
-int avfilter_init_filter(AVFilterContext *filter, const char *args)
+int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
 {
     int ret, i;
 
     if(filter->filter->init)
-        if((ret = filter->filter->init(filter, args))) return ret;
+        if((ret = filter->filter->init(filter, args, opaque))) return ret;
     return 0;
 }
 
