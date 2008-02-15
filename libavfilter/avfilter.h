@@ -196,6 +196,7 @@ struct AVFilterLink
     enum PixelFormat format;
 
     AVFilterPicRef *cur_pic;
+    AVFilterPicRef *outpic;
 };
 
 /** Link two filters together */
