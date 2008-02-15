@@ -227,7 +227,6 @@ void avfilter_init(void)
     avfilter_register(&vf_rgb2bgr);
     avfilter_register(&vf_slicify);
     avfilter_register(&vf_vflip);
-    avfilter_register(&vo_sdl);
 }
 
 void avfilter_uninit(void)
