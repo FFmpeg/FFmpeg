@@ -1,6 +1,6 @@
 include ../config.mak
 
-CFLAGS+=-I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libswscale
+CFLAGS+=-I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libswscale
 
 OBJS = avfilter.o \
        avfiltergraph.o \
@@ -25,11 +25,17 @@ OBJS-yes = vf_crop.o \
            vf_vflip.o \
            avfiltergraphfile.o \
 
+OBJS-$(CONFIG_AVFILTER_LAVF) += vsrc_movie.o
+
 HEADERS = avfilter.h
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) \
              -L$(BUILD_ROOT)/libswscale -lswscale$(BUILDSUF) \
              -L$(BUILD_ROOT)/libavutil  -lavutil$(BUILDSUF) $(EXTRALIBS)
+
+ifeq ($(CONFIG_AVFILTER_LAVF),yes)
+EXTRALIBS := -L$(BUILD_ROOT)/libavformat -lavformat$(BUILDSUF) $(EXTRALIBS)
+endif
 
 NAME=avfilter
 LIBVERSION=$(LAVFILTERVERSION)
