@@ -142,6 +142,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->cur_pic = NULL;
 
     /* find a format both filters support - TODO: auto-insert conversion filter */
+    link->format = -1;
     if(src->filter->outputs[srcpad].query_formats)
         fmts[0] = src->filter->outputs[srcpad].query_formats(link);
     else
