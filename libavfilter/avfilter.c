@@ -213,10 +213,12 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     /* prepare to copy the picture if it has insufficient permissions */
     if((link_dpad(link).min_perms & picref->perms) != link_dpad(link).min_perms ||
         link_dpad(link).rej_perms & picref->perms) {
+        /*
         av_log(link->dst, AV_LOG_INFO,
                 "frame copy needed (have perms %x, need %x, reject %x)\n",
                 picref->perms,
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
+        */
 
         link->cur_pic = avfilter_default_get_video_buffer(link, link_dpad(link).min_perms);
         link->srcpic = picref;
@@ -231,6 +233,11 @@ void avfilter_end_frame(AVFilterLink *link)
 {
     void (*end_frame)(AVFilterLink *);
 
+    if(!(end_frame = link_dpad(link).end_frame))
+        end_frame = avfilter_default_end_frame;
+
+    end_frame(link);
+
     /* unreference the source picture if we're feeding the destination filter
      * a copied version dues to permission issues */
     if(link->srcpic) {
@@ -238,10 +245,6 @@ void avfilter_end_frame(AVFilterLink *link)
         link->srcpic = NULL;
     }
 
-    if(!(end_frame = link_dpad(link).end_frame))
-        end_frame = avfilter_default_end_frame;
-
-    end_frame(link);
 }
 
 void avfilter_draw_slice(AVFilterLink *link, int y, int h)
@@ -253,6 +256,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     if(link->srcpic) {
         avcodec_get_chroma_sub_sample(link->format, &hsub, &vsub);
 
+        link->cur_pic->pts = link->srcpic->pts;
         src[0] = link->srcpic-> data[0] + y * link->srcpic-> linesize[0];
         dst[0] = link->cur_pic->data[0] + y * link->cur_pic->linesize[0];
         for(i = 1; i < 4; i ++) {
