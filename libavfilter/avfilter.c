@@ -185,6 +185,22 @@ int avfilter_request_frame(AVFilterLink *link)
     else return -1;
 }
 
+int avfilter_poll_frame(AVFilterLink *link)
+{
+    int i, min=INT_MAX;
+
+    if(link_spad(link).poll_frame)
+        return link_spad(link).poll_frame(link);
+    else
+        for (i=0; i<link->src->input_count; i++) {
+            if(!link->src->inputs[i])
+                return -1;
+            min = FFMIN(min, avfilter_poll_frame(link->src->inputs[i]));
+        }
+
+    return min;
+}
+
 /* XXX: should we do the duplicating of the picture ref here, instead of
  * forcing the source filter to do it? */
 void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
