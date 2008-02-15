@@ -70,6 +70,7 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 
     if(out) {
         out->outpic  = avfilter_get_video_buffer(out, AV_PERM_WRITE);
+        out->outpic->pts = picref->pts;
         avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
     }
 }
