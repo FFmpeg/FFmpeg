@@ -381,6 +381,13 @@ struct AVFilterLink
     AVFilterContext *dst;       ///< dest filter
     unsigned int dstpad;        ///< index of the input pad on the dest filter
 
+    /** stage of the initialization of the link properties (dimensions, etc) */
+    enum {
+        AVLINK_UNINIT = 0,      ///< not started
+        AVLINK_STARTINIT,       ///< started, but incomplete
+        AVLINK_INIT             ///< complete
+    } init_state;
+
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     enum PixelFormat format;    ///< agreed upon image colorspace
@@ -418,11 +425,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
 
 /**
- * Negotiate the colorspace, dimensions, etc of a link
- * @param link The link to negotiate the properties of
+ * Negotiate the colorspace, dimensions, etc of all inputs to a filter.
+ * @param filter The filter to negotiate the properties for its inputs
  * @return     Zero on successful negotiation
  */
-int avfilter_config_link(AVFilterLink *link);
+int avfilter_config_links(AVFilterContext *filter);
 
 /**
  * Request a picture buffer with a specific set of permissions
