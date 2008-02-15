@@ -240,7 +240,7 @@ void avfilter_init(void)
     avfilter_register(&vsrc_ppm);
     avfilter_register(&vf_crop);
     avfilter_register(&vf_passthrough);
-    avfilter_register(&vf_rgb2bgr)
+    avfilter_register(&vf_rgb2bgr);
     avfilter_register(&vf_slicify);
     avfilter_register(&vo_sdl);
 }
