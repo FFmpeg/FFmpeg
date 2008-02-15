@@ -102,6 +102,91 @@ AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask);
 void avfilter_unref_pic(AVFilterPicRef *ref);
 
 /**
+ * A list of supported formats for one end of a filter link. This is used
+ * during the format negotiation process to try to pick the best format to
+ * use to minimize the number of necessary conversions. Each filter gives a
+ * list of the formats supported by each input and output pad. The list
+ * given for each pad need not be distinct - they may be references to the
+ * same list of formats, as is often the case when a filter supports multiple
+ * formats, but will always outut the same format as it is given in input.
+ *
+ * In this way, a list of possible input formats and a list of possible
+ * output formats are associated with each link. When a set of formats is
+ * negotiated over a link, the input and output lists are merged to form a
+ * new list containing only the common elements of each list. In the case
+ * that there were no common elements, a format conversion is necessary.
+ * Otherwise, the lists are merged, and all other links which reference
+ * either of the format lists involved in the merge are also affected.
+ *
+ * For example, consider the filter chain:
+ * filter (a) --> (b) filter (b) --> (c) filter
+ *
+ * where the letters in parenthesis indicate a list of formats supported on
+ * the input or output of the link. Suppose the lists are as follows:
+ * (a) = {A, B}
+ * (b) = {A, B, C}
+ * (c) = {B, C}
+ *
+ * First, the first link's lists are merged, yielding:
+ * filter (a) --> (a) filter (a) --> (c) filter
+ *
+ * Notice that format list (b) now refers to the same list as filter list (a).
+ * Next, the lists for the second link are merged, yielding:
+ * filter (a) --> (a) filter (a) --> (a) filter
+ *
+ * where (a) = {B}.
+ *
+ * Unfortunately, when the format lists at the two ends of a link are merged,
+ * we must ensure that all links which reference either pre-merge format list
+ * get updated as well. Therefore, we have the format list structure store a
+ * pointer to each of the pointers to itself.
+ */
+typedef struct AVFilterFormats AVFilterFormats;
+struct AVFilterFormats
+{
+    unsigned format_count;      ///< number of formats
+    int *formats;               ///< list of formats
+
+    unsigned refcount;          ///< number of references to this list
+    AVFilterFormats ***refs;    ///< references to this list
+};
+
+/**
+ * Helper function to create a list of supported formats.  This is intended
+ * for use in AVFilter->query_formats().
+ * @param len The number of formats supported
+ * @param ... A list of the supported formats
+ * @return    The format list, with no existing references
+ */
+AVFilterFormats *avfilter_make_format_list(int len, ...);
+
+/**
+ * Returns a fairly comprehensive list of colorspaces which are supported by
+ * many of the included filters. This is not truly "all" the colorspaces, but
+ * it is most of them, and it is the most commonly supported large subset.
+ */
+AVFilterFormats *avfilter_all_colorspaces(void);
+
+/**
+ * If a and b share at least one common format, they are merged into a new
+ * format list which is returned.  All the references to a and b are updated
+ * to point to this new list, and a and b are deallocated.
+ *
+ * If a and b do not share any common formats, neither is modified, and NULL
+ * is returned.
+ */
+AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
+
+/** Adds *ref as a new reference to f */
+void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
+
+/**
+ * Remove *ref as a reference to the format list it currently points to,
+ * deallocate that list if this was the last reference, and set *ref to NULL
+ */
+void avfilter_formats_unref(AVFilterFormats **ref);
+
+/**
  * A filter pad used for either input or output
  */
 struct AVFilterPad
@@ -138,18 +223,6 @@ struct AVFilterPad
      * Input pads only.
      */
     int rej_perms;
-
-    /**
-     * Callback to get a list of supported formats.  The returned list should
-     * be terminated by -1 (see avfilter_make_format_list for an easy way to
-     * create such a list).
-     *
-     * This is used for both input and output pads.  If ommitted from an output
-     * pad, it is assumed that the only format supported is the same format
-     * that is being used for the filter's first input.  If the filter has no
-     * inputs, then this may not be ommitted for its output pads.
-     */
-    int *(*query_formats)(AVFilterLink *link);
 
     /**
      * Callback called before passing the first slice of a new frame.  If
@@ -219,11 +292,17 @@ void avfilter_default_end_frame(AVFilterLink *link);
 int avfilter_default_config_output_link(AVFilterLink *link);
 /** Default handler for config_props() for video inputs */
 int avfilter_default_config_input_link (AVFilterLink *link);
-/** Default handler for query_formats() for video outputs */
-int *avfilter_default_query_output_formats(AVFilterLink *link);
 /** Default handler for get_video_buffer() for video inputs */
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                   int perms);
+/**
+ * A helper for query_formats() which sets all links to the same list of
+ * formats. If there are no links hooked to this filter, the list of formats is
+ * freed.
+ */
+void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+/** Default handler for query_formats() */
+int avfilter_default_query_formats(AVFilterContext *ctx);
 
 /**
  * Filter definition.  This defines the pads a filter contains, and all the
@@ -250,6 +329,15 @@ typedef struct
      * to deallocate the AVFilterContext->priv memory itself.
      */
     void (*uninit)(AVFilterContext *ctx);
+
+    /**
+     * Query formats supported by the filter and its pads. Should set the
+     * in_formats for links connected to its output pads, and out_formats
+     * for links connected to its input pads.
+     *
+     * Should return zero on success.
+     */
+    int (*query_formats)(AVFilterContext *);
 
     const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
     const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
@@ -293,6 +381,14 @@ struct AVFilterLink
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     enum PixelFormat format;    ///< agreed upon image colorspace
+
+    /**
+     * Lists of formats supported by the input and output filters respectively.
+     * These lists are used for negotiating the format to actually be used,
+     * which will be loaded into the format member, above, when chosen.
+     */
+    AVFilterFormats *in_formats;
+    AVFilterFormats *out_formats;
 
     /**
      * The picture reference currently being sent across the link by the source
@@ -415,14 +511,15 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 void avfilter_destroy(AVFilterContext *filter);
 
 /**
- * Helper function to create a list of supported formats.  This is intended
- * for use in AVFilterPad->query_formats().
- * @param len The number of formats supported
- * @param ... A list of the supported formats
- * @return    The format list in a form suitable for returning from
- *            AVFilterPad->query_formats()
+ * Insert a filter in the middle of an existing link.
+ * @param link The link into which the filter should be inserted
+ * @param filt The filter to be inserted
+ * @param in   The input pad on the filter to connect
+ * @param out  The output pad on the filter to connect
+ * @return     Zero on success
  */
-int *avfilter_make_format_list(int len, ...);
+int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
+                           unsigned in, unsigned out);
 
 /**
  * Insert a new pad
