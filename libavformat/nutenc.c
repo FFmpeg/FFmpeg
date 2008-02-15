@@ -727,6 +727,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
 
     put_buffer(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
     nus->last_flags= flags;
+    nus->last_pts= pkt->pts;
 
     //FIXME just store one per syncpoint
     if(flags & FLAG_KEY)
