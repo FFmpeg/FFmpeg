@@ -149,7 +149,11 @@ typedef struct
 
     int priv_size;
 
-    int (*init)(AVFilterContext *ctx);
+    /**
+     * Filter initialization function.  Args contains the user-supplied
+     * parameters.  FIXME: maybe an AVOption-based system would be better?
+     */
+    int (*init)(AVFilterContext *ctx, const char *args);
     void (*uninit)(AVFilterContext *ctx);
 
     const AVFilterPad *inputs;  /// NULL terminated list of inputs. NULL if none
@@ -199,7 +203,7 @@ AVFilter *avfilter_get_by_name(char *name);
 
 AVFilterContext *avfilter_create(AVFilter *filter);
 AVFilterContext *avfilter_create_by_name(char *name);
-int avfilter_init_filter(AVFilterContext *filter);
+int avfilter_init_filter(AVFilterContext *filter, const char *args);
 void avfilter_destroy(AVFilterContext *filter);
 
 #endif  /* FFMPEG_AVFILTER_H */
