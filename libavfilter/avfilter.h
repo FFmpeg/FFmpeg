@@ -53,7 +53,7 @@ typedef struct AVFilterPic
  * and dimensions are per-reference properties.  Linesize is also useful for
  * image flipping, frame to field filters, etc, and so is also per-reference.
  *
- * TODO: add pts, and anything necessary for frame reordering
+ * TODO: add anything necessary for frame reordering
  */
 typedef struct AVFilterPicRef
 {
@@ -61,6 +61,8 @@ typedef struct AVFilterPicRef
     uint8_t *data[4];
     int linesize[4];
     int w, h;
+
+    int64_t pts;                ///< presentation timestamp in milliseconds
 
     int perms;                  ///< permissions
 #define AV_PERM_READ     0x01   ///< can read from the buffer
