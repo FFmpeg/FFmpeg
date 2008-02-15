@@ -44,7 +44,7 @@ AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
 
 void avfilter_unref_pic(AVFilterPicRef *ref)
 {
-    if(-- ref->pic->refcount == 0)
+    if(!(--ref->pic->refcount))
         ref->pic->free(ref->pic);
     av_free(ref);
 }
@@ -126,9 +126,9 @@ int avfilter_config_links(AVFilterContext *filter)
     unsigned i;
 
     for(i = 0; i < filter->input_count; i ++) {
-        AVFilterLink *link;
+        AVFilterLink *link = filter->inputs[i];
 
-        if(!(link = filter->inputs[i])) continue;
+        if(!link) continue;
 
         switch(link->init_state) {
         case AVLINK_INIT:
@@ -410,10 +410,10 @@ void avfilter_destroy(AVFilterContext *filter)
 
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
 {
-    int ret;
+    int ret=0;
 
     if(filter->filter->init)
-        if((ret = filter->filter->init(filter, args, opaque))) return ret;
-    return 0;
+        ret = filter->filter->init(filter, args, opaque);
+    return ret;
 }
 
