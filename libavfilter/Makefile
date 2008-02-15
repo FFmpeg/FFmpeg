@@ -10,7 +10,6 @@ OBJS = avfilter.o \
 # TODO: real conditional compilation
 OBJS-yes = vsrc_dummy.o \
            vsrc_ppm.o \
-           vo_sdl.o \
            vf_crop.o \
            vf_fps.o \
            vf_overlay.o \
@@ -28,14 +27,3 @@ LIBVERSION=$(LAVFILTERVERSION)
 LIBMAJOR=$(LAVFILTERMAJOR)
 
 include ../common.mak
-
-clean::
-	rm -f \
-	   filter_test $(TESTS)
-
-tests: filter_test
-
-filter_test: filter_test.o $(LIB)
-	$(CC) $(CFLAGS) $< -o $@ $(LIB) -lm -lSDL
-
-.PHONY: tests
