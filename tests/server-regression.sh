@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Make sure that the data directory exists
 mkdir -p tests/data
