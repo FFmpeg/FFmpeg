@@ -924,7 +924,6 @@ SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
-LDCONFIG="ldconfig"
 LIBPREF="lib"
 LIBSUF=".a"
 FULLNAME='$(NAME)$(BUILDSUF)'
@@ -1160,7 +1159,6 @@ case $targetos in
             add_cflags "-fno-expensive-optimizations"
             ;;
         esac
-        LDCONFIG="echo ignoring ldconfig"
         SHFLAGS=-nostart
         # enable BeOS things
         enable audio_beos
@@ -1185,7 +1183,6 @@ case $targetos in
     openbsd)
         disable need_memalign
         LIBOBJFLAGS='$(PIC)'
-        LDCONFIG='ldconfig -m $(SHLIBDIR)'
         SHFLAGS='-shared'
         SLIBNAME='$(SLIBPREF)$(FULLNAME)$(SLIBSUF).$(LIBVERSION)'
         SLIBNAME_WITH_VERSION='$(SLIBNAME)'
@@ -1963,7 +1960,6 @@ echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
-echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "LN_S=$ln_s" >> config.mak
 enabled dostrip &&
     echo "STRIP=$strip" >> config.mak ||

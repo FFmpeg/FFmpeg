@@ -166,9 +166,6 @@ install-libs:
 	$(MAKE)                    -C libavdevice install-libs
 	$(MAKE-$(CONFIG_PP))       -C libpostproc install-libs
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  install-libs
-ifeq ($(BUILD_SHARED),yes)
-	-$(LDCONFIG)
-endif
 
 install-headers:
 	$(MAKE)              -C libavutil   install-headers
