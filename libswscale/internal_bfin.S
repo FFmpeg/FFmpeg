@@ -94,8 +94,12 @@
 
 */
 
-#define mL1 .l1.text
 #define mL3 .text
+#ifdef __FDPIC__
+#define mL1 .l1.text
+#else
+#define mL1 mL3
+#endif
 #define MEM mL1
 
 #define DEFUN(fname,where,interface) \

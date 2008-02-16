@@ -36,8 +36,11 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-
+#ifdef __FDPIC__
 #define L1CODE __attribute__ ((l1_text))
+#else
+#define L1CODE
+#endif
 
 extern void ff_bfin_yuv2rgb555_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
                                      int w, uint32_t *coeffs) L1CODE;
