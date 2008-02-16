@@ -30,7 +30,11 @@ Registers Used  : A0, A1, R0-R7, I0-I3, B0, B2, B3, M0-M2, L0-L3, P0-P5, LC0.
 
 #include "config_bfin.h"
 
+#ifdef __FDPIC__
 .section .l1.data.B,"aw",@progbits
+#else
+.data
+#endif
 
 .align 4;
 coefs:
@@ -45,7 +49,9 @@ coefs:
 .short 0x18F9;           //cos(7pi/16)
 .short 0x7D8A;           //cos(pi/16)
 
+#ifdef __FDPIC__
 .section .l1.data.A
+#endif
 
 vtmp: .space 256
 
@@ -54,6 +60,7 @@ vtmp: .space 256
 #define TMP2 FP-16
 
 
+.text
 DEFUN(vp3_idct,mL1,
         (DCTELEM *block)):
 
@@ -61,8 +68,8 @@ DEFUN(vp3_idct,mL1,
     link 16;
     [--SP] = (R7:4, P5:3);   // Push the registers onto the stack.
     B0 = R0;                 // Pointer to Input matrix
-    R1 = [P3+coefs@GOT17M4]; // Pointer to Coefficients
-    R2 = [P3+vtmp@GOT17M4];  // Pointer to Temporary matrix
+    RELOC(R1, P3, coefs);    // Pointer to Coefficients
+    RELOC(R2, P3, vtmp);     // Pointer to Temporary matrix
     B3 = R1;
     B2 = R2;
     L3 = 20;                // L3 is used for making the coefficient array

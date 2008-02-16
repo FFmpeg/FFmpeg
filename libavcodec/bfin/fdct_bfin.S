@@ -129,23 +129,30 @@ root:/u/ffmpeg/bhead/libavcodec>
 
 #include "config_bfin.h"
 
+#ifdef __FDPIC__
 .section .l1.data.B,"aw",@progbits
+#else
+.data
+#endif
 .align 4;
 dct_coeff:
 .short 0x5a82, 0x2d41, 0x187e, 0x3b21, 0x0c7c, 0x3ec5, 0x238e, 0x3537;
 
+#ifdef __FDPIC__
 .section .l1.data.A,"aw",@progbits
+#endif
 .align 4
 vtmp:   .space 128
 
+.text
 DEFUN(fdct,mL1,
         (DCTELEM *block)):
     [--SP] = (R7:4, P5:3);          // Push the registers onto the stack.
 
     b0 = r0;
-    r0 = [P3+dct_coeff@GOT17M4];
+    RELOC(r0, P3, dct_coeff);
     b3 = r0;
-    r0 = [P3+vtmp@GOT17M4];
+    RELOC(r0, P3, vtmp);
     b2 = r0;
 
     L3 = 16;                        // L3 is set to 16 to make the coefficient
