@@ -1,11 +1,4 @@
 #!/bin/bash
-# Even in the 21st century some diffs are not supporting -u.
-diff -u $0 $0 > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-  diff_cmd="diff -u"
-else
-  diff_cmd="diff"
-fi
 
 # Make sure that the data directory exists
 mkdir -p tests/data
@@ -43,7 +36,7 @@ kill $FFMPEG_PID
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
 rm -f tests/feed1.ffm
-if $diff_cmd tests/data/ffserver.regression "$1" ; then
+if diff -u tests/data/ffserver.regression "$1" ; then
     echo
     echo Server regression test succeeded.
     exit 0
