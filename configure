@@ -1437,10 +1437,6 @@ if test $cpu != "generic"; then
         sparc64)
             add_cflags "-mcpu=v9"
         ;;
-        bf*) #bf531 bf532 bf533 bf561 bf5xx all get this config
-            add_cflags "-mfdpic"
-            add_ldflags "-mfdpic"
-        ;;
         arm*)
             add_cflags "-mcpu=$cpu"
         ;;
