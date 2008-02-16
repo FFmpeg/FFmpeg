@@ -527,39 +527,13 @@ static inline void emms(void)
         emms();\
 }
 
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-
-#define STRIDE_ALIGN 8
-
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_ARMV4L)
 
-/* This is to use 4 bytes read to the IDCT pointers for some 'zero'
-   line optimizations */
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(4, t, v)
-#define STRIDE_ALIGN 4
-
 #define MM_IWMMXT    0x0100 /* XScale IWMMXT */
 
 extern int mm_flags;
-
-#elif defined(HAVE_MLIB)
-
-/* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
-
-#elif defined(HAVE_VIS)
-
-/* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
-
-#elif defined(ARCH_ALPHA)
-
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
 
 #elif defined(ARCH_POWERPC)
 
@@ -575,21 +549,14 @@ extern int mm_flags;
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16
 
-#elif defined(ARCH_SH4)
+#endif
 
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
+#ifndef DECLARE_ALIGNED_8
+#   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
+#endif
 
-#elif defined(ARCH_BFIN)
-
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
-
-#else
-
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
-#define STRIDE_ALIGN 8
-
+#ifndef STRIDE_ALIGN
+#   define STRIDE_ALIGN 8
 #endif
 
 /* PSNR */
