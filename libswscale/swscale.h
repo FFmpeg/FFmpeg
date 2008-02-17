@@ -29,9 +29,6 @@
 
 #include "avutil.h"
 
-#define AV_STRINGIFY(s)         AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-
 #define LIBSWSCALE_VERSION_INT  ((0<<16)+(5<<8)+0)
 #define LIBSWSCALE_VERSION      0.5.0
 #define LIBSWSCALE_BUILD        LIBSWSCALE_VERSION_INT
