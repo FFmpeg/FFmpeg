@@ -1055,6 +1055,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
 
+    if(ist->next_pts == AV_NOPTS_VALUE)
+        ist->next_pts= ist->pts;
+
     if (pkt == NULL) {
         /* EOF handling */
         ptr = NULL;
