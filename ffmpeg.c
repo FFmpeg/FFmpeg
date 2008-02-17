@@ -1062,17 +1062,14 @@ static int output_packet(AVInputStream *ist, int ist_index,
         goto handle_eof;
     }
 
+    if(pkt->dts != AV_NOPTS_VALUE)
+        ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+
     len = pkt->size;
     ptr = pkt->data;
     while (len > 0) {
     handle_eof:
-        if(!pkt || ptr != pkt->data || pkt->dts == AV_NOPTS_VALUE){
-            ist->pts= ist->next_pts; // needed for last packet if vsync=0 and for multi pkt
-        } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
-            ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-        } else {
-    //        assert(ist->pts == ist->next_pts);
-        }
+        ist->pts= ist->next_pts;
 
         /* decode the packet if needed */
         data_buf = NULL; /* fail safe */
