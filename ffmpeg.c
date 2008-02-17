@@ -1074,6 +1074,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
     handle_eof:
         ist->pts= ist->next_pts;
 
+        if(len && len != pkt->size && verbose>0)
+            fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
+
         /* decode the packet if needed */
         data_buf = NULL; /* fail safe */
         data_size = 0;
