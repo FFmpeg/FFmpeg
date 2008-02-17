@@ -2002,14 +2002,18 @@ if enabled texi2html; then
     echo "BUILD_DOC=yes" >> config.mak
 fi
 
-sws_version=`grep '#define LIBSWSCALE_VERSION ' "$source_path/libswscale/swscale.h" | sed 's/[^0-9\.]//g'`
-pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
-lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
-lavd_version=`grep '#define LIBAVDEVICE_VERSION ' "$source_path/libavdevice/avdevice.h" | sed 's/[^0-9\.]//g'`
-lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
-lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
+get_version(){
+    name=$1
+    file=$source_path/$2
+    grep "#define ${name}_VERSION " "$file" | sed 's/[^0-9\.]//g'
+}
 
-
+sws_version=$(get_version  LIBSWSCALE  libswscale/swscale.h)
+pp_version=$(get_version   LIBPOSTPROC libpostproc/postprocess.h)
+lavc_version=$(get_version LIBAVCODEC  libavcodec/avcodec.h)
+lavd_version=$(get_version LIBAVDEVICE libavdevice/avdevice.h)
+lavf_version=$(get_version LIBAVFORMAT libavformat/avformat.h)
+lavu_version=$(get_version LIBAVUTIL   libavutil/avutil.h)
 
 if enabled shared; then
     echo "BUILD_SHARED=yes" >> config.mak
