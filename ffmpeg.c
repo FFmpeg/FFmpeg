@@ -544,6 +544,8 @@ static void do_audio_out(AVFormatContext *s,
             AVPacket pkt;
             av_init_packet(&pkt);
 
+            //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
+
             ret = avcodec_encode_audio(enc, audio_out, audio_out_size,
                                        (short *)audio_buf);
             audio_size += ret;
@@ -588,6 +590,7 @@ static void do_audio_out(AVFormatContext *s,
             size_out = size_out >> 1;
             break;
         }
+        //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
         ret = avcodec_encode_audio(enc, audio_out, size_out,
                                    (short *)buftmp);
         audio_size += ret;
