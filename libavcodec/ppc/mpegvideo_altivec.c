@@ -608,6 +608,8 @@ extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 void MPV_common_init_altivec(MpegEncContext *s)
 {
+     if (mm_flags & MM_ALTIVEC == 0) return;
+
     if (s->avctx->lowres==0)
     {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
