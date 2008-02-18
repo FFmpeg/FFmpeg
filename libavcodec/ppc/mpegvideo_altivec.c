@@ -66,12 +66,8 @@ do { \
 }
 
 
-#ifdef __APPLE_CC__
-#define FOUROF(a) (a)
-#else
-// slower, for dumb non-apple GCC
-#define FOUROF(a) {a,a,a,a}
-#endif
+#define FOUROF(a) AVV(a,a,a,a)
+
 int dct_quantize_altivec(MpegEncContext* s,
                         DCTELEM* data, int n,
                         int qscale, int* overflow)
