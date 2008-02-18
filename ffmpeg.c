@@ -2181,7 +2181,7 @@ static void opt_me_threshold(const char *arg)
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
-    av_log_set_level(atoi(arg));
+    av_log_set_level(verbose);
 }
 
 static void opt_frame_rate(const char *arg)
