@@ -486,7 +486,6 @@ int dct_quantize_altivec(MpegEncContext* s,
 
     return lastNonZero;
 }
-#undef FOUROF
 
 /*
   AltiVec version of dct_unquantize_h263
