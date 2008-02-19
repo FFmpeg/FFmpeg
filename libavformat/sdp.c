@@ -96,7 +96,7 @@ static int get_address(char *dest_addr, int size, int *ttl, const char *url)
 static char *extradata2psets(AVCodecContext *c)
 {
     char *psets, *p;
-    uint8_t *r;
+    const uint8_t *r;
     const char *pset_string = "; sprop-parameter-sets=";
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
@@ -114,7 +114,7 @@ static char *extradata2psets(AVCodecContext *c)
     p = psets + strlen(pset_string);
     r = ff_avc_find_startcode(c->extradata, c->extradata + c->extradata_size);
     while (r < c->extradata + c->extradata_size) {
-        uint8_t *r1;
+        const uint8_t *r1;
 
         while (!*(r++));
         r1 = ff_avc_find_startcode(r, c->extradata + c->extradata_size);
