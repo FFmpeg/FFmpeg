@@ -136,7 +136,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
         } else {
             ofs = *(srcptr++);
             cnt = *(srcptr++);
-            ofs += cnt * 256;;
+            ofs += cnt * 256;
             cnt = ((cnt >> 3) & 0x1f) + 1;
             ofs &= 0x7ff;
             srclen -= 2;
@@ -302,7 +302,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
             }
         }
         encoded = c->decomp_buf;
-        len = c->decomp_size;;
+        len = c->decomp_size;
 #else
         av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
         return -1;
