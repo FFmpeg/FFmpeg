@@ -802,8 +802,8 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 {
     unsigned char *input_bytes = (unsigned char *)input_data;
     unsigned char *output_data_bytes = (unsigned char *)input_data;
-    unsigned char *idct_data_bytes = (unsigned char *)SSE2_idct_data;
-    unsigned char *Eight = (unsigned char *)eight_data;
+    const unsigned char *idct_data_bytes = (const unsigned char *)SSE2_idct_data;
+    const unsigned char *Eight = (const unsigned char *)eight_data;
 
 #define eax input_bytes
 //#define ebx dequant_matrix_bytes
