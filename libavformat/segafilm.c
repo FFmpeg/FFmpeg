@@ -107,7 +107,7 @@ static int film_read_header(AVFormatContext *s,
         /* normal Saturn .cpk files; 32-byte header */
         if (get_buffer(pb, scratch, 32) != 32)
             return AVERROR(EIO);
-        film->audio_samplerate = AV_RB16(&scratch[24]);;
+        film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
         if (film->audio_bits == 8)

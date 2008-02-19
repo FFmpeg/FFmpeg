@@ -2919,7 +2919,7 @@ static int fill_default_ref_list(H264Context *h){
                 if(sel != PICT_FRAME) continue;
 
                 frame_list[ list ][index  ]= *h->long_ref[i];
-                frame_list[ list ][index++].pic_id= i;;
+                frame_list[ list ][index++].pic_id= i;
             }
             len[list] = index;
         }
@@ -2963,7 +2963,7 @@ static int fill_default_ref_list(H264Context *h){
             sel = h->long_ref[i]->reference | structure_sel;
             if(sel != PICT_FRAME) continue;
             frame_list[0][index  ]= *h->long_ref[i];
-            frame_list[0][index++].pic_id= i;;
+            frame_list[0][index++].pic_id= i;
         }
 
         if (FIELD_PICTURE)
@@ -5498,7 +5498,7 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
             if( !qmul ) {
                 block[j] = get_cabac_bypass_sign( CC, -1);
             }else{
-                block[j] = (get_cabac_bypass_sign( CC, -qmul[j]) + 32) >> 6;;
+                block[j] = (get_cabac_bypass_sign( CC, -qmul[j]) + 32) >> 6;
             }
 
             abslevel1++;

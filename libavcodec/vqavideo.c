@@ -133,7 +133,7 @@ static int vqa_decode_init(AVCodecContext *avctx)
 {
     VqaContext *s = avctx->priv_data;
     unsigned char *vqa_header;
-    int i, j, codebook_index;;
+    int i, j, codebook_index;
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;

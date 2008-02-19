@@ -1097,8 +1097,8 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
         for(y= 0; y <= ey; y++){
             x = (y*f)>>16;
             fr= (y*f)&0xFFFF;
-            buf[y*stride + x  ]+= (color*(0x10000-fr))>>16;;
-            buf[y*stride + x+1]+= (color*         fr )>>16;;
+            buf[y*stride + x  ]+= (color*(0x10000-fr))>>16;
+            buf[y*stride + x+1]+= (color*         fr )>>16;
         }
     }
 }
@@ -2129,7 +2129,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
             offset[2]=
             offset[3]= 0;
         }else{
-            offset[0]= y * s->linesize;;
+            offset[0]= y * s->linesize;
             offset[1]=
             offset[2]= (y >> s->chroma_y_shift) * s->uvlinesize;
             offset[3]= 0;

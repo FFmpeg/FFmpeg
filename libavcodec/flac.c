@@ -721,7 +721,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
 //    s->last_blocksize = s->blocksize;
 end:
-    i= (get_bits_count(&s->gb)+7)/8;;
+    i= (get_bits_count(&s->gb)+7)/8;
     if(i > buf_size){
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", i - buf_size);
         s->bitstream_size=0;

@@ -387,7 +387,7 @@ static int g726_decode_frame(AVCodecContext *avctx,
     mask = (1<<c->code_size) - 1;
     init_get_bits(&gb, buf, buf_size * 8);
     if (c->bits_left) {
-        int s = c->code_size - c->bits_left;;
+        int s = c->code_size - c->bits_left;
         code = (c->bit_buffer << s) | get_bits(&gb, s);
         *samples++ = g726_decode(&c->c, code & mask);
     }
