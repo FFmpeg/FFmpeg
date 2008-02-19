@@ -1869,7 +1869,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         }
     }
 eos: // end of slice
-    *buf += get_bits_count(&s->gb)/8 - 1;
+    *buf += (get_bits_count(&s->gb)-1)/8;
 //printf("y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
     return 0;
 }
