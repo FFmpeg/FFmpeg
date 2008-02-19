@@ -99,7 +99,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     /* we have built Huffman table and are ready to decode plane */
 
     /* convert bits so they may be used by standard bitreader */
-    s->dsp.bswap_buf(s->tmpbuf, src, size >> 2);
+    s->dsp.bswap_buf((uint32_t *)s->tmpbuf, (const uint32_t *)src, size >> 2);
 
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for(j = 0; j < h; j++){
