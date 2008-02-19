@@ -2005,7 +2005,7 @@ fi
 get_version(){
     name=$1
     file=$source_path/$2
-    grep "#define ${name}_VERSION " "$file" | sed 's/[^0-9\.]//g'
+    grep "#define ${name}_VERSION_TRIPLET " "$file" | sed 's/[^0-9,]//g' | tr , .
 }
 
 sws_version=$(get_version  LIBSWSCALE  libswscale/swscale.h)
