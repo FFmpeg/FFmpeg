@@ -31,7 +31,7 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
     }
 
     for( end -= 3; p < end; p += 4 ) {
-        const uint32_t x = *(uint32_t*)p;
+        uint32_t x = *(const uint32_t*)p;
 //      if( (x - 0x01000100) & (~x) & 0x80008000 ) // little endian
 //      if( (x - 0x00010001) & (~x) & 0x00800080 ) // big endian
         if( (x - 0x01010101) & (~x) & 0x80808080 ) { // generic
