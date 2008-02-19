@@ -66,7 +66,7 @@ int ff_rate_control_init(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
     int i;
-    char *error = NULL;
+    const char *error = NULL;
     static const char *const_names[]={
         "PI",
         "E",
