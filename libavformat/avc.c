@@ -21,9 +21,9 @@
 #include "avformat.h"
 #include "avio.h"
 
-uint8_t *ff_avc_find_startcode(uint8_t *p, uint8_t *end)
+const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
 {
-    uint8_t *a = p + 4 - ((long)p & 3);
+    const uint8_t *a = p + 4 - ((long)p & 3);
 
     for( end -= 3; p < a && p < end; p++ ) {
         if( p[0] == 0 && p[1] == 0 && p[2] == 1 )
@@ -31,7 +31,7 @@ uint8_t *ff_avc_find_startcode(uint8_t *p, uint8_t *end)
     }
 
     for( end -= 3; p < end; p += 4 ) {
-        uint32_t x = *(uint32_t*)p;
+        const uint32_t x = *(uint32_t*)p;
 //      if( (x - 0x01000100) & (~x) & 0x80008000 ) // little endian
 //      if( (x - 0x00010001) & (~x) & 0x00800080 ) // big endian
         if( (x - 0x01010101) & (~x) & 0x80808080 ) { // generic
@@ -58,12 +58,12 @@ uint8_t *ff_avc_find_startcode(uint8_t *p, uint8_t *end)
     return end + 3;
 }
 
-int ff_avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
+int ff_avc_parse_nal_units(const uint8_t *buf_in, uint8_t **buf, int *size)
 {
     ByteIOContext *pb;
-    uint8_t *p = buf_in;
-    uint8_t *end = p + *size;
-    uint8_t *nal_start, *nal_end;
+    const uint8_t *p = buf_in;
+    const uint8_t *end = p + *size;
+    const uint8_t *nal_start, *nal_end;
     int ret = url_open_dyn_buf(&pb);
     if(ret < 0)
         return ret;
@@ -81,19 +81,19 @@ int ff_avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size)
     return 0;
 }
 
-int ff_isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
+int ff_isom_write_avcc(ByteIOContext *pb, const uint8_t *data, int len)
 {
     if (len > 6) {
         /* check for h264 start code */
         if (AV_RB32(data) == 0x00000001) {
-            uint8_t *buf=NULL, *end;
+            uint8_t *buf=NULL, *end, *start;
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
 
             int ret = ff_avc_parse_nal_units(data, &buf, &len);
             if (ret < 0)
                 return ret;
-            data = buf;
+            start = buf;
             end = buf + len;
 
             /* look for sps and pps */
@@ -126,7 +126,7 @@ int ff_isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len)
             put_byte(pb, 1); /* number of pps */
             put_be16(pb, pps_size);
             put_buffer(pb, pps, pps_size);
-            av_free(data);
+            av_free(start);
         } else {
             put_buffer(pb, data, len);
         }

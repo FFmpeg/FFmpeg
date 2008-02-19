@@ -25,8 +25,8 @@
 #include <stdint.h>
 #include "avio.h"
 
-int ff_avc_parse_nal_units(uint8_t *buf_in, uint8_t **buf, int *size);
-int ff_isom_write_avcc(ByteIOContext *pb, uint8_t *data, int len);
-uint8_t *ff_avc_find_startcode(uint8_t *p, uint8_t *end);
+int ff_avc_parse_nal_units(const uint8_t *buf_in, uint8_t **buf, int *size);
+int ff_isom_write_avcc(ByteIOContext *pb, const uint8_t *data, int len);
+const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end);
 
 #endif /* AVC_H */
