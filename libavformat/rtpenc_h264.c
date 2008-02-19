@@ -60,15 +60,15 @@ static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last
     }
 }
 
-void ff_rtp_send_h264(AVFormatContext *s1, uint8_t *buf1, int size)
+void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size)
 {
-    uint8_t *r;
+    const uint8_t *r;
     RTPDemuxContext *s = s1->priv_data;
 
     s->timestamp = s->cur_timestamp;
     r = ff_avc_find_startcode(buf1, buf1 + size);
     while (r < buf1 + size) {
-        uint8_t *r1;
+        const uint8_t *r1;
 
         while(!*(r++));
         r1 = ff_avc_find_startcode(r, buf1 + size);
