@@ -27,6 +27,8 @@
  *     external api for the pp stuff
  */
 
+#include "avutil.h"
+
 #define LIBPOSTPROC_VERSION_TRIPLET 51,1,0
 
 #define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_TRIPLET)
