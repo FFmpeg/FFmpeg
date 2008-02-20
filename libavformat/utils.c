@@ -702,21 +702,30 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* interpolate PTS and DTS if they are not present */
     if(delay <=1){
         if (presentation_delayed) {
+            int fields= 2 + (pc ? pc->repeat_pict : 0);
+            int field_duration= pkt->duration / fields;
+            int parity= pc ? pc->parity : 0;
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
             if (pkt->dts == AV_NOPTS_VALUE)
-                pkt->dts = st->last_IP_pts;
+                pkt->dts = st->last_IP_pts[parity];
             update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts);
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->cur_dts;
 
             /* this is tricky: the dts must be incremented by the duration
             of the frame we are displaying, i.e. the last I- or P-frame */
-            if (st->last_IP_duration == 0)
-                st->last_IP_duration = pkt->duration;
-            st->cur_dts = pkt->dts + st->last_IP_duration;
-            st->last_IP_duration  = pkt->duration;
-            st->last_IP_pts= pkt->pts;
+            st->cur_dts = pkt->dts;
+            for(i=0; i<fields; i++){
+                int p= (parity + i)&1;
+                if(!st->last_IP_duration[p])
+                    st->last_IP_duration[p]= field_duration;
+                st->cur_dts += st->last_IP_duration[p];
+                st->last_IP_pts[p]= pkt->pts;
+                if(pkt->pts != AV_NOPTS_VALUE)
+                    st->last_IP_pts[p] += i*field_duration;
+                st->last_IP_duration[p]= field_duration;
+            }
             /* cannot compute PTS if not present (we can compute it only
             by knowing the future */
         } else if(pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE || pkt->duration){
@@ -1014,7 +1023,8 @@ static void av_read_frame_flush(AVFormatContext *s)
             av_parser_close(st->parser);
             st->parser = NULL;
         }
-        st->last_IP_pts = AV_NOPTS_VALUE;
+        st->last_IP_pts[0] =
+        st->last_IP_pts[1] = AV_NOPTS_VALUE;
         st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
     }
 }
@@ -1622,7 +1632,8 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, offset_t old_offse
     for(i=0; i<ic->nb_streams; i++){
         st= ic->streams[i];
         st->cur_dts= st->first_dts;
-        st->last_IP_pts = AV_NOPTS_VALUE;
+        st->last_IP_pts[0] =
+        st->last_IP_pts[1] = AV_NOPTS_VALUE;
     }
 }
 
@@ -2181,7 +2192,8 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 
     /* default pts setting is MPEG-like */
     av_set_pts_info(st, 33, 1, 90000);
-    st->last_IP_pts = AV_NOPTS_VALUE;
+    st->last_IP_pts[0] =
+    st->last_IP_pts[1] = AV_NOPTS_VALUE;
     for(i=0; i<MAX_REORDER_DELAY+1; i++)
         st->pts_buffer[i]= AV_NOPTS_VALUE;
 

@@ -36,6 +36,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
+    s->parity = 0;
     buf_end = buf + buf_size;
     while (buf < buf_end) {
         start_code= -1;
@@ -105,8 +106,11 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
                         /* the packet only represents half a frame
                            XXX,FIXME maybe find a different solution */
-                        if(picture_structure != 3)
+                        if(picture_structure != 3){
                             s->repeat_pict = -1;
+                            s->parity = picture_structure-1;
+                        }else
+                            s->parity = !top_field_first;
                     }
                     break;
                 }

@@ -337,8 +337,8 @@ typedef struct AVStream {
     struct AVCodecParserContext *parser;
 
     int64_t cur_dts;
-    int last_IP_duration;
-    int64_t last_IP_pts;
+    int last_IP_duration[2];
+    int64_t last_IP_pts[2];
     /* av_seek_frame() support */
     AVIndexEntry *index_entries; /**< only used if the format does not
                                     support seeking natively */
