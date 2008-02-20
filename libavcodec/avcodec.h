@@ -2788,7 +2788,6 @@ typedef struct AVCodecParserContext {
     /* video info */
     int pict_type; /* XXX: Put it back in AVCodecContext. */
     int repeat_pict; /* XXX: Put it back in AVCodecContext. */
-    int parity;
     int64_t pts;     /* pts of the current frame */
     int64_t dts;     /* dts of the current frame */
 

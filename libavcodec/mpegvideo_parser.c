@@ -36,7 +36,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
-    s->parity = 0;
     buf_end = buf + buf_size;
     while (buf < buf_end) {
         start_code= -1;
