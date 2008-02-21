@@ -158,13 +158,13 @@ asm(
     "1: ....
     ...
     "jump_instruciton ....
-dont use C loops:
+Do not use C loops:
 do{
     asm(
         ...
 }while()
 
-Use asm() instead of intrinsics. Later require a good optimizing compiler
+Use asm() instead of intrinsics. Later requires a good optimizing compiler
 which gcc is not.
 
 
