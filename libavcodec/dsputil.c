@@ -50,6 +50,9 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
+static const unsigned long pb_7f = 0x7f7f7f7f7f7f7f7fUL;
+static const unsigned long pb_80 = 0x8080808080808080UL;
+
 const uint8_t ff_zigzag_direct[64] = {
     0,   1,  8, 16,  9,  2,  3, 10,
     17, 24, 32, 25, 18, 11,  4,  5,
@@ -3276,34 +3279,31 @@ static void clear_blocks_c(DCTELEM *blocks)
 }
 
 static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
-    int i;
-    for(i=0; i+7<w; i+=8){
-        dst[i+0] += src[i+0];
-        dst[i+1] += src[i+1];
-        dst[i+2] += src[i+2];
-        dst[i+3] += src[i+3];
-        dst[i+4] += src[i+4];
-        dst[i+5] += src[i+5];
-        dst[i+6] += src[i+6];
-        dst[i+7] += src[i+7];
+    long i;
+    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
+        long a = *(long*)(src+i);
+        long b = *(long*)(dst+i);
+        *(long*)(dst+i) = ((a&pb_7f) + (b&pb_7f)) ^ ((a^b)&pb_80);
     }
     for(; i<w; i++)
         dst[i+0] += src[i+0];
 }
 
 static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
-    int i;
+    long i;
     for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
         long a = *(long*)(src1+i);
         long b = *(long*)(src2+i);
-        *(long*)(dst+i) = ((a&0x7f7f7f7f7f7f7f7fL) + (b&0x7f7f7f7f7f7f7f7fL)) ^ ((a^b)&0x8080808080808080L);
+        *(long*)(dst+i) = ((a&pb_7f) + (b&pb_7f)) ^ ((a^b)&pb_80);
     }
     for(; i<w; i++)
         dst[i] = src1[i]+src2[i];
 }
 
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
-    int i;
+    long i;
+#ifndef HAVE_FAST_UNALIGNED
+    if((long)src2 & (sizeof(long)-1)){
     for(i=0; i+7<w; i+=8){
         dst[i+0] = src1[i+0]-src2[i+0];
         dst[i+1] = src1[i+1]-src2[i+1];
@@ -3313,6 +3313,13 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i+5] = src1[i+5]-src2[i+5];
         dst[i+6] = src1[i+6]-src2[i+6];
         dst[i+7] = src1[i+7]-src2[i+7];
+    }
+    }else
+#endif
+    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
+        long a = *(long*)(src1+i);
+        long b = *(long*)(src2+i);
+        *(long*)(dst+i) = ((a|pb_80) - (b&pb_7f)) ^ ((a^b^pb_80)&pb_80);
     }
     for(; i<w; i++)
         dst[i+0] = src1[i+0]-src2[i+0];
