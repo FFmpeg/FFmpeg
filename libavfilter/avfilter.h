@@ -168,9 +168,9 @@ AVFilterFormats *avfilter_make_format_list(int len, ...);
 AVFilterFormats *avfilter_all_colorspaces(void);
 
 /**
- * If a and b share at least one common format, they are merged into a new
- * format list which is returned.  All the references to a and b are updated
- * to point to this new list, and a and b are deallocated.
+ * Returns a format list which contains the intersection of the formats of
+ * a and b. And all the references of a and b, and a and b will be
+ * deallocated.
  *
  * If a and b do not share any common formats, neither is modified, and NULL
  * is returned.
