@@ -197,6 +197,19 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
  */
 void avfilter_formats_unref(AVFilterFormats **ref);
 
+/**
+ *
+ *         Before                                 After
+ *   ________                         ________
+ *  |   f    |<---------.            |   f    |<---------.
+ *  |  ____  |       ___|___         |  ____  |       ___|___
+ *  | |refs| |      |   |   |        | |refs| |      |   |   |   NULL
+ *  | |* *--------->|*oldref|        | |* *--------->|*newref|     ^
+ *  | |* * | |      |_______|        | |* * | |      |_______|  ___|___
+ *  | |____| |                       | |____| |                |   |   |
+ *  |________|                       |________|                |*oldref|
+ *                                                             |_______|
+ */
 void avfilter_formats_changeref(AVFilterFormats **oldref,
                                 AVFilterFormats **newref);
 
