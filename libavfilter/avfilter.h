@@ -177,7 +177,18 @@ AVFilterFormats *avfilter_all_colorspaces(void);
  */
 AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
 
-/** Adds *ref as a new reference to f */
+/**
+ * Adds *ref as a new reference to f.
+ * That is the pointers will point like in the ascii art below:
+ *   ________
+ *  |   f    |<--------.
+ *  |  ____  |         |
+ *  | |refs| |       __|_
+ *  | |* * | |      |  | |
+ *  | |* *--------->|*ref|
+ *  | |____| |      |____|
+ *  |________|
+ */
 void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
 
 /**
