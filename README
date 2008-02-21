@@ -17,6 +17,9 @@ FFmpeg README
   License, see the file COPYING.GPL for details. Their compilation and use
   in FFmpeg is optional.
 
+* The file libavcodec/i386/idct_mmx.c is distributed under the GNU General
+  Public License. It is strictly an optimization and its use is optional.
+
 * The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
   are taken from libjpeg, see the top of the files for licensing details.
 
