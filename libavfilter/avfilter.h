@@ -197,6 +197,9 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
  */
 void avfilter_formats_unref(AVFilterFormats **ref);
 
+void avfilter_formats_changeref(AVFilterFormats **oldref,
+                                AVFilterFormats **newref);
+
 /**
  * A filter pad used for either input or output.
  */
@@ -324,9 +327,6 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
 void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
-
-void avfilter_formats_changeref(AVFilterFormats **oldref,
-                                AVFilterFormats **newref);
 
 /**
  * Filter definition.  This defines the pads a filter contains, and all the
