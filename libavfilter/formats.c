@@ -21,7 +21,9 @@
 
 #include "avfilter.h"
 
-/** merge and update all the references */
+/**
+ * Add all refs from a to ret and destroy a.
+ */
 static void merge_ref(AVFilterFormats *ret, AVFilterFormats *a)
 {
     int i;
