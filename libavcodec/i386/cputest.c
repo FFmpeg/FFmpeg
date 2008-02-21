@@ -82,13 +82,17 @@ int mm_support(void)
         if (std_caps & (1<<23))
             rval |= FF_MM_MMX;
         if (std_caps & (1<<25))
-            rval |= FF_MM_MMXEXT | FF_MM_SSE;
+            rval |= FF_MM_MMXEXT
+#if !defined(__GNUC__) || __GNUC__ > 2
+                  | FF_MM_SSE;
         if (std_caps & (1<<26))
             rval |= FF_MM_SSE2;
         if (ecx & 1)
             rval |= FF_MM_SSE3;
         if (ecx & 0x00000200 )
-            rval |= FF_MM_SSSE3;
+            rval |= FF_MM_SSSE3
+#endif
+                  ;
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);
