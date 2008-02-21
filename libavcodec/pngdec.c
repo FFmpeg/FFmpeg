@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "png.h"
+#include "dsputil.h"
 
 /* TODO:
  * - add 2, 4 and 16 bit depth support
@@ -31,6 +32,8 @@
 //#define DEBUG
 
 typedef struct PNGDecContext {
+    DSPContext dsp;
+
     const uint8_t *bytestream;
     const uint8_t *bytestream_start;
     const uint8_t *bytestream_end;
@@ -129,12 +132,60 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
     }
 }
 
-/* XXX: optimize */
+void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)
+{
+    int i;
+    for(i = 0; i < w; i++) {
+        int a, b, c, p, pa, pb, pc;
+
+        a = dst[i - bpp];
+        b = top[i];
+        c = top[i - bpp];
+
+        p = b - c;
+        pc = a - c;
+
+        pa = abs(p);
+        pb = abs(pc);
+        pc = abs(p + pc);
+
+        if (pa <= pb && pa <= pc)
+            p = a;
+        else if (pb <= pc)
+            p = b;
+        else
+            p = c;
+        dst[i] = p + src[i];
+    }
+}
+
+#define UNROLL1(bpp, op) {\
+                 r = dst[0];\
+    if(bpp >= 2) g = dst[1];\
+    if(bpp >= 3) b = dst[2];\
+    if(bpp >= 4) a = dst[3];\
+    for(; i < size; i+=bpp) {\
+        dst[i+0] = r = op(r, src[i+0], last[i+0]);\
+        if(bpp == 1) continue;\
+        dst[i+1] = g = op(g, src[i+1], last[i+1]);\
+        if(bpp == 2) continue;\
+        dst[i+2] = b = op(b, src[i+2], last[i+2]);\
+        if(bpp == 3) continue;\
+        dst[i+3] = a = op(a, src[i+3], last[i+3]);\
+    }\
+}
+
+#define UNROLL_FILTER(op)\
+         if(bpp == 1) UNROLL1(1, op)\
+    else if(bpp == 2) UNROLL1(2, op)\
+    else if(bpp == 3) UNROLL1(3, op)\
+    else if(bpp == 4) UNROLL1(4, op)\
+
 /* NOTE: 'dst' can be equal to 'last' */
-static void png_filter_row(uint8_t *dst, int filter_type,
+static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
                            uint8_t *src, uint8_t *last, int size, int bpp)
 {
-    int i, p;
+    int i, p, r, g, b, a;
 
     switch(filter_type) {
     case PNG_FILTER_VALUE_NONE:
@@ -144,54 +195,41 @@ static void png_filter_row(uint8_t *dst, int filter_type,
         for(i = 0; i < bpp; i++) {
             dst[i] = src[i];
         }
-        for(i = bpp; i < size; i++) {
-            p = dst[i - bpp];
-            dst[i] = p + src[i];
+        if(bpp == 4) {
+            p = *(int*)dst;
+            for(; i < size; i+=bpp) {
+                int s = *(int*)(src+i);
+                p = ((s&0x7f7f7f7f) + (p&0x7f7f7f7f)) ^ ((s^p)&0x80808080);
+                *(int*)(dst+i) = p;
+            }
+        } else {
+#define OP_SUB(x,s,l) x+s
+            UNROLL_FILTER(OP_SUB);
         }
         break;
     case PNG_FILTER_VALUE_UP:
-        for(i = 0; i < size; i++) {
-            p = last[i];
-            dst[i] = p + src[i];
-        }
+        dsp->add_bytes_l2(dst, src, last, size);
         break;
     case PNG_FILTER_VALUE_AVG:
         for(i = 0; i < bpp; i++) {
             p = (last[i] >> 1);
             dst[i] = p + src[i];
         }
-        for(i = bpp; i < size; i++) {
-            p = ((dst[i - bpp] + last[i]) >> 1);
-            dst[i] = p + src[i];
-        }
+#define OP_AVG(x,s,l) (((x + l) >> 1) + s) & 0xff
+        UNROLL_FILTER(OP_AVG);
         break;
     case PNG_FILTER_VALUE_PAETH:
         for(i = 0; i < bpp; i++) {
             p = last[i];
             dst[i] = p + src[i];
         }
-        for(i = bpp; i < size; i++) {
-            int a, b, c, pa, pb, pc;
-
-            a = dst[i - bpp];
-            b = last[i];
-            c = last[i - bpp];
-
-            p = b - c;
-            pc = a - c;
-
-            pa = abs(p);
-            pb = abs(pc);
-            pc = abs(p + pc);
-
-            if (pa <= pb && pa <= pc)
-                p = a;
-            else if (pb <= pc)
-                p = b;
-            else
-                p = c;
-            dst[i] = p + src[i];
+        if(bpp > 1 && size > 4) {
+            // would write off the end of the array if we let it process the last pixel with bpp=3
+            int w = bpp==4 ? size : size-3;
+            dsp->add_png_paeth_prediction(dst+i, src+i, last+i, w-i, bpp);
+            i = w;
         }
+        ff_add_png_paeth_prediction(dst+i, src+i, last+i, size-i, bpp);
         break;
     }
 }
@@ -222,7 +260,7 @@ static void png_handle_row(PNGDecContext *s)
         ptr = s->image_buf + s->image_linesize * s->y;
         /* need to swap bytes correctly for RGB_ALPHA */
         if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-            png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
+            png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                            s->last_row, s->row_size, s->bpp);
             memcpy(s->last_row, s->tmp_row, s->row_size);
             convert_to_rgb32(ptr, s->tmp_row, s->width);
@@ -233,7 +271,7 @@ static void png_handle_row(PNGDecContext *s)
             else
                 last_row = ptr - s->image_linesize;
 
-            png_filter_row(ptr, s->crow_buf[0], s->crow_buf + 1,
+            png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
                            last_row, s->row_size, s->bpp);
         }
         s->y++;
@@ -249,7 +287,7 @@ static void png_handle_row(PNGDecContext *s)
                    wait for the next one */
                 if (got_line)
                     break;
-                png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
+                png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                                s->last_row, s->pass_row_size, s->bpp);
                 memcpy(s->last_row, s->tmp_row, s->pass_row_size);
                 got_line = 1;
@@ -534,6 +572,7 @@ static int png_dec_init(AVCodecContext *avctx){
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame= (AVFrame*)&s->picture;
+    dsputil_init(&s->dsp, avctx);
 
     return 0;
 }

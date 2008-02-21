@@ -44,6 +44,9 @@ void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
 /* flacenc.c */
 void ff_flac_compute_autocorr(const int32_t *data, int len, int lag, double *autoc);
 
+/* pngdec.c */
+void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
+
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
@@ -3288,6 +3291,17 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
+static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+    int i;
+    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
+        long a = *(long*)(src1+i);
+        long b = *(long*)(src2+i);
+        *(long*)(dst+i) = ((a&0x7f7f7f7f7f7f7f7fL) + (b&0x7f7f7f7f7f7f7f7fL)) ^ ((a^b)&0x8080808080808080L);
+    }
+    for(; i<w; i++)
+        dst[i] = src1[i]+src2[i];
+}
+
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     int i;
     for(i=0; i+7<w; i+=8){
@@ -4232,9 +4246,13 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     c->add_bytes= add_bytes_c;
+    c->add_bytes_l2= add_bytes_l2_c;
     c->diff_bytes= diff_bytes_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
     c->bswap_buf= bswap_buf;
+#ifdef CONFIG_PNG_DECODER
+    c->add_png_paeth_prediction= ff_add_png_paeth_prediction;
+#endif
 
     c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_c;
     c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_c;

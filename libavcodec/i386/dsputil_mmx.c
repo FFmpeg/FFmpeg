@@ -59,6 +59,7 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pw_42 ) = 0x002A002A002A002AULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_64 ) = 0x0040004000400040ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_96 ) = 0x0060006000600060ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_128) = 0x0080008000800080ULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_pw_255) = 0x00ff00ff00ff00ffULL;
 
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_1  ) = 0x0101010101010101ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_3  ) = 0x0303030303030303ULL;
@@ -603,6 +604,26 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
     );
     for(; i<w; i++)
         dst[i+0] += src[i+0];
+}
+
+static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+    long i=0;
+    asm volatile(
+        "1:                             \n\t"
+        "movq   (%2, %0), %%mm0         \n\t"
+        "movq  8(%2, %0), %%mm1         \n\t"
+        "paddb  (%3, %0), %%mm0         \n\t"
+        "paddb 8(%3, %0), %%mm1         \n\t"
+        "movq %%mm0,  (%1, %0)          \n\t"
+        "movq %%mm1, 8(%1, %0)          \n\t"
+        "add $16, %0                    \n\t"
+        "cmp %4, %0                     \n\t"
+        " jb 1b                         \n\t"
+        : "+r" (i)
+        : "r"(dst), "r"(src1), "r"(src2), "r"((long)w-15)
+    );
+    for(; i<w; i++)
+        dst[i] = src1[i] + src2[i];
 }
 
 #define H263_LOOP_FILTER \
@@ -1563,6 +1584,80 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     *left_top= src1[w-1];
     *left    = src2[w-1];
 }
+
+#define PAETH(cpu, abs3)\
+void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
+{\
+    long i = -bpp;\
+    long end = w-3;\
+    asm volatile(\
+        "pxor      %%mm7, %%mm7 \n"\
+        "movd    (%1,%0), %%mm0 \n"\
+        "movd    (%2,%0), %%mm1 \n"\
+        "punpcklbw %%mm7, %%mm0 \n"\
+        "punpcklbw %%mm7, %%mm1 \n"\
+        "add       %4, %0 \n"\
+        "1: \n"\
+        "movq      %%mm1, %%mm2 \n"\
+        "movd    (%2,%0), %%mm1 \n"\
+        "movq      %%mm2, %%mm3 \n"\
+        "punpcklbw %%mm7, %%mm1 \n"\
+        "movq      %%mm2, %%mm4 \n"\
+        "psubw     %%mm1, %%mm3 \n"\
+        "psubw     %%mm0, %%mm4 \n"\
+        "movq      %%mm3, %%mm5 \n"\
+        "paddw     %%mm4, %%mm5 \n"\
+        abs3\
+        "movq      %%mm4, %%mm6 \n"\
+        "pminsw    %%mm5, %%mm6 \n"\
+        "pcmpgtw   %%mm6, %%mm3 \n"\
+        "pcmpgtw   %%mm5, %%mm4 \n"\
+        "movq      %%mm4, %%mm6 \n"\
+        "pand      %%mm3, %%mm4 \n"\
+        "pandn     %%mm3, %%mm6 \n"\
+        "pandn     %%mm0, %%mm3 \n"\
+        "movd    (%3,%0), %%mm0 \n"\
+        "pand      %%mm1, %%mm6 \n"\
+        "pand      %%mm4, %%mm2 \n"\
+        "punpcklbw %%mm7, %%mm0 \n"\
+        "movq      %6,    %%mm5 \n"\
+        "paddw     %%mm6, %%mm0 \n"\
+        "paddw     %%mm2, %%mm3 \n"\
+        "paddw     %%mm3, %%mm0 \n"\
+        "pand      %%mm5, %%mm0 \n"\
+        "movq      %%mm0, %%mm3 \n"\
+        "packuswb  %%mm3, %%mm3 \n"\
+        "movd      %%mm3, (%1,%0) \n"\
+        "add       %4, %0 \n"\
+        "cmp       %5, %0 \n"\
+        "jle 1b \n"\
+        :"+r"(i)\
+        :"r"(dst), "r"(top), "r"(src), "r"((long)bpp), "g"(end),\
+         "m"(ff_pw_255)\
+        :"memory"\
+    );\
+}
+
+#define ABS3_MMX2\
+        "psubw     %%mm5, %%mm7 \n"\
+        "pmaxsw    %%mm7, %%mm5 \n"\
+        "pxor      %%mm6, %%mm6 \n"\
+        "pxor      %%mm7, %%mm7 \n"\
+        "psubw     %%mm3, %%mm6 \n"\
+        "psubw     %%mm4, %%mm7 \n"\
+        "pmaxsw    %%mm6, %%mm3 \n"\
+        "pmaxsw    %%mm7, %%mm4 \n"\
+        "pxor      %%mm7, %%mm7 \n"
+
+#define ABS3_SSSE3\
+        "pabsw     %%mm3, %%mm3 \n"\
+        "pabsw     %%mm4, %%mm4 \n"\
+        "pabsw     %%mm5, %%mm5 \n"
+
+PAETH(mmx2, ABS3_MMX2)
+#ifdef HAVE_SSSE3
+PAETH(ssse3, ABS3_SSSE3)
+#endif
 
 #define DIFF_PIXELS_1(m,a,t,p1,p2)\
     "mov"#m" "#p1", "#a"              \n\t"\
@@ -3317,6 +3412,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->gmc= gmc_mmx;
 
         c->add_bytes= add_bytes_mmx;
+        c->add_bytes_l2= add_bytes_l2_mmx;
 #ifdef CONFIG_ENCODERS
         c->diff_bytes= diff_bytes_mmx;
         c->sum_abs_dctelem= sum_abs_dctelem_mmx;
@@ -3471,6 +3567,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if (ENABLE_VC1_DECODER || ENABLE_WMV3_DECODER)
                 ff_vc1dsp_init_mmx(c, avctx);
 
+            c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
 #endif //CONFIG_ENCODERS
@@ -3565,6 +3662,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, ssse3);
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
+            c->add_png_paeth_prediction= add_png_paeth_prediction_ssse3;
         }
 #endif
 
