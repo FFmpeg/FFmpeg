@@ -32,6 +32,24 @@
 
 #undef exit
 
+
+double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
+{
+    char *tail;
+    const char *error;
+    double d = strtod(numstr, &tail);
+    if (*tail)
+        error= "Expected number for %s but found: %s\n";
+    else if (d < min || d > max)
+        error= "The value for %s was %s which is not within %f - %f\n";
+    else if(type == OPT_INT64 && (int64_t)d != d)
+        error= "Expected int64 for %s but found %s\n";
+    else
+        return d;
+    fprintf(stderr, error, context, numstr, min, max);
+    exit(1);
+}
+
 void show_help_options(const OptionDef *options, const char *msg, int mask, int value)
 {
     const OptionDef *po;
