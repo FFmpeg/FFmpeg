@@ -16,7 +16,7 @@ Understanding these overoptimized functions:
 --------------------------------------------
 As many functions tend to be a bit difficult to understand because
 of optimizations, it can be hard to optimize them further, or write
-architecture-specific versions. It is recommened to look at older
+architecture-specific versions. It is recommended to look at older
 revisions of the interesting files (for a web frontend try ViewVC at
 http://svn.mplayerhq.hu/ffmpeg/trunk/).
 Alternatively, look into the other architecture-specific versions in
@@ -43,8 +43,8 @@ readable instead of making it 1% faster.
 
 WTF is that function good for ....:
 -----------------------------------
-The primary purpose of that list is to avoid wasting time to optimize functions
-which are rarely used
+The primary purpose of this list is to avoid wasting time optimizing functions
+which are rarely used.
 
 put(_no_rnd)_pixels{,_x2,_y2,_xy2}
     Used in motion compensation (en/decoding).
@@ -164,7 +164,7 @@ do{
         ...
 }while()
 
-Use asm() instead of intrinsics. Later requires a good optimizing compiler
+Use asm() instead of intrinsics. The latter requires a good optimizing compiler
 which gcc is not.
 
 
