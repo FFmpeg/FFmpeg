@@ -151,6 +151,22 @@ The minimum guaranteed alignment is written in the .h files, for example:
     void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
 
 
+General Tips:
+-------------
+Use asm loops like:
+asm(
+    "1: ....
+    ...
+    "jump_instruciton ....
+dont use C loops:
+do{
+    asm(
+        ...
+}while()
+
+Use asm() instead of intrinsics. Later require a good optimizing compiler
+which gcc is not.
+
 
 Links:
 ======
