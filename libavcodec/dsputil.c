@@ -50,8 +50,9 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
-static const unsigned long pb_7f = 0x7f7f7f7f7f7f7f7fUL;
-static const unsigned long pb_80 = 0x8080808080808080UL;
+// 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
+#define pb_7f (~0UL/255 * 0x7f)
+#define pb_80 (~0UL/255 * 0x80)
 
 const uint8_t ff_zigzag_direct[64] = {
     0,   1,  8, 16,  9,  2,  3, 10,
