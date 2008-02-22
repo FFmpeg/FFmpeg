@@ -3124,10 +3124,10 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         }
 
 #ifdef HAVE_MMX
-        b5Dither= dither8[dstY&1];
-        g6Dither= dither4[dstY&1];
-        g5Dither= dither8[dstY&1];
-        r5Dither= dither8[(dstY+1)&1];
+        b5Dither= ff_dither8[dstY&1];
+        g6Dither= ff_dither4[dstY&1];
+        g5Dither= ff_dither8[dstY&1];
+        r5Dither= ff_dither8[(dstY+1)&1];
 #endif
         if (dstY < dstH-2)
         {

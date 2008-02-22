@@ -194,11 +194,11 @@ static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 
-DECLARE_ASM_CONST(8, uint64_t, dither4[2])={
+const DECLARE_ALIGNED(8, uint64_t, ff_dither4[2]) = {
         0x0103010301030103LL,
         0x0200020002000200LL,};
 
-DECLARE_ASM_CONST(8, uint64_t, dither8[2])={
+const DECLARE_ALIGNED(8, uint64_t, ff_dither8[2]) = {
         0x0602060206020602LL,
         0x0004000400040004LL,};
 
@@ -367,7 +367,7 @@ void in_asm_used_var_warning_killer()
 {
     volatile int i= bF8+bFC+w10+
     bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+
-    ff_M24A+ff_M24B+ff_M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
+    ff_M24A+ff_M24B+ff_M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+ff_dither4[0]+ff_dither8[0]+bm01010101;
     if (i) i=0;
 }
 #endif
