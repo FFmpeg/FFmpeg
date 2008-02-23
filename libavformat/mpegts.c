@@ -31,6 +31,7 @@
 /* maximum size in which we look for synchronisation if
    synchronisation is lost */
 #define MAX_RESYNC_SIZE 4096
+#define REGISTRATION_DESCRIPTOR 5
 
 typedef struct PESContext PESContext;
 
@@ -478,6 +479,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int desc_list_len, desc_len, desc_tag;
     int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
     char language[4] = {0}; /* initialize to kill warnings */
+    int has_hdmv_descr = 0;
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
@@ -505,6 +507,27 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     program_info_length = get16(&p, p_end) & 0xfff;
     if (program_info_length < 0)
         return;
+    while(program_info_length >= 2) {
+        uint8_t tag, len;
+        tag = get8(&p, p_end);
+        len = get8(&p, p_end);
+        if(len > program_info_length - 2)
+            //something else is broken, exit the program_descriptors_loop
+            break;
+        program_info_length -= len + 2;
+        if(tag == REGISTRATION_DESCRIPTOR && len >= 4) {
+            uint8_t bytes[4];
+            bytes[0] = get8(&p, p_end);
+            bytes[1] = get8(&p, p_end);
+            bytes[2] = get8(&p, p_end);
+            bytes[3] = get8(&p, p_end);
+            len -= 4;
+            if(bytes[0] == 'H' && bytes[1] == 'D' &&
+               bytes[2] == 'M' && bytes[3] == 'V')
+                has_hdmv_descr = 1;
+        }
+        p += len;
+    }
     p += program_info_length;
     if (p >= p_end)
         return;
@@ -588,7 +611,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         case STREAM_TYPE_AUDIO_AAC:
         case STREAM_TYPE_AUDIO_AC3:
         case STREAM_TYPE_AUDIO_DTS:
+        case STREAM_TYPE_AUDIO_HDMV_DTS:
         case STREAM_TYPE_SUBTITLE_DVB:
+            if(stream_type == STREAM_TYPE_AUDIO_HDMV_DTS && !has_hdmv_descr)
+                break;
             if(ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES){
                 pes= ts->pids[pid]->u.pes_filter.opaque;
                 st= pes->st;
@@ -923,6 +949,7 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
         codec_id = CODEC_ID_AC3;
         break;
     case STREAM_TYPE_AUDIO_DTS:
+    case STREAM_TYPE_AUDIO_HDMV_DTS:
         codec_type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_DTS;
         break;
