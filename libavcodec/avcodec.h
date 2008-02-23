@@ -276,6 +276,8 @@ enum CodecID {
     CODEC_ID_NELLYMOSER,
     CODEC_ID_MUSEPACK8,
     CODEC_ID_SPEEX,
+    CODEC_ID_WMAVOICE,
+    CODEC_ID_WMAPRO,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,

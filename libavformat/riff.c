@@ -177,6 +177,7 @@ const AVCodecTag codec_bmp_tags[] = {
 };
 
 const AVCodecTag codec_wav_tags[] = {
+    { CODEC_ID_WMAVOICE, 0xA },
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_MP3, 0x55 },
     { CODEC_ID_AC3, 0x2000 },
@@ -195,6 +196,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_ADPCM_IMA_DK3, 0x62 },  /* rogue format number */
     { CODEC_ID_WMAV1, 0x160 },
     { CODEC_ID_WMAV2, 0x161 },
+    { CODEC_ID_WMAPRO, 0x162 },
     { CODEC_ID_AAC, 0x706d },
     { CODEC_ID_AAC, 0xff },
     { CODEC_ID_VORBIS, ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
