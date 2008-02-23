@@ -356,8 +356,8 @@ ROTOZOOM_REG = tests/data/rotozoom.regression
 VSYNTH_REG   = tests/data/vsynth.regression
 
 codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
-	diff -u $(FFMPEG_REFFILE)   $(VSYNTH_REG)
-	diff -u $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
+	diff -u -w $(FFMPEG_REFFILE)   $(VSYNTH_REG)
+	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
 
 libavtest: $(LAVF_REG)
 	diff -u -w $(LIBAV_REFFILE) $(LAVF_REG)
