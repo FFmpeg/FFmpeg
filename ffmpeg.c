@@ -1643,7 +1643,7 @@ static int av_encode(AVFormatContext **output_files,
         } else {
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
-                if (av_fifo_init(&ost->fifo, 2 * MAX_AUDIO_PACKET_SIZE))
+                if (av_fifo_init(&ost->fifo, 1024))
                     goto fail;
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
