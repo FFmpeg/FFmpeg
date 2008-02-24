@@ -71,7 +71,7 @@ enum {
 };
 
 enum {
-    FLV_CODECID_PCM_BE              = 0,
+    FLV_CODECID_PCM                 = 0,
     FLV_CODECID_ADPCM               = 1 << FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_MP3                 = 2 << FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_PCM_LE              = 3 << FLV_AUDIO_CODECID_OFFSET,

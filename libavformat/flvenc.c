@@ -35,8 +35,8 @@ static const AVCodecTag flv_video_codec_ids[] = {
 
 static const AVCodecTag flv_audio_codec_ids[] = {
     {CODEC_ID_MP3,       FLV_CODECID_MP3    >> FLV_AUDIO_CODECID_OFFSET},
-    {CODEC_ID_PCM_S8,    FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},
-    {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_S8,    FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S16LE, FLV_CODECID_PCM_LE >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_ADPCM_SWF, FLV_CODECID_ADPCM  >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_NONE,      0}
@@ -84,10 +84,10 @@ static int get_audio_flags(AVCodecContext *enc){
         flags |= FLV_CODECID_MP3    | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_PCM_S8:
-        flags |= FLV_CODECID_PCM_BE | FLV_SAMPLESSIZE_8BIT;
+        flags |= FLV_CODECID_PCM    | FLV_SAMPLESSIZE_8BIT;
         break;
     case CODEC_ID_PCM_S16BE:
-        flags |= FLV_CODECID_PCM_BE | FLV_SAMPLESSIZE_16BIT;
+        flags |= FLV_CODECID_PCM    | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_PCM_S16LE:
         flags |= FLV_CODECID_PCM_LE | FLV_SAMPLESSIZE_16BIT;
