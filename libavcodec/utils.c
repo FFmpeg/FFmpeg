@@ -295,7 +295,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 
         for (i=0; i<3 && picture.data[i+1]; i++)
             size[i] = picture.data[i+1] - picture.data[i];
-        size[i] = tmpsize - size[i];
+        size[i] = tmpsize - (picture.data[i] - picture.data[0]);
 
         buf->last_pic_num= -256*256*256*64;
         memset(buf->base, 0, sizeof(buf->base));
