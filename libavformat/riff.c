@@ -177,45 +177,45 @@ const AVCodecTag codec_bmp_tags[] = {
 };
 
 const AVCodecTag codec_wav_tags[] = {
-    { CODEC_ID_WMAVOICE, 0xA },
-    { CODEC_ID_MP2, 0x50 },
-    { CODEC_ID_MP3, 0x55 },
-    { CODEC_ID_AC3, 0x2000 },
-    { CODEC_ID_DTS, 0x2001 },
-    { CODEC_ID_PCM_S16LE, 0x01 },
-    { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
-    { CODEC_ID_PCM_S24LE, 0x01 },
-    { CODEC_ID_PCM_S32LE, 0x01 },
-    { CODEC_ID_PCM_ALAW, 0x06 },
-    { CODEC_ID_PCM_MULAW, 0x07 },
-    { CODEC_ID_ADPCM_MS, 0x02 },
-    { CODEC_ID_ADPCM_IMA_WAV, 0x11 },
-    { CODEC_ID_ADPCM_YAMAHA, 0x20 },
-    { CODEC_ID_ADPCM_G726, 0x45 },
-    { CODEC_ID_ADPCM_IMA_DK4, 0x61 },  /* rogue format number */
-    { CODEC_ID_ADPCM_IMA_DK3, 0x62 },  /* rogue format number */
-    { CODEC_ID_WMAV1, 0x160 },
-    { CODEC_ID_WMAV2, 0x161 },
-    { CODEC_ID_WMAPRO, 0x162 },
-    { CODEC_ID_AAC, 0x706d },
-    { CODEC_ID_AAC, 0xff },
-    { CODEC_ID_VORBIS, ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
-    { CODEC_ID_SONIC, 0x2048 },
-    { CODEC_ID_SONIC_LS, 0x2048 },
-    { CODEC_ID_ADPCM_CT, 0x200 },
-    { CODEC_ID_ADPCM_SWF, ('S'<<8)+'F' },
-    { CODEC_ID_TRUESPEECH, 0x22 },
-    { CODEC_ID_FLAC, 0xF1AC },
-    { CODEC_ID_IMC, 0x401 },
-    { CODEC_ID_GSM_MS, 0x31 },
-    { CODEC_ID_ATRAC3, 0x270 },
-    { CODEC_ID_VOXWARE, 0x75 },
+    { CODEC_ID_PCM_S16LE,       0x0001 },
+    { CODEC_ID_PCM_U8,          0x0001 }, /* must come after s16le in this list */
+    { CODEC_ID_PCM_S24LE,       0x0001 },
+    { CODEC_ID_PCM_S32LE,       0x0001 },
+    { CODEC_ID_ADPCM_MS,        0x0002 },
+    { CODEC_ID_PCM_ALAW,        0x0006 },
+    { CODEC_ID_PCM_MULAW,       0x0007 },
+    { CODEC_ID_WMAVOICE,        0x000A },
+    { CODEC_ID_ADPCM_IMA_WAV,   0x0011 },
+    { CODEC_ID_ADPCM_YAMAHA,    0x0020 },
+    { CODEC_ID_TRUESPEECH,      0x0022 },
+    { CODEC_ID_GSM_MS,          0x0031 },
+    { CODEC_ID_ADPCM_G726,      0x0045 },
+    { CODEC_ID_MP2,             0x0050 },
+    { CODEC_ID_MP3,             0x0055 },
+    { CODEC_ID_ADPCM_IMA_DK4,   0x0061 },  /* rogue format number */
+    { CODEC_ID_ADPCM_IMA_DK3,   0x0062 },  /* rogue format number */
+    { CODEC_ID_VOXWARE,         0x0075 },
+    { CODEC_ID_AAC,             0x00ff },
+    { CODEC_ID_WMAV1,           0x0160 },
+    { CODEC_ID_WMAV2,           0x0161 },
+    { CODEC_ID_WMAPRO,          0x0162 },
+    { CODEC_ID_ADPCM_CT,        0x0200 },
+    { CODEC_ID_ATRAC3,          0x0270 },
+    { CODEC_ID_IMC,             0x0401 },
+    { CODEC_ID_AC3,             0x2000 },
+    { CODEC_ID_DTS,             0x2001 },
+    { CODEC_ID_SONIC,           0x2048 },
+    { CODEC_ID_SONIC_LS,        0x2048 },
+    { CODEC_ID_AAC,             0x706d },
+    { CODEC_ID_FLAC,            0xF1AC },
+    { CODEC_ID_ADPCM_SWF,       ('S'<<8)+'F' },
+    { CODEC_ID_VORBIS,          ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
 
     /* FIXME: All of the IDs below are not 16 bit and thus illegal. */
     // for NuppelVideo (nuv.c)
     { CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
-    { CODEC_ID_MP3, MKTAG('L', 'A', 'M', 'E') },
-    { CODEC_ID_MP3, MKTAG('M', 'P', '3', ' ') },
+    { CODEC_ID_MP3,       MKTAG('L', 'A', 'M', 'E') },
+    { CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
     { 0, 0 },
 };
 
