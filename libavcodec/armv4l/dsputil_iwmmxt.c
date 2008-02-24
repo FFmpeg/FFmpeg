@@ -125,7 +125,7 @@ void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_s
 
 static void clear_blocks_iwmmxt(DCTELEM *blocks)
 {
-    __asm __volatile(
+    asm volatile(
                 "wzero wr0                      \n\t"
                 "mov r1, #(128 * 6 / 32)        \n\t"
                 "1:                             \n\t"

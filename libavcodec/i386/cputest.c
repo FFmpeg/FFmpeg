@@ -35,7 +35,7 @@
 
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index,eax,ebx,ecx,edx)\
-    __asm __volatile\
+    asm volatile\
         ("mov %%"REG_b", %%"REG_S"\n\t"\
          "cpuid\n\t"\
          "xchg %%"REG_b", %%"REG_S\

@@ -71,33 +71,33 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 DECLARE_ALIGNED_16(const double, ff_pd_1[2]) = { 1.0, 1.0 };
 DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 
-#define JUMPALIGN() __asm __volatile (ASMALIGN(3)::)
-#define MOVQ_ZERO(regd)  __asm __volatile ("pxor %%" #regd ", %%" #regd ::)
+#define JUMPALIGN() asm volatile (ASMALIGN(3)::)
+#define MOVQ_ZERO(regd)  asm volatile ("pxor %%" #regd ", %%" #regd ::)
 
 #define MOVQ_WONE(regd) \
-    __asm __volatile ( \
+    asm volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd ::)
 
 #define MOVQ_BFE(regd) \
-    __asm __volatile ( \
+    asm volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t"\
     "paddb %%" #regd ", %%" #regd " \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_BONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_bone))
-#define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_wtwo))
+#define MOVQ_BONE(regd)  asm volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_bone))
+#define MOVQ_WTWO(regd)  asm volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_wtwo))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
 #define MOVQ_BONE(regd) \
-    __asm __volatile ( \
+    asm volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd " \n\t" \
     "packuswb %%" #regd ", %%" #regd " \n\t" ::)
 
 #define MOVQ_WTWO(regd) \
-    __asm __volatile ( \
+    asm volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd " \n\t" \
     "psllw $1, %%" #regd " \n\t"::)
@@ -288,7 +288,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     p = block;
     pix = pixels;
     /* unrolled loop */
-        __asm __volatile(
+        asm volatile(
                 "movq   %3, %%mm0               \n\t"
                 "movq   8%3, %%mm1              \n\t"
                 "movq   16%3, %%mm2             \n\t"
@@ -313,7 +313,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     // if here would be an exact copy of the code above
     // compiler would generate some very strange code
     // thus using "r"
-    __asm __volatile(
+    asm volatile(
             "movq       (%3), %%mm0             \n\t"
             "movq       8(%3), %%mm1            \n\t"
             "movq       16(%3), %%mm2           \n\t"
@@ -364,7 +364,7 @@ void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     MOVQ_ZERO(mm7);
     i = 4;
     do {
-        __asm __volatile(
+        asm volatile(
                 "movq   (%2), %%mm0     \n\t"
                 "movq   8(%2), %%mm1    \n\t"
                 "movq   16(%2), %%mm2   \n\t"
@@ -395,7 +395,7 @@ void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
 
 static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    __asm __volatile(
+    asm volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -421,7 +421,7 @@ static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 
 static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    __asm __volatile(
+    asm volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -447,7 +447,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 
 static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    __asm __volatile(
+    asm volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -481,7 +481,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
 
 static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    __asm __volatile(
+    asm volatile(
          "1:                            \n\t"
          "movdqu (%1), %%xmm0           \n\t"
          "movdqu (%1,%3), %%xmm1        \n\t"
@@ -503,7 +503,7 @@ static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_si
 
 static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    __asm __volatile(
+    asm volatile(
          "1:                            \n\t"
          "movdqu (%1), %%xmm0           \n\t"
          "movdqu (%1,%3), %%xmm1        \n\t"
@@ -529,7 +529,7 @@ static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_si
 
 static void clear_blocks_mmx(DCTELEM *blocks)
 {
-    __asm __volatile(
+    asm volatile(
                 "pxor %%mm7, %%mm7              \n\t"
                 "mov $-128*6, %%"REG_a"         \n\t"
                 "1:                             \n\t"
@@ -550,7 +550,7 @@ static int pix_sum16_mmx(uint8_t * pix, int line_size){
     int sum;
     long index= -line_size*h;
 
-    __asm __volatile(
+    asm volatile(
                 "pxor %%mm7, %%mm7              \n\t"
                 "pxor %%mm6, %%mm6              \n\t"
                 "1:                             \n\t"
