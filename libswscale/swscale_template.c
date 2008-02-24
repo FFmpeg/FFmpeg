@@ -3259,8 +3259,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     }
 
 #ifdef HAVE_MMX
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     /* store changed local vars back in the context */
     c->dstY= dstY;

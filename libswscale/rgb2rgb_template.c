@@ -92,12 +92,12 @@ static inline void RENAME(rgb24to32)(const uint8_t *src, uint8_t *dst, long src_
     #endif
     end = s + src_size;
     #ifdef HAVE_MMX
-        __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
+        asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
         mm_end = end - 23;
-        __asm __volatile("movq        %0, %%mm7"::"m"(mask32):"memory");
+        asm volatile("movq        %0, %%mm7"::"m"(mask32):"memory");
         while (s < mm_end)
         {
-            __asm __volatile(
+            asm volatile(
             PREFETCH"    32%1           \n\t"
             "movd          %1, %%mm0    \n\t"
             "punpckldq    3%1, %%mm0    \n\t"
@@ -121,8 +121,8 @@ static inline void RENAME(rgb24to32)(const uint8_t *src, uint8_t *dst, long src_
             dest += 32;
             s += 24;
         }
-        __asm __volatile(SFENCE:::"memory");
-        __asm __volatile(EMMS:::"memory");
+        asm volatile(SFENCE:::"memory");
+        asm volatile(EMMS:::"memory");
     #endif
     while (s < end)
     {
@@ -152,11 +152,11 @@ static inline void RENAME(rgb32to24)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
+    asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 31;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movq          %1, %%mm0    \n\t"
         "movq         8%1, %%mm1    \n\t"
@@ -207,8 +207,8 @@ static inline void RENAME(rgb32to24)(const uint8_t *src, uint8_t *dst, long src_
         dest += 24;
         s += 32;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -242,12 +242,12 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_
     const uint8_t *mm_end;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s));
-    __asm __volatile("movq        %0, %%mm4"::"m"(mask15s));
+    asm volatile(PREFETCH"    %0"::"m"(*s));
+    asm volatile("movq        %0, %%mm4"::"m"(mask15s));
     mm_end = end - 15;
     while (s<mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"  32%1         \n\t"
         "movq        %1, %%mm0  \n\t"
         "movq       8%1, %%mm2  \n\t"
@@ -265,8 +265,8 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_
         d+=16;
         s+=16;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     mm_end = end - 3;
     while (s < mm_end)
@@ -291,13 +291,13 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_
     const uint8_t *mm_end;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s));
-    __asm __volatile("movq        %0, %%mm7"::"m"(mask15rg));
-    __asm __volatile("movq        %0, %%mm6"::"m"(mask15b));
+    asm volatile(PREFETCH"    %0"::"m"(*s));
+    asm volatile("movq        %0, %%mm7"::"m"(mask15rg));
+    asm volatile("movq        %0, %%mm6"::"m"(mask15b));
     mm_end = end - 15;
     while (s<mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"  32%1         \n\t"
         "movq        %1, %%mm0  \n\t"
         "movq       8%1, %%mm2  \n\t"
@@ -319,8 +319,8 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_
         d+=16;
         s+=16;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     mm_end = end - 3;
     while (s < mm_end)
@@ -386,14 +386,14 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
     : "r" (mm_end), "m" (mask3216g), "m" (mask3216br), "m" (mul3216)
     );
 #else
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq    %0, %%mm7    \n\t"
         "movq    %1, %%mm6    \n\t"
         ::"m"(red_16mask),"m"(green_16mask));
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         4%1, %%mm3    \n\t"
@@ -427,8 +427,8 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
         s += 16;
     }
 #endif
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -447,15 +447,15 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq          %0, %%mm7    \n\t"
         "movq          %1, %%mm6    \n\t"
         ::"m"(red_16mask),"m"(green_16mask));
     mm_end = end - 15;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         4%1, %%mm3    \n\t"
@@ -488,8 +488,8 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
         d += 4;
         s += 16;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -545,14 +545,14 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
     : "r" (mm_end), "m" (mask3215g), "m" (mask3216br), "m" (mul3215)
     );
 #else
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq          %0, %%mm7    \n\t"
         "movq          %1, %%mm6    \n\t"
         ::"m"(red_15mask),"m"(green_15mask));
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         4%1, %%mm3    \n\t"
@@ -586,8 +586,8 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
         s += 16;
     }
 #endif
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -606,15 +606,15 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq          %0, %%mm7    \n\t"
         "movq          %1, %%mm6    \n\t"
         ::"m"(red_15mask),"m"(green_15mask));
     mm_end = end - 15;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         4%1, %%mm3    \n\t"
@@ -647,8 +647,8 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
         d += 4;
         s += 16;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -667,15 +667,15 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq         %0, %%mm7     \n\t"
         "movq         %1, %%mm6     \n\t"
         ::"m"(red_16mask),"m"(green_16mask));
     mm_end = end - 11;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         3%1, %%mm3    \n\t"
@@ -708,8 +708,8 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_
         d += 4;
         s += 12;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -730,15 +730,15 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq         %0, %%mm7     \n\t"
         "movq         %1, %%mm6     \n\t"
         ::"m"(red_16mask),"m"(green_16mask));
     mm_end = end - 15;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         3%1, %%mm3    \n\t"
@@ -771,8 +771,8 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long s
         d += 4;
         s += 12;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -793,15 +793,15 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq          %0, %%mm7    \n\t"
         "movq          %1, %%mm6    \n\t"
         ::"m"(red_15mask),"m"(green_15mask));
     mm_end = end - 11;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movd          %1, %%mm0    \n\t"
         "movd         3%1, %%mm3    \n\t"
@@ -834,8 +834,8 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
         d += 4;
         s += 12;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -856,15 +856,15 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm __volatile(
+    asm volatile(PREFETCH"    %0"::"m"(*src):"memory");
+    asm volatile(
         "movq         %0, %%mm7     \n\t"
         "movq         %1, %%mm6     \n\t"
         ::"m"(red_15mask),"m"(green_15mask));
     mm_end = end - 15;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"   32%1            \n\t"
         "movd         %1, %%mm0     \n\t"
         "movd        3%1, %%mm3     \n\t"
@@ -897,8 +897,8 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
         d += 4;
         s += 12;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -940,11 +940,11 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *s = (uint16_t *)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
+    asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 7;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movq          %1, %%mm0    \n\t"
         "movq          %1, %%mm1    \n\t"
@@ -1007,7 +1007,7 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
         :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r), "m"(mmx_null)
         :"memory");
         /* Borrowed 32 to 24 */
-        __asm __volatile(
+        asm volatile(
         "movq       %%mm0, %%mm4    \n\t"
         "movq       %%mm3, %%mm5    \n\t"
         "movq       %%mm6, %%mm0    \n\t"
@@ -1059,8 +1059,8 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
         d += 24;
         s += 8;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -1082,11 +1082,11 @@ static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *s = (const uint16_t *)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
+    asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 7;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movq          %1, %%mm0    \n\t"
         "movq          %1, %%mm1    \n\t"
@@ -1148,7 +1148,7 @@ static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, long src_
         :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
         :"memory");
         /* Borrowed 32 to 24 */
-        __asm __volatile(
+        asm volatile(
         "movq       %%mm0, %%mm4    \n\t"
         "movq       %%mm3, %%mm5    \n\t"
         "movq       %%mm6, %%mm0    \n\t"
@@ -1200,8 +1200,8 @@ static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, long src_
         d += 24;
         s += 8;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -1223,12 +1223,12 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *s = (const uint16_t *)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
-    __asm __volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
+    asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
+    asm volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
     mm_end = end - 3;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movq          %1, %%mm0    \n\t"
         "movq          %1, %%mm1    \n\t"
@@ -1264,8 +1264,8 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
         d += 16;
         s += 4;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -1301,12 +1301,12 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *s = (uint16_t *)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
-    __asm __volatile(PREFETCH"    %0"::"m"(*s):"memory");
-    __asm __volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
+    asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
+    asm volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
     mm_end = end - 3;
     while (s < mm_end)
     {
-        __asm __volatile(
+        asm volatile(
         PREFETCH"    32%1           \n\t"
         "movq          %1, %%mm0    \n\t"
         "movq          %1, %%mm1    \n\t"
@@ -1342,8 +1342,8 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
         d += 16;
         s += 4;
     }
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 #endif
     while (s < end)
     {
@@ -1368,7 +1368,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long s
     long idx = 15 - src_size;
     uint8_t *s = (uint8_t *) src-idx, *d = dst-idx;
 #ifdef HAVE_MMX
-    __asm __volatile(
+    asm volatile(
     "test          %0, %0           \n\t"
     "jns           2f               \n\t"
     PREFETCH"       (%1, %0)        \n\t"
@@ -1475,8 +1475,8 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
     : "r" (src-mmx_size), "r"(dst-mmx_size)
     );
 
-    __asm __volatile(SFENCE:::"memory");
-    __asm __volatile(EMMS:::"memory");
+    asm volatile(SFENCE:::"memory");
+    asm volatile(EMMS:::"memory");
 
     if (mmx_size==23) return; //finihsed, was multiple of 8
 
