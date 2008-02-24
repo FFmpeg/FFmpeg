@@ -2313,7 +2313,9 @@ if (!s->keyframe) {
 static int vp3_decode_end(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
+    int i;
 
+    av_free(s->superblock_coding);
     av_free(s->all_fragments);
     av_free(s->coeffs);
     av_free(s->coded_fragment_list);
@@ -2321,6 +2323,19 @@ static int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->superblock_macroblocks);
     av_free(s->macroblock_fragments);
     av_free(s->macroblock_coding);
+
+    for (i = 0; i < 16; i++) {
+        free_vlc(&s->dc_vlc[i]);
+        free_vlc(&s->ac_vlc_1[i]);
+        free_vlc(&s->ac_vlc_2[i]);
+        free_vlc(&s->ac_vlc_3[i]);
+        free_vlc(&s->ac_vlc_4[i]);
+    }
+
+    free_vlc(&s->superblock_run_length_vlc);
+    free_vlc(&s->fragment_run_length_vlc);
+    free_vlc(&s->mode_code_vlc);
+    free_vlc(&s->motion_vector_vlc);
 
     /* release all frames */
     if (s->golden_frame.data[0] && s->golden_frame.data[0] != s->last_frame.data[0])
