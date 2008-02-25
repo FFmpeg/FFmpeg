@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <math.h>
 
 #include "avformat.h"
 #include "avdevice.h"
@@ -122,11 +123,11 @@ unknown_opt:
             } else if (po->flags & OPT_BOOL) {
                 *po->u.int_arg = 1;
             } else if (po->flags & OPT_INT) {
-                *po->u.int_arg = atoi(arg);
+                *po->u.int_arg = parse_number_or_die(opt+1, arg, OPT_INT64, INT_MIN, INT_MAX);
             } else if (po->flags & OPT_INT64) {
-                *po->u.int64_arg = strtoll(arg, (char **)NULL, 10);
+                *po->u.int64_arg = parse_number_or_die(opt+1, arg, OPT_INT64, INT64_MIN, INT64_MAX);
             } else if (po->flags & OPT_FLOAT) {
-                *po->u.float_arg = atof(arg);
+                *po->u.float_arg = parse_number_or_die(opt+1, arg, OPT_FLOAT, -INFINITY, INFINITY);
             } else if (po->flags & OPT_FUNC2) {
                 if(po->u.func2_arg(opt+1, arg)<0)
                     goto unknown_opt;
