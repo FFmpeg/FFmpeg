@@ -527,8 +527,6 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
     int offset;
     IDWTELEM * buffer;
 
-//  av_log(NULL, AV_LOG_DEBUG, "Cache hit: %d\n", line);
-
     assert(buf->data_stack_top >= 0);
 //  assert(!buf->line[line]);
     if (buf->line[line])
@@ -538,8 +536,6 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
     buffer = buf->data_stack[buf->data_stack_top];
     buf->data_stack_top--;
     buf->line[line] = buffer;
-
-//  av_log(NULL, AV_LOG_DEBUG, "slice_buffer_load_line: line: %d remaining: %d\n", line, buf->data_stack_top + 1);
 
     return buffer;
 }
@@ -557,8 +553,6 @@ static void slice_buffer_release(slice_buffer * buf, int line)
     buf->data_stack_top++;
     buf->data_stack[buf->data_stack_top] = buffer;
     buf->line[line] = NULL;
-
-//  av_log(NULL, AV_LOG_DEBUG, "slice_buffer_release: line: %d remaining: %d\n", line, buf->data_stack_top + 1);
 }
 
 static void slice_buffer_flush(slice_buffer * buf)
@@ -567,10 +561,7 @@ static void slice_buffer_flush(slice_buffer * buf)
     for (i = 0; i < buf->line_count; i++)
     {
         if (buf->line[i])
-        {
-//      av_log(NULL, AV_LOG_DEBUG, "slice_buffer_flush: line: %d \n", i);
             slice_buffer_release(buf, i);
-        }
     }
 }
 
@@ -3809,7 +3800,6 @@ static int common_init_after_header(AVCodecContext *avctx){
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
 
-//av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
         for(level=s->spatial_decomposition_count-1; level>=0; level--){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &s->plane[plane_index].band[level][orientation];
@@ -3927,7 +3917,6 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
             }
 
             b->qlog= (int)(log(352256.0/sqrt(error)) / log(pow(2.0, 1.0/QROOT))+0.5);
-//            av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", level, orientation, b->qlog/*, sqrt(error)*/);
         }
     }
 }
@@ -4433,7 +4422,6 @@ redo_frame:
                     correlate(s, b, b->ibuf, b->stride, 1, 0);
             }
         }
-//        av_log(NULL, AV_LOG_DEBUG, "plane:%d bits:%d\n", plane_index, put_bits_count(&s->c.pb) - bits);
 
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
