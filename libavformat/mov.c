@@ -294,12 +294,12 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
-                get_buffer(pb, st->codec->extradata, len);
-                st->codec->extradata_size = len;
-                /* from mplayer */
-                if ((*st->codec->extradata >> 3) == 29) {
-                    st->codec->codec_id = CODEC_ID_MP3ON4;
-                }
+            get_buffer(pb, st->codec->extradata, len);
+            st->codec->extradata_size = len;
+            /* from mplayer */
+            if ((*st->codec->extradata >> 3) == 29) {
+                st->codec->codec_id = CODEC_ID_MP3ON4;
+            }
         }
     }
     return 0;
@@ -423,10 +423,10 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->codec->extradata = av_mallocz(atom.size + 0x5a + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
-        st->codec->extradata_size = 0x5a + atom.size;
-        memcpy(st->codec->extradata, "SVQ3", 4); // fake
-        get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
-        dprintf(c->fc, "Reading SMI %"PRId64"  %s\n", atom.size, st->codec->extradata + 0x5a);
+    st->codec->extradata_size = 0x5a + atom.size;
+    memcpy(st->codec->extradata, "SVQ3", 4); // fake
+    get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
+    dprintf(c->fc, "Reading SMI %"PRId64"  %s\n", atom.size, st->codec->extradata + 0x5a);
     return 0;
 }
 
