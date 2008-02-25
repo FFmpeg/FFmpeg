@@ -27,7 +27,7 @@
  */
 
 
-#include "avutil.h"
+#include "libavutil/avutil.h"
 #include <sys/types.h> /* size_t */
 
 #define LIBAVCODEC_VERSION_TRIPLET 51,50,1

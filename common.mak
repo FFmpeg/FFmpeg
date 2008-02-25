@@ -79,10 +79,12 @@ install-lib-static: $(LIBNAME)
 	install -m 644 $(LIBNAME) "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
+INCINSTDIR = $(INCDIR)/lib$(NAME)
+
 install-headers:
-	install -d "$(INCDIR)"
+	install -d "$(INCINSTDIR)"
 	install -d "$(LIBDIR)/pkgconfig"
-	install -m 644 $(addprefix $(SRC_DIR)/,$(HEADERS)) "$(INCDIR)"
+	install -m 644 $(addprefix $(SRC_DIR)/,$(HEADERS)) "$(INCINSTDIR)"
 	install -m 644 $(BUILD_ROOT)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
 
 uninstall: uninstall-libs uninstall-headers
@@ -95,7 +97,7 @@ uninstall-libs:
 	-rm -f "$(LIBDIR)/$(LIBNAME)"
 
 uninstall-headers::
-	rm -f $(addprefix "$(INCDIR)/",$(HEADERS))
+	rm -f $(addprefix "$(INCINSTDIR)/",$(HEADERS))
 	rm -f "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
 
 tests: $(TESTS)

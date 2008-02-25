@@ -31,7 +31,7 @@
 
 #include <time.h>
 #include <stdio.h>  /* FILE */
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 
 #include "avio.h"
 
