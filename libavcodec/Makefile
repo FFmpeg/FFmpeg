@@ -13,11 +13,8 @@ OBJS = allcodecs.o \
        dsputil.o \
        error_resilience.o \
        eval.o \
-       faandct.o \
        imgconvert.o \
        jrevdct.o \
-       jfdctfst.o \
-       jfdctint.o\
        mpeg12.o \
        mpeg12data.o \
        mpegvideo.o \
@@ -31,6 +28,8 @@ OBJS = allcodecs.o \
 
 
 HEADERS = avcodec.h opt.h
+
+OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o ac3.o mdct.o fft.o
