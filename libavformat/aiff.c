@@ -261,15 +261,15 @@ static int aiff_write_trailer(AVFormatContext *s)
     if (!url_is_streamed(s->pb)) {
         /* File length */
         url_fseek(pb, aiff->form, SEEK_SET);
-        put_be32(pb, (uint32_t)(file_size - aiff->form - 4));
+        put_be32(pb, file_size - aiff->form - 4);
 
         /* Number of sample frames */
         url_fseek(pb, aiff->frames, SEEK_SET);
-        put_be32(pb, ((uint32_t)(file_size-aiff->ssnd-12))/enc->block_align);
+        put_be32(pb, (file_size-aiff->ssnd-12)/enc->block_align);
 
         /* Sound Data chunk size */
         url_fseek(pb, aiff->ssnd, SEEK_SET);
-        put_be32(pb, (uint32_t)(file_size - aiff->ssnd - 4));
+        put_be32(pb, file_size - aiff->ssnd - 4);
 
         /* return to the end */
         url_fseek(pb, end_size, SEEK_SET);
