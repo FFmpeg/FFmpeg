@@ -25,17 +25,17 @@
 #include <inttypes.h>
 
 /**
- * parses a string and returns its corresponding value as a double or
- * exits from the application if the string cannot be correctly parsed
- * or the corresponding value is invalid
+ * Parses a string and returns its corresponding value as a double.
+ * Exits from the application if the string cannot be correctly
+ * parsed or the corresponding value is invalid.
  *
  * @param context the context of the value to be set (e.g. the
  * corresponding commandline option name)
  * @param numstr the string to be parsed
  * @param type the type (OPT_INT64 or OPT_FLOAT) as which the
  * string should be parsed
- * @param min the minimum valid value accepted
- * @param max the maximum valid value accepted
+ * @param min the minimum valid accepted value
+ * @param max the maximum valid accepted value
  */
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max);
 
@@ -82,25 +82,25 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 void print_error(const char *filename, int err);
 
 /**
- * Prints the banner of the program on stderr. The banner message
- * depends on the current versions of the repository and of the libav*
- * libraries.
- * @param program_name Name of the program.
- * @param program_birth_year Year of birth of the program.
+ * Prints the program banner to stderr. The banner contents depend on the
+ * current version of the repository and of the libav* libraries used by
+ * the program.
+ * @param program_name name of the program
+ * @param program_birth_year year of birth of the program
  */
 void show_banner(const char *program_name, int program_birth_year);
 
 /**
- * Prints the version of the program on stdout. The version message
+ * Prints the version of the program to stdout. The version message
  * depends on the current versions of the repository and of the libav*
  * libraries.
- * @param program_name Name of the program.
+ * @param program_name name of the program
  */
 void show_version(const char *program_name);
 
 /**
- * Prints on stdout the license of the program, which depends on the license of
- * the compiled libav* libraries.
+ * Prints the license of the program to stdout. The license depends on
+ * the license of the libraries compiled into the program.
  */
 void show_license(void);
 
