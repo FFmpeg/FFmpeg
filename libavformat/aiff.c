@@ -36,6 +36,7 @@ static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_ADPCM_G726, MKTAG('G','7','2','6') },
     { CODEC_ID_PCM_S16LE, MKTAG('s','o','w','t') },
     { CODEC_ID_ADPCM_IMA_QT, MKTAG('i','m','a','4') },
+    { CODEC_ID_QDM2, MKTAG('Q','D','M','2') },
     { 0, 0 },
 };
 
@@ -365,6 +366,13 @@ static int aiff_read_header(AVFormatContext *s,
                 return -1;
             }
             url_fskip(pb, size - 8);
+            break;
+        case MKTAG('w', 'a', 'v', 'e'):
+            st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
+            st->codec->extradata_size = size;
+            get_buffer(pb, st->codec->extradata, size);
             break;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
