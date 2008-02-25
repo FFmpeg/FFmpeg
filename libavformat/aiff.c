@@ -331,45 +331,45 @@ static int aiff_read_header(AVFormatContext *s,
         filesize -= size + 8;
 
         switch (tag) {
-            case MKTAG('C', 'O', 'M', 'M'):     /* Common chunk */
-                /* Then for the complete header info */
-                st->nb_frames = get_aiff_header (pb, st->codec, size, version);
-                if (st->nb_frames < 0)
-                        return st->nb_frames;
-                if (offset > 0) // COMM is after SSND
-                    goto got_sound;
-                break;
-            case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
-                version = get_be32(pb);
-                break;
-            case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
-                get_meta (pb, s->title, sizeof(s->title), size);
-                break;
-            case MKTAG('A', 'U', 'T', 'H'):     /* Author chunk */
-                get_meta (pb, s->author, sizeof(s->author), size);
-                break;
-            case MKTAG('(', 'c', ')', ' '):     /* Copyright chunk */
-                get_meta (pb, s->copyright, sizeof(s->copyright), size);
-                break;
-            case MKTAG('A', 'N', 'N', 'O'):     /* Annotation chunk */
-                get_meta (pb, s->comment, sizeof(s->comment), size);
-                break;
-            case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
-                offset = get_be32(pb);      /* Offset of sound data */
-                get_be32(pb);               /* BlockSize... don't care */
-                offset += url_ftell(pb);    /* Compute absolute data offset */
-                if (st->codec->codec_id)    /* Assume COMM already parsed */
-                    goto got_sound;
-                if (url_is_streamed(pb)) {
-                    av_log(s, AV_LOG_ERROR, "file is not seekable\n");
-                    return -1;
-                }
-                url_fskip(pb, size - 8);
-                break;
-            default: /* Jump */
-                if (size & 1)   /* Always even aligned */
-                    size++;
-                url_fskip (pb, size);
+        case MKTAG('C', 'O', 'M', 'M'):     /* Common chunk */
+            /* Then for the complete header info */
+            st->nb_frames = get_aiff_header (pb, st->codec, size, version);
+            if (st->nb_frames < 0)
+                return st->nb_frames;
+            if (offset > 0) // COMM is after SSND
+                goto got_sound;
+            break;
+        case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
+            version = get_be32(pb);
+            break;
+        case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
+            get_meta (pb, s->title, sizeof(s->title), size);
+            break;
+        case MKTAG('A', 'U', 'T', 'H'):     /* Author chunk */
+            get_meta (pb, s->author, sizeof(s->author), size);
+            break;
+        case MKTAG('(', 'c', ')', ' '):     /* Copyright chunk */
+            get_meta (pb, s->copyright, sizeof(s->copyright), size);
+            break;
+        case MKTAG('A', 'N', 'N', 'O'):     /* Annotation chunk */
+            get_meta (pb, s->comment, sizeof(s->comment), size);
+            break;
+        case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
+            offset = get_be32(pb);      /* Offset of sound data */
+            get_be32(pb);               /* BlockSize... don't care */
+            offset += url_ftell(pb);    /* Compute absolute data offset */
+            if (st->codec->codec_id)    /* Assume COMM already parsed */
+                goto got_sound;
+            if (url_is_streamed(pb)) {
+                av_log(s, AV_LOG_ERROR, "file is not seekable\n");
+                return -1;
+            }
+            url_fskip(pb, size - 8);
+            break;
+        default: /* Jump */
+            if (size & 1)   /* Always even aligned */
+                size++;
+            url_fskip (pb, size);
         }
     }
 
