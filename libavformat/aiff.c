@@ -131,6 +131,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
             break;
         case CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
+            codec->frame_size = 64;
             break;
         default:
             break;
@@ -390,7 +391,8 @@ got_sound:
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->start_time = 0;
-    st->duration = st->nb_frames;
+    st->duration = st->codec->frame_size ?
+        st->nb_frames * st->codec->frame_size : st->nb_frames;
 
     /* Position the stream at the first block */
     url_fseek(pb, offset, SEEK_SET);
