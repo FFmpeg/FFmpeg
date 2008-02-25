@@ -2,7 +2,7 @@
  * AltiVec-enhanced yuv2yuvX
  *
  * Copyright (C) 2004 Romain Dolbeau <romain@dolbeau.org>
- * based on the equivalent C code in "postproc/swscale.c"
+ * based on the equivalent C code in swscale.c
  *
  * This file is part of FFmpeg.
  *
