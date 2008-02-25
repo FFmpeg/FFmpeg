@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  * The AAN DCT in this file except ff_faandct248() can also be used under the
- * BSD license.
+ * new (3 clause) BSD license.
  */
 
 /**
