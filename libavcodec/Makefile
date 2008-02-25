@@ -369,6 +369,8 @@ OBJS += i386/fdct_mmx.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 
+OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
+
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o

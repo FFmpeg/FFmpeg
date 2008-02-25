@@ -23,6 +23,7 @@
 #define FFMPEG_DSPUTIL_MMX_H
 
 #include <stdint.h>
+#include "dsputil.h"
 
 typedef struct { uint64_t a, b; } xmm_t;
 
@@ -43,6 +44,7 @@ extern const uint64_t ff_pw_42;
 extern const uint64_t ff_pw_64;
 extern const uint64_t ff_pw_96;
 extern const uint64_t ff_pw_128;
+extern const uint64_t ff_pw_255;
 
 extern const uint64_t ff_pb_1;
 extern const uint64_t ff_pb_3;
@@ -110,5 +112,12 @@ extern const double ff_pd_2[2];
     SBUTTERFLY(c,g,b,qdq,dqa)\
     "movdqa 16"#t", "#g"              \n\t"
 #endif
+
+#define MOVQ_WONE(regd) \
+    asm volatile ( \
+    "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
+    "psrlw $15, %%" #regd ::)
+
+void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx);
 
 #endif /* FFMPEG_DSPUTIL_MMX_H */
