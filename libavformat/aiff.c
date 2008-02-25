@@ -189,7 +189,12 @@ static int aiff_write_header(AVFormatContext *s)
     put_be32(pb, 0);                    /* file length */
     put_tag(pb, aifc ? "AIFC" : "AIFF");
 
-    if (aifc) {
+    if (aifc) { // compressed audio
+        enc->bits_per_sample = 16;
+        if (!enc->block_align) {
+            av_log(s, AV_LOG_ERROR, "block align not set\n");
+            return -1;
+        }
         /* Version chunk */
         put_tag(pb, "FVER");
         put_be32(pb, 4);
