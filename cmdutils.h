@@ -24,6 +24,21 @@
 
 #include <inttypes.h>
 
+/**
+ * parses a string and returns its corresponding value as a double or
+ * exits from the application if the string cannot be correctly parsed
+ * or the corresponding value is invalid
+ *
+ * @param context the context of the value to be set (e.g. the
+ * corresponding commandline option name)
+ * @param numstr the string to be parsed
+ * @param type the type (OPT_INT64 or OPT_FLOAT) as which the
+ * string should be parsed
+ * @param min the minimum valid value accepted
+ * @param max the maximum valid value accepted
+ */
+double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max);
+
 typedef struct {
     const char *name;
     int flags;
