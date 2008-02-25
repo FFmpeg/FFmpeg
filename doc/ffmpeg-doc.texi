@@ -255,8 +255,8 @@ Set the track.
 @item -year number
 Set the year.
 
-@item -v verbose
-Control amount of logging.
+@item -v number
+Set the logging verbosity level.
 
 @item -target type
 Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
