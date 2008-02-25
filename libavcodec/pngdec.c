@@ -262,8 +262,8 @@ static void png_handle_row(PNGDecContext *s)
         if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
             png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                            s->last_row, s->row_size, s->bpp);
-            memcpy(s->last_row, s->tmp_row, s->row_size);
             convert_to_rgb32(ptr, s->tmp_row, s->width);
+            FFSWAP(uint8_t*, s->last_row, s->tmp_row);
         } else {
             /* in normal case, we avoid one copy */
             if (s->y == 0)
@@ -289,7 +289,7 @@ static void png_handle_row(PNGDecContext *s)
                     break;
                 png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                                s->last_row, s->pass_row_size, s->bpp);
-                memcpy(s->last_row, s->tmp_row, s->pass_row_size);
+                FFSWAP(uint8_t*, s->last_row, s->tmp_row);
                 got_line = 1;
             }
             if ((png_pass_dsp_ymask[s->pass] << (s->y & 7)) & 0x80) {
