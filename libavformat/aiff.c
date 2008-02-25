@@ -37,6 +37,7 @@ static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_GSM, MKTAG('G','S','M',' ') },
     { CODEC_ID_ADPCM_G726, MKTAG('G','7','2','6') },
     { CODEC_ID_PCM_S16LE, MKTAG('s','o','w','t') },
+    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i','m','a','4') },
     { 0, 0 },
 };
 
@@ -123,11 +124,17 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
         codec->codec_tag = get_le32(pb);
         codec->codec_id  = codec_get_id (codec_aiff_tags, codec->codec_tag);
 
-        if (codec->codec_id == CODEC_ID_PCM_S16BE) {
+        switch (codec->codec_id) {
+        case CODEC_ID_PCM_S16BE:
             codec->codec_id = aiff_codec_get_id (codec->bits_per_sample);
             codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
+            break;
+        case CODEC_ID_ADPCM_IMA_QT:
+            codec->block_align = 34*codec->channels;
+            break;
+        default:
+            break;
         }
-
         size -= 4;
     } else {
         /* Need the codec type */
@@ -140,7 +147,8 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
 
     /* Block align needs to be computed in all cases, as the definition
      * is specific to applications -> here we use the WAVE format definition */
-    codec->block_align = (codec->bits_per_sample * codec->channels) >> 3;
+    if (!codec->block_align)
+        codec->block_align = (codec->bits_per_sample * codec->channels) >> 3;
 
     codec->bit_rate = codec->sample_rate * (codec->block_align << 3);
 
