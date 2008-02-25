@@ -27,7 +27,7 @@
  *     external api for the swscale stuff
  */
 
-#include "avutil.h"
+#include "libavutil/avutil.h"
 
 #define LIBSWSCALE_VERSION_TRIPLET 0,5,0
 
