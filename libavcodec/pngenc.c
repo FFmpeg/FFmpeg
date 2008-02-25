@@ -21,10 +21,10 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "png.h"
+#include <dsputil.h>
 
 /* TODO:
  * - add 2, 4 and 16 bit depth support
- * - use filters when generating a png (better compression)
  */
 
 #include <zlib.h>
@@ -34,10 +34,14 @@
 #define IOBUF_SIZE 4096
 
 typedef struct PNGEncContext {
+    DSPContext dsp;
+
     uint8_t *bytestream;
     uint8_t *bytestream_start;
     uint8_t *bytestream_end;
     AVFrame picture;
+
+    int filter_type;
 
     z_stream zstream;
     uint8_t buf[IOBUF_SIZE];
@@ -78,6 +82,93 @@ static void png_get_interlaced_row(uint8_t *dst, int row_size,
             s += bpp;
         }
         break;
+    }
+}
+
+static void sub_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)
+{
+    int i;
+    for(i = 0; i < w; i++) {
+        int a, b, c, p, pa, pb, pc;
+
+        a = src[i - bpp];
+        b = top[i];
+        c = top[i - bpp];
+
+        p = b - c;
+        pc = a - c;
+
+        pa = abs(p);
+        pb = abs(pc);
+        pc = abs(p + pc);
+
+        if (pa <= pb && pa <= pc)
+            p = a;
+        else if (pb <= pc)
+            p = b;
+        else
+            p = c;
+        dst[i] = src[i] - p;
+    }
+}
+
+static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
+                           uint8_t *src, uint8_t *top, int size, int bpp)
+{
+    int i;
+
+    switch(filter_type) {
+    case PNG_FILTER_VALUE_NONE:
+        memcpy(dst, src, size);
+        break;
+    case PNG_FILTER_VALUE_SUB:
+        dsp->diff_bytes(dst, src, src-bpp, size);
+        memcpy(dst, src, bpp);
+        break;
+    case PNG_FILTER_VALUE_UP:
+        dsp->diff_bytes(dst, src, top, size);
+        break;
+    case PNG_FILTER_VALUE_AVG:
+        for(i = 0; i < bpp; i++)
+            dst[i] = src[i] - (top[i] >> 1);
+        for(; i < size; i++)
+            dst[i] = src[i] - ((src[i-bpp] + top[i]) >> 1);
+        break;
+    case PNG_FILTER_VALUE_PAETH:
+        for(i = 0; i < bpp; i++)
+            dst[i] = src[i] - top[i];
+        sub_png_paeth_prediction(dst+i, src+i, top+i, size-i, bpp);
+        break;
+    }
+}
+
+static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
+                                  uint8_t *src, uint8_t *top, int size, int bpp)
+{
+    int pred = s->filter_type;
+    assert(bpp || !pred);
+    if(!top && pred)
+        pred = PNG_FILTER_VALUE_SUB;
+    if(pred == PNG_FILTER_VALUE_MIXED) {
+        int i;
+        int cost, bcost = INT_MAX;
+        uint8_t *buf1 = dst, *buf2 = dst + size + 16;
+        for(pred=0; pred<5; pred++) {
+            png_filter_row(&s->dsp, buf1+1, pred, src, top, size, bpp);
+            buf1[0] = pred;
+            cost = 0;
+            for(i=0; i<=size; i++)
+                cost += abs(0x80 - (buf1[i] ^ 0x80));
+            if(cost < bcost) {
+                bcost = cost;
+                FFSWAP(uint8_t*, buf1, buf2);
+            }
+        }
+        return buf2;
+    } else {
+        png_filter_row(&s->dsp, dst+1, pred, src, top, size, bpp);
+        dst[0] = pred;
+        return dst;
     }
 }
 
@@ -145,9 +236,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
     int bits_per_pixel, pass_row_size;
     int compression_level;
-    uint8_t *ptr;
-    uint8_t *crow_buf = NULL;
-    uint8_t *tmp_buf = NULL;
+    uint8_t *ptr, *top;
+    uint8_t *crow_base = NULL, *crow_buf, *crow;
+    uint8_t *progressive_buf = NULL;
+    uint8_t *rgba_buf = NULL;
+    uint8_t *top_buf = NULL;
 
     *p = *pict;
     p->pict_type= FF_I_TYPE;
@@ -195,12 +288,23 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                        Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK)
         return -1;
-    crow_buf = av_malloc(row_size + 1);
-    if (!crow_buf)
+    crow_base = av_malloc((row_size + 32) << (s->filter_type == PNG_FILTER_VALUE_MIXED));
+    if (!crow_base)
         goto fail;
+    crow_buf = crow_base + 15; // pixel data should be aligned, but there's a control byte before it
     if (is_progressive) {
-        tmp_buf = av_malloc(row_size + 1);
-        if (!tmp_buf)
+        progressive_buf = av_malloc(row_size + 1);
+        if (!progressive_buf)
+            goto fail;
+    }
+    if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+        rgba_buf = av_malloc(row_size + 1);
+        if (!rgba_buf)
+            goto fail;
+    }
+    if (is_progressive || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+        top_buf = av_malloc(row_size + 1);
+        if (!top_buf)
             goto fail;
     }
 
@@ -247,7 +351,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     s->zstream.avail_out = IOBUF_SIZE;
     s->zstream.next_out = s->buf;
     if (is_progressive) {
-        uint8_t *ptr1;
         int pass;
 
         for(pass = 0; pass < NB_PASSES; pass++) {
@@ -255,33 +358,37 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                output */
             pass_row_size = ff_png_pass_row_size(pass, bits_per_pixel, avctx->width);
             if (pass_row_size > 0) {
+                top = NULL;
                 for(y = 0; y < avctx->height; y++) {
                     if ((ff_png_pass_ymask[pass] << (y & 7)) & 0x80) {
                         ptr = p->data[0] + y * p->linesize[0];
+                        FFSWAP(uint8_t*, progressive_buf, top_buf);
                         if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-                            convert_from_rgb32(tmp_buf, ptr, avctx->width);
-                            ptr1 = tmp_buf;
-                        } else {
-                            ptr1 = ptr;
+                            convert_from_rgb32(rgba_buf, ptr, avctx->width);
+                            ptr = rgba_buf;
                         }
-                        png_get_interlaced_row(crow_buf + 1, pass_row_size,
+                        png_get_interlaced_row(progressive_buf, pass_row_size,
                                                bits_per_pixel, pass,
-                                               ptr1, avctx->width);
-                        crow_buf[0] = PNG_FILTER_VALUE_NONE;
-                        png_write_row(s, crow_buf, pass_row_size + 1);
+                                               ptr, avctx->width);
+                        crow = png_choose_filter(s, crow_buf, progressive_buf, top, pass_row_size, bits_per_pixel>>3);
+                        png_write_row(s, crow, pass_row_size + 1);
+                        top = progressive_buf;
                     }
                 }
             }
         }
     } else {
+        top = NULL;
         for(y = 0; y < avctx->height; y++) {
             ptr = p->data[0] + y * p->linesize[0];
-            if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-                convert_from_rgb32(crow_buf + 1, ptr, avctx->width);
-            else
-                memcpy(crow_buf + 1, ptr, row_size);
-            crow_buf[0] = PNG_FILTER_VALUE_NONE;
-            png_write_row(s, crow_buf, row_size + 1);
+            if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+                FFSWAP(uint8_t*, rgba_buf, top_buf);
+                convert_from_rgb32(rgba_buf, ptr, avctx->width);
+                ptr = rgba_buf;
+            }
+            crow = png_choose_filter(s, crow_buf, ptr, top, row_size, bits_per_pixel>>3);
+            png_write_row(s, crow, row_size + 1);
+            top = ptr;
         }
     }
     /* compress last bytes */
@@ -304,8 +411,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
     ret = s->bytestream - s->bytestream_start;
  the_end:
-    av_free(crow_buf);
-    av_free(tmp_buf);
+    av_free(crow_base);
+    av_free(progressive_buf);
+    av_free(rgba_buf);
+    av_free(top_buf);
     deflateEnd(&s->zstream);
     return ret;
  fail:
@@ -318,6 +427,11 @@ static int png_enc_init(AVCodecContext *avctx){
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame= (AVFrame*)&s->picture;
+    dsputil_init(&s->dsp, avctx);
+
+    s->filter_type = av_clip(avctx->prediction_method, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED);
+    if(avctx->pix_fmt == PIX_FMT_MONOBLACK)
+        s->filter_type = PNG_FILTER_VALUE_NONE;
 
     return 0;
 }

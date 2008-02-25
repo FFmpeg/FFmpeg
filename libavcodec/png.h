@@ -39,6 +39,7 @@
 #define PNG_FILTER_VALUE_UP    2
 #define PNG_FILTER_VALUE_AVG   3
 #define PNG_FILTER_VALUE_PAETH 4
+#define PNG_FILTER_VALUE_MIXED 5
 
 #define PNG_IHDR      0x0001
 #define PNG_IDAT      0x0002
