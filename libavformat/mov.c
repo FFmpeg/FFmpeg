@@ -292,14 +292,14 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         if (tag == MP4DecSpecificDescrTag) {
             dprintf(c->fc, "Specific MPEG4 header len=%d\n", len);
             st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (st->codec->extradata) {
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
                 get_buffer(pb, st->codec->extradata, len);
                 st->codec->extradata_size = len;
                 /* from mplayer */
                 if ((*st->codec->extradata >> 3) == 29) {
                     st->codec->codec_id = CODEC_ID_MP3ON4;
                 }
-            }
         }
     }
     return 0;
@@ -420,16 +420,13 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     // currently SVQ3 decoder expect full STSD header - so let's fake it
     // this should be fixed and just SMI header should be passed
     av_free(st->codec->extradata);
-    st->codec->extradata_size = 0x5a + atom.size;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
-    if (st->codec->extradata) {
+    st->codec->extradata = av_mallocz(atom.size + 0x5a + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
+        st->codec->extradata_size = 0x5a + atom.size;
         memcpy(st->codec->extradata, "SVQ3", 4); // fake
         get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
         dprintf(c->fc, "Reading SMI %"PRId64"  %s\n", atom.size, st->codec->extradata + 0x5a);
-    } else
-        url_fskip(pb, atom.size);
-
     return 0;
 }
 
@@ -483,13 +480,11 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (st->codec->codec_id == CODEC_ID_QDM2) {
         // pass all frma atom to codec, needed at least for QDM2
         av_free(st->codec->extradata);
+        st->codec->extradata = av_mallocz(atom.size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
         st->codec->extradata_size = atom.size;
-        st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
-        if (st->codec->extradata) {
-            get_buffer(pb, st->codec->extradata, atom.size);
-        } else
-            url_fskip(pb, atom.size);
+        get_buffer(pb, st->codec->extradata, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
         if (mov_read_default(c, pb, atom) < 0)
             return -1;
@@ -510,15 +505,11 @@ static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
 
     av_free(st->codec->extradata);
-
+    st->codec->extradata = av_mallocz(atom.size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
     st->codec->extradata_size = atom.size;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-
-    if (st->codec->extradata) {
-        get_buffer(pb, st->codec->extradata, atom.size);
-    } else
-        url_fskip(pb, atom.size);
-
+    get_buffer(pb, st->codec->extradata, atom.size);
     return 0;
 }
 
