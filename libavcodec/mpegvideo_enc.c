@@ -61,6 +61,17 @@ static const uint16_t aanscales[64] = {
     4520 ,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
 
+static const uint16_t inv_aanscales[64] = {
+  4096,  2953,  3135,  3483,  4096,  5213,  7568, 14846,
+  2953,  2129,  2260,  2511,  2953,  3759,  5457, 10703,
+  3135,  2260,  2399,  2666,  3135,  3990,  5793, 11363,
+  3483,  2511,  2666,  2962,  3483,  4433,  6436, 12625,
+  4096,  2953,  3135,  3483,  4096,  5213,  7568, 14846,
+  5213,  3759,  3990,  4433,  5213,  6635,  9633, 18895,
+  7568,  5457,  5793,  6436,  7568,  9633, 13985, 27432,
+ 14846, 10703, 11363, 12625, 14846, 18895, 27432, 53809,
+};
+
 static uint8_t default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static uint8_t default_fcode_tab[MAX_MV*2+1];
 
@@ -3067,10 +3078,18 @@ int dct_quantize_trellis_c(MpegEncContext *s,
     survivor_count= 1;
 
     for(i=start_i; i<=last_non_zero; i++){
-        int level_index, j;
-        const int dct_coeff= FFABS(block[ scantable[i] ]);
-        const int zero_distoration= dct_coeff*dct_coeff;
+        int level_index, j, zero_distoration;
+        int dct_coeff= FFABS(block[ scantable[i] ]);
         int best_score=256*256*256*120;
+
+        if (   s->dsp.fdct == fdct_ifast
+#ifndef FAAN_POSTSCALE
+            || s->dsp.fdct == ff_faandct
+#endif
+           )
+            dct_coeff= (dct_coeff*inv_aanscales[ scantable[i] ]) >> 12;
+        zero_distoration= dct_coeff*dct_coeff;
+
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
