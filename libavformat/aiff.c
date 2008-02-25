@@ -103,10 +103,8 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     double sample_rate;
     unsigned int num_frames;
 
-
     if (size & 1)
         size++;
-
     codec->codec_type = CODEC_TYPE_AUDIO;
     codec->channels = get_be16(pb);
     num_frames = get_be32(pb);
@@ -120,11 +118,11 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     /* Got an AIFF-C? */
     if (version == AIFF_C_VERSION1) {
         codec->codec_tag = get_le32(pb);
-        codec->codec_id  = codec_get_id (codec_aiff_tags, codec->codec_tag);
+        codec->codec_id  = codec_get_id(codec_aiff_tags, codec->codec_tag);
 
         switch (codec->codec_id) {
         case CODEC_ID_PCM_S16BE:
-            codec->codec_id = aiff_codec_get_id (codec->bits_per_sample);
+            codec->codec_id = aiff_codec_get_id(codec->bits_per_sample);
             codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
             break;
         case CODEC_ID_ADPCM_IMA_QT:
@@ -137,7 +135,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
         size -= 4;
     } else {
         /* Need the codec type */
-        codec->codec_id = aiff_codec_get_id (codec->bits_per_sample);
+        codec->codec_id = aiff_codec_get_id(codec->bits_per_sample);
         codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
     }
 
@@ -174,10 +172,8 @@ static int aiff_write_header(AVFormatContext *s)
     int aifc = 0;
 
     /* First verify if format is ok */
-    if (!enc->codec_tag) {
+    if (!enc->codec_tag)
         return -1;
-    }
-
     if (enc->codec_tag != MKTAG('N','O','N','E'))
         aifc = 1;
 
@@ -202,10 +198,10 @@ static int aiff_write_header(AVFormatContext *s)
     /* Common chunk */
     put_tag(pb, "COMM");
     put_be32(pb, aifc ? 24 : 18); /* size */
-    put_be16(pb, enc->channels);        /* Number of channels */
+    put_be16(pb, enc->channels);  /* Number of channels */
 
     aiff->frames = url_ftell(pb);
-    put_be32(pb, 0);                    /* Number of frames */
+    put_be32(pb, 0);              /* Number of frames */
 
     if (!enc->bits_per_sample)
         enc->bits_per_sample = av_get_bits_per_sample(enc->codec_id);
@@ -343,27 +339,21 @@ static int aiff_read_header(AVFormatContext *s,
                 if (offset > 0) // COMM is after SSND
                     goto got_sound;
                 break;
-
             case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
                 version = get_be32(pb);
                 break;
-
             case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
                 get_meta (pb, s->title, sizeof(s->title), size);
                 break;
-
             case MKTAG('A', 'U', 'T', 'H'):     /* Author chunk */
                 get_meta (pb, s->author, sizeof(s->author), size);
                 break;
-
             case MKTAG('(', 'c', ')', ' '):     /* Copyright chunk */
                 get_meta (pb, s->copyright, sizeof(s->copyright), size);
                 break;
-
             case MKTAG('A', 'N', 'N', 'O'):     /* Annotation chunk */
                 get_meta (pb, s->comment, sizeof(s->comment), size);
                 break;
-
             case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
                 offset = get_be32(pb);      /* Offset of sound data */
                 get_be32(pb);               /* BlockSize... don't care */
@@ -376,7 +366,6 @@ static int aiff_read_header(AVFormatContext *s,
                 }
                 url_fskip(pb, size - 8);
                 break;
-
             default: /* Jump */
                 if (size & 1)   /* Always even aligned */
                     size++;
