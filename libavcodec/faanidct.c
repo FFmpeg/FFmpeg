@@ -47,7 +47,7 @@ B7*B0/8, B7*B1/8, B7*B2/8, B7*B3/8, B7*B4/8, B7*B5/8, B7*B6/8, B7*B7/8,
 
 static inline void p8idct(DCTELEM data[64], FLOAT temp[64], uint8_t *dest, int stride, int x, int y, int type){
     int i;
-    FLOAT tmp0, tmp1;
+    FLOAT tmp0;
     FLOAT s04, d04, s17, d17, s26, d26, s53, d53;
     FLOAT os07, os16, os25, os34;
     FLOAT od07, od16, od25, od34;
@@ -76,15 +76,16 @@ static inline void p8idct(DCTELEM data[64], FLOAT temp[64], uint8_t *dest, int s
 
         s26 = temp[2*x + i] + temp[6*x + i];
         d26 = temp[2*x + i] - temp[6*x + i];
-        tmp1= d26*(2*A4) - s26;
+        d26*= 2*A4;
+        d26-= s26;
 
         s04= temp[0*x + i] + temp[4*x + i];
         d04= temp[0*x + i] - temp[4*x + i];
 
         os07= s04 + s26;
         os34= s04 - s26;
-        os16= d04 + tmp1;
-        os25= d04 - tmp1;
+        os16= d04 + d26;
+        os25= d04 - d26;
 
         if(type==0){
             temp[0*x + i]= os07 + od07;
