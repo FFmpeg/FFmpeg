@@ -1293,6 +1293,9 @@ case $targetos in
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
         vhook="no"
         ;;
+    interix)
+        disable vhook
+        ;;
 
     *)
         targetos="${targetos}-UNKNOWN"
