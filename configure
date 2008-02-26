@@ -617,12 +617,12 @@ COMPONENT_LIST="
     decoders
     demuxers
     encoders
+    filters
     indevs
     muxers
     outdevs
     parsers
     protocols
-    filters
 "
 
 CONFIG_LIST="
