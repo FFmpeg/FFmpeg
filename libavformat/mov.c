@@ -1443,7 +1443,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_set_pts_info(st, 64, sc->time_rate, sc->time_scale);
 
         if (st->codec->codec_type == CODEC_TYPE_AUDIO && sc->stts_count == 1)
-            st->codec->frame_size = sc->stts_data[0].duration;
+            st->codec->frame_size = av_rescale(sc->time_rate, st->codec->sample_rate, sc->time_scale);
 
         if(st->duration != AV_NOPTS_VALUE){
             assert(st->duration % sc->time_rate == 0);
