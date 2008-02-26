@@ -1389,6 +1389,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int stts_sample = 0;
         unsigned int keyframe, sample_size;
         unsigned int distance = 0;
+        int key_off = sc->keyframes && sc->keyframes[0] == 1;
 
         st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
@@ -1401,7 +1402,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
                     goto out;
                 }
-                keyframe = !sc->keyframe_count || current_sample + 1 == sc->keyframes[stss_index];
+                keyframe = !sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index];
                 if (keyframe) {
                     distance = 0;
                     if (stss_index + 1 < sc->keyframe_count)
