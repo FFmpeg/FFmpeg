@@ -1808,6 +1808,7 @@ elif enabled optimizations; then
         add_cflags "-O3"
     fi
 fi
+check_cflags -fno-math-errno
 
 # PIC flags for shared library objects where they are needed
 if enabled shared; then
