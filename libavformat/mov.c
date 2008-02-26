@@ -799,9 +799,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             url_fskip(pb, a.size);
     }
 
-    if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1) {
+    if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1)
         st->codec->sample_rate= sc->time_scale;
-    }
 
     /* special codec parameters handling */
     switch (st->codec->codec_id) {
