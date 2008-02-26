@@ -406,7 +406,7 @@ typedef struct SubBand{
     int stride;
     int width;
     int height;
-    int qlog;                                   ///< log(qscale)/log[2^(1/6)]
+    int qlog;        ///< log(qscale)/log[2^(1/6)]
     DWTELEM *buf;
     IDWTELEM *ibuf;
     int buf_x_offset;
@@ -433,7 +433,7 @@ typedef struct Plane{
 }Plane;
 
 typedef struct SnowContext{
-//    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independent of MpegEncContext, so this will be removed then (FIXME/XXX)
+//    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     AVCodecContext *avctx;
     RangeCoder c;
@@ -487,7 +487,7 @@ typedef struct SnowContext{
     int me_cache_generation;
     slice_buffer sb;
 
-    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independent of MpegEncContext, so this will be removed then (FIXME/XXX)
+    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 }SnowContext;
 
 typedef struct {
@@ -2416,7 +2416,7 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
     }
 }
 
-//FIXME name clenup (b_w, block_w, b_width stuff)
+//FIXME name cleanup (b_w, block_w, b_width stuff)
 static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer *sb, IDWTELEM *dst, uint8_t *dst8, const uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int offset_dst, int plane_index){
     const int b_width = s->b_width  << s->block_max_depth;
     const int b_height= s->b_height << s->block_max_depth;
@@ -2446,7 +2446,7 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
         rb= rt;
     }
 
-    if(src_x<0){ //FIXME merge with prev & always round internal width upto *16
+    if(src_x<0){ //FIXME merge with prev & always round internal width up to *16
         obmc -= src_x;
         b_w += src_x;
         if(!sliced && !offset_dst)
@@ -2730,12 +2730,12 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
                 if(x<0) obmc_v += obmc[index + block_w];
                 if(y+block_w>h) obmc_v += obmc[index - block_w*obmc_stride];
                 if(x+block_w>w) obmc_v += obmc[index - block_w];
-                //FIXME precalc this or simplify it somehow else
+                //FIXME precalculate this or simplify it somehow else
 
                 d = -dst[index] + (1<<(FRAC_BITS-1));
                 dst[index] = d;
                 ab += (src[x2 + y2*ref_stride] - (d>>FRAC_BITS)) * obmc_v;
-                aa += obmc_v * obmc_v; //FIXME precalclate this
+                aa += obmc_v * obmc_v; //FIXME precalculate this
             }
         }
     }
@@ -2767,7 +2767,7 @@ static inline int get_block_bits(SnowContext *s, int x, int y, int w){
 00001XXXX   15-30   8-15
 */
 //FIXME try accurate rate
-//FIXME intra and inter predictors if surrounding blocks arent the same type
+//FIXME intra and inter predictors if surrounding blocks are not the same type
     if(b->type & BLOCK_INTRA){
         return 3+2*( av_log2(2*FFABS(left->color[0] - b->color[0]))
                    + av_log2(2*FFABS(left->color[1] - b->color[1]))
@@ -2846,10 +2846,10 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     if(block_w==16){
         /* FIXME rearrange dsputil to fit 32x32 cmp functions */
         /* FIXME check alignment of the cmp wavelet vs the encoding wavelet */
-        /* FIXME cmps overlap but don't cover the wavelet's whole support,
-         * so improving the score of one block is not strictly guaranteed to
-         * improve the score of the whole frame, so iterative motion est
-         * doesn't always converge. */
+        /* FIXME cmps overlap but do not cover the wavelet's whole support.
+         * So improving the score of one block is not strictly guaranteed
+         * to improve the score of the whole frame, thus iterative motion
+         * estimation does not always converge. */
         if(s->avctx->me_cmp == FF_CMP_W97)
             distortion = w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else if(s->avctx->me_cmp == FF_CMP_W53)
@@ -2982,7 +2982,8 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
     }
 }
 
-/* special case for int[2] args we discard afterward, fixes compilation prob with gcc 2.95 */
+/* special case for int[2] args we discard afterwards,
+ * fixes compilation problem with gcc 2.95 */
 static av_always_inline int check_block_inter(SnowContext *s, int mb_x, int mb_y, int p0, int p1, const uint8_t *obmc_edged, int *best_rd){
     int p[2] = {p0, p1};
     return check_block(s, mb_x, mb_y, p, 0, obmc_edged, best_rd);
@@ -3074,7 +3075,7 @@ static void iterative_me(SnowContext *s){
                     memset(s->me_cache, 0, sizeof(s->me_cache));
                 s->me_cache_generation += 1<<22;
 
-                //FIXME precalc
+                //FIXME precalculate
                 {
                     int x, y;
                     memcpy(obmc_edged, obmc_tab[s->block_max_depth], b_w*b_w*4);
@@ -3157,7 +3158,7 @@ static void iterative_me(SnowContext *s){
                         check_block_inter(s, mb_x, mb_y, mvr[b_stride][0], mvr[b_stride][1], *obmc_edged, &best_rd);
 
                     /* fullpel ME */
-                    //FIXME avoid subpel interpol / round to nearest integer
+                    //FIXME avoid subpel interpolation / round to nearest integer
                     do{
                         dia_change=0;
                         for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
@@ -3700,7 +3701,7 @@ static int common_init(AVCodecContext *avctx){
     height= s->avctx->height;
 
     s->spatial_idwt_buffer= av_mallocz(width*height*sizeof(IDWTELEM));
-    s->spatial_dwt_buffer= av_mallocz(width*height*sizeof(DWTELEM)); //FIXME this doesnt belong here
+    s->spatial_dwt_buffer= av_mallocz(width*height*sizeof(DWTELEM)); //FIXME this does not belong here
 
     for(i=0; i<MAX_REF_FRAMES; i++)
         for(j=0; j<MAX_REF_FRAMES; j++)
@@ -3771,7 +3772,7 @@ static int qscale2qlog(int qscale){
 
 static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 {
-    /* estimate the frame's complexity as a sum of weighted dwt coefs.
+    /* Estimate the frame's complexity as a sum of weighted dwt coefficients.
      * FIXME we know exact mv bits at this point,
      * but ratecontrol isn't set up to include them. */
     uint32_t coef_sum= 0;
@@ -3864,7 +3865,7 @@ static void find_sse(SnowContext *s, Plane *p, int *score, int score_stride, IDW
     if(orientation&2)
         yo= step>>1;
 
-    //FIXME bias for non zero ?
+    //FIXME bias for nonzero ?
     //FIXME optimize
     memset(score, 0, sizeof(*score)*score_stride*((p->height + Q2_STEP-1)/Q2_STEP));
     for(y=0; y<p->height; y++){
@@ -3912,7 +3913,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
             SubBand *b= &p->band[level][orientation];
             IDWTELEM *dst= best_dequant + (b->ibuf - s->spatial_idwt_buffer);
              DWTELEM *src=       buffer + (b-> buf - s->spatial_dwt_buffer);
-            assert(src == b->buf); // code doesnt depen on this but its true currently
+            assert(src == b->buf); // code does not depend on this but it is true currently
 
             quantize(s, b, dst, src, b->stride, s->qbias);
         }
@@ -3937,7 +3938,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
                             for(x=xs; x<b->width; x+= Q2_STEP){
                                 if(dst[x + y*b->stride]<0) dst[x + y*b->stride]++;
                                 if(dst[x + y*b->stride]>0) dst[x + y*b->stride]--;
-                                //FIXME try more then just --
+                                //FIXME try more than just --
                             }
                         }
                         dequantize_all(s, p, idwt2_buffer, width, height);
@@ -3959,7 +3960,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
             }
         }
     }
-    memcpy(s->spatial_idwt_buffer, best_dequant, height * stride * sizeof(IDWTELEM)); //FIXME work with that directly insteda of copy at the end
+    memcpy(s->spatial_idwt_buffer, best_dequant, height * stride * sizeof(IDWTELEM)); //FIXME work with that directly instead of copy at the end
 }
 
 #endif /* QUANTIZE2==1 */
@@ -3970,15 +3971,15 @@ static int encode_init(AVCodecContext *avctx)
     int plane_index;
 
     if(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
-        av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it may not be decodable with future versions!!!\n"
-               "use vstrict=-2 / -strict -2 to use it anyway\n");
+        av_log(avctx, AV_LOG_ERROR, "This codec is under development, files encoded with it may not be decodable with future versions!!!\n"
+               "Use vstrict=-2 / -strict -2 to use it anyway.\n");
         return -1;
     }
 
     if(avctx->prediction_method == DWT_97
        && (avctx->flags & CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
-        av_log(avctx, AV_LOG_ERROR, "the 9/7 wavelet is incompatible with lossless mode\n");
+        av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
         return -1;
     }
 
@@ -4197,7 +4198,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(s->qlog < 0 || (!pict->quality && (avctx->flags & CODEC_FLAG_QSCALE))){
         s->qlog= LOSSLESS_QLOG;
         s->lambda = 0;
-    }//else keep previous frame's qlog until after motion est
+    }//else keep previous frame's qlog until after motion estimation
 
     frame_start(s);
 
@@ -4508,7 +4509,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
     if(!s->block) alloc_blocks(s);
 
     frame_start(s);
-    //keyframe flag dupliaction mess FIXME
+    //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
 
