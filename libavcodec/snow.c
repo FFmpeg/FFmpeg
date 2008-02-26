@@ -1304,9 +1304,9 @@ static void ff_spatial_idwt_slice(dwt_compose_t *cs, IDWTELEM *buffer, int width
         while(cs[level].y <= FFMIN((y>>level)+support, height>>level)){
             switch(type){
             case DWT_97: spatial_compose97i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
-                    break;
+                break;
             case DWT_53: spatial_compose53i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
-                    break;
+                break;
             }
         }
     }
@@ -1321,9 +1321,9 @@ static void ff_spatial_idwt_buffered_slice(DSPContext *dsp, dwt_compose_t *cs, s
         while(cs[level].y <= FFMIN((y>>level)+support, height>>level)){
             switch(type){
             case DWT_97: spatial_compose97i_dy_buffered(dsp, cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
-                    break;
+                break;
             case DWT_53: spatial_compose53i_dy_buffered(cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
-                    break;
+                break;
             }
         }
     }
@@ -2467,7 +2467,8 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
 
     if(b_w<=0 || b_h<=0) return;
 
-assert(src_stride > 2*MB_SIZE + 5);
+    assert(src_stride > 2*MB_SIZE + 5);
+
     if(!sliced && offset_dst)
         dst += src_x + src_y*dst_stride;
     dst8+= src_x + src_y*src_stride;
@@ -2670,16 +2671,16 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
         return;
     }
 
-        for(mb_x=0; mb_x<=mb_w; mb_x++){
-            add_yblock(s, 0, NULL, buf, dst8, obmc,
-                       block_w*mb_x - block_w/2,
-                       block_w*mb_y - block_w/2,
-                       block_w, block_w,
-                       w, h,
-                       w, ref_stride, obmc_stride,
-                       mb_x - 1, mb_y - 1,
-                       add, 1, plane_index);
-        }
+    for(mb_x=0; mb_x<=mb_w; mb_x++){
+        add_yblock(s, 0, NULL, buf, dst8, obmc,
+                   block_w*mb_x - block_w/2,
+                   block_w*mb_y - block_w/2,
+                   block_w, block_w,
+                   w, h,
+                   w, ref_stride, obmc_stride,
+                   mb_x - 1, mb_y - 1,
+                   add, 1, plane_index);
+    }
 }
 
 static av_always_inline void predict_plane(SnowContext *s, IDWTELEM *buf, int plane_index, int add){
@@ -3531,12 +3532,12 @@ static void update_last_header_values(SnowContext *s){
         }
     }
 
-    s->last_spatial_decomposition_type= s->spatial_decomposition_type;
-    s->last_qlog                      = s->qlog;
-    s->last_qbias                     = s->qbias;
-    s->last_mv_scale                  = s->mv_scale;
-    s->last_block_max_depth           = s->block_max_depth;
-    s->last_spatial_decomposition_count= s->spatial_decomposition_count;
+    s->last_spatial_decomposition_type  = s->spatial_decomposition_type;
+    s->last_qlog                        = s->qlog;
+    s->last_qbias                       = s->qbias;
+    s->last_mv_scale                    = s->mv_scale;
+    s->last_block_max_depth             = s->block_max_depth;
+    s->last_spatial_decomposition_count = s->spatial_decomposition_count;
 }
 
 static void decode_qlogs(SnowContext *s){
@@ -4280,94 +4281,94 @@ redo_frame:
         int x, y;
 //        int bits= put_bits_count(&s->c.pb);
 
-    if(!(avctx->flags2 & CODEC_FLAG2_MEMC_ONLY)){
-        //FIXME optimize
-     if(pict->data[plane_index]) //FIXME gray hack
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                s->spatial_idwt_buffer[y*w + x]= pict->data[plane_index][y*pict->linesize[plane_index] + x]<<FRAC_BITS;
-            }
-        }
-        predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
-
-        if(   plane_index==0
-           && pict->pict_type == P_TYPE
-           && !(avctx->flags&CODEC_FLAG_PASS2)
-           && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
-            ff_init_range_encoder(c, buf, buf_size);
-            ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
-            pict->pict_type= FF_I_TYPE;
-            s->keyframe=1;
-            s->current_picture.key_frame=1;
-            goto redo_frame;
-        }
-
-        if(s->qlog == LOSSLESS_QLOG){
-            for(y=0; y<h; y++){
-                for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]= (s->spatial_idwt_buffer[y*w + x] + (1<<(FRAC_BITS-1))-1)>>FRAC_BITS;
+        if(!(avctx->flags2 & CODEC_FLAG2_MEMC_ONLY)){
+            //FIXME optimize
+            if(pict->data[plane_index]) //FIXME gray hack
+                for(y=0; y<h; y++){
+                    for(x=0; x<w; x++){
+                        s->spatial_idwt_buffer[y*w + x]= pict->data[plane_index][y*pict->linesize[plane_index] + x]<<FRAC_BITS;
+                    }
                 }
-            }
-        }else{
-            for(y=0; y<h; y++){
-                for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]=s->spatial_idwt_buffer[y*w + x]<<ENCODER_EXTRA_BITS;
-                }
-            }
-        }
+            predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
 
-/*        if(QUANTIZE2)
-            dwt_quantize(s, p, s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type);
-        else*/
-            ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
-
-        if(s->pass1_rc && plane_index==0){
-            int delta_qlog = ratecontrol_1pass(s, pict);
-            if (delta_qlog <= INT_MIN)
-                return -1;
-            if(delta_qlog){
-                //reordering qlog in the bitstream would eliminate this reset
+            if(   plane_index==0
+               && pict->pict_type == P_TYPE
+               && !(avctx->flags&CODEC_FLAG_PASS2)
+               && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, buf, buf_size);
-                memcpy(s->header_state, rc_header_bak, sizeof(s->header_state));
-                memcpy(s->block_state, rc_block_bak, sizeof(s->block_state));
-                encode_header(s);
-                encode_blocks(s, 0);
+                ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+                pict->pict_type= FF_I_TYPE;
+                s->keyframe=1;
+                s->current_picture.key_frame=1;
+                goto redo_frame;
             }
-        }
 
-        for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                SubBand *b= &p->band[level][orientation];
-
-                if(!QUANTIZE2)
-                    quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
-                if(orientation==0)
-                    decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == P_TYPE, 0);
-                encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
-                assert(b->parent==NULL || b->parent->stride == b->stride*2);
-                if(orientation==0)
-                    correlate(s, b, b->ibuf, b->stride, 1, 0);
-            }
-        }
-
-        for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                SubBand *b= &p->band[level][orientation];
-
-                dequantize(s, b, b->ibuf, b->stride);
-            }
-        }
-
-        ff_spatial_idwt(s->spatial_idwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
-        if(s->qlog == LOSSLESS_QLOG){
-            for(y=0; y<h; y++){
-                for(x=0; x<w; x++){
-                    s->spatial_idwt_buffer[y*w + x]<<=FRAC_BITS;
+            if(s->qlog == LOSSLESS_QLOG){
+                for(y=0; y<h; y++){
+                    for(x=0; x<w; x++){
+                        s->spatial_dwt_buffer[y*w + x]= (s->spatial_idwt_buffer[y*w + x] + (1<<(FRAC_BITS-1))-1)>>FRAC_BITS;
+                    }
+                }
+            }else{
+                for(y=0; y<h; y++){
+                    for(x=0; x<w; x++){
+                        s->spatial_dwt_buffer[y*w + x]=s->spatial_idwt_buffer[y*w + x]<<ENCODER_EXTRA_BITS;
+                    }
                 }
             }
-        }
-        predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
-      }else{
+
+            /*  if(QUANTIZE2)
+                dwt_quantize(s, p, s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type);
+            else*/
+                ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+
+            if(s->pass1_rc && plane_index==0){
+                int delta_qlog = ratecontrol_1pass(s, pict);
+                if (delta_qlog <= INT_MIN)
+                    return -1;
+                if(delta_qlog){
+                    //reordering qlog in the bitstream would eliminate this reset
+                    ff_init_range_encoder(c, buf, buf_size);
+                    memcpy(s->header_state, rc_header_bak, sizeof(s->header_state));
+                    memcpy(s->block_state, rc_block_bak, sizeof(s->block_state));
+                    encode_header(s);
+                    encode_blocks(s, 0);
+                }
+            }
+
+            for(level=0; level<s->spatial_decomposition_count; level++){
+                for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                    SubBand *b= &p->band[level][orientation];
+
+                    if(!QUANTIZE2)
+                        quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
+                    if(orientation==0)
+                        decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == P_TYPE, 0);
+                    encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
+                    assert(b->parent==NULL || b->parent->stride == b->stride*2);
+                    if(orientation==0)
+                        correlate(s, b, b->ibuf, b->stride, 1, 0);
+                }
+            }
+
+            for(level=0; level<s->spatial_decomposition_count; level++){
+                for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                    SubBand *b= &p->band[level][orientation];
+
+                    dequantize(s, b, b->ibuf, b->stride);
+                }
+            }
+
+            ff_spatial_idwt(s->spatial_idwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+            if(s->qlog == LOSSLESS_QLOG){
+                for(y=0; y<h; y++){
+                    for(x=0; x<w; x++){
+                        s->spatial_idwt_buffer[y*w + x]<<=FRAC_BITS;
+                    }
+                }
+            }
+            predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
+        }else{
             //ME/MC only
             if(pict->pict_type == I_TYPE){
                 for(y=0; y<h; y++){
@@ -4380,20 +4381,21 @@ redo_frame:
                 memset(s->spatial_idwt_buffer, 0, sizeof(IDWTELEM)*w*h);
                 predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
             }
-      }
+        }
         if(s->avctx->flags&CODEC_FLAG_PSNR){
             int64_t error= 0;
 
-    if(pict->data[plane_index]) //FIXME gray hack
-            for(y=0; y<h; y++){
-                for(x=0; x<w; x++){
-                    int d= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x] - pict->data[plane_index][y*pict->linesize[plane_index] + x];
-                    error += d*d;
+            if(pict->data[plane_index]) //FIXME gray hack
+                for(y=0; y<h; y++){
+                    for(x=0; x<w; x++){
+                        int d= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x] - pict->data[plane_index][y*pict->linesize[plane_index] + x];
+                        error += d*d;
+                    }
                 }
-            }
             s->avctx->error[plane_index] += error;
             s->current_picture.error[plane_index] = error;
         }
+
     }
 
     update_last_header_values(s);
@@ -4522,102 +4524,103 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
         int x, y;
         int decode_state[MAX_DECOMPOSITIONS][4][1]; /* Stored state info for unpack_coeffs. 1 variable per instance. */
 
-if(s->avctx->debug&2048){
-        memset(s->spatial_dwt_buffer, 0, sizeof(DWTELEM)*w*h);
-        predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
+        if(s->avctx->debug&2048){
+            memset(s->spatial_dwt_buffer, 0, sizeof(DWTELEM)*w*h);
+            predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
 
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x];
-                s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    int v= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x];
+                    s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
+                }
             }
         }
-}
 
-{
-    for(level=0; level<s->spatial_decomposition_count; level++){
-        for(orientation=level ? 1 : 0; orientation<4; orientation++){
-            SubBand *b= &p->band[level][orientation];
-            unpack_coeffs(s, b, b->parent, orientation);
-        }
-    }
-}
-
-{
-    const int mb_h= s->b_height << s->block_max_depth;
-    const int block_size = MB_SIZE >> s->block_max_depth;
-    const int block_w    = plane_index ? block_size/2 : block_size;
-    int mb_y;
-    dwt_compose_t cs[MAX_DECOMPOSITIONS];
-    int yd=0, yq=0;
-    int y;
-    int end_y;
-
-    ff_spatial_idwt_buffered_init(cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count);
-    for(mb_y=0; mb_y<=mb_h; mb_y++){
-
-        int slice_starty = block_w*mb_y;
-        int slice_h = block_w*(mb_y+1);
-        if (!(s->keyframe || s->avctx->debug&512)){
-            slice_starty = FFMAX(0, slice_starty - (block_w >> 1));
-            slice_h -= (block_w >> 1);
-        }
-
+        {
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
-                int start_y;
-                int end_y;
-                int our_mb_start = mb_y;
-                int our_mb_end = (mb_y + 1);
-                const int extra= 3;
-                start_y = (mb_y ? ((block_w * our_mb_start) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra: 0);
-                end_y = (((block_w * our_mb_end) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra);
-                if (!(s->keyframe || s->avctx->debug&512)){
-                    start_y = FFMAX(0, start_y - (block_w >> (1+s->spatial_decomposition_count - level)));
-                    end_y = FFMAX(0, end_y - (block_w >> (1+s->spatial_decomposition_count - level)));
-                }
-                start_y = FFMIN(b->height, start_y);
-                end_y = FFMIN(b->height, end_y);
+                unpack_coeffs(s, b, b->parent, orientation);
+            }
+        }
+        }
 
-                if (start_y != end_y){
-                    if (orientation == 0){
-                        SubBand * correlate_band = &p->band[0][0];
-                        int correlate_end_y = FFMIN(b->height, end_y + 1);
-                        int correlate_start_y = FFMIN(b->height, (start_y ? start_y + 1 : 0));
-                        decode_subband_slice_buffered(s, correlate_band, &s->sb, correlate_start_y, correlate_end_y, decode_state[0][0]);
-                        correlate_slice_buffered(s, &s->sb, correlate_band, correlate_band->ibuf, correlate_band->stride, 1, 0, correlate_start_y, correlate_end_y);
-                        dequantize_slice_buffered(s, &s->sb, correlate_band, correlate_band->ibuf, correlate_band->stride, start_y, end_y);
+        {
+        const int mb_h= s->b_height << s->block_max_depth;
+        const int block_size = MB_SIZE >> s->block_max_depth;
+        const int block_w    = plane_index ? block_size/2 : block_size;
+        int mb_y;
+        dwt_compose_t cs[MAX_DECOMPOSITIONS];
+        int yd=0, yq=0;
+        int y;
+        int end_y;
+
+        ff_spatial_idwt_buffered_init(cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count);
+        for(mb_y=0; mb_y<=mb_h; mb_y++){
+
+            int slice_starty = block_w*mb_y;
+            int slice_h = block_w*(mb_y+1);
+            if (!(s->keyframe || s->avctx->debug&512)){
+                slice_starty = FFMAX(0, slice_starty - (block_w >> 1));
+                slice_h -= (block_w >> 1);
+            }
+
+            for(level=0; level<s->spatial_decomposition_count; level++){
+                for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                    SubBand *b= &p->band[level][orientation];
+                    int start_y;
+                    int end_y;
+                    int our_mb_start = mb_y;
+                    int our_mb_end = (mb_y + 1);
+                    const int extra= 3;
+                    start_y = (mb_y ? ((block_w * our_mb_start) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra: 0);
+                    end_y = (((block_w * our_mb_end) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra);
+                    if (!(s->keyframe || s->avctx->debug&512)){
+                        start_y = FFMAX(0, start_y - (block_w >> (1+s->spatial_decomposition_count - level)));
+                        end_y = FFMAX(0, end_y - (block_w >> (1+s->spatial_decomposition_count - level)));
                     }
-                    else
-                        decode_subband_slice_buffered(s, b, &s->sb, start_y, end_y, decode_state[level][orientation]);
+                    start_y = FFMIN(b->height, start_y);
+                    end_y = FFMIN(b->height, end_y);
+
+                    if (start_y != end_y){
+                        if (orientation == 0){
+                            SubBand * correlate_band = &p->band[0][0];
+                            int correlate_end_y = FFMIN(b->height, end_y + 1);
+                            int correlate_start_y = FFMIN(b->height, (start_y ? start_y + 1 : 0));
+                            decode_subband_slice_buffered(s, correlate_band, &s->sb, correlate_start_y, correlate_end_y, decode_state[0][0]);
+                            correlate_slice_buffered(s, &s->sb, correlate_band, correlate_band->ibuf, correlate_band->stride, 1, 0, correlate_start_y, correlate_end_y);
+                            dequantize_slice_buffered(s, &s->sb, correlate_band, correlate_band->ibuf, correlate_band->stride, start_y, end_y);
+                        }
+                        else
+                            decode_subband_slice_buffered(s, b, &s->sb, start_y, end_y, decode_state[level][orientation]);
+                    }
                 }
             }
-        }
 
-        for(; yd<slice_h; yd+=4){
-            ff_spatial_idwt_buffered_slice(&s->dsp, cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
-        }
+            for(; yd<slice_h; yd+=4){
+                ff_spatial_idwt_buffered_slice(&s->dsp, cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
+            }
 
-        if(s->qlog == LOSSLESS_QLOG){
-            for(; yq<slice_h && yq<h; yq++){
-                IDWTELEM * line = slice_buffer_get_line(&s->sb, yq);
-                for(x=0; x<w; x++){
-                    line[x] <<= FRAC_BITS;
+            if(s->qlog == LOSSLESS_QLOG){
+                for(; yq<slice_h && yq<h; yq++){
+                    IDWTELEM * line = slice_buffer_get_line(&s->sb, yq);
+                    for(x=0; x<w; x++){
+                        line[x] <<= FRAC_BITS;
+                    }
                 }
             }
+
+            predict_slice_buffered(s, &s->sb, s->spatial_idwt_buffer, plane_index, 1, mb_y);
+
+            y = FFMIN(p->height, slice_starty);
+            end_y = FFMIN(p->height, slice_h);
+            while(y < end_y)
+                slice_buffer_release(&s->sb, y++);
         }
 
-        predict_slice_buffered(s, &s->sb, s->spatial_idwt_buffer, plane_index, 1, mb_y);
+        slice_buffer_flush(&s->sb);
+        }
 
-        y = FFMIN(p->height, slice_starty);
-        end_y = FFMIN(p->height, slice_h);
-        while(y < end_y)
-            slice_buffer_release(&s->sb, y++);
-    }
-
-    slice_buffer_flush(&s->sb);
-}
     }
 
     emms_c();
@@ -4629,10 +4632,10 @@ if(s->avctx->debug&2048){
                 av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
     }
 
-if(!(s->avctx->debug&2048))
-    *picture= s->current_picture;
-else
-    *picture= s->mconly_picture;
+    if(!(s->avctx->debug&2048))
+        *picture= s->current_picture;
+    else
+        *picture= s->mconly_picture;
 
     *data_size = sizeof(AVFrame);
 
@@ -4736,52 +4739,52 @@ int main(void){
         if(j!=i*i*i/3*FFABS(i)) printf("fsck: %d != %d\n", i, j);
     }
 #endif
-{
-int level, orientation, x, y;
-int64_t errors[8][4];
-int64_t g=0;
-
-    memset(errors, 0, sizeof(errors));
-    s.spatial_decomposition_count=3;
-    s.spatial_decomposition_type=0;
-    for(level=0; level<s.spatial_decomposition_count; level++){
-        for(orientation=level ? 1 : 0; orientation<4; orientation++){
-            int w= width  >> (s.spatial_decomposition_count-level);
-            int h= height >> (s.spatial_decomposition_count-level);
-            int stride= width  << (s.spatial_decomposition_count-level);
-            DWTELEM *buf= buffer[0];
-            int64_t error=0;
-
-            if(orientation&1) buf+=w;
-            if(orientation>1) buf+=stride>>1;
-
-            memset(buffer[0], 0, sizeof(int)*width*height);
-            buf[w/2 + h/2*stride]= 256*256;
-            ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-            for(y=0; y<height; y++){
-                for(x=0; x<width; x++){
-                    int64_t d= buffer[0][x + y*width];
-                    error += d*d;
-                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8"PRId64" ", d);
-                }
-                if(FFABS(height/2-y)<9 && level==2) printf("\n");
-            }
-            error= (int)(sqrt(error)+0.5);
-            errors[level][orientation]= error;
-            if(g) g=ff_gcd(g, error);
-            else g= error;
-        }
-    }
-    printf("static int const visual_weight[][4]={\n");
-    for(level=0; level<s.spatial_decomposition_count; level++){
-        printf("  {");
-        for(orientation=0; orientation<4; orientation++){
-            printf("%8"PRId64",", errors[level][orientation]/g);
-        }
-        printf("},\n");
-    }
-    printf("};\n");
     {
+    int level, orientation, x, y;
+    int64_t errors[8][4];
+    int64_t g=0;
+
+        memset(errors, 0, sizeof(errors));
+        s.spatial_decomposition_count=3;
+        s.spatial_decomposition_type=0;
+        for(level=0; level<s.spatial_decomposition_count; level++){
+            for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                int w= width  >> (s.spatial_decomposition_count-level);
+                int h= height >> (s.spatial_decomposition_count-level);
+                int stride= width  << (s.spatial_decomposition_count-level);
+                DWTELEM *buf= buffer[0];
+                int64_t error=0;
+
+                if(orientation&1) buf+=w;
+                if(orientation>1) buf+=stride>>1;
+
+                memset(buffer[0], 0, sizeof(int)*width*height);
+                buf[w/2 + h/2*stride]= 256*256;
+                ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+                for(y=0; y<height; y++){
+                    for(x=0; x<width; x++){
+                        int64_t d= buffer[0][x + y*width];
+                        error += d*d;
+                        if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8"PRId64" ", d);
+                    }
+                    if(FFABS(height/2-y)<9 && level==2) printf("\n");
+                }
+                error= (int)(sqrt(error)+0.5);
+                errors[level][orientation]= error;
+                if(g) g=ff_gcd(g, error);
+                else g= error;
+            }
+        }
+        printf("static int const visual_weight[][4]={\n");
+        for(level=0; level<s.spatial_decomposition_count; level++){
+            printf("  {");
+            for(orientation=0; orientation<4; orientation++){
+                printf("%8"PRId64",", errors[level][orientation]/g);
+            }
+            printf("},\n");
+        }
+        printf("};\n");
+        {
             int level=2;
             int w= width  >> (s.spatial_decomposition_count-level);
             //int h= height >> (s.spatial_decomposition_count-level);
@@ -4818,9 +4821,9 @@ int64_t g=0;
                 }
                 if(FFABS(height/2-y)<9) printf("\n");
             }
-    }
+        }
 
-}
+    }
     return 0;
 }
 #endif /* TEST */
