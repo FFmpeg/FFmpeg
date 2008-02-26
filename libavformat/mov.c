@@ -71,6 +71,11 @@ typedef struct {
 
 typedef struct {
     uint32_t type;
+    char *path;
+} MOV_dref_t;
+
+typedef struct {
+    uint32_t type;
     int64_t offset;
     int64_t size; /* total size (excluding the size and type fields) */
 } MOV_atom_t;
@@ -78,6 +83,7 @@ typedef struct {
 struct MOVParseTableEntry;
 
 typedef struct MOVStreamContext {
+    ByteIOContext *pb;
     int ffindex; /* the ffmpeg stream id */
     int next_chunk;
     unsigned int chunk_count;
@@ -104,6 +110,9 @@ typedef struct MOVStreamContext {
     int dv_audio_container;
     int pseudo_stream_id;
     int16_t audio_cid; ///< stsd audio compression id
+    unsigned drefs_count;
+    MOV_dref_t *drefs;
+    int dref_id;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -198,6 +207,71 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     }
 
     return err;
+}
+
+static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = st->priv_data;
+    int entries, i, j;
+
+    get_be32(pb); // version + flags
+    entries = get_be32(pb);
+    if (entries >= UINT_MAX / sizeof(*sc->drefs))
+        return -1;
+    sc->drefs_count = entries;
+    sc->drefs = av_mallocz(entries * sizeof(*sc->drefs));
+
+    for (i = 0; i < sc->drefs_count; i++) {
+        MOV_dref_t *dref = &sc->drefs[i];
+        uint32_t size = get_be32(pb);
+        offset_t next = url_ftell(pb) + size - 4;
+
+        dref->type = get_le32(pb);
+        get_be32(pb); // version + flags
+        dprintf(c->fc, "type %.4s size %d\n", (char*)&dref->type, size);
+
+        if (dref->type == MKTAG('a','l','i','s') && size > 150) {
+            /* macintosh alias record */
+            uint16_t volume_len, len;
+            char volume[28];
+            int16_t type;
+
+            url_fskip(pb, 10);
+
+            volume_len = get_byte(pb);
+            volume_len = FFMIN(volume_len, 27);
+            get_buffer(pb, volume, 27);
+            volume[volume_len] = 0;
+            av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", volume, volume_len);
+
+            url_fskip(pb, 112);
+
+            for (type = 0; type != -1 && url_ftell(pb) < next; ) {
+                type = get_be16(pb);
+                len = get_be16(pb);
+                av_log(c->fc, AV_LOG_DEBUG, "type %d, len %d\n", type, len);
+                if (len&1)
+                    len += 1;
+                if (type == 2) { // absolute path
+                    dref->path = av_mallocz(len+1);
+                    get_buffer(pb, dref->path, len);
+                    if (!strncmp(dref->path, volume, volume_len)) {
+                        len -= volume_len;
+                        memmove(dref->path, dref->path+volume_len, len);
+                        dref->path[len] = 0;
+                    }
+                    for (j = 0; j < len; j++)
+                        if (dref->path[j] == ':')
+                            dref->path[j] = '/';
+                    av_log(c->fc, AV_LOG_DEBUG, "path %s\n", dref->path);
+                } else
+                    url_fskip(pb, len);
+            }
+        }
+        url_fseek(pb, next, SEEK_SET);
+    }
+    return 0;
 }
 
 static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
@@ -574,6 +648,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     for(pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) { //Parsing Sample description table
         enum CodecID id;
+        int dref_id;
         MOV_atom_t a = { 0, 0, 0 };
         offset_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
@@ -581,7 +656,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         get_be32(pb); /* reserved */
         get_be16(pb); /* reserved */
-        get_be16(pb); /* index */
+        dref_id = get_be16(pb);
 
         if (st->codec->codec_tag &&
             (c->fc->video_codec_id ? codec_get_id(codec_movvideo_tags, format) != c->fc->video_codec_id
@@ -594,6 +669,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             continue;
         }
         sc->pseudo_stream_id= pseudo_stream_id;
+        sc->dref_id= dref_id;
 
         st->codec->codec_tag = format;
         id = codec_get_id(codec_movaudio_tags, format);
@@ -1217,6 +1293,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 /* mp4 atoms */
 { MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
 { MKTAG( 'c', 't', 't', 's' ), mov_read_ctts }, /* composition time to sample */
+{ MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default },
+{ MKTAG( 'd', 'r', 'e', 'f' ), mov_read_dref },
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
 { MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
 { MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
@@ -1451,6 +1529,13 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         sc->ffindex = i;
         mov_build_index(mov, st);
 
+        if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
+            if (url_fopen(&sc->pb, sc->drefs[sc->dref_id-1].path, URL_RDONLY) < 0)
+                av_log(s, AV_LOG_ERROR, "stream %d, error opening external essence: %s\n",
+                       st->index, strerror(errno));
+        } else
+            sc->pb = s->pb;
+
         switch (st->codec->codec_id) {
 #ifdef CONFIG_H261_DECODER
         case CODEC_ID_H261:
@@ -1499,15 +1584,16 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *msc = st->priv_data;
-        if (st->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
+        if (st->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < msc->sample_count) {
             AVIndexEntry *current_sample = &st->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate,
                                      AV_TIME_BASE, msc->time_scale);
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
                 (!url_is_streamed(s->pb) &&
+                 ((msc->pb != s->pb && dts < best_dts) || (msc->pb == s->pb &&
                  ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
-                  (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))) {
+                  (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {
                 sample = current_sample;
                 best_dts = dts;
                 sc = msc;
@@ -1518,12 +1604,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
-    if (url_fseek(s->pb, sample->pos, SEEK_SET) != sample->pos) {
+    if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
         av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
                sc->ffindex, sample->pos);
         return -1;
     }
-    av_get_packet(s->pb, pkt, sample->size);
+    av_get_packet(sc->pb, pkt, sample->size);
 #ifdef CONFIG_DV_DEMUXER
     if (mov->dv_demux && sc->dv_audio_container) {
         dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
@@ -1614,11 +1700,16 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
 static int mov_read_close(AVFormatContext *s)
 {
-    int i;
+    int i, j;
     MOVContext *mov = s->priv_data;
     for(i=0; i<s->nb_streams; i++) {
         MOVStreamContext *sc = s->streams[i]->priv_data;
         av_freep(&sc->ctts_data);
+        for (j=0; j<sc->drefs_count; j++)
+            av_freep(&sc->drefs[j].path);
+        av_freep(&sc->drefs);
+        if (sc->pb && sc->pb != s->pb)
+            url_fclose(sc->pb);
     }
     if(mov->dv_demux){
         for(i=0; i<mov->dv_fctx->nb_streams; i++){
