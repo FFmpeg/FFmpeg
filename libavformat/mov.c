@@ -805,27 +805,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     /* special codec parameters handling */
     switch (st->codec->codec_id) {
-#ifdef CONFIG_H261_DECODER
-    case CODEC_ID_H261:
-#endif
-#ifdef CONFIG_H263_DECODER
-    case CODEC_ID_H263:
-#endif
-#ifdef CONFIG_MPEG4_DECODER
-    case CODEC_ID_MPEG4:
-#endif
-        st->codec->width= 0; /* let decoder init width/height */
-        st->codec->height= 0;
-        break;
-#ifdef CONFIG_LIBFAAD
-    case CODEC_ID_AAC:
-#endif
-#ifdef CONFIG_VORBIS_DECODER
-    case CODEC_ID_VORBIS:
-#endif
-    case CODEC_ID_MP3ON4:
-        st->codec->sample_rate= 0; /* let decoder init parameters properly */
-        break;
 #ifdef CONFIG_DV_DEMUXER
     case CODEC_ID_DVAUDIO:
         c->dv_fctx = av_alloc_format_context();
@@ -1472,6 +1451,30 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
         sc->ffindex = i;
         mov_build_index(mov, st);
+
+        switch (st->codec->codec_id) {
+#ifdef CONFIG_H261_DECODER
+        case CODEC_ID_H261:
+#endif
+#ifdef CONFIG_H263_DECODER
+        case CODEC_ID_H263:
+#endif
+#ifdef CONFIG_MPEG4_DECODER
+        case CODEC_ID_MPEG4:
+#endif
+            st->codec->width= 0; /* let decoder init width/height */
+            st->codec->height= 0;
+            break;
+#ifdef CONFIG_LIBFAAD
+        case CODEC_ID_AAC:
+#endif
+#ifdef CONFIG_VORBIS_DECODER
+        case CODEC_ID_VORBIS:
+#endif
+        case CODEC_ID_MP3ON4:
+            st->codec->sample_rate= 0; /* let decoder init parameters properly */
+            break;
+        }
     }
 
     for(i=0; i<s->nb_streams; i++) {
