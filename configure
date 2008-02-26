@@ -1951,14 +1951,11 @@ echo "zlib enabled              ${zlib-no}"
 
 for type in decoder encoder parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
-    ucname="\$`toupper $type`_LIST"
-    list="`eval echo $ucname`"
-    partlist=""
+    eval list=\$$(toupper $type)_LIST
     for part in $list; do
-        enabled $part && partlist="$partlist $part"
-    done
-    partlist=`echo $partlist | sed s/_$type//g | tr ' ' '\n' | sort`
-    echo $partlist
+        enabled $part && echo ${part%_*}
+    done | sort | pr -3 -t
+    echo
 done
 
 enabled nonfree &&
