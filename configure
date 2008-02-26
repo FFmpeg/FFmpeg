@@ -2009,31 +2009,32 @@ fi
 get_version(){
     name=$1
     file=$source_path/$2
-    printf '%s.%s.%s' $(grep "#define ${name}_VERSION_M" "$file" | sed 's/[^0-9]//g')
+    eval $(grep "#define ${name}_VERSION_M" "$file" | awk '{ print $2"="$3 }')
+    eval ${name}_VERSION=\$${name}_VERSION_MAJOR.\$${name}_VERSION_MINOR.\$${name}_VERSION_MICRO
 }
 
-sws_version=$(get_version  LIBSWSCALE  libswscale/swscale.h)
-pp_version=$(get_version   LIBPOSTPROC libpostproc/postprocess.h)
-lavc_version=$(get_version LIBAVCODEC  libavcodec/avcodec.h)
-lavd_version=$(get_version LIBAVDEVICE libavdevice/avdevice.h)
-lavf_version=$(get_version LIBAVFORMAT libavformat/avformat.h)
-lavu_version=$(get_version LIBAVUTIL   libavutil/avutil.h)
+get_version LIBSWSCALE  libswscale/swscale.h
+get_version LIBPOSTPROC libpostproc/postprocess.h
+get_version LIBAVCODEC  libavcodec/avcodec.h
+get_version LIBAVDEVICE libavdevice/avdevice.h
+get_version LIBAVFORMAT libavformat/avformat.h
+get_version LIBAVUTIL   libavutil/avutil.h
 
 if enabled shared; then
     echo "BUILD_SHARED=yes" >> config.mak
     echo "PIC=-fPIC -DPIC" >> config.mak
-    echo "SPPMAJOR=${pp_version%%.*}" >> config.mak
-    echo "SPPVERSION=$pp_version" >> config.mak
-    echo "LAVCMAJOR=${lavc_version%%.*}" >> config.mak
-    echo "LAVCVERSION=$lavc_version" >> config.mak
-    echo "LAVDMAJOR=${lavd_version%%.*}" >> config.mak
-    echo "LAVDVERSION=$lavd_version" >> config.mak
-    echo "LAVFMAJOR=${lavf_version%%.*}" >> config.mak
-    echo "LAVFVERSION=$lavf_version" >> config.mak
-    echo "LAVUMAJOR=${lavu_version%%.*}" >> config.mak
-    echo "LAVUVERSION=$lavu_version" >> config.mak
-    echo "SWSMAJOR=${sws_version%%.*}" >> config.mak
-    echo "SWSVERSION=$sws_version" >> config.mak
+    echo "SPPMAJOR=$LIBPOSTPROC_VERSION_MAJOR" >> config.mak
+    echo "SPPVERSION=$LIBPOSTPROC_VERSION" >> config.mak
+    echo "LAVCMAJOR=$LIBAVCODEC_VERSION_MAJOR" >> config.mak
+    echo "LAVCVERSION=$LIBAVCODEC_VERSION" >> config.mak
+    echo "LAVDMAJOR=$LIBAVDEVICE_VERSION_MAJOR" >> config.mak
+    echo "LAVDVERSION=$LIBAVDEVICE_VERSION" >> config.mak
+    echo "LAVFMAJOR=$LIBAVFORMAT_VERSION_MAJOR" >> config.mak
+    echo "LAVFVERSION=$LIBAVFORMAT_VERSION" >> config.mak
+    echo "LAVUMAJOR=$LIBAVUTIL_VERSION_MAJOR" >> config.mak
+    echo "LAVUVERSION=$LIBAVUTIL_VERSION" >> config.mak
+    echo "SWSMAJOR=$LIBSWSCALE_VERSION_MAJOR" >> config.mak
+    echo "SWSVERSION=$LIBSWSCALE_VERSION" >> config.mak
     echo "SLIBNAME=${SLIBNAME}" >> config.mak
     echo "SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}" >> config.mak
     echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak
