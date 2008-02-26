@@ -103,14 +103,14 @@ static av_always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
         temp[2 + i]= tmp13 + tmp12;
         temp[6 + i]= tmp13 - tmp12;
 
-        tmp10= tmp4 + tmp5;
-        tmp11= tmp5 + tmp6;
-        tmp12= tmp6 + tmp7;
+        tmp4 += tmp5;
+        tmp5 += tmp6;
+        tmp6 += tmp7;
 
-        z5= (tmp10 - tmp12) * A5;
-        z2= tmp10*A2 + z5;
-        z4= tmp12*A4 + z5;
-        z3= tmp11*A1;
+        z5= (tmp4 - tmp6) * A5;
+        z2= tmp4*A2 + z5;
+        z4= tmp6*A4 + z5;
+        z3= tmp5*A1;
 
         z11= tmp7 + z3;
         z13= tmp7 - z3;
@@ -157,14 +157,14 @@ void ff_faandct(DCTELEM * data)
         data[8*2 + i]= lrintf(SCALE(8*2 + i) * (tmp13 + tmp12));
         data[8*6 + i]= lrintf(SCALE(8*6 + i) * (tmp13 - tmp12));
 
-        tmp10= tmp4 + tmp5;
-        tmp11= tmp5 + tmp6;
-        tmp12= tmp6 + tmp7;
+        tmp4 += tmp5;
+        tmp5 += tmp6;
+        tmp6 += tmp7;
 
-        z5= (tmp10 - tmp12) * A5;
-        z2= tmp10*A2 + z5;
-        z4= tmp12*A4 + z5;
-        z3= tmp11*A1;
+        z5= (tmp4 - tmp6) * A5;
+        z2= tmp4*A2 + z5;
+        z4= tmp6*A4 + z5;
+        z3= tmp5*A1;
 
         z11= tmp7 + z3;
         z13= tmp7 - z3;
