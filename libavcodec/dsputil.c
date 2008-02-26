@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "simple_idct.h"
 #include "faandct.h"
+#include "faanidct.h"
 #include "h263.h"
 #include "snow.h"
 
@@ -4045,6 +4046,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_put= ff_wmv2_idct_put_c;
             c->idct_add= ff_wmv2_idct_add_c;
             c->idct    = ff_wmv2_idct_c;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }else if(avctx->idct_algo==FF_IDCT_FAAN){
+            c->idct_put= ff_faanidct_put;
+            c->idct_add= ff_faanidct_add;
+            c->idct    = ff_faanidct;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put= ff_simple_idct_put;

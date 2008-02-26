@@ -13,6 +13,7 @@ OBJS = allcodecs.o \
        dsputil.o \
        error_resilience.o \
        eval.o \
+       faanidct.o \
        imgconvert.o \
        jrevdct.o \
        mpeg12.o \

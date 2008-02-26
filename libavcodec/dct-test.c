@@ -36,6 +36,7 @@
 
 #include "simple_idct.h"
 #include "faandct.h"
+#include "faanidct.h"
 
 #ifndef MAX
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
@@ -87,6 +88,7 @@ struct algo {
 struct algo algos[] = {
   DCT_ERROR( "REF-DBL",        0, fdct,               fdct, NO_PERM),
   DCT_ERROR("FAAN",            0, ff_faandct,         fdct, FAAN_SCALE),
+  DCT_ERROR("FAANI",           1, ff_faanidct,        idct, NO_PERM),
   DCT_ERROR("IJG-AAN-INT",     0, fdct_ifast,         fdct, SCALE_PERM),
   DCT_ERROR("IJG-LLM-INT",     0, ff_jpeg_fdct_islow, fdct, NO_PERM),
   DCT_ERROR("REF-DBL",         1, idct,               idct, NO_PERM),
