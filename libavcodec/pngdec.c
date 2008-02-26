@@ -234,7 +234,7 @@ static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
     }
 }
 
-static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width)
+static av_always_inline void convert_to_rgb32_loco(uint8_t *dst, const uint8_t *src, int width, int loco)
 {
     int j;
     unsigned int r, g, b, a;
@@ -244,9 +244,31 @@ static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width)
         g = src[1];
         b = src[2];
         a = src[3];
+        if(loco) {
+            r = (r+g)&0xff;
+            b = (b+g)&0xff;
+        }
         *(uint32_t *)dst = (a << 24) | (r << 16) | (g << 8) | b;
         dst += 4;
         src += 4;
+    }
+}
+
+static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width, int loco)
+{
+    if(loco)
+        convert_to_rgb32_loco(dst, src, width, 1);
+    else
+        convert_to_rgb32_loco(dst, src, width, 0);
+}
+
+static void deloco_rgb24(uint8_t *dst, int size)
+{
+    int i;
+    for(i=0; i<size; i+=3) {
+        int g = dst[i+1];
+        dst[i+0] += g;
+        dst[i+2] += g;
     }
 }
 
@@ -262,7 +284,7 @@ static void png_handle_row(PNGDecContext *s)
         if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
             png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                            s->last_row, s->row_size, s->bpp);
-            convert_to_rgb32(ptr, s->tmp_row, s->width);
+            convert_to_rgb32(ptr, s->tmp_row, s->width, s->filter_type == PNG_FILTER_TYPE_LOCO);
             FFSWAP(uint8_t*, s->last_row, s->tmp_row);
         } else {
             /* in normal case, we avoid one copy */
@@ -274,9 +296,16 @@ static void png_handle_row(PNGDecContext *s)
             png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
                            last_row, s->row_size, s->bpp);
         }
+        /* loco lags by 1 row so that it doesn't interfere with top prediction */
+        if (s->filter_type == PNG_FILTER_TYPE_LOCO &&
+            s->color_type == PNG_COLOR_TYPE_RGB && s->y > 0)
+            deloco_rgb24(ptr - s->image_linesize, s->row_size);
         s->y++;
         if (s->y == s->height) {
             s->state |= PNG_ALLIMAGE;
+            if (s->filter_type == PNG_FILTER_TYPE_LOCO &&
+                s->color_type == PNG_COLOR_TYPE_RGB)
+                deloco_rgb24(ptr, s->row_size);
         }
     } else {
         got_line = 0;
@@ -363,7 +392,8 @@ static int decode_frame(AVCodecContext *avctx,
     s->bytestream_end= buf + buf_size;
 
     /* check signature */
-    if (memcmp(s->bytestream, ff_pngsig, 8) != 0)
+    if (memcmp(s->bytestream, ff_pngsig, 8) != 0 &&
+        memcmp(s->bytestream, ff_mngsig, 8) != 0)
         return -1;
     s->bytestream+= 8;
     s->y=
