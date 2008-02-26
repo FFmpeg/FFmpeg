@@ -149,7 +149,7 @@ static void put_ebml_num(ByteIOContext *pb, uint64_t num, int bytes)
 static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t val)
 {
     int i, bytes = 1;
-    while (val >> bytes*8) bytes++;
+    while (val >> bytes*8 && bytes < 8) bytes++;
 
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, bytes, 0);
