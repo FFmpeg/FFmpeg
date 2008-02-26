@@ -847,7 +847,7 @@ inv_liftS(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref,
             LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
     }
 }
-#endif
+#endif /* ! liftS */
 
 static void horizontal_decompose53i(DWTELEM *b, int width){
     DWTELEM temp[width];
@@ -895,7 +895,7 @@ static void horizontal_decompose53i(DWTELEM *b, int width){
 #else
     lift(b+w2, temp+w2, temp, 1, 1, 1, width, -1, 0, 1, 1, 0);
     lift(b   , temp   , b+w2, 1, 1, 1, width,  1, 2, 2, 0, 0);
-#endif
+#endif /* 0 */
 }
 
 static void vertical_decompose53iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
