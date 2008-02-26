@@ -20,6 +20,7 @@
  */
 #include "mpegvideo.h"
 
+/* To allow switching to double. */
 #define FLOAT float
 
 #define B0 1.0000000000000000000000
