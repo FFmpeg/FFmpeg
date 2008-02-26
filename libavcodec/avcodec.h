@@ -30,10 +30,16 @@
 #include "libavutil/avutil.h"
 #include <sys/types.h> /* size_t */
 
-#define LIBAVCODEC_VERSION_TRIPLET 51,50,1
+#define LIBAVCODEC_VERSION_MAJOR 51
+#define LIBAVCODEC_VERSION_MINOR 50
+#define LIBAVCODEC_VERSION_MICRO  1
 
-#define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_TRIPLET)
-#define LIBAVCODEC_VERSION      AV_VERSION(LIBAVCODEC_VERSION_TRIPLET)
+#define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
+                                               LIBAVCODEC_VERSION_MINOR, \
+                                               LIBAVCODEC_VERSION_MICRO)
+#define LIBAVCODEC_VERSION      AV_VERSION(LIBAVCODEC_VERSION_MAJOR,    \
+                                           LIBAVCODEC_VERSION_MINOR,    \
+                                           LIBAVCODEC_VERSION_MICRO)
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)

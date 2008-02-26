@@ -30,16 +30,20 @@
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define AV_VERSION_INT_3(a, b, c) (a<<16 | b<<8 | c)
-#define AV_VERSION_INT(x) AV_VERSION_INT_3(x)
+#define AV_VERSION_INT(a, b, c) (a<<16 | b<<8 | c)
+#define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
+#define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
-#define AV_VERSION_3(a, b, c) a ##.## b ##.## c
-#define AV_VERSION(x) AV_VERSION_3(x)
+#define LIBAVUTIL_VERSION_MAJOR 49
+#define LIBAVUTIL_VERSION_MINOR  6
+#define LIBAVUTIL_VERSION_MICRO  0
 
-#define LIBAVUTIL_VERSION_TRIPLET 49,6,0
-
-#define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_TRIPLET)
-#define LIBAVUTIL_VERSION       AV_VERSION(LIBAVUTIL_VERSION_TRIPLET)
+#define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
+                                               LIBAVUTIL_VERSION_MINOR, \
+                                               LIBAVUTIL_VERSION_MICRO)
+#define LIBAVUTIL_VERSION       AV_VERSION(LIBAVUTIL_VERSION_MAJOR,     \
+                                           LIBAVUTIL_VERSION_MINOR,     \
+                                           LIBAVUTIL_VERSION_MICRO)
 #define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
 
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
