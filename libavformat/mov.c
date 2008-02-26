@@ -1375,26 +1375,26 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 goto out;
             }
             for (j = 0; j < frames; j++) {
-            av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
-            /* get chunk duration */
-            chunk_duration = 0;
-            while (chunk_samples > 0) {
-                if (chunk_samples < sc->stts_data[stts_index].count) {
-                    chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
-                    sc->stts_data[stts_index].count -= chunk_samples;
-                    break;
-                } else {
-                    chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
-                    chunk_samples -= sc->stts_data[stts_index].count;
-                    if (stts_index + 1 < sc->stts_count)
-                        stts_index++;
+                av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
+                /* get chunk duration */
+                chunk_duration = 0;
+                while (chunk_samples > 0) {
+                    if (chunk_samples < sc->stts_data[stts_index].count) {
+                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                        sc->stts_data[stts_index].count -= chunk_samples;
+                        break;
+                    } else {
+                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                        chunk_samples -= sc->stts_data[stts_index].count;
+                        if (stts_index + 1 < sc->stts_count)
+                            stts_index++;
+                    }
                 }
-            }
-            current_offset += sc->bytes_per_frame;
-            dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
-                    "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
-            assert(chunk_duration % sc->time_rate == 0);
-            current_dts += chunk_duration / sc->time_rate;
+                current_offset += sc->bytes_per_frame;
+                dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
+                        "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
+                assert(chunk_duration % sc->time_rate == 0);
+                current_dts += chunk_duration / sc->time_rate;
             }
         }
     }
