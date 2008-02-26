@@ -158,7 +158,7 @@ static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
             buf1[0] = pred;
             cost = 0;
             for(i=0; i<=size; i++)
-                cost += abs(0x80 - (buf1[i] ^ 0x80));
+                cost += abs((int8_t)buf1[i]);
             if(cost < bcost) {
                 bcost = cost;
                 FFSWAP(uint8_t*, buf1, buf2);
