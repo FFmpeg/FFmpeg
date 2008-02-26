@@ -8,7 +8,7 @@ VPATH=$(SRC_PATH_BARE)
 
 CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
-       -I$(SRC_PATH)/libavdevice \
+       -I$(SRC_PATH)/libavdevice -I$(SRC_PATH)/libavfilter \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE -DHAVE_AV_CONFIG_H
 LDFLAGS+= -g
 
@@ -69,6 +69,11 @@ LDFLAGS+=-L$(BUILD_ROOT)/libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
+ifeq ($(CONFIG_AVFILTER),yes)
+LDFLAGS+=-L$(BUILD_ROOT)/libavfilter
+EXTRALIBS := -lavfilter$(BUILDSUF) $(EXTRALIBS)
+endif
+
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
 
@@ -81,6 +86,7 @@ lib:
 	$(MAKE)                    -C libavdevice all
 	$(MAKE-$(CONFIG_PP))       -C libpostproc all
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  all
+	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(EXTRALIBS)
@@ -174,6 +180,7 @@ install-headers:
 	$(MAKE)              -C libavdevice install-headers
 	$(MAKE-$(CONFIG_PP)) -C libpostproc install-headers
 	$(MAKE)              -C libswscale  install-headers
+	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-headers
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 
@@ -194,6 +201,7 @@ uninstall-libs:
 	$(MAKE) -C libavdevice uninstall-libs
 	$(MAKE) -C libpostproc uninstall-libs
 	$(MAKE) -C libswscale  uninstall-libs
+	$(MAKE) -C libavfilter uninstall-libs
 
 uninstall-headers:
 	$(MAKE) -C libavutil   uninstall-headers
@@ -202,6 +210,7 @@ uninstall-headers:
 	$(MAKE) -C libavdevice uninstall-headers
 	$(MAKE) -C libpostproc uninstall-headers
 	$(MAKE) -C libswscale  uninstall-headers
+	$(MAKE) -C libavfilter uninstall-headers
 	-rmdir "$(INCDIR)"
 
 depend dep: .depend .vhookdep
@@ -211,6 +220,7 @@ depend dep: .depend .vhookdep
 	$(MAKE)                    -C libavdevice depend
 	$(MAKE-$(CONFIG_PP))       -C libpostproc depend
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  depend
+	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
 .depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
@@ -231,6 +241,7 @@ clean:
 	$(MAKE) -C libavdevice clean
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
+	$(MAKE) -C libavfilter clean
 	rm -f *.o *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
@@ -246,6 +257,7 @@ distclean: clean
 	$(MAKE) -C libavdevice distclean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
+	$(MAKE) -C libavfilter distclean
 	rm -f .depend .vhookdep version.h config.* *.pc
 
 TAGS:
