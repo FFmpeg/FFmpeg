@@ -923,15 +923,11 @@ static void spatial_decompose53i(DWTELEM *buffer, int width, int height, int str
         DWTELEM *b2= buffer + mirror(y+1, height-1)*stride;
         DWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
 
-{START_TIMER
         if(y+1<(unsigned)height) horizontal_decompose53i(b2, width);
         if(y+2<(unsigned)height) horizontal_decompose53i(b3, width);
-STOP_TIMER("horizontal_decompose53i")}
 
-{START_TIMER
         if(y+1<(unsigned)height) vertical_decompose53iH0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_decompose53iL0(b0, b1, b2, width);
-STOP_TIMER("vertical_decompose53i*")}
 
         b0=b2;
         b1=b3;
@@ -996,22 +992,13 @@ static void spatial_decompose97i(DWTELEM *buffer, int width, int height, int str
         DWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
         DWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
-{START_TIMER
         if(y+3<(unsigned)height) horizontal_decompose97i(b4, width);
         if(y+4<(unsigned)height) horizontal_decompose97i(b5, width);
-if(width>400){
-STOP_TIMER("horizontal_decompose97i")
-}}
 
-{START_TIMER
         if(y+3<(unsigned)height) vertical_decompose97iH0(b3, b4, b5, width);
         if(y+2<(unsigned)height) vertical_decompose97iL0(b2, b3, b4, width);
         if(y+1<(unsigned)height) vertical_decompose97iH1(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_decompose97iL1(b0, b1, b2, width);
-
-if(width>400){
-STOP_TIMER("vertical_decompose97i")
-}}
 
         b0=b2;
         b1=b3;
@@ -1114,15 +1101,11 @@ static void spatial_compose53i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb,
     IDWTELEM *b2= slice_buffer_get_line(sb, mirror(y+1, height-1) * stride_line);
     IDWTELEM *b3= slice_buffer_get_line(sb, mirror(y+2, height-1) * stride_line);
 
-{START_TIMER
         if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_compose53iH0(b0, b1, b2, width);
-STOP_TIMER("vertical_compose53i*")}
 
-{START_TIMER
         if(y-1<(unsigned)height) horizontal_compose53i(b0, width);
         if(y+0<(unsigned)height) horizontal_compose53i(b1, width);
-STOP_TIMER("horizontal_compose53i")}
 
     cs->b0 = b2;
     cs->b1 = b3;
@@ -1136,15 +1119,11 @@ static void spatial_compose53i_dy(dwt_compose_t *cs, IDWTELEM *buffer, int width
     IDWTELEM *b2= buffer + mirror(y+1, height-1)*stride;
     IDWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
 
-{START_TIMER
         if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_compose53iH0(b0, b1, b2, width);
-STOP_TIMER("vertical_compose53i*")}
 
-{START_TIMER
         if(y-1<(unsigned)height) horizontal_compose53i(b0, width);
         if(y+0<(unsigned)height) horizontal_compose53i(b1, width);
-STOP_TIMER("horizontal_compose53i")}
 
     cs->b0 = b2;
     cs->b1 = b3;
@@ -1246,7 +1225,6 @@ static void spatial_compose97i_dy_buffered(DSPContext *dsp, dwt_compose_t *cs, s
     IDWTELEM *b4= slice_buffer_get_line(sb, mirror(y + 3, height - 1) * stride_line);
     IDWTELEM *b5= slice_buffer_get_line(sb, mirror(y + 4, height - 1) * stride_line);
 
-{START_TIMER
     if(y>0 && y+4<height){
         dsp->vertical_compose97i(b0, b1, b2, b3, b4, b5, width);
     }else{
@@ -1255,14 +1233,9 @@ static void spatial_compose97i_dy_buffered(DSPContext *dsp, dwt_compose_t *cs, s
         if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
     }
-if(width>400){
-STOP_TIMER("vertical_compose97i")}}
 
-{START_TIMER
         if(y-1<(unsigned)height) dsp->horizontal_compose97i(b0, width);
         if(y+0<(unsigned)height) dsp->horizontal_compose97i(b1, width);
-if(width>400 && y+0<(unsigned)height){
-STOP_TIMER("horizontal_compose97i")}}
 
     cs->b0=b2;
     cs->b1=b3;
@@ -1280,19 +1253,13 @@ static void spatial_compose97i_dy(dwt_compose_t *cs, IDWTELEM *buffer, int width
     IDWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
     IDWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
-{START_TIMER
         if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
         if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
         if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
-if(width>400){
-STOP_TIMER("vertical_compose97i")}}
 
-{START_TIMER
         if(y-1<(unsigned)height) ff_snow_horizontal_compose97i(b0, width);
         if(y+0<(unsigned)height) ff_snow_horizontal_compose97i(b1, width);
-if(width>400 && b0 <= b2){
-STOP_TIMER("horizontal_compose97i")}}
 
     cs->b0=b2;
     cs->b1=b3;
@@ -1605,8 +1572,6 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
     int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int new_index = 0;
 
-    START_TIMER
-
     if(b->ibuf == s->spatial_idwt_buffer || s->qlog == LOSSLESS_QLOG){
         qadd= 0;
         qmul= 1<<QEXPSHIFT;
@@ -1633,9 +1598,6 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
             v = b->x_coeff[new_index].coeff;
             x = b->x_coeff[new_index++].x;
         }
-    }
-    if(w > 200 && start_y != 0/*level+1 == s->spatial_decomposition_count*/){
-        STOP_TIMER("decode_subband")
     }
 
     /* Save our variables for the next slice. */
@@ -2185,7 +2147,6 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, i
     int16_t *tmpI= tmpIt;
     uint8_t *tmp2= tmp2t[0];
     const uint8_t *hpel[11];
-START_TIMER
     assert(dx<16 && dy<16);
     r= brane[dx + 16*dy]&15;
     l= brane[dx + 16*dy]>>4;
@@ -2324,7 +2285,6 @@ START_TIMER
             dst +=stride;
         }
     }
-STOP_TIMER("mc_block")
 }
 
 #define mca(dx,dy,b_w)\
@@ -2581,10 +2541,7 @@ assert(src_stride > 2*MB_SIZE + 5);
     }
 #else
     if(sliced){
-        START_TIMER
-
         s->dsp.inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
-        STOP_TIMER("inner_add_yblock")
     }else
     for(y=0; y<b_h; y++){
         //FIXME ugly misuse of obmc_stride
@@ -2628,7 +2585,6 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
     uint8_t *dst8= s->current_picture.data[plane_index];
     int w= p->width;
     int h= p->height;
-    START_TIMER
 
     if(s->keyframe || (s->avctx->debug&512)){
         if(mb_y==mb_h)
@@ -2665,8 +2621,6 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
     }
 
         for(mb_x=0; mb_x<=mb_w; mb_x++){
-            START_TIMER
-
             add_yblock(s, 1, sb, old_buffer, dst8, obmc,
                        block_w*mb_x - block_w/2,
                        block_w*mb_y - block_w/2,
@@ -2675,11 +2629,7 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
                        w, ref_stride, obmc_stride,
                        mb_x - 1, mb_y - 1,
                        add, 0, plane_index);
-
-            STOP_TIMER("add_yblock")
         }
-
-    STOP_TIMER("predict_slice")
 }
 
 static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int plane_index, int add, int mb_y){
@@ -2695,7 +2645,6 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
     uint8_t *dst8= s->current_picture.data[plane_index];
     int w= p->width;
     int h= p->height;
-    START_TIMER
 
     if(s->keyframe || (s->avctx->debug&512)){
         if(mb_y==mb_h)
@@ -2722,8 +2671,6 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
     }
 
         for(mb_x=0; mb_x<=mb_w; mb_x++){
-            START_TIMER
-
             add_yblock(s, 0, NULL, buf, dst8, obmc,
                        block_w*mb_x - block_w/2,
                        block_w*mb_y - block_w/2,
@@ -2732,11 +2679,7 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
                        w, ref_stride, obmc_stride,
                        mb_x - 1, mb_y - 1,
                        add, 1, plane_index);
-
-            STOP_TIMER("add_yblock")
         }
-
-    STOP_TIMER("predict_slice")
 }
 
 static av_always_inline void predict_plane(SnowContext *s, IDWTELEM *buf, int plane_index, int add){
@@ -3308,13 +3251,11 @@ static void iterative_me(SnowContext *s){
 }
 
 static void quantize(SnowContext *s, SubBand *b, IDWTELEM *dst, DWTELEM *src, int stride, int bias){
-    const int level= b->level;
     const int w= b->width;
     const int h= b->height;
     const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
     const int qmul= qexp[qlog&(QROOT-1)]<<((qlog>>QSHIFT) + ENCODER_EXTRA_BITS);
     int x,y, thres1, thres2;
-//    START_TIMER
 
     if(s->qlog == LOSSLESS_QLOG){
         for(y=0; y<h; y++)
@@ -3368,9 +3309,6 @@ static void quantize(SnowContext *s, SubBand *b, IDWTELEM *dst, DWTELEM *src, in
             }
         }
     }
-    if(level+1 == s->spatial_decomposition_count){
-//        STOP_TIMER("quantize")
-    }
 }
 
 static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, IDWTELEM *src, int stride, int start_y, int end_y){
@@ -3379,7 +3317,6 @@ static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand
     const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
-    START_TIMER
 
     if(s->qlog == LOSSLESS_QLOG) return;
 
@@ -3395,9 +3332,6 @@ static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand
             }
         }
     }
-    if(w > 200 /*level+1 == s->spatial_decomposition_count*/){
-        STOP_TIMER("dquant")
-    }
 }
 
 static void dequantize(SnowContext *s, SubBand *b, IDWTELEM *src, int stride){
@@ -3407,7 +3341,6 @@ static void dequantize(SnowContext *s, SubBand *b, IDWTELEM *src, int stride){
     const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
-    START_TIMER
 
     if(s->qlog == LOSSLESS_QLOG) return;
 
@@ -3420,9 +3353,6 @@ static void dequantize(SnowContext *s, SubBand *b, IDWTELEM *src, int stride){
                 src[x + y*stride]=  (( i*qmul + qadd)>>(QEXPSHIFT));
             }
         }
-    }
-    if(w > 200 /*level+1 == s->spatial_decomposition_count*/){
-        STOP_TIMER("dquant")
     }
 }
 
@@ -3454,8 +3384,6 @@ static void correlate_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand 
     const int w= b->width;
     int x,y;
 
-//    START_TIMER
-
     IDWTELEM * line=0; // silence silly "could be used without having been initialized" warning
     IDWTELEM * prev;
 
@@ -3480,8 +3408,6 @@ static void correlate_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand 
             }
         }
     }
-
-//    STOP_TIMER("correlate")
 }
 
 static void correlate(SnowContext *s, SubBand *b, IDWTELEM *src, int stride, int inverse, int use_median){
@@ -4439,9 +4365,7 @@ redo_frame:
                 }
             }
         }
-{START_TIMER
         predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
-STOP_TIMER("pred-conv")}
       }else{
             //ME/MC only
             if(pict->pict_type == I_TYPE){
@@ -4609,17 +4533,16 @@ if(s->avctx->debug&2048){
         }
 }
 
-{   START_TIMER
+{
     for(level=0; level<s->spatial_decomposition_count; level++){
         for(orientation=level ? 1 : 0; orientation<4; orientation++){
             SubBand *b= &p->band[level][orientation];
             unpack_coeffs(s, b, b->parent, orientation);
         }
     }
-    STOP_TIMER("unpack coeffs");
 }
 
-{START_TIMER
+{
     const int mb_h= s->b_height << s->block_max_depth;
     const int block_size = MB_SIZE >> s->block_max_depth;
     const int block_w    = plane_index ? block_size/2 : block_size;
@@ -4639,8 +4562,6 @@ if(s->avctx->debug&2048){
             slice_h -= (block_w >> 1);
         }
 
-        {
-        START_TIMER
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
@@ -4672,15 +4593,10 @@ if(s->avctx->debug&2048){
                 }
             }
         }
-        STOP_TIMER("decode_subband_slice");
-        }
 
-{   START_TIMER
         for(; yd<slice_h; yd+=4){
             ff_spatial_idwt_buffered_slice(&s->dsp, cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
         }
-    STOP_TIMER("idwt slice");}
-
 
         if(s->qlog == LOSSLESS_QLOG){
             for(; yq<slice_h && yq<h; yq++){
@@ -4700,8 +4616,7 @@ if(s->avctx->debug&2048){
     }
 
     slice_buffer_flush(&s->sb);
-
-STOP_TIMER("idwt + predict_slices")}
+}
     }
 
     emms_c();
@@ -4806,9 +4721,7 @@ int main(void){
     ff_init_cabac_states(&s.c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
 
     for(i=-256; i<256; i++){
-START_TIMER
         put_symbol(&s.c, s.header_state, i*i*i/3*FFABS(i), 1);
-STOP_TIMER("put_symbol")
     }
     ff_rac_terminate(&s.c);
 
@@ -4818,9 +4731,7 @@ STOP_TIMER("put_symbol")
 
     for(i=-256; i<256; i++){
         int j;
-START_TIMER
         j= get_symbol(&s.c, s.header_state, 1);
-STOP_TIMER("get_symbol")
         if(j!=i*i*i/3*FFABS(i)) printf("fsck: %d != %d\n", i, j);
     }
 #endif
