@@ -732,6 +732,7 @@ HAVE_LIST="
     getrusage
     imlib2
     inet_aton
+    inline_asm
     libdc1394_1
     libdc1394_2
     llrint
@@ -1508,6 +1509,8 @@ if test "$?" != 0; then
     fi
     die "C compiler test failed."
 fi
+
+check_asm inline_asm '""'
 
 if enabled x86; then
     # check whether EBP is available on x86
