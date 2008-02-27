@@ -25,6 +25,7 @@
 #include <math.h>
 
 #include "avformat.h"
+#include "avfilter.h"
 #include "avdevice.h"
 #include "cmdutils.h"
 #include "avstring.h"
@@ -183,6 +184,9 @@ void show_banner(const char *program_name, int program_birth_year)
     fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
     fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
     fprintf(stderr, "  libavdevice version: " AV_STRINGIFY(LIBAVDEVICE_VERSION) "\n");
+#if ENABLE_AVFILTER
+    fprintf(stderr, "  libavfilter version: " AV_STRINGIFY(LIBAVFILTER_VERSION) "\n");
+#endif
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
     fprintf(stderr, ", gcc: " __VERSION__ "\n");
