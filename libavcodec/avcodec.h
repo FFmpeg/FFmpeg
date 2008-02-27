@@ -176,6 +176,8 @@ enum CodecID {
     CODEC_ID_VB,
     CODEC_ID_PCX,
     CODEC_ID_SUNRAST,
+    CODEC_ID_INDEO4,
+    CODEC_ID_INDEO5,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -284,6 +286,7 @@ enum CodecID {
     CODEC_ID_SPEEX,
     CODEC_ID_WMAVOICE,
     CODEC_ID_WMAPRO,
+    CODEC_ID_WMALOSSLESS,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
