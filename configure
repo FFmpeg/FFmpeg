@@ -2036,7 +2036,7 @@ get_version LIBAVCODEC  libavcodec/avcodec.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
 get_version LIBAVFORMAT libavformat/avformat.h
 get_version LIBAVUTIL   libavutil/avutil.h
-lavfi_version=$(get_version LIBAVFILTER   libavfilter/avfilter.h)
+get_version LIBAVFILTER libavfilter/avfilter.h
 
 if enabled shared; then
     echo "BUILD_SHARED=yes" >> config.mak
