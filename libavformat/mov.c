@@ -254,6 +254,7 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 if (len&1)
                     len += 1;
                 if (type == 2) { // absolute path
+                    av_free(dref->path);
                     dref->path = av_mallocz(len+1);
                     if (!dref->path)
                         return AVERROR(ENOMEM);
