@@ -2197,33 +2197,33 @@ Cflags: -I\${includedir}
 EOF
 }
 
-pkgconfig_generate libavutil "FFmpeg utility library" "$lavu_version" -lavutil ""
-pkgconfig_generate_uninstalled libavutil "FFmpeg utility library" "$lavu_version"
+pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" -lavutil ""
+pkgconfig_generate_uninstalled libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
 
-pkgconfig_generate libavcodec "FFmpeg codec library" "$lavc_version" "-lavcodec $extralibs" "$pkg_requires libavutil = $lavu_version"
-pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$lavc_version" "$extralibs" "$pkg_requires libavutil = $lavu_version"
+pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "-lavcodec $extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
 
-pkgconfig_generate libavformat "FFmpeg container format library" "$lavf_version" "-lavformat $extralibs" "$pkg_requires libavcodec = $lavc_version"
-pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$lavf_version" "$extralibs" "$pkg_requires libavcodec = $lavc_version"
+pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "-lavformat $extralibs" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
+pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
 
-pkgconfig_generate libavdevice "FFmpeg device handling library" "$lavd_version" "-lavdevice $extralibs" "$pkg_requires libavformat = $lavf_version"
-pkgconfig_generate_uninstalled libavdevice "FFmpeg device handling library" "$lavd_version" "$extralibs" "$pkg_requires libavformat = $lavf_version"
+pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "-lavdevice $extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
+pkgconfig_generate_uninstalled libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
 if enabled pp; then
-    pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc ""
-    pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
+    pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION" -lpostproc ""
+    pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
 fi
 
 if enabled swscaler; then
-    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" -lswscale "libavutil = $lavu_version"
-    pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "libavutil = $lavu_version"
+    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" -lswscale "libavutil = $LIBAVUTIL_VERSION"
+    pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 else
-    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
-    pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
+    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
+    pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
     apply libswscale.pc sed s/^Libs:.*$/Libs:/
     apply libswscale-uninstalled.pc sed s/^Libs:.*$/Libs:/
 fi
 
 if enabled avfilter; then
-  pkgconfig_generate libavfilter "FFmpeg video filtering library" "$avfilter_version" "-lavfilter $extralibs" "$pkg_requires libavutil = $lavu=version" ffmpeg
-  pkgconfig_generate_uninstalled libavfilter "FFmpeg video filtering library" "$avfilter_version" "$extralibs" "$pkg_requires libavutil = $libavu_version"
+  pkgconfig_generate libavfilter "FFmpeg video filtering library" "$avfilter_version" "-lavfilter $extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION" ffmpeg
+  pkgconfig_generate_uninstalled libavfilter "FFmpeg video filtering library" "$avfilter_version" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
 fi
