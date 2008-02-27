@@ -256,7 +256,7 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 if (type == 2) { // absolute path
                     dref->path = av_mallocz(len+1);
                     get_buffer(pb, dref->path, len);
-                    if (!strncmp(dref->path, volume, volume_len)) {
+                    if (len > volume_len && !strncmp(dref->path, volume, volume_len)) {
                         len -= volume_len;
                         memmove(dref->path, dref->path+volume_len, len);
                         dref->path[len] = 0;
