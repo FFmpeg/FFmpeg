@@ -1952,6 +1952,7 @@ echo "libvorbis enabled         ${libvorbis-no}"
 echo "x264 enabled              ${libx264-no}"
 echo "XviD enabled              ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
+echo
 
 for type in decoder encoder parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
