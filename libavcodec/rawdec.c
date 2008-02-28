@@ -109,7 +109,7 @@ static int raw_decode(AVCodecContext *avctx,
 
     //4bpp raw in avi and mov (yes this is ugly ...)
     if(avctx->bits_per_sample == 4 && avctx->pix_fmt==PIX_FMT_PAL8 &&
-       !avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ')){
+       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))){
         int i;
         for(i=256*2; i+1 < context->length>>1; i++){
             context->buffer[2*i+0]= buf[i-256*2]>>4;
