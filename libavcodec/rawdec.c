@@ -46,6 +46,7 @@ static const PixelFormatTag pixelFormatBpsAVI[] = {
 static const PixelFormatTag pixelFormatBpsMOV[] = {
     /* FIXME fix swscaler to support those */
     /* http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/chapter_4_section_2.html */
+    { PIX_FMT_PAL8,      4 },
     { PIX_FMT_PAL8,      8 },
     { PIX_FMT_BGR555,   16 },
     { PIX_FMT_RGB24,    24 },
@@ -106,8 +107,9 @@ static int raw_decode(AVCodecContext *avctx,
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
 
-    //4bpp raw in avi (yes this is ugly ...)
-    if(avctx->bits_per_sample == 4 && avctx->pix_fmt==PIX_FMT_PAL8 && !avctx->codec_tag){
+    //4bpp raw in avi and mov (yes this is ugly ...)
+    if(avctx->bits_per_sample == 4 && avctx->pix_fmt==PIX_FMT_PAL8 &&
+       !avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ')){
         int i;
         for(i=256*2; i+1 < context->length>>1; i++){
             context->buffer[2*i+0]= buf[i-256*2]>>4;
