@@ -205,7 +205,7 @@ static inline unsigned int ff_sqrt(unsigned int a)
 #if defined(ARCH_X86)
 #define MASK_ABS(mask, level)\
             asm volatile(\
-                "cdq                    \n\t"\
+                "cltd                   \n\t"\
                 "xorl %1, %0            \n\t"\
                 "subl %1, %0            \n\t"\
                 : "+a" (level), "=&d" (mask)\

@@ -327,7 +327,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     //P3:665    athlon:517
     asm(
         "lea -0x100(%0), %%eax      \n\t"
-        "cdq                        \n\t"
+        "cltd                       \n\t"
         "mov %0, %%eax              \n\t"
         "and %%edx, %0              \n\t"
         "and %1, %%edx              \n\t"
@@ -599,7 +599,7 @@ static int get_cabac_bypass(CABACContext *c){
         "shl $17, %%ebx                         \n\t"
         "add %%eax, %%eax                       \n\t"
         "sub %%ebx, %%eax                       \n\t"
-        "cdq                                    \n\t"
+        "cltd                                   \n\t"
         "and %%edx, %%ebx                       \n\t"
         "add %%ebx, %%eax                       \n\t"
         "test %%ax, %%ax                        \n\t"
@@ -646,7 +646,7 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
         "shl $17, %%ebx                         \n\t"
         "add %%eax, %%eax                       \n\t"
         "sub %%ebx, %%eax                       \n\t"
-        "cdq                                    \n\t"
+        "cltd                                   \n\t"
         "and %%edx, %%ebx                       \n\t"
         "add %%ebx, %%eax                       \n\t"
         "xor %%edx, %%ecx                       \n\t"
