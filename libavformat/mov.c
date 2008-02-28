@@ -725,7 +725,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
             st->codec->bits_per_sample = get_be16(pb); /* depth */
             st->codec->color_table_id = get_be16(pb); /* colortable id */
-
+            dprintf(c->fc, "depth %d, ctab id %d\n",
+                   st->codec->bits_per_sample, st->codec->color_table_id);
             /* figure out the palette situation */
             color_depth = st->codec->bits_per_sample & 0x1F;
             color_greyscale = st->codec->bits_per_sample & 0x20;
@@ -735,6 +736,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 (color_depth == 8)) {
                 if (color_greyscale) {
                     /* compute the greyscale palette */
+                    st->codec->bits_per_sample = color_depth;
                     color_count = 1 << color_depth;
                     color_index = 255;
                     color_dec = 256 / (color_count - 1);
