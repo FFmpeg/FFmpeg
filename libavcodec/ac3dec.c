@@ -154,7 +154,7 @@ typedef struct {
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
-    float downmix_coeff_sum[2];             ///< sum of downmix coeffs for each output channel
+    float downmix_coeff_adjust[2];          ///< adjustment needed for each output channel when downmixing
     float dynamic_range[2];                 ///< dynamic range
     int   cpl_coords[AC3_MAX_CHANNELS][18]; ///< coupling coordinates
     int   num_cpl_bands;                    ///< number of coupling bands
@@ -404,11 +404,14 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
         s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = smix;
     }
 
-    s->downmix_coeff_sum[0] = s->downmix_coeff_sum[1] = 0.0f;
+    /* calculate adjustment needed for each channel to avoid clipping */
+    s->downmix_coeff_adjust[0] = s->downmix_coeff_adjust[1] = 0.0f;
     for(i=0; i<s->fbw_channels; i++) {
-        s->downmix_coeff_sum[0] += s->downmix_coeffs[i][0];
-        s->downmix_coeff_sum[1] += s->downmix_coeffs[i][1];
+        s->downmix_coeff_adjust[0] += s->downmix_coeffs[i][0];
+        s->downmix_coeff_adjust[1] += s->downmix_coeffs[i][1];
     }
+    s->downmix_coeff_adjust[0] = 1.0f / s->downmix_coeff_adjust[0];
+    s->downmix_coeff_adjust[1] = 1.0f / s->downmix_coeff_adjust[1];
 }
 
 /**
@@ -747,8 +750,8 @@ static void ac3_downmix(AC3DecodeContext *s)
             v0 += s->output[j][i] * s->downmix_coeffs[j][0];
             v1 += s->output[j][i] * s->downmix_coeffs[j][1];
         }
-        v0 /= s->downmix_coeff_sum[0];
-        v1 /= s->downmix_coeff_sum[1];
+        v0 *= s->downmix_coeff_adjust[0];
+        v1 *= s->downmix_coeff_adjust[1];
         if(s->output_mode == AC3_CHMODE_MONO) {
             s->output[0][i] = (v0 + v1) * LEVEL_MINUS_3DB;
         } else if(s->output_mode == AC3_CHMODE_STEREO) {
