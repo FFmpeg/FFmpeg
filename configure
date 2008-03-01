@@ -1394,7 +1394,7 @@ if test $targetos = darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
-        add_cflags "-no-cpp-precomp -pipe"
+        add_cflags "-pipe"
         check_cflags "-force_cpusubtype_ALL"
         check_cflags "-Wno-sign-compare"
         disabled shared && add_cflags -mdynamic-no-pic
