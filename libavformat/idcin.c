@@ -71,7 +71,7 @@
 #include "avformat.h"
 
 #define HUFFMAN_TABLE_SIZE (64 * 1024)
-#define FRAME_PTS_INC (90000 / 14)
+#define IDCIN_FPS 14
 
 typedef struct IdcinDemuxContext {
     int video_stream_index;
@@ -152,7 +152,7 @@ static int idcin_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 33, 1, IDCIN_FPS);
     idcin->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_IDCIN;
@@ -175,7 +175,7 @@ static int idcin_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR(ENOMEM);
-        av_set_pts_info(st, 33, 1, 90000);
+        av_set_pts_info(st, 33, 1, IDCIN_FPS);
         idcin->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_tag = 1;
@@ -271,7 +271,7 @@ static int idcin_read_packet(AVFormatContext *s,
         pkt->pts = idcin->pts;
 
         idcin->current_audio_chunk ^= 1;
-        idcin->pts += FRAME_PTS_INC;
+        idcin->pts++;
     }
 
     if (idcin->audio_present)
