@@ -154,6 +154,7 @@ typedef struct {
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
+    float downmix_coeff_sum[2];             ///< sum of downmix coeffs for each output channel
     float dynamic_range[2];                 ///< dynamic range
     int   cpl_coords[AC3_MAX_CHANNELS][18]; ///< coupling coordinates
     int   num_cpl_bands;                    ///< number of coupling bands
@@ -401,6 +402,12 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
     if(s->channel_mode == AC3_CHMODE_2F2R || s->channel_mode == AC3_CHMODE_3F2R) {
         int nf = s->channel_mode - 4;
         s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = smix;
+    }
+
+    s->downmix_coeff_sum[0] = s->downmix_coeff_sum[1] = 0.0f;
+    for(i=0; i<s->fbw_channels; i++) {
+        s->downmix_coeff_sum[0] += s->downmix_coeffs[i][0];
+        s->downmix_coeff_sum[1] += s->downmix_coeffs[i][1];
     }
 }
 
@@ -732,18 +739,16 @@ static inline void do_imdct(AC3DecodeContext *s)
 static void ac3_downmix(AC3DecodeContext *s)
 {
     int i, j;
-    float v0, v1, s0, s1;
+    float v0, v1;
 
     for(i=0; i<256; i++) {
-        v0 = v1 = s0 = s1 = 0.0f;
+        v0 = v1 = 0.0f;
         for(j=0; j<s->fbw_channels; j++) {
             v0 += s->output[j][i] * s->downmix_coeffs[j][0];
             v1 += s->output[j][i] * s->downmix_coeffs[j][1];
-            s0 += s->downmix_coeffs[j][0];
-            s1 += s->downmix_coeffs[j][1];
         }
-        v0 /= s0;
-        v1 /= s1;
+        v0 /= s->downmix_coeff_sum[0];
+        v1 /= s->downmix_coeff_sum[1];
         if(s->output_mode == AC3_CHMODE_MONO) {
             s->output[0][i] = (v0 + v1) * LEVEL_MINUS_3DB;
         } else if(s->output_mode == AC3_CHMODE_STEREO) {
