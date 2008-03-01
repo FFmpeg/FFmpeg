@@ -59,10 +59,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#if !defined(INFINITY) && defined(HUGE_VAL)
-#define INFINITY HUGE_VAL
-#endif
-
 #undef exit
 
 static const char program_name[] = "FFmpeg";
@@ -876,7 +872,6 @@ static void do_video_out(AVFormatContext *s,
 }
 
 static double psnr(double d){
-    if(d==0) return INFINITY;
     return -10.0*log(d)/log(10.0);
 }
 
