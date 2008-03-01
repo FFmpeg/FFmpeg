@@ -55,7 +55,7 @@
 #define WC3_AUDIO_BITS 16
 
 /* nice, constant framerate */
-#define WC3_FRAME_PTS_INC (90000 / 15)
+#define WC3_FRAME_FPS 15
 
 #define PALETTE_SIZE (256 * 3)
 #define PALETTE_COUNT 256
@@ -239,7 +239,7 @@ static int wc3_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_XAN_WC3;
@@ -253,7 +253,7 @@ static int wc3_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->audio_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_PCM_S16LE;
@@ -356,7 +356,7 @@ static int wc3_read_packet(AVFormatContext *s,
                 ret = AVERROR(EIO);
 
             /* time to advance pts */
-            wc3->pts += WC3_FRAME_PTS_INC;
+            wc3->pts++;
 
             packet_read = 1;
             break;
