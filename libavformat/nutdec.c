@@ -325,8 +325,11 @@ static int decode_stream_header(NUTContext *nut){
                 av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 2:
-//            st->codec->codec_type = CODEC_TYPE_TEXT;
-//            break;
+            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+//            st->codec->codec_id = codec_get_id(codec_wav_tags, tmp); FIXME
+            if (st->codec->codec_id == CODEC_ID_NONE)
+                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
+            break;
         case 3:
             st->codec->codec_type = CODEC_TYPE_DATA;
             break;

@@ -394,7 +394,7 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
     switch(codec->codec_type){
     case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
     case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
-//    case CODEC_TYPE_TEXT : put_v(bc, 2); break;
+    case CODEC_TYPE_SUBTITLE: put_v(bc, 2); break;
     default              : put_v(bc, 3); break;
     }
     put_v(bc, 4);
