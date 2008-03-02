@@ -441,7 +441,7 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
         *au_rate = stream->time_base.den;
     }else{
         *au_scale= stream->block_align ? stream->block_align*8 : 8;
-        *au_rate = stream->bit_rate;
+        *au_rate = stream->bit_rate ? stream->bit_rate : 8*stream->sample_rate;
     }
     gcd= ff_gcd(*au_scale, *au_rate);
     *au_scale /= gcd;
