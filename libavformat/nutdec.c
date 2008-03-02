@@ -315,20 +315,14 @@ static int decode_stream_header(NUTContext *nut){
         case 0:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = codec_get_id(codec_bmp_tags, tmp);
-            if (st->codec->codec_id == CODEC_ID_NONE)
-                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 1:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_id = codec_get_id(codec_wav_tags, tmp);
-            if (st->codec->codec_id == CODEC_ID_NONE)
-                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 2:
             st->codec->codec_type = CODEC_TYPE_SUBTITLE;
 //            st->codec->codec_id = codec_get_id(codec_wav_tags, tmp); FIXME
-            if (st->codec->codec_id == CODEC_ID_NONE)
-                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 3:
             st->codec->codec_type = CODEC_TYPE_DATA;
@@ -337,6 +331,9 @@ static int decode_stream_header(NUTContext *nut){
             av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
             return -1;
     }
+    if(class<3 && st->codec->codec_id == CODEC_ID_NONE)
+        av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
+
     GET_V(stc->time_base_id    , tmp < nut->time_base_count);
     GET_V(stc->msb_pts_shift   , tmp < 16);
     stc->max_pts_distance= ff_get_v(bc);
