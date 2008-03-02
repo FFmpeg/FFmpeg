@@ -1307,7 +1307,7 @@ case $targetos in
           emximp -o $(LIBPREF)$(NAME)_dll.lib $(NAME).def;'
         SLIB_INSTALL_EXTRA_CMD='install -m 644 $(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
-        vhook="no"
+        disable vhook
         ;;
     interix)
         disable vhook
