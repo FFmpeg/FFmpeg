@@ -283,6 +283,38 @@ static int avi_write_header(AVFormatContext *s)
             end_tag(pb, avi->indexes[i].indx_start);
         }
 
+        if(   stream->codec_type == CODEC_TYPE_VIDEO
+           && stream->sample_aspect_ratio.num>0
+           && stream->sample_aspect_ratio.den>0){
+            int vprp= start_tag(pb, "vprp");
+            AVRational dar = av_mul_q(stream->sample_aspect_ratio,
+                                      (AVRational){stream->width, stream->height});
+            int num, den;
+            av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);
+
+            put_le32(pb, 0); //video format  = unknown
+            put_le32(pb, 0); //video standard= unknown
+            put_le32(pb, lrintf(1.0/av_q2d(stream->time_base)));
+            put_le32(pb, stream->width );
+            put_le32(pb, stream->height);
+            put_le16(pb, num);
+            put_le16(pb, den);
+            put_le32(pb, stream->width );
+            put_le32(pb, stream->height);
+            put_le32(pb, 1); //progressive FIXME
+
+            put_le32(pb, stream->height);
+            put_le32(pb, stream->width );
+            put_le32(pb, stream->height);
+            put_le32(pb, stream->width );
+            put_le32(pb, 0);
+            put_le32(pb, 0);
+
+            put_le32(pb, 0);
+            put_le32(pb, 0);
+            end_tag(pb, vprp);
+        }
+
         end_tag(pb, list2);
     }
 
