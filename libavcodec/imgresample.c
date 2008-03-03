@@ -512,6 +512,8 @@ void img_resample_close(ImgReSampleContext *s)
     av_free(s);
 }
 
+static const AVClass context_class = { "imgresample", NULL, NULL };
+
 struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
                                   int dstW, int dstH, int dstFormat,
                                   int flags, SwsFilter *srcFilter,
@@ -520,13 +522,12 @@ struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
     struct SwsContext *ctx;
 
     ctx = av_malloc(sizeof(struct SwsContext));
-    if (ctx)
-        ctx->av_class = av_mallocz(sizeof(AVClass));
-    if (!ctx || !ctx->av_class) {
+    if (!ctx) {
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate a resampling context!\n");
 
         return NULL;
     }
+    ctx->av_class = &context_class;
 
     if ((srcH != dstH) || (srcW != dstW)) {
         if ((srcFormat != PIX_FMT_YUV420P) || (dstFormat != PIX_FMT_YUV420P)) {
