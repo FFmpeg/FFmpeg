@@ -1066,6 +1066,8 @@ for opt do
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
+    --enable-debug=*) debuglevel="$optval"
+    ;;
     --enable-*=*|--disable-*=*)
     eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
     case "$thing" in
@@ -1795,7 +1797,7 @@ check_header X11/extensions/XShm.h      &&
 check_func XOpenDisplay -lX11           &&
 check_func XShmCreateImage -lX11 -lXext
 
-enabled debug && add_cflags -g
+enabled debug && add_cflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
