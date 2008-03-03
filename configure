@@ -1580,7 +1580,7 @@ enabled vis && add_cflags "-mcpu=ultrasparc -mtune=ultrasparc"
 check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
-grep -q BIGE $TMPO && enable bigendian
+tr -c -d BIGE < $TMPO | grep -q BIGE && enable bigendian
 
 # ---
 # check availability of some header files
