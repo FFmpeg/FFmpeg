@@ -962,7 +962,7 @@ find_things(){
     thing=$1
     pattern=$2
     file=$source_path/$3
-    sed -n "s/^[^#]*$pattern.*([^,]*, *\\([^,]*\\)\(,.*\)*).*/\\1_$thing/p" "$file"
+    sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
 }
 
 ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
