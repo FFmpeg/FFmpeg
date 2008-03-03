@@ -557,7 +557,6 @@ void sws_freeContext(struct SwsContext *ctx)
     } else {
         av_free(ctx->resampling_ctx);
     }
-    av_free(ctx->av_class);
     av_free(ctx);
 }
 
