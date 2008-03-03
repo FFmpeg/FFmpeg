@@ -24,6 +24,8 @@
 #ifndef FFMPEG_IMGCONVERT_H
 #define FFMPEG_IMGCONVERT_H
 
+#include "avcodec.h"
+
 int ff_fill_linesize(AVPicture *picture, int pix_fmt, int width);
 
 int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, int pix_fmt, int height);
