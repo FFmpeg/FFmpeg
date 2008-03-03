@@ -23,7 +23,7 @@
 #define FFMPEG_RTJPEG_H
 
 #include <stdint.h>
-#include <dsputil.h>
+#include "dsputil.h"
 
 typedef struct {
     int w, h;
