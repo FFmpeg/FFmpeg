@@ -488,8 +488,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, st->codec, size);
-                    if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align)
+                    if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);
+                        ast->sample_size= st->codec->block_align;
+                    }
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
                     /* Force parsing as several audio frames can be in
