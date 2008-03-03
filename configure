@@ -858,7 +858,7 @@ tcp_protocol_deps="network"
 udp_protocol_deps="network"
 
 # filters
-vsrc_movie_deps="avfilter_lavf"
+movie_filter_deps="avfilter_lavf"
 
 # programs
 ffplay_deps="sdl"
@@ -962,7 +962,7 @@ find_things(){
     thing=$1
     pattern=$2
     file=$source_path/$3
-    sed -n "s/^[^#]*$pattern.*(.*, *\\(.*\\)).*/\\1_$thing/p" "$file"
+    sed -n "s/^[^#]*$pattern.*([^,]*, *\\([^,]*\\)\(,.*\)*).*/\\1_$thing/p" "$file"
 }
 
 ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
@@ -974,9 +974,7 @@ DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
 OUTDEV_LIST=$(find_things   muxer    _MUX     libavdevice/alldevices.c)
 INDEV_LIST=$(find_things    demuxer  DEMUX    libavdevice/alldevices.c)
 PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
-VIDEO_FILTER_LIST=$(find_things vf_ VF_ libavfilter/allfilters.c)
-SRC_FILTER_LIST=$(find_things vsrc_ VSRC_ libavfilter/allfilters.c)
-FILTER_LIST="$SRC_FILTER_LIST $VIDEO_FILTER_LIST"
+FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
 enable $ARCH_EXT_LIST \
        $DECODER_LIST \
@@ -1071,8 +1069,7 @@ for opt do
     --enable-*=*|--disable-*=*)
     eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
     case "$thing" in
-        encoder|decoder|muxer|demuxer|parser|bsf|protocol) $action ${optval}_${thing} ;;
-        filter) $action ${optval} ;;
+        encoder|decoder|muxer|demuxer|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
         *) die_unknown "$opt" ;;
     esac
     ;;
@@ -1920,7 +1917,7 @@ echo "shared                    ${shared-no}"
 echo "postprocessing support    ${pp-no}"
 echo "software scaler enabled   ${swscaler-no}"
 echo "new filter support        ${avfilter-no}"
-echo "filters using lavformat   ${avfilter-lavf-no}"
+echo "filters using lavformat   ${avfilter_lavf-no}"
 echo "video hooking             ${vhook-no}"
 if enabled vhook; then
     echo "Imlib2 support            ${imlib2-no}"
