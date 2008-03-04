@@ -334,6 +334,10 @@ static int mpegps_read_pes_header(AVFormatContext *s,
                 header_len -= 5;
             }
         }
+        if (flags & 0x3f && header_len == 0){
+            flags &= 0xC0;
+            av_log(s, AV_LOG_WARNING, "Further flags set but no bytes left\n");
+        }
         if (flags & 0x01) { /* PES extension */
             pes_ext = get_byte(s->pb);
             header_len--;
