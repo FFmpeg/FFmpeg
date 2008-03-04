@@ -32,6 +32,7 @@
 #include "bitstream.h"
 #include "ratecontrol.h"
 #include "parser.h"
+#include "rl.h"
 
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
 
@@ -60,10 +61,6 @@ enum OutputFormat {
 #define ME_MAP_SIZE 64
 #define ME_MAP_SHIFT 3
 #define ME_MAP_MV_BITS 11
-
-/* run length table */
-#define MAX_RUN    64
-#define MAX_LEVEL  64
 
 #define I_TYPE FF_I_TYPE  ///< Intra
 #define P_TYPE FF_P_TYPE  ///< Predicted
@@ -774,8 +771,6 @@ void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
-
-#include "rl.h"
 
 extern const uint8_t ff_mpeg4_y_dc_scale_table[32];
 extern const uint8_t ff_mpeg4_c_dc_scale_table[32];

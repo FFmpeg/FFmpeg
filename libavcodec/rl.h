@@ -29,7 +29,10 @@
 
 #include <stdint.h>
 #include "bitstream.h"
-#include "mpegvideo.h"
+
+/* run length table */
+#define MAX_RUN    64
+#define MAX_LEVEL  64
 
 /** RLTable. */
 typedef struct RLTable {
