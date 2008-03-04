@@ -162,7 +162,7 @@ typedef struct ScanTable{
     uint8_t raster_end[64];
 #ifdef ARCH_POWERPC
                 /** Used by dct_quantize_altivec to find last-non-zero */
-    DECLARE_ALIGNED_8(uint8_t, inverse[64]);
+    DECLARE_ALIGNED(16, uint8_t, inverse[64]);
 #endif
 } ScanTable;
 
