@@ -156,6 +156,8 @@ typedef struct APEContext {
     uint8_t *data_end;                       ///< frame data end
     const uint8_t *ptr;                      ///< current position in frame data
     const uint8_t *last_ptr;                 ///< position where last 4608-sample block ended
+
+    int error;
 } APEContext;
 
 // TODO: dsputilize
@@ -382,6 +384,13 @@ static inline int range_get_symbol(APEContext * ctx,
 
     cf = range_decode_culshift(ctx, 16);
 
+    if(cf > 65492){
+        symbol= cf - 65535 + 63;
+        range_decode_update(ctx, 1, cf);
+        if(cf > 65535)
+            ctx->error=1;
+        return symbol;
+    }
     /* figure out the symbol inefficiently; a binary search would be much better */
     for (symbol = 0; counts[symbol + 1] <= cf; symbol++);
 
@@ -894,10 +903,18 @@ static int ape_decode_frame(AVCodecContext * avctx,
     nblocks = s->samples;
     blockstodecode = FFMIN(BLOCKS_PER_LOOP, nblocks);
 
+    s->error=0;
+
     if ((s->channels == 1) || (s->frameflags & APE_FRAMECODE_PSEUDO_STEREO))
         ape_unpack_mono(s, blockstodecode);
     else
         ape_unpack_stereo(s, blockstodecode);
+
+    if(s->error || s->ptr > s->data_end){
+        s->samples=0;
+        av_log(avctx, AV_LOG_ERROR, "Error decoding frame\n");
+        return -1;
+    }
 
     for (i = 0; i < blockstodecode; i++) {
         *samples++ = s->decoded0[i];
