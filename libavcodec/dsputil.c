@@ -457,6 +457,77 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w)
     }
 }
 
+/**
+ * Copies a rectangular area of samples to a temporary buffer and replicates the boarder samples.
+ * @param buf destination buffer
+ * @param src source buffer
+ * @param linesize number of bytes between 2 vertically adjacent samples in both the source and destination buffers
+ * @param block_w width of block
+ * @param block_h height of block
+ * @param src_x x coordinate of the top left sample of the block in the source buffer
+ * @param src_y y coordinate of the top left sample of the block in the source buffer
+ * @param w width of the source buffer
+ * @param h height of the source buffer
+ */
+void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize, int block_w, int block_h,
+                                    int src_x, int src_y, int w, int h){
+    int x, y;
+    int start_y, start_x, end_y, end_x;
+
+    if(src_y>= h){
+        src+= (h-1-src_y)*linesize;
+        src_y=h-1;
+    }else if(src_y<=-block_h){
+        src+= (1-block_h-src_y)*linesize;
+        src_y=1-block_h;
+    }
+    if(src_x>= w){
+        src+= (w-1-src_x);
+        src_x=w-1;
+    }else if(src_x<=-block_w){
+        src+= (1-block_w-src_x);
+        src_x=1-block_w;
+    }
+
+    start_y= FFMAX(0, -src_y);
+    start_x= FFMAX(0, -src_x);
+    end_y= FFMIN(block_h, h-src_y);
+    end_x= FFMIN(block_w, w-src_x);
+
+    // copy existing part
+    for(y=start_y; y<end_y; y++){
+        for(x=start_x; x<end_x; x++){
+            buf[x + y*linesize]= src[x + y*linesize];
+        }
+    }
+
+    //top
+    for(y=0; y<start_y; y++){
+        for(x=start_x; x<end_x; x++){
+            buf[x + y*linesize]= buf[x + start_y*linesize];
+        }
+    }
+
+    //bottom
+    for(y=end_y; y<block_h; y++){
+        for(x=start_x; x<end_x; x++){
+            buf[x + y*linesize]= buf[x + (end_y-1)*linesize];
+        }
+    }
+
+    for(y=0; y<block_h; y++){
+       //left
+        for(x=0; x<start_x; x++){
+            buf[x + y*linesize]= buf[start_x + y*linesize];
+        }
+
+       //right
+        for(x=end_x; x<block_w; x++){
+            buf[x + y*linesize]= buf[end_x - 1 + y*linesize];
+        }
+    }
+}
+
 static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;

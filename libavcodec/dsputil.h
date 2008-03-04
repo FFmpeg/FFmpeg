@@ -168,6 +168,10 @@ typedef struct ScanTable{
 
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 
+void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize,
+                         int block_w, int block_h,
+                         int src_x, int src_y, int w, int h);
+
 /**
  * DSPContext.
  */
