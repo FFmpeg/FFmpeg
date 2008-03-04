@@ -404,6 +404,35 @@ int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
 }
 #endif
 
+/* draw the edges of width 'w' of an image of size width, height */
+//FIXME check that this is ok for mpeg4 interlaced
+static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w)
+{
+    uint8_t *ptr, *last_line;
+    int i;
+
+    last_line = buf + (height - 1) * wrap;
+    for(i=0;i<w;i++) {
+        /* top and bottom */
+        memcpy(buf - (i + 1) * wrap, buf, width);
+        memcpy(last_line + (i + 1) * wrap, last_line, width);
+    }
+    /* left and right */
+    ptr = buf;
+    for(i=0;i<height;i++) {
+        memset(ptr - w, ptr[0], w);
+        memset(ptr + width, ptr[width-1], w);
+        ptr += wrap;
+    }
+    /* corners */
+    for(i=0;i<w;i++) {
+        memset(buf - (i + 1) * wrap - w, buf[0], w); /* top left */
+        memset(buf - (i + 1) * wrap + width, buf[width-1], w); /* top right */
+        memset(last_line + (i + 1) * wrap - w, last_line[0], w); /* top left */
+        memset(last_line + (i + 1) * wrap + width, last_line[width-1], w); /* top right */
+    }
+}
+
 static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
@@ -4202,6 +4231,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->biweight_h264_pixels_tab[7]= biweight_h264_pixels4x2_c;
     c->biweight_h264_pixels_tab[8]= biweight_h264_pixels2x4_c;
     c->biweight_h264_pixels_tab[9]= biweight_h264_pixels2x2_c;
+
+    c->draw_edges = draw_edges_c;
 
 #ifdef CONFIG_CAVS_DECODER
     ff_cavsdsp_init(c,avctx);

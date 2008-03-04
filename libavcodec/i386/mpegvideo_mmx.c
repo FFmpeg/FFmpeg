@@ -475,94 +475,6 @@ asm volatile(
         );
 }
 
-/* draw the edges of width 'w' of an image of size width, height
-   this mmx version can only handle w==8 || w==16 */
-static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
-{
-    uint8_t *ptr, *last_line;
-    int i;
-
-    last_line = buf + (height - 1) * wrap;
-    /* left and right */
-    ptr = buf;
-    if(w==8)
-    {
-        asm volatile(
-                "1:                             \n\t"
-                "movd (%0), %%mm0               \n\t"
-                "punpcklbw %%mm0, %%mm0         \n\t"
-                "punpcklwd %%mm0, %%mm0         \n\t"
-                "punpckldq %%mm0, %%mm0         \n\t"
-                "movq %%mm0, -8(%0)             \n\t"
-                "movq -8(%0, %2), %%mm1         \n\t"
-                "punpckhbw %%mm1, %%mm1         \n\t"
-                "punpckhwd %%mm1, %%mm1         \n\t"
-                "punpckhdq %%mm1, %%mm1         \n\t"
-                "movq %%mm1, (%0, %2)           \n\t"
-                "add %1, %0                     \n\t"
-                "cmp %3, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((long)wrap), "r" ((long)width), "r" (ptr + wrap*height)
-        );
-    }
-    else
-    {
-        asm volatile(
-                "1:                             \n\t"
-                "movd (%0), %%mm0               \n\t"
-                "punpcklbw %%mm0, %%mm0         \n\t"
-                "punpcklwd %%mm0, %%mm0         \n\t"
-                "punpckldq %%mm0, %%mm0         \n\t"
-                "movq %%mm0, -8(%0)             \n\t"
-                "movq %%mm0, -16(%0)            \n\t"
-                "movq -8(%0, %2), %%mm1         \n\t"
-                "punpckhbw %%mm1, %%mm1         \n\t"
-                "punpckhwd %%mm1, %%mm1         \n\t"
-                "punpckhdq %%mm1, %%mm1         \n\t"
-                "movq %%mm1, (%0, %2)           \n\t"
-                "movq %%mm1, 8(%0, %2)          \n\t"
-                "add %1, %0                     \n\t"
-                "cmp %3, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((long)wrap), "r" ((long)width), "r" (ptr + wrap*height)
-        );
-    }
-
-    for(i=0;i<w;i+=4) {
-        /* top and bottom (and hopefully also the corners) */
-        ptr= buf - (i + 1) * wrap - w;
-        asm volatile(
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq %%mm0, (%0)               \n\t"
-                "movq %%mm0, (%0, %2)           \n\t"
-                "movq %%mm0, (%0, %2, 2)        \n\t"
-                "movq %%mm0, (%0, %3)           \n\t"
-                "add $8, %0                     \n\t"
-                "cmp %4, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((long)buf - (long)ptr - w), "r" ((long)-wrap), "r" ((long)-wrap*3), "r" (ptr+width+2*w)
-        );
-        ptr= last_line + (i + 1) * wrap - w;
-        asm volatile(
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq %%mm0, (%0)               \n\t"
-                "movq %%mm0, (%0, %2)           \n\t"
-                "movq %%mm0, (%0, %2, 2)        \n\t"
-                "movq %%mm0, (%0, %3)           \n\t"
-                "add $8, %0                     \n\t"
-                "cmp %4, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((long)last_line - (long)ptr - w), "r" ((long)wrap), "r" ((long)wrap*3), "r" (ptr+width+2*w)
-        );
-    }
-}
-
 static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int *sum= s->dct_error_sum[intra];
@@ -717,8 +629,6 @@ void MPV_common_init_mmx(MpegEncContext *s)
         if(!(s->flags & CODEC_FLAG_BITEXACT))
             s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
-
-        draw_edges = draw_edges_mmx;
 
         if (mm_flags & MM_SSE2) {
             s->denoise_dct= denoise_dct_sse2;
