@@ -87,19 +87,6 @@ enum OutputFormat {
 #define USER_START_CODE         0x000001b2
 
 /**
- * Scantable.
- */
-typedef struct ScanTable{
-    const uint8_t *scantable;
-    uint8_t permutated[64];
-    uint8_t raster_end[64];
-#ifdef ARCH_POWERPC
-                /** Used by dct_quantize_altivec to find last-non-zero */
-    DECLARE_ALIGNED_8(uint8_t, inverse[64]);
-#endif
-} ScanTable;
-
-/**
  * Picture.
  */
 typedef struct Picture{
@@ -707,7 +694,6 @@ void MPV_common_init_armv4l(MpegEncContext *s);
 void MPV_common_init_altivec(MpegEncContext *s);
 extern void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
 void ff_clean_intra_table_entries(MpegEncContext *s);
-void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize, int block_w, int block_h,
                                     int src_x, int src_y, int w, int h);

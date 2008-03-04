@@ -154,6 +154,21 @@ typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align widt
 typedef struct slice_buffer_s slice_buffer;
 
 /**
+ * Scantable.
+ */
+typedef struct ScanTable{
+    const uint8_t *scantable;
+    uint8_t permutated[64];
+    uint8_t raster_end[64];
+#ifdef ARCH_POWERPC
+                /** Used by dct_quantize_altivec to find last-non-zero */
+    DECLARE_ALIGNED_8(uint8_t, inverse[64]);
+#endif
+} ScanTable;
+
+void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
+
+/**
  * DSPContext.
  */
 typedef struct DSPContext {

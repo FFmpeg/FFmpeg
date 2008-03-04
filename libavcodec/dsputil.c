@@ -152,6 +152,30 @@ static const uint8_t simple_mmx_permutation[64]={
         0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
+void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
+    int i;
+    int end;
+
+    st->scantable= src_scantable;
+
+    for(i=0; i<64; i++){
+        int j;
+        j = src_scantable[i];
+        st->permutated[i] = permutation[j];
+#ifdef ARCH_POWERPC
+        st->inverse[j] = i;
+#endif
+    }
+
+    end=-1;
+    for(i=0; i<64; i++){
+        int j;
+        j = st->permutated[i];
+        if(j>end) end=j;
+        st->raster_end[i]= end;
+    }
+}
+
 static int pix_sum_c(uint8_t * pix, int line_size)
 {
     int s, i, j;

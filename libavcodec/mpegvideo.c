@@ -70,29 +70,6 @@ static const uint8_t ff_default_chroma_qscale_table[32]={
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
 };
 
-void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
-    int i;
-    int end;
-
-    st->scantable= src_scantable;
-
-    for(i=0; i<64; i++){
-        int j;
-        j = src_scantable[i];
-        st->permutated[i] = permutation[j];
-#ifdef ARCH_POWERPC
-        st->inverse[j] = i;
-#endif
-    }
-
-    end=-1;
-    for(i=0; i<64; i++){
-        int j;
-        j = st->permutated[i];
-        if(j>end) end=j;
-        st->raster_end[i]= end;
-    }
-}
 
 const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end, uint32_t * restrict state){
     int i;
