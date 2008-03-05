@@ -50,6 +50,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (!s)
         return AVERROR(ENOMEM);
     h->priv_data = s;
+    h->is_streamed = 1;
 
     if (port <= 0 || port >= 65536)
         goto fail;
