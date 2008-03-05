@@ -267,6 +267,9 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
 
     av_strlcatf(buff, size, "m=%s %d RTP/AVP %d\r\n", type, port, payload_type);
     dest_write(buff, size, dest_addr, ttl);
+    if (c->bit_rate) {
+        av_strlcatf(buff, size, "b=AS:%d\r\n", c->bit_rate / 1000);
+    }
 
     sdp_media_attributes(buff, size, c, payload_type);
 }
