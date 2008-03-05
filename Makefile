@@ -4,7 +4,9 @@
 #
 include config.mak
 
-VPATH=$(SRC_PATH_BARE)
+vpath %.c    $(SRC_PATH_BARE)
+vpath %.h    $(SRC_PATH_BARE)
+vpath %.texi $(SRC_PATH_BARE)
 
 CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \

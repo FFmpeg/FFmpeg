@@ -2,8 +2,13 @@
 # common bits used by all libraries
 #
 
-VPATH = $(SRC_PATH_BARE)/lib$(NAME)
-SRC_DIR = "$(VPATH)"
+LIBSRC = $(SRC_PATH_BARE)/lib$(NAME)
+
+vpath %.c $(LIBSRC)
+vpath %.h $(LIBSRC)
+vpath %.S $(LIBSRC)
+
+SRC_DIR = "$(LIBSRC)"
 
 CFLAGS   += $(CFLAGS-yes)
 OBJS     += $(OBJS-yes)
@@ -44,7 +49,7 @@ $(SLIBNAME_WITH_MAJOR): $(OBJS)
 %.ho: %.h
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
 
-ALLHEADERS = $(subst $(VPATH)/,,$(wildcard $(VPATH)/*.h))
+ALLHEADERS = $(subst $(LIBSRC)/,,$(wildcard $(LIBSRC)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
 depend dep: $(SRCS)
