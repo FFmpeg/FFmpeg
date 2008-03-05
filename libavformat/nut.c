@@ -22,6 +22,14 @@
 #include "nut.h"
 #include "tree.h"
 
+const AVCodecTag ff_nut_subtitle_tags[] = {
+    { CODEC_ID_TEXT        , MKTAG('U', 'T', 'F', '8') },
+    { CODEC_ID_SSA         , MKTAG('S', 'S', 'A',  0 ) },
+    { CODEC_ID_DVD_SUBTITLE, MKTAG('D', 'V', 'D', 'S') },
+    { CODEC_ID_DVB_SUBTITLE, MKTAG('D', 'V', 'B', 'S') },
+    { CODEC_ID_NONE        , 0                         }
+};
+
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
     int i;
     for(i=0; i<nut->avf->nb_streams; i++){

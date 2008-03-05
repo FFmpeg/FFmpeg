@@ -97,6 +97,8 @@ typedef struct {
     struct AVTreeNode *syncpoints;
 } NUTContext;
 
+extern const AVCodecTag ff_nut_subtitle_tags[];
+
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val);
 int64_t ff_lsb2full(StreamContext *stream, int64_t lsb);
 int ff_nut_sp_pos_cmp(syncpoint_t *a, syncpoint_t *b);
