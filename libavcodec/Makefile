@@ -299,7 +299,9 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 # libavformat dependencies
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o
+OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
 
 # external codec libraries
