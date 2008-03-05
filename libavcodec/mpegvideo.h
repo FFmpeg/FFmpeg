@@ -45,8 +45,6 @@ enum OutputFormat {
     FMT_H264,
 };
 
-#define EDGE_WIDTH 16
-
 #define MPEG_BUF_SIZE (16 * 1024)
 
 #define QMAT_SHIFT_MMX 16

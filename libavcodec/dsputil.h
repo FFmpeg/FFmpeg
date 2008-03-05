@@ -412,6 +412,7 @@ typedef struct DSPContext {
 #define RECON_SHIFT 6
 
     void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
+#define EDGE_WIDTH 16
 
     /* h264 functions */
     void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
