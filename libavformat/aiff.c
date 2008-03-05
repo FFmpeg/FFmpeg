@@ -131,7 +131,11 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
             codec->frame_size = 64;
             break;
         case CODEC_ID_MACE3:
+            codec->block_align = 2*codec->channels;
+            codec->frame_size = 6;
+            break;
         case CODEC_ID_MACE6:
+            codec->block_align = 1*codec->channels;
             codec->frame_size = 6;
             break;
         default:
