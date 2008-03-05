@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "mpegvideo.h"
 
 typedef struct QpegContext{
     AVCodecContext *avctx;

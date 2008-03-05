@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "mpegvideo.h"
+#include "dsputil.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -55,7 +55,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= I_TYPE;
+    p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
     for(i=0; i<16; i++){
@@ -122,7 +122,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int mb_x, mb_y;
 
     *p = *pict;
-    p->pict_type= I_TYPE;
+    p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
     emms_c();

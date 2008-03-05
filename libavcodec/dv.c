@@ -36,7 +36,7 @@
 #define ALT_BITSTREAM_READER
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "bitstream.h"
 #include "simple_idct.h"
 #include "dvdata.h"
 

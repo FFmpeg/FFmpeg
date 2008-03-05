@@ -29,7 +29,6 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
 #include "simple_idct.h"
 #include "faandct.h"
 #include "faanidct.h"

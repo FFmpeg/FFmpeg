@@ -35,7 +35,6 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
 
 
 typedef struct CyuvDecodeContext {

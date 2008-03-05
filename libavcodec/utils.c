@@ -27,7 +27,6 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
 #include "integer.h"
 #include "opt.h"
 #include "crc.h"
@@ -1284,12 +1283,12 @@ void avcodec_default_free_buffers(AVCodecContext *s){
 
 char av_get_pict_type_char(int pict_type){
     switch(pict_type){
-    case I_TYPE: return 'I';
-    case P_TYPE: return 'P';
-    case B_TYPE: return 'B';
-    case S_TYPE: return 'S';
-    case SI_TYPE:return 'i';
-    case SP_TYPE:return 'p';
+    case FF_I_TYPE: return 'I';
+    case FF_P_TYPE: return 'P';
+    case FF_B_TYPE: return 'B';
+    case FF_S_TYPE: return 'S';
+    case FF_SI_TYPE:return 'i';
+    case FF_SP_TYPE:return 'p';
     default:     return '?';
     }
 }

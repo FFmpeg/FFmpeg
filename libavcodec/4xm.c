@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "bitstream.h"
 #include "bytestream.h"
 
 //#undef NDEBUG
@@ -756,15 +756,15 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if(frame_4cc == ff_get_fourcc("ifr2")){
-        p->pict_type= I_TYPE;
+        p->pict_type= FF_I_TYPE;
         if(decode_i2_frame(f, buf-4, frame_size) < 0)
             return -1;
     }else if(frame_4cc == ff_get_fourcc("ifrm")){
-        p->pict_type= I_TYPE;
+        p->pict_type= FF_I_TYPE;
         if(decode_i_frame(f, buf, frame_size) < 0)
             return -1;
     }else if(frame_4cc == ff_get_fourcc("pfrm") || frame_4cc == ff_get_fourcc("pfr2")){
-        p->pict_type= P_TYPE;
+        p->pict_type= FF_P_TYPE;
         if(decode_p_frame(f, buf, frame_size) < 0)
             return -1;
     }else if(frame_4cc == ff_get_fourcc("snd_")){
@@ -773,7 +773,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "ignoring unknown chunk length:%d\n", buf_size);
     }
 
-    p->key_frame= p->pict_type == I_TYPE;
+    p->key_frame= p->pict_type == FF_I_TYPE;
 
     *picture= *p;
     *data_size = sizeof(AVPicture);

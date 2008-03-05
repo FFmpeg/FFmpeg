@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "mpegvideo.h"
 
 typedef struct VideoXLContext{
     AVCodecContext *avctx;
@@ -58,7 +57,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= I_TYPE;
+    p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
     Y = a->pic.data[0];
