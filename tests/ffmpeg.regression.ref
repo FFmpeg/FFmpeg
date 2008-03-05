@@ -74,10 +74,10 @@ stddev: 10.40 PSNR:27.78 bytes:7602176
 604580 ./tests/data/a-mpeg4-adv.avi
 ee7f2a0be286f09e20372e127364d690 *./tests/data/mpeg4adv.vsynth.out.yuv
 stddev:  6.99 PSNR:31.23 bytes:7602176
-13bc53ae93709323b8989cc4f8ea4b1e *./tests/data/a-mpeg4-qprd.avi
-736920 ./tests/data/a-mpeg4-qprd.avi
-745ccd9185f579cde533c1500fc4adc7 *./tests/data/mpeg4adv.vsynth.out.yuv
-stddev: 10.04 PSNR:28.08 bytes:7602176
+b52f11515c6d209ab68c1ccd177d8997 *./tests/data/a-mpeg4-qprd.avi
+725392 ./tests/data/a-mpeg4-qprd.avi
+615524174e9c10f0460fb2205e7140bc *./tests/data/mpeg4adv.vsynth.out.yuv
+stddev:  9.92 PSNR:28.19 bytes:7602176
 5b105ca591f94fa1c2b420cd74b290a1 *./tests/data/a-mpeg4-adap.avi
 409360 ./tests/data/a-mpeg4-adap.avi
 6ae220d766c44af3bd58e3d2f5aefa8d *./tests/data/mpeg4adv.vsynth.out.yuv

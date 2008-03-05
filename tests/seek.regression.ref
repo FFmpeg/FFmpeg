@@ -1758,47 +1758,47 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:215220 size:13087 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:159706 size:12679 flags:1
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:187334 size:12986 flags:1
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:99648 size:29366 flags:1
+ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:94070 size:29366 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:159706 size:12679 flags:1
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:215220 size:13087 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:215220 size:13087 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:99648 size:29366 flags:1
+ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:94070 size:29366 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:215220 size:13087 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:187334 size:12986 flags:1
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:215220 size:13087 flags:1
+ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:159706 size:12679 flags:1
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:187334 size:12986 flags:1
+ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:159706 size:12679 flags:1
+ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-rc.avi
