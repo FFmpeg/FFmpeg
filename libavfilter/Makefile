@@ -12,8 +12,12 @@ OBJS = allfilters.o \
 HEADERS = avfilter.h
 
 EXTRALIBS := -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) \
-             -L$(BUILD_ROOT)/libswscale -lswscale$(BUILDSUF) \
              -L$(BUILD_ROOT)/libavutil  -lavutil$(BUILDSUF) $(EXTRALIBS)
+
+ifeq ($(CONFIG_SWSCALER),yes)
+EXTRALIBS+=-L$(BUILD_ROOT)/libswscale
+EXTRALIBS+=-lswscale$(BUILDSUF)
+endif
 
 ifeq ($(CONFIG_AVFILTER_LAVF),yes)
 EXTRALIBS := -L$(BUILD_ROOT)/libavformat -lavformat$(BUILDSUF) $(EXTRALIBS)
