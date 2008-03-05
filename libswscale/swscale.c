@@ -397,7 +397,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
             for (j=0; j<chrFilterSize; j++)
             {
                 u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + 2048] * chrFilter[j];
+                v += chrSrc[j][i + VOFW] * chrFilter[j];
             }
 
             uDest[i]= av_clip_uint8(u>>19);
@@ -433,7 +433,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
             for (j=0; j<chrFilterSize; j++)
             {
                 u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + 2048] * chrFilter[j];
+                v += chrSrc[j][i + VOFW] * chrFilter[j];
             }
 
             uDest[2*i]= av_clip_uint8(u>>19);
@@ -448,7 +448,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
             for (j=0; j<chrFilterSize; j++)
             {
                 u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + 2048] * chrFilter[j];
+                v += chrSrc[j][i + VOFW] * chrFilter[j];
             }
 
             uDest[2*i]= av_clip_uint8(v>>19);
@@ -474,7 +474,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         for (j=0; j<chrFilterSize; j++)\
         {\
             U += chrSrc[j][i] * chrFilter[j];\
-            V += chrSrc[j][i+2048] * chrFilter[j];\
+            V += chrSrc[j][i+VOFW] * chrFilter[j];\
         }\
         Y1>>=19;\
         Y2>>=19;\
@@ -504,7 +504,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>19;           \
         int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>19;           \
         int U= (uvbuf0[i     ]*uvalpha1+uvbuf1[i     ]*uvalpha)>>19;  \
-        int V= (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;  \
+        int V= (uvbuf0[i+VOFW]*uvalpha1+uvbuf1[i+VOFW]*uvalpha)>>19;  \
 
 #define YSCALE_YUV_2_RGB2_C(type) \
     YSCALE_YUV_2_PACKED2_C\
@@ -519,7 +519,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         int Y1= buf0[i2  ]>>7;\
         int Y2= buf0[i2+1]>>7;\
         int U= (uvbuf1[i     ])>>7;\
-        int V= (uvbuf1[i+2048])>>7;\
+        int V= (uvbuf1[i+VOFW])>>7;\
 
 #define YSCALE_YUV_2_RGB1_C(type) \
     YSCALE_YUV_2_PACKED1_C\
@@ -534,7 +534,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         int Y1= buf0[i2  ]>>7;\
         int Y2= buf0[i2+1]>>7;\
         int U= (uvbuf0[i     ] + uvbuf1[i     ])>>8;\
-        int V= (uvbuf0[i+2048] + uvbuf1[i+2048])>>8;\
+        int V= (uvbuf0[i+VOFW] + uvbuf1[i+VOFW])>>8;\
 
 #define YSCALE_YUV_2_RGB1B_C(type) \
     YSCALE_YUV_2_PACKED1B_C\
@@ -2078,6 +2078,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
                srcW, srcH, dstW, dstH);
         return NULL;
     }
+    if(srcW > VOFW || dstW > VOFW){
+        av_log(NULL, AV_LOG_ERROR, "swScaler: Compile time max width is "AV_STRINGIFY(VOFW)" change VOF/VOFW and recompile\n");
+        return NULL;
+    }
 
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
@@ -2384,12 +2388,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     //Note we need at least one pixel more at the end because of the mmx code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
     for (i=0; i<c->vLumBufSize; i++)
-        c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_mallocz(4000);
+        c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_mallocz(VOF+1);
     for (i=0; i<c->vChrBufSize; i++)
-        c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc(8000);
+        c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc((VOF+1)*2);
 
     //try to avoid drawing green stuff between the right end and the stride end
-    for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, 8000);
+    for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
+
+    assert(2*VOF == VOFW);
 
     ASSERT(c->chrDstH <= dstH)
 

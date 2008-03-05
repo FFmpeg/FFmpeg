@@ -31,6 +31,9 @@
 
 #define MAX_FILTER_SIZE 256
 
+#define VOF  4096
+#define VOFW 2048
+
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
@@ -70,7 +73,7 @@ typedef struct SwsContext{
     int16_t *vChrFilter;
     int16_t *vChrFilterPos;
 
-    uint8_t formatConvBuffer[4000]; //FIXME dynamic alloc, but we have to change a lot of code for this to be useful
+    uint8_t formatConvBuffer[VOF]; //FIXME dynamic alloc, but we have to change a lot of code for this to be useful
 
     int hLumFilterSize;
     int hChrFilterSize;
