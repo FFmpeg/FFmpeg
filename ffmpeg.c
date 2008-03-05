@@ -206,7 +206,7 @@ static uint64_t limit_filesize = 0; //
 static int pgmyuv_compatibility_hack=0;
 static float dts_delta_threshold = 10;
 
-static int sws_flags = SWS_BICUBIC;
+static unsigned int sws_flags = SWS_BICUBIC;
 
 static const char **opt_names;
 static int opt_name_count;
