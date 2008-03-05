@@ -355,9 +355,9 @@ uint64_t time= rdtsc();
     if(s->flags&CODEC_FLAG_TRUNCATED){
         int next;
 
-        if(s->codec_id==CODEC_ID_MPEG4){
+        if(ENABLE_MPEG4_DECODER && s->codec_id==CODEC_ID_MPEG4){
             next= ff_mpeg4_find_frame_end(&s->parse_context, buf, buf_size);
-        }else if(s->codec_id==CODEC_ID_H263){
+        }else if(ENABLE_H263_DECODER && s->codec_id==CODEC_ID_H263){
             next= ff_h263_find_frame_end(&s->parse_context, buf, buf_size);
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "this codec does not support truncated bitstreams\n");
