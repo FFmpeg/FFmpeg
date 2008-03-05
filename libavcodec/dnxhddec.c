@@ -26,7 +26,6 @@
 #include "bitstream.h"
 #include "dnxhddata.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
 
 typedef struct {
     AVCodecContext *avctx;

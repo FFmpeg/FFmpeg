@@ -27,7 +27,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bitstream.h"
-#include "mpegvideo.h"
 
 #include "vp56.h"
 #include "vp56data.h"

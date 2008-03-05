@@ -32,7 +32,6 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
 
 #define MAX_COMPONENTS 4
 

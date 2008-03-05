@@ -26,7 +26,7 @@
 
 #include "vp56data.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "bitstream.h"
 #include "bytestream.h"
 
 

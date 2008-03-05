@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "mpeg12data.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -402,7 +402,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= I_TYPE;
+    p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -476,7 +476,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     init_put_bits(&a->pb, buf, buf_size);
 
     *p = *pict;
-    p->pict_type= I_TYPE;
+    p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
     for(mb_y=0; mb_y<a->mb_height2; mb_y++){

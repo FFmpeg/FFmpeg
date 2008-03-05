@@ -36,7 +36,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "bitstream.h"
 
 #include "vp3data.h"
 #include "xiph.h"

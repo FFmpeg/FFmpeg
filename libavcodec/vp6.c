@@ -31,7 +31,6 @@
 #include "dsputil.h"
 #include "bitstream.h"
 #include "huffman.h"
-#include "mpegvideo.h"
 
 #include "vp56.h"
 #include "vp56data.h"

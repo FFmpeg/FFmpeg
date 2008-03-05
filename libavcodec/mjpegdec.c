@@ -332,7 +332,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->picture.pict_type= I_TYPE;
+    s->picture.pict_type= FF_I_TYPE;
     s->picture.key_frame= 1;
 
     for(i=0; i<3; i++){
