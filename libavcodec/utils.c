@@ -1289,7 +1289,7 @@ char av_get_pict_type_char(int pict_type){
     case FF_S_TYPE: return 'S';
     case FF_SI_TYPE:return 'i';
     case FF_SP_TYPE:return 'p';
-    default:     return '?';
+    default:        return '?';
     }
 }
 
