@@ -62,8 +62,8 @@ static const AVOption *av_set_number(void *obj, const char *name, double num, in
 
     switch(o->type){
     case FF_OPT_TYPE_FLAGS:
-    case FF_OPT_TYPE_INT:   *(int       *)dst= lrintf(num/den)*intnum; break;
-    case FF_OPT_TYPE_INT64: *(int64_t   *)dst= lrintf(num/den)*intnum; break;
+    case FF_OPT_TYPE_INT:   *(int       *)dst= llrint(num/den)*intnum; break;
+    case FF_OPT_TYPE_INT64: *(int64_t   *)dst= llrint(num/den)*intnum; break;
     case FF_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
     case FF_OPT_TYPE_DOUBLE:*(double    *)dst= num*intnum/den;         break;
     case FF_OPT_TYPE_RATIONAL:
@@ -254,7 +254,7 @@ static int av_get_number(void *obj, const char *name, const AVOption **o_out, do
     if(o_out) *o_out= o;
 
     switch(o->type){
-    case FF_OPT_TYPE_FLAGS:
+    case FF_OPT_TYPE_FLAGS:     *intnum= *(unsigned int*)dst;return 0;
     case FF_OPT_TYPE_INT:       *intnum= *(int    *)dst;return 0;
     case FF_OPT_TYPE_INT64:     *intnum= *(int64_t*)dst;return 0;
     case FF_OPT_TYPE_FLOAT:     *num=    *(float  *)dst;return 0;
