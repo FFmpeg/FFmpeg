@@ -1033,22 +1033,6 @@ for opt do
     ;;
     --disable-strip) disable dostrip
     ;;
-    --disable-encoders) disable $ENCODER_LIST
-    ;;
-    --disable-decoders) disable $DECODER_LIST
-    ;;
-    --disable-muxers) disable $MUXER_LIST
-    ;;
-    --disable-filters) disable $FILTER_LIST
-    ;;
-    --disable-demuxers) disable $DEMUXER_LIST
-    ;;
-    --disable-parsers) disable $PARSER_LIST
-    ;;
-    --disable-bsfs) disable $BSF_LIST
-    ;;
-    --disable-protocols) disable $PROTOCOL_LIST
-    ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
     --enable-debug=*) debuglevel="$optval"
@@ -1062,8 +1046,13 @@ for opt do
     ;;
     --enable-?*|--disable-?*)
     eval `echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g'`
-    echo "$CMDLINE_SELECT" | grep -q "^ *$option\$" || die_unknown $opt
-    $action $option
+    if is_in $option $COMPONENT_LIST; then
+        eval $action \$$(toupper ${option%s})_LIST
+    elif is_in $option $CMDLINE_SELECT; then
+        $action $option
+    else
+        die_unknown $opt
+    fi
     ;;
     --list-*)
         NAME="${opt#--list-}"
