@@ -32,6 +32,7 @@
 #include "bitstream.h"
 #include "ratecontrol.h"
 #include "parser.h"
+#include "mpeg12data.h"
 #include "rl.h"
 
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
@@ -758,10 +759,7 @@ int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate);
 
 /* mpeg12.c */
-extern const uint16_t ff_mpeg1_default_intra_matrix[64];
-extern const uint16_t ff_mpeg1_default_non_intra_matrix[64];
 extern const uint8_t ff_mpeg1_dc_scale_table[128];
-extern const AVRational ff_frame_rate_tab[];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void mpeg1_encode_mb(MpegEncContext *s,
