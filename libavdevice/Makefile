@@ -4,11 +4,7 @@ NAME=avdevice
 LIBVERSION=$(LAVDVERSION)
 LIBMAJOR=$(LAVDMAJOR)
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavformat -lavformat$(BUILDSUF) \
-             -L$(BUILD_ROOT)/libavcodec  -lavcodec$(BUILDSUF) \
-             -L$(BUILD_ROOT)/libavutil   -lavutil$(BUILDSUF) $(EXTRALIBS)
-
-CFLAGS += -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat
+FFLIBS = avformat avcodec avutil
 
 OBJS = alldevices.o
 

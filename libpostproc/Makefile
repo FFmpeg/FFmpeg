@@ -1,7 +1,7 @@
 
 include ../config.mak
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+FFLIBS = avutil
 
 NAME=postproc
 LIBVERSION=$(SPPVERSION)

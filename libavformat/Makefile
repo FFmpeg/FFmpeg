@@ -4,8 +4,6 @@
 #
 include ../config.mak
 
-CFLAGS += -I$(SRC_PATH)/libavcodec
-
 OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
 
 HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
@@ -182,9 +180,6 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
 OBJS-$(CONFIG_VHOOK)                     += framehook.o
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) \
-             -L$(BUILD_ROOT)/libavutil  -lavutil$(BUILDSUF) $(EXTRALIBS)
-
 # protocols I/O
 OBJS+= avio.o aviobuf.o
 
@@ -194,6 +189,8 @@ OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
+
+FFLIBS = avcodec avutil
 
 NAME=avformat
 LIBVERSION=$(LAVFVERSION)

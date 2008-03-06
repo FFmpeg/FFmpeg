@@ -10,14 +10,20 @@ vpath %.S $(LIBSRC)
 
 SRC_DIR = "$(LIBSRC)"
 
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
+
 CFLAGS   += $(CFLAGS-yes)
 OBJS     += $(OBJS-yes)
 ASM_OBJS += $(ASM_OBJS-yes)
 CPP_OBJS += $(CPP_OBJS-yes)
+FFLIBS   += $(FFLIBS-yes)
 
 CFLAGS += -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
           -D_ISOC9X_SOURCE -I$(BUILD_ROOT) -I$(SRC_PATH) \
-          -I$(SRC_PATH)/libavutil $(OPTFLAGS)
+          $(addprefix -I$(SRC_PATH)/lib,$(ALLFFLIBS)) $(OPTFLAGS)
+
+EXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
+LDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S) $(CPPOBJS:.o=.cpp)
 OBJS := $(OBJS) $(ASM_OBJS) $(CPPOBJS)

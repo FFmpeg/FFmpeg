@@ -4,8 +4,6 @@
 #
 include ../config.mak
 
-CFLAGS += -I$(SRC_PATH)/libswscale -I$(SRC_PATH)/libavcodec
-
 OBJS = allcodecs.o \
        audioconvert.o \
        bitstream.o \
@@ -456,7 +454,7 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/idct_bfin.o   \
                                           bfin/vp3_idct_bfin.o   \
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+FFLIBS = avutil
 
 NAME=avcodec
 LIBVERSION=$(LAVCVERSION)

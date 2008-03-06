@@ -1,7 +1,5 @@
 include ../config.mak
 
-CFLAGS+=-I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libswscale
-
 OBJS = allfilters.o \
        avfilter.o \
        defaults.o \
@@ -11,17 +9,10 @@ OBJS = allfilters.o \
 
 HEADERS = avfilter.h
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavcodec -lavcodec$(BUILDSUF) \
-             -L$(BUILD_ROOT)/libavutil  -lavutil$(BUILDSUF) $(EXTRALIBS)
+FFLIBS = avcodec avutil
 
-ifeq ($(CONFIG_SWSCALER),yes)
-EXTRALIBS+=-L$(BUILD_ROOT)/libswscale
-EXTRALIBS+=-lswscale$(BUILDSUF)
-endif
-
-ifeq ($(CONFIG_AVFILTER_LAVF),yes)
-EXTRALIBS := -L$(BUILD_ROOT)/libavformat -lavformat$(BUILDSUF) $(EXTRALIBS)
-endif
+FFLIBS-$(CONFIG_SWSCALER)      += swscale
+FFLIBS-$(CONFIG_AVFILTER_LAVF) += avformat
 
 NAME=avfilter
 LIBVERSION=$(LAVFIVERSION)
