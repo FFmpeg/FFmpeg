@@ -5,7 +5,7 @@ NAME=swscale
 LIBVERSION=$(SWSVERSION)
 LIBMAJOR=$(SWSMAJOR)
 
-EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+FFLIBS = avutil
 
 OBJS = rgb2rgb.o swscale.o
 
