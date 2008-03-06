@@ -193,7 +193,7 @@ void altivec_yuv2packedX (SwsContext *c,
                           int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                           uint8_t *dest, int dstW, int dstY);
 
-char *sws_format_name(int format);
+const char *sws_format_name(int format);
 
 //FIXME replace this with something faster
 #define isPlanarYUV(x)  (           \

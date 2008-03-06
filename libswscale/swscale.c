@@ -276,7 +276,7 @@ static const AVOption options[] = {
 
 static AVClass sws_context_class = { "SWScaler", sws_context_to_name, options };
 
-char *sws_format_name(enum PixelFormat format)
+const char *sws_format_name(enum PixelFormat format)
 {
     switch (format) {
         case PIX_FMT_YUV420P:
