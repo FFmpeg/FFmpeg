@@ -415,7 +415,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                                 value_num= get_value(pb, value_type);
                                 if (!strcmp(name,"WM/Track"      ) && s->track == 0) s->track = value_num + 1;
                                 if (!strcmp(name,"WM/TrackNumber")) s->track = value_num;
-                        }
+                        }else
+                            url_fskip(pb, value_len);
                 }
         } else if (!memcmp(&g, &metadata_header, sizeof(GUID))) {
             int n, stream_num, name_len, value_len, value_type, value_num;
