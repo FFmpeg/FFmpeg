@@ -125,6 +125,7 @@ typedef struct {
 
     /* Primary audio coding header */
     int subframes;              ///< number of subframes
+    int total_channels;         ///< number of channels including extensions
     int prim_channels;          ///< number of primary audio channels
     int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
     int vq_start_subband[DCA_PRIM_CHANNELS_MAX];    ///< high frequency vq start subband
@@ -320,7 +321,10 @@ static int dca_parse_frame_header(DCAContext * s)
 
     /* Primary audio coding header */
     s->subframes         = get_bits(&s->gb, 4) + 1;
-    s->prim_channels     = get_bits(&s->gb, 3) + 1;
+    s->total_channels    = get_bits(&s->gb, 3) + 1;
+    s->prim_channels     = s->total_channels;
+    if (s->prim_channels > DCA_PRIM_CHANNELS_MAX)
+        s->prim_channels = DCA_PRIM_CHANNELS_MAX;   /* We only support DTS core */
 
 
     for (i = 0; i < s->prim_channels; i++) {
@@ -427,7 +431,11 @@ static int dca_subframe_header(DCAContext * s)
                 s->bitalloc[j][k] = get_bits(&s->gb, 5);
             else if (s->bitalloc_huffman[j] == 5)
                 s->bitalloc[j][k] = get_bits(&s->gb, 4);
-            else {
+            else if (s->bitalloc_huffman[j] == 7) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Invalid bit allocation index\n");
+                return -1;
+            } else {
                 s->bitalloc[j][k] =
                     get_bitalloc(&s->gb, &dca_bitalloc_index, s->bitalloc_huffman[j]);
             }
