@@ -353,6 +353,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 url_fskip(s->pb, klv.length);
                 return -1;
             }
+            if (s->streams[index]->discard == AVDISCARD_ALL)
+                goto skip;
             /* check for 8 channels AES3 element */
             if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
                 if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
@@ -365,6 +367,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pos = klv.offset;
             return 0;
         } else
+        skip:
             url_fskip(s->pb, klv.length);
     }
     return AVERROR(EIO);
