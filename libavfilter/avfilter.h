@@ -392,7 +392,7 @@ typedef struct
 /** An instance of a filter */
 struct AVFilterContext
 {
-    AVClass *av_class;              ///< needed for av_log()
+    const AVClass *av_class;              ///< needed for av_log()
 
     AVFilter *filter;               ///< the AVFilter of which this is an instance
 

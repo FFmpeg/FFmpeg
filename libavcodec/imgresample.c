@@ -48,7 +48,7 @@
 #define LINE_BUF_HEIGHT (NB_TAPS * 4)
 
 struct SwsContext {
-    AVClass *av_class;
+    const AVClass *av_class;
     struct ImgReSampleContext *resampling_ctx;
     enum PixelFormat src_pix_fmt, dst_pix_fmt;
 };
