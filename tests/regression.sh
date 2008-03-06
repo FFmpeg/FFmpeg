@@ -401,6 +401,11 @@ do_audio_encoding adpcm_ima.wav "-ar 44100" "-acodec adpcm_ima_wav"
 do_audio_decoding
 fi
 
+if [ -n "$do_adpcm_ima_qt" ] ; then
+do_audio_encoding adpcm_qt.aiff "-ar 44100" "-acodec adpcm_ima_qt"
+do_audio_decoding
+fi
+
 if [ -n "$do_adpcm_ms" ] ; then
 do_audio_encoding adpcm_ms.wav "-ar 44100" "-acodec adpcm_ms"
 do_audio_decoding

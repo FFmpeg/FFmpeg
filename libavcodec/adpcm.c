@@ -165,6 +165,10 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = BLKSIZE;
         /* seems frame_size isn't taken into account... have to buffer the samples :-( */
         break;
+    case CODEC_ID_ADPCM_IMA_QT:
+        avctx->frame_size = 64;
+        avctx->block_align = 34 * avctx->channels;
+        break;
     case CODEC_ID_ADPCM_MS:
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2; /* each 16 bits sample gives one nibble */
                                                              /* and we have 7 bytes per channel overhead */
@@ -295,7 +299,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
     nodes[0]->step = c->step_index;
     nodes[0]->sample1 = c->sample1;
     nodes[0]->sample2 = c->sample2;
-    if((version == CODEC_ID_ADPCM_IMA_WAV) || (version == CODEC_ID_ADPCM_SWF))
+    if((version == CODEC_ID_ADPCM_IMA_WAV) || (version == CODEC_ID_ADPCM_IMA_QT) || (version == CODEC_ID_ADPCM_SWF))
         nodes[0]->sample1 = c->prev_sample;
     if(version == CODEC_ID_ADPCM_MS)
         nodes[0]->step = c->idelta;
@@ -366,7 +370,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     next_##NAME:;
                     STORE_NODE(ms, FFMAX(16, (AdaptationTable[nibble] * step) >> 8));
                 }
-            } else if((version == CODEC_ID_ADPCM_IMA_WAV)|| (version == CODEC_ID_ADPCM_SWF)) {
+            } else if((version == CODEC_ID_ADPCM_IMA_WAV)|| (version == CODEC_ID_ADPCM_IMA_QT)|| (version == CODEC_ID_ADPCM_SWF)) {
 #define LOOP_NODES(NAME, STEP_TABLE, STEP_INDEX)\
                 const int predictor = nodes[j]->sample1;\
                 const int div = (sample - predictor) * 4 / STEP_TABLE;\
@@ -509,6 +513,36 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                 samples += 8 * avctx->channels;
             }
         break;
+    case CODEC_ID_ADPCM_IMA_QT:
+    {
+        int ch, i;
+        PutBitContext pb;
+        init_put_bits(&pb, dst, buf_size*8);
+
+        for(ch=0; ch<avctx->channels; ch++){
+            put_bits(&pb, 9, (c->status[ch].prev_sample + 0x10000) >> 7);
+            put_bits(&pb, 7, c->status[ch].step_index);
+            if(avctx->trellis > 0) {
+                uint8_t buf[64];
+                adpcm_compress_trellis(avctx, samples+ch, buf, &c->status[ch], 64);
+                for(i=0; i<64; i++)
+                    put_bits(&pb, 4, buf[i^1]);
+                c->status[ch].prev_sample = c->status[ch].predictor & ~0x7F;
+            } else {
+                for (i=0; i<64; i+=2){
+                    int t1, t2;
+                    t1 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+0)+ch]);
+                    t2 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+1)+ch]);
+                    put_bits(&pb, 4, t2);
+                    put_bits(&pb, 4, t1);
+                }
+                c->status[ch].prev_sample &= ~0x7F;
+            }
+        }
+
+        dst += put_bits_count(&pb)>>3;
+        break;
+    }
     case CODEC_ID_ADPCM_SWF:
     {
         int i;
@@ -1588,7 +1622,7 @@ ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_EACS, adpcm_ima_ea_eacs);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
+ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
 ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 ADPCM_DECODER(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);

@@ -95,6 +95,61 @@ ret: 0 st: 0 dts:0.511995 pts:0.511995 pos:8252 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:-0.703991 pts:-0.703991 pos:41020 size:4096 flags:1
 ----------------
+tests/data/a-adpcm_qt.aiff
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:72 size:4080 flags:1
+ret: 0 st:-1 ts:-1.000000 flags:0
+ret:-5
+ret: 0 st:-1 ts:1.894167 flags:1
+ret: 0 st: 0 dts:1.894059 pts:1.894059 pos:88812 size:4080 flags:1
+ret: 0 st: 0 ts:0.788345 flags:0
+ret: 0 st: 0 dts:0.789546 pts:0.789546 pos:37064 size:4080 flags:1
+ret: 0 st: 0 ts:-0.317506 flags:1
+ret: 0 st: 0 dts:-0.317846 pts:-0.317846 pos:69832 size:4080 flags:1
+ret: 0 st:-1 ts:2.576668 flags:0
+ret: 0 st: 0 dts:2.577642 pts:2.577642 pos:120840 size:4080 flags:1
+ret: 0 st:-1 ts:1.470835 flags:1
+ret: 0 st: 0 dts:1.470249 pts:1.470249 pos:68956 size:4080 flags:1
+ret: 0 st: 0 ts:0.365011 flags:0
+ret: 0 st: 0 dts:0.365737 pts:0.365737 pos:17208 size:4080 flags:1
+ret: 0 st: 0 ts:-0.740839 flags:1
+ret: 0 st: 0 dts:-0.741655 pts:-0.741655 pos:49976 size:4080 flags:1
+ret: 0 st:-1 ts:2.153336 flags:0
+ret: 0 st: 0 dts:2.153855 pts:2.153855 pos:100984 size:4080 flags:1
+ret: 0 st:-1 ts:1.047503 flags:1
+ret: 0 st: 0 dts:1.046440 pts:1.046440 pos:49100 size:4080 flags:1
+ret: 0 st: 0 ts:-0.058322 flags:0
+ret: 0 st: 0 dts:-0.058050 pts:-0.058050 pos:81868 size:4080 flags:1
+ret: 0 st: 0 ts:2.835828 flags:1
+ret: 0 st: 0 dts:2.834535 pts:2.834535 pos:132876 size:4080 flags:1
+ret: 0 st:-1 ts:1.730004 flags:0
+ret: 0 st: 0 dts:1.730045 pts:1.730045 pos:81128 size:4080 flags:1
+ret: 0 st:-1 ts:0.624171 flags:1
+ret: 0 st: 0 dts:0.624082 pts:0.624082 pos:29312 size:4080 flags:1
+ret: 0 st: 0 ts:-0.481655 flags:0
+ret: 0 st: 0 dts:-0.480408 pts:-0.480408 pos:62080 size:4080 flags:1
+ret: 0 st: 0 ts:2.412494 flags:1
+ret: 0 st: 0 dts:2.412200 pts:2.412200 pos:113088 size:4080 flags:1
+ret: 0 st:-1 ts:1.306672 flags:0
+ret: 0 st: 0 dts:1.307687 pts:1.307687 pos:61340 size:4080 flags:1
+ret: 0 st:-1 ts:0.200839 flags:1
+ret: 0 st: 0 dts:0.200295 pts:0.200295 pos:9456 size:4080 flags:1
+ret: 0 st: 0 ts:-0.904989 flags:0
+ret: 0 st: 0 dts:-0.904218 pts:-0.904218 pos:42224 size:4080 flags:1
+ret: 0 st: 0 ts:1.989184 flags:1
+ret: 0 st: 0 dts:1.988390 pts:1.988390 pos:93232 size:4080 flags:1
+ret: 0 st:-1 ts:0.883340 flags:0
+ret: 0 st: 0 dts:0.883900 pts:0.883900 pos:41484 size:4080 flags:1
+ret: 0 st:-1 ts:-0.222493 flags:1
+ret: 0 st: 0 dts:-0.223515 pts:-0.223515 pos:74252 size:4080 flags:1
+ret: 0 st: 0 ts:2.671678 flags:0
+ret: 0 st: 0 dts:2.671995 pts:2.671995 pos:125260 size:4080 flags:1
+ret: 0 st: 0 ts:1.565850 flags:1
+ret: 0 st: 0 dts:1.564580 pts:1.564580 pos:73376 size:4080 flags:1
+ret: 0 st:-1 ts:0.460008 flags:0
+ret: 0 st: 0 dts:0.460091 pts:0.460091 pos:21628 size:4080 flags:1
+ret: 0 st:-1 ts:-0.645825 flags:1
+ret: 0 st: 0 dts:-0.645873 pts:-0.645873 pos:54396 size:4080 flags:1
+----------------
 tests/data/a-adpcm_ms.wav
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:56 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0

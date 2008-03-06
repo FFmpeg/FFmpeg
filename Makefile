@@ -314,6 +314,7 @@ CODEC_TESTS = $(addprefix regtest-,             \
         ac3                                     \
         g726                                    \
         adpcm_ima_wav                           \
+        adpcm_ima_qt                            \
         adpcm_ms                                \
         adpcm_yam                               \
         adpcm_swf                               \
