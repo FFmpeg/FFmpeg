@@ -2244,7 +2244,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
         if (c->swScale){
             if (flags&SWS_PRINT_INFO)
-                av_log(c, AV_LOG_INFO, "SwScaler: using unscaled %s -> %s special converter\n",
+                av_log(c, AV_LOG_INFO, "using unscaled %s -> %s special converter\n",
                                 sws_format_name(srcFormat), sws_format_name(dstFormat));
             return c;
         }
@@ -2256,7 +2256,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR))
         {
             if (flags&SWS_PRINT_INFO)
-                av_log(c, AV_LOG_INFO, "SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
+                av_log(c, AV_LOG_INFO, "output Width is not a multiple of 32 -> no MMX2 scaler\n");
         }
         if (usesHFilter) c->canMMX2BeUsed=0;
     }
@@ -2407,29 +2407,29 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         char *dither= "";
 #endif
         if (flags&SWS_FAST_BILINEAR)
-            av_log(c, AV_LOG_INFO, "SwScaler: FAST_BILINEAR scaler, ");
+            av_log(c, AV_LOG_INFO, "FAST_BILINEAR scaler, ");
         else if (flags&SWS_BILINEAR)
-            av_log(c, AV_LOG_INFO, "SwScaler: BILINEAR scaler, ");
+            av_log(c, AV_LOG_INFO, "BILINEAR scaler, ");
         else if (flags&SWS_BICUBIC)
-            av_log(c, AV_LOG_INFO, "SwScaler: BICUBIC scaler, ");
+            av_log(c, AV_LOG_INFO, "BICUBIC scaler, ");
         else if (flags&SWS_X)
-            av_log(c, AV_LOG_INFO, "SwScaler: Experimental scaler, ");
+            av_log(c, AV_LOG_INFO, "Experimental scaler, ");
         else if (flags&SWS_POINT)
-            av_log(c, AV_LOG_INFO, "SwScaler: Nearest Neighbor / POINT scaler, ");
+            av_log(c, AV_LOG_INFO, "Nearest Neighbor / POINT scaler, ");
         else if (flags&SWS_AREA)
-            av_log(c, AV_LOG_INFO, "SwScaler: Area Averageing scaler, ");
+            av_log(c, AV_LOG_INFO, "Area Averageing scaler, ");
         else if (flags&SWS_BICUBLIN)
-            av_log(c, AV_LOG_INFO, "SwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
+            av_log(c, AV_LOG_INFO, "luma BICUBIC / chroma BILINEAR scaler, ");
         else if (flags&SWS_GAUSS)
-            av_log(c, AV_LOG_INFO, "SwScaler: Gaussian scaler, ");
+            av_log(c, AV_LOG_INFO, "Gaussian scaler, ");
         else if (flags&SWS_SINC)
-            av_log(c, AV_LOG_INFO, "SwScaler: Sinc scaler, ");
+            av_log(c, AV_LOG_INFO, "Sinc scaler, ");
         else if (flags&SWS_LANCZOS)
-            av_log(c, AV_LOG_INFO, "SwScaler: Lanczos scaler, ");
+            av_log(c, AV_LOG_INFO, "Lanczos scaler, ");
         else if (flags&SWS_SPLINE)
-            av_log(c, AV_LOG_INFO, "SwScaler: Bicubic spline scaler, ");
+            av_log(c, AV_LOG_INFO, "Bicubic spline scaler, ");
         else
-            av_log(c, AV_LOG_INFO, "SwScaler: ehh flags invalid?! ");
+            av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
 
         if (dstFormat==PIX_FMT_BGR555 || dstFormat==PIX_FMT_BGR565)
             av_log(c, AV_LOG_INFO, "from %s to%s %s ",
@@ -2455,70 +2455,70 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         if (flags & SWS_CPU_CAPS_MMX)
         {
             if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
+                av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
             else
             {
                 if (c->hLumFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal luminance scaling\n");
                 else if (c->hLumFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal luminance scaling\n");
                 else
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal luminance scaling\n");
 
                 if (c->hChrFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal chrominance scaling\n");
                 else if (c->hChrFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal chrominance scaling\n");
                 else
-                    av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
+                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal chrominance scaling\n");
             }
         }
         else
         {
 #if defined(ARCH_X86)
-            av_log(c, AV_LOG_VERBOSE, "SwScaler: using X86-Asm scaler for horizontal scaling\n");
+            av_log(c, AV_LOG_VERBOSE, "using X86-Asm scaler for horizontal scaling\n");
 #else
             if (flags & SWS_FAST_BILINEAR)
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
+                av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR C scaler for horizontal scaling\n");
             else
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using C scaler for horizontal scaling\n");
+                av_log(c, AV_LOG_VERBOSE, "using C scaler for horizontal scaling\n");
 #endif
         }
         if (isPlanarYUV(dstFormat))
         {
             if (c->vLumFilterSize==1)
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
             else
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
         }
         else
         {
             if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
-                       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
+                       "      2-tap scaler for vertical chrominance scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
             else if (c->vLumFilterSize==2 && c->vChrFilterSize==2)
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
             else
-                av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
         }
 
         if (dstFormat==PIX_FMT_BGR24)
-            av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR24 Converter\n",
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR24 Converter\n",
                    (flags & SWS_CPU_CAPS_MMX2) ? "MMX2" : ((flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C"));
         else if (dstFormat==PIX_FMT_RGB32)
-            av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
         else if (dstFormat==PIX_FMT_BGR565)
-            av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
         else if (dstFormat==PIX_FMT_BGR555)
-            av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
-        av_log(c, AV_LOG_VERBOSE, "SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
+        av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
     }
     if (flags & SWS_PRINT_INFO)
     {
-        av_log(c, AV_LOG_DEBUG, "SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+        av_log(c, AV_LOG_DEBUG, "Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
                c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
-        av_log(c, AV_LOG_DEBUG, "SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+        av_log(c, AV_LOG_DEBUG, "Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
                c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
     }
 

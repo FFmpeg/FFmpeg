@@ -3002,8 +3002,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         static int firstTime=1; //FIXME move this into the context perhaps
         if (flags & SWS_PRINT_INFO && firstTime)
         {
-            av_log(c, AV_LOG_WARNING, "SwScaler: Warning: dstStride is not aligned!\n"
-                   "SwScaler:          ->cannot do aligned memory acesses anymore\n");
+            av_log(c, AV_LOG_WARNING, "Warning: dstStride is not aligned!\n"
+                   "         ->cannot do aligned memory acesses anymore\n");
             firstTime=0;
         }
     }
