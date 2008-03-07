@@ -115,7 +115,7 @@ do_video_decoding()
 do_video_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -y $2 -f $3 -i $raw_src $4 $file
+    do_ffmpeg $file -y $2 -f image2 -vcodec pgmyuv -i $raw_src $3 $file
 }
 
 do_audio_encoding()
@@ -170,27 +170,27 @@ fi
 
 if [ -n "$do_mpeg" ] ; then
 # mpeg1
-do_video_encoding mpeg1.mpg "-qscale 10" pgmyuv "-f mpeg1video"
+do_video_encoding mpeg1.mpg "-qscale 10" "-f mpeg1video"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg2" ] ; then
 # mpeg2
-do_video_encoding mpeg2.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1video"
+do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video"
 do_video_decoding
 
 # mpeg2 encoding intra vlc qprd
-do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-vcodec mpeg2video -f mpeg2video"
+do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" "-vcodec mpeg2video -f mpeg2video"
 
 # mpeg2 decoding
 do_video_decoding
 
 # mpeg2
-do_video_encoding mpeg2.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
+do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
 do_video_decoding "-idct int"
 
 # mpeg2 encoding interlaced
-do_video_encoding mpeg2i.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
+do_video_encoding mpeg2i.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
 
 # mpeg2 decoding
 do_video_decoding
@@ -198,13 +198,13 @@ fi
 
 if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
-do_video_encoding mpeg2thread.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
+do_video_encoding mpeg2thread.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
 
 # mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding interlaced using intra vlc
-do_video_encoding mpeg2threadivlc.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
+do_video_encoding mpeg2threadivlc.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
 
 # mpeg2 decoding
 do_video_decoding
@@ -218,161 +218,161 @@ do_video_decoding
 fi
 
 if [ -n "$do_msmpeg4v2" ] ; then
-do_video_encoding msmpeg4v2.avi "-qscale 10" pgmyuv "-an -vcodec msmpeg4v2"
+do_video_encoding msmpeg4v2.avi "-qscale 10" "-an -vcodec msmpeg4v2"
 do_video_decoding
 fi
 
 if [ -n "$do_msmpeg4" ] ; then
-do_video_encoding msmpeg4.avi "-qscale 10" pgmyuv "-an -vcodec msmpeg4"
+do_video_encoding msmpeg4.avi "-qscale 10" "-an -vcodec msmpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_wmv1" ] ; then
-do_video_encoding wmv1.avi "-qscale 10" pgmyuv "-an -vcodec wmv1"
+do_video_encoding wmv1.avi "-qscale 10" "-an -vcodec wmv1"
 do_video_decoding
 fi
 
 if [ -n "$do_wmv2" ] ; then
-do_video_encoding wmv2.avi "-qscale 10" pgmyuv "-an -vcodec wmv2"
+do_video_encoding wmv2.avi "-qscale 10" "-an -vcodec wmv2"
 do_video_decoding
 fi
 
 if [ -n "$do_h261" ] ; then
-do_video_encoding h261.avi "-qscale 11" pgmyuv "-s 352x288 -an -vcodec h261"
+do_video_encoding h261.avi "-qscale 11" "-s 352x288 -an -vcodec h261"
 do_video_decoding
 fi
 
 if [ -n "$do_h263" ] ; then
-do_video_encoding h263.avi "-qscale 10" pgmyuv "-s 352x288 -an -vcodec h263"
+do_video_encoding h263.avi "-qscale 10" "-s 352x288 -an -vcodec h263"
 do_video_decoding
 fi
 
 if [ -n "$do_h263p" ] ; then
-do_video_encoding h263p.avi "-qscale 2 -flags +umv+aiv+aic" pgmyuv "-s 352x288 -an -vcodec h263p -ps 300"
+do_video_encoding h263p.avi "-qscale 2 -flags +umv+aiv+aic" "-s 352x288 -an -vcodec h263p -ps 300"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg4" ] ; then
-do_video_encoding odivx.mp4 "-flags +mv4 -mbd bits -qscale 10" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding odivx.mp4 "-flags +mv4 -mbd bits -qscale 10" "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_huffyuv" ] ; then
-do_video_encoding huffyuv.avi "" pgmyuv "-an -vcodec huffyuv -pix_fmt yuv422p"
+do_video_encoding huffyuv.avi "" "-an -vcodec huffyuv -pix_fmt yuv422p"
 do_video_decoding "" "-strict -2 -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_rc" ] ; then
-do_video_encoding mpeg4-rc.avi "-b 400k -bf 2" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-rc.avi "-b 400k -bf 2" "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg4adv" ] ; then
-do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200" "-an -vcodec mpeg4"
 do_video_decoding
 
-do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -flags +mv4+trell+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -flags +mv4+trell+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd" "-an -vcodec mpeg4"
 do_video_decoding
 
-do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+trell+mv0 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+trell+mv0 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" "-an -vcodec mpeg4"
 do_video_decoding
 
-do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg4thread" ] ; then
-do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" pgmyuv "-an -vcodec mpeg4 -threads 2"
+do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" "-an -vcodec mpeg4 -threads 2"
 do_video_decoding
 fi
 
 if [ -n "$do_error" ] ; then
-do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10" "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg4nr" ] ; then
-do_video_encoding mpeg4-nr.avi "-qscale 8 -flags +mv4 -mbd rd -nr 200" pgmyuv "-an -vcodec mpeg4"
+do_video_encoding mpeg4-nr.avi "-qscale 8 -flags +mv4 -mbd rd -nr 200" "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg1b" ] ; then
-do_video_encoding mpeg1b.mpg "-qscale 8 -bf 3 -ps 200" pgmyuv "-an -vcodec mpeg1video -f mpeg1video"
+do_video_encoding mpeg1b.mpg "-qscale 8 -bf 3 -ps 200" "-an -vcodec mpeg1video -f mpeg1video"
 do_video_decoding
 fi
 
 if [ -n "$do_mjpeg" ] ; then
-do_video_encoding mjpeg.avi "-qscale 10" pgmyuv "-an -vcodec mjpeg -pix_fmt yuvj420p"
+do_video_encoding mjpeg.avi "-qscale 10" "-an -vcodec mjpeg -pix_fmt yuvj420p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_ljpeg" ] ; then
-do_video_encoding ljpeg.avi "" pgmyuv "-an -vcodec ljpeg -strict -1"
+do_video_encoding ljpeg.avi "" "-an -vcodec ljpeg -strict -1"
 do_video_decoding
 fi
 
 if [ -n "$do_jpegls" ] ; then
-do_video_encoding jpegls.avi "" pgmyuv "-an -vcodec jpegls -vtag MJPG"
+do_video_encoding jpegls.avi "" "-an -vcodec jpegls -vtag MJPG"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_rv10" ] ; then
-do_video_encoding rv10.rm "-qscale 10" pgmyuv "-an"
+do_video_encoding rv10.rm "-qscale 10" "-an"
 do_video_decoding
 fi
 
 if [ -n "$do_rv20" ] ; then
-do_video_encoding rv20.rm "-qscale 10" pgmyuv "-vcodec rv20 -an"
+do_video_encoding rv20.rm "-qscale 10" "-vcodec rv20 -an"
 do_video_decoding
 fi
 
 if [ -n "$do_asv1" ] ; then
-do_video_encoding asv1.avi "-qscale 10" pgmyuv "-an -vcodec asv1"
+do_video_encoding asv1.avi "-qscale 10" "-an -vcodec asv1"
 do_video_decoding
 fi
 
 if [ -n "$do_asv2" ] ; then
-do_video_encoding asv2.avi "-qscale 10" pgmyuv "-an -vcodec asv2"
+do_video_encoding asv2.avi "-qscale 10" "-an -vcodec asv2"
 do_video_decoding
 fi
 
 if [ -n "$do_flv" ] ; then
-do_video_encoding flv.flv "-qscale 10" pgmyuv "-an -vcodec flv"
+do_video_encoding flv.flv "-qscale 10" "-an -vcodec flv"
 do_video_decoding
 fi
 
 if [ -n "$do_ffv1" ] ; then
-do_video_encoding ffv1.avi "-strict -2" pgmyuv "-an -vcodec ffv1"
+do_video_encoding ffv1.avi "-strict -2" "-an -vcodec ffv1"
 do_video_decoding
 fi
 
 if [ -n "$do_snow" ] ; then
-do_video_encoding snow.avi "-strict -2" pgmyuv "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
+do_video_encoding snow.avi "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
 do_video_decoding "" "-s 352x288"
 fi
 
 if [ -n "$do_snowll" ] ; then
-do_video_encoding snow53.avi "-strict -2" pgmyuv "-an -vcodec snow -qscale .001 -pred 1 -flags +mv4+qpel"
+do_video_encoding snow53.avi "-strict -2" "-an -vcodec snow -qscale .001 -pred 1 -flags +mv4+qpel"
 do_video_decoding
 fi
 
 if [ -n "$do_dv" ] ; then
-do_video_encoding dv.dv "-dct int" pgmyuv "-s pal -an"
+do_video_encoding dv.dv "-dct int" "-s pal -an"
 do_video_decoding "" "-s cif"
 fi
 
 if [ -n "$do_dv50" ] ; then
-do_video_encoding dv50.dv "-dct int" pgmyuv "-s pal -pix_fmt yuv422p -an"
+do_video_encoding dv50.dv "-dct int" "-s pal -pix_fmt yuv422p -an"
 do_video_decoding "" "-s cif -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_svq1" ] ; then
-do_video_encoding svq1.mov "" pgmyuv "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
+do_video_encoding svq1.mov "" "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_flashsv" ] ; then
-do_video_encoding flashsv.flv "" pgmyuv "-an -vcodec flashsv "
+do_video_encoding flashsv.flv "" "-an -vcodec flashsv "
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
