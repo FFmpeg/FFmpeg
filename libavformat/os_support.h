@@ -32,7 +32,7 @@ typedef int socklen_t;
 #endif
 
 #ifdef __MINGW32__
-__declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
+__declspec(dllimport) void WINAPI Sleep(unsigned long dwMilliseconds);
 // #  include <windows.h>
 #  define usleep(t)    Sleep((t) / 1000)
 #  include <fcntl.h>
