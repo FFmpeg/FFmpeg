@@ -457,8 +457,6 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
 FFLIBS = avutil
 
 NAME=avcodec
-LIBVERSION=$(LAVCVERSION)
-LIBMAJOR=$(LAVCMAJOR)
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 ifeq ($(ARCH_X86),yes)

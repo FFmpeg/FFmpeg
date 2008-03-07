@@ -15,7 +15,5 @@ FFLIBS-$(CONFIG_SWSCALER)      += swscale
 FFLIBS-$(CONFIG_AVFILTER_LAVF) += avformat
 
 NAME=avfilter
-LIBVERSION=$(LAVFIVERSION)
-LIBMAJOR=$(LAVFIMAJOR)
 
 include ../common.mak

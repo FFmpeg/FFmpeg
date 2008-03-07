@@ -193,7 +193,5 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 FFLIBS = avcodec avutil
 
 NAME=avformat
-LIBVERSION=$(LAVFVERSION)
-LIBMAJOR=$(LAVFMAJOR)
 
 include ../common.mak

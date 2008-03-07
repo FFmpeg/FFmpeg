@@ -4,6 +4,9 @@
 
 LIBSRC = $(SRC_PATH_BARE)/lib$(NAME)
 
+LIBVERSION = $(lib$(NAME)_VERSION)
+LIBMAJOR   = $(lib$(NAME)_VERSION_MAJOR)
+
 vpath %.c $(LIBSRC)
 vpath %.h $(LIBSRC)
 vpath %.S $(LIBSRC)

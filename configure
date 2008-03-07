@@ -2006,6 +2006,9 @@ get_version(){
     file=$source_path/$2
     eval $(grep "#define ${name}_VERSION_M" "$file" | awk '{ print $2"="$3 }')
     eval ${name}_VERSION=\$${name}_VERSION_MAJOR.\$${name}_VERSION_MINOR.\$${name}_VERSION_MICRO
+    lcname=$(tolower $name)
+    eval echo "${lcname}_VERSION=\$${name}_VERSION" >> config.mak
+    eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> config.mak
 }
 
 get_version LIBSWSCALE  libswscale/swscale.h
@@ -2019,20 +2022,6 @@ get_version LIBAVFILTER libavfilter/avfilter.h
 if enabled shared; then
     echo "BUILD_SHARED=yes" >> config.mak
     echo "PIC=-fPIC -DPIC" >> config.mak
-    echo "SPPMAJOR=$LIBPOSTPROC_VERSION_MAJOR" >> config.mak
-    echo "SPPVERSION=$LIBPOSTPROC_VERSION" >> config.mak
-    echo "LAVCMAJOR=$LIBAVCODEC_VERSION_MAJOR" >> config.mak
-    echo "LAVCVERSION=$LIBAVCODEC_VERSION" >> config.mak
-    echo "LAVDMAJOR=$LIBAVDEVICE_VERSION_MAJOR" >> config.mak
-    echo "LAVDVERSION=$LIBAVDEVICE_VERSION" >> config.mak
-    echo "LAVFMAJOR=$LIBAVFORMAT_VERSION_MAJOR" >> config.mak
-    echo "LAVFVERSION=$LIBAVFORMAT_VERSION" >> config.mak
-    echo "LAVUMAJOR=$LIBAVUTIL_VERSION_MAJOR" >> config.mak
-    echo "LAVUVERSION=$LIBAVUTIL_VERSION" >> config.mak
-    echo "LAVFIMAJOR=$LIBAVFILTER_VERSION_MAJOR" >> config.mak
-    echo "LAVFIVERSION=$LIBAVFILTER_VERSION" >> config.mak
-    echo "SWSMAJOR=$LIBSWSCALE_VERSION_MAJOR" >> config.mak
-    echo "SWSVERSION=$LIBSWSCALE_VERSION" >> config.mak
     echo "SLIBNAME=${SLIBNAME}" >> config.mak
     echo "SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}" >> config.mak
     echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak

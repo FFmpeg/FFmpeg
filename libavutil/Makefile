@@ -38,8 +38,6 @@ HEADERS = adler32.h \
           sha1.h
 
 NAME=avutil
-LIBVERSION=$(LAVUVERSION)
-LIBMAJOR=$(LAVUMAJOR)
 
 TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 sha1 softfloat tree)
 

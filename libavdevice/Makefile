@@ -1,8 +1,6 @@
 include ../config.mak
 
 NAME=avdevice
-LIBVERSION=$(LAVDVERSION)
-LIBMAJOR=$(LAVDMAJOR)
 
 FFLIBS = avformat avcodec avutil
 
