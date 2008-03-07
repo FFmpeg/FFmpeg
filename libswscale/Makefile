@@ -2,8 +2,6 @@
 include ../config.mak
 
 NAME=swscale
-LIBVERSION=$(SWSVERSION)
-LIBMAJOR=$(SWSMAJOR)
 
 FFLIBS = avutil
 
