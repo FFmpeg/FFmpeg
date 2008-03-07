@@ -291,7 +291,6 @@ CODEC_TESTS = $(addprefix regtest-,             \
         rc                                      \
         mpeg4adv                                \
         mpeg4thread                             \
-        mp4psp                                  \
         error                                   \
         mpeg4nr                                 \
         mpeg1b                                  \

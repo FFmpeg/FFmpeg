@@ -286,10 +286,6 @@ do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits
 do_video_decoding
 fi
 
-if [ -n "$do_mp4psp" ] ; then
-do_video_encoding mpeg4-PSP.mp4 "-vb 768k -s 320x240" psp "-ar 24000 -ab 32k -i $raw_src"
-fi
-
 if [ -n "$do_error" ] ; then
 do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10" pgmyuv "-an -vcodec mpeg4"
 do_video_decoding

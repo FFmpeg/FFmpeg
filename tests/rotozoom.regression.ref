@@ -90,8 +90,6 @@ stddev:  4.00 PSNR:36.08 bytes:7602176
 250162 ./tests/data/a-mpeg4-thread.avi
 58165c879707aedeab460bab86dae4ef *./tests/data/mpeg4thread.rotozoom.out.yuv
 stddev:  3.73 PSNR:36.67 bytes:7602176
-6cd200bf844fd1c0e48c23d542a860e8 *./tests/data/a-mpeg4-PSP.mp4
-324998 ./tests/data/a-mpeg4-PSP.mp4
 90e65096aa9ebafa3fe3f44a5a47cdc4 *./tests/data/a-error-mpeg4-adv.avi
 176588 ./tests/data/a-error-mpeg4-adv.avi
 113defd3f8daf878e0b3fc03fafb4c09 *./tests/data/error.rotozoom.out.yuv

@@ -90,8 +90,6 @@ stddev:  5.61 PSNR:33.13 bytes:7602176
 778604 ./tests/data/a-mpeg4-thread.avi
 152d46da2a9d7fa3c22c56767c1760db *./tests/data/mpeg4thread.vsynth.out.yuv
 stddev: 10.26 PSNR:27.89 bytes:7602176
-743cf18c1e8941591f8ab41350247c42 *./tests/data/a-mpeg4-PSP.mp4
-406441 ./tests/data/a-mpeg4-PSP.mp4
 7315281e07830456208dff61337c982b *./tests/data/a-error-mpeg4-adv.avi
 731526 ./tests/data/a-error-mpeg4-adv.avi
 6ce2c82a0a9cf67a6991694473e9a306 *./tests/data/error.vsynth.out.yuv

@@ -1568,54 +1568,6 @@ ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.880000 pts:-102481911520608.625000 pos:79182 size:10791 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
-tests/data/a-mpeg4-PSP.mp4
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:17075 flags:1
-ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:302824 size:18559 flags:1
-ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:179481 size:19311 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.680000 flags:0
-ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:242961 size:21719 flags:1
-ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:108454 size:21469 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
-----------------
 tests/data/a-mpeg4-Q.avi
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
