@@ -68,3 +68,14 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
         av_free(node);
     }
 }
+
+const Dispositions ff_nut_dispositions[] = {
+    {"default"     , AV_DISPOSITION_DEFAULT},
+    {"dub"         , AV_DISPOSITION_DUB},
+    {"original"    , AV_DISPOSITION_ORIGINAL},
+    {"comment"     , AV_DISPOSITION_COMMENT},
+    {"lyrics"      , AV_DISPOSITION_LYRICS},
+    {"karaoke"     , AV_DISPOSITION_KARAOKE},
+    {""            , 0}
+};
+

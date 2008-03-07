@@ -472,6 +472,37 @@ static int write_globalinfo(NUTContext *nut, ByteIOContext *bc){
     return 0;
 }
 
+static int write_streaminfo(NUTContext *nut, ByteIOContext *bc, int stream_id){
+    AVFormatContext *s= nut->avf;
+    AVStream* st = s->streams[stream_id];
+    ByteIOContext *dyn_bc;
+    uint8_t *dyn_buf=NULL;
+    int count=0, dyn_size, i;
+    int ret = url_open_dyn_buf(&dyn_bc);
+    if(ret < 0)
+        return ret;
+
+    for (i=0; ff_nut_dispositions[i].flag; ++i) {
+        if (st->disposition & ff_nut_dispositions[i].flag)
+            count += add_info(dyn_bc, "Disposition", ff_nut_dispositions[i].str);
+    }
+    dyn_size = url_close_dyn_buf(dyn_bc, &dyn_buf);
+
+    if (count) {
+        put_v(bc, stream_id + 1); //stream_id_plus1
+        put_v(bc, 0); //chapter_id
+        put_v(bc, 0); //timestamp_start
+        put_v(bc, 0); //length
+
+        put_v(bc, count);
+
+        put_buffer(bc, dyn_buf, dyn_size);
+    }
+
+    av_free(dyn_buf);
+    return count;
+}
+
 static int write_headers(NUTContext *nut, ByteIOContext *bc){
     ByteIOContext *dyn_bc;
     int i, ret;
@@ -497,6 +528,22 @@ static int write_headers(NUTContext *nut, ByteIOContext *bc){
         return ret;
     write_globalinfo(nut, dyn_bc);
     put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
+
+    for (i = 0; i < nut->avf->nb_streams; i++) {
+        ret = url_open_dyn_buf(&dyn_bc);
+        if(ret < 0)
+            return ret;
+        ret = write_streaminfo(nut, dyn_bc, i);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
+        else {
+            uint8_t* buf;
+            url_close_dyn_buf(dyn_bc, &buf);
+            av_free(buf);
+        }
+    }
 
     nut->last_syncpoint_pos= INT_MIN;
     nut->header_count++;

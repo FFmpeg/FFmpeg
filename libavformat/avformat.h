@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR  7
+#define LIBAVFORMAT_VERSION_MINOR  8
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -278,6 +278,13 @@ typedef struct AVIndexEntry {
     int min_distance;         /**< min distance between this and the previous keyframe, used to avoid unneeded searching */
 } AVIndexEntry;
 
+#define AV_DISPOSITION_DEFAULT   0x0001
+#define AV_DISPOSITION_DUB       0x0002
+#define AV_DISPOSITION_ORIGINAL  0x0004
+#define AV_DISPOSITION_COMMENT   0x0008
+#define AV_DISPOSITION_LYRICS    0x0010
+#define AV_DISPOSITION_KARAOKE   0x0020
+
 /**
  * Stream structure.
  * New fields can be added to the end with minor version bumps.
@@ -357,6 +364,8 @@ typedef struct AVStream {
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
 
     char *filename; /**< source filename of the stream */
+
+    int disposition; /**< AV_DISPOSITION_* bitfield */
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

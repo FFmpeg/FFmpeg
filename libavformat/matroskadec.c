@@ -2298,6 +2298,9 @@ matroska_read_header (AVFormatContext    *s,
             if (strcmp(track->language, "und"))
                 strcpy(st->language, track->language);
 
+            if (track->flags & MATROSKA_TRACK_DEFAULT)
+                st->disposition |= AV_DISPOSITION_DEFAULT;
+
             if (track->default_duration)
                 av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
                           track->default_duration, 1000000000, 30000);

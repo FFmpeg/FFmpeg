@@ -371,6 +371,19 @@ static int decode_stream_header(NUTContext *nut){
     return 0;
 }
 
+static void set_disposition_bits(AVFormatContext* avf, char* value, int stream_id){
+    int flag = 0, i;
+    for (i=0; ff_nut_dispositions[i].flag; ++i) {
+        if (!strcmp(ff_nut_dispositions[i].str, value))
+            flag = ff_nut_dispositions[i].flag;
+    }
+    if (!flag)
+        av_log(avf, AV_LOG_INFO, "unknown disposition type '%s'\n", value);
+    for (i = 0; i < avf->nb_streams; ++i)
+        if (stream_id == i || stream_id == -1)
+            avf->streams[i]->disposition |= flag;
+}
+
 static int decode_info_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = s->pb;
@@ -412,6 +425,11 @@ static int decode_info_header(NUTContext *nut){
             type= "v";
         }
 
+        if (stream_id_plus1 < 0 || stream_id_plus1 > s->nb_streams) {
+            av_log(s, AV_LOG_ERROR, "invalid stream id for info packet\n");
+            continue;
+        }
+
         if(chapter_id==0 && !strcmp(type, "UTF-8")){
             if     (!strcmp(name, "Author"))
                 av_strlcpy(s->author   , str_value, sizeof(s->author));
@@ -421,6 +439,8 @@ static int decode_info_header(NUTContext *nut){
                 av_strlcpy(s->copyright, str_value, sizeof(s->copyright));
             else if(!strcmp(name, "Description"))
                 av_strlcpy(s->comment  , str_value, sizeof(s->comment));
+            else if(!strcmp(name, "Disposition"))
+                set_disposition_bits(s, str_value, stream_id_plus1 - 1);
         }
     }
 
