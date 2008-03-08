@@ -836,6 +836,8 @@ rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
 v4l2_demuxer_deps="linux_videodev2_h"
 v4l_demuxer_deps="linux_videodev_h"
+vfwcap_demuxer_deps="capCreateCaptureWindow"
+vfwcap_demuxer_extralibs="-lvfw32"
 x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
 x11_grab_device_demuxer_extralibs="-lX11 -lXext"
 
@@ -1752,6 +1754,8 @@ EOF
 
 check_header linux/videodev.h
 check_header linux/videodev2.h
+
+check_func2 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 { check_header dev/bktr/ioctl_meteor.h &&

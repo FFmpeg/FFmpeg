@@ -43,6 +43,7 @@ void avdevice_register_all(void)
     REGISTER_MUXDEMUX (OSS, oss);
     REGISTER_DEMUXER  (V4L2, v4l2);
     REGISTER_DEMUXER  (V4L, v4l);
+    REGISTER_DEMUXER  (VFWCAP, vfwcap);
     REGISTER_DEMUXER  (X11_GRAB_DEVICE, x11_grab_device);
 
     /* external libraries */

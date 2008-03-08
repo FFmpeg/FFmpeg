@@ -14,6 +14,7 @@ OBJS-$(CONFIG_OSS_DEMUXER)               += audio.o
 OBJS-$(CONFIG_OSS_MUXER)                 += audio.o
 OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
 OBJS-$(CONFIG_V4L_DEMUXER)               += v4l.o
+OBJS-$(CONFIG_VFWCAP_DEMUXER)            += vfwcap.o
 OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 
 # external libraries
