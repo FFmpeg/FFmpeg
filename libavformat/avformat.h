@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR  8
+#define LIBAVFORMAT_VERSION_MINOR  9
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -508,6 +508,12 @@ typedef struct AVFormatContext {
      * demuxing: set by user
      */
     unsigned int max_index_size;
+
+    /**
+     * Maximum ammount of memory in bytes to use for buffering frames that are
+     * obtained from real-time capture devices.
+     */
+    unsigned int max_picture_buffer;
 } AVFormatContext;
 
 typedef struct AVPacketList {
