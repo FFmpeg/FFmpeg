@@ -111,6 +111,7 @@ version <next>
 - Linux Media Labs MPEG-4 (LMLM4) demuxer
 - AVM2 (Flash 9) SWF muxer
 - QT variant of IMA ADPCM encoder
+- VFW grabber
 
 version 0.4.9-pre1:
 
