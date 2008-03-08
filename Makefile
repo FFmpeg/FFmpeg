@@ -177,12 +177,12 @@ install-libs:
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-libs
 
 install-headers:
-	$(MAKE)              -C libavutil   install-headers
-	$(MAKE)              -C libavcodec  install-headers
-	$(MAKE)              -C libavformat install-headers
-	$(MAKE)              -C libavdevice install-headers
-	$(MAKE-$(CONFIG_PP)) -C libpostproc install-headers
-	$(MAKE)              -C libswscale  install-headers
+	$(MAKE)                    -C libavutil   install-headers
+	$(MAKE)                    -C libavcodec  install-headers
+	$(MAKE)                    -C libavformat install-headers
+	$(MAKE)                    -C libavdevice install-headers
+	$(MAKE-$(CONFIG_PP))       -C libpostproc install-headers
+	$(MAKE)                    -C libswscale  install-headers
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-headers
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
