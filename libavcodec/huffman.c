@@ -28,12 +28,12 @@
 #define HNODE -1
 
 
-static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *nodes, int node, uint32_t pfx, int pl, int *pos)
+static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *nodes, int node, uint32_t pfx, int pl, int *pos, int no_zero_count)
 {
     int s;
 
     s = nodes[node].sym;
-    if(s != HNODE || !nodes[node].count){
+    if(s != HNODE || (no_zero_count && !nodes[node].count)){
         bits[*pos] = pfx;
         lens[*pos] = pl;
         xlat[*pos] = s;
@@ -41,20 +41,23 @@ static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *n
     }else{
         pfx <<= 1;
         pl++;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl, pos);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl, pos,
+                       no_zero_count);
         pfx |= 1;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0+1, pfx, pl, pos);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0+1, pfx, pl, pos,
+                       no_zero_count);
     }
 }
 
-static int build_huff_tree(VLC *vlc, Node *nodes, int head)
+static int build_huff_tree(VLC *vlc, Node *nodes, int head, int flags)
 {
+    int no_zero_count = !(flags & FF_HUFFMAN_FLAG_ZERO_COUNT);
     uint32_t bits[256];
     int16_t lens[256];
     uint8_t xlat[256];
     int pos = 0;
 
-    get_tree_codes(bits, lens, xlat, nodes, head, 0, 0, &pos);
+    get_tree_codes(bits, lens, xlat, nodes, head, 0, 0, &pos, no_zero_count);
     return init_vlc_sparse(vlc, 9, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
 }
 
@@ -98,7 +101,7 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
         }
         cur_node++;
     }
-    if(build_huff_tree(vlc, nodes, nb_codes*2-2) < 0){
+    if(build_huff_tree(vlc, nodes, nb_codes*2-2, flags) < 0){
         av_log(avctx, AV_LOG_ERROR, "Error building tree\n");
         return -1;
     }

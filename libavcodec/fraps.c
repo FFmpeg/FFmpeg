@@ -94,7 +94,8 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     for(i = 0; i < 256; i++)
         nodes[i].count = bytestream_get_le32(&src);
     size -= 1024;
-    if (ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp, 0) < 0)
+    if (ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp,
+                           FF_HUFFMAN_FLAG_ZERO_COUNT) < 0)
         return -1;
     /* we have built Huffman table and are ready to decode plane */
 
