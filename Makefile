@@ -121,7 +121,7 @@ ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
-videohook: .libs $(HOOKS)
+videohook: $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
