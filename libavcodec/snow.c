@@ -2539,30 +2539,31 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
 #else
     if(sliced){
         s->dsp.inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
-    }else
-    for(y=0; y<b_h; y++){
-        //FIXME ugly misuse of obmc_stride
-        const uint8_t *obmc1= obmc + y*obmc_stride;
-        const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
-        const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
-        const uint8_t *obmc4= obmc3+ (obmc_stride>>1);
-        for(x=0; x<b_w; x++){
-            int v=   obmc1[x] * block[3][x + y*src_stride]
-                    +obmc2[x] * block[2][x + y*src_stride]
-                    +obmc3[x] * block[1][x + y*src_stride]
-                    +obmc4[x] * block[0][x + y*src_stride];
+    }else{
+        for(y=0; y<b_h; y++){
+            //FIXME ugly misuse of obmc_stride
+            const uint8_t *obmc1= obmc + y*obmc_stride;
+            const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
+            const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
+            const uint8_t *obmc4= obmc3+ (obmc_stride>>1);
+            for(x=0; x<b_w; x++){
+                int v=   obmc1[x] * block[3][x + y*src_stride]
+                        +obmc2[x] * block[2][x + y*src_stride]
+                        +obmc3[x] * block[1][x + y*src_stride]
+                        +obmc4[x] * block[0][x + y*src_stride];
 
-            v <<= 8 - LOG2_OBMC_MAX;
-            if(FRAC_BITS != 8){
-                v >>= 8 - FRAC_BITS;
-            }
-            if(add){
-                v += dst[x + y*dst_stride];
-                v = (v + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
-                if(v&(~255)) v= ~(v>>31);
-                dst8[x + y*src_stride] = v;
-            }else{
-                dst[x + y*dst_stride] -= v;
+                v <<= 8 - LOG2_OBMC_MAX;
+                if(FRAC_BITS != 8){
+                    v >>= 8 - FRAC_BITS;
+                }
+                if(add){
+                    v += dst[x + y*dst_stride];
+                    v = (v + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
+                    if(v&(~255)) v= ~(v>>31);
+                    dst8[x + y*src_stride] = v;
+                }else{
+                    dst[x + y*dst_stride] -= v;
+                }
             }
         }
     }
@@ -2613,16 +2614,16 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
         return;
     }
 
-        for(mb_x=0; mb_x<=mb_w; mb_x++){
-            add_yblock(s, 1, sb, old_buffer, dst8, obmc,
-                       block_w*mb_x - block_w/2,
-                       block_w*mb_y - block_w/2,
-                       block_w, block_w,
-                       w, h,
-                       w, ref_stride, obmc_stride,
-                       mb_x - 1, mb_y - 1,
-                       add, 0, plane_index);
-        }
+    for(mb_x=0; mb_x<=mb_w; mb_x++){
+        add_yblock(s, 1, sb, old_buffer, dst8, obmc,
+                   block_w*mb_x - block_w/2,
+                   block_w*mb_y - block_w/2,
+                   block_w, block_w,
+                   w, h,
+                   w, ref_stride, obmc_stride,
+                   mb_x - 1, mb_y - 1,
+                   add, 0, plane_index);
+    }
 }
 
 static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int plane_index, int add, int mb_y){
