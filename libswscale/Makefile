@@ -1,8 +1,7 @@
 
 include ../config.mak
 
-NAME=swscale
-
+NAME = swscale
 FFLIBS = avutil
 
 OBJS = rgb2rgb.o swscale.o
