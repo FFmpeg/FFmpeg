@@ -28,8 +28,7 @@
  */
 
 #ifdef __MINGW32__
-__declspec(dllimport) void WINAPI Sleep(unsigned long dwMilliseconds);
-// #  include <windows.h>
+#  include <windows.h>
 #  define usleep(t)    Sleep((t) / 1000)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
