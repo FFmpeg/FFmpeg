@@ -20,6 +20,9 @@ FFmpeg README
 * The file libavcodec/i386/idct_mmx.c is distributed under the GNU General
   Public License. It is strictly an optimization and its use is optional.
 
+* The file libavdevice/x11grab.c is distributed under the GNU General
+  Public License. X11 grabbing is optional.
+
 * The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
   are taken from libjpeg, see the top of the files for licensing details.
 
