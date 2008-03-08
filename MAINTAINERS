@@ -207,7 +207,7 @@ libavdevice
     libavdevice/avdevice.h
 
 
-  dc1394.c                              Roman Shaposhnik
+  libdc1394.c                           Roman Shaposhnik
   v4l2.c                                Luca Abeni
 
 
