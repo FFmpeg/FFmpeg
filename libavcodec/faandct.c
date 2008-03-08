@@ -77,7 +77,8 @@ static av_always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
-    FLOAT z2, z4, z5, z11, z13;
+    FLOAT z2, z4, z11, z13;
+    FLOAT av_unused z5;
     int i;
 
     for (i=0; i<8*8; i+=8) {
@@ -131,7 +132,8 @@ void ff_faandct(DCTELEM * data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
-    FLOAT z2, z4, z5, z11, z13;
+    FLOAT z2, z4, z11, z13;
+    FLOAT av_unused z5;
     FLOAT temp[64];
     int i;
 
