@@ -510,7 +510,7 @@ typedef struct AVFormatContext {
     unsigned int max_index_size;
 
     /**
-     * Maximum ammount of memory in bytes to use for buffering frames that are
+     * Maximum amount of memory in bytes to use for buffering frames
      * obtained from real-time capture devices.
      */
     unsigned int max_picture_buffer;
