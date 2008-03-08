@@ -189,7 +189,7 @@ static int shall_we_drop(struct vfw_ctx *ctx)
     const int ndropscores = sizeof(dropscore)/sizeof(dropscore[0]);
     unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
 
-    if(dropscore[++ctx->frame_num%ndropscores] < buffer_fullness) {
+    if(dropscore[++ctx->frame_num%ndropscores] <= buffer_fullness) {
         av_log(ctx->s, AV_LOG_ERROR,
               "real-time buffer %d%% full! frame dropped!\n", buffer_fullness);
         return 1;
