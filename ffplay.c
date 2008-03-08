@@ -2366,20 +2366,12 @@ static void opt_frame_size(const char *arg)
 
 static void opt_width(const char *arg)
 {
-    screen_width = atoi(arg);
-    if(screen_width<=0){
-        fprintf(stderr, "invalid width\n");
-        exit(1);
-    }
+    screen_width = parse_number_or_die("x", arg, OPT_INT64, 1, INT_MAX);
 }
 
 static void opt_height(const char *arg)
 {
-    screen_height = atoi(arg);
-    if(screen_height<=0){
-        fprintf(stderr, "invalid height\n");
-        exit(1);
-    }
+    screen_height = parse_number_or_die("y", arg, OPT_INT64, 1, INT_MAX);
 }
 
 static void opt_format(const char *arg)
@@ -2422,17 +2414,17 @@ static void opt_seek(const char *arg)
 static void opt_debug(const char *arg)
 {
     av_log_set_level(99);
-    debug = atoi(arg);
+    debug = parse_number_or_die("debug", arg, OPT_INT64, 0, INT_MAX);
 }
 
 static void opt_vismv(const char *arg)
 {
-    debug_mv = atoi(arg);
+    debug_mv = parse_number_or_die("vismv", arg, OPT_INT64, INT_MIN, INT_MAX);
 }
 
 static void opt_thread_count(const char *arg)
 {
-    thread_count= atoi(arg);
+    thread_count= parse_number_or_die("threads", arg, OPT_INT64, 0, INT_MAX);
 #if !defined(HAVE_THREADS)
     fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
