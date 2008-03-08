@@ -52,6 +52,7 @@ __declspec(dllimport) void WINAPI Sleep(unsigned long dwMilliseconds);
 #  endif
 #endif
 
+#ifdef CONFIG_NETWORK
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
@@ -89,5 +90,6 @@ struct pollfd {
 extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_FFSERVER */
+#endif /* CONFIG_NETWORK */
 
 #endif /* FFMPEG_OS_SUPPORT_H */
