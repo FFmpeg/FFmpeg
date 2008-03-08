@@ -514,8 +514,7 @@ static void slice_buffer_init(slice_buffer * buf, int line_count, int max_alloca
     buf->line = av_mallocz (sizeof(IDWTELEM *) * line_count);
     buf->data_stack = av_malloc (sizeof(IDWTELEM *) * max_allocated_lines);
 
-    for (i = 0; i < max_allocated_lines; i++)
-    {
+    for(i = 0; i < max_allocated_lines; i++){
         buf->data_stack[i] = av_malloc (sizeof(IDWTELEM) * line_width);
     }
 
@@ -558,8 +557,7 @@ static void slice_buffer_release(slice_buffer * buf, int line)
 static void slice_buffer_flush(slice_buffer * buf)
 {
     int i;
-    for (i = 0; i < buf->line_count; i++)
-    {
+    for(i = 0; i < buf->line_count; i++){
         if (buf->line[i])
             slice_buffer_release(buf, i);
     }
@@ -570,8 +568,7 @@ static void slice_buffer_destroy(slice_buffer * buf)
     int i;
     slice_buffer_flush(buf);
 
-    for (i = buf->data_count - 1; i >= 0; i--)
-    {
+    for(i = buf->data_count - 1; i >= 0; i--){
         av_freep(&buf->data_stack[i]);
     }
     av_freep(&buf->data_stack);
@@ -1589,8 +1586,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
         memset(line, 0, b->width*sizeof(IDWTELEM));
         v = b->x_coeff[new_index].coeff;
         x = b->x_coeff[new_index++].x;
-        while(x < w)
-        {
+        while(x < w){
             register int t= ( (v>>1)*qmul + qadd)>>QEXPSHIFT;
             register int u= -(v&1);
             line[x] = (t^u) - u;
@@ -2592,12 +2588,10 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
             return;
 
         if(add){
-            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++)
-            {
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++){
 //                DWTELEM * line = slice_buffer_get_line(sb, y);
                 IDWTELEM * line = sb->line[y];
-                for(x=0; x<w; x++)
-                {
+                for(x=0; x<w; x++){
 //                    int v= buf[x + y*w] + (128<<FRAC_BITS) + (1<<(FRAC_BITS-1));
                     int v= line[x] + (128<<FRAC_BITS) + (1<<(FRAC_BITS-1));
                     v >>= FRAC_BITS;
@@ -2606,12 +2600,10 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
                 }
             }
         }else{
-            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++)
-            {
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++){
 //                DWTELEM * line = slice_buffer_get_line(sb, y);
                 IDWTELEM * line = sb->line[y];
-                for(x=0; x<w; x++)
-                {
+                for(x=0; x<w; x++){
                     line[x] -= 128 << FRAC_BITS;
 //                    buf[x + y*w]-= 128<<FRAC_BITS;
                 }
@@ -3103,8 +3095,7 @@ static void iterative_me(SnowContext *s){
                 }
 
                 //skip stuff outside the picture
-                if(mb_x==0 || mb_y==0 || mb_x==b_width-1 || mb_y==b_height-1)
-                {
+                if(mb_x==0 || mb_y==0 || mb_x==b_width-1 || mb_y==b_height-1){
                     uint8_t *src= s->  input_picture.data[0];
                     uint8_t *dst= s->current_picture.data[0];
                     const int stride= s->current_picture.linesize[0];
