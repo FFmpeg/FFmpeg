@@ -1,4 +1,3 @@
-
 include ../config.mak
 
 NAME = swscale
