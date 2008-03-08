@@ -224,7 +224,8 @@ static void vp6_build_huff_tree(vp56_context_t *s, uint8_t coeff_model[],
     }
 
     /* then build the huffman tree accodring to probabilities */
-    ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp, 1);
+    ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
+                       FF_HUFFMAN_FLAG_HNODE_FIRST);
 }
 
 static void vp6_parse_coeff_models(vp56_context_t *s)

@@ -64,7 +64,7 @@ static int build_huff_tree(VLC *vlc, Node *nodes, int head)
  * first nb_codes nodes.count must be set
  */
 int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
-                       Node *nodes, huff_cmp_t cmp, int hnode_first)
+                       Node *nodes, huff_cmp_t cmp, int flags)
 {
     int i, j;
     int cur_node;
@@ -90,7 +90,8 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
         for(j = cur_node; j > 0; j--){
             if(nodes[j].count > nodes[j-1].count ||
                (nodes[j].count == nodes[j-1].count &&
-                (!hnode_first || nodes[j].n0==j-1 || nodes[j].n0==j-2 ||
+                (!(flags & FF_HUFFMAN_FLAG_HNODE_FIRST) ||
+                 nodes[j].n0==j-1 || nodes[j].n0==j-2 ||
                  (nodes[j].sym!=HNODE && nodes[j-1].sym!=HNODE))))
                 break;
             FFSWAP(Node, nodes[j], nodes[j-1]);
