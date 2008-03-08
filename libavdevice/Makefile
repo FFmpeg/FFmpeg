@@ -1,7 +1,6 @@
 include ../config.mak
 
-NAME=avdevice
-
+NAME = avdevice
 FFLIBS = avformat avcodec avutil
 
 OBJS = alldevices.o

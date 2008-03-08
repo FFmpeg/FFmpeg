@@ -1,9 +1,8 @@
 
 include ../config.mak
 
+NAME = postproc
 FFLIBS = avutil
-
-NAME=postproc
 
 HEADERS = postprocess.h
 

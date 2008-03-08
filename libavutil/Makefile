@@ -1,5 +1,7 @@
 include ../config.mak
 
+NAME = avutil
+
 OBJS = adler32.o \
        aes.o \
        base64.o \
@@ -36,8 +38,6 @@ HEADERS = adler32.h \
           random.h \
           rational.h \
           sha1.h
-
-NAME=avutil
 
 TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 sha1 softfloat tree)
 

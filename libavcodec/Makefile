@@ -4,6 +4,9 @@
 #
 include ../config.mak
 
+NAME = avcodec
+FFLIBS = avutil
+
 OBJS = allcodecs.o \
        audioconvert.o \
        bitstream.o \
@@ -453,10 +456,6 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/fdct_bfin.o   \
                                           bfin/idct_bfin.o   \
                                           bfin/vp3_idct_bfin.o   \
-
-FFLIBS = avutil
-
-NAME=avcodec
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 ifeq ($(ARCH_X86),yes)

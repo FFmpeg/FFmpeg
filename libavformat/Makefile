@@ -4,6 +4,9 @@
 #
 include ../config.mak
 
+NAME = avformat
+FFLIBS = avcodec avutil
+
 OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
 
 HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
@@ -189,9 +192,5 @@ OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
-
-FFLIBS = avcodec avutil
-
-NAME=avformat
 
 include ../common.mak
