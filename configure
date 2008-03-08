@@ -70,7 +70,7 @@ show_help(){
   echo "                           and ffmpeg will be under GPL [default=no]"
   echo "  --enable-nonfree         allow use of nonfree code, the resulting libav*"
   echo "                           and ffmpeg will be unredistributable [default=no]"
-  echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
+  echo "  --enable-postproc        enable GPLed postprocessing support [default=no]"
   echo "  --enable-swscaler        software scaler support [default=no]"
   echo "  --enable-avfilter        video filter support (replaces vhook) [default=no]"
   echo "  --enable-avfilter-lavf   video filters dependant on avformat [default=no]"
@@ -658,8 +658,8 @@ CONFIG_LIST="
     mpegaudio_hp
     network
     nonfree
+    postproc
     powerpc_perf
-    pp
     small
     swscaler
     vhook
@@ -1347,7 +1347,7 @@ if ! enabled gpl; then
         shift
         enabled_any $@ && die "$name is under GPL and --enable-gpl is not specified."
     }
-    die_gpl_disabled "The Postprocessing code" pp
+    die_gpl_disabled "The Postprocessing code" postproc
     die_gpl_disabled "liba52"                  liba52
     die_gpl_disabled "libx264"                 libx264
     die_gpl_disabled "libxvidcore"             libxvid
@@ -1893,7 +1893,7 @@ echo "strip symbols             ${dostrip-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
-echo "postprocessing support    ${pp-no}"
+echo "postprocessing support    ${postproc-no}"
 echo "software scaler enabled   ${swscaler-no}"
 echo "new filter support        ${avfilter-no}"
 echo "filters using lavformat   ${avfilter_lavf-no}"
@@ -2175,7 +2175,7 @@ pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$L
 
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "-lavdevice $extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
 pkgconfig_generate_uninstalled libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
-if enabled pp; then
+if enabled postproc; then
     pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION" -lpostproc ""
     pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
 fi

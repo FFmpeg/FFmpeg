@@ -86,7 +86,7 @@ lib:
 	$(MAKE)                    -C libavcodec  all
 	$(MAKE)                    -C libavformat all
 	$(MAKE)                    -C libavdevice all
-	$(MAKE-$(CONFIG_PP))       -C libpostproc all
+	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc all
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  all
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
 
@@ -172,7 +172,7 @@ install-libs:
 	$(MAKE)                    -C libavcodec  install-libs
 	$(MAKE)                    -C libavformat install-libs
 	$(MAKE)                    -C libavdevice install-libs
-	$(MAKE-$(CONFIG_PP))       -C libpostproc install-libs
+	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc install-libs
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  install-libs
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-libs
 
@@ -181,7 +181,7 @@ install-headers:
 	$(MAKE)                    -C libavcodec  install-headers
 	$(MAKE)                    -C libavformat install-headers
 	$(MAKE)                    -C libavdevice install-headers
-	$(MAKE-$(CONFIG_PP))       -C libpostproc install-headers
+	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc install-headers
 	$(MAKE)                    -C libswscale  install-headers
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-headers
 
@@ -221,7 +221,7 @@ depend dep: .depend .vhookdep
 	$(MAKE)                    -C libavcodec  depend
 	$(MAKE)                    -C libavformat depend
 	$(MAKE)                    -C libavdevice depend
-	$(MAKE-$(CONFIG_PP))       -C libpostproc depend
+	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc depend
 	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  depend
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
