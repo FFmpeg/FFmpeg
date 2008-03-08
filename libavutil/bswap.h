@@ -56,7 +56,7 @@ static av_always_inline uint16_t bswap_16(uint16_t x)
 static av_always_inline uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
-#if __CPU__ != 386
+#ifdef HAVE_BSWAP
     __asm("bswap   %0":
           "=r" (x)    :
 #else

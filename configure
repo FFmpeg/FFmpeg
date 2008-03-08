@@ -708,6 +708,7 @@ HAVE_LIST="
     $THREADS_LIST
     altivec_h
     arpa_inet_h
+    bswap
     byteswap_h
     closesocket
     cmov
@@ -1504,6 +1505,8 @@ EOF
 
     # check whether binutils is new enough to compile SSSE3
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
+
+    check_asm bswap '"bswap %%eax" ::: "%eax"'
 fi
 
 # check for assembler specific support
@@ -1988,9 +1991,6 @@ echo "EXESUF=$EXESUF" >> config.mak
 if enabled bigendian; then
     echo "WORDS_BIGENDIAN=yes" >> config.mak
     echo "#define WORDS_BIGENDIAN 1" >> $TMPH
-fi
-if enabled mmx; then
-    echo "#define __CPU__ 586" >> $TMPH
 fi
 
 if enabled sdl; then
