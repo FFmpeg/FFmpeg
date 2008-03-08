@@ -27,10 +27,6 @@
  * miscellaneous OS support macros and functions.
  */
 
-#ifndef HAVE_SOCKLEN_T
-typedef int socklen_t;
-#endif
-
 #ifdef __MINGW32__
 __declspec(dllimport) void WINAPI Sleep(unsigned long dwMilliseconds);
 // #  include <windows.h>
@@ -54,6 +50,10 @@ __declspec(dllimport) void WINAPI Sleep(unsigned long dwMilliseconds);
 #    warning SA_RESTART not implemented; ffserver might misbehave.
 #    define SA_RESTART 0
 #  endif
+#endif
+
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
 #endif
 
 /* most of the time closing a socket is just closing an fd */
