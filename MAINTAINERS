@@ -201,6 +201,16 @@ Codecs:
   zmbv*                                 Kostya Shishkov
 
 
+libavdevice
+===========
+  External Interface:
+    libavdevice/avdevice.h
+
+
+  dc1394.c                              Roman Shaposhnik
+  v4l2.c                                Luca Abeni
+
+
 libavformat
 ===========
 
@@ -219,7 +229,7 @@ Muxers/Demuxers:
   avi*                                  Michael Niedermayer
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
-  dc1394.c, dv.c                        Roman Shaposhnik
+  dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
   flic.c                                Mike Melanson
   flvdec.c, flvenc.c                    Michael Niedermayer
@@ -259,7 +269,6 @@ Muxers/Demuxers:
   swf.c                                 Baptiste Coudurier
   tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
-  v4l2.c                                Luca Abeni
   voc.c                                 Aurelien Jacobs
   wav.c                                 Michael Niedermayer
   wc3movie.c                            Mike Melanson
