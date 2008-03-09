@@ -75,7 +75,7 @@ static const AVRational pixel_aspect[17]={
 };
 
 static const uint8_t golomb_to_pict_type[5]=
-{P_TYPE, B_TYPE, I_TYPE, SP_TYPE, SI_TYPE};
+{FF_P_TYPE, FF_B_TYPE, FF_I_TYPE, FF_SP_TYPE, FF_SI_TYPE};
 
 static const uint8_t pict_type_to_golomb[7]=
 {-1, 2, 0, 1, -1, 4, 3};

@@ -3800,7 +3800,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
     assert(coef_sum < INT_MAX);
 
-    if(pict->pict_type == I_TYPE){
+    if(pict->pict_type == FF_I_TYPE){
         s->m.current_picture.mb_var_sum= coef_sum;
         s->m.current_picture.mc_mb_var_sum= 0;
     }else{
@@ -4198,7 +4198,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     frame_start(s);
 
     s->m.current_picture_ptr= &s->m.current_picture;
-    if(pict->pict_type == P_TYPE){
+    if(pict->pict_type == FF_P_TYPE){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
         int stride= s->current_picture.linesize[0];
@@ -4247,13 +4247,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
 redo_frame:
 
-    if(pict->pict_type == I_TYPE)
+    if(pict->pict_type == FF_I_TYPE)
         s->spatial_decomposition_count= 5;
     else
         s->spatial_decomposition_count= 5;
 
     s->m.pict_type = pict->pict_type;
-    s->qbias= pict->pict_type == P_TYPE ? 2 : 0;
+    s->qbias= pict->pict_type == FF_P_TYPE ? 2 : 0;
 
     common_init_after_header(avctx);
 
@@ -4286,7 +4286,7 @@ redo_frame:
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
 
             if(   plane_index==0
-               && pict->pict_type == P_TYPE
+               && pict->pict_type == FF_P_TYPE
                && !(avctx->flags&CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, buf, buf_size);
@@ -4337,7 +4337,7 @@ redo_frame:
                     if(!QUANTIZE2)
                         quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
                     if(orientation==0)
-                        decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == P_TYPE, 0);
+                        decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == FF_P_TYPE, 0);
                     encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
                     assert(b->parent==NULL || b->parent->stride == b->stride*2);
                     if(orientation==0)
@@ -4364,7 +4364,7 @@ redo_frame:
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
         }else{
             //ME/MC only
-            if(pict->pict_type == I_TYPE){
+            if(pict->pict_type == FF_I_TYPE){
                 for(y=0; y<h; y++){
                     for(x=0; x<w; x++){
                         s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]=

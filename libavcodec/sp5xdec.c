@@ -125,7 +125,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    s->picture.pict_type = I_TYPE;
+    s->picture.pict_type = FF_I_TYPE;
     s->picture.key_frame = 1;
 
     for (i = 0; i < 3; i++)

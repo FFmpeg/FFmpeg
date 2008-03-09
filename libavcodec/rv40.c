@@ -229,7 +229,7 @@ static int rv40_decode_mb_info(RV34DecContext *r)
             prev_type = i;
         }
     }
-    if(s->pict_type == P_TYPE){
+    if(s->pict_type == FF_P_TYPE){
         prev_type = block_num_to_ptype_vlc_num[prev_type];
         q = get_vlc2(gb, ptype_vlc[prev_type].table, PTYPE_VLC_BITS, 1);
         if(q < PBTYPE_ESCAPE)

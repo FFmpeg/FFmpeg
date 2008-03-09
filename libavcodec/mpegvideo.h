@@ -61,13 +61,6 @@ enum OutputFormat {
 #define ME_MAP_SHIFT 3
 #define ME_MAP_MV_BITS 11
 
-#define I_TYPE FF_I_TYPE  ///< Intra
-#define P_TYPE FF_P_TYPE  ///< Predicted
-#define B_TYPE FF_B_TYPE  ///< Bi-dir predicted
-#define S_TYPE FF_S_TYPE  ///< S(GMC)-VOP MPEG4
-#define SI_TYPE FF_SI_TYPE  ///< Switching Intra
-#define SP_TYPE FF_SP_TYPE  ///< Switching Predicted
-
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
 #define INPLACE_OFFSET 16
@@ -316,7 +309,7 @@ typedef struct MpegEncContext {
     int *lambda_table;
     int adaptive_quant;         ///< use adaptive quantization
     int dquant;                 ///< qscale difference to prev qscale
-    int pict_type;              ///< I_TYPE, P_TYPE, B_TYPE, ...
+    int pict_type;              ///< FF_I_TYPE, FF_P_TYPE, FF_B_TYPE, ...
     int last_pict_type; //FIXME removes
     int last_non_b_pict_type;   ///< used for mpeg4 gmc b-frames & ratecontrol
     int dropable;

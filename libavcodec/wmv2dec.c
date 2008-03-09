@@ -128,7 +128,7 @@ return -1;
         decode_ext_header(w);
 
     s->pict_type = get_bits1(&s->gb) + 1;
-    if(s->pict_type == I_TYPE){
+    if(s->pict_type == FF_I_TYPE){
         code = get_bits(&s->gb, 7);
         av_log(s->avctx, AV_LOG_DEBUG, "I7:%X/\n", code);
     }
@@ -143,7 +143,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s)
 {
     Wmv2Context * const w= (Wmv2Context*)s;
 
-    if (s->pict_type == I_TYPE) {
+    if (s->pict_type == FF_I_TYPE) {
         if(w->j_type_bit) w->j_type= get_bits1(&s->gb);
         else              w->j_type= 0; //FIXME check
 
@@ -354,7 +354,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if(w->j_type) return 0;
 
-    if (s->pict_type == P_TYPE) {
+    if (s->pict_type == FF_P_TYPE) {
         if(IS_SKIP(s->current_picture.mb_type[s->mb_y * s->mb_stride + s->mb_x])){
             /* skip mb */
             s->mb_intra = 0;
@@ -431,7 +431,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
     } else {
-//if(s->pict_type==P_TYPE)
+//if(s->pict_type==FF_P_TYPE)
 //   printf("%d%d ", s->inter_intra_pred, cbp);
 //printf("I at %d %d %d %06X\n", s->mb_x, s->mb_y, ((cbp&3)? 1 : 0) +((cbp&0x3C)? 2 : 0), show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);

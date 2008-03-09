@@ -575,7 +575,7 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
   if(s->pict_type==4)
       return -1;
 
-  if (s->pict_type == I_TYPE) {
+  if (s->pict_type == FF_I_TYPE) {
 
     /* unknown fields */
     if (s->f_code == 0x50 || s->f_code == 0x60) {
@@ -678,11 +678,11 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
   //FIXME this avoids some confusion for "B frames" without 2 references
   //this should be removed after libavcodec can handle more flexible picture types & ordering
-  if(s->pict_type==B_TYPE && s->last_picture_ptr==NULL) return buf_size;
+  if(s->pict_type==FF_B_TYPE && s->last_picture_ptr==NULL) return buf_size;
 
-  if(avctx->hurry_up && s->pict_type==B_TYPE) return buf_size;
-  if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==B_TYPE)
-     ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=I_TYPE)
+  if(avctx->hurry_up && s->pict_type==FF_B_TYPE) return buf_size;
+  if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
+     ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
      || avctx->skip_frame >= AVDISCARD_ALL)
       return buf_size;
 
@@ -705,13 +705,13 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
     current  = s->current_picture.data[i];
 
-    if(s->pict_type==B_TYPE){
+    if(s->pict_type==FF_B_TYPE){
         previous = s->next_picture.data[i];
     }else{
         previous = s->last_picture.data[i];
     }
 
-    if (s->pict_type == I_TYPE) {
+    if (s->pict_type == FF_I_TYPE) {
       /* keyframe */
       for (y=0; y < height; y+=16) {
         for (x=0; x < width; x+=16) {

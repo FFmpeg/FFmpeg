@@ -134,7 +134,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
     if(!dry_run)
         s->rc_context.dry_run_qscale= 0;
 
-    if(s->pict_type == B_TYPE) //FIXME this is not exactly identical to xvid
+    if(s->pict_type == FF_B_TYPE) //FIXME this is not exactly identical to xvid
         return xvid_plg_data.quant * FF_QP2LAMBDA * s->avctx->b_quant_factor + s->avctx->b_quant_offset;
     else
         return xvid_plg_data.quant * FF_QP2LAMBDA;

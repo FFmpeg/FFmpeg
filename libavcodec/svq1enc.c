@@ -82,7 +82,7 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
     /* frame type */
     put_bits(&s->pb, 2, frame_type - 1);
 
-    if (frame_type == I_TYPE) {
+    if (frame_type == FF_I_TYPE) {
 
         /* no checksum since frame code is 0x20 */
 
@@ -283,7 +283,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
     block_width = (width + 15) / 16;
     block_height = (height + 15) / 16;
 
-    if(s->picture.pict_type == P_TYPE){
+    if(s->picture.pict_type == FF_P_TYPE){
         s->m.avctx= s->avctx;
         s->m.current_picture_ptr= &s->m.current_picture;
         s->m.last_picture_ptr   = &s->m.last_picture;
@@ -389,11 +389,11 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
             ff_init_block_index(&s->m);
             ff_update_block_index(&s->m);
 
-            if(s->picture.pict_type == I_TYPE || (s->m.mb_type[x + y*s->m.mb_stride]&CANDIDATE_MB_TYPE_INTRA)){
+            if(s->picture.pict_type == FF_I_TYPE || (s->m.mb_type[x + y*s->m.mb_stride]&CANDIDATE_MB_TYPE_INTRA)){
                 for(i=0; i<6; i++){
                     init_put_bits(&s->reorder_pb[i], reorder_buffer[0][i], 7*32);
                 }
-                if(s->picture.pict_type == P_TYPE){
+                if(s->picture.pict_type == FF_P_TYPE){
                     const uint8_t *vlc= ff_svq1_block_type_vlc[SVQ1_BLOCK_INTRA];
                     put_bits(&s->reorder_pb[5], vlc[1], vlc[0]);
                     score[0]= vlc[1]*lambda;
@@ -408,7 +408,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
 
             best=0;
 
-            if(s->picture.pict_type == P_TYPE){
+            if(s->picture.pict_type == FF_P_TYPE){
                 const uint8_t *vlc= ff_svq1_block_type_vlc[SVQ1_BLOCK_INTER];
                 int mx, my, pred_x, pred_y, dxy;
                 int16_t *motion_ptr;
@@ -533,8 +533,8 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     init_put_bits(&s->pb, buf, buf_size);
 
     *p = *pict;
-    p->pict_type = avctx->gop_size && avctx->frame_number % avctx->gop_size ? P_TYPE : I_TYPE;
-    p->key_frame = p->pict_type == I_TYPE;
+    p->pict_type = avctx->gop_size && avctx->frame_number % avctx->gop_size ? FF_P_TYPE : FF_I_TYPE;
+    p->key_frame = p->pict_type == FF_I_TYPE;
 
     svq1_write_header(s, p->pict_type);
     for(i=0; i<3; i++){

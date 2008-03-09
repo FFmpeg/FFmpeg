@@ -349,7 +349,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 16, 0xFFFF); /* vbv_delay */
 
     // RAL: Forward f_code also needed for B frames
-    if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
+    if (s->pict_type == FF_P_TYPE || s->pict_type == FF_B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
         if(s->codec_id == CODEC_ID_MPEG1VIDEO)
             put_bits(&s->pb, 3, s->f_code); /* forward_f_code */
@@ -358,7 +358,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     }
 
     // RAL: Backward f_code necessary for B frames
-    if (s->pict_type == B_TYPE) {
+    if (s->pict_type == FF_B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
         if(s->codec_id == CODEC_ID_MPEG1VIDEO)
             put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
@@ -372,13 +372,13 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     if(s->codec_id == CODEC_ID_MPEG2VIDEO){
         put_header(s, EXT_START_CODE);
         put_bits(&s->pb, 4, 8); //pic ext
-        if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
+        if (s->pict_type == FF_P_TYPE || s->pict_type == FF_B_TYPE) {
             put_bits(&s->pb, 4, s->f_code);
             put_bits(&s->pb, 4, s->f_code);
         }else{
             put_bits(&s->pb, 8, 255);
         }
-        if (s->pict_type == B_TYPE) {
+        if (s->pict_type == FF_B_TYPE) {
             put_bits(&s->pb, 4, s->b_code);
             put_bits(&s->pb, 4, s->b_code);
         }else{
@@ -451,15 +451,15 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
 
     if (cbp == 0 && !first_mb && s->mv_type == MV_TYPE_16X16 &&
         (mb_x != s->mb_width - 1 || (mb_y != s->mb_height - 1 && s->codec_id == CODEC_ID_MPEG1VIDEO)) &&
-        ((s->pict_type == P_TYPE && (motion_x | motion_y) == 0) ||
-        (s->pict_type == B_TYPE && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
+        ((s->pict_type == FF_P_TYPE && (motion_x | motion_y) == 0) ||
+        (s->pict_type == FF_B_TYPE && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
         ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
         s->mb_skip_run++;
         s->qscale -= s->dquant;
         s->skip_count++;
         s->misc_bits++;
         s->last_bits++;
-        if(s->pict_type == P_TYPE){
+        if(s->pict_type == FF_P_TYPE){
             s->last_mv[0][1][0]= s->last_mv[0][0][0]=
             s->last_mv[0][1][1]= s->last_mv[0][0][1]= 0;
         }
@@ -471,7 +471,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             encode_mb_skip_run(s, s->mb_skip_run);
         }
 
-        if (s->pict_type == I_TYPE) {
+        if (s->pict_type == FF_I_TYPE) {
             if(s->dquant && cbp){
                 put_mb_modes(s, 2, 1, 0, 0); /* macroblock_type : macroblock_quant = 1 */
                 put_qscale(s);
@@ -492,7 +492,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             s->misc_bits+= get_bits_diff(s);
             s->i_count++;
             memset(s->last_mv, 0, sizeof(s->last_mv));
-        } else if (s->pict_type == P_TYPE) {
+        } else if (s->pict_type == FF_P_TYPE) {
             if(s->mv_type == MV_TYPE_16X16){
                 if (cbp != 0) {
                     if ((motion_x|motion_y) == 0) {

@@ -691,7 +691,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
         return 0;
     case RV34_MB_SKIP:
-        if(s->pict_type == P_TYPE){
+        if(s->pict_type == FF_P_TYPE){
             fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
@@ -914,9 +914,9 @@ static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
         s->current_picture_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
         r->mb_type[mb_pos] = r->block_type;
         if(r->block_type == RV34_MB_SKIP){
-            if(s->pict_type == P_TYPE)
+            if(s->pict_type == FF_P_TYPE)
                 r->mb_type[mb_pos] = RV34_MB_P_16x16;
-            if(s->pict_type == B_TYPE)
+            if(s->pict_type == FF_B_TYPE)
                 r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
         }
         r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
@@ -1107,7 +1107,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
             r->cbp_luma   = av_realloc(r->cbp_luma,   r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_luma));
             r->cbp_chroma = av_realloc(r->cbp_chroma, r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_chroma));
         }
-        s->pict_type = r->si.type ? r->si.type : I_TYPE;
+        s->pict_type = r->si.type ? r->si.type : FF_I_TYPE;
         if(MPV_frame_start(s, s->avctx) < 0)
             return -1;
         ff_er_frame_start(s);
@@ -1270,7 +1270,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             r->loop_filter(r);
         ff_er_frame_end(s);
         MPV_frame_end(s);
-        if (s->pict_type == B_TYPE || s->low_delay) {
+        if (s->pict_type == FF_B_TYPE || s->low_delay) {
             *pict= *(AVFrame*)s->current_picture_ptr;
         } else if (s->last_picture_ptr != NULL) {
             *pict= *(AVFrame*)s->last_picture_ptr;

@@ -105,7 +105,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
         av_log(s->avctx, AV_LOG_ERROR, "dquant needed\n");
         code -= 6;
     }
-    if(s->pict_type != B_TYPE)
+    if(s->pict_type != FF_B_TYPE)
         return rv30_p_types[code];
     else
         return rv30_b_types[code];

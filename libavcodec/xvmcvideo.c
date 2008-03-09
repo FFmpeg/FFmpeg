@@ -90,9 +90,9 @@ xvmc_render_state_t * render,* last, * next;
     render->p_past_surface = NULL;
 
     switch(s->pict_type){
-        case  I_TYPE:
+        case  FF_I_TYPE:
             return 0;// no prediction from other frames
-        case  B_TYPE:
+        case  FF_B_TYPE:
             next = (xvmc_render_state_t*)s->next_picture.data[2];
             assert(next!=NULL);
             assert(next->state & MP_XVMC_STATE_PREDICTION);
@@ -100,7 +100,7 @@ xvmc_render_state_t * render,* last, * next;
             if(next->magic != MP_XVMC_RENDER_MAGIC) return -1;
             render->p_future_surface = next->p_surface;
             //no return here, going to set forward prediction
-        case  P_TYPE:
+        case  FF_P_TYPE:
             last = (xvmc_render_state_t*)s->last_picture.data[2];
             if(last == NULL)// && !s->first_field)
                 last = render;//predict second field from the first

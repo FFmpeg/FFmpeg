@@ -127,9 +127,6 @@ enum TransformTypes {
 };
 //@}
 
-/** One more frame type */
-#define BI_TYPE FF_BI_TYPE
-
 enum CodingSet {
     CS_HIGH_MOT_INTRA = 0,
     CS_HIGH_MOT_INTER,
