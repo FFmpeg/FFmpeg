@@ -504,6 +504,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
     } else {
         c->pic.key_frame = 0;
         c->pic.pict_type = FF_P_TYPE;
+        if(c->decomp_len)
         c->decode_xor(c);
     }
 
