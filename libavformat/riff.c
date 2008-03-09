@@ -48,7 +48,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('X', 'V', 'I', 'D') },
     { CODEC_ID_MPEG4,        MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4,        MKTAG('M', '4', 'S', '2') },
-    { CODEC_ID_MPEG4,        MKTAG(0x04,  0,   0,   0) }, /* some broken avi use this */
+    { CODEC_ID_MPEG4,        MKTAG( 4 ,  0 ,  0 ,  0 ) }, /* some broken avi use this */
 
     /* added based on MPlayer */
     { CODEC_ID_MPEG4,        MKTAG('D', 'I', 'V', '1') },
@@ -95,8 +95,8 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'P', 'E', 'G') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('P', 'I', 'M', '1') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('V', 'C', 'R', '2') },
-    { CODEC_ID_MPEG1VIDEO,   0x10000001                },
-    { CODEC_ID_MPEG2VIDEO,   0x10000002                },
+    { CODEC_ID_MPEG1VIDEO,   MKTAG( 1 ,  0 ,  0 ,  16) },
+    { CODEC_ID_MPEG2VIDEO,   MKTAG( 2 ,  0 ,  0 ,  16) },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('D', 'V', 'R', ' ') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'M', 'E', 'S') },
     { CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
@@ -111,7 +111,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_HUFFYUV,      MKTAG('H', 'F', 'Y', 'U') },
     { CODEC_ID_FFVHUFF,      MKTAG('F', 'F', 'V', 'H') },
     { CODEC_ID_CYUV,         MKTAG('C', 'Y', 'U', 'V') },
-    { CODEC_ID_RAWVIDEO,     0                         },
+    { CODEC_ID_RAWVIDEO,     MKTAG( 0 ,  0 ,  0 ,  0 ) },
     { CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '2', '0') },
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'Y', '2') },
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '2', '2') },
@@ -136,7 +136,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_FFV1,         MKTAG('F', 'F', 'V', '1') },
     { CODEC_ID_XAN_WC4,      MKTAG('X', 'x', 'a', 'n') },
     { CODEC_ID_MSRLE,        MKTAG('m', 'r', 'l', 'e') },
-    { CODEC_ID_MSRLE,        MKTAG(0x1, 0x0, 0x0, 0x0) },
+    { CODEC_ID_MSRLE,        MKTAG( 1 ,  0 ,  0 ,  0 ) },
     { CODEC_ID_MSVIDEO1,     MKTAG('M', 'S', 'V', 'C') },
     { CODEC_ID_MSVIDEO1,     MKTAG('m', 's', 'v', 'c') },
     { CODEC_ID_MSVIDEO1,     MKTAG('C', 'R', 'A', 'M') },
