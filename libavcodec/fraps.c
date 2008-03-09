@@ -84,7 +84,8 @@ static int huff_cmp(const void *va, const void *vb){
  * decode Fraps v2 packed plane
  */
 static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
-                               int h, const uint8_t *src, int size, int Uoff)
+                               int h, const uint8_t *src, int size, int Uoff,
+                               const int step)
 {
     int i, j;
     GetBitContext gb;
@@ -104,7 +105,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
 
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for(j = 0; j < h; j++){
-        for(i = 0; i < w; i++){
+        for(i = 0; i < w*step; i += step){
             dst[i] = get_vlc2(&gb, vlc.table, 9, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
@@ -281,7 +282,7 @@ static int decode_frame(AVCodecContext *avctx,
             is_chroma = !!i;
             s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
             if(fraps2_decode_plane(s, f->data[i], f->linesize[i], avctx->width >> is_chroma,
-                    avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma) < 0) {
+                    avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma, 1) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
                 return -1;
             }
