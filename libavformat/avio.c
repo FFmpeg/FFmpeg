@@ -20,6 +20,22 @@
  */
 #include "avformat.h"
 #include "avstring.h"
+#include "opt.h"
+
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+/** @name Logging context. */
+/*@{*/
+static const char *urlcontext_to_name(void *ptr)
+{
+    URLContext *h = (URLContext *)ptr;
+    if(h->prot) return h->prot->name;
+    else        return "NULL";
+}
+static const AVOption options[] = {{NULL}};
+static const AVClass urlcontext_class =
+        { "URLContext", urlcontext_to_name, options };
+/*@}*/
+#endif
 
 static int default_interrupt_cb(void);
 
@@ -82,6 +98,9 @@ int url_open(URLContext **puc, const char *filename, int flags)
         err = AVERROR(ENOMEM);
         goto fail;
     }
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+    uc->av_class = &urlcontext_class;
+#endif
     uc->filename = (char *) &uc[1];
     strcpy(uc->filename, filename);
     uc->prot = up;

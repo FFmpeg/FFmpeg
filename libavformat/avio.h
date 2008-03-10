@@ -37,6 +37,9 @@ typedef int64_t offset_t;
  * sizeof(URLContext) must not be used outside libav*.
  */
 struct URLContext {
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+    const AVClass *av_class; ///< information for av_log(). Set by url_open().
+#endif
     struct URLProtocol *prot;
     int flags;
     int is_streamed;  /**< true if streamed (no seek possible), default = false */
