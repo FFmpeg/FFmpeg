@@ -2356,7 +2356,7 @@ matroska_read_header (AVFormatContext    *s,
             MatroskaDemuxIndex *idx = &matroska->index[i];
             track = matroska_find_track_by_num(matroska, idx->track);
             stream = matroska->tracks[track]->stream_index;
-            if (stream >= 0)
+            if (stream >= 0 && stream < matroska->ctx->nb_streams)
                 av_add_index_entry(matroska->ctx->streams[stream],
                                    idx->pos, idx->time/matroska->time_scale,
                                    0, 0, AVINDEX_KEYFRAME);
@@ -2400,7 +2400,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         return res;
     }
     stream_index = matroska->tracks[track]->stream_index;
-    if (stream_index < 0) {
+    if (stream_index < 0 || stream_index >= matroska->ctx->nb_streams) {
         av_free(origdata);
         return res;
     }
