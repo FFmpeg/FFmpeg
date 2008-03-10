@@ -117,7 +117,7 @@ output_example$(EXESUF): output_example.o .libs
 tools/%$(EXESUF): tools/%.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
 
-ffplay.o: CFLAGS += $(SDL_CFLAGS)
+ffplay.o .depend: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
@@ -227,7 +227,7 @@ depend dep: .depend .vhookdep
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
 .depend: $(SRCS) version.h
-	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
+	$(CC) -MM $(CFLAGS) $(filter-out %.h,$^) 1>.depend
 
 # gcc stupidly only outputs the basename of targets with -MM
 .vhookdep: $(ALLHOOKS_SRCS) version.h
