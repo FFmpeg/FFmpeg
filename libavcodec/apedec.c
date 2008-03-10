@@ -79,7 +79,7 @@ static const uint16_t ape_filter_orders[5][APE_FILTER_LEVELS] = {
 };
 
 /** Filter fraction bits depending on compression level */
-static const uint16_t ape_filter_fracbits[5][APE_FILTER_LEVELS] = {
+static const uint8_t ape_filter_fracbits[5][APE_FILTER_LEVELS] = {
     {  0,  0,  0 },
     { 11,  0,  0 },
     { 11,  0,  0 },
@@ -316,7 +316,7 @@ static inline int range_decode_bits(APEContext * ctx, int n)
 /**
  * Fixed probabilities for symbols in Monkey Audio version 3.97
  */
-static const uint32_t counts_3970[22] = {
+static const uint16_t counts_3970[22] = {
         0, 14824, 28224, 39348, 47855, 53994, 58171, 60926,
     62682, 63786, 64463, 64878, 65126, 65276, 65365, 65419,
     65450, 65469, 65480, 65487, 65491, 65493,
@@ -334,7 +334,7 @@ static const uint16_t counts_diff_3970[21] = {
 /**
  * Fixed probabilities for symbols in Monkey Audio version 3.98
  */
-static const uint32_t counts_3980[22] = {
+static const uint16_t counts_3980[22] = {
         0, 19578, 36160, 48417, 56323, 60899, 63265, 64435,
     64971, 65232, 65351, 65416, 65447, 65466, 65476, 65482,
     65485, 65488, 65490, 65491, 65492, 65493,
@@ -355,7 +355,7 @@ static const uint16_t counts_diff_3980[21] = {
  * @param count_diffs probability range widths
  */
 static inline int range_get_symbol(APEContext * ctx,
-                                   const uint32_t counts[],
+                                   const uint16_t counts[],
                                    const uint16_t counts_diff[])
 {
     int symbol, cf;
