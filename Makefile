@@ -121,7 +121,8 @@ ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
-videohook: $(HOOKS)
+# vhooks compile fine without libav*, but need them nonetheless.
+videohook: .libs $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
