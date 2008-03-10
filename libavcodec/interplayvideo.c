@@ -804,7 +804,6 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     s->line_inc = s->stride - 8;
     s->upper_motion_limit_offset = (s->avctx->height - 8) * s->stride
         + s->avctx->width - 8;
-    s->dsp = s->dsp;
 
     for (y = 0; y < (s->stride * s->avctx->height); y += s->stride * 8) {
         for (x = y; x < y + s->avctx->width; x += 8) {
