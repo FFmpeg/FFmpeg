@@ -227,7 +227,7 @@ depend dep: .depend .vhookdep
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
 .depend: $(SRCS) version.h
-	$(CC) -MM $(CFLAGS) $(filter-out %.h,$^) 1>.depend
+	$(CC) -MM $(CFLAGS) $(filter-out %.h,$^) > .depend
 
 # gcc stupidly only outputs the basename of targets with -MM
 .vhookdep: $(ALLHOOKS_SRCS) version.h

@@ -63,7 +63,7 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
 # gcc stupidly only outputs the basename of targets with -MM
 depend dep: $(SRCS)
-	$(CC) -MM $(CFLAGS) $^ | sed 's,[0-9a-z._-]*: \([a-z0-9]*/\).*,\1&,' 1>.depend
+	$(CC) -MM $(CFLAGS) $^ | sed 's,[0-9a-z._-]*: \([a-z0-9]*/\).*,\1&,' > .depend
 
 clean::
 	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
