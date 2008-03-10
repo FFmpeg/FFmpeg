@@ -2380,6 +2380,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     uint32_t *lace_size = NULL;
     int n, flags, laces = 0;
     uint64_t num;
+    int stream_index;
 
     /* first byte(s): tracknum */
     if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
@@ -2398,11 +2399,12 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
-    if (matroska->tracks[track]->stream_index < 0) {
+    stream_index = matroska->tracks[track]->stream_index;
+    if (stream_index < 0) {
         av_free(origdata);
         return res;
     }
-    st = matroska->ctx->streams[matroska->tracks[track]->stream_index];
+    st = matroska->ctx->streams[stream_index];
     if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
         return res;
@@ -2545,7 +2547,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     memcpy(pkt->data, audiotrack->buf
                            + a * (h*w / a - audiotrack->pkt_cnt--), a);
                     pkt->pos = pos;
-                    pkt->stream_index = matroska->tracks[track]->stream_index;
+                    pkt->stream_index = stream_index;
                     matroska_queue_packet(matroska, pkt);
                 }
             } else {
@@ -2562,7 +2564,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
                 if (n == 0)
                     pkt->flags = is_keyframe;
-                pkt->stream_index = matroska->tracks[track]->stream_index;
+                pkt->stream_index = stream_index;
 
                 pkt->pts = timecode;
                 pkt->pos = pos;
