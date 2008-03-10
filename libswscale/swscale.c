@@ -274,7 +274,7 @@ static const AVOption options[] = {
 #undef VE
 #undef DEFAULT
 
-static AVClass sws_context_class = { "SWScaler", sws_context_to_name, options };
+static const AVClass sws_context_class = { "SWScaler", sws_context_to_name, options };
 
 const char *sws_format_name(enum PixelFormat format)
 {

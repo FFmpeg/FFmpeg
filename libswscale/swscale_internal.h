@@ -42,7 +42,7 @@ typedef struct SwsContext{
     /**
      * info on struct for av_log
      */
-    AVClass *av_class;
+    const AVClass *av_class;
 
     /**
      * Note that src, dst, srcStride, dstStride will be copied in the
