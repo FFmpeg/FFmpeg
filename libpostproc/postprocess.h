@@ -24,7 +24,7 @@
 /**
  * @file postprocess.h
  * @brief
- *     external api for the pp stuff
+ *     external postprocessing API
  */
 
 #include "libavutil/avutil.h"

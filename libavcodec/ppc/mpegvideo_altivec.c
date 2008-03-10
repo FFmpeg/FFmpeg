@@ -197,7 +197,7 @@ int dct_quantize_altivec(MpegEncContext* s,
                 // z4 = vec_add(z4, z5);  // z4 += z5;
 
                 // z2 = MULTIPLY(z2, - FIX_2_562915447); /* sqrt(2) * (-c1-c3) */
-                // Wow!  It's actually more effecient to roll this multiply
+                // Wow!  It's actually more efficient to roll this multiply
                 // into the adds below, even thought the multiply gets done twice!
                 // z2 = vec_madd(z2, vec_2_562915447, (vector float)zero);
 

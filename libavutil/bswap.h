@@ -20,7 +20,7 @@
 
 /**
  * @file bswap.h
- * byte swap.
+ * byte swapping routines
  */
 
 #ifndef FFMPEG_BSWAP_H

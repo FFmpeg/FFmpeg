@@ -20,7 +20,7 @@
 
 /**
  * @file common.h
- * common internal and external api header.
+ * common internal and external API header
  */
 
 #ifndef FFMPEG_COMMON_H

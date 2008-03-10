@@ -28,14 +28,14 @@ extern const int av_aes_size;
 struct AVAES;
 
 /**
- * initializes an AVAES context
+ * Initializes an AVAES context.
  * @param key_bits 128, 192 or 256
  * @param decrypt 0 for encryption, 1 for decryption
  */
 int av_aes_init(struct AVAES *a, const uint8_t *key, int key_bits, int decrypt);
 
 /**
- * encrypts / decrypts.
+ * Encrypts / decrypts.
  * @param count number of 16 byte blocks
  * @param dst destination array, can be equal to src
  * @param src source array, can be equal to dst

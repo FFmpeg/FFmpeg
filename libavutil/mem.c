@@ -69,10 +69,10 @@ void *av_malloc(unsigned int size)
        But I don't want to code such logic here!
      */
      /* Why 16?
-        because some cpus need alignment, for example SSE2 on P4, & most RISC cpus
+        Because some CPUs need alignment, for example SSE2 on P4, & most RISC CPUs
         it will just trigger an exception and the unaligned load will be done in the
         exception handler or it will just segfault (SSE2 on P4)
-        Why not larger? because i didnt see a difference in benchmarks ...
+        Why not larger? because i did not see a difference in benchmarks ...
      */
      /* benchmarks with p3
         memalign(64)+1          3071,3051,3032

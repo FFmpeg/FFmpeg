@@ -69,7 +69,7 @@ static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint
         header |= 1<<16; //no crc
         AV_WB32(out, header);
         if(size <= 0)
-            return 2; //we guess theres no crc, if there is one the user clearly doesnt care about overhead
+            return 2; //we guess there is no crc, if there is one the user clearly does not care about overhead
         if(bitrate_index == 30)
             return -1; //something is wrong ...
 
@@ -78,8 +78,8 @@ static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint
         header |= (bitrate_index&1)<<9;
 
         return 2; //FIXME actually put the needed ones in build_elision_headers()
-        return 3; //we guess that the private bit isnt set
-//FIXME the above asumtations should be checked, if these turn out false too often something should be done
+        return 3; //we guess that the private bit is not set
+//FIXME the above assumptions should be checked, if these turn out false too often something should be done
     }
     return 0;
 }

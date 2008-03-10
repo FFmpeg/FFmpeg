@@ -23,7 +23,7 @@
 
 /**
  * @file avutil.h
- * external api header.
+ * external API header
  */
 
 

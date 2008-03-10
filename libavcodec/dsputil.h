@@ -93,11 +93,14 @@ void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
 
 /* minimum alignment rules ;)
-if u notice errors in the align stuff, need more alignment for some asm code for some cpu
-or need to use a function with less aligned data then send a mail to the ffmpeg-dev list, ...
+If you notice errors in the align stuff, need more alignment for some ASM code
+for some CPU or need to use a function with less aligned data then send a mail
+to the ffmpeg-devel mailing list, ...
 
-!warning these alignments might not match reallity, (missing attribute((align)) stuff somewhere possible)
-i (michael) didnt check them, these are just the alignents which i think could be reached easily ...
+!warning These alignments might not match reality, (missing attribute((align))
+stuff somewhere possible).
+I (Michael) did not check them, these are just the alignments which i think
+could be reached easily ...
 
 !future video codecs might need functions with less strict alignment
 */
