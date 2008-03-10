@@ -1649,7 +1649,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
         case 0x83: conv= rgb15to32; break;
         case 0x84: conv= rgb16to32; break;
         case 0x86: conv= rgb24to32; break;
-        default: av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n",
+        default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                         sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
         }
     }else if (  (isBGR(srcFormat) && isRGB(dstFormat))
@@ -1671,11 +1671,11 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
         case 0x84: conv= rgb16tobgr32; break;
         case 0x86: conv= rgb24tobgr32; break;
         case 0x88: conv= rgb32tobgr32; break;
-        default: av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n",
+        default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                         sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
         }
     }else{
-        av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n",
+        av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                sws_format_name(srcFormat), sws_format_name(dstFormat));
     }
 
@@ -2536,7 +2536,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
     uint8_t* src2[4]= {src[0], src[1], src[2]};
     uint32_t pal[256];
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
-        av_log(c, AV_LOG_ERROR, "swScaler: slices start in the middle!\n");
+        av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
         return 0;
     }
     if (c->sliceDir == 0) {
