@@ -1125,7 +1125,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
 /**
  * Decode a single AC-3 frame.
  */
-static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
+                            const uint8_t *buf, int buf_size)
 {
     AC3DecodeContext *s = avctx->priv_data;
     int16_t *out_samples = (int16_t *)data;
