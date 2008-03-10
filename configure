@@ -2069,7 +2069,7 @@ enabled asmalign_pot &&
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 
-# Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
+# Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
 cmp -s $TMPH config.h &&
     echo "config.h is unchanged" ||
     mv -f $TMPH config.h
