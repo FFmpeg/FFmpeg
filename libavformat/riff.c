@@ -38,7 +38,6 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263I,        MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_H261,         MKTAG('H', '2', '6', '1') },
 
-    /* added based on MPlayer */
     { CODEC_ID_H263P,        MKTAG('U', '2', '6', '3') },
     { CODEC_ID_H263P,        MKTAG('v', 'i', 'v', '1') },
 
@@ -50,7 +49,6 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('M', '4', 'S', '2') },
     { CODEC_ID_MPEG4,        MKTAG( 4 ,  0 ,  0 ,  0 ) }, /* some broken avi use this */
 
-    /* added based on MPlayer */
     { CODEC_ID_MPEG4,        MKTAG('D', 'I', 'V', '1') },
     { CODEC_ID_MPEG4,        MKTAG('B', 'L', 'Z', '0') },
     { CODEC_ID_MPEG4,        MKTAG('m', 'p', '4', 'v') },
@@ -63,7 +61,6 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
 
-    /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '5') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '6') },
@@ -74,14 +71,12 @@ const AVCodecTag codec_bmp_tags[] = {
 
     { CODEC_ID_MSMPEG4V2,    MKTAG('M', 'P', '4', '2') },
 
-    /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V2,    MKTAG('D', 'I', 'V', '2') },
 
     { CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', 'G', '4') },
 
     { CODEC_ID_WMV1,         MKTAG('W', 'M', 'V', '1') },
 
-    /* added based on MPlayer */
     { CODEC_ID_WMV2,         MKTAG('W', 'M', 'V', '2') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'd') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', 'd') },
