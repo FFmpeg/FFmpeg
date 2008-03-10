@@ -35,7 +35,6 @@
 #include <unistd.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 
 
 typedef struct {
@@ -56,7 +55,6 @@ typedef struct {
 typedef struct CinepakContext {
 
     AVCodecContext *avctx;
-    DSPContext dsp;
     AVFrame frame;
 
     const unsigned char *data;
@@ -404,8 +402,6 @@ static int cinepak_decode_init(AVCodecContext *avctx)
         s->palette_video = 1;
         avctx->pix_fmt = PIX_FMT_PAL8;
     }
-
-    dsputil_init(&s->dsp, avctx);
 
     s->frame.data[0] = NULL;
 

@@ -50,7 +50,6 @@
 #include <unistd.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 
 #define HUFFMAN_TABLE_SIZE 64 * 1024
 #define HUF_TOKENS 256
@@ -66,7 +65,6 @@ typedef struct
 typedef struct IdcinContext {
 
     AVCodecContext *avctx;
-    DSPContext dsp;
     AVFrame frame;
 
     const unsigned char *buf;
@@ -153,7 +151,6 @@ static int idcin_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
-    dsputil_init(&s->dsp, avctx);
 
     /* make sure the Huffman tables make it */
     if (s->avctx->extradata_size != HUFFMAN_TABLE_SIZE) {

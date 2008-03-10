@@ -69,7 +69,6 @@
 #include <unistd.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 
 #define PALETTE_COUNT 256
 #define VQA_HEADER_SIZE 0x2A
@@ -101,7 +100,6 @@ static inline void vqa_debug(const char *format, ...) { }
 typedef struct VqaContext {
 
     AVCodecContext *avctx;
-    DSPContext dsp;
     AVFrame frame;
 
     const unsigned char *buf;
@@ -137,7 +135,6 @@ static int vqa_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
-    dsputil_init(&s->dsp, avctx);
 
     /* make sure the extradata made it */
     if (s->avctx->extradata_size != VQA_HEADER_SIZE) {

@@ -36,7 +36,6 @@
 #include <unistd.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 
 #define PALETTE_COUNT 256
 #define CHECK_STREAM_PTR(n) \
@@ -49,7 +48,6 @@
 typedef struct Msvideo1Context {
 
     AVCodecContext *avctx;
-    DSPContext dsp;
     AVFrame frame;
 
     const unsigned char *buf;
@@ -73,8 +71,6 @@ static int msvideo1_decode_init(AVCodecContext *avctx)
         s->mode_8bit = 0;
         avctx->pix_fmt = PIX_FMT_RGB555;
     }
-
-    dsputil_init(&s->dsp, avctx);
 
     s->frame.data[0] = NULL;
 

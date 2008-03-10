@@ -32,7 +32,6 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "dsputil.h"
 #include "roqvideo.h"
 
 static void roqvideo_decode_frame(RoqContext *ri)
@@ -164,7 +163,6 @@ static int roq_decode_init(AVCodecContext *avctx)
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
     avctx->pix_fmt = PIX_FMT_YUV444P;
-    dsputil_init(&s->dsp, avctx);
 
     return 0;
 }

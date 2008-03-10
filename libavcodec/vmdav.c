@@ -45,7 +45,6 @@
 #include <unistd.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
@@ -57,7 +56,6 @@
 typedef struct VmdVideoContext {
 
     AVCodecContext *avctx;
-    DSPContext dsp;
     AVFrame frame;
     AVFrame prev_frame;
 
@@ -336,7 +334,6 @@ static int vmdvideo_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
-    dsputil_init(&s->dsp, avctx);
 
     /* make sure the VMD header made it */
     if (s->avctx->extradata_size != VMD_HEADER_SIZE) {
