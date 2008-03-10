@@ -71,7 +71,7 @@ show_help(){
   echo "  --enable-nonfree         allow use of nonfree code, the resulting libav*"
   echo "                           and ffmpeg will be unredistributable [default=no]"
   echo "  --enable-postproc        enable GPLed postprocessing support [default=no]"
-  echo "  --enable-swscaler        software scaler support [default=no]"
+  echo "  --enable-swscale         software scaler support [default=no]"
   echo "  --enable-avfilter        video filter support (replaces vhook) [default=no]"
   echo "  --enable-avfilter-lavf   video filters dependant on avformat [default=no]"
   echo "  --enable-beosthreads     use BeOS threads [default=no]"
@@ -661,7 +661,7 @@ CONFIG_LIST="
     postproc
     powerpc_perf
     small
-    swscaler
+    swscale
     vhook
     x11grab
     zlib
@@ -1214,7 +1214,7 @@ case $targetos in
         shlibdir="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
-        if enabled swscaler; then
+        if enabled swscale; then
             VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
             VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
         fi
@@ -1234,7 +1234,7 @@ case $targetos in
         shlibdir="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
-        if enabled swscaler; then
+        if enabled swscale; then
             VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
             VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
         fi
@@ -1355,7 +1355,7 @@ if ! enabled gpl; then
     die_gpl_disabled "libxvidcore"             libxvid
     die_gpl_disabled "FAAD2"                   libfaad2
     die_gpl_disabled "The X11 grabber"         x11grab
-    die_gpl_disabled "The software scaler"     swscaler
+    die_gpl_disabled "The software scaler"     swscale
 fi
 
 if ! enabled nonfree && enabled_any libamr_nb libamr_wb; then
@@ -1898,7 +1898,7 @@ echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
 echo "postprocessing support    ${postproc-no}"
-echo "software scaler enabled   ${swscaler-no}"
+echo "software scaler enabled   ${swscale-no}"
 echo "new filter support        ${avfilter-no}"
 echo "filters using lavformat   ${avfilter_lavf-no}"
 echo "video hooking             ${vhook-no}"
@@ -2184,7 +2184,7 @@ if enabled postproc; then
     pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
 fi
 
-if enabled swscaler; then
+if enabled swscale; then
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" -lswscale "libavutil = $LIBAVUTIL_VERSION"
     pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 else

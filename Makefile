@@ -66,7 +66,7 @@ SRCS = $(addsuffix .c, $(PROGS-yes)) cmdutils.c
 LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
 EXTRALIBS := -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
-ifeq ($(CONFIG_SWSCALER),yes)
+ifeq ($(CONFIG_SWSCALE),yes)
 LDFLAGS+=-L$(BUILD_ROOT)/libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
@@ -87,7 +87,7 @@ lib:
 	$(MAKE)                    -C libavformat all
 	$(MAKE)                    -C libavdevice all
 	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc all
-	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  all
+	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  all
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
@@ -173,7 +173,7 @@ install-libs:
 	$(MAKE)                    -C libavformat install-libs
 	$(MAKE)                    -C libavdevice install-libs
 	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc install-libs
-	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  install-libs
+	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  install-libs
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-libs
 
 install-headers:
@@ -222,7 +222,7 @@ depend dep: .depend .vhookdep
 	$(MAKE)                    -C libavformat depend
 	$(MAKE)                    -C libavdevice depend
 	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc depend
-	$(MAKE-$(CONFIG_SWSCALER)) -C libswscale  depend
+	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  depend
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
 .depend: $(SRCS) version.h
@@ -409,11 +409,11 @@ test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
-ifeq ($(CONFIG_SWSCALER),yes)
+ifeq ($(CONFIG_SWSCALE),yes)
 test-server codectest $(CODEC_TESTS) libavtest: swscale_error
 swscale_error:
 	@echo
-	@echo "This regression test is incompatible with --enable-swscaler."
+	@echo "This regression test is incompatible with --enable-swscale."
 	@echo
 	@exit 1
 endif

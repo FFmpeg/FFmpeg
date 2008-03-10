@@ -356,7 +356,7 @@ OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 OBJS-$(HAVE_XVMC_ACCEL)                += xvmcvideo.o
 
-ifneq ($(CONFIG_SWSCALER),yes)
+ifneq ($(CONFIG_SWSCALE),yes)
 OBJS += imgresample.o
 endif
 
