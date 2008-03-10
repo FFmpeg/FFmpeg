@@ -156,10 +156,6 @@ install-progs: $(PROGS)
 	install -d "$(BINDIR)"
 	install -c -m 755 $(PROGS) "$(BINDIR)"
 
-# Create the Windows installer.
-wininstaller: all install
-	makensis ffinstall.nsi
-
 install-man:
 	install -d "$(MANDIR)/man1"
 	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
@@ -437,7 +433,7 @@ tests/seek_test$(EXESUF): tests/seek_test.c .libs
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $< $(EXTRALIBS)
 
 
-.PHONY: all lib videohook documentation install* wininstaller uninstall*
+.PHONY: all lib videohook documentation install* uninstall*
 .PHONY: dep depend clean distclean TAGS
 .PHONY: codectest libavtest seektest test-server fulltest test
 .PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
