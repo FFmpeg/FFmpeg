@@ -276,8 +276,7 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
             dst_2 += dst_delta;\
         }\
         if (c->dstW & 4) {\
-            int av_unused U, V;\
-            int Y;\
+            int av_unused Y, U, V;\
 
 #define EPILOG2()\
         }\
