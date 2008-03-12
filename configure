@@ -1374,7 +1374,7 @@ if test $targetos = darwin; then
         add_cflags "-pipe"
         check_cflags "-force_cpusubtype_ALL"
         check_cflags "-Wno-sign-compare"
-        disabled shared && add_cflags -mdynamic-no-pic
+        enabled shared || add_cflags -mdynamic-no-pic
     fi
 fi
 
