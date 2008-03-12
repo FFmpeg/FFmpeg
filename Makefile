@@ -227,7 +227,7 @@ depend dep: .depend .vhookdep
 
 # gcc stupidly only outputs the basename of targets with -MM
 .vhookdep: $(ALLHOOKS_SRCS) version.h
-	$(CC) $(VHOOKCFLAGS) -MM $^ | sed 's,^\([a-z]\),vhook/\1,' > $@
+	$(CC) -MM $(VHOOKCFLAGS) $(filter-out %.h,$^) | sed 's,^\([a-z]\),vhook/\1,' > $@
 
 $(DEP_LIBS): lib
 
