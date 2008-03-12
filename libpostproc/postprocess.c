@@ -47,7 +47,7 @@ LinBlendDeinterlace     e               E       E*
 MedianDeinterlace#      E       Ec      Ec
 TempDeNoiser#           E               e       e       Ec
 
-* i do not have a 3DNow! CPU -> it is untested, but no one said it does not work so it seems to work
+* I do not have a 3DNow! CPU -> it is untested, but no one said it does not work so it seems to work
 # more or less selfinvented filters so the exactness is not too meaningful
 E = Exact implementation
 e = allmost exact implementation (slightly different rounding,...)

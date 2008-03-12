@@ -275,7 +275,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     for(i=0; i<blocks_per_mb; i++){
         if(s->block_last_index[i] >= 0){
-            // i do not have unsigned_intra MOCO to test, hope it is OK
+            // I do not have unsigned_intra MOCO to test, hope it is OK
             if( (s->mb_intra) && ( render->idct || (!render->idct && !render->unsigned_intra)) )
                 s->pblocks[i][0]-=1<<10;
             if(!render->idct){

@@ -854,7 +854,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
                 pos= pos2;
-            //FIXME dir but i think it does not matter
+            //FIXME dir but I think it does not matter
         }
         dummy.pos= pos;
         sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);

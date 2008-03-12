@@ -72,7 +72,7 @@ void *av_malloc(unsigned int size)
         Because some CPUs need alignment, for example SSE2 on P4, & most RISC CPUs
         it will just trigger an exception and the unaligned load will be done in the
         exception handler or it will just segfault (SSE2 on P4)
-        Why not larger? because i did not see a difference in benchmarks ...
+        Why not larger? Because I did not see a difference in benchmarks ...
      */
      /* benchmarks with p3
         memalign(64)+1          3071,3051,3032

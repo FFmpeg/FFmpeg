@@ -99,7 +99,7 @@ to the ffmpeg-devel mailing list, ...
 
 !warning These alignments might not match reality, (missing attribute((align))
 stuff somewhere possible).
-I (Michael) did not check them, these are just the alignments which i think
+I (Michael) did not check them, these are just the alignments which I think
 could be reached easily ...
 
 !future video codecs might need functions with less strict alignment

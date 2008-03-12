@@ -110,9 +110,9 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     (vector signed short)vec_mergeh((vector signed char)zero,           \
                                     (vector signed char)v_srcA##i)
 
-    // special casing the aligned case is worthwhile, as all call from
-    // the (transposed) horizontable deblocks will be aligned, i naddition
-    // to the naturraly aligned vertical deblocks.
+    /* Special-casing the aligned case is worthwhile, as all calls from
+     * the (transposed) horizontable deblocks will be aligned, in addition
+     * to the naturally aligned vertical deblocks. */
     if (properStride && srcAlign) {
       LOAD_LINE_ALIGNED(0);
       LOAD_LINE_ALIGNED(1);
@@ -230,9 +230,9 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     (vector signed short)vec_mergeh((vector signed char)zero,           \
                                     (vector signed char)vbT##i)
 
-    // special casing the aligned case is worthwhile, as all call from
-    // the (transposed) horizontable deblocks will be aligned, in addition
-    // to the naturraly aligned vertical deblocks.
+    /* Special-casing the aligned case is worthwhile, as all calls from
+     * the (transposed) horizontable deblocks will be aligned, in addition
+     * to the naturally aligned vertical deblocks. */
     if (properStride && srcAlign) {
       LOAD_LINE_ALIGNED(0);
       LOAD_LINE_ALIGNED(1);
@@ -348,9 +348,9 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     vec_perm(vf##i, vbT##i, permHH);                            \
   vec_st(vg##i, i * stride, src2)
 
-  // special casing the aligned case is worthwhile, as all call from
-  // the (transposed) horizontable deblocks will be aligned, in addition
-  // to the naturraly aligned vertical deblocks.
+  /* Special-casing the aligned case is worthwhile, as all calls from
+   * the (transposed) horizontable deblocks will be aligned, in addition
+   * to the naturally aligned vertical deblocks. */
   if (properStride && srcAlign) {
     PACK_AND_STORE_ALIGNED(1);
     PACK_AND_STORE_ALIGNED(2);

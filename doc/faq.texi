@@ -429,7 +429,7 @@ encompassing your FFmpeg includes using @code{extern "C"}.
 
 See @url{http://www.parashift.com/c++-faq-lite/mixing-c-and-cpp.html#faq-32.3}
 
-@section I have a file in memory / a API different from *open/*read/ libc how do i use it with libavformat?
+@section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
 You have to implement a URLProtocol, see libavformat/file.c in FFmpeg
 and libmpdemux/demux_lavf.c in MPlayer sources.
