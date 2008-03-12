@@ -52,7 +52,7 @@
 
   GL libraries seem to be very slow on this machine 1.33Ghz PB running
   Jaguar, this is not the case for my 1Ghz PB.  I thought it might be
-  a versioning issues, however i have libGL.1.2.dylib for both
+  a versioning issues, however I have libGL.1.2.dylib for both
   machines. ((We need to figure this out now))
 
   GL2 libraries work now with patch for RGB32

@@ -38,7 +38,7 @@
 */
 
 /*
-tested special converters (most are tested actually, but i did not write it down ...)
+tested special converters (most are tested actually, but I did not write it down ...)
  YV12 -> BGR16
  YV12 -> YV12
  BGR15 -> BGR16
