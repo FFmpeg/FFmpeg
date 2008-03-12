@@ -146,8 +146,9 @@ bug/closed/fixed
     Bugs which have to the best of our knowledge been fixed.
 
 bug/closed/wont_fix
-    Bugs which we will not fix. Reasons include legality, high
-    complexity or speed loss for supporting some obscure corner cases.
+    Bugs which we will not fix. Possible reasons include legality, high
+    complexity for the sake of supporting obscure corner cases, speed loss
+    for similarly esoteric purposes, et cetera.
     This also means that wont_fix means we would reject a patch.
     If we are just too lazy to fix a bug then the correct state is open
     and unassigned. Closed means that the case is closed which is not
