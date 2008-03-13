@@ -21,6 +21,7 @@
 #ifndef FFMPEG_INTFLOAT_READWRITE_H
 #define FFMPEG_INTFLOAT_READWRITE_H
 
+#include <stdint.h>
 #include "common.h"
 
 /* IEEE 80 bits extended float */
