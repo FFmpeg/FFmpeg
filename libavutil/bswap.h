@@ -27,6 +27,7 @@
 #define FFMPEG_BSWAP_H
 
 #include <stdint.h>
+#include "config.h"
 #include "common.h"
 
 #ifdef HAVE_BYTESWAP_H

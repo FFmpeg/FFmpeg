@@ -21,6 +21,8 @@
 #ifndef FFMPEG_X86CPU_H
 #define FFMPEG_X86CPU_H
 
+#include "config.h"
+
 #ifdef ARCH_X86_64
 #    define REG_a "rax"
 #    define REG_b "rbx"

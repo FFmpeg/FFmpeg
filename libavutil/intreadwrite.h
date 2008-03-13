@@ -20,6 +20,7 @@
 #define FFMPEG_INTREADWRITE_H
 
 #include <stdint.h>
+#include "config.h"
 #include "bswap.h"
 
 #ifdef __GNUC__

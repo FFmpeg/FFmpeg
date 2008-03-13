@@ -105,6 +105,7 @@
 #    define PIC
 #endif
 
+#include "config.h"
 #include "intreadwrite.h"
 #include "bswap.h"
 
