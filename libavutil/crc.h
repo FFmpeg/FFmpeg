@@ -22,7 +22,7 @@
 #define FFMPEG_CRC_H
 
 #include <stdint.h>
-#include <sys/types.h>
+#include <stddef.h>
 
 typedef uint32_t AVCRC;
 
