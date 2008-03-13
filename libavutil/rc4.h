@@ -21,7 +21,7 @@
 #ifndef FFMPEG_RC4_H
 #define FFMPEG_RC4_H
 
-#include <inttypes.h>
+#include <stdint.h>
 
 void ff_rc4_enc(const uint8_t *key, int keylen, uint8_t *data, int datalen);
 
