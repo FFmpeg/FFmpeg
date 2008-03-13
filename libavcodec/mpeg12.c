@@ -1970,8 +1970,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         (width % 2) != 0 || (height % 2) != 0)
         return -1;
     s->aspect_ratio_info= get_bits(&s->gb, 4);
-    if (s->aspect_ratio_info == 0)
-        return -1;
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0 || s->frame_rate_index > 13)
         return -1;
