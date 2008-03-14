@@ -430,6 +430,5 @@ AVOutputFormat image2pipe_muxer = {
     CODEC_ID_MJPEG,
     img_write_header,
     img_write_packet,
-    NULL,
 };
 #endif
