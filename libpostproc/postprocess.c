@@ -651,11 +651,11 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
         c->ppMode= *ppMode; //FIXME
 
         // Using ifs here as they are faster than function pointers although the
-        // difference would not be measureable here but it is much better because
+        // difference would not be measurable here but it is much better because
         // someone might exchange the CPU whithout restarting MPlayer ;)
 #ifdef RUNTIME_CPUDETECT
 #if defined(ARCH_X86)
-        // ordered per speed fasterst first
+        // ordered per speed fastest first
         if(c->cpuCaps & PP_CPU_CAPS_MMX2)
                 postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
         else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
