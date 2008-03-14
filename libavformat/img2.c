@@ -373,11 +373,6 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int img_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
-
 #endif /* CONFIG_MUXERS */
 
 /* input */
@@ -420,7 +415,7 @@ AVOutputFormat image2_muxer = {
     CODEC_ID_MJPEG,
     img_write_header,
     img_write_packet,
-    img_write_trailer,
+    NULL,
     AVFMT_NOFILE,
 };
 #endif
@@ -435,6 +430,6 @@ AVOutputFormat image2pipe_muxer = {
     CODEC_ID_MJPEG,
     img_write_header,
     img_write_packet,
-    img_write_trailer,
+    NULL,
 };
 #endif
