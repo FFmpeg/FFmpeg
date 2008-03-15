@@ -1532,12 +1532,9 @@ fi
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if enabled altivec; then
-    if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
-        add_cflags "-faltivec"
-    else
-        add_cflags "-maltivec -mabi=altivec"
-        check_header altivec.h
-    fi
+    check_cflags -maltivec -mabi=altivec &&
+        check_header altivec.h ||
+        check_cflags -faltivec
 
     # check if our compiler supports Motorola AltiVec C API
     enabled altivec_h &&
