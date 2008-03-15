@@ -39,7 +39,7 @@ typedef struct ThreadContext{
 }ThreadContext;
 
 
-void thread_func(void *v){
+void attribute_align_arg thread_func(void *v){
     ThreadContext *c= v;
 
     for(;;){
