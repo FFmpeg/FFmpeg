@@ -1136,7 +1136,7 @@ typedef struct AVCodecContext {
     int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
     /**
-     * Called to release buffers which where allocated with get_buffer.
+     * Called to release buffers which were allocated with get_buffer.
      * A released buffer can be reused in get_buffer().
      * pic.data[*] must be set to NULL.
      * - encoding: unused
