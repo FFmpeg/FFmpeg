@@ -2,16 +2,14 @@
 # common bits used by all libraries
 #
 
-LIBSRC = $(SRC_PATH_BARE)/lib$(NAME)
+SRC_DIR = $(SRC_PATH_BARE)/lib$(NAME)
 
 LIBVERSION = $(lib$(NAME)_VERSION)
 LIBMAJOR   = $(lib$(NAME)_VERSION_MAJOR)
 
-vpath %.c $(LIBSRC)
-vpath %.h $(LIBSRC)
-vpath %.S $(LIBSRC)
-
-SRC_DIR = "$(LIBSRC)"
+vpath %.c $(SRC_DIR)
+vpath %.h $(SRC_DIR)
+vpath %.S $(SRC_DIR)
 
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
@@ -58,7 +56,7 @@ $(SLIBNAME_WITH_MAJOR): $(OBJS)
 %.ho: %.h
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
 
-ALLHEADERS = $(subst $(LIBSRC)/,,$(wildcard $(LIBSRC)/*.h))
+ALLHEADERS = $(subst $(SRC_DIR)/,,$(wildcard $(SRC_DIR)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
 depend dep: $(SRCS)
@@ -98,7 +96,7 @@ INCINSTDIR = $(INCDIR)/lib$(NAME)
 install-headers:
 	install -d "$(INCINSTDIR)"
 	install -d "$(LIBDIR)/pkgconfig"
-	install -m 644 $(addprefix $(SRC_DIR)/,$(HEADERS)) "$(INCINSTDIR)"
+	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
 	install -m 644 $(BUILD_ROOT)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
 
 uninstall: uninstall-libs uninstall-headers
