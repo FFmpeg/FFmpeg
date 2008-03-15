@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avformat.h"
 #include "config.h"
+#include "avformat.h"
 
 #if ENABLE_LIBDC1394_2
 #include <dc1394/dc1394.h>

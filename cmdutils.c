@@ -24,13 +24,13 @@
 #include <errno.h>
 #include <math.h>
 
+#include "config.h"
 #include "avformat.h"
 #include "avfilter.h"
 #include "avdevice.h"
 #include "cmdutils.h"
 #include "avstring.h"
 #include "version.h"
-#include "config.h"
 
 #undef exit
 
