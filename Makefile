@@ -91,13 +91,13 @@ lib:
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(EXTRALIBS)
+	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
 
 ffserver_g$(EXESUF): ffserver.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ ffserver.o cmdutils.o $(EXTRALIBS)
+	$(CC) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
 
 ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(EXTRALIBS) $(SDL_LIBS)
+	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS) $(SDL_LIBS)
 
 %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
