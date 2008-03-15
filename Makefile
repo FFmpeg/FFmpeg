@@ -81,7 +81,7 @@ endif
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
 
-all: lib $(PROGS) $(ALL_TARGETS-yes)
+all: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
 
 lib:
 	$(MAKE)                    -C libavutil   all
@@ -92,14 +92,11 @@ lib:
 	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  all
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
 
-ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
+ffplay_g$(EXESUF): EXTRALIBS += $(SDL_LIBS)
+ffserver_g$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
+
+%_g$(EXESUF): %.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
-
-ffserver_g$(EXESUF): ffserver.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
-
-ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS) $(SDL_LIBS)
 
 %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
