@@ -4,6 +4,8 @@
 #
 include config.mak
 
+SRC_DIR = $(SRC_PATH_BARE)
+
 vpath %.c    $(SRC_PATH_BARE)
 vpath %.h    $(SRC_PATH_BARE)
 vpath %.texi $(SRC_PATH_BARE)
