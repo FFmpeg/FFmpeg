@@ -695,7 +695,7 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
 
     /*
       and this seems not to matter too much I tried a bunch of
-      videos with abnormal widths and mplayer crashes else where.
+      videos with abnormal widths and MPlayer crashes elsewhere.
       mplayer -vo x11 -rawvideo on:w=350:h=240 raw-350x240.eyuv
       boom with X11 bad match.
 
