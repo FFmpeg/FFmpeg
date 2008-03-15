@@ -478,7 +478,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 /**
  * Experimental Filter 1
  * will not damage linear gradients
- * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
+ * Flat blocks should look like they were passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
  * can only smooth blocks at the expected locations (it cannot smooth them if they did move)
  * MMX2 version does correct clipping C version does not
  */
@@ -1546,7 +1546,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 /**
  * Deinterlaces the given block by linearly interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  */
 static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int stride)
@@ -1598,7 +1598,7 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 /**
  * Deinterlaces the given block by cubic interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 3-15 and write 7-13
  */
@@ -1663,7 +1663,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
 /**
  * Deinterlaces the given block by filtering every second line with a (-1 4 2 4 -1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 4-13 and write 5-11
  */
@@ -1743,7 +1743,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
 /**
  * Deinterlaces the given block by filtering every line with a (-1 2 6 2 -1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 4-13 and write 4-11
  */
@@ -1845,7 +1845,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
 /**
  * Deinterlaces the given block by filtering all lines with a (1 2 1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 4-13 and write 4-11
  */
@@ -1947,7 +1947,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 /**
  * Deinterlaces the given block by applying a median filter to every second line.
  * will be called for every 8x8 block and can read & write from line 4-15,
- * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  */
 static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)

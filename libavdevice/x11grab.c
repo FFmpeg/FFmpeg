@@ -299,7 +299,7 @@ apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
 /**
  * Paints a mouse pointer in an X11 image.
  *
- * @param image Image where to paint the mouse pointer
+ * @param image image to paint the mouse pointer to
  * @param s context used to retrieve original grabbing rectangle
  *          coordinates
  * @param x Mouse pointer coordinate

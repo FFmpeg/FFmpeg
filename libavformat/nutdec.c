@@ -111,7 +111,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
     uint64_t state=0;
 
     if(pos >= 0)
-        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we are currently
+        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we currently are
 
     while(!url_feof(bc)){
         state= (state<<8) | get_byte(bc);

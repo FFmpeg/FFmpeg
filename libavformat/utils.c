@@ -1990,7 +1990,7 @@ int av_find_stream_info(AVFormatContext *ic)
         count++;
     }
 
-    // close codecs which where opened in try_decode_frame()
+    // close codecs which were opened in try_decode_frame()
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if(st->codec->codec)

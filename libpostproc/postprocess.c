@@ -392,7 +392,7 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
 /**
  * Experimental Filter 1 (Horizontal)
  * will not damage linear gradients
- * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
+ * Flat blocks should look like they were passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
  * can only smooth blocks at the expected locations (it cannot smooth them if they did move)
  * MMX2 version does correct clipping C version does not
  * not identical with the vertical one

@@ -1375,7 +1375,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
     }else
         skip_dc=1;
 
-    /* are all which we could set to zero are allready zero? */
+    /* Are all we could set to zero already zero? */
     if(last_index<=skip_dc - 1) return;
 
     for(i=0; i<=last_index; i++){

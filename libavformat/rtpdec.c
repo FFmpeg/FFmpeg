@@ -318,7 +318,7 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
     if (infos == NULL)
         return -1;
 
-    /* decode the first 2 bytes where are stored the AUHeader sections
+    /* decode the first 2 bytes where the AUHeader sections are stored
        length in bits */
     au_headers_length = AV_RB16(buf);
 

@@ -3202,7 +3202,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
     }
     if(s->pict_type == FF_B_TYPE){
         while(s->next_picture.mbskip_table[ s->mb_index2xy[ mb_num ] ]) mb_num++;
-        if(mb_num >= s->mb_num) return -1; // slice contains just skipped MBs which where allready decoded
+        if(mb_num >= s->mb_num) return -1; // slice contains just skipped MBs which where already decoded
     }
 
     s->mb_x= mb_num % s->mb_width;
