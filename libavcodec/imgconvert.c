@@ -1269,140 +1269,6 @@ static void yuv420p_to_uyvy422(AVPicture *dst, const AVPicture *src,
     }
 }
 
-static uint8_t y_ccir_to_jpeg[256];
-static uint8_t y_jpeg_to_ccir[256];
-static uint8_t c_ccir_to_jpeg[256];
-static uint8_t c_jpeg_to_ccir[256];
-
-/* init various conversion tables */
-static void img_convert_init(void)
-{
-    int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-
-    for(i = 0;i < 256; i++) {
-        y_ccir_to_jpeg[i] = Y_CCIR_TO_JPEG(i);
-        y_jpeg_to_ccir[i] = Y_JPEG_TO_CCIR(i);
-        c_ccir_to_jpeg[i] = C_CCIR_TO_JPEG(i);
-        c_jpeg_to_ccir[i] = C_JPEG_TO_CCIR(i);
-    }
-}
-
-/* apply to each pixel the given table */
-static void img_apply_table(uint8_t *dst, int dst_wrap,
-                            const uint8_t *src, int src_wrap,
-                            int width, int height, const uint8_t *table1)
-{
-    int n;
-    const uint8_t *s;
-    uint8_t *d;
-    const uint8_t *table;
-
-    table = table1;
-    for(;height > 0; height--) {
-        s = src;
-        d = dst;
-        n = width;
-        while (n >= 4) {
-            d[0] = table[s[0]];
-            d[1] = table[s[1]];
-            d[2] = table[s[2]];
-            d[3] = table[s[3]];
-            d += 4;
-            s += 4;
-            n -= 4;
-        }
-        while (n > 0) {
-            d[0] = table[s[0]];
-            d++;
-            s++;
-            n--;
-        }
-        dst += dst_wrap;
-        src += src_wrap;
-    }
-}
-
-/* XXX: use generic filter ? */
-/* XXX: in most cases, the sampling position is incorrect */
-
-/* 4x1 -> 1x1 */
-static void shrink41(uint8_t *dst, int dst_wrap,
-                     const uint8_t *src, int src_wrap,
-                     int width, int height)
-{
-    int w;
-    const uint8_t *s;
-    uint8_t *d;
-
-    for(;height > 0; height--) {
-        s = src;
-        d = dst;
-        for(w = width;w > 0; w--) {
-            d[0] = (s[0] + s[1] + s[2] + s[3] + 2) >> 2;
-            s += 4;
-            d++;
-        }
-        src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 2x1 -> 1x1 */
-static void shrink21(uint8_t *dst, int dst_wrap,
-                     const uint8_t *src, int src_wrap,
-                     int width, int height)
-{
-    int w;
-    const uint8_t *s;
-    uint8_t *d;
-
-    for(;height > 0; height--) {
-        s = src;
-        d = dst;
-        for(w = width;w > 0; w--) {
-            d[0] = (s[0] + s[1]) >> 1;
-            s += 2;
-            d++;
-        }
-        src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 1x2 -> 1x1 */
-static void shrink12(uint8_t *dst, int dst_wrap,
-                     const uint8_t *src, int src_wrap,
-                     int width, int height)
-{
-    int w;
-    uint8_t *d;
-    const uint8_t *s1, *s2;
-
-    for(;height > 0; height--) {
-        s1 = src;
-        s2 = s1 + src_wrap;
-        d = dst;
-        for(w = width;w >= 4; w-=4) {
-            d[0] = (s1[0] + s2[0]) >> 1;
-            d[1] = (s1[1] + s2[1]) >> 1;
-            d[2] = (s1[2] + s2[2]) >> 1;
-            d[3] = (s1[3] + s2[3]) >> 1;
-            s1 += 4;
-            s2 += 4;
-            d += 4;
-        }
-        for(;w > 0; w--) {
-            d[0] = (s1[0] + s2[0]) >> 1;
-            s1++;
-            s2++;
-            d++;
-        }
-        src += 2 * src_wrap;
-        dst += dst_wrap;
-    }
-}
-
 /* 2x2 -> 1x1 */
 void ff_shrink22(uint8_t *dst, int dst_wrap,
                      const uint8_t *src, int src_wrap,
@@ -1486,145 +1352,6 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
         }
         src += 8*src_wrap - 8*width;
         dst += dst_wrap - width;
-    }
-}
-
-static void grow21_line(uint8_t *dst, const uint8_t *src,
-                        int width)
-{
-    int w;
-    const uint8_t *s1;
-    uint8_t *d;
-
-    s1 = src;
-    d = dst;
-    for(w = width;w >= 4; w-=4) {
-        d[1] = d[0] = s1[0];
-        d[3] = d[2] = s1[1];
-        s1 += 2;
-        d += 4;
-    }
-    for(;w >= 2; w -= 2) {
-        d[1] = d[0] = s1[0];
-        s1 ++;
-        d += 2;
-    }
-    /* only needed if width is not a multiple of two */
-    /* XXX: veryfy that */
-    if (w) {
-        d[0] = s1[0];
-    }
-}
-
-static void grow41_line(uint8_t *dst, const uint8_t *src,
-                        int width)
-{
-    int w, v;
-    const uint8_t *s1;
-    uint8_t *d;
-
-    s1 = src;
-    d = dst;
-    for(w = width;w >= 4; w-=4) {
-        v = s1[0];
-        d[0] = v;
-        d[1] = v;
-        d[2] = v;
-        d[3] = v;
-        s1 ++;
-        d += 4;
-    }
-}
-
-/* 1x1 -> 2x1 */
-static void grow21(uint8_t *dst, int dst_wrap,
-                   const uint8_t *src, int src_wrap,
-                   int width, int height)
-{
-    for(;height > 0; height--) {
-        grow21_line(dst, src, width);
-        src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 1x1 -> 1x2 */
-static void grow12(uint8_t *dst, int dst_wrap,
-                   const uint8_t *src, int src_wrap,
-                   int width, int height)
-{
-    for(;height > 0; height-=2) {
-        memcpy(dst, src, width);
-        dst += dst_wrap;
-        memcpy(dst, src, width);
-        dst += dst_wrap;
-        src += src_wrap;
-    }
-}
-
-/* 1x1 -> 2x2 */
-static void grow22(uint8_t *dst, int dst_wrap,
-                   const uint8_t *src, int src_wrap,
-                   int width, int height)
-{
-    for(;height > 0; height--) {
-        grow21_line(dst, src, width);
-        if (height%2)
-            src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 1x1 -> 4x1 */
-static void grow41(uint8_t *dst, int dst_wrap,
-                   const uint8_t *src, int src_wrap,
-                   int width, int height)
-{
-    for(;height > 0; height--) {
-        grow41_line(dst, src, width);
-        src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 1x1 -> 4x4 */
-static void grow44(uint8_t *dst, int dst_wrap,
-                   const uint8_t *src, int src_wrap,
-                   int width, int height)
-{
-    for(;height > 0; height--) {
-        grow41_line(dst, src, width);
-        if ((height & 3) == 1)
-            src += src_wrap;
-        dst += dst_wrap;
-    }
-}
-
-/* 1x2 -> 2x1 */
-static void conv411(uint8_t *dst, int dst_wrap,
-                    const uint8_t *src, int src_wrap,
-                    int width, int height)
-{
-    int w, c;
-    const uint8_t *s1, *s2;
-    uint8_t *d;
-
-    width>>=1;
-
-    for(;height > 0; height--) {
-        s1 = src;
-        s2 = src + src_wrap;
-        d = dst;
-        for(w = width;w > 0; w--) {
-            c = (s1[0] + s2[0]) >> 1;
-            d[0] = c;
-            d[1] = c;
-            s1++;
-            s2++;
-            d += 2;
-        }
-        src += src_wrap * 2;
-        dst += dst_wrap;
     }
 }
 
@@ -2381,6 +2108,279 @@ int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
 #endif
 
 #ifndef CONFIG_SWSCALE
+static uint8_t y_ccir_to_jpeg[256];
+static uint8_t y_jpeg_to_ccir[256];
+static uint8_t c_ccir_to_jpeg[256];
+static uint8_t c_jpeg_to_ccir[256];
+
+/* init various conversion tables */
+static void img_convert_init(void)
+{
+    int i;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+
+    for(i = 0;i < 256; i++) {
+        y_ccir_to_jpeg[i] = Y_CCIR_TO_JPEG(i);
+        y_jpeg_to_ccir[i] = Y_JPEG_TO_CCIR(i);
+        c_ccir_to_jpeg[i] = C_CCIR_TO_JPEG(i);
+        c_jpeg_to_ccir[i] = C_JPEG_TO_CCIR(i);
+    }
+}
+
+/* apply to each pixel the given table */
+static void img_apply_table(uint8_t *dst, int dst_wrap,
+                            const uint8_t *src, int src_wrap,
+                            int width, int height, const uint8_t *table1)
+{
+    int n;
+    const uint8_t *s;
+    uint8_t *d;
+    const uint8_t *table;
+
+    table = table1;
+    for(;height > 0; height--) {
+        s = src;
+        d = dst;
+        n = width;
+        while (n >= 4) {
+            d[0] = table[s[0]];
+            d[1] = table[s[1]];
+            d[2] = table[s[2]];
+            d[3] = table[s[3]];
+            d += 4;
+            s += 4;
+            n -= 4;
+        }
+        while (n > 0) {
+            d[0] = table[s[0]];
+            d++;
+            s++;
+            n--;
+        }
+        dst += dst_wrap;
+        src += src_wrap;
+    }
+}
+
+/* XXX: use generic filter ? */
+/* XXX: in most cases, the sampling position is incorrect */
+
+/* 4x1 -> 1x1 */
+static void shrink41(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    const uint8_t *s;
+    uint8_t *d;
+
+    for(;height > 0; height--) {
+        s = src;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            d[0] = (s[0] + s[1] + s[2] + s[3] + 2) >> 2;
+            s += 4;
+            d++;
+        }
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 2x1 -> 1x1 */
+static void shrink21(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    const uint8_t *s;
+    uint8_t *d;
+
+    for(;height > 0; height--) {
+        s = src;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            d[0] = (s[0] + s[1]) >> 1;
+            s += 2;
+            d++;
+        }
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x2 -> 1x1 */
+static void shrink12(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    uint8_t *d;
+    const uint8_t *s1, *s2;
+
+    for(;height > 0; height--) {
+        s1 = src;
+        s2 = s1 + src_wrap;
+        d = dst;
+        for(w = width;w >= 4; w-=4) {
+            d[0] = (s1[0] + s2[0]) >> 1;
+            d[1] = (s1[1] + s2[1]) >> 1;
+            d[2] = (s1[2] + s2[2]) >> 1;
+            d[3] = (s1[3] + s2[3]) >> 1;
+            s1 += 4;
+            s2 += 4;
+            d += 4;
+        }
+        for(;w > 0; w--) {
+            d[0] = (s1[0] + s2[0]) >> 1;
+            s1++;
+            s2++;
+            d++;
+        }
+        src += 2 * src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+static void grow21_line(uint8_t *dst, const uint8_t *src,
+                        int width)
+{
+    int w;
+    const uint8_t *s1;
+    uint8_t *d;
+
+    s1 = src;
+    d = dst;
+    for(w = width;w >= 4; w-=4) {
+        d[1] = d[0] = s1[0];
+        d[3] = d[2] = s1[1];
+        s1 += 2;
+        d += 4;
+    }
+    for(;w >= 2; w -= 2) {
+        d[1] = d[0] = s1[0];
+        s1 ++;
+        d += 2;
+    }
+    /* only needed if width is not a multiple of two */
+    /* XXX: veryfy that */
+    if (w) {
+        d[0] = s1[0];
+    }
+}
+
+static void grow41_line(uint8_t *dst, const uint8_t *src,
+                        int width)
+{
+    int w, v;
+    const uint8_t *s1;
+    uint8_t *d;
+
+    s1 = src;
+    d = dst;
+    for(w = width;w >= 4; w-=4) {
+        v = s1[0];
+        d[0] = v;
+        d[1] = v;
+        d[2] = v;
+        d[3] = v;
+        s1 ++;
+        d += 4;
+    }
+}
+
+/* 1x1 -> 2x1 */
+static void grow21(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow21_line(dst, src, width);
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 1x2 */
+static void grow12(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height-=2) {
+        memcpy(dst, src, width);
+        dst += dst_wrap;
+        memcpy(dst, src, width);
+        dst += dst_wrap;
+        src += src_wrap;
+    }
+}
+
+/* 1x1 -> 2x2 */
+static void grow22(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow21_line(dst, src, width);
+        if (height%2)
+            src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 4x1 */
+static void grow41(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow41_line(dst, src, width);
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 4x4 */
+static void grow44(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow41_line(dst, src, width);
+        if ((height & 3) == 1)
+            src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x2 -> 2x1 */
+static void conv411(uint8_t *dst, int dst_wrap,
+                    const uint8_t *src, int src_wrap,
+                    int width, int height)
+{
+    int w, c;
+    const uint8_t *s1, *s2;
+    uint8_t *d;
+
+    width>>=1;
+
+    for(;height > 0; height--) {
+        s1 = src;
+        s2 = src + src_wrap;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            c = (s1[0] + s2[0]) >> 1;
+            d[0] = c;
+            d[1] = c;
+            s1++;
+            s2++;
+            d += 2;
+        }
+        src += src_wrap * 2;
+        dst += dst_wrap;
+    }
+}
+
 /* XXX: always use linesize. Return -1 if not supported */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
                 const AVPicture *src, int src_pix_fmt,
