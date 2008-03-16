@@ -284,7 +284,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     uint32_t ctype;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     /* component type */
     ctype = get_le32(pb);
@@ -432,9 +432,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (version > 1)
         return 1; /* unsupported */
 
-    get_byte(pb); get_byte(pb);
-    get_byte(pb); /* flags */
-
+    get_be24(pb); /* flags */
     if (version == 1) {
         get_be64(pb);
         get_be64(pb);
@@ -456,7 +454,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int version = get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     if (version == 1) {
         get_be64(pb);
@@ -599,7 +597,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned int i, entries;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     entries = get_be32(pb);
 
@@ -645,7 +643,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned char r, g, b;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     entries = get_be32(pb);
 
@@ -929,7 +927,7 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned int i, entries;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     entries = get_be32(pb);
 
@@ -957,7 +955,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned int i, entries;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     entries = get_be32(pb);
 
@@ -985,7 +983,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned int i, entries, sample_size;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
 
     sample_size = get_be32(pb);
     if (!sc->sample_size) /* do not overwrite value computed in stsd */
@@ -1019,7 +1017,7 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int64_t total_sample_count=0;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
     entries = get_be32(pb);
     if(entries >= UINT_MAX / sizeof(MOV_stts_t))
         return -1;
@@ -1062,7 +1060,7 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned int i, entries;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
     entries = get_be32(pb);
     if(entries >= UINT_MAX / sizeof(MOV_stts_t))
         return -1;
@@ -1159,8 +1157,7 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     int version = get_byte(pb);
 
-    get_byte(pb); get_byte(pb);
-    get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
     /*
     MOV_TRACK_ENABLED 0x0001
     MOV_TRACK_IN_MOVIE 0x0002
@@ -1278,7 +1275,7 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int i, edit_count;
 
     get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    get_be24(pb); /* flags */
     edit_count= sc->edit_count = get_be32(pb);     /* entries */
 
     for(i=0; i<edit_count; i++){
