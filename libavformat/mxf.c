@@ -350,8 +350,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             int index = mxf_get_stream_index(s, &klv);
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR, "error getting stream index\n");
-                url_fskip(s->pb, klv.length);
-                return -1;
+                goto skip;
             }
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
