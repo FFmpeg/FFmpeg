@@ -112,6 +112,7 @@ version <next>
 - AVM2 (Flash 9) SWF muxer
 - QT variant of IMA ADPCM encoder
 - VFW grabber
+- Ipod/Iphone compatible mp4 muxer
 
 version 0.4.9-pre1:
 

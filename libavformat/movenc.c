@@ -37,6 +37,7 @@
 #define MODE_PSP 3 // example working PSP command line:
 // ffmpeg -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
 #define MODE_3G2 4
+#define MODE_IPOD 5
 
 typedef struct MOVIentry {
     unsigned int flags, size;
@@ -494,7 +495,7 @@ static const AVCodecTag mov_pix_fmt_tags[] = {
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
-    if (track->mode == MODE_MP4 || track->mode == MODE_PSP) {
+    if (track->mode == MODE_MP4 || track->mode == MODE_PSP || track->mode == MODE_IPOD) {
         if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
             return 0;
         if (track->enc->codec_id == CODEC_ID_H264)           tag = MKTAG('a','v','c','1');
@@ -539,6 +540,22 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         }
     }
     return tag;
+}
+
+/** Write uuid atom.
+ * Needed to make file play in iPods running newest firmware
+ * goes after avcC atom in moov.trak.mdia.minf.stbl.stsd.avc1
+ */
+static int mov_write_uuid_tag_ipod(ByteIOContext *pb)
+{
+    put_be32(pb, 28);
+    put_tag(pb, "uuid");
+    put_be32(pb, 0x6b6840f2);
+    put_be32(pb, 0x5f244fc5);
+    put_be32(pb, 0xba39a51b);
+    put_be32(pb, 0xcf0323f3);
+    put_be32(pb, 0x0);
+    return 28;
 }
 
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
@@ -593,8 +610,11 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_d263_tag(pb);
     else if(track->enc->codec_id == CODEC_ID_SVQ3)
         mov_write_svq3_tag(pb);
-    else if(track->enc->codec_id == CODEC_ID_H264)
+    else if(track->enc->codec_id == CODEC_ID_H264) {
         mov_write_avcc_tag(pb, track);
+        if(track->mode == MODE_IPOD)
+            mov_write_uuid_tag_ipod(pb);
+    }
     else if(track->enc->codec_id == CODEC_ID_DNXHD)
         mov_write_avid_tag(pb, track);
     else if(track->vosLen > 0)
@@ -1355,7 +1375,7 @@ static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
-    else if (mov->mode == MODE_MP4)
+    else if (mov->mode == MODE_MP4 || mov->mode == MODE_IPOD)
         put_tag(pb, "isom");
     else
         put_tag(pb, "qt  ");
@@ -1368,7 +1388,7 @@ static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
-    else if (mov->mode == MODE_MP4)
+    else if (mov->mode == MODE_MP4 || mov->mode == MODE_IPOD)
         put_tag(pb, "mp41");
     else
         put_tag(pb, "qt  ");
@@ -1454,6 +1474,7 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3G2;
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
+        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
 
         mov_write_ftyp_tag(pb,s);
         if (mov->mode == MODE_PSP) {
@@ -1708,5 +1729,21 @@ AVOutputFormat tg2_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag*[]){codec_3gp_tags, 0},
+};
+#endif
+#ifdef CONFIG_IPOD_MUXER
+AVOutputFormat ipod_muxer = {
+    "ipod",
+    "iPod H.264 mp4 format",
+    "application/mp4",
+    NULL,
+    sizeof(MOVContext),
+    CODEC_ID_AAC,
+    CODEC_ID_H264,
+    mov_write_header,
+    mov_write_packet,
+    mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
+    .codec_tag = (const AVCodecTag*[]){ff_mp4_obj_type, 0},
 };
 #endif

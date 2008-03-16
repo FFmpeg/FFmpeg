@@ -90,6 +90,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (IMAGE2PIPE, image2pipe);
     REGISTER_DEMUXER  (INGENIENT, ingenient);
     REGISTER_DEMUXER  (IPMOVIE, ipmovie);
+    REGISTER_MUXER    (IPOD, ipod);
     REGISTER_DEMUXER  (LMLM4, lmlm4);
     REGISTER_MUXDEMUX (M4V, m4v);
     REGISTER_MUXDEMUX (MATROSKA, matroska);
