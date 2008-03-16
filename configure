@@ -1994,7 +1994,7 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
-echo "VHOOKDEPEND_CMD=$VHOOKDEPEND_CMD" >> config.mak
+echo "VHOOK_DEPEND_CMD=$VHOOK_DEPEND_CMD" >> config.mak
 
 if enabled bigendian; then
     echo "WORDS_BIGENDIAN=yes" >> config.mak
