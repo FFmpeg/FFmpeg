@@ -1170,7 +1170,7 @@ case $targetos in
         # no need for libm, but the inet stuff
         # Check for BONE
         # XXX: actually should check for NOT net_server
-        if (echo $BEINCLUDES | grep -q 'headers/be/bone'); then
+        if echo $BEINCLUDES | grep -q 'headers/be/bone'; then
             network_extralibs="-lbind -lsocket"
         else
             enable beos_netserver
