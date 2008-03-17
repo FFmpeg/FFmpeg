@@ -1085,7 +1085,7 @@ case "$arch" in
         enable fast_unaligned
         canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
         if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
-            if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
+            if [ -z "`echo $CFLAGS | grep -q -- -m32`"  ]; then
                 arch="x86_64"
                 enable fast_64bit
             fi
@@ -1170,7 +1170,7 @@ case $targetos in
         # no need for libm, but the inet stuff
         # Check for BONE
         # XXX: actually should check for NOT net_server
-        if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
+        if (echo $BEINCLUDES | grep -q 'headers/be/bone'); then
             network_extralibs="-lbind -lsocket"
         else
             enable beos_netserver
@@ -1372,7 +1372,7 @@ test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
 if test $targetos = darwin; then
-    if test -n "`$cc -v 2>&1 | grep xlc`"; then
+    if test -n "`$cc -v 2>&1 | grep -q xlc`"; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
         add_cflags "-pipe"
@@ -1802,7 +1802,7 @@ if enabled small; then
     check_cflags -Os            # not all compilers support -Os
     optimizations="small"
 elif enabled optimizations; then
-    if test -n "`$cc -v 2>&1 | grep xlc`"; then
+    if test -n "`$cc -v 2>&1 | grep -q xlc`"; then
         add_cflags  "-O5"
         add_ldflags "-O5"
     else
