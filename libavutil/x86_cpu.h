@@ -38,6 +38,7 @@
 #    define REGa    rax
 #    define REGb    rbx
 #    define REGc    rcx
+#    define REGd    rdx
 #    define REGSP   rsp
 
 #else
@@ -56,6 +57,7 @@
 #    define REGa    eax
 #    define REGb    ebx
 #    define REGc    ecx
+#    define REGd    edx
 #    define REGSP   esp
 #endif
 
