@@ -2395,7 +2395,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
 
-    assert(2*VOF == VOFW);
+    assert(2*VOFW == VOF);
 
     ASSERT(c->chrDstH <= dstH)
 
