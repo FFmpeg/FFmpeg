@@ -32,7 +32,7 @@
 
 #include "armv4l/mathops.h"
 
-#elif defined(ARCH_PPC)
+#elif defined(ARCH_POWERPC)
 
 #include "ppc/mathops.h"
 
