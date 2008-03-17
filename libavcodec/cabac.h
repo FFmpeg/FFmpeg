@@ -731,9 +731,9 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
 
         "movl %%esi, "RANGE    "(%3)            \n\t"
         "movl %%ebx, "LOW      "(%3)            \n\t"
-        :"=&a"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index)\
-        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex)\
-        : "%"REG_c, "%ebx", "%edx", "%esi", "memory"\
+        :"=&a"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index)
+        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex)
+        : "%"REG_c, "%ebx", "%edx", "%esi", "memory"
     );
     return coeff_count;
 }
@@ -787,9 +787,9 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
 
         "movl %%esi, "RANGE    "(%3)            \n\t"
         "movl %%ebx, "LOW      "(%3)            \n\t"
-        :"=&a"(coeff_count),"+m"(last), "+m"(index)\
-        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off)\
-        : "%"REG_c, "%ebx", "%edx", "%esi", "%"REG_D, "memory"\
+        :"=&a"(coeff_count),"+m"(last), "+m"(index)
+        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off)
+        : "%"REG_c, "%ebx", "%edx", "%esi", "%"REG_D, "memory"
     );
     return coeff_count;
 }
