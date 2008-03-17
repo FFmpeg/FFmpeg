@@ -87,33 +87,33 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 #endif
 
     /* compute constant table for HAVE_SSE version */
-        if (shuffle) {
-            int np, nblocks, np2, l;
-            FFTComplex *q;
+    if (shuffle) {
+        int np, nblocks, np2, l;
+        FFTComplex *q;
 
-            np = 1 << nbits;
-            nblocks = np >> 3;
-            np2 = np >> 1;
-            s->exptab1 = av_malloc(np * 2 * sizeof(FFTComplex));
-            if (!s->exptab1)
-                goto fail;
-            q = s->exptab1;
-            do {
-                for(l = 0; l < np2; l += 2 * nblocks) {
-                    *q++ = s->exptab[l];
-                    *q++ = s->exptab[l + nblocks];
+        np = 1 << nbits;
+        nblocks = np >> 3;
+        np2 = np >> 1;
+        s->exptab1 = av_malloc(np * 2 * sizeof(FFTComplex));
+        if (!s->exptab1)
+            goto fail;
+        q = s->exptab1;
+        do {
+            for(l = 0; l < np2; l += 2 * nblocks) {
+                *q++ = s->exptab[l];
+                *q++ = s->exptab[l + nblocks];
 
-                    q->re = -s->exptab[l].im;
-                    q->im = s->exptab[l].re;
-                    q++;
-                    q->re = -s->exptab[l + nblocks].im;
-                    q->im = s->exptab[l + nblocks].re;
-                    q++;
-                }
-                nblocks = nblocks >> 1;
-            } while (nblocks != 0);
-            av_freep(&s->exptab);
-        }
+                q->re = -s->exptab[l].im;
+                q->im = s->exptab[l].re;
+                q++;
+                q->re = -s->exptab[l + nblocks].im;
+                q->im = s->exptab[l + nblocks].re;
+                q++;
+            }
+            nblocks = nblocks >> 1;
+        } while (nblocks != 0);
+        av_freep(&s->exptab);
+    }
 
     /* compute bit reverse table */
 
