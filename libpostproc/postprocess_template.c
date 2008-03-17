@@ -23,24 +23,11 @@
  * mmx/mmx2/3dnow postprocess code.
  */
 
+#include "x86_cpu.h"
 
 #ifdef ARCH_X86_64
-#  define REGa  rax
-#  define REGc  rcx
-#  define REGd  rdx
-#  define REG_a  "rax"
-#  define REG_c  "rcx"
-#  define REG_d  "rdx"
-#  define REG_SP "rsp"
 #  define ALIGN_MASK "$0xFFFFFFFFFFFFFFF8"
 #else
-#  define REGa  eax
-#  define REGc  ecx
-#  define REGd  edx
-#  define REG_a  "eax"
-#  define REG_c  "ecx"
-#  define REG_d  "edx"
-#  define REG_SP "esp"
 #  define ALIGN_MASK "$0xFFFFFFF8"
 #endif
 
