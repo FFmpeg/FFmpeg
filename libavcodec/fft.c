@@ -34,6 +34,8 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
     float alpha, c1, s1, s2;
+    int shuffle = 0;
+    int av_unused has_vectors;
 
     s->nbits = nbits;
     n = 1 << nbits;
@@ -59,32 +61,33 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->imdct_calc = ff_imdct_calc;
     s->exptab1 = NULL;
 
-    /* compute constant table for HAVE_SSE version */
-#if defined(HAVE_MMX) \
-    || (defined(HAVE_ALTIVEC) && !defined(ALTIVEC_USE_REFERENCE_C_CODE))
-    {
-        int has_vectors = mm_support();
-
-        if (has_vectors) {
-#if defined(HAVE_MMX)
-            if (has_vectors & MM_3DNOWEXT) {
-                /* 3DNowEx for K7/K8 */
-                s->imdct_calc = ff_imdct_calc_3dn2;
-                s->fft_calc = ff_fft_calc_3dn2;
-            } else if (has_vectors & MM_3DNOW) {
-                /* 3DNow! for K6-2/3 */
-                s->fft_calc = ff_fft_calc_3dn;
-            } else if (has_vectors & MM_SSE) {
-                /* SSE for P3/P4 */
-                s->imdct_calc = ff_imdct_calc_sse;
-                s->fft_calc = ff_fft_calc_sse;
-            }
-#else /* HAVE_MMX */
-            if (has_vectors & MM_ALTIVEC)
-                s->fft_calc = ff_fft_calc_altivec;
+#ifdef HAVE_MMX
+    has_vectors = mm_support();
+    shuffle = 1;
+    if (has_vectors & MM_3DNOWEXT) {
+        /* 3DNowEx for K7/K8 */
+        s->imdct_calc = ff_imdct_calc_3dn2;
+        s->fft_calc = ff_fft_calc_3dn2;
+    } else if (has_vectors & MM_3DNOW) {
+        /* 3DNow! for K6-2/3 */
+        s->fft_calc = ff_fft_calc_3dn;
+    } else if (has_vectors & MM_SSE) {
+        /* SSE for P3/P4 */
+        s->imdct_calc = ff_imdct_calc_sse;
+        s->fft_calc = ff_fft_calc_sse;
+    } else {
+        shuffle = 0;
+    }
+#elif defined HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
+    has_vectors = mm_support();
+    if (has_vectors & MM_ALTIVEC) {
+        s->fft_calc = ff_fft_calc_altivec;
+        shuffle = 1;
+    }
 #endif
-        }
-        if (s->fft_calc != ff_fft_calc_c) {
+
+    /* compute constant table for HAVE_SSE version */
+        if (shuffle) {
             int np, nblocks, np2, l;
             FFTComplex *q;
 
@@ -111,8 +114,6 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
             } while (nblocks != 0);
             av_freep(&s->exptab);
         }
-    }
-#endif
 
     /* compute bit reverse table */
 
