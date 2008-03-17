@@ -25,12 +25,7 @@
 
 #include "x86_cpu.h"
 
-#ifdef ARCH_X86_64
-#  define ALIGN_MASK "$0xFFFFFFFFFFFFFFF8"
-#else
-#  define ALIGN_MASK "$0xFFFFFFF8"
-#endif
-
+#define ALIGN_MASK "$-8"
 
 #undef PAVGB
 #undef PMINUB
