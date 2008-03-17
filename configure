@@ -1085,7 +1085,7 @@ case "$arch" in
         enable fast_unaligned
         canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
         if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
-            if [ -z "`echo $CFLAGS | grep -q -- -m32`"  ]; then
+            if ! echo $CFLAGS | grep -q -- -m32; then
                 arch="x86_64"
                 enable fast_64bit
             fi
