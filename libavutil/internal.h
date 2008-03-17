@@ -128,9 +128,9 @@
 #        define MANGLE(a) "_" #a
 #    endif
 #elif defined(ARCH_X86_64) && defined(PIC)
-#        define MANGLE(a) #a"(%%rip)"
+#    define MANGLE(a) #a"(%%rip)"
 #else
-#        define MANGLE(a) #a
+#    define MANGLE(a) #a
 #endif
 
 /* debug stuff */
