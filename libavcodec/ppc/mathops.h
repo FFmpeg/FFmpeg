@@ -30,8 +30,8 @@
 
 /* signed 16x16 -> 32 multiply */
 #   define MUL16(ra, rb) \
-        ({ int __rt;
-         asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));
+        ({ int __rt; \
+         asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); \
          __rt; })
 #endif
 
