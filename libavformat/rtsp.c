@@ -846,78 +846,18 @@ static void rtsp_close_streams(RTSPState *rt)
     av_free(rt->rtsp_streams);
 }
 
-static int rtsp_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+/**
+ * @returns 0 on success, <0 on error, 1 if protocol is unavailable.
+ */
+static int
+make_setup_request (AVFormatContext *s, const char *host, int port, int protocol_mask)
 {
     RTSPState *rt = s->priv_data;
-    char host[1024], path[1024], tcpname[1024], cmd[2048], *option_list, *option;
-    URLContext *rtsp_hd;
-    int port, i, j, ret, err;
-    RTSPHeader reply1, *reply = &reply1;
-    unsigned char *content = NULL;
+    int j, i, err;
     RTSPStream *rtsp_st;
-    int protocol_mask = 0;
     AVStream *st;
-
-    /* extract hostname and port */
-    url_split(NULL, 0, NULL, 0,
-              host, sizeof(host), &port, path, sizeof(path), s->filename);
-    if (port < 0)
-        port = RTSP_DEFAULT_PORT;
-
-    /* search for options */
-    option_list = strchr(path, '?');
-    if (option_list) {
-        /* remove the options from the path */
-        *option_list++ = 0;
-        while(option_list) {
-            /* move the option pointer */
-            option = option_list;
-            option_list = strchr(option_list, '&');
-            if (option_list)
-                *(option_list++) = 0;
-            /* handle the options */
-            if (strcmp(option, "udp") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP);
-            else if (strcmp(option, "multicast") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP_MULTICAST);
-            else if (strcmp(option, "tcp") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_TCP);
-        }
-    }
-
-    if (!protocol_mask)
-        protocol_mask = rtsp_default_protocols;
-
-    /* open the tcp connexion */
-    snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
-    if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0)
-        return AVERROR(EIO);
-    rt->rtsp_hd = rtsp_hd;
-    rt->seq = 0;
-
-    /* describe the stream */
-    snprintf(cmd, sizeof(cmd),
-             "DESCRIBE %s RTSP/1.0\r\n"
-             "Accept: application/sdp\r\n",
-             s->filename);
-    rtsp_send_cmd(s, cmd, reply, &content);
-    if (!content) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-    if (reply->status_code != RTSP_STATUS_OK) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-
-    /* now we got the SDP description, we parse it */
-    ret = sdp_parse(s, (const char *)content);
-    av_freep(&content);
-    if (ret < 0) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    RTSPHeader reply1, *reply = &reply1;
+    char cmd[2048];
 
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
@@ -1059,6 +999,87 @@ static int rtsp_read_header(AVFormatContext *s,
             }
         }
     }
+
+    return 0;
+
+fail:
+    return err;
+}
+
+static int rtsp_read_header(AVFormatContext *s,
+                            AVFormatParameters *ap)
+{
+    RTSPState *rt = s->priv_data;
+    char host[1024], path[1024], tcpname[1024], cmd[2048], *option_list, *option;
+    URLContext *rtsp_hd;
+    int port, ret, err;
+    RTSPHeader reply1, *reply = &reply1;
+    unsigned char *content = NULL;
+    int protocol_mask = 0;
+
+    /* extract hostname and port */
+    url_split(NULL, 0, NULL, 0,
+              host, sizeof(host), &port, path, sizeof(path), s->filename);
+    if (port < 0)
+        port = RTSP_DEFAULT_PORT;
+
+    /* search for options */
+    option_list = strchr(path, '?');
+    if (option_list) {
+        /* remove the options from the path */
+        *option_list++ = 0;
+        while(option_list) {
+            /* move the option pointer */
+            option = option_list;
+            option_list = strchr(option_list, '&');
+            if (option_list)
+                *(option_list++) = 0;
+            /* handle the options */
+            if (strcmp(option, "udp") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP);
+            else if (strcmp(option, "multicast") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP_MULTICAST);
+            else if (strcmp(option, "tcp") == 0)
+                protocol_mask = (1<< RTSP_PROTOCOL_RTP_TCP);
+        }
+    }
+
+    if (!protocol_mask)
+        protocol_mask = rtsp_default_protocols;
+
+    /* open the tcp connexion */
+    snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
+    if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0)
+        return AVERROR(EIO);
+    rt->rtsp_hd = rtsp_hd;
+    rt->seq = 0;
+
+    /* describe the stream */
+    snprintf(cmd, sizeof(cmd),
+             "DESCRIBE %s RTSP/1.0\r\n"
+             "Accept: application/sdp\r\n",
+             s->filename);
+    rtsp_send_cmd(s, cmd, reply, &content);
+    if (!content) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    if (reply->status_code != RTSP_STATUS_OK) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    /* now we got the SDP description, we parse it */
+    ret = sdp_parse(s, (const char *)content);
+    av_freep(&content);
+    if (ret < 0) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    err = make_setup_request(s, host, port, protocol_mask);
+    if (err)
+        goto fail;
 
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position
