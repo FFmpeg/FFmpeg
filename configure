@@ -699,6 +699,7 @@ ARCH_EXT_LIST='
     iwmmxt
     mmi
     mmx
+    mmx2
     ssse3
     vis
 '
@@ -780,6 +781,7 @@ armv6_deps="armv4l"
 iwmmxt_deps="armv4l"
 mmi_deps="mips"
 mmx_deps="x86"
+mmx2_deps="x86"
 ssse3_deps="x86"
 vis_deps="sparc"
 
@@ -1517,8 +1519,9 @@ EOF
     # check wether EBX is available on x86
     check_asm ebx_available '"":::"%ebx"'
 
-    # check whether binutils is new enough to compile SSSE3
+    # check whether binutils is new enough to compile SSSE3/MMX2
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
+    enabled mmx2  && check_asm mmx2  '"movss %xmm0, %xmm0"'
 
     check_asm bswap '"bswap %%eax" ::: "%eax"'
 fi
