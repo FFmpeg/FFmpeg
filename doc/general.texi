@@ -125,6 +125,10 @@ different game cutscenes repacked for use with ScummVM.
 @item Monkey's Audio @tab    @tab X
 @item SIFF @tab    @tab X
 @tab Audio and video format used in some games by Beam Software
+@item LMLM4 @tab    @tab X
+@tab Used by Linux Media Labs MPEG-4 PCI boards
+@item PVA @tab    @tab X
+@tab Used by TechnoTrend DVB PCI boards
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -147,6 +151,8 @@ following image formats are supported:
 @item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @item SGI          @tab X @tab X @tab SGI RGB image format
 @item PTX          @tab   @tab X @tab V.Flash PTX format
+@item RAS          @tab   @tab X @tab Sun Rasterfile
+@item PCX          @tab   @tab X @tab PC Paintbrush
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
