@@ -34,16 +34,10 @@
 #include <byteswap.h>
 #else
 
-#ifdef ARCH_X86_64
-#  define LEGACY_REGS "=Q"
-#else
-#  define LEGACY_REGS "=q"
-#endif
-
 static av_always_inline uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
-    asm("rorw $8, %0" : LEGACY_REGS (x) : "0" (x));
+    asm("rorw $8, %0" : "+r"(x));
 #elif defined(ARCH_SH4)
     asm("swap.b %0,%0" : "=r"(x) : "0"(x));
 #else
@@ -56,15 +50,13 @@ static av_always_inline uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
 #ifdef HAVE_BSWAP
-    asm("bswap   %0":
-          "=r" (x)    :
+    asm("bswap   %0" : "+r" (x));
 #else
-    asm("xchgb   %b0,%h0\n"
-        "rorl    $16,%0 \n"
-        "xchgb   %b0,%h0":
-        LEGACY_REGS (x)  :
+    asm("rorw    $8,  %w0 \n\t"
+        "rorl    $16, %0  \n\t"
+        "rorw    $8,  %w0"
+        : "+r"(x));
 #endif
-          "0" (x));
 #elif defined(ARCH_SH4)
     asm("swap.b %0,%0\n"
         "swap.w %0,%0\n"
