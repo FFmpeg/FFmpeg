@@ -913,14 +913,12 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #include "swscale_template.c"
 #endif
 
-#ifdef ARCH_POWERPC
 #ifdef COMPILE_ALTIVEC
 #undef RENAME
 #define HAVE_ALTIVEC
 #define RENAME(a) a ## _altivec
 #include "swscale_template.c"
 #endif
-#endif //ARCH_POWERPC
 
 #if defined(ARCH_X86)
 
