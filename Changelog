@@ -114,6 +114,7 @@ version <next>
 - VFW grabber
 - Ipod/Iphone compatible mp4 muxer
 - Mimic decoder
+- MSN TCP Webcam stream demuxer
 
 version 0.4.9-pre1:
 

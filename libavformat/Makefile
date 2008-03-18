@@ -102,6 +102,7 @@ OBJS-$(CONFIG_MPEGTSRAW_DEMUXER)         += mpegts.o
 OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
 OBJS-$(CONFIG_MPEGVIDEO_DEMUXER)         += raw.o
 OBJS-$(CONFIG_MPJPEG_MUXER)              += mpjpeg.o
+OBJS-$(CONFIG_MSNWC_TCP_DEMUXER)         += msnwc_tcp.o
 OBJS-$(CONFIG_MTV_DEMUXER)               += mtv.o
 OBJS-$(CONFIG_MXF_DEMUXER)               += mxf.o
 OBJS-$(CONFIG_NSV_DEMUXER)               += nsvdec.o
