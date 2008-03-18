@@ -1491,6 +1491,12 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
+check_cc <<EOF || die "Symbol mangling check failed."
+int ff_extern;
+EOF
+sym=$(nm -P $TMPO)
+extern_prefix=${sym%%ff_extern*}
+
 check_asm inline_asm '""'
 
 if enabled x86; then
@@ -2070,6 +2076,7 @@ enabled asmalign_pot &&
     printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH ||
     printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
 
+echo "#define EXTERN_PREFIX \"${extern_prefix}\"" >> $TMPH
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 

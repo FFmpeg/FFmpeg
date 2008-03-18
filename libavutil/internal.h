@@ -119,18 +119,10 @@
 #endif
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
-#if defined(__MINGW32__) || defined(__CYGWIN__) || defined(__DJGPP__) || \
-    defined(__OS2__) || defined(__APPLE__) || \
-    (defined (__OpenBSD__) && !defined(__ELF__))
-#    if defined(ARCH_X86_64) && defined(PIC)
-#        define MANGLE(a) "_" #a"(%%rip)"
-#    else
-#        define MANGLE(a) "_" #a
-#    endif
-#elif defined(ARCH_X86_64) && defined(PIC)
-#    define MANGLE(a) #a"(%%rip)"
+#if defined(ARCH_X86_64) && defined(PIC)
+#    define MANGLE(a) EXTERN_PREFIX #a"(%%rip)"
 #else
-#    define MANGLE(a) #a
+#    define MANGLE(a) EXTERN_PREFIX #a
 #endif
 
 /* debug stuff */
