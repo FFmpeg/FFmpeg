@@ -78,7 +78,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
  * @param c second rational.
  * @return b*c.
  */
-AVRational av_mul_q(AVRational b, AVRational c);
+AVRational av_mul_q(AVRational b, AVRational c) av_const;
 
 /**
  * Divides one rational by another.
@@ -86,7 +86,7 @@ AVRational av_mul_q(AVRational b, AVRational c);
  * @param c second rational.
  * @return b/c.
  */
-AVRational av_div_q(AVRational b, AVRational c);
+AVRational av_div_q(AVRational b, AVRational c) av_const;
 
 /**
  * Adds two rationals.
@@ -94,7 +94,7 @@ AVRational av_div_q(AVRational b, AVRational c);
  * @param c second rational.
  * @return b+c.
  */
-AVRational av_add_q(AVRational b, AVRational c);
+AVRational av_add_q(AVRational b, AVRational c) av_const;
 
 /**
  * Subtracts one rational from another.
@@ -102,7 +102,7 @@ AVRational av_add_q(AVRational b, AVRational c);
  * @param c second rational.
  * @return b-c.
  */
-AVRational av_sub_q(AVRational b, AVRational c);
+AVRational av_sub_q(AVRational b, AVRational c) av_const;
 
 /**
  * Converts a double precision floating point number to a rational.
@@ -110,6 +110,6 @@ AVRational av_sub_q(AVRational b, AVRational c);
  * @param max the maximum allowed numerator and denominator
  * @return (AVRational) d.
  */
-AVRational av_d2q(double d, int max);
+AVRational av_d2q(double d, int max) av_const;
 
 #endif /* FFMPEG_RATIONAL_H */
