@@ -42,12 +42,6 @@
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
 
-#ifdef __GNUC__
-    #define av_malloc_attrib __attribute__((__malloc__))
-#else
-    #define av_malloc_attrib
-#endif
-
 /**
  * Allocate a block of \p size bytes with alignment suitable for all
  * memory accesses (including vectors if available on the CPU).
@@ -56,7 +50,7 @@
  * it.
  * @see av_mallocz()
  */
-void *av_malloc(unsigned int size) av_malloc_attrib;
+void *av_malloc(unsigned int size);
 
 /**
  * Allocate or reallocate a block of memory.
@@ -91,7 +85,7 @@ void av_free(void *ptr);
  * it.
  * @see av_malloc()
  */
-void *av_mallocz(unsigned int size) av_malloc_attrib;
+void *av_mallocz(unsigned int size);
 
 /**
  * Duplicate the string \p s.
@@ -99,7 +93,7 @@ void *av_mallocz(unsigned int size) av_malloc_attrib;
  * @return Pointer to a newly allocated string containing a
  * copy of \p s or NULL if it cannot be allocated.
  */
-char *av_strdup(const char *s) av_malloc_attrib;
+char *av_strdup(const char *s);
 
 /**
  * Free a memory block which has been allocated with av_malloc(z)() or

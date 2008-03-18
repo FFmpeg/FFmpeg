@@ -32,7 +32,7 @@ typedef struct SoftFloat{
     int32_t mant;
 }SoftFloat;
 
-static av_const SoftFloat av_normalize_sf(SoftFloat a){
+static SoftFloat av_normalize_sf(SoftFloat a){
     if(a.mant){
 #if 1
         while((a.mant + 0x20000000U)<0x40000000U){
@@ -54,7 +54,7 @@ static av_const SoftFloat av_normalize_sf(SoftFloat a){
     return a;
 }
 
-static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
+static inline SoftFloat av_normalize1_sf(SoftFloat a){
 #if 1
     if(a.mant + 0x40000000 < 0){
         a.exp++;
@@ -76,7 +76,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
  *         normalized then the output wont be worse then the other input
  *         if both are normalized then the output will be normalized
  */
-static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
+static inline SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
     a.exp += b.exp;
     a.mant = (a.mant * (int64_t)b.mant) >> ONE_BITS;
     return av_normalize1_sf(a);
@@ -87,31 +87,31 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
  * b has to be normalized and not zero
  * @return will not be more denormalized then a
  */
-static av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
+static SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
     a.exp -= b.exp+1;
     a.mant = ((int64_t)a.mant<<(ONE_BITS+1)) / b.mant;
     return av_normalize1_sf(a);
 }
 
-static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
+static inline int av_cmp_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if(t<0) return (a.mant >> (-t)) -  b.mant      ;
     else    return  a.mant          - (b.mant >> t);
 }
 
-static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
+static inline SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if(t<0) return av_normalize1_sf((SoftFloat){b.exp, b.mant + (a.mant >> (-t))});
     else    return av_normalize1_sf((SoftFloat){a.exp, a.mant + (b.mant >>   t )});
 }
 
-static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
+static inline SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
     return av_add_sf(a, (SoftFloat){b.exp, -b.mant});
 }
 
 //FIXME sqrt, log, exp, pow, sin, cos
 
-static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
+static inline SoftFloat av_int2sf(int v, int frac_bits){
     return av_normalize_sf((SoftFloat){ONE_BITS-frac_bits, v});
 }
 
@@ -119,7 +119,7 @@ static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
  *
  * rounding is to -inf
  */
-static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
+static inline int av_sf2int(SoftFloat v, int frac_bits){
     v.exp += frac_bits - ONE_BITS;
     if(v.exp >= 0) return v.mant <<  v.exp ;
     else           return v.mant >>(-v.exp);
