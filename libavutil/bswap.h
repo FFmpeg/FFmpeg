@@ -43,11 +43,9 @@
 static av_always_inline uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
-    __asm("rorw $8, %0"   :
-          LEGACY_REGS (x) :
-          "0" (x));
+    asm("rorw $8, %0" : LEGACY_REGS (x) : "0" (x));
 #elif defined(ARCH_SH4)
-    __asm__("swap.b %0,%0":"=r"(x):"0"(x));
+    asm("swap.b %0,%0" : "=r"(x) : "0"(x));
 #else
     x= (x>>8) | (x<<8);
 #endif
@@ -58,27 +56,27 @@ static av_always_inline uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
 #ifdef HAVE_BSWAP
-    __asm("bswap   %0":
+    asm("bswap   %0":
           "=r" (x)    :
 #else
-    __asm("xchgb   %b0,%h0\n"
-          "rorl    $16,%0 \n"
-          "xchgb   %b0,%h0":
-          LEGACY_REGS (x)  :
+    asm("xchgb   %b0,%h0\n"
+        "rorl    $16,%0 \n"
+        "xchgb   %b0,%h0":
+        LEGACY_REGS (x)  :
 #endif
           "0" (x));
 #elif defined(ARCH_SH4)
-    __asm__("swap.b %0,%0\n"
-            "swap.w %0,%0\n"
-            "swap.b %0,%0\n"
-            :"=r"(x):"0"(x));
+    asm("swap.b %0,%0\n"
+        "swap.w %0,%0\n"
+        "swap.b %0,%0\n"
+        : "=r"(x) : "0"(x));
 #elif defined(ARCH_ARM)
     uint32_t t;
-    __asm__ ("eor %1, %0, %0, ror #16 \n\t"
-             "bic %1, %1, #0xFF0000   \n\t"
-             "mov %0, %0, ror #8      \n\t"
-             "eor %0, %0, %1, lsr #8  \n\t"
-             : "+r"(x), "+r"(t));
+    asm ("eor %1, %0, %0, ror #16 \n\t"
+         "bic %1, %1, #0xFF0000   \n\t"
+         "mov %0, %0, ror #8      \n\t"
+         "eor %0, %0, %1, lsr #8  \n\t"
+         : "+r"(x), "+r"(t));
 #elif defined(ARCH_BFIN)
     unsigned tmp;
     asm("%1 = %0 >> 8 (V);      \n\t"
@@ -100,9 +98,7 @@ static inline uint64_t bswap_64(uint64_t x)
     x= ((x<<16)&0xFFFF0000FFFF0000ULL) | ((x>>16)&0x0000FFFF0000FFFFULL);
     return (x>>32) | (x<<32);
 #elif defined(ARCH_X86_64)
-  __asm("bswap  %0":
-        "=r" (x)   :
-        "0" (x));
+  asm("bswap  %0": "=r" (x) : "0" (x));
   return x;
 #else
     union {
