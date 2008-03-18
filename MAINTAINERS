@@ -145,6 +145,7 @@ Codecs:
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
+  mimic.c                               Ramiro Polla
   mjpeg.c                               Michael Niedermayer
   mpc*                                  Kostya Shishkov
   mpeg12.c, mpeg12data.h                Michael Niedermayer

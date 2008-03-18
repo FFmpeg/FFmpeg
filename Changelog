@@ -113,6 +113,7 @@ version <next>
 - QT variant of IMA ADPCM encoder
 - VFW grabber
 - Ipod/Iphone compatible mp4 muxer
+- Mimic decoder
 
 version 0.4.9-pre1:
 
