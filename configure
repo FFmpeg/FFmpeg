@@ -888,6 +888,7 @@ bindir='$(PREFIX)/bin'
 # toolchain
 cc="gcc"
 ar="ar"
+nm="nm"
 ranlib="ranlib"
 make="make"
 strip="strip"
@@ -1315,6 +1316,7 @@ LDFLAGS="$FFLDFLAGS $LDFLAGS"
 test -n "$cross_prefix" && enable cross_compile
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
+nm="${cross_prefix}${nm}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
@@ -1494,7 +1496,7 @@ fi
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$(nm -P -g $TMPO)
+sym=$($nm -P -g $TMPO)
 extern_prefix=${sym%%ff_extern*}
 
 check_asm inline_asm '""'
