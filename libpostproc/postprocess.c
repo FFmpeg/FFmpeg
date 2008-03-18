@@ -567,11 +567,9 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #define COMPILE_C
 #endif
 
-#ifdef ARCH_POWERPC
 #ifdef HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
 #endif //HAVE_ALTIVEC
-#endif //ARCH_POWERPC
 
 #if defined(ARCH_X86)
 
@@ -601,7 +599,6 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #include "postprocess_template.c"
 #endif
 
-#ifdef ARCH_POWERPC
 #ifdef COMPILE_ALTIVEC
 #undef RENAME
 #define HAVE_ALTIVEC
@@ -609,7 +606,6 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #include "postprocess_altivec_template.c"
 #include "postprocess_template.c"
 #endif
-#endif //ARCH_POWERPC
 
 //MMX versions
 #ifdef COMPILE_MMX
@@ -665,12 +661,10 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
         else
                 postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
-#ifdef ARCH_POWERPC
 #ifdef HAVE_ALTIVEC
         if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
                 postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
         else
-#endif
 #endif
                 postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
