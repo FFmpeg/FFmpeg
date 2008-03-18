@@ -1494,7 +1494,7 @@ fi
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$(nm -P $TMPO)
+sym=$(nm -P -g $TMPO)
 extern_prefix=${sym%%ff_extern*}
 
 check_asm inline_asm '""'
