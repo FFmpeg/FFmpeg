@@ -181,8 +181,6 @@ do_video_decoding
 
 # mpeg2 encoding intra vlc qprd
 do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" "-vcodec mpeg2video -f mpeg2video"
-
-# mpeg2 decoding
 do_video_decoding
 
 # mpeg2
@@ -191,29 +189,21 @@ do_video_decoding "-idct int"
 
 # mpeg2 encoding interlaced
 do_video_encoding mpeg2i.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
-
-# mpeg2 decoding
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
 do_video_encoding mpeg2thread.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
-
-# mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding interlaced using intra vlc
 do_video_encoding mpeg2threadivlc.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
-
-# mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2reuse.mpg
 do_ffmpeg $file -y -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4 $file
-
-# mpeg2 decoding
 do_video_decoding
 fi
 
