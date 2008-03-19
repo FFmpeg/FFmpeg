@@ -850,7 +850,7 @@ static void rtsp_close_streams(RTSPState *rt)
  * @returns 0 on success, <0 on error, 1 if protocol is unavailable.
  */
 static int
-make_setup_request (AVFormatContext *s, const char *host, int port, int protocol_mask)
+make_setup_request (AVFormatContext *s, const char *host, int port, int protocol)
 {
     RTSPState *rt = s->priv_data;
     int j, i, err;
@@ -872,7 +872,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
         transport[0] = '\0';
 
         /* RTP/UDP */
-        if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_UDP)) {
+        if (protocol == RTSP_PROTOCOL_RTP_UDP) {
             char buf[256];
 
             /* first try in specified port range */
@@ -903,14 +903,14 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
         }
 
         /* RTP/TCP */
-        else if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_TCP)) {
+        else if (protocol == RTSP_PROTOCOL_RTP_TCP) {
             if (transport[0] != '\0')
                 av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
                      "RTP/AVP/TCP");
         }
 
-        else if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_UDP_MULTICAST)) {
+        else if (protocol == RTSP_PROTOCOL_RTP_UDP_MULTICAST) {
             if (transport[0] != '\0')
                 av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport),
@@ -944,7 +944,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
 
         /* close RTP connection if not choosen */
         if (reply->transports[0].protocol != RTSP_PROTOCOL_RTP_UDP &&
-            (protocol_mask & (1 << RTSP_PROTOCOL_RTP_UDP))) {
+            (protocol == RTSP_PROTOCOL_RTP_UDP)) {
             url_close(rtsp_st->rtp_handle);
             rtsp_st->rtp_handle = NULL;
         }
@@ -1088,12 +1088,12 @@ static int rtsp_read_header(AVFormatContext *s,
     }
 
     do {
-        int protocol = protocol_mask & ~(protocol_mask - 1);
+        int protocol = ff_log2_tab[protocol_mask & ~(protocol_mask - 1)];
 
         err = make_setup_request(s, host, port, protocol);
         if (err < 0)
         goto fail;
-        protocol_mask &= ~protocol;
+        protocol_mask &= ~(1 << protocol);
         if (protocol_mask == 0 && err == 1) {
             err = AVERROR(EPROTONOSUPPORT);
             goto fail;
