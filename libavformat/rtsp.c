@@ -925,9 +925,8 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
         if (reply->status_code == 461 /* Unsupported protocol */ && i == 0) {
             err = 1;
             goto fail;
-        } else
-        if (reply->status_code != RTSP_STATUS_OK ||
-            reply->nb_transports != 1) {
+        } else if (reply->status_code != RTSP_STATUS_OK ||
+                   reply->nb_transports != 1) {
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -1092,7 +1091,7 @@ static int rtsp_read_header(AVFormatContext *s,
 
         err = make_setup_request(s, host, port, protocol);
         if (err < 0)
-        goto fail;
+            goto fail;
         protocol_mask &= ~(1 << protocol);
         if (protocol_mask == 0 && err == 1) {
             err = AVERROR(EPROTONOSUPPORT);
