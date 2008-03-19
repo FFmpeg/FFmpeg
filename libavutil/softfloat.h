@@ -22,6 +22,7 @@
 #define FFMPEG_SOFTFLOAT_H
 
 #include <stdint.h>
+#include "common.h"
 
 #define MIN_EXP -126
 #define MAX_EXP  126

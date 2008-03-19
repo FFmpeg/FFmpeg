@@ -29,6 +29,7 @@
 #define FFMPEG_INTEGER_H
 
 #include <stdint.h>
+#include "common.h"
 
 #define AV_INTEGER_SIZE 8
 

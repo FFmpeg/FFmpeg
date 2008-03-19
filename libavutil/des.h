@@ -23,6 +23,7 @@
 #define FFMPEG_DES_H
 
 #include <stdint.h>
+#include "common.h"
 
 /**
  * \brief en- or decrypt an 64-bit block of data with DES
