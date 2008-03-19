@@ -34,7 +34,7 @@
 #include <byteswap.h>
 #else
 
-static av_always_inline uint16_t bswap_16(uint16_t x)
+static av_always_inline av_const uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
     asm("rorw $8, %0" : "+r"(x));
@@ -46,7 +46,7 @@ static av_always_inline uint16_t bswap_16(uint16_t x)
     return x;
 }
 
-static av_always_inline uint32_t bswap_32(uint32_t x)
+static av_always_inline av_const uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
 #ifdef HAVE_BSWAP
@@ -83,7 +83,7 @@ static av_always_inline uint32_t bswap_32(uint32_t x)
     return x;
 }
 
-static inline uint64_t bswap_64(uint64_t x)
+static inline uint64_t av_const bswap_64(uint64_t x)
 {
 #if 0
     x= ((x<< 8)&0xFF00FF00FF00FF00ULL) | ((x>> 8)&0x00FF00FF00FF00FFULL);

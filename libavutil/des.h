@@ -34,6 +34,6 @@
  * If your input data is in 8-bit blocks treat it as big-endian
  * (use e.g. AV_RB64 and AV_WB64).
  */
-uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt);
+uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) av_const;
 
 #endif /* FFMPEG_DES_H */

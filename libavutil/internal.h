@@ -172,7 +172,7 @@ extern const uint8_t ff_sqrt_tab[256];
 
 static inline int av_log2_16bit(unsigned int v);
 
-static inline unsigned int ff_sqrt(unsigned int a)
+static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
 
@@ -267,35 +267,35 @@ if((y)<(x)){\
 }
 
 #ifndef HAVE_LLRINT
-static av_always_inline long long llrint(double x)
+static av_always_inline av_const long long llrint(double x)
 {
     return rint(x);
 }
 #endif /* HAVE_LLRINT */
 
 #ifndef HAVE_LRINT
-static av_always_inline long int lrint(double x)
+static av_always_inline av_const long int lrint(double x)
 {
     return rint(x);
 }
 #endif /* HAVE_LRINT */
 
 #ifndef HAVE_LRINTF
-static av_always_inline long int lrintf(float x)
+static av_always_inline av_const long int lrintf(float x)
 {
     return (int)(rint(x));
 }
 #endif /* HAVE_LRINTF */
 
 #ifndef HAVE_ROUND
-static av_always_inline double round(double x)
+static av_always_inline av_const double round(double x)
 {
     return (x > 0) ? floor(x + 0.5) : ceil(x - 0.5);
 }
 #endif /* HAVE_ROUND */
 
 #ifndef HAVE_ROUNDF
-static av_always_inline float roundf(float x)
+static av_always_inline av_const float roundf(float x)
 {
     return (x > 0) ? floor(x + 0.5) : ceil(x - 0.5);
 }
