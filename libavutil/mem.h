@@ -48,7 +48,7 @@
     #define av_malloc_attrib
 #endif
 
-#if defined (__GNUC__) && (__GNU__ > 4 || __GNU__ == 4 && __GNU_MINOR__ > 1)
+#if defined(__GNUC__) && (__GNU__ > 4 || __GNU__ == 4 && __GNU_MINOR__ > 1)
     #define av_alloc_size(n) __attribute__((alloc_size(n)))
 #else
     #define av_alloc_size(n)
