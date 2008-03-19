@@ -754,6 +754,7 @@ HAVE_LIST="
     socklen_t
     soundcard_h
     poll_h
+    sys_mman_h
     sys_select_h
     sys_soundcard_h
     termios_h
@@ -1597,6 +1598,7 @@ check_header byteswap.h
 check_header conio.h
 check_header dlfcn.h
 check_header malloc.h
+check_header sys/mman.h
 check_header termios.h
 
 if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
