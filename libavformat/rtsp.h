@@ -29,6 +29,10 @@ enum RTSPProtocol {
     RTSP_PROTOCOL_RTP_UDP = 0,
     RTSP_PROTOCOL_RTP_TCP = 1,
     RTSP_PROTOCOL_RTP_UDP_MULTICAST = 2,
+    /**
+     * This is not part of public API and shouldn't be used outside of ffmpeg.
+     */
+    RTSP_PROTOCOL_RTP_LAST
 };
 
 #define RTSP_DEFAULT_PORT   554

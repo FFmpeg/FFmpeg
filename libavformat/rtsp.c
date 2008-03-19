@@ -922,6 +922,10 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
                  "Transport: %s\r\n",
                  rtsp_st->control_url, transport);
         rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code == 461 /* Unsupported protocol */ && i == 0) {
+            err = 1;
+            goto fail;
+        } else
         if (reply->status_code != RTSP_STATUS_OK ||
             reply->nb_transports != 1) {
             err = AVERROR_INVALIDDATA;
@@ -1003,6 +1007,12 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
     return 0;
 
 fail:
+    for (i=0; i<rt->nb_rtsp_streams; i++) {
+        if (rt->rtsp_streams[i]->rtp_handle) {
+            url_close(rt->rtsp_streams[i]->rtp_handle);
+            rt->rtsp_streams[i]->rtp_handle = NULL;
+        }
+    }
     return err;
 }
 
@@ -1045,7 +1055,7 @@ static int rtsp_read_header(AVFormatContext *s,
     }
 
     if (!protocol_mask)
-        protocol_mask = rtsp_default_protocols;
+        protocol_mask = (1 << RTSP_PROTOCOL_RTP_LAST) - 1;
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
@@ -1077,9 +1087,18 @@ static int rtsp_read_header(AVFormatContext *s,
         goto fail;
     }
 
-    err = make_setup_request(s, host, port, protocol_mask);
-    if (err)
+    do {
+        int protocol = protocol_mask & ~(protocol_mask - 1);
+
+        err = make_setup_request(s, host, port, protocol);
+        if (err < 0)
         goto fail;
+        protocol_mask &= ~protocol;
+        if (protocol_mask == 0 && err == 1) {
+            err = AVERROR(EPROTONOSUPPORT);
+            goto fail;
+        }
+    } while (err);
 
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position
