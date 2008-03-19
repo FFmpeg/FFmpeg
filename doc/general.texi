@@ -129,6 +129,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item PVA @tab    @tab X
 @tab Used by TechnoTrend DVB PCI boards
+@item MSN TCP Webcam @tab    @tab X
+@tab Used by MSN Messenger Webcam streams.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -246,6 +248,7 @@ following image formats are supported:
 @item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.
 @item Renderware TXD         @tab     @tab  X @tab Texture dictionaries used by the Renderware Engine.
 @item AMV                    @tab     @tab  X @tab Used in Chinese MP3 players.
+@item Mimic                  @tab     @tab  X @tab Used in MSN Messenger Webcam streams.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
