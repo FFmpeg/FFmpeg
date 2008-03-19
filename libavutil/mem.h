@@ -42,7 +42,7 @@
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && (__GNU__ > 3 || __GNU__ == 3 && __GNU_MINOR__ > 0)
     #define av_malloc_attrib __attribute__((__malloc__))
 #else
     #define av_malloc_attrib
