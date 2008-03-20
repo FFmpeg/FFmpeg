@@ -1268,16 +1268,13 @@ case $targetos in
         ranlib="echo ignoring ranlib"
         ;;
     os/2*)
-        ar="emxomfar -p256"
-        ranlib="echo ignoring ranlib"
         strip="lxlite"
         ln_s="cp -f"
-        add_cflags "-Zomf"
         EXESUF=".exe"
         FFLDFLAGS="-Zomf -Zbin-files -Zargs-wild -Zmap"
         SHFLAGS='$(NAME).def -Zdll -Zomf'
         FFSERVERLDFLAGS=""
-        LIBSUF="_s.lib"
+        LIBSUF="_s.a"
         SLIBPREF=""
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
