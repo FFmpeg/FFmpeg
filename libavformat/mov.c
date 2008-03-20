@@ -1001,10 +1001,8 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
         return -1;
-    for(i=0; i<entries; i++) {
+    for(i=0; i<entries; i++)
         sc->sample_sizes[i] = get_be32(pb);
-        dprintf(c->fc, "sample_sizes[]=%d\n", sc->sample_sizes[i]);
-    }
     return 0;
 }
 
