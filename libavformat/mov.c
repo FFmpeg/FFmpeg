@@ -1089,7 +1089,113 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
-static void mov_build_index(MOVContext *mov, AVStream *st);
+static void mov_build_index(MOVContext *mov, AVStream *st)
+{
+    MOVStreamContext *sc = st->priv_data;
+    offset_t current_offset;
+    int64_t current_dts = 0;
+    unsigned int stts_index = 0;
+    unsigned int stsc_index = 0;
+    unsigned int stss_index = 0;
+    unsigned int i, j;
+
+    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO ||
+        sc->audio_cid == -2) {
+        unsigned int current_sample = 0;
+        unsigned int stts_sample = 0;
+        unsigned int keyframe, sample_size;
+        unsigned int distance = 0;
+        int key_off = sc->keyframes && sc->keyframes[0] == 1;
+
+        st->nb_frames = sc->sample_count;
+        for (i = 0; i < sc->chunk_count; i++) {
+            current_offset = sc->chunk_offsets[i];
+            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
+                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+                stsc_index++;
+            for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
+                if (current_sample >= sc->sample_count) {
+                    av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
+                    goto out;
+                }
+                keyframe = !sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index];
+                if (keyframe) {
+                    distance = 0;
+                    if (stss_index + 1 < sc->keyframe_count)
+                        stss_index++;
+                }
+                sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
+                dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                        "size %d, distance %d, keyframe %d\n", st->index, current_sample,
+                        current_offset, current_dts, sample_size, distance, keyframe);
+                if(sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id)
+                    av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
+                                    keyframe ? AVINDEX_KEYFRAME : 0);
+                current_offset += sample_size;
+                assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
+                current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
+                distance++;
+                stts_sample++;
+                current_sample++;
+                if (stts_index + 1 < sc->stts_count && stts_sample == sc->stts_data[stts_index].count) {
+                    stts_sample = 0;
+                    stts_index++;
+                }
+            }
+        }
+    } else { /* read whole chunk */
+        unsigned int chunk_samples, chunk_size, chunk_duration;
+        unsigned int frames = 1;
+        for (i = 0; i < sc->chunk_count; i++) {
+            current_offset = sc->chunk_offsets[i];
+            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
+                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+                stsc_index++;
+            chunk_samples = sc->sample_to_chunk[stsc_index].count;
+            /* get chunk size, beware of alaw/ulaw/mace */
+            if (sc->samples_per_frame > 0 &&
+                (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
+                if (sc->samples_per_frame < 1024)
+                    chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
+                else {
+                    chunk_size = sc->bytes_per_frame;
+                    frames = chunk_samples / sc->samples_per_frame;
+                    chunk_samples = sc->samples_per_frame;
+                }
+            } else if (sc->sample_size > 1 || st->codec->bits_per_sample == 8) {
+                chunk_size = chunk_samples * sc->sample_size;
+            } else {
+                av_log(mov->fc, AV_LOG_ERROR, "could not determine chunk size, report problem\n");
+                goto out;
+            }
+            for (j = 0; j < frames; j++) {
+                av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
+                /* get chunk duration */
+                chunk_duration = 0;
+                while (chunk_samples > 0) {
+                    if (chunk_samples < sc->stts_data[stts_index].count) {
+                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                        sc->stts_data[stts_index].count -= chunk_samples;
+                        break;
+                    } else {
+                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                        chunk_samples -= sc->stts_data[stts_index].count;
+                        if (stts_index + 1 < sc->stts_count)
+                            stts_index++;
+                    }
+                }
+                current_offset += sc->bytes_per_frame;
+                dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
+                        "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
+                assert(chunk_duration % sc->time_rate == 0);
+                current_dts += chunk_duration / sc->time_rate;
+            }
+        }
+    }
+ out:
+    /* adjust sample count to avindex entries */
+    sc->sample_count = st->nb_index_entries;
+}
 
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -1433,114 +1539,6 @@ static int mov_probe(AVProbeData *p)
         }
     }
     return score;
-}
-
-static void mov_build_index(MOVContext *mov, AVStream *st)
-{
-    MOVStreamContext *sc = st->priv_data;
-    offset_t current_offset;
-    int64_t current_dts = 0;
-    unsigned int stts_index = 0;
-    unsigned int stsc_index = 0;
-    unsigned int stss_index = 0;
-    unsigned int i, j;
-
-    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO ||
-        sc->audio_cid == -2) {
-        unsigned int current_sample = 0;
-        unsigned int stts_sample = 0;
-        unsigned int keyframe, sample_size;
-        unsigned int distance = 0;
-        int key_off = sc->keyframes && sc->keyframes[0] == 1;
-
-        st->nb_frames = sc->sample_count;
-        for (i = 0; i < sc->chunk_count; i++) {
-            current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
-                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
-                stsc_index++;
-            for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
-                if (current_sample >= sc->sample_count) {
-                    av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
-                    goto out;
-                }
-                keyframe = !sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index];
-                if (keyframe) {
-                    distance = 0;
-                    if (stss_index + 1 < sc->keyframe_count)
-                        stss_index++;
-                }
-                sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
-                dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
-                        "size %d, distance %d, keyframe %d\n", st->index, current_sample,
-                        current_offset, current_dts, sample_size, distance, keyframe);
-                if(sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id)
-                    av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
-                                    keyframe ? AVINDEX_KEYFRAME : 0);
-                current_offset += sample_size;
-                assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
-                current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
-                distance++;
-                stts_sample++;
-                current_sample++;
-                if (stts_index + 1 < sc->stts_count && stts_sample == sc->stts_data[stts_index].count) {
-                    stts_sample = 0;
-                    stts_index++;
-                }
-            }
-        }
-    } else { /* read whole chunk */
-        unsigned int chunk_samples, chunk_size, chunk_duration;
-        unsigned int frames = 1;
-        for (i = 0; i < sc->chunk_count; i++) {
-            current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
-                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
-                stsc_index++;
-            chunk_samples = sc->sample_to_chunk[stsc_index].count;
-            /* get chunk size, beware of alaw/ulaw/mace */
-            if (sc->samples_per_frame > 0 &&
-                (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
-                if (sc->samples_per_frame < 1024)
-                    chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
-                else {
-                    chunk_size = sc->bytes_per_frame;
-                    frames = chunk_samples / sc->samples_per_frame;
-                    chunk_samples = sc->samples_per_frame;
-                }
-            } else if (sc->sample_size > 1 || st->codec->bits_per_sample == 8) {
-                chunk_size = chunk_samples * sc->sample_size;
-            } else {
-                av_log(mov->fc, AV_LOG_ERROR, "could not determine chunk size, report problem\n");
-                goto out;
-            }
-            for (j = 0; j < frames; j++) {
-                av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
-                /* get chunk duration */
-                chunk_duration = 0;
-                while (chunk_samples > 0) {
-                    if (chunk_samples < sc->stts_data[stts_index].count) {
-                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
-                        sc->stts_data[stts_index].count -= chunk_samples;
-                        break;
-                    } else {
-                        chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
-                        chunk_samples -= sc->stts_data[stts_index].count;
-                        if (stts_index + 1 < sc->stts_count)
-                            stts_index++;
-                    }
-                }
-                current_offset += sc->bytes_per_frame;
-                dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
-                        "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
-                assert(chunk_duration % sc->time_rate == 0);
-                current_dts += chunk_duration / sc->time_rate;
-            }
-        }
-    }
- out:
-    /* adjust sample count to avindex entries */
-    sc->sample_count = st->nb_index_entries;
 }
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
