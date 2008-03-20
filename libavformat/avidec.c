@@ -43,6 +43,8 @@ typedef struct AVIStream {
 
     int prefix;                       ///< normally 'd'<<8 + 'c' or 'w'<<8 + 'b'
     int prefix_count;
+    uint32_t pal[256];
+    int has_pal;
 } AVIStream;
 
 typedef struct {
@@ -684,6 +686,14 @@ resync:
             size= ast->remaining;
         av_get_packet(pb, pkt, size);
 
+        if(ast->has_pal && pkt->data && pkt->size<(unsigned)INT_MAX/2){
+            ast->has_pal=0;
+            pkt->size += 4*256;
+            pkt->data = av_realloc(pkt->data, pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if(pkt->data)
+                memcpy(pkt->data + pkt->size - 4*256, ast->pal, 4*256);
+        }
+
         if (ENABLE_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
             size = dv_produce_packet(avi->dv_demux, pkt,
@@ -781,6 +791,17 @@ resync:
                 goto resync;
           }
 
+          if (d[2] == 'p' && d[3] == 'c' && size<=4*256+4) {
+                int k = get_byte(pb);
+                int last = (k + get_byte(pb) - 1) & 0xFF;
+
+                get_le16(pb); //flags
+
+                for (; k <= last; k++)
+                    ast->pal[k] = get_be32(pb)>>8;// b + (g << 8) + (r << 16);
+                ast->has_pal= 1;
+                goto resync;
+          } else
           if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) ||
                 d[2]*256+d[3] == ast->prefix /*||
                 (d[2] == 'd' && d[3] == 'c') ||
@@ -807,35 +828,6 @@ resync:
             goto resync;
           }
         }
-        /* palette changed chunk */
-        if (   d[0] >= '0' && d[0] <= '9'
-            && d[1] >= '0' && d[1] <= '9'
-            && ((d[2] == 'p' && d[3] == 'c'))
-            && n < s->nb_streams && i + size <= avi->fsize) {
-
-            AVStream *st;
-            int first, clr, flags, k, p;
-
-            st = s->streams[n];
-
-            first = get_byte(pb);
-            clr = get_byte(pb);
-            if(!clr) /* all 256 colors used */
-                clr = 256;
-            flags = get_le16(pb);
-            p = 4;
-            for (k = first; k < clr + first; k++) {
-                int r, g, b;
-                r = get_byte(pb);
-                g = get_byte(pb);
-                b = get_byte(pb);
-                    get_byte(pb);
-                st->codec->palctrl->palette[k] = b + (g << 8) + (r << 16);
-            }
-            st->codec->palctrl->palette_changed = 1;
-            goto resync;
-        }
-
     }
 
     return -1;
