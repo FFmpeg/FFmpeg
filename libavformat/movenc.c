@@ -616,7 +616,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_avcc_tag(pb, track);
         if(track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
-    } else if(track->vosLen > 0)
+    } else if(track->vosLen > 0 &&
+              track->enc->codec_id != CODEC_ID_MPEG2VIDEO)
         mov_write_glbl_tag(pb, track);
 
     return updateSize (pb, pos);
@@ -1536,6 +1537,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc = trk->enc;
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
+    int dump_extradata = 0;
 
     if (url_is_streamed(s->pb)) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
@@ -1581,6 +1583,11 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->vosLen = 640;
         trk->vosData = av_malloc(trk->vosLen);
         memcpy(trk->vosData, pkt->data, 640);
+    } else if (enc->codec_id == CODEC_ID_MPEG2VIDEO && trk->vosLen > 4 &&
+               AV_RB32(trk->vosData) == 0x000001b3 && pkt->flags & PKT_FLAG_KEY &&
+               pkt->size > 4 && AV_RB32(pkt->data) != 0x000001b3) {
+        size += trk->vosLen;
+        dump_extradata = 1;
     }
 
     if (!(trk->entry % MOV_INDEX_CLUSTER_SIZE)) {
@@ -1608,6 +1615,10 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->sampleCount += samplesInChunk;
     mov->mdat_size += size;
 
+    if (dump_extradata) {
+        put_buffer(pb, trk->vosData, trk->vosLen);
+        size -= trk->vosLen;
+    }
     put_buffer(pb, pkt->data, size);
 
     put_flush_packet(pb);
