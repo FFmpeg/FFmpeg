@@ -1048,8 +1048,6 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, i
 }\
 \
 static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
-    uint64_t temp;\
-\
     asm volatile(\
         "pxor %%mm7, %%mm7                \n\t"\
         "1:                               \n\t"\
@@ -1078,7 +1076,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int
         "paddw %%mm1, %%mm5               \n\t" /* d */\
         "pmullw "MANGLE(ff_pw_20)", %%mm0 \n\t" /* 20a */\
         "psubw %%mm5, %%mm0               \n\t" /* 20a - d */\
-        "paddw %6, %%mm6                  \n\t"\
+        "paddw %5, %%mm6                  \n\t"\
         "paddw %%mm6, %%mm0               \n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm0                  \n\t"\
         /* mm1=EFGH, mm2=DEFG, mm3=CDEF, mm4=BCDE, mm7=0 */\
@@ -1097,7 +1095,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int
         "pmullw "MANGLE(ff_pw_20)", %%mm1 \n\t" /* 20a */\
         "pmullw "MANGLE(ff_pw_3)", %%mm3  \n\t" /* 3c - 6b */\
         "psubw %%mm4, %%mm3               \n\t" /* -6b + 3c - d */\
-        "paddw %6, %%mm1                  \n\t"\
+        "paddw %5, %%mm1                  \n\t"\
         "paddw %%mm1, %%mm3               \n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm3                  \n\t"\
         "packuswb %%mm3, %%mm0            \n\t"\
@@ -1108,7 +1106,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int
         "decl %2                          \n\t"\
         " jnz 1b                          \n\t"\
         : "+a"(src), "+c"(dst), "+g"(h)\
-        : "S"((long)srcStride), "D"((long)dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
+        : "S"((long)srcStride), "D"((long)dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER)\
         : "memory"\
     );\
 }\
