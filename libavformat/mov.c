@@ -1089,10 +1089,13 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+static void mov_build_index(MOVContext *mov, AVStream *st);
+
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
+    int ret;
 
     st = av_new_stream(c->fc, c->fc->nb_streams);
     if (!st) return -2;
@@ -1106,7 +1109,63 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->codec->codec_type = CODEC_TYPE_DATA;
     st->start_time = 0; /* XXX: check */
 
-    return mov_read_default(c, pb, atom);
+    if ((ret = mov_read_default(c, pb, atom)) < 0)
+        return ret;
+
+    /* sanity checks */
+    if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
+       (!sc->sample_size && !sc->sample_count)){
+        av_log(c->fc, AV_LOG_ERROR, "missing mandatory atoms, broken header\n");
+        sc->sample_count = 0; //ignore track
+        return 0;
+    }
+    if(!sc->time_rate)
+        sc->time_rate=1;
+    if(!sc->time_scale)
+        sc->time_scale= c->time_scale;
+    av_set_pts_info(st, 64, sc->time_rate, sc->time_scale);
+
+    if (st->codec->codec_type == CODEC_TYPE_AUDIO && sc->stts_count == 1)
+        st->codec->frame_size = av_rescale(sc->time_rate, st->codec->sample_rate, sc->time_scale);
+
+    if(st->duration != AV_NOPTS_VALUE){
+        assert(st->duration % sc->time_rate == 0);
+        st->duration /= sc->time_rate;
+    }
+    sc->ffindex = st->index;
+    mov_build_index(c, st);
+
+    if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
+        if (url_fopen(&sc->pb, sc->drefs[sc->dref_id-1].path, URL_RDONLY) < 0)
+            av_log(c->fc, AV_LOG_ERROR, "stream %d, error opening external essence: %s\n",
+                   st->index, strerror(errno));
+    } else
+        sc->pb = c->fc->pb;
+
+    switch (st->codec->codec_id) {
+#ifdef CONFIG_H261_DECODER
+    case CODEC_ID_H261:
+#endif
+#ifdef CONFIG_H263_DECODER
+    case CODEC_ID_H263:
+#endif
+#ifdef CONFIG_MPEG4_DECODER
+    case CODEC_ID_MPEG4:
+#endif
+        st->codec->width= 0; /* let decoder init width/height */
+        st->codec->height= 0;
+        break;
+#ifdef CONFIG_LIBFAAD
+    case CODEC_ID_AAC:
+#endif
+#ifdef CONFIG_VORBIS_DECODER
+    case CODEC_ID_VORBIS:
+#endif
+    case CODEC_ID_MP3ON4:
+        st->codec->sample_rate= 0; /* let decoder init parameters properly */
+        break;
+    }
+    return 0;
 }
 
 static void mov_parse_udta_string(ByteIOContext *pb, char *str, int size)
@@ -1506,64 +1565,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
-
-    for(i=0; i<s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        MOVStreamContext *sc = st->priv_data;
-        /* sanity checks */
-        if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
-           (!sc->sample_size && !sc->sample_count)){
-            av_log(s, AV_LOG_ERROR, "missing mandatory atoms, broken header\n");
-            sc->sample_count = 0; //ignore track
-            continue;
-        }
-        if(!sc->time_rate)
-            sc->time_rate=1;
-        if(!sc->time_scale)
-            sc->time_scale= mov->time_scale;
-        av_set_pts_info(st, 64, sc->time_rate, sc->time_scale);
-
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO && sc->stts_count == 1)
-            st->codec->frame_size = av_rescale(sc->time_rate, st->codec->sample_rate, sc->time_scale);
-
-        if(st->duration != AV_NOPTS_VALUE){
-            assert(st->duration % sc->time_rate == 0);
-            st->duration /= sc->time_rate;
-        }
-        sc->ffindex = i;
-        mov_build_index(mov, st);
-
-        if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
-            if (url_fopen(&sc->pb, sc->drefs[sc->dref_id-1].path, URL_RDONLY) < 0)
-                av_log(s, AV_LOG_ERROR, "stream %d, error opening external essence: %s\n",
-                       st->index, strerror(errno));
-        } else
-            sc->pb = s->pb;
-
-        switch (st->codec->codec_id) {
-#ifdef CONFIG_H261_DECODER
-        case CODEC_ID_H261:
-#endif
-#ifdef CONFIG_H263_DECODER
-        case CODEC_ID_H263:
-#endif
-#ifdef CONFIG_MPEG4_DECODER
-        case CODEC_ID_MPEG4:
-#endif
-            st->codec->width= 0; /* let decoder init width/height */
-            st->codec->height= 0;
-            break;
-#ifdef CONFIG_LIBFAAD
-        case CODEC_ID_AAC:
-#endif
-#ifdef CONFIG_VORBIS_DECODER
-        case CODEC_ID_VORBIS:
-#endif
-        case CODEC_ID_MP3ON4:
-            st->codec->sample_rate= 0; /* let decoder init parameters properly */
-            break;
-        }
-    }
 
     for(i=0; i<s->nb_streams; i++) {
         MOVStreamContext *sc = s->streams[i]->priv_data;
