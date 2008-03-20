@@ -994,7 +994,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, in
         "add %4, %1                       \n\t"\
         "decl %2                          \n\t"\
         " jnz 1b                          \n\t"\
-        : "+a"(src), "+c"(dst), "+g"(h)\
+        : "+a"(src), "+c"(dst), "+D"(h)\
         : "d"((long)srcStride), "S"((long)dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
         : "memory"\
     );\
@@ -1105,7 +1105,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int
         "add %4, %1                       \n\t"\
         "decl %2                          \n\t"\
         " jnz 1b                          \n\t"\
-        : "+a"(src), "+c"(dst), "+g"(h)\
+        : "+a"(src), "+c"(dst), "+d"(h)\
         : "S"((long)srcStride), "D"((long)dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER)\
         : "memory"\
     );\
