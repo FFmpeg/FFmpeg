@@ -2301,15 +2301,15 @@ static int mp_decode_frame(MPADecodeContext *s,
     dprintf(s->avctx, "frame %d:\n", s->frame_count);
     switch(s->layer) {
     case 1:
-        avctx->frame_size = 384;
+        s->avctx->frame_size = 384;
         nb_frames = mp_decode_layer1(s);
         break;
     case 2:
-        avctx->frame_size = 1152;
+        s->avctx->frame_size = 1152;
         nb_frames = mp_decode_layer2(s);
         break;
     case 3:
-        avctx->frame_size = s->lsf ? 576 : 1152;
+        s->avctx->frame_size = s->lsf ? 576 : 1152;
     default:
         nb_frames = mp_decode_layer3(s);
 
