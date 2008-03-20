@@ -1271,6 +1271,14 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->sample_rate= 0; /* let decoder init parameters properly */
         break;
     }
+
+    /* Do not need those anymore. */
+    av_freep(&sc->chunk_offsets);
+    av_freep(&sc->sample_to_chunk);
+    av_freep(&sc->sample_sizes);
+    av_freep(&sc->keyframes);
+    av_freep(&sc->stts_data);
+
     return 0;
 }
 
@@ -1545,7 +1553,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i, err;
+    int err;
     MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
@@ -1564,15 +1572,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
 
-    for(i=0; i<s->nb_streams; i++) {
-        MOVStreamContext *sc = s->streams[i]->priv_data;
-        /* Do not need those anymore. */
-        av_freep(&sc->chunk_offsets);
-        av_freep(&sc->sample_to_chunk);
-        av_freep(&sc->sample_sizes);
-        av_freep(&sc->keyframes);
-        av_freep(&sc->stts_data);
-    }
     return 0;
 }
 
