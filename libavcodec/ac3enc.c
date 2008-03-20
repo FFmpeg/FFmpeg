@@ -676,7 +676,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     } else {
         /* use default bandwidth setting */
         /* XXX: should compute the bandwidth according to the frame
-           size, so that we avoid anoying high freq artefacts */
+           size, so that we avoid anoying high freq artifacts */
         bw_code = 50;
     }
     for(ch=0;ch<s->nb_channels;ch++) {
