@@ -2301,12 +2301,15 @@ static int mp_decode_frame(MPADecodeContext *s,
     dprintf(s->avctx, "frame %d:\n", s->frame_count);
     switch(s->layer) {
     case 1:
+        avctx->frame_size = 384;
         nb_frames = mp_decode_layer1(s);
         break;
     case 2:
+        avctx->frame_size = 1152;
         nb_frames = mp_decode_layer2(s);
         break;
     case 3:
+        avctx->frame_size = s->lsf ? 576 : 1152;
     default:
         nb_frames = mp_decode_layer3(s);
 
@@ -2395,20 +2398,6 @@ retry:
     avctx->channels = s->nb_channels;
     avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
-    switch(s->layer) {
-    case 1:
-        avctx->frame_size = 384;
-        break;
-    case 2:
-        avctx->frame_size = 1152;
-        break;
-    case 3:
-        if (s->lsf)
-            avctx->frame_size = 576;
-        else
-            avctx->frame_size = 1152;
-        break;
-    }
 
     if(s->frame_size<=0 || s->frame_size > buf_size){
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
@@ -2472,7 +2461,7 @@ static int decode_frame_adu(AVCodecContext * avctx,
     avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
-    avctx->frame_size=s->frame_size = len;
+    s->frame_size = len;
 
     if (avctx->parse_only) {
         out_size = buf_size;
@@ -2635,7 +2624,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 
     /* update codec info */
     avctx->sample_rate = s->mp3decctx[0]->sample_rate;
-    avctx->frame_size= buf_size;
     avctx->bit_rate = 0;
     for (i = 0; i < s->frames; i++)
         avctx->bit_rate += s->mp3decctx[i]->bit_rate;
