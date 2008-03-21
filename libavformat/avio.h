@@ -207,11 +207,36 @@ void put_tag(ByteIOContext *s, const char *tag);
 
 void put_strz(ByteIOContext *s, const char *buf);
 
+/**
+ * fseek() equivalent for ByteIOContext.
+ * @return new position or AVERROR.
+ */
 offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence);
+
+/**
+ * Skip given number of bytes forward.
+ * @param offset number of bytes
+ */
 void url_fskip(ByteIOContext *s, offset_t offset);
+
+/**
+ * ftell() equivalent for ByteIOContext.
+ * @return position or AVERROR.
+ */
 offset_t url_ftell(ByteIOContext *s);
+
+/**
+ * Gets the filesize.
+ * @return filesize or AVERROR
+ */
 offset_t url_fsize(ByteIOContext *s);
+
+/**
+ * feof() equivalent for ByteIOContext.
+ * @return non zero if and only if end of file
+ */
 int url_feof(ByteIOContext *s);
+
 int url_ferror(ByteIOContext *s);
 
 int av_url_read_fpause(ByteIOContext *h, int pause);
