@@ -1460,7 +1460,6 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
-/* mp4 atoms */
 { MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
 { MKTAG( 'c', 't', 't', 's' ), mov_read_ctts }, /* composition time to sample */
 { MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default },
@@ -1499,7 +1498,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { 0, NULL }
 };
 
-/* XXX: is it sufficient ? */
 static int mov_probe(AVProbeData *p)
 {
     unsigned int offset;
