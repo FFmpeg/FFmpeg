@@ -642,7 +642,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     entries = get_be32(pb);
 
-    for(pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) { //Parsing Sample description table
+    for(pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) {
+        //Parsing Sample description table
         enum CodecID id;
         int dref_id;
         MOV_atom_t a = { 0, 0, 0 };
@@ -1178,8 +1179,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 }
                 current_offset += sc->bytes_per_frame;
-                dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, "
-                        "duration %d\n", st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
+                dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", "
+                        "size %d, duration %d\n", st->index, i, current_offset, current_dts,
+                        chunk_size, chunk_duration);
                 assert(chunk_duration % sc->time_rate == 0);
                 current_dts += chunk_duration / sc->time_rate;
             }
@@ -1338,7 +1340,8 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
     get_be32(pb); /* reserved */
     st->start_time = 0; /* check */
-    (version == 1) ? get_be64(pb) : get_be32(pb); /* highlevel (considering edits) duration in movie timebase */
+    /* highlevel (considering edits) duration in movie timebase */
+    (version == 1) ? get_be64(pb) : get_be32(pb);
     get_be32(pb); /* reserved */
     get_be32(pb); /* reserved */
 
@@ -1545,8 +1548,8 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
-
-    if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
+    /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
+    if(!url_is_streamed(pb))
         atom.size = url_fsize(pb);
     else
         atom.size = INT64_MAX;
