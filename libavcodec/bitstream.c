@@ -39,7 +39,8 @@
  * @deprecated. Code which uses ff_realloc_static is broken/misdesigned
  * and should correctly use static arrays
  */
-attribute_deprecated void *ff_realloc_static(void *ptr, unsigned int size);
+attribute_deprecated av_alloc_size(2)
+void *ff_realloc_static(void *ptr, unsigned int size);
 
 void align_put_bits(PutBitContext *s)
 {
