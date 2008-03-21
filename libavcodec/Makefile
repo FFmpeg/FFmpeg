@@ -152,6 +152,7 @@ OBJS-$(CONFIG_RA_144_DECODER)          += ra144.o
 OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o
 OBJS-$(CONFIG_RAWVIDEO_DECODER)        += rawdec.o
 OBJS-$(CONFIG_RAWVIDEO_ENCODER)        += rawenc.o
+OBJS-$(CONFIG_RL2_DECODER)             += rl2.o
 OBJS-$(CONFIG_ROQ_DECODER)             += roqvideodec.o roqvideo.o
 OBJS-$(CONFIG_ROQ_ENCODER)             += roqvideoenc.o roqvideo.o elbg.o
 OBJS-$(CONFIG_ROQ_DPCM_DECODER)        += dpcm.o
