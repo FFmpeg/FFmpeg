@@ -135,6 +135,7 @@ void av_register_all(void)
     REGISTER_MUXER    (PSP, psp);
     REGISTER_DEMUXER  (PVA, pva);
     REGISTER_MUXDEMUX (RAWVIDEO, rawvideo);
+    REGISTER_DEMUXER  (RL2, rl2);
     REGISTER_MUXDEMUX (RM, rm);
     REGISTER_MUXDEMUX (ROQ, roq);
     REGISTER_DEMUXER  (REDIR, redir);
