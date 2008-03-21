@@ -191,7 +191,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             offset_t start_pos = url_ftell(pb);
             int64_t left;
             err = mov_default_parse_table[i].parse(c, pb, a);
-            if (c->found_moov && c->found_mdat)
+            if (url_is_streamed(pb) && c->found_moov && c->found_mdat)
                 break;
             left = a.size - url_ftell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
@@ -390,9 +390,6 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(atom.size == 0) /* wrong one (MP4) */
         return 0;
     c->found_mdat=1;
-    if(c->found_moov)
-        return 1; /* found both, just go */
-    url_fskip(pb, atom.size);
     return 0; /* now go for moov */
 }
 
@@ -416,8 +413,6 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
     /* so we don't parse the whole file if over a network */
     c->found_moov=1;
-    if(c->found_mdat)
-        return 1; /* found both, just go */
     return 0; /* now go for mdat */
 }
 
