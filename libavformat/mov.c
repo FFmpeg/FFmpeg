@@ -132,10 +132,10 @@ typedef struct MOVContext {
 
 /* those functions parse an atom */
 /* return code:
- 1: found what I wanted, exit
- 0: continue to parse next atom
+  1: found what I wanted, exit
+  0: continue to parse next atom
  -1: error occured, exit
- */
+*/
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
     uint32_t type;
@@ -1565,7 +1565,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     err = mov_read_default(mov, pb, atom);
     if (err<0 || (!mov->found_moov && !mov->found_mdat)) {
         av_log(s, AV_LOG_ERROR, "mov: header not found !!! (err:%d, moov:%d, mdat:%d) pos:%"PRId64"\n",
-                err, mov->found_moov, mov->found_mdat, url_ftell(pb));
+               err, mov->found_moov, mov->found_mdat, url_ftell(pb));
         return -1;
     }
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
