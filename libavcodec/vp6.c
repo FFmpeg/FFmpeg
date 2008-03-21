@@ -610,7 +610,7 @@ static void vp6_filter(vp56_context_t *s, uint8_t *dst, uint8_t *src,
     }
 }
 
-static int vp6_decode_init(AVCodecContext *avctx)
+static av_cold int vp6_decode_init(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 

@@ -265,7 +265,7 @@ static void vp5_default_models_init(vp56_context_t *s)
     memset(model->vector_pdv, 0x80, sizeof(model->vector_pdv));
 }
 
-static int vp5_decode_init(AVCodecContext *avctx)
+static av_cold int vp5_decode_init(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 

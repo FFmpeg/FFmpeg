@@ -148,7 +148,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
  * Init 8BPS decoder
  *
  */
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
         EightBpsContext * const c = avctx->priv_data;
 
@@ -208,7 +208,7 @@ static int decode_init(AVCodecContext *avctx)
  * Uninit 8BPS decoder
  *
  */
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
         EightBpsContext * const c = avctx->priv_data;
 

@@ -209,7 +209,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
 #endif
 }
 
-static int faac_decode_end(AVCodecContext *avctx)
+static av_cold int faac_decode_end(AVCodecContext *avctx)
 {
     FAACContext *s = avctx->priv_data;
 
@@ -219,7 +219,7 @@ static int faac_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int faac_decode_init(AVCodecContext *avctx)
+static av_cold int faac_decode_init(AVCodecContext *avctx)
 {
     FAACContext *s = avctx->priv_data;
     faacDecConfigurationPtr faac_cfg;

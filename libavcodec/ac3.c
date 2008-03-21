@@ -223,7 +223,7 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
  * note: This function must remain thread safe because it is called by the
  *       AVParser init code.
  */
-void ac3_common_init(void)
+av_cold void ac3_common_init(void)
 {
     int i, j, k, l, v;
     /* compute bndtab and masktab from bandsz */

@@ -110,7 +110,7 @@ static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t buf
     return 0x20+4;
 }
 
-static int adx_encode_init(AVCodecContext *avctx)
+static av_cold int adx_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
@@ -126,7 +126,7 @@ static int adx_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int adx_encode_close(AVCodecContext *avctx)
+static av_cold int adx_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
 

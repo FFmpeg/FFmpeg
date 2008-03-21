@@ -479,7 +479,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
     return 0;
 }
 
-static int svq1_encode_init(AVCodecContext *avctx)
+static av_cold int svq1_encode_init(AVCodecContext *avctx)
 {
     SVQ1Context * const s = avctx->priv_data;
 
@@ -554,7 +554,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     return (put_bits_count(&s->pb) / 8);
 }
 
-static int svq1_encode_end(AVCodecContext *avctx)
+static av_cold int svq1_encode_end(AVCodecContext *avctx)
 {
     SVQ1Context * const s = avctx->priv_data;
     int i;

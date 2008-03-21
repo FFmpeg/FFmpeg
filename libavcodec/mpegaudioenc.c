@@ -61,7 +61,7 @@ typedef struct MpegAudioContext {
 #include "mpegaudiodata.h"
 #include "mpegaudiotab.h"
 
-static int MPA_encode_init(AVCodecContext *avctx)
+static av_cold int MPA_encode_init(AVCodecContext *avctx)
 {
     MpegAudioContext *s = avctx->priv_data;
     int freq = avctx->sample_rate;
@@ -781,7 +781,7 @@ static int MPA_encode_frame(AVCodecContext *avctx,
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
-static int MPA_encode_close(AVCodecContext *avctx)
+static av_cold int MPA_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;

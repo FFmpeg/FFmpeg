@@ -97,7 +97,7 @@ static int copy_region_enc(uint8_t *sptr, uint8_t *dptr,
     return 0;
 }
 
-static int flashsv_encode_init(AVCodecContext *avctx)
+static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 
@@ -271,7 +271,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
     return res;
 }
 
-static int flashsv_encode_end(AVCodecContext *avctx)
+static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 

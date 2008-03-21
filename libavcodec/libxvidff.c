@@ -81,7 +81,7 @@ void xvid_correct_framerate(AVCodecContext *avctx);
  * @param avctx AVCodecContext pointer to context
  * @return Returns 0 on success, -1 on failure
  */
-int ff_xvid_encode_init(AVCodecContext *avctx)  {
+av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
     int xerr, i;
     int xvid_flags = avctx->flags;
     xvid_context_t *x = avctx->priv_data;
@@ -461,7 +461,7 @@ int ff_xvid_encode_frame(AVCodecContext *avctx,
  * @param avctx AVCodecContext pointer to context
  * @return Returns 0, success guaranteed
  */
-int ff_xvid_encode_close(AVCodecContext *avctx) {
+av_cold int ff_xvid_encode_close(AVCodecContext *avctx) {
     xvid_context_t *x = avctx->priv_data;
 
     xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);

@@ -113,7 +113,7 @@ static VLC dc_ccp_vlc;
 static VLC ac_ccp_vlc;
 static VLC asv2_level_vlc;
 
-static void init_vlcs(ASV1Context *a){
+static av_cold void init_vlcs(ASV1Context *a){
     static int done = 0;
 
     if (!done) {
@@ -521,7 +521,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 }
 #endif /* CONFIG_ENCODERS */
 
-static void common_init(AVCodecContext *avctx){
+static av_cold void common_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
 
     dsputil_init(&a->dsp, avctx);
@@ -535,7 +535,7 @@ static void common_init(AVCodecContext *avctx){
     a->avctx= avctx;
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *p= (AVFrame*)&a->picture;
     int i;
@@ -570,7 +570,7 @@ static int decode_init(AVCodecContext *avctx){
 }
 
 #ifdef CONFIG_ENCODERS
-static int encode_init(AVCodecContext *avctx){
+static av_cold int encode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     int i;
     const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
@@ -595,7 +595,7 @@ static int encode_init(AVCodecContext *avctx){
 }
 #endif
 
-static int decode_end(AVCodecContext *avctx){
+static av_cold int decode_end(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
 
     av_freep(&a->bitstream_buffer);

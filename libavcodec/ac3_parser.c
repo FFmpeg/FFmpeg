@@ -137,7 +137,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     return hdr.frame_size;
 }
 
-static int ac3_parse_init(AVCodecParserContext *s1)
+static av_cold int ac3_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
     s->inbuf_ptr = s->inbuf;

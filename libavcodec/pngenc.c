@@ -422,7 +422,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     goto the_end;
 }
 
-static int png_enc_init(AVCodecContext *avctx){
+static av_cold int png_enc_init(AVCodecContext *avctx){
     PNGEncContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);

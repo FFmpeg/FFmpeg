@@ -73,7 +73,7 @@ static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
               ff_mjpeg_val_ac_chrominance, 251, 0, 1);
 }
 
-int ff_mjpeg_decode_init(AVCodecContext *avctx)
+av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
 
@@ -1338,7 +1338,7 @@ the_end:
     return buf_ptr - buf;
 }
 
-int ff_mjpeg_decode_end(AVCodecContext *avctx)
+av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;

@@ -110,7 +110,7 @@ static const int sol_table_16[128] = {
 
 
 
-static int dpcm_decode_init(AVCodecContext *avctx)
+static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
     int i;

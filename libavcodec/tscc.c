@@ -253,7 +253,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
  * Init tscc decoder
  *
  */
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
     int zret; // Zlib return code
@@ -316,7 +316,7 @@ static int decode_init(AVCodecContext *avctx)
  * Uninit tscc decoder
  *
  */
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
 

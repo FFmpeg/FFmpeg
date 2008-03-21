@@ -522,7 +522,7 @@ av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
     return s->mb_width*s->mb_height - mb_pos;
 }
 
-static int rv10_decode_init(AVCodecContext *avctx)
+static av_cold int rv10_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     static int done=0;
@@ -588,7 +588,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int rv10_decode_end(AVCodecContext *avctx)
+static av_cold int rv10_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 

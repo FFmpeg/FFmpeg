@@ -133,7 +133,7 @@ static int targa_encode_frame(AVCodecContext *avctx,
     return out + 26 - outbuf;
 }
 
-static int targa_encode_init(AVCodecContext *avctx)
+static av_cold int targa_encode_init(AVCodecContext *avctx)
 {
     return 0;
 }

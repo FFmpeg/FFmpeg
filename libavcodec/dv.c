@@ -107,7 +107,7 @@ static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
     }
 }
 
-static int dvvideo_init(AVCodecContext *avctx)
+static av_cold int dvvideo_init(AVCodecContext *avctx)
 {
     DVVideoContext *s = avctx->priv_data;
     DSPContext dsp;

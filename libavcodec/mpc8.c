@@ -92,7 +92,7 @@ static int mpc8_get_mask(GetBitContext *gb, int size, int t)
     return mask;
 }
 
-static int mpc8_decode_init(AVCodecContext * avctx)
+static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 {
     int i;
     MPCContext *c = avctx->priv_data;

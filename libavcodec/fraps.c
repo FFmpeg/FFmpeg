@@ -55,7 +55,7 @@ typedef struct FrapsContext{
  * @param avctx codec context
  * @return 0 on success or negative if fails
  */
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
     FrapsContext * const s = avctx->priv_data;
 
@@ -343,7 +343,7 @@ static int decode_frame(AVCodecContext *avctx,
  * @param avctx codec context
  * @return 0 on success or negative if fails
  */
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
     FrapsContext *s = (FrapsContext*)avctx->priv_data;
 

@@ -457,7 +457,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     return 0;
 }
 
-static int wmv2_decode_init(AVCodecContext *avctx){
+static av_cold int wmv2_decode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
     if(avctx->idct_algo==FF_IDCT_AUTO){
@@ -474,7 +474,7 @@ static int wmv2_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int wmv2_decode_end(AVCodecContext *avctx)
+static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 {
     Wmv2Context *w = avctx->priv_data;
 

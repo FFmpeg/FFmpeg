@@ -139,7 +139,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
  * Init lcl encoder
  *
  */
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     LclEncContext *c = avctx->priv_data;
     int zret; // Zlib return code
@@ -207,7 +207,7 @@ static int encode_init(AVCodecContext *avctx)
  * Uninit lcl encoder
  *
  */
-static int encode_end(AVCodecContext *avctx)
+static av_cold int encode_end(AVCodecContext *avctx)
 {
     LclEncContext *c = avctx->priv_data;
 

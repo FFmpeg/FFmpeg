@@ -266,7 +266,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
     return av_clip(re_signal << 2, -0xffff, 0xffff);
 }
 
-static int g726_reset(G726Context* c, int bit_rate)
+static av_cold int g726_reset(G726Context* c, int bit_rate)
 {
     int i;
 
@@ -319,7 +319,7 @@ typedef struct AVG726Context {
     int code_size;
 } AVG726Context;
 
-static int g726_init(AVCodecContext * avctx)
+static av_cold int g726_init(AVCodecContext * avctx)
 {
     AVG726Context* c = (AVG726Context*)avctx->priv_data;
 
@@ -346,7 +346,7 @@ static int g726_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int g726_close(AVCodecContext *avctx)
+static av_cold int g726_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;

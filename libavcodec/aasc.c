@@ -44,7 +44,7 @@ typedef struct AascContext {
     } \
     stream_byte = buf[stream_ptr++];
 
-static int aasc_decode_init(AVCodecContext *avctx)
+static av_cold int aasc_decode_init(AVCodecContext *avctx)
 {
     AascContext *s = avctx->priv_data;
 
@@ -150,7 +150,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int aasc_decode_end(AVCodecContext *avctx)
+static av_cold int aasc_decode_end(AVCodecContext *avctx)
 {
     AascContext *s = avctx->priv_data;
 

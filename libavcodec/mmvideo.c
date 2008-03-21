@@ -47,7 +47,7 @@ typedef struct MmContext {
     AVFrame frame;
 } MmContext;
 
-static int mm_decode_init(AVCodecContext *avctx)
+static av_cold int mm_decode_init(AVCodecContext *avctx)
 {
     MmContext *s = avctx->priv_data;
 
@@ -182,7 +182,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int mm_decode_end(AVCodecContext *avctx)
+static av_cold int mm_decode_end(AVCodecContext *avctx)
 {
     MmContext *s = avctx->priv_data;
 

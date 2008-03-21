@@ -225,7 +225,7 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     LOCOContext * const l = avctx->priv_data;
     int version;
 

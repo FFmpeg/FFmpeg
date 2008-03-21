@@ -215,7 +215,7 @@ static int decode_frame(AVCodecContext *avctx,
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
-static void mdec_common_init(AVCodecContext *avctx){
+static av_cold void mdec_common_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
 
     dsputil_init(&a->dsp, avctx);
@@ -227,7 +227,7 @@ static void mdec_common_init(AVCodecContext *avctx){
     a->avctx= avctx;
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
     AVFrame *p= (AVFrame*)&a->picture;
 
@@ -247,7 +247,7 @@ static int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int decode_end(AVCodecContext *avctx){
+static av_cold int decode_end(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
 
     av_freep(&a->bitstream_buffer);

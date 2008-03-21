@@ -426,7 +426,7 @@ static void smc_decode_stream(SmcContext *s)
     }
 }
 
-static int smc_decode_init(AVCodecContext *avctx)
+static av_cold int smc_decode_init(AVCodecContext *avctx)
 {
     SmcContext *s = avctx->priv_data;
 
@@ -464,7 +464,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int smc_decode_end(AVCodecContext *avctx)
+static av_cold int smc_decode_end(AVCodecContext *avctx)
 {
     SmcContext *s = avctx->priv_data;
 

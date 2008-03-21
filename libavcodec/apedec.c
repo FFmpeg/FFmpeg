@@ -185,7 +185,7 @@ static inline int32_t scalarproduct(int16_t * v1, int16_t * v2, int order)
     return res;
 }
 
-static int ape_decode_init(AVCodecContext * avctx)
+static av_cold int ape_decode_init(AVCodecContext * avctx)
 {
     APEContext *s = avctx->priv_data;
     int i;
@@ -224,7 +224,7 @@ static int ape_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int ape_decode_close(AVCodecContext * avctx)
+static av_cold int ape_decode_close(AVCodecContext * avctx)
 {
     APEContext *s = avctx->priv_data;
     int i;

@@ -76,7 +76,7 @@ typedef struct FlicDecodeContext {
     int fli_type;  /* either 0xAF11 or 0xAF12, affects palette resolution */
 } FlicDecodeContext;
 
-static int flic_decode_init(AVCodecContext *avctx)
+static av_cold int flic_decode_init(AVCodecContext *avctx)
 {
     FlicDecodeContext *s = avctx->priv_data;
     unsigned char *fli_header = (unsigned char *)avctx->extradata;
@@ -726,7 +726,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
 }
 
 
-static int flic_decode_end(AVCodecContext *avctx)
+static av_cold int flic_decode_end(AVCodecContext *avctx)
 {
     FlicDecodeContext *s = avctx->priv_data;
 

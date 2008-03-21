@@ -54,7 +54,7 @@ typedef struct XanContext {
 
 } XanContext;
 
-static int xan_decode_init(AVCodecContext *avctx)
+static av_cold int xan_decode_init(AVCodecContext *avctx)
 {
     XanContext *s = avctx->priv_data;
 
@@ -445,7 +445,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int xan_decode_end(AVCodecContext *avctx)
+static av_cold int xan_decode_end(AVCodecContext *avctx)
 {
     XanContext *s = avctx->priv_data;
 

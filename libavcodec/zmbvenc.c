@@ -231,7 +231,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
 /**
  * Init zmbv encoder
  */
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     ZmbvEncContext * const c = avctx->priv_data;
     int zret; // Zlib return code
@@ -297,7 +297,7 @@ static int encode_init(AVCodecContext *avctx)
 /**
  * Uninit zmbv encoder
  */
-static int encode_end(AVCodecContext *avctx)
+static av_cold int encode_end(AVCodecContext *avctx)
 {
     ZmbvEncContext * const c = avctx->priv_data;
 

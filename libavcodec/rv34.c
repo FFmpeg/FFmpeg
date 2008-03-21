@@ -99,7 +99,7 @@ static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t 
 /**
  * Initialize all tables.
  */
-static void rv34_init_tables()
+static av_cold void rv34_init_tables()
 {
     int i, j, k;
 
@@ -1163,7 +1163,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
 /**
  * Initialize decoder.
  */
-int ff_rv34_decode_init(AVCodecContext *avctx)
+av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
     MpegEncContext *s = &r->s;
@@ -1285,7 +1285,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-int ff_rv34_decode_end(AVCodecContext *avctx)
+av_cold int ff_rv34_decode_end(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
 

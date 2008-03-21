@@ -127,7 +127,7 @@ typedef struct VqaContext {
 
 } VqaContext;
 
-static int vqa_decode_init(AVCodecContext *avctx)
+static av_cold int vqa_decode_init(AVCodecContext *avctx)
 {
     VqaContext *s = avctx->priv_data;
     unsigned char *vqa_header;
@@ -592,7 +592,7 @@ static int vqa_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int vqa_decode_end(AVCodecContext *avctx)
+static av_cold int vqa_decode_end(AVCodecContext *avctx)
 {
     VqaContext *s = avctx->priv_data;
 

@@ -32,7 +32,7 @@ typedef struct SUNRASTContext {
     AVFrame picture;
 } SUNRASTContext;
 
-static int sunrast_init(AVCodecContext *avctx) {
+static av_cold int sunrast_init(AVCodecContext *avctx) {
     SUNRASTContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
@@ -172,7 +172,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     return buf - bufstart;
 }
 
-static int sunrast_end(AVCodecContext *avctx) {
+static av_cold int sunrast_end(AVCodecContext *avctx) {
     SUNRASTContext *s = avctx->priv_data;
 
     if(s->picture.data[0])

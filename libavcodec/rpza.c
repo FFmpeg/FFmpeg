@@ -226,7 +226,7 @@ static void rpza_decode_stream(RpzaContext *s)
     }
 }
 
-static int rpza_decode_init(AVCodecContext *avctx)
+static av_cold int rpza_decode_init(AVCodecContext *avctx)
 {
     RpzaContext *s = avctx->priv_data;
 
@@ -263,7 +263,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int rpza_decode_end(AVCodecContext *avctx)
+static av_cold int rpza_decode_end(AVCodecContext *avctx)
 {
     RpzaContext *s = avctx->priv_data;
 

@@ -119,7 +119,7 @@ X264_frame(AVCodecContext *ctx, uint8_t *buf, int bufsize, void *data)
     return bufsize;
 }
 
-static int
+static av_cold int
 X264_close(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
@@ -130,7 +130,7 @@ X264_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int
+static av_cold int
 X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;

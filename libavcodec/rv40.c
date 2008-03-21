@@ -40,7 +40,7 @@ static VLC ptype_vlc[NUM_PTYPE_VLCS], btype_vlc[NUM_BTYPE_VLCS];
 /**
  * Initialize all tables.
  */
-static void rv40_init_tables()
+static av_cold void rv40_init_tables()
 {
     int i;
 
@@ -250,7 +250,7 @@ static int rv40_decode_mb_info(RV34DecContext *r)
 /**
  * Initialize decoder.
  */
-static int rv40_decode_init(AVCodecContext *avctx)
+static av_cold int rv40_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
 

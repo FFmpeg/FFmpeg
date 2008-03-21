@@ -169,7 +169,7 @@ static int select_blocksize(int samplerate, int block_time_ms)
     return blocksize;
 }
 
-static int flac_encode_init(AVCodecContext *avctx)
+static av_cold int flac_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
     int channels = avctx->channels;
@@ -1486,7 +1486,7 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     return out_bytes;
 }
 
-static int flac_encode_close(AVCodecContext *avctx)
+static av_cold int flac_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->extradata);
     avctx->extradata_size = 0;

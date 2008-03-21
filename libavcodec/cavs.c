@@ -668,7 +668,7 @@ void ff_cavs_init_top_lines(AVSContext *h) {
     h->block        = av_mallocz(64*sizeof(DCTELEM));
 }
 
-int ff_cavs_init(AVCodecContext *avctx) {
+av_cold int ff_cavs_init(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
@@ -699,7 +699,7 @@ int ff_cavs_init(AVCodecContext *avctx) {
     return 0;
 }
 
-int ff_cavs_end(AVCodecContext *avctx) {
+av_cold int ff_cavs_end(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
 
     av_free(h->top_qp);

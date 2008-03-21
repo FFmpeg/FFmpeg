@@ -608,7 +608,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
-static int AC3_encode_init(AVCodecContext *avctx)
+static av_cold int AC3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
@@ -1255,7 +1255,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     return output_frame_end(s);
 }
 
-static int AC3_encode_close(AVCodecContext *avctx)
+static av_cold int AC3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;

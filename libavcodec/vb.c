@@ -234,7 +234,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
     return buf_size;
 }
 
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
     VBDecContext * const c = avctx->priv_data;
 
@@ -257,7 +257,7 @@ static int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
     VBDecContext *c = avctx->priv_data;
 

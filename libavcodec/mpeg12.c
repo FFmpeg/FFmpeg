@@ -1199,7 +1199,7 @@ typedef struct Mpeg1Context {
 
 } Mpeg1Context;
 
-static int mpeg_decode_init(AVCodecContext *avctx)
+static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
@@ -2459,7 +2459,7 @@ AVCodec mpegvideo_decoder = {
 };
 
 #ifdef HAVE_XVMC
-static int mpeg_mc_decode_init(AVCodecContext *avctx){
+static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx){
     Mpeg1Context *s;
 
     if( avctx->thread_count > 1)

@@ -114,7 +114,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
 /**
  * Initialize decoder.
  */
-static int rv30_decode_init(AVCodecContext *avctx)
+static av_cold int rv30_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
 

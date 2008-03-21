@@ -240,7 +240,7 @@ static void MPV_encode_defaults(MpegEncContext *s){
 }
 
 /* init video encoder */
-int MPV_encode_init(AVCodecContext *avctx)
+av_cold int MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
@@ -737,7 +737,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-int MPV_encode_end(AVCodecContext *avctx)
+av_cold int MPV_encode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 

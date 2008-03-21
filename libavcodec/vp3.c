@@ -1933,7 +1933,7 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
 /*
  * This is the ffmpeg/libavcodec API init function.
  */
-static int vp3_decode_init(AVCodecContext *avctx)
+static av_cold int vp3_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     int i, inter, plane;
@@ -2310,7 +2310,7 @@ if (!s->keyframe) {
 /*
  * This is the ffmpeg/libavcodec API module cleanup function.
  */
-static int vp3_decode_end(AVCodecContext *avctx)
+static av_cold int vp3_decode_end(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     int i;

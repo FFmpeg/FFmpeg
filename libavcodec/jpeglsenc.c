@@ -368,7 +368,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
     return put_bits_count(&pb) >> 3;
 }
 
-static int encode_init_ls(AVCodecContext *ctx) {
+static av_cold int encode_init_ls(AVCodecContext *ctx) {
     JpeglsContext *c = (JpeglsContext*)ctx->priv_data;
 
     c->avctx = ctx;

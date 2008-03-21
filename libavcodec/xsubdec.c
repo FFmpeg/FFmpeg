@@ -22,7 +22,7 @@
 #include "bitstream.h"
 #include "bytestream.h"
 
-static int decode_init(AVCodecContext *avctx) {
+static av_cold int decode_init(AVCodecContext *avctx) {
     avctx->pix_fmt = PIX_FMT_PAL8;
     return 0;
 }

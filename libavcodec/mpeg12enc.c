@@ -133,7 +133,7 @@ static int find_frame_rate_index(MpegEncContext *s){
         return 0;
 }
 
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 

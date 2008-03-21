@@ -81,7 +81,7 @@ static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
     return vorbis_encode_setup_init(vi);
 }
 
-static int oggvorbis_encode_init(AVCodecContext *avccontext) {
+static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext) {
     OggVorbisContext *context = avccontext->priv_data ;
     ogg_packet header, header_comm, header_code;
     uint8_t *p;
@@ -191,7 +191,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 }
 
 
-static int oggvorbis_encode_close(AVCodecContext *avccontext) {
+static av_cold int oggvorbis_encode_close(AVCodecContext *avccontext) {
     OggVorbisContext *context = avccontext->priv_data ;
 /*  ogg_packet op ; */
 

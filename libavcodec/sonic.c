@@ -503,7 +503,7 @@ static inline int code_samplerate(int samplerate)
     return -1;
 }
 
-static int sonic_encode_init(AVCodecContext *avctx)
+static av_cold int sonic_encode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     PutBitContext pb;
@@ -608,7 +608,7 @@ static int sonic_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int sonic_encode_close(AVCodecContext *avctx)
+static av_cold int sonic_encode_close(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     int i;
@@ -751,7 +751,7 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 #endif //CONFIG_ENCODERS
 
 #ifdef CONFIG_DECODERS
-static int sonic_decode_init(AVCodecContext *avctx)
+static av_cold int sonic_decode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
@@ -831,7 +831,7 @@ static int sonic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int sonic_decode_close(AVCodecContext *avctx)
+static av_cold int sonic_decode_close(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     int i;

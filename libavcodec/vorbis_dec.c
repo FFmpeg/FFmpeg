@@ -923,7 +923,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
 
 // Process the extradata using the functions above (identification header, setup header)
 
-static int vorbis_decode_init(AVCodecContext *avccontext) {
+static av_cold int vorbis_decode_init(AVCodecContext *avccontext) {
     vorbis_context *vc = avccontext->priv_data ;
     uint8_t *headers = avccontext->extradata;
     int headers_len=avccontext->extradata_size;
@@ -1617,7 +1617,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
 // Close decoder
 
-static int vorbis_decode_close(AVCodecContext *avccontext) {
+static av_cold int vorbis_decode_close(AVCodecContext *avccontext) {
     vorbis_context *vc = avccontext->priv_data;
 
     vorbis_free(vc);

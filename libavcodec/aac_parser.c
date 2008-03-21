@@ -81,7 +81,7 @@ static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
     return size;
 }
 
-static int aac_parse_init(AVCodecParserContext *s1)
+static av_cold int aac_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
     s->inbuf_ptr = s->inbuf;

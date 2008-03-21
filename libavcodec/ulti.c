@@ -41,7 +41,7 @@ typedef struct UltimotionDecodeContext {
     const uint8_t *ulti_codebook;
 } UltimotionDecodeContext;
 
-static int ulti_decode_init(AVCodecContext *avctx)
+static av_cold int ulti_decode_init(AVCodecContext *avctx)
 {
     UltimotionDecodeContext *s = avctx->priv_data;
 
@@ -393,7 +393,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int ulti_decode_end(AVCodecContext *avctx)
+static av_cold int ulti_decode_end(AVCodecContext *avctx)
 {
 /*    UltimotionDecodeContext *s = avctx->priv_data;*/
 

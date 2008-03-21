@@ -44,7 +44,7 @@
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
-static int mpc7_decode_init(AVCodecContext * avctx)
+static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 {
     int i, j;
     MPCContext *c = avctx->priv_data;

@@ -51,7 +51,7 @@ static int encode_ext_header(Wmv2Context *w){
     return 0;
 }
 
-static int wmv2_encode_init(AVCodecContext *avctx){
+static av_cold int wmv2_encode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
     if(MPV_encode_init(avctx) < 0)
@@ -67,7 +67,7 @@ static int wmv2_encode_init(AVCodecContext *avctx){
 }
 
 #if 0 /* unused, remove? */
-static int wmv2_encode_end(AVCodecContext *avctx){
+static av_cold int wmv2_encode_end(AVCodecContext *avctx){
 
     if(MPV_encode_end(avctx) < 0)
         return -1;

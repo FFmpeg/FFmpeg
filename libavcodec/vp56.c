@@ -643,7 +643,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return buf_size;
 }
 
-void vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
+av_cold void vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
 {
     vp56_context_t *s = avctx->priv_data;
     int i;
@@ -683,7 +683,7 @@ void vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
     }
 }
 
-int vp56_free(AVCodecContext *avctx)
+av_cold int vp56_free(AVCodecContext *avctx)
 {
     vp56_context_t *s = avctx->priv_data;
 

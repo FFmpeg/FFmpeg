@@ -597,7 +597,7 @@ static int decode_frame(AVCodecContext *avctx,
     goto the_end;
 }
 
-static int png_dec_init(AVCodecContext *avctx){
+static av_cold int png_dec_init(AVCodecContext *avctx){
     PNGDecContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);

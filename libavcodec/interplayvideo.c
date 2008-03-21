@@ -835,7 +835,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     }
 }
 
-static int ipvideo_decode_init(AVCodecContext *avctx)
+static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 {
     IpvideoContext *s = avctx->priv_data;
 
@@ -919,7 +919,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int ipvideo_decode_end(AVCodecContext *avctx)
+static av_cold int ipvideo_decode_end(AVCodecContext *avctx)
 {
     IpvideoContext *s = avctx->priv_data;
 

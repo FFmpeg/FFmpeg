@@ -173,7 +173,7 @@ static void seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int
     }
 }
 
-static int seqvideo_decode_init(AVCodecContext *avctx)
+static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
 {
     SeqVideoContext *seq = avctx->priv_data;
 
@@ -185,7 +185,7 @@ static int seqvideo_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int seqvideo_decode_frame(AVCodecContext *avctx,
+static av_cold int seqvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  const uint8_t *buf, int buf_size)
 {

@@ -77,7 +77,7 @@ static void* dlsymm(void* handle, const char* symbol)
 }
 #endif
 
-static int a52_decode_init(AVCodecContext *avctx)
+static av_cold int a52_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
 
@@ -203,7 +203,7 @@ static int a52_decode_frame(AVCodecContext *avctx,
     return len;
 }
 
-static int a52_decode_end(AVCodecContext *avctx)
+static av_cold int a52_decode_end(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
     s->a52_free(s->state);

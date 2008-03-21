@@ -761,7 +761,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   return buf_size;
 }
 
-static int svq1_decode_init(AVCodecContext *avctx)
+static av_cold int svq1_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
@@ -805,7 +805,7 @@ static int svq1_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int svq1_decode_end(AVCodecContext *avctx)
+static av_cold int svq1_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 

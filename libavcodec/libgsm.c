@@ -35,7 +35,7 @@
 #define GSM_MS_BLOCK_SIZE 65
 #define GSM_FRAME_SIZE 160
 
-static int libgsm_init(AVCodecContext *avctx) {
+static av_cold int libgsm_init(AVCodecContext *avctx) {
     if (avctx->channels > 1 || avctx->sample_rate != 8000 || avctx->bit_rate != 13000)
         return -1;
 
@@ -60,7 +60,7 @@ static int libgsm_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int libgsm_close(AVCodecContext *avctx) {
+static av_cold int libgsm_close(AVCodecContext *avctx) {
     gsm_destroy(avctx->priv_data);
     avctx->priv_data = NULL;
     return 0;

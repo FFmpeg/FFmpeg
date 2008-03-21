@@ -98,7 +98,7 @@ static void metadata_streaminfo(FLACContext *s);
 static void allocate_buffers(FLACContext *s);
 static int metadata_parse(FLACContext *s);
 
-static int flac_decode_init(AVCodecContext * avctx)
+static av_cold int flac_decode_init(AVCodecContext * avctx)
 {
     FLACContext *s = avctx->priv_data;
     s->avctx = avctx;
@@ -737,7 +737,7 @@ end:
         return i;
 }
 
-static int flac_decode_close(AVCodecContext *avctx)
+static av_cold int flac_decode_close(AVCodecContext *avctx)
 {
     FLACContext *s = avctx->priv_data;
     int i;

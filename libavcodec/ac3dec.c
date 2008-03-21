@@ -207,7 +207,7 @@ symmetric_dequant(int code, int levels)
 /*
  * Initialize tables at runtime.
  */
-static void ac3_tables_init(void)
+static av_cold void ac3_tables_init(void)
 {
     int i;
 
@@ -260,7 +260,7 @@ static void ac3_tables_init(void)
 /**
  * AVCodec initialization
  */
-static int ac3_decode_init(AVCodecContext *avctx)
+static av_cold int ac3_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeContext *s = avctx->priv_data;
     s->avctx = avctx;
@@ -1209,7 +1209,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 /**
  * Uninitialize the AC-3 decoder.
  */
-static int ac3_decode_end(AVCodecContext *avctx)
+static av_cold int ac3_decode_end(AVCodecContext *avctx)
 {
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);

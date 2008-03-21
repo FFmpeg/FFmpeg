@@ -235,7 +235,7 @@ static void idct(DCTELEM block[64]){
     }
 }
 
-static void init_vlcs(FourXContext *f){
+static av_cold void init_vlcs(FourXContext *f){
     int i;
 
     for(i=0; i<8; i++){
@@ -792,7 +792,7 @@ static void common_init(AVCodecContext *avctx){
     f->avctx= avctx;
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     FourXContext * const f = avctx->priv_data;
 
     if(avctx->extradata_size != 4 || !avctx->extradata) {
@@ -811,7 +811,7 @@ static int decode_init(AVCodecContext *avctx){
 }
 
 
-static int decode_end(AVCodecContext *avctx){
+static av_cold int decode_end(AVCodecContext *avctx){
     FourXContext * const f = avctx->priv_data;
     int i;
 

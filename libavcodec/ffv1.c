@@ -530,7 +530,7 @@ static void write_header(FFV1Context *f){
 }
 #endif /* CONFIG_ENCODERS */
 
-static int common_init(AVCodecContext *avctx){
+static av_cold int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
     int width, height;
 
@@ -548,7 +548,7 @@ static int common_init(AVCodecContext *avctx){
 }
 
 #ifdef CONFIG_ENCODERS
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
     int i;
@@ -694,7 +694,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 }
 #endif /* CONFIG_ENCODERS */
 
-static int common_end(AVCodecContext *avctx){
+static av_cold int common_end(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
     int i;
 
@@ -927,7 +927,7 @@ static int read_header(FFV1Context *f){
     return 0;
 }
 
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
 //    FFV1Context *s = avctx->priv_data;
 

@@ -236,7 +236,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return orig_size;
 }
 
-static int decode_init(AVCodecContext *avctx) {
+static av_cold int decode_init(AVCodecContext *avctx) {
     NuvContext *c = avctx->priv_data;
     avctx->pix_fmt = PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
@@ -253,7 +253,7 @@ static int decode_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int decode_end(AVCodecContext *avctx) {
+static av_cold int decode_end(AVCodecContext *avctx) {
     NuvContext *c = avctx->priv_data;
     av_freep(&c->decomp_buf);
     if (c->pic.data[0])

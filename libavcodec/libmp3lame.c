@@ -36,7 +36,7 @@ typedef struct Mp3AudioContext {
     int buffer_index;
 } Mp3AudioContext;
 
-static int MP3lame_encode_init(AVCodecContext *avctx)
+static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
 {
     Mp3AudioContext *s = avctx->priv_data;
 
@@ -198,7 +198,7 @@ static int MP3lame_encode_frame(AVCodecContext *avctx,
             return 0;
 }
 
-static int MP3lame_encode_close(AVCodecContext *avctx)
+static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
 {
     Mp3AudioContext *s = avctx->priv_data;
 

@@ -269,7 +269,7 @@ static int gif_parse_next_image(GifState *s)
     return -1;
 }
 
-static int gif_decode_init(AVCodecContext *avctx)
+static av_cold int gif_decode_init(AVCodecContext *avctx)
 {
     GifState *s = avctx->priv_data;
 
@@ -314,7 +314,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, c
     return s->bytestream - buf;
 }
 
-static int gif_decode_close(AVCodecContext *avctx)
+static av_cold int gif_decode_close(AVCodecContext *avctx)
 {
     GifState *s = avctx->priv_data;
 

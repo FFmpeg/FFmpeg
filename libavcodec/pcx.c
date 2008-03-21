@@ -30,7 +30,7 @@ typedef struct PCXContext {
     AVFrame picture;
 } PCXContext;
 
-static int pcx_init(AVCodecContext *avctx) {
+static av_cold int pcx_init(AVCodecContext *avctx) {
     PCXContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
@@ -224,7 +224,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return buf - bufstart;
 }
 
-static int pcx_end(AVCodecContext *avctx) {
+static av_cold int pcx_end(AVCodecContext *avctx) {
     PCXContext *s = avctx->priv_data;
 
     if(s->picture.data[0])

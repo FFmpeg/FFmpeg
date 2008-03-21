@@ -392,7 +392,7 @@ static void Exp1to6(MACEContext *ctx,
 }
 /* \\\ */
 
-static int mace_decode_init(AVCodecContext * avctx)
+static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
     if (avctx->channels > 2)
         return -1;

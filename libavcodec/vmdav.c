@@ -322,7 +322,7 @@ static void vmd_decode(VmdVideoContext *s)
     }
 }
 
-static int vmdvideo_decode_init(AVCodecContext *avctx)
+static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
 {
     VmdVideoContext *s = avctx->priv_data;
     int i;
@@ -398,7 +398,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int vmdvideo_decode_end(AVCodecContext *avctx)
+static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
 {
     VmdVideoContext *s = avctx->priv_data;
 
@@ -438,7 +438,7 @@ static uint16_t vmdaudio_table[128] = {
     0xF00, 0x1000, 0x1400, 0x1800, 0x1C00, 0x2000, 0x3000, 0x4000
 };
 
-static int vmdaudio_decode_init(AVCodecContext *avctx)
+static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
 {
     VmdAudioContext *s = avctx->priv_data;
 

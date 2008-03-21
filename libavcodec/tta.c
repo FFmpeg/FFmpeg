@@ -197,7 +197,7 @@ static int tta_get_unary(GetBitContext *gb)
     return ret;
 }
 
-static int tta_decode_init(AVCodecContext * avctx)
+static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
     int i;
@@ -425,7 +425,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int tta_decode_close(AVCodecContext *avctx) {
+static av_cold int tta_decode_close(AVCodecContext *avctx) {
     TTAContext *s = avctx->priv_data;
 
     if (s->decode_buffer)

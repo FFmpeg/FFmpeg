@@ -188,7 +188,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int ir2_decode_init(AVCodecContext *avctx){
+static av_cold int ir2_decode_init(AVCodecContext *avctx){
     Ir2Context * const ic = avctx->priv_data;
 
     ic->avctx = avctx;

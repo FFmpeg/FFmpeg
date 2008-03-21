@@ -354,7 +354,7 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
     return count;
 }
 
-static int wavpack_decode_init(AVCodecContext *avctx)
+static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 {
     WavpackContext *s = avctx->priv_data;
 

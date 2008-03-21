@@ -84,7 +84,7 @@ static int dca_find_frame_end(DCAParseContext * pc1, const uint8_t * buf,
     return END_NOT_FOUND;
 }
 
-static int dca_parse_init(AVCodecParserContext * s)
+static av_cold int dca_parse_init(AVCodecParserContext * s)
 {
     DCAParseContext *pc1 = s->priv_data;
 

@@ -624,7 +624,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     return input_buffer_size;
 }
 
-static int alac_decode_init(AVCodecContext * avctx)
+static av_cold int alac_decode_init(AVCodecContext * avctx)
 {
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
@@ -637,7 +637,7 @@ static int alac_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int alac_decode_close(AVCodecContext *avctx)
+static av_cold int alac_decode_close(AVCodecContext *avctx)
 {
     ALACContext *alac = avctx->priv_data;
 

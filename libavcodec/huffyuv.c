@@ -478,7 +478,7 @@ static int common_init(AVCodecContext *avctx){
 }
 
 #ifdef CONFIG_DECODERS
-static int decode_init(AVCodecContext *avctx)
+static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
 
@@ -599,7 +599,7 @@ static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
     return index;
 }
 
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
     int i, j;
@@ -1210,7 +1210,7 @@ static int common_end(HYuvContext *s){
 }
 
 #ifdef CONFIG_DECODERS
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
     int i;
@@ -1420,7 +1420,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     return size*4;
 }
 
-static int encode_end(AVCodecContext *avctx)
+static av_cold int encode_end(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
 

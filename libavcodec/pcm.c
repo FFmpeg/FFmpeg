@@ -44,7 +44,7 @@
  * alaw2linear() - Convert an A-law value to 16-bit linear PCM
  *
  */
-static int alaw2linear(unsigned char a_val)
+static av_cold int alaw2linear(unsigned char a_val)
 {
         int t;
         int seg;
@@ -59,7 +59,7 @@ static int alaw2linear(unsigned char a_val)
         return ((a_val & SIGN_BIT) ? t : -t);
 }
 
-static int ulaw2linear(unsigned char u_val)
+static av_cold int ulaw2linear(unsigned char u_val)
 {
         int t;
 
@@ -80,7 +80,7 @@ static int ulaw2linear(unsigned char u_val)
 static uint8_t linear_to_alaw[16384];
 static uint8_t linear_to_ulaw[16384];
 
-static void build_xlaw_table(uint8_t *linear_to_xlaw,
+static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
                              int (*xlaw2linear)(unsigned char),
                              int mask)
 {
@@ -104,7 +104,7 @@ static void build_xlaw_table(uint8_t *linear_to_xlaw,
     linear_to_xlaw[0] = linear_to_xlaw[1];
 }
 
-static int pcm_encode_init(AVCodecContext *avctx)
+static av_cold int pcm_encode_init(AVCodecContext *avctx)
 {
     avctx->frame_size = 1;
     switch(avctx->codec->id) {
@@ -154,7 +154,7 @@ static int pcm_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int pcm_encode_close(AVCodecContext *avctx)
+static av_cold int pcm_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
 
@@ -325,7 +325,7 @@ typedef struct PCMDecode {
     short table[256];
 } PCMDecode;
 
-static int pcm_decode_init(AVCodecContext * avctx)
+static av_cold int pcm_decode_init(AVCodecContext * avctx)
 {
     PCMDecode *s = avctx->priv_data;
     int i;

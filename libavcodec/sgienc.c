@@ -31,7 +31,7 @@ typedef struct SgiContext {
     AVFrame picture;
 } SgiContext;
 
-static int encode_init(AVCodecContext *avctx){
+static av_cold int encode_init(AVCodecContext *avctx){
     SgiContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);

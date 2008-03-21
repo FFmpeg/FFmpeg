@@ -102,7 +102,7 @@ static const uint8_t col_zag[64] = {
     53, 60, 61, 54, 47, 55, 62, 63
 };
 
-static int mimic_decode_init(AVCodecContext *avctx)
+static av_cold int mimic_decode_init(AVCodecContext *avctx)
 {
     MimicContext *ctx = avctx->priv_data;
 
@@ -371,7 +371,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-static int mimic_decode_end(AVCodecContext *avctx)
+static av_cold int mimic_decode_end(AVCodecContext *avctx)
 {
     MimicContext *ctx = avctx->priv_data;
     int i;

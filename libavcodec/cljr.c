@@ -105,14 +105,14 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 }
 #endif
 
-static void common_init(AVCodecContext *avctx){
+static av_cold void common_init(AVCodecContext *avctx){
     CLJRContext * const a = avctx->priv_data;
 
     avctx->coded_frame= (AVFrame*)&a->picture;
     a->avctx= avctx;
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
 
     common_init(avctx);
 
@@ -122,7 +122,7 @@ static int decode_init(AVCodecContext *avctx){
 }
 
 #if 0
-static int encode_init(AVCodecContext *avctx){
+static av_cold int encode_init(AVCodecContext *avctx){
 
     common_init(avctx);
 

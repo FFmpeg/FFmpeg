@@ -663,7 +663,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 }
 #endif //CONFIG_ENCODERS
 
-static int adpcm_decode_init(AVCodecContext * avctx)
+static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMContext *c = avctx->priv_data;
     unsigned int max_channels = 2;

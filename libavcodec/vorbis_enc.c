@@ -932,7 +932,7 @@ static int apply_window_and_mdct(venc_context_t * venc, signed short * audio, in
     return 1;
 }
 
-static int vorbis_encode_init(AVCodecContext * avccontext)
+static av_cold int vorbis_encode_init(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
 
@@ -1015,7 +1015,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 }
 
 
-static int vorbis_encode_close(AVCodecContext * avccontext)
+static av_cold int vorbis_encode_close(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
     int i;

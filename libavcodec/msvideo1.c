@@ -57,7 +57,7 @@ typedef struct Msvideo1Context {
 
 } Msvideo1Context;
 
-static int msvideo1_decode_init(AVCodecContext *avctx)
+static av_cold int msvideo1_decode_init(AVCodecContext *avctx)
 {
     Msvideo1Context *s = avctx->priv_data;
 
@@ -319,7 +319,7 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int msvideo1_decode_end(AVCodecContext *avctx)
+static av_cold int msvideo1_decode_end(AVCodecContext *avctx)
 {
     Msvideo1Context *s = avctx->priv_data;
 

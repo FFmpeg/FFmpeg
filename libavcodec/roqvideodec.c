@@ -153,7 +153,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
 }
 
 
-static int roq_decode_init(AVCodecContext *avctx)
+static av_cold int roq_decode_init(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
 
@@ -196,7 +196,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int roq_decode_end(AVCodecContext *avctx)
+static av_cold int roq_decode_end(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
 

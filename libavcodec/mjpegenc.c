@@ -44,7 +44,7 @@
 #undef TWOMATRIXES
 
 
-int ff_mjpeg_encode_init(MpegEncContext *s)
+av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
 

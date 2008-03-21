@@ -3812,7 +3812,7 @@ static av_always_inline int vc1_unescape_buffer(const uint8_t *src, int size, ui
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
  * @todo TODO: Decypher remaining bits in extra_data
  */
-static int vc1_decode_init(AVCodecContext *avctx)
+static av_cold int vc1_decode_init(AVCodecContext *avctx)
 {
     VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
@@ -4109,7 +4109,7 @@ assert(s->current_picture.pict_type == s->pict_type);
 /** Close a VC1/WMV3 decoder
  * @warning Initial try at using MpegEncContext stuff
  */
-static int vc1_decode_end(AVCodecContext *avctx)
+static av_cold int vc1_decode_end(AVCodecContext *avctx)
 {
     VC1Context *v = avctx->priv_data;
 

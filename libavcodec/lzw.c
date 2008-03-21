@@ -109,12 +109,12 @@ void ff_lzw_decode_tail(LZWState *p)
         s->pbuf= s->ebuf;
 }
 
-void ff_lzw_decode_open(LZWState **p)
+av_cold void ff_lzw_decode_open(LZWState **p)
 {
     *p = av_mallocz(sizeof(struct LZWState));
 }
 
-void ff_lzw_decode_close(LZWState **p)
+av_cold void ff_lzw_decode_close(LZWState **p)
 {
     av_freep(p);
 }

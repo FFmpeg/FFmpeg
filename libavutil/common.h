@@ -73,6 +73,14 @@
 #endif
 #endif
 
+#ifndef av_cold
+#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 2)
+#    define av_cold __attribute__((cold))
+#else
+#    define av_cold
+#endif
+#endif
+
 #ifdef HAVE_AV_CONFIG_H
 #    include "internal.h"
 #endif /* HAVE_AV_CONFIG_H */

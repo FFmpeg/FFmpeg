@@ -25,7 +25,7 @@
 #include "wmv2.h"
 
 
-void ff_wmv2_common_init(Wmv2Context * w){
+av_cold void ff_wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
 
     ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0], wmv2_scantableA);

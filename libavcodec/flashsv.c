@@ -79,7 +79,7 @@ static void copy_region(uint8_t *sptr, uint8_t *dptr,
 }
 
 
-static int flashsv_decode_init(AVCodecContext *avctx)
+static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
     int zret; // Zlib return code
@@ -228,7 +228,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
 }
 
 
-static int flashsv_decode_end(AVCodecContext *avctx)
+static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
     inflateEnd(&(s->zstream));

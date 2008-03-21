@@ -57,7 +57,7 @@ typedef struct QtrleEncContext {
     uint8_t* skip_table;
 } QtrleEncContext;
 
-static int qtrle_encode_init(AVCodecContext *avctx)
+static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 
@@ -303,7 +303,7 @@ static int qtrle_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return chunksize;
 }
 
-static int qtrle_encode_end(AVCodecContext *avctx)
+static av_cold int qtrle_encode_end(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 

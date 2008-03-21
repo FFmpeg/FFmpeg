@@ -23,7 +23,7 @@
 #include "bytestream.h"
 #include "bmp.h"
 
-static int bmp_decode_init(AVCodecContext *avctx){
+static av_cold int bmp_decode_init(AVCodecContext *avctx){
     BMPContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
@@ -231,7 +231,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int bmp_decode_end(AVCodecContext *avctx)
+static av_cold int bmp_decode_end(AVCodecContext *avctx)
 {
     BMPContext* c = avctx->priv_data;
 

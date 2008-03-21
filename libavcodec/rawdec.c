@@ -64,7 +64,7 @@ static int findPixelFormat(const PixelFormatTag *tags, unsigned int fourcc)
     return PIX_FMT_YUV420P;
 }
 
-static int raw_init_decoder(AVCodecContext *avctx)
+static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 
@@ -145,7 +145,7 @@ static int raw_decode(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int raw_close_decoder(AVCodecContext *avctx)
+static av_cold int raw_close_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 

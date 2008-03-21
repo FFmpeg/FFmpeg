@@ -1952,7 +1952,7 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     prefetch_motion(h, 1);
 }
 
-static void decode_init_vlc(void){
+static av_cold void decode_init_vlc(void){
     static int done = 0;
 
     if (!done) {
@@ -2166,7 +2166,7 @@ fail:
     return -1; // free_tables will clean up for us
 }
 
-static void common_init(H264Context *h){
+static av_cold void common_init(H264Context *h){
     MpegEncContext * const s = &h->s;
 
     s->width = s->avctx->width;
@@ -2183,7 +2183,7 @@ static void common_init(H264Context *h){
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
 
-static int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
@@ -8054,7 +8054,7 @@ int main(void){
 #endif /* TEST */
 
 
-static int decode_end(AVCodecContext *avctx)
+static av_cold int decode_end(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;

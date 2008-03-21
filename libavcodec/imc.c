@@ -90,7 +90,7 @@ typedef struct {
 } IMCContext;
 
 
-static int imc_decode_init(AVCodecContext * avctx)
+static av_cold int imc_decode_init(AVCodecContext * avctx)
 {
     int i, j;
     IMCContext *q = avctx->priv_data;
@@ -796,7 +796,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
 }
 
 
-static int imc_decode_close(AVCodecContext * avctx)
+static av_cold int imc_decode_close(AVCodecContext * avctx)
 {
     IMCContext *q = avctx->priv_data;
 

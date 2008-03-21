@@ -48,7 +48,7 @@ static VLC h261_cbp_vlc;
 
 static int h261_decode_block(H261Context * h, DCTELEM * block, int n, int coded);
 
-static void h261_decode_init_vlc(H261Context *h){
+static av_cold void h261_decode_init_vlc(H261Context *h){
     static int done = 0;
 
     if(!done){
@@ -70,7 +70,7 @@ static void h261_decode_init_vlc(H261Context *h){
     }
 }
 
-static int h261_decode_init(AVCodecContext *avctx){
+static av_cold int h261_decode_init(AVCodecContext *avctx){
     H261Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
@@ -628,7 +628,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     return get_consumed_bytes(s, buf_size);
 }
 
-static int h261_decode_end(AVCodecContext *avctx)
+static av_cold int h261_decode_end(AVCodecContext *avctx)
 {
     H261Context *h= avctx->priv_data;
     MpegEncContext *s = &h->s;

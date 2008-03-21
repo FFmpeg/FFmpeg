@@ -235,7 +235,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 }
 
-static int sgi_init(AVCodecContext *avctx){
+static av_cold int sgi_init(AVCodecContext *avctx){
     SgiState *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
@@ -244,7 +244,7 @@ static int sgi_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int sgi_end(AVCodecContext *avctx)
+static av_cold int sgi_end(AVCodecContext *avctx)
 {
     SgiState * const s = avctx->priv_data;
 

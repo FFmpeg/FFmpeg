@@ -28,7 +28,7 @@ typedef struct TXDContext {
     AVFrame picture;
 } TXDContext;
 
-static int txd_init(AVCodecContext *avctx) {
+static av_cold int txd_init(AVCodecContext *avctx) {
     TXDContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
@@ -143,7 +143,7 @@ unsupported:
     return -1;
 }
 
-static int txd_end(AVCodecContext *avctx) {
+static av_cold int txd_end(AVCodecContext *avctx) {
     TXDContext *s = avctx->priv_data;
 
     if (s->picture.data[0])

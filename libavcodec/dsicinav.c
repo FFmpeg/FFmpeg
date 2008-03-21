@@ -86,7 +86,7 @@ static const int16_t cinaudio_delta16_table[256] = {
 };
 
 
-static int cinvideo_decode_init(AVCodecContext *avctx)
+static av_cold int cinvideo_decode_init(AVCodecContext *avctx)
 {
     CinVideoContext *cin = avctx->priv_data;
     unsigned int i;
@@ -284,7 +284,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int cinvideo_decode_end(AVCodecContext *avctx)
+static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
 {
     CinVideoContext *cin = avctx->priv_data;
     int i;
@@ -298,7 +298,7 @@ static int cinvideo_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int cinaudio_decode_init(AVCodecContext *avctx)
+static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
 {
     CinAudioContext *cin = avctx->priv_data;
 

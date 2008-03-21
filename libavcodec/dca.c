@@ -178,7 +178,7 @@ typedef struct {
     DSPContext dsp;
 } DCAContext;
 
-static void dca_init_vlcs(void)
+static av_cold void dca_init_vlcs(void)
 {
     static int vlcs_initialized = 0;
     int i, j;
@@ -1200,7 +1200,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
  * @param s     pointer to the DCAContext
  */
 
-static void pre_calc_cosmod(DCAContext * s)
+static av_cold void pre_calc_cosmod(DCAContext * s)
 {
     int i, j, k;
     static int cosmod_initialized = 0;
@@ -1230,7 +1230,7 @@ static void pre_calc_cosmod(DCAContext * s)
  * @param avctx     pointer to the AVCodecContext
  */
 
-static int dca_decode_init(AVCodecContext * avctx)
+static av_cold int dca_decode_init(AVCodecContext * avctx)
 {
     DCAContext *s = avctx->priv_data;
 

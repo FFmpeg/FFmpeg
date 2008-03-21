@@ -308,7 +308,7 @@ typedef struct {
     AVFrame picture;
 } GIFContext;
 
-static int gif_encode_init(AVCodecContext *avctx)
+static av_cold int gif_encode_init(AVCodecContext *avctx)
 {
     GIFContext *s = avctx->priv_data;
 

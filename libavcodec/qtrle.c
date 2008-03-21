@@ -485,7 +485,7 @@ static void qtrle_decode_32bpp(QtrleContext *s)
     }
 }
 
-static int qtrle_decode_init(AVCodecContext *avctx)
+static av_cold int qtrle_decode_init(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
 
@@ -600,7 +600,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int qtrle_decode_end(AVCodecContext *avctx)
+static av_cold int qtrle_decode_end(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
 

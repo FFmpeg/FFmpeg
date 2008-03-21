@@ -31,7 +31,7 @@ typedef struct FaacAudioContext {
     faacEncHandle faac_handle;
 } FaacAudioContext;
 
-static int Faac_encode_init(AVCodecContext *avctx)
+static av_cold int Faac_encode_init(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
     faacEncConfigurationPtr faac_cfg;
@@ -132,7 +132,7 @@ static int Faac_encode_frame(AVCodecContext *avctx,
     return bytes_written;
 }
 
-static int Faac_encode_close(AVCodecContext *avctx)
+static av_cold int Faac_encode_close(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
 
