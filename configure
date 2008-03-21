@@ -120,6 +120,8 @@ show_help(){
   echo "  --enable-powerpc-perf    enable performance report on PPC"
   echo "                           (requires enabling PMC)"
   echo "  --disable-mmx            disable MMX usage"
+  echo "  --disable-mmx2           disable MMX2 usage"
+  echo "  --disable-ssse3          disable SSSE3 usage"
   echo "  --disable-armv5te        disable armv5te usage"
   echo "  --disable-armv6          disable armv6 usage"
   echo "  --disable-iwmmxt         disable iwmmxt usage"
