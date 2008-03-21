@@ -2217,6 +2217,10 @@ typedef struct AVCodec {
     int (*close)(AVCodecContext *);
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
                   const uint8_t *buf, int buf_size);
+    /**
+     * Codec capabilities.
+     * see CODEC_CAP_*
+     */
     int capabilities;
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
