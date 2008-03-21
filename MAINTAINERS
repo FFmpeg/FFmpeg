@@ -163,6 +163,7 @@ Codecs:
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
+  rl2.c                                 Sascha Sommer
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
@@ -262,6 +263,7 @@ Muxers/Demuxers:
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
   raw.c                                 Michael Niedermayer
+  rl2.c                                 Sascha Sommer
   rm.c                                  Roberto Togni
   rtp.c, rtpenc.c                       Luca Abeni
   rtp_mpv.*, rtp_aac.*                  Luca Abeni

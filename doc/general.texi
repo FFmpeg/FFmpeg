@@ -131,6 +131,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used by TechnoTrend DVB PCI boards
 @item MSN TCP Webcam @tab    @tab X
 @tab Used by MSN Messenger Webcam streams.
+@item RL2 @tab    @tab X
+@tab Audio and video format used in some games by Entertainment Software Partners
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

@@ -115,6 +115,7 @@ version <next>
 - Ipod/Iphone compatible mp4 muxer
 - Mimic decoder
 - MSN TCP Webcam stream demuxer
+- RL2 demuxer / decoder
 
 version 0.4.9-pre1:
 
