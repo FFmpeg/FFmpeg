@@ -144,14 +144,12 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_ALAW,  MKTAG('a', 'l', 'a', 'w') }, /*  */
 
     { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') }, /* IMA-4 ADPCM */
-    { CODEC_ID_ADPCM_MS,     MKTAG('m', 's', 0x00, 0x02) }, /* MS ADPCM */
 
     { CODEC_ID_MACE3, MKTAG('M', 'A', 'C', '3') }, /* Macintosh Audio Compression and Expansion 3:1 */
     { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') }, /* Macintosh Audio Compression and Expansion 6:1 */
 
     { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') }, /* MPEG layer 3 */ /* sample files at http://www.3ivx.com/showcase.html use this tag */
     { CODEC_ID_MP3, 0x6D730055 }, /* MPEG layer 3 */
-    { CODEC_ID_MP3, MKTAG('m', 's', 0x00, 0x55) }, /* MPEG layer 3 *//* XXX: check endianness */
 
 /*  { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 
@@ -159,8 +157,6 @@ const AVCodecTag codec_movaudio_tags[] = {
 
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
-
-    { CODEC_ID_AC3,  MKTAG('m', 's', 0x20, 0x00) }, /* Dolby AC-3 */
 
     { CODEC_ID_ALAC, MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
     { CODEC_ID_QDM2, MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
