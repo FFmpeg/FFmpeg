@@ -2223,6 +2223,10 @@ typedef struct AVCodec {
      */
     int capabilities;
     struct AVCodec *next;
+    /**
+     * Flush buffers.
+     * Will be called when seeking
+     */
     void (*flush)(AVCodecContext *);
     const AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}
     const enum PixelFormat *pix_fmts;       ///array of supported pixel formats, or NULL if unknown, array is terminanted by -1
