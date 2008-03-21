@@ -1202,7 +1202,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int ret;
 
     st = av_new_stream(c->fc, c->fc->nb_streams);
-    if (!st) return -2;
+    if (!st) return AVERROR(ENOMEM);
     sc = av_mallocz(sizeof(MOVStreamContext));
     if (!sc) return AVERROR(ENOMEM);
 
