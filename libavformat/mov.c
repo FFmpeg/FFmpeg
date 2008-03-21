@@ -82,6 +82,24 @@ typedef struct {
 
 struct MOVParseTableEntry;
 
+typedef struct {
+    unsigned track_id;
+    uint64_t base_data_offset;
+    uint64_t moof_offset;
+    unsigned stsd_id;
+    unsigned duration;
+    unsigned size;
+    unsigned flags;
+} MOVFragment;
+
+typedef struct {
+    unsigned track_id;
+    unsigned stsd_id;
+    unsigned duration;
+    unsigned size;
+    unsigned flags;
+} MOVTrackExt;
+
 typedef struct MOVStreamContext {
     ByteIOContext *pb;
     int ffindex; /* the ffmpeg stream id */
@@ -125,6 +143,9 @@ typedef struct MOVContext {
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
     int isom; /* 1 if file is ISO Media (mp4/3gp) */
+    MOVFragment fragment; ///< current fragment in moof atom
+    MOVTrackExt *trex_data;
+    unsigned trex_count;
 } MOVContext;
 
 
@@ -416,6 +437,12 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0; /* now go for mdat */
 }
 
+static int mov_read_moof(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    c->fragment.moof_offset = url_ftell(pb) - 8;
+    dprintf(c->fc, "moof offset %llx\n", c->fragment.moof_offset);
+    return mov_read_default(c, pb, atom);
+}
 
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -1359,6 +1386,127 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+static int mov_read_tfhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    MOVFragment *frag = &c->fragment;
+    MOVTrackExt *trex = NULL;
+    int flags, track_id, i;
+
+    get_byte(pb); /* version */
+    flags = get_be24(pb);
+
+    track_id = get_be32(pb);
+    if (!track_id || track_id > c->fc->nb_streams)
+        return -1;
+    frag->track_id = track_id;
+    for (i = 0; i < c->trex_count; i++)
+        if (c->trex_data[i].track_id == frag->track_id) {
+            trex = &c->trex_data[i];
+            break;
+        }
+    if (!trex) {
+        av_log(c->fc, AV_LOG_ERROR, "could not find corresponding trex\n");
+        return -1;
+    }
+
+    if (flags & 0x01) frag->base_data_offset = get_be64(pb);
+    else              frag->base_data_offset = frag->moof_offset;
+    if (flags & 0x02) frag->stsd_id          = get_be32(pb);
+    else              frag->stsd_id          = trex->stsd_id;
+
+    frag->duration = flags & 0x08 ? get_be32(pb) : trex->duration;
+    frag->size     = flags & 0x10 ? get_be32(pb) : trex->size;
+    frag->flags    = flags & 0x20 ? get_be32(pb) : trex->flags;
+    dprintf(c->fc, "frag flags 0x%x\n", frag->flags);
+    return 0;
+}
+
+static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    MOVTrackExt *trex;
+
+    if ((uint64_t)c->trex_count+1 >= UINT_MAX / sizeof(*c->trex_data))
+        return -1;
+    c->trex_data = av_realloc(c->trex_data, (c->trex_count+1)*sizeof(*c->trex_data));
+    if (!c->trex_data)
+        return AVERROR(ENOMEM);
+    trex = &c->trex_data[c->trex_count++];
+    get_byte(pb); /* version */
+    get_be24(pb); /* flags */
+    trex->track_id = get_be32(pb);
+    trex->stsd_id  = get_be32(pb);
+    trex->duration = get_be32(pb);
+    trex->size     = get_be32(pb);
+    trex->flags    = get_be32(pb);
+    return 0;
+}
+
+static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    MOVFragment *frag = &c->fragment;
+    AVStream *st = c->fc->streams[frag->track_id-1];
+    MOVStreamContext *sc = st->priv_data;
+    uint64_t offset;
+    int64_t dts;
+    int data_offset = 0;
+    unsigned entries, first_sample_flags = frag->flags;
+    int flags, distance, i;
+
+    if (sc->pseudo_stream_id+1 != frag->stsd_id)
+        return 0;
+    if (!st->nb_index_entries)
+        return -1;
+    get_byte(pb); /* version */
+    flags = get_be24(pb);
+    entries = get_be32(pb);
+    dprintf(c->fc, "flags 0x%x entries %d\n", flags, entries);
+    if (flags & 0x001) data_offset        = get_be32(pb);
+    if (flags & 0x004) first_sample_flags = get_be32(pb);
+    if (flags & 0x800) {
+        if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
+            return -1;
+        sc->ctts_data = av_realloc(sc->ctts_data,
+                                   (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
+        if (!sc->ctts_data)
+            return AVERROR(ENOMEM);
+    }
+    dts = st->duration;
+    offset = frag->base_data_offset + data_offset;
+    distance = 0;
+    dprintf(c->fc, "first sample flags 0x%x\n", first_sample_flags);
+    for (i = 0; i < entries; i++) {
+        unsigned sample_size = frag->size;
+        int sample_flags = i ? frag->flags : first_sample_flags;
+        unsigned sample_duration = frag->duration;
+        int keyframe;
+
+        if (flags & 0x100) sample_duration = get_be32(pb);
+        if (flags & 0x200) sample_size     = get_be32(pb);
+        if (flags & 0x400) sample_flags    = get_be32(pb);
+        if (flags & 0x800) {
+            sc->ctts_data[sc->ctts_count].count = 1;
+            sc->ctts_data[sc->ctts_count].duration = get_be32(pb);
+            sc->ctts_count++;
+        }
+        if ((keyframe = st->codec->codec_type == CODEC_TYPE_AUDIO ||
+             (flags & 0x004 && !i && !sample_flags) || sample_flags & 0x2000000))
+            distance = 0;
+        av_add_index_entry(st, offset, dts, sample_size, distance,
+                           keyframe ? AVINDEX_KEYFRAME : 0);
+        dprintf(c->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                "size %d, distance %d, keyframe %d\n", st->index, sc->sample_count+i,
+                offset, dts, sample_size, distance, keyframe);
+        distance++;
+        assert(sample_duration % sc->time_rate == 0);
+        dts += sample_duration / sc->time_rate;
+        offset += sample_size;
+    }
+    frag->moof_offset = offset;
+    sc->sample_count = st->nb_index_entries;
+    st->duration = dts;
+    return 0;
+}
+
 /* this atom should be null (from specs), but some buggy files put the 'moov' atom inside it... */
 /* like the files created with Adobe Premiere 5.0, for samples see */
 /* http://graphics.tudelft.nl/~wouter/publications/soundtests/ */
@@ -1474,7 +1622,9 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
 { MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
 { MKTAG( 'm', 'i', 'n', 'f' ), mov_read_default },
+{ MKTAG( 'm', 'o', 'o', 'f' ), mov_read_moof },
 { MKTAG( 'm', 'o', 'o', 'v' ), mov_read_moov },
+{ MKTAG( 'm', 'v', 'e', 'x' ), mov_read_default },
 { MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
 { MKTAG( 'a', 'l', 'a', 'c' ), mov_read_extradata }, /* alac specific atom */
@@ -1487,7 +1637,11 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 't', 's', 'z' ), mov_read_stsz }, /* sample size */
 { MKTAG( 's', 't', 't', 's' ), mov_read_stts },
 { MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
+{ MKTAG( 't', 'f', 'h', 'd' ), mov_read_tfhd }, /* track fragment header */
 { MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
+{ MKTAG( 't', 'r', 'a', 'f' ), mov_read_default },
+{ MKTAG( 't', 'r', 'e', 'x' ), mov_read_trex },
+{ MKTAG( 't', 'r', 'u', 'n' ), mov_read_trun },
 { MKTAG( 'u', 'd', 't', 'a' ), mov_read_udta },
 { MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
 { MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
@@ -1712,6 +1866,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&mov->dv_fctx);
         av_freep(&mov->dv_demux);
     }
+    av_freep(&mov->trex_data);
     return 0;
 }
 
