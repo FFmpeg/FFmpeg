@@ -134,7 +134,7 @@ typedef struct MOVContext {
 /* return code:
   1: found what I wanted, exit
   0: continue to parse next atom
- -1: error occured, exit
+ <0: error occured, exit
 */
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
