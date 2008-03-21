@@ -2917,7 +2917,8 @@ attribute_deprecated void av_free_static(void);
  * @deprecated. Code which uses av_mallocz_static is broken/misdesigned
  * and should correctly use static arrays
  */
-attribute_deprecated void *av_mallocz_static(unsigned int size);
+attribute_deprecated av_malloc_attrib av_alloc_size(1)
+void *av_mallocz_static(unsigned int size);
 
 /**
  * Copy image 'src' to 'dst'.
