@@ -1204,10 +1204,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st = av_new_stream(c->fc, c->fc->nb_streams);
     if (!st) return -2;
     sc = av_mallocz(sizeof(MOVStreamContext));
-    if (!sc) {
-        av_free(st);
-        return -1;
-    }
+    if (!sc) return AVERROR(ENOMEM);
 
     st->priv_data = sc;
     st->codec->codec_type = CODEC_TYPE_DATA;
