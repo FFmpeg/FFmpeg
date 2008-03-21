@@ -1183,12 +1183,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     frames = chunk_samples / sc->samples_per_frame;
                     chunk_samples = sc->samples_per_frame;
                 }
-            } else if (sc->sample_size > 1 || st->codec->bits_per_sample == 8) {
+            } else
                 chunk_size = chunk_samples * sc->sample_size;
-            } else {
-                av_log(mov->fc, AV_LOG_ERROR, "could not determine chunk size, report problem\n");
-                goto out;
-            }
             for (j = 0; j < frames; j++) {
                 av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
                 /* get chunk duration */
