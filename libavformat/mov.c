@@ -1727,7 +1727,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIndexEntry *sample = 0;
     int64_t best_dts = INT64_MAX;
     int i;
-
+ retry:
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *msc = st->priv_data;
@@ -1747,8 +1747,15 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
-    if (!sample)
-        return -1;
+    if (!sample) {
+        mov->found_mdat = 0;
+        if (!url_is_streamed(s->pb) ||
+            mov_read_default(mov, s->pb, (MOV_atom_t){ 0, 0, INT64_MAX }) < 0 ||
+            url_feof(s->pb))
+            return -1;
+        dprintf(s, "read fragments, offset 0x%llx\n", url_ftell(s->pb));
+        goto retry;
+    }
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
     if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
