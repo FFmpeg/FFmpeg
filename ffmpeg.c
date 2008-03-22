@@ -2591,24 +2591,28 @@ static int64_t parse_time_or_die(const char *context, const char *timestr, int i
     return us;
 }
 
-static void opt_recording_time(const char *arg)
+static int opt_recording_time(const char *opt, const char *arg)
 {
-    recording_time = parse_time_or_die("t", arg, 1);
+    recording_time = parse_time_or_die(opt, arg, 1);
+    return 0;
 }
 
-static void opt_start_time(const char *arg)
+static int opt_start_time(const char *opt, const char *arg)
 {
-    start_time = parse_time_or_die("ss", arg, 1);
+    start_time = parse_time_or_die(opt, arg, 1);
+    return 0;
 }
 
-static void opt_rec_timestamp(const char *arg)
+static int opt_rec_timestamp(const char *opt, const char *arg)
 {
-    rec_timestamp = parse_time_or_die("timestamp", arg, 0) / 1000000;
+    rec_timestamp = parse_time_or_die(opt, arg, 0) / 1000000;
+    return 0;
 }
 
-static void opt_input_ts_offset(const char *arg)
+static int opt_input_ts_offset(const char *opt, const char *arg)
 {
-    input_ts_offset = parse_time_or_die("itsoffset", arg, 1);
+    input_ts_offset = parse_time_or_die(opt, arg, 1);
+    return 0;
 }
 
 static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
@@ -3733,12 +3737,12 @@ const OptionDef options[] = {
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
-    { "t", HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
+    { "t", OPT_FUNC2 | HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
-    { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
-    { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
+    { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
+    { "itsoffset", OPT_FUNC2 | HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
-    { "timestamp", HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
+    { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
