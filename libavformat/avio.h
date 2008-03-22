@@ -269,7 +269,7 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
 
 /**
  * Reads size bytes from ByteIOContext into buf.
- * This reads at most 1 packet. If thats not enough fewer bytes will be
+ * This reads at most 1 packet. If that's not enough fewer bytes will be
  * returned.
  * @returns number of bytes read or AVERROR
  */
