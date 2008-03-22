@@ -1399,14 +1399,14 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
     // End
         "9:                                             \n\t"
 //        "int $3                                         \n\t"
-        "lea                         0b, %0             \n\t"
-        "lea                         1b, %1             \n\t"
-        "lea                         2b, %2             \n\t"
+        "lea                 " LOCAL_MANGLE(0b) ", %0   \n\t"
+        "lea                 " LOCAL_MANGLE(1b) ", %1   \n\t"
+        "lea                 " LOCAL_MANGLE(2b) ", %2   \n\t"
         "dec                         %1                 \n\t"
         "dec                         %2                 \n\t"
         "sub                         %0, %1             \n\t"
         "sub                         %0, %2             \n\t"
-        "lea                         9b, %3             \n\t"
+        "lea                 " LOCAL_MANGLE(9b) ", %3   \n\t"
         "sub                         %0, %3             \n\t"
 
 
@@ -1437,14 +1437,14 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
     // End
         "9:                                             \n\t"
 //        "int                       $3                   \n\t"
-        "lea                         0b, %0             \n\t"
-        "lea                         1b, %1             \n\t"
-        "lea                         2b, %2             \n\t"
+        "lea                 " LOCAL_MANGLE(0b) ", %0   \n\t"
+        "lea                 " LOCAL_MANGLE(1b) ", %1   \n\t"
+        "lea                 " LOCAL_MANGLE(2b) ", %2   \n\t"
         "dec                         %1                 \n\t"
         "dec                         %2                 \n\t"
         "sub                         %0, %1             \n\t"
         "sub                         %0, %2             \n\t"
-        "lea                         9b, %3             \n\t"
+        "lea                 " LOCAL_MANGLE(9b) ", %3   \n\t"
         "sub                         %0, %3             \n\t"
 
 
