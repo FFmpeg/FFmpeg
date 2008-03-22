@@ -120,10 +120,12 @@
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
 #if defined(ARCH_X86_64) && defined(PIC)
-#    define MANGLE(a) EXTERN_PREFIX #a"(%%rip)"
+#    define LOCAL_MANGLE(a) #a "(%%rip)"
 #else
-#    define MANGLE(a) EXTERN_PREFIX #a
+#    define LOCAL_MANGLE(a) #a
 #endif
+
+#define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
 
 /* debug stuff */
 
