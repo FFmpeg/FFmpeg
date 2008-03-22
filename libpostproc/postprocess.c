@@ -116,65 +116,65 @@ DECLARE_ASM_CONST(8, int, deringThreshold)= 20;
 
 static struct PPFilter filters[]=
 {
-        {"hb", "hdeblock",              1, 1, 3, H_DEBLOCK},
-        {"vb", "vdeblock",              1, 2, 4, V_DEBLOCK},
-/*      {"hr", "rkhdeblock",            1, 1, 3, H_RK1_FILTER},
-        {"vr", "rkvdeblock",            1, 2, 4, V_RK1_FILTER},*/
-        {"h1", "x1hdeblock",            1, 1, 3, H_X1_FILTER},
-        {"v1", "x1vdeblock",            1, 2, 4, V_X1_FILTER},
-        {"ha", "ahdeblock",             1, 1, 3, H_A_DEBLOCK},
-        {"va", "avdeblock",             1, 2, 4, V_A_DEBLOCK},
-        {"dr", "dering",                1, 5, 6, DERING},
-        {"al", "autolevels",            0, 1, 2, LEVEL_FIX},
-        {"lb", "linblenddeint",         1, 1, 4, LINEAR_BLEND_DEINT_FILTER},
-        {"li", "linipoldeint",          1, 1, 4, LINEAR_IPOL_DEINT_FILTER},
-        {"ci", "cubicipoldeint",        1, 1, 4, CUBIC_IPOL_DEINT_FILTER},
-        {"md", "mediandeint",           1, 1, 4, MEDIAN_DEINT_FILTER},
-        {"fd", "ffmpegdeint",           1, 1, 4, FFMPEG_DEINT_FILTER},
-        {"l5", "lowpass5",              1, 1, 4, LOWPASS5_DEINT_FILTER},
-        {"tn", "tmpnoise",              1, 7, 8, TEMP_NOISE_FILTER},
-        {"fq", "forcequant",            1, 0, 0, FORCE_QUANT},
-        {NULL, NULL,0,0,0,0} //End Marker
+    {"hb", "hdeblock",              1, 1, 3, H_DEBLOCK},
+    {"vb", "vdeblock",              1, 2, 4, V_DEBLOCK},
+/*  {"hr", "rkhdeblock",            1, 1, 3, H_RK1_FILTER},
+    {"vr", "rkvdeblock",            1, 2, 4, V_RK1_FILTER},*/
+    {"h1", "x1hdeblock",            1, 1, 3, H_X1_FILTER},
+    {"v1", "x1vdeblock",            1, 2, 4, V_X1_FILTER},
+    {"ha", "ahdeblock",             1, 1, 3, H_A_DEBLOCK},
+    {"va", "avdeblock",             1, 2, 4, V_A_DEBLOCK},
+    {"dr", "dering",                1, 5, 6, DERING},
+    {"al", "autolevels",            0, 1, 2, LEVEL_FIX},
+    {"lb", "linblenddeint",         1, 1, 4, LINEAR_BLEND_DEINT_FILTER},
+    {"li", "linipoldeint",          1, 1, 4, LINEAR_IPOL_DEINT_FILTER},
+    {"ci", "cubicipoldeint",        1, 1, 4, CUBIC_IPOL_DEINT_FILTER},
+    {"md", "mediandeint",           1, 1, 4, MEDIAN_DEINT_FILTER},
+    {"fd", "ffmpegdeint",           1, 1, 4, FFMPEG_DEINT_FILTER},
+    {"l5", "lowpass5",              1, 1, 4, LOWPASS5_DEINT_FILTER},
+    {"tn", "tmpnoise",              1, 7, 8, TEMP_NOISE_FILTER},
+    {"fq", "forcequant",            1, 0, 0, FORCE_QUANT},
+    {NULL, NULL,0,0,0,0} //End Marker
 };
 
 static const char *replaceTable[]=
 {
-        "default",      "hb:a,vb:a,dr:a",
-        "de",           "hb:a,vb:a,dr:a",
-        "fast",         "h1:a,v1:a,dr:a",
-        "fa",           "h1:a,v1:a,dr:a",
-        "ac",           "ha:a:128:7,va:a,dr:a",
-        NULL //End Marker
+    "default",      "hb:a,vb:a,dr:a",
+    "de",           "hb:a,vb:a,dr:a",
+    "fast",         "h1:a,v1:a,dr:a",
+    "fa",           "h1:a,v1:a,dr:a",
+    "ac",           "ha:a:128:7,va:a,dr:a",
+    NULL //End Marker
 };
 
 
 #if defined(ARCH_X86)
 static inline void prefetchnta(void *p)
 {
-        asm volatile(   "prefetchnta (%0)\n\t"
-                : : "r" (p)
-        );
+    asm volatile(   "prefetchnta (%0)\n\t"
+        : : "r" (p)
+    );
 }
 
 static inline void prefetcht0(void *p)
 {
-        asm volatile(   "prefetcht0 (%0)\n\t"
-                : : "r" (p)
-        );
+    asm volatile(   "prefetcht0 (%0)\n\t"
+        : : "r" (p)
+    );
 }
 
 static inline void prefetcht1(void *p)
 {
-        asm volatile(   "prefetcht1 (%0)\n\t"
-                : : "r" (p)
-        );
+    asm volatile(   "prefetcht1 (%0)\n\t"
+        : : "r" (p)
+    );
 }
 
 static inline void prefetcht2(void *p)
 {
-        asm volatile(   "prefetcht2 (%0)\n\t"
-                : : "r" (p)
-        );
+    asm volatile(   "prefetcht2 (%0)\n\t"
+        : : "r" (p)
+    );
 }
 #endif
 
@@ -185,171 +185,167 @@ static inline void prefetcht2(void *p)
  */
 static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
 {
-        int numEq= 0;
-        int y;
-        const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
-        const int dcThreshold= dcOffset*2 + 1;
+    int numEq= 0;
+    int y;
+    const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
+    const int dcThreshold= dcOffset*2 + 1;
 
-        for(y=0; y<BLOCK_SIZE; y++)
-        {
-                if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold) numEq++;
-                src+= stride;
-        }
-        return numEq > c->ppMode.flatnessThreshold;
+    for(y=0; y<BLOCK_SIZE; y++){
+        if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[1] - src[2] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[2] - src[3] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[3] - src[4] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[4] - src[5] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[5] - src[6] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[6] - src[7] + dcOffset)) < dcThreshold) numEq++;
+        src+= stride;
+    }
+    return numEq > c->ppMode.flatnessThreshold;
 }
 
 /**
  * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
-static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c){
-        int numEq= 0;
-        int y;
-        const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
-        const int dcThreshold= dcOffset*2 + 1;
+static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c)
+{
+    int numEq= 0;
+    int y;
+    const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
+    const int dcThreshold= dcOffset*2 + 1;
 
-        src+= stride*4; // src points to begin of the 8x8 Block
-        for(y=0; y<BLOCK_SIZE-1; y++)
-        {
-                if(((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold) numEq++;
-                src+= stride;
-        }
-        return numEq > c->ppMode.flatnessThreshold;
+    src+= stride*4; // src points to begin of the 8x8 Block
+    for(y=0; y<BLOCK_SIZE-1; y++){
+        if(((unsigned)(src[0] - src[0+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[1] - src[1+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[2] - src[2+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[3] - src[3+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[4] - src[4+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[5] - src[5+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[6] - src[6+stride] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[7] - src[7+stride] + dcOffset)) < dcThreshold) numEq++;
+        src+= stride;
+    }
+    return numEq > c->ppMode.flatnessThreshold;
 }
 
 static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
 {
-        int i;
+    int i;
 #if 1
-        for(i=0; i<2; i++){
-                if((unsigned)(src[0] - src[5] + 2*QP) > 4*QP) return 0;
-                src += stride;
-                if((unsigned)(src[2] - src[7] + 2*QP) > 4*QP) return 0;
-                src += stride;
-                if((unsigned)(src[4] - src[1] + 2*QP) > 4*QP) return 0;
-                src += stride;
-                if((unsigned)(src[6] - src[3] + 2*QP) > 4*QP) return 0;
-                src += stride;
-        }
+    for(i=0; i<2; i++){
+        if((unsigned)(src[0] - src[5] + 2*QP) > 4*QP) return 0;
+        src += stride;
+        if((unsigned)(src[2] - src[7] + 2*QP) > 4*QP) return 0;
+        src += stride;
+        if((unsigned)(src[4] - src[1] + 2*QP) > 4*QP) return 0;
+        src += stride;
+        if((unsigned)(src[6] - src[3] + 2*QP) > 4*QP) return 0;
+        src += stride;
+    }
 #else
-        for(i=0; i<8; i++){
-                if((unsigned)(src[0] - src[7] + 2*QP) > 4*QP) return 0;
-                src += stride;
-        }
+    for(i=0; i<8; i++){
+        if((unsigned)(src[0] - src[7] + 2*QP) > 4*QP) return 0;
+        src += stride;
+    }
 #endif
-        return 1;
+    return 1;
 }
 
 static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
 {
 #if 1
 #if 1
-        int x;
-        src+= stride*4;
-        for(x=0; x<BLOCK_SIZE; x+=4)
-        {
-                if((unsigned)(src[  x + 0*stride] - src[  x + 5*stride] + 2*QP) > 4*QP) return 0;
-                if((unsigned)(src[1+x + 2*stride] - src[1+x + 7*stride] + 2*QP) > 4*QP) return 0;
-                if((unsigned)(src[2+x + 4*stride] - src[2+x + 1*stride] + 2*QP) > 4*QP) return 0;
-                if((unsigned)(src[3+x + 6*stride] - src[3+x + 3*stride] + 2*QP) > 4*QP) return 0;
-        }
+    int x;
+    src+= stride*4;
+    for(x=0; x<BLOCK_SIZE; x+=4){
+        if((unsigned)(src[  x + 0*stride] - src[  x + 5*stride] + 2*QP) > 4*QP) return 0;
+        if((unsigned)(src[1+x + 2*stride] - src[1+x + 7*stride] + 2*QP) > 4*QP) return 0;
+        if((unsigned)(src[2+x + 4*stride] - src[2+x + 1*stride] + 2*QP) > 4*QP) return 0;
+        if((unsigned)(src[3+x + 6*stride] - src[3+x + 3*stride] + 2*QP) > 4*QP) return 0;
+    }
 #else
-        int x;
-        src+= stride*3;
-        for(x=0; x<BLOCK_SIZE; x++)
-        {
-                if((unsigned)(src[x + stride] - src[x + (stride<<3)] + 2*QP) > 4*QP) return 0;
-        }
+    int x;
+    src+= stride*3;
+    for(x=0; x<BLOCK_SIZE; x++){
+        if((unsigned)(src[x + stride] - src[x + (stride<<3)] + 2*QP) > 4*QP) return 0;
+    }
 #endif
-        return 1;
+    return 1;
 #else
-        int x;
-        src+= stride*4;
-        for(x=0; x<BLOCK_SIZE; x++)
-        {
-                int min=255;
-                int max=0;
-                int y;
-                for(y=0; y<8; y++){
-                        int v= src[x + y*stride];
-                        if(v>max) max=v;
-                        if(v<min) min=v;
-                }
-                if(max-min > 2*QP) return 0;
+    int x;
+    src+= stride*4;
+    for(x=0; x<BLOCK_SIZE; x++){
+        int min=255;
+        int max=0;
+        int y;
+        for(y=0; y<8; y++){
+            int v= src[x + y*stride];
+            if(v>max) max=v;
+            if(v<min) min=v;
         }
-        return 1;
+        if(max-min > 2*QP) return 0;
+    }
+    return 1;
 #endif
 }
 
-static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c){
-        if( isHorizDC_C(src, stride, c) ){
-                if( isHorizMinMaxOk_C(src, stride, c->QP) )
-                        return 1;
-                else
-                        return 0;
-        }else{
-                return 2;
-        }
+static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c)
+{
+    if( isHorizDC_C(src, stride, c) ){
+        if( isHorizMinMaxOk_C(src, stride, c->QP) )
+            return 1;
+        else
+            return 0;
+    }else{
+        return 2;
+    }
 }
 
-static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c){
-        if( isVertDC_C(src, stride, c) ){
-                if( isVertMinMaxOk_C(src, stride, c->QP) )
-                        return 1;
-                else
-                        return 0;
-        }else{
-                return 2;
-        }
+static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c)
+{
+    if( isVertDC_C(src, stride, c) ){
+        if( isVertMinMaxOk_C(src, stride, c->QP) )
+            return 1;
+        else
+            return 0;
+    }else{
+        return 2;
+    }
 }
 
 static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
 {
-        int y;
-        for(y=0; y<BLOCK_SIZE; y++)
-        {
-                const int middleEnergy= 5*(dst[4] - dst[3]) + 2*(dst[2] - dst[5]);
+    int y;
+    for(y=0; y<BLOCK_SIZE; y++){
+        const int middleEnergy= 5*(dst[4] - dst[3]) + 2*(dst[2] - dst[5]);
 
-                if(FFABS(middleEnergy) < 8*c->QP)
-                {
-                        const int q=(dst[3] - dst[4])/2;
-                        const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
-                        const int rightEnergy= 5*(dst[6] - dst[5]) + 2*(dst[4] - dst[7]);
+        if(FFABS(middleEnergy) < 8*c->QP){
+            const int q=(dst[3] - dst[4])/2;
+            const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
+            const int rightEnergy= 5*(dst[6] - dst[5]) + 2*(dst[4] - dst[7]);
 
-                        int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
-                        d= FFMAX(d, 0);
+            int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
+            d= FFMAX(d, 0);
 
-                        d= (5*d + 32) >> 6;
-                        d*= FFSIGN(-middleEnergy);
+            d= (5*d + 32) >> 6;
+            d*= FFSIGN(-middleEnergy);
 
-                        if(q>0)
-                        {
-                                d= d<0 ? 0 : d;
-                                d= d>q ? q : d;
-                        }
-                        else
-                        {
-                                d= d>0 ? 0 : d;
-                                d= d<q ? q : d;
-                        }
+            if(q>0)
+            {
+                d= d<0 ? 0 : d;
+                d= d>q ? q : d;
+            }
+            else
+            {
+                d= d>0 ? 0 : d;
+                d= d<q ? q : d;
+            }
 
-                        dst[3]-= d;
-                        dst[4]+= d;
-                }
-                dst+= stride;
+            dst[3]-= d;
+            dst[4]+= d;
         }
+        dst+= stride;
+    }
 }
 
 /**
@@ -358,35 +354,34 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
  */
 static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
 {
-        int y;
-        for(y=0; y<BLOCK_SIZE; y++)
-        {
-                const int first= FFABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
-                const int last= FFABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
+    int y;
+    for(y=0; y<BLOCK_SIZE; y++){
+        const int first= FFABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
+        const int last= FFABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
 
-                int sums[10];
-                sums[0] = 4*first + dst[0] + dst[1] + dst[2] + 4;
-                sums[1] = sums[0] - first  + dst[3];
-                sums[2] = sums[1] - first  + dst[4];
-                sums[3] = sums[2] - first  + dst[5];
-                sums[4] = sums[3] - first  + dst[6];
-                sums[5] = sums[4] - dst[0] + dst[7];
-                sums[6] = sums[5] - dst[1] + last;
-                sums[7] = sums[6] - dst[2] + last;
-                sums[8] = sums[7] - dst[3] + last;
-                sums[9] = sums[8] - dst[4] + last;
+        int sums[10];
+        sums[0] = 4*first + dst[0] + dst[1] + dst[2] + 4;
+        sums[1] = sums[0] - first  + dst[3];
+        sums[2] = sums[1] - first  + dst[4];
+        sums[3] = sums[2] - first  + dst[5];
+        sums[4] = sums[3] - first  + dst[6];
+        sums[5] = sums[4] - dst[0] + dst[7];
+        sums[6] = sums[5] - dst[1] + last;
+        sums[7] = sums[6] - dst[2] + last;
+        sums[8] = sums[7] - dst[3] + last;
+        sums[9] = sums[8] - dst[4] + last;
 
-                dst[0]= (sums[0] + sums[2] + 2*dst[0])>>4;
-                dst[1]= (sums[1] + sums[3] + 2*dst[1])>>4;
-                dst[2]= (sums[2] + sums[4] + 2*dst[2])>>4;
-                dst[3]= (sums[3] + sums[5] + 2*dst[3])>>4;
-                dst[4]= (sums[4] + sums[6] + 2*dst[4])>>4;
-                dst[5]= (sums[5] + sums[7] + 2*dst[5])>>4;
-                dst[6]= (sums[6] + sums[8] + 2*dst[6])>>4;
-                dst[7]= (sums[7] + sums[9] + 2*dst[7])>>4;
+        dst[0]= (sums[0] + sums[2] + 2*dst[0])>>4;
+        dst[1]= (sums[1] + sums[3] + 2*dst[1])>>4;
+        dst[2]= (sums[2] + sums[4] + 2*dst[2])>>4;
+        dst[3]= (sums[3] + sums[5] + 2*dst[3])>>4;
+        dst[4]= (sums[4] + sums[6] + 2*dst[4])>>4;
+        dst[5]= (sums[5] + sums[7] + 2*dst[5])>>4;
+        dst[6]= (sums[6] + sums[8] + 2*dst[6])>>4;
+        dst[7]= (sums[7] + sums[9] + 2*dst[7])>>4;
 
-                dst+= stride;
-        }
+        dst+= stride;
+    }
 }
 
 /**
@@ -399,161 +394,154 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
  */
 static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 {
-        int y;
-        static uint64_t *lut= NULL;
-        if(lut==NULL)
+    int y;
+    static uint64_t *lut= NULL;
+    if(lut==NULL)
+    {
+        int i;
+        lut = av_malloc(256*8);
+        for(i=0; i<256; i++)
         {
-                int i;
-                lut = av_malloc(256*8);
-                for(i=0; i<256; i++)
-                {
-                        int v= i < 128 ? 2*i : 2*(i-256);
+            int v= i < 128 ? 2*i : 2*(i-256);
 /*
 //Simulate 112242211 9-Tap filter
-                        uint64_t a= (v/16) & 0xFF;
-                        uint64_t b= (v/8) & 0xFF;
-                        uint64_t c= (v/4) & 0xFF;
-                        uint64_t d= (3*v/8) & 0xFF;
+            uint64_t a= (v/16)  & 0xFF;
+            uint64_t b= (v/8)   & 0xFF;
+            uint64_t c= (v/4)   & 0xFF;
+            uint64_t d= (3*v/8) & 0xFF;
 */
 //Simulate piecewise linear interpolation
-                        uint64_t a= (v/16) & 0xFF;
-                        uint64_t b= (v*3/16) & 0xFF;
-                        uint64_t c= (v*5/16) & 0xFF;
-                        uint64_t d= (7*v/16) & 0xFF;
-                        uint64_t A= (0x100 - a)&0xFF;
-                        uint64_t B= (0x100 - b)&0xFF;
-                        uint64_t C= (0x100 - c)&0xFF;
-                        uint64_t D= (0x100 - c)&0xFF;
+            uint64_t a= (v/16)   & 0xFF;
+            uint64_t b= (v*3/16) & 0xFF;
+            uint64_t c= (v*5/16) & 0xFF;
+            uint64_t d= (7*v/16) & 0xFF;
+            uint64_t A= (0x100 - a)&0xFF;
+            uint64_t B= (0x100 - b)&0xFF;
+            uint64_t C= (0x100 - c)&0xFF;
+            uint64_t D= (0x100 - c)&0xFF;
 
-                        lut[i]   = (a<<56) | (b<<48) | (c<<40) | (d<<32) |
-                                (D<<24) | (C<<16) | (B<<8) | (A);
-                        //lut[i] = (v<<32) | (v<<24);
-                }
+            lut[i]   = (a<<56) | (b<<48) | (c<<40) | (d<<32) |
+                       (D<<24) | (C<<16) | (B<<8)  | (A);
+            //lut[i] = (v<<32) | (v<<24);
         }
+    }
 
-        for(y=0; y<BLOCK_SIZE; y++)
-        {
-                int a= src[1] - src[2];
-                int b= src[3] - src[4];
-                int c= src[5] - src[6];
+    for(y=0; y<BLOCK_SIZE; y++){
+        int a= src[1] - src[2];
+        int b= src[3] - src[4];
+        int c= src[5] - src[6];
 
-                int d= FFMAX(FFABS(b) - (FFABS(a) + FFABS(c))/2, 0);
+        int d= FFMAX(FFABS(b) - (FFABS(a) + FFABS(c))/2, 0);
 
-                if(d < QP)
-                {
-                        int v = d * FFSIGN(-b);
+        if(d < QP){
+            int v = d * FFSIGN(-b);
 
-                        src[1] +=v/8;
-                        src[2] +=v/4;
-                        src[3] +=3*v/8;
-                        src[4] -=3*v/8;
-                        src[5] -=v/4;
-                        src[6] -=v/8;
-
-                }
-                src+=stride;
+            src[1] +=v/8;
+            src[2] +=v/4;
+            src[3] +=3*v/8;
+            src[4] -=3*v/8;
+            src[5] -=v/4;
+            src[6] -=v/8;
         }
+        src+=stride;
+    }
 }
 
 /**
  * accurate deblock filter
  */
 static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
-        int y;
-        const int QP= c->QP;
-        const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
-        const int dcThreshold= dcOffset*2 + 1;
+    int y;
+    const int QP= c->QP;
+    const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
+    const int dcThreshold= dcOffset*2 + 1;
 //START_TIMER
-        src+= step*4; // src points to begin of the 8x8 Block
-        for(y=0; y<8; y++){
-                int numEq= 0;
+    src+= step*4; // src points to begin of the 8x8 Block
+    for(y=0; y<8; y++){
+        int numEq= 0;
 
-                if(((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold) numEq++;
-                if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
-                if(numEq > c->ppMode.flatnessThreshold){
-                        int min, max, x;
+        if(((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold) numEq++;
+        if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
+        if(numEq > c->ppMode.flatnessThreshold){
+            int min, max, x;
 
-                        if(src[0] > src[step]){
-                            max= src[0];
-                            min= src[step];
-                        }else{
-                            max= src[step];
-                            min= src[0];
-                        }
-                        for(x=2; x<8; x+=2){
-                                if(src[x*step] > src[(x+1)*step]){
-                                        if(src[x    *step] > max) max= src[ x   *step];
-                                        if(src[(x+1)*step] < min) min= src[(x+1)*step];
-                                }else{
-                                        if(src[(x+1)*step] > max) max= src[(x+1)*step];
-                                        if(src[ x   *step] < min) min= src[ x   *step];
-                                }
-                        }
-                        if(max-min < 2*QP){
-                                const int first= FFABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
-                                const int last= FFABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
-
-                                int sums[10];
-                                sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
-                                sums[1] = sums[0] - first       + src[3*step];
-                                sums[2] = sums[1] - first       + src[4*step];
-                                sums[3] = sums[2] - first       + src[5*step];
-                                sums[4] = sums[3] - first       + src[6*step];
-                                sums[5] = sums[4] - src[0*step] + src[7*step];
-                                sums[6] = sums[5] - src[1*step] + last;
-                                sums[7] = sums[6] - src[2*step] + last;
-                                sums[8] = sums[7] - src[3*step] + last;
-                                sums[9] = sums[8] - src[4*step] + last;
-
-                                src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
-                                src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
-                                src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
-                                src[3*step]= (sums[3] + sums[5] + 2*src[3*step])>>4;
-                                src[4*step]= (sums[4] + sums[6] + 2*src[4*step])>>4;
-                                src[5*step]= (sums[5] + sums[7] + 2*src[5*step])>>4;
-                                src[6*step]= (sums[6] + sums[8] + 2*src[6*step])>>4;
-                                src[7*step]= (sums[7] + sums[9] + 2*src[7*step])>>4;
-                        }
+            if(src[0] > src[step]){
+                max= src[0];
+                min= src[step];
+            }else{
+                max= src[step];
+                min= src[0];
+            }
+            for(x=2; x<8; x+=2){
+                if(src[x*step] > src[(x+1)*step]){
+                        if(src[x    *step] > max) max= src[ x   *step];
+                        if(src[(x+1)*step] < min) min= src[(x+1)*step];
                 }else{
-                        const int middleEnergy= 5*(src[4*step] - src[3*step]) + 2*(src[2*step] - src[5*step]);
+                        if(src[(x+1)*step] > max) max= src[(x+1)*step];
+                        if(src[ x   *step] < min) min= src[ x   *step];
+                }
+            }
+            if(max-min < 2*QP){
+                const int first= FFABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
+                const int last= FFABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
 
-                        if(FFABS(middleEnergy) < 8*QP)
-                        {
-                                const int q=(src[3*step] - src[4*step])/2;
-                                const int leftEnergy=  5*(src[2*step] - src[1*step]) + 2*(src[0*step] - src[3*step]);
-                                const int rightEnergy= 5*(src[6*step] - src[5*step]) + 2*(src[4*step] - src[7*step]);
+                int sums[10];
+                sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
+                sums[1] = sums[0] - first       + src[3*step];
+                sums[2] = sums[1] - first       + src[4*step];
+                sums[3] = sums[2] - first       + src[5*step];
+                sums[4] = sums[3] - first       + src[6*step];
+                sums[5] = sums[4] - src[0*step] + src[7*step];
+                sums[6] = sums[5] - src[1*step] + last;
+                sums[7] = sums[6] - src[2*step] + last;
+                sums[8] = sums[7] - src[3*step] + last;
+                sums[9] = sums[8] - src[4*step] + last;
 
-                                int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
-                                d= FFMAX(d, 0);
+                src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
+                src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
+                src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
+                src[3*step]= (sums[3] + sums[5] + 2*src[3*step])>>4;
+                src[4*step]= (sums[4] + sums[6] + 2*src[4*step])>>4;
+                src[5*step]= (sums[5] + sums[7] + 2*src[5*step])>>4;
+                src[6*step]= (sums[6] + sums[8] + 2*src[6*step])>>4;
+                src[7*step]= (sums[7] + sums[9] + 2*src[7*step])>>4;
+            }
+        }else{
+            const int middleEnergy= 5*(src[4*step] - src[3*step]) + 2*(src[2*step] - src[5*step]);
 
-                                d= (5*d + 32) >> 6;
-                                d*= FFSIGN(-middleEnergy);
+            if(FFABS(middleEnergy) < 8*QP){
+                const int q=(src[3*step] - src[4*step])/2;
+                const int leftEnergy=  5*(src[2*step] - src[1*step]) + 2*(src[0*step] - src[3*step]);
+                const int rightEnergy= 5*(src[6*step] - src[5*step]) + 2*(src[4*step] - src[7*step]);
 
-                                if(q>0)
-                                {
-                                        d= d<0 ? 0 : d;
-                                        d= d>q ? q : d;
-                                }
-                                else
-                                {
-                                        d= d>0 ? 0 : d;
-                                        d= d<q ? q : d;
-                                }
+                int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
+                d= FFMAX(d, 0);
 
-                                src[3*step]-= d;
-                                src[4*step]+= d;
-                        }
+                d= (5*d + 32) >> 6;
+                d*= FFSIGN(-middleEnergy);
+
+                if(q>0){
+                    d= d<0 ? 0 : d;
+                    d= d>q ? q : d;
+                }else{
+                    d= d>0 ? 0 : d;
+                    d= d<q ? q : d;
                 }
 
-                src += stride;
+                src[3*step]-= d;
+                src[4*step]+= d;
+            }
         }
+
+        src += stride;
+    }
 /*if(step==16){
     STOP_TIMER("step16")
 }else{
@@ -642,43 +630,43 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
 {
-        PPContext *c= (PPContext *)vc;
-        PPMode *ppMode= (PPMode *)vm;
-        c->ppMode= *ppMode; //FIXME
+    PPContext *c= (PPContext *)vc;
+    PPMode *ppMode= (PPMode *)vm;
+    c->ppMode= *ppMode; //FIXME
 
-        // Using ifs here as they are faster than function pointers although the
-        // difference would not be measurable here but it is much better because
-        // someone might exchange the CPU whithout restarting MPlayer ;)
+    // Using ifs here as they are faster than function pointers although the
+    // difference would not be measurable here but it is much better because
+    // someone might exchange the CPU whithout restarting MPlayer ;)
 #ifdef RUNTIME_CPUDETECT
 #if defined(ARCH_X86)
-        // ordered per speed fastest first
-        if(c->cpuCaps & PP_CPU_CAPS_MMX2)
-                postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
-                postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        else if(c->cpuCaps & PP_CPU_CAPS_MMX)
-                postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        else
-                postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    // ordered per speed fastest first
+    if(c->cpuCaps & PP_CPU_CAPS_MMX2)
+        postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
+        postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    else if(c->cpuCaps & PP_CPU_CAPS_MMX)
+        postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    else
+        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
 #ifdef HAVE_ALTIVEC
-        if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
-                postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        else
+    if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
+            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    else
 #endif
-                postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
 #else //RUNTIME_CPUDETECT
 #ifdef HAVE_MMX2
-                postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif defined (HAVE_3DNOW)
-                postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif defined (HAVE_MMX)
-                postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif defined (HAVE_ALTIVEC)
-                postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
-                postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
 #endif //!RUNTIME_CPUDETECT
 }
@@ -738,194 +726,177 @@ const char pp_help[] =
 
 pp_mode_t *pp_get_mode_by_name_and_quality(const char *name, int quality)
 {
-        char temp[GET_MODE_BUFFER_SIZE];
-        char *p= temp;
-        static const char filterDelimiters[] = ",/";
-        static const char optionDelimiters[] = ":";
-        struct PPMode *ppMode;
-        char *filterToken;
+    char temp[GET_MODE_BUFFER_SIZE];
+    char *p= temp;
+    static const char filterDelimiters[] = ",/";
+    static const char optionDelimiters[] = ":";
+    struct PPMode *ppMode;
+    char *filterToken;
 
-        ppMode= av_malloc(sizeof(PPMode));
+    ppMode= av_malloc(sizeof(PPMode));
 
-        ppMode->lumMode= 0;
-        ppMode->chromMode= 0;
-        ppMode->maxTmpNoise[0]= 700;
-        ppMode->maxTmpNoise[1]= 1500;
-        ppMode->maxTmpNoise[2]= 3000;
-        ppMode->maxAllowedY= 234;
-        ppMode->minAllowedY= 16;
-        ppMode->baseDcDiff= 256/8;
-        ppMode->flatnessThreshold= 56-16-1;
-        ppMode->maxClippedThreshold= 0.01;
-        ppMode->error=0;
+    ppMode->lumMode= 0;
+    ppMode->chromMode= 0;
+    ppMode->maxTmpNoise[0]= 700;
+    ppMode->maxTmpNoise[1]= 1500;
+    ppMode->maxTmpNoise[2]= 3000;
+    ppMode->maxAllowedY= 234;
+    ppMode->minAllowedY= 16;
+    ppMode->baseDcDiff= 256/8;
+    ppMode->flatnessThreshold= 56-16-1;
+    ppMode->maxClippedThreshold= 0.01;
+    ppMode->error=0;
 
-        strncpy(temp, name, GET_MODE_BUFFER_SIZE);
+    strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
-        av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
+    av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
-        for(;;){
-                char *filterName;
-                int q= 1000000; //PP_QUALITY_MAX;
-                int chrom=-1;
-                int luma=-1;
-                char *option;
-                char *options[OPTIONS_ARRAY_SIZE];
-                int i;
-                int filterNameOk=0;
-                int numOfUnknownOptions=0;
-                int enable=1; //does the user want us to enabled or disabled the filter
+    for(;;){
+        char *filterName;
+        int q= 1000000; //PP_QUALITY_MAX;
+        int chrom=-1;
+        int luma=-1;
+        char *option;
+        char *options[OPTIONS_ARRAY_SIZE];
+        int i;
+        int filterNameOk=0;
+        int numOfUnknownOptions=0;
+        int enable=1; //does the user want us to enabled or disabled the filter
 
-                filterToken= strtok(p, filterDelimiters);
-                if(filterToken == NULL) break;
-                p+= strlen(filterToken) + 1; // p points to next filterToken
-                filterName= strtok(filterToken, optionDelimiters);
-                av_log(NULL, AV_LOG_DEBUG, "pp: %s::%s\n", filterToken, filterName);
+        filterToken= strtok(p, filterDelimiters);
+        if(filterToken == NULL) break;
+        p+= strlen(filterToken) + 1; // p points to next filterToken
+        filterName= strtok(filterToken, optionDelimiters);
+        av_log(NULL, AV_LOG_DEBUG, "pp: %s::%s\n", filterToken, filterName);
 
-                if(*filterName == '-')
-                {
-                        enable=0;
-                        filterName++;
-                }
-
-                for(;;){ //for all options
-                        option= strtok(NULL, optionDelimiters);
-                        if(option == NULL) break;
-
-                        av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
-                        if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
-                        else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
-                        else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
-                        else if(!strcmp("noluma", option) || !strcmp("n", option)) luma=0;
-                        else
-                        {
-                                options[numOfUnknownOptions] = option;
-                                numOfUnknownOptions++;
-                        }
-                        if(numOfUnknownOptions >= OPTIONS_ARRAY_SIZE-1) break;
-                }
-                options[numOfUnknownOptions] = NULL;
-
-                /* replace stuff from the replace Table */
-                for(i=0; replaceTable[2*i]!=NULL; i++)
-                {
-                        if(!strcmp(replaceTable[2*i], filterName))
-                        {
-                                int newlen= strlen(replaceTable[2*i + 1]);
-                                int plen;
-                                int spaceLeft;
-
-                                if(p==NULL) p= temp, *p=0;      //last filter
-                                else p--, *p=',';               //not last filter
-
-                                plen= strlen(p);
-                                spaceLeft= p - temp + plen;
-                                if(spaceLeft + newlen  >= GET_MODE_BUFFER_SIZE)
-                                {
-                                        ppMode->error++;
-                                        break;
-                                }
-                                memmove(p + newlen, p, plen+1);
-                                memcpy(p, replaceTable[2*i + 1], newlen);
-                                filterNameOk=1;
-                        }
-                }
-
-                for(i=0; filters[i].shortName!=NULL; i++)
-                {
-                        if(   !strcmp(filters[i].longName, filterName)
-                           || !strcmp(filters[i].shortName, filterName))
-                        {
-                                ppMode->lumMode &= ~filters[i].mask;
-                                ppMode->chromMode &= ~filters[i].mask;
-
-                                filterNameOk=1;
-                                if(!enable) break; // user wants to disable it
-
-                                if(q >= filters[i].minLumQuality && luma)
-                                        ppMode->lumMode|= filters[i].mask;
-                                if(chrom==1 || (chrom==-1 && filters[i].chromDefault))
-                                        if(q >= filters[i].minChromQuality)
-                                                ppMode->chromMode|= filters[i].mask;
-
-                                if(filters[i].mask == LEVEL_FIX)
-                                {
-                                        int o;
-                                        ppMode->minAllowedY= 16;
-                                        ppMode->maxAllowedY= 234;
-                                        for(o=0; options[o]!=NULL; o++)
-                                        {
-                                                if(  !strcmp(options[o],"fullyrange")
-                                                   ||!strcmp(options[o],"f"))
-                                                {
-                                                        ppMode->minAllowedY= 0;
-                                                        ppMode->maxAllowedY= 255;
-                                                        numOfUnknownOptions--;
-                                                }
-                                        }
-                                }
-                                else if(filters[i].mask == TEMP_NOISE_FILTER)
-                                {
-                                        int o;
-                                        int numOfNoises=0;
-
-                                        for(o=0; options[o]!=NULL; o++)
-                                        {
-                                                char *tail;
-                                                ppMode->maxTmpNoise[numOfNoises]=
-                                                        strtol(options[o], &tail, 0);
-                                                if(tail!=options[o])
-                                                {
-                                                        numOfNoises++;
-                                                        numOfUnknownOptions--;
-                                                        if(numOfNoises >= 3) break;
-                                                }
-                                        }
-                                }
-                                else if(filters[i].mask == V_DEBLOCK   || filters[i].mask == H_DEBLOCK
-                                     || filters[i].mask == V_A_DEBLOCK || filters[i].mask == H_A_DEBLOCK)
-                                {
-                                        int o;
-
-                                        for(o=0; options[o]!=NULL && o<2; o++)
-                                        {
-                                                char *tail;
-                                                int val= strtol(options[o], &tail, 0);
-                                                if(tail==options[o]) break;
-
-                                                numOfUnknownOptions--;
-                                                if(o==0) ppMode->baseDcDiff= val;
-                                                else ppMode->flatnessThreshold= val;
-                                        }
-                                }
-                                else if(filters[i].mask == FORCE_QUANT)
-                                {
-                                        int o;
-                                        ppMode->forcedQuant= 15;
-
-                                        for(o=0; options[o]!=NULL && o<1; o++)
-                                        {
-                                                char *tail;
-                                                int val= strtol(options[o], &tail, 0);
-                                                if(tail==options[o]) break;
-
-                                                numOfUnknownOptions--;
-                                                ppMode->forcedQuant= val;
-                                        }
-                                }
-                        }
-                }
-                if(!filterNameOk) ppMode->error++;
-                ppMode->error += numOfUnknownOptions;
+        if(*filterName == '-'){
+            enable=0;
+            filterName++;
         }
 
-        av_log(NULL, AV_LOG_DEBUG, "pp: lumMode=%X, chromMode=%X\n", ppMode->lumMode, ppMode->chromMode);
-        if(ppMode->error)
-        {
-                av_log(NULL, AV_LOG_ERROR, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
-                av_free(ppMode);
-                return NULL;
+        for(;;){ //for all options
+            option= strtok(NULL, optionDelimiters);
+            if(option == NULL) break;
+
+            av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
+            if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
+            else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
+            else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
+            else if(!strcmp("noluma", option) || !strcmp("n", option)) luma=0;
+            else{
+                options[numOfUnknownOptions] = option;
+                numOfUnknownOptions++;
+            }
+            if(numOfUnknownOptions >= OPTIONS_ARRAY_SIZE-1) break;
         }
-        return ppMode;
+        options[numOfUnknownOptions] = NULL;
+
+        /* replace stuff from the replace Table */
+        for(i=0; replaceTable[2*i]!=NULL; i++){
+            if(!strcmp(replaceTable[2*i], filterName)){
+                int newlen= strlen(replaceTable[2*i + 1]);
+                int plen;
+                int spaceLeft;
+
+                if(p==NULL) p= temp, *p=0;      //last filter
+                else p--, *p=',';               //not last filter
+
+                plen= strlen(p);
+                spaceLeft= p - temp + plen;
+                if(spaceLeft + newlen  >= GET_MODE_BUFFER_SIZE){
+                    ppMode->error++;
+                    break;
+                }
+                memmove(p + newlen, p, plen+1);
+                memcpy(p, replaceTable[2*i + 1], newlen);
+                filterNameOk=1;
+            }
+        }
+
+        for(i=0; filters[i].shortName!=NULL; i++){
+            if(   !strcmp(filters[i].longName, filterName)
+               || !strcmp(filters[i].shortName, filterName)){
+                ppMode->lumMode &= ~filters[i].mask;
+                ppMode->chromMode &= ~filters[i].mask;
+
+                filterNameOk=1;
+                if(!enable) break; // user wants to disable it
+
+                if(q >= filters[i].minLumQuality && luma)
+                    ppMode->lumMode|= filters[i].mask;
+                if(chrom==1 || (chrom==-1 && filters[i].chromDefault))
+                    if(q >= filters[i].minChromQuality)
+                            ppMode->chromMode|= filters[i].mask;
+
+                if(filters[i].mask == LEVEL_FIX){
+                    int o;
+                    ppMode->minAllowedY= 16;
+                    ppMode->maxAllowedY= 234;
+                    for(o=0; options[o]!=NULL; o++){
+                        if(  !strcmp(options[o],"fullyrange")
+                           ||!strcmp(options[o],"f")){
+                            ppMode->minAllowedY= 0;
+                            ppMode->maxAllowedY= 255;
+                            numOfUnknownOptions--;
+                        }
+                    }
+                }
+                else if(filters[i].mask == TEMP_NOISE_FILTER)
+                {
+                    int o;
+                    int numOfNoises=0;
+
+                    for(o=0; options[o]!=NULL; o++){
+                        char *tail;
+                        ppMode->maxTmpNoise[numOfNoises]=
+                            strtol(options[o], &tail, 0);
+                        if(tail!=options[o]){
+                            numOfNoises++;
+                            numOfUnknownOptions--;
+                            if(numOfNoises >= 3) break;
+                        }
+                    }
+                }
+                else if(filters[i].mask == V_DEBLOCK   || filters[i].mask == H_DEBLOCK
+                     || filters[i].mask == V_A_DEBLOCK || filters[i].mask == H_A_DEBLOCK){
+                    int o;
+
+                    for(o=0; options[o]!=NULL && o<2; o++){
+                        char *tail;
+                        int val= strtol(options[o], &tail, 0);
+                        if(tail==options[o]) break;
+
+                        numOfUnknownOptions--;
+                        if(o==0) ppMode->baseDcDiff= val;
+                        else ppMode->flatnessThreshold= val;
+                    }
+                }
+                else if(filters[i].mask == FORCE_QUANT){
+                    int o;
+                    ppMode->forcedQuant= 15;
+
+                    for(o=0; options[o]!=NULL && o<1; o++){
+                        char *tail;
+                        int val= strtol(options[o], &tail, 0);
+                        if(tail==options[o]) break;
+
+                        numOfUnknownOptions--;
+                        ppMode->forcedQuant= val;
+                    }
+                }
+            }
+        }
+        if(!filterNameOk) ppMode->error++;
+        ppMode->error += numOfUnknownOptions;
+    }
+
+    av_log(NULL, AV_LOG_DEBUG, "pp: lumMode=%X, chromMode=%X\n", ppMode->lumMode, ppMode->chromMode);
+    if(ppMode->error){
+        av_log(NULL, AV_LOG_ERROR, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
+        av_free(ppMode);
+        return NULL;
+    }
+    return ppMode;
 }
 
 void pp_free_mode(pp_mode_t *mode){
@@ -933,36 +904,35 @@ void pp_free_mode(pp_mode_t *mode){
 }
 
 static void reallocAlign(void **p, int alignment, int size){
-        av_free(*p);
-        *p= av_mallocz(size);
+    av_free(*p);
+    *p= av_mallocz(size);
 }
 
 static void reallocBuffers(PPContext *c, int width, int height, int stride, int qpStride){
-        int mbWidth = (width+15)>>4;
-        int mbHeight= (height+15)>>4;
-        int i;
+    int mbWidth = (width+15)>>4;
+    int mbHeight= (height+15)>>4;
+    int i;
 
-        c->stride= stride;
-        c->qpStride= qpStride;
+    c->stride= stride;
+    c->qpStride= qpStride;
 
-        reallocAlign((void **)&c->tempDst, 8, stride*24);
-        reallocAlign((void **)&c->tempSrc, 8, stride*24);
-        reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
-        reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
-        for(i=0; i<256; i++)
-                c->yHistogram[i]= width*height/64*15/256;
+    reallocAlign((void **)&c->tempDst, 8, stride*24);
+    reallocAlign((void **)&c->tempSrc, 8, stride*24);
+    reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
+    reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
+    for(i=0; i<256; i++)
+            c->yHistogram[i]= width*height/64*15/256;
 
-        for(i=0; i<3; i++)
-        {
-                //Note: The +17*1024 is just there so i do not have to worry about r/w over the end.
-                reallocAlign((void **)&c->tempBlured[i], 8, stride*mbHeight*16 + 17*1024);
-                reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
-        }
+    for(i=0; i<3; i++){
+        //Note: The +17*1024 is just there so i do not have to worry about r/w over the end.
+        reallocAlign((void **)&c->tempBlured[i], 8, stride*mbHeight*16 + 17*1024);
+        reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
+    }
 
-        reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
-        reallocAlign((void **)&c->nonBQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
-        reallocAlign((void **)&c->stdQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
-        reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
+    reallocAlign((void **)&c->nonBQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->stdQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
 }
 
 static const char * context_to_name(void * ptr) {
@@ -972,153 +942,146 @@ static const char * context_to_name(void * ptr) {
 static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
-        PPContext *c= av_malloc(sizeof(PPContext));
-        int stride= (width+15)&(~15);    //assumed / will realloc if needed
-        int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
+    PPContext *c= av_malloc(sizeof(PPContext));
+    int stride= (width+15)&(~15);    //assumed / will realloc if needed
+    int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
-        memset(c, 0, sizeof(PPContext));
-        c->av_class = &av_codec_context_class;
-        c->cpuCaps= cpuCaps;
-        if(cpuCaps&PP_FORMAT){
-                c->hChromaSubSample= cpuCaps&0x3;
-                c->vChromaSubSample= (cpuCaps>>4)&0x3;
-        }else{
-                c->hChromaSubSample= 1;
-                c->vChromaSubSample= 1;
-        }
+    memset(c, 0, sizeof(PPContext));
+    c->av_class = &av_codec_context_class;
+    c->cpuCaps= cpuCaps;
+    if(cpuCaps&PP_FORMAT){
+        c->hChromaSubSample= cpuCaps&0x3;
+        c->vChromaSubSample= (cpuCaps>>4)&0x3;
+    }else{
+        c->hChromaSubSample= 1;
+        c->vChromaSubSample= 1;
+    }
 
-        reallocBuffers(c, width, height, stride, qpStride);
+    reallocBuffers(c, width, height, stride, qpStride);
 
-        c->frameNum=-1;
+    c->frameNum=-1;
 
-        return c;
+    return c;
 }
 
 void pp_free_context(void *vc){
-        PPContext *c = (PPContext*)vc;
-        int i;
+    PPContext *c = (PPContext*)vc;
+    int i;
 
-        for(i=0; i<3; i++) av_free(c->tempBlured[i]);
-        for(i=0; i<3; i++) av_free(c->tempBluredPast[i]);
+    for(i=0; i<3; i++) av_free(c->tempBlured[i]);
+    for(i=0; i<3; i++) av_free(c->tempBluredPast[i]);
 
-        av_free(c->tempBlocks);
-        av_free(c->yHistogram);
-        av_free(c->tempDst);
-        av_free(c->tempSrc);
-        av_free(c->deintTemp);
-        av_free(c->stdQPTable);
-        av_free(c->nonBQPTable);
-        av_free(c->forcedQPTable);
+    av_free(c->tempBlocks);
+    av_free(c->yHistogram);
+    av_free(c->tempDst);
+    av_free(c->tempSrc);
+    av_free(c->deintTemp);
+    av_free(c->stdQPTable);
+    av_free(c->nonBQPTable);
+    av_free(c->forcedQPTable);
 
-        memset(c, 0, sizeof(PPContext));
+    memset(c, 0, sizeof(PPContext));
 
-        av_free(c);
+    av_free(c);
 }
 
 void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
-                 uint8_t * dst[3], const int dstStride[3],
-                 int width, int height,
-                 const QP_STORE_T *QP_store,  int QPStride,
-                 pp_mode_t *vm,  void *vc, int pict_type)
+                     uint8_t * dst[3], const int dstStride[3],
+                     int width, int height,
+                     const QP_STORE_T *QP_store,  int QPStride,
+                     pp_mode_t *vm,  void *vc, int pict_type)
 {
-        int mbWidth = (width+15)>>4;
-        int mbHeight= (height+15)>>4;
-        PPMode *mode = (PPMode*)vm;
-        PPContext *c = (PPContext*)vc;
-        int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
-        int absQPStride = FFABS(QPStride);
+    int mbWidth = (width+15)>>4;
+    int mbHeight= (height+15)>>4;
+    PPMode *mode = (PPMode*)vm;
+    PPContext *c = (PPContext*)vc;
+    int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
+    int absQPStride = FFABS(QPStride);
 
-        // c->stride and c->QPStride are always positive
-        if(c->stride < minStride || c->qpStride < absQPStride)
-                reallocBuffers(c, width, height,
-                                FFMAX(minStride, c->stride),
-                                FFMAX(c->qpStride, absQPStride));
+    // c->stride and c->QPStride are always positive
+    if(c->stride < minStride || c->qpStride < absQPStride)
+        reallocBuffers(c, width, height,
+                       FFMAX(minStride, c->stride),
+                       FFMAX(c->qpStride, absQPStride));
 
-        if(QP_store==NULL || (mode->lumMode & FORCE_QUANT))
-        {
-                int i;
-                QP_store= c->forcedQPTable;
-                absQPStride = QPStride = 0;
-                if(mode->lumMode & FORCE_QUANT)
-                        for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= mode->forcedQuant;
-                else
-                        for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= 1;
+    if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)){
+        int i;
+        QP_store= c->forcedQPTable;
+        absQPStride = QPStride = 0;
+        if(mode->lumMode & FORCE_QUANT)
+            for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= mode->forcedQuant;
+        else
+            for(i=0; i<mbWidth; i++) c->forcedQPTable[i]= 1;
+    }
+
+    if(pict_type & PP_PICT_TYPE_QP2){
+        int i;
+        const int count= mbHeight * absQPStride;
+        for(i=0; i<(count>>2); i++){
+            ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
         }
-
-        if(pict_type & PP_PICT_TYPE_QP2){
-                int i;
-                const int count= mbHeight * absQPStride;
-                for(i=0; i<(count>>2); i++){
-                        ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
-                }
-                for(i<<=2; i<count; i++){
-                        c->stdQPTable[i] = QP_store[i]>>1;
-                }
-                QP_store= c->stdQPTable;
-                QPStride= absQPStride;
+        for(i<<=2; i<count; i++){
+            c->stdQPTable[i] = QP_store[i]>>1;
         }
+        QP_store= c->stdQPTable;
+        QPStride= absQPStride;
+    }
 
-if(0){
-int x,y;
-for(y=0; y<mbHeight; y++){
-        for(x=0; x<mbWidth; x++){
+    if(0){
+        int x,y;
+        for(y=0; y<mbHeight; y++){
+            for(x=0; x<mbWidth; x++){
                 av_log(c, AV_LOG_INFO, "%2d ", QP_store[x + y*QPStride]);
+            }
+            av_log(c, AV_LOG_INFO, "\n");
         }
         av_log(c, AV_LOG_INFO, "\n");
-}
-        av_log(c, AV_LOG_INFO, "\n");
-}
+    }
 
-        if((pict_type&7)!=3)
-        {
-                if (QPStride >= 0) {
-                        int i;
-                        const int count= mbHeight * QPStride;
-                        for(i=0; i<(count>>2); i++){
-                                ((uint32_t*)c->nonBQPTable)[i] = ((const uint32_t*)QP_store)[i] & 0x3F3F3F3F;
-                        }
-                        for(i<<=2; i<count; i++){
-                                c->nonBQPTable[i] = QP_store[i] & 0x3F;
-                        }
-                } else {
-                        int i,j;
-                        for(i=0; i<mbHeight; i++) {
-                                    for(j=0; j<absQPStride; j++) {
-                                        c->nonBQPTable[i*absQPStride+j] = QP_store[i*QPStride+j] & 0x3F;
-                                }
-                        }
+    if((pict_type&7)!=3){
+        if (QPStride >= 0){
+            int i;
+            const int count= mbHeight * QPStride;
+            for(i=0; i<(count>>2); i++){
+                ((uint32_t*)c->nonBQPTable)[i] = ((const uint32_t*)QP_store)[i] & 0x3F3F3F3F;
+            }
+            for(i<<=2; i<count; i++){
+                c->nonBQPTable[i] = QP_store[i] & 0x3F;
+            }
+        } else {
+            int i,j;
+            for(i=0; i<mbHeight; i++) {
+                for(j=0; j<absQPStride; j++) {
+                    c->nonBQPTable[i*absQPStride+j] = QP_store[i*QPStride+j] & 0x3F;
                 }
+            }
         }
+    }
 
-        av_log(c, AV_LOG_DEBUG, "using npp filters 0x%X/0x%X\n",
-               mode->lumMode, mode->chromMode);
+    av_log(c, AV_LOG_DEBUG, "using npp filters 0x%X/0x%X\n",
+           mode->lumMode, mode->chromMode);
 
-        postProcess(src[0], srcStride[0], dst[0], dstStride[0],
+    postProcess(src[0], srcStride[0], dst[0], dstStride[0],
                 width, height, QP_store, QPStride, 0, mode, c);
 
-        width  = (width )>>c->hChromaSubSample;
-        height = (height)>>c->vChromaSubSample;
+    width  = (width )>>c->hChromaSubSample;
+    height = (height)>>c->vChromaSubSample;
 
-        if(mode->chromMode)
-        {
-                postProcess(src[1], srcStride[1], dst[1], dstStride[1],
-                        width, height, QP_store, QPStride, 1, mode, c);
-                postProcess(src[2], srcStride[2], dst[2], dstStride[2],
-                        width, height, QP_store, QPStride, 2, mode, c);
+    if(mode->chromMode){
+        postProcess(src[1], srcStride[1], dst[1], dstStride[1],
+                    width, height, QP_store, QPStride, 1, mode, c);
+        postProcess(src[2], srcStride[2], dst[2], dstStride[2],
+                    width, height, QP_store, QPStride, 2, mode, c);
+    }
+    else if(srcStride[1] == dstStride[1] && srcStride[2] == dstStride[2]){
+        linecpy(dst[1], src[1], height, srcStride[1]);
+        linecpy(dst[2], src[2], height, srcStride[2]);
+    }else{
+        int y;
+        for(y=0; y<height; y++){
+            memcpy(&(dst[1][y*dstStride[1]]), &(src[1][y*srcStride[1]]), width);
+            memcpy(&(dst[2][y*dstStride[2]]), &(src[2][y*srcStride[2]]), width);
         }
-        else if(srcStride[1] == dstStride[1] && srcStride[2] == dstStride[2])
-        {
-                linecpy(dst[1], src[1], height, srcStride[1]);
-                linecpy(dst[2], src[2], height, srcStride[2]);
-        }
-        else
-        {
-                int y;
-                for(y=0; y<height; y++)
-                {
-                        memcpy(&(dst[1][y*dstStride[1]]), &(src[1][y*srcStride[1]]), width);
-                        memcpy(&(dst[2][y*dstStride[2]]), &(src[2][y*srcStride[2]]), width);
-                }
-        }
+    }
 }
 

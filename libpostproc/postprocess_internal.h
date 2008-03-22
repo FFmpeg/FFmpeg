@@ -55,13 +55,13 @@
 #define FULL_Y_RANGE    0x8000                  // 32768
 
 //Deinterlacing Filters
-#define        LINEAR_IPOL_DEINT_FILTER         0x10000 // 65536
-#define        LINEAR_BLEND_DEINT_FILTER        0x20000 // 131072
-#define        CUBIC_BLEND_DEINT_FILTER         0x8000  // (not implemented yet)
-#define        CUBIC_IPOL_DEINT_FILTER          0x40000 // 262144
-#define        MEDIAN_DEINT_FILTER              0x80000 // 524288
-#define        FFMPEG_DEINT_FILTER              0x400000
-#define        LOWPASS5_DEINT_FILTER            0x800000
+#define LINEAR_IPOL_DEINT_FILTER        0x10000 // 65536
+#define LINEAR_BLEND_DEINT_FILTER       0x20000 // 131072
+#define CUBIC_BLEND_DEINT_FILTER        0x8000  // (not implemented yet)
+#define CUBIC_IPOL_DEINT_FILTER         0x40000 // 262144
+#define MEDIAN_DEINT_FILTER             0x80000 // 524288
+#define FFMPEG_DEINT_FILTER             0x400000
+#define LOWPASS5_DEINT_FILTER           0x800000
 
 #define TEMP_NOISE_FILTER               0x100000
 #define FORCE_QUANT                     0x200000
@@ -73,106 +73,105 @@
 //#define COMPILE_TIME_MODE 0x77
 
 static inline int CLIP(int a){
-        if(a&256) return ((a)>>31)^(-1);
-        else      return a;
+    if(a&256) return ((a)>>31)^(-1);
+    else      return a;
 }
 /**
  * Postprocessng filter.
  */
 struct PPFilter{
-        const char *shortName;
-        const char *longName;
-        int chromDefault;       ///< is chrominance filtering on by default if this filter is manually activated
-        int minLumQuality;      ///< minimum quality to turn luminance filtering on
-        int minChromQuality;    ///< minimum quality to turn chrominance filtering on
-        int mask;               ///< Bitmask to turn this filter on
+    const char *shortName;
+    const char *longName;
+    int chromDefault;       ///< is chrominance filtering on by default if this filter is manually activated
+    int minLumQuality;      ///< minimum quality to turn luminance filtering on
+    int minChromQuality;    ///< minimum quality to turn chrominance filtering on
+    int mask;               ///< Bitmask to turn this filter on
 };
 
 /**
  * Postprocessng mode.
  */
 typedef struct PPMode{
-        int lumMode;                    ///< acivates filters for luminance
-        int chromMode;                  ///< acivates filters for chrominance
-        int error;                      ///< non zero on error
+    int lumMode;                    ///< acivates filters for luminance
+    int chromMode;                  ///< acivates filters for chrominance
+    int error;                      ///< non zero on error
 
-        int minAllowedY;                ///< for brigtness correction
-        int maxAllowedY;                ///< for brihtness correction
-        float maxClippedThreshold;      ///< amount of "black" u r willing to loose to get a brightness corrected picture
+    int minAllowedY;                ///< for brigtness correction
+    int maxAllowedY;                ///< for brihtness correction
+    float maxClippedThreshold;      ///< amount of "black" u r willing to loose to get a brightness corrected picture
 
-        int maxTmpNoise[3];             ///< for Temporal Noise Reducing filter (Maximal sum of abs differences)
+    int maxTmpNoise[3];             ///< for Temporal Noise Reducing filter (Maximal sum of abs differences)
 
-        int baseDcDiff;
-        int flatnessThreshold;
+    int baseDcDiff;
+    int flatnessThreshold;
 
-        int forcedQuant;                ///< quantizer if FORCE_QUANT is used
+    int forcedQuant;                ///< quantizer if FORCE_QUANT is used
 } PPMode;
 
 /**
  * postprocess context.
  */
 typedef struct PPContext{
-        /**
-         * info on struct for av_log
-         */
-        const AVClass *av_class;
+    /**
+     * info on struct for av_log
+     */
+    const AVClass *av_class;
 
-        uint8_t *tempBlocks; ///<used for the horizontal code
+    uint8_t *tempBlocks; ///<used for the horizontal code
 
-        /**
-         * luma histogram.
-         * we need 64bit here otherwise we'll going to have a problem
-         * after watching a black picture for 5 hours
-         */
-        uint64_t *yHistogram;
+    /**
+     * luma histogram.
+     * we need 64bit here otherwise we'll going to have a problem
+     * after watching a black picture for 5 hours
+     */
+    uint64_t *yHistogram;
 
-        DECLARE_ALIGNED(8, uint64_t, packedYOffset);
-        DECLARE_ALIGNED(8, uint64_t, packedYScale);
+    DECLARE_ALIGNED(8, uint64_t, packedYOffset);
+    DECLARE_ALIGNED(8, uint64_t, packedYScale);
 
-        /** Temporal noise reducing buffers */
-        uint8_t *tempBlured[3];
-        int32_t *tempBluredPast[3];
+    /** Temporal noise reducing buffers */
+    uint8_t *tempBlured[3];
+    int32_t *tempBluredPast[3];
 
-        /** Temporary buffers for handling the last row(s) */
-        uint8_t *tempDst;
-        uint8_t *tempSrc;
+    /** Temporary buffers for handling the last row(s) */
+    uint8_t *tempDst;
+    uint8_t *tempSrc;
 
-        uint8_t *deintTemp;
+    uint8_t *deintTemp;
 
-        DECLARE_ALIGNED(8, uint64_t, pQPb);
-        DECLARE_ALIGNED(8, uint64_t, pQPb2);
+    DECLARE_ALIGNED(8, uint64_t, pQPb);
+    DECLARE_ALIGNED(8, uint64_t, pQPb2);
 
-        DECLARE_ALIGNED(8, uint64_t, mmxDcOffset[64]);
-        DECLARE_ALIGNED(8, uint64_t, mmxDcThreshold[64]);
+    DECLARE_ALIGNED(8, uint64_t, mmxDcOffset[64]);
+    DECLARE_ALIGNED(8, uint64_t, mmxDcThreshold[64]);
 
-        QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
-        QP_STORE_T *nonBQPTable;
-        QP_STORE_T *forcedQPTable;
+    QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
+    QP_STORE_T *nonBQPTable;
+    QP_STORE_T *forcedQPTable;
 
-        int QP;
-        int nonBQP;
+    int QP;
+    int nonBQP;
 
-        int frameNum;
+    int frameNum;
 
-        int cpuCaps;
+    int cpuCaps;
 
-        int qpStride; ///<size of qp buffers (needed to realloc them if needed)
-        int stride;   ///<size of some buffers (needed to realloc them if needed)
+    int qpStride; ///<size of qp buffers (needed to realloc them if needed)
+    int stride;   ///<size of some buffers (needed to realloc them if needed)
 
-        int hChromaSubSample;
-        int vChromaSubSample;
+    int hChromaSubSample;
+    int vChromaSubSample;
 
-        PPMode ppMode;
+    PPMode ppMode;
 } PPContext;
 
 
-static inline void linecpy(void *dest, const void *src, int lines, int stride)
-{
-        if (stride > 0) {
-                memcpy(dest, src, lines*stride);
-        } else {
-                memcpy((uint8_t*)dest+(lines-1)*stride, (const uint8_t*)src+(lines-1)*stride, -lines*stride);
-        }
+static inline void linecpy(void *dest, const void *src, int lines, int stride) {
+    if (stride > 0) {
+        memcpy(dest, src, lines*stride);
+    } else {
+        memcpy((uint8_t*)dest+(lines-1)*stride, (const uint8_t*)src+(lines-1)*stride, -lines*stride);
+    }
 }
 
 #endif /* FFMPEG_POSTPROCESS_INTERNAL_H */
