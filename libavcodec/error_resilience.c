@@ -561,7 +561,7 @@ static int is_intra_more_likely(MpegEncContext *s){
             undamaged_count++;
     }
 
-    if(undamaged_count < 5) return 0; //allmost all MBs damaged -> use temporal prediction
+    if(undamaged_count < 5) return 0; //almost all MBs damaged -> use temporal prediction
 
 #ifdef HAVE_XVMC
     //prevent dsp.sad() check, that requires access to the image

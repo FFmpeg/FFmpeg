@@ -405,7 +405,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
 
 /**
  * decode block and dequantize.
- * Note this is allmost identical to mjpeg
+ * Note this is almost identical to MJPEG.
  */
 static int decode_i_block(FourXContext *f, DCTELEM *block){
     int code, i, j, level, val;

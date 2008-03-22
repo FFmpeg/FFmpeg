@@ -121,7 +121,7 @@ int ff_rate_control_init(MpegEncContext *s)
         rcc->p_cplx_sum [i]=
         rcc->mv_bits_sum[i]=
         rcc->qscale_sum [i]=
-        rcc->frame_count[i]= 1; // 1 is better cuz of 1/0 and such
+        rcc->frame_count[i]= 1; // 1 is better because of 1/0 and such
         rcc->last_qscale_for[i]=FF_QP2LAMBDA * 5;
     }
     rcc->buffer_index= s->avctx->rc_initial_buffer_occupancy;

@@ -606,7 +606,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
     src+= stride*4;
     asm volatile(
 
-#if 0 //sligtly more accurate and slightly slower
+#if 0 //slightly more accurate and slightly slower
         "pxor %%mm7, %%mm7                      \n\t" // 0
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"

@@ -50,7 +50,7 @@ TempDeNoiser#           E               e       e       Ec
 * I do not have a 3DNow! CPU -> it is untested, but no one said it does not work so it seems to work
 # more or less selfinvented filters so the exactness is not too meaningful
 E = Exact implementation
-e = allmost exact implementation (slightly different rounding,...)
+e = almost exact implementation (slightly different rounding,...)
 a = alternative / approximate impl
 c = checked against the other implementations (-vo md5)
 p = partially optimized, still some work to do
@@ -178,7 +178,8 @@ static inline void prefetcht2(void *p)
 }
 #endif
 
-// The horizontal Functions exist only in C cuz the MMX code is faster with vertical filters and transposing
+/* The horizontal functions exist only in C because the MMX
+ * code is faster with vertical filters and transposing. */
 
 /**
  * Check if the given 8x8 Block is mostly "flat"
