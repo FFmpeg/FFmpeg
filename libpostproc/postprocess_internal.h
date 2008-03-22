@@ -130,8 +130,8 @@ typedef struct PPContext{
     DECLARE_ALIGNED(8, uint64_t, packedYScale);
 
     /** Temporal noise reducing buffers */
-    uint8_t *tempBlured[3];
-    int32_t *tempBluredPast[3];
+    uint8_t *tempBlurred[3];
+    int32_t *tempBlurredPast[3];
 
     /** Temporary buffers for handling the last row(s) */
     uint8_t *tempDst;

@@ -926,8 +926,8 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
 
     for(i=0; i<3; i++){
         //Note: The +17*1024 is just there so i do not have to worry about r/w over the end.
-        reallocAlign((void **)&c->tempBlured[i], 8, stride*mbHeight*16 + 17*1024);
-        reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
+        reallocAlign((void **)&c->tempBlurred[i], 8, stride*mbHeight*16 + 17*1024);
+        reallocAlign((void **)&c->tempBlurredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
     }
 
     reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
@@ -969,8 +969,8 @@ void pp_free_context(void *vc){
     PPContext *c = (PPContext*)vc;
     int i;
 
-    for(i=0; i<3; i++) av_free(c->tempBlured[i]);
-    for(i=0; i<3; i++) av_free(c->tempBluredPast[i]);
+    for(i=0; i<3; i++) av_free(c->tempBlurred[i]);
+    for(i=0; i<3; i++) av_free(c->tempBlurredPast[i]);
 
     av_free(c->tempBlocks);
     av_free(c->yHistogram);

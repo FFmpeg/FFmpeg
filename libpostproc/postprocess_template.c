@@ -2182,12 +2182,12 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 
 #ifndef HAVE_ALTIVEC
 static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
-                                    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
+                                    uint8_t *tempBlurred, uint32_t *tempBlurredPast, int *maxNoise)
 {
     // to save a register (FIXME do this outside of the loops)
-    tempBluredPast[127]= maxNoise[0];
-    tempBluredPast[128]= maxNoise[1];
-    tempBluredPast[129]= maxNoise[2];
+    tempBlurredPast[127]= maxNoise[0];
+    tempBlurredPast[128]= maxNoise[1];
+    tempBlurredPast[129]= maxNoise[2];
 
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
@@ -2476,7 +2476,7 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
 
         "4:                                     \n\t"
 
-        :: "r" (src), "r" (tempBlured), "r"((long)stride), "m" (tempBluredPast)
+        :: "r" (src), "r" (tempBlurred), "r"((long)stride), "m" (tempBlurredPast)
         : "%"REG_a, "%"REG_d, "%"REG_c, "memory"
     );
 #else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -2489,7 +2489,7 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
     for(y=0; y<8; y++){
         int x;
         for(x=0; x<8; x++){
-            int ref= tempBlured[ x + y*stride ];
+            int ref= tempBlurred[ x + y*stride ];
             int cur= src[ x + y*stride ];
             int d1=ref - cur;
 //            if(x==0 || x==7) d1+= d1>>1;
@@ -2502,12 +2502,12 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
     i=d;
     d=  (
         4*d
-        +(*(tempBluredPast-256))
-        +(*(tempBluredPast-1))+ (*(tempBluredPast+1))
-        +(*(tempBluredPast+256))
+        +(*(tempBlurredPast-256))
+        +(*(tempBlurredPast-1))+ (*(tempBlurredPast+1))
+        +(*(tempBlurredPast+256))
         +4)>>3;
-    *tempBluredPast=i;
-//    ((*tempBluredPast)*3 + d + 2)>>2;
+    *tempBlurredPast=i;
+//    ((*tempBlurredPast)*3 + d + 2)>>2;
 
 /*
 Switch between
@@ -2521,9 +2521,9 @@ Switch between
             for(y=0; y<8; y++){
                 int x;
                 for(x=0; x<8; x++){
-                    int ref= tempBlured[ x + y*stride ];
+                    int ref= tempBlurred[ x + y*stride ];
                     int cur= src[ x + y*stride ];
-                    tempBlured[ x + y*stride ]=
+                    tempBlurred[ x + y*stride ]=
                     src[ x + y*stride ]=
                         (ref + cur + 1)>>1;
                 }
@@ -2532,7 +2532,7 @@ Switch between
             for(y=0; y<8; y++){
                 int x;
                 for(x=0; x<8; x++){
-                    tempBlured[ x + y*stride ]= src[ x + y*stride ];
+                    tempBlurred[ x + y*stride ]= src[ x + y*stride ];
                 }
             }
         }
@@ -2541,9 +2541,9 @@ Switch between
             for(y=0; y<8; y++){
                 int x;
                 for(x=0; x<8; x++){
-                    int ref= tempBlured[ x + y*stride ];
+                    int ref= tempBlurred[ x + y*stride ];
                     int cur= src[ x + y*stride ];
-                    tempBlured[ x + y*stride ]=
+                    tempBlurred[ x + y*stride ]=
                     src[ x + y*stride ]=
                         (ref*7 + cur + 4)>>3;
                 }
@@ -2552,9 +2552,9 @@ Switch between
             for(y=0; y<8; y++){
                 int x;
                 for(x=0; x<8; x++){
-                    int ref= tempBlured[ x + y*stride ];
+                    int ref= tempBlurred[ x + y*stride ];
                     int cur= src[ x + y*stride ];
-                    tempBlured[ x + y*stride ]=
+                    tempBlurred[ x + y*stride ]=
                     src[ x + y*stride ]=
                         (ref*3 + cur + 2)>>2;
                 }
@@ -3650,8 +3650,8 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 if(mode & TEMP_NOISE_FILTER)
                 {
                     RENAME(tempNoiseReducer)(dstBlock-8, stride,
-                            c.tempBlured[isColor] + y*dstStride + x,
-                            c.tempBluredPast[isColor] + (y>>3)*256 + (x>>3),
+                            c.tempBlurred[isColor] + y*dstStride + x,
+                            c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3),
                             c.ppMode.maxTmpNoise);
                 }
             }
@@ -3672,8 +3672,8 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
         if((mode & TEMP_NOISE_FILTER)){
             RENAME(tempNoiseReducer)(dstBlock-8, dstStride,
-                    c.tempBlured[isColor] + y*dstStride + x,
-                    c.tempBluredPast[isColor] + (y>>3)*256 + (x>>3),
+                    c.tempBlurred[isColor] + y*dstStride + x,
+                    c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3),
                     c.ppMode.maxTmpNoise);
         }
 

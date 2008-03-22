@@ -800,7 +800,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 #define do_a_deblock_altivec(a...) do_a_deblock_C(a)
 
 static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
-                                            uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
+                                            uint8_t *tempBlurred, uint32_t *tempBlurredPast, int *maxNoise)
 {
     const vector signed int zero = vec_splat_s32(0);
     const vector signed short vsint16_1 = vec_splat_s16(1);
@@ -808,9 +808,9 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     vector signed int v_sysdp = zero;
     int d, sysd, i;
 
-    tempBluredPast[127]= maxNoise[0];
-    tempBluredPast[128]= maxNoise[1];
-    tempBluredPast[129]= maxNoise[2];
+    tempBlurredPast[127]= maxNoise[0];
+    tempBlurredPast[128]= maxNoise[1];
+    tempBlurredPast[129]= maxNoise[2];
 
 #define LOAD_LINE(src, i)                                               \
     register int j##src##i = i * stride;                                \
@@ -832,18 +832,18 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     LOAD_LINE(src, 6);
     LOAD_LINE(src, 7);
 
-    LOAD_LINE(tempBlured, 0);
-    LOAD_LINE(tempBlured, 1);
-    LOAD_LINE(tempBlured, 2);
-    LOAD_LINE(tempBlured, 3);
-    LOAD_LINE(tempBlured, 4);
-    LOAD_LINE(tempBlured, 5);
-    LOAD_LINE(tempBlured, 6);
-    LOAD_LINE(tempBlured, 7);
+    LOAD_LINE(tempBlurred, 0);
+    LOAD_LINE(tempBlurred, 1);
+    LOAD_LINE(tempBlurred, 2);
+    LOAD_LINE(tempBlurred, 3);
+    LOAD_LINE(tempBlurred, 4);
+    LOAD_LINE(tempBlurred, 5);
+    LOAD_LINE(tempBlurred, 6);
+    LOAD_LINE(tempBlurred, 7);
 #undef LOAD_LINE
 
 #define ACCUMULATE_DIFFS(i)                                     \
-    vector signed short v_d##i = vec_sub(v_tempBluredAss##i,    \
+    vector signed short v_d##i = vec_sub(v_tempBlurredAss##i,    \
                                          v_srcAss##i);          \
     v_dp = vec_msums(v_d##i, v_d##i, v_dp);                     \
     v_sysdp = vec_msums(v_d##i, vsint16_1, v_sysdp)
@@ -869,16 +869,16 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
     i = d;
     d = (4*d
-         +(*(tempBluredPast-256))
-         +(*(tempBluredPast-1))+ (*(tempBluredPast+1))
-         +(*(tempBluredPast+256))
+         +(*(tempBlurredPast-256))
+         +(*(tempBlurredPast-1))+ (*(tempBlurredPast+1))
+         +(*(tempBlurredPast+256))
          +4)>>3;
 
-    *tempBluredPast=i;
+    *tempBlurredPast=i;
 
     if (d > maxNoise[1]) {
         if (d < maxNoise[2]) {
-#define OP(i) v_tempBluredAss##i = vec_avg(v_tempBluredAss##i, v_srcAss##i);
+#define OP(i) v_tempBlurredAss##i = vec_avg(v_tempBlurredAss##i, v_srcAss##i);
 
             OP(0);
             OP(1);
@@ -890,7 +890,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
             OP(7);
 #undef OP
         } else {
-#define OP(i) v_tempBluredAss##i = v_srcAss##i;
+#define OP(i) v_tempBlurredAss##i = v_srcAss##i;
 
             OP(0);
             OP(1);
@@ -910,11 +910,11 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
 #define OP(i)                                                   \
             const vector signed short v_temp##i =               \
-                vec_mladd(v_tempBluredAss##i,                   \
+                vec_mladd(v_tempBlurredAss##i,                   \
                           vsint16_7, v_srcAss##i);              \
             const vector signed short v_temp2##i =              \
                 vec_add(v_temp##i, vsint16_4);                  \
-            v_tempBluredAss##i = vec_sr(v_temp2##i, vuint16_3)
+            v_tempBlurredAss##i = vec_sr(v_temp2##i, vuint16_3)
 
             OP(0);
             OP(1);
@@ -931,11 +931,11 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
 #define OP(i)                                                   \
             const vector signed short v_temp##i =               \
-                vec_mladd(v_tempBluredAss##i,                   \
+                vec_mladd(v_tempBlurredAss##i,                   \
                           vsint16_3, v_srcAss##i);              \
             const vector signed short v_temp2##i =              \
                 vec_add(v_temp##i, vsint16_2);                  \
-            v_tempBluredAss##i = vec_sr(v_temp2##i, (vector unsigned short)vsint16_2)
+            v_tempBlurredAss##i = vec_sr(v_temp2##i, (vector unsigned short)vsint16_2)
 
             OP(0);
             OP(1);
@@ -957,7 +957,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     const vector unsigned char perms##src##i =                  \
         vec_lvsr(i * stride, src);                              \
     const vector unsigned char vf##src##i =                     \
-        vec_packsu(v_tempBluredAss##i, (vector signed short)zero); \
+        vec_packsu(v_tempBlurredAss##i, (vector signed short)zero); \
     const vector unsigned char vg##src##i =                     \
         vec_perm(vf##src##i, v_##src##A##i, permHH);            \
     const vector unsigned char mask##src##i =                   \
@@ -979,14 +979,14 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     PACK_AND_STORE(src, 5);
     PACK_AND_STORE(src, 6);
     PACK_AND_STORE(src, 7);
-    PACK_AND_STORE(tempBlured, 0);
-    PACK_AND_STORE(tempBlured, 1);
-    PACK_AND_STORE(tempBlured, 2);
-    PACK_AND_STORE(tempBlured, 3);
-    PACK_AND_STORE(tempBlured, 4);
-    PACK_AND_STORE(tempBlured, 5);
-    PACK_AND_STORE(tempBlured, 6);
-    PACK_AND_STORE(tempBlured, 7);
+    PACK_AND_STORE(tempBlurred, 0);
+    PACK_AND_STORE(tempBlurred, 1);
+    PACK_AND_STORE(tempBlurred, 2);
+    PACK_AND_STORE(tempBlurred, 3);
+    PACK_AND_STORE(tempBlurred, 4);
+    PACK_AND_STORE(tempBlurred, 5);
+    PACK_AND_STORE(tempBlurred, 6);
+    PACK_AND_STORE(tempBlurred, 7);
 #undef PACK_AND_STORE
 }
 
