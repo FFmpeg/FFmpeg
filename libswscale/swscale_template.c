@@ -1762,7 +1762,8 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
     assert(src1 == src2);
 }
 
-//this is allmost identical to the previous, end exists only cuz yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses
+/* This is almost identical to the previous, end exists only because
+ * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
 static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width)
 {
 #ifdef HAVE_MMX
