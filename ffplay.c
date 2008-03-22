@@ -2364,14 +2364,16 @@ static void opt_frame_size(const char *arg)
     }
 }
 
-static void opt_width(const char *arg)
+static int opt_width(const char *opt, const char *arg)
 {
-    screen_width = parse_number_or_die("x", arg, OPT_INT64, 1, INT_MAX);
+    screen_width = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
+    return 0;
 }
 
-static void opt_height(const char *arg)
+static int opt_height(const char *opt, const char *arg)
 {
-    screen_height = parse_number_or_die("y", arg, OPT_INT64, 1, INT_MAX);
+    screen_height = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
+    return 0;
 }
 
 static void opt_format(const char *arg)
@@ -2411,23 +2413,26 @@ static void opt_seek(const char *arg)
     }
 }
 
-static void opt_debug(const char *arg)
+static int opt_debug(const char *opt, const char *arg)
 {
     av_log_set_level(99);
-    debug = parse_number_or_die("debug", arg, OPT_INT64, 0, INT_MAX);
+    debug = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
+    return 0;
 }
 
-static void opt_vismv(const char *arg)
+static int opt_vismv(const char *opt, const char *arg)
 {
-    debug_mv = parse_number_or_die("vismv", arg, OPT_INT64, INT_MIN, INT_MAX);
+    debug_mv = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
+    return 0;
 }
 
-static void opt_thread_count(const char *arg)
+static int opt_thread_count(const char *opt, const char *arg)
 {
-    thread_count= parse_number_or_die("threads", arg, OPT_INT64, 0, INT_MAX);
+    thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
 #if !defined(HAVE_THREADS)
     fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
+    return 0;
 }
 
 static void opt_show_help(void)
@@ -2438,8 +2443,8 @@ static void opt_show_help(void)
 
 const OptionDef options[] = {
     { "h", 0, {(void*)opt_show_help}, "show help" },
-    { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
-    { "y", HAS_ARG, {(void*)opt_height}, "force displayed height", "height" },
+    { "x", HAS_ARG | OPT_FUNC2, {(void*)opt_width}, "force displayed width", "width" },
+    { "y", HAS_ARG | OPT_FUNC2, {(void*)opt_height}, "force displayed height", "height" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "fs", OPT_BOOL, {(void*)&is_full_screen}, "force full screen" },
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
@@ -2452,9 +2457,9 @@ const OptionDef options[] = {
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
-    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
+    { "debug", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
-    { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
+    { "vismv", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
     { "genpts", OPT_BOOL | OPT_EXPERT, {(void*)&genpts}, "generate pts", "" },
     { "drp", OPT_BOOL |OPT_EXPERT, {(void*)&decoder_reorder_pts}, "let decoder reorder pts", ""},
@@ -2466,7 +2471,7 @@ const OptionDef options[] = {
     { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_resilience}, "set error detection threshold (0-4)",  "threshold" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
-    { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
+    { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { NULL, },
 };
 
