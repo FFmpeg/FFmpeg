@@ -1439,7 +1439,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 //                    if((max-min)*QP < 500)
 //                    if(max-min<QP/2)
                     if(max-min < 20){
-                        static int numSkiped=0;
+                        static int numSkipped=0;
                         static int errorSum=0;
                         static int worstQP=0;
                         static int worstRange=0;
@@ -1450,7 +1450,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 
                         if(x==1 || x==8 || y==1 || y==8) continue;
 
-                        numSkiped++;
+                        numSkipped++;
                         if(absDiff > worstDiff){
                             worstDiff= absDiff;
                             worstQP= QP;
@@ -1458,11 +1458,11 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
                         }
                         errorSum+= error;
 
-                        if(1024LL*1024LL*1024LL % numSkiped == 0){
+                        if(1024LL*1024LL*1024LL % numSkipped == 0){
                             av_log(c, AV_LOG_INFO, "sum:%1.3f, skip:%d, wQP:%d, "
                                    "wRange:%d, wDiff:%d, relSkip:%1.3f\n",
-                                   (float)errorSum/numSkiped, numSkiped, worstQP, worstRange,
-                                   worstDiff, (float)numSkiped/numPixels);
+                                   (float)errorSum/numSkipped, numSkipped, worstQP, worstRange,
+                                   worstDiff, (float)numSkipped/numPixels);
                         }
                     }
                     }
