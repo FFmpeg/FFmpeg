@@ -69,7 +69,7 @@ typedef unsigned long nfds_t;
 struct pollfd {
     int fd;
     short events;  /* events to look for */
-    short revents; /* events that occured */
+    short revents; /* events that occurred */
 };
 
 /* events & revents */

@@ -208,7 +208,7 @@ void av_resample_close(AVResampleContext *c){
 
 /**
  * Compensates samplerate/timestamp drift. The compensation is done by changing
- * the resampler parameters, so no audible clicks or similar distortions ocur
+ * the resampler parameters, so no audible clicks or similar distortions occur
  * @param compensation_distance distance in output samples over which the compensation should be performed
  * @param sample_delta number of output samples which should be output less
  *
@@ -231,7 +231,7 @@ void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensa
  * @param src_size the number of unconsumed samples available
  * @param dst_size the amount of space in samples available in dst
  * @param update_ctx if this is 0 then the context wont be modified, that way several channels can be resampled with the same context
- * @return the number of samples written in dst or -1 if an error occured
+ * @return the number of samples written in dst or -1 if an error occurred
  */
 int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;

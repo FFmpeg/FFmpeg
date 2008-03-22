@@ -66,7 +66,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 
 
 /**
- * returns a pp_mode_t or NULL if an error occured
+ * returns a pp_mode_t or NULL if an error occurred
  * name is the string after "-pp" on the command line
  * quality is a number from 0 to PP_QUALITY_MAX
  */

@@ -235,7 +235,7 @@ typedef struct AVInputFormat {
                      int stream_index, int64_t timestamp, int flags);
     /**
      * gets the next timestamp in stream[stream_index].time_base units.
-     * @return the timestamp or AV_NOPTS_VALUE if an error occured
+     * @return the timestamp or AV_NOPTS_VALUE if an error occurred
      */
     int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
                               int64_t *pos, int64_t pos_limit);
@@ -868,7 +868,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
  * @param flush 1 if no further packets are available as input and all
  *              remaining packets should be output
  * @return 1 if a packet was output, 0 if no packet could be output,
- *         < 0 if an error occured
+ *         < 0 if an error occurred
  */
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush);
 

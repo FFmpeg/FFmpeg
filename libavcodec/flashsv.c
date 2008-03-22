@@ -200,7 +200,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
                 ret = inflate(&(s->zstream), Z_FINISH);
                 if (ret == Z_DATA_ERROR)
                 {
-                    av_log(avctx, AV_LOG_ERROR, "Zlib resync occured\n");
+                    av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
                     inflateSync(&(s->zstream));
                     ret = inflate(&(s->zstream), Z_FINISH);
                 }

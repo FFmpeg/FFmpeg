@@ -613,7 +613,7 @@ void ff_er_frame_start(MpegEncContext *s){
  * adds a slice.
  * @param endx x component of the last macroblock, can be -1 for the last of the previous line
  * @param status the status at the end (MV_END, AC_ERROR, ...), it is assumed that no earlier end or
- *               error of the same type occured
+ *               error of the same type occurred
  */
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status){
     const int start_i= av_clip(startx + starty * s->mb_width    , 0, s->mb_num-1);

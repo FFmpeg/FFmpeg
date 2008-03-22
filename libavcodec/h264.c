@@ -3857,7 +3857,7 @@ static void clone_slice(H264Context *dst, H264Context *src)
  * @param h h264context
  * @param h0 h264 master context (differs from 'h' when doing sliced based parallel decoding)
  *
- * @return 0 if okay, <0 if an error occured, 1 if decoding must not be multithreaded
+ * @return 0 if okay, <0 if an error occurred, 1 if decoding must not be multithreaded
  */
 static int decode_slice_header(H264Context *h, H264Context *h0){
     MpegEncContext * const s = &h->s;
@@ -4290,7 +4290,7 @@ static inline int get_dct8x8_allowed(H264Context *h){
  * @param n block index
  * @param scantable scantable
  * @param max_coeff number of coefficients in the block
- * @return <0 if an error occured
+ * @return <0 if an error occurred
  */
 static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff){
     MpegEncContext * const s = &h->s;

@@ -29,7 +29,7 @@
  * @param dest the target buffer, dst+1 == src is allowed as a special case
  * @param destsize the length of the dst array
  * @param b2 the data which should be escaped
- * @returns pointer to current position in the output buffer or NULL if an error occured
+ * @returns pointer to current position in the output buffer or NULL if an error occurred
  */
 static uint8_t *h264_write_nal_unit(int nal_ref_idc, int nal_unit_type, uint8_t *dest, int *destsize,
                           PutBitContext *b2)

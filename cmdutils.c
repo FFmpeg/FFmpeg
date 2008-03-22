@@ -159,12 +159,12 @@ void print_error(const char *filename, int err)
         fprintf(stderr, "%s: Unknown format\n", filename);
         break;
     case AVERROR(EIO):
-        fprintf(stderr, "%s: I/O error occured\n"
+        fprintf(stderr, "%s: I/O error occurred\n"
                 "Usually that means that input file is truncated and/or corrupted.\n",
                 filename);
         break;
     case AVERROR(ENOMEM):
-        fprintf(stderr, "%s: memory allocation error occured\n", filename);
+        fprintf(stderr, "%s: memory allocation error occurred\n", filename);
         break;
     case AVERROR(ENOENT):
         fprintf(stderr, "%s: no such file or directory\n", filename);

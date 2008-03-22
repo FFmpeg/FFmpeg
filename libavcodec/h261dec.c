@@ -97,7 +97,7 @@ static av_cold int h261_decode_init(AVCodecContext *avctx){
 
 /**
  * decodes the group of blocks header or slice header.
- * @return <0 if an error occured
+ * @return <0 if an error occurred
  */
 static int h261_decode_gob_header(H261Context *h){
     unsigned int val;
@@ -352,7 +352,7 @@ intra:
 
 /**
  * decodes a macroblock
- * @return <0 if an error occured
+ * @return <0 if an error occurred
  */
 static int h261_decode_block(H261Context * h, DCTELEM * block,
                              int n, int coded)
