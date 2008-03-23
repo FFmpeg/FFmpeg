@@ -223,21 +223,31 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     const vector signed int zero = vec_splat_s32(0);
     const int properStride = (stride % 16);
     const int srcAlign = ((unsigned long)src2 % 16);
-    DECLARE_ALIGNED(16, short, qp[8]);
-    qp[0] = c->QP;
+    DECLARE_ALIGNED(16, short, qp[8]) = {c->QP};
     vector signed short vqp = vec_ld(0, qp);
-    vqp = vec_splat(vqp, 0);
-
-    src2 += stride*3;
-
     vector signed short vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9;
     vector unsigned char vbA0, vbA1, vbA2, vbA3, vbA4, vbA5, vbA6, vbA7, vbA8, vbA9;
     vector unsigned char vbB0, vbB1, vbB2, vbB3, vbB4, vbB5, vbB6, vbB7, vbB8, vbB9;
     vector unsigned char vbT0, vbT1, vbT2, vbT3, vbT4, vbT5, vbT6, vbT7, vbT8, vbT9;
+    vector unsigned char perml0, perml1, perml2, perml3, perml4,
+                         perml5, perml6, perml7, perml8, perml9;
+    register int j0 = 0,
+                 j1 = stride,
+                 j2 = 2 * stride,
+                 j3 = 3 * stride,
+                 j4 = 4 * stride,
+                 j5 = 5 * stride,
+                 j6 = 6 * stride,
+                 j7 = 7 * stride,
+                 j8 = 8 * stride,
+                 j9 = 9 * stride;
+
+    vqp = vec_splat(vqp, 0);
+
+    src2 += stride*3;
 
 #define LOAD_LINE(i)                                                    \
-    const vector unsigned char perml##i =                               \
-        vec_lvsl(i * stride, src2);                                     \
+    perml##i = vec_lvsl(i * stride, src2);                              \
     vbA##i = vec_ld(i * stride, src2);                                  \
     vbB##i = vec_ld(i * stride + 16, src2);                             \
     vbT##i = vec_perm(vbA##i, vbB##i, perml##i);                        \
@@ -246,7 +256,6 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
                                         (vector unsigned char)vbT##i)
 
 #define LOAD_LINE_ALIGNED(i)                                            \
-    register int j##i = i * stride;                                     \
     vbT##i = vec_ld(j##i, src2);                                        \
     vb##i =                                                             \
         (vector signed short)vec_mergeh((vector signed char)zero,       \
@@ -255,7 +264,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
       /* Special-casing the aligned case is worthwhile, as all calls from
        * the (transposed) horizontable deblocks will be aligned, in addition
        * to the naturally aligned vertical deblocks. */
-      if (properStride && srcAlign) {
+    if (properStride && srcAlign) {
           LOAD_LINE_ALIGNED(0);
           LOAD_LINE_ALIGNED(1);
           LOAD_LINE_ALIGNED(2);
@@ -266,7 +275,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
           LOAD_LINE_ALIGNED(7);
           LOAD_LINE_ALIGNED(8);
           LOAD_LINE_ALIGNED(9);
-      } else {
+    } else {
           LOAD_LINE(0);
           LOAD_LINE(1);
           LOAD_LINE(2);
@@ -280,7 +289,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
       }
 #undef LOAD_LINE
 #undef LOAD_LINE_ALIGNED
-
+{
     const vector unsigned short v_2 = vec_splat_u16(2);
     const vector unsigned short v_4 = vec_splat_u16(4);
 
@@ -346,7 +355,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
                                                                         0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
 #define PACK_AND_STORE(i)                                       \
-    const vector unsigned char perms##i =                       \
+{    const vector unsigned char perms##i =                       \
         vec_lvsr(i * stride, src2);                             \
     const vector unsigned char vf##i =                          \
         vec_packsu(vr##i, (vector signed short)zero);           \
@@ -361,39 +370,40 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     const vector unsigned char svB##i =                         \
         vec_sel(vg2##i, vbB##i, mask##i);                       \
     vec_st(svA##i, i * stride, src2);                           \
-    vec_st(svB##i, i * stride + 16, src2)
+    vec_st(svB##i, i * stride + 16, src2);}
 
 #define PACK_AND_STORE_ALIGNED(i)                               \
-    const vector unsigned char vf##i =                          \
+{    const vector unsigned char vf##i =                          \
         vec_packsu(vr##i, (vector signed short)zero);           \
     const vector unsigned char vg##i =                          \
         vec_perm(vf##i, vbT##i, permHH);                        \
-    vec_st(vg##i, i * stride, src2)
+    vec_st(vg##i, i * stride, src2);}
 
     /* Special-casing the aligned case is worthwhile, as all calls from
      * the (transposed) horizontable deblocks will be aligned, in addition
      * to the naturally aligned vertical deblocks. */
     if (properStride && srcAlign) {
-        PACK_AND_STORE_ALIGNED(1);
-        PACK_AND_STORE_ALIGNED(2);
-        PACK_AND_STORE_ALIGNED(3);
-        PACK_AND_STORE_ALIGNED(4);
-        PACK_AND_STORE_ALIGNED(5);
-        PACK_AND_STORE_ALIGNED(6);
-        PACK_AND_STORE_ALIGNED(7);
-        PACK_AND_STORE_ALIGNED(8);
+        PACK_AND_STORE_ALIGNED(1)
+        PACK_AND_STORE_ALIGNED(2)
+        PACK_AND_STORE_ALIGNED(3)
+        PACK_AND_STORE_ALIGNED(4)
+        PACK_AND_STORE_ALIGNED(5)
+        PACK_AND_STORE_ALIGNED(6)
+        PACK_AND_STORE_ALIGNED(7)
+        PACK_AND_STORE_ALIGNED(8)
     } else {
-        PACK_AND_STORE(1);
-        PACK_AND_STORE(2);
-        PACK_AND_STORE(3);
-        PACK_AND_STORE(4);
-        PACK_AND_STORE(5);
-        PACK_AND_STORE(6);
-        PACK_AND_STORE(7);
-        PACK_AND_STORE(8);
+        PACK_AND_STORE(1)
+        PACK_AND_STORE(2)
+        PACK_AND_STORE(3)
+        PACK_AND_STORE(4)
+        PACK_AND_STORE(5)
+        PACK_AND_STORE(6)
+        PACK_AND_STORE(7)
+        PACK_AND_STORE(8)
     }
 #undef PACK_AND_STORE
 #undef PACK_AND_STORE_ALIGNED
+}
 }
 
 
