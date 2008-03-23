@@ -103,7 +103,6 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
 
     src2 += stride * 4;
 
-
 #define LOAD_LINE(i)                                                    \
     {                                                                   \
     vector unsigned char perm##i = vec_lvsl(j##i, src2);                \
@@ -158,23 +157,23 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
                                        v_dcThreshold);                  \
     const vector signed short v_part##i = vec_and(mask, v_comp##i);
 
-{
-    ITER(0, 1)
-    ITER(1, 2)
-    ITER(2, 3)
-    ITER(3, 4)
-    ITER(4, 5)
-    ITER(5, 6)
-    ITER(6, 7)
+    {
+        ITER(0, 1)
+        ITER(1, 2)
+        ITER(2, 3)
+        ITER(3, 4)
+        ITER(4, 5)
+        ITER(5, 6)
+        ITER(6, 7)
 
-    v_numEq = vec_sum4s(v_part0, v_numEq);
-    v_numEq = vec_sum4s(v_part1, v_numEq);
-    v_numEq = vec_sum4s(v_part2, v_numEq);
-    v_numEq = vec_sum4s(v_part3, v_numEq);
-    v_numEq = vec_sum4s(v_part4, v_numEq);
-    v_numEq = vec_sum4s(v_part5, v_numEq);
-    v_numEq = vec_sum4s(v_part6, v_numEq);
-}
+        v_numEq = vec_sum4s(v_part0, v_numEq);
+        v_numEq = vec_sum4s(v_part1, v_numEq);
+        v_numEq = vec_sum4s(v_part2, v_numEq);
+        v_numEq = vec_sum4s(v_part3, v_numEq);
+        v_numEq = vec_sum4s(v_part4, v_numEq);
+        v_numEq = vec_sum4s(v_part5, v_numEq);
+        v_numEq = vec_sum4s(v_part6, v_numEq);
+    }
 
 #undef ITER
 
@@ -286,73 +285,73 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
           LOAD_LINE(7);
           LOAD_LINE(8);
           LOAD_LINE(9);
-      }
+    }
 #undef LOAD_LINE
 #undef LOAD_LINE_ALIGNED
-{
-    const vector unsigned short v_2 = vec_splat_u16(2);
-    const vector unsigned short v_4 = vec_splat_u16(4);
+    {
+        const vector unsigned short v_2 = vec_splat_u16(2);
+        const vector unsigned short v_4 = vec_splat_u16(4);
 
-    const vector signed short v_diff01 = vec_sub(vb0, vb1);
-    const vector unsigned short v_cmp01 =
-        (const vector unsigned short) vec_cmplt(vec_abs(v_diff01), vqp);
-    const vector signed short v_first = vec_sel(vb1, vb0, v_cmp01);
-    const vector signed short v_diff89 = vec_sub(vb8, vb9);
-    const vector unsigned short v_cmp89 =
-        (const vector unsigned short) vec_cmplt(vec_abs(v_diff89), vqp);
-    const vector signed short v_last = vec_sel(vb8, vb9, v_cmp89);
+        const vector signed short v_diff01 = vec_sub(vb0, vb1);
+        const vector unsigned short v_cmp01 =
+            (const vector unsigned short) vec_cmplt(vec_abs(v_diff01), vqp);
+        const vector signed short v_first = vec_sel(vb1, vb0, v_cmp01);
+        const vector signed short v_diff89 = vec_sub(vb8, vb9);
+        const vector unsigned short v_cmp89 =
+            (const vector unsigned short) vec_cmplt(vec_abs(v_diff89), vqp);
+        const vector signed short v_last = vec_sel(vb8, vb9, v_cmp89);
 
-    const vector signed short temp01 = vec_mladd(v_first, (vector signed short)v_4, vb1);
-    const vector signed short temp02 = vec_add(vb2, vb3);
-    const vector signed short temp03 = vec_add(temp01, (vector signed short)v_4);
-    const vector signed short v_sumsB0 = vec_add(temp02, temp03);
+        const vector signed short temp01 = vec_mladd(v_first, (vector signed short)v_4, vb1);
+        const vector signed short temp02 = vec_add(vb2, vb3);
+        const vector signed short temp03 = vec_add(temp01, (vector signed short)v_4);
+        const vector signed short v_sumsB0 = vec_add(temp02, temp03);
 
-    const vector signed short temp11 = vec_sub(v_sumsB0, v_first);
-    const vector signed short v_sumsB1 = vec_add(temp11, vb4);
+        const vector signed short temp11 = vec_sub(v_sumsB0, v_first);
+        const vector signed short v_sumsB1 = vec_add(temp11, vb4);
 
-    const vector signed short temp21 = vec_sub(v_sumsB1, v_first);
-    const vector signed short v_sumsB2 = vec_add(temp21, vb5);
+        const vector signed short temp21 = vec_sub(v_sumsB1, v_first);
+        const vector signed short v_sumsB2 = vec_add(temp21, vb5);
 
-    const vector signed short temp31 = vec_sub(v_sumsB2, v_first);
-    const vector signed short v_sumsB3 = vec_add(temp31, vb6);
+        const vector signed short temp31 = vec_sub(v_sumsB2, v_first);
+        const vector signed short v_sumsB3 = vec_add(temp31, vb6);
 
-    const vector signed short temp41 = vec_sub(v_sumsB3, v_first);
-    const vector signed short v_sumsB4 = vec_add(temp41, vb7);
+        const vector signed short temp41 = vec_sub(v_sumsB3, v_first);
+        const vector signed short v_sumsB4 = vec_add(temp41, vb7);
 
-    const vector signed short temp51 = vec_sub(v_sumsB4, vb1);
-    const vector signed short v_sumsB5 = vec_add(temp51, vb8);
+        const vector signed short temp51 = vec_sub(v_sumsB4, vb1);
+        const vector signed short v_sumsB5 = vec_add(temp51, vb8);
 
-    const vector signed short temp61 = vec_sub(v_sumsB5, vb2);
-    const vector signed short v_sumsB6 = vec_add(temp61, v_last);
+        const vector signed short temp61 = vec_sub(v_sumsB5, vb2);
+        const vector signed short v_sumsB6 = vec_add(temp61, v_last);
 
-    const vector signed short temp71 = vec_sub(v_sumsB6, vb3);
-    const vector signed short v_sumsB7 = vec_add(temp71, v_last);
+        const vector signed short temp71 = vec_sub(v_sumsB6, vb3);
+        const vector signed short v_sumsB7 = vec_add(temp71, v_last);
 
-    const vector signed short temp81 = vec_sub(v_sumsB7, vb4);
-    const vector signed short v_sumsB8 = vec_add(temp81, v_last);
+        const vector signed short temp81 = vec_sub(v_sumsB7, vb4);
+        const vector signed short v_sumsB8 = vec_add(temp81, v_last);
 
-    const vector signed short temp91 = vec_sub(v_sumsB8, vb5);
-    const vector signed short v_sumsB9 = vec_add(temp91, v_last);
+        const vector signed short temp91 = vec_sub(v_sumsB8, vb5);
+        const vector signed short v_sumsB9 = vec_add(temp91, v_last);
 
-#define COMPUTE_VR(i, j, k)                                             \
-    const vector signed short temps1##i =                               \
-        vec_add(v_sumsB##i, v_sumsB##k);                                \
-    const vector signed short temps2##i =                               \
-        vec_mladd(vb##j, (vector signed short)v_2, temps1##i);          \
-    const vector signed short  vr##j = vec_sra(temps2##i, v_4)
+    #define COMPUTE_VR(i, j, k)                                             \
+        const vector signed short temps1##i =                               \
+            vec_add(v_sumsB##i, v_sumsB##k);                                \
+        const vector signed short temps2##i =                               \
+            vec_mladd(vb##j, (vector signed short)v_2, temps1##i);          \
+        const vector signed short  vr##j = vec_sra(temps2##i, v_4)
 
-    COMPUTE_VR(0, 1, 2);
-    COMPUTE_VR(1, 2, 3);
-    COMPUTE_VR(2, 3, 4);
-    COMPUTE_VR(3, 4, 5);
-    COMPUTE_VR(4, 5, 6);
-    COMPUTE_VR(5, 6, 7);
-    COMPUTE_VR(6, 7, 8);
-    COMPUTE_VR(7, 8, 9);
+        COMPUTE_VR(0, 1, 2);
+        COMPUTE_VR(1, 2, 3);
+        COMPUTE_VR(2, 3, 4);
+        COMPUTE_VR(3, 4, 5);
+        COMPUTE_VR(4, 5, 6);
+        COMPUTE_VR(5, 6, 7);
+        COMPUTE_VR(6, 7, 8);
+        COMPUTE_VR(7, 8, 9);
 
-    const vector signed char neg1 = vec_splat_s8(-1);
-    const vector unsigned char permHH = (const vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                                                                        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
+        const vector signed char neg1 = vec_splat_s8(-1);
+        const vector unsigned char permHH = (const vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                                                            0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
 #define PACK_AND_STORE(i)                                       \
 {    const vector unsigned char perms##i =                       \
@@ -379,31 +378,31 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
         vec_perm(vf##i, vbT##i, permHH);                        \
     vec_st(vg##i, i * stride, src2);}
 
-    /* Special-casing the aligned case is worthwhile, as all calls from
-     * the (transposed) horizontable deblocks will be aligned, in addition
-     * to the naturally aligned vertical deblocks. */
-    if (properStride && srcAlign) {
-        PACK_AND_STORE_ALIGNED(1)
-        PACK_AND_STORE_ALIGNED(2)
-        PACK_AND_STORE_ALIGNED(3)
-        PACK_AND_STORE_ALIGNED(4)
-        PACK_AND_STORE_ALIGNED(5)
-        PACK_AND_STORE_ALIGNED(6)
-        PACK_AND_STORE_ALIGNED(7)
-        PACK_AND_STORE_ALIGNED(8)
-    } else {
-        PACK_AND_STORE(1)
-        PACK_AND_STORE(2)
-        PACK_AND_STORE(3)
-        PACK_AND_STORE(4)
-        PACK_AND_STORE(5)
-        PACK_AND_STORE(6)
-        PACK_AND_STORE(7)
-        PACK_AND_STORE(8)
+        /* Special-casing the aligned case is worthwhile, as all calls from
+         * the (transposed) horizontable deblocks will be aligned, in addition
+         * to the naturally aligned vertical deblocks. */
+        if (properStride && srcAlign) {
+            PACK_AND_STORE_ALIGNED(1)
+            PACK_AND_STORE_ALIGNED(2)
+            PACK_AND_STORE_ALIGNED(3)
+            PACK_AND_STORE_ALIGNED(4)
+            PACK_AND_STORE_ALIGNED(5)
+            PACK_AND_STORE_ALIGNED(6)
+            PACK_AND_STORE_ALIGNED(7)
+            PACK_AND_STORE_ALIGNED(8)
+        } else {
+            PACK_AND_STORE(1)
+            PACK_AND_STORE(2)
+            PACK_AND_STORE(3)
+            PACK_AND_STORE(4)
+            PACK_AND_STORE(5)
+            PACK_AND_STORE(6)
+            PACK_AND_STORE(7)
+            PACK_AND_STORE(8)
+        }
+    #undef PACK_AND_STORE
+    #undef PACK_AND_STORE_ALIGNED
     }
-#undef PACK_AND_STORE
-#undef PACK_AND_STORE_ALIGNED
-}
 }
 
 
