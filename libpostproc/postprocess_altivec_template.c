@@ -62,7 +62,13 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true.
     */
-    DECLARE_ALIGNED(16, short, data[8]);
+    DECLARE_ALIGNED(16, short, data[8]) =
+                    {
+                        ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1,
+                        data[0] * 2 + 1,
+                        c->QP * 2,
+                        c->QP * 4
+                    };
     int numEq;
     uint8_t *src2 = src;
     vector signed short v_dcOffset;
@@ -75,12 +81,10 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     const vector signed int zero = vec_splat_s32(0);
     const vector signed short mask = vec_splat_s16(1);
     vector signed int v_numEq = vec_splat_s32(0);
-
-    data[0] = ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
-    data[1] = data[0] * 2 + 1;
-    data[2] = c->QP * 2;
-    data[3] = c->QP * 4;
     vector signed short v_data = vec_ld(0, data);
+    vector signed short v_srcAss0, v_srcAss1, v_srcAss2, v_srcAss3,
+                        v_srcAss4, v_srcAss5, v_srcAss6, v_srcAss7;
+
     v_dcOffset = vec_splat(v_data, 0);
     v_dcThreshold = (vector unsigned short)vec_splat(v_data, 1);
     v2QP = vec_splat(v_data, 2);
@@ -88,7 +92,6 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
 
     src2 += stride * 4;
 
-    vector signed short v_srcAss0, v_srcAss1, v_srcAss2, v_srcAss3, v_srcAss4, v_srcAss5, v_srcAss6, v_srcAss7;
 
 #define LOAD_LINE(i)                                                    \
     register int j##i = i * stride;                                     \
