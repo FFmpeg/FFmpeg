@@ -30,9 +30,13 @@ typedef struct AACAC3ParseContext {
     uint8_t *inbuf_ptr;
     int frame_size;
     int header_size;
-    int (*sync)(const uint8_t *buf, int *channels, int *sample_rate,
-                int *bit_rate, int *samples);
+    int (*sync)(struct AACAC3ParseContext *hdr_info);
     uint8_t inbuf[8192]; /* input buffer */
+
+    int channels;
+    int sample_rate;
+    int bit_rate;
+    int samples;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,

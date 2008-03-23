@@ -38,13 +38,12 @@ static const int aac_channels[8] = {
 };
 
 
-static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
-                    int *bit_rate, int *samples)
+static int aac_sync(AACAC3ParseContext *hdr_info)
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
 
-    init_get_bits(&bits, buf, AAC_HEADER_SIZE * 8);
+    init_get_bits(&bits, hdr_info->inbuf, AAC_HEADER_SIZE * 8);
 
     if(get_bits(&bits, 12) != 0xfff)
         return 0;
@@ -73,10 +72,10 @@ static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
     skip_bits(&bits, 11);       /* adts_buffer_fullness */
     rdb = get_bits(&bits, 2);   /* number_of_raw_data_blocks_in_frame */
 
-    *channels = aac_channels[ch];
-    *sample_rate = aac_sample_rates[sr];
-    *samples = (rdb + 1) * 1024;
-    *bit_rate = size * 8 * *sample_rate / *samples;
+    hdr_info->channels = aac_channels[ch];
+    hdr_info->sample_rate = aac_sample_rates[sr];
+    hdr_info->samples = (rdb + 1) * 1024;
+    hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
 
     return size;
 }

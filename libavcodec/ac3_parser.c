@@ -119,21 +119,20 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     return 0;
 }
 
-static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
-                    int *bit_rate, int *samples)
+static int ac3_sync(AACAC3ParseContext *hdr_info)
 {
     int err;
     AC3HeaderInfo hdr;
 
-    err = ff_ac3_parse_header(buf, &hdr);
+    err = ff_ac3_parse_header(hdr_info->inbuf, &hdr);
 
     if(err < 0)
         return 0;
 
-    *sample_rate = hdr.sample_rate;
-    *bit_rate = hdr.bit_rate;
-    *channels = hdr.channels;
-    *samples = AC3_FRAME_SIZE;
+    hdr_info->sample_rate = hdr.sample_rate;
+    hdr_info->bit_rate = hdr.bit_rate;
+    hdr_info->channels = hdr.channels;
+    hdr_info->samples = AC3_FRAME_SIZE;
     return hdr.frame_size;
 }
 
