@@ -417,12 +417,11 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
     can be removed by assuming proper alignment of
     src & stride :-(
     */
-    uint8_t *src2 = src;
+    uint8_t *src2 = src + stride*3;
     const vector signed int zero = vec_splat_s32(0);
-    DECLARE_ALIGNED(16, short, qp[8]);
-    qp[0] = 8*c->QP;
-    vector signed short vqp = vec_ld(0, qp);
-    vqp = vec_splat(vqp, 0);
+    DECLARE_ALIGNED(16, short, qp[8]) = {8*c->QP};
+    vector signed short vqp = vec_splat(
+                                (vector signed short)vec_ld(0, qp), 0);
 
 #define LOAD_LINE(i)                                                    \
     const vector unsigned char perm##i =                                \
@@ -436,8 +435,6 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
     const vector signed short vb##i =                                   \
         (vector signed short)vec_mergeh((vector unsigned char)zero,     \
                                         (vector unsigned char)vbT##i)
-
-    src2 += stride*3;
 
      LOAD_LINE(1);
      LOAD_LINE(2);
@@ -513,7 +510,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
                                                                          0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
 #define STORE(i)                                                \
-     const vector unsigned char perms##i =                      \
+{     const vector unsigned char perms##i =                      \
          vec_lvsr(i * stride, src2);                            \
      const vector unsigned char vg##i =                         \
          vec_perm(st##i, vbT##i, permHH);                       \
@@ -526,10 +523,10 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
      const vector unsigned char svB##i =                        \
          vec_sel(vg2##i, vbB##i, mask##i);                      \
      vec_st(svA##i, i * stride, src2);                          \
-     vec_st(svB##i, i * stride + 16, src2)
+     vec_st(svB##i, i * stride + 16, src2);}
 
-     STORE(4);
-     STORE(5);
+     STORE(4)
+     STORE(5)
 }
 
 static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
