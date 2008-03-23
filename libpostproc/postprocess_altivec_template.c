@@ -84,6 +84,17 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     vector signed short v_data = vec_ld(0, data);
     vector signed short v_srcAss0, v_srcAss1, v_srcAss2, v_srcAss3,
                         v_srcAss4, v_srcAss5, v_srcAss6, v_srcAss7;
+//FIXME avoid this mess if possible
+    register int j0 = 0,
+                 j1 = stride,
+                 j2 = 2 * stride,
+                 j3 = 3 * stride,
+                 j4 = 4 * stride,
+                 j5 = 5 * stride,
+                 j6 = 6 * stride,
+                 j7 = 7 * stride;
+    vector unsigned char v_srcA0, v_srcA1, v_srcA2, v_srcA3,
+                         v_srcA4, v_srcA5, v_srcA6, v_srcA7;
 
     v_dcOffset = vec_splat(v_data, 0);
     v_dcThreshold = (vector unsigned short)vec_splat(v_data, 1);
@@ -94,21 +105,20 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
 
 
 #define LOAD_LINE(i)                                                    \
-    register int j##i = i * stride;                                     \
+    {                                                                   \
     vector unsigned char perm##i = vec_lvsl(j##i, src2);                \
-    const vector unsigned char v_srcA1##i = vec_ld(j##i, src2);         \
     vector unsigned char v_srcA2##i;                                    \
+    vector unsigned char v_srcA1##i = vec_ld(j##i, src2);               \
     if (two_vectors)                                                    \
         v_srcA2##i = vec_ld(j##i + 16, src2);                           \
-    const vector unsigned char v_srcA##i =                              \
+    v_srcA##i =                                                         \
         vec_perm(v_srcA1##i, v_srcA2##i, perm##i);                      \
     v_srcAss##i =                                                       \
         (vector signed short)vec_mergeh((vector signed char)zero,       \
-                                        (vector signed char)v_srcA##i)
+                                        (vector signed char)v_srcA##i); }
 
 #define LOAD_LINE_ALIGNED(i)                                            \
-    register int j##i = i * stride;                                     \
-    const vector unsigned char v_srcA##i = vec_ld(j##i, src2);          \
+    v_srcA##i = vec_ld(j##i, src2);                                     \
     v_srcAss##i =                                                       \
         (vector signed short)vec_mergeh((vector signed char)zero,       \
                                         (vector signed char)v_srcA##i)
@@ -146,16 +156,26 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     const vector signed short v_comp##i =                               \
         (vector signed short)vec_cmplt((vector unsigned short)v_sum##i, \
                                        v_dcThreshold);                  \
-    const vector signed short v_part##i = vec_and(mask, v_comp##i);     \
-    v_numEq = vec_sum4s(v_part##i, v_numEq);
+    const vector signed short v_part##i = vec_and(mask, v_comp##i);
 
-    ITER(0, 1);
-    ITER(1, 2);
-    ITER(2, 3);
-    ITER(3, 4);
-    ITER(4, 5);
-    ITER(5, 6);
-    ITER(6, 7);
+{
+    ITER(0, 1)
+    ITER(1, 2)
+    ITER(2, 3)
+    ITER(3, 4)
+    ITER(4, 5)
+    ITER(5, 6)
+    ITER(6, 7)
+
+    v_numEq = vec_sum4s(v_part0, v_numEq);
+    v_numEq = vec_sum4s(v_part1, v_numEq);
+    v_numEq = vec_sum4s(v_part2, v_numEq);
+    v_numEq = vec_sum4s(v_part3, v_numEq);
+    v_numEq = vec_sum4s(v_part4, v_numEq);
+    v_numEq = vec_sum4s(v_part5, v_numEq);
+    v_numEq = vec_sum4s(v_part6, v_numEq);
+}
+
 #undef ITER
 
     v_numEq = vec_sums(v_numEq, zero);
