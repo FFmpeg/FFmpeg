@@ -30,6 +30,7 @@ typedef enum {
     AC3_PARSE_ERROR_BSID        = -2,
     AC3_PARSE_ERROR_SAMPLE_RATE = -3,
     AC3_PARSE_ERROR_FRAME_SIZE  = -4,
+    AC3_PARSE_ERROR_STREAM_TYPE = -5,
 } AC3ParseError;
 
 /**

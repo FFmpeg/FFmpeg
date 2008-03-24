@@ -37,6 +37,7 @@ typedef struct AACAC3ParseContext {
     int sample_rate;
     int bit_rate;
     int samples;
+    uint8_t stream_type;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,
