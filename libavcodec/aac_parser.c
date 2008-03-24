@@ -23,6 +23,7 @@
 #include "parser.h"
 #include "aac_ac3_parser.h"
 #include "bitstream.h"
+#include "ac3.h"
 
 
 #define AAC_HEADER_SIZE 7
