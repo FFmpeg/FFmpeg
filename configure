@@ -748,6 +748,7 @@ HAVE_LIST="
     memalign
     mkstemp
     mlib
+    pld
     ppc64
     round
     roundf
@@ -1561,6 +1562,8 @@ int main(void) {
 EOF
 fi
 
+# We have to check if pld is a nop and disable it.
+enabled armv4l  && check_asm pld     '"pld [r0]"'
 enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
 enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
 enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'

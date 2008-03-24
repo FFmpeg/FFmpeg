@@ -19,6 +19,13 @@
 @ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 @
 
+#include "config.h"
+
+#ifndef HAVE_PLD
+.macro pld reg
+.endm
+#endif
+
 .macro  ADJ_ALIGN_QUADWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
         mov \Rd0, \Rn0, lsr #(\shift * 8)
         mov \Rd1, \Rn1, lsr #(\shift * 8)
