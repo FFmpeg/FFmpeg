@@ -83,7 +83,7 @@ static int aac_sync(AACAC3ParseContext *hdr_info)
 static av_cold int aac_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
-    s->stream_type = 0;
+    s->stream_type = EAC3_STREAM_TYPE_INDEPENDENT;
     s->inbuf_ptr = s->inbuf;
     s->header_size = AAC_HEADER_SIZE;
     s->sync = aac_sync;
