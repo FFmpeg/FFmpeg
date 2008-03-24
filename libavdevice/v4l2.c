@@ -32,9 +32,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#endif
 #include <sys/time.h>
 #include <asm/types.h>
 #include <linux/videodev2.h>

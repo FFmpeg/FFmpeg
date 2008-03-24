@@ -24,9 +24,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#endif
 #include <sys/poll.h>
 #include <sys/time.h>
 #include <time.h>

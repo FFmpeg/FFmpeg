@@ -25,9 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#endif
 #include <sys/time.h>
 #define _LINUX_TIME_H 1
 #include <linux/videodev.h>
