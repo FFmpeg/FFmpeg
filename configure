@@ -56,7 +56,8 @@ show_help(){
   echo
   echo "Standard options:"
   echo "  --help                   print this message"
-  echo "  --logfile=<FILE|yes|no>  log tests and output to FILE [config.err]"
+  echo "  --logfile=FILE           log tests and output to FILE [config.err]"
+  echo "  --disable-logging        do not log configure debug information"
   echo "  --prefix=PREFIX          install in PREFIX [$PREFIX]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
@@ -771,6 +772,7 @@ CMDLINE_SELECT="
     $THREADS_LIST
     debug
     extra_warnings
+    logging
     optimizations
     shared
     static
@@ -990,7 +992,7 @@ show_list() {
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --logfile=*) logging="$optval"
+    --logfile=*) logfile="$optval"
     ;;
     --prefix=*) PREFIX="$optval"
     ;;
@@ -1304,13 +1306,10 @@ TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 add_extralibs $osextralibs
 
-if ! disabled logging ; then
-    enabled logging || logfile="$logging"
+enabled logging || logfile=/dev/null
+
     echo "# $0 $@" >$logfile
     set >>$logfile
-else
-    logfile=/dev/null
-fi
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
