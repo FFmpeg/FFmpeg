@@ -177,7 +177,7 @@ show_help(){
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
   echo "  --disable-optimizations  disable compiler optimizations"
   echo "  --enable-extra-warnings  enable more compiler warnings"
-  echo "  --disable-strip          disable stripping of executables and shared libraries"
+  echo "  --disable-stripping      disable stripping of executables and shared libraries"
   echo ""
   echo "NOTE: Object files are built at the place where configure is launched."
   exit 1
@@ -776,6 +776,7 @@ CMDLINE_SELECT="
     optimizations
     shared
     static
+    stripping
 "
 
 # code dependency declarations
@@ -900,7 +901,6 @@ enable zlib
 
 # configurable options
 enable debug
-enable dostrip
 enable ffmpeg
 enable ffplay
 enable ffserver
@@ -910,6 +910,7 @@ enable mpegaudio_hp
 enable network
 enable optimizations
 enable protocols
+enable stripping
 vhook="default"
 
 # build settings
@@ -1029,8 +1030,6 @@ for opt do
     --cpu=*) cpu="$optval"
     ;;
     --enable-sunmlib) enable mlib
-    ;;
-    --disable-strip) disable dostrip
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
@@ -1908,7 +1907,7 @@ if test $arch = "powerpc"; then
 fi
 echo "gprof enabled             ${gprof-no}"
 echo "debug symbols             ${debug-no}"
-echo "strip symbols             ${dostrip-no}"
+echo "strip symbols             ${stripping-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
@@ -1985,7 +1984,7 @@ echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 echo "LN_S=$ln_s" >> config.mak
-enabled dostrip &&
+enabled stripping &&
     echo "STRIP=$strip" >> config.mak ||
     echo "STRIP=echo ignoring strip" >> config.mak
 
