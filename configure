@@ -1021,7 +1021,7 @@ for opt do
     ;;
     --extra-libs=*) add_extralibs "$optval"
     ;;
-    --build-suffix=*) BUILDSUF="$optval"
+    --build-suffix=*) build_suffix="$optval"
     ;;
     --arch=*) arch="$optval"
     ;;
@@ -1878,8 +1878,8 @@ echo "C compiler                $cc"
 echo "make                      $make"
 echo ".align is power-of-two    $asmalign_pot"
 echo "ARCH                      $arch ($cpu)"
-if test "$BUILDSUF" != ""; then
-    echo "build suffix              $BUILDSUF"
+if test "$build_suffix" != ""; then
+    echo "build suffix              $build_suffix"
 fi
 echo "big-endian                ${bigendian-no}"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
@@ -1993,7 +1993,7 @@ echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
 echo "VHOOKLIBS=$VHOOKLIBS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILD_STATIC=$static" >> config.mak
-echo "BUILDSUF=$BUILDSUF" >> config.mak
+echo "BUILDSUF=$build_suffix" >> config.mak
 echo "FULLNAME=$FULLNAME" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=$LIBSUF" >> config.mak
