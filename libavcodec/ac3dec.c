@@ -39,6 +39,9 @@
 #include "dsputil.h"
 #include "random.h"
 
+/** Maximum possible frame size when the specification limit is ignored */
+#define AC3_MAX_FRAME_SIZE 21695
+
 /**
  * Table of bin locations for rematrixing bands
  * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
@@ -191,6 +194,7 @@ typedef struct {
     GetBitContext gbc;                      ///< bitstream reader
     AVRandomState dith_state;               ///< for dither generation
     AVCodecContext *avctx;                  ///< parent context
+    uint8_t input_buffer[AC3_MAX_FRAME_SIZE];   ///< temp buffer to prevent overread
 } AC3DecodeContext;
 
 /**
@@ -1133,7 +1137,14 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     int i, blk, ch, err;
 
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
+    if(avctx->error_resilience >= FF_ER_CAREFUL) {
+        /* copy input buffer to decoder context to avoid reading past the end
+           of the buffer, which can be caused by a damaged input stream. */
+        memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_MAX_FRAME_SIZE));
+        init_get_bits(&s->gbc, s->input_buffer, buf_size * 8);
+    } else {
     init_get_bits(&s->gbc, buf, buf_size * 8);
+    }
 
     /* parse the syncinfo */
     err = ac3_parse_header(s);
