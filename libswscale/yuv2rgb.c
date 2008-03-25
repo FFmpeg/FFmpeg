@@ -43,7 +43,7 @@
 #include "yuv2rgb_vis.c"
 #endif
 
-#ifdef HAVE_MLIB
+#ifdef CONFIG_MLIB
 #include "yuv2rgb_mlib.c"
 #endif
 
@@ -627,7 +627,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
         if (t) return t;
     }
 #endif
-#ifdef HAVE_MLIB
+#ifdef CONFIG_MLIB
     {
         SwsFunc t= yuv2rgb_init_mlib(c);
         if (t) return t;
