@@ -843,8 +843,8 @@ redir_demuxer_deps="network"
 rtp_muxer_deps="network rtp_protocol"
 rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
-v4l2_demuxer_deps="linux_videodev2_h"
 v4l_demuxer_deps="linux_videodev_h"
+v4l2_demuxer_deps="linux_videodev2_h"
 vfwcap_demuxer_deps="capCreateCaptureWindow"
 vfwcap_demuxer_extralibs="-lvfw32"
 x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
@@ -905,11 +905,11 @@ enable ffmpeg
 enable ffplay
 enable ffserver
 enable ipv6
-enable static
 enable mpegaudio_hp
 enable network
 enable optimizations
 enable protocols
+enable static
 enable stripping
 vhook="default"
 
