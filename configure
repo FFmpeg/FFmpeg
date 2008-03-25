@@ -1299,7 +1299,7 @@ fi
 
 TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
 TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}"
+TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
 TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
