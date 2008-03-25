@@ -125,7 +125,7 @@ int ff_dct_common_init(MpegEncContext *s)
     MPV_common_init_mmx(s);
 #elif defined(ARCH_ALPHA)
     MPV_common_init_axp(s);
-#elif defined(HAVE_MLIB)
+#elif defined(CONFIG_MLIB)
     MPV_common_init_mlib(s);
 #elif defined(HAVE_MMI)
     MPV_common_init_mmi(s);

@@ -658,6 +658,7 @@ CONFIG_LIST="
     libx264
     libxvid
     memalign_hack
+    mlib
     mpegaudio_hp
     network
     nonfree
@@ -748,7 +749,6 @@ HAVE_LIST="
     malloc_h
     memalign
     mkstemp
-    mlib
     pld
     ppc64
     round
@@ -1026,8 +1026,6 @@ for opt do
     --arch=*) arch="$optval"
     ;;
     --cpu=*) cpu="$optval"
-    ;;
-    --enable-mlib) enable mlib
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
