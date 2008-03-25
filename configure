@@ -58,7 +58,7 @@ show_help(){
   echo "  --help                   print this message"
   echo "  --logfile=FILE           log tests and output to FILE [config.err]"
   echo "  --disable-logging        do not log configure debug information"
-  echo "  --prefix=PREFIX          install in PREFIX [$PREFIX]"
+  echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include]"
@@ -872,7 +872,7 @@ vhook_extralibs='$ldl'
 logfile="config.err"
 
 # installation paths
-PREFIX="/usr/local"
+prefix="/usr/local"
 libdir='$(PREFIX)/lib'
 shlibdir="$libdir"
 incdir='$(PREFIX)/include'
@@ -995,7 +995,7 @@ for opt do
     case "$opt" in
     --logfile=*) logfile="$optval"
     ;;
-    --prefix=*) PREFIX="$optval"
+    --prefix=*) prefix="$optval"
     ;;
     --libdir=*) libdir="$optval"
     ;;
@@ -1138,7 +1138,7 @@ enabled     sparc64       && enable sparc
 # OS specific
 case $target_os in
     beos|haiku|zeta)
-        PREFIX="$HOME/config"
+        prefix="$HOME/config"
         # helps building libavcodec
         add_cflags "-DPIC -fomit-frame-pointer"
         # 3 gcc releases known for BeOS, each with ugly bugs
@@ -1872,7 +1872,7 @@ enabled libdc1394 && append pkg_requires "libraw1394"
 enabled libtheora && append pkg_requires "theora"
 enabled libvorbis && append pkg_requires "vorbisenc"
 
-echo "install prefix            $PREFIX"
+echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
 echo "make                      $make"
@@ -1968,7 +1968,7 @@ echo "#ifndef FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$FFMPEG_CONFIGURATION\"" >> $TMPH
 
-echo "PREFIX=$PREFIX" >> config.mak
+echo "PREFIX=$prefix" >> config.mak
 echo "prefix=\$(DESTDIR)\$(PREFIX)" >> config.mak
 echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
 echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
@@ -2143,7 +2143,7 @@ version=$3
 libs=$4
 requires=$5
 cat <<EOF >$name.pc
-prefix=$PREFIX
+prefix=$prefix
 exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
 includedir=\${prefix}/include
