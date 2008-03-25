@@ -779,6 +779,22 @@ CMDLINE_SELECT="
     static
     stripping
 "
+CMDLINE_SET='
+    arch
+    build_suffix
+    cc
+    cpu
+    cross_prefix
+    incdir
+    libdir
+    logfile
+    make
+    mandir
+    prefix
+    shlibdir
+    source_path
+    target_os
+'
 
 # code dependency declarations
 
@@ -993,39 +1009,11 @@ show_list() {
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --logfile=*) logfile="$optval"
-    ;;
-    --prefix=*) prefix="$optval"
-    ;;
-    --libdir=*) libdir="$optval"
-    ;;
-    --shlibdir=*) shlibdir="$optval"
-    ;;
-    --incdir=*) incdir="$optval"
-    ;;
-    --mandir=*) mandir="$optval"
-    ;;
-    --source-path=*) source_path="$optval"
-    ;;
-    --cross-prefix=*) cross_prefix="$optval"
-    ;;
-    --target-os=*) target_os="$optval"
-    ;;
-    --cc=*) cc="$optval"
-    ;;
-    --make=*) make="$optval"
-    ;;
     --extra-cflags=*) add_cflags "$optval"
     ;;
     --extra-ldflags=*) add_ldflags "$optval"
     ;;
     --extra-libs=*) add_extralibs "$optval"
-    ;;
-    --build-suffix=*) build_suffix="$optval"
-    ;;
-    --arch=*) arch="$optval"
-    ;;
-    --cpu=*) cpu="$optval"
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
@@ -1057,7 +1045,11 @@ for opt do
     --help|-h) show_help
     ;;
     *)
-    die_unknown $opt
+    optname="${opt%=*}"
+    optname="${optname#--}"
+    optname=$(echo "$optname" | sed 's/-/_/g')
+    is_in $optname $CMDLINE_SET || die_unknown $opt
+    eval $optname='$optval'
     ;;
     esac
 done
