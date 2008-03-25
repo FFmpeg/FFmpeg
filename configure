@@ -212,8 +212,8 @@ solving the problem.
 EOF
     else
 cat <<EOF
-Rerun configure with logging enabled (do not use --log=no), and include the
-log this produces with your report.
+Rerun configure with logging enabled (do not use --disable-logging), and
+include the log this produces with your report.
 EOF
     fi
     rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
