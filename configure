@@ -205,15 +205,15 @@ If you think configure made a mistake, make sure you are using the latest
 version from SVN.  If the latest version fails, report the problem to the
 ffmpeg-user@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
 EOF
-    if enabled logging; then
+    if disabled logging; then
         cat <<EOF
-Include the log file "$logfile" produced by configure as this will help
-solving the problem.
+Rerun configure with logging enabled (do not use --disable-logging), and
+include the log this produces with your report.
 EOF
     else
 cat <<EOF
-Rerun configure with logging enabled (do not use --disable-logging), and
-include the log this produces with your report.
+Include the log file "$logfile" produced by configure as this will help
+solving the problem.
 EOF
     fi
     rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
@@ -868,7 +868,6 @@ vhook_extralibs='$ldl'
 
 # default parameters
 
-enable logging
 logfile="config.err"
 
 # installation paths
@@ -1305,7 +1304,7 @@ TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 add_extralibs $osextralibs
 
-enabled logging || logfile=/dev/null
+disabled logging && logfile=/dev/null
 
 echo "# $0 $@" >$logfile
 set >>$logfile
