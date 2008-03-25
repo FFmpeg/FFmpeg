@@ -56,7 +56,7 @@ show_help(){
   echo
   echo "Standard options:"
   echo "  --help                   print this message"
-  echo "  --log=<FILE|yes|no>      log tests and output to FILE [config.err]"
+  echo "  --logfile=<FILE|yes|no>  log tests and output to FILE [config.err]"
   echo "  --prefix=PREFIX          install in PREFIX [$PREFIX]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
@@ -990,7 +990,7 @@ show_list() {
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --log=*) logging="$optval"
+    --logfile=*) logging="$optval"
     ;;
     --prefix=*) PREFIX="$optval"
     ;;
