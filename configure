@@ -1308,8 +1308,8 @@ add_extralibs $osextralibs
 
 enabled logging || logfile=/dev/null
 
-    echo "# $0 $@" >$logfile
-    set >>$logfile
+echo "# $0 $@" >$logfile
+set >>$logfile
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
