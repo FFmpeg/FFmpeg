@@ -82,7 +82,7 @@ show_help(){
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
   echo
   echo "External library support:"
-  echo "  --enable-sunmlib         use Sun medialib [default=no]"
+  echo "  --enable-mlib            use Sun medialib [default=no]"
   echo "  --enable-liba52          enable GPLed liba52 support [default=no]"
   echo "  --enable-liba52bin       open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
@@ -1027,7 +1027,7 @@ for opt do
     ;;
     --cpu=*) cpu="$optval"
     ;;
-    --enable-sunmlib) enable mlib
+    --enable-mlib) enable mlib
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
