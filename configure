@@ -108,7 +108,7 @@ show_help(){
   echo "  --source-path=PATH       path to source code [$source_path]"
   echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
   echo "  --enable-cross-compile   assume a cross-compiler is used"
-  echo "  --target-os=OS           compiler targets OS [$targetos]"
+  echo "  --target-os=OS           compiler targets OS [$target_os]"
   echo "  --cc=CC                  use C compiler CC [$cc]"
   echo "  --make=MAKE              use specified make [$make]"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
@@ -894,7 +894,7 @@ arch=`uname -m`
 cpu="generic"
 
 # OS
-targetos=$(tolower $(uname -s))
+target_os=$(tolower $(uname -s))
 
 # libraries
 enable zlib
@@ -1009,7 +1009,7 @@ for opt do
     ;;
     --cross-prefix=*) cross_prefix="$optval"
     ;;
-    --target-os=*) targetos="$optval"
+    --target-os=*) target_os="$optval"
     ;;
     --cc=*) cc="$optval"
     ;;
@@ -1138,7 +1138,7 @@ enabled_any x86_32 x86_64 && enable x86
 enabled     sparc64       && enable sparc
 
 # OS specific
-case $targetos in
+case $target_os in
     beos|haiku|zeta)
         PREFIX="$HOME/config"
         # helps building libavcodec
@@ -1203,7 +1203,7 @@ case $targetos in
         FFSERVERLDFLAGS=-Wl,-bind_at_load
         ;;
     mingw32*)
-        targetos=mingw32
+        target_os=mingw32
         shlibdir="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
@@ -1223,7 +1223,7 @@ case $targetos in
         SHFLAGS='-shared -Wl,--output-def,$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         ;;
     cygwin*)
-        targetos=cygwin
+        target_os=cygwin
         shlibdir="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
@@ -1249,7 +1249,7 @@ case $targetos in
         enable dv1394
         ;;
     irix*)
-        targetos=irix
+        target_os=irix
         ranlib="echo ignoring ranlib"
         ;;
     os/2*)
@@ -1281,7 +1281,7 @@ case $targetos in
         ;;
 
     *)
-        targetos="${targetos}-UNKNOWN"
+        target_os="${target_os}-UNKNOWN"
         ;;
 esac
 
@@ -1371,7 +1371,7 @@ check_deps $ARCH_EXT_LIST
 test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
-if test $targetos = darwin; then
+if test $target_os = darwin; then
     if $cc -v 2>&1 | grep -q xlc; then
         add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
@@ -1684,7 +1684,7 @@ done
 
 test "$vhook" = "default" && vhook="$dlopen"
 
-if test "$targetos" = cygwin -o "$targetos" = mingw32 && enabled_all static vhook ; then
+if test "$target_os" = cygwin -o "$target_os" = mingw32 && enabled_all static vhook ; then
     disable vhook
     echo
     echo "At the moment vhooks don't work on Cygwin or MinGW static builds."
