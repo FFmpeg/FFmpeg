@@ -10,11 +10,6 @@ vpath %.c    $(SRC_PATH_BARE)
 vpath %.h    $(SRC_PATH_BARE)
 vpath %.texi $(SRC_PATH_BARE)
 
-CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
-       -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
-       -I$(SRC_PATH)/libavdevice -I$(SRC_PATH)/libavfilter \
-       -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE -DHAVE_AV_CONFIG_H
-
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFSERVER) += ffserver
@@ -52,6 +47,10 @@ main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
 
 vhook/%.o: vhook/%.c
 	$(CC) $(VHOOKCFLAGS) -c -o $@ $<
+
+.depend: version.h $(PROGS_SRCS)
+
+include common.mak
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
@@ -128,9 +127,6 @@ videohook: .libs $(HOOKS)
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
                                  ffplay-doc.html general.html hooks.html \
                                  $(ALLMANPAGES))
@@ -144,8 +140,6 @@ doc/%.pod: doc/%-doc.texi
 
 doc/%.1: doc/%.pod
 	pod2man --section=1 --center=" " --release=" " $< > $@
-
-install: install-libs install-headers $(INSTALL_TARGETS-yes)
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: install-libs
@@ -171,7 +165,7 @@ install-libs:
 	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  install-libs
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-libs
 
-install-headers:
+install-headers::
 	$(MAKE)                    -C libavutil   install-headers
 	$(MAKE)                    -C libavcodec  install-headers
 	$(MAKE)                    -C libavformat install-headers
@@ -180,7 +174,7 @@ install-headers:
 	$(MAKE)                    -C libswscale  install-headers
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-headers
 
-uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
+uninstall: uninstall-progs uninstall-man uninstall-vhook
 
 uninstall-progs:
 	rm -f $(addprefix "$(BINDIR)/", $(ALLPROGS))
@@ -192,7 +186,7 @@ uninstall-vhook:
 	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
 
-uninstall-libs:
+uninstall-libs::
 	$(MAKE) -C libavutil   uninstall-libs
 	$(MAKE) -C libavcodec  uninstall-libs
 	$(MAKE) -C libavformat uninstall-libs
@@ -201,7 +195,7 @@ uninstall-libs:
 	$(MAKE) -C libswscale  uninstall-libs
 	$(MAKE) -C libavfilter uninstall-libs
 
-uninstall-headers:
+uninstall-headers::
 	$(MAKE) -C libavutil   uninstall-headers
 	$(MAKE) -C libavcodec  uninstall-headers
 	$(MAKE) -C libavformat uninstall-headers
@@ -211,7 +205,7 @@ uninstall-headers:
 	$(MAKE) -C libavfilter uninstall-headers
 	-rmdir "$(INCDIR)"
 
-depend dep: .depend .vhookdep
+depend dep: .vhookdep
 	$(MAKE)                    -C libavutil   depend
 	$(MAKE)                    -C libavcodec  depend
 	$(MAKE)                    -C libavformat depend
@@ -219,9 +213,6 @@ depend dep: .depend .vhookdep
 	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc depend
 	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  depend
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
-
-.depend: $(PROGS_SRCS) version.h
-	$(DEPEND_CMD) > $@
 
 .vhookdep: $(ALLHOOKS_SRCS) version.h
 	$(VHOOK_DEPEND_CMD) > $@
@@ -231,7 +222,7 @@ $(DEP_LIBS): lib
 .libs: $(DEP_LIBS)
 	touch $@
 
-clean:
+clean::
 	$(MAKE) -C libavutil   clean
 	$(MAKE) -C libavcodec  clean
 	$(MAKE) -C libavformat clean
@@ -239,7 +230,7 @@ clean:
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C libswscale  clean
 	$(MAKE) -C libavfilter clean
-	rm -f *.o *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
+	rm -f .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
@@ -247,7 +238,7 @@ clean:
 	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
 	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
-distclean: clean
+distclean::
 	$(MAKE) -C libavutil   distclean
 	$(MAKE) -C libavcodec  distclean
 	$(MAKE) -C libavformat distclean
@@ -255,7 +246,7 @@ distclean: clean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C libswscale  distclean
 	$(MAKE) -C libavfilter distclean
-	rm -f .depend .vhookdep version.h config.* *.pc
+	rm -f .vhookdep version.h config.* *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
@@ -430,10 +421,8 @@ tests/seek_test$(EXESUF): tests/seek_test.c .libs
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $< $(EXTRALIBS)
 
 
-.PHONY: all lib videohook documentation install* uninstall*
-.PHONY: dep depend clean distclean TAGS
+.PHONY: lib videohook documentation TAGS
 .PHONY: codectest libavtest seektest test-server fulltest test
 .PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
 
--include .depend
 -include .vhookdep

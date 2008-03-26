@@ -59,14 +59,16 @@ $(SLIBNAME_WITH_MAJOR): $(OBJS)
 ALLHEADERS = $(subst $(SRC_DIR)/,,$(wildcard $(SRC_DIR)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
-depend dep: $(SRCS)
+depend dep: .depend
+
+.depend: $(SRCS)
 	$(DEPEND_CMD) > .depend
 
 clean::
 	rm -f *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
 	      *.def *.dll.a *.exp *.ho *.map $(TESTS)
 
-distclean: clean
+distclean:: clean
 	rm -f .depend
 
 INSTALL_TARGETS-$(BUILD_SHARED) += install-lib-shared
@@ -93,7 +95,7 @@ install-lib-static: $(LIBNAME)
 
 INCINSTDIR = $(INCDIR)/lib$(NAME)
 
-install-headers:
+install-headers::
 	install -d "$(INCINSTDIR)"
 	install -d "$(LIBDIR)/pkgconfig"
 	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
@@ -101,7 +103,7 @@ install-headers:
 
 uninstall: uninstall-libs uninstall-headers
 
-uninstall-libs:
+uninstall-libs::
 	-rm -f "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
 	       "$(SHLIBDIR)/$(SLIBNAME)"            \
 	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
