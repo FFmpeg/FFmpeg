@@ -81,7 +81,7 @@ endif
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
 
-all: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
+main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
 
 lib:
 	$(MAKE)                    -C libavutil   all
