@@ -14,7 +14,6 @@ CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
        -I$(SRC_PATH)/libavdevice -I$(SRC_PATH)/libavfilter \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE -DHAVE_AV_CONFIG_H
-LDFLAGS+= -g
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
@@ -74,7 +73,7 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
-LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
+LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil -g $(LDFLAGS)
 EXTRALIBS := -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 ifeq ($(CONFIG_SWSCALE),yes)
