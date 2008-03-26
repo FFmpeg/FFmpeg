@@ -194,7 +194,7 @@ typedef struct {
     GetBitContext gbc;                      ///< bitstream reader
     AVRandomState dith_state;               ///< for dither generation
     AVCodecContext *avctx;                  ///< parent context
-    uint8_t input_buffer[AC3_MAX_FRAME_SIZE];   ///< temp buffer to prevent overread
+    uint8_t *input_buffer;                  ///< temp buffer to prevent overread
 } AC3DecodeContext;
 
 /**
@@ -293,6 +293,13 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
         avctx->channels = avctx->request_channels;
     }
     s->downmixed = 1;
+
+    /* allocate context input buffer */
+    if (avctx->error_resilience >= FF_ER_CAREFUL) {
+        s->input_buffer = av_mallocz(AC3_MAX_FRAME_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!s->input_buffer)
+            return AVERROR_NOMEM;
+    }
 
     return 0;
 }
@@ -1137,7 +1144,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     int i, blk, ch, err;
 
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
-    if(avctx->error_resilience >= FF_ER_CAREFUL) {
+    if (s->input_buffer) {
         /* copy input buffer to decoder context to avoid reading past the end
            of the buffer, which can be caused by a damaged input stream. */
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_MAX_FRAME_SIZE));
@@ -1228,6 +1235,8 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
+
+    av_freep(&s->input_buffer);
 
     return 0;
 }
