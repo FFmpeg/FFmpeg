@@ -21,7 +21,7 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
-SRCS        = $(addsuffix .c,          $(PROGS-yes)) cmdutils.c
+PROGS_SRCS  = $(addsuffix .c,          $(PROGS-yes)) cmdutils.c
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 
 BASENAMES   = ffmpeg ffplay ffserver
@@ -220,7 +220,7 @@ depend dep: .depend .vhookdep
 	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  depend
 	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
-.depend: $(SRCS) version.h
+.depend: $(PROGS_SRCS) version.h
 	$(DEPEND_CMD) > $@
 
 .vhookdep: $(ALLHOOKS_SRCS) version.h
