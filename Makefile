@@ -22,6 +22,7 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
+SRCS        = $(addsuffix .c,          $(PROGS-yes)) cmdutils.c
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 
 BASENAMES   = ffmpeg ffplay ffserver
@@ -44,6 +45,15 @@ INSTALL_TARGETS-yes             += install-progs
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
 
+main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
+
+%$(EXESUF): %_g$(EXESUF)
+	cp -p $< $@
+	$(STRIP) $@
+
+vhook/%.o: vhook/%.c
+	$(CC) $(VHOOKCFLAGS) -c -o $@ $<
+
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
 BASEHOOKS = fish null watermark
@@ -64,7 +74,6 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
-SRCS = $(addsuffix .c, $(PROGS-yes)) cmdutils.c
 LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil $(LDFLAGS)
 EXTRALIBS := -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
@@ -81,8 +90,6 @@ endif
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
 
-main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
-
 lib:
 	$(MAKE)                    -C libavutil   all
 	$(MAKE)                    -C libavcodec  all
@@ -97,10 +104,6 @@ ffserver_g$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
 
 %_g$(EXESUF): %.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
-
-%$(EXESUF): %_g$(EXESUF)
-	cp -p $< $@
-	$(STRIP) $@
 
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
 ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
@@ -125,9 +128,6 @@ videohook: .libs $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
-
-vhook/%.o: vhook/%.c
-	$(CC) $(VHOOKCFLAGS) -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
