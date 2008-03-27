@@ -20,7 +20,7 @@ OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 # external libraries
 OBJS-$(CONFIG_LIBDC1394_DEMUXER)         += libdc1394.o
 
-CPPOBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
-CPPOBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
+CPP_OBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
+CPP_OBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
 
 include ../common.mak

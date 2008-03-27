@@ -26,8 +26,8 @@ CFLAGS += -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 EXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 LDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
-SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S) $(CPPOBJS:.o=.cpp)
-OBJS := $(OBJS) $(ASM_OBJS) $(CPPOBJS)
+SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S) $(CPP_OBJS:.o=.cpp)
+OBJS := $(OBJS) $(ASM_OBJS) $(CPP_OBJS)
 
 all: $(LIBNAME) $(SLIBNAME)
 
