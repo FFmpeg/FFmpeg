@@ -1259,8 +1259,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         if (url_fopen(&sc->pb, sc->drefs[sc->dref_id-1].path, URL_RDONLY) < 0)
-            av_log(c->fc, AV_LOG_ERROR, "stream %d, error opening external essence: %s\n",
-                   st->index, strerror(errno));
+            av_log(c->fc, AV_LOG_ERROR, "stream %d, error opening file %s: %s\n",
+                   st->index, sc->drefs[sc->dref_id-1].path, strerror(errno));
     } else
         sc->pb = c->fc->pb;
 
