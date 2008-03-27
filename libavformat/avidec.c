@@ -538,8 +538,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb);
                 get_le32(pb);
 
-                active_aspect.num= get_le16(pb);
                 active_aspect.den= get_le16(pb);
+                active_aspect.num= get_le16(pb);
                 active.num       = get_le32(pb);
                 active.den       = get_le32(pb);
                 get_le32(pb); //nbFieldsPerFrame

@@ -297,8 +297,8 @@ static int avi_write_header(AVFormatContext *s)
             put_le32(pb, lrintf(1.0/av_q2d(stream->time_base)));
             put_le32(pb, stream->width );
             put_le32(pb, stream->height);
-            put_le16(pb, num);
             put_le16(pb, den);
+            put_le16(pb, num);
             put_le32(pb, stream->width );
             put_le32(pb, stream->height);
             put_le32(pb, 1); //progressive FIXME
