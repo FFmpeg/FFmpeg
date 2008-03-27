@@ -769,7 +769,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                         if (color_index < 0)
                             color_index = 0;
                     }
-                } else if (st->codec->color_table_id & 0x08) {
+                } else if (st->codec->color_table_id) {
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
                     if (color_depth == 2)
