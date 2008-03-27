@@ -223,9 +223,8 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         total_size += a.size;
     }
 
-    if (!err && total_size < atom.size && atom.size < 0x7ffff) {
+    if (!err && total_size < atom.size && atom.size < 0x7ffff)
         url_fskip(pb, atom.size - total_size);
-    }
 
     return err;
 }
