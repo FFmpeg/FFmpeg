@@ -1120,8 +1120,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stss_index = 0;
     unsigned int i, j;
 
-    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO ||
-        sc->audio_cid == -2) {
+    /* only use old uncompressed audio chunk demuxing when stts specifies it */
+    if (!(st->codec->codec_type == CODEC_TYPE_AUDIO &&
+          sc->stts_count == 1 && sc->stts_data[0].duration == 1)) {
         unsigned int current_sample = 0;
         unsigned int stts_sample = 0;
         unsigned int keyframe, sample_size;
