@@ -778,9 +778,28 @@ resync:
         //parse ##dc/##wb
         if(n < s->nb_streams){
           AVStream *st;
+          AVStream *st1  = s->streams[1];
+          AVIStream *ast1= st1->priv_data;
           AVIStream *ast;
           st = s->streams[n];
           ast = st->priv_data;
+
+
+            //workaround for broken small-file-bug402.avi
+            if(   d[2] == 'w' && d[3] == 'b'
+               && n==0
+               && s->nb_streams>=2
+               && st ->codec->codec_type == CODEC_TYPE_VIDEO
+               && st1->codec->codec_type == CODEC_TYPE_AUDIO
+               && ast->prefix == 'd'*256+'c'
+               && (d[2]*256+d[3] == ast1->prefix || !ast1->prefix_count)
+              ){
+                n=1;
+                st = st1;
+                ast = ast1;
+                av_log(s, AV_LOG_WARNING, "Invalid stream+prefix combination, assuming audio\n");
+            }
+
 
           if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
              /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & PKT_FLAG_KEY))*/ //FIXME needs a little reordering
