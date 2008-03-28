@@ -777,41 +777,40 @@ resync:
 
         //parse ##dc/##wb
         if(n < s->nb_streams){
-          AVStream *st;
-          AVIStream *ast;
-          st = s->streams[n];
-          ast = st->priv_data;
-
+            AVStream *st;
+            AVIStream *ast;
+            st = s->streams[n];
+            ast = st->priv_data;
 
             if(s->nb_streams>=2){
                 AVStream *st1  = s->streams[1];
                 AVIStream *ast1= st1->priv_data;
-            //workaround for broken small-file-bug402.avi
-            if(   d[2] == 'w' && d[3] == 'b'
-               && n==0
-               && st ->codec->codec_type == CODEC_TYPE_VIDEO
-               && st1->codec->codec_type == CODEC_TYPE_AUDIO
-               && ast->prefix == 'd'*256+'c'
-               && (d[2]*256+d[3] == ast1->prefix || !ast1->prefix_count)
-              ){
-                n=1;
-                st = st1;
-                ast = ast1;
-                av_log(s, AV_LOG_WARNING, "Invalid stream+prefix combination, assuming audio\n");
-            }
+                //workaround for broken small-file-bug402.avi
+                if(   d[2] == 'w' && d[3] == 'b'
+                   && n==0
+                   && st ->codec->codec_type == CODEC_TYPE_VIDEO
+                   && st1->codec->codec_type == CODEC_TYPE_AUDIO
+                   && ast->prefix == 'd'*256+'c'
+                   && (d[2]*256+d[3] == ast1->prefix || !ast1->prefix_count)
+                  ){
+                    n=1;
+                    st = st1;
+                    ast = ast1;
+                    av_log(s, AV_LOG_WARNING, "Invalid stream+prefix combination, assuming audio\n");
+                }
             }
 
 
-          if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
-             /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & PKT_FLAG_KEY))*/ //FIXME needs a little reordering
-             || st->discard >= AVDISCARD_ALL){
+            if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
+               /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & PKT_FLAG_KEY))*/ //FIXME needs a little reordering
+               || st->discard >= AVDISCARD_ALL){
                 if(ast->sample_size) ast->frame_offset += pkt->size;
                 else                 ast->frame_offset++;
                 url_fskip(pb, size);
                 goto resync;
-          }
+            }
 
-          if (d[2] == 'p' && d[3] == 'c' && size<=4*256+4) {
+            if (d[2] == 'p' && d[3] == 'c' && size<=4*256+4) {
                 int k = get_byte(pb);
                 int last = (k + get_byte(pb) - 1) & 0xFF;
 
@@ -821,32 +820,31 @@ resync:
                     ast->pal[k] = get_be32(pb)>>8;// b + (g << 8) + (r << 16);
                 ast->has_pal= 1;
                 goto resync;
-          } else
-          if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) ||
-                d[2]*256+d[3] == ast->prefix /*||
-                (d[2] == 'd' && d[3] == 'c') ||
-                (d[2] == 'w' && d[3] == 'b')*/) {
+            } else if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) ||
+                         d[2]*256+d[3] == ast->prefix /*||
+                         (d[2] == 'd' && d[3] == 'c') ||
+                         (d[2] == 'w' && d[3] == 'b')*/) {
 
 //av_log(NULL, AV_LOG_DEBUG, "OK\n");
-            if(d[2]*256+d[3] == ast->prefix)
-                ast->prefix_count++;
-            else{
-                ast->prefix= d[2]*256+d[3];
-                ast->prefix_count= 0;
-            }
-
-            avi->stream_index= n;
-            ast->packet_size= size + 8;
-            ast->remaining= size;
-
-            {
-                uint64_t pos= url_ftell(pb) - 8;
-                if(!st->index_entries || !st->nb_index_entries || st->index_entries[st->nb_index_entries - 1].pos < pos){
-                    av_add_index_entry(st, pos, ast->frame_offset / FFMAX(1, ast->sample_size), size, 0, AVINDEX_KEYFRAME);
+                if(d[2]*256+d[3] == ast->prefix)
+                    ast->prefix_count++;
+                else{
+                    ast->prefix= d[2]*256+d[3];
+                    ast->prefix_count= 0;
                 }
+
+                avi->stream_index= n;
+                ast->packet_size= size + 8;
+                ast->remaining= size;
+
+                {
+                    uint64_t pos= url_ftell(pb) - 8;
+                    if(!st->index_entries || !st->nb_index_entries || st->index_entries[st->nb_index_entries - 1].pos < pos){
+                        av_add_index_entry(st, pos, ast->frame_offset / FFMAX(1, ast->sample_size), size, 0, AVINDEX_KEYFRAME);
+                    }
+                }
+                goto resync;
             }
-            goto resync;
-          }
         }
     }
 
