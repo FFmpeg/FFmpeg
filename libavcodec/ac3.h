@@ -84,7 +84,7 @@ typedef struct {
     uint8_t bitstream_id;
     uint8_t channel_mode;
     uint8_t lfe_on;
-    uint8_t stream_type;
+    uint8_t frame_type;
     /** @} */
 
     /** @defgroup derived Derived values
@@ -99,11 +99,11 @@ typedef struct {
 } AC3HeaderInfo;
 
 typedef enum {
-    EAC3_STREAM_TYPE_INDEPENDENT = 0,
-    EAC3_STREAM_TYPE_DEPENDENT,
-    EAC3_STREAM_TYPE_AC3_CONVERT,
-    EAC3_STREAM_TYPE_RESERVED
-} EAC3StreamType;
+    EAC3_FRAME_TYPE_INDEPENDENT = 0,
+    EAC3_FRAME_TYPE_DEPENDENT,
+    EAC3_FRAME_TYPE_AC3_CONVERT,
+    EAC3_FRAME_TYPE_RESERVED
+} EAC3FrameType;
 
 void ac3_common_init(void);
 

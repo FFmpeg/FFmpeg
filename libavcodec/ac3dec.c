@@ -1169,8 +1169,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             case AC3_PARSE_ERROR_FRAME_SIZE:
                 av_log(avctx, AV_LOG_ERROR, "invalid frame size\n");
                 break;
-            case AC3_PARSE_ERROR_STREAM_TYPE:
-                av_log(avctx, AV_LOG_ERROR, "invalid stream type\n");
+            case AC3_PARSE_ERROR_FRAME_TYPE:
+                av_log(avctx, AV_LOG_ERROR, "invalid frame type\n");
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "invalid header\n");

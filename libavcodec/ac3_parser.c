@@ -84,13 +84,13 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
         hdr->bit_rate = (ff_ac3_bitrate_tab[frame_size_code>>1] * 1000) >> hdr->sr_shift;
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
         hdr->frame_size = ff_ac3_frame_size_tab[frame_size_code][hdr->sr_code] * 2;
-        hdr->stream_type = EAC3_STREAM_TYPE_INDEPENDENT;
+        hdr->frame_type = EAC3_FRAME_TYPE_INDEPENDENT;
     } else {
         /* Enhanced AC-3 */
         hdr->crc1 = 0;
-        hdr->stream_type = get_bits(&gbc, 2);
-        if(hdr->stream_type == EAC3_STREAM_TYPE_RESERVED)
-            return AC3_PARSE_ERROR_STREAM_TYPE;
+        hdr->frame_type = get_bits(&gbc, 2);
+        if(hdr->frame_type == EAC3_FRAME_TYPE_RESERVED)
+            return AC3_PARSE_ERROR_FRAME_TYPE;
 
         skip_bits(&gbc, 3); // skip substream id
 
@@ -138,14 +138,14 @@ static int ac3_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
-    switch(hdr.stream_type){
-        case EAC3_STREAM_TYPE_INDEPENDENT:
+    switch(hdr.frame_type){
+        case EAC3_FRAME_TYPE_INDEPENDENT:
             *flag = FRAME_START;
             break;
-        case EAC3_STREAM_TYPE_DEPENDENT:
+        case EAC3_FRAME_TYPE_DEPENDENT:
             *flag = FRAME_CONTINUATION;
             break;
-        case EAC3_STREAM_TYPE_AC3_CONVERT:
+        case EAC3_FRAME_TYPE_AC3_CONVERT:
             *flag = FRAME_COMPLETE;
             break;
     }
