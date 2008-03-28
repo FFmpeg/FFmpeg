@@ -23,7 +23,6 @@
 #include "parser.h"
 #include "aac_ac3_parser.h"
 #include "bitstream.h"
-#include "ac3.h"
 
 
 #define AAC_HEADER_SIZE 7
@@ -39,7 +38,7 @@ static const int aac_channels[8] = {
 };
 
 
-static int aac_sync(AACAC3ParseContext *hdr_info)
+static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
@@ -77,6 +76,7 @@ static int aac_sync(AACAC3ParseContext *hdr_info)
     hdr_info->sample_rate = aac_sample_rates[sr];
     hdr_info->samples = (rdb + 1) * 1024;
     hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
+    *flag = FRAME_COMPLETE;
 
     return size;
 }
@@ -84,7 +84,6 @@ static int aac_sync(AACAC3ParseContext *hdr_info)
 static av_cold int aac_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
-    s->stream_type = EAC3_STREAM_TYPE_INDEPENDENT;
     s->inbuf_ptr = s->inbuf;
     s->header_size = AAC_HEADER_SIZE;
     s->sync = aac_sync;

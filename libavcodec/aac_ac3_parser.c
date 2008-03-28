@@ -29,6 +29,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      const uint8_t *buf, int buf_size)
 {
     AACAC3ParseContext *s = s1->priv_data;
+    AACAC3FrameFlag frame_flag;
     const uint8_t *buf_ptr;
     int len;
 
@@ -50,7 +51,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
 
         if (s->frame_size == 0) {
             if ((s->inbuf_ptr - s->inbuf) == s->header_size) {
-                len = s->sync(s);
+                len = s->sync(s, &frame_flag);
                 if (len == 0) {
                     /* no sync found : move by one byte (inefficient, but simple!) */
                     memmove(s->inbuf, s->inbuf + 1, s->header_size - 1);
