@@ -778,17 +778,17 @@ resync:
         //parse ##dc/##wb
         if(n < s->nb_streams){
           AVStream *st;
-          AVStream *st1  = s->streams[1];
-          AVIStream *ast1= st1->priv_data;
           AVIStream *ast;
           st = s->streams[n];
           ast = st->priv_data;
 
 
+            if(s->nb_streams>=2){
+                AVStream *st1  = s->streams[1];
+                AVIStream *ast1= st1->priv_data;
             //workaround for broken small-file-bug402.avi
             if(   d[2] == 'w' && d[3] == 'b'
                && n==0
-               && s->nb_streams>=2
                && st ->codec->codec_type == CODEC_TYPE_VIDEO
                && st1->codec->codec_type == CODEC_TYPE_AUDIO
                && ast->prefix == 'd'*256+'c'
@@ -798,6 +798,7 @@ resync:
                 st = st1;
                 ast = ast1;
                 av_log(s, AV_LOG_WARNING, "Invalid stream+prefix combination, assuming audio\n");
+            }
             }
 
 
