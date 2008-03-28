@@ -38,6 +38,7 @@ ifneq ($(PROGS),)
 INSTALL_TARGETS-yes             += install-progs
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
+INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
 
 main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
 
@@ -137,8 +138,6 @@ doc/%.1: doc/%.pod
 	pod2man --section=1 --center=" " --release=" " $< > $@
 
 install: $(INSTALL_TARGETS-yes)
-
-INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
 
 install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
 	install -d "$(BINDIR)"
