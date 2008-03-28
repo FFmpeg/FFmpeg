@@ -31,12 +31,12 @@ OBJS := $(OBJS) $(ASM_OBJS) $(CPP_OBJS)
 
 all: $(LIBNAME) $(SLIBNAME)
 
-$(LIBNAME): $(OBJS)
+$(LIBNAME)$(DISABLE): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
 
-$(SLIBNAME): $(SLIBNAME_WITH_MAJOR)
+$(SLIBNAME)$(DISABLE): $(SLIBNAME_WITH_MAJOR)
 	$(LN_S) $^ $@
 
 $(SLIBNAME_WITH_MAJOR): $(OBJS)
@@ -76,7 +76,7 @@ INSTALL_LIB_TARGETS-$(BUILD_STATIC) += install-lib-static
 
 install: install-libs install-headers
 
-install-libs: $(INSTALL_LIB_TARGETS-yes)
+install-libs$(DISABLE): $(INSTALL_LIB_TARGETS-yes)
 
 install-lib-shared: $(SLIBNAME)
 	install -d "$(SHLIBDIR)"
@@ -95,7 +95,7 @@ install-lib-static: $(LIBNAME)
 
 INCINSTDIR = $(INCDIR)/lib$(NAME)
 
-install-headers::
+install-headers$(DISABLE)::
 	install -d "$(INCINSTDIR)"
 	install -d "$(LIBDIR)/pkgconfig"
 	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"

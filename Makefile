@@ -51,6 +51,9 @@ vhook/%.o: vhook/%.c
 
 .depend: version.h $(PROGS_SRCS)
 
+# bandaid to disable triggering shared library installation routines
+DISABLE=yes
+
 include common.mak
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
