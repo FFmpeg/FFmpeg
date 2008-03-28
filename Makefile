@@ -248,9 +248,6 @@ distclean::
 	$(MAKE) -C libavfilter distclean
 	rm -f .vhookdep version.h config.* *.pc
 
-TAGS:
-	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
-
 # regression tests
 
 fulltest test: codectest libavtest seektest
