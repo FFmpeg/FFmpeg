@@ -72,18 +72,13 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
-LDFLAGS := -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil -g $(LDFLAGS)
-EXTRALIBS := -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
+LDFLAGS-$(CONFIG_SWSCALE) += -L$(BUILD_ROOT)/libswscale
+LDFLAGS-$(CONFIG_AVFILTER) += -L$(BUILD_ROOT)/libavfilter
+LDFLAGS := $(LDFLAGS-yes) -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil -g $(LDFLAGS)
 
-ifeq ($(CONFIG_SWSCALE),yes)
-LDFLAGS+=-L$(BUILD_ROOT)/libswscale
-EXTRALIBS+=-lswscale$(BUILDSUF)
-endif
-
-ifeq ($(CONFIG_AVFILTER),yes)
-LDFLAGS+=-L$(BUILD_ROOT)/libavfilter
-EXTRALIBS := -lavfilter$(BUILDSUF) $(EXTRALIBS)
-endif
+EXTRALIBS-$(CONFIG_AVFILTER) += -lavfilter$(BUILDSUF)
+EXTRALIBS-$(CONFIG_SWSCALE) += -lswscale$(BUILDSUF)
+EXTRALIBS := $(EXTRALIBS-yes) -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
