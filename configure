@@ -1233,13 +1233,9 @@ case "$arch" in
     x86_64|amd64)
         arch="x86_32"
         enable fast_unaligned
-        canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
-        if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
-            if ! echo $CFLAGS | grep -q -- -m32; then
-                arch="x86_64"
-                enable fast_64bit
-            fi
-        fi
+        check_cc <<EOF && enable fast_64bit && arch="x86_64"
+        int test[sizeof(char*) - 7];
+EOF
     ;;
     # armv4l is a subset of armv[567]*l
     arm|armv[4567]*l)
