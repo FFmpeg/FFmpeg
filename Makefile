@@ -141,6 +141,8 @@ doc/%.pod: doc/%-doc.texi
 doc/%.1: doc/%.pod
 	pod2man --section=1 --center=" " --release=" " $< > $@
 
+install: $(INSTALL_TARGETS-yes)
+
 ifeq ($(BUILD_SHARED),yes)
 install-progs: install-libs
 endif
