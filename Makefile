@@ -143,10 +143,9 @@ doc/%.1: doc/%.pod
 
 install: $(INSTALL_TARGETS-yes)
 
-ifeq ($(BUILD_SHARED),yes)
-install-progs: install-libs
-endif
-install-progs: $(PROGS)
+INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
+
+install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
 	install -d "$(BINDIR)"
 	install -c -m 755 $(PROGS) "$(BINDIR)"
 
