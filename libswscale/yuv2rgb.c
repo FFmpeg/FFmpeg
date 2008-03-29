@@ -188,7 +188,7 @@ static volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 #define RENAME(a) a ## _MMX2
 #include "yuv2rgb_template.c"
 
-#endif /* defined(ARCH_X86) */
+#endif /* HAVE_MMX */
 
 const int32_t Inverse_Table_6_9[8][4] = {
     {117504, 138453, 13954, 34903}, /* no sequence_display_extension */
