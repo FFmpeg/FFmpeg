@@ -40,9 +40,9 @@ INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
 INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
 
-main: lib $(PROGS_G) $(PROGS) $(ALL_TARGETS-yes)
+main: lib $(PROGS) $(ALL_TARGETS-yes)
 
-%$(EXESUF): %_g$(EXESUF)
+$(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
