@@ -63,6 +63,7 @@ OBJS-$(CONFIG_H263_MUXER)                += raw.o
 OBJS-$(CONFIG_H264_DEMUXER)              += raw.o
 OBJS-$(CONFIG_H264_MUXER)                += raw.o
 OBJS-$(CONFIG_IDCIN_DEMUXER)             += idcin.o
+OBJS-$(CONFIG_IFF_DEMUXER)               += iff.o
 OBJS-$(CONFIG_IMAGE2_DEMUXER)            += img2.o
 OBJS-$(CONFIG_IMAGE2_MUXER)              += img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_DEMUXER)        += img2.o
