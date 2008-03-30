@@ -805,7 +805,7 @@ armv6_deps="armv4l"
 iwmmxt_deps="armv4l"
 mmi_deps="mips"
 mmx_deps="x86"
-mmx2_deps="x86"
+mmx2_deps="x86 mmx"
 ssse3_deps="x86"
 vis_deps="sparc"
 
