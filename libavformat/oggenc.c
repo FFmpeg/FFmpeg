@@ -88,8 +88,8 @@ static int ogg_build_flac_headers(const uint8_t *extradata, int extradata_size,
     uint8_t *p;
     if (extradata_size != 34)
         return -1;
-    oggstream->header_len[0] = 79;
-    oggstream->header[0] = av_mallocz(79); // per ogg flac specs
+    oggstream->header_len[0] = 51;
+    oggstream->header[0] = av_mallocz(51); // per ogg flac specs
     p = oggstream->header[0];
     bytestream_put_byte(&p, 0x7F);
     bytestream_put_buffer(&p, "FLAC", 4);

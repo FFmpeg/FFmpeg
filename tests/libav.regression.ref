@@ -84,8 +84,8 @@ ae3a23a7ea13c92a2909445ca8144dcd *./tests/data/b-libav.aif
 8d117c49d6b210abe783d1b0b897cec7 *./tests/data/b-libav.voc
   32768 ./tests/data/b-libav.voc
 ./tests/data/b-libav.voc CRC=0x49972c8c
-d7e6e9091a600b7208b29500be94aa89 *./tests/data/b-libav.ogg
-23624 ./tests/data/b-libav.ogg
+8ac1fa6e0ee5d47ea98aea17b67d5908 *./tests/data/b-libav.ogg
+23596 ./tests/data/b-libav.ogg
 ./tests/data/b-libav.ogg CRC=0x93baa056
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv420p.yuv
  304128 ./tests/data/b-libav-yuv420p.yuv
