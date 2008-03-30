@@ -1442,14 +1442,18 @@ static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     MOVFragment *frag = &c->fragment;
-    AVStream *st = c->fc->streams[frag->track_id-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     uint64_t offset;
     int64_t dts;
     int data_offset = 0;
     unsigned entries, first_sample_flags = frag->flags;
     int flags, distance, i;
 
+    if (!frag->track_id || frag->track_id > c->fc->nb_streams)
+        return -1;
+    st = c->fc->streams[frag->track_id-1];
+    sc = st->priv_data;
     if (sc->pseudo_stream_id+1 != frag->stsd_id)
         return 0;
     if (!st->nb_index_entries)
