@@ -1235,8 +1235,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return ret;
 
     /* sanity checks */
-    if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
-       (!sc->sample_size && !sc->sample_count)){
+    if(sc->chunk_count && (!sc->stts_count || !sc->sample_to_chunk_sz ||
+                           (!sc->sample_size && !sc->sample_count))){
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
         sc->sample_count = 0; //ignore track
@@ -1456,8 +1456,6 @@ static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc = st->priv_data;
     if (sc->pseudo_stream_id+1 != frag->stsd_id)
         return 0;
-    if (!st->nb_index_entries)
-        return -1;
     get_byte(pb); /* version */
     flags = get_be24(pb);
     entries = get_be32(pb);
