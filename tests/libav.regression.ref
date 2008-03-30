@@ -58,9 +58,9 @@ c3a9f333ddebff6eae3f4360bad2de29 *./tests/data/b-libav02.bmp
 ./tests/data/b-libav%02d.tga CRC=0xf3a66ecf
 f558eef0740c4b247f1eb17e1dbf7adf *./tests/data/b-libav02.tga
 ./tests/data/b-libav%02d.tiff CRC=0x25c06ecf
-3076b16ac0c8a39a796e69944f6a40dc *./tests/data/b-libav02.tiff
-./tests/data/b-libav%02d.sgi CRC=0x00000001
-c6cab058a2b0a33ee843bd096b280075 *./tests/data/b-libav02.sgi
+7211a09803f104e59196bc712a819e69 *./tests/data/b-libav02.tiff
+./tests/data/b-libav%02d.sgi CRC=0x25c06ecf
+50a1d8ca27813084e20b7ae0b8f9d663 *./tests/data/b-libav02.sgi
 ./tests/data/b-libav%02d.jpg CRC=0x62328baa
 5d6c53e5297c4485e26c25e37885376f *./tests/data/b-libav02.jpg
 b0a8c8063d81921db5d7c8f50a1cc454 *./tests/data/b-libav.wav
