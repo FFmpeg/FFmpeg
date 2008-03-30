@@ -169,7 +169,7 @@ void idct_mmx_init(void)
     }
 }
 
-static DCTELEM block[64] __attribute__ ((aligned (8)));
+static DCTELEM block[64] __attribute__ ((aligned (16)));
 static DCTELEM block1[64] __attribute__ ((aligned (8)));
 static DCTELEM block_org[64] __attribute__ ((aligned (8)));
 
