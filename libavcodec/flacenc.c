@@ -367,16 +367,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         }
         s->options.lpc_coeff_precision = avctx->lpc_coeff_precision;
     } else {
-        /* select LPC precision based on block size */
-        if(     s->blocksize <=   192) s->options.lpc_coeff_precision =  7;
-        else if(s->blocksize <=   384) s->options.lpc_coeff_precision =  8;
-        else if(s->blocksize <=   576) s->options.lpc_coeff_precision =  9;
-        else if(s->blocksize <=  1152) s->options.lpc_coeff_precision = 10;
-        else if(s->blocksize <=  2304) s->options.lpc_coeff_precision = 11;
-        else if(s->blocksize <=  4608) s->options.lpc_coeff_precision = 12;
-        else if(s->blocksize <=  8192) s->options.lpc_coeff_precision = 13;
-        else if(s->blocksize <= 16384) s->options.lpc_coeff_precision = 14;
-        else                           s->options.lpc_coeff_precision = 15;
+        /* default LPC precision */
+        s->options.lpc_coeff_precision = 15;
     }
     av_log(avctx, AV_LOG_DEBUG, " lpc precision: %d\n",
            s->options.lpc_coeff_precision);
