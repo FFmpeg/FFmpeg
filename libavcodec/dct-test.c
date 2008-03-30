@@ -74,6 +74,7 @@ struct algo {
   void (* func) (DCTELEM *block);
   void (* ref)  (DCTELEM *block);
   enum formattag { NO_PERM,MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM } format;
+  int  mm_support;
 };
 
 #ifndef FAAN_POSTSCALE
@@ -93,22 +94,22 @@ struct algo algos[] = {
   {"SIMPLE-C",        1, ff_simple_idct,     idct, NO_PERM},
 
 #ifdef HAVE_MMX
-  {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM},
+  {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM, MM_MMX},
 #ifdef HAVE_MMX2
-  {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM},
+  {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM, MM_MMXEXT},
 #endif
 
 #ifdef CONFIG_GPL
-  {"LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM},
-  {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM},
+  {"LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM, MM_MMX},
+  {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM, MM_MMXEXT},
 #endif
-  {"SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM},
-  {"XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM},
-  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM},
+  {"SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM, MM_MMX},
+  {"XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM, MM_MMX},
+  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM, MM_MMXEXT},
 #endif
 
 #ifdef HAVE_ALTIVEC
-  {"altivecfdct",     0, fdct_altivec,       fdct, NO_PERM},
+  {"altivecfdct",     0, fdct_altivec,       fdct, NO_PERM, MM_ALTIVEC},
 #endif
 
 #ifdef ARCH_BFIN
@@ -562,7 +563,7 @@ int main(int argc, char **argv)
         idct248_error("SIMPLE-C", ff_simple_idct248_put);
     } else {
       for (i=0;algos[i].name;i++)
-        if (algos[i].is_idct == test_idct) {
+        if (algos[i].is_idct == test_idct && !(~mm_flags & algos[i].mm_support)) {
           dct_error (algos[i].name, algos[i].is_idct, algos[i].func, algos[i].ref, algos[i].format, test);
         }
     }
