@@ -37,7 +37,7 @@ f108c91e3adadb39ce436c8836793045 *./tests/data/b-libav.mkv
 329860 ./tests/data/b-libav.mkv
 ./tests/data/b-libav.mkv CRC=0x400c29e9
 9a9da315747599f7718cc9a9a09c21ff *./tests/data/b-pbmpipe.pbm
- 317075 ./tests/data/b-pbmpipe.pbm
+317075 ./tests/data/b-pbmpipe.pbm
 ./tests/data/b-pbmpipe.pbm CRC=0xb92906cb
 6ea0e1faf08f6fcdb44db4a104361b57 *./tests/data/b-pgmpipe.pgm
 2534775 ./tests/data/b-pgmpipe.pgm
