@@ -427,9 +427,7 @@ check_asm(){
     asm="$2"
     shift 2
     check_cc "$@" <<EOF && enable $name || disable $name
-int foo(void){
-    asm volatile($asm);
-}
+int foo(void){ asm volatile($asm); }
 EOF
 }
 
@@ -454,9 +452,7 @@ EOF
 check_ldflags(){
     log check_ldflags "$@"
     check_ld "$@" <<EOF && add_ldflags "$@"
-int main(void){
-    return 0;
-}
+int main(void){ return 0; }
 EOF
 }
 
@@ -479,9 +475,7 @@ check_func(){
     disable $func
     check_ld "$@" <<EOF && enable $func
 extern int $func();
-int main(void){
-    $func();
-}
+int main(void){ $func(); }
 EOF
 }
 
@@ -1464,9 +1458,7 @@ rm $TMPE
 
 # compiler sanity check
 check_exec <<EOF
-int main(void){
-    return 0;
-}
+int main(void){ return 0; }
 EOF
 if test "$?" != 0; then
     echo "$cc is unable to create an executable file."
