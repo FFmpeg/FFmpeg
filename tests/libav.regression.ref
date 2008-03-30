@@ -64,66 +64,66 @@ f558eef0740c4b247f1eb17e1dbf7adf *./tests/data/b-libav02.tga
 ./tests/data/b-libav%02d.jpg CRC=0x62328baa
 5d6c53e5297c4485e26c25e37885376f *./tests/data/b-libav02.jpg
 b0a8c8063d81921db5d7c8f50a1cc454 *./tests/data/b-libav.wav
-  89132 ./tests/data/b-libav.wav
+89132 ./tests/data/b-libav.wav
 ./tests/data/b-libav.wav CRC=0x2a09519c
 e2a6d6fae17394dfe87cb5bb8ae11837 *./tests/data/b-libav.al
-  44544 ./tests/data/b-libav.al
+44544 ./tests/data/b-libav.al
 ./tests/data/b-libav.al CRC=0xefdf94c3
 4574d7e2c09e1e13663e61bd2889f12d *./tests/data/b-libav.ul
-  44544 ./tests/data/b-libav.ul
+44544 ./tests/data/b-libav.ul
 ./tests/data/b-libav.ul CRC=0x6064b2f8
 7a21ff174e3cca1702e0826c4ca0eccf *./tests/data/b-libav.au
-  89112 ./tests/data/b-libav.au
+89112 ./tests/data/b-libav.au
 ./tests/data/b-libav.au CRC=0x2a09519c
 272b91d8fc31ed43b08246d182719751 *./tests/data/b-libav.mmf
-  22609 ./tests/data/b-libav.mmf
+22609 ./tests/data/b-libav.mmf
 ./tests/data/b-libav.mmf CRC=0x03633476
 ae3a23a7ea13c92a2909445ca8144dcd *./tests/data/b-libav.aif
 89142 ./tests/data/b-libav.aif
 ./tests/data/b-libav.aif CRC=0x2a09519c
 8d117c49d6b210abe783d1b0b897cec7 *./tests/data/b-libav.voc
-  32768 ./tests/data/b-libav.voc
+32768 ./tests/data/b-libav.voc
 ./tests/data/b-libav.voc CRC=0x49972c8c
 9268c90bd2623a5ab3c2a1a751826f69 *./tests/data/b-libav.ogg
-  14210 ./tests/data/b-libav.ogg
+14210 ./tests/data/b-libav.ogg
 ./tests/data/b-libav.ogg CRC=0x6bcbb966
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv420p.yuv
- 304128 ./tests/data/b-libav-yuv420p.yuv
+304128 ./tests/data/b-libav-yuv420p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv422p.yuv
- 304128 ./tests/data/b-libav-yuv422p.yuv
+304128 ./tests/data/b-libav-yuv422p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv444p.yuv
- 304128 ./tests/data/b-libav-yuv444p.yuv
+304128 ./tests/data/b-libav-yuv444p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuyv422.yuv
- 304128 ./tests/data/b-libav-yuyv422.yuv
+304128 ./tests/data/b-libav-yuyv422.yuv
 545f61c353a8b4419808785cb4f0069d *./tests/data/b-libav-yuv410p.yuv
- 304128 ./tests/data/b-libav-yuv410p.yuv
+304128 ./tests/data/b-libav-yuv410p.yuv
 d6c03f930018ff859bd43f52b92e9321 *./tests/data/b-libav-yuv411p.yuv
- 304128 ./tests/data/b-libav-yuv411p.yuv
+304128 ./tests/data/b-libav-yuv411p.yuv
 14117c4d7956775a7bbceabfc38da808 *./tests/data/b-libav-yuvj420p.yuv
- 304128 ./tests/data/b-libav-yuvj420p.yuv
+304128 ./tests/data/b-libav-yuvj420p.yuv
 14117c4d7956775a7bbceabfc38da808 *./tests/data/b-libav-yuvj422p.yuv
- 304128 ./tests/data/b-libav-yuvj422p.yuv
+304128 ./tests/data/b-libav-yuvj422p.yuv
 14117c4d7956775a7bbceabfc38da808 *./tests/data/b-libav-yuvj444p.yuv
- 304128 ./tests/data/b-libav-yuvj444p.yuv
+304128 ./tests/data/b-libav-yuvj444p.yuv
 deb2f7ebe297df2c1fe264d19b34d2fb *./tests/data/b-libav-rgb24.yuv
- 304128 ./tests/data/b-libav-rgb24.yuv
+304128 ./tests/data/b-libav-rgb24.yuv
 deb2f7ebe297df2c1fe264d19b34d2fb *./tests/data/b-libav-bgr24.yuv
- 304128 ./tests/data/b-libav-bgr24.yuv
+304128 ./tests/data/b-libav-bgr24.yuv
 deb2f7ebe297df2c1fe264d19b34d2fb *./tests/data/b-libav-rgb32.yuv
- 304128 ./tests/data/b-libav-rgb32.yuv
+304128 ./tests/data/b-libav-rgb32.yuv
 5d395f62bff8ac475f743268c772ca3a *./tests/data/b-libav-rgb565.yuv
- 304128 ./tests/data/b-libav-rgb565.yuv
+304128 ./tests/data/b-libav-rgb565.yuv
 2ffd6871fcbfe9570454e8703ac8ea01 *./tests/data/b-libav-rgb555.yuv
- 304128 ./tests/data/b-libav-rgb555.yuv
+304128 ./tests/data/b-libav-rgb555.yuv
 0b62dcf9b57b294dbaa5d9e99b1ee192 *./tests/data/b-libav-gray.yuv
- 304128 ./tests/data/b-libav-gray.yuv
+304128 ./tests/data/b-libav-gray.yuv
 e197450dae2feba9e757b551e1e9145c *./tests/data/b-libav-monow.yuv
- 304128 ./tests/data/b-libav-monow.yuv
+304128 ./tests/data/b-libav-monow.yuv
 e197450dae2feba9e757b551e1e9145c *./tests/data/b-libav-monob.yuv
- 304128 ./tests/data/b-libav-monob.yuv
+304128 ./tests/data/b-libav-monob.yuv
 7a319375916cae4e691ecb74295e5d2a *./tests/data/b-libav-pal8.yuv
- 304128 ./tests/data/b-libav-pal8.yuv
+304128 ./tests/data/b-libav-pal8.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./tests/data/b-libav-yuv440p.yuv
- 304128 ./tests/data/b-libav-yuv440p.yuv
+304128 ./tests/data/b-libav-yuv440p.yuv
 14117c4d7956775a7bbceabfc38da808 *./tests/data/b-libav-yuvj440p.yuv
- 304128 ./tests/data/b-libav-yuvj440p.yuv
+304128 ./tests/data/b-libav-yuvj440p.yuv
