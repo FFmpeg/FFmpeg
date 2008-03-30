@@ -148,8 +148,9 @@ do_image_formats()
 {
     file=${outfile}libav%02d.$1
     $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact $file
-    do_ffmpeg_crc $file $3 -i $file
     do_md5sum ${outfile}libav02.$1 >> $logfile
+    do_ffmpeg_crc $file $3 -i $file
+    wc -c ${outfile}libav02.$1 >> $logfile
 }
 
 do_audio_only()
