@@ -359,7 +359,7 @@ OBJS-$(HAVE_OS2THREADS)                += os2thread.o
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
-OBJS-$(HAVE_XVMC_ACCEL)                += xvmcvideo.o
+OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
 ifneq ($(CONFIG_SWSCALE),yes)
 OBJS += imgresample.o
