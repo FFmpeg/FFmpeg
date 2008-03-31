@@ -29,6 +29,11 @@
 //#define DEBUG
 
 /* from http://www.iana.org/assignments/rtp-parameters last updated 05 January 2005 */
+/* payload types >= 96 are dynamic;
+ * payload types between 72 and 76 are reserved for RTCP conflict avoidance;
+ * all the other payload types not present in the table are unassigned or
+ * reserved
+ */
 static const struct
 {
     int pt;
