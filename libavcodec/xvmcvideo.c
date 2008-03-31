@@ -29,8 +29,8 @@
 #undef NDEBUG
 #include <assert.h>
 
-//X11 includes are in the xvmc_render.h
-//by replacing it with none-X one
+//X11 includes are in xvmc_render.h
+//by replacing it with non-X one
 //XvMC emulation could be performed
 
 #include "xvmc_render.h"
@@ -44,7 +44,7 @@ xvmc_render_state_t * render;
     assert(render != NULL);
     if( (render == NULL) || (render->magic != MP_XVMC_RENDER_MAGIC) ){
         assert(0);
-        return;//make sure that this is render packet
+        return;//make sure that this is a render packet
     }
     s->block =(DCTELEM *)(render->data_blocks+(render->next_free_data_block_num)*64);
 }
@@ -66,8 +66,8 @@ const int mb_block_count = 4+(1<<s->chroma_format);
     }
 }
 
-//these functions should be called on every new field or/and frame
-//They should be safe if they are called few times for same field!
+//These functions should be called on every new field and/or frame.
+//They should be safe if they are called a few times for the same field!
 int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx){
 xvmc_render_state_t * render,* last, * next;
 
@@ -147,8 +147,8 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     s->mb_skipped = 0;
 
 
-   // do I need to export quant when I could not perform postprocessing?
-   // anyway, it doesn't hurrt
+   // Do I need to export quant when I could not perform postprocessing?
+   // Anyway, it doesn't hurt.
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
 //START OF XVMC specific code
@@ -166,7 +166,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     mv_block->x = s->mb_x;
     mv_block->y = s->mb_y;
     mv_block->dct_type = s->interlaced_dct;//XVMC_DCT_TYPE_FRAME/FIELD;
-//    mv_block->motion_type = 0;  //zero to silense warnings
+//    mv_block->motion_type = 0;  //zero to silence warnings
     if(s->mb_intra){
         mv_block->macroblock_type = XVMC_MB_TYPE_INTRA;//no MC, all done
     }else{
@@ -231,7 +231,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
         mv_block->motion_vertical_field_select = 0;
 
-//set correct field referenses
+//set correct field references
         if(s->mv_type == MV_TYPE_FIELD || s->mv_type == MV_TYPE_16X8){
             if( s->field_select[0][0] ) mv_block->motion_vertical_field_select|=1;
             if( s->field_select[1][0] ) mv_block->motion_vertical_field_select|=2;
@@ -256,7 +256,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     }
 
     if(s->flags & CODEC_FLAG_GRAY){
-        if(s->mb_intra){//intra frames are alwasy full chroma block
+        if(s->mb_intra){//intra frames are always full chroma block
             for(i=4; i<blocks_per_mb; i++){
                 memset(s->pblocks[i],0,sizeof(short)*8*8);//so we need to clear them
                 if(!render->unsigned_intra)
@@ -264,7 +264,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
             }
         }else{
             cbp&= 0xf << (blocks_per_mb - 4);
-            blocks_per_mb = 4;//Luminance blocks only
+            blocks_per_mb = 4;//luminance blocks only
         }
     }
     mv_block->coded_block_pattern = cbp;
@@ -273,7 +273,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     for(i=0; i<blocks_per_mb; i++){
         if(s->block_last_index[i] >= 0){
-            // I do not have unsigned_intra MOCO to test, hope it is OK
+            // I do not have unsigned_intra MOCO to test, hope it is OK.
             if( (s->mb_intra) && ( render->idct || (!render->idct && !render->unsigned_intra)) )
                 s->pblocks[i][0]-=1<<10;
             if(!render->idct){
