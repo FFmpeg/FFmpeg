@@ -102,7 +102,6 @@ typedef struct FlacEncodeContext {
     int ch_code;
     int samplerate;
     int sr_code[2];
-    int blocksize;
     int max_framesize;
     uint32_t frame_count;
     FlacFrame frame;
@@ -136,8 +135,8 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     init_put_bits(&pb, header, FLAC_STREAMINFO_SIZE);
 
     /* streaminfo metadata block */
-    put_bits(&pb, 16, s->blocksize);
-    put_bits(&pb, 16, s->blocksize);
+    put_bits(&pb, 16, s->avctx->frame_size);
+    put_bits(&pb, 16, s->avctx->frame_size);
     put_bits(&pb, 24, 0);
     put_bits(&pb, 24, s->max_framesize);
     put_bits(&pb, 20, s->samplerate);
@@ -351,12 +350,10 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                    avctx->frame_size);
             return -1;
         }
-        s->blocksize = avctx->frame_size;
     } else {
-        s->blocksize = select_blocksize(s->samplerate, s->options.block_time_ms);
-        avctx->frame_size = s->blocksize;
+        s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
-    av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->blocksize);
+    av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->avctx->frame_size);
 
     /* set LPC precision */
     if(avctx->lpc_coeff_precision > 0) {
@@ -375,9 +372,9 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     /* set maximum encoded frame size in verbatim mode */
     if(s->channels == 2) {
-        s->max_framesize = 14 + ((s->blocksize * 33 + 7) >> 3);
+        s->max_framesize = 14 + ((s->avctx->frame_size * 33 + 7) >> 3);
     } else {
-        s->max_framesize = 14 + (s->blocksize * s->channels * 2);
+        s->max_framesize = 14 + (s->avctx->frame_size * s->channels * 2);
     }
 
     streaminfo = av_malloc(FLAC_STREAMINFO_SIZE);
@@ -401,7 +398,7 @@ static void init_frame(FlacEncodeContext *s)
     frame = &s->frame;
 
     for(i=0; i<16; i++) {
-        if(s->blocksize == flac_blocksizes[i]) {
+        if(s->avctx->frame_size == flac_blocksizes[i]) {
             frame->blocksize = flac_blocksizes[i];
             frame->bs_code[0] = i;
             frame->bs_code[1] = 0;
@@ -409,7 +406,7 @@ static void init_frame(FlacEncodeContext *s)
         }
     }
     if(i == 16) {
-        frame->blocksize = s->blocksize;
+        frame->blocksize = s->avctx->frame_size;
         if(frame->blocksize <= 256) {
             frame->bs_code[0] = 6;
             frame->bs_code[1] = frame->blocksize-1;
@@ -1440,7 +1437,6 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     s = avctx->priv_data;
 
-    s->blocksize = avctx->frame_size;
     init_frame(s);
 
     copy_samples(s, samples);
