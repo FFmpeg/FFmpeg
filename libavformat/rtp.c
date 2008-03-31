@@ -32,7 +32,7 @@
 static const struct
 {
     int pt;
-    const char enc_name[50]; /* XXX: why 50 ? */
+    const char enc_name[6];
     enum CodecType codec_type;
     enum CodecID codec_id;
     int clock_rate;
