@@ -2355,6 +2355,7 @@ matroska_read_header (AVFormatContext    *s,
         for (i=0; i<matroska->num_indexes; i++) {
             MatroskaDemuxIndex *idx = &matroska->index[i];
             track = matroska_find_track_by_num(matroska, idx->track);
+            if (track < 0)  continue;
             stream = matroska->tracks[track]->stream_index;
             if (stream >= 0 && stream < matroska->ctx->nb_streams)
                 av_add_index_entry(matroska->ctx->streams[stream],
