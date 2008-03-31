@@ -2580,17 +2580,6 @@ static void opt_map_meta_data(const char *arg)
     m->in_file = strtol(p, &p, 0);
 }
 
-static int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration)
-{
-    int64_t us = parse_date(timestr, is_duration);
-    if (us == INT64_MIN) {
-        fprintf(stderr, "Invalid %s specification for %s: %s\n",
-                is_duration ? "duration" : "date", context, timestr);
-        exit(1);
-    }
-    return us;
-}
-
 static int opt_recording_time(const char *opt, const char *arg)
 {
     recording_time = parse_time_or_die(opt, arg, 1);

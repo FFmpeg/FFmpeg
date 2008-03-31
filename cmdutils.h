@@ -39,6 +39,22 @@
  */
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max);
 
+/**
+ * Parses a string specifying a time and returns its corresponding
+ * value as a number of microseconds. Exits from the application if
+ * the string cannot be correctly parsed.
+ *
+ * @param context the context of the value to be set (e.g. the
+ * corresponding commandline option name)
+ * @param timestr the string to be parsed
+ * @param is_duration a flag which tells how to interpret \p timestr, if
+ * not zero \p timestr is interpreted as a duration, otherwise as a
+ * date
+ *
+ * @see av_parse_date()
+ */
+int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration);
+
 typedef struct {
     const char *name;
     int flags;

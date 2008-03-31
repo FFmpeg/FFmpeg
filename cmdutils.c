@@ -52,6 +52,17 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
     exit(1);
 }
 
+int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration)
+{
+    int64_t us = parse_date(timestr, is_duration);
+    if (us == INT64_MIN) {
+        fprintf(stderr, "Invalid %s specification for %s: %s\n",
+                is_duration ? "duration" : "date", context, timestr);
+        exit(1);
+    }
+    return us;
+}
+
 void show_help_options(const OptionDef *options, const char *msg, int mask, int value)
 {
     const OptionDef *po;
