@@ -216,7 +216,7 @@ Include the log file "$logfile" produced by configure as this will help
 solving the problem.
 EOF
     fi
-    rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
+    rm -f $TMPC $TMPO $TMPE $TMPS $TMPH $TMPSH
     exit 1
 }
 
@@ -1210,6 +1210,7 @@ TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
 TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
+TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
 
 add_extralibs $osextralibs
@@ -1442,11 +1443,11 @@ if ! gnu_make $make; then
 fi
 
 # make sure we can execute files in $TMPDIR
-cat >$TMPE 2>>$logfile <<EOF
+cat >$TMPSH 2>>$logfile <<EOF
 #! /bin/sh
 EOF
-chmod +x $TMPE >>$logfile 2>&1
-if ! $TMPE >>$logfile 2>&1; then
+chmod +x $TMPSH >>$logfile 2>&1
+if ! $TMPSH >>$logfile 2>&1; then
     cat <<EOF
 Unable to create and execute files in $TMPDIR1.  Set the TMPDIR environment
 variable to another directory and make sure that $TMPDIR1 is not mounted
@@ -1454,7 +1455,7 @@ noexec.
 EOF
     die "Sanity test failed."
 fi
-rm $TMPE
+rm $TMPSH
 
 # compiler sanity check
 check_exec <<EOF
@@ -2067,7 +2068,7 @@ cmp -s $TMPH config.h &&
     echo "config.h is unchanged" ||
     mv -f $TMPH config.h
 
-rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
+rm -f $TMPO $TMPC $TMPE $TMPS $TMPH $TMPSH
 
 # build tree in object directory if source path is different from current one
 if enabled source_path_used; then
