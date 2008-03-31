@@ -145,6 +145,7 @@ OBJS-$(CONFIG_RM_DEMUXER)                += rmdec.o
 OBJS-$(CONFIG_RM_MUXER)                  += rmenc.o
 OBJS-$(CONFIG_ROQ_DEMUXER)               += idroq.o
 OBJS-$(CONFIG_ROQ_MUXER)                 += raw.o
+OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc.o      \
                                             rtp_mpv.o     \
