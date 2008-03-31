@@ -216,7 +216,7 @@ Include the log file "$logfile" produced by configure as this will help
 solving the problem.
 EOF
     fi
-    rm -f $TMPC $TMPO $TMPE $TMPS $TMPH $TMPSH
+    rm -f $TMPC $TMPE $TMPH $TMPO $TMPS $TMPSH
     exit 1
 }
 
@@ -1206,10 +1206,10 @@ else
 fi
 
 TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
-TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
-TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
+TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
 
@@ -2068,7 +2068,7 @@ cmp -s $TMPH config.h &&
     echo "config.h is unchanged" ||
     mv -f $TMPH config.h
 
-rm -f $TMPO $TMPC $TMPE $TMPS $TMPH $TMPSH
+rm -f $TMPC $TMPE $TMPH $TMPO $TMPS $TMPSH
 
 # build tree in object directory if source path is different from current one
 if enabled source_path_used; then
