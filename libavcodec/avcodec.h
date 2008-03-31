@@ -181,6 +181,7 @@ enum CodecID {
     CODEC_ID_RL2,
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
+    CODEC_ID_ESCAPE124,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,

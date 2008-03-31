@@ -67,6 +67,7 @@ OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EIGHTBPS_DECODER)        += 8bps.o
 OBJS-$(CONFIG_EIGHTSVX_EXP_DECODER)    += 8svx.o
 OBJS-$(CONFIG_EIGHTSVX_FIB_DECODER)    += 8svx.o
+OBJS-$(CONFIG_ESCAPE124_DECODER)       += escape124.o
 OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o rangecoder.o golomb.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
