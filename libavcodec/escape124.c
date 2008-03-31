@@ -37,7 +37,7 @@ typedef union SuperBlock {
 typedef struct CodeBook {
     unsigned depth;
     unsigned size;
-    MacroBlock blocks[];
+    MacroBlock blocks[0];
 } CodeBook;
 
 typedef struct Escape124Context {
