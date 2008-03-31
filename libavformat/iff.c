@@ -1,5 +1,5 @@
 /*
- * Iff (.iff) File Demuxer
+ * IFF (.iff) file demuxer
  * Copyright (c) 2008 Jaikrishnan Menon <realityman@gmx.net>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file iff.c
- * iff file demuxer
+ * IFF file demuxer
  * by Jaikrishnan Menon
  * for more information on the .iff file format, visit:
  * http://wiki.multimedia.cx/index.php?title=IFF

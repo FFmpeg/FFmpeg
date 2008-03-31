@@ -1,5 +1,5 @@
 /*
- * 8SVX Audio Decoder
+ * 8SVX audio decoder
  * Copyright (C) 2008 Jaikrishnan Menon
  *
  * This file is part of FFmpeg.
