@@ -29,8 +29,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#ifdef HAVE_XVMC
-
 //X11 includes are in the xvmc_render.h
 //by replacing it with none-X one
 //XvMC emulation could be performed
@@ -310,5 +308,3 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 // DumpMBlockInfo(mv_block);
 
 }
-
-#endif
