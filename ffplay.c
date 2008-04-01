@@ -2404,9 +2404,10 @@ static void opt_sync(const char *arg)
     }
 }
 
-static void opt_seek(const char *arg)
+static int opt_seek(const char *opt, const char *arg)
 {
-    start_time = parse_time_or_die("ss", arg, 1);
+    start_time = parse_time_or_die(opt, arg, 1);
+    return 0;
 }
 
 static int opt_debug(const char *opt, const char *arg)
@@ -2447,7 +2448,7 @@ const OptionDef options[] = {
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_audio_stream}, "", "" },
     { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_video_stream}, "", "" },
-    { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
+    { "ss", HAS_ARG | OPT_FUNC2, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
