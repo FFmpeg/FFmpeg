@@ -1968,6 +1968,42 @@ static void avg_h264_chroma_mc8_3dnow_rnd(uint8_t *dst/*align 8*/, uint8_t *src/
 #undef H264_CHROMA_MC4_TMPL
 #undef H264_CHROMA_MC8_MV0
 
+#ifdef HAVE_SSSE3
+#define AVG_OP(X)
+#undef H264_CHROMA_MC8_TMPL
+#undef H264_CHROMA_MC4_TMPL
+#define H264_CHROMA_MC8_TMPL put_h264_chroma_mc8_ssse3
+#define H264_CHROMA_MC4_TMPL put_h264_chroma_mc4_ssse3
+#define H264_CHROMA_MC8_MV0 put_pixels8_mmx
+#include "dsputil_h264_template_ssse3.c"
+static void put_h264_chroma_mc8_ssse3_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    put_h264_chroma_mc8_ssse3(dst, src, stride, h, x, y, 1);
+}
+static void put_h264_chroma_mc8_ssse3_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    put_h264_chroma_mc8_ssse3(dst, src, stride, h, x, y, 0);
+}
+
+#undef AVG_OP
+#undef H264_CHROMA_MC8_TMPL
+#undef H264_CHROMA_MC4_TMPL
+#undef H264_CHROMA_MC8_MV0
+#define AVG_OP(X) X
+#define H264_CHROMA_MC8_TMPL avg_h264_chroma_mc8_ssse3
+#define H264_CHROMA_MC4_TMPL avg_h264_chroma_mc4_ssse3
+#define H264_CHROMA_MC8_MV0 avg_pixels8_mmx2
+#include "dsputil_h264_template_ssse3.c"
+static void avg_h264_chroma_mc8_ssse3_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    avg_h264_chroma_mc8_ssse3(dst, src, stride, h, x, y, 1);
+}
+#undef AVG_OP
+#undef H264_CHROMA_MC8_TMPL
+#undef H264_CHROMA_MC4_TMPL
+#undef H264_CHROMA_MC8_MV0
+#endif
+
 /***********************************/
 /* weighted prediction */
 

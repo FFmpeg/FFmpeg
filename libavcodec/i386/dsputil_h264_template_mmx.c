@@ -27,7 +27,6 @@
  */
 static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, int rnd)
 {
-    DECLARE_ALIGNED_8(static const uint64_t, ff_pw_28) = 0x001C001C001C001CULL;
     const uint64_t *rnd_reg;
     DECLARE_ALIGNED_8(uint64_t, AA);
     DECLARE_ALIGNED_8(uint64_t, DD);
@@ -98,7 +97,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 
     /* general case, bilinear */
-    rnd_reg = rnd ? &ff_pw_32.a : &ff_pw_28;
+    rnd_reg = rnd ? &ff_pw_32.a : &ff_pw_28.a;
     asm volatile("movd %2, %%mm4\n\t"
                  "movd %3, %%mm6\n\t"
                  "punpcklwd %%mm4, %%mm4\n\t"

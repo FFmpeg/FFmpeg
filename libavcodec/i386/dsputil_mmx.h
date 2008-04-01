@@ -39,6 +39,7 @@ extern const uint64_t ff_pw_8;
 extern const uint64_t ff_pw_15;
 extern const xmm_t    ff_pw_16;
 extern const uint64_t ff_pw_20;
+extern const xmm_t    ff_pw_28;
 extern const xmm_t    ff_pw_32;
 extern const uint64_t ff_pw_42;
 extern const uint64_t ff_pw_64;

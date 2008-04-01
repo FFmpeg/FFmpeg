@@ -54,6 +54,7 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pw_8  ) = 0x0008000800080008ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_15 ) = 0x000F000F000F000FULL;
 DECLARE_ALIGNED_16(const xmm_t,    ff_pw_16 ) = {0x0010001000100010ULL, 0x0010001000100010ULL};
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_20 ) = 0x0014001400140014ULL;
+DECLARE_ALIGNED_16(const xmm_t,    ff_pw_28 ) = {0x001C001C001C001CULL, 0x001C001C001C001CULL};
 DECLARE_ALIGNED_16(const xmm_t,    ff_pw_32 ) = {0x0020002000200020ULL, 0x0020002000200020ULL};
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_42 ) = 0x002A002A002A002AULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_64 ) = 0x0040004000400040ULL;
@@ -2376,6 +2377,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, ssse3);
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
+            c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_nornd;
+            c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_rnd;
+            c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_ssse3_rnd;
+            c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_ssse3;
+            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_ssse3;
             c->add_png_paeth_prediction= add_png_paeth_prediction_ssse3;
         }
 #endif
