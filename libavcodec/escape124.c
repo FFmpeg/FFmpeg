@@ -37,7 +37,7 @@ typedef union SuperBlock {
 typedef struct CodeBook {
     unsigned depth;
     unsigned size;
-    MacroBlock blocks[0];
+    MacroBlock* blocks;
 } CodeBook;
 
 typedef struct Escape124Context {
@@ -45,7 +45,7 @@ typedef struct Escape124Context {
 
     unsigned num_superblocks;
 
-    CodeBook* codebooks[3];
+    CodeBook codebooks[3];
 } Escape124Context;
 
 static int can_safely_read(GetBitContext* gb, int bits) {
@@ -75,7 +75,7 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     Escape124Context *s = avctx->priv_data;
 
     for (i = 0; i < 3; i++)
-        av_free(s->codebooks[i]);
+        av_free(s->codebooks[i].blocks);
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
@@ -83,23 +83,23 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static CodeBook* unpack_codebook(GetBitContext* gb, unsigned depth,
+static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
                                  unsigned size)
 {
     unsigned i, j;
-    CodeBook* cb;
+    CodeBook cb = { 0 };
 
     if (!can_safely_read(gb, size * 34))
-        return NULL;
+        return cb;
 
-    if (size >= (INT_MAX - sizeof(CodeBook)) / sizeof(MacroBlock))
-        return NULL;
-    cb = av_malloc(size * sizeof(MacroBlock) + sizeof(CodeBook));
-    if (!cb)
-        return NULL;
+    if (size >= INT_MAX / sizeof(MacroBlock))
+        return cb;
+    cb.blocks = av_malloc(size ? size * sizeof(MacroBlock) : 1);
+    if (!cb.blocks)
+        return cb;
 
-    cb->depth = depth;
-    cb->size = size;
+    cb.depth = depth;
+    cb.size = size;
     for (i = 0; i < size; i++) {
         unsigned mask_bits = get_bits(gb, 4);
         unsigned color0 = get_bits(gb, 15);
@@ -107,9 +107,9 @@ static CodeBook* unpack_codebook(GetBitContext* gb, unsigned depth,
 
         for (j = 0; j < 4; j++) {
             if (mask_bits & (1 << j))
-                cb->blocks[i].pixels[j] = color1;
+                cb.blocks[i].pixels[j] = color1;
             else
-                cb->blocks[i].pixels[j] = color0;
+                cb.blocks[i].pixels[j] = color0;
         }
     }
     return cb;
@@ -149,7 +149,7 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
         *codebook_index = transitions[*codebook_index][get_bits1(gb)];
     }
 
-    depth = s->codebooks[*codebook_index]->depth;
+    depth = s->codebooks[*codebook_index].depth;
 
     // depth = 0 means that this shouldn't read any bits;
     // in theory, this is the same as get_bits(gb, 0), but
@@ -157,15 +157,15 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
     block_index = depth ? get_bits(gb, depth) : 0;
 
     if (*codebook_index == 1) {
-        block_index += superblock_index << s->codebooks[1]->depth;
+        block_index += superblock_index << s->codebooks[1].depth;
     }
 
     // This condition can occur with invalid bitstreams and
     // *codebook_index == 2
-    if (block_index >= s->codebooks[*codebook_index]->size)
+    if (block_index >= s->codebooks[*codebook_index].size)
         return (MacroBlock) { { 0 } };
 
-    return s->codebooks[*codebook_index]->blocks[block_index];
+    return s->codebooks[*codebook_index].blocks[block_index];
 }
 
 static void insert_mb_into_sb(SuperBlock* sb, MacroBlock mb, unsigned index) {
@@ -265,9 +265,9 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                     cb_size = s->num_superblocks << cb_depth;
                 }
             }
-            av_free(s->codebooks[i]);
+            av_free(s->codebooks[i].blocks);
             s->codebooks[i] = unpack_codebook(&gb, cb_depth, cb_size);
-            if (!s->codebooks[i])
+            if (!s->codebooks[i].blocks)
                 return -1;
         }
     }
