@@ -23,20 +23,9 @@
 #include "parser.h"
 #include "aac_ac3_parser.h"
 #include "bitstream.h"
-
+#include "mpeg4audio.h"
 
 #define AAC_HEADER_SIZE 7
-
-
-static const int aac_sample_rates[16] = {
-    96000, 88200, 64000, 48000, 44100, 32000,
-    24000, 22050, 16000, 12000, 11025, 8000, 7350
-};
-
-static const int aac_channels[8] = {
-    0, 1, 2, 3, 4, 5, 6, 8
-};
-
 
 static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
 {
@@ -53,11 +42,11 @@ static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
     skip_bits1(&bits);          /* protection_absent */
     skip_bits(&bits, 2);        /* profile_objecttype */
     sr = get_bits(&bits, 4);    /* sample_frequency_index */
-    if(!aac_sample_rates[sr])
+    if(!ff_mpeg4audio_sample_rates[sr])
         return 0;
     skip_bits1(&bits);          /* private_bit */
     ch = get_bits(&bits, 3);    /* channel_configuration */
-    if(!aac_channels[ch])
+    if(!ff_mpeg4audio_channels[ch])
         return 0;
     skip_bits1(&bits);          /* original/copy */
     skip_bits1(&bits);          /* home */
@@ -72,8 +61,8 @@ static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
     skip_bits(&bits, 11);       /* adts_buffer_fullness */
     rdb = get_bits(&bits, 2);   /* number_of_raw_data_blocks_in_frame */
 
-    hdr_info->channels = aac_channels[ch];
-    hdr_info->sample_rate = aac_sample_rates[sr];
+    hdr_info->channels = ff_mpeg4audio_channels[ch];
+    hdr_info->sample_rate = ff_mpeg4audio_sample_rates[sr];
     hdr_info->samples = (rdb + 1) * 1024;
     hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
     *flag = FRAME_COMPLETE;
