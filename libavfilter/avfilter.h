@@ -188,22 +188,32 @@ AVFilterFormats *avfilter_all_colorspaces(void);
 AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
 
 /**
- * Adds *ref as a new reference to f.
+ * Adds *ref as a new reference to formats.
  * That is the pointers will point like in the ascii art below:
  *   ________
- *  |   f    |<--------.
- *  |  ____  |         |
- *  | |refs| |       __|_
- *  | |* * | |      |  | |
+ *  |formats |<--------.
+ *  |  ____  |     ____|___________________
+ *  | |refs| |    |  __|_
+ *  | |* * | |    | |  | |  AVFilterLink
  *  | |* *--------->|*ref|
- *  | |____| |      |____|
- *  |________|
+ *  | |____| |    | |____|
+ *  |________|    |________________________
  */
-void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref);
+void avfilter_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 
 /**
  * Remove *ref as a reference to the format list it currently points to,
  * deallocate that list if this was the last reference, and set *ref to NULL.
+ *
+ *         Before                                 After
+ *   ________                               ________         NULL
+ *  |formats |<--------.                   |formats |         ^
+ *  |  ____  |     ____|________________   |  ____  |     ____|________________
+ *  | |refs| |    |  __|_                  | |refs| |    |  __|_
+ *  | |* * | |    | |  | |  AVFilterLink   | |* * | |    | |  | |  AVFilterLink
+ *  | |* *--------->|*ref|                 | |*   | |    | |*ref|
+ *  | |____| |    | |____|                 | |____| |    | |____|
+ *  |________|    |_____________________   |________|    |_____________________
  */
 void avfilter_formats_unref(AVFilterFormats **ref);
 
@@ -211,7 +221,7 @@ void avfilter_formats_unref(AVFilterFormats **ref);
  *
  *         Before                                 After
  *   ________                         ________
- *  |   f    |<---------.            |   f    |<---------.
+ *  |formats |<---------.            |formats |<---------.
  *  |  ____  |       ___|___         |  ____  |       ___|___
  *  | |refs| |      |   |   |        | |refs| |      |   |   |   NULL
  *  | |* *--------->|*oldref|        | |* *--------->|*newref|     ^
