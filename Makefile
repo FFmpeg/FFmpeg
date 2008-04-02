@@ -25,9 +25,9 @@ ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
 ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF) libavdevice/$(SLIBPREF)avdevice$(SLIBSUF)
+DEP_LIBS = libavdevice/$(SLIBPREF)avdevice$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF) libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavutil/$(SLIBPREF)avutil$(SLIBSUF)
 else
-DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF) libavdevice/$(LIBPREF)avdevice$(LIBSUF)
+DEP_LIBS = libavdevice/$(LIBPREF)avdevice$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavutil/$(LIBPREF)avutil(LIBSUF)
 endif
 
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
