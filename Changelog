@@ -116,6 +116,8 @@ version <next>
 - Mimic decoder
 - MSN TCP Webcam stream demuxer
 - RL2 demuxer / decoder
+- IFF demuxer
+- 8SVX audio decoder
 
 version 0.4.9-pre1:
 

@@ -133,6 +133,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Used by MSN Messenger Webcam streams.
 @item RL2 @tab    @tab X
 @tab Audio and video format used in some games by Entertainment Software Partners
+@item IFF @tab    @tab X
+@tab Interchange File Format
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -336,6 +338,7 @@ following image formats are supported:
 @item ATRAC 3                @tab      @tab X
 @item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported
 @item Nellymoser ASAO        @tab      @tab X
+@item 8SVX Audio             @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
