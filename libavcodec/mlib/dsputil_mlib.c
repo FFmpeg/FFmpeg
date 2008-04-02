@@ -455,7 +455,7 @@ void MPV_common_init_mlib(MpegEncContext *s)
         s->dsp.fdct = ff_fdct_mlib;
     }
 
-    if(s->avctx->idct_algo==FF_IDCT_AUTO || s->avctx->idct_algo==FF_IDCT_MLIB){
+    if(s->avctx->idct_algo==FF_IDCT_MLIB){
         s->dsp.idct_put= ff_idct_put_mlib;
         s->dsp.idct_add= ff_idct_add_mlib;
         s->dsp.idct    = ff_idct_mlib;
