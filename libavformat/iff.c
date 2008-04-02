@@ -77,7 +77,7 @@ static int iff_read_header(AVFormatContext *s,
     ByteIOContext *pb = s->pb;
     AVStream *st;
     uint32_t chunk_id, data_size;
-    int padding, ret, done = 0;
+    int padding, done = 0;
 
     st = av_new_stream(s, 0);
     if (!st)
