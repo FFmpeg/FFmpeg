@@ -907,6 +907,9 @@ do not attach several unrelated patches to the same mail.
     Have you checked that the patch does not introduce buffer overflows or
     other security issues?
 @item
+    If you add a new demuxer or decoder, have you checked that it does not
+    crash with damaged input (see tools/trasher)?
+@item
     Is the patch created from the root of the source tree, so it can be
     applied with @code{patch -p0}?
 @item
