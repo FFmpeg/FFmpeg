@@ -25,6 +25,7 @@
 #include "xiph.h"
 #include "matroska.h"
 #include "avc.h"
+#include "libavcodec/mpeg4audio.h"
 
 typedef struct ebml_master {
     offset_t        pos;                ///< absolute offset in the file where the master's elements start
@@ -438,10 +439,6 @@ static int put_flac_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecCont
 
 static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
-    static const int aac_sample_rates[] = {
-        96000, 88200, 64000, 48000, 44100, 32000,
-        24000, 22050, 16000, 12000, 11025,  8000,
-    };
     int sri;
 
     if (codec->extradata_size < 2) {
@@ -454,7 +451,7 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
         av_log(s, AV_LOG_WARNING, "AAC samplerate index out of bounds\n");
         return;
     }
-    *sample_rate = aac_sample_rates[sri];
+    *sample_rate = ff_mpeg4audio_sample_rates[sri];
 
     // if sbr, get output sample rate as well
     if (codec->extradata_size == 5) {
@@ -463,7 +460,7 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
             av_log(s, AV_LOG_WARNING, "AAC output samplerate index out of bounds\n");
             return;
         }
-        *output_sample_rate = aac_sample_rates[sri];
+        *output_sample_rate = ff_mpeg4audio_sample_rates[sri];
     }
 }
 

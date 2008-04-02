@@ -306,8 +306,9 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o
-OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o
+OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
+OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o

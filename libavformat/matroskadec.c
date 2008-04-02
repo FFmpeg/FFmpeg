@@ -33,6 +33,7 @@
 #include "riff.h"
 #include "intfloat_readwrite.h"
 #include "matroska.h"
+#include "libavcodec/mpeg4audio.h"
 
 typedef struct Track {
     MatroskaTrackType type;
@@ -1997,14 +1998,10 @@ matroska_aac_profile (char *codec_id)
 static int
 matroska_aac_sri (int samplerate)
 {
-    static const int aac_sample_rates[] = {
-        96000, 88200, 64000, 48000, 44100, 32000,
-        24000, 22050, 16000, 12000, 11025,  8000,
-    };
     int sri;
 
-    for (sri=0; sri<ARRAY_SIZE(aac_sample_rates); sri++)
-        if (aac_sample_rates[sri] == samplerate)
+    for (sri=0; sri<ARRAY_SIZE(ff_mpeg4audio_sample_rates); sri++)
+        if (ff_mpeg4audio_sample_rates[sri] == samplerate)
             break;
     return sri;
 }
