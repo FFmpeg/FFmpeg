@@ -924,7 +924,7 @@ enable stripping
 vhook="default"
 
 # build settings
-SHFLAGS='-shared -Wl,-soname,$@'
+SHFLAGS='-shared -Wl,-soname,$(SLIBNAME_WITH_MAJOR)'
 VHOOKSHFLAGS='$(SHFLAGS)'
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
@@ -1078,7 +1078,7 @@ case $target_os in
         fi ;;
     sunos)
         FFSERVERLDFLAGS=""
-        SHFLAGS='-shared -Wl,-h,$@'
+        SHFLAGS='-shared -Wl,-h,$(SLIBNAME_WITH_MAJOR)'
         network_extralibs="-lsocket -lnsl"
         ;;
     netbsd)
