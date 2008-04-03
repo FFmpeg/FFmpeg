@@ -2283,6 +2283,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count= 0;
 
+    if(avctx->extradata && !avctx->frame_number)
+        decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
+
     return decode_chunks(avctx, picture, data_size, buf, buf_size);
 }
 
