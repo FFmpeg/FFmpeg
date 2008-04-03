@@ -2234,16 +2234,16 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
     return END_NOT_FOUND;
 }
 
+static int decode_chunks(AVCodecContext *avctx,
+                             AVFrame *picture, int *data_size,
+                             const uint8_t *buf, int buf_size);
+
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
-    const uint8_t *buf_end;
-    const uint8_t *buf_ptr;
-    uint32_t start_code;
-    int ret, input_size;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
     dprintf(avctx, "fill_buffer\n");
@@ -2266,9 +2266,6 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             return buf_size;
     }
 
-    buf_ptr = buf;
-    buf_end = buf + buf_size;
-
 #if 0
     if (s->repeat_field % 2 == 1) {
         s->repeat_field++;
@@ -2286,9 +2283,22 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count= 0;
 
+    return decode_chunks(avctx, picture, data_size, buf, buf_size);
+}
+
+static int decode_chunks(AVCodecContext *avctx,
+                             AVFrame *picture, int *data_size,
+                             const uint8_t *buf, int buf_size)
+{
+    Mpeg1Context *s = avctx->priv_data;
+    MpegEncContext *s2 = &s->mpeg_enc_ctx;
+    const uint8_t *buf_ptr = buf;
+    const uint8_t *buf_end = buf + buf_size;
+    int ret, input_size;
+
     for(;;) {
         /* find start next code */
-        start_code = -1;
+        uint32_t start_code = -1;
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
         if (start_code > 0x1ff){
             if(s2->pict_type != FF_B_TYPE || avctx->skip_frame <= AVDISCARD_DEFAULT){
