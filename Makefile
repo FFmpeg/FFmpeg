@@ -49,9 +49,6 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
-vhook/%.o: vhook/%.c
-	$(CC) $(VHOOKCFLAGS) -c -o $@ $<
-
 .depend: version.h $(PROGS_SRCS)
 
 # bandaid to disable triggering shared library installation routines
@@ -78,6 +75,8 @@ VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
 LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
+
+vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
 
 LDFLAGS-$(CONFIG_SWSCALE) += -L$(BUILD_ROOT)/libswscale
 LDFLAGS-$(CONFIG_AVFILTER) += -L$(BUILD_ROOT)/libavfilter
