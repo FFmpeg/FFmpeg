@@ -131,9 +131,7 @@ void av_freep(void *arg)
 
 void *av_mallocz(unsigned int size)
 {
-    void *ptr;
-
-    ptr = av_malloc(size);
+    void *ptr = av_malloc(size);
     if (ptr)
         memset(ptr, 0, size);
     return ptr;
