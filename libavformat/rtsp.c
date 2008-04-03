@@ -1094,7 +1094,7 @@ static int rtsp_read_header(AVFormatContext *s,
             goto fail;
         protocol_mask &= ~(1 << protocol);
         if (protocol_mask == 0 && err == 1) {
-            err = AVERROR(EPROTONOSUPPORT);
+            err = AVERROR(FF_NETERROR(EPROTONOSUPPORT));
             goto fail;
         }
     } while (err);
