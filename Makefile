@@ -24,11 +24,14 @@ ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
 ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
-ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS = libavdevice/$(SLIBPREF)avdevice$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF) libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavutil/$(SLIBPREF)avutil$(SLIBSUF)
-else
-DEP_LIBS = libavdevice/$(LIBPREF)avdevice$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF) libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavutil/$(LIBPREF)avutil$(LIBSUF)
-endif
+LIBS-$(CONFIG_AVFILTER) += avfilter
+LIBS-$(CONFIG_POSTPROC) += postproc
+LIBS-$(CONFIG_SWSCALE)  += swscale
+
+LIBS := avcodec avdevice avformat avutil $(LIBS-yes)
+
+S := $(BUILD_SHARED:yes=S)
+DEP_LIBS := $(foreach L,$(LIBS),lib$(L)/$($(S)LIBPREF)$(L)$($(S)LIBSUF))
 
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
