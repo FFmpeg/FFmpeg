@@ -24,14 +24,11 @@ ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
 ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
-LIBS-$(CONFIG_AVFILTER) += avfilter
-LIBS-$(CONFIG_POSTPROC) += postproc
-LIBS-$(CONFIG_SWSCALE)  += swscale
+FFLIBS-$(CONFIG_AVFILTER) += avfilter
+FFLIBS-$(CONFIG_POSTPROC) += postproc
+FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
-LIBS := avcodec avdevice avformat avutil $(LIBS-yes)
-
-S := $(BUILD_SHARED:yes=S)
-DEP_LIBS := $(foreach L,$(LIBS),lib$(L)/$($(S)LIBPREF)$(L)$($(S)LIBSUF))
+FFLIBS := avdevice avformat avcodec avutil
 
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
@@ -56,6 +53,9 @@ DISABLE=yes
 
 include common.mak
 
+S := $(BUILD_SHARED:yes=S)
+DEP_LIBS := $(foreach L,$(FFLIBS),lib$(L)/$($(S)LIBPREF)$(L)$($(S)LIBSUF))
+
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
 BASEHOOKS = fish null watermark
@@ -77,14 +77,6 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
 vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
-
-LDFLAGS-$(CONFIG_SWSCALE) += -L$(BUILD_ROOT)/libswscale
-LDFLAGS-$(CONFIG_AVFILTER) += -L$(BUILD_ROOT)/libavfilter
-LDFLAGS := $(LDFLAGS-yes) -L$(BUILD_ROOT)/libavdevice -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil -g $(LDFLAGS)
-
-EXTRALIBS-$(CONFIG_AVFILTER) += -lavfilter$(BUILDSUF)
-EXTRALIBS-$(CONFIG_SWSCALE) += -lswscale$(BUILDSUF)
-EXTRALIBS := $(EXTRALIBS-yes) -lavdevice$(BUILDSUF) -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 MAKE-yes = $(MAKE)
 MAKE-    = : $(MAKE)
