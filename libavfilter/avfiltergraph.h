@@ -87,8 +87,6 @@ typedef struct
 } AVFilterGraphDescParser;
 
 extern AVFilter avfilter_vf_graph;
-extern AVFilter avfilter_vf_graphfile;
-extern AVFilter avfilter_vf_graphdesc;
 
 /**
  * Parse a graph composed of a simple chain of filters which is described by
@@ -97,27 +95,6 @@ extern AVFilter avfilter_vf_graphdesc;
  * @return        The parsed graph description.
  */
 AVFilterGraphDesc *avfilter_graph_parse_chain(const char *filters);
-
-/** Parse a line of a filter graph description.
- * @param desc   Pointer to an AVFilterGraphDesc pointer. If *desc is NULL,
- *               a new AVFilterGraphDesc structure will be created for you.
- *               Must be the same between multiple invocations when parsing
- *               the same description.
- * @param parser Parser state. Must be the same between multiple invocations
- *               when parsing the same description
- * @param line   Line of the graph description to parse.
- * @return       Zero on success, negative on error.
- */
-int avfilter_graph_parse_desc(AVFilterGraphDesc **desc,
-                              AVFilterGraphDescParser **parser,
-                              char *line);
-
-/**
- * Load a filter graph description from a file.
- * @param filename Name of the file from which to load the description.
- * @return         Pointer to the description on success,  NULL on failure.
- */
-AVFilterGraphDesc *avfilter_graph_load_desc(const char *filename);
 
 /**
  * Free a filter graph description.
