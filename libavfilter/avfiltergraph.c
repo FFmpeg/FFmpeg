@@ -32,13 +32,18 @@ AVFilterGraph *avfilter_create_graph(void)
     return av_mallocz(sizeof(AVFilterGraph));
 }
 
-void avfilter_destroy_graph(AVFilterGraph *graph)
+static void destroy_graph_filters(AVFilterGraph *graph)
 {
     unsigned i;
 
     for(i = 0; i < graph->filter_count; i ++)
         avfilter_destroy(graph->filters[i]);
-    av_free(graph->filters);
+    av_freep(&graph->filters);
+}
+
+void avfilter_destroy_graph(AVFilterGraph *graph)
+{
+    destroy_graph_filters(graph);
     av_free(graph);
 }
 
