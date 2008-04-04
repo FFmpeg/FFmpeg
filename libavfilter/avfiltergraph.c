@@ -69,6 +69,15 @@ static int link_in_request_frame(AVFilterLink *link)
     return avfilter_request_frame(link2);
 }
 
+
+static int link_in_poll_frame(AVFilterLink *link)
+{
+    AVFilterLink *link2 = get_extern_input_link(link);
+    if(!link2)
+        return -1;
+    return avfilter_poll_frame(link2);
+}
+
 static int link_in_config_props(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_extern_input_link(link);
@@ -236,6 +245,16 @@ static int graph_out_request_frame(AVFilterLink *link)
     return -1;
 }
 
+static int graph_out_poll_frame(AVFilterLink *link)
+{
+    AVFilterLink *link2 = get_intern_output_link(link);
+
+    if(!link2)
+        return -1;
+
+    return avfilter_poll_frame(link2);
+}
+
 static int graph_out_config_props(AVFilterLink *link)
 {
     GraphContext *graph = link->src->priv;
@@ -276,6 +295,7 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
         .name          = NULL,          /* FIXME? */
         .type          = AV_PAD_VIDEO,
         .request_frame = link_in_request_frame,
+        .poll_frame    = link_in_poll_frame,
         .config_props  = link_in_config_props,
     };
 
@@ -296,6 +316,7 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
         .name             = name,
         .type             = AV_PAD_VIDEO,
         .request_frame    = graph_out_request_frame,
+        .poll_frame       = graph_out_poll_frame,
         .config_props     = graph_out_config_props,
     };
     AVFilterPad dummy_inpad =
@@ -488,12 +509,14 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
     for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
         if(!(filterdef = avfilter_get_by_name(curfilt->filter)) ||
            !(filt = avfilter_open(filterdef, curfilt->name))) {
-            av_log(ctx, AV_LOG_ERROR, "error creating filter\n");
+            av_log(ctx, AV_LOG_ERROR,
+               "error creating filter '%s'\n", curfilt->name);
             goto fail;
         }
         avfilter_graph_add_filter(ctx, filt);
         if(avfilter_init_filter(filt, curfilt->args, NULL)) {
-            av_log(ctx, AV_LOG_ERROR, "error initializing filter\n");
+            av_log(ctx, AV_LOG_ERROR,
+                "error initializing filter '%s'\n", curfilt->name);
             goto fail;
         }
     }
