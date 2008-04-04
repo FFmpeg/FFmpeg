@@ -22,7 +22,10 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-#include "allfilters.h"
+extern AVFilter avfilter_vf_scale;
+extern AVFilter avfilter_vf_graph;
+extern AVFilter avfilter_vf_graphfile;
+extern AVFilter avfilter_vf_graphdesc;
 
 typedef struct AVFilterGraph {
     unsigned filter_count;
