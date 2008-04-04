@@ -57,6 +57,16 @@ typedef struct AVFilterGraphDescExport
     struct AVFilterGraphDescExport *next;
 } AVFilterGraphDescExport;
 
+/** Sections of a filter graph description */
+typedef enum
+{
+    SEC_NONE = 0,
+    SEC_FILTERS,
+    SEC_LINKS,
+    SEC_INPUTS,
+    SEC_OUTPUTS
+} AVFilterGraphDescSection;
+
 /** Description of a graph to be loaded from a file, etc */
 typedef struct
 {
@@ -65,6 +75,30 @@ typedef struct
     AVFilterGraphDescExport *inputs;    ///< inputs to export
     AVFilterGraphDescExport *outputs;   ///< outputs to export
 } AVFilterGraphDesc;
+
+typedef struct
+{
+    AVFilterGraphDescSection section;   ///< current section being parsed
+
+    AVFilterGraphDescFilter **filterp;  ///< last parsed filter
+    AVFilterGraphDescLink   **linkp;    ///< last parsed link
+    AVFilterGraphDescExport **inputp;   ///< last parsed exported input
+    AVFilterGraphDescExport **outputp;  ///< last parsed exported output
+} AVFilterGraphDescParser;
+
+/** Parse a line of a filter graph description.
+ * @param desc   Pointer to an AVFilterGraphDesc pointer. If *desc is NULL,
+ *               a new AVFilterGraphDesc structure will be created for you.
+ *               Must be the same between multiple invocations when parsing
+ *               the same description.
+ * @param parser Parser state. Must be the same between multiple invocations
+ *               when parsing the same description
+ * @param line   Line of the graph description to parse.
+ * @return       Zero on success, negative on error.
+ */
+int avfilter_graph_parse_desc(AVFilterGraphDesc **desc,
+                              AVFilterGraphDescParser **parser,
+                              char *line);
 
 /**
  * Load a filter graph description from a file
