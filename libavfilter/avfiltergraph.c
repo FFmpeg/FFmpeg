@@ -415,9 +415,9 @@ int avfilter_graph_config_links(AVFilterContext *graphctx)
     for(i = 0; i < graph->filter_count; i ++) {
         for(j = 0; j < graph->filters[i]->input_count; j ++) {
             /* ensure that graphs contained within graphs are configured */
-            if((graph->filters[i]->filter == &vf_graph     ||
-                graph->filters[i]->filter == &vf_graphfile ||
-                graph->filters[i]->filter == &vf_graphdesc) &&
+            if((graph->filters[i]->filter == &avfilter_vf_graph     ||
+                graph->filters[i]->filter == &avfilter_vf_graphfile ||
+                graph->filters[i]->filter == &avfilter_vf_graphdesc) &&
                 avfilter_graph_config_links(graph->filters[i]))
                 return -1;
             if(avfilter_config_link(graph->filters[i]->inputs[j]))
@@ -559,7 +559,7 @@ fail:
     return -1;
 }
 
-AVFilter vf_graph =
+AVFilter avfilter_vf_graph =
 {
     .name      = "graph",
     .author    = "Bobby Bingham",
@@ -656,7 +656,7 @@ fail:
     return -1;
 }
 
-AVFilter vf_graphdesc =
+AVFilter avfilter_vf_graphdesc =
 {
     .name      = "graph_desc",
     .author    = "Bobby Bingham",
@@ -685,7 +685,7 @@ static int init_file(AVFilterContext *ctx, const char *args, void *opaque)
     return ret;
 }
 
-AVFilter vf_graphfile =
+AVFilter avfilter_vf_graphfile =
 {
     .name      = "graph_file",
     .author    = "Bobby Bingham",
