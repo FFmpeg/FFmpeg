@@ -87,7 +87,12 @@ void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
 void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter);
 
 /**
- * Configure the colorspace, resolution, etc of all links in the graph
+ * Configure the formats of all the links in the graph
+ */
+int avfilter_graph_config_formats(AVFilterContext *graphctx);
+
+/**
+ * Configure the resolution, etc of all links in the graph
  */
 int avfilter_graph_config_links(AVFilterContext *graphctx);
 

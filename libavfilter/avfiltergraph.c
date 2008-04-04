@@ -58,21 +58,6 @@ static inline AVFilterLink *get_extern_input_link(AVFilterLink *link)
     return lctx->graph->inputs[link->srcpad];
 }
 
-/** query the formats supported by a filter providing input to the graph */
-static int *link_in_query_formats(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_input_link(link);
-    int *(*query_formats)(AVFilterLink *);
-
-    if(!link2)
-        return avfilter_make_format_list(0);
-
-    if(!(query_formats = link2->src->output_pads[link2->srcpad].query_formats))
-        query_formats = avfilter_default_query_output_formats;
-
-    return query_formats(link2);
-}
-
 /** request a frame from a filter providing input to the graph */
 static int link_in_request_frame(AVFilterLink *link)
 {
@@ -110,17 +95,6 @@ static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
 {
     GraphLinkContext *lctx = link->dst->priv;
     return lctx->graph->outputs[link->dstpad];
-}
-
-/** query the formats supported by a filter taking output from the graph */
-static int *link_out_query_formats(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(!link2)
-        return avfilter_make_format_list(0);
-
-    return link2->dst->input_pads[link2->dstpad].query_formats(link2);
 }
 
 static int link_out_config_props(AVFilterLink *link)
@@ -224,15 +198,6 @@ static void graph_in_draw_slice(AVFilterLink *link, int y, int height)
         avfilter_draw_slice(link2, y, height);
 }
 
-static int *graph_in_query_formats(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-
-    if(!link2 || !link2->dst->input_pads[link2->dstpad].query_formats)
-        return avfilter_make_format_list(0);
-    return link2->dst->input_pads[link2->dstpad].query_formats(link2);
-}
-
 static int graph_in_config_props(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_intern_input_link(link);
@@ -256,17 +221,6 @@ static AVFilterLink *get_intern_output_link(AVFilterLink *link)
 {
     GraphContext *graph = link->src->priv;
     return graph->link_filter->inputs[link->srcpad];
-}
-
-static int *graph_out_query_formats(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_output_link(link);
-
-    if(!link2)
-        return avfilter_make_format_list(0);
-    if(!link2->src->output_pads[link2->srcpad].query_formats)
-        return avfilter_default_query_output_formats(link2);
-    return link2->src->output_pads[link2->srcpad].query_formats(link2);
 }
 
 static int graph_out_request_frame(AVFilterLink *link)
@@ -315,7 +269,6 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
         .end_frame        = graph_in_end_frame,
         .get_video_buffer = graph_in_get_video_buffer,
         .draw_slice       = graph_in_draw_slice,
-        .query_formats    = graph_in_query_formats,
         .config_props     = graph_in_config_props,
         /* XXX */
     };
@@ -323,7 +276,6 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
     {
         .name          = NULL,          /* FIXME? */
         .type          = AV_PAD_VIDEO,
-        .query_formats = link_in_query_formats,
         .request_frame = link_in_request_frame,
         .config_props  = link_in_config_props,
     };
@@ -345,7 +297,6 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
         .name             = name,
         .type             = AV_PAD_VIDEO,
         .request_frame    = graph_out_request_frame,
-        .query_formats    = graph_out_query_formats,
         .config_props     = graph_out_config_props,
     };
     AVFilterPad dummy_inpad =
@@ -356,7 +307,6 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
         .end_frame        = link_out_end_frame,
         .draw_slice       = link_out_draw_slice,
         .get_video_buffer = link_out_get_video_buffer,
-        .query_formats    = link_out_query_formats,
         .config_props     = link_out_config_props,
     };
 
@@ -404,6 +354,121 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterContext *ctx, char *name)
             return graph->filters[i];
 
     return NULL;
+}
+
+static int query_formats(AVFilterContext *graphctx)
+{
+    GraphContext *graph = graphctx->priv;
+    AVFilterContext *linkfilt = graph->link_filter;
+    int i, j;
+
+    /* ask all the sub-filters for their supported colorspaces */
+    for(i = 0; i < graph->filter_count; i ++) {
+        if(graph->filters[i]->filter->query_formats)
+            graph->filters[i]->filter->query_formats(graph->filters[i]);
+        else
+            avfilter_default_query_formats(graph->filters[i]);
+    }
+
+    /* use these formats on our exported links */
+    for(i = 0; i < linkfilt->input_count; i ++) {
+        avfilter_formats_ref( linkfilt->inputs[i]->in_formats,
+                             &linkfilt->inputs[i]->out_formats);
+
+        if(graphctx->outputs[i])
+            avfilter_formats_ref( linkfilt-> inputs[i]->in_formats,
+                                 &graphctx->outputs[i]->in_formats);
+    }
+    for(i = 0; i < linkfilt->output_count; i ++) {
+        avfilter_formats_ref( linkfilt->outputs[i]->out_formats,
+                             &linkfilt->outputs[i]->in_formats);
+
+        if(graphctx->inputs[i])
+            avfilter_formats_ref( linkfilt->outputs[i]->out_formats,
+                                 &graphctx-> inputs[i]->out_formats);
+    }
+
+    /* go through and merge as many format lists as possible */
+    for(i = 0; i < graph->filter_count; i ++) {
+        AVFilterContext *filter = graph->filters[i];
+
+        for(j = 0; j < filter->input_count; j ++) {
+            AVFilterLink *link;
+            if(!(link = filter->inputs[j]))
+                continue;
+            if(link->in_formats != link->out_formats) {
+                if(!avfilter_merge_formats(link->in_formats,
+                                           link->out_formats)) {
+                    /* couldn't merge format lists. auto-insert scale filter */
+                    AVFilterContext *scale;
+
+                    if(!(scale = avfilter_open(&avfilter_vf_scale, NULL)))
+                        return -1;
+                    if(scale->filter->init(scale, NULL, NULL) ||
+                       avfilter_insert_filter(link, scale, 0, 0)) {
+                        avfilter_destroy(scale);
+                        return -1;
+                    }
+
+                    avfilter_graph_add_filter(graphctx, scale);
+                    scale->filter->query_formats(scale);
+                    if(avfilter_merge_formats(scale-> inputs[0]->in_formats,
+                                              scale-> inputs[0]->out_formats) ||
+                       avfilter_merge_formats(scale->outputs[0]->in_formats,
+                                              scale->outputs[0]->out_formats))
+                        return -1;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+static void pick_format(AVFilterLink *link)
+{
+    if(!link || !link->in_formats)
+        return;
+
+    link->in_formats->format_count = 1;
+    link->format = link->in_formats->formats[0];
+
+    avfilter_formats_unref(&link->in_formats);
+    avfilter_formats_unref(&link->out_formats);
+}
+
+static void pick_formats(GraphContext *graph)
+{
+    int i, j;
+
+    for(i = 0; i < graph->filter_count; i ++) {
+        AVFilterContext *filter = graph->filters[i];
+
+        if(filter->filter == &avfilter_vf_graph     ||
+           filter->filter == &avfilter_vf_graphfile ||
+           filter->filter == &avfilter_vf_graphdesc)
+            pick_formats(filter->priv);
+
+        for(j = 0; j < filter->input_count; j ++)
+            pick_format(filter->inputs[j]);
+        for(j = 0; j < filter->output_count; j ++)
+            pick_format(filter->outputs[j]);
+    }
+}
+
+int avfilter_graph_config_formats(AVFilterContext *graphctx)
+{
+    GraphContext *graph = graphctx->priv;
+
+    /* Find supported formats from sub-filters, and merge along links */
+    if(query_formats(graphctx))
+        return -1;
+
+    /* Once everything is merged, it's possible that we'll still have
+     * multiple valid choices of colorspace. We pick the first one. */
+    pick_formats(graph);
+
+    return 0;
 }
 
 int avfilter_graph_config_links(AVFilterContext *graphctx)
@@ -570,6 +635,8 @@ AVFilter avfilter_vf_graph =
     .init      = init,
     .uninit    = uninit,
 
+    .query_formats = query_formats,
+
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
 };
@@ -667,6 +734,8 @@ AVFilter avfilter_vf_graphdesc =
     .init      = init_desc,
     .uninit    = uninit,
 
+    .query_formats = query_formats,
+
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
 };
@@ -695,6 +764,8 @@ AVFilter avfilter_vf_graphfile =
 
     .init      = init_file,
     .uninit    = uninit,
+
+    .query_formats = query_formats,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
