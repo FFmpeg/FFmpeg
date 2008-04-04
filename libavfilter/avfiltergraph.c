@@ -33,11 +33,17 @@ void avfilter_destroy_graph(AVFilterGraph *graph)
     av_freep(&graph->filters);
 }
 
-void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
+int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
     graph->filters = av_realloc(graph->filters,
                                 sizeof(AVFilterContext*) * ++graph->filter_count);
+
+    if (!graph->filters)
+        return -1;
+
     graph->filters[graph->filter_count - 1] = filter;
+
+    return 0;
 }
 
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
@@ -87,7 +93,9 @@ static int query_formats(AVFilterGraph *graph)
                         return -1;
                     }
 
-                    avfilter_graph_add_filter(graph, scale);
+                    if (avfilter_graph_add_filter(graph, scale) < 0)
+                        return -1;
+
                     scale->filter->query_formats(scale);
                     if(!avfilter_merge_formats(scale-> inputs[0]->in_formats,
                                                scale-> inputs[0]->out_formats)||

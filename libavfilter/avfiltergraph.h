@@ -39,7 +39,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
  * @param graph  The filter graph
  * @param filter The filter to be added
  */
-void avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
+int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 
 /**
  * Configure the formats of all the links in the graph.
