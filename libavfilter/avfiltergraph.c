@@ -41,7 +41,7 @@ static const AVClass filter_parser_class = {
 
 static const AVClass *log_ctx = &filter_parser_class;
 
-static void uninit(GraphContext *graph)
+static void uninit(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
@@ -49,7 +49,7 @@ static void uninit(GraphContext *graph)
 }
 
 /* TODO: insert in sorted order */
-void avfilter_graph_add_filter(GraphContext *graph, AVFilterContext *filter)
+void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
     graph->filters = av_realloc(graph->filters,
                                 sizeof(AVFilterContext*) * ++graph->filter_count);
@@ -57,7 +57,7 @@ void avfilter_graph_add_filter(GraphContext *graph, AVFilterContext *filter)
 }
 
 /* search intelligently, once we insert in order */
-AVFilterContext *avfilter_graph_get_filter(GraphContext *graph, char *name)
+AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 {
     int i;
 
@@ -71,7 +71,7 @@ AVFilterContext *avfilter_graph_get_filter(GraphContext *graph, char *name)
     return NULL;
 }
 
-static int query_formats(GraphContext *graph)
+static int query_formats(AVFilterGraph *graph)
 {
     int i, j;
 
@@ -133,7 +133,7 @@ static void pick_format(AVFilterLink *link)
     avfilter_formats_unref(&link->out_formats);
 }
 
-static void pick_formats(GraphContext *graph)
+static void pick_formats(AVFilterGraph *graph)
 {
     int i, j;
 
@@ -147,7 +147,7 @@ static void pick_formats(GraphContext *graph)
     }
 }
 
-int avfilter_graph_config_formats(GraphContext *graph)
+int avfilter_graph_config_formats(AVFilterGraph *graph)
 {
     /* find supported formats from sub-filters, and merge along links */
     if(query_formats(graph))
@@ -160,7 +160,7 @@ int avfilter_graph_config_formats(GraphContext *graph)
     return 0;
 }
 
-static int graph_load_from_desc2(GraphContext *ctx, AVFilterGraphDesc *desc)
+static int graph_load_from_desc2(AVFilterGraph *ctx, AVFilterGraphDesc *desc)
 {
     AVFilterGraphDescFilter *curfilt;
     AVFilterGraphDescLink   *curlink;
@@ -211,7 +211,7 @@ fail:
     return -1;
 }
 
-int graph_load_from_desc3(GraphContext *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
+int graph_load_from_desc3(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
     AVFilterGraphDescExport *curpad;
     char tmp[20];

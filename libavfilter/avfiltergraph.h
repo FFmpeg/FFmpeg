@@ -69,7 +69,7 @@ typedef struct
 typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
-} GraphContext;
+} AVFilterGraph;
 
 /**
  * Parse a graph composed of a simple chain of filters which is described by
@@ -90,20 +90,20 @@ void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
  * @param graph  The filter graph
  * @param filter The filter to be added
  */
-void avfilter_graph_add_filter(GraphContext *graphctx, AVFilterContext *filter);
+void avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 
 /**
  * Configure the formats of all the links in the graph.
  */
-int avfilter_graph_config_formats(GraphContext *graphctx);
+int avfilter_graph_config_formats(AVFilterGraph *graphctx);
 
 /**
  * Configure the parameters (resolution, etc) of all links in the graph.
  */
-int avfilter_graph_config_links(GraphContext *graphctx);
+int avfilter_graph_config_links(AVFilterGraph *graphctx);
 
 
-int graph_load_from_desc3(GraphContext *ctx, AVFilterGraphDesc *desc,
+int graph_load_from_desc3(AVFilterGraph *ctx, AVFilterGraphDesc *desc,
                           AVFilterContext *in, int inpad,
                           AVFilterContext *out, int outpad);
 
