@@ -451,7 +451,12 @@ static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
             avfilter_destroy(ret);
             goto fail;
         }
-    } else av_log(NULL, AV_LOG_ERROR, "error creating filter!\n");
+    } else {
+        av_log(NULL, AV_LOG_ERROR,
+               "error creating filter \"%s\" with args \"%s\"\n",
+               name, args ? args : "(none)");
+        return NULL;
+    }
 
     av_free(filter);
 
