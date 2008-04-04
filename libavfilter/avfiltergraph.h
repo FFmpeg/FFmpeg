@@ -30,16 +30,9 @@ typedef struct AVFilterGraph {
 } AVFilterGraph;
 
 /**
- * Add to a graph a graph described by a string.
- * @param graph   the filter graph where to link the parsed graph context
- * @param filters string to be parsed
- * @param in      input to the graph to be parsed (TODO: allow several)
- * @param inpad   pad index of the input
- * @param in      output to the graph to be parsed (TODO: allow several)
- * @param inpad   pad index of the output
- * @return        zero on success, -1 on error
+ * Get a pointer to a graph by instance name
  */
-int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad);
+AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 
 /**
  * Add an existing filter instance to a filter graph.
