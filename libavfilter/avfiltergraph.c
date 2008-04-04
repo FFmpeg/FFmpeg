@@ -160,55 +160,54 @@ int avfilter_graph_config_formats(AVFilterGraph *graph)
     return 0;
 }
 
-static int graph_load_from_desc2(AVFilterGraph *ctx, AVFilterGraphDesc *desc)
+static int create_filter(AVFilterGraph *ctx, int index, char *name,
+                         char *args)
 {
-    AVFilterGraphDescFilter *curfilt;
-    AVFilterGraphDescLink   *curlink;
-    AVFilterContext *filt, *filtb;
+    AVFilterContext *filt;
 
     AVFilter *filterdef;
     char tmp[20];
 
-    /* create all filters */
-    for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
-        snprintf(tmp, 20, "%d", curfilt->index);
-        if(!(filterdef = avfilter_get_by_name(curfilt->filter)) ||
-           !(filt = avfilter_open(filterdef, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR,
-               "error creating filter '%s'\n", curfilt->filter);
-            goto fail;
-        }
-        avfilter_graph_add_filter(ctx, filt);
-        if(avfilter_init_filter(filt, curfilt->args, NULL)) {
-            av_log(&log_ctx, AV_LOG_ERROR,
-                "error initializing filter '%s'\n", curfilt->filter);
-            goto fail;
-        }
+    snprintf(tmp, 20, "%d", index);
+    if(!(filterdef = avfilter_get_by_name(name)) ||
+       !(filt = avfilter_open(filterdef, tmp))) {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "error creating filter '%s'\n", name);
+        return -1;
     }
-
-    /* create all links */
-    for(curlink = desc->links; curlink; curlink = curlink->next) {
-        snprintf(tmp, 20, "%d", curlink->src);
-        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
-            goto fail;
-        }
-        snprintf(tmp, 20, "%d", curlink->dst);
-        if(!(filtb = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
-            goto fail;
-        }
-        if(avfilter_link(filt, curlink->srcpad, filtb, curlink->dstpad)) {
-            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
-            goto fail;
-        }
+    avfilter_graph_add_filter(ctx, filt);
+    if(avfilter_init_filter(filt, args, NULL)) {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "error initializing filter '%s'\n", name);
+        return -1;
     }
 
     return 0;
+}
 
-fail:
-    uninit(ctx);
-    return -1;
+static int link_filter(AVFilterGraph *ctx, int src, int srcpad,
+                       int dst, int dstpad)
+{
+    AVFilterContext *filt, *filtb;
+
+    char tmp[20];
+
+    snprintf(tmp, 20, "%d", src);
+    if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
+        av_log(&log_ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
+        return -1;
+    }
+    snprintf(tmp, 20, "%d", dst);
+    if(!(filtb = avfilter_graph_get_filter(ctx, tmp))) {
+        av_log(&log_ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
+        return -1;
+    }
+    if(avfilter_link(filt, srcpad, filtb, dstpad)) {
+        av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+        return -1;
+    }
+
+    return 0;
 }
 
 int graph_load_from_desc3(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
@@ -216,9 +215,23 @@ int graph_load_from_desc3(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilte
     AVFilterGraphDescExport *curpad;
     char tmp[20];
     AVFilterContext *filt;
+    AVFilterGraphDescFilter *curfilt;
+    AVFilterGraphDescLink   *curlink;
 
-    if (graph_load_from_desc2(graph, desc) < 0)
-        goto fail;
+
+    /* create all filters */
+    for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
+        if (create_filter(graph, curfilt->index, curfilt->filter,
+                          curfilt->args) < 0)
+            goto fail;
+    }
+
+    /* create all links */
+    for(curlink = desc->links; curlink; curlink = curlink->next) {
+        if (link_filter(graph, curlink->src, curlink->srcpad,
+                          curlink->dst, curlink->dstpad) < 0)
+            goto fail;
+    }
 
     /* export all input pads */
     for(curpad = desc->inputs; curpad; curpad = curpad->next) {
