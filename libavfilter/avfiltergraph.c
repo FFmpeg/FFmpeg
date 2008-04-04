@@ -101,7 +101,6 @@ static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
 static int link_out_config_props(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_extern_output_link(link);
-    int (*config_props)(AVFilterLink *);
 
     if(!link2)
         return 0;
@@ -109,9 +108,7 @@ static int link_out_config_props(AVFilterLink *link)
     link2->w = link->w;
     link2->h = link->h;
 
-    if(!(config_props = link2->dst->input_pads[link2->dstpad].config_props))
-        config_props = avfilter_default_config_input_link;
-    return config_props(link2);
+    return 0;
 }
 
 static void link_out_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
@@ -203,6 +200,7 @@ static int graph_in_config_props(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_intern_input_link(link);
     int (*config_props)(AVFilterLink *);
+    int ret;
 
     if(!link2)
         return -1;
@@ -215,7 +213,12 @@ static int graph_in_config_props(AVFilterLink *link)
     if(!(config_props = link2->dst->input_pads[link2->dstpad].config_props))
         return 0;   /* FIXME? */
         //config_props = avfilter_default_config_input_link;
-    return config_props(link2);
+    if(!(ret = config_props(link2)))
+        link2->init_state = AVLINK_INIT;
+    else
+        link2->init_state = AVLINK_STARTINIT;
+
+    return ret;
 }
 
 static AVFilterLink *get_intern_output_link(AVFilterLink *link)
@@ -235,26 +238,21 @@ static int graph_out_request_frame(AVFilterLink *link)
 
 static int graph_out_config_props(AVFilterLink *link)
 {
-    AVFilterLink *link2 = get_intern_output_link(link);
-    int (*config_props)(AVFilterLink *);
+    GraphContext *graph = link->src->priv;
+    AVFilterLink *link2 = graph->link_filter_out->inputs[link->srcpad];
     int ret;
+
+    if((ret = avfilter_config_links(graph->link_filter_out)))
+        return ret;
 
     if(!link2)
         return 0;
-
-    link2->w = link->w;
-    link2->h = link->h;
-    link2->format = link->format;
-
-    if(!(config_props = link2->src->output_pads[link2->srcpad].config_props))
-        config_props = avfilter_default_config_output_link;
-    ret = config_props(link2);
 
     link->w = link2->w;
     link->h = link2->h;
     link->format = link2->format;
 
-    return ret;
+    return 0;
 }
 
 static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigned idx,
@@ -473,27 +471,6 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx)
     /* Once everything is merged, it's possible that we'll still have
      * multiple valid choices of colorspace. We pick the first one. */
     pick_formats(graph);
-
-    return 0;
-}
-
-int avfilter_graph_config_links(AVFilterContext *graphctx)
-{
-    GraphContext *graph = graphctx->priv;
-    int i, j;
-
-    for(i = 0; i < graph->filter_count; i ++) {
-        for(j = 0; j < graph->filters[i]->input_count; j ++) {
-            /* ensure that graphs contained within graphs are configured */
-            if((graph->filters[i]->filter == &avfilter_vf_graph     ||
-                graph->filters[i]->filter == &avfilter_vf_graphfile ||
-                graph->filters[i]->filter == &avfilter_vf_graphdesc) &&
-                avfilter_graph_config_links(graph->filters[i]))
-                return -1;
-            if(avfilter_config_link(graph->filters[i]->inputs[j]))
-                return -1;
-        }
-    }
 
     return 0;
 }
