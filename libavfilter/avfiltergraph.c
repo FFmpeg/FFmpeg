@@ -278,7 +278,7 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
     AVFilterPad graph_inpad =
     {
         .name             = name,
-        .type             = AV_PAD_VIDEO,
+        .type             = CODEC_TYPE_VIDEO,
         .start_frame      = graph_in_start_frame,
         .end_frame        = graph_in_end_frame,
         .get_video_buffer = graph_in_get_video_buffer,
@@ -289,7 +289,7 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
     AVFilterPad dummy_outpad =
     {
         .name          = NULL,          /* FIXME? */
-        .type          = AV_PAD_VIDEO,
+        .type          = CODEC_TYPE_VIDEO,
         .request_frame = link_in_request_frame,
         .poll_frame    = link_in_poll_frame,
         .config_props  = link_in_config_props,
@@ -310,7 +310,7 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
     AVFilterPad graph_outpad =
     {
         .name             = name,
-        .type             = AV_PAD_VIDEO,
+        .type             = CODEC_TYPE_VIDEO,
         .request_frame    = graph_out_request_frame,
         .poll_frame       = graph_out_poll_frame,
         .config_props     = graph_out_config_props,
@@ -318,7 +318,7 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
     AVFilterPad dummy_inpad =
     {
         .name             = NULL,          /* FIXME? */
-        .type             = AV_PAD_VIDEO,
+        .type             = CODEC_TYPE_VIDEO,
         .start_frame      = link_out_start_frame,
         .end_frame        = link_out_end_frame,
         .draw_slice       = link_out_draw_slice,
