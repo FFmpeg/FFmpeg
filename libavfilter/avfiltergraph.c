@@ -33,9 +33,6 @@ void avfilter_destroy_graph(AVFilterGraph *graph)
     av_freep(&graph->filters);
 }
 
-/**
- * @todo insert in sorted order
- */
 void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
     graph->filters = av_realloc(graph->filters,
@@ -43,9 +40,6 @@ void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filters[graph->filter_count - 1] = filter;
 }
 
-/*
- * @todo search intelligently, once we insert in order
- */
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 {
     int i;
