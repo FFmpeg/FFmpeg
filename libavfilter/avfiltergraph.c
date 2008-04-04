@@ -257,8 +257,10 @@ static int *graph_out_query_formats(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_intern_output_link(link);
 
-    if(!link2 || !link2->src->output_pads[link2->srcpad].query_formats)
+    if(!link2)
         return avfilter_make_format_list(0);
+    if(!link2->src->output_pads[link2->srcpad].query_formats)
+        return avfilter_default_query_output_formats(link2);
     return link2->src->output_pads[link2->srcpad].query_formats(link2);
 }
 
