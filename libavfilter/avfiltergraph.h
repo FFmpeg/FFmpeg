@@ -24,48 +24,6 @@
 
 #include "avfilter.h"
 
-/** Linked-list of filters to create for an AVFilterGraphDesc */
-typedef struct AVFilterGraphDescFilter
-{
-    int index;              ///< filter instance index
-    char *filter;           ///< name of filter type
-    char *args;             ///< filter parameters
-    struct AVFilterGraphDescFilter *next;
-} AVFilterGraphDescFilter;
-
-/** Linked-list of links between filters */
-typedef struct AVFilterGraphDescLink
-{
-    /* TODO: allow referencing pads by name, not just by index */
-    int src;                ///< index of the source filter
-    unsigned srcpad;        ///< index of the output pad on the source filter
-
-    int dst;                ///< index of the dest filter
-    unsigned dstpad;        ///< index of the input pad on the dest filter
-
-    struct AVFilterGraphDescLink *next;
-} AVFilterGraphDescLink;
-
-/** Linked-list of filter pads to be exported from the graph */
-typedef struct AVFilterGraphDescExport
-{
-    /* TODO: allow referencing pads by name, not just by index */
-    char *name;             ///< name of the exported pad
-    int filter;             ///< index of the filter
-    unsigned pad;           ///< index of the pad to be exported
-
-    struct AVFilterGraphDescExport *next;
-} AVFilterGraphDescExport;
-
-/** Description of a graph to be loaded from a file, etc */
-typedef struct
-{
-    AVFilterGraphDescFilter *filters;   ///< filters in the graph
-    AVFilterGraphDescLink   *links;     ///< links between the filters
-    AVFilterGraphDescExport *inputs;    ///< inputs to export
-    AVFilterGraphDescExport *outputs;   ///< outputs to export
-} AVFilterGraphDesc;
-
 typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
@@ -84,12 +42,6 @@ typedef struct AVFilterGraph {
 int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad);
 
 /**
- * Free a filter graph description.
- * @param desc The graph description to free
- */
-void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
-
-/**
  * Add an existing filter instance to a filter graph.
  * @param graph  The filter graph
  * @param filter The filter to be added
@@ -105,10 +57,5 @@ int avfilter_graph_config_formats(AVFilterGraph *graphctx);
  * Configure the parameters (resolution, etc) of all links in the graph.
  */
 int avfilter_graph_config_links(AVFilterGraph *graphctx);
-
-
-int graph_load_from_desc3(AVFilterGraph *ctx, AVFilterGraphDesc *desc,
-                          AVFilterContext *in, int inpad,
-                          AVFilterContext *out, int outpad);
 
 #endif  /* FFMPEG_AVFILTERGRAPH_H */
