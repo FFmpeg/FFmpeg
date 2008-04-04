@@ -68,20 +68,16 @@ static int query_formats(AVFilterGraph *graph)
         AVFilterContext *filter = graph->filters[i];
 
         for(j = 0; j < filter->input_count; j ++) {
-            AVFilterLink *link;
-            if(!(link = filter->inputs[j]))
-                continue;
-            if(link->in_formats != link->out_formats) {
+            AVFilterLink *link = filter->inputs[j];
+            if(link && link->in_formats != link->out_formats) {
                 if(!avfilter_merge_formats(link->in_formats,
                                            link->out_formats)) {
                     /* couldn't merge format lists. auto-insert scale filter */
-                    AVFilterContext *scale;
+                    AVFilterContext *scale =
+                        avfilter_open(avfilter_get_by_name("scale"), NULL);
 
-                    if(!(scale =
-                         avfilter_open(avfilter_get_by_name("scale"), NULL)))
-                        return -1;
-                    if(scale->filter->init(scale, NULL, NULL) ||
-                       avfilter_insert_filter(link, scale, 0, 0)) {
+                    if(!scale || scale->filter->init(scale, NULL, NULL) ||
+                                 avfilter_insert_filter(link, scale, 0, 0)) {
                         avfilter_destroy(scale);
                         return -1;
                     }
