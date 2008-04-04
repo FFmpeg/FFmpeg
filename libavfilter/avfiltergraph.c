@@ -112,7 +112,8 @@ int avfilter_graph_load_chain(AVFilterGraph *graph,
 
 fail:
     destroy_graph_filters(graph);
-    *first = *last = NULL;
+    if(first) *first = NULL;
+    if(last)  *last  = NULL;
     return -1;
 }
 
