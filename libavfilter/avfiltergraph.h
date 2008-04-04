@@ -57,16 +57,6 @@ typedef struct AVFilterGraphDescExport
     struct AVFilterGraphDescExport *next;
 } AVFilterGraphDescExport;
 
-/** Sections of a filter graph description */
-typedef enum
-{
-    SEC_NONE = 0,
-    SEC_FILTERS,
-    SEC_LINKS,
-    SEC_INPUTS,
-    SEC_OUTPUTS
-} AVFilterGraphDescSection;
-
 /** Description of a graph to be loaded from a file, etc */
 typedef struct
 {
@@ -75,16 +65,6 @@ typedef struct
     AVFilterGraphDescExport *inputs;    ///< inputs to export
     AVFilterGraphDescExport *outputs;   ///< outputs to export
 } AVFilterGraphDesc;
-
-typedef struct
-{
-    AVFilterGraphDescSection section;   ///< current section being parsed
-
-    AVFilterGraphDescFilter **filterp;  ///< last parsed filter
-    AVFilterGraphDescLink   **linkp;    ///< last parsed link
-    AVFilterGraphDescExport **inputp;   ///< last parsed exported input
-    AVFilterGraphDescExport **outputp;  ///< last parsed exported output
-} AVFilterGraphDescParser;
 
 extern AVFilter avfilter_vf_graph;
 
