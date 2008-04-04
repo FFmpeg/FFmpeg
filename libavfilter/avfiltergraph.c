@@ -37,10 +37,8 @@ AVFilterGraph *avfilter_create_graph(void)
 
 static void destroy_graph_filters(AVFilterGraph *graph)
 {
-    unsigned i;
-
-    for(i = 0; i < graph->filter_count; i ++)
-        avfilter_destroy(graph->filters[i]);
+    for(; graph->filter_count > 0; graph->filter_count --)
+        avfilter_destroy(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->filters);
 }
 
