@@ -96,7 +96,7 @@ static int link_in_config_props(AVFilterLink *link)
 }
 
 /**
- * Given the link between the dummy filter and an internal filter whose input
+ * Given the link between the dummy filter and an internal filter whose output
  * is being exported outside the graph, this returns the externally visible
  * link.
  */
