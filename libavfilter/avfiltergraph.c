@@ -430,7 +430,6 @@ int avfilter_graph_config_links(AVFilterContext *graphctx)
 
 static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
 {
-    AVFilter *filterdef;
     AVFilterContext *ret;
     char *filter = av_strdup(filt); /* copy - don't mangle the input string */
     char *name, *args;
@@ -447,8 +446,7 @@ static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
     av_log(NULL, AV_LOG_INFO, "creating filter \"%s\" with args \"%s\"\n",
            name, args ? args : "(none)");
 
-    if((filterdef = avfilter_get_by_name(name)) &&
-       (ret = avfilter_open(filterdef, NULL))) {
+    if(ret = avfilter_open(avfilter_get_by_name(name), NULL)) {
         if(avfilter_init_filter(ret, args, opaque)) {
             av_log(NULL, AV_LOG_ERROR, "error initializing filter!\n");
             avfilter_destroy(ret);
