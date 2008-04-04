@@ -54,6 +54,8 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 static int query_formats(AVFilterGraph *graph)
 {
     int i, j;
+    int scaler_count = 0;
+    char inst_name[30];
 
     /* ask all the sub-filters for their supported colorspaces */
     for(i = 0; i < graph->filter_count; i ++) {
@@ -72,9 +74,12 @@ static int query_formats(AVFilterGraph *graph)
             if(link && link->in_formats != link->out_formats) {
                 if(!avfilter_merge_formats(link->in_formats,
                                            link->out_formats)) {
+                    AVFilterContext *scale;
                     /* couldn't merge format lists. auto-insert scale filter */
-                    AVFilterContext *scale =
-                        avfilter_open(avfilter_get_by_name("scale"), NULL);
+                    snprintf(inst_name, 30, "auto-inserted scaler %d",
+                             scaler_count);
+                    scale =
+                        avfilter_open(avfilter_get_by_name("scale"),inst_name);
 
                     if(!scale || scale->filter->init(scale, NULL, NULL) ||
                                  avfilter_insert_filter(link, scale, 0, 0)) {
