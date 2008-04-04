@@ -253,7 +253,7 @@ static int link_filter(AVFilterGraph *ctx, int src, int srcpad,
     return 0;
 }
 
-int graph_load_from_desc3(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
+static int load_from_desc(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
     AVFilterGraphDescExport *curpad;
     char tmp[20];
@@ -477,7 +477,7 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
 /**
  * Free a graph description.
  */
-void avfilter_graph_free_desc(AVFilterGraphDesc *desc)
+static void free_desc(AVFilterGraphDesc *desc)
 {
     void *next;
 
@@ -624,7 +624,7 @@ static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
  fail:
     free_inout(head);
 
-    avfilter_graph_free_desc(ret);
+    free_desc(ret);
     return NULL;
 }
 
@@ -643,11 +643,11 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
     if (!desc)
         return -1;
 
-    if (graph_load_from_desc3(graph, desc, in, inpad, out, outpad) < 0) {
-        avfilter_graph_free_desc(desc);
+    if (load_from_desc(graph, desc, in, inpad, out, outpad) < 0) {
+        free_desc(desc);
         return -1;
     }
 
-    avfilter_graph_free_desc(desc);
+    free_desc(desc);
     return 0;
 }
