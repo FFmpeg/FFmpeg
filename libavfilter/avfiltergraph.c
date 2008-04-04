@@ -430,6 +430,7 @@ int avfilter_graph_config_links(AVFilterContext *graphctx)
 
 static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
 {
+    AVFilter *filterdef;
     AVFilterContext *ret;
     char *filter = av_strdup(filt); /* copy - don't mangle the input string */
     char *name, *args;
@@ -446,7 +447,8 @@ static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
     av_log(NULL, AV_LOG_INFO, "creating filter \"%s\" with args \"%s\"\n",
            name, args ? args : "(none)");
 
-    if((ret = avfilter_create_by_name(name, NULL))) {
+    if((filterdef = avfilter_get_by_name(name)) &&
+       (ret = avfilter_open(filterdef, NULL))) {
         if(avfilter_init_filter(ret, args, opaque)) {
             av_log(NULL, AV_LOG_ERROR, "error initializing filter!\n");
             avfilter_destroy(ret);
@@ -545,7 +547,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     if(!args)
         return 0;
 
-    if(!(gctx->link_filter = avfilter_create(&vf_graph_dummy, NULL)))
+    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
         return -1;
     if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
         goto fail;
@@ -578,9 +580,12 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
     AVFilterGraphDescExport *curpad;
     AVFilterContext *filt, *filtb;
 
+    AVFilter *filterdef;
+
     /* create all filters */
     for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
-        if(!(filt = avfilter_create_by_name(curfilt->filter, curfilt->name))) {
+        if(!(filterdef = avfilter_get_by_name(curfilt->filter)) ||
+           !(filt = avfilter_open(filterdef, curfilt->name))) {
             av_log(ctx, AV_LOG_ERROR, "error creating filter\n");
             goto fail;
         }
@@ -639,7 +644,7 @@ static int init_desc(AVFilterContext *ctx, const char *args, void *opaque)
     if(!opaque)
         return -1;
 
-    if(!(gctx->link_filter = avfilter_create(&vf_graph_dummy, NULL)))
+    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
         return -1;
     if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
         goto fail;
