@@ -86,6 +86,10 @@ typedef struct
     AVFilterGraphDescExport **outputp;  ///< last parsed exported output
 } AVFilterGraphDescParser;
 
+extern AVFilter avfilter_vf_graph;
+extern AVFilter avfilter_vf_graphfile;
+extern AVFilter avfilter_vf_graphdesc;
+
 /**
  * Parse a graph composed of a simple chain of filters which is described by
  * a single string.

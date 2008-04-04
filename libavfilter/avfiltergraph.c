@@ -22,11 +22,6 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-extern AVFilter avfilter_vf_scale;
-extern AVFilter avfilter_vf_graph;
-extern AVFilter avfilter_vf_graphfile;
-extern AVFilter avfilter_vf_graphdesc;
-
 typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
@@ -425,7 +420,8 @@ static int query_formats(AVFilterContext *graphctx)
                     /* couldn't merge format lists. auto-insert scale filter */
                     AVFilterContext *scale;
 
-                    if(!(scale = avfilter_open(&avfilter_vf_scale, NULL)))
+                    if(!(scale =
+                         avfilter_open(avfilter_get_by_name("scale"), NULL)))
                         return -1;
                     if(scale->filter->init(scale, NULL, NULL) ||
                        avfilter_insert_filter(link, scale, 0, 0)) {
