@@ -70,13 +70,13 @@ static int *link_in_query_formats(AVFilterLink *link)
 }
 
 /** request a frame from a filter providing input to the graph */
-static void link_in_request_frame(AVFilterLink *link)
+static int link_in_request_frame(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_extern_input_link(link);
 
     if(!link2)
-        return;
-    avfilter_request_frame(link2);
+        return -1;
+    return avfilter_request_frame(link2);
 }
 
 static int link_in_config_props(AVFilterLink *link)
@@ -265,12 +265,13 @@ static int *graph_out_query_formats(AVFilterLink *link)
     return link2->src->output_pads[link2->srcpad].query_formats(link2);
 }
 
-static void graph_out_request_frame(AVFilterLink *link)
+static int graph_out_request_frame(AVFilterLink *link)
 {
     AVFilterLink *link2 = get_intern_output_link(link);
 
     if(link2)
-        avfilter_request_frame(link2);
+        return avfilter_request_frame(link2);
+    return -1;
 }
 
 static int graph_out_config_props(AVFilterLink *link)
