@@ -474,6 +474,40 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
     return pad;
 }
 
+/**
+ * Free a graph description.
+ */
+void avfilter_graph_free_desc(AVFilterGraphDesc *desc)
+{
+    void *next;
+
+    while(desc->filters) {
+        next = desc->filters->next;
+        av_free(desc->filters->filter);
+        av_free(desc->filters->args);
+        av_free(desc->filters);
+        desc->filters = next;
+    }
+
+    while(desc->links) {
+        next = desc->links->next;
+        av_free(desc->links);
+        desc->links = next;
+    }
+
+    while(desc->inputs) {
+        next = desc->inputs->next;
+        av_free(desc->inputs);
+        desc->inputs = next;
+    }
+
+    while(desc->outputs) {
+        next = desc->outputs->next;
+        av_free(desc->outputs);
+        desc->outputs = next;
+    }
+}
+
 static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
 {
     AVFilterGraphDesc        *ret;
@@ -617,38 +651,3 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
     avfilter_graph_free_desc(desc);
     return 0;
 }
-
-/**
- * Free a graph description.
- */
-void avfilter_graph_free_desc(AVFilterGraphDesc *desc)
-{
-    void *next;
-
-    while(desc->filters) {
-        next = desc->filters->next;
-        av_free(desc->filters->filter);
-        av_free(desc->filters->args);
-        av_free(desc->filters);
-        desc->filters = next;
-    }
-
-    while(desc->links) {
-        next = desc->links->next;
-        av_free(desc->links);
-        desc->links = next;
-    }
-
-    while(desc->inputs) {
-        next = desc->inputs->next;
-        av_free(desc->inputs);
-        desc->inputs = next;
-    }
-
-    while(desc->outputs) {
-        next = desc->outputs->next;
-        av_free(desc->outputs);
-        desc->outputs = next;
-    }
-}
-
