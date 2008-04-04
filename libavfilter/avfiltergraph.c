@@ -84,7 +84,7 @@ static const AVClass filter_parser_class = {
 
 static const AVClass *log_ctx = &filter_parser_class;
 
-static void uninit(AVFilterGraph *graph)
+void avfilter_destroy_graph(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
@@ -306,7 +306,7 @@ static int load_from_desc(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilte
     return 0;
 
 fail:
-    uninit(graph);
+    avfilter_destroy_graph(graph);
     return -1;
 }
 

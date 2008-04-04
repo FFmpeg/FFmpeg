@@ -58,4 +58,9 @@ int avfilter_graph_config_formats(AVFilterGraph *graphctx);
  */
 int avfilter_graph_config_links(AVFilterGraph *graphctx);
 
+/**
+ * Free a graph and destroy its links.
+ */
+void avfilter_destroy_graph(AVFilterGraph *graph);
+
 #endif  /* FFMPEG_AVFILTERGRAPH_H */
