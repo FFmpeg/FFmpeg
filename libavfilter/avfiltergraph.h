@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVFILTER_GRAPH_H
-#define FFMPEG_AVFILTER_GRAPH_H
+#ifndef FFMPEG_AVFILTERGRAPH_H
+#define FFMPEG_AVFILTERGRAPH_H
 
 #include "avfilter.h"
 
