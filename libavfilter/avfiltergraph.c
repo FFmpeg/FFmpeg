@@ -49,6 +49,20 @@ void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filte
     graph->filters[graph->filter_count - 1] = filter;
 }
 
+int avfilter_graph_config_links(AVFilterContext *graphctx)
+{
+    GraphContext *graph = graphctx->priv;
+    int i, j;
+
+    for(i = 0; i < graph->filter_count; i ++) {
+        for(j = 0; j < graph->filters[i]->input_count; j ++)
+            if(avfilter_config_link(graph->filters[i]->inputs[j]))
+                return -1;
+    }
+
+    return 0;
+}
+
 static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
 {
     AVFilterContext *ret;

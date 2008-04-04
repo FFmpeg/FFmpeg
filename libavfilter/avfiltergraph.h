@@ -31,4 +31,9 @@
  */
 void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter);
 
+/**
+ * Configure the colorspace, resolution, etc of all links in the graph
+ */
+int avfilter_graph_config_links(AVFilterContext *graphctx);
+
 #endif  /* FFMPEG_AVFILTER_H */
