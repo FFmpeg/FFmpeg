@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "avstring.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
@@ -55,16 +56,17 @@ void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filters[graph->filter_count - 1] = filter;
 }
 
-static AVFilterContext *create_filter_with_args(char *filter)
+static AVFilterContext *create_filter_with_args(const char *filt)
 {
     AVFilterContext *ret;
+    char *filter = av_strdup(filt); /* copy - don't mangle the input string */
     char *name, *args;
 
     name = filter;
     if((args = strchr(filter, '='))) {
         /* ensure we at least have a name */
         if(args == filter)
-            return NULL;
+            goto fail;
 
         *args ++ = 0;
     }
@@ -76,11 +78,15 @@ static AVFilterContext *create_filter_with_args(char *filter)
         if(avfilter_init_filter(ret, args)) {
             av_log(NULL, AV_LOG_ERROR, "error initializing filter!\n");
             avfilter_destroy(ret);
-            ret = NULL;
+            goto fail;
         }
     } else av_log(NULL, AV_LOG_ERROR, "error creating filter!\n");
 
     return ret;
+
+fail:
+    av_free(filter);
+    return NULL;
 }
 
 int avfilter_graph_load_chain(AVFilterGraph *graph,
