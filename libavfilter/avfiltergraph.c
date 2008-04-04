@@ -26,49 +26,6 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-
-/** Linked-list of filters to create for an AVFilterGraphDesc */
-typedef struct AVFilterGraphDescFilter
-{
-    int index;              ///< filter instance index
-    char *filter;           ///< name of filter type
-    char *args;             ///< filter parameters
-    struct AVFilterGraphDescFilter *next;
-} AVFilterGraphDescFilter;
-
-/** Linked-list of links between filters */
-typedef struct AVFilterGraphDescLink
-{
-    /* TODO: allow referencing pads by name, not just by index */
-    int src;                ///< index of the source filter
-    unsigned srcpad;        ///< index of the output pad on the source filter
-
-    int dst;                ///< index of the dest filter
-    unsigned dstpad;        ///< index of the input pad on the dest filter
-
-    struct AVFilterGraphDescLink *next;
-} AVFilterGraphDescLink;
-
-/** Linked-list of filter pads to be exported from the graph */
-typedef struct AVFilterGraphDescExport
-{
-    /* TODO: allow referencing pads by name, not just by index */
-    char *name;             ///< name of the exported pad
-    int filter;             ///< index of the filter
-    unsigned pad;           ///< index of the pad to be exported
-
-    struct AVFilterGraphDescExport *next;
-} AVFilterGraphDescExport;
-
-/** Description of a graph to be loaded from a file, etc */
-typedef struct
-{
-    AVFilterGraphDescFilter *filters;   ///< filters in the graph
-    AVFilterGraphDescLink   *links;     ///< links between the filters
-    AVFilterGraphDescExport *inputs;    ///< inputs to export
-    AVFilterGraphDescExport *outputs;   ///< outputs to export
-} AVFilterGraphDesc;
-
 /**
  * For use in av_log
  */
@@ -253,64 +210,6 @@ static int link_filter(AVFilterGraph *ctx, int src, int srcpad,
     return 0;
 }
 
-static int load_from_desc(AVFilterGraph *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
-{
-    AVFilterGraphDescExport *curpad;
-    char tmp[20];
-    AVFilterContext *filt;
-    AVFilterGraphDescFilter *curfilt;
-    AVFilterGraphDescLink   *curlink;
-
-
-    /* create all filters */
-    for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
-        if (create_filter(graph, curfilt->index, curfilt->filter,
-                          curfilt->args) < 0)
-            goto fail;
-    }
-
-    /* create all links */
-    for(curlink = desc->links; curlink; curlink = curlink->next) {
-        if (link_filter(graph, curlink->src, curlink->srcpad,
-                          curlink->dst, curlink->dstpad) < 0)
-            goto fail;
-    }
-
-    /* export all input pads */
-    for(curpad = desc->inputs; curpad; curpad = curpad->next) {
-        snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-            goto fail;
-        }
-        if(avfilter_link(in, inpad, filt, curpad->pad)) {
-            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
-            goto fail;
-        }
-    }
-
-    /* export all output pads */
-    for(curpad = desc->outputs; curpad; curpad = curpad->next) {
-        snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-            goto fail;
-        }
-
-        if(avfilter_link(filt, curpad->pad, out, outpad)) {
-            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
-            goto fail;
-        }
-    }
-
-    return 0;
-
-fail:
-    avfilter_destroy_graph(graph);
-    return -1;
-}
-
-
 static void consume_whitespace(const char **buf)
 {
     *buf += strspn(*buf, " \n\t");
@@ -415,17 +314,19 @@ static void parse_link_name(const char **buf, char **name)
  * @arg ars  a pointer (that need to be free'd after use) to the args of the
  *           filter
  */
-static void parse_filter(const char **buf, char **name, char **opts)
+static int parse_filter(const char **buf, AVFilterGraph *graph, int index)
 {
-    *name = consume_string(buf);
+    char *name, *opts;
+    name = consume_string(buf);
 
     if (**buf == '=') {
         consume_char(buf);
-        *opts = consume_string(buf);
+        opts = consume_string(buf);
     } else {
-        *opts = NULL;
+        opts = NULL;
     }
 
+    return create_filter(graph, index, name, opts);
 }
 
 enum LinkType {
@@ -475,82 +376,51 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
 }
 
 /**
- * Free a graph description.
+ * Parse a string describing a filter graph.
  */
-static void free_desc(AVFilterGraphDesc *desc)
+int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
-    void *next;
-
-    while(desc->filters) {
-        next = desc->filters->next;
-        av_free(desc->filters->filter);
-        av_free(desc->filters->args);
-        av_free(desc->filters);
-        desc->filters = next;
-    }
-
-    while(desc->links) {
-        next = desc->links->next;
-        av_free(desc->links);
-        desc->links = next;
-    }
-
-    while(desc->inputs) {
-        next = desc->inputs->next;
-        av_free(desc->inputs);
-        desc->inputs = next;
-    }
-
-    while(desc->outputs) {
-        next = desc->outputs->next;
-        av_free(desc->outputs);
-        desc->outputs = next;
-    }
-}
-
-static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
-{
-    AVFilterGraphDesc        *ret;
-    AVFilterGraphDescFilter **filterp, *filtern;
-    AVFilterGraphDescLink   **linkp,   *linkn;
     AVFilterInOut           *inout=NULL;
-    AVFilterInOut           *head;
+    AVFilterInOut           *head=NULL;
 
     int index = 0;
     char chr = 0;
     int pad = 0;
     int has_out = 0;
 
+    char tmp[20];
+    AVFilterContext *filt;
+
     consume_whitespace(&filters);
 
-    if(!(ret = av_mallocz(sizeof(AVFilterGraphDesc))))
-        return NULL;
-
-    filterp = &ret->filters;
-    linkp   = &ret->links;
-
     do {
-        if(chr == ',') {
-            linkn = av_mallocz(sizeof(AVFilterGraphDescLink));
-            linkn->src = index-1;
-            linkn->srcpad = pad;
-            linkn->dst = index;
-            linkn->dstpad = 0;
+        int oldpad = pad;
 
-            *linkp = linkn;
-            linkp = &linkn->next;
+        pad = parse_inouts(&filters, &inout, chr == ',', LinkTypeIn, index);
+
+        if (parse_filter(&filters, graph, index) < 0)
+            goto fail;
+
+        // If the first filter has an input and none was given, it is
+        // implicitly the input of the whole graph.
+        if (pad == 0 && graph->filters[graph->filter_count-1]->input_count == 1) {
+            snprintf(tmp, 20, "%d", index);
+            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+                goto fail;
+            }
+            if(avfilter_link(in, inpad, filt, 0)) {
+                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+                goto fail;
+            }
         }
-        pad = parse_inouts(&filters, &inout, chr == ',' || (!has_in),
-                           LinkTypeIn, index);
 
-        filtern = av_mallocz(sizeof(AVFilterGraphDescFilter));
-        filtern->index = index;
-        parse_filter(&filters, &filtern->filter, &filtern->args);
-        *filterp = filtern;
-        filterp = &filtern->next;
+        if(chr == ',') {
+            if (link_filter(graph, index-1, oldpad, index, 0) < 0)
+                goto fail;
 
-        pad = parse_inouts(&filters, &inout, 0,
-                           LinkTypeOut, index);
+        }
+        pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, index);
         chr = consume_char(&filters);
         index++;
     } while (chr == ',' || chr == ';');
@@ -561,16 +431,28 @@ static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
             continue; // Already processed
 
         if (!strcmp(inout->name, "in")) {
-            if (!has_in)
+            snprintf(tmp, 20, "%d", inout->instance);
+            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
                 goto fail;
-            ret->inputs = av_mallocz(sizeof(AVFilterGraphDescExport));
-            ret->inputs->filter = inout->instance;
-            ret->inputs->pad = inout->pad_idx;
+            }
+            if(avfilter_link(in, inpad, filt, inout->pad_idx)) {
+                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+                goto fail;
+            }
         } else if (!strcmp(inout->name, "out")) {
             has_out = 1;
-            ret->outputs = av_mallocz(sizeof(AVFilterGraphDescExport));
-            ret->outputs->filter = inout->instance;
-            ret->outputs->pad = inout->pad_idx;
+            snprintf(tmp, 20, "%d", inout->instance);
+            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+                goto fail;
+            }
+
+            if(avfilter_link(filt, inout->pad_idx, out, outpad)) {
+                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+                goto fail;
+        }
+
         } else {
             AVFilterInOut *p, *src, *dst;
             for (p = inout->next;
@@ -593,15 +475,9 @@ static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
                        inout->name);
                 goto fail;
             }
-            linkn = av_mallocz(sizeof(AVFilterGraphDescLink));
 
-            linkn->src = src->instance;
-            linkn->srcpad = src->pad_idx;
-            linkn->dst = dst->instance;
-            linkn->dstpad = dst->pad_idx;
-
-            *linkp = linkn;
-            linkp = &linkn->next;
+            if (link_filter(graph, src->instance, src->pad_idx, dst->instance, dst->pad_idx) < 0)
+                goto fail;
 
             src->instance = -1;
             dst->instance = -1;
@@ -610,44 +486,24 @@ static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
 
     free_inout(head);
 
-    if (!has_in) {
-        ret->inputs = av_mallocz(sizeof(AVFilterGraphDescExport));
-        ret->inputs->filter = 0;
-    }
     if (!has_out) {
-        ret->outputs = av_mallocz(sizeof(AVFilterGraphDescExport));
-        ret->outputs->filter = index-1;
+        snprintf(tmp, 20, "%d", index-1);
+        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+            goto fail;
+        }
+
+        if(avfilter_link(filt, pad, out, outpad)) {
+            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            goto fail;
+        }
+
     }
 
-    return ret;
+    return 0;
 
  fail:
     free_inout(head);
-
-    free_desc(ret);
-    return NULL;
-}
-
-/**
- * Parse a string describing a filter graph.
- */
-int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
-{
-    AVFilterGraphDesc *desc;
-
-    /* Try first to parse supposing there is no (in) element */
-    if (!(desc = parse_chain(filters, 0))) {
-        /* If it didn't work, parse supposing there is an (in) element */
-        desc = parse_chain(filters, 1);
-    }
-    if (!desc)
-        return -1;
-
-    if (load_from_desc(graph, desc, in, inpad, out, outpad) < 0) {
-        free_desc(desc);
-        return -1;
-    }
-
-    free_desc(desc);
-    return 0;
+    avfilter_destroy_graph(graph);
+    return -1;
 }
