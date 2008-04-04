@@ -47,9 +47,11 @@ static int link_init(AVFilterContext *ctx, const char *args, void *opaque)
     return !opaque;
 }
 
-/* given the link between the dummy filter and an internal filter whose input
+/**
+ * Given the link between the dummy filter and an internal filter whose input
  * is being exported outside the graph, this returns the externally visible
- * link */
+ * link
+ */
 static inline AVFilterLink *get_extern_input_link(AVFilterLink *link)
 {
     GraphLinkContext *lctx = link->src->priv;
@@ -99,9 +101,11 @@ static int link_in_config_props(AVFilterLink *link)
     return ret;
 }
 
-/* given the link between the dummy filter and an internal filter whose input
+/**
+ * Given the link between the dummy filter and an internal filter whose input
  * is being exported outside the graph, this returns the externally visible
- * link */
+ * link
+ */
 static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
 {
     GraphLinkContext *lctx = link->dst->priv;
