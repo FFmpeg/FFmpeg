@@ -176,5 +176,4 @@ AVCodecParser mpegvideo_parser = {
     NULL,
     mpegvideo_parse,
     ff_parse1_close,
-    mpegvideo_split,
 };
