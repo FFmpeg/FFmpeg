@@ -66,7 +66,10 @@ typedef struct
     AVFilterGraphDescExport *outputs;   ///< outputs to export
 } AVFilterGraphDesc;
 
-extern AVFilter avfilter_vf_graph;
+typedef struct AVFilterGraph {
+    unsigned filter_count;
+    AVFilterContext **filters;
+} GraphContext;
 
 /**
  * Parse a graph composed of a simple chain of filters which is described by
@@ -87,20 +90,20 @@ void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
  * @param graph  The filter graph
  * @param filter The filter to be added
  */
-void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter);
+void avfilter_graph_add_filter(GraphContext *graphctx, AVFilterContext *filter);
 
 /**
  * Configure the formats of all the links in the graph.
  */
-int avfilter_graph_config_formats(AVFilterContext *graphctx);
+int avfilter_graph_config_formats(GraphContext *graphctx);
 
 /**
  * Configure the parameters (resolution, etc) of all links in the graph.
  */
-int avfilter_graph_config_links(AVFilterContext *graphctx);
+int avfilter_graph_config_links(GraphContext *graphctx);
 
 
-int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc,
+int graph_load_from_desc3(GraphContext *ctx, AVFilterGraphDesc *desc,
                           AVFilterContext *in, int inpad,
                           AVFilterContext *out, int outpad);
 

@@ -22,93 +22,39 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-typedef struct AVFilterGraph {
-    unsigned filter_count;
-    AVFilterContext **filters;
-
-    /** fake filters to handle links to internal filters */
-    AVFilterContext *link_filter_in;
-    AVFilterContext *link_filter_out;
-} GraphContext;
-
-typedef struct {
-    AVFilterContext *graph;
-} GraphLinkContext;
-
-static int link_init(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    GraphLinkContext *linkctx = ctx->priv;
-    linkctx->graph = opaque;
-    return !opaque;
-}
-
 /**
- * Given the link between the dummy filter and an internal filter whose input
- * is being exported outside the graph, this returns the externally visible
- * link.
+ * For use in av_log
  */
-static inline AVFilterLink *get_extern_input_link(AVFilterLink *link)
+static const char *log_name(void *p)
 {
-    GraphLinkContext *lctx = link->src->priv;
-    return lctx->graph->inputs[link->srcpad];
+    return "Filter parser";
 }
 
-/**
- * Given the link between the dummy filter and an internal filter whose output
- * is being exported outside the graph, this returns the externally visible
- * link.
- */
-static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
-{
-    GraphLinkContext *lctx = link->dst->priv;
-    return lctx->graph->outputs[link->dstpad];
-}
-
-
-/** dummy filter used to help export filters pads outside the graph */
-static AVFilter vf_graph_dummy =
-{
-    .name      = "graph_dummy",
-
-    .priv_size = sizeof(GraphLinkContext),
-
-    .init      = link_init,
-
-    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
+static const AVClass filter_parser_class = {
+    "Filter parser",
+    log_name
 };
 
-static void uninit(AVFilterContext *ctx)
-{
-    GraphContext *graph = ctx->priv;
+static const AVClass *log_ctx = &filter_parser_class;
 
-    if(graph->link_filter_in) {
-        avfilter_destroy(graph->link_filter_in);
-        graph->link_filter_in = NULL;
-    }
-    if(graph->link_filter_out) {
-        avfilter_destroy(graph->link_filter_out);
-        graph->link_filter_out = NULL;
-    }
+static void uninit(GraphContext *graph)
+{
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->filters);
 }
 
 /* TODO: insert in sorted order */
-void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter)
+void avfilter_graph_add_filter(GraphContext *graph, AVFilterContext *filter)
 {
-    GraphContext *graph = graphctx->priv;
-
     graph->filters = av_realloc(graph->filters,
                                 sizeof(AVFilterContext*) * ++graph->filter_count);
     graph->filters[graph->filter_count - 1] = filter;
 }
 
 /* search intelligently, once we insert in order */
-AVFilterContext *avfilter_graph_get_filter(AVFilterContext *ctx, char *name)
+AVFilterContext *avfilter_graph_get_filter(GraphContext *graph, char *name)
 {
-    GraphContext *graph = ctx->priv;
     int i;
 
     if(!name)
@@ -121,11 +67,8 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterContext *ctx, char *name)
     return NULL;
 }
 
-static int query_formats(AVFilterContext *graphctx)
+static int query_formats(GraphContext *graph)
 {
-    GraphContext *graph = graphctx->priv;
-    AVFilterContext *linkfiltin  = graph->link_filter_in;
-    AVFilterContext *linkfiltout = graph->link_filter_out;
     int i, j;
 
     /* ask all the sub-filters for their supported colorspaces */
@@ -134,24 +77,6 @@ static int query_formats(AVFilterContext *graphctx)
             graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
             avfilter_default_query_formats(graph->filters[i]);
-    }
-
-    /* use these formats on our exported links */
-    for(i = 0; i < linkfiltout->input_count; i ++) {
-        avfilter_formats_ref( linkfiltout->inputs[i]->in_formats,
-                             &linkfiltout->inputs[i]->out_formats);
-
-        if(graphctx->outputs[i])
-            avfilter_formats_ref(linkfiltout->inputs[i]->in_formats,
-                                 &graphctx->outputs[i]->in_formats);
-    }
-    for(i = 0; i < linkfiltin->output_count; i ++) {
-        avfilter_formats_ref( linkfiltin->outputs[i]->out_formats,
-                             &linkfiltin->outputs[i]->in_formats);
-
-        if(graphctx->inputs[i])
-            avfilter_formats_ref(linkfiltin->outputs[i]->out_formats,
-                                 &graphctx-> inputs[i]->out_formats);
     }
 
     /* go through and merge as many format lists as possible */
@@ -177,7 +102,7 @@ static int query_formats(AVFilterContext *graphctx)
                         return -1;
                     }
 
-                    avfilter_graph_add_filter(graphctx, scale);
+                    avfilter_graph_add_filter(graph, scale);
                     scale->filter->query_formats(scale);
                     if(!avfilter_merge_formats(scale-> inputs[0]->in_formats,
                                               scale-> inputs[0]->out_formats) ||
@@ -211,9 +136,6 @@ static void pick_formats(GraphContext *graph)
     for(i = 0; i < graph->filter_count; i ++) {
         AVFilterContext *filter = graph->filters[i];
 
-        if(filter->filter == &avfilter_vf_graph)
-            pick_formats(filter->priv);
-
         for(j = 0; j < filter->input_count; j ++)
             pick_format(filter->inputs[j]);
         for(j = 0; j < filter->output_count; j ++)
@@ -221,12 +143,10 @@ static void pick_formats(GraphContext *graph)
     }
 }
 
-int avfilter_graph_config_formats(AVFilterContext *graphctx)
+int avfilter_graph_config_formats(GraphContext *graph)
 {
-    GraphContext *graph = graphctx->priv;
-
     /* find supported formats from sub-filters, and merge along links */
-    if(query_formats(graphctx))
+    if(query_formats(graph))
         return -1;
 
     /* Once everything is merged, it's possible that we'll still have
@@ -236,7 +156,7 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx)
     return 0;
 }
 
-static int graph_load_from_desc2(AVFilterContext *ctx, AVFilterGraphDesc *desc)
+static int graph_load_from_desc2(GraphContext *ctx, AVFilterGraphDesc *desc)
 {
     AVFilterGraphDescFilter *curfilt;
     AVFilterGraphDescLink   *curlink;
@@ -250,13 +170,13 @@ static int graph_load_from_desc2(AVFilterContext *ctx, AVFilterGraphDesc *desc)
         snprintf(tmp, 20, "%d", curfilt->index);
         if(!(filterdef = avfilter_get_by_name(curfilt->filter)) ||
            !(filt = avfilter_open(filterdef, tmp))) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(&log_ctx, AV_LOG_ERROR,
                "error creating filter '%s'\n", curfilt->filter);
             goto fail;
         }
         avfilter_graph_add_filter(ctx, filt);
         if(avfilter_init_filter(filt, curfilt->args, NULL)) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(&log_ctx, AV_LOG_ERROR,
                 "error initializing filter '%s'\n", curfilt->filter);
             goto fail;
         }
@@ -266,16 +186,16 @@ static int graph_load_from_desc2(AVFilterContext *ctx, AVFilterGraphDesc *desc)
     for(curlink = desc->links; curlink; curlink = curlink->next) {
         snprintf(tmp, 20, "%d", curlink->src);
         if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
+            av_log(&log_ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
             goto fail;
         }
         snprintf(tmp, 20, "%d", curlink->dst);
         if(!(filtb = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
+            av_log(&log_ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
             goto fail;
         }
         if(avfilter_link(filt, curlink->srcpad, filtb, curlink->dstpad)) {
-            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
             goto fail;
         }
     }
@@ -287,24 +207,24 @@ fail:
     return -1;
 }
 
-int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
+int graph_load_from_desc3(GraphContext *graph, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
     AVFilterGraphDescExport *curpad;
     char tmp[20];
     AVFilterContext *filt;
 
-    if (graph_load_from_desc2(ctx, desc) < 0)
+    if (graph_load_from_desc2(graph, desc) < 0)
         goto fail;
 
     /* export all input pads */
     for(curpad = desc->inputs; curpad; curpad = curpad->next) {
         snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
             goto fail;
         }
         if(avfilter_link(in, inpad, filt, curpad->pad)) {
-            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
             goto fail;
         }
     }
@@ -312,13 +232,13 @@ int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc, AVFilte
     /* export all output pads */
     for(curpad = desc->outputs; curpad; curpad = curpad->next) {
         snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
+            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
             goto fail;
         }
 
         if(avfilter_link(filt, curpad->pad, out, outpad)) {
-            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
             goto fail;
         }
     }
@@ -326,44 +246,6 @@ int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc, AVFilte
     return 0;
 
 fail:
-    uninit(ctx);
+    uninit(graph);
     return -1;
 }
-
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    GraphContext *gctx = ctx->priv;
-
-    if(!(gctx->link_filter_in = avfilter_open(&vf_graph_dummy, NULL)))
-        return -1;
-    if(avfilter_init_filter(gctx->link_filter_in, NULL, ctx))
-        goto fail;
-    if(!(gctx->link_filter_out = avfilter_open(&vf_graph_dummy, NULL)))
-        goto fail;
-    if(avfilter_init_filter(gctx->link_filter_out, NULL, ctx))
-        goto fail;
-
-    return 0;
-
-fail:
-    avfilter_destroy(gctx->link_filter_in);
-    if(gctx->link_filter_out)
-        avfilter_destroy(gctx->link_filter_out);
-    return -1;
-}
-
-AVFilter avfilter_vf_graph =
-{
-    .name      = "graph",
-
-    .priv_size = sizeof(GraphContext),
-
-    .init      = init,
-    .uninit    = uninit,
-
-    .query_formats = query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
-};
-
