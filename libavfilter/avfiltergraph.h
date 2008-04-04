@@ -86,6 +86,14 @@ typedef struct
     AVFilterGraphDescExport **outputp;  ///< last parsed exported output
 } AVFilterGraphDescParser;
 
+/**
+ * Parse a graph composed of a simple chain of filters which is described by
+ * a single string.
+ * @param filters String listing filters and their arguments.
+ * @return        The parsed graph description.
+ */
+AVFilterGraphDesc *avfilter_graph_parse_chain(const char *filters);
+
 /** Parse a line of a filter graph description.
  * @param desc   Pointer to an AVFilterGraphDesc pointer. If *desc is NULL,
  *               a new AVFilterGraphDesc structure will be created for you.

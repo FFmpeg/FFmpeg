@@ -492,156 +492,6 @@ int avfilter_graph_config_links(AVFilterContext *graphctx)
     return 0;
 }
 
-static AVFilterContext *create_filter_with_args(AVFilterContext *graphctx,
-                                                const char *filt, void *opaque)
-{
-    AVFilterContext *ret;
-    char *filter = av_strdup(filt); /* copy - don't mangle the input string */
-    char *name, *args;
-
-    name = filter;
-    if((args = strchr(filter, '='))) {
-        /* ensure we at least have a name */
-        if(args == filter)
-            goto fail;
-
-        *args ++ = 0;
-    }
-
-    av_log(graphctx, AV_LOG_INFO, "creating filter \"%s\" with args \"%s\"\n",
-           name, args ? args : "(none)");
-
-    if((ret = avfilter_open(avfilter_get_by_name(name), NULL))) {
-        if(avfilter_init_filter(ret, args, opaque)) {
-            av_log(graphctx, AV_LOG_ERROR, "error initializing filter!\n");
-            avfilter_destroy(ret);
-            goto fail;
-        }
-    } else {
-        av_log(graphctx, AV_LOG_ERROR,
-               "error creating filter \"%s\" with args \"%s\"\n",
-               name, args ? args : "(none)");
-    }
-
-    av_free(filter);
-
-    return ret;
-
-fail:
-    av_free(filter);
-    return NULL;
-}
-
-static int graph_load_chain(AVFilterContext *graphctx,
-                              unsigned count, char **filter_list, void **opaque,
-                              AVFilterContext **first, AVFilterContext **last)
-{
-    unsigned i;
-    AVFilterContext *filters[2] = {NULL,NULL};
-
-    for(i = 0; i < count; i ++) {
-        void *op;
-
-        if(opaque) op = opaque[i];
-        else       op = NULL;
-
-        if(!(filters[1] = create_filter_with_args(graphctx, filter_list[i], op)))
-            goto fail;
-        if(i == 0) {
-            if(first) *first = filters[1];
-        } else {
-            if(avfilter_link(filters[0], 0, filters[1], 0)) {
-                av_log(graphctx, AV_LOG_ERROR, "error linking filters!\n");
-                goto fail;
-            }
-        }
-        avfilter_graph_add_filter(graphctx, filters[1]);
-        if(i == 0 && filters[1]->input_count > 0)
-            add_graph_input(graphctx, filters[1], 0, "default");
-        filters[0] = filters[1];
-    }
-
-    if(filters[1]->output_count > 0)
-        add_graph_output(graphctx, filters[1], 0, "default");
-
-    if(last) *last = filters[1];
-    return 0;
-
-fail:
-    uninit(graphctx);
-    if(first) *first = NULL;
-    if(last)  *last  = NULL;
-    return -1;
-}
-
-static int graph_load_chain_from_string(AVFilterContext *ctx, const char *str,
-                                        AVFilterContext **first,
-                                        AVFilterContext **last)
-{
-    int count, ret = 0;
-    char **strings;
-    char *filt;
-
-    strings    = av_malloc(sizeof(char *));
-    strings[0] = av_strdup(str);
-
-    filt = strchr(strings[0], ',');
-    for(count = 1; filt; count ++) {
-        if(filt == strings[count-1]) {
-            ret = -1;
-            goto done;
-        }
-
-        strings = av_realloc(strings, sizeof(char *) * (count+1));
-        strings[count] = filt + 1;
-        *filt = '\0';
-        filt = strchr(strings[count], ',');
-    }
-
-    ret = graph_load_chain(ctx, count, strings, NULL, first, last);
-
-done:
-    av_free(strings[0]);
-    av_free(strings);
-
-    return ret;
-}
-
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    GraphContext *gctx = ctx->priv;
-
-    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
-        return -1;
-    if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
-        goto fail;
-
-    if(!args)
-        return 0;
-
-    return graph_load_chain_from_string(ctx, args, NULL, NULL);
-
-fail:
-    avfilter_destroy(gctx->link_filter);
-    return -1;
-}
-
-AVFilter avfilter_vf_graph =
-{
-    .name      = "graph",
-    .author    = "Bobby Bingham",
-
-    .priv_size = sizeof(GraphContext),
-
-    .init      = init,
-    .uninit    = uninit,
-
-    .query_formats = query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
-};
-
 static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
 {
     AVFilterGraphDescFilter *curfilt;
@@ -705,6 +555,48 @@ fail:
     uninit(ctx);
     return -1;
 }
+
+static int init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    GraphContext *gctx = ctx->priv;
+    AVFilterGraphDesc *desc;
+    int ret;
+
+    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
+        return -1;
+    if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
+        goto fail;
+
+    if(!args)
+        return 0;
+
+    if(!(desc = avfilter_graph_parse_chain(args)))
+        goto fail;
+
+    ret = graph_load_from_desc(ctx, desc);
+    avfilter_graph_free_desc(desc);
+    return ret;
+
+fail:
+    avfilter_destroy(gctx->link_filter);
+    return -1;
+}
+
+AVFilter avfilter_vf_graph =
+{
+    .name      = "graph",
+    .author    = "Bobby Bingham",
+
+    .priv_size = sizeof(GraphContext),
+
+    .init      = init,
+    .uninit    = uninit,
+
+    .query_formats = query_formats,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
+};
 
 static int init_desc(AVFilterContext *ctx, const char *args, void *opaque)
 {
