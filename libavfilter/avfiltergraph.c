@@ -75,6 +75,8 @@ static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
         }
     } else av_log(NULL, AV_LOG_ERROR, "error creating filter!\n");
 
+    av_free(filter);
+
     return ret;
 
 fail:
