@@ -32,8 +32,9 @@ typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
 
-    /** fake filter to handle links to internal filters */
-    AVFilterContext *link_filter;
+    /** fake filters to handle links to internal filters */
+    AVFilterContext *link_filter_in;
+    AVFilterContext *link_filter_out;
 } GraphContext;
 
 typedef struct {
@@ -166,7 +167,7 @@ static AVFilter vf_graph_dummy =
 static AVFilterLink *get_intern_input_link(AVFilterLink *link)
 {
     GraphContext *graph = link->dst->priv;
-    return graph->link_filter->outputs[link->dstpad];
+    return graph->link_filter_in->outputs[link->dstpad];
 }
 
 static void graph_in_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
@@ -220,7 +221,7 @@ static int graph_in_config_props(AVFilterLink *link)
 static AVFilterLink *get_intern_output_link(AVFilterLink *link)
 {
     GraphContext *graph = link->src->priv;
-    return graph->link_filter->inputs[link->srcpad];
+    return graph->link_filter_out->inputs[link->srcpad];
 }
 
 static int graph_out_request_frame(AVFilterLink *link)
@@ -281,10 +282,10 @@ static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigne
     };
 
     avfilter_insert_inpad (gctx, gctx->input_count, &graph_inpad);
-    avfilter_insert_outpad(graph->link_filter, graph->link_filter->output_count,
+    avfilter_insert_outpad(graph->link_filter_in, graph->link_filter_in->output_count,
                            &dummy_outpad);
-    return avfilter_link(graph->link_filter,
-                         graph->link_filter->output_count-1, filt, idx);
+    return avfilter_link(graph->link_filter_in,
+                         graph->link_filter_in->output_count-1, filt, idx);
 }
 
 static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsigned idx,
@@ -311,19 +312,23 @@ static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsign
     };
 
     avfilter_insert_outpad(gctx, gctx->output_count, &graph_outpad);
-    avfilter_insert_inpad (graph->link_filter, graph->link_filter->input_count,
+    avfilter_insert_inpad (graph->link_filter_out, graph->link_filter_out->input_count,
                            &dummy_inpad);
-    return avfilter_link(filt, idx, graph->link_filter,
-                         graph->link_filter->input_count-1);
+    return avfilter_link(filt, idx, graph->link_filter_out,
+                         graph->link_filter_out->input_count-1);
 }
 
 static void uninit(AVFilterContext *ctx)
 {
     GraphContext *graph = ctx->priv;
 
-    if(graph->link_filter) {
-        avfilter_destroy(graph->link_filter);
-        graph->link_filter = NULL;
+    if(graph->link_filter_in) {
+        avfilter_destroy(graph->link_filter_in);
+        graph->link_filter_in = NULL;
+    }
+    if(graph->link_filter_out) {
+        avfilter_destroy(graph->link_filter_out);
+        graph->link_filter_out = NULL;
     }
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
@@ -359,7 +364,8 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterContext *ctx, char *name)
 static int query_formats(AVFilterContext *graphctx)
 {
     GraphContext *graph = graphctx->priv;
-    AVFilterContext *linkfilt = graph->link_filter;
+    AVFilterContext *linkfiltin  = graph->link_filter_in;
+    AVFilterContext *linkfiltout = graph->link_filter_out;
     int i, j;
 
     /* ask all the sub-filters for their supported colorspaces */
@@ -371,20 +377,20 @@ static int query_formats(AVFilterContext *graphctx)
     }
 
     /* use these formats on our exported links */
-    for(i = 0; i < linkfilt->input_count; i ++) {
-        avfilter_formats_ref( linkfilt->inputs[i]->in_formats,
-                             &linkfilt->inputs[i]->out_formats);
+    for(i = 0; i < linkfiltout->input_count; i ++) {
+        avfilter_formats_ref( linkfiltout->inputs[i]->in_formats,
+                             &linkfiltout->inputs[i]->out_formats);
 
         if(graphctx->outputs[i])
-            avfilter_formats_ref( linkfilt-> inputs[i]->in_formats,
+            avfilter_formats_ref(linkfiltout->inputs[i]->in_formats,
                                  &graphctx->outputs[i]->in_formats);
     }
-    for(i = 0; i < linkfilt->output_count; i ++) {
-        avfilter_formats_ref( linkfilt->outputs[i]->out_formats,
-                             &linkfilt->outputs[i]->in_formats);
+    for(i = 0; i < linkfiltin->output_count; i ++) {
+        avfilter_formats_ref( linkfiltin->outputs[i]->out_formats,
+                             &linkfiltin->outputs[i]->in_formats);
 
         if(graphctx->inputs[i])
-            avfilter_formats_ref( linkfilt->outputs[i]->out_formats,
+            avfilter_formats_ref(linkfiltin->outputs[i]->out_formats,
                                  &graphctx-> inputs[i]->out_formats);
     }
 
@@ -562,9 +568,13 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     AVFilterGraphDesc *desc;
     int ret;
 
-    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
+    if(!(gctx->link_filter_in = avfilter_open(&vf_graph_dummy, NULL)))
         return -1;
-    if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
+    if(avfilter_init_filter(gctx->link_filter_in, NULL, ctx))
+        goto fail;
+    if(!(gctx->link_filter_out = avfilter_open(&vf_graph_dummy, NULL)))
+        goto fail;
+    if(avfilter_init_filter(gctx->link_filter_out, NULL, ctx))
         goto fail;
 
     if(!args)
@@ -578,7 +588,9 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     return ret;
 
 fail:
-    avfilter_destroy(gctx->link_filter);
+    avfilter_destroy(gctx->link_filter_in);
+    if(gctx->link_filter_out)
+        avfilter_destroy(gctx->link_filter_out);
     return -1;
 }
 
@@ -605,15 +617,21 @@ static int init_desc(AVFilterContext *ctx, const char *args, void *opaque)
     if(!opaque)
         return -1;
 
-    if(!(gctx->link_filter = avfilter_open(&vf_graph_dummy, NULL)))
+    if(!(gctx->link_filter_in = avfilter_open(&vf_graph_dummy, NULL)))
         return -1;
-    if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
+    if(avfilter_init_filter(gctx->link_filter_in, NULL, ctx))
+        goto fail;
+    if(!(gctx->link_filter_out = avfilter_open(&vf_graph_dummy, NULL)))
+        goto fail;
+    if(avfilter_init_filter(gctx->link_filter_out, NULL, ctx))
         goto fail;
 
     return graph_load_from_desc(ctx, opaque);
 
 fail:
-    avfilter_destroy(gctx->link_filter);
+    avfilter_destroy(gctx->link_filter_in);
+    if(gctx->link_filter_out)
+        avfilter_destroy(gctx->link_filter_out);
     return -1;
 }
 
