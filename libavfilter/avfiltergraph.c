@@ -488,11 +488,10 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx)
     return 0;
 }
 
-static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
+static int graph_load_from_desc2(AVFilterContext *ctx, AVFilterGraphDesc *desc)
 {
     AVFilterGraphDescFilter *curfilt;
     AVFilterGraphDescLink   *curlink;
-    AVFilterGraphDescExport *curpad;
     AVFilterContext *filt, *filtb;
 
     AVFilter *filterdef;
@@ -533,6 +532,22 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
         }
     }
 
+    return 0;
+
+fail:
+    uninit(ctx);
+    return -1;
+}
+
+static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
+{
+    AVFilterGraphDescExport *curpad;
+    char tmp[20];
+    AVFilterContext *filt;
+
+    if (graph_load_from_desc2(ctx, desc) < 0)
+        goto fail;
+
     /* export all input pads */
     for(curpad = desc->inputs; curpad; curpad = curpad->next) {
         snprintf(tmp, 20, "%d", curpad->filter);
@@ -551,6 +566,49 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
             goto fail;
         }
         add_graph_output(ctx, filt, curpad->pad, curpad->name);
+    }
+
+    return 0;
+
+fail:
+    uninit(ctx);
+    return -1;
+}
+
+int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
+{
+    AVFilterGraphDescExport *curpad;
+    char tmp[20];
+    AVFilterContext *filt;
+
+    if (graph_load_from_desc2(ctx, desc) < 0)
+        goto fail;
+
+    /* export all input pads */
+    for(curpad = desc->inputs; curpad; curpad = curpad->next) {
+        snprintf(tmp, 20, "%d", curpad->filter);
+        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
+            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+            goto fail;
+        }
+        if(avfilter_link(in, inpad, filt, curpad->pad)) {
+            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            goto fail;
+        }
+    }
+
+    /* export all output pads */
+    for(curpad = desc->outputs; curpad; curpad = curpad->next) {
+        snprintf(tmp, 20, "%d", curpad->filter);
+        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
+            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+            goto fail;
+        }
+
+        if(avfilter_link(filt, curpad->pad, out, outpad)) {
+            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            goto fail;
+        }
     }
 
     return 0;

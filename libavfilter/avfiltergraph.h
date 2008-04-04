@@ -119,4 +119,9 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx);
  */
 int avfilter_graph_config_links(AVFilterContext *graphctx);
 
+
+int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc,
+                          AVFilterContext *in, int inpad,
+                          AVFilterContext *out, int outpad);
+
 #endif  /* FFMPEG_AVFILTERGRAPH_H */
