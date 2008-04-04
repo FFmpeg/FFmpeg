@@ -216,22 +216,6 @@ static void consume_whitespace(const char **buf)
 }
 
 /**
- * get the next non-whitespace char
- */
-static char consume_char(const char **buf)
-{
-    char out;
-    consume_whitespace(buf);
-
-    out = **buf;
-
-    if (out)
-        (*buf)++;
-
-    return out;
-}
-
-/**
  * Copy the first size bytes of input string to a null-terminated string,
  * removing any control character. Ex: "aaa'bb'c\'c\\" -> "aaabbc'c\"
  */
@@ -304,14 +288,14 @@ static char *consume_string(const char **buf)
  */
 static void parse_link_name(const char **buf, char **name)
 {
-    consume_char(buf);
+    (*buf)++;
 
     *name = consume_string(buf);
 
     if (!*name[0])
         goto fail;
 
-    if (consume_char(buf) != ')')
+    if (*(*buf)++ != ')')
         goto fail;
 
     return;
@@ -333,7 +317,7 @@ static int parse_filter(const char **buf, AVFilterGraph *graph, int index)
     name = consume_string(buf);
 
     if (**buf == '=') {
-        consume_char(buf);
+        (*buf)++;
         opts = consume_string(buf);
     } else {
         opts = NULL;
@@ -393,8 +377,8 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
  */
 int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
-    AVFilterInOut           *inout=NULL;
-    AVFilterInOut           *head=NULL;
+    AVFilterInOut *inout=NULL;
+    AVFilterInOut  *head=NULL;
 
     int index = 0;
     char chr = 0;
@@ -434,7 +418,7 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
 
         }
         pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, index);
-        chr = consume_char(&filters);
+        chr = *filters++;
         index++;
     } while (chr == ',' || chr == ';');
 
