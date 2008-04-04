@@ -184,7 +184,6 @@ static AVFilter vf_graph_dummy =
     .priv_size = sizeof(GraphLinkContext),
 
     .init      = link_init,
-    //.uninit    = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
