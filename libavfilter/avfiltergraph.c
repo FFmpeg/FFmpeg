@@ -26,31 +26,24 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-struct AVFilterGraph {
+typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
-};
+} GraphContext;
 
-AVFilterGraph *avfilter_create_graph(void)
+static void uninit(AVFilterContext *ctx)
 {
-    return av_mallocz(sizeof(AVFilterGraph));
-}
+    GraphContext *graph = ctx->priv;
 
-static void destroy_graph_filters(AVFilterGraph *graph)
-{
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->filters);
 }
 
-void avfilter_destroy_graph(AVFilterGraph *graph)
+void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter)
 {
-    destroy_graph_filters(graph);
-    av_free(graph);
-}
+    GraphContext *graph = graphctx->priv;
 
-void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
-{
     graph->filters = av_realloc(graph->filters,
                                 sizeof(AVFilterContext*) * ++graph->filter_count);
     graph->filters[graph->filter_count - 1] = filter;
@@ -89,7 +82,7 @@ fail:
     return NULL;
 }
 
-int avfilter_graph_load_chain(AVFilterGraph *graph,
+static int graph_load_chain(AVFilterContext *graphctx,
                               unsigned count, char **filter_list, void **opaque,
                               AVFilterContext **first, AVFilterContext **last)
 {
@@ -112,7 +105,7 @@ int avfilter_graph_load_chain(AVFilterGraph *graph,
                 goto fail;
             }
         }
-        avfilter_graph_add_filter(graph, filters[1]);
+        avfilter_graph_add_filter(graphctx, filters[1]);
         filters[0] = filters[1];
     }
 
@@ -120,9 +113,68 @@ int avfilter_graph_load_chain(AVFilterGraph *graph,
     return 0;
 
 fail:
-    destroy_graph_filters(graph);
+    uninit(graphctx);
     if(first) *first = NULL;
     if(last)  *last  = NULL;
     return -1;
 }
+
+static int graph_load_chain_from_string(AVFilterContext *ctx, const char *str,
+                                        AVFilterContext **first,
+                                        AVFilterContext **last)
+{
+    int count, ret = 0;
+    char **strings;
+    char *filt;
+
+    strings    = av_malloc(sizeof(char *));
+    strings[0] = av_strdup(str);
+
+    filt = strchr(strings[0], ',');
+    for(count = 1; filt; count ++) {
+        if(filt == strings[count-1]) {
+            ret = -1;
+            goto done;
+        }
+
+        strings = av_realloc(strings, sizeof(char *) * (count+1));
+        strings[count] = filt + 1;
+        *filt = '\0';
+        filt = strchr(strings[count], ',');
+    }
+
+    ret = graph_load_chain(ctx, count, strings, NULL, first, last);
+
+done:
+    av_free(strings[0]);
+    av_free(strings);
+
+    return ret;
+}
+
+static int init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    AVFilterContext **filters = opaque;
+
+    if(!args)
+        return 0;
+    if(!opaque)
+        return -1;
+
+    return graph_load_chain_from_string(ctx, args, filters, filters + 1);
+}
+
+AVFilter vf_graph =
+{
+    .name      = "graph",
+    .author    = "Bobby Bingham",
+
+    .priv_size = sizeof(GraphContext),
+
+    .init      = init,
+    .uninit    = uninit,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
+};
 

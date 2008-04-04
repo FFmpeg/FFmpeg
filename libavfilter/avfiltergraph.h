@@ -24,37 +24,11 @@
 
 #include "avfilter.h"
 
-typedef struct AVFilterGraph AVFilterGraph;
-
-/**
- * Create a new filter graph
- */
-AVFilterGraph *avfilter_create_graph(void);
-
-/**
- * Destroy a filter graph, and any filters in it.
- * @param graph The filter graph to destroy
- */
-void avfilter_destroy_graph(AVFilterGraph *graph);
-
 /**
  * Add an existing filter instance to a filter graph.
  * @param graph  The filter graph
  * @param filter The filter to be added
  */
-void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter);
+void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter);
 
-/**
- * Loads the filter graph with a simple chain described by filters.
- * @param graph   The filter graph to load filters into
- * @param count   The number of filters to be created
- * @param filters_list An array of strings describing the filters to be created.
- *                The format of each string is "name=params".
- * @param first   If non-NULL, will be set to the first filter in the chain.
- * @param last    If non-NULL, will be set to the last filter in the chain.
- * @return 0 on success.  -1 on error.
- */
-int avfilter_graph_load_chain(AVFilterGraph *graph,
-                              unsigned count, char **filter_list, void **opaque,
-                              AVFilterContext **first, AVFilterContext **last);
 #endif  /* FFMPEG_AVFILTER_H */
