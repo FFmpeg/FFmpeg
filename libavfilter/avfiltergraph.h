@@ -72,12 +72,16 @@ typedef struct AVFilterGraph {
 } AVFilterGraph;
 
 /**
- * Parse a graph composed of a simple chain of filters which is described by
- * a single string.
- * @param filters String listing filters and their arguments.
- * @return        The parsed graph description.
+ * Add to a graph a graph described by a string.
+ * @param graph   the filter graph where to link the parsed graph context
+ * @param filters string to be parsed
+ * @param in      input to the graph to be parsed (TODO: allow several)
+ * @param inpad   pad index of the input
+ * @param in      output to the graph to be parsed (TODO: allow several)
+ * @param inpad   pad index of the output
+ * @return        zero on success, -1 on error
  */
-AVFilterGraphDesc *avfilter_graph_parse_chain(const char *filters);
+int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad);
 
 /**
  * Free a filter graph description.

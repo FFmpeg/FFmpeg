@@ -554,16 +554,25 @@ static AVFilterGraphDesc *parse_chain(const char *filters, int has_in)
 /**
  * Parse a string describing a filter graph.
  */
-AVFilterGraphDesc *avfilter_graph_parse_chain(const char *filters)
+int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
-    AVFilterGraphDesc *ret;
+    AVFilterGraphDesc *desc;
 
     /* Try first to parse supposing there is no (in) element */
-    if ((ret = parse_chain(filters, 0)))
-        return ret;
+    if (!(desc = parse_chain(filters, 0))) {
+        /* If it didn't work, parse supposing there is an (in) element */
+        desc = parse_chain(filters, 1);
+    }
+    if (!desc)
+        return -1;
 
-    /* Parse supposing there is an (in) element */
-    return parse_chain(filters, 1);
+    if (graph_load_from_desc3(graph, desc, in, inpad, out, outpad) < 0) {
+        avfilter_graph_free_desc(desc);
+        return -1;
+    }
+
+    avfilter_graph_free_desc(desc);
+    return 0;
 }
 
 /**
