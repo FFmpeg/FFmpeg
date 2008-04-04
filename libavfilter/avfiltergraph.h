@@ -55,6 +55,6 @@ void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter);
  * @return 0 on success.  -1 on error.
  */
 int avfilter_graph_load_chain(AVFilterGraph *graph,
-                              unsigned count, char **filter_list,
+                              unsigned count, char **filter_list, void **opaque,
                               AVFilterContext **first, AVFilterContext **last);
 #endif  /* FFMPEG_AVFILTER_H */

@@ -56,7 +56,7 @@ void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filters[graph->filter_count - 1] = filter;
 }
 
-static AVFilterContext *create_filter_with_args(const char *filt)
+static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
 {
     AVFilterContext *ret;
     char *filter = av_strdup(filt); /* copy - don't mangle the input string */
@@ -75,7 +75,7 @@ static AVFilterContext *create_filter_with_args(const char *filt)
            name, args ? args : "(none)");
 
     if((ret = avfilter_create_by_name(name, NULL))) {
-        if(avfilter_init_filter(ret, args)) {
+        if(avfilter_init_filter(ret, args, opaque)) {
             av_log(NULL, AV_LOG_ERROR, "error initializing filter!\n");
             avfilter_destroy(ret);
             goto fail;
@@ -90,14 +90,19 @@ fail:
 }
 
 int avfilter_graph_load_chain(AVFilterGraph *graph,
-                              unsigned count, char **filter_list,
+                              unsigned count, char **filter_list, void **opaque,
                               AVFilterContext **first, AVFilterContext **last)
 {
     unsigned i;
     AVFilterContext *filters[2] = {NULL,NULL};
 
     for(i = 0; i < count; i ++) {
-        if(!(filters[1] = create_filter_with_args(filter_list[i])))
+        void *op;
+
+        if(opaque) op = opaque[i];
+        else       op = NULL;
+
+        if(!(filters[1] = create_filter_with_args(filter_list[i], op)))
             goto fail;
         if(i == 0) {
             if(first) *first = filters[1];
