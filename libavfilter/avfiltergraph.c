@@ -240,6 +240,7 @@ static int graph_in_config_props(AVFilterLink *link)
     /* copy link properties over to the dummy internal link */
     link2->w = link->w;
     link2->h = link->h;
+    link2->format = link->format;
 
     if(!(config_props = link2->dst->input_pads[link2->dstpad].config_props))
         return 0;   /* FIXME? */
