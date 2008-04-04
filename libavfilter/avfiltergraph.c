@@ -492,7 +492,8 @@ int avfilter_graph_config_links(AVFilterContext *graphctx)
     return 0;
 }
 
-static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
+static AVFilterContext *create_filter_with_args(AVFilterContext *graphctx,
+                                                const char *filt, void *opaque)
 {
     AVFilterContext *ret;
     char *filter = av_strdup(filt); /* copy - don't mangle the input string */
@@ -507,17 +508,17 @@ static AVFilterContext *create_filter_with_args(const char *filt, void *opaque)
         *args ++ = 0;
     }
 
-    av_log(NULL, AV_LOG_INFO, "creating filter \"%s\" with args \"%s\"\n",
+    av_log(graphctx, AV_LOG_INFO, "creating filter \"%s\" with args \"%s\"\n",
            name, args ? args : "(none)");
 
     if((ret = avfilter_open(avfilter_get_by_name(name), NULL))) {
         if(avfilter_init_filter(ret, args, opaque)) {
-            av_log(NULL, AV_LOG_ERROR, "error initializing filter!\n");
+            av_log(graphctx, AV_LOG_ERROR, "error initializing filter!\n");
             avfilter_destroy(ret);
             goto fail;
         }
     } else {
-        av_log(NULL, AV_LOG_ERROR,
+        av_log(graphctx, AV_LOG_ERROR,
                "error creating filter \"%s\" with args \"%s\"\n",
                name, args ? args : "(none)");
     }
@@ -544,13 +545,13 @@ static int graph_load_chain(AVFilterContext *graphctx,
         if(opaque) op = opaque[i];
         else       op = NULL;
 
-        if(!(filters[1] = create_filter_with_args(filter_list[i], op)))
+        if(!(filters[1] = create_filter_with_args(graphctx, filter_list[i], op)))
             goto fail;
         if(i == 0) {
             if(first) *first = filters[1];
         } else {
             if(avfilter_link(filters[0], 0, filters[1], 0)) {
-                av_log(NULL, AV_LOG_ERROR, "error linking filters!\n");
+                av_log(graphctx, AV_LOG_ERROR, "error linking filters!\n");
                 goto fail;
             }
         }
