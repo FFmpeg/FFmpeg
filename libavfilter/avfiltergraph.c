@@ -92,9 +92,9 @@ static int query_formats(AVFilterGraph *graph)
                     avfilter_graph_add_filter(graph, scale);
                     scale->filter->query_formats(scale);
                     if(!avfilter_merge_formats(scale-> inputs[0]->in_formats,
-                                              scale-> inputs[0]->out_formats) ||
+                                               scale-> inputs[0]->out_formats)||
                        !avfilter_merge_formats(scale->outputs[0]->in_formats,
-                                              scale->outputs[0]->out_formats))
+                                               scale->outputs[0]->out_formats))
                         return -1;
                 }
             }
