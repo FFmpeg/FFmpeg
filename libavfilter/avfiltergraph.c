@@ -488,7 +488,7 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx)
         return -1;
 
     /* Once everything is merged, it's possible that we'll still have
-     * multiple valid choices of colorspace. We pick the first one. */
+     * multiple valid colorspace choices. We pick the first one. */
     pick_formats(graph);
 
     return 0;

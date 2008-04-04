@@ -109,14 +109,14 @@ int avfilter_graph_parse_desc(AVFilterGraphDesc **desc,
                               char *line);
 
 /**
- * Load a filter graph description from a file
- * @param filename Name of the file from which to load the description
- * @return         Pointer to the description on success.  NULL on failure
+ * Load a filter graph description from a file.
+ * @param filename Name of the file from which to load the description.
+ * @return         Pointer to the description on success,  NULL on failure.
  */
 AVFilterGraphDesc *avfilter_graph_load_desc(const char *filename);
 
 /**
- * Free a filter graph description
+ * Free a filter graph description.
  * @param desc The graph description to free
  */
 void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
@@ -129,12 +129,12 @@ void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
 void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter);
 
 /**
- * Configure the formats of all the links in the graph
+ * Configure the formats of all the links in the graph.
  */
 int avfilter_graph_config_formats(AVFilterContext *graphctx);
 
 /**
- * Configure the resolution, etc of all links in the graph
+ * Configure the parameters (resolution, etc) of all links in the graph.
  */
 int avfilter_graph_config_links(AVFilterContext *graphctx);
 
