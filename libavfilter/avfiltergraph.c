@@ -463,9 +463,7 @@ static void pick_formats(GraphContext *graph)
     for(i = 0; i < graph->filter_count; i ++) {
         AVFilterContext *filter = graph->filters[i];
 
-        if(filter->filter == &avfilter_vf_graph     ||
-           filter->filter == &avfilter_vf_graphfile ||
-           filter->filter == &avfilter_vf_graphdesc)
+        if(filter->filter == &avfilter_vf_graph)
             pick_formats(filter->priv);
 
         for(j = 0; j < filter->input_count; j ++)
@@ -498,30 +496,34 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
     AVFilterContext *filt, *filtb;
 
     AVFilter *filterdef;
+    char tmp[20];
 
     /* create all filters */
     for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
+        snprintf(tmp, 20, "%d", curfilt->index);
         if(!(filterdef = avfilter_get_by_name(curfilt->filter)) ||
-           !(filt = avfilter_open(filterdef, curfilt->name))) {
+           !(filt = avfilter_open(filterdef, tmp))) {
             av_log(ctx, AV_LOG_ERROR,
-               "error creating filter '%s'\n", curfilt->name);
+               "error creating filter '%s'\n", curfilt->filter);
             goto fail;
         }
         avfilter_graph_add_filter(ctx, filt);
         if(avfilter_init_filter(filt, curfilt->args, NULL)) {
             av_log(ctx, AV_LOG_ERROR,
-                "error initializing filter '%s'\n", curfilt->name);
+                "error initializing filter '%s'\n", curfilt->filter);
             goto fail;
         }
     }
 
     /* create all links */
     for(curlink = desc->links; curlink; curlink = curlink->next) {
-        if(!(filt = avfilter_graph_get_filter(ctx, curlink->src))) {
+        snprintf(tmp, 20, "%d", curlink->src);
+        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
             av_log(ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
             goto fail;
         }
-        if(!(filtb = avfilter_graph_get_filter(ctx, curlink->dst))) {
+        snprintf(tmp, 20, "%d", curlink->dst);
+        if(!(filtb = avfilter_graph_get_filter(ctx, tmp))) {
             av_log(ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
             goto fail;
         }
@@ -533,7 +535,8 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
 
     /* export all input pads */
     for(curpad = desc->inputs; curpad; curpad = curpad->next) {
-        if(!(filt = avfilter_graph_get_filter(ctx, curpad->filter))) {
+        snprintf(tmp, 20, "%d", curpad->filter);
+        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
             av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
             goto fail;
         }
@@ -542,7 +545,8 @@ static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
 
     /* export all output pads */
     for(curpad = desc->outputs; curpad; curpad = curpad->next) {
-        if(!(filt = avfilter_graph_get_filter(ctx, curpad->filter))) {
+        snprintf(tmp, 20, "%d", curpad->filter);
+        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
             av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
             goto fail;
         }
@@ -595,76 +599,6 @@ AVFilter avfilter_vf_graph =
     .priv_size = sizeof(GraphContext),
 
     .init      = init,
-    .uninit    = uninit,
-
-    .query_formats = query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
-};
-
-static int init_desc(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    GraphContext *gctx = ctx->priv;
-
-    if(!opaque)
-        return -1;
-
-    if(!(gctx->link_filter_in = avfilter_open(&vf_graph_dummy, NULL)))
-        return -1;
-    if(avfilter_init_filter(gctx->link_filter_in, NULL, ctx))
-        goto fail;
-    if(!(gctx->link_filter_out = avfilter_open(&vf_graph_dummy, NULL)))
-        goto fail;
-    if(avfilter_init_filter(gctx->link_filter_out, NULL, ctx))
-        goto fail;
-
-    return graph_load_from_desc(ctx, opaque);
-
-fail:
-    avfilter_destroy(gctx->link_filter_in);
-    if(gctx->link_filter_out)
-        avfilter_destroy(gctx->link_filter_out);
-    return -1;
-}
-
-AVFilter avfilter_vf_graphdesc =
-{
-    .name      = "graph_desc",
-
-    .priv_size = sizeof(GraphContext),
-
-    .init      = init_desc,
-    .uninit    = uninit,
-
-    .query_formats = query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
-};
-
-static int init_file(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    AVFilterGraphDesc *desc;
-    int ret;
-
-    if(!args)
-        return -1;
-    if(!(desc = avfilter_graph_load_desc(args)))
-        return -1;
-
-    ret = init_desc(ctx, NULL, desc);
-    avfilter_graph_free_desc(desc);
-    return ret;
-}
-
-AVFilter avfilter_vf_graphfile =
-{
-    .name      = "graph_file",
-
-    .priv_size = sizeof(GraphContext),
-
-    .init      = init_file,
     .uninit    = uninit,
 
     .query_formats = query_formats,

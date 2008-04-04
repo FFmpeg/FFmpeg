@@ -27,7 +27,7 @@
 /** Linked-list of filters to create for an AVFilterGraphDesc */
 typedef struct AVFilterGraphDescFilter
 {
-    char *name;             ///< filter instance name
+    int index;              ///< filter instance index
     char *filter;           ///< name of filter type
     char *args;             ///< filter parameters
     struct AVFilterGraphDescFilter *next;
@@ -37,10 +37,10 @@ typedef struct AVFilterGraphDescFilter
 typedef struct AVFilterGraphDescLink
 {
     /* TODO: allow referencing pads by name, not just by index */
-    char *src;              ///< name of the source filter
+    int src;                ///< index of the source filter
     unsigned srcpad;        ///< index of the output pad on the source filter
 
-    char *dst;              ///< name of the dest filter
+    int dst;                ///< index of the dest filter
     unsigned dstpad;        ///< index of the input pad on the dest filter
 
     struct AVFilterGraphDescLink *next;
@@ -51,7 +51,7 @@ typedef struct AVFilterGraphDescExport
 {
     /* TODO: allow referencing pads by name, not just by index */
     char *name;             ///< name of the exported pad
-    char *filter;           ///< name of the filter
+    int filter;             ///< index of the filter
     unsigned pad;           ///< index of the pad to be exported
 
     struct AVFilterGraphDescExport *next;
