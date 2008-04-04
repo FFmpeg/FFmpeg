@@ -47,11 +47,6 @@ void avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter)
 int avfilter_graph_config_formats(AVFilterGraph *graphctx);
 
 /**
- * Configure the parameters (resolution, etc) of all links in the graph.
- */
-int avfilter_graph_config_links(AVFilterGraph *graphctx);
-
-/**
  * Free a graph and destroy its links.
  */
 void avfilter_destroy_graph(AVFilterGraph *graph);
