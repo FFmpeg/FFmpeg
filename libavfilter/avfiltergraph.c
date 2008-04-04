@@ -163,13 +163,12 @@ static AVFilterPicRef *link_out_get_video_buffer(AVFilterLink *link, int perms)
         return avfilter_get_video_buffer(link2, perms);
 }
 
-static void link_out_draw_slice(AVFilterLink *link, uint8_t *data[4], int y,
-                                int height)
+static void link_out_draw_slice(AVFilterLink *link, int y, int height)
 {
     AVFilterLink *link2 = get_extern_output_link(link);
 
     if(link2)
-        avfilter_draw_slice(link2, data, y, height);
+        avfilter_draw_slice(link2, y, height);
 }
 
 /** dummy filter used to help export filters pads outside the graph */
@@ -215,11 +214,11 @@ static AVFilterPicRef *graph_in_get_video_buffer(AVFilterLink *link, int perms)
     return NULL;
 }
 
-static void graph_in_draw_slice(AVFilterLink *link, uint8_t *data[4], int y, int height)
+static void graph_in_draw_slice(AVFilterLink *link, int y, int height)
 {
     AVFilterLink *link2 = get_intern_input_link(link);
     if(link2)
-        avfilter_draw_slice(link2, data, y, height);
+        avfilter_draw_slice(link2, y, height);
 }
 
 static int *graph_in_query_formats(AVFilterLink *link)
