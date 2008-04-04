@@ -156,7 +156,6 @@ static void link_out_draw_slice(AVFilterLink *link, int y, int height)
 static AVFilter vf_graph_dummy =
 {
     .name      = "graph_dummy",
-    .author    = "Bobby Bingham",
 
     .priv_size = sizeof(GraphLinkContext),
 
@@ -593,7 +592,6 @@ fail:
 AVFilter avfilter_vf_graph =
 {
     .name      = "graph",
-    .author    = "Bobby Bingham",
 
     .priv_size = sizeof(GraphContext),
 
@@ -634,7 +632,6 @@ fail:
 AVFilter avfilter_vf_graphdesc =
 {
     .name      = "graph_desc",
-    .author    = "Bobby Bingham",
 
     .priv_size = sizeof(GraphContext),
 
@@ -665,7 +662,6 @@ static int init_file(AVFilterContext *ctx, const char *args, void *opaque)
 AVFilter avfilter_vf_graphfile =
 {
     .name      = "graph_file",
-    .author    = "Bobby Bingham",
 
     .priv_size = sizeof(GraphContext),
 
