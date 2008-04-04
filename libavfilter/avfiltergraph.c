@@ -76,7 +76,7 @@ static int query_formats(AVFilterGraph *graph)
                                            link->out_formats)) {
                     AVFilterContext *scale;
                     /* couldn't merge format lists. auto-insert scale filter */
-                    snprintf(inst_name, 30, "auto-inserted scaler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count);
                     scale =
                         avfilter_open(avfilter_get_by_name("scale"),inst_name);
