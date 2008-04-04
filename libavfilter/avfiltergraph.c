@@ -53,43 +53,6 @@ static inline AVFilterLink *get_extern_input_link(AVFilterLink *link)
     return lctx->graph->inputs[link->srcpad];
 }
 
-/** request a frame from a filter providing input to the graph */
-static int link_in_request_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_input_link(link);
-
-    if(!link2)
-        return -1;
-    return avfilter_request_frame(link2);
-}
-
-
-static int link_in_poll_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_input_link(link);
-    if(!link2)
-        return -1;
-    return avfilter_poll_frame(link2);
-}
-
-static int link_in_config_props(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_input_link(link);
-    int (*config_props)(AVFilterLink *);
-    int ret;
-
-    if(!link2)
-        return -1;
-    if(!(config_props = link2->src->output_pads[link2->srcpad].config_props))
-        config_props = avfilter_default_config_output_link;
-    ret = config_props(link2);
-
-    link->w = link2->w;
-    link->h = link2->h;
-
-    return ret;
-}
-
 /**
  * Given the link between the dummy filter and an internal filter whose output
  * is being exported outside the graph, this returns the externally visible
@@ -101,54 +64,6 @@ static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
     return lctx->graph->outputs[link->dstpad];
 }
 
-static int link_out_config_props(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(!link2)
-        return 0;
-
-    link2->w = link->w;
-    link2->h = link->h;
-
-    return 0;
-}
-
-static void link_out_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(!link2)
-        avfilter_unref_pic(picref);
-    else
-        avfilter_start_frame(link2, picref);
-}
-
-static void link_out_end_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(link2)
-        avfilter_end_frame(link2);
-}
-
-static AVFilterPicRef *link_out_get_video_buffer(AVFilterLink *link, int perms)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(!link2)
-        return NULL;
-    else
-        return avfilter_get_video_buffer(link2, perms);
-}
-
-static void link_out_draw_slice(AVFilterLink *link, int y, int height)
-{
-    AVFilterLink *link2 = get_extern_output_link(link);
-
-    if(link2)
-        avfilter_draw_slice(link2, y, height);
-}
 
 /** dummy filter used to help export filters pads outside the graph */
 static AVFilter vf_graph_dummy =
@@ -162,173 +77,6 @@ static AVFilter vf_graph_dummy =
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
 };
-
-static AVFilterLink *get_intern_input_link(AVFilterLink *link)
-{
-    GraphContext *graph = link->dst->priv;
-    return graph->link_filter_in->outputs[link->dstpad];
-}
-
-static void graph_in_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-    if(link2)
-        avfilter_start_frame(link2, picref);
-}
-
-static void graph_in_end_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-    if(link2)
-        avfilter_end_frame(link2);
-}
-
-static AVFilterPicRef *graph_in_get_video_buffer(AVFilterLink *link, int perms)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-    if(link2)
-        return avfilter_get_video_buffer(link2, perms);
-    return NULL;
-}
-
-static void graph_in_draw_slice(AVFilterLink *link, int y, int height)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-    if(link2)
-        avfilter_draw_slice(link2, y, height);
-}
-
-static int graph_in_config_props(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_input_link(link);
-    int (*config_props)(AVFilterLink *);
-    int ret;
-
-    if(!link2)
-        return -1;
-
-    /* copy link properties over to the dummy internal link */
-    link2->w = link->w;
-    link2->h = link->h;
-    link2->format = link->format;
-
-    if(!(config_props = link2->dst->input_pads[link2->dstpad].config_props))
-        return 0;   /* FIXME? */
-        //config_props = avfilter_default_config_input_link;
-    if(!(ret = config_props(link2)))
-        link2->init_state = AVLINK_INIT;
-    else
-        link2->init_state = AVLINK_STARTINIT;
-
-    return ret;
-}
-
-static AVFilterLink *get_intern_output_link(AVFilterLink *link)
-{
-    GraphContext *graph = link->src->priv;
-    return graph->link_filter_out->inputs[link->srcpad];
-}
-
-static int graph_out_request_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_output_link(link);
-
-    if(link2)
-        return avfilter_request_frame(link2);
-    return -1;
-}
-
-static int graph_out_poll_frame(AVFilterLink *link)
-{
-    AVFilterLink *link2 = get_intern_output_link(link);
-
-    if(!link2)
-        return -1;
-
-    return avfilter_poll_frame(link2);
-}
-
-static int graph_out_config_props(AVFilterLink *link)
-{
-    GraphContext *graph = link->src->priv;
-    AVFilterLink *link2 = graph->link_filter_out->inputs[link->srcpad];
-    int ret;
-
-    if((ret = avfilter_config_links(graph->link_filter_out)))
-        return ret;
-
-    if(!link2)
-        return 0;
-
-    link->w = link2->w;
-    link->h = link2->h;
-    link->format = link2->format;
-
-    return 0;
-}
-
-static int add_graph_input(AVFilterContext *gctx, AVFilterContext *filt, unsigned idx,
-                           char *name)
-{
-    GraphContext *graph = gctx->priv;
-
-    AVFilterPad graph_inpad =
-    {
-        .name             = name,
-        .type             = CODEC_TYPE_VIDEO,
-        .start_frame      = graph_in_start_frame,
-        .end_frame        = graph_in_end_frame,
-        .get_video_buffer = graph_in_get_video_buffer,
-        .draw_slice       = graph_in_draw_slice,
-        .config_props     = graph_in_config_props,
-        /* XXX */
-    };
-    AVFilterPad dummy_outpad =
-    {
-        .name          = NULL,          /* FIXME? */
-        .type          = CODEC_TYPE_VIDEO,
-        .request_frame = link_in_request_frame,
-        .poll_frame    = link_in_poll_frame,
-        .config_props  = link_in_config_props,
-    };
-
-    avfilter_insert_inpad (gctx, gctx->input_count, &graph_inpad);
-    avfilter_insert_outpad(graph->link_filter_in, graph->link_filter_in->output_count,
-                           &dummy_outpad);
-    return avfilter_link(graph->link_filter_in,
-                         graph->link_filter_in->output_count-1, filt, idx);
-}
-
-static int add_graph_output(AVFilterContext *gctx, AVFilterContext *filt, unsigned idx,
-                            char *name)
-{
-    GraphContext *graph = gctx->priv;
-
-    AVFilterPad graph_outpad =
-    {
-        .name             = name,
-        .type             = CODEC_TYPE_VIDEO,
-        .request_frame    = graph_out_request_frame,
-        .poll_frame       = graph_out_poll_frame,
-        .config_props     = graph_out_config_props,
-    };
-    AVFilterPad dummy_inpad =
-    {
-        .name             = NULL,          /* FIXME? */
-        .type             = CODEC_TYPE_VIDEO,
-        .start_frame      = link_out_start_frame,
-        .end_frame        = link_out_end_frame,
-        .draw_slice       = link_out_draw_slice,
-        .get_video_buffer = link_out_get_video_buffer,
-        .config_props     = link_out_config_props,
-    };
-
-    avfilter_insert_outpad(gctx, gctx->output_count, &graph_outpad);
-    avfilter_insert_inpad (graph->link_filter_out, graph->link_filter_out->input_count,
-                           &dummy_inpad);
-    return avfilter_link(filt, idx, graph->link_filter_out,
-                         graph->link_filter_out->input_count-1);
-}
 
 static void uninit(AVFilterContext *ctx)
 {
@@ -539,42 +287,6 @@ fail:
     return -1;
 }
 
-static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
-{
-    AVFilterGraphDescExport *curpad;
-    char tmp[20];
-    AVFilterContext *filt;
-
-    if (graph_load_from_desc2(ctx, desc) < 0)
-        goto fail;
-
-    /* export all input pads */
-    for(curpad = desc->inputs; curpad; curpad = curpad->next) {
-        snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-            goto fail;
-        }
-        add_graph_input(ctx, filt, curpad->pad, curpad->name);
-    }
-
-    /* export all output pads */
-    for(curpad = desc->outputs; curpad; curpad = curpad->next) {
-        snprintf(tmp, 20, "%d", curpad->filter);
-        if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-            goto fail;
-        }
-        add_graph_output(ctx, filt, curpad->pad, curpad->name);
-    }
-
-    return 0;
-
-fail:
-    uninit(ctx);
-    return -1;
-}
-
 int graph_load_from_desc3(AVFilterContext *ctx, AVFilterGraphDesc *desc, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
 {
     AVFilterGraphDescExport *curpad;
@@ -621,8 +333,6 @@ fail:
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     GraphContext *gctx = ctx->priv;
-    AVFilterGraphDesc *desc;
-    int ret;
 
     if(!(gctx->link_filter_in = avfilter_open(&vf_graph_dummy, NULL)))
         return -1;
@@ -633,15 +343,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     if(avfilter_init_filter(gctx->link_filter_out, NULL, ctx))
         goto fail;
 
-    if(!args)
-        return 0;
-
-    if(!(desc = avfilter_graph_parse_chain(args)))
-        goto fail;
-
-    ret = graph_load_from_desc(ctx, desc);
-    avfilter_graph_free_desc(desc);
-    return ret;
+    return 0;
 
 fail:
     avfilter_destroy(gctx->link_filter_in);
