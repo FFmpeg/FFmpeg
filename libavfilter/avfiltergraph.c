@@ -232,19 +232,25 @@ static char consume_char(const char **buf)
 }
 
 /**
- * remove the quotation marks from a string. Ex: "aaa'bb'cc" -> "aaabbcc"
+ * Copy the first size bytes of input string to a null-terminated string,
+ * removing any control character. Ex: "aaa'bb'c\'c\\" -> "aaabbc'c\"
  */
-static void unquote(char *str)
+static void copy_unquoted(char *out, const char *in, int size)
 {
-    char *p1, *p2;
-    p1=p2=str;
-    while (*p1 != 0) {
-        if (*p1 != '\'')
-            *p2++ = *p1;
-        p1++;
+    int i;
+    for (i=0; i < size; i++) {
+        if (in[i] == '\'')
+            continue;
+        else if (in[i] == '\\') {
+            if (i+1 == size) {
+                *out = 0;
+                return;
+            }
+            i++;
+        }
+        *out++ = in[i];
     }
-
-    *p2 = 0;
+    *out=0;
 }
 
 /**
@@ -264,10 +270,20 @@ static char *consume_string(const char **buf)
 
     start = *buf;
 
-    *buf += strcspn(*buf, " ()=,'");
+    while(1) {
+        *buf += strcspn(*buf, " ()=,'\\");
+        if (**buf == '\\')
+            *buf+=2;
+        else
+            break;
+    }
 
     if (**buf == '\'') {
-        char *p = strchr(*buf + 1, '\'');
+        const char *p = *buf;
+        do {
+            p++;
+            p = strchr(p, '\'');
+        } while (p && p[-1] == '\\');
         if (p)
             *buf = p + 1;
         else
@@ -276,10 +292,7 @@ static char *consume_string(const char **buf)
 
     size = *buf - start + 1;
     ret = av_malloc(size);
-    memcpy(ret, start, size - 1);
-    ret[size-1] = 0;
-
-    unquote(ret);
+    copy_unquoted(ret, start, size-1);
 
     return ret;
 }
