@@ -1,5 +1,5 @@
 /*
- * Filter graphs
+ * filter graphs
  * copyright (c) 2007 Bobby Bingham
  *
  * This file is part of FFmpeg.
@@ -51,7 +51,7 @@ static int link_init(AVFilterContext *ctx, const char *args, void *opaque)
 /**
  * Given the link between the dummy filter and an internal filter whose input
  * is being exported outside the graph, this returns the externally visible
- * link
+ * link.
  */
 static inline AVFilterLink *get_extern_input_link(AVFilterLink *link)
 {
@@ -99,7 +99,7 @@ static int link_in_config_props(AVFilterLink *link)
 /**
  * Given the link between the dummy filter and an internal filter whose input
  * is being exported outside the graph, this returns the externally visible
- * link
+ * link.
  */
 static inline AVFilterLink *get_extern_output_link(AVFilterLink *link)
 {
@@ -485,7 +485,7 @@ int avfilter_graph_config_formats(AVFilterContext *graphctx)
 {
     GraphContext *graph = graphctx->priv;
 
-    /* Find supported formats from sub-filters, and merge along links */
+    /* find supported formats from sub-filters, and merge along links */
     if(query_formats(graphctx))
         return -1;
 
