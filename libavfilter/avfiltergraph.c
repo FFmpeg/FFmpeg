@@ -26,6 +26,8 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
+#include "allfilters.h"
+
 typedef struct AVFilterGraph {
     unsigned filter_count;
     AVFilterContext **filters;
@@ -376,6 +378,7 @@ static void uninit(AVFilterContext *ctx)
     av_freep(&graph->filters);
 }
 
+/* TODO: insert in sorted order */
 void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filter)
 {
     GraphContext *graph = graphctx->priv;
@@ -385,15 +388,38 @@ void avfilter_graph_add_filter(AVFilterContext *graphctx, AVFilterContext *filte
     graph->filters[graph->filter_count - 1] = filter;
 }
 
+/* search intelligently, once we insert in order */
+AVFilterContext *avfilter_graph_get_filter(AVFilterContext *ctx, char *name)
+{
+    GraphContext *graph = ctx->priv;
+    int i;
+
+    if(!name)
+        return NULL;
+
+    for(i = 0; i < graph->filter_count; i ++)
+        if(graph->filters[i]->name && !strcmp(name, graph->filters[i]->name))
+            return graph->filters[i];
+
+    return NULL;
+}
+
 int avfilter_graph_config_links(AVFilterContext *graphctx)
 {
     GraphContext *graph = graphctx->priv;
     int i, j;
 
     for(i = 0; i < graph->filter_count; i ++) {
-        for(j = 0; j < graph->filters[i]->input_count; j ++)
+        for(j = 0; j < graph->filters[i]->input_count; j ++) {
+            /* ensure that graphs contained within graphs are configured */
+            if((graph->filters[i]->filter == &vf_graph     ||
+                graph->filters[i]->filter == &vf_graphfile ||
+                graph->filters[i]->filter == &vf_graphdesc) &&
+                avfilter_graph_config_links(graph->filters[i]))
+                return -1;
             if(avfilter_config_link(graph->filters[i]->inputs[j]))
                 return -1;
+        }
     }
 
     return 0;
@@ -536,6 +562,129 @@ AVFilter vf_graph =
     .priv_size = sizeof(GraphContext),
 
     .init      = init,
+    .uninit    = uninit,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
+};
+
+static int graph_load_from_desc(AVFilterContext *ctx, AVFilterGraphDesc *desc)
+{
+    AVFilterGraphDescFilter *curfilt;
+    AVFilterGraphDescLink   *curlink;
+    AVFilterGraphDescExport *curpad;
+    AVFilterContext *filt, *filtb;
+
+    /* create all filters */
+    for(curfilt = desc->filters; curfilt; curfilt = curfilt->next) {
+        if(!(filt = avfilter_create_by_name(curfilt->filter, curfilt->name))) {
+            av_log(ctx, AV_LOG_ERROR, "error creating filter\n");
+            goto fail;
+        }
+        avfilter_graph_add_filter(ctx, filt);
+        if(avfilter_init_filter(filt, curfilt->args, NULL)) {
+            av_log(ctx, AV_LOG_ERROR, "error initializing filter\n");
+            goto fail;
+        }
+    }
+
+    /* create all links */
+    for(curlink = desc->links; curlink; curlink = curlink->next) {
+        if(!(filt = avfilter_graph_get_filter(ctx, curlink->src))) {
+            av_log(ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
+            goto fail;
+        }
+        if(!(filtb = avfilter_graph_get_filter(ctx, curlink->dst))) {
+            av_log(ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
+            goto fail;
+        }
+        if(avfilter_link(filt, curlink->srcpad, filtb, curlink->dstpad)) {
+            av_log(ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            goto fail;
+        }
+    }
+
+    /* export all input pads */
+    for(curpad = desc->inputs; curpad; curpad = curpad->next) {
+        if(!(filt = avfilter_graph_get_filter(ctx, curpad->filter))) {
+            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+            goto fail;
+        }
+        add_graph_input(ctx, filt, curpad->pad, curpad->name);
+    }
+
+    /* export all output pads */
+    for(curpad = desc->outputs; curpad; curpad = curpad->next) {
+        if(!(filt = avfilter_graph_get_filter(ctx, curpad->filter))) {
+            av_log(ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
+            goto fail;
+        }
+        add_graph_output(ctx, filt, curpad->pad, curpad->name);
+    }
+
+    return 0;
+
+fail:
+    uninit(ctx);
+    return -1;
+}
+
+static int init_desc(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    GraphContext *gctx = ctx->priv;
+
+    if(!opaque)
+        return -1;
+
+    if(!(gctx->link_filter = avfilter_create(&vf_graph_dummy, NULL)))
+        return -1;
+    if(avfilter_init_filter(gctx->link_filter, NULL, ctx))
+        goto fail;
+
+    return graph_load_from_desc(ctx, opaque);
+
+fail:
+    avfilter_destroy(gctx->link_filter);
+    return -1;
+}
+
+AVFilter vf_graphdesc =
+{
+    .name      = "graph_desc",
+    .author    = "Bobby Bingham",
+
+    .priv_size = sizeof(GraphContext),
+
+    .init      = init_desc,
+    .uninit    = uninit,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL, }},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL, }},
+};
+
+static int init_file(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    AVFilterGraphDesc *desc;
+    int ret;
+
+    if(!args)
+        return -1;
+    if(!(desc = avfilter_graph_load_desc(args)))
+        return -1;
+
+    ret = init_desc(ctx, NULL, desc);
+    avfilter_graph_free_desc(desc);
+    return ret;
+}
+
+AVFilter vf_graphfile =
+{
+    .name      = "graph_file",
+    .author    = "Bobby Bingham",
+
+    .priv_size = sizeof(GraphContext),
+
+    .init      = init_file,
     .uninit    = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL, }},

@@ -24,6 +24,61 @@
 
 #include "avfilter.h"
 
+/** Linked-list of filters to create for an AVFilterGraphDesc */
+typedef struct AVFilterGraphDescFilter
+{
+    char *name;             ///< filter instance name
+    char *filter;           ///< name of filter type
+    char *args;             ///< filter parameters
+    struct AVFilterGraphDescFilter *next;
+} AVFilterGraphDescFilter;
+
+/** Linked-list of links between filters */
+typedef struct AVFilterGraphDescLink
+{
+    /* TODO: allow referencing pads by name, not just by index */
+    char *src;              ///< name of the source filter
+    unsigned srcpad;        ///< index of the output pad on the source filter
+
+    char *dst;              ///< name of the dest filter
+    unsigned dstpad;        ///< index of the input pad on the dest filter
+
+    struct AVFilterGraphDescLink *next;
+} AVFilterGraphDescLink;
+
+/** Linked-list of filter pads to be exported from the graph */
+typedef struct AVFilterGraphDescExport
+{
+    /* TODO: allow referencing pads by name, not just by index */
+    char *name;             ///< name of the exported pad
+    char *filter;           ///< name of the filter
+    unsigned pad;           ///< index of the pad to be exported
+
+    struct AVFilterGraphDescExport *next;
+} AVFilterGraphDescExport;
+
+/** Description of a graph to be loaded from a file, etc */
+typedef struct
+{
+    AVFilterGraphDescFilter *filters;   ///< filters in the graph
+    AVFilterGraphDescLink   *links;     ///< links between the filters
+    AVFilterGraphDescExport *inputs;    ///< inputs to export
+    AVFilterGraphDescExport *outputs;   ///< outputs to export
+} AVFilterGraphDesc;
+
+/**
+ * Load a filter graph description from a file
+ * @param filename Name of the file from which to load the description
+ * @return         Pointer to the description on success.  NULL on failure
+ */
+AVFilterGraphDesc *avfilter_graph_load_desc(const char *filename);
+
+/**
+ * Free a filter graph description
+ * @param desc The graph description to free
+ */
+void avfilter_graph_free_desc(AVFilterGraphDesc *desc);
+
 /**
  * Add an existing filter instance to a filter graph.
  * @param graph  The filter graph
