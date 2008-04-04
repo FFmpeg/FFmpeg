@@ -44,4 +44,17 @@ void avfilter_destroy_graph(AVFilterGraph *graph);
  */
 void avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter);
 
+/**
+ * Loads the filter graph with a simple chain described by filters.
+ * @param graph   The filter graph to load filters into
+ * @param count   The number of filters to be created
+ * @param filters_list An array of strings describing the filters to be created.
+ *                The format of each string is "name=params".
+ * @param first   If non-NULL, will be set to the first filter in the chain.
+ * @param last    If non-NULL, will be set to the last filter in the chain.
+ * @return 0 on success.  -1 on error.
+ */
+int avfilter_graph_load_chain(AVFilterGraph *graph,
+                              unsigned count, char **filter_list,
+                              AVFilterContext **first, AVFilterContext **last);
 #endif  /* FFMPEG_AVFILTER_H */
