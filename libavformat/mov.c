@@ -1717,7 +1717,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "moov atom not found\n");
         return -1;
     }
-    dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
+    dprintf(mov->fc, "on_parse_exit_offset=%lld\n", url_ftell(pb));
 
     return 0;
 }
