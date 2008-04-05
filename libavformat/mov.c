@@ -1709,10 +1709,12 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         atom.size = INT64_MAX;
 
     /* check MOV header */
-    err = mov_read_default(mov, pb, atom);
-    if (err<0 || (!mov->found_moov && !mov->found_mdat)) {
-        av_log(s, AV_LOG_ERROR, "mov: header not found !!! (err:%d, moov:%d, mdat:%d) pos:%"PRId64"\n",
-               err, mov->found_moov, mov->found_mdat, url_ftell(pb));
+    if ((err = mov_read_default(mov, pb, atom)) < 0) {
+        av_log(s, AV_LOG_ERROR, "error reading header: %d\n", err);
+        return err;
+    }
+    if (!mov->found_moov) {
+        av_log(s, AV_LOG_ERROR, "moov atom not found\n");
         return -1;
     }
     dprintf(mov->fc, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
