@@ -1,4 +1,4 @@
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = swscale
 FFLIBS = avutil
@@ -15,12 +15,11 @@ ASM_OBJS-$(ARCH_BFIN)      += internal_bfin.o
 
 HEADERS = swscale.h rgb2rgb.h
 
-include ../common.mak
+CLEANFILES = cs_test swscale-example
 
-cs_test: cs_test.o $(LIBNAME)
+include $(SUBDIR)../subdir.mak
 
-swscale-example: swscale-example.o $(LIBNAME)
-swscale-example: EXTRALIBS += -lm
+$(SUBDIR)cs_test: $(SUBDIR)cs_test.o $(SUBDIR)$(LIBNAME)
 
-clean::
-	rm -f cs_test swscale-example
+$(SUBDIR)swscale-example: $(SUBDIR)swscale-example.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)swscale-example: EXTRALIBS += -lm
