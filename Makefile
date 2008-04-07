@@ -69,28 +69,6 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
-VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
-
-BASEHOOKS = fish null watermark
-ALLHOOKS = $(BASEHOOKS) drawtext imlib2 ppm
-ALLHOOKS_SRCS = $(addprefix vhook/, $(addsuffix .c, $(ALLHOOKS)))
-
-HOOKS-$(HAVE_FORK)      += ppm
-HOOKS-$(HAVE_IMLIB2)    += imlib2
-HOOKS-$(HAVE_FREETYPE2) += drawtext
-
-HOOKS = $(addprefix vhook/, $(addsuffix $(SLIBSUF), $(BASEHOOKS) $(HOOKS-yes)))
-
-VHOOKCFLAGS-$(HAVE_IMLIB2) += `imlib2-config --cflags`
-LIBS_imlib2$(SLIBSUF)       = `imlib2-config --libs`
-
-VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
-LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
-
-VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
-
-vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
-
 ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
 ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
@@ -115,11 +93,38 @@ ffplay.o .depend: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
+VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
+
+BASEHOOKS = fish null watermark
+ALLHOOKS = $(BASEHOOKS) drawtext imlib2 ppm
+ALLHOOKS_SRCS = $(addprefix vhook/, $(addsuffix .c, $(ALLHOOKS)))
+
+HOOKS-$(HAVE_FORK)      += ppm
+HOOKS-$(HAVE_IMLIB2)    += imlib2
+HOOKS-$(HAVE_FREETYPE2) += drawtext
+
+HOOKS = $(addprefix vhook/, $(addsuffix $(SLIBSUF), $(BASEHOOKS) $(HOOKS-yes)))
+
+VHOOKCFLAGS-$(HAVE_IMLIB2) += `imlib2-config --cflags`
+LIBS_imlib2$(SLIBSUF)       = `imlib2-config --libs`
+
+VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
+LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
+
+VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
+
+vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
+
 # vhooks compile fine without libav*, but need them nonetheless.
 videohook: $(DEP_LIBS) $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
+
+.vhookdep: $(ALLHOOKS_SRCS) version.h
+	$(VHOOK_DEPEND_CMD) > $@
+
+depend dep: .vhookdep
 
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
                                  ffplay-doc.html general.html hooks.html \
@@ -160,11 +165,6 @@ uninstall-man:
 uninstall-vhook:
 	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
-
-depend dep: .vhookdep
-
-.vhookdep: $(ALLHOOKS_SRCS) version.h
-	$(VHOOK_DEPEND_CMD) > $@
 
 clean::
 	rm -f gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
