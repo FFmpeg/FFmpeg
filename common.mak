@@ -4,7 +4,7 @@
 
 all: # make "all" default target
 
-ifeq ($(SUBDIR),)
+ifndef SUBDIR
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
 vpath %.S $(SRC_DIR)

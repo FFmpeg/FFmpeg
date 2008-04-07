@@ -362,12 +362,12 @@ OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
-ifneq ($(CONFIG_SWSCALE),yes)
+ifndef CONFIG_SWSCALE
 OBJS += imgresample.o
 endif
 
 # processor-specific code
-ifeq ($(HAVE_MMX),yes)
+ifdef HAVE_MMX
 OBJS += i386/fdct_mmx.o \
         i386/cputest.o \
         i386/dsputil_mmx.o \

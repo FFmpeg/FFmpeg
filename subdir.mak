@@ -19,7 +19,7 @@ endif
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
 define RULES
-ifeq ($(BUILD_SHARED),yes)
+ifdef BUILD_SHARED
 all: $(SUBDIR)$(SLIBNAME)
 
 install-libs: install-lib$(NAME)-shared
@@ -32,7 +32,7 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS)
 	$(CC) $(SHFLAGS) $(FFLDFLAGS) -o $$@ $$^ $(FFEXTRALIBS) $(EXTRAOBJS)
 	$(SLIB_EXTRA_CMD)
 
-ifneq ($(SUBDIR),)
+ifdef SUBDIR
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): \
     $(foreach L,$(FFLIBS),lib$(L)/$(SLIBPREF)$(L)$(SLIBSUF))
 endif
