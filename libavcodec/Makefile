@@ -465,9 +465,7 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/vp3_idct_bfin.o   \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
-ifeq ($(ARCH_X86),yes)
-TESTS += cpuid-test$(EXESUF) motion-test$(EXESUF)
-endif
+TESTS-$(ARCH_X86) += cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = \
     alpha/*.o alpha/*~ \
