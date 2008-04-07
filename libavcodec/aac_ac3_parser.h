@@ -43,6 +43,7 @@ typedef struct AACAC3ParseContext {
 
     int need_next_header;
     int new_frame_start;
+    int frame_in_buffer;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,

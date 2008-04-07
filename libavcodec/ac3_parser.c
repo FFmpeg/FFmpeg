@@ -130,7 +130,7 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     uint64_t tmp = be2me_64(state);
     AC3HeaderInfo hdr;
 
-    err = ff_ac3_parse_header((uint8_t *)&tmp, &hdr);
+    err = ff_ac3_parse_header(((uint8_t *)&tmp)+8-AC3_HEADER_SIZE, &hdr);
 
     if(err < 0)
         return 0;

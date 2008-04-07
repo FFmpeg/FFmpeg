@@ -44,13 +44,19 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                 if((len=s->sync(s->state, s, &s->need_next_header, &s->new_frame_start)))
                     break;
             }
-            i-= s->header_size;
+            i-= s->header_size -1;
             if(len>0){
                 s->remaining_size = len + i;
 
                 if(pc->index+i > 0 && s->new_frame_start){
                     s->remaining_size -= i; // remaining_size=len
 output_frame:
+                    if(!s->frame_in_buffer && 0){
+                        s->frame_in_buffer=1;
+                        buf+=i;
+                        buf_size-=i;
+                        continue;
+                    }
                     ff_combine_frame(pc, i, &buf, &buf_size);
                     *poutbuf = buf;
                     *poutbuf_size = buf_size;
@@ -72,6 +78,7 @@ output_frame:
 
                     return i;
                 }
+                s->frame_in_buffer=1;
             }else{
                 break;
             }
