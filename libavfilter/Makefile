@@ -1,4 +1,4 @@
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avfilter
 FFLIBS = avcodec avutil
@@ -14,4 +14,4 @@ OBJS = allfilters.o \
 
 HEADERS = avfilter.h
 
-include ../common.mak
+include $(SUBDIR)../subdir.mak

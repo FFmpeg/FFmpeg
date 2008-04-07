@@ -1,4 +1,4 @@
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avdevice
 FFLIBS = avformat avcodec avutil
@@ -23,4 +23,4 @@ OBJS-$(CONFIG_LIBDC1394_DEMUXER)         += libdc1394.o
 CPP_OBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
 CPP_OBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
 
-include ../common.mak
+include $(SUBDIR)../subdir.mak

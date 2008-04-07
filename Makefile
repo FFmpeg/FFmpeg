@@ -6,8 +6,6 @@ include config.mak
 
 SRC_DIR = $(SRC_PATH_BARE)
 
-vpath %.c    $(SRC_PATH_BARE)
-vpath %.h    $(SRC_PATH_BARE)
 vpath %.texi $(SRC_PATH_BARE)
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
@@ -30,6 +28,14 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
 FFLIBS := avdevice avformat avcodec avutil
 
+include common.mak
+
+FF_LDFLAGS   := $(FFLDFLAGS)
+FF_EXTRALIBS := $(FFEXTRALIBS)
+
+S := $(BUILD_SHARED:yes=S)
+DEP_LIBS := $(foreach L,$(FFLIBS),lib$(L)/$($(S)LIBPREF)$(L)$($(S)LIBSUF))
+
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
 
@@ -40,7 +46,7 @@ INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
 INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
 
-main: lib $(PROGS) $(ALL_TARGETS-yes)
+all: $(DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
 
 $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
@@ -48,13 +54,20 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 
 .depend: version.h $(PROGS_SRCS)
 
-# bandaid to disable triggering shared library installation routines
-DISABLE=yes
+SUBDIR_VARS := OBJS ASM_OBJS CPP_OBJS FFLIBS CLEANFILES
 
-include common.mak
+define RESET
+$(1) :=
+$(1)-yes :=
+endef
 
-S := $(BUILD_SHARED:yes=S)
-DEP_LIBS := $(foreach L,$(FFLIBS),lib$(L)/$($(S)LIBPREF)$(L)$($(S)LIBSUF))
+define DOSUBDIR
+$(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
+SUBDIR := $(1)/
+include $(1)/Makefile
+endef
+
+$(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
@@ -78,23 +91,11 @@ VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
 vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
 
-MAKE-yes = $(MAKE)
-MAKE-    = : $(MAKE)
+ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
+ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
-lib:
-	$(MAKE)                    -C libavutil   all
-	$(MAKE)                    -C libavcodec  all
-	$(MAKE)                    -C libavformat all
-	$(MAKE)                    -C libavdevice all
-	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc all
-	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  all
-	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter all
-
-ffplay_g$(EXESUF): EXTRALIBS += $(SDL_LIBS)
-ffserver_g$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
-
-%_g$(EXESUF): %.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ $< cmdutils.o $(EXTRALIBS)
+%_g$(EXESUF): %.o cmdutils.o $(DEP_LIBS)
+	$(CC) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
 ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
@@ -104,18 +105,18 @@ endif
 version.h:
 	$(SRC_PATH)/version.sh $(SRC_PATH)
 
-output_example$(EXESUF): output_example.o .libs
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
+output_example$(EXESUF): output_example.o $(DEP_LIBS)
+	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(EXTRALIBS)
+	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 ffplay.o .depend: CFLAGS += $(SDL_CFLAGS)
 
 ffmpeg.o ffplay.o ffserver.o: version.h
 
 # vhooks compile fine without libav*, but need them nonetheless.
-videohook: .libs $(HOOKS)
+videohook: $(DEP_LIBS) $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
@@ -148,24 +149,6 @@ install-vhook: videohook
 	install -d "$(SHLIBDIR)/vhook"
 	install -m 755 $(HOOKS) "$(SHLIBDIR)/vhook"
 
-install-libs:
-	$(MAKE)                    -C libavutil   install-libs
-	$(MAKE)                    -C libavcodec  install-libs
-	$(MAKE)                    -C libavformat install-libs
-	$(MAKE)                    -C libavdevice install-libs
-	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc install-libs
-	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  install-libs
-	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-libs
-
-install-headers::
-	$(MAKE)                    -C libavutil   install-headers
-	$(MAKE)                    -C libavcodec  install-headers
-	$(MAKE)                    -C libavformat install-headers
-	$(MAKE)                    -C libavdevice install-headers
-	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc install-headers
-	$(MAKE)                    -C libswscale  install-headers
-	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter install-headers
-
 uninstall: uninstall-progs uninstall-man uninstall-vhook
 
 uninstall-progs:
@@ -178,51 +161,13 @@ uninstall-vhook:
 	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
 
-uninstall-libs::
-	$(MAKE) -C libavutil   uninstall-libs
-	$(MAKE) -C libavcodec  uninstall-libs
-	$(MAKE) -C libavformat uninstall-libs
-	$(MAKE) -C libavdevice uninstall-libs
-	$(MAKE) -C libpostproc uninstall-libs
-	$(MAKE) -C libswscale  uninstall-libs
-	$(MAKE) -C libavfilter uninstall-libs
-
-uninstall-headers::
-	$(MAKE) -C libavutil   uninstall-headers
-	$(MAKE) -C libavcodec  uninstall-headers
-	$(MAKE) -C libavformat uninstall-headers
-	$(MAKE) -C libavdevice uninstall-headers
-	$(MAKE) -C libpostproc uninstall-headers
-	$(MAKE) -C libswscale  uninstall-headers
-	$(MAKE) -C libavfilter uninstall-headers
-	-rmdir "$(INCDIR)"
-
 depend dep: .vhookdep
-	$(MAKE)                    -C libavutil   depend
-	$(MAKE)                    -C libavcodec  depend
-	$(MAKE)                    -C libavformat depend
-	$(MAKE)                    -C libavdevice depend
-	$(MAKE-$(CONFIG_POSTPROC)) -C libpostproc depend
-	$(MAKE-$(CONFIG_SWSCALE))  -C libswscale  depend
-	$(MAKE-$(CONFIG_AVFILTER)) -C libavfilter depend
 
 .vhookdep: $(ALLHOOKS_SRCS) version.h
 	$(VHOOK_DEPEND_CMD) > $@
 
-$(DEP_LIBS): lib
-
-.libs: $(DEP_LIBS)
-	touch $@
-
 clean::
-	$(MAKE) -C libavutil   clean
-	$(MAKE) -C libavcodec  clean
-	$(MAKE) -C libavformat clean
-	$(MAKE) -C libavdevice clean
-	$(MAKE) -C libpostproc clean
-	$(MAKE) -C libswscale  clean
-	$(MAKE) -C libavfilter clean
-	rm -f .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
+	rm -f gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
@@ -231,13 +176,6 @@ clean::
 	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
 distclean::
-	$(MAKE) -C libavutil   distclean
-	$(MAKE) -C libavcodec  distclean
-	$(MAKE) -C libavformat distclean
-	$(MAKE) -C libavdevice distclean
-	$(MAKE) -C libpostproc distclean
-	$(MAKE) -C libswscale  distclean
-	$(MAKE) -C libavfilter distclean
 	rm -f .vhookdep version.h config.* *.pc
 
 # regression tests
@@ -404,10 +342,10 @@ tests/asynth1.sw: tests/audiogen$(EXESUF)
 	$(BUILD_ROOT)/$< $@
 
 %$(EXESUF): %.c
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
+	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $<
 
-tests/seek_test$(EXESUF): tests/seek_test.c .libs
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $< $(EXTRALIBS)
+tests/seek_test$(EXESUF): tests/seek_test.c $(DEP_LIBS)
+	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
 .PHONY: lib videohook documentation TAGS

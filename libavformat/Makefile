@@ -2,7 +2,7 @@
 # libavformat Makefile
 # (c) 2000-2003 Fabrice Bellard
 #
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avformat
 FFLIBS = avcodec avutil
@@ -198,4 +198,4 @@ OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
-include ../common.mak
+include $(SUBDIR)../subdir.mak

@@ -940,7 +940,7 @@ SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 # gcc stupidly only outputs the basename of targets with -MM
-DEPEND_CMD='$(CC) -MM $(CFLAGS) $(filter-out %.h,$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\\2&,"'
+DEPEND_CMD='$(CC) -MM $(CFLAGS) $(filter-out %.h,$$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\\2&,;s,^.*:,\$$$$(SUBDIR)&,"'
 VHOOK_DEPEND_CMD='$(CC) -MM $(VHOOKCFLAGS) $(filter-out %.h,$^) | sed "s,^\([a-z]\),vhook/\\1,"'
 
 # find source path
@@ -1105,7 +1105,7 @@ case $target_os in
     darwin)
         disable need_memalign
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
-        VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$@'
+        VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$$@'
         strip="strip -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
         SLIBSUF=".dylib"
@@ -1128,10 +1128,10 @@ case $target_os in
         EXESUF=".exe"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD='-lib /machine:i386 /def:$(@:$(SLIBSUF)=.def)'
-        SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
+        SLIB_EXTRA_CMD='-lib /machine:i386 /def:$$(@:$(SLIBSUF)=.def)'
+        SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
-        SHFLAGS='-shared -Wl,--output-def,$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
+        SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         ;;
     cygwin*)
         target_os=cygwin
@@ -1168,22 +1168,22 @@ case $target_os in
         ln_s="cp -f"
         EXESUF=".exe"
         FFLDFLAGS="-Zomf -Zbin-files -Zargs-wild -Zmap"
-        SHFLAGS='$(NAME).def -Zdll -Zomf'
+        SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         FFSERVERLDFLAGS=""
         LIBSUF="_s.a"
         SLIBPREF=""
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(shell echo $(NAME) | cut -c1-6)$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_CREATE_DEF_CMD='echo LIBRARY $(SLIBNAME_WITH_MAJOR) INITINSTANCE TERMINSTANCE > $(NAME).def; \
-          echo PROTMODE >> $(NAME).def; \
-          echo CODE PRELOAD MOVEABLE DISCARDABLE >> $(NAME).def; \
-          echo DATA PRELOAD MOVEABLE MULTIPLE NONSHARED >> $(NAME).def; \
-          echo EXPORTS >> $(NAME).def; \
-          emxexp -o $(OBJS) >> $(NAME).def'
-        SLIB_EXTRA_CMD='emximp -o $(LIBPREF)$(NAME)_dll.a $(NAME).def; \
-          emximp -o $(LIBPREF)$(NAME)_dll.lib $(NAME).def;'
-        SLIB_INSTALL_EXTRA_CMD='install -m 644 $(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
+        SLIB_CREATE_DEF_CMD='echo LIBRARY $(SLIBNAME_WITH_MAJOR) INITINSTANCE TERMINSTANCE > $(SUBDIR)$(NAME).def; \
+          echo PROTMODE >> $(SUBDIR)$(NAME).def; \
+          echo CODE PRELOAD MOVEABLE DISCARDABLE >> $(SUBDIR)$(NAME).def; \
+          echo DATA PRELOAD MOVEABLE MULTIPLE NONSHARED >> $(SUBDIR)$(NAME).def; \
+          echo EXPORTS >> $(SUBDIR)$(NAME).def; \
+          emxexp -o $(OBJS) >> $(SUBDIR)$(NAME).def'
+        SLIB_EXTRA_CMD='emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(NAME).def; \
+          emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
+        SLIB_INSTALL_EXTRA_CMD='install -m 644 $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
         disable vhook
         ;;
@@ -2096,6 +2096,7 @@ if enabled source_path_used; then
     FILES="\
         Makefile             \
         common.mak           \
+        subdir.mak           \
         doc/texi2pod.pl      \
         libavcodec/Makefile  \
         libavdevice/Makefile \

@@ -2,7 +2,7 @@
 # libavcodec Makefile
 # (c) 2000-2005 Fabrice Bellard
 #
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avcodec
 FFLIBS = avutil
@@ -449,7 +449,7 @@ ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
 
 # -maltivec is needed in order to build AltiVec code.
-$(ALTIVEC-OBJS-yes): CFLAGS += -maltivec -mabi=altivec
+$(addprefix $(SUBDIR),$(ALTIVEC-OBJS-yes)): CFLAGS += -maltivec -mabi=altivec
 
 # check_altivec must be built without -maltivec
 OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)       \
@@ -469,23 +469,22 @@ ifeq ($(ARCH_X86),yes)
 TESTS += cpuid-test$(EXESUF) motion-test$(EXESUF)
 endif
 
-include ../common.mak
+CLEANFILES = \
+    alpha/*.o alpha/*~ \
+    armv4l/*.o armv4l/*~ \
+    bfin/*.o bfin/*~ \
+    i386/*.o i386/*~ \
+    mlib/*.o mlib/*~ \
+    ppc/*.o ppc/*~ \
+    ps2/*.o ps2/*~ \
+    sh4/*.o sh4/*~ \
+    sparc/*.o sparc/*~ \
+    apiexample$(EXESUF)
 
-clean::
-	rm -f \
-	   alpha/*.o alpha/*~ \
-	   armv4l/*.o armv4l/*~ \
-	   bfin/*.o bfin/*~ \
-	   i386/*.o i386/*~ \
-	   mlib/*.o mlib/*~ \
-	   ppc/*.o ppc/*~ \
-	   ps2/*.o ps2/*~ \
-	   sh4/*.o sh4/*~ \
-	   sparc/*.o sparc/*~ \
-	   apiexample$(EXESUF)
+include $(SUBDIR)../subdir.mak
 
-cpuid-test$(EXESUF): i386/cputest.c
-apiexample$(EXESUF): apiexample.o $(LIBNAME)
-dct-test$(EXESUF): dct-test.o fdctref.o $(LIBNAME)
-fft-test$(EXESUF): fft-test.o $(LIBNAME)
-motion-test$(EXESUF): motion-test.o $(LIBNAME)
+$(SUBDIR)cpuid-test$(EXESUF): $(SUBDIR)i386/cputest.c
+$(SUBDIR)apiexample$(EXESUF): $(SUBDIR)apiexample.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dct-test.o fdctref.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)fft-test$(EXESUF): $(SUBDIR)fft-test.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)motion-test$(EXESUF): $(SUBDIR)motion-test.o $(SUBDIR)$(LIBNAME)

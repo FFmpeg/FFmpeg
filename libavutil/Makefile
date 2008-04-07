@@ -1,4 +1,4 @@
-include ../config.mak
+include $(SUBDIR)../config.mak
 
 NAME = avutil
 
@@ -41,9 +41,8 @@ HEADERS = adler32.h \
 
 TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 sha1 softfloat tree)
 
-include ../common.mak
+include $(SUBDIR)../subdir.mak
 
-lzo-test$(EXESUF): EXTRALIBS += -llzo2
+$(SUBDIR)lzo-test$(EXESUF): EXTRALIBS += -llzo2
 
-clean::
-	rm -f lzo-test$(EXESUF)
+CLEANFILES = lzo-test$(EXESUF)
