@@ -141,7 +141,7 @@ install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
 	install -d "$(BINDIR)"
 	install -c -m 755 $(PROGS) "$(BINDIR)"
 
-install-man:
+install-man: $(MANPAGES)
 	install -d "$(MANDIR)/man1"
 	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
