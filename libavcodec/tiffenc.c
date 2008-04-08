@@ -455,7 +455,7 @@ AVCodec tiff_encoder = {
                               PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
                               PIX_FMT_YUV420P, PIX_FMT_YUV422P,
                               PIX_FMT_YUV444P, PIX_FMT_YUV410P,
-                              PIX_FMT_YUV411P
+                              PIX_FMT_YUV411P,
                               -1}
 
 };
