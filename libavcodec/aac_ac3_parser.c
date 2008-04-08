@@ -51,7 +51,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                 if(pc->index+i > 0 && s->new_frame_start){
                     s->remaining_size -= i; // remaining_size=len
 output_frame:
-                    if(!s->frame_in_buffer && 0){
+                    if(!s->frame_in_buffer){
                         s->frame_in_buffer=1;
                         buf+=i;
                         buf_size-=i;
