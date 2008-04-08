@@ -43,7 +43,8 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "pshuflw $0, %%xmm7, %%xmm7 \n\t"
             "movlhps %%xmm6, %%xmm6 \n\t"
             "movlhps %%xmm7, %%xmm7 \n\t"
-            :: "r"(255*(x+y)+8), "m"(rnd?ff_pw_4:ff_pw_3));
+            :: "r"(255*(x+y)+8), "m"(*(rnd?&ff_pw_4:&ff_pw_3))
+        );
 
         if(x) {
             asm volatile(
@@ -114,7 +115,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         "pshuflw $0, %%xmm6, %%xmm6 \n\t"
         "movlhps %%xmm7, %%xmm7 \n\t"
         "movlhps %%xmm6, %%xmm6 \n\t"
-        :: "r"((x*255+8)*(8-y)), "r"((x*255+8)*y), "m"(rnd?ff_pw_32:ff_pw_28)
+        :: "r"((x*255+8)*(8-y)), "r"((x*255+8)*y), "m"(*(rnd?&ff_pw_32:&ff_pw_28))
     );
 
     asm volatile(
