@@ -200,7 +200,7 @@ ffserver [options]
 Print the license.
 @item -h
 Print the help.
-@item -f configfile
+@item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @end table
 @c man end

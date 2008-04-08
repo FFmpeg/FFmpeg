@@ -202,28 +202,28 @@ Show version.
 @item -formats
 Show available formats, codecs, protocols, ...
 
-@item -f fmt
+@item -f @var{fmt}
 Force format.
 
-@item -i filename
+@item -i @var{filename}
 input filename
 
 @item -y
 Overwrite output files.
 
-@item -t duration
+@item -t @var{duration}
 Restrict the transcoded/captured video sequence
 to the duration specified in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
-@item -fs limit_size
+@item -fs @var{limit_size}
 Set the file size limit.
 
-@item -ss position
+@item -ss @var{position}
 Seek to given time position in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
-@item -itsoffset offset
+@item -itsoffset @var{offset}
 Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
 This option affects all the input files that follow it.
@@ -231,34 +231,34 @@ The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
 
-@item -title string
+@item -title @var{string}
 Set the title.
 
-@item -timestamp time
+@item -timestamp @var{time}
 Set the timestamp.
 
-@item -author string
+@item -author @var{string}
 Set the author.
 
-@item -copyright string
+@item -copyright @var{string}
 Set the copyright.
 
-@item -comment string
+@item -comment @var{string}
 Set the comment.
 
-@item -album string
+@item -album @var{string}
 Set the album.
 
-@item -track number
+@item -track @var{number}
 Set the track.
 
-@item -year number
+@item -year @var{number}
 Set the year.
 
-@item -v number
+@item -v @var{number}
 Set the logging verbosity level.
 
-@item -target type
+@item -target @var{type}
 Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
 "ntsc-svcd", ... ). All the format options (bitrate, codecs,
 buffer sizes) are then set automatically. You can just type:
@@ -274,16 +274,16 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
-@item -dframes number
+@item -dframes @var{number}
 Set the number of data frames to record.
 
-@item -scodec codec
+@item -scodec @var{codec}
 Force subtitle codec ('copy' to copy stream).
 
 @item -newsubtitle
 Add a new subtitle stream to the current output stream.
 
-@item -slang code
+@item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 
 @end table
@@ -291,13 +291,13 @@ Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @section Video Options
 
 @table @option
-@item -b bitrate
+@item -b @var{bitrate}
 Set the video bitrate in bit/s (default = 200 kb/s).
-@item -vframes number
+@item -vframes @var{number}
 Set the number of video frames to record.
-@item -r fps
+@item -r @var{fps}
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
-@item -s size
+@item -s @var{size}
 Set frame size. The format is @samp{wxh} (ffserver default = 160x128, ffmpeg default = same as source).
 The following abbreviations are recognized:
 @table @samp
@@ -359,52 +359,52 @@ The following abbreviations are recognized:
 1920x1080
 @end table
 
-@item -aspect aspect
+@item -aspect @var{aspect}
 Set aspect ratio (4:3, 16:9 or 1.3333, 1.7777).
-@item -croptop size
+@item -croptop @var{size}
 Set top crop band size (in pixels).
-@item -cropbottom size
+@item -cropbottom @var{size}
 Set bottom crop band size (in pixels).
-@item -cropleft size
+@item -cropleft @var{size}
 Set left crop band size (in pixels).
-@item -cropright size
+@item -cropright @var{size}
 Set right crop band size (in pixels).
-@item -padtop size
+@item -padtop @var{size}
 Set top pad band size (in pixels).
-@item -padbottom size
+@item -padbottom @var{size}
 Set bottom pad band size (in pixels).
-@item -padleft size
+@item -padleft @var{size}
 Set left pad band size (in pixels).
-@item -padright size
+@item -padright @var{size}
 Set right pad band size (in pixels).
-@item -padcolor (hex color)
+@item -padcolor @var{hex_color}
 Set color of padded bands. The value for padcolor is expressed
 as a six digit hexadecimal number where the first two digits
 represent red, the middle two digits green and last two digits
 blue (default = 000000 (black)).
 @item -vn
 Disable video recording.
-@item -bt tolerance
+@item -bt @var{tolerance}
 Set video bitrate tolerance (in bit/s).
-@item -maxrate bitrate
+@item -maxrate @var{bitrate}
 Set max video bitrate (in bit/s).
-@item -minrate bitrate
+@item -minrate @var{bitrate}
 Set min video bitrate (in bit/s).
-@item -bufsize size
+@item -bufsize @var{size}
 Set video buffer verifier buffer size (in bits).
-@item -vcodec codec
+@item -vcodec @var{codec}
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
 @item -sameq
 Use same video quality as source (implies VBR).
 
-@item -pass n
+@item -pass @var{n}
 Select the pass number (1 or 2). It is useful to do two pass
 encoding. The statistics of the video are recorded in the first
 pass and the video is generated at the exact requested bitrate
 in the second pass.
 
-@item -passlogfile file
+@item -passlogfile @var{file}
 Set two pass logfile name to @var{file}.
 
 @item -newvideo
@@ -415,37 +415,37 @@ Add a new video stream to the current output stream.
 @section Advanced Video Options
 
 @table @option
-@item -pix_fmt format
+@item -pix_fmt @var{format}
 Set pixel format. Use 'list' as parameter to show all the supported
 pixel formats.
-@item -sws_flags flags
+@item -sws_flags @var{flags}
 Set SwScaler flags (only available when compiled with SwScaler support).
-@item -g gop_size
+@item -g @var{gop_size}
 Set the group of pictures size.
 @item -intra
 Use only intra frames.
-@item -vdt n
+@item -vdt @var{n}
 Discard threshold.
-@item -qscale q
+@item -qscale @var{q}
 Use fixed video quantizer scale (VBR).
-@item -qmin q
+@item -qmin @var{q}
 minimum video quantizer scale (VBR)
-@item -qmax q
+@item -qmax @var{q}
 maximum video quantizer scale (VBR)
-@item -qdiff q
+@item -qdiff @var{q}
 maximum difference between the quantizer scales (VBR)
-@item -qblur blur
+@item -qblur @var{blur}
 video quantizer scale blur (VBR)
-@item -qcomp compression
+@item -qcomp @var{compression}
 video quantizer scale compression (VBR)
 
-@item -lmin lambda
+@item -lmin @var{lambda}
 minimum video lagrange factor (VBR)
-@item -lmax lambda
+@item -lmax @var{lambda}
 max video lagrange factor (VBR)
-@item -mblmin lambda
+@item -mblmin @var{lambda}
 minimum macroblock quantizer scale (VBR)
-@item -mblmax lambda
+@item -mblmax @var{lambda}
 maximum macroblock quantizer scale (VBR)
 
 These four options (lmin, lmax, mblmin, mblmax) use 'lambda' units,
@@ -454,22 +454,22 @@ but you may use the QP2LAMBDA constant to easily convert from 'q' units:
 ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @end example
 
-@item -rc_init_cplx complexity
+@item -rc_init_cplx @var{complexity}
 initial complexity for single pass encoding
-@item -b_qfactor factor
+@item -b_qfactor @var{factor}
 qp factor between P- and B-frames
-@item -i_qfactor factor
+@item -i_qfactor @var{factor}
 qp factor between P- and I-frames
-@item -b_qoffset offset
+@item -b_qoffset @var{offset}
 qp offset between P- and B-frames
-@item -i_qoffset offset
+@item -i_qoffset @var{offset}
 qp offset between P- and I-frames
-@item -rc_eq equation
+@item -rc_eq @var{equation}
 Set rate control equation (@pxref{FFmpeg formula
 evaluator}) (default = @code{tex^qComp}).
-@item -rc_override override
+@item -rc_override @var{override}
 rate control override for specific intervals
-@item -me_method method
+@item -me_method @var{method}
 Set motion estimation method to @var{method}.
 Available methods are (from lowest to best quality):
 @table @samp
@@ -486,7 +486,7 @@ Try just the (0, 0) vector.
 exhaustive search (slow and marginally better than epzs)
 @end table
 
-@item -dct_algo algo
+@item -dct_algo @var{algo}
 Set DCT algorithm to @var{algo}. Available values are:
 @table @samp
 @item 0
@@ -503,7 +503,7 @@ FF_DCT_MLIB
 FF_DCT_ALTIVEC
 @end table
 
-@item -idct_algo algo
+@item -idct_algo @var{algo}
 Set IDCT algorithm to @var{algo}. Available values are:
 @table @samp
 @item 0
@@ -530,7 +530,7 @@ FF_IDCT_SH4
 FF_IDCT_SIMPLEARM
 @end table
 
-@item -er n
+@item -er @var{n}
 Set error resilience to @var{n}.
 @table @samp
 @item 1
@@ -543,7 +543,7 @@ FF_ER_AGGRESSIVE
 FF_ER_VERY_AGGRESSIVE
 @end table
 
-@item -ec bit_mask
+@item -ec @var{bit_mask}
 Set error concealment to @var{bit_mask}. @var{bit_mask} is a bit mask of
 the following values:
 @table @samp
@@ -553,9 +553,9 @@ FF_EC_GUESS_MVS (default = enabled)
 FF_EC_DEBLOCK (default = enabled)
 @end table
 
-@item -bf frames
+@item -bf @var{frames}
 Use 'frames' B-frames (supported for MPEG-1, MPEG-2 and MPEG-4).
-@item -mbd mode
+@item -mbd @var{mode}
 macroblock decision
 @table @samp
 @item 0
@@ -570,9 +570,9 @@ FF_MB_DECISION_RD: rate distortion
 Use four motion vector by macroblock (MPEG-4 only).
 @item -part
 Use data partitioning (MPEG-4 only).
-@item -bug param
+@item -bug @var{param}
 Work around encoder bugs that are not auto-detected.
-@item -strict strictness
+@item -strict @var{strictness}
 How strictly to follow the standards.
 @item -aic
 Enable Advanced intra coding (h263+).
@@ -591,37 +591,37 @@ The alternative is to deinterlace the input stream with
 Calculate PSNR of compressed frames.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
-@item -vstats_file file
+@item -vstats_file @var{file}
 Dump video coding statistics to @var{file}.
-@item -vhook module
+@item -vhook @var{module}
 Insert video processing @var{module}. @var{module} contains the module
 name and its parameters separated by spaces.
-@item -top n
+@item -top @var{n}
 top=1/bottom=0/auto=-1 field first
-@item -dc precision
+@item -dc @var{precision}
 Intra_dc_precision.
-@item -vtag fourcc/tag
+@item -vtag @var{fourcc/tag}
 Force video tag/fourcc.
 @item -qphist
 Show QP histogram.
-@item -vbsf bitstream filter
+@item -vbsf @var{bitstream_filter}
 Bitstream filters available are "dump_extra", "remove_extra", "noise".
 @end table
 
 @section Audio Options
 
 @table @option
-@item -aframes number
+@item -aframes @var{number}
 Set the number of audio frames to record.
-@item -ar freq
+@item -ar @var{freq}
 Set the audio sampling frequency (default = 44100 Hz).
-@item -ab bitrate
+@item -ab @var{bitrate}
 Set the audio bitrate in bit/s (default = 64k).
-@item -ac channels
+@item -ac @var{channels}
 Set the number of audio channels (default = 1).
 @item -an
 Disable audio recording.
-@item -acodec codec
+@item -acodec @var{codec}
 Force audio codec to @var{codec}. Use the @code{copy} special value to
 specify that the raw codec data must be copied as is.
 @item -newaudio
@@ -636,36 +636,36 @@ Example:
 @example
 ffmpeg -i file.mpg -vcodec copy -acodec ac3 -ab 384k test.mpg -acodec mp2 -ab 192k -newaudio
 @end example
-@item -alang code
+@item -alang @var{code}
 Set the ISO 639 language code (3 letters) of the current audio stream.
 @end table
 
 @section Advanced Audio options:
 
 @table @option
-@item -atag fourcc/tag
+@item -atag @var{fourcc/tag}
 Force audio tag/fourcc.
-@item -absf bitstream filter
+@item -absf @var{bitstream_filter}
 Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
 @end table
 
 @section Subtitle options:
 
 @table @option
-@item -scodec codec
+@item -scodec @var{codec}
 Force subtitle codec ('copy' to copy stream).
 @item -newsubtitle
 Add a new subtitle stream to the current output stream.
-@item -slang code
+@item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @end table
 
 @section Audio/Video grab options
 
 @table @option
-@item -vc channel
+@item -vc @var{channel}
 Set video grab channel (DV1394 only).
-@item -tvstd standard
+@item -tvstd @var{standard}
 Set television standard (NTSC, PAL (SECAM)).
 @item -isync
 Synchronize read on input.
@@ -678,8 +678,8 @@ Synchronize read on input.
 Set stream mapping from input streams to output streams.
 Just enumerate the input streams in the order you want them in the output.
 [input stream id] sets the (input) stream to sync against.
-@item -map_meta_data outfile:infile
-Set meta data information of outfile from infile.
+@item -map_meta_data @var{outfile}:@var{infile}
+Set meta data information of @var{outfile} from @var{infile}.
 @item -debug
 Print specific debug info.
 @item -benchmark
@@ -690,24 +690,24 @@ Dump each input packet.
 When dumping packets, also dump the payload.
 @item -bitexact
 Only use bit exact algorithms (for codec testing).
-@item -ps size
+@item -ps @var{size}
 Set packet size in bits.
 @item -re
 Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
-@item -loop_output number_of_times
+@item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
-@item -threads count
+@item -threads @var{count}
 Thread count.
-@item -vsync parameter
+@item -vsync @var{parameter}
 Video sync method. Video will be stretched/squeezed to match the timestamps,
 it is done by duplicating and dropping frames. With -map you can select from
 which stream the timestamps should be taken. You can leave either video or
 audio unchanged and sync the remaining stream(s) to the unchanged one.
-@item -async samples_per_second
+@item -async @var{samples_per_second}
 Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps,
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
@@ -718,9 +718,9 @@ Copy timestamps from input to output.
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
 Timestamp discontinuity delta threshold.
-@item -muxdelay seconds
+@item -muxdelay @var{seconds}
 Set the maximum demux-decode delay.
-@item -muxpreload seconds
+@item -muxpreload @var{seconds}
 Set the initial demux-decode delay.
 @end table
 

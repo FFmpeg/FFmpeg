@@ -31,30 +31,30 @@ ffplay [options] @file{input_file}
 @table @option
 @item -h
 show help
-@item -x width
+@item -x @var{width}
 force displayed width
-@item -y height
+@item -y @var{height}
 force displayed height
-@item -s size
+@item -s @var{size}
 Set frame size (WxH or abbreviation), needed for videos which don't
 contain a header with the framesize like raw YUV.
 @item -an
 disable audio
 @item -vn
 disable video
-@item -ss pos
+@item -ss @var{pos}
 seek to a given position in seconds
 @item -bytes
 seek by bytes
 @item -nodisp
 disable graphical display
-@item -f fmt
+@item -f @var{fmt}
 force format
 @end table
 
 @section Advanced options
 @table @option
-@item -pix_fmt format
+@item -pix_fmt @var{format}
 set pixel format
 @item -stats
 Show the stream duration, the codec parameters, the current position in
@@ -72,14 +72,14 @@ generate pts
 @item -rtp_tcp
 Force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
 if you are streaming with the RTSP protocol.
-@item -sync type
+@item -sync @var{type}
 Set the master clock to audio (@code{type=audio}), video
 (@code{type=video}) or external (@code{type=ext}). Default is audio. The
 master clock is used to control audio-video synchronization. Most media
 players use audio as master clock, but in some cases (streaming or high
 quality broadcast) it is necessary to change that. This option is mainly
 used for debugging purposes.
-@item -threads count
+@item -threads @var{count}
 thread count
 @end table
 
