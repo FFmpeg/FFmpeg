@@ -376,7 +376,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * 6], *mb, *mb1;
-    DECLARE_ALIGNED_8(DCTELEM, sblock[5*6][64]);
+    DECLARE_ALIGNED_16(DCTELEM, sblock[5*6][64]);
     DECLARE_ALIGNED_8(uint8_t, mb_bit_buffer[80 + 4]); /* allow some slack */
     DECLARE_ALIGNED_8(uint8_t, vs_bit_buffer[5 * 80 + 4]); /* allow some slack */
     const int log2_blocksize= 3-s->avctx->lowres;

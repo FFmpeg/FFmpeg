@@ -82,7 +82,7 @@ typedef struct MJpegDecodeContext {
     AVFrame picture; /* picture structure */
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
-    DECLARE_ALIGNED_8(DCTELEM, block[64]);
+    DECLARE_ALIGNED_16(DCTELEM, block[64]);
     ScanTable scantable;
     DSPContext dsp;
 
