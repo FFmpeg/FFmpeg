@@ -29,38 +29,35 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      const uint8_t *buf, int buf_size)
 {
     AACAC3ParseContext *s = s1->priv_data;
-    ParseContext *pc = &s->pc;
-    int len, i;
+    AACAC3FrameFlag frame_flag;
+    const uint8_t *buf_ptr;
+    int len;
 
-    while(s->remaining_size <= buf_size){
-        if(s->remaining_size && !s->need_next_header){
-            i= s->remaining_size;
-            s->remaining_size = 0;
-            goto output_frame;
-        }else{ //we need a header first
-            len=0;
-            for(i=s->remaining_size; i<buf_size; i++){
-                s->state = (s->state<<8) + buf[i];
-                if((len=s->sync(s->state, s, &s->need_next_header, &s->new_frame_start)))
-                    break;
-            }
-            i-= s->header_size -1;
-            if(len>0){
-                s->remaining_size = len + i;
+    *poutbuf = NULL;
+    *poutbuf_size = 0;
 
-                if(pc->index+i > 0 && s->new_frame_start){
-                    s->remaining_size -= i; // remaining_size=len
-output_frame:
-                    if(!s->frame_in_buffer){
-                        s->frame_in_buffer=1;
-                        buf+=i;
-                        buf_size-=i;
-                        continue;
-                    }
-                    ff_combine_frame(pc, i, &buf, &buf_size);
-                    *poutbuf = buf;
-                    *poutbuf_size = buf_size;
+    buf_ptr = buf;
+    while (buf_size > 0) {
+        int size_needed= s->frame_size ? s->frame_size : s->header_size;
+        len = s->inbuf_ptr - s->inbuf;
 
+        if(len<size_needed){
+            len = FFMIN(size_needed - len, buf_size);
+            memcpy(s->inbuf_ptr, buf_ptr, len);
+            buf_ptr      += len;
+            s->inbuf_ptr += len;
+            buf_size     -= len;
+        }
+
+        if (s->frame_size == 0) {
+            if ((s->inbuf_ptr - s->inbuf) == s->header_size) {
+                len = s->sync(s, &frame_flag);
+                if (len == 0) {
+                    /* no sync found : move by one byte (inefficient, but simple!) */
+                    memmove(s->inbuf, s->inbuf + 1, s->header_size - 1);
+                    s->inbuf_ptr--;
+                } else {
+                    s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = s->sample_rate;
                     /* allow downmixing to stereo (or mono for AC3) */
@@ -75,19 +72,17 @@ output_frame:
                     }
                     avctx->bit_rate = s->bit_rate;
                     avctx->frame_size = s->samples;
-
-                    return i;
                 }
-                s->frame_in_buffer=1;
-            }else{
+            }
+        } else {
+            if(s->inbuf_ptr - s->inbuf == s->frame_size){
+                *poutbuf = s->inbuf;
+                *poutbuf_size = s->frame_size;
+                s->inbuf_ptr = s->inbuf;
+                s->frame_size = 0;
                 break;
             }
         }
     }
-
-    ff_combine_frame(pc, END_NOT_FOUND, &buf, &buf_size);
-    s->remaining_size -= FFMIN(s->remaining_size, buf_size);
-    *poutbuf = NULL;
-    *poutbuf_size = 0;
-    return buf_size;
+    return buf_ptr - buf;
 }

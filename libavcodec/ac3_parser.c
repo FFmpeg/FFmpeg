@@ -123,14 +123,12 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     return 0;
 }
 
-static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
-        int *need_next_header, int *new_frame_start)
+static int ac3_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
 {
     int err;
-    uint64_t tmp = be2me_64(state);
     AC3HeaderInfo hdr;
 
-    err = ff_ac3_parse_header(((uint8_t *)&tmp)+8-AC3_HEADER_SIZE, &hdr);
+    err = ff_ac3_parse_header(hdr_info->inbuf, &hdr);
 
     if(err < 0)
         return 0;
@@ -140,14 +138,24 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
-    *need_next_header = (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
-    *new_frame_start = (hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
+    switch(hdr.frame_type){
+        case EAC3_FRAME_TYPE_INDEPENDENT:
+            *flag = FRAME_START;
+            break;
+        case EAC3_FRAME_TYPE_DEPENDENT:
+            *flag = FRAME_CONTINUATION;
+            break;
+        case EAC3_FRAME_TYPE_AC3_CONVERT:
+            *flag = FRAME_COMPLETE;
+            break;
+    }
     return hdr.frame_size;
 }
 
 static av_cold int ac3_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
+    s->inbuf_ptr = s->inbuf;
     s->header_size = AC3_HEADER_SIZE;
     s->sync = ac3_sync;
     return 0;

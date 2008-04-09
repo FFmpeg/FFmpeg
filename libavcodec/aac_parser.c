@@ -27,14 +27,12 @@
 
 #define AAC_HEADER_SIZE 7
 
-static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
-        int *need_next_header, int *new_frame_start)
+static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
-    uint64_t tmp = be2me_64(state);
 
-    init_get_bits(&bits, ((uint8_t *)&tmp)+8-AAC_HEADER_SIZE, AAC_HEADER_SIZE * 8);
+    init_get_bits(&bits, hdr_info->inbuf, AAC_HEADER_SIZE * 8);
 
     if(get_bits(&bits, 12) != 0xfff)
         return 0;
@@ -67,15 +65,15 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     hdr_info->sample_rate = ff_mpeg4audio_sample_rates[sr];
     hdr_info->samples = (rdb + 1) * 1024;
     hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
+    *flag = FRAME_COMPLETE;
 
-    *need_next_header=0;
-    *new_frame_start=1;
     return size;
 }
 
 static av_cold int aac_parse_init(AVCodecParserContext *s1)
 {
     AACAC3ParseContext *s = s1->priv_data;
+    s->inbuf_ptr = s->inbuf;
     s->header_size = AAC_HEADER_SIZE;
     s->sync = aac_sync;
     return 0;
