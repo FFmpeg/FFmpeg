@@ -76,17 +76,17 @@ void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
     av_fifo_generic_write(f, (void *)buf, size, NULL);
 }
 
-int av_fifo_generic_write(AVFifoBuffer *f, void *buf, int size, int (*func)(void*, void*, int))
+int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int))
 {
     int total = size;
     do {
         int len = FFMIN(f->end - f->wptr, size);
         if(func) {
-            if(func(buf, f->wptr, len) <= 0)
+            if(func(src, f->wptr, len) <= 0)
                 break;
         } else {
-        memcpy(f->wptr, buf, len);
-            buf = (uint8_t*)buf + len;
+            memcpy(f->wptr, src, len);
+            src = (uint8_t*)src + len;
         }
         f->wptr += len;
         if (f->wptr >= f->end)

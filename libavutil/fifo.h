@@ -81,16 +81,16 @@ attribute_deprecated void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int
 /**
  * Feeds data from a user supplied callback to an AVFifoBuffer.
  * @param *f AVFifoBuffer to write to
- * @param *buf data source
+ * @param *src data source
  * @param size number of bytes to write
- * @param *func generic write function. First parameter is buf,
+ * @param *func generic write function. First parameter is src,
  * second is dest_buf, third is dest_buf_size.
  * func must return the number of bytes written to dest_buf, or <= 0 to
  * indicate no more data available to write.
- * If func is NULL, buf is interpreted as a simple byte array for source data.
+ * If func is NULL, src is interpreted as a simple byte array for source data.
  * @return the number of bytes written to the fifo.
  */
-int av_fifo_generic_write(AVFifoBuffer *f, void *buf, int size, int (*func)(void*, void*, int));
+int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int));
 
 /**
  * Resizes an AVFifoBuffer.
