@@ -401,7 +401,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
     uint32_t state=0xFFFFFFFF;
 
     while(!url_feof(pb)){
-        *pos= url_ftell(pb);
+        *pos= url_ftell(pb) - 3;
         if(rm->remaining_len > 0){
             num= rm->current_stream;
             len= rm->remaining_len;
