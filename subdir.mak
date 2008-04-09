@@ -34,7 +34,7 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS)
 
 ifdef SUBDIR
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): \
-    $(foreach L,$(FFLIBS),lib$(L)/$(SLIBPREF)$(L)$(SLIBSUF))
+    $(foreach NAME,$(FFLIBS),lib$(NAME)/$(SLIBNAME))
 endif
 endif
 
