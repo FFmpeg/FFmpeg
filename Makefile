@@ -14,7 +14,7 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
-PROGS_SRCS  = $(addsuffix .c,          $(PROGS-yes)) cmdutils.c
+OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 
 BASENAMES   = ffmpeg ffplay ffserver
@@ -52,8 +52,6 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
-.depend: version.h $(PROGS_SRCS)
-
 SUBDIR_VARS := OBJS ASM_OBJS CPP_OBJS FFLIBS CLEANFILES
 
 define RESET
@@ -89,9 +87,7 @@ output_example$(EXESUF): output_example.o $(DEP_LIBS)
 tools/%$(EXESUF): tools/%.c
 	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-ffplay.o .depend: CFLAGS += $(SDL_CFLAGS)
-
-ffmpeg.o ffplay.o ffserver.o: version.h
+ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
@@ -113,7 +109,7 @@ LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
 
 VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 
-vhook/%.o: CFLAGS:=$(VHOOKCFLAGS)
+vhook/%.o vhook/%.d: CFLAGS:=$(VHOOKCFLAGS)
 
 # vhooks compile fine without libav*, but need them nonetheless.
 videohook: $(DEP_LIBS) $(HOOKS)
@@ -121,10 +117,8 @@ videohook: $(DEP_LIBS) $(HOOKS)
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
 
-.vhookdep: $(ALLHOOKS_SRCS) version.h
-	$(VHOOK_DEPEND_CMD) > $@
-
-depend dep: .vhookdep
+VHOOK_DEPS = $(HOOKS:$(SLIBSUF)=.d)
+depend dep: $(VHOOK_DEPS)
 
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
                                  ffplay-doc.html general.html hooks.html \
@@ -176,7 +170,7 @@ clean::
 	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
 distclean::
-	rm -f .vhookdep version.h config.* *.pc
+	rm -f version.h config.* *.pc vhook/*.d
 
 # regression tests
 
@@ -352,4 +346,4 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(DEP_LIBS)
 .PHONY: codectest libavtest seektest test-server fulltest test
 .PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
 
--include .vhookdep
+-include $(VHOOK_DEPS)

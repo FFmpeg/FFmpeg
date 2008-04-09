@@ -24,6 +24,15 @@ CFLAGS = -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 %.ho: %.h
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
 
+%.d: %.c
+	$(DEPEND_CMD) > $@
+
+%.d: %.S
+	$(DEPEND_CMD) > $@
+
+%.d: %.cpp
+	$(DEPEND_CMD) > $@
+
 install: install-libs install-headers
 
 uninstall: uninstall-libs uninstall-headers
@@ -51,7 +60,8 @@ TESTS := $(addprefix $(SUBDIR),$(TESTS))
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
-depend dep: $(SUBDIR).depend
+DEPS := $(OBJS:.o=.d)
+depend dep: $(DEPS)
 
 CLEANFILES += *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
               *.def *.dll.a *.exp *.ho *.map
@@ -63,18 +73,15 @@ $(SUBDIR)%: $(SUBDIR)%.o $(LIBNAME)
 $(SUBDIR)%-test$(EXESUF): $(SUBDIR)%.c $(LIBNAME)
 	$(CC) $(CFLAGS) $(FFLDFLAGS) -DTEST -o $$@ $$^ $(FFEXTRALIBS)
 
-$(SUBDIR).depend: $(SRCS)
-	$(DEPEND_CMD) > $$@
-
 clean::
 	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES))
 
 distclean:: clean
-	rm -f $(SUBDIR).depend
+	rm -f $(DEPS)
 endef
 
 $(eval $(RULES))
 
 tests: $(TESTS)
 
--include $(SUBDIR).depend
+-include $(DEPS)

@@ -940,8 +940,7 @@ SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 # gcc stupidly only outputs the basename of targets with -MM
-DEPEND_CMD='$(CC) -MM $(CFLAGS) $(filter-out %.h,$$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\\2&,;s,^.*:,\$$$$(SUBDIR)&,"'
-VHOOK_DEPEND_CMD='$(CC) -MM $(VHOOKCFLAGS) $(filter-out %.h,$^) | sed "s,^\([a-z]\),vhook/\\1,"'
+DEPEND_CMD='$(CC) $(CFLAGS) -MM -MG $< | sed "1s,^,$(@D)/,"'
 
 # find source path
 source_path="`dirname \"$0\"`"
@@ -1983,7 +1982,6 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
-echo "VHOOK_DEPEND_CMD=$VHOOK_DEPEND_CMD" >> config.mak
 
 if enabled bigendian; then
     echo "WORDS_BIGENDIAN=yes" >> config.mak
