@@ -33,9 +33,6 @@ include common.mak
 FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 
-S := $(BUILD_SHARED:yes=S)
-DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(S)LIBNAME))
-
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
 

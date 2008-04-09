@@ -57,6 +57,8 @@ SRCS  := $(addprefix $(SUBDIR),$(SRCS))
 OBJS  := $(addprefix $(SUBDIR),$(OBJS))
 TESTS := $(addprefix $(SUBDIR),$(TESTS))
 
+DEP_LIBS:=$(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
+
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
