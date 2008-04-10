@@ -1173,7 +1173,14 @@ static int dca_decode_frame(AVCodecContext * avctx,
         s->output = DCA_STEREO;
     }
 
-    avctx->channels = channels;
+    /* There is nothing that prevents a dts frame to change channel configuration
+       but FFmpeg doesn't support that so only set the channels if it is previously
+       unset. Ideally during the first probe for channels the crc should be checked
+       and only set avctx->channels when the crc is ok. Right now the decoder could
+       set the channels based on a broken first frame.*/
+    if (!avctx->channels)
+        avctx->channels = channels;
+
     if(*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
     *data_size = 0;
