@@ -32,6 +32,7 @@ include common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
+FF_DEP_LIBS  := $(DEP_LIBS)
 
 ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
@@ -43,7 +44,7 @@ INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
 INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
 
-all: $(DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
+all: $(FF_DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
 
 $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
@@ -67,7 +68,7 @@ $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
 ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
-%_g$(EXESUF): %.o cmdutils.o $(DEP_LIBS)
+%_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
@@ -78,7 +79,7 @@ endif
 version.h:
 	$(SRC_PATH)/version.sh $(SRC_PATH)
 
-output_example$(EXESUF): output_example.o $(DEP_LIBS)
+output_example$(EXESUF): output_example.o $(FF_DEP_LIBS)
 	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.c
@@ -109,7 +110,7 @@ VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
 vhook/%.o vhook/%.d: CFLAGS:=$(VHOOKCFLAGS)
 
 # vhooks compile fine without libav*, but need them nonetheless.
-videohook: $(DEP_LIBS) $(HOOKS)
+videohook: $(FF_DEP_LIBS) $(HOOKS)
 
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
@@ -335,7 +336,7 @@ tests/asynth1.sw: tests/audiogen$(EXESUF)
 %$(EXESUF): %.c
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $<
 
-tests/seek_test$(EXESUF): tests/seek_test.c $(DEP_LIBS)
+tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
