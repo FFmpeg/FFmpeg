@@ -112,6 +112,7 @@ vhook/%.o vhook/%.d: CFLAGS:=$(VHOOKCFLAGS)
 # vhooks compile fine without libav*, but need them nonetheless.
 videohook: $(FF_DEP_LIBS) $(HOOKS)
 
+$(eval VHOOKSHFLAGS=$(VHOOKSHFLAGS))
 vhook/%$(SLIBSUF): vhook/%.o
 	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
 

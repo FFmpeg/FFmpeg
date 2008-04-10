@@ -924,7 +924,7 @@ enable stripping
 vhook="default"
 
 # build settings
-SHFLAGS='-shared -Wl,-soname,$(SLIBNAME_WITH_MAJOR)'
+SHFLAGS='-shared -Wl,-soname,$$(@F)'
 VHOOKSHFLAGS='$(SHFLAGS)'
 LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
@@ -1077,7 +1077,7 @@ case $target_os in
         fi ;;
     sunos)
         FFSERVERLDFLAGS=""
-        SHFLAGS='-shared -Wl,-h,$(SLIBNAME_WITH_MAJOR)'
+        SHFLAGS='-shared -Wl,-h,$$(@F)'
         network_extralibs="-lsocket -lnsl"
         ;;
     netbsd)
@@ -1104,7 +1104,7 @@ case $target_os in
     darwin)
         disable need_memalign
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
-        VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$$@'
+        VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$$(@F)'
         strip="strip -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
         SLIBSUF=".dylib"
