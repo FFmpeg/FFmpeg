@@ -496,15 +496,20 @@ static inline void qpel_motion(MpegEncContext *s,
 
     if(   (unsigned)src_x > s->h_edge_pos - (motion_x&3) - 16
        || (unsigned)src_y >    v_edge_pos - (motion_y&3) - h  ){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based,
-                         src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+        ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize,
+                            17, 17+field_based, src_x, src_y<<field_based,
+                            s->h_edge_pos, s->v_edge_pos);
         ptr_y= s->edge_emu_buffer;
         if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
             uint8_t *uvbuf= s->edge_emu_buffer + 18*s->linesize;
-            ff_emulated_edge_mc(uvbuf, ptr_cb, s->uvlinesize, 9, 9 + field_based,
-                             uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-            ff_emulated_edge_mc(uvbuf + 16, ptr_cr, s->uvlinesize, 9, 9 + field_based,
-                             uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ff_emulated_edge_mc(uvbuf, ptr_cb, s->uvlinesize,
+                                9, 9 + field_based,
+                                uvsrc_x, uvsrc_y<<field_based,
+                                s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ff_emulated_edge_mc(uvbuf + 16, ptr_cr, s->uvlinesize,
+                                9, 9 + field_based,
+                                uvsrc_x, uvsrc_y<<field_based,
+                                s->h_edge_pos>>1, s->v_edge_pos>>1);
             ptr_cb= uvbuf;
             ptr_cr= uvbuf + 16;
         }
@@ -569,7 +574,9 @@ static inline void chroma_4mv_motion(MpegEncContext *s,
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(   (unsigned)src_x > (s->h_edge_pos>>1) - (dxy &1) - 8
            || (unsigned)src_y > (s->v_edge_pos>>1) - (dxy>>1) - 8){
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize,
+                                9, 9, src_x, src_y,
+                                s->h_edge_pos>>1, s->v_edge_pos>>1);
             ptr= s->edge_emu_buffer;
             emu=1;
         }
@@ -578,7 +585,9 @@ static inline void chroma_4mv_motion(MpegEncContext *s,
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize,
+                            9, 9, src_x, src_y,
+                            s->h_edge_pos>>1, s->v_edge_pos>>1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[dxy](dest_cr, ptr, s->uvlinesize, 8);
@@ -609,9 +618,11 @@ static inline void prefetch_motion(MpegEncContext *s, uint8_t **pix, int dir){
  * the motion vectors are taken from s->mv and the MV type from s->mv_type
  */
 static inline void MPV_motion(MpegEncContext *s,
-                              uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                              int dir, uint8_t **ref_picture,
-                              op_pixels_func (*pix_op)[4], qpel_mc_func (*qpix_op)[16])
+                              uint8_t *dest_y, uint8_t *dest_cb,
+                              uint8_t *dest_cr, int dir,
+                              uint8_t **ref_picture,
+                              op_pixels_func (*pix_op)[4],
+                              qpel_mc_func (*qpix_op)[16])
 {
     int dxy, mx, my, src_x, src_y, motion_x, motion_y;
     int mb_x, mb_y, i;
@@ -734,7 +745,10 @@ static inline void MPV_motion(MpegEncContext *s,
                 if(s->flags&CODEC_FLAG_EMU_EDGE){
                     if(   (unsigned)src_x > s->h_edge_pos - (motion_x&3) - 8
                        || (unsigned)src_y > s->v_edge_pos - (motion_y&3) - 8 ){
-                        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize, 9, 9, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+                        ff_emulated_edge_mc(s->edge_emu_buffer, ptr,
+                                            s->linesize, 9, 9,
+                                            src_x, src_y,
+                                            s->h_edge_pos, s->v_edge_pos);
                         ptr= s->edge_emu_buffer;
                     }
                 }
@@ -798,7 +812,8 @@ static inline void MPV_motion(MpegEncContext *s,
         for(i=0; i<2; i++){
             uint8_t ** ref2picture;
 
-            if(s->picture_structure == s->field_select[dir][i] + 1 || s->pict_type == FF_B_TYPE || s->first_field){
+            if(s->picture_structure == s->field_select[dir][i] + 1
+               || s->pict_type == FF_B_TYPE || s->first_field){
                 ref2picture= ref_picture;
             }else{
                 ref2picture= s->current_picture_ptr->data;
