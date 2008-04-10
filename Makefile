@@ -85,7 +85,7 @@ output_example$(EXESUF): output_example.o $(FF_DEP_LIBS)
 tools/%$(EXESUF): tools/%.c
 	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-ffplay.o: CFLAGS += $(SDL_CFLAGS)
+ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
