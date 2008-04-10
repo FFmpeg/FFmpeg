@@ -110,7 +110,6 @@ show_help(){
   echo "  --enable-cross-compile   assume a cross-compiler is used"
   echo "  --target-os=OS           compiler targets OS [$target_os]"
   echo "  --cc=CC                  use C compiler CC [$cc]"
-  echo "  --make=MAKE              use specified make [$make]"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
   echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
@@ -782,7 +781,6 @@ CMDLINE_SET='
     incdir
     libdir
     logfile
-    make
     mandir
     prefix
     shlibdir
@@ -894,7 +892,6 @@ cc="gcc"
 ar="ar"
 nm="nm"
 ranlib="ranlib"
-make="make"
 strip="strip"
 asmalign_pot="unknown"
 ln_s="ln -sf"
@@ -1433,14 +1430,6 @@ if test $cpu != "generic"; then
     esac
 fi
 
-gnu_make(){
-    $1 --version 2>&1 | grep -q GNU
-}
-
-if ! gnu_make $make; then
-    gnu_make gmake && make=gmake || die "GNU make not found."
-fi
-
 # make sure we can execute files in $TMPDIR
 cat >$TMPSH 2>>$logfile <<EOF
 #! /bin/sh
@@ -1855,7 +1844,6 @@ enabled libvorbis && append pkg_requires "vorbisenc"
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
-echo "make                      $make"
 echo ".align is power-of-two    $asmalign_pot"
 echo "ARCH                      $arch ($cpu)"
 if test "$build_suffix" != ""; then
@@ -1955,7 +1943,6 @@ echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
 echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
 echo "BINDIR=\$(DESTDIR)$bindir" >> config.mak
 echo "MANDIR=\$(DESTDIR)$mandir" >> config.mak
-echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
