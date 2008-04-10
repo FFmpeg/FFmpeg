@@ -1735,7 +1735,9 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
    s->mv       : motion vector
    s->interlaced_dct : true if interlaced dct used (mpeg2)
  */
-static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64], int lowres_flag)
+static av_always_inline
+void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
+                            int lowres_flag)
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
