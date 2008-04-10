@@ -238,14 +238,16 @@ static inline int hpel_motion(MpegEncContext *s,
 }
 
 /* apply one mpeg motion vector to the three components */
-static av_always_inline void mpeg_motion(MpegEncContext *s,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               int field_based, int bottom_field, int field_select,
-                               uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
-                               int motion_x, int motion_y, int h)
+static av_always_inline
+void mpeg_motion(MpegEncContext *s,
+                 uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                 int field_based, int bottom_field, int field_select,
+                 uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
+                 int motion_x, int motion_y, int h)
 {
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-    int dxy, uvdxy, mx, my, src_x, src_y, uvsrc_x, uvsrc_y, v_edge_pos, uvlinesize, linesize;
+    int dxy, uvdxy, mx, my, src_x, src_y,
+        uvsrc_x, uvsrc_y, v_edge_pos, uvlinesize, linesize;
 
 #if 0
 if(s->quarter_sample)
@@ -312,18 +314,27 @@ if(s->quarter_sample)
        || (unsigned)src_y >    v_edge_pos - (motion_y&1) - h){
             if(s->codec_id == CODEC_ID_MPEG2VIDEO ||
                s->codec_id == CODEC_ID_MPEG1VIDEO){
-                av_log(s->avctx,AV_LOG_DEBUG,"MPEG motion vector out of boundary\n");
+                av_log(s->avctx,AV_LOG_DEBUG,
+                        "MPEG motion vector out of boundary\n");
                 return ;
             }
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based,
-                             src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize,
+                                17, 17+field_based,
+                                src_x, src_y<<field_based,
+                                s->h_edge_pos, s->v_edge_pos);
             ptr_y = s->edge_emu_buffer;
             if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                 uint8_t *uvbuf= s->edge_emu_buffer+18*s->linesize;
-                ff_emulated_edge_mc(uvbuf  , ptr_cb, s->uvlinesize, 9, 9+field_based,
-                                 uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-                ff_emulated_edge_mc(uvbuf+16, ptr_cr, s->uvlinesize, 9, 9+field_based,
-                                 uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+                ff_emulated_edge_mc(uvbuf ,
+                                    ptr_cb, s->uvlinesize,
+                                    9, 9+field_based,
+                                    uvsrc_x, uvsrc_y<<field_based,
+                                    s->h_edge_pos>>1, s->v_edge_pos>>1);
+                ff_emulated_edge_mc(uvbuf+16,
+                                    ptr_cr, s->uvlinesize,
+                                    9, 9+field_based,
+                                    uvsrc_x, uvsrc_y<<field_based,
+                                    s->h_edge_pos>>1, s->v_edge_pos>>1);
                 ptr_cb= uvbuf;
                 ptr_cr= uvbuf+16;
             }
@@ -344,10 +355,13 @@ if(s->quarter_sample)
     pix_op[0][dxy](dest_y, ptr_y, linesize, h);
 
     if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-        pix_op[s->chroma_x_shift][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
-        pix_op[s->chroma_x_shift][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
+        pix_op[s->chroma_x_shift][uvdxy]
+                (dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
+        pix_op[s->chroma_x_shift][uvdxy]
+                (dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
     }
-    if((ENABLE_H261_ENCODER || ENABLE_H261_DECODER) && s->out_format == FMT_H261){
+    if((ENABLE_H261_ENCODER || ENABLE_H261_DECODER) &&
+         s->out_format == FMT_H261){
         ff_h261_loop_filter(s);
     }
 }
