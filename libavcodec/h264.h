@@ -93,10 +93,10 @@ typedef struct SPS{
     int mb_aff;                        ///<mb_adaptive_frame_field_flag
     int direct_8x8_inference_flag;
     int crop;                   ///< frame_cropping_flag
-    int crop_left;              ///< frame_cropping_rect_left_offset
-    int crop_right;             ///< frame_cropping_rect_right_offset
-    int crop_top;               ///< frame_cropping_rect_top_offset
-    int crop_bottom;            ///< frame_cropping_rect_bottom_offset
+    unsigned int crop_left;            ///< frame_cropping_rect_left_offset
+    unsigned int crop_right;           ///< frame_cropping_rect_right_offset
+    unsigned int crop_top;             ///< frame_cropping_rect_top_offset
+    unsigned int crop_bottom;          ///< frame_cropping_rect_bottom_offset
     int vui_parameters_present_flag;
     AVRational sar;
     int timing_info_present_flag;
