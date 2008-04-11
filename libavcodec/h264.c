@@ -3941,11 +3941,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->b_stride=  s->mb_width*4;
     h->b8_stride= s->mb_width*2;
 
-    s->width = 16*s->mb_width - 2*(h->sps.crop_left + h->sps.crop_right );
+    s->width = 16*s->mb_width - 2*FFMIN(h->sps.crop_right, 7);
     if(h->sps.frame_mbs_only_flag)
-        s->height= 16*s->mb_height - 2*(h->sps.crop_top  + h->sps.crop_bottom);
+        s->height= 16*s->mb_height - 2*FFMIN(h->sps.crop_bottom, 7);
     else
-        s->height= 16*s->mb_height - 4*(h->sps.crop_top  + h->sps.crop_bottom); //FIXME recheck
+        s->height= 16*s->mb_height - 4*FFMIN(h->sps.crop_bottom, 3);
 
     if (s->context_initialized
         && (   s->width != s->avctx->width || s->height != s->avctx->height)) {
@@ -7243,6 +7243,9 @@ static inline int decode_seq_parameter_set(H264Context *h){
         sps->crop_bottom= get_ue_golomb(&s->gb);
         if(sps->crop_left || sps->crop_top){
             av_log(h->s.avctx, AV_LOG_ERROR, "insane cropping not completely supported, this could look slightly wrong ...\n");
+        }
+        if(sps->crop_right >= 8 || sps->crop_bottom >= (8>> !h->sps.frame_mbs_only_flag)){
+            av_log(h->s.avctx, AV_LOG_ERROR, "brainfart cropping not supported, this could look slightly wrong ...\n");
         }
     }else{
         sps->crop_left  =
