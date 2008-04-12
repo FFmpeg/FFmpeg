@@ -30,13 +30,11 @@
 #include "mmx.h"
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
+#include "idct_xvid.h"
 #include "h263.h"
 
 //#undef NDEBUG
 //#include <assert.h>
-
-extern void ff_idct_xvid_mmx(short *block);
-extern void ff_idct_xvid_mmx2(short *block);
 
 int mm_flags; /* multimedia extension flags */
 

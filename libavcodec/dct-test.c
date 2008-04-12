@@ -37,6 +37,7 @@
 #include "simple_idct.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "i386/idct_xvid.h"
 
 #ifndef MAX
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
@@ -50,8 +51,6 @@ void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
 /* reference fdct/idct */
 extern void fdct(DCTELEM *block);
 extern void idct(DCTELEM *block);
-extern void ff_idct_xvid_mmx(DCTELEM *block);
-extern void ff_idct_xvid_mmx2(DCTELEM *block);
 extern void init_fdct();
 
 extern void ff_mmx_idct(DCTELEM *data);
