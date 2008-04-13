@@ -467,17 +467,10 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 TESTS-$(ARCH_X86) += cpuid-test$(EXESUF) motion-test$(EXESUF)
 
-CLEANFILES = \
-    alpha/*.o alpha/*~ \
-    armv4l/*.o armv4l/*~ \
-    bfin/*.o bfin/*~ \
-    i386/*.o i386/*~ \
-    mlib/*.o mlib/*~ \
-    ppc/*.o ppc/*~ \
-    ps2/*.o ps2/*~ \
-    sh4/*.o sh4/*~ \
-    sparc/*.o sparc/*~ \
-    apiexample$(EXESUF)
+DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
+
+CLEANFILES = $(addsuffix /*.o,$(DIRS)) $(addsuffix /*.ho,$(DIRS)) \
+    $(addsuffix /*~,$(DIRS)) apiexample$(EXESUF)
 
 include $(SUBDIR)../subdir.mak
 
