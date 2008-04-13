@@ -135,6 +135,8 @@ different game cutscenes repacked for use with ScummVM.
 @tab Audio and video format used in some games by Entertainment Software Partners
 @item IFF @tab    @tab X
 @tab Interchange File Format
+@item BFI @tab    @tab
+@tab Brute Force & Ignorance, used in Flash Traffic: City of Angels
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

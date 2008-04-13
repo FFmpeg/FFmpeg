@@ -118,6 +118,7 @@ version <next>
 - RL2 demuxer / decoder
 - IFF demuxer
 - 8SVX audio decoder
+- BFI demuxer
 
 version 0.4.9-pre1:
 
