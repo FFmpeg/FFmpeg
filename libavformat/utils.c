@@ -668,7 +668,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
 
-            if(st->cur_dts == 0)
+            if(st->cur_dts == 0 && pkt->duration != 0)
                 update_initial_durations(s, st, pkt);
         }
     }
