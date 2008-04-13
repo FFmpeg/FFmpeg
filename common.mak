@@ -65,8 +65,8 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANFILES += *.o *~ *.a *.lib *.so *.so.* *.dylib *.dll \
-              *.def *.dll.a *.exp *.ho *.map
+CLEANSUFFIXES = *.o *~ *.ho
+LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
 
 define RULES
 $(SUBDIR)%: $(SUBDIR)%.o $(LIBNAME)
@@ -76,7 +76,7 @@ $(SUBDIR)%-test$(EXESUF): $(SUBDIR)%.c $(LIBNAME)
 	$(CC) $(CFLAGS) $(FFLDFLAGS) -DTEST -o $$@ $$^ $(FFEXTRALIBS)
 
 clean::
-	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES))
+	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES))
 
 distclean:: clean
 	rm -f $(DEPS)
