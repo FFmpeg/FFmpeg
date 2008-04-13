@@ -1215,8 +1215,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
 
             for (count2 = 0; count2 < 28; count2++) {
-                next_left_sample = (((*src & 0xF0) << 24) >> shift_left);
-                next_right_sample = (((*src & 0x0F) << 28) >> shift_right);
+                next_left_sample  = (int32_t)((*src & 0xF0) << 24) >> shift_left;
+                next_right_sample = (int32_t)((*src & 0x0F) << 28) >> shift_right;
                 src++;
 
                 next_left_sample = (next_left_sample +
@@ -1289,9 +1289,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
                     for (count2=0; count2<28; count2++) {
                         if (count2 & 1)
-                            next_sample = ((*srcC++ & 0x0F) << 28) >> shift;
+                            next_sample = (int32_t)((*srcC++ & 0x0F) << 28) >> shift;
                         else
-                            next_sample = ((*srcC   & 0xF0) << 24) >> shift;
+                            next_sample = (int32_t)((*srcC   & 0xF0) << 24) >> shift;
 
                         next_sample += (current_sample  * coeff1) +
                                        (previous_sample * coeff2);
@@ -1336,7 +1336,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 s = &samples[m*avctx->channels + channel];
                 for (n=0; n<4; n++, src++, s+=32*avctx->channels) {
                     for (s2=s, i=0; i<8; i+=4, s2+=avctx->channels) {
-                        int level = ((*src & (0xF0>>i)) << (24+i)) >> shift[n];
+                        int level = (int32_t)((*src & (0xF0>>i)) << (24+i)) >> shift[n];
                         int pred  = s2[-1*avctx->channels] * coeff[0][n]
                                   + s2[-2*avctx->channels] * coeff[1][n];
                         s2[0] = av_clip_int16((level + pred + 0x80) >> 8);
