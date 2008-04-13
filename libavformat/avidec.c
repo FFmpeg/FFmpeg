@@ -380,13 +380,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->scale = get_le32(pb);
             ast->rate = get_le32(pb);
             if(!(ast->scale && ast->rate)){
-            if(frame_period){
-                ast->rate = 1000000;
-                ast->scale = frame_period;
-            }else{
-                ast->rate = 25;
-                ast->scale = 1;
-            }
+                if(frame_period){
+                    ast->rate = 1000000;
+                    ast->scale = frame_period;
+                }else{
+                    ast->rate = 25;
+                    ast->scale = 1;
+                }
             }
             av_set_pts_info(st, 64, ast->scale, ast->rate);
 
