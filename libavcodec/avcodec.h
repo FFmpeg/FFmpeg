@@ -61,6 +61,8 @@
  */
 enum CodecID {
     CODEC_ID_NONE,
+
+    /* video codecs */
     CODEC_ID_MPEG1VIDEO,
     CODEC_ID_MPEG2VIDEO, ///< preferred ID for MPEG-1/2 video decoding
     CODEC_ID_MPEG2VIDEO_XVMC,
@@ -247,6 +249,7 @@ enum CodecID {
     CODEC_ID_XAN_DPCM,
     CODEC_ID_SOL_DPCM,
 
+    /* audio codecs */
     CODEC_ID_MP2= 0x15000,
     CODEC_ID_MP3, ///< preferred ID for decoding MPEG audio layer 1, 2 or 3
     CODEC_ID_AAC,
