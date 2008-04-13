@@ -67,6 +67,7 @@ depend dep: $(DEPS)
 
 CLEANSUFFIXES = *.o *~ *.ho
 LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
+DISTCLEANSUFFIXES = *.d
 
 define RULES
 $(SUBDIR)%: $(SUBDIR)%.o $(LIBNAME)
@@ -80,7 +81,8 @@ clean::
 	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 distclean:: clean
-	rm -f $(DEPS)
+	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
+            $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 endef
 
 $(eval $(RULES))
