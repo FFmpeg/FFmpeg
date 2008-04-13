@@ -76,7 +76,8 @@ $(SUBDIR)%-test$(EXESUF): $(SUBDIR)%.c $(LIBNAME)
 	$(CC) $(CFLAGS) $(FFLDFLAGS) -DTEST -o $$@ $$^ $(FFEXTRALIBS)
 
 clean::
-	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES))
+	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 distclean:: clean
 	rm -f $(DEPS)
