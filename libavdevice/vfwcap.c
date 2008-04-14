@@ -320,7 +320,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 #if 0
     /* For testing yet unsupported compressions
-     * Copy these values from-user supplied verbose information */
+     * Copy these values from user-supplied verbose information */
     bi->bmiHeader.biWidth       = 320;
     bi->bmiHeader.biHeight      = 240;
     bi->bmiHeader.biPlanes      = 1;
