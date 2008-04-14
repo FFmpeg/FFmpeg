@@ -84,8 +84,16 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    if (ihsize == 40) {
     width = bytestream_get_le32(&buf);
     height = bytestream_get_le32(&buf);
+    } else if (ihsize == 12) {
+        width  = bytestream_get_le16(&buf);
+        height = bytestream_get_le16(&buf);
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome");
+        return -1;
+    }
 
     if(bytestream_get_le16(&buf) != 1){ /* planes */
         av_log(avctx, AV_LOG_ERROR, "invalid BMP header\n");
@@ -94,7 +102,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     depth = bytestream_get_le16(&buf);
 
-    if(ihsize > 16)
+    if(ihsize == 40)
         comp = bytestream_get_le32(&buf);
     else
         comp = BMP_RGB;
