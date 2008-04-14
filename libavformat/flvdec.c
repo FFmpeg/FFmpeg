@@ -257,6 +257,10 @@ static int flv_read_header(AVFormatContext *s,
         av_log(s, AV_LOG_WARNING, "Broken FLV file, which says no streams present, this might fail\n");
     }
 
+    if((flags & (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
+             != (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
+
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
         if(!create_stream(s, 0))
             return AVERROR(ENOMEM);
