@@ -298,18 +298,16 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* Set video format */
     bisize = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, 0, 0);
-    if(!bisize) {
+    if(!bisize)
         goto fail_io;
-    }
     bi = av_malloc(bisize);
     if(!bi) {
         vfw_read_close(s);
         return AVERROR_NOMEM;
     }
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, bisize, (LPARAM) bi);
-    if(!ret) {
+    if(!ret)
         goto fail_bi;
-    }
 
     dump_bih(s, &bi->bmiHeader);
 
@@ -332,9 +330,8 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* Set sequence setup */
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_SEQUENCE_SETUP, sizeof(cparms),
                       (LPARAM) &cparms);
-    if(!ret) {
+    if(!ret)
         goto fail_io;
-    }
 
     dump_captureparms(s, &cparms);
 
@@ -348,9 +345,8 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     ret = SendMessage(ctx->hwnd, WM_CAP_SET_SEQUENCE_SETUP, sizeof(cparms),
                       (LPARAM) &cparms);
-    if(!ret) {
+    if(!ret)
         goto fail_io;
-    }
 
     codec = st->codec;
     codec->time_base = ap->time_base;
