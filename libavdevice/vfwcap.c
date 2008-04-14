@@ -285,8 +285,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
                       (LPARAM) videostream_cb);
     if(!ret) {
         av_log(s, AV_LOG_ERROR, "Could not set video stream callback.\n");
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR) ctx);
@@ -300,8 +299,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* Set video format */
     bisize = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, 0, 0);
     if(!bisize) {
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
     bi = av_malloc(bisize);
     if(!bi) {
@@ -311,8 +309,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, bisize, (LPARAM) bi);
     if(!ret) {
         av_free(bi);
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     dump_bih(s, &bi->bmiHeader);
@@ -326,8 +323,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!ret) {
         av_log(s, AV_LOG_ERROR, "Could not set Video Format.\n");
         av_free(bi);
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     biCompression = bi->bmiHeader.biCompression;
@@ -339,8 +335,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_SEQUENCE_SETUP, sizeof(cparms),
                       (LPARAM) &cparms);
     if(!ret) {
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     dump_captureparms(s, &cparms);
@@ -356,8 +351,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ret = SendMessage(ctx->hwnd, WM_CAP_SET_SEQUENCE_SETUP, sizeof(cparms),
                       (LPARAM) &cparms);
     if(!ret) {
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     codec = st->codec;
@@ -382,24 +376,25 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ctx->mutex = CreateMutex(NULL, 0, NULL);
     if(!ctx->mutex) {
         av_log(s, AV_LOG_ERROR, "Could not create Mutex.\n" );
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
     ctx->event = CreateEvent(NULL, 1, 0, NULL);
     if(!ctx->event) {
         av_log(s, AV_LOG_ERROR, "Could not create Event.\n" );
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     ret = SendMessage(ctx->hwnd, WM_CAP_SEQUENCE_NOFILE, 0, 0);
     if(!ret) {
         av_log(s, AV_LOG_ERROR, "Could not start capture sequence.\n" );
-        vfw_read_close(s);
-        return AVERROR_IO;
+        goto fail_io;
     }
 
     return 0;
+
+fail_io:
+    vfw_read_close(s);
+    return AVERROR_IO;
 }
 
 static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
