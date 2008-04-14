@@ -1,14 +1,12 @@
 
-1) Type './configure' create the configuration (use './configure
---help' to have the configure options).
+1) Type './configure' to create the configuration. A list of configure
+options is printed by running 'configure --help'.
 
-'configure' can be launched from another directory than the ffmpeg
-sources to put the objects at that place. In that case, use an
-absolute path when launching 'configure',
-e.g. /ffmpegdir/ffmpeg/configure.
+'configure' can be launched from a directory different from the FFmpeg
+sources to build the objects out of tree. To do this, use an absolute
+path when launching 'configure', e.g. '/ffmpegdir/ffmpeg/configure'.
 
-2) Then type 'make' to build ffmpeg. On BSD systems, type 'gmake'
-instead of 'make'. You may need to install GNU make first.
+2) Then type 'make' to build FFmpeg. On BSD systems, type 'gmake'
+instead of 'make'. You may need to install GNU Make first.
 
-3) Type 'make install' to install ffmpeg and ffserver in
-/usr/local/bin.
+3) Type 'make install' to install all binaries and libraries you built.
