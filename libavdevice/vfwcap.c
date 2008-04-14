@@ -308,8 +308,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, bisize, (LPARAM) bi);
     if(!ret) {
-        av_free(bi);
-        goto fail_io;
+        goto fail_bi;
     }
 
     dump_bih(s, &bi->bmiHeader);
@@ -322,8 +321,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ret = SendMessage(ctx->hwnd, WM_CAP_SET_VIDEOFORMAT, bisize, (LPARAM) bi);
     if(!ret) {
         av_log(s, AV_LOG_ERROR, "Could not set Video Format.\n");
-        av_free(bi);
-        goto fail_io;
+        goto fail_bi;
     }
 
     biCompression = bi->bmiHeader.biCompression;
@@ -391,6 +389,9 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     return 0;
+
+fail_bi:
+    av_free(bi);
 
 fail_io:
     vfw_read_close(s);
