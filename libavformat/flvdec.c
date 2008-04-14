@@ -384,11 +384,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int flv_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 AVInputFormat flv_demuxer = {
     "flv",
     "flv format",
@@ -396,7 +391,6 @@ AVInputFormat flv_demuxer = {
     flv_probe,
     flv_read_header,
     flv_read_packet,
-    flv_read_close,
     .extensions = "flv",
     .value = CODEC_ID_FLV1,
 };
