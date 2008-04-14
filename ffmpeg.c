@@ -371,6 +371,59 @@ static int decode_interrupt_cb(void)
     return q_pressed || (q_pressed = read_key() == 'q');
 }
 
+static int av_exit()
+{
+    int i;
+
+    /* close files */
+    for(i=0;i<nb_output_files;i++) {
+        /* maybe av_close_output_file ??? */
+        AVFormatContext *s = output_files[i];
+        int j;
+        if (!(s->oformat->flags & AVFMT_NOFILE))
+            url_fclose(s->pb);
+        for(j=0;j<s->nb_streams;j++) {
+            av_free(s->streams[j]->codec);
+            av_free(s->streams[j]);
+        }
+        av_free(s);
+    }
+    for(i=0;i<nb_input_files;i++)
+        av_close_input_file(input_files[i]);
+
+    av_free_static();
+
+    av_free(intra_matrix);
+    av_free(inter_matrix);
+
+    if (vstats_file)
+        fclose(vstats_file);
+    av_free(vstats_filename);
+
+    av_free(opt_names);
+
+    av_free(video_codec_name);
+    av_free(audio_codec_name);
+    av_free(subtitle_codec_name);
+
+    av_free(video_standard);
+
+#ifdef CONFIG_POWERPC_PERF
+    extern void powerpc_display_perf_report(void);
+    powerpc_display_perf_report();
+#endif /* CONFIG_POWERPC_PERF */
+
+    if (received_sigterm) {
+        fprintf(stderr,
+            "Received signal %d: terminating.\n",
+            (int) received_sigterm);
+        exit (255);
+    }
+
+    exit(0); /* not all OS-es handle main() return value */
+    return 0;
+}
+
 static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
@@ -3840,59 +3893,6 @@ const OptionDef options[] = {
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
-
-static int av_exit()
-{
-    int i;
-
-    /* close files */
-    for(i=0;i<nb_output_files;i++) {
-        /* maybe av_close_output_file ??? */
-        AVFormatContext *s = output_files[i];
-        int j;
-        if (!(s->oformat->flags & AVFMT_NOFILE))
-            url_fclose(s->pb);
-        for(j=0;j<s->nb_streams;j++) {
-            av_free(s->streams[j]->codec);
-            av_free(s->streams[j]);
-        }
-        av_free(s);
-    }
-    for(i=0;i<nb_input_files;i++)
-        av_close_input_file(input_files[i]);
-
-    av_free_static();
-
-    av_free(intra_matrix);
-    av_free(inter_matrix);
-
-    if (vstats_file)
-        fclose(vstats_file);
-    av_free(vstats_filename);
-
-    av_free(opt_names);
-
-    av_free(video_codec_name);
-    av_free(audio_codec_name);
-    av_free(subtitle_codec_name);
-
-    av_free(video_standard);
-
-#ifdef CONFIG_POWERPC_PERF
-    extern void powerpc_display_perf_report(void);
-    powerpc_display_perf_report();
-#endif /* CONFIG_POWERPC_PERF */
-
-    if (received_sigterm) {
-        fprintf(stderr,
-            "Received signal %d: terminating.\n",
-            (int) received_sigterm);
-        exit (255);
-    }
-
-    exit(0); /* not all OS-es handle main() return value */
-    return 0;
-}
 
 int main(int argc, char **argv)
 {
