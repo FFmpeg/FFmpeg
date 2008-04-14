@@ -318,6 +318,18 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     bi->bmiHeader.biWidth  = width ;
     bi->bmiHeader.biHeight = height;
 
+#if 0
+    /* For testing yet unsupported compressions
+     * Copy these values from-user supplied verbose information */
+    bi->bmiHeader.biWidth       = 320;
+    bi->bmiHeader.biHeight      = 240;
+    bi->bmiHeader.biPlanes      = 1;
+    bi->bmiHeader.biBitCount    = 12;
+    bi->bmiHeader.biCompression = MKTAG('I','4','2','0');
+    bi->bmiHeader.biSizeImage   = 115200;
+    dump_bih(s, &bi->bmiHeader);
+#endif
+
     ret = SendMessage(ctx->hwnd, WM_CAP_SET_VIDEOFORMAT, bisize, (LPARAM) bi);
     if(!ret) {
         av_log(s, AV_LOG_ERROR, "Could not set Video Format.\n");
