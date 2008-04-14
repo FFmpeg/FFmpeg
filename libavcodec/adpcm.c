@@ -34,6 +34,7 @@
  * EA IMA EACS decoder by Peter Ross (pross@xvid.org)
  * EA IMA SEAD decoder by Peter Ross (pross@xvid.org)
  * EA ADPCM XAS decoder by Peter Ross (pross@xvid.org)
+ * MAXIS EA ADPCM decoder by Robert Marston (rmarston@gmail.com)
  * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
  *
  * Features and limitations:
@@ -666,7 +667,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMContext *c = avctx->priv_data;
-    unsigned int max_channels = 2;
+    unsigned int max_channels = 2, channel;
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_EA_R1:
@@ -900,6 +901,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     int32_t coeff1l, coeff2l, coeff1r, coeff2r;
     uint8_t shift_left, shift_right;
     int count1, count2;
+    int coeff[2][2], shift[2];//used in EA MAXIS ADPCM
 
     if (!buf_size)
         return 0;
@@ -1233,6 +1235,28 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 *samples++ = (unsigned short)current_left_sample;
                 *samples++ = (unsigned short)current_right_sample;
             }
+        }
+        break;
+    case CODEC_ID_ADPCM_EA_MAXIS_XA:
+        for(channel = 0; channel < avctx->channels; channel++) {
+            for (i=0; i<2; i++)
+                coeff[channel][i] = ea_adpcm_table[(*src >> 4) + 4*i];
+            shift[channel] = (*src & 0x0F) + 8;
+            src++;
+        }
+        for (count1 = 0; count1 < (buf_size - avctx->channels) / avctx->channels; count1++) {
+            for(i = 4; i >= 0; i-=4) { /* Pairwise samples LL RR (st) or LL LL (mono) */
+                for(channel = 0; channel < avctx->channels; channel++) {
+                    int32_t sample = (int32_t)(((*(src+channel) >> i) & 0x0F) << 0x1C) >> shift[channel];
+                    sample = (sample +
+                             c->status[channel].sample1 * coeff[channel][0] +
+                             c->status[channel].sample2 * coeff[channel][1] + 0x80) >> 8;
+                    c->status[channel].sample2 = c->status[channel].sample1;
+                    c->status[channel].sample1 = av_clip_int16(sample);
+                    *samples++ = c->status[channel].sample1;
+                }
+            }
+            src+=avctx->channels;
         }
         break;
     case CODEC_ID_ADPCM_EA_R1:
@@ -1613,6 +1637,7 @@ ADPCM_ENCODER(id,name) ADPCM_DECODER(id,name)
 ADPCM_DECODER(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 ADPCM_DECODER(CODEC_ID_ADPCM_CT, adpcm_ct);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA, adpcm_ea);
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_MAXIS_XA, adpcm_ea_maxis_xa);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R1, adpcm_ea_r1);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R2, adpcm_ea_r2);
 ADPCM_DECODER(CODEC_ID_ADPCM_EA_R3, adpcm_ea_r3);
