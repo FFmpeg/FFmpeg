@@ -85,8 +85,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     if (ihsize == 40) {
-    width = bytestream_get_le32(&buf);
-    height = bytestream_get_le32(&buf);
+        width = bytestream_get_le32(&buf);
+        height = bytestream_get_le32(&buf);
     } else if (ihsize == 12) {
         width  = bytestream_get_le16(&buf);
         height = bytestream_get_le16(&buf);
