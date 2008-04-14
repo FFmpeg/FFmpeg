@@ -87,9 +87,6 @@ endef
 
 $(eval $(RULES))
 
-# Clear DIRS variable so that it is not used in other subdirectories.
-DIRS =
-
 tests: $(TESTS)
 
 -include $(DEPS)
