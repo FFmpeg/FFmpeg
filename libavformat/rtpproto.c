@@ -18,6 +18,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+/**
+ * @file rtpproto.c
+ * RTP protocol
+ */
+
 #include "avformat.h"
 #include "avstring.h"
 
@@ -44,6 +50,7 @@ typedef struct RTPContext {
  * @param uri of the remote server
  * @return zero if no error.
  */
+
 int rtp_set_remote_url(URLContext *h, const char *uri)
 {
     RTPContext *s = h->priv_data;
@@ -65,8 +72,11 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
 }
 
 
-/* add option to url of the form:
-   "http://host:port/path?option1=val1&option2=val2... */
+/**
+ * add option to url of the form:
+ * "http://host:port/path?option1=val1&option2=val2...
+ */
+
 static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 {
     char buf1[1024];
@@ -96,13 +106,14 @@ static void build_udp_url(char *buf, int buf_size,
         url_add_option(buf, buf_size, "pkt_size=%d", max_packet_size);
 }
 
-/*
+/**
  * url syntax: rtp://host:port[?option=val...]
  * option: 'ttl=n'       : set the ttl value (for multicast only)
  *         'localport=n' : set the local port to n
  *         'pkt_size=n'  : set max packet size
  *
  */
+
 static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s;
@@ -275,6 +286,7 @@ static int rtp_close(URLContext *h)
  * @param s1 media file context
  * @return the local port number
  */
+
 int rtp_get_local_port(URLContext *h)
 {
     RTPContext *s = h->priv_data;
@@ -282,10 +294,11 @@ int rtp_get_local_port(URLContext *h)
 }
 
 /**
- * Return the rtp and rtcp file handles for select() usage to wait for several RTP
- * streams at the same time.
+ * Return the rtp and rtcp file handles for select() usage to wait for
+ * several RTP streams at the same time.
  * @param h media file context
  */
+
 void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd)
 {
     RTPContext *s = h->priv_data;
