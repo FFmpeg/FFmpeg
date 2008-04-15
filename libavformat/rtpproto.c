@@ -84,28 +84,25 @@ static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 
 static void build_udp_url(char *buf, int buf_size,
                           const char *hostname, int port,
-                          int local_port, int multicast, int ttl)
+                          int local_port, int ttl)
 {
     snprintf(buf, buf_size, "udp://%s:%d", hostname, port);
     if (local_port >= 0)
         url_add_option(buf, buf_size, "localport=%d", local_port);
-    if (multicast)
-        url_add_option(buf, buf_size, "multicast=1");
     if (ttl >= 0)
         url_add_option(buf, buf_size, "ttl=%d", ttl);
 }
 
 /*
  * url syntax: rtp://host:port[?option=val...]
- * option: 'multicast=1' : enable multicast
- *         'ttl=n'       : set the ttl value (for multicast only)
+ * option: 'ttl=n'       : set the ttl value (for multicast only)
  *         'localport=n' : set the local port to n
  *
  */
 static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s;
-    int port, is_output, is_multicast, ttl, local_port;
+    int port, is_output, ttl, local_port;
     char hostname[256];
     char buf[1024];
     char path[1024];
@@ -121,12 +118,10 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
               path, sizeof(path), uri);
     /* extract parameters */
-    is_multicast = 0;
     ttl = -1;
     local_port = -1;
     p = strchr(uri, '?');
     if (p) {
-        is_multicast = find_info_tag(buf, sizeof(buf), "multicast", p);
         if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
             ttl = strtol(buf, NULL, 10);
         }
@@ -136,7 +131,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     }
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, port, local_port, is_multicast, ttl);
+                  hostname, port, local_port, ttl);
     if (url_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
     local_port = udp_get_local_port(s->rtp_hd);
@@ -145,7 +140,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     /* well, should suppress localport in path */
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, port + 1, local_port + 1, is_multicast, ttl);
+                  hostname, port + 1, local_port + 1, ttl);
     if (url_open(&s->rtcp_hd, buf, flags) < 0)
         goto fail;
 

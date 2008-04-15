@@ -27,6 +27,12 @@
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
+#ifndef IN_MULTICAST
+#define IN_MULTICAST(a) ((((uint32_t)(a)) & 0xf0000000) == 0xe0000000)
+#endif
+#ifndef IN6_IS_ADDR_MULTICAST
+#define IN6_IS_ADDR_MULTICAST(a) (((uint8_t *) (a))[0] == 0xff)
+#endif
 
 typedef struct {
     int udp_fd;
@@ -159,6 +165,18 @@ static int udp_set_url(struct sockaddr_storage *addr, const char *hostname, int 
     return addr_len;
 }
 
+static int is_multicast_address(struct sockaddr_storage *addr)
+{
+    if (addr->ss_family == AF_INET) {
+        return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
+    }
+    if (addr->ss_family == AF_INET6) {
+        return IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr);
+    }
+
+    return 0;
+}
+
 static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *addr_len)
 {
     int udp_fd = -1;
@@ -219,6 +237,11 @@ static int udp_set_url(struct sockaddr_in *addr, const char *hostname, int port)
     return sizeof(struct sockaddr_in);
 }
 
+static int is_multicast_address(struct sockaddr_in *addr)
+{
+    return IN_MULTICAST(ntohl(addr->sin_addr.s_addr));
+}
+
 static int udp_socket_create(UDPContext *s, struct sockaddr_in *addr, int *addr_len)
 {
     int fd;
@@ -248,8 +271,7 @@ static int udp_port(struct sockaddr_in *addr, int len)
  * the remote server address.
  *
  * url syntax: udp://host:port[?option=val...]
- * option: 'multicast=1' : enable multicast
- *         'ttl=n'       : set the ttl value (for multicast only)
+ * option: 'ttl=n'       : set the ttl value (for multicast only)
  *         'localport=n' : set the local port
  *         'pkt_size=n'  : set max packet size
  *         'reuse=1'     : enable reusing the socket
@@ -271,6 +293,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
     }
+    s->is_multicast = is_multicast_address(&s->dest_addr);
 
     return 0;
 }
@@ -327,7 +350,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->ttl = 16;
     p = strchr(uri, '?');
     if (p) {
-        s->is_multicast = find_info_tag(buf, sizeof(buf), "multicast", p);
         s->reuse_socket = find_info_tag(buf, sizeof(buf), "reuse", p);
         if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
@@ -346,7 +368,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* XXX: fix url_split */
     if (hostname[0] == '\0' || hostname[0] == '?') {
         /* only accepts null hostname if input */
-        if (s->is_multicast || (flags & URL_WRONLY))
+        if (flags & URL_WRONLY)
             goto fail;
     } else {
         udp_set_remote_url(h, uri);

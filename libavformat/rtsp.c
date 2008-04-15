@@ -973,7 +973,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
                 struct in_addr in;
 
                 in.s_addr = htonl(reply->transports[0].destination);
-                snprintf(url, sizeof(url), "rtp://%s:%d?multicast=1&ttl=%d",
+                snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
                          inet_ntoa(in),
                          reply->transports[0].port_min,
                          reply->transports[0].ttl);
@@ -1413,7 +1413,7 @@ static int sdp_read_header(AVFormatContext *s,
     for(i=0;i<rt->nb_rtsp_streams;i++) {
         rtsp_st = rt->rtsp_streams[i];
 
-        snprintf(url, sizeof(url), "rtp://%s:%d?multicast=1&ttl=%d",
+        snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
                  inet_ntoa(rtsp_st->sdp_ip),
                  rtsp_st->sdp_port,
                  rtsp_st->sdp_ttl);
