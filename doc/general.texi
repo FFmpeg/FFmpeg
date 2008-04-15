@@ -94,6 +94,8 @@ library:
 @item Matroska         @tab X  @tab X
 @item Electronic Arts Multimedia    @tab    @tab X
 @tab Used in various EA games; files have extensions like WVE and UV2.
+@item MAXIS EA XA      @tab    @tab X
+@tab Used in Sim City 3000; file extension .xa.
 @item Nullsoft Video (NSV) format @tab    @tab X
 @item ADTS AAC audio @tab X @tab X
 @item Creative VOC @tab X @tab X @tab Created for the Sound Blaster Pro.
@@ -292,6 +294,8 @@ following image formats are supported:
 @tab Used in Sega Dreamcast games.
 @item Electronic Arts ADPCM  @tab      @tab X
 @tab Used in various EA titles.
+@item MAXIS EA ADPCM         @tab      @tab X
+@tab Used in Sim City 3000.
 @item Creative ADPCM         @tab      @tab X
 @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
 @item THP ADPCM              @tab      @tab X
