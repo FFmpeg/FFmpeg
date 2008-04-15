@@ -166,6 +166,8 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'c', 'a') },
 
+    { CODEC_ID_WMAV2, MKTAG('W', 'M', 'A', '2') },
+
     { CODEC_ID_NONE, 0 },
 };
 
