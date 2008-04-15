@@ -7,6 +7,6 @@ sources to build the objects out of tree. To do this, use an absolute
 path when launching 'configure', e.g. '/ffmpegdir/ffmpeg/configure'.
 
 2) Then type 'make' to build FFmpeg. On BSD systems, type 'gmake'
-instead of 'make'. You may need to install GNU Make first.
+instead of 'make'. You may need to install GNU Make 3.81 first.
 
 3) Type 'make install' to install all binaries and libraries you built.
