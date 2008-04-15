@@ -282,7 +282,8 @@ static AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int
         if (score > *score_max) {
             *score_max = score;
             fmt = fmt1;
-        }
+        }else if (score == *score_max)
+            fmt = NULL;
     }
     return fmt;
 }
