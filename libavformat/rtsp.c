@@ -1413,8 +1413,9 @@ static int sdp_read_header(AVFormatContext *s,
     for(i=0;i<rt->nb_rtsp_streams;i++) {
         rtsp_st = rt->rtsp_streams[i];
 
-        snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
+        snprintf(url, sizeof(url), "rtp://%s:%d?localport=%d&ttl=%d",
                  inet_ntoa(rtsp_st->sdp_ip),
+                 rtsp_st->sdp_port,
                  rtsp_st->sdp_port,
                  rtsp_st->sdp_ttl);
         if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
