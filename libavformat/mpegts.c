@@ -1503,7 +1503,7 @@ AVInputFormat mpegtsraw_demuxer = {
     "mpegtsraw",
     "MPEG2 raw transport stream format",
     sizeof(MpegTSContext),
-    mpegts_probe,
+    NULL,
     mpegts_read_header,
     mpegts_raw_read_packet,
     mpegts_read_close,
