@@ -114,7 +114,7 @@ static inline int signed_shift(int i, int shift) {
 
 static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *audio, float *a_in)
 {
-    int bot, top, top2;
+    int bot, top;
 
     bot = 0;
     top = NELLY_BUF_LEN-1;
