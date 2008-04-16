@@ -45,25 +45,25 @@ int mm_support(void)
     long a, c;
 
     __asm__ __volatile__ (
-                          /* See if CPUID instruction is supported ... */
-                          /* ... Get copies of EFLAGS into eax and ecx */
-                          "pushf\n\t"
-                          "pop %0\n\t"
-                          "mov %0, %1\n\t"
+        /* See if CPUID instruction is supported ... */
+        /* ... Get copies of EFLAGS into eax and ecx */
+        "pushf\n\t"
+        "pop %0\n\t"
+        "mov %0, %1\n\t"
 
-                          /* ... Toggle the ID bit in one copy and store */
-                          /*     to the EFLAGS reg */
-                          "xor $0x200000, %0\n\t"
-                          "push %0\n\t"
-                          "popf\n\t"
+        /* ... Toggle the ID bit in one copy and store */
+        /*     to the EFLAGS reg */
+        "xor $0x200000, %0\n\t"
+        "push %0\n\t"
+        "popf\n\t"
 
-                          /* ... Get the (hopefully modified) EFLAGS */
-                          "pushf\n\t"
-                          "pop %0\n\t"
-                          : "=a" (a), "=c" (c)
-                          :
-                          : "cc"
-                          );
+        /* ... Get the (hopefully modified) EFLAGS */
+        "pushf\n\t"
+        "pop %0\n\t"
+        : "=a" (a), "=c" (c)
+        :
+        : "cc"
+        );
 
     if (a == c)
         return 0; /* CPUID not supported */
@@ -119,9 +119,9 @@ int mm_support(void)
 #ifdef TEST
 int main ( void )
 {
-  int mm_flags;
-  mm_flags = mm_support();
-  printf("mm_support = 0x%08X\n",mm_flags);
-  return 0;
+    int mm_flags;
+    mm_flags = mm_support();
+    printf("mm_support = 0x%08X\n",mm_flags);
+    return 0;
 }
 #endif
