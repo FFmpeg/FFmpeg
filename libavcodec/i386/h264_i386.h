@@ -32,9 +32,14 @@
 
 #include "cabac.h"
 
-//FIXME use some macros to avoid duplicatin get_cabac (cannot be done yet as that would make optimization work hard)
-#if defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS)
-static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *significant_coeff_ctx_base, int *index){
+//FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
+//as that would make optimization work hard)
+#if defined(ARCH_X86) && defined(HAVE_7REGS)     && \
+    defined(HAVE_EBX_AVAILABLE)                  && \
+    !defined(BROKEN_RELOCATIONS)
+static int decode_significance_x86(CABACContext *c, int max_coeff,
+                                   uint8_t *significant_coeff_ctx_base,
+                                   int *index){
     void *end= significant_coeff_ctx_base + max_coeff - 1;
     int minusstart= -(int)significant_coeff_ctx_base;
     int minusindex= 4-(int)index;
@@ -45,12 +50,14 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
 
         "2:                                     \n\t"
 
-        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%1)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%1)", "%%ebx",
+                             "%%bx", "%%esi", "%%eax", "%%al")
 
         "test $1, %%edx                         \n\t"
         " jz 3f                                 \n\t"
 
-        BRANCHLESS_GET_CABAC("%%edx", "%3", "61(%1)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "61(%1)", "%%ebx",
+                             "%%bx", "%%esi", "%%eax", "%%al")
 
         "mov  %2, %%"REG_a"                     \n\t"
         "movl %4, %%ecx                         \n\t"
@@ -84,7 +91,9 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
     return coeff_count;
 }
 
-static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coeff_ctx_base, int *index, const uint8_t *sig_off){
+static int decode_significance_8x8_x86(CABACContext *c,
+                                       uint8_t *significant_coeff_ctx_base,
+                                       int *index, const uint8_t *sig_off){
     int minusindex= 4-(int)index;
     int coeff_count;
     long last=0;
@@ -99,7 +108,8 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
         "movzbl (%%"REG_a", %%"REG_D"), %%edi   \n\t"
         "add %5, %%"REG_D"                      \n\t"
 
-        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%%"REG_D")", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%%"REG_D")", "%%ebx",
+                             "%%bx", "%%esi", "%%eax", "%%al")
 
         "mov %1, %%edi                          \n\t"
         "test $1, %%edx                         \n\t"
@@ -108,7 +118,8 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
         "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%%edi), %%edi\n\t"
         "add %5, %%"REG_D"                      \n\t"
 
-        BRANCHLESS_GET_CABAC("%%edx", "%3", "15(%%"REG_D")", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "15(%%"REG_D")", "%%ebx",
+                             "%%bx", "%%esi", "%%eax", "%%al")
 
         "mov %2, %%"REG_a"                      \n\t"
         "mov %1, %%edi                          \n\t"
@@ -139,6 +150,7 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
     );
     return coeff_count;
 }
-#endif /* defined(ARCH_X86) && && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
+#endif /* defined(ARCH_X86) && defined(HAVE_7REGS) &&                 */
+       /* defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
 
 #endif /* FFMPEG_H264_I386_H */
