@@ -120,7 +120,8 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
     top = NELLY_BUF_LEN-1;
 
     while (bot < NELLY_BUF_LEN) {
-        audio[bot] = a_in[bot]*sine_window[bot]+state[bot]*sine_window[top] + s->add_bias;
+        audio[bot] = a_in [bot]*sine_window[bot]
+                    +state[bot]*sine_window[top] + s->add_bias;
 
         bot++;
         top--;
