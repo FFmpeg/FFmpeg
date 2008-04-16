@@ -2101,7 +2101,6 @@ fi
 
 
 # build pkg-config files
-# FIXME: includedir is hardcoded and may differ from the real path.
 
 pkgconfig_generate(){
 name=$1
@@ -2113,7 +2112,7 @@ cat <<EOF >$name.pc
 prefix=$prefix
 exec_prefix=\${prefix}
 libdir=$libdir
-includedir=\${prefix}/include
+includedir=$incdir
 
 Name: $name
 Description: $comment
