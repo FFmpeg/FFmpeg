@@ -88,3 +88,4 @@ unassigned TODO: (unordered)
 - extract PES packetizer from PS muxer and use it for new TS muxer
 - implement automatic AVBistreamFilter activation
 - make cabac encoder use bytestream (see http://trac.videolan.org/x264/changeset/?format=diff&new=651)
+- merge imdct and windowing, the current code does considerable amounts of redundant work
