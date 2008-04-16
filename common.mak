@@ -70,11 +70,14 @@ LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
 DISTCLEANSUFFIXES = *.d
 
 define RULES
-$(SUBDIR)%: $(SUBDIR)%.o $(LIBNAME)
-	$(CC) $(FFLDFLAGS) -o $$@ $$^ $(FFEXTRALIBS)
+$(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
+	$(CC) $(FFLDFLAGS) -o $$@ $$^ $(SUBDIR)$(LIBNAME) $(FFEXTRALIBS)
 
-$(SUBDIR)%-test$(EXESUF): $(SUBDIR)%.c $(LIBNAME)
-	$(CC) $(CFLAGS) $(FFLDFLAGS) -DTEST -o $$@ $$^ $(FFEXTRALIBS)
+$(SUBDIR)%-test.o: $(SUBDIR)%.c
+	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
+
+$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
+	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 clean::
 	rm -f $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \

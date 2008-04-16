@@ -473,8 +473,6 @@ DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)cpuid-test$(EXESUF): $(SUBDIR)i386/cputest.c
+$(SUBDIR)cpuid-test$(EXESUF): $(SUBDIR)i386/cputest.o
 $(SUBDIR)apiexample$(EXESUF): $(SUBDIR)apiexample.o $(SUBDIR)$(LIBNAME)
-$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dct-test.o fdctref.o $(SUBDIR)$(LIBNAME)
-$(SUBDIR)fft-test$(EXESUF): $(SUBDIR)fft-test.o $(SUBDIR)$(LIBNAME)
-$(SUBDIR)motion-test$(EXESUF): $(SUBDIR)motion-test.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o
