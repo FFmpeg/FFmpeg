@@ -408,6 +408,7 @@ typedef struct DSPContext {
 #define FF_SIMPLE_IDCT_PERM 3
 #define FF_TRANSPOSE_IDCT_PERM 4
 #define FF_PARTTRANS_IDCT_PERM 5
+#define FF_SSE2_IDCT_PERM 6
 
     int (*try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);

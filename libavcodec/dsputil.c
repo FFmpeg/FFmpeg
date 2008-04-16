@@ -151,6 +151,8 @@ static const uint8_t simple_mmx_permutation[64]={
         0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
+static const uint8_t idct_sse2_row_perm[8] = {0, 4, 1, 5, 2, 6, 3, 7};
+
 void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
     int i;
     int end;
@@ -4475,6 +4477,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     case FF_PARTTRANS_IDCT_PERM:
         for(i=0; i<64; i++)
             c->idct_permutation[i]= (i&0x24) | ((i&3)<<3) | ((i>>3)&3);
+        break;
+    case FF_SSE2_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= (i&0x38) | idct_sse2_row_perm[i&7];
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Internal error, IDCT permutation not set\n");
