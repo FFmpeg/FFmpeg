@@ -92,7 +92,7 @@ static const int16_t nelly_delta_table[32] = {
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
     DECLARE_ALIGNED_16(float,float_buf[NELLY_SAMPLES]);
-    float           state[64];
+    float           state[128];
     AVRandomState   random_state;
     GetBitContext   gb;
     int             add_bias;
@@ -121,12 +121,12 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
 
     while (bot < NELLY_BUF_LEN/2) {
         audio[bot] = ( a_in[bot]*sine_window[bot]+state[bot]*sine_window[top])/s->scale_bias + s->add_bias;
-        audio[top] = ( a_in[top]*sine_window[top]+state[bot]*sine_window[bot])/s->scale_bias + s->add_bias;
-        state[bot] = a_in[bot + NELLY_BUF_LEN];
+        audio[top] = ( a_in[top]*sine_window[top]+state[top]*sine_window[bot])/s->scale_bias + s->add_bias;
 
         bot++;
         top--;
     }
+    memcpy(state, a_in + NELLY_BUF_LEN, sizeof(float)*NELLY_BUF_LEN);
 }
 
 static int sum_bits(short *buf, short shift, short off)
