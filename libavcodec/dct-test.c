@@ -72,7 +72,7 @@ struct algo {
   enum { FDCT, IDCT } is_idct;
   void (* func) (DCTELEM *block);
   void (* ref)  (DCTELEM *block);
-  enum formattag { NO_PERM,MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM } format;
+  enum formattag { NO_PERM,MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM, SSE2_PERM } format;
   int  mm_support;
 };
 
@@ -105,6 +105,7 @@ struct algo algos[] = {
   {"SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM, MM_MMX},
   {"XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM, MM_MMX},
   {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM, MM_MMXEXT},
+  {"XVID-SSE2",       1, ff_idct_xvid_sse2,  idct, SSE2_PERM, MM_SSE2},
 #endif
 
 #ifdef HAVE_ALTIVEC
@@ -156,6 +157,8 @@ static short idct_simple_mmx_perm[64]={
         0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
         0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
+
+static const uint8_t idct_sse2_row_perm[8] = {0, 4, 1, 5, 2, 6, 3, 7};
 
 void idct_mmx_init(void)
 {
@@ -232,6 +235,9 @@ void dct_error(const char *name, int is_idct,
             for(i=0;i<64;i++)
                 block[idct_simple_mmx_perm[i]] = block1[i];
 
+        } else if (form == SSE2_PERM) {
+            for(i=0; i<64; i++)
+                block[(i&0x38) | idct_sse2_row_perm[i&7]] = block1[i];
         } else {
             for(i=0; i<64; i++)
                 block[i]= block1[i];
