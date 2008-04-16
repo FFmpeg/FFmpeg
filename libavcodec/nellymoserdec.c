@@ -120,8 +120,8 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
     top = NELLY_BUF_LEN-1;
 
     while (bot < NELLY_BUF_LEN/2) {
-        audio[bot] =  (- a_in[bot]*sine_window[bot]-state[bot]*sine_window[top])/s->scale_bias + s->add_bias;
-        audio[top] =  (-state[bot]*sine_window[bot]- a_in[top]*sine_window[top])/s->scale_bias + s->add_bias;
+        audio[bot] = ( a_in[bot]*sine_window[bot]+state[bot]*sine_window[top])/s->scale_bias + s->add_bias;
+        audio[top] = (state[bot]*sine_window[bot]+ a_in[top]*sine_window[top])/s->scale_bias + s->add_bias;
         state[bot] = a_in[bot + NELLY_BUF_LEN];
 
         bot++;
@@ -299,11 +299,11 @@ void nelly_decode_block(NellyMoserDecodeContext *s, const unsigned char block[NE
         for (j = 0; j < NELLY_FILL_LEN; j++) {
             if (bits[j] <= 0) {
                 aptr[j] = M_SQRT1_2*pows[j];
-                if (av_random(&s->random_state) & 1)
+                if (!(av_random(&s->random_state) & 1))
                     aptr[j] *= -1.0;
             } else {
                 v = get_bits(&s->gb, bits[j]);
-                aptr[j] = dequantization_table[(1<<bits[j])-1+v]*pows[j];
+                aptr[j] = -dequantization_table[(1<<bits[j])-1+v]*pows[j];
             }
         }
         memset(&aptr[NELLY_FILL_LEN], 0,
