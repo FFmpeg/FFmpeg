@@ -375,6 +375,7 @@ OBJS += i386/fdct_mmx.o \
         i386/motion_est_mmx.o \
         i386/simple_idct_mmx.o \
         i386/idct_mmx_xvid.o \
+        i386/idct_sse2_xvid.o \
         i386/fft_sse.o \
         i386/fft_3dn.o \
         i386/fft_3dn2.o \

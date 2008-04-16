@@ -2124,7 +2124,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }else if(idct_algo==FF_IDCT_CAVS){
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
             }else if(idct_algo==FF_IDCT_XVIDMMX){
-                if(mm_flags & MM_MMXEXT){
+                if(mm_flags & MM_SSE2){
+                    c->idct_put= ff_idct_xvid_sse2_put;
+                    c->idct_add= ff_idct_xvid_sse2_add;
+                    c->idct    = ff_idct_xvid_sse2;
+                    c->idct_permutation_type= FF_SSE2_IDCT_PERM;
+                }else if(mm_flags & MM_MMXEXT){
                     c->idct_put= ff_idct_xvid_mmx2_put;
                     c->idct_add= ff_idct_xvid_mmx2_add;
                     c->idct    = ff_idct_xvid_mmx2;
