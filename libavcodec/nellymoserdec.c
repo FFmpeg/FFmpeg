@@ -279,7 +279,7 @@ void nelly_decode_block(NellyMoserDecodeContext *s, const unsigned char block[NE
     for (i=0 ; i<NELLY_BANDS ; i++) {
         if (i > 0)
             val += nelly_delta_table[get_bits(&s->gb, 5)];
-        pval = pow(2, val/2048) * s->scale_bias;
+        pval = -pow(2, val/2048) * s->scale_bias;
         for (j = 0; j < nelly_band_sizes_table[i]; j++) {
             *bptr++ = val;
             *pptr++ = pval;
@@ -298,11 +298,11 @@ void nelly_decode_block(NellyMoserDecodeContext *s, const unsigned char block[NE
         for (j = 0; j < NELLY_FILL_LEN; j++) {
             if (bits[j] <= 0) {
                 aptr[j] = M_SQRT1_2*pows[j];
-                if (!(av_random(&s->random_state) & 1))
+                if (av_random(&s->random_state) & 1)
                     aptr[j] *= -1.0;
             } else {
                 v = get_bits(&s->gb, bits[j]);
-                aptr[j] = -dequantization_table[(1<<bits[j])-1+v]*pows[j];
+                aptr[j] = dequantization_table[(1<<bits[j])-1+v]*pows[j];
             }
         }
         memset(&aptr[NELLY_FILL_LEN], 0,
