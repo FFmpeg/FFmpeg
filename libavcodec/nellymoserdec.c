@@ -111,30 +111,22 @@ static inline int signed_shift(int i, int shift) {
     return i >> -shift;
 }
 
-static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *audio)
+
+static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *audio, float *a_in)
 {
-    int bot, mid_up, mid_down, top;
-    float s_bot, s_top;
+    int bot, top, top2;
 
     bot = 0;
     top = NELLY_BUF_LEN-1;
-    mid_up = NELLY_BUF_LEN/2;
-    mid_down = (NELLY_BUF_LEN/2)-1;
+    top2 = 2*NELLY_BUF_LEN-1;
 
-    while (bot < NELLY_BUF_LEN/4) {
-        s_bot = audio[bot];
-        s_top = -audio[top];
-        audio[bot] =  (-audio[mid_up]*sine_window[bot]-state[bot   ]*sine_window[top])/s->scale_bias + s->add_bias;
-        audio[top] = (-state[bot   ]*sine_window[bot]+audio[mid_up]*sine_window[top])/s->scale_bias + s->add_bias;
-        state[bot] =  audio[mid_down];
-
-        audio[mid_down] =  (s_top          *sine_window[mid_down]-state[mid_down]*sine_window[mid_up])/s->scale_bias + s->add_bias;
-        audio[mid_up  ] = (-state[mid_down]*sine_window[mid_down]-s_top          *sine_window[mid_up])/s->scale_bias + s->add_bias;
-        state[mid_down] =  s_bot;
+    while (bot < NELLY_BUF_LEN/2) {
+        audio[bot] =  (- a_in[bot]*sine_window[bot]-state[bot]*sine_window[top])/s->scale_bias;
+        audio[top] =  (-state[bot]*sine_window[bot]+ a_in[bot]*sine_window[top])/s->scale_bias;
+        state[bot] =  a_in[top2];
 
         bot++;
-        mid_up++;
-        mid_down--;
+        top2--;
         top--;
     }
 }
@@ -323,9 +315,7 @@ void nelly_decode_block(NellyMoserDecodeContext *s, const unsigned char block[NE
                                     aptr, s->imdct_tmp);
         /* XXX: overlapping and windowing should be part of a more
            generic imdct function */
-        memcpy(&aptr[0],&s->imdct_out[NELLY_BUF_LEN+NELLY_BUF_LEN/2], (NELLY_BUF_LEN/2)*sizeof(float));
-        memcpy(&aptr[NELLY_BUF_LEN / 2],&s->imdct_out[0],(NELLY_BUF_LEN/2)*sizeof(float));
-        overlap_and_window(s, s->state, aptr);
+        overlap_and_window(s, s->state, aptr, s->imdct_out);
     }
 }
 
