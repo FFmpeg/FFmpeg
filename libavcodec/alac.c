@@ -184,11 +184,9 @@ static void bastardized_rice_decompress(ALACContext *alac,
             int k; /* size of extra bits */
 
             /* read k, that is bits as is */
-            k = 31 - rice_kmodifier - count_leading_zeros((history >> 9) + 3);
+            k = 31 - count_leading_zeros((history >> 9) + 3);
 
-            if (k < 0)
-                k += rice_kmodifier;
-            else
+            if (k >= rice_kmodifier)
                 k = rice_kmodifier;
 
             if (k != 1) {
