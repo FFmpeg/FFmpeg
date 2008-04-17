@@ -44,7 +44,7 @@ int mm_support(void)
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
     long a, c;
 
-    __asm__ __volatile__ (
+    asm volatile (
         /* See if CPUID instruction is supported ... */
         /* ... Get copies of EFLAGS into eax and ecx */
         "pushf\n\t"

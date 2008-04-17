@@ -22,7 +22,7 @@
 #include "dsputil.h"
 
 #define DEF(x, y) x ## _no_rnd_ ## y ##_iwmmxt
-#define SET_RND(regd)  __asm__ __volatile__ ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");
+#define SET_RND(regd)  asm volatile ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2b"
 #include "dsputil_iwmmxt_rnd.h"
 #undef DEF
@@ -30,7 +30,7 @@
 #undef WAVG2B
 
 #define DEF(x, y) x ## _ ## y ##_iwmmxt
-#define SET_RND(regd)  __asm__ __volatile__ ("mov r12, #2 \n\t tbcsth " #regd ", r12":::"r12");
+#define SET_RND(regd)  asm volatile ("mov r12, #2 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2br"
 #include "dsputil_iwmmxt_rnd.h"
 #undef DEF
@@ -89,7 +89,7 @@ void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_s
 {
     uint8_t *pixels2 = pixels + line_size;
 
-    __asm__ __volatile__ (
+    asm volatile (
         "mov            r12, #4                 \n\t"
         "1:                                     \n\t"
         "pld            [%[pixels], %[line_size2]]              \n\t"
