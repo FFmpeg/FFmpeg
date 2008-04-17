@@ -170,10 +170,6 @@ static void bastardized_rice_decompress(ALACContext *alac,
         if (x > 8) { /* RICE THRESHOLD */
             /* use alternative encoding */
             x = get_bits(&alac->gb, readsamplesize);
-
-            /* mask value to readsamplesize size */
-            if (readsamplesize != 32)
-                x &= (0xffffffff >> (32 - readsamplesize));
         } else {
             /* standard rice encoding */
             int extrabits;
