@@ -145,6 +145,26 @@ static inline int count_leading_zeros(int32_t input)
     return 31-av_log2(input);
 }
 
+
+static inline int decode_postfix(GetBitContext *gb, int x, int k, int limit){
+    if (k >= limit)
+        k = limit;
+
+    if (k != 1) {
+        int extrabits = show_bits(gb, k);
+
+        /* multiply x by 2^k - 1, as part of their strange algorithm */
+        x = (x << k) - x;
+
+        if (extrabits > 1) {
+            x += extrabits - 1;
+            skip_bits(gb, k);
+        } else
+            skip_bits(gb, k - 1);
+    }
+    return x;
+}
+
 static void bastardized_rice_decompress(ALACContext *alac,
                                  int32_t *output_buffer,
                                  int output_size,
@@ -172,27 +192,11 @@ static void bastardized_rice_decompress(ALACContext *alac,
             x = get_bits(&alac->gb, readsamplesize);
         } else {
             /* standard rice encoding */
-            int extrabits;
             int k; /* size of extra bits */
 
             /* read k, that is bits as is */
             k = 31 - count_leading_zeros((history >> 9) + 3);
-
-            if (k >= rice_kmodifier)
-                k = rice_kmodifier;
-
-            if (k != 1) {
-                extrabits = show_bits(&alac->gb, k);
-
-                /* multiply x by 2^k - 1, as part of their strange algorithm */
-                x = (x << k) - x;
-
-                if (extrabits > 1) {
-                    x += extrabits - 1;
-                    skip_bits(&alac->gb, k);
-                } else
-                    skip_bits(&alac->gb, k - 1);
-            }
+            x= decode_postfix(&alac->gb, x, k, rice_kmodifier);
         }
 
         x_modified = sign_modifier + x;
@@ -222,24 +226,10 @@ static void bastardized_rice_decompress(ALACContext *alac,
                 block_size = get_bits(&alac->gb, 16);
             } else {
                 int k;
-                int extrabits;
 
                 k = count_leading_zeros(history) + ((history + 16) >> 6 /* / 64 */) - 24;
 
-                if (k >= rice_kmodifier)
-                    k = rice_kmodifier;
-
-                x = (x << k) - x;
-
-                extrabits = show_bits(&alac->gb, k);
-
-                if (extrabits < 2) {
-                    skip_bits(&alac->gb, k - 1);
-                } else {
-                    x += extrabits - 1;
-                    skip_bits(&alac->gb, k);
-                }
-                block_size = x;
+                block_size= decode_postfix(&alac->gb, x, k, rice_kmodifier);
             }
 
             if (block_size > 0) {
