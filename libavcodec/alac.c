@@ -79,16 +79,10 @@ typedef struct {
 
     /* stuff from setinfo */
     uint32_t setinfo_max_samples_per_frame; /* 0x1000 = 4096 */    /* max samples per frame? */
-    uint8_t setinfo_7a; /* 0x00 */
     uint8_t setinfo_sample_size; /* 0x10 */
     uint8_t setinfo_rice_historymult; /* 0x28 */
     uint8_t setinfo_rice_initialhistory; /* 0x0a */
     uint8_t setinfo_rice_kmodifier; /* 0x0e */
-    uint8_t setinfo_7f; /* 0x02 */
-    uint16_t setinfo_80; /* 0x00ff */
-    uint32_t setinfo_82; /* 0x000020e7 */ /* max sample size?? */
-    uint32_t setinfo_86; /* 0x00069fe4 */ /* bit rate (average)?? */
-    uint32_t setinfo_8a_rate; /* 0x0000ac44 */
     /* end setinfo stuff */
 
 } ALACContext;
@@ -120,18 +114,16 @@ static int alac_set_info(ALACContext *alac)
 
     /* buffer size / 2 ? */
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
-    alac->setinfo_7a                    = *ptr++;
+    *ptr++;                         /* ??? */
     alac->setinfo_sample_size           = *ptr++;
     alac->setinfo_rice_historymult      = *ptr++;
     alac->setinfo_rice_initialhistory   = *ptr++;
     alac->setinfo_rice_kmodifier        = *ptr++;
-    /* channels? */
-    alac->setinfo_7f                    = *ptr++;
-    alac->setinfo_80                    = bytestream_get_be16(&ptr);
-    /* max coded frame size */
-    alac->setinfo_82                    = bytestream_get_be32(&ptr);
-    /* bitrate ? */
-    alac->setinfo_86                    = bytestream_get_be32(&ptr);
+    *ptr++;                         /* channels? */
+    bytestream_get_be16(&ptr);      /* ??? */
+    bytestream_get_be32(&ptr);      /* max coded frame size */
+    bytestream_get_be32(&ptr);      /* bitrate ? */
+
     /* samplerate */
     alac->setinfo_8a_rate               = bytestream_get_be32(&ptr);
 
