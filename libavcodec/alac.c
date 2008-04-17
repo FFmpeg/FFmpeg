@@ -226,18 +226,20 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
                 k = count_leading_zeros(history) + ((history + 16) >> 6 /* / 64 */) - 24;
 
+                if (k >= rice_kmodifier)
+                    k = rice_kmodifier;
+
+                x = (x << k) - x;
+
                 extrabits = show_bits(&alac->gb, k);
 
-                block_size = (((1 << k) - 1) & rice_kmodifier_mask) * x
-                           + extrabits - 1;
-
                 if (extrabits < 2) {
-                    x = 1 - extrabits;
-                    block_size += x;
                     skip_bits(&alac->gb, k - 1);
                 } else {
+                    x += extrabits - 1;
                     skip_bits(&alac->gb, k);
                 }
+                block_size = x;
             }
 
             if (block_size > 0) {
