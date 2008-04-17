@@ -140,12 +140,6 @@ static int alac_set_info(ALACContext *alac)
     return 0;
 }
 
-static inline int count_leading_zeros(int32_t input)
-{
-    return 31-av_log2(input);
-}
-
-
 static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
     /* read x - number of 1s before 0 represent the rice */
     int x = get_unary_0_9(gb);
@@ -196,7 +190,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
         int k; /* size of extra bits */
 
         /* read k, that is bits as is */
-        k = 31 - count_leading_zeros((history >> 9) + 3);
+        k = av_log2((history >> 9) + 3);
         x= decode_scalar(&alac->gb, k, rice_kmodifier, readsamplesize);
 
         x_modified = sign_modifier + x;
@@ -220,7 +214,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
             sign_modifier = 1;
 
-            k = count_leading_zeros(history) + ((history + 16) >> 6 /* / 64 */) - 24;
+            k = 7 - av_log2(history) + ((history + 16) >> 6 /* / 64 */);
 
             block_size= decode_scalar(&alac->gb, k, rice_kmodifier, 16);
 
