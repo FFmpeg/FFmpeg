@@ -68,7 +68,6 @@ typedef struct {
      * set this to 1 */
     int context_initialized;
 
-    int samplesize;
     int numchannels;
     int bytespersample;
 
@@ -587,9 +586,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     alac->avctx = avctx;
     alac->context_initialized = 0;
 
-    alac->samplesize = alac->avctx->bits_per_sample;
     alac->numchannels = alac->avctx->channels;
-    alac->bytespersample = (alac->samplesize / 8) * alac->numchannels;
+    alac->bytespersample = (avctx->bits_per_sample / 8) * alac->numchannels;
 
     return 0;
 }
