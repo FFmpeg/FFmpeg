@@ -146,7 +146,14 @@ static inline int count_leading_zeros(int32_t input)
 }
 
 
-static inline int decode_postfix(GetBitContext *gb, int x, int k, int limit){
+static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
+    /* read x - number of 1s before 0 represent the rice */
+    int x = get_unary_0_9(gb);
+
+    if (x > 8) { /* RICE THRESHOLD */
+        /* use alternative encoding */
+        x = get_bits(gb, readsamplesize);
+    } else {
     if (k >= limit)
         k = limit;
 
@@ -161,6 +168,7 @@ static inline int decode_postfix(GetBitContext *gb, int x, int k, int limit){
             skip_bits(gb, k);
         } else
             skip_bits(gb, k - 1);
+    }
     }
     return x;
 }
@@ -184,20 +192,12 @@ static void bastardized_rice_decompress(ALACContext *alac,
         int32_t x_modified;
         int32_t final_val;
 
-        /* read x - number of 1s before 0 represent the rice */
-        x = get_unary_0_9(&alac->gb);
-
-        if (x > 8) { /* RICE THRESHOLD */
-            /* use alternative encoding */
-            x = get_bits(&alac->gb, readsamplesize);
-        } else {
             /* standard rice encoding */
             int k; /* size of extra bits */
 
             /* read k, that is bits as is */
             k = 31 - count_leading_zeros((history >> 9) + 3);
-            x= decode_postfix(&alac->gb, x, k, rice_kmodifier);
-        }
+            x= decode_scalar(&alac->gb, k, rice_kmodifier, readsamplesize);
 
         x_modified = sign_modifier + x;
         final_val = (x_modified + 1) / 2;
@@ -216,21 +216,13 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* special case: there may be compressed blocks of 0 */
         if ((history < 128) && (output_count+1 < output_size)) {
-            int block_size;
+            int block_size, k;
 
             sign_modifier = 1;
 
-            x = get_unary_0_9(&alac->gb);
-
-            if (x > 8) {
-                block_size = get_bits(&alac->gb, 16);
-            } else {
-                int k;
-
                 k = count_leading_zeros(history) + ((history + 16) >> 6 /* / 64 */) - 24;
 
-                block_size= decode_postfix(&alac->gb, x, k, rice_kmodifier);
-            }
+                block_size= decode_scalar(&alac->gb, k, rice_kmodifier, 16);
 
             if (block_size > 0) {
                 memset(&output_buffer[output_count+1], 0, block_size * 4);
