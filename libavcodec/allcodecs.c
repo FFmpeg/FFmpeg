@@ -212,7 +212,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (WMAV2, wmav2);
     REGISTER_DECODER (WS_SND1, ws_snd1);
 
-    /* pcm codecs */
+    /* PCM codecs */
     REGISTER_ENCDEC  (PCM_ALAW, pcm_alaw);
     REGISTER_ENCDEC  (PCM_MULAW, pcm_mulaw);
     REGISTER_ENCDEC  (PCM_S8, pcm_s8);
@@ -233,13 +233,13 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (PCM_U32LE, pcm_u32le);
     REGISTER_ENCDEC  (PCM_ZORK , pcm_zork);
 
-    /* dpcm codecs */
+    /* DPCM codecs */
     REGISTER_DECODER (INTERPLAY_DPCM, interplay_dpcm);
     REGISTER_ENCDEC  (ROQ_DPCM, roq_dpcm);
     REGISTER_DECODER (SOL_DPCM, sol_dpcm);
     REGISTER_DECODER (XAN_DPCM, xan_dpcm);
 
-    /* adpcm codecs */
+    /* ADPCM codecs */
     REGISTER_DECODER (ADPCM_4XM, adpcm_4xm);
     REGISTER_ENCDEC  (ADPCM_ADX, adpcm_adx);
     REGISTER_DECODER (ADPCM_CT, adpcm_ct);
