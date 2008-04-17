@@ -51,7 +51,7 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
  * not zero \p timestr is interpreted as a duration, otherwise as a
  * date
  *
- * @see av_parse_date()
+ * @see parse_date()
  */
 int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration);
 
