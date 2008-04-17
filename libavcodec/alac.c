@@ -220,7 +220,6 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
             if (x > 8) {
                 block_size = get_bits(&alac->gb, 16);
-                block_size &= 0xffff;
             } else {
                 int k;
                 int extrabits;
