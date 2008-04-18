@@ -548,6 +548,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         interlacing_shift = 0;
         interlacing_leftweight = 0;
     }
+    if (get_bits(&alac->gb, 3) != 7)
+        av_log(avctx, AV_LOG_ERROR, "Error : Wrong End Of Frame\n");
 
     switch(alac->setinfo_sample_size) {
     case 16:
@@ -576,6 +578,9 @@ static int alac_decode_frame(AVCodecContext *avctx,
     default:
         break;
     }
+
+    if (input_buffer_size * 8 - get_bits_count(&alac->gb) > 8)
+        av_log(avctx, AV_LOG_ERROR, "Error : %d bits left\n", input_buffer_size * 8 - get_bits_count(&alac->gb));
 
     return input_buffer_size;
 }
