@@ -120,6 +120,7 @@ version <next>
 - 8SVX audio decoder
 - BFI demuxer
 - MAXIS EA XA (.xa) demuxer / decoder
+- BFI video decoder
 
 version 0.4.9-pre1:
 

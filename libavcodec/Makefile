@@ -42,6 +42,7 @@ OBJS-$(CONFIG_ASV2_ENCODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o mdct.o fft.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
+OBJS-$(CONFIG_BFI_DECODER)             += bfi.o
 OBJS-$(CONFIG_BMP_DECODER)             += bmp.o
 OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
