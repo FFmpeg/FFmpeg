@@ -278,6 +278,9 @@ uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
 }
 
 #ifdef TEST
+#undef printf
+#undef rand
+#undef srand
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
