@@ -33,6 +33,8 @@ CFLAGS = -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 %.d: %.cpp
 	$(DEPEND_CMD) > $@
 
+%$(EXESUF): %.c
+
 install: install-libs install-headers
 
 uninstall: uninstall-libs uninstall-headers
