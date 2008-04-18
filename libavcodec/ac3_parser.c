@@ -123,7 +123,7 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     return 0;
 }
 
-static int ac3_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
+static int ac3_sync(AACAC3ParseContext *hdr_info)
 {
     int err;
     AC3HeaderInfo hdr;
@@ -138,17 +138,6 @@ static int ac3_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
-    switch(hdr.frame_type){
-        case EAC3_FRAME_TYPE_INDEPENDENT:
-            *flag = FRAME_START;
-            break;
-        case EAC3_FRAME_TYPE_DEPENDENT:
-            *flag = FRAME_CONTINUATION;
-            break;
-        case EAC3_FRAME_TYPE_AC3_CONVERT:
-            *flag = FRAME_COMPLETE;
-            break;
-    }
     return hdr.frame_size;
 }
 

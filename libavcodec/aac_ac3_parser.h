@@ -26,17 +26,11 @@
 #include <stdint.h>
 #include "avcodec.h"
 
-typedef enum{
-    FRAME_COMPLETE,    ///< Complete frame, ends previous frame
-    FRAME_START,       ///< Frame start, ends previous frame
-    FRAME_CONTINUATION ///< Part of the previous frame
-}AACAC3FrameFlag;
-
 typedef struct AACAC3ParseContext {
     uint8_t *inbuf_ptr;
     int frame_size;
     int header_size;
-    int (*sync)(struct AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag);
+    int (*sync)(struct AACAC3ParseContext *hdr_info);
     uint8_t inbuf[8192]; /* input buffer */
 
     int channels;

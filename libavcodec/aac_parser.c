@@ -27,7 +27,7 @@
 
 #define AAC_HEADER_SIZE 7
 
-static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
+static int aac_sync(AACAC3ParseContext *hdr_info)
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
@@ -65,7 +65,6 @@ static int aac_sync(AACAC3ParseContext *hdr_info, AACAC3FrameFlag *flag)
     hdr_info->sample_rate = ff_mpeg4audio_sample_rates[sr];
     hdr_info->samples = (rdb + 1) * 1024;
     hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
-    *flag = FRAME_COMPLETE;
 
     return size;
 }
