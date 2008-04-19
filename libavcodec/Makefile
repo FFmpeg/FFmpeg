@@ -467,13 +467,13 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/vp3_idct_bfin.o   \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
-TESTS-$(ARCH_X86) += cpuid-test$(EXESUF) motion-test$(EXESUF)
+TESTS-$(ARCH_X86) += i386/cputest-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
 DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)cpuid-test$(EXESUF): $(SUBDIR)i386/cputest.o
+$(SUBDIR)i386/cputest-test$(EXESUF): $(SUBDIR)i386/cputest-test.o
 $(SUBDIR)apiexample$(EXESUF): $(SUBDIR)apiexample.o $(SUBDIR)$(LIBNAME)
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o
