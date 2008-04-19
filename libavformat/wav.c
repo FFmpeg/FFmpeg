@@ -145,7 +145,12 @@ static int wav_probe(AVProbeData *p)
         p->buf[2] == 'F' && p->buf[3] == 'F' &&
         p->buf[8] == 'W' && p->buf[9] == 'A' &&
         p->buf[10] == 'V' && p->buf[11] == 'E')
-        return AVPROBE_SCORE_MAX;
+        /*
+          Since ACT demuxer has standard WAV header at top of it's own,
+          returning score is decreased to avoid probe conflict
+          between ACT and WAV.
+        */
+        return AVPROBE_SCORE_MAX - 1;
     else
         return 0;
 }
