@@ -29,34 +29,40 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      const uint8_t *buf, int buf_size)
 {
     AACAC3ParseContext *s = s1->priv_data;
-    const uint8_t *buf_ptr;
-    int len;
+    ParseContext *pc = &s->pc;
+    int len, i;
 
-    *poutbuf = NULL;
-    *poutbuf_size = 0;
-
-    buf_ptr = buf;
-    while (buf_size > 0) {
-        int size_needed= s->frame_size ? s->frame_size : s->header_size;
-        len = s->inbuf_ptr - s->inbuf;
-
-        if(len<size_needed){
-            len = FFMIN(size_needed - len, buf_size);
-            memcpy(s->inbuf_ptr, buf_ptr, len);
-            buf_ptr      += len;
-            s->inbuf_ptr += len;
-            buf_size     -= len;
+    i=END_NOT_FOUND;
+    if(s->remaining_size <= buf_size){
+        if(s->remaining_size){
+            i= s->remaining_size;
+            s->remaining_size = 0;
+        }else{ //we need a header first
+            len=0;
+            for(i=s->remaining_size; i<buf_size; i++){
+                s->state = (s->state<<8) + buf[i];
+                if((len=s->sync(s->state, s)))
+                    break;
+            }
+            if(len<=0){
+                i=END_NOT_FOUND;
+            }else{
+                i-= s->header_size -1;
+                s->remaining_size = len + i;
+            }
         }
+    }
 
-        if (s->frame_size == 0) {
-            if ((s->inbuf_ptr - s->inbuf) == s->header_size) {
-                len = s->sync(s);
-                if (len == 0) {
-                    /* no sync found : move by one byte (inefficient, but simple!) */
-                    memmove(s->inbuf, s->inbuf + 1, s->header_size - 1);
-                    s->inbuf_ptr--;
-                } else {
-                    s->frame_size = len;
+    if(ff_combine_frame(pc, i, &buf, &buf_size)<0){
+        s->remaining_size -= FFMIN(s->remaining_size, buf_size);
+        *poutbuf = NULL;
+        *poutbuf_size = 0;
+        return buf_size;
+    }
+
+    *poutbuf = buf;
+    *poutbuf_size = buf_size;
+
                     /* update codec info */
                     avctx->sample_rate = s->sample_rate;
                     /* allow downmixing to stereo (or mono for AC3) */
@@ -71,17 +77,6 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                     }
                     avctx->bit_rate = s->bit_rate;
                     avctx->frame_size = s->samples;
-                }
-            }
-        } else {
-            if(s->inbuf_ptr - s->inbuf == s->frame_size){
-                *poutbuf = s->inbuf;
-                *poutbuf_size = s->frame_size;
-                s->inbuf_ptr = s->inbuf;
-                s->frame_size = 0;
-                break;
-            }
-        }
-    }
-    return buf_ptr - buf;
+
+    return i;
 }
