@@ -99,7 +99,7 @@ static const uint8_t col_zag[64] = {
     28, 21, 14,  7, 15, 22, 29, 36,
     43, 50, 57, 58, 51, 44, 37, 30,
     23, 31, 38, 45, 52, 59, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
+    53, 60, 61, 54, 47, 55, 62, 63,
 };
 
 static av_cold int mimic_decode_init(AVCodecContext *avctx)
@@ -213,7 +213,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
         const uint8_t *src = ctx->flipped_ptrs[ctx->prev_index].data[plane];
         uint8_t       *dst = ctx->flipped_ptrs[ctx->cur_index ].data[plane];
 
-        for(y = 0 ; y < ctx->num_vblocks[plane] ; y++) {
+        for(y = 0; y < ctx->num_vblocks[plane]; y++) {
             for(x = 0; x < ctx->num_hblocks[plane]; x++) {
 
                 /* Check for a change condition in the current block.
@@ -269,7 +269,7 @@ static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVPicture *src)
     dst->data[0] = src->data[0]+( ctx->avctx->height    -1)*src->linesize[0];
     dst->data[1] = src->data[2]+((ctx->avctx->height>>1)-1)*src->linesize[2];
     dst->data[2] = src->data[1]+((ctx->avctx->height>>1)-1)*src->linesize[1];
-    for(i = 0 ; i < 3 ; i++)
+    for(i = 0; i < 3; i++)
         dst->linesize[i] = -src->linesize[i];
 }
 
@@ -314,7 +314,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         avctx->width   = width;
         avctx->height  = height;
         avctx->pix_fmt = PIX_FMT_YUV420P;
-        for(i = 0 ; i < 3 ; i++) {
+        for(i = 0; i < 3; i++) {
             ctx->num_vblocks[i] = -((-height) >> (3 + !!i));
             ctx->num_hblocks[i] =     width   >> (3 + !!i) ;
         }
