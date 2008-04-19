@@ -84,7 +84,7 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
         hdr->bit_rate = (ff_ac3_bitrate_tab[frame_size_code>>1] * 1000) >> hdr->sr_shift;
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
         hdr->frame_size = ff_ac3_frame_size_tab[frame_size_code][hdr->sr_code] * 2;
-        hdr->frame_type = EAC3_FRAME_TYPE_INDEPENDENT;
+        hdr->frame_type = EAC3_FRAME_TYPE_AC3_CONVERT; //EAC3_FRAME_TYPE_INDEPENDENT;
     } else {
         /* Enhanced AC-3 */
         hdr->crc1 = 0;
@@ -140,8 +140,8 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
-    *need_next_header = 0;//(hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
-    *new_frame_start  = 1;//(hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
+    *need_next_header = (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
+    *new_frame_start  = (hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
     return hdr.frame_size;
 }
 
