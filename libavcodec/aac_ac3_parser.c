@@ -51,8 +51,10 @@ get_next:
             }else{
                 i-= s->header_size -1;
                 s->remaining_size = len;
-                if(!new_frame_start)
+                if(!new_frame_start){
+                    s->remaining_size += i;
                     goto get_next;
+                }
             }
         }
     }
