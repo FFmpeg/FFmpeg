@@ -27,7 +27,8 @@
 
 #define AAC_HEADER_SIZE 7
 
-static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info)
+static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
+        int *need_next_header, int *new_frame_start)
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
@@ -67,6 +68,8 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info)
     hdr_info->samples = (rdb + 1) * 1024;
     hdr_info->bit_rate = size * 8 * hdr_info->sample_rate / hdr_info->samples;
 
+    *need_next_header = 0;
+    *new_frame_start  = 1;
     return size;
 }
 

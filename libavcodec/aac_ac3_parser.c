@@ -31,6 +31,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
     AACAC3ParseContext *s = s1->priv_data;
     ParseContext *pc = &s->pc;
     int len, i;
+    int new_frame_start;
 
     i=END_NOT_FOUND;
     if(s->remaining_size <= buf_size){
@@ -41,7 +42,7 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
             len=0;
             for(i=s->remaining_size; i<buf_size; i++){
                 s->state = (s->state<<8) + buf[i];
-                if((len=s->sync(s->state, s)))
+                if((len=s->sync(s->state, s, &s->need_next_header, &new_frame_start)))
                     break;
             }
             if(len<=0){

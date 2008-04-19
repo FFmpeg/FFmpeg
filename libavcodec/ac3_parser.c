@@ -123,7 +123,8 @@ int ff_ac3_parse_header(const uint8_t buf[7], AC3HeaderInfo *hdr)
     return 0;
 }
 
-static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info)
+static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
+        int *need_next_header, int *new_frame_start)
 {
     int err;
     uint64_t tmp = be2me_64(state);
@@ -139,6 +140,8 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info)
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
+    *need_next_header = 0;
+    *new_frame_start  = 1;
     return hdr.frame_size;
 }
 
