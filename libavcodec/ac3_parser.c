@@ -140,8 +140,8 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     hdr_info->channels = hdr.channels;
     hdr_info->samples = AC3_FRAME_SIZE;
 
-    *need_next_header = 0;
-    *new_frame_start  = 1;
+    *need_next_header = 0;//(hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
+    *new_frame_start  = 1;//(hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
     return hdr.frame_size;
 }
 
