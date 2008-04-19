@@ -401,11 +401,6 @@ Edit the @file{bin/sdl-config} script so that it points to the correct prefix
 where SDL was installed. Verify that @file{sdl-config} can be launched from
 the MSYS command line.
 
-@item The target @code{make wininstaller} can be used to create a
-Nullsoft-based Windows installer for FFmpeg and FFplay. @file{SDL.dll}
-must be copied to the FFmpeg directory in order to build the
-installer.
-
 @item By using @code{./configure --enable-shared} when configuring FFmpeg,
 you can build libavutil, libavcodec and libavformat as DLLs.
 
