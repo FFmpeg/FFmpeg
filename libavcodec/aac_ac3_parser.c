@@ -67,20 +67,20 @@ get_next:
     *poutbuf = buf;
     *poutbuf_size = buf_size;
 
-                    /* update codec info */
-                    avctx->sample_rate = s->sample_rate;
-                    /* allow downmixing to stereo (or mono for AC3) */
-                    if(avctx->request_channels > 0 &&
-                            avctx->request_channels < s->channels &&
-                            (avctx->request_channels <= 2 ||
-                            (avctx->request_channels == 1 &&
-                            avctx->codec_id == CODEC_ID_AC3))) {
-                        avctx->channels = avctx->request_channels;
-                    } else {
-                        avctx->channels = s->channels;
-                    }
-                    avctx->bit_rate = s->bit_rate;
-                    avctx->frame_size = s->samples;
+    /* update codec info */
+    avctx->sample_rate = s->sample_rate;
+    /* allow downmixing to stereo (or mono for AC3) */
+    if(avctx->request_channels > 0 &&
+            avctx->request_channels < s->channels &&
+            (avctx->request_channels <= 2 ||
+            (avctx->request_channels == 1 &&
+            avctx->codec_id == CODEC_ID_AC3))) {
+        avctx->channels = avctx->request_channels;
+    } else {
+        avctx->channels = s->channels;
+    }
+    avctx->bit_rate = s->bit_rate;
+    avctx->frame_size = s->samples;
 
     return i;
 }
