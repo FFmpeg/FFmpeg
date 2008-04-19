@@ -369,7 +369,8 @@ the FFmpeg Windows Help Forum at
 
 FFmpeg can be built to run natively on Windows using the MinGW tools. Install
 the current versions of MSYS and MinGW from @url{http://www.mingw.org/}. Also
-install the coreutils package. You can find detailed installation
+install the coreutils package, and update to the latest MSYS make (note: not
+mingw32-make). You can find detailed installation
 instructions in the download section and the FAQ.
 
 Within the MSYS shell, configure and make with:
