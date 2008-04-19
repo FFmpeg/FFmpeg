@@ -2814,7 +2814,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                 int a,b;
                 a= ff_get_best_fcode(s, s->p_field_mv_table[0][0], CANDIDATE_MB_TYPE_INTER_I); //FIXME field_select
                 b= ff_get_best_fcode(s, s->p_field_mv_table[1][1], CANDIDATE_MB_TYPE_INTER_I);
-                s->f_code= FFMAX(s->f_code, FFMAX(a,b));
+                s->f_code= FFMAX3(s->f_code, a, b);
             }
 
             ff_fix_long_p_mvs(s);

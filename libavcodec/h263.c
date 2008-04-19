@@ -3100,7 +3100,7 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
         case FF_S_TYPE:
             return s->f_code+15;
         case FF_B_TYPE:
-            return FFMAX(FFMAX(s->f_code, s->b_code)+15, 17);
+            return FFMAX3(s->f_code, s->b_code, 2) + 15;
         default:
             return -1;
     }

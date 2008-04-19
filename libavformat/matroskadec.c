@@ -98,8 +98,8 @@ typedef struct MatroskaSubtitleTrack {
     //..
 } MatroskaSubtitleTrack;
 
-#define MAX_TRACK_SIZE (FFMAX(FFMAX(sizeof(MatroskaVideoTrack), \
-                                    sizeof(MatroskaAudioTrack)), \
+#define MAX_TRACK_SIZE (FFMAX3(sizeof(MatroskaVideoTrack), \
+                                    sizeof(MatroskaAudioTrack), \
                                     sizeof(MatroskaSubtitleTrack)))
 
 typedef struct MatroskaLevel {
