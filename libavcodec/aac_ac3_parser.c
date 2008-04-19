@@ -50,7 +50,7 @@ get_next:
                 i=END_NOT_FOUND;
             }else{
                 i-= s->header_size -1;
-                s->remaining_size = len + i;
+                s->remaining_size = len;
                 if(!new_frame_start)
                     goto get_next;
             }
