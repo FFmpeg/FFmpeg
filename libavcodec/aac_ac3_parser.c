@@ -33,9 +33,10 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
     int len, i;
     int new_frame_start;
 
+get_next:
     i=END_NOT_FOUND;
     if(s->remaining_size <= buf_size){
-        if(s->remaining_size){
+        if(s->remaining_size && !s->need_next_header){
             i= s->remaining_size;
             s->remaining_size = 0;
         }else{ //we need a header first
@@ -50,6 +51,8 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
             }else{
                 i-= s->header_size -1;
                 s->remaining_size = len + i;
+                if(!new_frame_start)
+                    goto get_next;
             }
         }
     }
