@@ -157,9 +157,9 @@ const static int8_t vlcdec_lookup[9][64] = {
        -67,  67,  -66,  66,  -65,  65,  -64,  64, },
 };
 
-static int vlc_decode_block(MimicContext *ctx, DCTELEM *block, int num_coeffs,
-                            int qscale)
+static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 {
+    DCTELEM *block = ctx->dct_block;
     unsigned int pos;
 
     memset(block, 0, 64 * sizeof(DCTELEM));
@@ -227,8 +227,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                      * Chroma planes don't use backreferences. */
                     if(is_chroma || is_iframe || !get_bits1(&ctx->gb)) {
 
-                        if(!vlc_decode_block(ctx, ctx->dct_block,
-                                             num_coeffs, qscale))
+                        if(!vlc_decode_block(ctx, num_coeffs, qscale))
                             return 0;
                         ctx->dsp.idct_put(dst, stride, ctx->dct_block);
                     } else {
