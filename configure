@@ -124,6 +124,7 @@ show_help(){
   echo "  --disable-ssse3          disable SSSE3 usage"
   echo "  --disable-armv5te        disable armv5te usage"
   echo "  --disable-armv6          disable armv6 usage"
+  echo "  --disable-armvfp         disable ARM VFP usage"
   echo "  --disable-iwmmxt         disable iwmmxt usage"
   echo "  --disable-altivec        disable AltiVec usage"
   echo "  --disable-network        disable network support [default=no]"
@@ -693,6 +694,7 @@ ARCH_EXT_LIST='
     altivec
     armv5te
     armv6
+    armvfp
     iwmmxt
     mmi
     mmx
@@ -794,6 +796,7 @@ CMDLINE_SET='
 altivec_deps="powerpc"
 armv5te_deps="armv4l"
 armv6_deps="armv4l"
+armvfp_deps="armv4l"
 iwmmxt_deps="armv4l"
 mmi_deps="mips"
 mmx_deps="x86"
@@ -1528,6 +1531,7 @@ fi
 enabled armv4l  && check_asm pld     '"pld [r0]"'
 enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
 enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
+enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
 enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'
 enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
 enabled vis     && check_asm vis     '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc
@@ -1860,6 +1864,7 @@ fi
 if test $arch = "armv4l"; then
     echo "ARMv5TE enabled           ${armv5te-no}"
     echo "ARMv6 enabled             ${armv6-no}"
+    echo "ARM VFP enabled           ${armvfp-no}"
     echo "IWMMXT enabled            ${iwmmxt-no}"
 fi
 if test $arch = "mips"; then
