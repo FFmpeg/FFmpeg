@@ -513,6 +513,20 @@ AVOutputFormat ac3_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
+
+AVOutputFormat dts_muxer = {
+    "dts",
+    "raw dts",
+    "audio/x-dca",
+    "dts",
+    0,
+    CODEC_ID_DTS,
+    0,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+
 #endif //CONFIG_MUXERS
 
 AVInputFormat dts_demuxer = {

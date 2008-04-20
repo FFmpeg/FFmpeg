@@ -70,7 +70,7 @@ void av_register_all(void)
     REGISTER_MUXER    (CRC, crc);
     REGISTER_DEMUXER  (DAUD, daud);
     REGISTER_DEMUXER  (DSICIN, dsicin);
-    REGISTER_DEMUXER  (DTS, dts);
+    REGISTER_MUXDEMUX (DTS, dts);
     REGISTER_MUXDEMUX (DV, dv);
     REGISTER_DEMUXER  (DXA, dxa);
     REGISTER_DEMUXER  (EA, ea);
