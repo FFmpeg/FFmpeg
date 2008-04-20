@@ -26,20 +26,27 @@ int ff_split_xiph_headers(uint8_t *extradata, int extradata_size,
 {
     int i, j;
 
-    if (AV_RB16(extradata) == first_header_size) {
+    if (extradata_size >= 6 && AV_RB16(extradata) == first_header_size) {
+        int overall_len = 6;
         for (i=0; i<3; i++) {
             header_len[i] = AV_RB16(extradata);
             extradata += 2;
             header_start[i] = extradata;
             extradata += header_len[i];
+            if (overall_len > extradata_size - header_len[i])
+                return -1;
+            overall_len += header_len[i];
         }
-    } else if (extradata[0] == 2) {
+    } else if (extradata_size >= 3 && extradata_size < INT_MAX - 0x1ff && extradata[0] == 2) {
+        int overall_len = 3;
         for (i=0,j=1; i<2; i++,j++) {
             header_len[i] = 0;
-            for (; j<extradata_size && extradata[j]==0xff; j++) {
+            for (; overall_len < extradata_size && extradata[j]==0xff; j++) {
                 header_len[i] += 0xff;
+                overall_len   += 0xff + 1;
             }
-            if (j >= extradata_size)
+            overall_len   += extradata[j];
+            if (overall_len > extradata_size)
                 return -1;
 
             header_len[i] += extradata[j];
