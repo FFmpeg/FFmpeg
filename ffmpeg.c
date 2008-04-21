@@ -380,7 +380,7 @@ static int av_exit(int ret)
         /* maybe av_close_output_file ??? */
         AVFormatContext *s = output_files[i];
         int j;
-        if (!(s->oformat->flags & AVFMT_NOFILE))
+        if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             url_fclose(s->pb);
         for(j=0;j<s->nb_streams;j++) {
             av_free(s->streams[j]->codec);
