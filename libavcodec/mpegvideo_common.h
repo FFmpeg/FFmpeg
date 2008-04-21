@@ -635,7 +635,7 @@ static inline void prefetch_motion(MpegEncContext *s, uint8_t **pix, int dir){
  * @param pic_op qpel motion compensation function (average or put normally)
  * the motion vectors are taken from s->mv and the MV type from s->mv_type
  */
-static inline void MPV_motion_internal(MpegEncContext *s,
+static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                               uint8_t *dest_y, uint8_t *dest_cb,
                               uint8_t *dest_cr, int dir,
                               uint8_t **ref_picture,
