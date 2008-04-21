@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "ac3_parser.h"
 #include "raw.h"
+#include "crc.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */
@@ -428,6 +429,9 @@ static int ac3_probe(AVProbeData *p)
 
         for(frames = 0; buf2 < end; frames++) {
             if(ff_ac3_parse_header(buf2, &hdr) < 0)
+                break;
+            if(buf2 + hdr.frame_size > end ||
+               av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
                 break;
             buf2 += hdr.frame_size;
         }
