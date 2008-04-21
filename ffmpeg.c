@@ -2226,12 +2226,12 @@ static void opt_video_rc_override_string(const char *arg)
 
 static void opt_me_threshold(const char *arg)
 {
-    me_threshold = atoi(arg);
+    me_threshold = parse_number_or_die("me_threshold", arg, OPT_INT64, INT_MIN, INT_MAX);
 }
 
 static void opt_verbose(const char *arg)
 {
-    verbose = atoi(arg);
+    verbose = parse_number_or_die("v", arg, OPT_INT64, AV_LOG_QUIET, AV_LOG_DEBUG);
     av_log_set_level(verbose);
 }
 
@@ -2510,12 +2510,12 @@ static void opt_thread_count(const char *arg)
 
 static void opt_audio_rate(const char *arg)
 {
-    audio_sample_rate = atoi(arg);
+    audio_sample_rate = parse_number_or_die("ar", arg, OPT_INT64, 0, INT_MAX);
 }
 
 static void opt_audio_channels(const char *arg)
 {
-    audio_channels = atoi(arg);
+    audio_channels = parse_number_or_die("ac", arg, OPT_INT64, 0, INT_MAX);
 }
 
 static void opt_video_channel(const char *arg)
