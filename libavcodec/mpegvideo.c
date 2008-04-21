@@ -1737,7 +1737,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
  */
 static av_always_inline
 void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
-                            int lowres_flag)
+                            int lowres_flag, int is_mpeg12)
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
@@ -1764,7 +1764,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
-        if (s->h263_pred || s->h263_aic) {
+        if (!is_mpeg12 && (s->h263_pred || s->h263_aic)) {
             if(s->mbintra_table[mb_xy])
                 ff_clean_intra_table_entries(s);
         } else {
@@ -1773,7 +1773,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
             s->last_dc[2] = 128 << s->intra_dc_precision;
         }
     }
-    else if (s->h263_pred || s->h263_aic)
+    else if (!is_mpeg12 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy]=1;
 
     if ((s->flags&CODEC_FLAG_PSNR) || !(s->encoding && (s->intra_only || s->pict_type==FF_B_TYPE) && s->avctx->mb_decision != FF_MB_DECISION_RD)) { //FIXME precalc
@@ -1888,7 +1888,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                         add_dequant_dct(s, block[7], 7, dest_cr + dct_offset, dct_linesize, s->chroma_qscale);
                     }
                 }
-            } else if(s->codec_id != CODEC_ID_WMV2){
+            } else if(is_mpeg12 || (s->codec_id != CODEC_ID_WMV2)){
                 add_dct(s, block[0], 0, dest_y                          , dct_linesize);
                 add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
@@ -1979,8 +1979,14 @@ skip_idct:
 }
 
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
-    if(s->avctx->lowres) MPV_decode_mb_internal(s, block, 1);
-    else                  MPV_decode_mb_internal(s, block, 0);
+#ifndef CONFIG_SMALL
+    if(s->out_format == FMT_MPEG1) {
+        if(s->avctx->lowres) MPV_decode_mb_internal(s, block, 1, 1);
+        else                 MPV_decode_mb_internal(s, block, 0, 1);
+    } else
+#endif
+    if(s->avctx->lowres) MPV_decode_mb_internal(s, block, 1, 0);
+    else                  MPV_decode_mb_internal(s, block, 0, 0);
 }
 
 /**
