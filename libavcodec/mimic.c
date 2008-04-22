@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "bytestream.h"
 #include "dsputil.h"
 
 #define MIMIC_HEADER_SIZE   20
@@ -297,8 +298,13 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    width  = AV_RL16(buf + 4);
-    height = AV_RL16(buf + 6);
+    buf       += 2;
+    quality    = bytestream_get_le16(&buf);
+    width      = bytestream_get_le16(&buf);
+    height     = bytestream_get_le16(&buf);
+    buf       += 4;
+    is_pframe  = bytestream_get_le32(&buf);
+    num_coeffs = bytestream_get_le32(&buf);
 
     if(!ctx->avctx) {
         int i;
@@ -322,10 +328,6 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    quality    = AV_RL16(buf + 2);
-    is_pframe  = AV_RL32(buf + 12);
-    num_coeffs = buf[16];
-
     if(is_pframe && !ctx->buf_ptrs[ctx->prev_index].data[0]) {
         av_log(avctx, AV_LOG_ERROR, "decoding must start with keyframe\n");
         return -1;
@@ -346,7 +348,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_NOMEM;
 
     ctx->dsp.bswap_buf((uint32_t*)ctx->swap_buf,
-                        (const uint32_t*) (buf + MIMIC_HEADER_SIZE),
+                        (const uint32_t*) buf,
                         swap_buf_size>>2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
 
