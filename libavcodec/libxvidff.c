@@ -192,10 +192,11 @@ av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
     /* XviD can determine the proper profile to use */
     /* xvid_enc_create.profile = XVID_PROFILE_S_L3; */
 
-    /* We don't use zones or threads */
+    /* We don't use zones */
     xvid_enc_create.zones = NULL;
     xvid_enc_create.num_zones = 0;
-    xvid_enc_create.num_threads = 0;
+
+    xvid_enc_create.num_threads = avctx->thread_count;
 
     xvid_enc_create.plugins = plugins;
     xvid_enc_create.num_plugins = 0;
