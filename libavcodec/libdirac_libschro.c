@@ -19,11 +19,11 @@
  */
 
 /**
-* @file diracschro_common.c
+* @file libdirac_libschro.c
 * functions common to libdirac and libschroedinger
 */
 
-#include "diracschro_common.h"
+#include "libdirac_libschro.h"
 
 static const FfmpegDiracSchroVideoFormatInfo ff_dirac_schro_video_format_info[] = {
     { 640,  480,  24000, 1001},

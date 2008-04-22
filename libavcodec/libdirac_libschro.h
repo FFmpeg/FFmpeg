@@ -19,12 +19,12 @@
  */
 
 /**
-* @file diracschro_common.h
+* @file libdirac_libschro.h
 * data structures common to libdirac and libschroedinger
 */
 
-#ifndef FFMPEG_DIRACSCHRO_COMMON_H
-#define FFMPEG_DIRACSCHRO_COMMON_H
+#ifndef FFMPEG_LIBDIRAC_LIBSCHRO_H
+#define FFMPEG_LIBDIRAC_LIBSCHRO_H
 
 #include "avcodec.h"
 
@@ -104,4 +104,4 @@ void *ff_dirac_schro_queue_pop (FfmpegDiracSchroQueue *queue);
 */
 void ff_dirac_schro_queue_free(FfmpegDiracSchroQueue *queue,
                                void (*free_func)(void *));
-#endif /* FFMPEG_DIRACSCHRO_COMMON_H */
+#endif /* FFMPEG_LIBDIRAC_LIBSCHRO_H */
