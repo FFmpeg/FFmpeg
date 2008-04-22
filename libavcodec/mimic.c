@@ -293,7 +293,8 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     height     = bytestream_get_le16(&buf);
     buf       += 4; /* some constant */
     is_pframe  = bytestream_get_le32(&buf);
-    num_coeffs = bytestream_get_le32(&buf);
+    num_coeffs = bytestream_get_byte(&buf);
+    buf       += 3; /* some constant */
 
     if(!ctx->avctx) {
         int i;
