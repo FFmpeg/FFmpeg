@@ -23,6 +23,7 @@
 #include "ac3_parser.h"
 #include "raw.h"
 #include "crc.h"
+#include "bitstream.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */
@@ -419,6 +420,7 @@ static int ac3_probe(AVProbeData *p)
     int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
+    GetBitContext gbc;
 
     max_frames = 0;
     buf = p->buf;
@@ -428,7 +430,8 @@ static int ac3_probe(AVProbeData *p)
         buf2 = buf;
 
         for(frames = 0; buf2 < end; frames++) {
-            if(ff_ac3_parse_header(buf2, &hdr) < 0)
+            init_get_bits(&gbc, buf2, 54);
+            if(ff_ac3_parse_header(&gbc, &hdr) < 0)
                 break;
             if(buf2 + hdr.frame_size > end ||
                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))

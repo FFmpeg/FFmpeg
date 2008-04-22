@@ -89,18 +89,6 @@ static const float gain_levels[6] = {
 };
 
 /**
- * Table for center mix levels
- * reference: Section 5.4.2.4 cmixlev
- */
-static const uint8_t center_levels[4] = { 2, 3, 4, 3 };
-
-/**
- * Table for surround mix levels
- * reference: Section 5.4.2.5 surmixlev
- */
-static const uint8_t surround_levels[4] = { 2, 4, 0, 4 };
-
-/**
  * Table for default stereo downmixing coefficients
  * reference: Section 7.8.2 Downmixing Into Two Channels
  */
@@ -315,7 +303,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
     GetBitContext *gbc = &s->gbc;
     int err, i;
 
-    err = ff_ac3_parse_header(gbc->buffer, &hdr);
+    err = ff_ac3_parse_header(gbc, &hdr);
     if(err)
         return err;
 
@@ -333,31 +321,14 @@ static int ac3_parse_header(AC3DecodeContext *s)
     s->fbw_channels                 = s->channels - s->lfe_on;
     s->lfe_ch                       = s->fbw_channels + 1;
     s->frame_size                   = hdr.frame_size;
+    s->center_mix_level             = hdr.center_mix_level;
+    s->surround_mix_level           = hdr.surround_mix_level;
 
     /* set default output to all source channels */
     s->out_channels = s->channels;
     s->output_mode = s->channel_mode;
     if(s->lfe_on)
         s->output_mode |= AC3_OUTPUT_LFEON;
-
-    /* set default mix levels */
-    s->center_mix_level   = 3;  // -4.5dB
-    s->surround_mix_level = 4;  // -6.0dB
-
-    /* skip over portion of header which has already been read */
-    skip_bits(gbc, 16); // skip the sync_word
-    skip_bits(gbc, 16); // skip crc1
-    skip_bits(gbc, 8);  // skip fscod and frmsizecod
-    skip_bits(gbc, 11); // skip bsid, bsmod, and acmod
-    if(s->channel_mode == AC3_CHMODE_STEREO) {
-        skip_bits(gbc, 2); // skip dsurmod
-    } else {
-        if((s->channel_mode & 1) && s->channel_mode != AC3_CHMODE_MONO)
-            s->center_mix_level = center_levels[get_bits(gbc, 2)];
-        if(s->channel_mode & 4)
-            s->surround_mix_level = surround_levels[get_bits(gbc, 2)];
-    }
-    skip_bits1(gbc); // skip lfeon
 
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(s->channel_mode);
