@@ -282,27 +282,16 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     int quality, num_coeffs;
     int swap_buf_size = buf_size - MIMIC_HEADER_SIZE;
 
-    /*
-     * Header structure:
-     *  uint16_t    I_dont_remember;
-     *  uint16_t    quality;
-     *  uint16_t    width;
-     *  uint16_t    height;
-     *  uint32_t    some_constant;
-     *  uint32_t    is_pframe;
-     *  uint32_t    num_coeffs;
-     */
-
     if(buf_size < MIMIC_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "insufficient data\n");
         return -1;
     }
 
-    buf       += 2;
+    buf       += 2; /* some constant (always 256) */
     quality    = bytestream_get_le16(&buf);
     width      = bytestream_get_le16(&buf);
     height     = bytestream_get_le16(&buf);
-    buf       += 4;
+    buf       += 4; /* some constant */
     is_pframe  = bytestream_get_le32(&buf);
     num_coeffs = bytestream_get_le32(&buf);
 
