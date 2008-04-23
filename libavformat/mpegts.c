@@ -90,6 +90,9 @@ struct MpegTSContext {
     AVFormatContext *stream;
     /** raw packet size, including FEC if present            */
     int raw_packet_size;
+
+    int pos47;
+
     /** if true, all pids are analyzed to find streams       */
     int auto_guess;
 
@@ -1046,6 +1049,8 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     if (p >= p_end)
         return;
 
+    ts->pos47= url_ftell(ts->stream->pb) % ts->raw_packet_size;
+
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
             /* pointer field present */
@@ -1379,7 +1384,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     uint8_t buf[TS_PACKET_SIZE];
     int pcr_l, pcr_pid = ((PESContext*)s->streams[stream_index]->priv_data)->pcr_pid;
     const int find_next= 1;
-    pos = ((*ppos  + ts->raw_packet_size - 1) / ts->raw_packet_size) * ts->raw_packet_size;
+    pos = ((*ppos  + ts->raw_packet_size - 1 - ts->pos47) / ts->raw_packet_size) * ts->raw_packet_size + ts->pos47;
     if (find_next) {
         for(;;) {
             url_fseek(s->pb, pos, SEEK_SET);
