@@ -406,6 +406,17 @@ int ff_xvid_encode_frame(AVCodecContext *avctx,
     xvid_enc_frame.motion = x->me_flags;
     xvid_enc_frame.type = XVID_TYPE_AUTO;
 
+    /* Pixel aspect ratio setting */
+    if (avctx->sample_aspect_ratio.num < 1 || avctx->sample_aspect_ratio.num > 255 ||
+        avctx->sample_aspect_ratio.den < 1 || avctx->sample_aspect_ratio.den > 255) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid pixel aspect ratio %i/%i\n",
+               avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
+        return -1;
+    }
+    xvid_enc_frame.par = XVID_PAR_EXT;
+    xvid_enc_frame.par_width  = avctx->sample_aspect_ratio.num;
+    xvid_enc_frame.par_height = avctx->sample_aspect_ratio.den;
+
     /* Quant Setting */
     if( x->qscale ) xvid_enc_frame.quant = picture->quality / FF_QP2LAMBDA;
     else xvid_enc_frame.quant = 0;
