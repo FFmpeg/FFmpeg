@@ -767,6 +767,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                     if(program)
                         av_set_program_name(program, provider_name, name);
                 }
+                av_free(name);
+                av_free(provider_name);
                 break;
             default:
                 break;
@@ -1370,6 +1372,9 @@ static int mpegts_read_close(AVFormatContext *s)
 {
     MpegTSContext *ts = s->priv_data;
     int i;
+
+    clear_programs(ts);
+
     for(i=0;i<NB_PID_MAX;i++)
         if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
 
