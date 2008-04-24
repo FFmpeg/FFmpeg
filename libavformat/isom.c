@@ -161,6 +161,10 @@ const AVCodecTag codec_movaudio_tags[] = {
 
     { CODEC_ID_GSM,  MKTAG('a', 'g', 's', 'm') },
     { CODEC_ID_ALAC, MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
+
+    { CODEC_ID_QCELP, MKTAG('Q','c','l','p') },
+    { CODEC_ID_QCELP, MKTAG('s','q','c','p') }, /* ISO Media fourcc */
+
     { CODEC_ID_QDM2, MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
 
     { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
