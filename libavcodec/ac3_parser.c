@@ -136,6 +136,35 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
     return 0;
 }
 
+int ff_ac3_parse_header_full(GetBitContext *gbc, AC3HeaderInfo *hdr){
+    int ret, i;
+    ret = ff_ac3_parse_header(gbc, hdr);
+    if(!ret){
+        if(hdr->bitstream_id>10){
+            /* Enhanced AC-3 */
+            skip_bits(gbc, 5); // skip bitstream id
+
+            /* skip dialog normalization and compression gain */
+            for (i = 0; i < (hdr->channel_mode ? 1 : 2); i++) {
+                skip_bits(gbc, 5); // skip dialog normalization
+                if (get_bits1(gbc)) {
+                    skip_bits(gbc, 8); //skip Compression gain word
+                }
+            }
+            /* dependent stream channel map */
+            if (hdr->frame_type == EAC3_FRAME_TYPE_DEPENDENT && get_bits1(gbc)) {
+                    hdr->channel_map = get_bits(gbc, 16); //custom channel map
+                    return 0;
+            }
+        }
+        //default channel map based on acmod and lfeon
+        hdr->channel_map = ff_eac3_default_chmap[hdr->channel_mode];
+        if(hdr->lfe_on)
+            hdr->channel_map |= AC3_CHMAP_LFE;
+    }
+    return ret;
+}
+
 static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         int *need_next_header, int *new_frame_start)
 {

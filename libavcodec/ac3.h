@@ -97,6 +97,7 @@ typedef struct {
     uint16_t frame_size;
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
+    uint16_t channel_map;
     /** @} */
 } AC3HeaderInfo;
 

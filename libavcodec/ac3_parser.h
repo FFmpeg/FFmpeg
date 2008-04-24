@@ -46,4 +46,15 @@ typedef enum {
  */
 int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr);
 
+/**
+ * Parses AC-3 frame header and sets channel_map
+ * Parses the header up to the lfeon (channel_map in E-AC-3)
+ * element, which is the first 52, 54 or 104 bits depending
+ * on the audio coding mode.
+ * @param gbc[in] BitContext containing the first 54 bits of the frame.
+ * @param hdr[out] Pointer to struct where header info is written.
+ * @return value returned by ff_ac3_parse_header
+ */
+int ff_ac3_parse_header_full(GetBitContext *gbc, AC3HeaderInfo *hdr);
+
 #endif /* FFMPEG_AC3_PARSER_H */

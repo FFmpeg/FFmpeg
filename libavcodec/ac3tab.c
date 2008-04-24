@@ -247,3 +247,16 @@ const uint8_t ff_ac3_critical_band_size_tab[50]={
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
     3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24
 };
+/**
+ * Default channel map for a dependent substream defined by acmod
+ */
+const uint16_t ff_eac3_default_chmap[8] = {
+    AC3_CHMAP_L |               AC3_CHMAP_R, // FIXME Ch1+Ch2
+                  AC3_CHMAP_C,
+    AC3_CHMAP_L |               AC3_CHMAP_R,
+    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R,
+    AC3_CHMAP_L |               AC3_CHMAP_R |                   AC3_CHMAP_C_SUR,
+    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R |                   AC3_CHMAP_C_SUR,
+    AC3_CHMAP_L |               AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR,
+    AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR
+};
