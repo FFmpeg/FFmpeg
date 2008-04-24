@@ -2145,6 +2145,7 @@ void av_close_input_stream(AVFormatContext *s)
         av_freep(&s->programs[i]->stream_index);
         av_freep(&s->programs[i]);
     }
+    av_freep(&s->programs);
     flush_packet_queue(s);
     av_freep(&s->priv_data);
     av_free(s);
