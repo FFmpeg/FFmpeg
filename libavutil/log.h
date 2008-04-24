@@ -24,15 +24,29 @@
 #include <stdarg.h>
 
 /**
- * Used by av_log
+ * Describes the class of an AVClass context structure, that is an
+ * arbitrary struct of which the first field is a pointer to an
+ * AVClass struct (e.g. AVCodecContext, AVFormatContext etc.).
  */
 typedef struct AVCLASS AVClass;
 struct AVCLASS {
+    /**
+     * the name of the class, usually it is the same name of the
+     * context structure type to which the AVClass is associated
+     */
     const char* class_name;
-    const char* (*item_name)(void*); /* actually passing a pointer to an AVCodecContext
-                                        or AVFormatContext, which begin with an AVClass.
-                                        Needed because av_log is in libavcodec and has no visibility
-                                        of AVIn/OutputFormat */
+
+    /**
+     * a pointer to a function which returns the name of a context
+     * instance \p ctx associated with the class
+     */
+    const char* (*item_name)(void* ctx);
+
+    /**
+     * a pointer to the first option specified in the class if any or NULL
+     *
+     * @see av_set_default_options()
+     */
     const struct AVOption *option;
 };
 
