@@ -219,6 +219,16 @@ static int mov_write_amr_tag(ByteIOContext *pb, MOVTrack *track)
     return 0x11;
 }
 
+/**
+ * This function writes extradata "as is".
+ * Extradata must be formated like a valid atom (with size and tag)
+ */
+static int mov_write_extradata_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    put_buffer(pb, track->enc->extradata, track->enc->extradata_size);
+    return track->enc->extradata_size;
+}
+
 static int mov_write_enda_tag(ByteIOContext *pb)
 {
     put_be32(pb, 10);
@@ -316,6 +326,8 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_enda_tag(pb);
     } else if (track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
+    } else if (track->enc->codec_id == CODEC_ID_ALAC) {
+        mov_write_extradata_tag(pb, track);
     }
 
     put_be32(pb, 8);     /* size */
@@ -380,7 +392,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
        (track->enc->codec_id == CODEC_ID_AAC ||
         track->enc->codec_id == CODEC_ID_AMR_NB ||
         track->enc->codec_id == CODEC_ID_PCM_S24LE ||
-        track->enc->codec_id == CODEC_ID_PCM_S32LE))
+        track->enc->codec_id == CODEC_ID_PCM_S32LE ||
+        track->enc->codec_id == CODEC_ID_ALAC))
         mov_write_wave_tag(pb, track);
     else if(track->tag == MKTAG('m','p','4','a'))
         mov_write_esds_tag(pb, track);
