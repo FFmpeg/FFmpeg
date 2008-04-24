@@ -922,6 +922,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->sample_rate= 16000;
         st->codec->channels= 1; /* really needed */
         break;
+    case CODEC_ID_QCELP:
+        st->codec->frame_size = sc->samples_per_frame;
+        st->need_parsing= AVSTREAM_PARSE_FULL;
     case CODEC_ID_AMR_NB:
         st->codec->sample_rate= 8000;
         st->codec->channels= 1; /* really needed */
@@ -1252,7 +1255,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         sc->time_scale= c->time_scale;
     av_set_pts_info(st, 64, sc->time_rate, sc->time_scale);
 
-    if (st->codec->codec_type == CODEC_TYPE_AUDIO && sc->stts_count == 1)
+    if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
+        !st->codec->frame_size && sc->stts_count == 1)
         st->codec->frame_size = av_rescale(sc->time_rate, st->codec->sample_rate, sc->time_scale);
 
     if(st->duration != AV_NOPTS_VALUE){
