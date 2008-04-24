@@ -983,7 +983,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
 
 #ifdef HAVE_AV_CONFIG_H
 
-void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem);
+void ff_dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem);
 
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
@@ -991,12 +991,12 @@ do {\
     typeof(tab) _tab = (tab);\
     typeof(elem) _elem = (elem);\
     (void)sizeof(**_tab == _elem); /* check that types are compatible */\
-    __dynarray_add((unsigned long **)_tab, nb_ptr, (unsigned long)_elem);\
+    ff_dynarray_add((unsigned long **)_tab, nb_ptr, (unsigned long)_elem);\
 } while(0)
 #else
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\
-    __dynarray_add((unsigned long **)(tab), nb_ptr, (unsigned long)(elem));\
+    ff_dynarray_add((unsigned long **)(tab), nb_ptr, (unsigned long)(elem));\
 } while(0)
 #endif
 

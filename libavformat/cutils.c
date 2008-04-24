@@ -21,7 +21,7 @@
 #include "avformat.h"
 
 /* add one element to a dynamic array */
-void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem)
+void ff_dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem)
 {
     int nb, nb_alloc;
     unsigned long *tab;
