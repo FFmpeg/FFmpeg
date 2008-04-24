@@ -936,6 +936,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     case CODEC_ID_ADPCM_IMA_WAV:
         st->codec->block_align = sc->bytes_per_frame;
         break;
+    case CODEC_ID_ALAC:
+        if (st->codec->extradata_size == 36)
+            st->codec->frame_size = AV_RB32((st->codec->extradata+12));
+        break;
     default:
         break;
     }
