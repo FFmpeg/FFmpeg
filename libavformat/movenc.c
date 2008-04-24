@@ -258,15 +258,15 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     offset_t pos = url_ftell(pb);
     int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
 
-    put_be32(pb, 0);               // size
+    put_be32(pb, 0); // size
     put_tag(pb, "esds");
-    put_be32(pb, 0);               // Version
+    put_be32(pb, 0); // Version
 
     // ES descriptor
     putDescr(pb, 0x03, 3 + descrLength(13 + decoderSpecificInfoLen) +
              descrLength(1));
     put_be16(pb, track->trackID);
-    put_byte(pb, 0x00);            // flags (= no flags)
+    put_byte(pb, 0x00); // flags (= no flags)
 
     // DecoderConfig descriptor
     putDescr(pb, 0x04, 13 + decoderSpecificInfoLen);
@@ -277,26 +277,24 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
     if(track->enc->codec_type == CODEC_TYPE_AUDIO)
-        put_byte(pb, 0x15);            // flags (= Audiostream)
+        put_byte(pb, 0x15); // flags (= Audiostream)
     else
-        put_byte(pb, 0x11);            // flags (= Visualstream)
+        put_byte(pb, 0x11); // flags (= Visualstream)
 
-    put_byte(pb,  track->enc->rc_buffer_size>>(3+16));             // Buffersize DB (24 bits)
-    put_be16(pb, (track->enc->rc_buffer_size>>3)&0xFFFF);          // Buffersize DB
+    put_byte(pb,  track->enc->rc_buffer_size>>(3+16));    // Buffersize DB (24 bits)
+    put_be16(pb, (track->enc->rc_buffer_size>>3)&0xFFFF); // Buffersize DB
 
-    put_be32(pb, FFMAX(track->enc->bit_rate, track->enc->rc_max_rate));     // maxbitrate  (FIXME should be max rate in any 1 sec window)
+    put_be32(pb, FFMAX(track->enc->bit_rate, track->enc->rc_max_rate)); // maxbitrate (FIXME should be max rate in any 1 sec window)
     if(track->enc->rc_max_rate != track->enc->rc_min_rate || track->enc->rc_min_rate==0)
-        put_be32(pb, 0);     // vbr
+        put_be32(pb, 0); // vbr
     else
-        put_be32(pb, track->enc->rc_max_rate);     // avg bitrate
+        put_be32(pb, track->enc->rc_max_rate); // avg bitrate
 
-    if (track->vosLen)
-    {
+    if (track->vosLen) {
         // DecoderSpecific info descriptor
         putDescr(pb, 0x05, track->vosLen);
         put_buffer(pb, track->vosData, track->vosLen);
     }
-
 
     // SL descriptor
     putDescr(pb, 0x06, 1);
