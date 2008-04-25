@@ -731,7 +731,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             uint8_t codec_name[32];
             unsigned int color_depth;
             int color_greyscale;
-            int frames_per_sample;
 
             st->codec->codec_id = id;
             get_be16(pb); /* version */
@@ -746,9 +745,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be32(pb); /* horiz resolution */
             get_be32(pb); /* vert resolution */
             get_be32(pb); /* data size, always 0 */
-            frames_per_sample = get_be16(pb); /* frames per samples */
-
-            dprintf(c->fc, "frames/samples = %d\n", frames_per_sample);
+            get_be16(pb); /* frames per samples */
 
             get_buffer(pb, codec_name, 32); /* codec name, pascal string (FIXME: true for mp4?) */
             if (codec_name[0] <= 31) {
