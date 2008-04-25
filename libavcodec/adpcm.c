@@ -959,9 +959,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         if(st) { /* handle stereo interlacing */
             c->channel = (channel + 1) % 2; /* we get one packet for left, then one for right data */
-            if(channel == 1) { /* wait for the other packet before outputing anything */
+            if(!channel) { /* wait for the other packet before outputing anything */
                 return src - buf;
             }
+            samples--;
         }
         break;
     case CODEC_ID_ADPCM_IMA_WAV:

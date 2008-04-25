@@ -179,8 +179,8 @@ stddev:8368.02 PSNR:17.87 bytes:96256
 stddev:904.20 PSNR:37.19 bytes:1056768
 efdae2746040dbc27be402b149556f1e *./tests/data/a-adpcm_qt.aiff
 281184 ./tests/data/a-adpcm_qt.aiff
-468fcd54a438f1b74060c2e9665be59e *./tests/data/adpcm_ima_qt.rotozoom.out.wav
-stddev:8931.22 PSNR:17.30 bytes:1056768
+5a2084ad27674d5cf3bc2945061e7910 *./tests/data/adpcm_ima_qt.rotozoom.out.wav
+stddev:915.35 PSNR:37.09 bytes:1056768
 628d4789cf9ee16a756ac54b7fd8650d *./tests/data/a-adpcm_ms.wav
 267320 ./tests/data/a-adpcm_ms.wav
 91a84bb4f319a3a0bf0c0441b3d3a529 *./tests/data/adpcm_ms.rotozoom.out.wav
@@ -197,7 +197,7 @@ c3382f03ce2efb5d475240d288a33898 *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
 c4228df189aad9567a037727d0e763e4 *./tests/data/flac.rotozoom.out.wav
 stddev: 33.31 PSNR:65.87 bytes:1040384
-4435d87463cd6c5407bd88cca241ca56  *./tests/data/a-wmav1.asf
+4435d87463cd6c5407bd88cca241ca56 *./tests/data/a-wmav1.asf
 106004 ./tests/data/a-wmav1.asf
 stddev:12251.50 PSNR:14.56 bytes:1056768
 stddev:2106.00 PSNR:29.85 bytes:1048576
