@@ -1186,7 +1186,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             /* get chunk size, beware of alaw/ulaw/mace */
             if (sc->samples_per_frame > 0 &&
                 (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
-                if (sc->samples_per_frame < 1024)
+                if (sc->samples_per_frame < 160)
                     chunk_size = chunk_samples * sc->bytes_per_frame / sc->samples_per_frame;
                 else {
                     chunk_size = sc->bytes_per_frame;
