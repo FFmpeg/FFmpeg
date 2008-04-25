@@ -856,6 +856,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 sc->samples_per_frame = 64;
                 sc->bytes_per_frame = 34*st->codec->channels;
                 break;
+            case CODEC_ID_GSM:
+                sc->samples_per_frame = 160;
+                sc->bytes_per_frame = 33;
+                break;
             default:
                 break;
             }
