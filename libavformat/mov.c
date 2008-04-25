@@ -153,7 +153,6 @@ typedef struct MOVContext {
 
 /* those functions parse an atom */
 /* return code:
-  1: found what I wanted, exit
   0: continue to parse next atom
  <0: error occurred, exit
 */
