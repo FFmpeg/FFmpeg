@@ -667,7 +667,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMContext *c = avctx->priv_data;
-    unsigned int max_channels = 2, channel;
+    unsigned int max_channels = 2;
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_EA_R1:
