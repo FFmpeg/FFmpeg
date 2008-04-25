@@ -36,8 +36,23 @@
 #define GSM_FRAME_SIZE 160
 
 static av_cold int libgsm_init(AVCodecContext *avctx) {
-    if (avctx->channels > 1 || avctx->sample_rate != 8000 || avctx->bit_rate != 13000)
+    if (avctx->channels > 1) {
+        av_log(avctx, AV_LOG_ERROR, "Mono required for GSM, got %d channels\n",
+               avctx->channels);
         return -1;
+    }
+    if (avctx->sample_rate != 8000) {
+        av_log(avctx, AV_LOG_ERROR, "Sample rate 8000Hz required for GSM, got %dHz\n",
+               avctx->sample_rate);
+        return -1;
+    }
+    if (avctx->bit_rate != 13000 /* Official */ &&
+        avctx->bit_rate != 13200 /* Very common */ &&
+        avctx->bit_rate != 0 /* Unknown; a.o. mov does not set bitrate when decoding */ ) {
+        av_log(avctx, AV_LOG_ERROR, "Bitrate 13000bps required for GSM, got %dbps\n",
+               avctx->bit_rate);
+        return -1;
+    }
 
     avctx->priv_data = gsm_create();
 
