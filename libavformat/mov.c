@@ -28,6 +28,7 @@
 #include "isom.h"
 #include "dv.h"
 #include "mpeg4audio.h"
+#include "mpegaudiodata.h"
 
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
@@ -407,6 +408,17 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 MPEG4AudioConfig cfg;
                 ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                          st->codec->extradata_size);
+                if (!cfg.chan_config || cfg.chan_config > 7)
+                    return -1;
+                st->codec->channels = ff_mpeg4audio_channels[cfg.chan_config];
+                if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
+                    st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
+                else
+                    st->codec->sample_rate = cfg.sample_rate; // ext sample rate ?
+                dprintf(c->fc, "mp4a config channels %d obj %d ext obj %d "
+                        "sample rate %d ext sample rate %d\n", st->codec->channels,
+                        cfg.object_type, cfg.ext_object_type,
+                        cfg.sample_rate, cfg.ext_sample_rate);
                 if (!(st->codec->codec_id = codec_get_id(mp4_audio_types,
                                                          cfg.object_type)))
                     st->codec->codec_id = CODEC_ID_AAC;
@@ -1296,13 +1308,9 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->width= 0; /* let decoder init width/height */
         st->codec->height= 0;
         break;
-#ifdef CONFIG_LIBFAAD
-    case CODEC_ID_AAC:
-#endif
 #ifdef CONFIG_VORBIS_DECODER
     case CODEC_ID_VORBIS:
 #endif
-    case CODEC_ID_MP3ON4:
         st->codec->sample_rate= 0; /* let decoder init parameters properly */
         break;
     }
