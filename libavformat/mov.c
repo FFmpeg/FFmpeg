@@ -747,7 +747,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be32(pb); /* data size, always 0 */
             get_be16(pb); /* frames per samples */
 
-            get_buffer(pb, codec_name, 32); /* codec name, pascal string (FIXME: true for mp4?) */
+            get_buffer(pb, codec_name, 32); /* codec name, pascal string */
             if (codec_name[0] <= 31) {
                 memcpy(st->codec->codec_name, &codec_name[1],codec_name[0]);
                 st->codec->codec_name[codec_name[0]] = 0;
