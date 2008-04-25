@@ -316,13 +316,13 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
     if(!ctype)
         c->isom = 1;
-    if(type == MKTAG('v', 'i', 'd', 'e'))
+    if (type == MKTAG('v','i','d','e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
-    else if(type == MKTAG('s', 'o', 'u', 'n'))
+    else if(type == MKTAG('s','o','u','n'))
         st->codec->codec_type = CODEC_TYPE_AUDIO;
-    else if(type == MKTAG('m', '1', 'a', ' '))
+    else if(type == MKTAG('m','1','a',' '))
         st->codec->codec_id = CODEC_ID_MP2;
-    else if(type == MKTAG('s', 'u', 'b', 'p')) {
+    else if(type == MKTAG('s','u','b','p')) {
         st->codec->codec_type = CODEC_TYPE_SUBTITLE;
     }
     get_be32(pb); /* component  manufacture */
@@ -629,11 +629,11 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc->chunk_offsets = av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
         return -1;
-    if (atom.type == MKTAG('s', 't', 'c', 'o')) {
+    if (atom.type == MKTAG('s','t','c','o')) {
         for(i=0; i<entries; i++) {
             sc->chunk_offsets[i] = get_be32(pb);
         }
-    } else if (atom.type == MKTAG('c', 'o', '6', '4')) {
+    } else if (atom.type == MKTAG('c','o','6','4')) {
         for(i=0; i<entries; i++) {
             sc->chunk_offsets[i] = get_be64(pb);
         }
@@ -683,7 +683,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         if (st->codec->codec_tag &&
             (c->fc->video_codec_id ? codec_get_id(codec_movvideo_tags, format) != c->fc->video_codec_id
-                                   : st->codec->codec_tag != MKTAG('j', 'p', 'e', 'g'))
+                                   : st->codec->codec_tag != MKTAG('j','p','e','g'))
            ){
             /* Multiple fourcc, we skip JPEG. This is not correct, we should
              * export it as a separate AVStream but this needs a few changes
@@ -696,13 +696,13 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         st->codec->codec_tag = format;
         id = codec_get_id(codec_movaudio_tags, format);
-        if (id<=0 && (format&0xFFFF) == 'm' + ('s'<<8))
+        if (id<=0 && (format&0xFFFF) == 'm'+('s'<<8))
             id = codec_get_id(codec_wav_tags, bswap_32(format)&0xFFFF);
 
         if (st->codec->codec_type != CODEC_TYPE_VIDEO && id > 0) {
             st->codec->codec_type = CODEC_TYPE_AUDIO;
         } else if (st->codec->codec_type != CODEC_TYPE_AUDIO && /* do not overwrite codec type */
-                   format && format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
+                   format && format != MKTAG('m','p','4','s')) { /* skip old asf mpeg4 tag */
             id = codec_get_id(codec_movvideo_tags, format);
             if (id <= 0)
                 id = codec_get_id(codec_bmp_tags, format);
@@ -1535,7 +1535,7 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     atom.type = get_le32(pb);
     atom.offset += 8;
     atom.size -= 8;
-    if (atom.type != MKTAG('m', 'd', 'a', 't')) {
+    if (atom.type != MKTAG('m','d','a','t')) {
         url_fskip(pb, atom.size);
         return 0;
     }
@@ -1553,14 +1553,14 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int ret;
 
     get_be32(pb); /* dcom atom */
-    if (get_le32(pb) != MKTAG( 'd', 'c', 'o', 'm' ))
+    if (get_le32(pb) != MKTAG('d','c','o','m'))
         return -1;
-    if (get_le32(pb) != MKTAG( 'z', 'l', 'i', 'b' )) {
+    if (get_le32(pb) != MKTAG('z','l','i','b')) {
         av_log(NULL, AV_LOG_ERROR, "unknown compression for cmov atom !");
         return -1;
     }
     get_be32(pb); /* cmvd atom */
-    if (get_le32(pb) != MKTAG( 'c', 'm', 'v', 'd' ))
+    if (get_le32(pb) != MKTAG('c','m','v','d'))
         return -1;
     moov_len = get_be32(pb); /* uncompressed size */
     cmov_len = atom.size - 6 * 4;
@@ -1578,7 +1578,7 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
     if(init_put_byte(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL) != 0)
         return -1;
-    atom.type = MKTAG( 'm', 'o', 'o', 'v' );
+    atom.type = MKTAG('m','o','o','v');
     atom.offset = 0;
     atom.size = moov_len;
 #ifdef DEBUG
@@ -1618,47 +1618,47 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
-{ MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
-{ MKTAG( 'c', 't', 't', 's' ), mov_read_ctts }, /* composition time to sample */
-{ MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default },
-{ MKTAG( 'd', 'r', 'e', 'f' ), mov_read_dref },
-{ MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
-{ MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
-{ MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
-{ MKTAG( 'f', 'i', 'e', 'l' ), mov_read_extradata },
-{ MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
-{ MKTAG( 'g', 'l', 'b', 'l' ), mov_read_glbl },
-{ MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
-{ MKTAG( 'j', 'p', '2', 'h' ), mov_read_extradata },
-{ MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
-{ MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
-{ MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
-{ MKTAG( 'm', 'i', 'n', 'f' ), mov_read_default },
-{ MKTAG( 'm', 'o', 'o', 'f' ), mov_read_moof },
-{ MKTAG( 'm', 'o', 'o', 'v' ), mov_read_moov },
-{ MKTAG( 'm', 'v', 'e', 'x' ), mov_read_default },
-{ MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
-{ MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
-{ MKTAG( 'a', 'l', 'a', 'c' ), mov_read_extradata }, /* alac specific atom */
-{ MKTAG( 'a', 'v', 'c', 'C' ), mov_read_glbl },
-{ MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
-{ MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
-{ MKTAG( 's', 't', 's', 'c' ), mov_read_stsc },
-{ MKTAG( 's', 't', 's', 'd' ), mov_read_stsd }, /* sample description */
-{ MKTAG( 's', 't', 's', 's' ), mov_read_stss }, /* sync sample */
-{ MKTAG( 's', 't', 's', 'z' ), mov_read_stsz }, /* sample size */
-{ MKTAG( 's', 't', 't', 's' ), mov_read_stts },
-{ MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
-{ MKTAG( 't', 'f', 'h', 'd' ), mov_read_tfhd }, /* track fragment header */
-{ MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
-{ MKTAG( 't', 'r', 'a', 'f' ), mov_read_default },
-{ MKTAG( 't', 'r', 'e', 'x' ), mov_read_trex },
-{ MKTAG( 't', 'r', 'u', 'n' ), mov_read_trun },
-{ MKTAG( 'u', 'd', 't', 'a' ), mov_read_udta },
-{ MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
-{ MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
-{ MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
-{ MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
+{ MKTAG('c','o','6','4'), mov_read_stco },
+{ MKTAG('c','t','t','s'), mov_read_ctts }, /* composition time to sample */
+{ MKTAG('d','i','n','f'), mov_read_default },
+{ MKTAG('d','r','e','f'), mov_read_dref },
+{ MKTAG('e','d','t','s'), mov_read_default },
+{ MKTAG('e','l','s','t'), mov_read_elst },
+{ MKTAG('e','n','d','a'), mov_read_enda },
+{ MKTAG('f','i','e','l'), mov_read_extradata },
+{ MKTAG('f','t','y','p'), mov_read_ftyp },
+{ MKTAG('g','l','b','l'), mov_read_glbl },
+{ MKTAG('h','d','l','r'), mov_read_hdlr },
+{ MKTAG('j','p','2','h'), mov_read_extradata },
+{ MKTAG('m','d','a','t'), mov_read_mdat },
+{ MKTAG('m','d','h','d'), mov_read_mdhd },
+{ MKTAG('m','d','i','a'), mov_read_default },
+{ MKTAG('m','i','n','f'), mov_read_default },
+{ MKTAG('m','o','o','f'), mov_read_moof },
+{ MKTAG('m','o','o','v'), mov_read_moov },
+{ MKTAG('m','v','e','x'), mov_read_default },
+{ MKTAG('m','v','h','d'), mov_read_mvhd },
+{ MKTAG('S','M','I',' '), mov_read_smi }, /* Sorenson extension ??? */
+{ MKTAG('a','l','a','c'), mov_read_extradata }, /* alac specific atom */
+{ MKTAG('a','v','c','C'), mov_read_glbl },
+{ MKTAG('s','t','b','l'), mov_read_default },
+{ MKTAG('s','t','c','o'), mov_read_stco },
+{ MKTAG('s','t','s','c'), mov_read_stsc },
+{ MKTAG('s','t','s','d'), mov_read_stsd }, /* sample description */
+{ MKTAG('s','t','s','s'), mov_read_stss }, /* sync sample */
+{ MKTAG('s','t','s','z'), mov_read_stsz }, /* sample size */
+{ MKTAG('s','t','t','s'), mov_read_stts },
+{ MKTAG('t','k','h','d'), mov_read_tkhd }, /* track header */
+{ MKTAG('t','f','h','d'), mov_read_tfhd }, /* track fragment header */
+{ MKTAG('t','r','a','k'), mov_read_trak },
+{ MKTAG('t','r','a','f'), mov_read_default },
+{ MKTAG('t','r','e','x'), mov_read_trex },
+{ MKTAG('t','r','u','n'), mov_read_trun },
+{ MKTAG('u','d','t','a'), mov_read_udta },
+{ MKTAG('w','a','v','e'), mov_read_wave },
+{ MKTAG('e','s','d','s'), mov_read_esds },
+{ MKTAG('w','i','d','e'), mov_read_wide }, /* place holder */
+{ MKTAG('c','m','o','v'), mov_read_cmov },
 { 0, NULL }
 };
 
@@ -1677,24 +1677,24 @@ static int mov_probe(AVProbeData *p)
         tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
-        case MKTAG( 'j', 'P', ' ', ' ' ): /* jpeg 2000 signature */
-        case MKTAG( 'm', 'o', 'o', 'v' ):
-        case MKTAG( 'm', 'd', 'a', 't' ):
-        case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
-        case MKTAG( 'u', 'd', 't', 'a' ): /* Packet Video PVAuthor adds this and a lot of more junk */
+        case MKTAG('j','P',' ',' '): /* jpeg 2000 signature */
+        case MKTAG('m','o','o','v'):
+        case MKTAG('m','d','a','t'):
+        case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
+        case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
             return AVPROBE_SCORE_MAX;
         /* those are more common words, so rate then a bit less */
-        case MKTAG( 'e', 'd', 'i', 'w' ): /* xdcam files have reverted first tags */
-        case MKTAG( 'w', 'i', 'd', 'e' ):
-        case MKTAG( 'f', 'r', 'e', 'e' ):
-        case MKTAG( 'j', 'u', 'n', 'k' ):
-        case MKTAG( 'p', 'i', 'c', 't' ):
+        case MKTAG('e','d','i','w'): /* xdcam files have reverted first tags */
+        case MKTAG('w','i','d','e'):
+        case MKTAG('f','r','e','e'):
+        case MKTAG('j','u','n','k'):
+        case MKTAG('p','i','c','t'):
             return AVPROBE_SCORE_MAX - 5;
         case MKTAG(0x82,0x82,0x7f,0x7d ):
-        case MKTAG( 'f', 't', 'y', 'p' ):
-        case MKTAG( 's', 'k', 'i', 'p' ):
-        case MKTAG( 'u', 'u', 'i', 'd' ):
-        case MKTAG( 'p', 'r', 'f', 'l' ):
+        case MKTAG('f','t','y','p'):
+        case MKTAG('s','k','i','p'):
+        case MKTAG('u','u','i','d'):
+        case MKTAG('p','r','f','l'):
             offset = AV_RB32(p->buf+offset) + offset;
             /* if we only find those cause probedata is too small at least rate them */
             score = AVPROBE_SCORE_MAX - 50;
