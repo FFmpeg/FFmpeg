@@ -316,7 +316,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
     if(!ctype)
         c->isom = 1;
-    if (type == MKTAG('v','i','d','e'))
+    if     (type == MKTAG('v','i','d','e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
     else if(type == MKTAG('s','o','u','n'))
         st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -629,15 +629,13 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc->chunk_offsets = av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
         return -1;
-    if (atom.type == MKTAG('s','t','c','o')) {
-        for(i=0; i<entries; i++) {
+    if      (atom.type == MKTAG('s','t','c','o'))
+        for(i=0; i<entries; i++)
             sc->chunk_offsets[i] = get_be32(pb);
-        }
-    } else if (atom.type == MKTAG('c','o','6','4')) {
-        for(i=0; i<entries; i++) {
+    else if (atom.type == MKTAG('c','o','6','4'))
+        for(i=0; i<entries; i++)
             sc->chunk_offsets[i] = get_be64(pb);
-        }
-    } else
+    else
         return -1;
 
     return 0;
