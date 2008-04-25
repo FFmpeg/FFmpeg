@@ -648,18 +648,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int entries, frames_per_sample;
     uint32_t format;
     uint8_t codec_name[32];
-
-    /* for palette traversal */
     unsigned int color_depth;
-    unsigned int color_start;
-    unsigned int color_count;
-    unsigned int color_end;
-    int color_index;
-    int color_dec;
     int color_greyscale;
-    const uint8_t *color_table;
     int j, pseudo_stream_id;
-    unsigned char r, g, b;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -752,7 +743,12 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             /* if the depth is 2, 4, or 8 bpp, file is palettized */
             if ((color_depth == 2) || (color_depth == 4) ||
                 (color_depth == 8)) {
+                /* for palette traversal */
+                unsigned int color_start, color_count, color_end;
+                unsigned char r, g, b;
+
                 if (color_greyscale) {
+                    int color_index, color_dec;
                     /* compute the greyscale palette */
                     st->codec->bits_per_sample = color_depth;
                     color_count = 1 << color_depth;
@@ -767,6 +763,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                             color_index = 0;
                     }
                 } else if (st->codec->color_table_id) {
+                    const uint8_t *color_table;
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
                     if (color_depth == 2)
