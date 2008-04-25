@@ -121,9 +121,8 @@ AVCodec libgsm_ms_encoder = {
 static int libgsm_decode_frame(AVCodecContext *avctx,
                                void *data, int *data_size,
                                uint8_t *buf, int buf_size) {
-
-    if(buf_size < avctx->block_align) return 0;
-
+    *data_size = 0; /* In case of error */
+    if(buf_size < avctx->block_align) return -1;
     switch(avctx->codec_id) {
     case CODEC_ID_GSM:
         if(gsm_decode(avctx->priv_data,buf,data)) return -1;
