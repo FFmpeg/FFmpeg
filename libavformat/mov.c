@@ -669,12 +669,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = st->priv_data;
-    int entries, frames_per_sample;
-    uint32_t format;
-    uint8_t codec_name[32];
-    unsigned int color_depth;
-    int color_greyscale;
-    int j, pseudo_stream_id;
+    int j, entries, pseudo_stream_id;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -688,7 +683,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         MOV_atom_t a = { 0, 0, 0 };
         offset_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
-        format = get_le32(pb); /* data format */
+        uint32_t format = get_le32(pb); /* data format */
 
         get_be32(pb); /* reserved */
         get_be16(pb); /* reserved */
@@ -733,6 +728,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 (format >> 24) & 0xff, st->codec->codec_type);
 
         if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
+            uint8_t codec_name[32];
+            unsigned int color_depth;
+            int color_greyscale;
+            int frames_per_sample;
+
             st->codec->codec_id = id;
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
