@@ -923,7 +923,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         break;
     case CODEC_ID_QCELP:
     case CODEC_ID_AMR_NB:
-        st->codec->frame_size = sc->samples_per_frame;
+        st->codec->frame_size= sc->samples_per_frame;
         st->codec->sample_rate= 8000;
         st->codec->channels= 1; /* really needed */
         break;
