@@ -163,7 +163,7 @@ static int flv_write_header(AVFormatContext *s)
             if(get_audio_flags(enc)<0)
                 return -1;
         }
-        av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
+        av_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
     }
     put_tag(pb,"FLV");
     put_byte(pb,1);
