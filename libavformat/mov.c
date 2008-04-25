@@ -27,6 +27,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "dv.h"
+#include "mpeg4audio.h"
 
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
@@ -361,6 +362,14 @@ static int mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
 #define MP4DecConfigDescrTag            0x04
 #define MP4DecSpecificDescrTag          0x05
 
+static const AVCodecTag mp4_audio_types[] = {
+    { CODEC_ID_MP3ON4, 29 }, /* old mp3on4 draft */
+    { CODEC_ID_MP3ON4, 32 }, /* layer 1 */
+    { CODEC_ID_MP3ON4, 33 }, /* layer 2 */
+    { CODEC_ID_MP3ON4, 34 }, /* layer 3 */
+    { CODEC_ID_NONE,    0 },
+};
+
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
@@ -394,9 +403,13 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 return AVERROR(ENOMEM);
             get_buffer(pb, st->codec->extradata, len);
             st->codec->extradata_size = len;
-            /* from mplayer */
-            if ((*st->codec->extradata >> 3) == 29) {
-                st->codec->codec_id = CODEC_ID_MP3ON4;
+            if (st->codec->codec_id == CODEC_ID_AAC) {
+                MPEG4AudioConfig cfg;
+                ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
+                                         st->codec->extradata_size);
+                if (!(st->codec->codec_id = codec_get_id(mp4_audio_types,
+                                                         cfg.object_type)))
+                    st->codec->codec_id = CODEC_ID_AAC;
             }
         }
     }
