@@ -280,7 +280,8 @@ static int flv_read_header(AVFormatContext *s,
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, pts, flags, is_audio, next, pos;
+    int ret, i, type, size, flags, is_audio, next, pos;
+    unsigned pts;
     AVStream *st = NULL;
 
  for(;;){
