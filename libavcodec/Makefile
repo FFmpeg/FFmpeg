@@ -310,10 +310,10 @@ OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o
+OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
-OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBA52)                  += liba52.o
