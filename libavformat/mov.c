@@ -451,7 +451,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int lang;
 
     if (version > 1)
-        return 1; /* unsupported */
+        return -1; /* unsupported */
 
     get_be24(pb); /* flags */
     if (version == 1) {
