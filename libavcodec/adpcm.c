@@ -922,38 +922,38 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_ADPCM_IMA_QT:
         n = buf_size - 2*avctx->channels;
         for (channel = 0; channel < avctx->channels; channel++) {
-        cs = &(c->status[channel]);
-        /* (pppppp) (piiiiiii) */
+            cs = &(c->status[channel]);
+            /* (pppppp) (piiiiiii) */
 
-        /* Bits 15-7 are the _top_ 9 bits of the 16-bit initial predictor value */
-        cs->predictor = (*src++) << 8;
-        cs->predictor |= (*src & 0x80);
-        cs->predictor &= 0xFF80;
+            /* Bits 15-7 are the _top_ 9 bits of the 16-bit initial predictor value */
+            cs->predictor = (*src++) << 8;
+            cs->predictor |= (*src & 0x80);
+            cs->predictor &= 0xFF80;
 
-        /* sign extension */
-        if(cs->predictor & 0x8000)
-            cs->predictor -= 0x10000;
+            /* sign extension */
+            if(cs->predictor & 0x8000)
+                cs->predictor -= 0x10000;
 
-        cs->predictor = av_clip_int16(cs->predictor);
+            cs->predictor = av_clip_int16(cs->predictor);
 
-        cs->step_index = (*src++) & 0x7F;
+            cs->step_index = (*src++) & 0x7F;
 
-        if (cs->step_index > 88){
-            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
-            cs->step_index = 88;
-        }
+            if (cs->step_index > 88){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
+                cs->step_index = 88;
+            }
 
-        cs->step = step_table[cs->step_index];
+            cs->step = step_table[cs->step_index];
 
-        samples = (short*)data + channel;
+            samples = (short*)data + channel;
 
-        for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
-            *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F, 3);
-            samples += avctx->channels;
-            *samples = adpcm_ima_expand_nibble(cs, src[0] >> 4  , 3);
-            samples += avctx->channels;
-            src ++;
-        }
+            for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
+                *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F, 3);
+                samples += avctx->channels;
+                *samples = adpcm_ima_expand_nibble(cs, src[0] >> 4  , 3);
+                samples += avctx->channels;
+                src ++;
+            }
         }
         if (st)
             samples--;
