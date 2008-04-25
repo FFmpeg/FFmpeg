@@ -134,7 +134,6 @@ do_libav()
     file=${outfile}libav.$1
     do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src $2 $file
     do_ffmpeg_crc $file -i $file $3
-
 }
 
 do_streamed_images()
