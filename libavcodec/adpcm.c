@@ -921,8 +921,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
-        n = (buf_size - 2);/* >> 2*avctx->channels;*/
-        channel = c->channel;
+        n = buf_size - 2*avctx->channels;
+        for (channel = 0; channel < avctx->channels; channel++) {
         cs = &(c->status[channel]);
         /* (pppppp) (piiiiiii) */
 
@@ -946,8 +946,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         cs->step = step_table[cs->step_index];
 
-        if (st && channel)
-            samples++;
+        samples = (short*)data + channel;
 
         for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
             *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F, 3);
@@ -956,14 +955,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             samples += avctx->channels;
             src ++;
         }
-
-        if(st) { /* handle stereo interlacing */
-            c->channel = (channel + 1) % 2; /* we get one packet for left, then one for right data */
-            if(!channel) { /* wait for the other packet before outputing anything */
-                return src - buf;
-            }
-            samples--;
         }
+        if (st)
+            samples--;
         break;
     case CODEC_ID_ADPCM_IMA_WAV:
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
