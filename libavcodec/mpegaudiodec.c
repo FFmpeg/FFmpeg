@@ -2581,12 +2581,9 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     for (fr = 0; fr < s->frames; fr++) {
         start = start2;
         fsize = (start[0] << 4) | (start[1] >> 4);
+        fsize = FFMIN3(fsize, len, MPA_MAX_CODED_FRAME_SIZE);
         start2 += fsize;
-        if (fsize > len)
-            fsize = len;
         len -= fsize;
-        if (fsize > MPA_MAX_CODED_FRAME_SIZE)
-            fsize = MPA_MAX_CODED_FRAME_SIZE;
         m = s->mp3decctx[fr];
         assert (m != NULL);
 
