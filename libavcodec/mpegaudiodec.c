@@ -2596,11 +2596,10 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         }
 
         ff_mpegaudio_decode_header(m, header);
-        mp_decode_frame(m, decoded_buf, start, fsize);
+        out_size += mp_decode_frame(m, decoded_buf, start, fsize);
 
-        n = MPA_FRAME_SIZE * m->nb_channels;
-        out_size += n * sizeof(OUT_INT);
         if(s->frames > 1) {
+            n = m->avctx->frame_size*m->nb_channels;
             /* interleave output data */
             bp = out_samples + coff[fr];
             if(m->nb_channels == 1) {
