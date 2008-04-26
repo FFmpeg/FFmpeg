@@ -2573,7 +2573,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     OUT_INT *outptr, *bp;
     int fsize;
     int fr, i, j, n;
-    int off = avctx->channels;
 
     len = buf_size;
 
@@ -2610,13 +2609,13 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
             if(m->nb_channels == 1) {
                 for(j = 0; j < n; j++) {
                     *bp = decoded_buf[j];
-                    bp += off;
+                    bp += avctx->channels;
                 }
             } else {
                 for(j = 0; j < n; j++) {
                     bp[0] = decoded_buf[j++];
                     bp[1] = decoded_buf[j];
-                    bp += off;
+                    bp += avctx->channels;
                 }
             }
         }
