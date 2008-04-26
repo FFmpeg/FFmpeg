@@ -110,7 +110,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     ctx->prev_index = 0;
     ctx->cur_index = 15;
 
-    if(init_vlc(&ctx->vlc, 8, sizeof(huffbits)/sizeof(huffbits[0]),
+    if(init_vlc(&ctx->vlc, 11, sizeof(huffbits)/sizeof(huffbits[0]),
                  huffbits, 1, 1, huffcodes, 4, 4, 0)) {
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return -1;
@@ -172,7 +172,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         int value;
         int coeff;
 
-        vlc = get_vlc2(&ctx->gb, ctx->vlc.table, ctx->vlc.bits, 4);
+        vlc = get_vlc2(&ctx->gb, ctx->vlc.table, ctx->vlc.bits, 3);
         if(!vlc) /* end-of-block code */
             return 1;
         if(vlc == -1)
