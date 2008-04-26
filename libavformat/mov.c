@@ -1812,6 +1812,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->sample_to_ctime_sample = 0;
         }
     } else {
+        AVStream *st = s->streams[sc->ffindex];
+        int64_t next_dts = (sc->current_sample < sc->sample_count) ?
+            st->index_entries[sc->current_sample].timestamp : st->duration;
+        pkt->duration = next_dts - pkt->dts;
         pkt->pts = pkt->dts;
     }
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
