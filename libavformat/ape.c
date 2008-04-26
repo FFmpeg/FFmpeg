@@ -156,7 +156,6 @@ static void ape_parse_tag(AVFormatContext *s)
 
     get_buffer(pb, buf, 8);    /* APETAGEX */
     if (strncmp(buf, "APETAGEX", 8)) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid APE Tags\n");
         return;
     }
 
