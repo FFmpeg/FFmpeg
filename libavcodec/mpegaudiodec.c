@@ -2563,7 +2563,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
     OUT_INT *outptr, *bp;
     int fsize;
-    const unsigned char *start2 = buf, *start;
     int fr, i, j, n;
     int off = avctx->channels;
     const uint8_t *coff = chan_offset[s->chan_cfg];
@@ -2579,16 +2578,13 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     outptr = s->frames == 1 ? out_samples : decoded_buf;
 
     for (fr = 0; fr < s->frames; fr++) {
-        start = start2;
-        fsize = AV_RB16(start) >> 4;
+        fsize = AV_RB16(buf) >> 4;
         fsize = FFMIN3(fsize, len, MPA_MAX_CODED_FRAME_SIZE);
-        start2 += fsize;
-        len -= fsize;
         m = s->mp3decctx[fr];
         assert (m != NULL);
 
         // Get header
-        header = AV_RB32(start) | 0xfff00000;
+        header = AV_RB32(buf) | 0xfff00000;
 
         if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
             *data_size = 0;
@@ -2596,7 +2592,9 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         }
 
         ff_mpegaudio_decode_header(m, header);
-        out_size += mp_decode_frame(m, decoded_buf, start, fsize);
+        out_size += mp_decode_frame(m, decoded_buf, buf, fsize);
+        buf += fsize;
+        len -= fsize;
 
         if(s->frames > 1) {
             n = m->avctx->frame_size*m->nb_channels;
