@@ -2476,10 +2476,10 @@ static int decode_frame_adu(AVCodecContext * avctx,
 
 #ifdef CONFIG_MP3ON4_DECODER
 /* Next 3 arrays are indexed by channel config number (passed via codecdata) */
-static int mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
-static int mp3Channels[16] = {0,1,2,3,4,5,6,8,4}; /* total output channels */
+static const int mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
+static const int mp3Channels[16] = {0,1,2,3,4,5,6,8,4}; /* total output channels */
 /* offsets into output buffer, assume output order is FL FR BL BR C LFE */
-static int chan_offset[9][5] = {
+static const int chan_offset[9][5] = {
     {0},
     {0},            // C
     {0},            // FLR
@@ -2566,7 +2566,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     const unsigned char *start2 = buf, *start;
     int fr, i, j, n;
     int off = avctx->channels;
-    int *coff = chan_offset[s->chan_cfg];
+    const int *coff = chan_offset[s->chan_cfg];
 
     len = buf_size;
 
