@@ -2591,10 +2591,8 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
-        if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
-            *data_size = 0;
-            return buf_size;
-        }
+        if (ff_mpa_check_header(header) < 0) // Bad header, discard block
+            break;
 
         ff_mpegaudio_decode_header(m, header);
         out_size += mp_decode_frame(m, outptr, buf, fsize);
