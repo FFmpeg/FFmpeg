@@ -2566,12 +2566,11 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     MPADecodeContext *m;
-    int len, out_size = 0;
+    int len, fsize, out_size = 0;
     uint32_t header;
     OUT_INT *out_samples = data;
     OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
     OUT_INT *outptr, *bp;
-    int fsize;
     int fr, j, n;
 
     len = buf_size;
