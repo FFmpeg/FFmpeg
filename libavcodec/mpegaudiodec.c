@@ -2472,8 +2472,8 @@ static int decode_frame_adu(AVCodecContext * avctx,
  */
 typedef struct MP3On4DecodeContext {
     int frames;   ///< number of mp3 frames per block (number of mp3 decoder instances)
-    int chan_cfg; ///< channel config number
     int syncword; ///< syncword patch
+    const uint8_t *coff; ///< channels offsets in output buffer
     MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
 } MP3On4DecodeContext;
 
@@ -2510,9 +2510,9 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
         return -1;
     }
-    s->chan_cfg = cfg.chan_config;
-    s->frames = mp3Frames[s->chan_cfg];
-    avctx->channels = ff_mpeg4audio_channels[s->chan_cfg];
+    s->frames = mp3Frames[cfg.chan_config];
+    s->coff = chan_offset[cfg.chan_config];
+    avctx->channels = ff_mpeg4audio_channels[cfg.chan_config];
 
     if (cfg.sample_rate < 16000)
         s->syncword = 0xffe00000;
@@ -2574,7 +2574,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     int fsize;
     int fr, i, j, n;
     int off = avctx->channels;
-    const uint8_t *coff = chan_offset[s->chan_cfg];
 
     len = buf_size;
 
@@ -2607,7 +2606,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         if(s->frames > 1) {
             n = m->avctx->frame_size*m->nb_channels;
             /* interleave output data */
-            bp = out_samples + coff[fr];
+            bp = out_samples + s->coff[fr];
             if(m->nb_channels == 1) {
                 for(j = 0; j < n; j++) {
                     *bp = decoded_buf[j];
