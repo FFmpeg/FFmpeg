@@ -2475,9 +2475,11 @@ static int decode_frame_adu(AVCodecContext * avctx,
 #endif /* CONFIG_MP3ADU_DECODER */
 
 #ifdef CONFIG_MP3ON4_DECODER
+
+#include "mpeg4audio.h"
+
 /* Next 3 arrays are indexed by channel config number (passed via codecdata) */
 static const uint8_t mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
-static const uint8_t mp3Channels[16] = {0,1,2,3,4,5,6,8,4}; /* total output channels */
 /* offsets into output buffer, assume output order is FL FR BL BR C LFE */
 static const uint8_t chan_offset[9][5] = {
     {0},
@@ -2495,6 +2497,7 @@ static const uint8_t chan_offset[9][5] = {
 static int decode_init_mp3on4(AVCodecContext * avctx)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
+    MPEG4AudioConfig cfg;
     int i;
 
     if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
@@ -2502,13 +2505,14 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
         return -1;
     }
 
-    s->chan_cfg = (((unsigned char *)avctx->extradata)[1] >> 3) & 0x0f;
-    s->frames = mp3Frames[s->chan_cfg];
-    if(!s->frames) {
+    ff_mpeg4audio_get_config(&cfg, avctx->extradata, avctx->extradata_size);
+    if (!cfg.chan_config || cfg.chan_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
         return -1;
     }
-    avctx->channels = mp3Channels[s->chan_cfg];
+    s->chan_cfg = cfg.chan_config;
+    s->frames = mp3Frames[s->chan_cfg];
+    avctx->channels = ff_mpeg4audio_channels[s->chan_cfg];
 
     /* Init the first mp3 decoder in standard way, so that all tables get builded
      * We replace avctx->priv_data with the context of the first decoder so that
