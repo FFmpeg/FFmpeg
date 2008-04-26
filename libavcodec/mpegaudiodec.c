@@ -62,6 +62,7 @@
 typedef struct MP3On4DecodeContext {
     int frames;   ///< number of mp3 frames per block (number of mp3 decoder instances)
     int chan_cfg; ///< channel config number
+    int syncword; ///< syncword patch
     MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
 } MP3On4DecodeContext;
 
@@ -2513,6 +2514,11 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
     s->frames = mp3Frames[s->chan_cfg];
     avctx->channels = ff_mpeg4audio_channels[s->chan_cfg];
 
+    if (cfg.sample_rate < 16000)
+        s->syncword = 0xffe00000;
+    else
+        s->syncword = 0xfff00000;
+
     /* Init the first mp3 decoder in standard way, so that all tables get builded
      * We replace avctx->priv_data with the context of the first decoder so that
      * decode_init() does not have to be changed.
@@ -2586,8 +2592,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         m = s->mp3decctx[fr];
         assert (m != NULL);
 
-        // Get header
-        header = AV_RB32(buf) | 0xfff00000;
+        header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
         if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
             *data_size = 0;
