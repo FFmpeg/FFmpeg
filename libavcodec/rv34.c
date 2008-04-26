@@ -667,6 +667,22 @@ static void rv34_mc_2mv(RV34DecContext *r, const int block_type)
             r->s.dsp.avg_h264_chroma_pixels_tab);
 }
 
+static void rv34_mc_2mv_skip(RV34DecContext *r)
+{
+    int i, j, k;
+    for(j = 0; j < 2; j++)
+        for(i = 0; i < 2; i++){
+             rv34_mc(r, RV34_MB_P_8x8, i*8, j*8, i+j*r->s.b8_stride, 1, 1, 0, r->rv30,
+                    r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
+                            : r->s.dsp.put_h264_qpel_pixels_tab,
+                    r->s.dsp.put_h264_chroma_pixels_tab);
+             rv34_mc(r, RV34_MB_P_8x8, i*8, j*8, i+j*r->s.b8_stride, 1, 1, 1, r->rv30,
+                    r->rv30 ? r->s.dsp.avg_rv30_tpel_pixels_tab
+                            : r->s.dsp.avg_h264_qpel_pixels_tab,
+                    r->s.dsp.avg_h264_chroma_pixels_tab);
+        }
+}
+
 /** number of motion vectors in each macroblock type */
 static const int num_mvs[RV34_MB_TYPES] = { 0, 0, 1, 4, 1, 1, 0, 0, 2, 2, 2, 1 };
 
@@ -678,7 +694,9 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
 {
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    int i;
+    int i, j, k;
+    int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
+    int next_bt;
 
     memset(r->dmv, 0, sizeof(r->dmv));
     for(i = 0; i < num_mvs[block_type]; i++){
@@ -697,9 +715,19 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
             break;
         }
     case RV34_MB_B_DIRECT:
-        rv34_pred_mv_b  (r, RV34_MB_B_DIRECT, 0);
-        rv34_pred_mv_b  (r, RV34_MB_B_DIRECT, 1);
-        rv34_mc_2mv     (r, RV34_MB_B_DIRECT);
+        //surprisingly, it uses motion scheme from next reference frame
+        next_bt = s->next_picture_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
+        for(j = 0; j < 2; j++)
+            for(i = 0; i < 2; i++)
+                for(k = 0; k < 2; k++){
+                    s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] =  (s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] + 1) >> 1;
+                    s->current_picture_ptr->motion_val[1][mv_pos + i + j*s->b8_stride][k] = -(s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] >> 1);
+                }
+        if(IS_16X16(next_bt)) //we can use whole macroblock MC
+            rv34_mc_2mv(r, block_type);
+        else
+            rv34_mc_2mv_skip(r);
+        fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
         break;
     case RV34_MB_P_16x16:
     case RV34_MB_P_MIX16x16:
