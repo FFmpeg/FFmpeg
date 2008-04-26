@@ -49,10 +49,10 @@ int ff_exp2(uint16_t power);
 int ff_log2(uint32_t value);
 
 /**
- * \brief Calculates sum of array elements multiplications
- * \param speech array with input data
- * \param length number elements to proceed
- * \param offset offset for calculation sum of s[i]*s[i+offset]
+ * \brief Calculates sum of array element multiplications
+ * \param speech input data array
+ * \param length number of elements
+ * \param offset offset for calculation of sum of s[i]*s[i+offset]
  * \param shift right shift by this value will be done before multiplication
  *
  * \return sum of multiplications
