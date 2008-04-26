@@ -2570,11 +2570,10 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 
     len = buf_size;
 
+    *data_size = 0;
     // Discard too short frames
-    if (buf_size < HEADER_SIZE) {
-        *data_size = 0;
-        return buf_size;
-    }
+    if (buf_size < HEADER_SIZE)
+        return -1;
 
     // If only one decoder interleave is not needed
     outptr = s->frames == 1 ? out_samples : decoded_buf;
