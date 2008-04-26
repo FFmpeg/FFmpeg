@@ -56,16 +56,6 @@
 
 #define HEADER_SIZE 4
 
-/**
- * Context for MP3On4 decoder
- */
-typedef struct MP3On4DecodeContext {
-    int frames;   ///< number of mp3 frames per block (number of mp3 decoder instances)
-    int chan_cfg; ///< channel config number
-    int syncword; ///< syncword patch
-    MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
-} MP3On4DecodeContext;
-
 /* layer 3 "granule" */
 typedef struct GranuleDef {
     uint8_t scfsi;
@@ -2476,6 +2466,16 @@ static int decode_frame_adu(AVCodecContext * avctx,
 #endif /* CONFIG_MP3ADU_DECODER */
 
 #ifdef CONFIG_MP3ON4_DECODER
+
+/**
+ * Context for MP3On4 decoder
+ */
+typedef struct MP3On4DecodeContext {
+    int frames;   ///< number of mp3 frames per block (number of mp3 decoder instances)
+    int chan_cfg; ///< channel config number
+    int syncword; ///< syncword patch
+    MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
+} MP3On4DecodeContext;
 
 #include "mpeg4audio.h"
 
