@@ -2572,7 +2572,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
     OUT_INT *outptr, *bp;
     int fsize;
-    int fr, i, j, n;
+    int fr, j, n;
 
     len = buf_size;
 
@@ -2583,6 +2583,8 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 
     // If only one decoder interleave is not needed
     outptr = s->frames == 1 ? out_samples : decoded_buf;
+
+    avctx->bit_rate = 0;
 
     for (fr = 0; fr < s->frames; fr++) {
         fsize = AV_RB16(buf) >> 4;
@@ -2619,13 +2621,11 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
                 }
             }
         }
+        avctx->bit_rate += m->bit_rate;
     }
 
     /* update codec info */
     avctx->sample_rate = s->mp3decctx[0]->sample_rate;
-    avctx->bit_rate = 0;
-    for (i = 0; i < s->frames; i++)
-        avctx->bit_rate += s->mp3decctx[i]->bit_rate;
 
     *data_size = out_size;
     return buf_size;
