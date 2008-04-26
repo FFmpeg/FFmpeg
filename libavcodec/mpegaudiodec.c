@@ -2479,9 +2479,9 @@ static int decode_frame_adu(AVCodecContext * avctx,
 #include "mpeg4audio.h"
 
 /* Next 3 arrays are indexed by channel config number (passed via codecdata) */
-static const uint8_t mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
+static const uint8_t mp3Frames[8] = {0,1,1,2,3,3,4,5};   /* number of mp3 decoder instances */
 /* offsets into output buffer, assume output order is FL FR BL BR C LFE */
-static const uint8_t chan_offset[9][5] = {
+static const uint8_t chan_offset[8][5] = {
     {0},
     {0},            // C
     {0},            // FLR
@@ -2490,7 +2490,6 @@ static const uint8_t chan_offset[9][5] = {
     {4,0,2},        // C FLR BLRS
     {4,0,2,5},      // C FLR BLRS LFE
     {4,0,2,6,5},    // C FLR BLRS BLR LFE
-    {0,2}           // FLR BLRS
 };
 
 
