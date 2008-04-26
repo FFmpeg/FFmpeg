@@ -2595,7 +2595,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         }
 
         ff_mpegaudio_decode_header(m, header);
-        out_size += mp_decode_frame(m, decoded_buf, buf, fsize);
+        out_size += mp_decode_frame(m, outptr, buf, fsize);
         buf += fsize;
         len -= fsize;
 
