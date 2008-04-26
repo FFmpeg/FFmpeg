@@ -371,7 +371,7 @@ endif
 # processor-specific code
 ifdef HAVE_MMX
 OBJS += i386/fdct_mmx.o \
-        i386/cputest.o \
+        i386/cpuid.o \
         i386/dsputil_mmx.o \
         i386/mpegvideo_mmx.o \
         i386/motion_est_mmx.o \
@@ -468,7 +468,7 @@ ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
                                           bfin/vp3_idct_bfin.o   \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
-TESTS-$(ARCH_X86) += i386/cputest-test$(EXESUF) motion-test$(EXESUF)
+TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
 DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
