@@ -1358,7 +1358,7 @@ if test $target_os = darwin; then
         add_cflags "-pipe"
         check_cflags "-force_cpusubtype_ALL"
         check_cflags "-Wno-sign-compare"
-        enabled shared || add_cflags -mdynamic-no-pic
+        enabled shared || check_cflags -mdynamic-no-pic
     fi
 fi
 
