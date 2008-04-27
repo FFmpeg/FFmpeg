@@ -172,6 +172,7 @@ AVCodec vcr1_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "ATI VCR1",
 };
 #if 0
 #ifdef CONFIG_ENCODERS
@@ -184,6 +185,7 @@ AVCodec vcr1_encoder = {
     encode_init,
     encode_frame,
     //encode_end,
+    .long_name = "ATI VCR1",
 };
 
 #endif //CONFIG_ENCODERS

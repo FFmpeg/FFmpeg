@@ -292,4 +292,5 @@ AVCodec vp5_decoder = {
     vp56_free,
     vp56_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "On2 VP5",
 };

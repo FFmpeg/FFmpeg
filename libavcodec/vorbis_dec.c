@@ -1634,5 +1634,6 @@ AVCodec vorbis_decoder = {
     NULL,
     vorbis_decode_close,
     vorbis_decode_frame,
+    .long_name = "Vorbis",
 };
 

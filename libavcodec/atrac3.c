@@ -1065,4 +1065,5 @@ AVCodec atrac3_decoder =
     .init = atrac3_decode_init,
     .close = atrac3_decode_close,
     .decode = atrac3_decode_frame,
+    .long_name = "Atrac 3 (Adaptive TRansform Acoustic Coding 3)",
 };

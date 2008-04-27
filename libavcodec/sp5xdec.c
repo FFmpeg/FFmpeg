@@ -198,7 +198,8 @@ AVCodec sp5x_decoder = {
     ff_mjpeg_decode_end,
     sp5x_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "Sunplus JPEG (SP5X)"
 };
 
 AVCodec amv_decoder = {
@@ -209,5 +210,6 @@ AVCodec amv_decoder = {
     ff_mjpeg_decode_init,
     NULL,
     ff_mjpeg_decode_end,
-    sp5x_decode_frame
+    sp5x_decode_frame,
+    .long_name = "AMV Video",
 };

@@ -141,4 +141,5 @@ AVCodec wnv1_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Winnov WNV1",
 };

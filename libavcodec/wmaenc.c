@@ -387,6 +387,7 @@ AVCodec wmav1_encoder =
     encode_init,
     encode_superframe,
     ff_wma_end,
+    .long_name = "Windows Media Audio 1",
 };
 
 AVCodec wmav2_encoder =
@@ -398,4 +399,5 @@ AVCodec wmav2_encoder =
     encode_init,
     encode_superframe,
     ff_wma_end,
+    .long_name = "Windows Media Audio 2",
 };

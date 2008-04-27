@@ -386,4 +386,5 @@ AVCodec mimic_decoder = {
     mimic_decode_end,
     mimic_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Mimic",
 };

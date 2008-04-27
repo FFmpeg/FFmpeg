@@ -640,6 +640,7 @@ AVCodec asv1_encoder = {
     encode_frame,
     //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "ASUS V1",
 };
 
 AVCodec asv2_encoder = {
@@ -651,6 +652,7 @@ AVCodec asv2_encoder = {
     encode_frame,
     //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "ASUS V2",
 };
 
 #endif //CONFIG_ENCODERS

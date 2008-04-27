@@ -250,4 +250,5 @@ AVCodec c93_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Interplay C93",
 };

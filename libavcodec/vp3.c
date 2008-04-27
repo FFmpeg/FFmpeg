@@ -2634,7 +2634,8 @@ AVCodec theora_decoder = {
     vp3_decode_end,
     vp3_decode_frame,
     0,
-    NULL
+    NULL,
+    .long_name = "Theora",
 };
 #endif
 
@@ -2648,5 +2649,6 @@ AVCodec vp3_decoder = {
     vp3_decode_end,
     vp3_decode_frame,
     0,
-    NULL
+    NULL,
+    .long_name = "On2 VP3",
 };

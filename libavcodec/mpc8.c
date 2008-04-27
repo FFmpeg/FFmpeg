@@ -361,4 +361,5 @@ AVCodec mpc8_decoder = {
     NULL,
     NULL,
     mpc8_decode_frame,
+    .long_name = "Musepack SV8",
 };

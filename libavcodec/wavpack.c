@@ -582,4 +582,5 @@ AVCodec wavpack_decoder = {
     NULL,
     NULL,
     wavpack_decode_frame,
+    .long_name = "WavPack",
 };

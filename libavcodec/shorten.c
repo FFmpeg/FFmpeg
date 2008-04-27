@@ -532,4 +532,5 @@ AVCodec shorten_decoder = {
     shorten_decode_close,
     shorten_decode_frame,
     .flush= shorten_flush,
+    .long_name= "Shorten",
 };

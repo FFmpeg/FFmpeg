@@ -190,4 +190,5 @@ AVCodec adpcm_adx_encoder = {
     adx_encode_frame,
     adx_encode_close,
     NULL,
+    .long_name = "SEGA CRI ADX",
 };

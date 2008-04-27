@@ -380,4 +380,5 @@ AVCodec truespeech_decoder = {
     NULL,
     NULL,
     truespeech_decode_frame,
+    .long_name = "DSP Group TrueSpeech",
 };

@@ -342,4 +342,5 @@ AVCodec dnxhd_decoder = {
     dnxhd_decode_close,
     dnxhd_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "VC3/DNxHD",
 };

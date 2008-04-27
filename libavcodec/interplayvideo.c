@@ -942,4 +942,5 @@ AVCodec interplay_video_decoder = {
     ipvideo_decode_end,
     ipvideo_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Interplay MVE Video",
 };

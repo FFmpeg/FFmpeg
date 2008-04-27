@@ -1363,7 +1363,8 @@ AVCodec mjpeg_decoder = {
     ff_mjpeg_decode_end,
     ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "MJPEG (Motion JPEG)",
 };
 
 AVCodec thp_decoder = {
@@ -1376,5 +1377,6 @@ AVCodec thp_decoder = {
     ff_mjpeg_decode_end,
     ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "Nintendo Gamecube THP video",
 };

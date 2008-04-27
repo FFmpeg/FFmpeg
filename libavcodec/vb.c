@@ -277,6 +277,7 @@ AVCodec vb_decoder = {
     decode_init,
     NULL,
     decode_end,
-    decode_frame
+    decode_frame,
+    .long_name = "Beam Software VB",
 };
 

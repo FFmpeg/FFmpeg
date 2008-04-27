@@ -1206,4 +1206,5 @@ AVCodec cook_decoder =
     .init = cook_decode_init,
     .close = cook_decode_close,
     .decode = cook_decode_frame,
+    .long_name = "COOK",
 };

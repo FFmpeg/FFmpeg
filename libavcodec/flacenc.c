@@ -1492,4 +1492,5 @@ AVCodec flac_encoder = {
     flac_encode_close,
     NULL,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
+    .long_name = "FLAC (Free Lossless Audio Codec)",
 };

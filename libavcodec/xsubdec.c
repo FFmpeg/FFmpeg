@@ -133,4 +133,5 @@ AVCodec xsub_decoder = {
     NULL,
     NULL,
     decode_frame,
+    .long_name = "XSUB",
 };

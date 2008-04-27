@@ -647,4 +647,5 @@ AVCodec h261_decoder = {
     h261_decode_end,
     h261_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "H.261",
 };

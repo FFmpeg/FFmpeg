@@ -619,4 +619,5 @@ AVCodec alac_decoder = {
     NULL,
     alac_decode_close,
     alac_decode_frame,
+    .long_name = "ALAC (Apple Lossless Audio Codec)",
 };

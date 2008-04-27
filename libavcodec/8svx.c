@@ -96,6 +96,7 @@ AVCodec eightsvx_fib_decoder = {
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
+  .long_name      = "8SVX fibonacci",
 };
 
 AVCodec eightsvx_exp_decoder = {
@@ -105,4 +106,5 @@ AVCodec eightsvx_exp_decoder = {
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
+  .long_name      = "8SVX exponential",
 };

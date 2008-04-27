@@ -180,6 +180,7 @@ AVCodec cyuv_decoder = {
     cyuv_decode_end,
     cyuv_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "Creative YUV (CYUV)",
 };
 
