@@ -620,5 +620,6 @@ AVCodec qtrle_decoder = {
     qtrle_decode_end,
     qtrle_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "QuickTime Animation (RLE) video",
 };
 

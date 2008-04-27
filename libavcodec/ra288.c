@@ -255,4 +255,5 @@ AVCodec ra_288_decoder =
     NULL,
     NULL,
     ra288_decode_frame,
+    .long_name = "RealAudio 2.0 (28.8K)",
 };

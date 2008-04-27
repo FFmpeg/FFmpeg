@@ -784,7 +784,8 @@ AVCodec rv10_decoder = {
     NULL,
     rv10_decode_end,
     rv10_decode_frame,
-    CODEC_CAP_DR1
+    CODEC_CAP_DR1,
+    .long_name = "RealVideo 1.0",
 };
 
 AVCodec rv20_decoder = {
@@ -798,5 +799,6 @@ AVCodec rv20_decoder = {
     rv10_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
+    .long_name = "RealVideo 2.0",
 };
 

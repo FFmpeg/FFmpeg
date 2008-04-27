@@ -503,6 +503,7 @@ AVCodec libamr_nb_decoder =
     NULL,
     amr_nb_decode_close,
     amr_nb_decode_frame,
+    .long_name = "libamr-nb Adaptive Multi-Rate (AMR) Narrow-Band",
 };
 
 AVCodec libamr_nb_encoder =
@@ -515,6 +516,7 @@ AVCodec libamr_nb_encoder =
     amr_nb_encode_frame,
     amr_nb_encode_close,
     NULL,
+    .long_name = "libamr-nb Adaptive Multi-Rate (AMR) Narrow-Band",
 };
 
 #endif
@@ -695,6 +697,7 @@ AVCodec libamr_wb_decoder =
     NULL,
     amr_wb_decode_close,
     amr_wb_decode_frame,
+    .long_name = "libamr-wb Adaptive Multi-Rate (AMR) Wide-Band",
 };
 
 AVCodec libamr_wb_encoder =
@@ -707,6 +710,7 @@ AVCodec libamr_wb_encoder =
     amr_wb_encode_frame,
     amr_wb_encode_close,
     NULL,
+    .long_name = "libamr-wb Adaptive Multi-Rate (AMR) Wide-Band",
 };
 
 #endif //CONFIG_LIBAMR_WB

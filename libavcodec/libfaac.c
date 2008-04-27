@@ -150,5 +150,6 @@ AVCodec libfaac_encoder = {
     sizeof(FaacAudioContext),
     Faac_encode_init,
     Faac_encode_frame,
-    Faac_encode_close
+    Faac_encode_close,
+    .long_name = "libfaac AAC (Advanced Audio Codec)",
 };

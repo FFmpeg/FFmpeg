@@ -410,5 +410,6 @@ AVCodec kmvc_decoder = {
     decode_init,
     NULL,
     decode_end,
-    decode_frame
+    decode_frame,
+    .long_name = "Karl Morton's video codec",
 };

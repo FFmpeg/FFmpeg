@@ -2038,4 +2038,5 @@ AVCodec qdm2_decoder =
     .init = qdm2_decode_init,
     .close = qdm2_decode_close,
     .decode = qdm2_decode_frame,
+    .long_name = "QDesign Music Codec 2",
 };

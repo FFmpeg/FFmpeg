@@ -1429,4 +1429,5 @@ AVCodec dvbsub_decoder = {
     NULL,
     dvbsub_close_decoder,
     dvbsub_decode,
+    .long_name = "DVB subtitles",
 };

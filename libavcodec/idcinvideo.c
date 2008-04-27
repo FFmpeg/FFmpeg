@@ -262,5 +262,6 @@ AVCodec idcin_decoder = {
     idcin_decode_end,
     idcin_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Id Quake II CIN video",
 };
 

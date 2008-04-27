@@ -174,4 +174,5 @@ AVCodec roq_dpcm_encoder = {
     roq_dpcm_encode_frame,
     roq_dpcm_encode_close,
     NULL,
+    .long_name = "Id RoQ audio",
 };

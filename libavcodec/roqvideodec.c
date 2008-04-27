@@ -219,4 +219,5 @@ AVCodec roq_decoder = {
     roq_decode_end,
     roq_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Id RoQ video",
 };

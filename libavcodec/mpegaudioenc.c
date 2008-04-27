@@ -796,6 +796,7 @@ AVCodec mp2_encoder = {
     MPA_encode_frame,
     MPA_encode_close,
     NULL,
+    .long_name = "MP2 (MPEG audio layer 2)",
 };
 
 #undef FIX

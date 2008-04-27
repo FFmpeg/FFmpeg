@@ -697,7 +697,8 @@ AVCodec smacker_decoder = {
     decode_init,
     NULL,
     decode_end,
-    decode_frame
+    decode_frame,
+    .long_name = "Smacker video",
 };
 
 AVCodec smackaud_decoder = {
@@ -708,6 +709,7 @@ AVCodec smackaud_decoder = {
     smka_decode_init,
     NULL,
     NULL,
-    smka_decode_frame
+    smka_decode_frame,
+    .long_name = "Smacker audio",
 };
 

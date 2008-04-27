@@ -323,4 +323,5 @@ AVCodec qtrle_encoder = {
     qtrle_encode_frame,
     qtrle_encode_end,
     .pix_fmts = (enum PixelFormat[]){PIX_FMT_RGB24, -1},
+    .long_name = "QuickTime Animation (RLE) video",
 };

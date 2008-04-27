@@ -228,4 +228,5 @@ AVCodec zlib_encoder = {
     encode_init,
     encode_frame,
     encode_end,
+    .long_name = "LCL (LossLess Codec Library) ZLIB",
 };

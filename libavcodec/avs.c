@@ -158,4 +158,5 @@ AVCodec avs_decoder = {
     NULL,
     avs_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "AVS (Audio Video Standard) video",
 };

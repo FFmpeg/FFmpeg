@@ -410,6 +410,7 @@ AVCodec ulti_decoder = {
     ulti_decode_end,
     ulti_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "IBM UltiMotion",
 };
 

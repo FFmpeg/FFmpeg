@@ -2640,6 +2640,7 @@ AVCodec mp2_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
+    .long_name= "MP2 (MPEG audio layer 2)",
 };
 #endif
 #ifdef CONFIG_MP3_DECODER
@@ -2655,6 +2656,7 @@ AVCodec mp3_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
+    .long_name= "MP3 (MPEG audio layer 3)",
 };
 #endif
 #ifdef CONFIG_MP3ADU_DECODER
@@ -2670,6 +2672,7 @@ AVCodec mp3adu_decoder =
     decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
+    .long_name= "ADU (Application Data Unit) MP3 (MPEG audio layer 3)",
 };
 #endif
 #ifdef CONFIG_MP3ON4_DECODER
@@ -2684,5 +2687,6 @@ AVCodec mp3on4_decoder =
     decode_close_mp3on4,
     decode_frame_mp3on4,
     .flush= flush,
+    .long_name= "MP3onMP4",
 };
 #endif

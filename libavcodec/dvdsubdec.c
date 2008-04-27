@@ -506,4 +506,5 @@ AVCodec dvdsub_decoder = {
     NULL,
     NULL,
     dvdsub_decode,
+    .long_name = "DVD subtitles",
 };

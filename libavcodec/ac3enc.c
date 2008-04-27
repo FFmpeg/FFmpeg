@@ -1363,4 +1363,5 @@ AVCodec ac3_encoder = {
     AC3_encode_frame,
     AC3_encode_close,
     NULL,
+    .long_name = "ATSC A/52 / AC-3",
 };

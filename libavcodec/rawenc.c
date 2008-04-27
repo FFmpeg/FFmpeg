@@ -51,4 +51,5 @@ AVCodec rawvideo_encoder = {
     sizeof(AVFrame),
     raw_init_encoder,
     raw_encode,
+    .long_name = "raw video",
 };

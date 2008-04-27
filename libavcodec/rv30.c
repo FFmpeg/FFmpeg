@@ -144,4 +144,5 @@ AVCodec rv30_decoder = {
     ff_rv34_decode_end,
     ff_rv34_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .long_name = "RealVideo 3.0",
 };

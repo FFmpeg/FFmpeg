@@ -230,4 +230,5 @@ AVCodec eightbps_decoder = {
         decode_end,
         decode_frame,
         CODEC_CAP_DR1,
+        .long_name = "QuickTime 8BPS video",
 };
