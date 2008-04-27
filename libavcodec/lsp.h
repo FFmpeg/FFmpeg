@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ACELP_LPC_H
-#define FFMPEG_ACELP_LPC_H
+#ifndef FFMPEG_LSP_H
+#define FFMPEG_LSP_H
 /**
   (I.F) means fixed-point value with F fractional and I integer bits
 */
@@ -60,4 +60,4 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp);
  */
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev);
 
-#endif // FFMPEG_ACELP_LPC_H
+#endif /* FFMPEG_LSP_H */
