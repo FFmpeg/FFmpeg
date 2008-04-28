@@ -496,6 +496,19 @@ AVInputFormat aac_demuxer = {
     .value = CODEC_ID_AAC,
 };
 
+AVInputFormat gsm_demuxer = {
+    "gsm",
+    "GSM",
+    0,
+    NULL,
+    audio_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "gsm",
+    .value = CODEC_ID_GSM,
+};
+
 #ifdef CONFIG_ROQ_MUXER
 AVOutputFormat roq_muxer =
 {
