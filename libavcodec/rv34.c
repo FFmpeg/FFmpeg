@@ -466,19 +466,21 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     }
 }
 
+#define GET_PTS_DIFF(a, b) ((a - b + 8192) & 0x1FFF)
+
 /**
  * Calculate motion vector component that should be added for direct blocks.
  */
-static int calc_add_mv(MpegEncContext *s, int dir, int component)
+static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
-    int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
-    int sum;
+    int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
+    int dist = dir ? GET_PTS_DIFF(r->next_pts, r->cur_pts) : GET_PTS_DIFF(r->cur_pts, r->last_pts);
 
-    sum = (s->next_picture_ptr->motion_val[0][mv_pos][component] +
-           s->next_picture_ptr->motion_val[0][mv_pos + 1][component] +
-           s->next_picture_ptr->motion_val[0][mv_pos + s->b8_stride][component] +
-           s->next_picture_ptr->motion_val[0][mv_pos + s->b8_stride + 1][component]) >> 2;
-    return dir ? -(sum >> 1) : ((sum + 1) >> 1);
+    if(!refdist) return 0;
+    if(!dir)
+        return (val * dist + refdist - 1) / refdist;
+    else
+        return -(val * dist / refdist);
 }
 
 /**
@@ -545,10 +547,6 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     mx += r->dmv[dir][0];
     my += r->dmv[dir][1];
 
-    if(block_type == RV34_MB_B_DIRECT){
-        mx += calc_add_mv(s, dir, 0);
-        my += calc_add_mv(s, dir, 1);
-    }
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
             cur_pic->motion_val[dir][mv_pos + i + j*s->b8_stride][0] = mx;
@@ -694,7 +692,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
 {
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    int i, j, k;
+    int i, j, k, l;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
     int next_bt;
 
@@ -719,10 +717,9 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         next_bt = s->next_picture_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
         for(j = 0; j < 2; j++)
             for(i = 0; i < 2; i++)
-                for(k = 0; k < 2; k++){
-                    s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] =  (s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] + 1) >> 1;
-                    s->current_picture_ptr->motion_val[1][mv_pos + i + j*s->b8_stride][k] = -(s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k] >> 1);
-                }
+                for(k = 0; k < 2; k++)
+                    for(l = 0; l < 2; l++)
+                        s->current_picture_ptr->motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k]);
         if(IS_16X16(next_bt)) //we can use whole macroblock MC
             rv34_mc_2mv(r, block_type);
         else
@@ -1104,7 +1101,8 @@ static inline int slice_compare(SliceInfo *si1, SliceInfo *si2)
     return si1->type   != si2->type  ||
            si1->start  >= si2->start ||
            si1->width  != si2->width ||
-           si1->height != si2->height;
+           si1->height != si2->height||
+           si1->pts    != si2->pts;
 }
 
 static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_size)
@@ -1140,6 +1138,11 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
             return -1;
         ff_er_frame_start(s);
         s->current_picture_ptr = &s->current_picture;
+        r->cur_pts = r->si.pts;
+        if(s->pict_type != FF_B_TYPE){
+            r->last_pts = r->next_pts;
+            r->next_pts = r->cur_pts;
+        }
         s->mb_x = s->mb_y = 0;
     }
 

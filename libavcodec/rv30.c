@@ -47,7 +47,7 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
         return -1;
     si->quant = get_bits(gb, 5);
     skip_bits1(gb);
-    skip_bits(gb, 13); // timestamp
+    si->pts = get_bits(gb, 13);
     skip_bits(gb, r->rpr);
     si->width  = w;
     si->height = h;

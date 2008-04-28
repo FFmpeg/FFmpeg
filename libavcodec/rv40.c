@@ -103,7 +103,7 @@ static void rv40_parse_picture_size(GetBitContext *gb, int *w, int *h)
 
 static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceInfo *si)
 {
-    int t, mb_bits;
+    int mb_bits;
     int w = r->s.width, h = r->s.height;
     int mb_size;
 
@@ -117,7 +117,7 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
         return -1;
     si->vlc_set = get_bits(gb, 2);
     skip_bits1(gb);
-    t = get_bits(gb, 13); /// ???
+    si->pts = get_bits(gb, 13);
     if(!si->type || !get_bits1(gb))
         rv40_parse_picture_size(gb, &w, &h);
     if(avcodec_check_dimensions(r->s.avctx, w, h) < 0)
