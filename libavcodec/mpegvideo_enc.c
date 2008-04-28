@@ -3744,6 +3744,7 @@ AVCodec h263_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "H.263",
 };
 
 AVCodec h263p_encoder = {
@@ -3755,6 +3756,7 @@ AVCodec h263p_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "H.263+ / H.263 version 2",
 };
 
 AVCodec flv_encoder = {
@@ -3766,6 +3768,7 @@ AVCodec flv_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "Flash Video",
 };
 
 AVCodec rv10_encoder = {
@@ -3777,6 +3780,7 @@ AVCodec rv10_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "RealVideo 1.0",
 };
 
 AVCodec rv20_encoder = {
@@ -3788,6 +3792,7 @@ AVCodec rv20_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "RealVideo 2.0",
 };
 
 AVCodec mpeg4_encoder = {
@@ -3844,4 +3849,5 @@ AVCodec wmv1_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "Windows Media Video 7",
 };

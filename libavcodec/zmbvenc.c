@@ -319,4 +319,5 @@ AVCodec zmbv_encoder = {
     encode_frame,
     encode_end,
     .pix_fmts = (enum PixelFormat[]){PIX_FMT_PAL8, -1},
+    .long_name = "Zip Motion Blocks Video",
 };

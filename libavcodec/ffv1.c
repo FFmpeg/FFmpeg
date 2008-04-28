@@ -1022,7 +1022,8 @@ AVCodec ffv1_decoder = {
     common_end,
     decode_frame,
     CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
-    NULL
+    NULL,
+    .long_name= "FFmpeg codec #1",
 };
 
 #ifdef CONFIG_ENCODERS
@@ -1035,5 +1036,6 @@ AVCodec ffv1_encoder = {
     encode_frame,
     common_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_RGB32, -1},
+    .long_name= "FFmpeg codec #1",
 };
 #endif

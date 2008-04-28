@@ -946,6 +946,7 @@ AVCodec sonic_encoder = {
     sonic_encode_frame,
     sonic_encode_close,
     NULL,
+    .long_name = "Sonic",
 };
 
 AVCodec sonic_ls_encoder = {
@@ -957,6 +958,7 @@ AVCodec sonic_ls_encoder = {
     sonic_encode_frame,
     sonic_encode_close,
     NULL,
+    .long_name = "Sonic lossless",
 };
 #endif
 
@@ -970,5 +972,6 @@ AVCodec sonic_decoder = {
     NULL,
     sonic_decode_close,
     sonic_decode_frame,
+    .long_name = "Sonic",
 };
 #endif

@@ -836,5 +836,6 @@ AVCodec fourxm_decoder = {
     decode_end,
     decode_frame,
     /*CODEC_CAP_DR1,*/
+    .long_name = "4X Movie",
 };
 
