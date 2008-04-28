@@ -221,83 +221,14 @@ int pcm_read_seek(AVFormatContext *s,
     return 0;
 }
 
-/* ac3 read */
-static int ac3_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int audio_read_header(AVFormatContext *s,
+                             AVFormatParameters *ap)
 {
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_AC3;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
-static int shorten_read_header(AVFormatContext *s,
-                               AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
+    AVStream *st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_SHORTEN;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
-/* flac read */
-static int flac_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_FLAC;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
-/* dts read */
-static int dts_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_DTS;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
-/* aac read */
-static int aac_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_AAC;
+    st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -459,11 +390,12 @@ AVInputFormat shorten_demuxer = {
     "raw shorten",
     0,
     NULL,
-    shorten_read_header,
+    audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "shn",
+    .value = CODEC_ID_SHORTEN,
 };
 
 AVInputFormat flac_demuxer = {
@@ -471,11 +403,12 @@ AVInputFormat flac_demuxer = {
     "raw flac",
     0,
     flac_probe,
-    flac_read_header,
+    audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
+    .value = CODEC_ID_FLAC,
 };
 
 #ifdef CONFIG_MUXERS
@@ -499,11 +432,12 @@ AVInputFormat ac3_demuxer = {
     "raw ac3",
     0,
     ac3_probe,
-    ac3_read_header,
+    audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
+    .value = CODEC_ID_AC3,
 };
 #endif
 
@@ -541,11 +475,12 @@ AVInputFormat dts_demuxer = {
     "raw dts",
     0,
     NULL,
-    dts_read_header,
+    audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "dts",
+    .value = CODEC_ID_DTS,
 };
 
 AVInputFormat aac_demuxer = {
@@ -553,11 +488,12 @@ AVInputFormat aac_demuxer = {
     "ADTS AAC",
     0,
     NULL,
-    aac_read_header,
+    audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aac",
+    .value = CODEC_ID_AAC,
 };
 
 #ifdef CONFIG_ROQ_MUXER
