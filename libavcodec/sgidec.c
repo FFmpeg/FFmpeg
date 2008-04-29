@@ -263,5 +263,6 @@ AVCodec sgi_decoder = {
     NULL,
     sgi_end,
     decode_frame,
+    .long_name = "SGI image",
 };
 

@@ -95,4 +95,5 @@ AVCodec bmp_encoder = {
     bmp_encode_frame,
     NULL, //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, -1},
+    .long_name = "BMP image",
 };

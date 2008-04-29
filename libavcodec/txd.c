@@ -162,5 +162,6 @@ AVCodec txd_decoder = {
     txd_end,
     txd_decode_frame,
     0,
-    NULL
+    NULL,
+    .long_name = "Renderware TXD (TeXture Dictionary) image",
 };

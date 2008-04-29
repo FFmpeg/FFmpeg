@@ -456,6 +456,6 @@ AVCodec tiff_encoder = {
                               PIX_FMT_YUV420P, PIX_FMT_YUV422P,
                               PIX_FMT_YUV444P, PIX_FMT_YUV410P,
                               PIX_FMT_YUV411P,
-                              -1}
-
+                              -1},
+    .long_name = "TIFF image",
 };

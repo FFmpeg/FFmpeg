@@ -616,4 +616,5 @@ AVCodec vqa_decoder = {
     vqa_decode_end,
     vqa_decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Westwood Studios VQA (Vector Quantized Animation) video",
 };

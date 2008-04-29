@@ -113,5 +113,6 @@ AVCodec ptx_decoder = {
     ptx_end,
     ptx_decode_frame,
     0,
-    NULL
+    NULL,
+    .long_name = "V.Flash PTX image",
 };
