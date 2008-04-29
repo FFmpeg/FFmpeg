@@ -145,5 +145,6 @@ AVCodec mjpegb_decoder = {
     ff_mjpeg_decode_end,
     mjpegb_decode_frame,
     CODEC_CAP_DR1,
-    NULL
+    NULL,
+    .long_name = "Apple MJPEG-B",
 };

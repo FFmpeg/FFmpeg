@@ -304,4 +304,5 @@ AVCodec msrle_decoder = {
     msrle_decode_end,
     msrle_decode_frame,
     CODEC_CAP_DR1,
+    .long_name= "Microsoft RLE",
 };

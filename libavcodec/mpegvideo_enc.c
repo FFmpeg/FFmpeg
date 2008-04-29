@@ -3805,6 +3805,7 @@ AVCodec mpeg4_encoder = {
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
     .capabilities= CODEC_CAP_DELAY,
+    .long_name= "MPEG-4 part 2",
 };
 
 AVCodec msmpeg4v1_encoder = {
@@ -3816,6 +3817,7 @@ AVCodec msmpeg4v1_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "MPEG-4 part 2 Microsoft variant version 1",
 };
 
 AVCodec msmpeg4v2_encoder = {
@@ -3827,6 +3829,7 @@ AVCodec msmpeg4v2_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "MPEG-4 part 2 Microsoft variant version 2",
 };
 
 AVCodec msmpeg4v3_encoder = {
@@ -3838,6 +3841,7 @@ AVCodec msmpeg4v3_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
+    .long_name= "MPEG-4 part 2 Microsoft variant version 3",
 };
 
 AVCodec wmv1_encoder = {

@@ -887,4 +887,5 @@ AVCodec truemotion2_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name = "Duck TrueMotion 2.0",
 };

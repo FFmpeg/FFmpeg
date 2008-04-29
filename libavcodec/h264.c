@@ -8087,6 +8087,7 @@ AVCodec h264_decoder = {
     decode_frame,
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= flush_dpb,
+    .long_name = "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
 };
 
 #include "svq3.c"
