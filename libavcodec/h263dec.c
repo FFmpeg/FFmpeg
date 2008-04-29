@@ -763,7 +763,7 @@ AVCodec msmpeg4v2_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name=" MPEG-4 part 2 Microsoft variant version 2",
+    .long_name="MPEG-4 part 2 Microsoft variant version 2",
 };
 
 AVCodec msmpeg4v3_decoder = {
