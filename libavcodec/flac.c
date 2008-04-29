@@ -60,7 +60,7 @@ typedef struct FLACContext {
     GetBitContext gb;
 
     int min_blocksize, max_blocksize;
-    int min_framesize, max_framesize;
+    int max_framesize;
     int samplerate, channels;
     int blocksize/*, last_blocksize*/;
     int bps, curr_bps;
@@ -120,7 +120,7 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
 static void dump_headers(FLACContext *s)
 {
     av_log(s->avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d (%d)\n", s->min_blocksize, s->max_blocksize, s->blocksize);
-    av_log(s->avctx, AV_LOG_DEBUG, "  Framesize: %d .. %d\n", s->min_framesize, s->max_framesize);
+    av_log(s->avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
     av_log(s->avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
     av_log(s->avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
     av_log(s->avctx, AV_LOG_DEBUG, "  Bits: %d\n", s->bps);
@@ -149,7 +149,7 @@ static void metadata_streaminfo(FLACContext *s)
     s->min_blocksize = get_bits(&s->gb, 16);
     s->max_blocksize = get_bits(&s->gb, 16);
 
-    s->min_framesize = get_bits_long(&s->gb, 24);
+    skip_bits(&s->gb, 24); /* skip min frame size */
     s->max_framesize = get_bits_long(&s->gb, 24);
 
     s->samplerate = get_bits_long(&s->gb, 20);
