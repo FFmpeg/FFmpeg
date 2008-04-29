@@ -3698,7 +3698,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     DECLARE_ALIGNED_8 (uint64_t, aligned_bak[stride]);
     DCTELEM * const temp= (DCTELEM*)aligned_temp;
     uint8_t * const bak= (uint8_t*)aligned_bak;
-    int i, last, run, bits, level, distoration, start_i;
+    int i, last, run, bits, level, distortion, start_i;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
@@ -3765,9 +3765,9 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
 
     s->dsp.idct_add(bak, stride, temp);
 
-    distoration= s->dsp.sse[1](NULL, bak, src1, stride, 8);
+    distortion= s->dsp.sse[1](NULL, bak, src1, stride, 8);
 
-    return distoration + ((bits*s->qscale*s->qscale*109 + 64)>>7);
+    return distortion + ((bits*s->qscale*s->qscale*109 + 64)>>7);
 }
 
 static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){

@@ -1699,7 +1699,7 @@ typedef struct AVCodecContext {
     int mb_decision;
 #define FF_MB_DECISION_SIMPLE 0        ///< uses mb_cmp
 #define FF_MB_DECISION_BITS   1        ///< chooses the one which needs the fewest bits
-#define FF_MB_DECISION_RD     2        ///< rate distoration
+#define FF_MB_DECISION_RD     2        ///< rate distortion
 
     /**
      * custom intra quantization matrix
