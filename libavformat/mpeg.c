@@ -341,12 +341,13 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         if (flags & 0x01) { /* PES extension */
             pes_ext = get_byte(s->pb);
             header_len--;
-            if (pes_ext & 0x40) { /* pack header - should be zero in PS */
-                goto error_redo;
-            }
             /* Skip PES private data, program packet sequence counter and P-STD buffer */
             skip = (pes_ext >> 4) & 0xb;
             skip += skip & 0x9;
+            if (pes_ext & 0x40 || skip > header_len){
+                av_log(s, AV_LOG_WARNING, "pes_ext %X is invalid\n", pes_ext);
+                pes_ext=skip=0;
+            }
             url_fskip(s->pb, skip);
             header_len -= skip;
 
