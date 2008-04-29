@@ -49,20 +49,20 @@ static av_cold int libgsm_init(AVCodecContext *avctx) {
         if(!avctx->sample_rate)
             avctx->sample_rate= 8000;
     }else{
-    if (avctx->sample_rate != 8000) {
-        av_log(avctx, AV_LOG_ERROR, "Sample rate 8000Hz required for GSM, got %dHz\n",
-               avctx->sample_rate);
-        if(avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL)
-        return -1;
-    }
-    if (avctx->bit_rate != 13000 /* Official */ &&
-        avctx->bit_rate != 13200 /* Very common */ &&
-        avctx->bit_rate != 0 /* Unknown; a.o. mov does not set bitrate when decoding */ ) {
-        av_log(avctx, AV_LOG_ERROR, "Bitrate 13000bps required for GSM, got %dbps\n",
-               avctx->bit_rate);
-        if(avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL)
-        return -1;
-    }
+        if (avctx->sample_rate != 8000) {
+            av_log(avctx, AV_LOG_ERROR, "Sample rate 8000Hz required for GSM, got %dHz\n",
+                avctx->sample_rate);
+            if(avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL)
+                return -1;
+        }
+        if (avctx->bit_rate != 13000 /* Official */ &&
+            avctx->bit_rate != 13200 /* Very common */ &&
+            avctx->bit_rate != 0 /* Unknown; a.o. mov does not set bitrate when decoding */ ) {
+            av_log(avctx, AV_LOG_ERROR, "Bitrate 13000bps required for GSM, got %dbps\n",
+                avctx->bit_rate);
+            if(avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL)
+                return -1;
+        }
     }
 
     avctx->priv_data = gsm_create();
