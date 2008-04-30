@@ -187,6 +187,7 @@ const uint8_t ff_vc1_norm6_bits[64] = {
  4,  8,  8, 10,  8, 10, 10, 13,  8, 10, 10, 13, 10, 13, 13,  9,
  8, 10, 10, 13, 10, 13, 13,  9, 10, 13, 13,  9, 13,  9,  9,  6,
 };
+#if 0
 /* Normal-6 imode */
 const uint8_t ff_vc1_norm6_spec[64][5] = {
 { 0,  1, 1        },
@@ -254,6 +255,7 @@ const uint8_t ff_vc1_norm6_spec[64][5] = {
 {62,  3, 5,  2, 4 },
 {63,  3, 5,  1, 1 },
 };
+#endif
 
 /* 4MV Block pattern VLC tables */
 const uint8_t ff_vc1_4mv_block_pattern_codes[4][16] = {
