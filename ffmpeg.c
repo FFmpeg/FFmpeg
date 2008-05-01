@@ -78,7 +78,7 @@ typedef struct AVMetaDataMap {
     int in_file;
 } AVMetaDataMap;
 
-extern const OptionDef options[];
+static const OptionDef options[];
 
 #define MAX_FILES 20
 
@@ -2427,7 +2427,7 @@ static void opt_frame_pad_right(const char *arg)
     }
 }
 
-void list_pix_fmts(void)
+static void list_pix_fmts(void)
 {
     int i;
     char pix_fmt_str[128];
@@ -3772,7 +3772,7 @@ static void opt_show_version(void)
     av_exit(0);
 }
 
-const OptionDef options[] = {
+static const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)opt_show_license}, "show license" },
     { "h", 0, {(void*)opt_show_help}, "show help" },
