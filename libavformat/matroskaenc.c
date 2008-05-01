@@ -429,9 +429,12 @@ static int put_flac_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecCont
         return -1;
     } else if (codec->extradata_size == FLAC_STREAMINFO_SIZE) {
         // only the streaminfo packet
-        put_byte(pb, 0);
-        put_xiph_size(pb, codec->extradata_size);
-        av_log(s, AV_LOG_ERROR, "Only one packet\n");
+        put_buffer(pb, "fLaC", 4);
+        put_byte(pb, 0x80);
+        put_be24(pb, FLAC_STREAMINFO_SIZE);
+    } else if(memcmp("fLaC", codec->extradata, 4)) {
+        av_log(s, AV_LOG_ERROR, "Invalid FLAC extradata\n");
+        return -1;
     }
     put_buffer(pb, codec->extradata, codec->extradata_size);
     return 0;
