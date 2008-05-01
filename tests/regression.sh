@@ -108,38 +108,38 @@ do_ffmpeg_nocheck()
 
 do_video_decoding()
 {
-    do_ffmpeg $raw_dst -y $1 -i $file -f rawvideo $2 $raw_dst
+    do_ffmpeg $raw_dst $1 -i $file -f rawvideo $2 $raw_dst
     rm -f $raw_dst
 }
 
 do_video_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -y $2 -f image2 -vcodec pgmyuv -i $raw_src $3 $file
+    do_ffmpeg $file $2 -f image2 -vcodec pgmyuv -i $raw_src $3 $file
 }
 
 do_audio_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -y -ab 128k -ac 2 -f s16le -i $pcm_src $3 $file
+    do_ffmpeg $file -ab 128k -ac 2 -f s16le -i $pcm_src $3 $file
 }
 
 do_audio_decoding()
 {
-    do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+    do_ffmpeg $pcm_dst -i $file -f wav $pcm_dst
 }
 
 do_libav()
 {
     file=${outfile}libav.$1
-    do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src $2 $file
+    do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src $2 $file
     do_ffmpeg_crc $file -i $file $3
 }
 
 do_streamed_images()
 {
     file=${outfile}${1}pipe.$1
-    do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f image2pipe $file
+    do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f image2pipe $file
     do_ffmpeg_crc $file -f image2pipe -i $file
 }
 
@@ -155,7 +155,7 @@ do_image_formats()
 do_audio_only()
 {
     file=${outfile}libav.$1
-    do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
+    do_ffmpeg $file -t 1 -qscale 10 -f s16le -i $pcm_src $file
     do_ffmpeg_crc $file -i $file
 }
 
@@ -164,8 +164,8 @@ rm -f "$benchfile"
 
 # generate reference for quality check
 if [ -n "$do_ref" ]; then
-do_ffmpeg_nocheck $raw_ref -y -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo $raw_ref
-do_ffmpeg_nocheck $pcm_ref -y -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
+do_ffmpeg_nocheck $raw_ref -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo $raw_ref
+do_ffmpeg_nocheck $pcm_ref -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
 fi
 
 if [ -n "$do_mpeg" ] ; then
@@ -203,7 +203,7 @@ do_video_decoding
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2reuse.mpg
-do_ffmpeg $file -y -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4 $file
+do_ffmpeg $file -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4 $file
 do_video_decoding
 fi
 
@@ -415,11 +415,11 @@ fi
 if [ -n "$do_wma" ] ; then
 # wmav1
 do_audio_encoding wmav1.asf "-ar 44100" "-acodec wmav1"
-do_ffmpeg_nomd5 $pcm_dst -y -i $file -f wav $pcm_dst
+do_ffmpeg_nomd5 $pcm_dst -i $file -f wav $pcm_dst
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 # wmav2
 do_audio_encoding wmav2.asf "-ar 44100" "-acodec wmav2"
-do_ffmpeg_nomd5 $pcm_dst -y -i $file -f wav $pcm_dst
+do_ffmpeg_nomd5 $pcm_dst -i $file -f wav $pcm_dst
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 
@@ -442,7 +442,7 @@ fi
 
 if [ -n "$do_rm" ] ; then
 file=${outfile}libav.rm
-do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src $file
 # broken
 #do_ffmpeg_crc $file -i $file
 fi
@@ -491,7 +491,7 @@ fi
 # streamed images
 # mjpeg
 #file=${outfile}libav.mjpeg
-#do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $file
+#do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
 
 if [ -n "$do_pbmpipe" ] ; then
@@ -508,13 +508,13 @@ fi
 
 if [ -n "$do_gif" ] ; then
 file=${outfile}libav.gif
-do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -pix_fmt rgb24 $file
+do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -pix_fmt rgb24 $file
 #do_ffmpeg_crc $file -i $file
 fi
 
 if [ -n "$do_yuv4mpeg" ] ; then
 file=${outfile}libav.y4m
-do_ffmpeg $file -t 1 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $file
+do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
 fi
 
@@ -590,7 +590,7 @@ conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              monob pal8 yuv440p yuvj440p"
 for pix_fmt in $conversions ; do
     file=${outfile}libav-${pix_fmt}.yuv
-    do_ffmpeg_nocheck $file -r 1 -t 1 -y -f image2 -vcodec pgmyuv -i $raw_src \
+    do_ffmpeg_nocheck $file -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
                             -f rawvideo -s 352x288 -pix_fmt $pix_fmt $raw_dst
     do_ffmpeg $file -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $raw_dst \
                     -f rawvideo -s 352x288 -pix_fmt yuv444p $file
