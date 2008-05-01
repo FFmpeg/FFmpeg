@@ -169,7 +169,7 @@ typedef struct VideoState {
     int width, height, xleft, ytop;
 } VideoState;
 
-void show_help(void);
+static void show_help(void);
 static int audio_write_get_buf_size(VideoState *is);
 
 /* options specified by the user */
@@ -1645,7 +1645,7 @@ static int audio_write_get_buf_size(VideoState *is)
 
 
 /* prepare a new audio buffer */
-void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
+static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
     VideoState *is = opaque;
     int audio_size, len1;
@@ -2438,7 +2438,7 @@ static void opt_show_help(void)
     exit(0);
 }
 
-const OptionDef options[] = {
+static const OptionDef options[] = {
     { "h", 0, {(void*)opt_show_help}, "show help" },
     { "x", HAS_ARG | OPT_FUNC2, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG | OPT_FUNC2, {(void*)opt_height}, "force displayed height", "height" },
@@ -2472,7 +2472,7 @@ const OptionDef options[] = {
     { NULL, },
 };
 
-void show_help(void)
+static void show_help(void)
 {
     printf("usage: ffplay [options] input_file\n"
            "Simple media player\n");
@@ -2495,7 +2495,7 @@ void show_help(void)
            );
 }
 
-void opt_input_file(const char *filename)
+static void opt_input_file(const char *filename)
 {
     if (!strcmp(filename, "-"))
         filename = "pipe:";
