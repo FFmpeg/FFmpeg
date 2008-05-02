@@ -40,6 +40,7 @@
 #include "bitstream.h"
 #include "golomb.h"
 #include "crc.h"
+#include "flac.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -56,14 +57,13 @@ enum decorrelation_type {
 };
 
 typedef struct FLACContext {
+    FLACSTREAMINFO
+
     AVCodecContext *avctx;
     GetBitContext gb;
 
-    int min_blocksize, max_blocksize;
-    int max_framesize;
-    int samplerate, channels;
     int blocksize/*, last_blocksize*/;
-    int bps, curr_bps;
+    int curr_bps;
     enum decorrelation_type decorrelation;
 
     int32_t *decoded[MAX_CHANNELS];
