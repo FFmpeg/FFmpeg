@@ -27,6 +27,8 @@
 #ifndef FFMPEG_FLAC_H
 #define FFMPEG_FLAC_H
 
+#include "avcodec.h"
+
 /**
  * Data needed from the Streaminfo header for use by the raw FLAC demuxer
  * and/or the FLAC decoder.
