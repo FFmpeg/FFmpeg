@@ -39,4 +39,17 @@
     int channels;           /**< number of channels                      */\
     int bps;                /**< bits-per-sample                         */\
 
+typedef struct FLACStreaminfo {
+    FLACSTREAMINFO
+} FLACStreaminfo;
+
+/**
+ * Parse the Streaminfo metadata block
+ * @param[out] avctx   codec context to set basic stream parameters
+ * @param[out] s       where parsed information is stored
+ * @param[in]  buffer  pointer to start of 34-byte streaminfo data
+ */
+void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                              const uint8_t *buffer);
+
 #endif /* FFMPEG_FLAC_H */

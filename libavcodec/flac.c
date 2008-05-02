@@ -94,7 +94,6 @@ static int64_t get_utf8(GetBitContext *gb){
     return val;
 }
 
-static void metadata_streaminfo(AVCodecContext *avctx, FLACContext *s, const uint8_t *buffer);
 static void allocate_buffers(FLACContext *s);
 static int metadata_parse(FLACContext *s);
 
@@ -107,7 +106,7 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
         /* initialize based on the demuxer-supplied streamdata header */
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
         if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
-            metadata_streaminfo(avctx, s, avctx->extradata);
+            ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, avctx->extradata);
             allocate_buffers(s);
         } else {
             metadata_parse(s);
@@ -117,9 +116,9 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void dump_headers(AVCodecContext *avctx, FLACContext *s)
+static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
 {
-    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d (%d)\n", s->min_blocksize, s->max_blocksize, s->blocksize);
+    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d\n", s->min_blocksize, s->max_blocksize);
     av_log(avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
     av_log(avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
     av_log(avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
@@ -143,8 +142,8 @@ static void allocate_buffers(FLACContext *s){
     s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
 }
 
-static void metadata_streaminfo(AVCodecContext *avctx, FLACContext *s,
-                                const uint8_t *buffer)
+void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                              const uint8_t *buffer)
 {
     GetBitContext gb;
     init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
@@ -197,7 +196,7 @@ static int metadata_parse(FLACContext *s)
             if (metadata_size) {
                 switch (metadata_type) {
                 case METADATA_TYPE_STREAMINFO:
-                    metadata_streaminfo(s->avctx, s, s->gb.buffer+get_bits_count(&s->gb)/8);
+                    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, s->gb.buffer+get_bits_count(&s->gb)/8);
                     streaminfo_updated = 1;
 
                 default:
@@ -573,7 +572,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     s->bps          = bps;
     s->decorrelation= decorrelation;
 
-//    dump_headers(s->avctx, s);
+//    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
     /* subframes */
     for (i = 0; i < s->channels; i++)
