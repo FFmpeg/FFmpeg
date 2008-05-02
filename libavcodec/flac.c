@@ -117,13 +117,13 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void dump_headers(FLACContext *s)
+static void dump_headers(AVCodecContext *avctx, FLACContext *s)
 {
-    av_log(s->avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d (%d)\n", s->min_blocksize, s->max_blocksize, s->blocksize);
-    av_log(s->avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
-    av_log(s->avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
-    av_log(s->avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
-    av_log(s->avctx, AV_LOG_DEBUG, "  Bits: %d\n", s->bps);
+    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d (%d)\n", s->min_blocksize, s->max_blocksize, s->blocksize);
+    av_log(avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
+    av_log(avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
+    av_log(avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
+    av_log(avctx, AV_LOG_DEBUG, "  Bits: %d\n", s->bps);
 }
 
 static void allocate_buffers(FLACContext *s){
@@ -168,7 +168,7 @@ static void metadata_streaminfo(AVCodecContext *avctx, FLACContext *s,
     skip_bits(&gb, 64); /* md5 sum */
     skip_bits(&gb, 64); /* md5 sum */
 
-    dump_headers(s);
+    dump_headers(avctx, s);
 }
 
 /**
@@ -573,7 +573,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     s->bps          = bps;
     s->decorrelation= decorrelation;
 
-//    dump_headers(s);
+//    dump_headers(s->avctx, s);
 
     /* subframes */
     for (i = 0; i < s->channels; i++)
