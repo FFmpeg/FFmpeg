@@ -254,6 +254,7 @@ static int video_read_header(AVFormatContext *s,
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
                 st->codec->codec_id == CODEC_ID_MPEG4 ||
+                st->codec->codec_id == CODEC_ID_DIRAC ||
                 st->codec->codec_id == CODEC_ID_H264) {
         av_set_pts_info(st, 64, 1, 25);
     }
@@ -344,6 +345,14 @@ static int h261_probe(AVProbeData *p)
         return 50;
     }
     return 0;
+}
+
+static int dirac_probe(AVProbeData *p)
+{
+    if (AV_RL32(p->buf) == MKTAG('B', 'B', 'C', 'D'))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
 }
 
 static int ac3_probe(AVProbeData *p)
@@ -469,6 +478,33 @@ AVOutputFormat dts_muxer = {
 };
 
 #endif //CONFIG_MUXERS
+
+AVInputFormat dirac_demuxer = {
+    "dirac",
+    "raw dirac",
+    0,
+    dirac_probe,
+    video_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .flags= AVFMT_GENERIC_INDEX,
+    .value = CODEC_ID_DIRAC,
+};
+
+#ifdef CONFIG_MUXERS
+AVOutputFormat dirac_muxer = {
+    "dirac",
+    "raw dirac",
+    NULL,
+    "drc",
+    0,
+    0,
+    CODEC_ID_DIRAC,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
 
 AVInputFormat dts_demuxer = {
     "dts",
