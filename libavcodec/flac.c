@@ -94,7 +94,7 @@ static int64_t get_utf8(GetBitContext *gb){
     return val;
 }
 
-static void metadata_streaminfo(FLACContext *s);
+static void metadata_streaminfo(AVCodecContext *avctx, FLACContext *s, const uint8_t *buffer);
 static void allocate_buffers(FLACContext *s);
 static int metadata_parse(FLACContext *s);
 
@@ -107,7 +107,7 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
         /* initialize based on the demuxer-supplied streamdata header */
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
         if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
-            metadata_streaminfo(s);
+            metadata_streaminfo(avctx, s, avctx->extradata);
             allocate_buffers(s);
         } else {
             metadata_parse(s);
@@ -143,26 +143,30 @@ static void allocate_buffers(FLACContext *s){
     s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
 }
 
-static void metadata_streaminfo(FLACContext *s)
+static void metadata_streaminfo(AVCodecContext *avctx, FLACContext *s,
+                                const uint8_t *buffer)
 {
+    GetBitContext gb;
+    init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
+
     /* mandatory streaminfo */
-    s->min_blocksize = get_bits(&s->gb, 16);
-    s->max_blocksize = get_bits(&s->gb, 16);
+    s->min_blocksize = get_bits(&gb, 16);
+    s->max_blocksize = get_bits(&gb, 16);
 
-    skip_bits(&s->gb, 24); /* skip min frame size */
-    s->max_framesize = get_bits_long(&s->gb, 24);
+    skip_bits(&gb, 24); /* skip min frame size */
+    s->max_framesize = get_bits_long(&gb, 24);
 
-    s->samplerate = get_bits_long(&s->gb, 20);
-    s->channels = get_bits(&s->gb, 3) + 1;
-    s->bps = get_bits(&s->gb, 5) + 1;
+    s->samplerate = get_bits_long(&gb, 20);
+    s->channels = get_bits(&gb, 3) + 1;
+    s->bps = get_bits(&gb, 5) + 1;
 
-    s->avctx->channels = s->channels;
-    s->avctx->sample_rate = s->samplerate;
+    avctx->channels = s->channels;
+    avctx->sample_rate = s->samplerate;
 
-    skip_bits(&s->gb, 36); /* total num of samples */
+    skip_bits(&gb, 36); /* total num of samples */
 
-    skip_bits(&s->gb, 64); /* md5 sum */
-    skip_bits(&s->gb, 64); /* md5 sum */
+    skip_bits(&gb, 64); /* md5 sum */
+    skip_bits(&gb, 64); /* md5 sum */
 
     dump_headers(s);
 }
@@ -193,9 +197,8 @@ static int metadata_parse(FLACContext *s)
             if (metadata_size) {
                 switch (metadata_type) {
                 case METADATA_TYPE_STREAMINFO:
-                    metadata_streaminfo(s);
+                    metadata_streaminfo(s->avctx, s, s->gb.buffer+get_bits_count(&s->gb)/8);
                     streaminfo_updated = 1;
-                    break;
 
                 default:
                     for (i=0; i<metadata_size; i++)
