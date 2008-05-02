@@ -397,6 +397,6 @@ AVCodec nellymoser_decoder = {
     NULL,
     decode_end,
     decode_tag,
-    .long_name = "Nellymoser",
+    .long_name = "Nellymoser Asao",
 };
 

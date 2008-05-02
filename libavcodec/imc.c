@@ -813,5 +813,5 @@ AVCodec imc_decoder = {
     .init = imc_decode_init,
     .close = imc_decode_close,
     .decode = imc_decode_frame,
-    .long_name = "IMC (Intel Music Codec)",
+    .long_name = "IMC (Intel Music Coder)",
 };
