@@ -39,6 +39,7 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S16LE, FLV_CODECID_PCM_LE >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_ADPCM_SWF, FLV_CODECID_ADPCM  >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_NELLYMOSER, FLV_CODECID_NELLYMOSER >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_NONE,      0}
 };
 
@@ -94,6 +95,9 @@ static int get_audio_flags(AVCodecContext *enc){
         break;
     case CODEC_ID_ADPCM_SWF:
         flags |= FLV_CODECID_ADPCM | FLV_SAMPLESSIZE_16BIT;
+        break;
+    case CODEC_ID_NELLYMOSER:
+        flags |= FLV_CODECID_NELLYMOSER | FLV_SAMPLESSIZE_16BIT;
         break;
     case 0:
         flags |= enc->codec_tag<<4;
