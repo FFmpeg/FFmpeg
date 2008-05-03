@@ -72,4 +72,4 @@ static int sum_of_squares(const int16_t* speech, int length, int offset, int shi
     return sum;
 }
 
-#endif // FFMPEG_ACELP_MATH_H
+#endif /* FFMPEG_ACELP_MATH_H */
