@@ -24,6 +24,7 @@
 #include "raw.h"
 #include "crc.h"
 #include "bitstream.h"
+#include "bytestream.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */
@@ -347,6 +348,39 @@ static int h261_probe(AVProbeData *p)
     return 0;
 }
 
+#define DCA_MARKER_14B_BE 0x1FFFE800
+#define DCA_MARKER_14B_LE 0xFF1F00E8
+#define DCA_MARKER_RAW_BE 0x7FFE8001
+#define DCA_MARKER_RAW_LE 0xFE7F0180
+static int dts_probe(AVProbeData *p)
+{
+    const uint8_t *buf, *bufp;
+    uint32_t state = -1;
+
+    buf = p->buf;
+
+    for(; buf < (p->buf+p->buf_size)-2; buf+=2) {
+        bufp = buf;
+        state = (state << 16) | bytestream_get_be16(&bufp);
+
+        /* Regular bitstream */
+        if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
+            return AVPROBE_SCORE_MAX/2+1;
+
+        /* 14 bits big endian bitstream */
+        if (state == DCA_MARKER_14B_BE)
+            if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
+                return AVPROBE_SCORE_MAX/2+1;
+
+        /* 14 bits little endian bitstream */
+        if (state == DCA_MARKER_14B_LE)
+            if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
+                return AVPROBE_SCORE_MAX/2+1;
+    }
+
+    return 0;
+}
+
 static int dirac_probe(AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('B', 'B', 'C', 'D'))
@@ -510,7 +544,7 @@ AVInputFormat dts_demuxer = {
     "dts",
     "raw dts",
     0,
-    NULL,
+    dts_probe,
     audio_read_header,
     raw_read_partial_packet,
     raw_read_close,
