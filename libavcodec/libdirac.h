@@ -26,6 +26,8 @@
 #ifndef FFMPEG_LIBDIRAC_H
 #define FFMPEG_LIBDIRAC_H
 
+#ifdef CONFIG_LIBDIRAC
+
 #include "avcodec.h"
 #include <libdirac_common/dirac_types.h>
 
@@ -41,4 +43,5 @@ static const struct {
     { PIX_FMT_YUV444P, format444 },
 };
 
+#endif /* CONFIG_LIBDIRAC */
 #endif /* FFMPEG_LIBDIRAC_H */
