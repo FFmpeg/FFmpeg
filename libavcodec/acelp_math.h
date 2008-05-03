@@ -23,6 +23,8 @@
 #ifndef FFMPEG_ACELP_MATH_H
 #define FFMPEG_ACELP_MATH_H
 
+#include <stdint.h>
+
 /**
  * \brief fixed-point implementation of cosine in [0; PI) domain
  * \param arg fixed-point cosine argument, 0 <= arg < 0x4000

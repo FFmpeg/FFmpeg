@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include "avcodec.h"
+#include "parser.h"
 
 typedef struct AACAC3ParseContext {
     int frame_size;

@@ -25,6 +25,7 @@
 #define FFMPEG_FIFO_H
 
 #include <stdint.h>
+#include "common.h"
 
 typedef struct AVFifoBuffer {
     uint8_t *buffer;

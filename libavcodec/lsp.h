@@ -22,6 +22,9 @@
 
 #ifndef FFMPEG_LSP_H
 #define FFMPEG_LSP_H
+
+#include <stdint.h>
+
 /**
   (I.F) means fixed-point value with F fractional and I integer bits
 */
