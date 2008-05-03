@@ -199,7 +199,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* special case: there may be compressed blocks of 0 */
         if ((history < 128) && (output_count+1 < output_size)) {
-            int block_size, k;
+            int k;
+            unsigned int block_size;
 
             sign_modifier = 1;
 
@@ -208,6 +209,10 @@ static void bastardized_rice_decompress(ALACContext *alac,
             block_size= decode_scalar(&alac->gb, k, rice_kmodifier, 16);
 
             if (block_size > 0) {
+                if(block_size >= output_size - output_count){
+                    av_log(alac->avctx, AV_LOG_ERROR, "invalid zero block size of %d %d %d\n", block_size, output_size, output_count);
+                    block_size= output_size - output_count - 1;
+                }
                 memset(&output_buffer[output_count+1], 0, block_size * 4);
                 output_count += block_size;
             }
