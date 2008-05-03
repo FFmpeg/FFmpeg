@@ -131,10 +131,10 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
 
 static int sum_bits(short *buf, short shift, short off)
 {
-    int b, i, ret = 0;
+    int i, ret = 0;
 
     for (i = 0; i < NELLY_FILL_LEN; i++) {
-        b = buf[i]-off;
+        int b = buf[i]-off;
         b = ((b>>(shift-1))+1)>>1;
         ret += av_clip(b, 0, NELLY_BIT_CAP);
     }
