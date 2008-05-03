@@ -465,6 +465,11 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else
         outputsamples = alac->setinfo_max_samples_per_frame;
 
+    if(outputsamples > *outputsize / alac->bytespersample){
+        av_log(avctx, AV_LOG_ERROR, "sample buffer too small\n");
+        return -1;
+    }
+
     *outputsize = outputsamples * alac->bytespersample;
     readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
 
