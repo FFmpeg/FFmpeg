@@ -26,6 +26,8 @@
 #ifndef FFMPEG_LIBDIRAC_H
 #define FFMPEG_LIBDIRAC_H
 
+#include "config.h"
+
 #ifdef CONFIG_LIBDIRAC
 
 #include "avcodec.h"
