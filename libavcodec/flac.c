@@ -280,13 +280,13 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
         return -1;
 
     if(pred_order > 0)
-    a = decoded[pred_order-1];
+        a = decoded[pred_order-1];
     if(pred_order > 1)
-    b = a - decoded[pred_order-2];
+        b = a - decoded[pred_order-2];
     if(pred_order > 2)
-    c = b - decoded[pred_order-2] + decoded[pred_order-3];
+        c = b - decoded[pred_order-2] + decoded[pred_order-3];
     if(pred_order > 3)
-    d = c - decoded[pred_order-2] + 2*decoded[pred_order-3] - decoded[pred_order-4];
+        d = c - decoded[pred_order-2] + 2*decoded[pred_order-3] - decoded[pred_order-4];
 
     switch(pred_order)
     {
