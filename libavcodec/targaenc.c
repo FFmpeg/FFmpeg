@@ -87,7 +87,7 @@ static int targa_encode_frame(AVCodecContext *avctx,
     p->key_frame= 1;
 
     /* zero out the header and only set applicable fields */
-    memset(outbuf, 0, 11);
+    memset(outbuf, 0, 12);
     AV_WL16(outbuf+12, avctx->width);
     AV_WL16(outbuf+14, avctx->height);
     outbuf[17] = 0x20;           /* origin is top-left. no alpha */
