@@ -24,7 +24,7 @@
  *
  * VP3 Video Decoder by Mike Melanson (mike at multimedia.cx)
  * For more information about the VP3 coding process, visit:
- *   http://multimedia.cx/
+ *   http://wiki.multimedia.cx/index.php?title=On2_VP3
  *
  * Theora decoder by Alex Beregszaszi
  */
