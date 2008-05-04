@@ -39,14 +39,6 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-#ifdef HAVE_VIS
-#include "yuv2rgb_vis.c"
-#endif
-
-#ifdef CONFIG_MLIB
-#include "yuv2rgb_mlib.c"
-#endif
-
 #define DITHER1XBPP // only for mmx
 
 const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
