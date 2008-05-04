@@ -5394,14 +5394,24 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
         9, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,13,13, 9,
         9,10,10, 8,13,13, 9, 9,10,10,14,14,14,14,14 }
     };
+    /* node ctx: 0..3: abslevel1 (with abslevelgt1 == 0).
+     * 4..7: abslevelgt1 + 3 (and abslevel1 doesn't matter).
+     * map node ctx => cabac ctx for level=1 */
+    static const uint8_t coeff_abs_level1_ctx[8] = { 1, 2, 3, 4, 0, 0, 0, 0 };
+    /* map node ctx => cabac ctx for level>1 */
+    static const uint8_t coeff_abs_levelgt1_ctx[8] = { 5, 5, 5, 5, 6, 7, 8, 9 };
+    static const uint8_t coeff_abs_level_transition[2][8] = {
+    /* update node ctx after decoding a level=1 */
+        { 1, 2, 3, 3, 4, 5, 6, 7 },
+    /* update node ctx after decoding a level>1 */
+        { 4, 4, 4, 4, 5, 6, 7, 7 }
+    };
 
     int index[64];
 
     int av_unused last;
     int coeff_count = 0;
-
-    int abslevel1 = 1;
-    int abslevelgt1 = 0;
+    int node_ctx = 0;
 
     uint8_t *significant_coeff_ctx_base;
     uint8_t *last_coeff_ctx_base;
@@ -5495,20 +5505,22 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
     }
 
     for( coeff_count--; coeff_count >= 0; coeff_count-- ) {
-        uint8_t *ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 )) + abs_level_m1_ctx_base;
+        uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;
+
         int j= scantable[index[coeff_count]];
 
         if( get_cabac( CC, ctx ) == 0 ) {
+            node_ctx = coeff_abs_level_transition[0][node_ctx];
             if( !qmul ) {
                 block[j] = get_cabac_bypass_sign( CC, -1);
             }else{
                 block[j] = (get_cabac_bypass_sign( CC, -qmul[j]) + 32) >> 6;
             }
-
-            abslevel1++;
         } else {
             int coeff_abs = 2;
-            ctx = 5 + FFMIN( 4, abslevelgt1 ) + abs_level_m1_ctx_base;
+            ctx = coeff_abs_levelgt1_ctx[node_ctx] + abs_level_m1_ctx_base;
+            node_ctx = coeff_abs_level_transition[1][node_ctx];
+
             while( coeff_abs < 15 && get_cabac( CC, ctx ) ) {
                 coeff_abs++;
             }
@@ -5533,8 +5545,6 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
                 if( get_cabac_bypass( CC ) ) block[j] = (-coeff_abs * qmul[j] + 32) >> 6;
                 else                                block[j] = ( coeff_abs * qmul[j] + 32) >> 6;
             }
-
-            abslevelgt1++;
         }
     }
 #ifdef CABAC_ON_STACK
