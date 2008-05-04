@@ -1056,6 +1056,12 @@ for opt do
     esac
 done
 
+cc="${cross_prefix}${cc}"
+ar="${cross_prefix}${ar}"
+nm="${cross_prefix}${nm}"
+ranlib="${cross_prefix}${ranlib}"
+strip="${cross_prefix}${strip}"
+
 # OS specific
 case $target_os in
     beos|haiku|zeta)
@@ -1301,11 +1307,6 @@ enabled     sparc64       && enable sparc
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
 test -n "$cross_prefix" && enable cross_compile
-cc="${cross_prefix}${cc}"
-ar="${cross_prefix}${ar}"
-nm="${cross_prefix}${nm}"
-ranlib="${cross_prefix}${ranlib}"
-strip="${cross_prefix}${strip}"
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
