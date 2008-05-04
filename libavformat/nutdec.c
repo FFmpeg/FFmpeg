@@ -425,7 +425,7 @@ static int decode_info_header(NUTContext *nut){
             type= "v";
         }
 
-        if (stream_id_plus1 < 0 || stream_id_plus1 > s->nb_streams) {
+        if (stream_id_plus1 > s->nb_streams) {
             av_log(s, AV_LOG_ERROR, "invalid stream id for info packet\n");
             continue;
         }
