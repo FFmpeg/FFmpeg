@@ -123,7 +123,7 @@ static char *extradata2psets(AVCodecContext *c)
             p++;
         }
         if (av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r) == NULL) {
-            av_log(c, AV_LOG_ERROR, "Cannot BASE64 encode %d %d!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
+            av_log(c, AV_LOG_ERROR, "Cannot BASE64 encode %td %td!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
             av_free(psets);
 
             return NULL;
