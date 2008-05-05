@@ -113,6 +113,12 @@ int url_open(URLContext **puc, const char *filename, int flags)
         *puc = NULL;
         return err;
     }
+
+    //We must be carefull here as url_seek() could be slow, for example for http
+    if(   (flags & (URL_WRONLY | URL_RDWR))
+       || !strcmp(proto_str, "file"))
+        if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
+            uc->is_streamed= 1;
     *puc = uc;
     return 0;
  fail:
