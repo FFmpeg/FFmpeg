@@ -2199,6 +2199,6 @@ else
 fi
 
 if enabled avfilter; then
-  pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "-lavfilter $extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION" ffmpeg
+  pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "-lavfilter $extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
   pkgconfig_generate_uninstalled libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
 fi
