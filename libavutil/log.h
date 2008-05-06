@@ -31,7 +31,7 @@
 typedef struct AVCLASS AVClass;
 struct AVCLASS {
     /**
-     * The name of the class; usually it is the same name of the
+     * The name of the class; usually it is the same name as the
      * context structure type to which the AVClass is associated.
      */
     const char* class_name;
