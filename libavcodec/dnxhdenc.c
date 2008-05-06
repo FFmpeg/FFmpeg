@@ -805,6 +805,8 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
         goto encode_coding_unit;
     }
 
+    ctx->frame.quality = ctx->qscale*FF_QP2LAMBDA;
+
     return ctx->cid_table->frame_size;
 }
 
