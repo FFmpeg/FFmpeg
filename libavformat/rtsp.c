@@ -90,7 +90,7 @@ static int rtsp_probe(AVProbeData *p)
 
 static int redir_isspace(int c)
 {
-    return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
 static void skip_spaces(const char **pp)

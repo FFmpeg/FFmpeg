@@ -162,13 +162,13 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
             if (pd + l > dest_end)
-                return (ps - src);
+                return ps - src;
             memcpy(pd, ps, l);
             ps += l;
             pd += l;
         } else {
             if (pd + i > dest_end)
-                return (ps - src);
+                return ps - src;
             for (i = 0; i < l; i++) {
                 *pd++ = ps[0];
                 *pd++ = ps[1];
@@ -178,7 +178,7 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
         i += l;
     } while (i < src_len);
 
-    return (ps - src);
+    return ps - src;
 }
 
 static void vmd_decode(VmdVideoContext *s)

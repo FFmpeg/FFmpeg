@@ -232,7 +232,7 @@ static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
         return -1;
     }
 
-    return (buf - obuf);
+    return buf - obuf;
 }
 
 static int tm2_read_deltas(TM2Context *ctx, int stream_id) {

@@ -1186,7 +1186,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
     }
     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
 
-    return (s->mb_y == s->mb_height);
+    return s->mb_y == s->mb_height;
 }
 
 /** @} */ // recons group end

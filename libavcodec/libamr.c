@@ -112,7 +112,7 @@ static int getBitrateMode(int bitrate)
     {
         if(rates[i].rate==bitrate)
         {
-            return(rates[i].mode);
+            return rates[i].mode;
         }
     }
     /* no bitrate matching, return an error */
@@ -559,7 +559,7 @@ static int getWBBitrateMode(int bitrate)
     {
         if(rates[i].rate==bitrate)
         {
-            return(rates[i].mode);
+            return rates[i].mode;
         }
     }
     /* no bitrate matching, return an error */

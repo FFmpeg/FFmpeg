@@ -152,7 +152,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
         data += stride;
     }
 
-    return ((get_bits_count(&rc.gb) + 7) >> 3);
+    return (get_bits_count(&rc.gb) + 7) >> 3;
 }
 
 static int decode_frame(AVCodecContext *avctx,

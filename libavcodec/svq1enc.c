@@ -551,7 +551,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     flush_put_bits(&s->pb);
 
-    return (put_bits_count(&s->pb) / 8);
+    return put_bits_count(&s->pb) / 8;
 }
 
 static av_cold int svq1_encode_end(AVCodecContext *avctx)

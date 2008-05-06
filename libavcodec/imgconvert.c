@@ -1362,7 +1362,7 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
 /* this is maybe slow, but allows for extensions */
 static inline unsigned char gif_clut_index(uint8_t r, uint8_t g, uint8_t b)
 {
-    return ((((r)/47)%6)*6*6+(((g)/47)%6)*6+(((b)/47)%6));
+    return (((r) / 47) % 6) * 6 * 6 + (((g) / 47) % 6) * 6 + (((b) / 47) % 6);
 }
 
 static void build_rgb_palette(uint8_t *palette, int has_alpha)

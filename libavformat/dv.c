@@ -87,7 +87,7 @@ static const uint8_t* dv_extract_pack(uint8_t* frame, enum dv_pack_type t)
           return NULL;
     }
 
-    return (frame[offs] == t ? &frame[offs] : NULL);
+    return frame[offs] == t ? &frame[offs] : NULL;
 }
 
 /*

@@ -56,7 +56,7 @@ static av_cold int alaw2linear(unsigned char a_val)
         if(seg) t= (t + t + 1 + 32) << (seg + 2);
         else    t= (t + t + 1     ) << 3;
 
-        return ((a_val & SIGN_BIT) ? t : -t);
+        return (a_val & SIGN_BIT) ? t : -t;
 }
 
 static av_cold int ulaw2linear(unsigned char u_val)
@@ -73,7 +73,7 @@ static av_cold int ulaw2linear(unsigned char u_val)
         t = ((u_val & QUANT_MASK) << 3) + BIAS;
         t <<= ((unsigned)u_val & SEG_MASK) >> SEG_SHIFT;
 
-        return ((u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS));
+        return (u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS);
 }
 
 /* 16384 entries per table */

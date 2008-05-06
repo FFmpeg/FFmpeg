@@ -227,7 +227,7 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
         }
     }
 
-    return (!used && discarded);
+    return !used && discarded;
 }
 
 /**

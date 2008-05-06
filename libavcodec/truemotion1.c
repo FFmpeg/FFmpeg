@@ -176,7 +176,7 @@ static int make_ydt15_entry(int p1, int p2, int16_t *ydt)
     lo += (lo << 5) + (lo << 10);
     hi = ydt[p2];
     hi += (hi << 5) + (hi << 10);
-    return ((lo + (hi << 16)) << 1);
+    return (lo + (hi << 16)) << 1;
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -190,7 +190,7 @@ static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
     b = cdt[p2];
     r = cdt[p1] << 10;
     lo = b + r;
-    return ((lo + (lo << 16)) << 1);
+    return (lo + (lo << 16)) << 1;
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -205,7 +205,7 @@ static int make_ydt16_entry(int p1, int p2, int16_t *ydt)
     lo += (lo << 6) + (lo << 11);
     hi = ydt[p2];
     hi += (hi << 6) + (hi << 11);
-    return ((lo + (hi << 16)) << 1);
+    return (lo + (hi << 16)) << 1;
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -219,7 +219,7 @@ static int make_cdt16_entry(int p1, int p2, int16_t *cdt)
     b = cdt[p2];
     r = cdt[p1] << 11;
     lo = b + r;
-    return ((lo + (lo << 16)) << 1);
+    return (lo + (lo << 16)) << 1;
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -232,7 +232,7 @@ static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
 
     lo = ydt[p1];
     hi = ydt[p2];
-    return ((lo + (hi << 8) + (hi << 16)) << 1);
+    return (lo + (hi << 8) + (hi << 16)) << 1;
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -245,7 +245,7 @@ static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
 
     b = cdt[p2];
     r = cdt[p1]<<16;
-    return ((b+r) << 1);
+    return (b+r) << 1;
 }
 
 static void gen_vector_table15(TrueMotion1Context *s, const uint8_t *sel_vector_table)

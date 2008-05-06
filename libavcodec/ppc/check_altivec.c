@@ -52,7 +52,7 @@ int has_altivec(void)
 
     err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
 
-    if (err == 0) return (has_vu != 0);
+    if (err == 0) return has_vu != 0;
     return 0;
 #elif defined(RUNTIME_CPUDETECT)
     int proc_ver;

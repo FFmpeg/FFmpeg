@@ -23,7 +23,7 @@
 
 static inline int pnm_space(int c)
 {
-    return (c == ' ' || c == '\n' || c == '\r' || c == '\t');
+    return c == ' ' || c == '\n' || c == '\r' || c == '\t';
 }
 
 static void pnm_get(PNMContext *sc, char *str, int buf_size)

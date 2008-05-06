@@ -40,7 +40,7 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
         for(i=0,j=ret;i<n-1;i++) j*=ret;
     } while (j<=x);
 
-    return (ret-1);
+    return ret - 1;
 }
 
 // Generate vlc codes from vorbis huffman code lengths

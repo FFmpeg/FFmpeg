@@ -1247,7 +1247,7 @@ static int ascii_to_wc (ByteIOContext *pb, const uint8_t *b)
 
 static uint16_t language_code (const char *str)
 {
-    return ((((str[0]-0x60) & 0x1F)<<10) + (((str[1]-0x60) & 0x1F)<<5) + ((str[2]-0x60) & 0x1F));
+    return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
 static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
