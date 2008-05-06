@@ -2145,7 +2145,8 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -l${shortname} $libs
+Libs: -L\${libdir} -l${shortname}
+Libs.private: $libs
 Cflags: -I\${includedir}
 EOF
 cat <<EOF >$name-uninstalled.pc
@@ -2159,7 +2160,8 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF} $libs
+Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF}
+Libs.private: $libs
 Cflags: -I\${includedir}
 EOF
 }
