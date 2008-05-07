@@ -22,12 +22,12 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)    ((int) ((x) * (1L<<SCALEBITS) + 0.5))
-typedef unsigned char uint8_t;
 
 static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
                               uint8_t *src, int width, int height)
