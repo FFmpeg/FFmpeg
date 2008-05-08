@@ -20,13 +20,14 @@
  */
 
 #include "dsputil_mmx.h"
+#include "x86_cpu.h"
 
 static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data)
 {
     double c = 2.0 / (len-1.0);
     int n2 = len>>1;
-    long i = -n2*sizeof(int32_t);
-    long j =  n2*sizeof(int32_t);
+    x86_reg i = -n2*sizeof(int32_t);
+    x86_reg j =  n2*sizeof(int32_t);
     asm volatile(
         "movsd   %0,     %%xmm7 \n\t"
         "movapd  %1,     %%xmm6 \n\t"
@@ -71,7 +72,7 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
     double *data1 = tmp + lag;
     int j;
 
-    if((long)data1 & 15)
+    if((x86_reg)data1 & 15)
         data1++;
 
     apply_welch_window_sse2(data, len, data1);
@@ -81,7 +82,7 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
     data1[len] = 0.0;
 
     for(j=0; j<lag; j+=2){
-        long i = -len*sizeof(double);
+        x86_reg i = -len*sizeof(double);
         if(j == lag-2) {
             asm volatile(
                 "movsd     %6,     %%xmm0 \n\t"

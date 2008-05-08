@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "dsputil.h"
+#include "x86_cpu.h"
 
 static const int p1m1[2] __attribute__((aligned(8))) =
     { 0, 1 << 31 };
@@ -30,7 +31,8 @@ static const int m1p1[2] __attribute__((aligned(8))) =
 void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
-    long i, j;
+    long j;
+    x86_reg i;
     long nblocks, nloops;
     FFTComplex *p, *cptr;
 

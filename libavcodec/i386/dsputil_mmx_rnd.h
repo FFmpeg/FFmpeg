@@ -57,7 +57,7 @@ static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line
         "subl   $4, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((long)line_size)
+        :"r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 
@@ -107,7 +107,7 @@ static void av_unused DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t 
 #else
         :"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
-        :"S"((long)src1Stride), "D"((long)dstStride)
+        :"S"((x86_reg)src1Stride), "D"((x86_reg)dstStride)
         :"memory");
 }
 
@@ -153,7 +153,7 @@ static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int lin
         "subl   $4, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((long)line_size)
+        :"r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 
@@ -202,7 +202,7 @@ static void av_unused DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t
 #else
         :"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
-        :"S"((long)src1Stride), "D"((long)dstStride)
+        :"S"((x86_reg)src1Stride), "D"((x86_reg)dstStride)
         :"memory");
 }
 
@@ -231,7 +231,7 @@ static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
         "subl   $4, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((long)line_size)
+        :"r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 
@@ -297,7 +297,7 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
         "subl   $2, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels)
-        :"D"(block), "r"((long)line_size)
+        :"D"(block), "r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 
@@ -493,7 +493,7 @@ static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
         "subl   $4, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((long)line_size)
+        :"r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 
@@ -568,7 +568,7 @@ static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
         "subl   $2, %0                  \n\t"
         "jnz    1b                      \n\t"
         :"+g"(h), "+S"(pixels)
-        :"D"(block), "r"((long)line_size)
+        :"D"(block), "r"((x86_reg)line_size)
         :REG_a, "memory");
 }
 

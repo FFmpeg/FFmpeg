@@ -31,6 +31,7 @@
 #    define REG_D "rdi"
 #    define REG_S "rsi"
 #    define PTR_SIZE "8"
+typedef int64_t x86_reg;
 
 #    define REG_SP "rsp"
 #    define REG_BP "rbp"
@@ -50,6 +51,7 @@
 #    define REG_D "edi"
 #    define REG_S "esi"
 #    define PTR_SIZE "4"
+typedef int32_t x86_reg;
 
 #    define REG_SP "esp"
 #    define REG_BP "ebp"

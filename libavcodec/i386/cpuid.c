@@ -42,7 +42,7 @@ int mm_support(void)
     int rval = 0;
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
-    long a, c;
+    x86_reg a, c;
 
     asm volatile (
         /* See if CPUID instruction is supported ... */

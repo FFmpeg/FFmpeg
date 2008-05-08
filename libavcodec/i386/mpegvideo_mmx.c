@@ -34,7 +34,7 @@ extern uint16_t inv_zigzag_direct16[64];
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    long level, qmul, qadd, nCoeffs;
+    x86_reg level, qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
 
@@ -109,7 +109,7 @@ asm volatile(
 static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    long qmul, qadd, nCoeffs;
+    x86_reg qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
@@ -200,7 +200,7 @@ asm volatile(
 static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    long nCoeffs;
+    x86_reg nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
 
@@ -269,7 +269,7 @@ asm volatile(
 static void dct_unquantize_mpeg1_inter_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    long nCoeffs;
+    x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
     assert(s->block_last_index[n]>=0);
@@ -335,7 +335,7 @@ asm volatile(
 static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    long nCoeffs;
+    x86_reg nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
 
@@ -401,7 +401,7 @@ asm volatile(
 static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    long nCoeffs;
+    x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
     assert(s->block_last_index[n]>=0);

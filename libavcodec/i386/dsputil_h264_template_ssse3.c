@@ -72,7 +72,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                 "lea (%0,%3,2), %0 \n\t"
                 "jg 1b \n\t"
                 :"+r"(dst), "+r"(src), "+r"(h)
-                :"r"((long)stride)
+                :"r"((x86_reg)stride)
             );
         } else {
             asm volatile(
@@ -100,7 +100,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                 "lea (%0,%3,2), %0 \n\t"
                 "jg 1b \n\t"
                 :"+r"(dst), "+r"(src), "+r"(h)
-                :"r"((long)stride)
+                :"r"((x86_reg)stride)
             );
         }
         return;
@@ -154,7 +154,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         "lea (%0,%3,2), %0 \n\t"
         "jg 1b \n\t"
         :"+r"(dst), "+r"(src), "+r"(h)
-        :"r"((long)stride)
+        :"r"((x86_reg)stride)
     );
 }
 
@@ -202,7 +202,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "lea (%0,%3,2), %0 \n\t"
         "jg 1b \n\t"
         :"+r"(dst), "+r"(src), "+r"(h)
-        :"r"((long)stride)
+        :"r"((x86_reg)stride)
     );
 }
 

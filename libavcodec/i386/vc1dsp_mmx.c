@@ -71,7 +71,7 @@ DECLARE_ALIGNED_16(const uint64_t, ff_pw_9) = 0x0009000900090009ULL;
 
 /** Sacrifying mm6 allows to pipeline loads from src */
 static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
-                                       const uint8_t *src, long int stride,
+                                       const uint8_t *src, x86_reg stride,
                                        int rnd, int64_t shift)
 {
     asm volatile(
@@ -107,7 +107,7 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
  * Data is already unpacked, so some operations can directly be made from
  * memory.
  */
-static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
+static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,
                                        const int16_t *src, int rnd)
 {
     int h = 8;
@@ -152,7 +152,7 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, long int stride,
  * Sacrify mm6 for *9 factor.
  */
 static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
-                               long int stride, int rnd, long int offset)
+                               x86_reg stride, int rnd, x86_reg offset)
 {
     rnd = 8-rnd;
     asm volatile(
@@ -259,7 +259,7 @@ DECLARE_ALIGNED_16(const uint64_t, ff_pw_18) = 0x0012001200120012ULL;
 #define MSPEL_FILTER13_VER_16B(NAME, A1, A2, A3, A4)                    \
 static void                                                             \
 vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
-                                 long int src_stride,                   \
+                                 x86_reg src_stride,                   \
                                  int rnd, int64_t shift)                \
 {                                                                       \
     int h = 8;                                                          \
@@ -314,7 +314,7 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
  */
 #define MSPEL_FILTER13_HOR_16B(NAME, A1, A2, A3, A4)                    \
 static void                                                             \
-vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, long int stride,         \
+vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, x86_reg stride,         \
                                  const int16_t *src, int rnd)           \
 {                                                                       \
     int h = 8;                                                          \
@@ -353,7 +353,7 @@ vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, long int stride,         \
 #define MSPEL_FILTER13_8B(NAME, A1, A2, A3, A4)                         \
 static void                                                             \
 vc1_put_## NAME ## _mmx(uint8_t *dst, const uint8_t *src,               \
-                        long int stride, int rnd, long int offset)      \
+                        x86_reg stride, int rnd, x86_reg offset)      \
 {                                                                       \
     int h = 8;                                                          \
     src -= offset;                                                      \
@@ -387,9 +387,9 @@ MSPEL_FILTER13_8B     (shift3, "0(%1     )", "0(%1,%3  )", "0(%1,%3,2)", "0(%1,%
 MSPEL_FILTER13_VER_16B(shift3, "0(%1     )", "0(%1,%3  )", "0(%1,%3,2)", "0(%1,%4  )")
 MSPEL_FILTER13_HOR_16B(shift3, "2*0(%1)", "2*1(%1)", "2*2(%1)", "2*3(%1)")
 
-typedef void (*vc1_mspel_mc_filter_ver_16bits)(int16_t *dst, const uint8_t *src, long int src_stride, int rnd, int64_t shift);
-typedef void (*vc1_mspel_mc_filter_hor_16bits)(uint8_t *dst, long int dst_stride, const int16_t *src, int rnd);
-typedef void (*vc1_mspel_mc_filter_8bits)(uint8_t *dst, const uint8_t *src, long int stride, int rnd, long int offset);
+typedef void (*vc1_mspel_mc_filter_ver_16bits)(int16_t *dst, const uint8_t *src, x86_reg src_stride, int rnd, int64_t shift);
+typedef void (*vc1_mspel_mc_filter_hor_16bits)(uint8_t *dst, x86_reg dst_stride, const int16_t *src, int rnd);
+typedef void (*vc1_mspel_mc_filter_8bits)(uint8_t *dst, const uint8_t *src, x86_reg stride, int rnd, x86_reg offset);
 
 /**
  * Interpolates fractional pel values by applying proper vertical then

@@ -51,7 +51,7 @@ static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
         "add $32, %%"REG_a"             \n\t"
         "js 1b                          \n\t"
         : "+r" (pixels)
-        : "r" (block+64), "r" ((long)line_size), "r" ((long)line_size*2)
+        : "r" (block+64), "r" ((x86_reg)line_size), "r" ((x86_reg)line_size*2)
         : "%"REG_a
     );
 }
@@ -80,7 +80,7 @@ static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint
         "add $16, %%"REG_a"             \n\t"
         "jnz 1b                         \n\t"
         : "+r" (s1), "+r" (s2)
-        : "r" (block+64), "r" ((long)stride)
+        : "r" (block+64), "r" ((x86_reg)stride)
         : "%"REG_a
     );
 }
@@ -88,7 +88,7 @@ static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint
 static int pix_sum16_mmx(uint8_t * pix, int line_size){
     const int h=16;
     int sum;
-    long index= -line_size*h;
+    x86_reg index= -line_size*h;
 
     asm volatile(
                 "pxor %%mm7, %%mm7              \n\t"
@@ -117,7 +117,7 @@ static int pix_sum16_mmx(uint8_t * pix, int line_size){
                 "movd %%mm6, %0                 \n\t"
                 "andl $0xFFFF, %0               \n\t"
                 : "=&r" (sum), "+r" (index)
-                : "r" (pix - index), "r" ((long)line_size)
+                : "r" (pix - index), "r" ((x86_reg)line_size)
         );
 
         return sum;
@@ -162,7 +162,7 @@ static int pix_norm1_mmx(uint8_t *pix, int line_size) {
       "psrlq $32, %%mm7\n"      /* shift hi dword to lo */
       "paddd %%mm7,%%mm1\n"
       "movd %%mm1,%1\n"
-      : "+r" (pix), "=r"(tmp) : "r" ((long)line_size) : "%ecx" );
+      : "+r" (pix), "=r"(tmp) : "r" ((x86_reg)line_size) : "%ecx" );
     return tmp;
 }
 
@@ -222,7 +222,7 @@ static int sse8_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
       "paddd %%mm7,%%mm1\n"
       "movd %%mm1,%2\n"
       : "+r" (pix1), "+r" (pix2), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp;
 }
@@ -282,7 +282,7 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int
       "paddd %%mm7,%%mm1\n"
       "movd %%mm1,%2\n"
       : "+r" (pix1), "+r" (pix2), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp;
 }
@@ -345,7 +345,7 @@ static int sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
       "paddd %%xmm1,%%xmm7\n"
       "movd %%xmm7,%3\n"
       : "+r" (pix1), "+r" (pix2), "+r"(h), "=r"(tmp)
-      : "r" ((long)line_size));
+      : "r" ((x86_reg)line_size));
     return tmp;
 }
 
@@ -469,7 +469,7 @@ static int hf_noise8_mmx(uint8_t * pix1, int line_size, int h) {
       "paddd %%mm6,%%mm0\n"
       "movd %%mm0,%1\n"
       : "+r" (pix1), "=r"(tmp)
-      : "r" ((long)line_size) , "g" (h-2)
+      : "r" ((x86_reg)line_size) , "g" (h-2)
       : "%ecx");
       return tmp;
 }
@@ -583,7 +583,7 @@ static int hf_noise16_mmx(uint8_t * pix1, int line_size, int h) {
       "paddd %%mm6,%%mm0\n"
       "movd %%mm0,%1\n"
       : "+r" (pix1), "=r"(tmp)
-      : "r" ((long)line_size) , "g" (h-2)
+      : "r" ((x86_reg)line_size) , "g" (h-2)
       : "%ecx");
       return tmp + hf_noise8_mmx(pix+8, line_size, h);
 }
@@ -665,7 +665,7 @@ static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_si
       "paddw %%mm6,%%mm0\n"
       "movd %%mm0,%1\n"
       : "+r" (pix), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp & 0xFFFF;
 }
@@ -706,7 +706,7 @@ static int vsad_intra16_mmx2(void *v, uint8_t * pix, uint8_t * dummy, int line_s
 
       "movd %%mm6,%1\n"
       : "+r" (pix), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp;
 }
@@ -785,7 +785,7 @@ static int vsad16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
       "paddw %%mm6,%%mm0\n"
       "movd %%mm0,%2\n"
       : "+r" (pix1), "+r" (pix2), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp & 0x7FFF;
 }
@@ -843,14 +843,14 @@ static int vsad16_mmx2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, i
 
       "movd %%mm6,%2\n"
       : "+r" (pix1), "+r" (pix2), "=r"(tmp)
-      : "r" ((long)line_size) , "m" (h)
+      : "r" ((x86_reg)line_size) , "m" (h)
       : "%ecx");
     return tmp;
 }
 #undef SUM
 
 static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
-    long i=0;
+    x86_reg i=0;
     asm volatile(
         "1:                             \n\t"
         "movq  (%2, %0), %%mm0          \n\t"
@@ -865,14 +865,14 @@ static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         "cmp %4, %0                     \n\t"
         " jb 1b                         \n\t"
         : "+r" (i)
-        : "r"(src1), "r"(src2), "r"(dst), "r"((long)w-15)
+        : "r"(src1), "r"(src2), "r"(dst), "r"((x86_reg)w-15)
     );
     for(; i<w; i++)
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
 static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
-    long i=0;
+    x86_reg i=0;
     uint8_t l, lt;
 
     asm volatile(
@@ -895,7 +895,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         "cmp %4, %0                     \n\t"
         " jb 1b                         \n\t"
         : "+r" (i)
-        : "r"(src1), "r"(src2), "r"(dst), "r"((long)w)
+        : "r"(src1), "r"(src2), "r"(dst), "r"((x86_reg)w)
     );
 
     l= *left;
@@ -930,7 +930,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         DIFF_PIXELS_1(m0, mm##7, mm##0, (%1,%3,4), (%2,%3,4))\
         "mov"#m1" %0, "#mm"0          \n\t"\
         : "+m"(temp), "+r"(p1b), "+r"(p2b)\
-        : "r"((long)stride), "r"((long)stride*3)\
+        : "r"((x86_reg)stride), "r"((x86_reg)stride*3)\
     );\
 }
     //the "+m"(temp) is needed as gcc 2.95 sometimes fails to compile "=m"(temp)
@@ -1237,7 +1237,7 @@ DCT_SAD_FUNC(ssse3)
 
 static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int size){
     int sum;
-    long i=size;
+    x86_reg i=size;
     asm volatile(
         "pxor %%mm4, %%mm4 \n"
         "1: \n"

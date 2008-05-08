@@ -30,7 +30,7 @@
 
 static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale)
 {
-    long i=0;
+    x86_reg i=0;
 
     assert(FFABS(scale) < MAX_ABS);
     scale<<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
@@ -72,7 +72,7 @@ static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[
 
 static void DEF(add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale)
 {
-    long i=0;
+    x86_reg i=0;
 
     if(FFABS(scale) < MAX_ABS){
         scale<<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
