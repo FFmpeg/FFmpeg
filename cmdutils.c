@@ -31,7 +31,9 @@
 #include "cmdutils.h"
 #include "avstring.h"
 #include "version.h"
+#ifdef CONFIG_NETWORK
 #include "network.h"
+#endif
 
 #undef exit
 
@@ -181,9 +183,11 @@ void print_error(const char *filename, int err)
     case AVERROR(ENOENT):
         fprintf(stderr, "%s: no such file or directory\n", filename);
         break;
+#ifdef CONFIG_NETWORK
     case AVERROR(FF_NETERROR(EPROTONOSUPPORT)):
         fprintf(stderr, "%s: Unsupported network protocol\n", filename);
         break;
+#endif
     default:
         fprintf(stderr, "%s: Error while opening file\n", filename);
         break;
