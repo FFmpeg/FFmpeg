@@ -81,8 +81,6 @@ static enum PixelFormat GetFfmpegChromaFormat(SchroChromaFormat schro_pix_fmt)
     return PIX_FMT_NONE;
 }
 
-/*-------------------------DECODER------------------------------------------*/
-
 static int libschroedinger_decode_init(AVCodecContext *avccontext)
 {
 
