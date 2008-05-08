@@ -1,11 +1,11 @@
 include $(SUBDIR)../config.mak
 
-NAME = avdevice
-FFLIBS = avformat avcodec avutil
-
-OBJS = alldevices.o
+NAME    = avdevice
+FFLIBS  = avformat avcodec avutil
 
 HEADERS = avdevice.h
+
+OBJS    = alldevices.o
 
 # input/output devices
 OBJS-$(CONFIG_BKTR_DEMUXER)              += bktr.o
@@ -20,7 +20,7 @@ OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 # external libraries
 OBJS-$(CONFIG_LIBDC1394_DEMUXER)         += libdc1394.o
 
-CPP_OBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)     += beosaudio.o
-CPP_OBJS-$(CONFIG_AUDIO_BEOS_MUXER)       += beosaudio.o
+CPP_OBJS-$(CONFIG_AUDIO_BEOS_DEMUXER)    += beosaudio.o
+CPP_OBJS-$(CONFIG_AUDIO_BEOS_MUXER)      += beosaudio.o
 
 include $(SUBDIR)../subdir.mak
