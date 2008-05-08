@@ -18,11 +18,13 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "avformat.h"
 
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
+#include <errno.h>
 #ifdef HAVE_SOUNDCARD_H
 #include <soundcard.h>
 #else
@@ -32,6 +34,10 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+
+#include "log.h"
+#include "avcodec.h"
+#include "avformat.h"
 
 #define AUDIO_BLOCK_SIZE 4096
 
