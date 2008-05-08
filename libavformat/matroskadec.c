@@ -1916,7 +1916,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         /* seek */
                         if ((res = ebml_read_seek(matroska, seek_pos +
                                                matroska->segment_start)) < 0)
-                            return res;
+                            goto finish;
 
                         /* we don't want to lose our seekhead level, so we add
                          * a dummy. This is a crude hack. */
