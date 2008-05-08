@@ -499,11 +499,12 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     vp56_context_t *s = avctx->priv_data;
     AVFrame *const p = s->framep[VP56_FRAME_CURRENT];
+    int remaining_buf_size = buf_size;
     int is_alpha, alpha_offset;
 
     if (s->has_alpha) {
         alpha_offset = bytestream_get_be24(&buf);
-        buf_size -= 3;
+        remaining_buf_size -= 3;
     }
 
     for (is_alpha=0; is_alpha < 1+s->has_alpha; is_alpha++) {
@@ -514,7 +515,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         s->modelp = &s->models[is_alpha];
 
-        res = s->parse_header(s, buf, buf_size, &golden_frame);
+        res = s->parse_header(s, buf, remaining_buf_size, &golden_frame);
         if (!res)
             return -1;
 
@@ -619,7 +620,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             FFSWAP(AVFrame *, s->framep[VP56_FRAME_GOLDEN],
                               s->framep[VP56_FRAME_GOLDEN2]);
             buf += alpha_offset;
-            buf_size -= alpha_offset;
+            remaining_buf_size -= alpha_offset;
         }
     }
 
