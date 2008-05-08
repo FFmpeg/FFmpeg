@@ -126,7 +126,7 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
         av_log(avccontext, AV_LOG_ERROR, "invalid dimensions (%dx%d)\n",
                p_schro_params->format->width, p_schro_params->format->height);
         avccontext->height = avccontext->width = 0;
-        return -1;
+        return;
     }
     avccontext->height  = p_schro_params->format->height;
     avccontext->width   = p_schro_params->format->width;
@@ -138,7 +138,7 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
         av_log (avccontext, AV_LOG_ERROR,
                 "This codec currently only supports planar YUV 4:2:0, 4:2:2 "
                 "and 4:4:4 formats.\n");
-        return -1;
+        return;
     }
 
     avccontext->time_base.den = p_schro_params->format->frame_rate_numerator;
