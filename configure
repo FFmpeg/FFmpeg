@@ -1653,6 +1653,9 @@ enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -
 # disable the native AC-3 decoder if liba52 is enabled
 enabled liba52 && disable ac3_decoder
 
+# disable the slower libdirac decoder if libschroedinger is enabled
+enabled libschroedinger && enabled libdirac && disable libdirac_decoder
+
 # libdc1394 check
 if enabled libdc1394; then
     { check_lib dc1394/dc1394.h dc1394_new -ldc1394 -lraw1394 &&
