@@ -25,10 +25,13 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
-#include "avformat.h"
-#include "rtsp.h"
-#include "rtp.h"
-#include "os_support.h"
+#include "libavutil/random.h"
+#include "libavutil/avstring.h"
+#include "libavformat/avformat.h"
+#include "libavformat/network.h"
+#include "libavformat/os_support.h"
+#include "libavformat/rtp.h"
+#include "libavformat/rtsp.h"
 
 #include <stdarg.h>
 #include <unistd.h>
@@ -47,11 +50,8 @@
 #include <dlfcn.h>
 #endif
 
-#include "network.h"
 #include "version.h"
 #include "ffserver.h"
-#include "random.h"
-#include "avstring.h"
 #include "cmdutils.h"
 
 #undef exit

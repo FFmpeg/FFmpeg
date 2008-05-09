@@ -27,7 +27,7 @@
 #ifndef FFMPEG_MPEGAUDIODATA_H
 #define FFMPEG_MPEGAUDIODATA_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 #define MODE_EXT_MS_STEREO 2
 #define MODE_EXT_I_STEREO  1

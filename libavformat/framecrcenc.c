@@ -18,8 +18,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/adler32.h"
 #include "avformat.h"
-#include "adler32.h"
 
 static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {

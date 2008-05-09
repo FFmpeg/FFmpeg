@@ -26,7 +26,7 @@
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
 #endif
-#include "lzo.h"
+#include "libavutil/lzo.h"
 
 typedef struct {
     AVFrame pic;

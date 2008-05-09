@@ -32,7 +32,7 @@
 //#undef NDEBUG
 #include <assert.h>
 #ifdef ARCH_X86
-#include "x86_cpu.h"
+#include "libavutil/x86_cpu.h"
 #endif
 
 #define CABAC_BITS 16

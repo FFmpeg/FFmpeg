@@ -22,7 +22,7 @@
 #ifndef FFMPEG_AC3TAB_H
 #define FFMPEG_AC3TAB_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];

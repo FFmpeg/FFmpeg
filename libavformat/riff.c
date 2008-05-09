@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/avcodec.h"
 #include "avformat.h"
-#include "avcodec.h"
 #include "riff.h"
 
 /* Note: when encoding, the first matching tag is used, so order is

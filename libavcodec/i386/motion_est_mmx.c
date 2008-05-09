@@ -21,8 +21,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "dsputil.h"
-#include "x86_cpu.h"
+
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 
 DECLARE_ASM_CONST(8, uint64_t, round_tab[3])={
 0x0000000000000000ULL,

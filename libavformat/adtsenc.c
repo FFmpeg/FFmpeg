@@ -19,8 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/bitstream.h"
 #include "avformat.h"
-#include "bitstream.h"
 
 #define ADTS_HEADER_SIZE 7
 

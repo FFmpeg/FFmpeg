@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <assert.h>
-#include "common.h"
+#include "libavutil/common.h"
 
 typedef struct RangeCoder{
     int low;

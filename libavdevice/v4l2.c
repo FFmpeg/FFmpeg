@@ -28,7 +28,7 @@
  */
 
 #include "config.h"
-#include "avformat.h"
+#include "libavformat/avformat.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

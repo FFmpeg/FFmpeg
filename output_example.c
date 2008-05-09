@@ -31,10 +31,13 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "avformat.h"
-#include "swscale.h"
+#include "libavformat/avformat.h"
+#include "libswscale/swscale.h"
 
 #undef exit
+#undef fprintf
+#undef printf
+#undef snprintf
 
 /* 5 seconds stream duration */
 #define STREAM_DURATION   5.0

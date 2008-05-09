@@ -27,7 +27,7 @@
  * @sa http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
-#include "common.h"
+#include "libavutil/common.h"
 #include "dsputil.h"
 #include "bethsoftvideo.h"
 #include "bytestream.h"

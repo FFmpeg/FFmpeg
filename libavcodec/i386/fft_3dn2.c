@@ -19,8 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "dsputil.h"
-#include "x86_cpu.h"
+
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 
 static const int p1m1[2] __attribute__((aligned(8))) =
     { 0, 1 << 31 };

@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avstring.h"
+#include "libavutil/avstring.h"
+#include "libavutil/base64.h"
 #include "avformat.h"
 #include "avc.h"
-#include "base64.h"
 #include "rtp.h"
 
 #ifdef CONFIG_RTP_MUXER

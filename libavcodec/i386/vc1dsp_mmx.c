@@ -24,9 +24,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "dsputil.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
-#include "x86_cpu.h"
 
 /** Add rounder from mm7 to mm3 and pack result at destination */
 #define NORMALIZE_MMX(SHIFT)                                    \

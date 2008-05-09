@@ -28,7 +28,7 @@
 #ifndef FFMPEG_H264PRED_H
 #define FFMPEG_H264PRED_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 /**
  * Prediction types

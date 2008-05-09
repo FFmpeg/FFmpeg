@@ -25,9 +25,9 @@
  */
 //#define DEBUG
 //#define DEBUG_BITALLOC
+#include "libavutil/crc.h"
 #include "avcodec.h"
 #include "bitstream.h"
-#include "crc.h"
 #include "ac3.h"
 
 typedef struct AC3EncodeContext {

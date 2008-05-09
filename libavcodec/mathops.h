@@ -22,7 +22,7 @@
 #ifndef FFMPEG_MATHOPS_H
 #define FFMPEG_MATHOPS_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 #ifdef ARCH_X86_32
 

@@ -23,7 +23,7 @@
 #define FFMPEG_MPEG_H
 
 #include <stdint.h>
-#include "intreadwrite.h"
+#include "libavutil/intreadwrite.h"
 
 #define PACK_START_CODE             ((unsigned int)0x000001ba)
 #define SYSTEM_HEADER_START_CODE    ((unsigned int)0x000001bb)

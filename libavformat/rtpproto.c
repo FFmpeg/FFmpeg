@@ -24,8 +24,8 @@
  * RTP protocol
  */
 
+#include "libavutil/avstring.h"
 #include "avformat.h"
-#include "avstring.h"
 
 #include <unistd.h>
 #include <stdarg.h>

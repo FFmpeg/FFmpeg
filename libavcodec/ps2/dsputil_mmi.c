@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 #include "mmi.h"
 
 void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);

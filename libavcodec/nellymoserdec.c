@@ -30,8 +30,9 @@
  * The 3 alphanumeric copyright notices are md5summed they are from the original
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
+
+#include "libavutil/random.h"
 #include "avcodec.h"
-#include "random.h"
 #include "dsputil.h"
 
 #define ALT_BITSTREAM_READER_LE

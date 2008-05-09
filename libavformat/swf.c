@@ -19,8 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/bitstream.h"
 #include "avformat.h"
-#include "bitstream.h"
 #include "riff.h"    /* for CodecTag */
 
 /* should have a generic way to indicate probable size */

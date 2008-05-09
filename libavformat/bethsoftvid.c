@@ -28,7 +28,7 @@
  */
 
 #include "avformat.h"
-#include "bethsoftvideo.h"
+#include "libavcodec/bethsoftvideo.h"
 
 typedef struct BVID_DemuxContext
 {

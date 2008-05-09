@@ -21,8 +21,8 @@
  */
 
 #include <stdlib.h>
-#include "dsputil.h"
-#include "x86_cpu.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 
 #undef printf
 

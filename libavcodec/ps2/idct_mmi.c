@@ -25,8 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "common.h"
-#include "dsputil.h"
+#include "libavutil/common.h"
+#include "libavcodec/dsputil.h"
 #include "mmi.h"
 
 #define BITS_INV_ACC    5       // 4 or 5 for IEEE

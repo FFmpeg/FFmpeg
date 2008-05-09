@@ -28,7 +28,7 @@
  * Prototypes for interface to .so that implement a video processing hook
  */
 
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 
 /* Function must be called 'Configure' */
 typedef int (FrameHookConfigure)(void **ctxp, int argc, char *argv[]);

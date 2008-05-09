@@ -19,12 +19,13 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/crc.h"
+#include "libavcodec/ac3_parser.h"
+#include "libavcodec/bitstream.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "ac3_parser.h"
 #include "raw.h"
-#include "crc.h"
-#include "bitstream.h"
-#include "bytestream.h"
 
 #ifdef CONFIG_MUXERS
 /* simple formats */

@@ -23,10 +23,10 @@
  * Based on documents from Game Audio Player and own research
  */
 
+#include "libavutil/bswap.h"
 #include "avformat.h"
 #include "raw.h"
 #include "riff.h"
-#include "bswap.h"
 
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))

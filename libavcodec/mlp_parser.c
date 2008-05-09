@@ -24,9 +24,9 @@
  * MLP parser
  */
 
+#include "libavutil/crc.h"
 #include "bitstream.h"
 #include "parser.h"
-#include "crc.h"
 #include "mlp_parser.h"
 
 static const uint8_t mlp_quants[16] = {

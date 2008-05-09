@@ -45,8 +45,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "framehook.h"
-#include "swscale.h"
+#include "libavformat/framehook.h"
+#include "libswscale/swscale.h"
 
 #include <stdio.h>
 #include <stdlib.h>

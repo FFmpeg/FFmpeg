@@ -21,7 +21,7 @@
 #ifndef FFMPEG_RTP_H
 #define FFMPEG_RTP_H
 
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 #include "avformat.h"
 
 #define RTP_MIN_PACKET_LENGTH 12

@@ -45,9 +45,9 @@
 
 //#define DEBUG
 
+#include "libavutil/aes.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "aes.h"
-#include "bytestream.h"
 
 typedef uint8_t UID[16];
 

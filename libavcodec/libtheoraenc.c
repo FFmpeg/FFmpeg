@@ -31,8 +31,8 @@
  */
 
 /* FFmpeg includes */
+#include "libavutil/log.h"
 #include "avcodec.h"
-#include "log.h"
 
 /* libtheora includes */
 #include <theora/theora.h>

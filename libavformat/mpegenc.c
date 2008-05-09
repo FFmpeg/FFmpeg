@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/fifo.h"
+#include "libavcodec/bitstream.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "fifo.h"
 #include "mpeg.h"
 
 #define MAX_PAYLOAD_SIZE 4096

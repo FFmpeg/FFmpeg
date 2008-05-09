@@ -25,14 +25,14 @@
 #include <math.h>
 
 #include "config.h"
-#include "avformat.h"
-#include "avfilter.h"
-#include "avdevice.h"
+#include "libavformat/avformat.h"
+#include "libavfilter/avfilter.h"
+#include "libavdevice/avdevice.h"
+#include "libavutil/avstring.h"
 #include "cmdutils.h"
-#include "avstring.h"
 #include "version.h"
 #ifdef CONFIG_NETWORK
-#include "network.h"
+#include "libavformat/network.h"
 #endif
 
 #undef exit

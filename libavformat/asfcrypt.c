@@ -19,11 +19,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "common.h"
-#include "intreadwrite.h"
-#include "bswap.h"
-#include "des.h"
-#include "rc4.h"
+
+#include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/bswap.h"
+#include "libavutil/des.h"
+#include "libavutil/rc4.h"
 #include "asfcrypt.h"
 
 /**

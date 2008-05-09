@@ -29,8 +29,7 @@
 #ifndef FFMPEG_H264_I386_H
 #define FFMPEG_H264_I386_H
 
-
-#include "cabac.h"
+#include "libavcodec/cabac.h"
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)

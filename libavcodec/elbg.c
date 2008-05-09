@@ -25,9 +25,9 @@
 
 #include <string.h>
 
+#include "libavutil/random.h"
 #include "elbg.h"
 #include "avcodec.h"
-#include "random.h"
 
 #define DELTA_ERR_MAX 0.1  ///< Precision of the ELBG algorithm (as percentual error)
 

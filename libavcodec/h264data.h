@@ -30,8 +30,8 @@
 #define FFMPEG_H264DATA_H
 
 #include <stdint.h>
+#include "libavutil/rational.h"
 #include "mpegvideo.h"
-#include "rational.h"
 
 
 #define EXTENDED_SAR          255

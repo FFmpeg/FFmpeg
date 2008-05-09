@@ -22,11 +22,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
-#include "mpegvideo.h"
-#include "avcodec.h"
-#include "x86_cpu.h"
 
 extern uint16_t inv_zigzag_direct16[64];
 

@@ -21,11 +21,11 @@
 
 #include <math.h>
 #include <limits.h>
-#include "avformat.h"
-#include "avdevice.h"
-#include "rtsp.h"
-#include "swscale.h"
-#include "avstring.h"
+#include "libavutil/avstring.h"
+#include "libavformat/avformat.h"
+#include "libavformat/rtsp.h"
+#include "libavdevice/avdevice.h"
+#include "libswscale/swscale.h"
 
 #include "version.h"
 #include "cmdutils.h"

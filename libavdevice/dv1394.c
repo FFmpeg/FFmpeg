@@ -29,12 +29,12 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "avformat.h"
+#include "libavformat/avformat.h"
 
 #undef DV1394_DEBUG
 
+#include "libavformat/dv.h"
 #include "dv1394.h"
-#include "dv.h"
 
 struct dv1394_data {
     int fd;

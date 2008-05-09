@@ -20,9 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tree.h"
+#include "libavutil/avstring.h"
+#include "libavutil/tree.h"
 #include "nut.h"
-#include "avstring.h"
 
 #undef NDEBUG
 #include <assert.h>

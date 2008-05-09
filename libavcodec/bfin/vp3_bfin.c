@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
-#include "dsputil.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
 
 extern void ff_bfin_vp3_idct (DCTELEM *block) attribute_l1_text;

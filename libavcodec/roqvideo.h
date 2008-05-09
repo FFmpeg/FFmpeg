@@ -22,9 +22,9 @@
 #ifndef FFMPEG_ROQVIDEO_H
 #define FFMPEG_ROQVIDEO_H
 
+#include "libavutil/random.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "random.h"
 
 typedef struct {
     unsigned char y[4];

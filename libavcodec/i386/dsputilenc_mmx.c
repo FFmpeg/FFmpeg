@@ -22,10 +22,10 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
-#include "dsputil.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
-#include "mpegvideo.h"
-#include "x86_cpu.h"
 
 
 static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)

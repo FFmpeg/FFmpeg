@@ -22,8 +22,8 @@
  */
 
 #include <unistd.h>
-#include "avcodec.h"
-#include "dsputil.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
 
 int off;

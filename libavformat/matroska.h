@@ -22,7 +22,7 @@
 #ifndef FFMPEG_MATROSKA_H
 #define FFMPEG_MATROSKA_H
 
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 
 /* EBML version supported */
 #define EBML_VERSION 1

@@ -20,8 +20,8 @@
  */
 
 
-#include "common.h"
-#include "dsputil.h"
+#include "libavutil/common.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_ppc.h"
 #include "gcc_fixes.h"
 

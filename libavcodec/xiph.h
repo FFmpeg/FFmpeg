@@ -21,7 +21,7 @@
 #ifndef FFMPEG_XIPH_H
 #define FFMPEG_XIPH_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 /**
  * Splits a single extradata buffer into the three headers that most

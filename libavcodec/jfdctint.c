@@ -63,7 +63,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "common.h"
+#include "libavutil/common.h"
 #include "dsputil.h"
 
 #define SHIFT_TEMPS

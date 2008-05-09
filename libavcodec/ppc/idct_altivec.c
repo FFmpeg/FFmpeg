@@ -38,7 +38,7 @@
 
 #include <stdlib.h>                                      /* malloc(), free() */
 #include <string.h>
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 
 #include "gcc_fixes.h"
 

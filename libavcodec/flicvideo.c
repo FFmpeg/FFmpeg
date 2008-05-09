@@ -40,8 +40,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "libavutil/bswap.h"
 #include "avcodec.h"
-#include "bswap.h"
 
 #define FLI_256_COLOR 4
 #define FLI_DELTA     7

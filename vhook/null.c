@@ -20,8 +20,8 @@
  */
 #include <stdio.h>
 
-#include "framehook.h"
-#include "swscale.h"
+#include "libavformat/framehook.h"
+#include "libswscale/swscale.h"
 
 static int sws_flags = SWS_BICUBIC;
 

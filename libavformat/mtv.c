@@ -24,8 +24,8 @@
  * MTV demuxer.
  */
 
+#include "libavutil/bswap.h"
 #include "avformat.h"
-#include "bswap.h"
 
 #define MTV_ASUBCHUNK_DATA_SIZE 500
 #define MTV_HEADER_SIZE 512

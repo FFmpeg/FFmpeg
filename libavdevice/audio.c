@@ -35,9 +35,9 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
-#include "log.h"
-#include "avcodec.h"
-#include "avformat.h"
+#include "libavutil/log.h"
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
 
 #define AUDIO_BLOCK_SIZE 4096
 

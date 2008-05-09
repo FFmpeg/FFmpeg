@@ -27,7 +27,7 @@
 #ifndef FFMPEG_MPEGAUDIODECHEADER_H
 #define FFMPEG_MPEGAUDIODECHEADER_H
 
-#include "common.h"
+#include "libavutil/common.h"
 #include "mpegaudio.h"
 
 

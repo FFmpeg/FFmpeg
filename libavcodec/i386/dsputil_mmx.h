@@ -23,7 +23,7 @@
 #define FFMPEG_DSPUTIL_MMX_H
 
 #include <stdint.h>
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 
 typedef struct { uint64_t a, b; } xmm_t;
 

@@ -27,14 +27,14 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
-#include "avformat.h"
-#include "avdevice.h"
-#include "swscale.h"
-#include "framehook.h"
-#include "opt.h"
-#include "fifo.h"
-#include "avstring.h"
-#include "os_support.h"
+#include "libavformat/avformat.h"
+#include "libavdevice/avdevice.h"
+#include "libswscale/swscale.h"
+#include "libavformat/framehook.h"
+#include "libavcodec/opt.h"
+#include "libavutil/fifo.h"
+#include "libavutil/avstring.h"
+#include "libavformat/os_support.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

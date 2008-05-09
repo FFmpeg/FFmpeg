@@ -28,10 +28,10 @@
 #ifndef FFMPEG_MPC_H
 #define FFMPEG_MPC_H
 
+#include "libavutil/random.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "random.h"
 
 #ifdef CONFIG_MPEGAUDIO_HP
 #define USE_HIGHPRECISION

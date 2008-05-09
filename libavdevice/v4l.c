@@ -20,8 +20,8 @@
  */
 
 #include "config.h"
-#include "avformat.h"
-#include "dsputil.h"
+#include "libavformat/avformat.h"
+#include "libavcodec/dsputil.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

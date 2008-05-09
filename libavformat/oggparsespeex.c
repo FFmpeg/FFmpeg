@@ -23,12 +23,12 @@
 **/
 
 #include <stdlib.h>
+#include "libavutil/bswap.h"
+#include "libavutil/avstring.h"
+#include "libavcodec/bitstream.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "bytestream.h"
-#include "bswap.h"
 #include "oggdec.h"
-#include "avstring.h"
 
 static int speex_header(AVFormatContext *s, int idx) {
     ogg_t *ogg = s->priv_data;

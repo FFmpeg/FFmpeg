@@ -22,16 +22,16 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
-#include "dsputil.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/h263.h"
+#include "libavcodec/mpegvideo.h"
+#include "libavcodec/simple_idct.h"
 #include "dsputil_mmx.h"
-#include "simple_idct.h"
-#include "mpegvideo.h"
-#include "x86_cpu.h"
 #include "mmx.h"
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
 #include "idct_xvid.h"
-#include "h263.h"
 
 //#undef NDEBUG
 //#include <assert.h>

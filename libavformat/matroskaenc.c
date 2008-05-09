@@ -20,11 +20,11 @@
  */
 
 #include "avformat.h"
-#include "md5.h"
 #include "riff.h"
-#include "xiph.h"
 #include "matroska.h"
 #include "avc.h"
+#include "libavutil/md5.h"
+#include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
 typedef struct ebml_master {

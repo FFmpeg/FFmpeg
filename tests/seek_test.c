@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "avformat.h"
+#include "libavformat/avformat.h"
 
 #undef exit
 

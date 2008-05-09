@@ -23,9 +23,9 @@
 **/
 
 #include <stdlib.h>
+#include "libavutil/bswap.h"
+#include "libavcodec/bitstream.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "bswap.h"
 #include "oggdec.h"
 
 typedef struct theora_params {

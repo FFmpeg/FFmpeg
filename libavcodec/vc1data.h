@@ -29,8 +29,8 @@
 #define FFMPEG_VC1DATA_H
 
 #include <stdint.h>
+#include "libavutil/rational.h"
 #include "bitstream.h"
-#include "rational.h"
 
 /** Table for conversion between TTBLK and TTMB */
 extern const int ff_vc1_ttblk_to_tt[3][8];

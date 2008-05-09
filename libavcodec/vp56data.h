@@ -24,7 +24,7 @@
 #ifndef FFMPEG_VP56DATA_H
 #define FFMPEG_VP56DATA_H
 
-#include "common.h"
+#include "libavutil/common.h"
 
 typedef enum {
     VP56_FRAME_CURRENT  = 0,

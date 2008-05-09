@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/imgconvert.h"
 #include "avfilter.h"
-#include "imgconvert.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void avfilter_default_free_video_buffer(AVFilterPic *pic)

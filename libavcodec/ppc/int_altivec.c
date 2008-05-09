@@ -23,7 +23,7 @@
  ** integer misc ops.
  **/
 
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 
 #include "gcc_fixes.h"
 

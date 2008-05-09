@@ -18,9 +18,10 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/bitstream.h"
+#include "libavcodec/unary.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "unary.h"
 
 /// Two-byte MPC tag
 #define MKMPCTAG(a, b) (a | (b << 8))

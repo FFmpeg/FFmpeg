@@ -26,8 +26,8 @@
  * @sa http://wiki.multimedia.cx/index.php?title=BFI
  */
 
+#include "libavutil/common.h"
 #include "avcodec.h"
-#include "common.h"
 #include "bytestream.h"
 
 typedef struct BFIContext {

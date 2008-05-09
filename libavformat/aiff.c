@@ -18,10 +18,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "raw.h"
 #include "riff.h"
-#include "intfloat_readwrite.h"
 
 static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_PCM_S16BE, MKTAG('N','O','N','E') },

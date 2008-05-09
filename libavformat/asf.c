@@ -18,11 +18,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/common.h"
+#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "riff.h"
-#include "mpegaudio.h"
 #include "asf.h"
-#include "common.h"
 #include "asfcrypt.h"
 
 extern void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);

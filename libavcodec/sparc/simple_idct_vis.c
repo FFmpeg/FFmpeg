@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 
 static const DECLARE_ALIGNED_8(int16_t, coeffs[28]) = {
     - 1259,- 1259,- 1259,- 1259,

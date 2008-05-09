@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 #include "asm.h"
-#include "dsputil.h"
-#include "mpegvideo.h"
 
 static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
                                     int n, int qscale)

@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/snow.h"
 
 #include "gcc_fixes.h"
 #include "dsputil_altivec.h"
-#include "snow.h"
 
 #undef NDEBUG
 #include <assert.h>

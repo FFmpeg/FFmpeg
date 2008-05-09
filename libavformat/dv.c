@@ -29,7 +29,7 @@
  */
 #include <time.h>
 #include "avformat.h"
-#include "dvdata.h"
+#include "libavcodec/dvdata.h"
 #include "dv.h"
 
 struct DVDemuxContext {

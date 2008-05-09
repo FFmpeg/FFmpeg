@@ -26,7 +26,7 @@
 #ifndef FFMPEG_POSTPROCESS_INTERNAL_H
 #define FFMPEG_POSTPROCESS_INTERNAL_H
 
-#include "avutil.h"
+#include "libavutil/avutil.h"
 #include "postprocess.h"
 
 #define V_DEBLOCK       0x01

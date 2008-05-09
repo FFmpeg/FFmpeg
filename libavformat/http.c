@@ -18,13 +18,13 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/base64.h"
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include <unistd.h>
 #include "network.h"
 #include "os_support.h"
-
-#include "base64.h"
-#include "avstring.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */

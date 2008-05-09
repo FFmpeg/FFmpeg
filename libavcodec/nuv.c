@@ -21,11 +21,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/bswap.h"
+#include "libavutil/lzo.h"
 #include "avcodec.h"
-
-#include "bswap.h"
 #include "dsputil.h"
-#include "lzo.h"
 #include "rtjpeg.h"
 
 typedef struct {

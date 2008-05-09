@@ -21,7 +21,7 @@
  */
 
 #include "config.h"
-#include "avformat.h"
+#include "libavformat/avformat.h"
 
 #if ENABLE_LIBDC1394_2
 #include <dc1394/dc1394.h>

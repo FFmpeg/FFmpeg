@@ -25,11 +25,11 @@
  * utils.
  */
 
+#include "libavutil/integer.h"
+#include "libavutil/crc.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "integer.h"
 #include "opt.h"
-#include "crc.h"
 #include "imgconvert.h"
 #include <stdarg.h>
 #include <limits.h>

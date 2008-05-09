@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/tree.h"
+#include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
-#include "tree.h"
-#include "mpegaudiodata.h"
 
 static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint8_t out[64]){
     int sample_rate= c->sample_rate;

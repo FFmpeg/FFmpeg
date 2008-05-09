@@ -26,7 +26,7 @@
 
 #include <string.h>
 
-#include "common.h"
+#include "libavutil/common.h"
 #include "bitstream.h"
 #include "cabac.h"
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/x86_cpu.h"
 #include "dsputil_mmx.h"
-#include "x86_cpu.h"
 
 static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data)
 {

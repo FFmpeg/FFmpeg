@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/tree.h"
 #include "nut.h"
-#include "tree.h"
 
 const AVCodecTag ff_nut_subtitle_tags[] = {
     { CODEC_ID_TEXT        , MKTAG('U', 'T', 'F', '8') },

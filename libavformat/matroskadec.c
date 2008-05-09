@@ -31,9 +31,9 @@
 #include "avformat.h"
 /* For codec_get_id(). */
 #include "riff.h"
-#include "intfloat_readwrite.h"
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/lzo.h"
 
 typedef struct Track {

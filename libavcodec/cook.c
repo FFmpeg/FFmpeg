@@ -46,11 +46,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/random.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
 #include "bytestream.h"
-#include "random.h"
 
 #include "cookdata.h"
 

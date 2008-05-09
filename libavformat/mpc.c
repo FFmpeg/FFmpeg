@@ -18,8 +18,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/bitstream.h"
 #include "avformat.h"
-#include "bitstream.h"
 
 #define MPC_FRAMESIZE  1152
 #define DELAY_FRAMES   32

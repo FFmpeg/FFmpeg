@@ -23,9 +23,9 @@
  * Based on http://wiki.multimedia.cx/index.php?title=Smacker
  */
 
+#include "libavutil/bswap.h"
 #include "avformat.h"
 #include "riff.h"
-#include "bswap.h"
 
 #define SMACKER_PAL 0x01
 #define SMACKER_FLAG_RING_FRAME 0x01

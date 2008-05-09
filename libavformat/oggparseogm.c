@@ -23,10 +23,10 @@
 **/
 
 #include <stdlib.h>
+#include "libavutil/intreadwrite.h"
+#include "libavcodec/bitstream.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "bytestream.h"
-#include "intreadwrite.h"
 #include "oggdec.h"
 #include "riff.h"
 

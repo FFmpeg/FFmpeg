@@ -44,10 +44,10 @@
 #include <stdio.h>
 #include <dirent.h>
 
-#include "framehook.h"
-#include "dsputil.h"
-#include "avformat.h"
-#include "swscale.h"
+#include "libavformat/avformat.h"
+#include "libavformat/framehook.h"
+#include "libavcodec/dsputil.h"
+#include "libswscale/swscale.h"
 
 static int sws_flags = SWS_BICUBIC;
 

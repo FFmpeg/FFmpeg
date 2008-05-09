@@ -21,7 +21,7 @@
 #ifndef FFMPEG_ELBG_H
 #define FFMPEG_ELBG_H
 
-#include "random.h"
+#include "libavutil/random.h"
 
 /**
  * Implementation of the Enhanced LBG Algorithm

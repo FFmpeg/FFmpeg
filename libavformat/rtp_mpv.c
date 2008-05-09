@@ -19,10 +19,10 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/mpegvideo.h"
 #include "avformat.h"
 #include "rtp_internal.h"
-
-#include "mpegvideo.h"
 
 /* NOTE: a single frame must be passed with sequence header if
    needed. XXX: use slices. */

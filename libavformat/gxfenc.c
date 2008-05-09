@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/fifo.h"
 #include "avformat.h"
 #include "gxf.h"
 #include "riff.h"
-#include "fifo.h"
 
 #define GXF_AUDIO_PACKET_SIZE 65536
 

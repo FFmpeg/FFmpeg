@@ -18,10 +18,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/avstring.h"
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodecheader.h"
 #include "avformat.h"
-#include "mpegaudio.h"
-#include "avstring.h"
-#include "mpegaudiodecheader.h"
 
 #define ID3v2_HEADER_SIZE 10
 #define ID3v1_TAG_SIZE 128

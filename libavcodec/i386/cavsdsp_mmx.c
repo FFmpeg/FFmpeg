@@ -22,10 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavutil/common.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
-#include "common.h"
-#include "x86_cpu.h"
 
 /*****************************************************************************
  *

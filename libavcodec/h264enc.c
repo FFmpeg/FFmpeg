@@ -17,7 +17,7 @@
  */
 
 
-#include "common.h"
+#include "libavutil/common.h"
 #include "bitstream.h"
 #include "mpegvideo.h"
 #include "h264data.h"

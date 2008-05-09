@@ -30,9 +30,9 @@
 #include <time.h>
 #include <stdarg.h>
 #include "avformat.h"
-#include "dvdata.h"
+#include "libavcodec/dvdata.h"
 #include "dv.h"
-#include "fifo.h"
+#include "libavutil/fifo.h"
 
 struct DVMuxContext {
     const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */

@@ -23,12 +23,12 @@
 **/
 
 #include <stdlib.h>
+#include "libavutil/avstring.h"
+#include "libavutil/bswap.h"
+#include "libavcodec/bitstream.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "bitstream.h"
-#include "bytestream.h"
-#include "bswap.h"
 #include "oggdec.h"
-#include "avstring.h"
 
 extern int
 vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)

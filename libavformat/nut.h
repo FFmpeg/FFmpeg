@@ -23,10 +23,10 @@
 #define FFMPEG_NUT_H
 
 //#include <limits.h>
+//#include "libavutil/adler32.h"
+//#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
-//#include "mpegaudio.h"
 #include "riff.h"
-//#include "adler32.h"
 
 #define      MAIN_STARTCODE (0x7A561F5F04ADULL + (((uint64_t)('N'<<8) + 'M')<<48))
 #define    STREAM_STARTCODE (0x11405BF2F9DBULL + (((uint64_t)('N'<<8) + 'S')<<48))

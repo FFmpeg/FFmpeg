@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/dsputil.h"
 #include "asm.h"
-#include "dsputil.h"
 
 extern void simple_idct_axp(DCTELEM *block);
 extern void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block);

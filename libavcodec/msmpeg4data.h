@@ -30,7 +30,7 @@
 #ifndef FFMPEG_MSMPEG4DATA_H
 #define FFMPEG_MSMPEG4DATA_H
 
-#include "common.h"
+#include "libavutil/common.h"
 #include "bitstream.h"
 #include "rl.h"
 

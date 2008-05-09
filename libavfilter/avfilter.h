@@ -35,7 +35,7 @@
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
 
 #include <stddef.h>
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 
 typedef struct AVFilterContext AVFilterContext;
 typedef struct AVFilterLink    AVFilterLink;

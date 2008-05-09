@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/crc.h"
+#include "libavutil/lls.h"
 #include "avcodec.h"
 #include "bitstream.h"
-#include "crc.h"
 #include "dsputil.h"
 #include "golomb.h"
-#include "lls.h"
 
 #define FLAC_MAX_CH  8
 #define FLAC_MIN_BLOCKSIZE  16

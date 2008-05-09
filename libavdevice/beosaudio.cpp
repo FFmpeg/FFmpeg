@@ -30,7 +30,7 @@
 #include <SoundPlayer.h>
 
 extern "C" {
-#include "avformat.h"
+#include "libavformat/avformat.h"
 }
 
 #ifdef HAVE_BSOUNDRECORDER

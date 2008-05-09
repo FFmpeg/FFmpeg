@@ -23,8 +23,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "dsputil.h"
-#include "mpegvideo.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/mpegvideo.h"
 
 #include "gcc_fixes.h"
 

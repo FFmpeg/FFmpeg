@@ -32,12 +32,12 @@
 #include <math.h>
 #include <string.h>
 
+#include "libavutil/crc.h"
+#include "libavutil/random.h"
 #include "avcodec.h"
 #include "ac3_parser.h"
 #include "bitstream.h"
-#include "crc.h"
 #include "dsputil.h"
-#include "random.h"
 
 /** Maximum possible frame size when the specification limit is ignored */
 #define AC3_MAX_FRAME_SIZE 21695

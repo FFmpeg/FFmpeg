@@ -74,7 +74,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //Changelog: use the Subversion log
 
 #include "config.h"
-#include "avutil.h"
+#include "libavutil/avutil.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>

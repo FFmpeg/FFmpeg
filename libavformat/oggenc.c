@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/crc.h"
+#include "libavcodec/xiph.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "crc.h"
-#include "xiph.h"
-#include "bytestream.h"
 
 typedef struct {
     int64_t duration;
