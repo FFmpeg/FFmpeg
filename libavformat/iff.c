@@ -60,6 +60,19 @@ typedef struct {
     uint32_t  audio_frame_count;
 } IffDemuxContext;
 
+
+static void interleave_stereo(const uint8_t *src, uint8_t *dest, int size)
+{
+    uint8_t *end = dest + size;
+    size = size>>1;
+
+    while(dest < end) {
+        *dest++ = *src;
+        *dest++ = *(src+size);
+        src++;
+    }
+}
+
 static int iff_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
@@ -152,7 +165,20 @@ static int iff_read_packet(AVFormatContext *s,
 
     if(iff->sent_bytes > iff->body_size)
         return AVERROR(EIO);
-    ret = av_get_packet(pb, pkt, PACKET_SIZE);
+
+    if(s->streams[0]->codec->channels == 2) {
+        uint8_t sample_buffer[PACKET_SIZE];
+
+        ret = get_buffer(pb, sample_buffer, PACKET_SIZE);
+        if(av_new_packet(pkt, PACKET_SIZE) < 0) {
+            av_log(s, AV_LOG_ERROR, "iff: cannot allocate packet \n");
+            return AVERROR(ENOMEM);
+        }
+        interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
+    }
+    else {
+        ret = av_get_packet(pb, pkt, PACKET_SIZE);
+    }
 
     if(iff->sent_bytes == 0)
         pkt->flags |= PKT_FLAG_KEY;
