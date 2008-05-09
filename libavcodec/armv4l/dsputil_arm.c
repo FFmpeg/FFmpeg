@@ -21,7 +21,7 @@
 
 #include "dsputil.h"
 #ifdef HAVE_IPP
-#include "ipp.h"
+#include <ipp.h>
 #endif
 
 extern void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
