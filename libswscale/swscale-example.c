@@ -25,7 +25,7 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
-#include "avutil.h"
+#include "libavutil/avutil.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "rgb2rgb.h"

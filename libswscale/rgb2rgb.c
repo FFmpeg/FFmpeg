@@ -27,11 +27,11 @@
  */
 #include <inttypes.h>
 #include "config.h"
+#include "libavutil/x86_cpu.h"
+#include "libavutil/bswap.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "x86_cpu.h"
-#include "bswap.h"
 
 #define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
 

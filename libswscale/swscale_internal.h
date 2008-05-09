@@ -27,7 +27,7 @@
 #include <altivec.h>
 #endif
 
-#include "avutil.h"
+#include "libavutil/avutil.h"
 
 #define MAX_FILTER_SIZE 256
 

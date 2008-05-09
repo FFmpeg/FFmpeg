@@ -69,9 +69,9 @@ untested special converters
 #endif
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "x86_cpu.h"
-#include "bswap.h"
 #include "rgb2rgb.h"
+#include "libavutil/x86_cpu.h"
+#include "libavutil/bswap.h"
 #include "libavcodec/opt.h"
 
 #undef MOVNTQ
