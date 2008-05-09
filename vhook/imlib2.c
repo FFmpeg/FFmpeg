@@ -58,7 +58,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <Imlib2.h>
-#include "eval.h"
+#include "libavcodec/eval.h"
 
 const char *const_names[]={
     "PI",
