@@ -34,6 +34,7 @@
 #include "intfloat_readwrite.h"
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavutil/lzo.h"
 
 typedef struct Track {
     MatroskaTrackType type;
@@ -1498,7 +1499,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                                                     uint64_t num;
                                                     if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                                                         break;
-                                                    if (num != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP)
+                                                    if (num != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
+                                                        num != MATROSKA_TRACK_ENCODING_COMP_LZO)
                                                         av_log(matroska->ctx, AV_LOG_ERROR,
                                                                "Unsupported compression algo");
                                                     track->encoding_algo = num;
@@ -2695,23 +2697,42 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     matroska_queue_packet(matroska, pkt);
                 }
             } else {
-                int offset = 0;
+                int result, offset = 0, ilen, olen, pkt_size = lace_size[n];
+                uint8_t *pkt_data = data;
 
-                if (matroska->tracks[track]->encoding_scope&1 &&
-                    matroska->tracks[track]->encoding_algo == MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP) {
+                if (matroska->tracks[track]->encoding_scope & 1) {
+                    switch (matroska->tracks[track]->encoding_algo) {
+                    case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP:
                     offset = matroska->tracks[track]->encoding_settings_len;
+                        break;
+                    case MATROSKA_TRACK_ENCODING_COMP_LZO:
+                        pkt_data = NULL;
+                        do {
+                            ilen = lace_size[n];
+                            olen = pkt_size *= 3;
+                            pkt_data = av_realloc(pkt_data,
+                                                  pkt_size+LZO_OUTPUT_PADDING);
+                            result = lzo1x_decode(pkt_data, &olen, data, &ilen);
+                        } while (result==LZO_OUTPUT_FULL && pkt_size<10000000);
+                        if (result) {
+                            av_free(pkt_data);
+                            continue;
+                        }
+                        pkt_size -= olen;
+                        break;
+                    }
                 }
 
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
-                if (av_new_packet(pkt, lace_size[n]+offset) < 0) {
+                if (av_new_packet(pkt, pkt_size+offset) < 0) {
                     res = AVERROR(ENOMEM);
                     n = laces-1;
                     break;
                 }
                 if (offset)
                     memcpy (pkt->data, matroska->tracks[track]->encoding_settings, offset);
-                memcpy (pkt->data+offset, data, lace_size[n]);
+                memcpy (pkt->data+offset, pkt_data, pkt_size);
 
                 if (n == 0)
                     pkt->flags = is_keyframe;
