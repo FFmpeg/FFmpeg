@@ -22,7 +22,7 @@
 #ifndef FFMPEG_VP3DSP_MMX_H
 #define FFMPEG_VP3DSP_MMX_H
 
-#include "dsputil.h"
+#include "libavcodec/dsputil.h"
 
 void ff_vp3_idct_mmx(int16_t *data);
 void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
