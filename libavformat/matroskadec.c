@@ -58,7 +58,7 @@ typedef struct Track {
     MatroskaTrackFlags flags;
 
     int encoding_scope;
-    int encoding_algo;
+    MatroskaTrackEncodingCompAlgo encoding_algo;
     uint8_t *encoding_settings;
     int encoding_settings_len;
 } MatroskaTrack;
