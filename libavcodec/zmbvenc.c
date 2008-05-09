@@ -54,6 +54,8 @@ typedef struct ZmbvEncContext {
     z_stream zstream;
 } ZmbvEncContext;
 
+static int score_tab[256];
+
 /** Block comparing function
  * XXX should be optimized and moved to DSPContext
  * TODO handle out of edge ME
@@ -62,13 +64,18 @@ static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2
 {
     int sum = 0;
     int i, j;
+    uint8_t histogram[256]={0};
 
     for(j = 0; j < bh; j++){
         for(i = 0; i < bw; i++)
-            sum += src[i] ^ src2[i];
+            histogram[src[i] ^ src2[i]]++;
         src += stride;
         src2 += stride2;
     }
+
+    for(i=1; i<256; i++)
+        sum+= score_tab[histogram[i]];
+
     return sum;
 }
 
@@ -235,7 +242,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     ZmbvEncContext * const c = avctx->priv_data;
     int zret; // Zlib return code
+    int i;
     int lvl = 9;
+
+    for(i=1; i<256; i++)
+        score_tab[i]= -i * log2(i/256.0) * 256;
 
     c->avctx = avctx;
 
