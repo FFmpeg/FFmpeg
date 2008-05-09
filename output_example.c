@@ -35,9 +35,6 @@
 #include "libswscale/swscale.h"
 
 #undef exit
-#undef fprintf
-#undef printf
-#undef snprintf
 
 /* 5 seconds stream duration */
 #define STREAM_DURATION   5.0
