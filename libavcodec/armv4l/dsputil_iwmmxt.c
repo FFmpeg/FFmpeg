@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
+#include "dsputil.h"
 
 #define DEF(x, y) x ## _no_rnd_ ## y ##_iwmmxt
 #define SET_RND(regd)  asm volatile ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");

@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "libavcodec/mpegvideo.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "avcodec.h"
 
 extern void MPV_common_init_iwmmxt(MpegEncContext *s);
 extern void MPV_common_init_armv5te(MpegEncContext *s);

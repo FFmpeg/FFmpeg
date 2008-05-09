@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "libavcodec/mpegvideo.h"
+#include "dsputil.h"
+#include "mpegvideo.h"
+#include "avcodec.h"
 
 
 #ifdef ENABLE_ARM_TESTS
