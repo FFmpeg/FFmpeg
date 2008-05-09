@@ -2703,7 +2703,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 if (matroska->tracks[track]->encoding_scope & 1) {
                     switch (matroska->tracks[track]->encoding_algo) {
                     case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP:
-                    offset = matroska->tracks[track]->encoding_settings_len;
+                        offset = matroska->tracks[track]->encoding_settings_len;
                         break;
                     case MATROSKA_TRACK_ENCODING_COMP_LZO:
                         pkt_data = NULL;
