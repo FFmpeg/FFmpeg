@@ -21,6 +21,7 @@
 #ifndef FFMPEG_X86CPU_H
 #define FFMPEG_X86CPU_H
 
+#include <stdint.h>
 #include "config.h"
 
 #ifdef ARCH_X86_64
