@@ -362,16 +362,6 @@ const char *sws_format_name(enum PixelFormat format)
     }
 }
 
-#if defined(ARCH_X86) && defined (CONFIG_GPL)
-void in_asm_used_var_warning_killer()
-{
-    volatile int i= bF8+bFC+w10+
-    bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+
-    ff_M24A+ff_M24B+ff_M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+ff_dither4[0]+ff_dither8[0]+bm01010101;
-    if (i) i=0;
-}
-#endif
-
 static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
                                int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                                uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
