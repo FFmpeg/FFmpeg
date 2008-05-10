@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "ra144.h"
 
 #define DATABLOCK1      20      /* size of 14.4 input block in bytes */
@@ -293,54 +294,25 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out,
 /* Decode 20-byte input */
 static void unpack_input(const unsigned char *input, unsigned int *output)
 {
-    unsigned int outbuffer[28];
-    unsigned short inbuffer[10];
-    unsigned int x;
-    unsigned int *ptr;
+    int i;
+    static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
 
-    /* fix endianness */
-    for (x=0; x<20; x+=2)
-        inbuffer[x/2] = (input[x] << 8) + input[x+1];
+    GetBitContext gb;
 
-    /* unpack */
-    ptr=outbuffer;
-    *(ptr++) = 27;
-    *(ptr++) = (inbuffer[0] >> 10) & 0x3f;
-    *(ptr++) = (inbuffer[0] >>  5) & 0x1f;
-    *(ptr++) = inbuffer[0] & 0x1f;
-    *(ptr++) = (inbuffer[1] >> 12) & 0xf;
-    *(ptr++) = (inbuffer[1] >>  8) & 0xf;
-    *(ptr++) = (inbuffer[1] >>  5) & 7;
-    *(ptr++) = (inbuffer[1] >>  2) & 7;
-    *(ptr++) = ((inbuffer[1] << 1) & 6) | ((inbuffer[2] >> 15) & 1);
-    *(ptr++) = (inbuffer[2] >> 12) & 7;
-    *(ptr++) = (inbuffer[2] >> 10) & 3;
-    *(ptr++) = (inbuffer[2] >>  5) & 0x1f;
-    *(ptr++) = ((inbuffer[2] << 2) & 0x7c) | ((inbuffer[3] >> 14) & 3);
-    *(ptr++) = (inbuffer[3] >> 6) & 0xff;
-    *(ptr++) = ((inbuffer[3] << 1) & 0x7e) | ((inbuffer[4] >> 15) & 1);
-    *(ptr++) = (inbuffer[4] >> 8) & 0x7f;
-    *(ptr++) = (inbuffer[4] >> 1) & 0x7f;
-    *(ptr++) = ((inbuffer[4] << 7) & 0x80) | ((inbuffer[5] >> 9) & 0x7f);
-    *(ptr++) = (inbuffer[5] >> 2) & 0x7f;
-    *(ptr++) = ((inbuffer[5] << 5) & 0x60) | ((inbuffer[6] >> 11) & 0x1f);
-    *(ptr++) = (inbuffer[6] >> 4) & 0x7f;
-    *(ptr++) = ((inbuffer[6] << 4) & 0xf0) | ((inbuffer[7] >> 12) & 0xf);
-    *(ptr++) = (inbuffer[7] >> 5) & 0x7f;
-    *(ptr++) = ((inbuffer[7] << 2) & 0x7c) | ((inbuffer[8] >> 14) & 3);
-    *(ptr++) = (inbuffer[8] >> 7) & 0x7f;
-    *(ptr++) = ((inbuffer[8] << 1) & 0xfe) | ((inbuffer[9] >> 15) & 1);
-    *(ptr++) = (inbuffer[9] >> 8) & 0x7f;
-    *(ptr++) = (inbuffer[9] >> 1) & 0x7f;
+    init_get_bits(&gb, input, 20 * 8);
 
-    *(output++) = outbuffer[11];
-    for (x=1; x<11; *(output++) = outbuffer[x++]);
-    ptr = outbuffer+12;
-    for (x=0; x<16; x+=4) {
-        *(output++) = ptr[x];
-        *(output++) = ptr[x+2];
-        *(output++) = ptr[x+3];
-        *(output++) = ptr[x+1];
+    for (i=0; i<10; i++)
+       output[i+1] = get_bits(&gb, sizes[i]);
+
+    output[0] = get_bits(&gb, 5);
+
+    output += 11;
+    for (i=0; i<4; i++) {
+        output[0] = get_bits(&gb, 7);
+        output[3] = get_bits(&gb, 8);
+        output[1] = get_bits(&gb, 7);
+        output[2] = get_bits(&gb, 7);
+        output += 4;
     }
 }
 
