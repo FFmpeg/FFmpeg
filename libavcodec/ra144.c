@@ -78,7 +78,6 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     Real144_internal *glob = avctx->priv_data;
 
-    memset(glob, 0, sizeof(Real144_internal));
     glob->resetflag   = 1;
     glob->swapbuf1    = glob->swapb1a;
     glob->swapbuf2    = glob->swapb2a;
