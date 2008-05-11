@@ -115,6 +115,10 @@ static int alac_set_info(ALACContext *alac)
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
     ptr++;                          /* ??? */
     alac->setinfo_sample_size           = *ptr++;
+    if (alac->setinfo_sample_size > 32) {
+        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_sample_size too large\n");
+        return -1;
+    }
     alac->setinfo_rice_historymult      = *ptr++;
     alac->setinfo_rice_initialhistory   = *ptr++;
     alac->setinfo_rice_kmodifier        = *ptr++;
@@ -531,33 +535,16 @@ static int alac_decode_frame(AVCodecContext *avctx,
         }
     } else {
         /* not compressed, easy case */
-        if (alac->setinfo_sample_size <= 16) {
             int i, chan;
             for (chan = 0; chan < channels; chan++)
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
-                    audiobits = get_bits(&alac->gb, alac->setinfo_sample_size);
-                    audiobits = extend_sign32(audiobits, readsamplesize);
+                    audiobits = get_bits_long(&alac->gb, alac->setinfo_sample_size);
+                    audiobits = extend_sign32(audiobits, alac->setinfo_sample_size);
 
                     alac->outputsamples_buffer[chan][i] = audiobits;
                 }
-        } else {
-            int i, chan;
-            for (chan = 0; chan < channels; chan++)
-                for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits;
-
-                    audiobits = get_bits(&alac->gb, 16);
-                    /* special case of sign extension..
-                     * as we'll be ORing the low 16bits into this */
-                    audiobits = audiobits << 16;
-                    audiobits = audiobits >> (32 - alac->setinfo_sample_size);
-                    audiobits |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
-
-                    alac->outputsamples_buffer[chan][i] = audiobits;
-                }
-        }
         /* wasted_bytes = 0; */
         interlacing_shift = 0;
         interlacing_leftweight = 0;
