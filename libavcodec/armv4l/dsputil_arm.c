@@ -25,6 +25,7 @@
 #endif
 
 extern void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
+extern void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
 
 extern void j_rev_dct_ARM(DCTELEM *data);
 extern void simple_idct_ARM(DCTELEM *data);
@@ -275,5 +276,8 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
 
 #ifdef HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);
+#endif
+#ifdef HAVE_ARMVFP
+    ff_float_init_arm_vfp(c, avctx);
 #endif
 }

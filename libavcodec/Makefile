@@ -419,6 +419,8 @@ ASM_OBJS-$(HAVE_ARMV5TE)               += armv4l/simple_idct_armv5te.o \
 
 ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o \
 
+ASM_OBJS-$(HAVE_ARMVFP)                += armv4l/float_arm_vfp.o \
+
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o \
                                           sparc/simple_idct_vis.o \
 
