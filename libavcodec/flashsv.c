@@ -254,6 +254,6 @@ AVCodec flashsv_decoder = {
     flashsv_decode_end,
     flashsv_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_BGR24, -1},
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_NONE},
     .long_name = "Flash Screen Video v1",
 };

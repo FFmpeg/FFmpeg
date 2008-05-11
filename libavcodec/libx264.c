@@ -296,6 +296,6 @@ AVCodec libx264_encoder = {
     .encode = X264_frame,
     .close = X264_close,
     .capabilities = CODEC_CAP_DELAY,
-    .pix_fmts = (enum PixelFormat[]) { PIX_FMT_YUV420P, -1 },
+    .pix_fmts = (enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
     .long_name = "libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
 };

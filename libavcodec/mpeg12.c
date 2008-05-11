@@ -70,13 +70,13 @@ extern int XVMC_field_end(MpegEncContext *s);
 extern void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
 extern void XVMC_init_block(MpegEncContext *s);//set s->block
 
-static const enum PixelFormat pixfmt_yuv_420[]= {PIX_FMT_YUV420P,-1};
-static const enum PixelFormat pixfmt_yuv_422[]= {PIX_FMT_YUV422P,-1};
-static const enum PixelFormat pixfmt_yuv_444[]= {PIX_FMT_YUV444P,-1};
+static const enum PixelFormat pixfmt_yuv_420[]= {PIX_FMT_YUV420P,PIX_FMT_NONE};
+static const enum PixelFormat pixfmt_yuv_422[]= {PIX_FMT_YUV422P,PIX_FMT_NONE};
+static const enum PixelFormat pixfmt_yuv_444[]= {PIX_FMT_YUV444P,PIX_FMT_NONE};
 static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_IDCT,
                                            PIX_FMT_XVMC_MPEG2_MC,
-                                           -1};
+                                           PIX_FMT_NONE};
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 

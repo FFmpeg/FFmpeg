@@ -584,6 +584,6 @@ AVCodec svq1_encoder = {
     svq1_encode_init,
     svq1_encode_frame,
     svq1_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
     .long_name= "Sorenson Vector Quantizer 1",
 };

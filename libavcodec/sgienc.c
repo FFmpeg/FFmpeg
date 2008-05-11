@@ -151,7 +151,7 @@ AVCodec sgi_encoder = {
     encode_init,
     encode_frame,
     NULL,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_PAL8, PIX_FMT_GRAY8, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_NONE},
     .long_name= "SGI image",
 };
 

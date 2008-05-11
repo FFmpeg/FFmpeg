@@ -264,7 +264,7 @@ static int encode_close(AVCodecContext* avc_context)
     return -1;
 }
 
-static const enum PixelFormat supported_pixel_formats[] = { PIX_FMT_YUV420P, -1 };
+static const enum PixelFormat supported_pixel_formats[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
 
 /*! AVCodec struct exposed to libavcodec */
 AVCodec libtheora_encoder =

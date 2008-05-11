@@ -1065,6 +1065,6 @@ AVCodec roq_encoder =
     roq_encode_frame,
     roq_encode_end,
     .supported_framerates = (AVRational[]){{30,1}, {0,0}},
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV444P, -1},
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV444P, PIX_FMT_NONE},
     .long_name = "Id RoQ video",
 };

@@ -825,6 +825,6 @@ AVCodec svq1_decoder = {
     svq1_decode_frame,
     CODEC_CAP_DR1,
     .flush= ff_mpeg_flush,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
     .long_name= "Sorenson Vector Quantizer 1",
 };

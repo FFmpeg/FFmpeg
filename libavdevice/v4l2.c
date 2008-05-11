@@ -223,7 +223,7 @@ static enum PixelFormat fmt_v4l2ff(uint32_t pix_fmt)
         }
     }
 
-    return -1;
+    return PIX_FMT_NONE;
 }
 
 static int mmap_init(AVFormatContext *ctx)
