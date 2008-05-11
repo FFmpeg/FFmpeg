@@ -535,16 +535,16 @@ static int alac_decode_frame(AVCodecContext *avctx,
         }
     } else {
         /* not compressed, easy case */
-            int i, chan;
-            for (chan = 0; chan < channels; chan++)
-                for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits;
+        int i, chan;
+        for (chan = 0; chan < channels; chan++)
+            for (i = 0; i < outputsamples; i++) {
+                int32_t audiobits;
 
-                    audiobits = get_bits_long(&alac->gb, alac->setinfo_sample_size);
-                    audiobits = extend_sign32(audiobits, alac->setinfo_sample_size);
+                audiobits = get_bits_long(&alac->gb, alac->setinfo_sample_size);
+                audiobits = extend_sign32(audiobits, alac->setinfo_sample_size);
 
-                    alac->outputsamples_buffer[chan][i] = audiobits;
-                }
+                alac->outputsamples_buffer[chan][i] = audiobits;
+            }
         /* wasted_bytes = 0; */
         interlacing_shift = 0;
         interlacing_leftweight = 0;
