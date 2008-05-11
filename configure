@@ -1827,6 +1827,8 @@ if $cc --version | grep -q Intel; then
   # 11030: Warning unknown option --as-needed
   # 10156: ignoring option '-export'; no argument required
   check_ldflags -wd10156,11030
+  # Allow to compile with optimizations
+  check_ldflags -march=$cpu
 fi
 
 # PIC flags for shared library objects where they are needed
