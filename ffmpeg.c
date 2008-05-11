@@ -37,6 +37,7 @@
 #include "libavformat/os_support.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
+#include <sys/types.h>
 #include <sys/resource.h>
 #elif defined(HAVE_GETPROCESSTIMES)
 #include <windows.h>
