@@ -23,11 +23,6 @@
 #include "bitstream.h"
 #include "ra144.h"
 
-#define DATABLOCK1      20      /* size of 14.4 input block in bytes */
-#define DATACHUNK1      1440    /* size of 14.4 input chunk in bytes */
-#define AUDIOBLOCK      160     /* size of output block in 16-bit words (320 bytes) */
-#define AUDIOBUFFER     12288   /* size of output buffer in 16-bit words (24576 bytes) */
-/* consts */
 #define NBLOCKS         4       /* number of segments within a block */
 #define BLOCKSIZE       40      /* (quarter) block size in 16-bit words (80 bytes) */
 #define HALFBLOCK       20      /* BLOCKSIZE/2 */
