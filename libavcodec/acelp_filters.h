@@ -97,7 +97,7 @@ void ff_acelp_weighted_filter(
  * \note Two items before the top of the out buffer must contain two items from the
  *       tail of the previous subframe.
  *
- * \remark It is safe to pass the same array in in and out parameters
+ * \remark It is safe to pass the same array in in and out parameters.
  *
  * \remark AMR uses mostly the same filter (cut-off frequency 60Hz, same formula,
  *         but constants differs in 5th sign after comma). Fortunately in

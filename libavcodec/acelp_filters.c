@@ -37,13 +37,12 @@ void ff_acelp_convolve_circ(
 
     memset(fc_out, 0, subframe_size * sizeof(int16_t));
 
-    /* Since there are few pulses over entire subframe (i.e. almost all
-       fc_in[i] are zero, in case of G.729D the buffer contains two non-zero
-       samples before the call to ff_acelp_enhance_harmonics, and (due to
-       pitch_delay bounded to [20; 143]) a maximum four non-zero samples
-       for a total of 40 after the call to it), it is faster to swap two loops
-       and process non-zero samples only. This will reduce the number of
-       multiplications from 40*40 to 4*40 for G.729D */
+    /* Since there are few pulses over an entire subframe (i.e. almost
+       all fc_in[i] are zero) it is faster to swap two loops and process
+       non-zero samples only. In the case of G.729D the buffer contains
+       two non-zero samples before the call to ff_acelp_enhance_harmonics
+       and, due to pitch_delay being bounded by [20; 143], a maximum
+       of four non-zero samples for a total of 40 after the call. */
     for(i=0; i<subframe_size; i++)
     {
         if(fc_in[i])
