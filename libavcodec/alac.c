@@ -457,7 +457,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     if (hassize) {
         /* now read the number of samples as a 32bit integer */
-        outputsamples = get_bits(&alac->gb, 32);
+        outputsamples = get_bits_long(&alac->gb, 32);
         if(outputsamples > alac->setinfo_max_samples_per_frame){
             av_log(avctx, AV_LOG_ERROR, "outputsamples %d > %d\n", outputsamples, alac->setinfo_max_samples_per_frame);
             return -1;
