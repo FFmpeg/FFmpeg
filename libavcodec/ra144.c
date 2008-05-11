@@ -108,7 +108,7 @@ static void do_voice(int *a1, int *a2)
     int buffer[10];
     int *b1, *b2;
     int x, y;
-    int *ptr, *tmp;
+    int *ptr;
 
     b1 = buffer;
     b2 = a2;
@@ -121,9 +121,7 @@ static void do_voice(int *a1, int *a2)
             for (y=0; y <= x - 1; y++)
                 b1[y] = (((*a1) * (*(--ptr))) >> 12) + b2[y];
         }
-        tmp = b1;
-        b1 = b2;
-        b2 = tmp;
+        FFSWAP(int *, b1, b2);
         a1++;
     }
     ptr = a2 + 10;
@@ -359,7 +357,7 @@ static int eq(Real144_internal *glob, short *in, int *target)
     unsigned int u;
     short *sptr;
     int *ptr1, *ptr2, *ptr3;
-    int *bp1, *bp2, *temp;
+    int *bp1, *bp2;
 
     retval = 0;
     bp1 = glob->buffer1;
@@ -403,9 +401,7 @@ static int eq(Real144_internal *glob, short *in, int *target)
         if ((u + 0x1000) > 0x1fff)
             retval = 1;
 
-        temp = bp2;
-        bp2 = bp1;
-        bp1 = temp;
+        FFSWAP(unsigned int *, bp1, bp2);
     }
     return retval;
 }
@@ -454,7 +450,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 {
     unsigned int a, b, c;
     signed short *shptr;
-    unsigned int *lptr, *temp;
+    unsigned int *lptr;
     const short **dptr;
     int16_t *datao;
     int16_t *data = vdata;
@@ -513,12 +509,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     }
 
     glob->oldval = glob->val;
-    temp = glob->swapbuf1alt;
-    glob->swapbuf1alt = glob->swapbuf1;
-    glob->swapbuf1 = temp;
-    temp = glob->swapbuf2alt;
-    glob->swapbuf2alt = glob->swapbuf2;
-    glob->swapbuf2 = temp;
+
+    FFSWAP(unsigned int *, glob->swapbuf1alt, glob->swapbuf1);
+    FFSWAP(unsigned int *, glob->swapbuf2alt, glob->swapbuf2);
+
     *data_size = (data-datao)*sizeof(*data);
     return 20;
 }
