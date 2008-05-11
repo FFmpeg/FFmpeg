@@ -5494,11 +5494,11 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
     assert(coeff_count > 0);
 
     if( cat == 0 )
-        h->cbp_table[mb_xy] |= 0x100;
+        h->cbp_table[h->mb_xy] |= 0x100;
     else if( cat == 1 || cat == 2 )
         h->non_zero_count_cache[scan8[n]] = coeff_count;
     else if( cat == 3 )
-        h->cbp_table[mb_xy] |= 0x40 << n;
+        h->cbp_table[h->mb_xy] |= 0x40 << n;
     else if( cat == 4 )
         h->non_zero_count_cache[scan8[16+n]] = coeff_count;
     else {
