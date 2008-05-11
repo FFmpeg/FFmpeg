@@ -249,7 +249,7 @@ static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
 static void final(Real144_internal *glob, short *i1, short *i2, void *out,
                   int *statbuf, int len)
 {
-    int x, sum;
+    int x, sum, i;
     int buffer[10];
     short *ptr;
     short *ptr2;
@@ -257,16 +257,8 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out,
     memcpy(glob->work, statbuf,20);
     memcpy(glob->work + 10, i2, len * 2);
 
-    buffer[9] = i1[0];
-    buffer[8] = i1[1];
-    buffer[7] = i1[2];
-    buffer[6] = i1[3];
-    buffer[5] = i1[4];
-    buffer[4] = i1[5];
-    buffer[3] = i1[6];
-    buffer[2] = i1[7];
-    buffer[1] = i1[8];
-    buffer[0] = i1[9];
+    for(i=0; i<10; i++)
+        buffer[9-i] = i1[i];
 
     ptr2 = (ptr = glob->work) + len;
 
