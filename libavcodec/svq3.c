@@ -681,10 +681,8 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
 static int svq3_decode_slice_header (H264Context *h) {
   MpegEncContext *const s = (MpegEncContext *) h;
-  int mb_xy;
+  const int mb_xy = h->mb_xy;
   int i, header;
-
-  mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
   header = get_bits (&s->gb, 8);
 
@@ -844,7 +842,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
   init_get_bits (&s->gb, buf, 8*buf_size);
 
-  s->mb_x = s->mb_y = 0;
+  s->mb_x = s->mb_y = h->mb_xy = 0;
 
   if (svq3_decode_slice_header (h))
     return -1;
@@ -917,6 +915,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
   for (s->mb_y=0; s->mb_y < s->mb_height; s->mb_y++) {
     for (s->mb_x=0; s->mb_x < s->mb_width; s->mb_x++) {
+      h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
       if ( (get_bits_count(&s->gb) + 7) >= s->gb.size_in_bits &&
           ((get_bits_count(&s->gb) & 7) == 0 || show_bits (&s->gb, (-get_bits_count(&s->gb) & 7)) == 0)) {
