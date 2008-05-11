@@ -81,7 +81,7 @@ const uint8_t ff_div6[52]={
 
 static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
     int left_block[8];
@@ -551,7 +551,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
 
 static inline void write_back_intra_pred_mode(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
 
     h->intra4x4_pred_mode[mb_xy][0]= h->intra4x4_pred_mode_cache[7+8*1];
     h->intra4x4_pred_mode[mb_xy][1]= h->intra4x4_pred_mode_cache[7+8*2];
@@ -647,7 +647,7 @@ static inline int pred_intra_mode(H264Context *h, int n){
 
 static inline void write_back_non_zero_count(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
 
     h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[7+8*1];
     h->non_zero_count[mb_xy][1]= h->non_zero_count_cache[7+8*2];
@@ -957,7 +957,7 @@ static inline void direct_ref_list_init(H264Context * const h){
 
 static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     MpegEncContext * const s = &h->s;
-    const int mb_xy =   s->mb_x +   s->mb_y*s->mb_stride;
+    const int mb_xy =   h->mb_xy;
     const int b8_xy = 2*s->mb_x + 2*s->mb_y*h->b8_stride;
     const int b4_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
     const int mb_type_col = h->ref_list[1][0].mb_type[mb_xy];
@@ -1873,7 +1873,7 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
                       qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg),
                       h264_weight_func *weight_op, h264_biweight_func *weight_avg){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
 
     assert(IS_INTER(mb_type));
@@ -2299,7 +2299,7 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     int mb_xy;
 
     if(h->deblocking_filter == 2) {
-        mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+        mb_xy = h->mb_xy;
         deblock_left = h->slice_table[mb_xy] == h->slice_table[mb_xy - 1];
         deblock_top  = h->slice_table[mb_xy] == h->slice_table[h->top_mb_xy];
     } else {
@@ -2438,7 +2438,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     MpegEncContext * const s = &h->s;
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
-    const int mb_xy= mb_x + mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     uint8_t  *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize /*dct_offset*/;
@@ -2688,14 +2688,14 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             backup_pair_border(h, pair_dest_y, pair_dest_cb, pair_dest_cr, s->linesize, s->uvlinesize);
             // deblock a pair
             // top
-            s->mb_y--;
+            s->mb_y--; h->mb_xy -= s->mb_stride;
             tprintf(h->s.avctx, "call mbaff filter_mb mb_x:%d mb_y:%d pair_dest_y = %p, dest_y = %p\n", mb_x, mb_y, pair_dest_y, dest_y);
             fill_caches(h, mb_type_top, 1); //FIXME don't fill stuff which isn't used by filter_mb
             h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
             h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
             filter_mb(h, mb_x, mb_y, pair_dest_y, pair_dest_cb, pair_dest_cr, linesize, uvlinesize);
             // bottom
-            s->mb_y++;
+            s->mb_y++; h->mb_xy += s->mb_stride;
             tprintf(h->s.avctx, "call mbaff filter_mb\n");
             fill_caches(h, mb_type_bottom, 1); //FIXME don't fill stuff which isn't used by filter_mb
             h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
@@ -2728,7 +2728,7 @@ static void hl_decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
-    const int mb_xy= mb_x + mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 || (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || s->encoding;
 
@@ -4443,7 +4443,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
 static void predict_field_decoding_flag(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     int mb_type = (h->slice_table[mb_xy-1] == h->slice_num)
                 ? s->current_picture.mb_type[mb_xy-1]
                 : (h->slice_table[mb_xy-s->mb_stride] == h->slice_num)
@@ -4457,7 +4457,7 @@ static void predict_field_decoding_flag(H264Context *h){
  */
 static void decode_mb_skip(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy= h->mb_xy;
     int mb_type=0;
 
     memset(h->non_zero_count[mb_xy], 0, 16);
@@ -4499,10 +4499,12 @@ static void decode_mb_skip(H264Context *h){
  */
 static int decode_mb_cavlc(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
     int dct8x8_allowed= h->pps.transform_8x8_mode;
+
+    mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
     s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?
 
@@ -5121,7 +5123,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
         }else
             mbb_xy = mb_x + (mb_y-1)*s->mb_stride;
     }else{
-        int mb_xy = mb_x + mb_y*s->mb_stride;
+        int mb_xy = h->mb_xy;
         mba_xy = mb_xy - 1;
         mbb_xy = mb_xy - (s->mb_stride << FIELD_PICTURE);
     }
@@ -5372,7 +5374,7 @@ DECLARE_ASM_CONST(1, uint8_t, last_coeff_flag_offset_8x8[63]) = {
 };
 
 static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
-    const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
+    const int mb_xy  = h->mb_xy;
     static const int significant_coeff_flag_offset[2][6] = {
       { 105+0, 105+15, 105+29, 105+44, 105+47, 402 },
       { 277+0, 277+15, 277+29, 277+44, 277+47, 436 }
@@ -5558,7 +5560,7 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
 static inline void compute_mb_neighbors(H264Context *h)
 {
     MpegEncContext * const s = &h->s;
-    const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
+    const int mb_xy  = h->mb_xy;
     h->top_mb_xy     = mb_xy - s->mb_stride;
     h->left_mb_xy[0] = mb_xy - 1;
     if(FRAME_MBAFF){
@@ -5589,9 +5591,11 @@ static inline void compute_mb_neighbors(H264Context *h)
  */
 static int decode_mb_cabac(H264Context *h) {
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    int mb_xy;
     int mb_type, partition_count, cbp = 0;
     int dct8x8_allowed= h->pps.transform_8x8_mode;
+
+    mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
     s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?)
 
@@ -6389,7 +6393,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     int mb_xy, mb_type;
     int qp, qp0, qp1, qpc, qpc0, qpc1, qp_thresh;
 
-    mb_xy = mb_x + mb_y*s->mb_stride;
+    mb_xy = h->mb_xy;
 
     if(mb_x==0 || mb_y==mb_y_firstrow || !s->dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff ||
        (h->deblocking_filter == 2 && (h->slice_table[mb_xy] != h->slice_table[h->top_mb_xy] ||
