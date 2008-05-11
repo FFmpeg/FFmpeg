@@ -550,7 +550,6 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
 }
 
 static inline void write_back_intra_pred_mode(H264Context *h){
-    MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
 
     h->intra4x4_pred_mode[mb_xy][0]= h->intra4x4_pred_mode_cache[7+8*1];
@@ -646,7 +645,6 @@ static inline int pred_intra_mode(H264Context *h, int n){
 }
 
 static inline void write_back_non_zero_count(H264Context *h){
-    MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
 
     h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[7+8*1];
@@ -2726,8 +2724,6 @@ static void av_noinline hl_decode_mb_complex(H264Context *h){
 
 static void hl_decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_x= s->mb_x;
-    const int mb_y= s->mb_y;
     const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 || (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || s->encoding;
@@ -5374,7 +5370,6 @@ DECLARE_ASM_CONST(1, uint8_t, last_coeff_flag_offset_8x8[63]) = {
 };
 
 static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
-    const int mb_xy  = h->mb_xy;
     static const int significant_coeff_flag_offset[2][6] = {
       { 105+0, 105+15, 105+29, 105+44, 105+47, 402 },
       { 277+0, 277+15, 277+29, 277+44, 277+47, 436 }
