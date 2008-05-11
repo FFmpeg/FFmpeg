@@ -106,28 +106,21 @@ static int t_sqrt(unsigned int x)
 static void do_voice(int *a1, int *a2)
 {
     int buffer[10];
-    int *b1, *b2;
+    int *b1 = buffer;
+    int *b2 = a2;
     int x, y;
-    int *ptr;
-
-    b1 = buffer;
-    b2 = a2;
 
     for (x=0; x < 10; x++) {
-        b1[x] = (*a1) << 4;
+        b1[x] = a1[x] << 4;
 
-        if(x > 0) {
-            ptr = b2 + x;
-            for (y=0; y <= x - 1; y++)
-                b1[y] = (((*a1) * (*(--ptr))) >> 12) + b2[y];
-        }
+        for (y=0; y < x; y++)
+            b1[y] = ((a1[x] * (b2[x-y-1])) >> 12) + b2[y];
+
         FFSWAP(int *, b1, b2);
-        a1++;
     }
-    ptr = a2 + 10;
 
-    while (ptr > a2)
-        (*a2++) >>= 4;
+    for (x=0; x < 10; x++)
+        a2[x] >>= 4;
 }
 
 
