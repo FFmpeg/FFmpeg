@@ -96,7 +96,7 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
 
         ff1 += 1 << 10; // for rounding
         lp[i]    = (ff1 + ff2) >> 11; // divide by 2 and (3.22) -> (3.12)
-        lp[lp_order + 1 - i] = (ff1 - ff2) >> 11; // divide by 2 and (3.22) -> (3.12)
+        lp[(lp_half_order << 1) + 1 - i] = (ff1 - ff2) >> 11; // divide by 2 and (3.22) -> (3.12)
     }
 }
 
