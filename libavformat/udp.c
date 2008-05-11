@@ -51,7 +51,7 @@ typedef struct {
 #else
     struct sockaddr_storage dest_addr;
 #endif
-    size_t dest_addr_len;
+    int dest_addr_len;
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
