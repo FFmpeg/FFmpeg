@@ -668,7 +668,7 @@ AVOutputFormat mp2_muxer = {
 #endif
     0,
     CODEC_ID_MP2,
-    0,
+    CODEC_ID_NONE,
     NULL,
     mp3_write_packet,
     mp3_write_trailer,
@@ -682,7 +682,7 @@ AVOutputFormat mp3_muxer = {
     "mp3",
     0,
     CODEC_ID_MP3,
-    0,
+    CODEC_ID_NONE,
     mp3_write_header,
     mp3_write_packet,
     mp3_write_trailer,

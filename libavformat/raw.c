@@ -463,7 +463,7 @@ AVOutputFormat flac_muxer = {
     "flac",
     0,
     CODEC_ID_FLAC,
-    0,
+    CODEC_ID_NONE,
     flac_write_header,
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
@@ -493,7 +493,7 @@ AVOutputFormat ac3_muxer = {
     "ac3",
     0,
     CODEC_ID_AC3,
-    0,
+    CODEC_ID_NONE,
     NULL,
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
@@ -506,7 +506,7 @@ AVOutputFormat dts_muxer = {
     "dts",
     0,
     CODEC_ID_DTS,
-    0,
+    CODEC_ID_NONE,
     NULL,
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
@@ -533,7 +533,7 @@ AVOutputFormat dirac_muxer = {
     NULL,
     "drc",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_DIRAC,
     NULL,
     raw_write_packet,
@@ -615,7 +615,7 @@ AVOutputFormat h261_muxer = {
     "video/x-h261",
     "h261",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_H261,
     NULL,
     raw_write_packet,
@@ -643,7 +643,7 @@ AVOutputFormat h263_muxer = {
     "video/x-h263",
     "h263",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_H263,
     NULL,
     raw_write_packet,
@@ -726,7 +726,7 @@ AVOutputFormat mpeg1video_muxer = {
     "video/x-mpeg",
     "mpg,mpeg,m1v",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_MPEG1VIDEO,
     NULL,
     raw_write_packet,
@@ -741,7 +741,7 @@ AVOutputFormat mpeg2video_muxer = {
     NULL,
     "m2v",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_MPEG2VIDEO,
     NULL,
     raw_write_packet,
@@ -782,7 +782,7 @@ AVOutputFormat mjpeg_muxer = {
     "video/x-mjpeg",
     "mjpg,mjpeg",
     0,
-    0,
+    CODEC_ID_NONE,
     CODEC_ID_MJPEG,
     NULL,
     raw_write_packet,
@@ -827,7 +827,7 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
     ext,\
     0,\
     codec,\
-    0,\
+    CODEC_ID_NONE,\
     NULL,\
     raw_write_packet,\
     .flags= AVFMT_NOTIMESTAMPS,\

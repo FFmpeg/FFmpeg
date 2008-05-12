@@ -68,7 +68,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_SUNRAST   , "im8"},
     { CODEC_ID_SUNRAST   , "im24"},
     { CODEC_ID_SUNRAST   , "sunras"},
-    {0, NULL}
+    { CODEC_ID_NONE      , NULL}
 };
 
 static int sizes[][2] = {
