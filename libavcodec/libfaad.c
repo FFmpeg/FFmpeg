@@ -180,8 +180,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         unsigned char channels;
         int r = s->faacDecInit(s->faac_handle, buf, buf_size, &srate, &channels);
         if(r < 0){
-            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed: %s\n",
-                   s->faacDecGetErrorMessage(frame_info.error));
+            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed.\n");
             return -1;
         }
         avctx->sample_rate = srate;
