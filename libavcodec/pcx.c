@@ -42,7 +42,7 @@ static av_cold int pcx_init(AVCodecContext *avctx) {
 /**
  * @return advanced src pointer
  */
-static const char *pcx_rle_decode(const uint8_t *src, uint8_t *dst,
+static const uint8_t *pcx_rle_decode(const uint8_t *src, uint8_t *dst,
                             unsigned int bytes_per_scanline) {
     unsigned int i = 0;
     unsigned char run, value;
