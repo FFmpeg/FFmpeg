@@ -845,6 +845,6 @@ AVCodec dnxhd_encoder = {
     dnxhd_encode_init,
     dnxhd_encode_picture,
     dnxhd_encode_end,
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV422P, -1},
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_NONE},
     .long_name = "VC3/DNxHD",
 };
