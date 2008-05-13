@@ -1063,6 +1063,22 @@ nm="${cross_prefix}${nm}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
+# set temporary file name
+if test ! -z "$TMPDIR" ; then
+    TMPDIR1="${TMPDIR}"
+elif test ! -z "$TEMPDIR" ; then
+    TMPDIR1="${TEMPDIR}"
+else
+    TMPDIR1="/tmp"
+fi
+
+TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
+TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
+TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
+TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
+
 case "$arch" in
     i386|i486|i586|i686|i86pc|BePC)
         arch="x86_32"
@@ -1285,23 +1301,6 @@ case $target_os in
         target_os="${target_os}-UNKNOWN"
         ;;
 esac
-
-# set temporary file name
-if test ! -z "$TMPDIR" ; then
-    TMPDIR1="${TMPDIR}"
-elif test ! -z "$TEMPDIR" ; then
-    TMPDIR1="${TEMPDIR}"
-else
-    TMPDIR1="/tmp"
-fi
-
-TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
-TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
-TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
-TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
-TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
-
 
 add_extralibs $osextralibs
 
