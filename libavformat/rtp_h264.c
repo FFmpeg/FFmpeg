@@ -173,8 +173,10 @@ static int h264_handle_packet(RTPDemuxContext * s,
     int result= 0;
     uint8_t start_sequence[]= {0, 0, 1};
 
+#ifdef DEBUG
     assert(data);
     assert(data->cookie == MAGIC_COOKIE);
+#endif
     assert(buf);
 
     if (type >= 1 && type <= 23)
