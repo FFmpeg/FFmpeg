@@ -1075,7 +1075,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                         av_log(matroska->ctx, AV_LOG_INFO,
                                "Unknown or unsupported track type 0x%x\n",
                                track->type);
-                        track->type = 0;
+                        track->type = MATROSKA_TRACK_TYPE_NONE;
                         break;
                 }
                 matroska->tracks[matroska->num_tracks - 1] = track;
