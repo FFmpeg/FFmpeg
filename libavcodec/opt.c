@@ -172,7 +172,7 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
                 else if(!strcmp(buf, "none"   )) d= 0;
                 else if(!strcmp(buf, "all"    )) d= ~0;
                 else {
-                    if (!error)
+                    if (error)
                         av_log(NULL, AV_LOG_ERROR, "Unable to parse option value \"%s\": %s\n", val, error);
                     return NULL;
                 }
