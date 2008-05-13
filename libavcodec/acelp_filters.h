@@ -23,6 +23,8 @@
 #ifndef FFMPEG_ACELP_FILTERS_H
 #define FFMPEG_ACELP_FILTERS_H
 
+#include <stdint.h>
+
 /**
  * \brief Circularly convolve fixed vector with a phase dispersion impulse
  *        response filter (D.6.2 of G.729 and 6.1.5 of AMR).
