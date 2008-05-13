@@ -35,6 +35,9 @@
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
 #include "libavutil/lzo.h"
+#ifdef CONFIG_ZLIB
+#include <zlib.h>
+#endif
 
 typedef struct Track {
     MatroskaTrackType type;
@@ -1500,6 +1503,9 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                                                     if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                                                         break;
                                                     if (num != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
+#ifdef CONFIG_ZLIB
+                                                        num != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
+#endif
                                                         num != MATROSKA_TRACK_ENCODING_COMP_LZO)
                                                         av_log(matroska->ctx, AV_LOG_ERROR,
                                                                "Unsupported compression algo");
@@ -2720,6 +2726,30 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                         }
                         pkt_size -= olen;
                         break;
+#ifdef CONFIG_ZLIB
+                    case MATROSKA_TRACK_ENCODING_COMP_ZLIB: {
+                        z_stream zstream = {0};
+                        pkt_data = NULL;
+                        if (inflateInit(&zstream) != Z_OK)
+                            continue;
+                        zstream.next_in = data;
+                        zstream.avail_in = lace_size[n];
+                        do {
+                            pkt_size *= 3;
+                            pkt_data = av_realloc(pkt_data, pkt_size);
+                            zstream.avail_out = pkt_size - zstream.total_out;
+                            zstream.next_out = pkt_data + zstream.total_out;
+                            result = inflate(&zstream, Z_NO_FLUSH);
+                        } while (result==Z_OK && pkt_size<10000000);
+                        pkt_size = zstream.total_out;
+                        inflateEnd(&zstream);
+                        if (result != Z_STREAM_END) {
+                            av_free(pkt_data);
+                            continue;
+                        }
+                        break;
+                    }
+#endif
                     }
                 }
 
