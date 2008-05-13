@@ -27,6 +27,7 @@
 #include "libavutil/common.h"
 
 typedef enum {
+    VP56_FRAME_NONE     =-1,
     VP56_FRAME_CURRENT  = 0,
     VP56_FRAME_PREVIOUS = 1,
     VP56_FRAME_GOLDEN   = 2,

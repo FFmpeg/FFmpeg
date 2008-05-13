@@ -552,12 +552,12 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         s->prev_dc[2][VP56_FRAME_CURRENT] = 128;
 
         for (block=0; block < 4*s->mb_width+6; block++) {
-            s->above_blocks[block].ref_frame = -1;
+            s->above_blocks[block].ref_frame = VP56_FRAME_NONE;
             s->above_blocks[block].dc_coeff = 0;
             s->above_blocks[block].not_null_dc = 0;
         }
-        s->above_blocks[2*s->mb_width + 2].ref_frame = 0;
-        s->above_blocks[3*s->mb_width + 4].ref_frame = 0;
+        s->above_blocks[2*s->mb_width + 2].ref_frame = VP56_FRAME_CURRENT;
+        s->above_blocks[3*s->mb_width + 4].ref_frame = VP56_FRAME_CURRENT;
 
         stride_y  = p->linesize[0];
         stride_uv = p->linesize[1];
@@ -573,7 +573,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 mb_row_flip = mb_row;
 
             for (block=0; block<4; block++) {
-                s->left_block[block].ref_frame = -1;
+                s->left_block[block].ref_frame = VP56_FRAME_NONE;
                 s->left_block[block].dc_coeff = 0;
                 s->left_block[block].not_null_dc = 0;
             }
