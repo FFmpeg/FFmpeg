@@ -1508,7 +1508,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 #endif
                                                         num != MATROSKA_TRACK_ENCODING_COMP_LZO)
                                                         av_log(matroska->ctx, AV_LOG_ERROR,
-                                                               "Unsupported compression algo");
+                                                               "Unsupported compression algo\n");
                                                     track->encoding_algo = num;
                                                     break;
                                                 }
