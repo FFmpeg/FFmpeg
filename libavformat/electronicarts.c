@@ -49,11 +49,11 @@
 typedef struct EaDemuxContext {
     int big_endian;
 
-    int video_codec;
+    enum CodecID video_codec;
     AVRational time_base;
     int video_stream_index;
 
-    int audio_codec;
+    enum CodecID audio_codec;
     int audio_stream_index;
     int audio_frame_counter;
 
