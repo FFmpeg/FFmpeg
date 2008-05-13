@@ -3466,14 +3466,15 @@ static void opt_show_formats(void)
             break;
         }
         printf(
-            " %s%s%s%s%s%s %s",
+            " %s%s%s%s%s%s %-15s %s",
             decode ? "D": (/*p2->decoder ? "d":*/" "),
             encode ? "E":" ",
             type_str,
             cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S":" ",
             cap & CODEC_CAP_DR1 ? "D":" ",
             cap & CODEC_CAP_TRUNCATED ? "T":" ",
-            p2->name);
+            p2->name,
+            p2->long_name ? p2->long_name : "");
        /* if(p2->decoder && decode==0)
             printf(" use %s for decoding", p2->decoder->name);*/
         printf("\n");
