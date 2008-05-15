@@ -62,8 +62,8 @@ static int ra144_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void final(Real144_internal *glob, const short *i1, const short *i2, void *out, int *statbuf, int len);
-static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2, int m3, const short *s1, const short *s2, const short *s3, short *dest);
+static void final(const short *i1, const short *i2, void *out, int *statbuf, int len);
+static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1, const short *s2, const short *s3, short *dest);
 static int irms(const short *data, int factor);
 static void rotate_block(const short *source, short *target, int offset);
 
@@ -129,13 +129,13 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     else
         g = 0;
 
-    add_wav(glob, d, a, g, e, f, buffer_a, buffer_b,
+    add_wav(d, a, g, e, f, buffer_a, buffer_b,
             buffer_c, buffer_d);
 
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
     memcpy(glob->buffer_2 + BUFFERSIZE - BLOCKSIZE, buffer_d, BLOCKSIZE * 2);
 
-    final(glob, gsp, buffer_d, output_buffer, glob->buffer, BLOCKSIZE);
+    final(gsp, buffer_d, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
 /* rotate block */
@@ -174,9 +174,8 @@ static int irms(const short *data, int factor)
 }
 
 /* multiply/add wavetable */
-static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
-                    int m3, const short *s1, const short *s2, const short *s3,
-                    short *dest)
+static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
+                    const short *s2, const short *s3, short *dest)
 {
     int a, b, c, i;
     const short *ptr, *ptr2;
@@ -205,7 +204,7 @@ static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
 }
 
 
-static void final(Real144_internal *glob, const short *i1, const short *i2,
+static void final(const short *i1, const short *i2,
                   void *out, int *statbuf, int len)
 {
     int x, sum, i;
@@ -291,7 +290,7 @@ static void dec1(Real144_internal *glob, const int *data, const int *inp,
         *(ptr++) = *(inp++);
 }
 
-static int eq(Real144_internal *glob, const short *in, int *target)
+static int eq(const short *in, int *target)
 {
     int retval;
     int a;
@@ -377,7 +376,7 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     for (x=0; x<10*n; x++)
         *(glob->sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
 
-    result = eq(glob, glob->decsp, work);
+    result = eq(glob->decsp, work);
 
     if (result == 1) {
         dec1(glob, data, inp, n, f);
