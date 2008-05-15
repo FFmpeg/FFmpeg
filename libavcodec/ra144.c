@@ -114,7 +114,7 @@ static void do_voice(int *a1, int *a2)
         b1[x] = a1[x] << 4;
 
         for (y=0; y < x; y++)
-            b1[y] = ((a1[x] * (b2[x-y-1])) >> 12) + b2[y];
+            b1[y] = ((a1[x] * b2[x-y-1]) >> 12) + b2[y];
 
         FFSWAP(int *, b1, b2);
     }
