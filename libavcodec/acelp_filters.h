@@ -112,4 +112,4 @@ void ff_acelp_high_pass_filter(
         const int16_t* in,
         int length);
 
-#endif // FFMPEG_ACELP_FILTERS_H
+#endif /* FFMPEG_ACELP_FILTERS_H */
