@@ -12,14 +12,14 @@
 
 try_exec(){
     echo "Trying shell $1"
-    type "$1" >/dev/null 2>&1 && exec "$@"
+    type "$1" > /dev/null 2>&1 && exec "$@"
 }
 
 unset foo
-(: ${foo%%bar}) 2>/dev/null
+(: ${foo%%bar}) 2> /dev/null
 E1="$?"
 
-(: ${foo?}) 2>/dev/null
+(: ${foo?}) 2> /dev/null
 E2="$?"
 
 if test "$E1" != 0 || test "$E2" = 0; then
@@ -186,12 +186,12 @@ show_help(){
 }
 
 log(){
-    echo "$@" >>$logfile
+    echo "$@" >> $logfile
 }
 
 log_file(){
     log BEGIN $1
-    pr -n -t $1 >>$logfile
+    pr -n -t $1 >> $logfile
     log END $1
 }
 
@@ -350,7 +350,7 @@ print_config(){
 }
 
 flags_saved(){
-    (: ${SAVE_CFLAGS?}) 2>/dev/null
+    (: ${SAVE_CFLAGS?}) 2> /dev/null
 }
 
 save_flags(){
@@ -406,19 +406,19 @@ add_extralibs(){
 
 check_cmd(){
     log "$@"
-    "$@" >>$logfile 2>&1
+    "$@" >> $logfile 2>&1
 }
 
 check_cc(){
     log check_cc "$@"
-    cat >$TMPC
+    cat > $TMPC
     log_file $TMPC
     check_cmd $cc $CFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_cpp(){
     log check_cpp "$@"
-    cat >$TMPC
+    cat > $TMPC
     log_file $TMPC
     check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
 }
@@ -526,7 +526,7 @@ check_lib2(){
 }
 
 check_exec(){
-    check_ld "$@" && { enabled cross_compile || $TMPE >>$logfile 2>&1; }
+    check_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
 }
 
 check_exec_crash(){
@@ -538,7 +538,7 @@ check_exec_crash(){
     # can redirect the "Terminated" message from the shell.  SIGBUS
     # is not defined by standard C so it is used conditionally.
 
-    (check_exec "$@") >>$logfile 2>&1 <<EOF
+    (check_exec "$@") >> $logfile 2>&1 <<EOF
 #include <signal.h>
 static void sighandler(int sig){
     raise(SIGTERM);
@@ -1306,8 +1306,8 @@ add_extralibs $osextralibs
 
 disabled logging && logfile=/dev/null
 
-echo "# $0 $@" >$logfile
-set >>$logfile
+echo "# $0 $@" > $logfile
+set >> $logfile
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
@@ -1450,11 +1450,11 @@ if test $cpu != "generic"; then
 fi
 
 # make sure we can execute files in $TMPDIR
-cat >$TMPSH 2>>$logfile <<EOF
+cat > $TMPSH 2>> $logfile <<EOF
 #! /bin/sh
 EOF
-chmod +x $TMPSH >>$logfile 2>&1
-if ! $TMPSH >>$logfile 2>&1; then
+chmod +x $TMPSH >> $logfile 2>&1
+if ! $TMPSH >> $logfile 2>&1; then
     cat <<EOF
 Unable to create and execute files in $TMPDIR1.  Set the TMPDIR environment
 variable to another directory and make sure that $TMPDIR1 is not mounted
@@ -1704,7 +1704,7 @@ check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
 disable sdl_too_old
 disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
-if "${SDL_CONFIG}" --version >/dev/null 2>&1; then
+if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
     sdl_cflags=`"${SDL_CONFIG}" --cflags`
     temp_cflags $sdl_cflags
     temp_extralibs `"${SDL_CONFIG}" --libs`
@@ -1727,7 +1727,7 @@ EOF
     restore_flags
 fi
 
-texi2html -version >/dev/null 2>&1 && enable texi2html || disable texi2html
+texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
 check_type sys/socket.h socklen_t
 
@@ -2003,7 +2003,7 @@ enabled stripping &&
     echo "STRIP=echo ignoring strip" >> config.mak
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
-echo "VHOOKCFLAGS=$VHOOKCFLAGS">>config.mak
+echo "VHOOKCFLAGS=$VHOOKCFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
@@ -2161,7 +2161,7 @@ comment=$2
 version=$3
 libs=$4
 requires=$5
-cat <<EOF >$name.pc
+cat <<EOF > $name.pc
 prefix=$prefix
 exec_prefix=\${prefix}
 libdir=$libdir
@@ -2176,7 +2176,7 @@ Libs: -L\${libdir} -l${shortname}
 Libs.private: $libs
 Cflags: -I\${includedir}
 EOF
-cat <<EOF >$name-uninstalled.pc
+cat <<EOF > $name-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}/$name
