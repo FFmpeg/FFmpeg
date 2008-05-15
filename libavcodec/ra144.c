@@ -456,9 +456,9 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     unpack_input(buf, glob->unpacked);
 
     glob->iptr = glob->unpacked;
-    glob->val = decodetable[0][(*(glob->iptr++)) << 1];
+    glob->val = decodeval[(*(glob->iptr++)) << 1];
 
-    dptr = decodetable + 1;
+    dptr = decodetable;
     lptr = glob->swapbuf1;
 
     while (lptr<glob->swapbuf1 + 10)
