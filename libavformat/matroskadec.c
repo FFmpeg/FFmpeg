@@ -38,6 +38,9 @@
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
 #endif
+#ifdef CONFIG_BZLIB
+#include <bzlib.h>
+#endif
 
 typedef struct Track {
     MatroskaTrackType type;
@@ -1506,6 +1509,9 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 #ifdef CONFIG_ZLIB
                                                         num != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
 #endif
+#ifdef CONFIG_BZLIB
+                                                        num != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
+#endif
                                                         num != MATROSKA_TRACK_ENCODING_COMP_LZO)
                                                         av_log(matroska->ctx, AV_LOG_ERROR,
                                                                "Unsupported compression algo\n");
@@ -2744,6 +2750,30 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                         pkt_size = zstream.total_out;
                         inflateEnd(&zstream);
                         if (result != Z_STREAM_END) {
+                            av_free(pkt_data);
+                            continue;
+                        }
+                        break;
+                    }
+#endif
+#ifdef CONFIG_BZLIB
+                    case MATROSKA_TRACK_ENCODING_COMP_BZLIB: {
+                        bz_stream bzstream = {0};
+                        pkt_data = NULL;
+                        if (BZ2_bzDecompressInit(&bzstream, 0, 0) != BZ_OK)
+                            continue;
+                        bzstream.next_in = data;
+                        bzstream.avail_in = lace_size[n];
+                        do {
+                            pkt_size *= 3;
+                            pkt_data = av_realloc(pkt_data, pkt_size);
+                            bzstream.avail_out = pkt_size - bzstream.total_out_lo32;
+                            bzstream.next_out = pkt_data + bzstream.total_out_lo32;
+                            result = BZ2_bzDecompress(&bzstream);
+                        } while (result==BZ_OK && pkt_size<10000000);
+                        pkt_size = bzstream.total_out_lo32;
+                        BZ2_bzDecompressEnd(&bzstream);
+                        if (result != BZ_STREAM_END) {
                             av_free(pkt_data);
                             continue;
                         }
