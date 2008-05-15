@@ -1593,7 +1593,7 @@ if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
-enabled zlib && check_lib zlib.h zlibVersion -lz || disable zlib
+enabled  zlib && check_lib  zlib.h      zlibVersion -lz   || disable  zlib
 enabled bzlib && check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # ffserver uses poll(),
