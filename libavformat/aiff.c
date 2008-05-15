@@ -366,7 +366,7 @@ static int aiff_read_header(AVFormatContext *s,
             offset = get_be32(pb);      /* Offset of sound data */
             get_be32(pb);               /* BlockSize... don't care */
             offset += url_ftell(pb);    /* Compute absolute data offset */
-            if (st->codec->codec_id)    /* Assume COMM already parsed */
+            if (st->codec->block_align)    /* Assume COMM already parsed */
                 goto got_sound;
             if (url_is_streamed(pb)) {
                 av_log(s, AV_LOG_ERROR, "file is not seekable\n");
@@ -390,8 +390,10 @@ static int aiff_read_header(AVFormatContext *s,
         }
     }
 
-    /* End of loop and didn't get sound */
-    return AVERROR_INVALIDDATA;
+    if (!st->codec->block_align) {
+        av_log(s, AV_LOG_ERROR, "could not find COMM tag\n");
+        return -1;
+    }
 
 got_sound:
     /* Now positioned, get the sound data start and end */
