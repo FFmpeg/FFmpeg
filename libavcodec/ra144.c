@@ -394,7 +394,7 @@ static int eq(Real144_internal *glob, short *in, int *target)
         if ((u + 0x1000) > 0x1fff)
             retval = 1;
 
-        FFSWAP(unsigned int *, bp1, bp2);
+        FFSWAP(int *, bp1, bp2);
     }
     return retval;
 }
