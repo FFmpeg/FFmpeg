@@ -1060,6 +1060,11 @@ for opt do
     esac
 done
 
+disabled logging && logfile=/dev/null
+
+echo "# $0 $@" > $logfile
+set >> $logfile
+
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 nm="${cross_prefix}${nm}"
@@ -1306,11 +1311,6 @@ case $target_os in
 esac
 
 add_extralibs $osextralibs
-
-disabled logging && logfile=/dev/null
-
-echo "# $0 $@" > $logfile
-set >> $logfile
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
