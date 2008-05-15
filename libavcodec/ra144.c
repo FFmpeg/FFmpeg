@@ -48,9 +48,6 @@ typedef struct {
     unsigned short int buffer_2[148];
 
     unsigned short *sptr;
-
-    signed short wavtable1[2304];
-    unsigned short wavtable2[2304];
 } Real144_internal;
 
 static int ra144_decode_init(AVCodecContext * avctx)
@@ -61,9 +58,6 @@ static int ra144_decode_init(AVCodecContext * avctx)
     glob->swapbuf2    = glob->swapbuffers[1];
     glob->swapbuf1alt = glob->swapbuffers[2];
     glob->swapbuf2alt = glob->swapbuffers[3];
-
-    memcpy(glob->wavtable1, wavtable1, sizeof(wavtable1));
-    memcpy(glob->wavtable2, wavtable2, sizeof(wavtable2));
 
     return 0;
 }
@@ -183,11 +177,11 @@ static int irms(short *data, int factor)
 static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
                     int m3, short *s1, short *s2, short *s3, short *dest)
 {
-    int a, b, c;
-    short *ptr, *ptr2;
+    int a, b, c, i;
+    const short *ptr, *ptr2;
 
-    ptr  = glob->wavtable1 + n * 9;
-    ptr2 = glob->wavtable2 + n * 9;
+    ptr  = wavtable1 + n * 9;
+    ptr2 = wavtable2 + n * 9;
 
     if (f != 0)
         a = ((*ptr) * m1) >> ((*ptr2) + 1);
@@ -200,14 +194,13 @@ static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
     ptr++;
     ptr2++;
     c = ((*ptr) * m3) >> ((*ptr2) + 1);
-    ptr2 = (ptr = dest) + BLOCKSIZE;
 
     if (f != 0)
-        while (ptr < ptr2)
-            *(ptr++) = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
+        for (i=0; i < BLOCKSIZE; i++)
+            dest[i] = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
     else
-        while (ptr < ptr2)
-            *(ptr++) = ((*(s2++)) * b + (*(s3++)) * c) >> 12;
+        for (i=0; i < BLOCKSIZE; i++)
+            dest[i] = ((*(s2++)) * b + (*(s3++)) * c) >> 12;
 }
 
 
