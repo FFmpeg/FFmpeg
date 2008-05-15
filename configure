@@ -132,6 +132,7 @@ show_help(){
   echo "  --disable-network        disable network support [default=no]"
   echo "  --disable-ipv6           disable ipv6 support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
+  echo "  --disable-bzlib          disable bzlib [default=no]"
   echo "  --disable-vhook          disable video hooking support"
   echo "  --disable-debug          disable debugging symbols"
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
@@ -630,6 +631,7 @@ CONFIG_LIST="
     avfilter_lavf
     avisynth
     beos_netserver
+    bzlib
     ffmpeg
     ffplay
     ffserver
@@ -917,6 +919,7 @@ cpu="generic"
 target_os=$(tolower $(uname -s))
 
 # libraries
+enable bzlib
 enable zlib
 
 # configurable options
@@ -1591,6 +1594,7 @@ if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
 fi
 
 enabled zlib && check_lib zlib.h zlibVersion -lz || disable zlib
+enabled bzlib && check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # ffserver uses poll(),
 # if it's not found we can emulate it using select().
@@ -1962,6 +1966,7 @@ echo "libvorbis enabled         ${libvorbis-no}"
 echo "x264 enabled              ${libx264-no}"
 echo "XviD enabled              ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
+echo "bzlib enabled             ${bzlib-no}"
 echo
 
 for type in decoder encoder parser demuxer muxer protocol filter bsf indev outdev; do
