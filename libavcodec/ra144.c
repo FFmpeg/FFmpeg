@@ -141,19 +141,14 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 /* rotate block */
 static void rotate_block(const short *source, short *target, int offset)
 {
-    short *end;
-    const short *ptr1;
-    const short *ptr2;
-    const short *ptr3;
-    ptr2 = source + BUFFERSIZE;
-    ptr3 = ptr1 = ptr2 - offset;
-    end = target + BLOCKSIZE;
+    int i=0, k=0;
+    const short *ptr1 = source + BUFFERSIZE - offset;
 
-    while (target < end) {
-        *(target++) = *(ptr3++);
+    while (i<BLOCKSIZE) {
+        target[i++] = ptr1[k++];
 
-        if (ptr3 == ptr2)
-            ptr3 = ptr1;
+        if (k == offset)
+            k = 0;
     }
 }
 
