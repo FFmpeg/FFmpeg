@@ -32,8 +32,6 @@
 /* internal globals */
 typedef struct {
     unsigned int     resetflag, val, oldval;
-    unsigned int     unpacked[28];          /* buffer for unpacked input */
-    unsigned int    *iptr;                  /* pointer to current input (from unpacked) */
     unsigned int     gval;
     unsigned short  *gsp;
     unsigned int     gbuf1[8];
@@ -125,25 +123,21 @@ static void do_voice(int *a1, int *a2)
 
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, unsigned int x)
+static void do_output_subblock(Real144_internal *glob, unsigned int x, GetBitContext *gb)
 {
-    int a, b, c, d, e, f, g;
+    int e, f, g;
+    int a = get_bits(gb, 7);
+    int d = get_bits(gb, 8);
+    int b = get_bits(gb, 7);
+    int c = get_bits(gb, 7);
 
     if (x == 1)
         memset(glob->buffer, 0, 20);
 
-    if ((*glob->iptr) == 0)
-        a = 0;
-    else
-        a = (*glob->iptr) + HALFBLOCK - 1;
-
-    glob->iptr++;
-    b = *(glob->iptr++);
-    c = *(glob->iptr++);
-    d = *(glob->iptr++);
-
-    if (a)
+    if (a) {
+        a += HALFBLOCK - 1;
         rotate_block(glob->buffer_2, glob->buffer_a, a);
+    }
 
     memcpy(glob->buffer_b, etable1 + b * BLOCKSIZE, BLOCKSIZE * 2);
     e = ((ftable1[b] >> 4) *glob->gval) >> 8;
@@ -266,31 +260,6 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out,
     }
     memcpy(out, ptr+10 - len, len * 2);
     memcpy(statbuf, ptr, 20);
-}
-
-/* Decode 20-byte input */
-static void unpack_input(const unsigned char *input, unsigned int *output)
-{
-    int i;
-    static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-
-    GetBitContext gb;
-
-    init_get_bits(&gb, input, 20 * 8);
-
-    for (i=0; i<10; i++)
-       output[i+1] = get_bits(&gb, sizes[i]);
-
-    output[0] = get_bits(&gb, 5);
-
-    output += 11;
-    for (i=0; i<4; i++) {
-        output[0] = get_bits(&gb, 7);
-        output[3] = get_bits(&gb, 8);
-        output[1] = get_bits(&gb, 7);
-        output[2] = get_bits(&gb, 7);
-        output += 4;
-    }
 }
 
 static unsigned int rms(int *data, int f)
@@ -441,31 +410,29 @@ static int ra144_decode_frame(AVCodecContext * avctx,
             void *vdata, int *data_size,
             const uint8_t * buf, int buf_size)
 {
+    static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int a, b, c;
+    int i;
     signed short *shptr;
-    unsigned int *lptr;
-    const short **dptr;
     int16_t *datao;
     int16_t *data = vdata;
     Real144_internal *glob = avctx->priv_data;
+    GetBitContext gb;
 
     if(buf_size == 0)
         return 0;
 
     datao = data;
-    unpack_input(buf, glob->unpacked);
 
-    glob->iptr = glob->unpacked;
-    glob->val = decodeval[(*(glob->iptr++)) << 1];
+    init_get_bits(&gb, buf, 20 * 8);
 
-    dptr = decodetable;
-    lptr = glob->swapbuf1;
-
-    while (lptr<glob->swapbuf1 + 10)
-        *(lptr++) = (*(dptr++))[(*(glob->iptr++)) << 1];
+    for (i=0; i<10; i++)
+        // "<< 1"? Doesn't this make one value out of two of the table useless?
+        glob->swapbuf1[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
 
     do_voice(glob->swapbuf1, glob->swapbuf2);
 
+    glob->val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(glob->val*glob->oldval) >> 12;
 
     for (c=0; c < NBLOCKS; c++) {
@@ -492,7 +459,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     for (b=0, c=0; c<4; c++) {
         glob->gval = glob->gbuf1[c * 2];
         glob->gsp = glob->gbuf2 + b;
-        do_output_subblock(glob, glob->resetflag);
+        do_output_subblock(glob, glob->resetflag, &gb);
         glob->resetflag = 0;
 
         shptr = glob->output_buffer;
