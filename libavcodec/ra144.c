@@ -31,20 +31,14 @@
 
 /* internal globals */
 typedef struct {
-    unsigned int     resetflag, val, oldval;
-    unsigned int     gval;
-    unsigned short  *gsp;
+    unsigned int     oldval;
     unsigned int     gbuf1[8];
     unsigned short   gbuf2[120];
-    signed   short   output_buffer[40];
     unsigned int    *decptr;                /* decoder ptr */
     signed   short  *decsp;
 
     /* the swapped buffers */
-    unsigned int     swapb1a[10];
-    unsigned int     swapb2a[10];
-    unsigned int     swapb1b[10];
-    unsigned int     swapb2b[10];
+    unsigned int     swapbuffers[4][10];
     unsigned int    *swapbuf1;
     unsigned int    *swapbuf2;
     unsigned int    *swapbuf1alt;
@@ -52,16 +46,8 @@ typedef struct {
 
     unsigned int buffer[5];
     unsigned short int buffer_2[148];
-    unsigned short int buffer_a[40];
-    unsigned short int buffer_b[40];
-    unsigned short int buffer_c[40];
-    unsigned short int buffer_d[40];
 
-    unsigned short int work[50];
     unsigned short *sptr;
-
-    int buffer1[10];
-    int buffer2[10];
 
     signed short wavtable1[2304];
     unsigned short wavtable2[2304];
@@ -71,11 +57,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     Real144_internal *glob = avctx->priv_data;
 
-    glob->resetflag   = 1;
-    glob->swapbuf1    = glob->swapb1a;
-    glob->swapbuf2    = glob->swapb2a;
-    glob->swapbuf1alt = glob->swapb1b;
-    glob->swapbuf2alt = glob->swapb2b;
+    glob->swapbuf1    = glob->swapbuffers[0];
+    glob->swapbuf2    = glob->swapbuffers[1];
+    glob->swapbuf1alt = glob->swapbuffers[2];
+    glob->swapbuf2alt = glob->swapbuffers[3];
 
     memcpy(glob->wavtable1, wavtable1, sizeof(wavtable1));
     memcpy(glob->wavtable2, wavtable2, sizeof(wavtable2));
@@ -123,40 +108,40 @@ static void do_voice(int *a1, int *a2)
 
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, unsigned int x, GetBitContext *gb)
+static void do_output_subblock(Real144_internal *glob, unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
 {
+    unsigned short int buffer_a[40];
+    unsigned short int buffer_b[40];
+    unsigned short int buffer_c[40];
+    unsigned short int buffer_d[40];
     int e, f, g;
     int a = get_bits(gb, 7);
     int d = get_bits(gb, 8);
     int b = get_bits(gb, 7);
     int c = get_bits(gb, 7);
 
-    if (x == 1)
-        memset(glob->buffer, 0, 20);
-
     if (a) {
         a += HALFBLOCK - 1;
-        rotate_block(glob->buffer_2, glob->buffer_a, a);
+        rotate_block(glob->buffer_2, buffer_a, a);
     }
 
-    memcpy(glob->buffer_b, etable1 + b * BLOCKSIZE, BLOCKSIZE * 2);
-    e = ((ftable1[b] >> 4) *glob->gval) >> 8;
-    memcpy(glob->buffer_c, etable2 + c * BLOCKSIZE, BLOCKSIZE * 2);
-    f=((ftable2[c] >> 4) *glob->gval) >> 8;
+    memcpy(buffer_b, etable1 + b * BLOCKSIZE, BLOCKSIZE * 2);
+    e = ((ftable1[b] >> 4) * gval) >> 8;
+    memcpy(buffer_c, etable2 + c * BLOCKSIZE, BLOCKSIZE * 2);
+    f=((ftable2[c] >> 4) * gval) >> 8;
 
     if (a)
-        g = irms(glob->buffer_a, glob->gval) >> 12;
+        g = irms(buffer_a, gval) >> 12;
     else
         g = 0;
 
-    add_wav(glob, d, a, g, e, f, glob->buffer_a, glob->buffer_b,
-            glob->buffer_c, glob->buffer_d);
+    add_wav(glob, d, a, g, e, f, buffer_a, buffer_b,
+            buffer_c, buffer_d);
 
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
-    memcpy(glob->buffer_2 + BUFFERSIZE - BLOCKSIZE, glob->buffer_d, BLOCKSIZE * 2);
+    memcpy(glob->buffer_2 + BUFFERSIZE - BLOCKSIZE, buffer_d, BLOCKSIZE * 2);
 
-    final(glob,glob->gsp, glob->buffer_d, glob->output_buffer, glob->buffer,
-          BLOCKSIZE);
+    final(glob, gsp, buffer_d, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
 /* rotate block */
@@ -233,14 +218,15 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out,
     int buffer[10];
     short *ptr;
     short *ptr2;
+    unsigned short int work[50];
 
-    memcpy(glob->work, statbuf,20);
-    memcpy(glob->work + 10, i2, len * 2);
+    memcpy(work, statbuf,20);
+    memcpy(work + 10, i2, len * 2);
 
     for(i=0; i<10; i++)
         buffer[9-i] = i1[i];
 
-    ptr2 = (ptr = glob->work) + len;
+    ptr2 = (ptr = work) + len;
 
     while (ptr < ptr2) {
         for(sum=0, x=0; x<=9; x++)
@@ -320,11 +306,13 @@ static int eq(Real144_internal *glob, short *in, int *target)
     short *sptr;
     int *ptr1, *ptr2, *ptr3;
     int *bp1, *bp2;
+    int buffer1[10];
+    int buffer2[10];
 
     retval = 0;
-    bp1 = glob->buffer1;
-    bp2 = glob->buffer2;
-    ptr2 = (ptr3 = glob->buffer2) + 9;
+    bp1 = buffer1;
+    bp2 = buffer2;
+    ptr2 = (ptr3 = buffer2) + 9;
     sptr = in;
 
     while (ptr2 >= ptr3)
@@ -416,6 +404,8 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     signed short *shptr;
     int16_t *datao;
     int16_t *data = vdata;
+    unsigned int val;
+
     Real144_internal *glob = avctx->priv_data;
     GetBitContext gb;
 
@@ -432,15 +422,15 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     do_voice(glob->swapbuf1, glob->swapbuf2);
 
-    glob->val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
-    a = t_sqrt(glob->val*glob->oldval) >> 12;
+    val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
+    a = t_sqrt(val*glob->oldval) >> 12;
 
     for (c=0; c < NBLOCKS; c++) {
         if (c == (NBLOCKS - 1)) {
-            dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, glob->val);
+            dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val);
         } else {
             if (c * 2 == (NBLOCKS - 2)) {
-                if (glob->oldval < glob->val) {
+                if (glob->oldval < val) {
                     dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, a, glob->swapbuf2alt, c);
                 } else {
                     dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, a, glob->swapbuf2, c);
@@ -449,7 +439,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
                 if (c * 2 < (NBLOCKS - 2)) {
                     dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, glob->oldval, glob->swapbuf2, c);
                 } else {
-                    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, glob->val, glob->swapbuf2alt, c);
+                    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, val, glob->swapbuf2alt, c);
                 }
             }
         }
@@ -457,18 +447,19 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     /* do output */
     for (b=0, c=0; c<4; c++) {
-        glob->gval = glob->gbuf1[c * 2];
-        glob->gsp = glob->gbuf2 + b;
-        do_output_subblock(glob, glob->resetflag, &gb);
-        glob->resetflag = 0;
+        unsigned int gval = glob->gbuf1[c * 2];
+        unsigned short *gsp = glob->gbuf2 + b;
+        signed short output_buffer[40];
 
-        shptr = glob->output_buffer;
-        while (shptr < glob->output_buffer + BLOCKSIZE)
+        do_output_subblock(glob, gsp, gval, output_buffer, &gb);
+
+        shptr = output_buffer;
+        while (shptr < output_buffer + BLOCKSIZE)
             *data++ = av_clip_int16(*(shptr++) << 2);
         b += 30;
     }
 
-    glob->oldval = glob->val;
+    glob->oldval = val;
 
     FFSWAP(unsigned int *, glob->swapbuf1alt, glob->swapbuf1);
     FFSWAP(unsigned int *, glob->swapbuf2alt, glob->swapbuf2);
