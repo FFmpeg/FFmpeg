@@ -182,7 +182,8 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
             }else if(cmd=='-')
                 d= -d;
 
-            av_set_number(obj, name, d, 1, 1);
+            if (!av_set_number(obj, name, d, 1, 1))
+                return NULL;
             val+= i;
             if(!*val)
                 return o;
