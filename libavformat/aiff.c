@@ -344,7 +344,7 @@ static int aiff_read_header(AVFormatContext *s,
         switch (tag) {
         case MKTAG('C', 'O', 'M', 'M'):     /* Common chunk */
             /* Then for the complete header info */
-            st->nb_frames = get_aiff_header (pb, st->codec, size, version);
+            st->nb_frames = get_aiff_header(pb, st->codec, size, version);
             if (st->nb_frames < 0)
                 return st->nb_frames;
             if (offset > 0) // COMM is after SSND
@@ -354,16 +354,16 @@ static int aiff_read_header(AVFormatContext *s,
             version = get_be32(pb);
             break;
         case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
-            get_meta (pb, s->title, sizeof(s->title), size);
+            get_meta(pb, s->title, sizeof(s->title), size);
             break;
         case MKTAG('A', 'U', 'T', 'H'):     /* Author chunk */
-            get_meta (pb, s->author, sizeof(s->author), size);
+            get_meta(pb, s->author, sizeof(s->author), size);
             break;
         case MKTAG('(', 'c', ')', ' '):     /* Copyright chunk */
-            get_meta (pb, s->copyright, sizeof(s->copyright), size);
+            get_meta(pb, s->copyright, sizeof(s->copyright), size);
             break;
         case MKTAG('A', 'N', 'N', 'O'):     /* Annotation chunk */
-            get_meta (pb, s->comment, sizeof(s->comment), size);
+            get_meta(pb, s->comment, sizeof(s->comment), size);
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
             offset = get_be32(pb);      /* Offset of sound data */
