@@ -62,10 +62,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void final(Real144_internal *glob, short *i1, short *i2, void *out, int *statbuf, int len);
-static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2, int m3, short *s1, short *s2, short *s3, short *dest);
-static int irms(short *data, int factor);
-static void rotate_block(short *source, short *target, int offset);
+static void final(Real144_internal *glob, const short *i1, const short *i2, void *out, int *statbuf, int len);
+static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2, int m3, const short *s1, const short *s2, const short *s3, short *dest);
+static int irms(const short *data, int factor);
+static void rotate_block(const short *source, short *target, int offset);
 
 /* lookup square roots in table */
 static int t_sqrt(unsigned int x)
@@ -80,7 +80,7 @@ static int t_sqrt(unsigned int x)
 }
 
 /* do 'voice' */
-static void do_voice(int *a1, int *a2)
+static void do_voice(const int *a1, int *a2)
 {
     int buffer[10];
     int *b1 = buffer;
@@ -102,7 +102,7 @@ static void do_voice(int *a1, int *a2)
 
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
+static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
 {
     unsigned short int buffer_a[40];
     unsigned short int buffer_b[40];
@@ -139,12 +139,12 @@ static void do_output_subblock(Real144_internal *glob, unsigned short  *gsp, uns
 }
 
 /* rotate block */
-static void rotate_block(short *source, short *target, int offset)
+static void rotate_block(const short *source, short *target, int offset)
 {
     short *end;
-    short *ptr1;
-    short *ptr2;
-    short *ptr3;
+    const short *ptr1;
+    const short *ptr2;
+    const short *ptr3;
     ptr2 = source + BUFFERSIZE;
     ptr3 = ptr1 = ptr2 - offset;
     end = target + BLOCKSIZE;
@@ -158,9 +158,9 @@ static void rotate_block(short *source, short *target, int offset)
 }
 
 /* inverse root mean square */
-static int irms(short *data, int factor)
+static int irms(const short *data, int factor)
 {
-    short *p1, *p2;
+    const short *p1, *p2;
     unsigned int sum;
 
     p2 = (p1 = data) + BLOCKSIZE;
@@ -175,7 +175,8 @@ static int irms(short *data, int factor)
 
 /* multiply/add wavetable */
 static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
-                    int m3, short *s1, short *s2, short *s3, short *dest)
+                    int m3, const short *s1, const short *s2, const short *s3,
+                    short *dest)
 {
     int a, b, c, i;
     const short *ptr, *ptr2;
@@ -204,8 +205,8 @@ static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2,
 }
 
 
-static void final(Real144_internal *glob, short *i1, short *i2, void *out,
-                  int *statbuf, int len)
+static void final(Real144_internal *glob, const short *i1, const short *i2,
+                  void *out, int *statbuf, int len)
 {
     int x, sum, i;
     int buffer[10];
@@ -241,9 +242,9 @@ static void final(Real144_internal *glob, short *i1, short *i2, void *out,
     memcpy(statbuf, ptr, 20);
 }
 
-static unsigned int rms(int *data, int f)
+static unsigned int rms(const int *data, int f)
 {
-    int *c;
+    const int *c;
     int x;
     unsigned int res;
     int b;
@@ -277,7 +278,8 @@ static unsigned int rms(int *data, int f)
     return res;
 }
 
-static void dec1(Real144_internal *glob, int *data, int *inp, int n, int f)
+static void dec1(Real144_internal *glob, const int *data, const int *inp,
+                 int n, int f)
 {
     short *ptr,*end;
 
@@ -289,14 +291,14 @@ static void dec1(Real144_internal *glob, int *data, int *inp, int n, int f)
         *(ptr++) = *(inp++);
 }
 
-static int eq(Real144_internal *glob, short *in, int *target)
+static int eq(Real144_internal *glob, const short *in, int *target)
 {
     int retval;
     int a;
     int b;
     int c;
     unsigned int u;
-    short *sptr;
+    const short *sptr;
     int *ptr1, *ptr2, *ptr3;
     int *bp1, *bp2;
     int buffer1[10];
@@ -349,10 +351,10 @@ static int eq(Real144_internal *glob, short *in, int *target)
     return retval;
 }
 
-static void dec2(Real144_internal *glob, int *data, int *inp, int n, int f,
-                 int *inp2, int l)
+static void dec2(Real144_internal *glob, const int *data, const int *inp,
+                 int n, int f, const int *inp2, int l)
 {
-    unsigned int *ptr1,*ptr2;
+    unsigned const int *ptr1,*ptr2;
     int work[10];
     int a,b;
     int x;
