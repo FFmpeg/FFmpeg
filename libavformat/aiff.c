@@ -149,9 +149,6 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
         codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
     }
 
-    if (!codec->codec_id)
-        return AVERROR_INVALIDDATA;
-
     /* Block align needs to be computed in all cases, as the definition
      * is specific to applications -> here we use the WAVE format definition */
     if (!codec->block_align)
