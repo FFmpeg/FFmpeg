@@ -1594,7 +1594,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
 
 #ifdef CONFIG_ENCODERS
-#define ADPCM_ENCODER(id,name)                  \
+#define ADPCM_ENCODER(id,name,long_name_)       \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -1604,13 +1604,14 @@ AVCodec name ## _encoder = {                    \
     adpcm_encode_frame,                         \
     adpcm_encode_close,                         \
     NULL,                                       \
+    .long_name = long_name_,                    \
 };
 #else
-#define ADPCM_ENCODER(id,name)
+#define ADPCM_ENCODER(id,name,long_name_)
 #endif
 
 #ifdef CONFIG_DECODERS
-#define ADPCM_DECODER(id,name)                  \
+#define ADPCM_DECODER(id,name,long_name_)       \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -1620,36 +1621,37 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     adpcm_decode_frame,                         \
+    .long_name = long_name_,                    \
 };
 #else
-#define ADPCM_DECODER(id,name)
+#define ADPCM_DECODER(id,name,long_name_)
 #endif
 
-#define ADPCM_CODEC(id, name)                   \
-ADPCM_ENCODER(id,name) ADPCM_DECODER(id,name)
+#define ADPCM_CODEC(id,name,long_name_)         \
+    ADPCM_ENCODER(id,name,long_name_) ADPCM_DECODER(id,name,long_name_)
 
-ADPCM_DECODER(CODEC_ID_ADPCM_4XM, adpcm_4xm);
-ADPCM_DECODER(CODEC_ID_ADPCM_CT, adpcm_ct);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA, adpcm_ea);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA_MAXIS_XA, adpcm_ea_maxis_xa);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA_R1, adpcm_ea_r1);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA_R2, adpcm_ea_r2);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA_R3, adpcm_ea_r3);
-ADPCM_DECODER(CODEC_ID_ADPCM_EA_XAS, adpcm_ea_xas);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_EACS, adpcm_ima_ea_eacs);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead);
-ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
-ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
-ADPCM_DECODER(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
-ADPCM_CODEC  (CODEC_ID_ADPCM_MS, adpcm_ms);
-ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
-ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3);
-ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4);
-ADPCM_CODEC  (CODEC_ID_ADPCM_SWF, adpcm_swf);
-ADPCM_DECODER(CODEC_ID_ADPCM_THP, adpcm_thp);
-ADPCM_DECODER(CODEC_ID_ADPCM_XA, adpcm_xa);
-ADPCM_CODEC  (CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
+ADPCM_DECODER(CODEC_ID_ADPCM_4XM, adpcm_4xm, "4X Movie ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_CT, adpcm_ct, "Creative Technology ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA, adpcm_ea, "Electronic Arts ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_MAXIS_XA, adpcm_ea_maxis_xa, "Electronic Arts Maxis CDROM XA ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_R1, adpcm_ea_r1, "Electronic Arts R1 ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_R2, adpcm_ea_r2, "Electronic Arts R2 ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_R3, adpcm_ea_r3, "Electronic Arts R3 ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_EA_XAS, adpcm_ea_xas, "Electronic Arts XAS ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv, "IMA AMV ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3, "IMA Duck DK3 ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4, "IMA Duck DK4 ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_EACS, adpcm_ima_ea_eacs, "IMA Electronic Arts EACS ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead, "IMA Electronic Arts SEAD ADPCM");
+ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt, "IMA QuickTime ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg, "IMA Loki SDL MJPEG ADPCM");
+ADPCM_CODEC  (CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, "IMA Wav ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws, "IMA Westwood ADPCM");
+ADPCM_CODEC  (CODEC_ID_ADPCM_MS, adpcm_ms, "Microsoft ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2, "Sound Blaster Pro 2 bits ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3, "Sound Blaster Pro 2.6 bits ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4, "Sound Blaster Pro 4 bits ADPCM");
+ADPCM_CODEC  (CODEC_ID_ADPCM_SWF, adpcm_swf, "Shockwave Flash ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_THP, adpcm_thp, "Nintendo Gamecube THP ADPCM");
+ADPCM_DECODER(CODEC_ID_ADPCM_XA, adpcm_xa, "CDROM XA ADPCM");
+ADPCM_CODEC  (CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha, "Yamaha ADPCM");
