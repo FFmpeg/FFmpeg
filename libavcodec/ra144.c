@@ -105,8 +105,6 @@ static void do_voice(const int *a1, int *a2)
 static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
 {
     unsigned short int buffer_a[40];
-    unsigned short int buffer_b[40];
-    unsigned short int buffer_c[40];
     unsigned short int buffer_d[40];
     int e, f, g;
     int a = get_bits(gb, 7);
@@ -119,9 +117,7 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
         rotate_block(glob->buffer_2, buffer_a, a);
     }
 
-    memcpy(buffer_b, etable1 + b * BLOCKSIZE, BLOCKSIZE * 2);
     e = ((ftable1[b] >> 4) * gval) >> 8;
-    memcpy(buffer_c, etable2 + c * BLOCKSIZE, BLOCKSIZE * 2);
     f=((ftable2[c] >> 4) * gval) >> 8;
 
     if (a)
@@ -129,8 +125,8 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     else
         g = 0;
 
-    add_wav(d, a, g, e, f, buffer_a, buffer_b,
-            buffer_c, buffer_d);
+    add_wav(d, a, g, e, f, buffer_a, etable1 + b*BLOCKSIZE,
+            etable2 + c*BLOCKSIZE, buffer_d);
 
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
     memcpy(glob->buffer_2 + BUFFERSIZE - BLOCKSIZE, buffer_d, BLOCKSIZE * 2);
