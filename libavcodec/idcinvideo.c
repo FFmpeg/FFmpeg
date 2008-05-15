@@ -1,5 +1,5 @@
 /*
- * Id Quake II CIN Video Decoder
+ * id Quake II CIN Video Decoder
  * Copyright (C) 2003 the ffmpeg project
  *
  * This file is part of FFmpeg.
@@ -21,8 +21,8 @@
 
 /**
  * @file idcinvideo.c
- * Id Quake II Cin Video Decoder by Dr. Tim Ferguson
- * For more information about the Id CIN format, visit:
+ * id Quake II Cin Video Decoder by Dr. Tim Ferguson
+ * For more information about the id CIN format, visit:
  *   http://www.csse.monash.edu.au/~timf/
  *
  * This video decoder outputs PAL8 colorspace data. Interacting with this
@@ -32,7 +32,7 @@
  * the demuxer must use the same extradata space to transmit an
  * AVPaletteControl structure.
  *
- * Id CIN video is purely Huffman-coded, intraframe-only codec. It achieves
+ * id CIN video is purely Huffman-coded, intraframe-only codec. It achieves
  * a little more compression by exploiting the fact that adjacent pixels
  * tend to be similar.
  *
@@ -154,7 +154,7 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
 
     /* make sure the Huffman tables make it */
     if (s->avctx->extradata_size != HUFFMAN_TABLE_SIZE) {
-        av_log(s->avctx, AV_LOG_ERROR, "  Id CIN video: expected extradata size of %d\n", HUFFMAN_TABLE_SIZE);
+        av_log(s->avctx, AV_LOG_ERROR, "  id CIN video: expected extradata size of %d\n", HUFFMAN_TABLE_SIZE);
         return -1;
     }
 
@@ -221,7 +221,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  Id CIN Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  id CIN Video: get_buffer() failed\n");
         return -1;
     }
 
@@ -262,6 +262,6 @@ AVCodec idcin_decoder = {
     idcin_decode_end,
     idcin_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Id Quake II CIN video",
+    .long_name = "id Quake II CIN video",
 };
 
