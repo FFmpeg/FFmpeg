@@ -540,7 +540,7 @@ PCM_CODEC  (CODEC_ID_PCM_ALAW, pcm_alaw, "A-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_MULAW, pcm_mulaw, "mu-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_S8, pcm_s8, "signed 8-bit PCM");
 PCM_CODEC  (CODEC_ID_PCM_S16BE, pcm_s16be, "signed 16-bit big-endian PCM");
-PCM_CODEC  (CODEC_ID_PCM_S16LE, pcm_s16le, "signed 16-bit big-endian PCM");
+PCM_CODEC  (CODEC_ID_PCM_S16LE, pcm_s16le, "signed 16-bit little-endian PCM");
 PCM_DECODER(CODEC_ID_PCM_S16LE_PLANAR, pcm_s16le_planar, "16-bit little-endian planar PCM");
 PCM_CODEC  (CODEC_ID_PCM_S24BE, pcm_s24be, "signed 24-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_S24DAUD, pcm_s24daud, "D-Cinema audio signed 24-bit PCM");
