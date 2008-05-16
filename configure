@@ -1978,11 +1978,14 @@ for type in decoder encoder parser demuxer muxer protocol filter bsf indev outde
     echo
 done
 
-enabled nonfree &&
-    echo "License: unredistributable" ||
-    (enabled gpl &&
-        echo "License: GPL" ||
-        echo "License: LGPL")
+license="LGPL"
+if enabled nonfree; then
+    license="unredistributable"
+elif enabled gpl; then
+    license="GPL"
+fi
+
+echo "License: $license"
 
 echo "Creating config.mak and config.h..."
 
