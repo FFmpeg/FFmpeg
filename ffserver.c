@@ -4308,9 +4308,9 @@ static void show_help(void)
     printf("usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
-           "-L            : print the LICENSE\n"
-           "-h            : this help\n"
-           "-f configfile : use configfile instead of /etc/ffserver.conf\n"
+           "-L              show license\n"
+           "-h              show help\n"
+           "-f configfile   use configfile instead of /etc/ffserver.conf\n"
            );
 }
 
