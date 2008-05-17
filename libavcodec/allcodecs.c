@@ -195,7 +195,6 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MP3ON4, mp3on4);
     REGISTER_DECODER (MPC7, mpc7);
     REGISTER_DECODER (MPC8, mpc8);
-    REGISTER_DECODER (MPEG4AAC, mpeg4aac);
     REGISTER_DECODER (NELLYMOSER, nellymoser);
     REGISTER_DECODER (QDM2, qdm2);
     REGISTER_DECODER (RA_144, ra_144);
@@ -288,6 +287,9 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBVORBIS, libvorbis);
     REGISTER_ENCODER (LIBX264, libx264);
     REGISTER_ENCODER (LIBXVID, libxvid);
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+    REGISTER_DECODER (MPEG4AAC, mpeg4aac);
+#endif
 
     /* parsers */
     REGISTER_PARSER  (AAC, aac);
