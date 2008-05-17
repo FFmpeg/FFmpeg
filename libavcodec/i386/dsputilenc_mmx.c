@@ -692,12 +692,11 @@ static int vsad_intra16_mmx2(void *v, uint8_t * pix, uint8_t * dummy, int line_s
       "movq (%0),%%mm0\n"
       "movq 8(%0),%%mm1\n"
       "add %2,%0\n"
-      "subl $2, %%ecx\n"
-      SUM(%%mm0, %%mm1, %%mm4, %%mm5)
+      "jmp 2f\n"
       "1:\n"
 
       SUM(%%mm4, %%mm5, %%mm0, %%mm1)
-
+      "2:\n"
       SUM(%%mm0, %%mm1, %%mm4, %%mm5)
 
       "subl $2, %%ecx\n"
