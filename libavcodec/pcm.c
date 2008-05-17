@@ -383,13 +383,19 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     samples = data;
     src = buf;
 
-    n= av_get_bits_per_sample(avctx->codec_id)/8;
-    if(n && buf_size % n){
-        av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
-        return -1;
-    }
     if(avctx->channels <= 0 || avctx->channels > MAX_CHANNELS){
         av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
+        return -1;
+    }
+
+    n = avctx->channels * av_get_bits_per_sample(avctx->codec_id)/8;
+    /* av_get_bits_per_sample returns 0 for CODEC_ID_PCM_DVD */
+    if (CODEC_ID_PCM_DVD == avctx->codec_id)
+        /* 2 samples are interleaved per block in PCM_DVD */
+        n = 2 * avctx->channels * avctx->bits_per_sample/8;
+
+    if(n && buf_size % n){
+        av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
         return -1;
     }
 
@@ -492,6 +498,20 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             *samples++ = s->table[*src++];
         }
         break;
+    case CODEC_ID_PCM_DVD:
+        if(avctx->bits_per_sample != 20 && avctx->bits_per_sample != 24) {
+            av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
+            return -1;
+        } else {
+            int jump = avctx->channels * (avctx->bits_per_sample-16) / 4;
+            n = buf_size / (avctx->channels * 2 * avctx->bits_per_sample / 8);
+            while (n--) {
+                for (c=0; c < 2*avctx->channels; c++)
+                    *samples++ = bytestream_get_be16(&src);
+                src += jump;
+            }
+        }
+        break;
     default:
         return -1;
     }
@@ -537,6 +557,7 @@ AVCodec name ## _decoder = {                    \
     PCM_ENCODER(id,name,long_name_) PCM_DECODER(id,name,long_name_)
 
 PCM_CODEC  (CODEC_ID_PCM_ALAW, pcm_alaw, "A-law PCM");
+PCM_CODEC  (CODEC_ID_PCM_DVD, pcm_dvd, "signed 16|20|24-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_MULAW, pcm_mulaw, "mu-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_S8, pcm_s8, "signed 8-bit PCM");
 PCM_CODEC  (CODEC_ID_PCM_S16BE, pcm_s16be, "signed 16-bit big-endian PCM");
