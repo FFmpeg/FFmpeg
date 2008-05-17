@@ -138,10 +138,10 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 static void rotate_block(const short *source, short *target, int offset)
 {
     int i=0, k=0;
-    const short *ptr1 = source + BUFFERSIZE - offset;
+    source += BUFFERSIZE - offset;
 
     while (i<BLOCKSIZE) {
-        target[i++] = ptr1[k++];
+        target[i++] = source[k++];
 
         if (k == offset)
             k = 0;
