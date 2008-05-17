@@ -387,7 +387,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     unsigned int a, b, c;
     int i;
     signed short *shptr;
-    int16_t *datao;
     int16_t *data = vdata;
     unsigned int val;
 
@@ -396,8 +395,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     if(buf_size == 0)
         return 0;
-
-    datao = data;
 
     init_get_bits(&gb, buf, 20 * 8);
 
@@ -449,7 +446,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     FFSWAP(unsigned int *, glob->swapbuf1alt, glob->swapbuf1);
     FFSWAP(unsigned int *, glob->swapbuf2alt, glob->swapbuf2);
 
-    *data_size = (data-datao)*sizeof(*data);
+    *data_size = 2*160;
     return 20;
 }
 
