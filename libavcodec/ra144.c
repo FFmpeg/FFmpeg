@@ -62,11 +62,6 @@ static int ra144_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void final(const short *i1, const short *i2, void *out, int *statbuf, int len);
-static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1, const short *s2, const short *s3, short *dest);
-static int irms(const short *data, int factor);
-static void rotate_block(const short *source, short *target, int offset);
-
 /* lookup square roots in table */
 static int t_sqrt(unsigned int x)
 {
@@ -98,40 +93,6 @@ static void do_voice(const int *a1, int *a2)
 
     for (x=0; x < 10; x++)
         a2[x] >>= 4;
-}
-
-
-/* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
-{
-    unsigned short int buffer_a[40];
-    unsigned short int *block;
-    int e, f, g;
-    int a = get_bits(gb, 7);
-    int d = get_bits(gb, 8);
-    int b = get_bits(gb, 7);
-    int c = get_bits(gb, 7);
-
-    if (a) {
-        a += HALFBLOCK - 1;
-        rotate_block(glob->buffer_2, buffer_a, a);
-    }
-
-    e = ((ftable1[b] >> 4) * gval) >> 8;
-    f = ((ftable2[c] >> 4) * gval) >> 8;
-
-    if (a)
-        g = irms(buffer_a, gval) >> 12;
-    else
-        g = 0;
-
-    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
-    block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
-
-    add_wav(d, a, g, e, f, buffer_a, etable1 + b*BLOCKSIZE,
-            etable2 + c*BLOCKSIZE, block);
-
-    final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
 /* rotate block */
@@ -266,6 +227,39 @@ static unsigned int rms(const int *data, int f)
     res >>= (b + 10);
     res = (res * f) >> 10;
     return res;
+}
+
+/* do quarter-block output */
+static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
+{
+    unsigned short int buffer_a[40];
+    unsigned short int *block;
+    int e, f, g;
+    int a = get_bits(gb, 7);
+    int d = get_bits(gb, 8);
+    int b = get_bits(gb, 7);
+    int c = get_bits(gb, 7);
+
+    if (a) {
+        a += HALFBLOCK - 1;
+        rotate_block(glob->buffer_2, buffer_a, a);
+    }
+
+    e = ((ftable1[b] >> 4) * gval) >> 8;
+    f = ((ftable2[c] >> 4) * gval) >> 8;
+
+    if (a)
+        g = irms(buffer_a, gval) >> 12;
+    else
+        g = 0;
+
+    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
+    block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
+
+    add_wav(d, a, g, e, f, buffer_a, etable1 + b*BLOCKSIZE,
+            etable2 + c*BLOCKSIZE, block);
+
+    final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
 static void dec1(Real144_internal *glob, const int *data, const int *inp,
