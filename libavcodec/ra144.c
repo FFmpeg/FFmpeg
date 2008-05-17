@@ -118,7 +118,7 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     }
 
     e = ((ftable1[b] >> 4) * gval) >> 8;
-    f=((ftable2[c] >> 4) * gval) >> 8;
+    f = ((ftable2[c] >> 4) * gval) >> 8;
 
     if (a)
         g = irms(buffer_a, gval) >> 12;
