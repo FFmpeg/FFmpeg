@@ -105,7 +105,7 @@ static void do_voice(const int *a1, int *a2)
 static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
 {
     unsigned short int buffer_a[40];
-    unsigned short int buffer_d[40];
+    unsigned short int *buffer_d;
     int e, f, g;
     int a = get_bits(gb, 7);
     int d = get_bits(gb, 8);
@@ -125,11 +125,11 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     else
         g = 0;
 
+    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
+    buffer_d = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
+
     add_wav(d, a, g, e, f, buffer_a, etable1 + b*BLOCKSIZE,
             etable2 + c*BLOCKSIZE, buffer_d);
-
-    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
-    memcpy(glob->buffer_2 + BUFFERSIZE - BLOCKSIZE, buffer_d, BLOCKSIZE * 2);
 
     final(gsp, buffer_d, output_buffer, glob->buffer, BLOCKSIZE);
 }
