@@ -204,5 +204,6 @@ AVCodec libdirac_decoder = {
     libdirac_decode_close,
     libdirac_decode_frame,
     CODEC_CAP_DELAY,
-    .flush = libdirac_flush
+    .flush = libdirac_flush,
+    .long_name = "libdirac Dirac 2.2",
 } ;

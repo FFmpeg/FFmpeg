@@ -384,4 +384,5 @@ AVCodec libschroedinger_encoder = {
     libschroedinger_encode_close,
    .capabilities= CODEC_CAP_DELAY,
    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
+   .long_name= "libschroedinger Dirac 2.2",
 };

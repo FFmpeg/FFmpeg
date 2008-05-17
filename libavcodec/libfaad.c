@@ -315,7 +315,7 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#define AAC_CODEC(id, name)     \
+#define AAC_CODEC(id, name, long_name_) \
 AVCodec name ## _decoder = {    \
     #name,                      \
     CODEC_TYPE_AUDIO,           \
@@ -325,13 +325,14 @@ AVCodec name ## _decoder = {    \
     NULL,                       \
     faac_decode_end,            \
     faac_decode_frame,          \
+    .long_name = long_name_,    \
 }
 
 // FIXME - raw AAC files - maybe just one entry will be enough
-AAC_CODEC(CODEC_ID_AAC, libfaad);
+AAC_CODEC(CODEC_ID_AAC, libfaad, "libfaad AAC (Advanced Audio Codec)");
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 // If it's mp4 file - usually embeded into Qt Mov
-AAC_CODEC(CODEC_ID_MPEG4AAC, mpeg4aac);
+AAC_CODEC(CODEC_ID_MPEG4AAC, mpeg4aac, "libfaad AAC (Advanced Audio Codec)");
 #endif
 
 #undef AAC_CODEC
