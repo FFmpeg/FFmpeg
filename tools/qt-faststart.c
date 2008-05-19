@@ -7,8 +7,12 @@
  * This utility rearranges a Quicktime file such that the moov atom
  * is in front of the data, thus facilitating network streaming.
  *
- * Compile this program using:
- *  make qt-faststart
+ * To compile this program, start from the base directory from which you
+ * are building FFmpeg and type:
+ *  make tools/qt-faststart
+ * The qt-faststart program will be built in the tools/ directory. If you
+ * do not build the program in this manner, correct results are not
+ * guaranteed, particularly on 64-bit platforms.
  * Invoke the program with:
  *  qt-faststart <infile.mov> <outfile.mov>
  *
