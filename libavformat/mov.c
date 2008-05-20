@@ -128,7 +128,7 @@ typedef struct MOVStreamContext {
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
     int dv_audio_container;
-    int pseudo_stream_id;
+    int pseudo_stream_id; ///< -1 means demux all ids
     int16_t audio_cid; ///< stsd audio compression id
     unsigned drefs_count;
     MOV_dref_t *drefs;
@@ -690,6 +690,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         dref_id = get_be16(pb);
 
         if (st->codec->codec_tag &&
+            st->codec->codec_tag != format &&
             (c->fc->video_codec_id ? codec_get_id(codec_movvideo_tags, format) != c->fc->video_codec_id
                                    : st->codec->codec_tag != MKTAG('j','p','e','g'))
            ){
@@ -699,7 +700,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             url_fskip(pb, size - (url_ftell(pb) - start_pos));
             continue;
         }
-        sc->pseudo_stream_id= pseudo_stream_id;
+        sc->pseudo_stream_id = st->codec->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
 
         st->codec->codec_tag = format;
@@ -1176,7 +1177,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
                         "size %d, distance %d, keyframe %d\n", st->index, current_sample,
                         current_offset, current_dts, sample_size, distance, keyframe);
-                if(sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id)
+                if(sc->pseudo_stream_id == -1 ||
+                   sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id)
                     av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
                                     keyframe ? AVINDEX_KEYFRAME : 0);
                 current_offset += sample_size;
