@@ -190,11 +190,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int swf_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 AVInputFormat swf_demuxer = {
     "swf",
     "Flash format",
@@ -202,5 +197,4 @@ AVInputFormat swf_demuxer = {
     swf_probe,
     swf_read_header,
     swf_read_packet,
-    swf_read_close,
 };
