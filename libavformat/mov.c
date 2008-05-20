@@ -697,6 +697,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             /* Multiple fourcc, we skip JPEG. This is not correct, we should
              * export it as a separate AVStream but this needs a few changes
              * in the MOV demuxer, patch welcome. */
+            av_log(c->fc, AV_LOG_WARNING, "multiple fourcc not supported\n");
             url_fskip(pb, size - (url_ftell(pb) - start_pos));
             continue;
         }
