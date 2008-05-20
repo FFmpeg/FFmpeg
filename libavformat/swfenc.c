@@ -134,7 +134,6 @@ static void put_swf_line_edge(PutBitContext *pb, int dx, int dy)
 
 #define FRAC_BITS 16
 
-/* put matrix */
 static void put_swf_matrix(ByteIOContext *pb,
                            int a, int b, int c, int d, int tx, int ty)
 {
@@ -171,7 +170,6 @@ static void put_swf_matrix(ByteIOContext *pb,
     put_buffer(pb, buf, pbBufPtr(&p) - p.buf);
 }
 
-/* */
 static int swf_write_header(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;

@@ -22,13 +22,6 @@
 
 #include "swf.h"
 
-/*********************************************/
-/* Extract FLV encoded frame and MP3 from swf
-   Note that the detection of the real frame
-   is inaccurate at this point as it can be
-   quite tricky to determine, you almost certainly
-   will get a bad audio/video sync */
-
 static int get_swf_tag(ByteIOContext *pb, int *len_ptr)
 {
     int tag, len;
