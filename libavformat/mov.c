@@ -1175,13 +1175,14 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                         stss_index++;
                 }
                 sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
-                dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
-                        "size %d, distance %d, keyframe %d\n", st->index, current_sample,
-                        current_offset, current_dts, sample_size, distance, keyframe);
                 if(sc->pseudo_stream_id == -1 ||
-                   sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id)
+                   sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id) {
                     av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
                                     keyframe ? AVINDEX_KEYFRAME : 0);
+                    dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                            "size %d, distance %d, keyframe %d\n", st->index, current_sample,
+                            current_offset, current_dts, sample_size, distance, keyframe);
+                }
                 current_offset += sample_size;
                 assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
                 current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
