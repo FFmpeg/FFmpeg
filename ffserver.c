@@ -4333,12 +4333,6 @@ static void handle_child_exit(int sig)
     need_to_start_children = 1;
 }
 
-static void opt_show_license(void)
-{
-    show_license();
-    exit(0);
-}
-
 static void opt_debug()
 {
     ffserver_debug = 1;
@@ -4351,12 +4345,11 @@ static void opt_show_help(void)
            "Hyper fast multi format Audio/Video streaming server\n");
     printf("\n");
     show_help_options(options, "Main options:\n", 0, 0);
-    exit(0);
 }
 
 static const OptionDef options[] = {
-    { "h", 0, {(void*)opt_show_help}, "show help" },
-    { "L", 0, {(void*)opt_show_license}, "show license" },
+    { "h", OPT_EXIT, {(void*)opt_show_help}, "show help" },
+    { "L", OPT_EXIT, {(void*)show_license}, "show license" },
     { "n", OPT_BOOL, {(void *)&no_launch }, "enable no-launch mode" },
     { "d", 0, {(void*)opt_debug}, "enable debug mode" },
     { "f", HAS_ARG | OPT_STRING, {(void*)&config_filename }, "use configfile instead of /etc/ffserver.conf", "configfile" },

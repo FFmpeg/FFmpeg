@@ -3756,17 +3756,11 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_show_version(void)
-{
-    show_version();
-    av_exit(0);
-}
-
 static const OptionDef options[] = {
     /* main options */
     { "L", OPT_EXIT, {(void*)show_license}, "show license" },
     { "h", OPT_EXIT, {(void*)show_help}, "show help" },
-    { "version", 0, {(void*)opt_show_version}, "show version" },
+    { "version", OPT_EXIT, {(void*)show_version}, "show version" },
     { "formats", OPT_EXIT, {(void*)opt_show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
