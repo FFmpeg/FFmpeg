@@ -112,12 +112,10 @@ static void rotate_block(const short *source, short *target, int offset)
 /* inverse root mean square */
 static int irms(const short *data, int factor)
 {
-    const short *p1, *p2;
-    unsigned int sum;
+    unsigned int i, sum = 0;
 
-    p2 = (p1 = data) + BLOCKSIZE;
-    for (sum=0; p2 > p1; p1++)
-        sum += (*p1) * (*p1);
+    for (i=0; i < BLOCKSIZE; i++)
+        sum += data[i] * data[i];
 
     if (sum == 0)
         return 0; /* OOPS - division by zero */
