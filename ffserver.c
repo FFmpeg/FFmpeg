@@ -59,6 +59,8 @@
 static const char program_name[] = "FFserver";
 static const int program_birth_year = 2000;
 
+static const OptionDef options[];
+
 /* maximum number of simultaneous HTTP connections */
 #define HTTP_MAX_CONNECTIONS 2000
 
@@ -288,6 +290,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 static const char *my_program_name;
 static const char *my_program_dir;
 
+static const char *config_filename;
 static int ffserver_debug;
 static int ffserver_daemon;
 static int no_launch;
@@ -4303,17 +4306,6 @@ static int parse_ffconfig(const char *filename)
         return 0;
 }
 
-static void show_help(void)
-{
-    printf("usage: ffserver [-L] [-h] [-f configfile]\n"
-           "Hyper fast multi format Audio/Video streaming server\n"
-           "\n"
-           "-L              show license\n"
-           "-h              show help\n"
-           "-f configfile   use configfile instead of /etc/ffserver.conf\n"
-           );
-}
-
 static void handle_child_exit(int sig)
 {
     pid_t pid;
@@ -4339,10 +4331,38 @@ static void handle_child_exit(int sig)
     need_to_start_children = 1;
 }
 
+static void opt_show_license(void)
+{
+    show_license();
+    exit(0);
+}
+
+static void opt_debug()
+{
+    ffserver_debug = 1;
+    ffserver_daemon = 0;
+}
+
+static void opt_show_help(void)
+{
+    printf("usage: ffserver [options]\n"
+           "Hyper fast multi format Audio/Video streaming server\n");
+    printf("\n");
+    show_help_options(options, "Main options:\n", 0, 0);
+    exit(0);
+}
+
+static const OptionDef options[] = {
+    { "h", 0, {(void*)opt_show_help}, "show help" },
+    { "L", 0, {(void*)opt_show_license}, "show license" },
+    { "n", OPT_BOOL, {(void *)&no_launch }, "enable no-launch mode" },
+    { "d", 0, {(void*)opt_debug}, "enable debug mode" },
+    { "f", HAS_ARG | OPT_STRING, {(void*)&config_filename }, "use configfile instead of /etc/ffserver.conf", "configfile" },
+    { NULL },
+};
+
 int main(int argc, char **argv)
 {
-    const char *config_filename;
-    int c;
     struct sigaction sigact;
 
     av_register_all();
@@ -4355,32 +4375,7 @@ int main(int argc, char **argv)
     my_program_dir = getcwd(0, 0);
     ffserver_daemon = 1;
 
-    for(;;) {
-        c = getopt(argc, argv, "ndLh?f:");
-        if (c == -1)
-            break;
-        switch(c) {
-        case 'L':
-            show_license();
-            exit(0);
-        case '?':
-        case 'h':
-            show_help();
-            exit(0);
-        case 'n':
-            no_launch = 1;
-            break;
-        case 'd':
-            ffserver_debug = 1;
-            ffserver_daemon = 0;
-            break;
-        case 'f':
-            config_filename = optarg;
-            break;
-        default:
-            exit(2);
-        }
-    }
+    parse_options(argc, argv, options, NULL);
 
     putenv("http_proxy");               /* Kill the http_proxy */
 
