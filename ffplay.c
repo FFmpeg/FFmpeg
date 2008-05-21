@@ -2438,8 +2438,15 @@ static void opt_show_help(void)
     exit(0);
 }
 
+static void opt_show_version(void)
+{
+    show_version(program_name);
+    exit(0);
+}
+
 static const OptionDef options[] = {
     { "h", 0, {(void*)opt_show_help}, "show help" },
+    { "version", 0, {(void*)opt_show_version}, "show version" },
     { "x", HAS_ARG | OPT_FUNC2, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG | OPT_FUNC2, {(void*)opt_height}, "force displayed height", "height" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },

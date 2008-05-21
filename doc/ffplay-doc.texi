@@ -31,6 +31,8 @@ ffplay [options] @file{input_file}
 @table @option
 @item -h
 show help
+@item -version
+show version
 @item -x @var{width}
 force displayed width
 @item -y @var{height}
