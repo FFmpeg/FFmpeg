@@ -140,8 +140,8 @@ static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
     b = (ptr[1] * m2) >> (ptr2[1] + 1);
     c = (ptr[2] * m3) >> (ptr2[2] + 1);
 
-        for (i=0; i < BLOCKSIZE; i++)
-            dest[i] = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
+    for (i=0; i < BLOCKSIZE; i++)
+        dest[i] = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
 }
 
 
