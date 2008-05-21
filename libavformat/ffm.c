@@ -263,9 +263,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     header[1] = 0;
     if (pkt->flags & PKT_FLAG_KEY)
         header[1] |= FLAG_KEY_FRAME;
-    header[2] = (size >> 16) & 0xff;
-    header[3] = (size >> 8) & 0xff;
-    header[4] = size & 0xff;
+    AV_WB24(header+2, size);
     header[5] = (duration >> 16) & 0xff;
     header[6] = (duration >> 8) & 0xff;
     header[7] = duration & 0xff;
