@@ -4448,7 +4448,7 @@ int main(int argc, char **argv)
         if (!strcmp(logfilename, "-"))
             logfile = stdout;
         else
-            logfile = fopen(logfilename, "w");
+            logfile = fopen(logfilename, "a");
     }
 
     if (http_server() < 0) {
