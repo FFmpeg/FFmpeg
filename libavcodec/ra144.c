@@ -129,30 +129,21 @@ static int irms(const short *data, int factor)
 static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
                     const short *s2, const short *s3, short *dest)
 {
-    int a, b, c, i;
+    int a = 0;
+    int b, c, i;
     const short *ptr, *ptr2;
 
     ptr  = wavtable1 + n * 9;
     ptr2 = wavtable2 + n * 9;
 
-    if (f != 0)
-        a = ((*ptr) * m1) >> ((*ptr2) + 1);
-    else
-        a = 0;
+    if (f)
+        a = (ptr[0] * m1) >> (ptr2[0] + 1);
 
-    ptr++;
-    ptr2++;
-    b = ((*ptr) * m2) >> ((*ptr2) + 1);
-    ptr++;
-    ptr2++;
-    c = ((*ptr) * m3) >> ((*ptr2) + 1);
+    b = (ptr[1] * m2) >> (ptr2[1] + 1);
+    c = (ptr[2] * m3) >> (ptr2[2] + 1);
 
-    if (f != 0)
         for (i=0; i < BLOCKSIZE; i++)
             dest[i] = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
-    else
-        for (i=0; i < BLOCKSIZE; i++)
-            dest[i] = ((*(s2++)) * b + (*(s3++)) * c) >> 12;
 }
 
 
