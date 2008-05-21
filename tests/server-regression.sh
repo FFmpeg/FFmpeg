@@ -11,11 +11,9 @@ FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html`
 rm -f tests/feed1.ffm
 ./ffserver -d -f tests/test.conf 2> /dev/null &
 FFSERVER_PID=$!
-sleep 2
 echo "Waiting for feeds to startup..."
 ./ffmpeg -loop_input -flags +bitexact -dct fastint -idct simple -y -f pgmyuv -i tests/vsynth1/%02d.pgm http://localhost:9999/feed1.ffm 2> /dev/null &
 FFMPEG_PID=$!
-sleep 5
 (
     cd tests/data || exit $?
     rm -f ff-*;
