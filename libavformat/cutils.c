@@ -77,11 +77,12 @@ struct tm *brktimegm(time_t secs, struct tm *tm)
 
     /* oh well, may be someone some day will invent a formula for this stuff */
     y = 1970; /* start "guessing" */
-    while (days >= (ISLEAP(y)?366:365)) {
+    while (days > 365) {
         ny = (y + days/366);
         days -= (ny - y) * 365 + LEAPS_COUNT(ny - 1) - LEAPS_COUNT(y - 1);
         y = ny;
     }
+    if (days==365 && !ISLEAP(y)) { days=0; y++; }
     md[1] = ISLEAP(y)?29:28;
     for (m=0; days >= md[m]; m++)
          days -= md[m];
