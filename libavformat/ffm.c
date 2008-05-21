@@ -610,6 +610,12 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
+        if ((unsigned)pkt->stream_index >= s->nb_streams) {
+            av_log(s, AV_LOG_ERROR, "invalid stream index %d\n", pkt->stream_index);
+            av_free_packet(pkt);
+            ffm->read_state = READ_HEADER;
+            return AVERROR(EAGAIN);
+        }
         pkt->pos = url_ftell(s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= PKT_FLAG_KEY;
