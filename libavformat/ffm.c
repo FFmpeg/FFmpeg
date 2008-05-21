@@ -247,15 +247,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     FFMStream *fst = st->priv_data;
     int64_t pts;
     uint8_t header[FRAME_HEADER_SIZE];
-    int duration;
     int size= pkt->size;
-
-    //XXX/FIXME use duration from pkt
-    if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-        duration = ((float)st->codec->frame_size / st->codec->sample_rate * 1000000.0);
-    } else {
-        duration = (1000000.0 * st->codec->time_base.num / (float)st->codec->time_base.den);
-    }
 
     pts = fst->pts;
     /* packet size & key_frame */
@@ -264,7 +256,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->flags & PKT_FLAG_KEY)
         header[1] |= FLAG_KEY_FRAME;
     AV_WB24(header+2, size);
-    AV_WB24(header+5, duration);
+    AV_WB24(header+5, pkt->duration);
     ffm_write_data(s, header, FRAME_HEADER_SIZE, pts, 1);
     ffm_write_data(s, pkt->data, size, pts, 0);
 
