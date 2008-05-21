@@ -3499,7 +3499,6 @@ static void opt_show_formats(void)
 "even though both encoding and decoding are supported. For example, the h263\n"
 "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
 "worse.\n");
-    av_exit(0);
 }
 
 static void parse_matrix_coeffs(uint16_t *dest, const char *str)
@@ -3572,12 +3571,6 @@ static void show_help(void)
     av_opt_show(avctx_opts[0], NULL);
     av_opt_show(avformat_opts, NULL);
     av_opt_show(sws_opts, NULL);
-}
-
-static void opt_show_help(void)
-{
-    show_help();
-    av_exit(0);
 }
 
 static void opt_target(const char *arg)
@@ -3763,12 +3756,6 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_show_license(void)
-{
-    show_license();
-    av_exit(0);
-}
-
 static void opt_show_version(void)
 {
     show_version(program_name);
@@ -3777,10 +3764,10 @@ static void opt_show_version(void)
 
 static const OptionDef options[] = {
     /* main options */
-    { "L", 0, {(void*)opt_show_license}, "show license" },
-    { "h", 0, {(void*)opt_show_help}, "show help" },
+    { "L", OPT_EXIT, {(void*)show_license}, "show license" },
+    { "h", OPT_EXIT, {(void*)show_help}, "show help" },
     { "version", 0, {(void*)opt_show_version}, "show version" },
-    { "formats", 0, {(void*)opt_show_formats}, "show available formats, codecs, protocols, ..." },
+    { "formats", OPT_EXIT, {(void*)opt_show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },

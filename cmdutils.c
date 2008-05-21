@@ -149,6 +149,8 @@ unknown_opt:
             } else {
                 po->u.func_arg(arg);
             }
+            if(po->flags & OPT_EXIT)
+                exit(0);
         } else {
             if (parse_arg_function)
                 parse_arg_function(opt);
