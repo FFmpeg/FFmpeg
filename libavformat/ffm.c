@@ -260,7 +260,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     ffm_write_data(s, header, FRAME_HEADER_SIZE, pts, 1);
     ffm_write_data(s, pkt->data, size, pts, 0);
 
-    fst->pts += duration;
+    fst->pts += pkt->duration;
     return 0;
 }
 
