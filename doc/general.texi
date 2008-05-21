@@ -838,7 +838,7 @@ should also be avoided if they don't make the code easier to understand.
     If you add a new codec, remember to update the changelog, add it to
     the supported codecs table in the documentation and bump the second
     component of the @file{libavcodec} version number appropriately. If
-    it has a fourcc, add it to @file{libavformat/avienc.c}, even if it
+    it has a fourcc, add it to @file{libavformat/riff.c}, even if it
     is only a decoder.
 @item
     Compiler warnings indicate potential bugs or code with bad style. If a type of
