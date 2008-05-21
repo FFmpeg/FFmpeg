@@ -217,7 +217,7 @@ static AVEvalExpr * parse_primary(Parser *p) {
 
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
-        *p->error = "missing (";
+        *p->error = "undefined constant or missing (";
         p->s= next;
         ff_eval_free(d);
         return NULL;
