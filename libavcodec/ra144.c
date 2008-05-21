@@ -32,7 +32,7 @@
 /* internal globals */
 typedef struct {
     unsigned int     oldval;
-    unsigned int     gbuf1[8];
+    unsigned int     gbuf1[4];
     unsigned short   gbuf2[120];
     unsigned int    *decptr;                /* decoder ptr */
     signed   short  *decsp;
@@ -268,7 +268,6 @@ static void dec1(Real144_internal *glob, const int *data, const int *inp,
     short *ptr,*end;
 
     *(glob->decptr++) = rms(data, f);
-    glob->decptr++;
     end = (ptr = glob->decsp) + (n * 10);
 
     while (ptr < end)
@@ -367,7 +366,6 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
         dec1(glob, data, inp, n, f);
     } else {
         *(glob->decptr++) = rms(work, f);
-        glob->decptr++;
     }
     glob->decsp += n * 10;
 }
@@ -412,7 +410,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     /* do output */
     for (b=0, c=0; c<4; c++) {
-        unsigned int gval = glob->gbuf1[c * 2];
+        unsigned int gval = glob->gbuf1[c];
         unsigned short *gsp = glob->gbuf2 + b;
         signed short output_buffer[40];
 
