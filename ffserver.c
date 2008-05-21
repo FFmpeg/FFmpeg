@@ -2192,8 +2192,10 @@ static int http_prepare_data(HTTPContext *c)
                         c->buffer_end = c->pb_buffer + len;
 
                         codec->frame_number++;
-                        if (len == 0)
+                        if (len == 0) {
+                            av_free_packet(&pkt);
                             goto redo;
+                        }
                     }
                     av_free_packet(&pkt);
                 }
