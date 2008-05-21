@@ -216,7 +216,7 @@ void show_banner(const char *program_name, int program_birth_year)
 #endif
 }
 
-void show_version(const char *program_name) {
+void show_version(void) {
      /* TODO: add function interface to avutil and avformat avdevice*/
     printf("%s " FFMPEG_VERSION "\n", program_name);
     printf("libavutil   %d\n"

@@ -39,7 +39,7 @@
 
 #undef exit
 
-static const char program_name[] = "FFplay";
+const char program_name[] = "FFplay";
 static const int program_birth_year = 2003;
 
 //#define DEBUG_SYNC
@@ -2440,7 +2440,7 @@ static void opt_show_help(void)
 
 static void opt_show_version(void)
 {
-    show_version(program_name);
+    show_version();
     exit(0);
 }
 

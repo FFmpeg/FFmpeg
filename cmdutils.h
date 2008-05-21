@@ -25,6 +25,11 @@
 #include <inttypes.h>
 
 /**
+ * program name, defined by the program for show_version().
+ */
+extern const char program_name[];
+
+/**
  * Parses a string and returns its corresponding value as a double.
  * Exits from the application if the string cannot be correctly
  * parsed or the corresponding value is invalid.
@@ -113,7 +118,7 @@ void show_banner(const char *program_name, int program_birth_year);
  * libraries.
  * @param program_name name of the program
  */
-void show_version(const char *program_name);
+void show_version(void);
 
 /**
  * Prints the license of the program to stdout. The license depends on

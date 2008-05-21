@@ -63,7 +63,7 @@
 
 #undef exit
 
-static const char program_name[] = "FFmpeg";
+const char program_name[] = "FFmpeg";
 static const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */
@@ -3758,7 +3758,7 @@ static int opt_bsf(const char *opt, const char *arg)
 
 static void opt_show_version(void)
 {
-    show_version(program_name);
+    show_version();
     av_exit(0);
 }
 

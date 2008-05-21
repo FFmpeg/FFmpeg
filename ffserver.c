@@ -56,7 +56,7 @@
 
 #undef exit
 
-static const char program_name[] = "FFserver";
+const char program_name[] = "FFserver";
 static const int program_birth_year = 2000;
 
 static const OptionDef options[];
