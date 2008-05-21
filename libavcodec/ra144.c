@@ -33,7 +33,7 @@
 typedef struct {
     unsigned int     oldval;
     unsigned int     gbuf1[4];
-    unsigned short   gbuf2[120];
+    unsigned short   gbuf2[4][30];
     unsigned int    *decptr;                /* decoder ptr */
 
     /* the swapped buffers */
@@ -252,7 +252,7 @@ static void dec1(Real144_internal *glob, const int *data, const int *inp,
                  int n, int f, int block_idx)
 {
     short *ptr,*end;
-    signed   short  *decsp = glob->gbuf2 + 30*block_idx;
+    signed   short  *decsp = glob->gbuf2[block_idx];
 
      *(glob->decptr++) = rms(data, f);
     end = (ptr = decsp) + (n * 10);
@@ -329,7 +329,7 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     int a,b;
     int x;
     int result;
-    signed   short *decsp = glob->gbuf2 + 30*l;
+    signed   short *decsp = glob->gbuf2[l];
     unsigned short *sptr  = decsp;
 
     if(l + 1 < NBLOCKS / 2)
@@ -363,7 +363,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
             const uint8_t * buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-    unsigned int a, b, c;
+    unsigned int a, c;
     int i;
     signed short *shptr;
     int16_t *data = vdata;
@@ -396,9 +396,9 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val, 3);
 
     /* do output */
-    for (b=0, c=0; c<4; c++) {
+    for (c=0; c<4; c++) {
         unsigned int gval = glob->gbuf1[c];
-        unsigned short *gsp = glob->gbuf2 + b;
+        unsigned short *gsp = glob->gbuf2[c];
         signed short output_buffer[40];
 
         do_output_subblock(glob, gsp, gval, output_buffer, &gb);
@@ -406,7 +406,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         shptr = output_buffer;
         while (shptr < output_buffer + BLOCKSIZE)
             *data++ = av_clip_int16(*(shptr++) << 2);
-        b += 30;
     }
 
     glob->oldval = val;
