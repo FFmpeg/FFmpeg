@@ -35,7 +35,6 @@ typedef struct {
     unsigned int     gbuf1[4];
     unsigned short   gbuf2[120];
     unsigned int    *decptr;                /* decoder ptr */
-    signed   short  *decsp;
 
     /* the swapped buffers */
     unsigned int     swapbuffers[4][10];
@@ -46,8 +45,6 @@ typedef struct {
 
     unsigned int buffer[5];
     unsigned short int buffer_2[148];
-
-    unsigned short *sptr;
 } Real144_internal;
 
 static int ra144_decode_init(AVCodecContext * avctx)
@@ -252,12 +249,13 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 }
 
 static void dec1(Real144_internal *glob, const int *data, const int *inp,
-                 int n, int f)
+                 int n, int f, int block_idx)
 {
     short *ptr,*end;
+    signed   short  *decsp = glob->gbuf2 + 30*block_idx;
 
-    *(glob->decptr++) = rms(data, f);
-    end = (ptr = glob->decsp) + (n * 10);
+     *(glob->decptr++) = rms(data, f);
+    end = (ptr = decsp) + (n * 10);
 
     while (ptr < end)
         *(ptr++) = *(inp++);
@@ -331,6 +329,8 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     int a,b;
     int x;
     int result;
+    signed   short *decsp = glob->gbuf2 + 30*l;
+    unsigned short *sptr  = decsp;
 
     if(l + 1 < NBLOCKS / 2)
         a = NBLOCKS - (l + 1);
@@ -340,23 +340,21 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     b = NBLOCKS - a;
 
     if (l == 0) {
-        glob->decsp = glob->sptr = glob->gbuf2;
         glob->decptr = glob->gbuf1;
     }
     ptr1 = inp;
     ptr2 = inp2;
 
     for (x=0; x<10*n; x++)
-        *(glob->sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
+        *(sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
 
-    result = eq(glob->decsp, work);
+    result = eq(decsp, work);
 
     if (result == 1) {
-        dec1(glob, data, inp, n, f);
+        dec1(glob, data, inp, n, f, l);
     } else {
         *(glob->decptr++) = rms(work, f);
     }
-    glob->decsp += n * 10;
 }
 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
@@ -395,7 +393,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, a, glob->swapbuf2, 1);
     }
     dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, val, glob->swapbuf2alt, 2);
-    dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val);
+    dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val, 3);
 
     /* do output */
     for (b=0, c=0; c<4; c++) {
