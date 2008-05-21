@@ -1066,7 +1066,7 @@ static void print_report(AVFormatContext **output_files,
         bitrate = (double)(total_size * 8) / ti1 / 1000.0;
 
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-            "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
+            "size=%8.0fkB time=%0.2f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
 
         if (verbose > 1)
