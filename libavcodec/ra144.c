@@ -401,25 +401,14 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(val*glob->oldval) >> 12;
 
-    for (c=0; c < NBLOCKS; c++) {
-        if (c == (NBLOCKS - 1)) {
-            dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val);
-        } else {
-            if (c * 2 == (NBLOCKS - 2)) {
-                if (glob->oldval < val) {
-                    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, a, glob->swapbuf2alt, c);
-                } else {
-                    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, a, glob->swapbuf2, c);
-                }
-            } else {
-                if (c * 2 < (NBLOCKS - 2)) {
-                    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, glob->oldval, glob->swapbuf2, c);
-                } else {
-                    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, val, glob->swapbuf2alt, c);
-                }
-            }
-        }
+    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, glob->oldval, glob->swapbuf2, 0);
+    if (glob->oldval < val) {
+        dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, a, glob->swapbuf2alt, 1);
+    } else {
+        dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, a, glob->swapbuf2, 1);
     }
+    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, val, glob->swapbuf2alt, 2);
+    dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val);
 
     /* do output */
     for (b=0, c=0; c<4; c++) {
