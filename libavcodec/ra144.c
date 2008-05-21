@@ -71,7 +71,7 @@ static int t_sqrt(unsigned int x)
         x = x >> 2;
     }
 
-    return (sqrt_table[x] << s) << 2;
+    return (ff_sqrt(x << 20) << s) << 2;
 }
 
 /* do 'voice' */
