@@ -256,8 +256,8 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
     block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(d, a, g, e, f, buffer_a, etable1 + b*BLOCKSIZE,
-            etable2 + c*BLOCKSIZE, block);
+    add_wav(d, a, g, e, f, buffer_a, etable1[b],
+            etable2[c], block);
 
     final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
