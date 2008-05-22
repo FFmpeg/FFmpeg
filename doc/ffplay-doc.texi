@@ -33,6 +33,8 @@ ffplay [options] @file{input_file}
 show help
 @item -version
 show version
+@item -L
+show license
 @item -x @var{width}
 force displayed width
 @item -y @var{height}
