@@ -1565,7 +1565,7 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     uint8_t *cmov_data;
     uint8_t *moov_data; /* uncompressed data */
     long cmov_len, moov_len;
-    int ret;
+    int ret = -1;
 
     get_be32(pb); /* dcom atom */
     if (get_le32(pb) != MKTAG('d','c','o','m'))
@@ -1590,9 +1590,9 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     }
     get_buffer(pb, cmov_data, cmov_len);
     if(uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
-        return -1;
+        goto free_and_return;
     if(init_put_byte(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL) != 0)
-        return -1;
+        goto free_and_return;
     atom.type = MKTAG('m','o','o','v');
     atom.offset = 0;
     atom.size = moov_len;
@@ -1600,6 +1600,7 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 //    { int fd = open("/tmp/uncompheader.mov", O_WRONLY | O_CREAT); write(fd, moov_data, moov_len); close(fd); }
 #endif
     ret = mov_read_default(c, &ctx, atom);
+free_and_return:
     av_free(moov_data);
     av_free(cmov_data);
     return ret;
