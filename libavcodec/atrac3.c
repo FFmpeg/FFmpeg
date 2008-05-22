@@ -1,7 +1,7 @@
 /*
  * Atrac 3 compatible decoder
- * Copyright (c) 2006-2007 Maxim Poliakovski
- * Copyright (c) 2006-2007 Benjamin Larsson
+ * Copyright (c) 2006-2008 Maxim Poliakovski
+ * Copyright (c) 2006-2008 Benjamin Larsson
  *
  * This file is part of FFmpeg.
  *
@@ -23,12 +23,13 @@
 /**
  * @file atrac3.c
  * Atrac 3 compatible decoder.
- * This decoder handles RealNetworks, RealAudio atrc data.
- * Atrac 3 is identified by the codec name atrc in RealMedia files.
+ * This decoder handles Sony's ATRAC3 data.
+ *
+ * Container formats used to store atrac 3 data:
+ * RealMedia (.rm), RIFF WAV (.wav, .at3), Sony OpenMG (.oma, .aa3).
  *
  * To use this decoder, a calling application must supply the extradata
- * bytes provided from the RealMedia container: 10 bytes or 14 bytes
- * from the WAV container.
+ * bytes provided in the containers above.
  */
 
 #include <math.h>
