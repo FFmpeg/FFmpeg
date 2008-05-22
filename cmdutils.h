@@ -126,4 +126,10 @@ void show_version(void);
  */
 void show_license(void);
 
+/**
+ * Prints a listing containing all the formats supported by the
+ * program.
+ */
+void show_formats(void);
+
 #endif /* FFMPEG_CMDUTILS_H */
