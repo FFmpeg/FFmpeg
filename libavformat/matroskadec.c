@@ -2250,8 +2250,12 @@ matroska_parse_chapters(AVFormatContext *s)
                         }
                     }
 
-                    if(start != AV_NOPTS_VALUE && end != AV_NOPTS_VALUE)
-                        res = ff_new_chapter(s, start * AV_TIME_BASE / 1000000000 , end * AV_TIME_BASE / 1000000000, title ? title : "(unnamed)");
+                    if (start != AV_NOPTS_VALUE) {
+                        start = start * AV_TIME_BASE / 1000000000;
+                        if (end != AV_NOPTS_VALUE)
+                            end = end * AV_TIME_BASE / 1000000000;
+                        res = ff_new_chapter(s, start, end, title ? title : "(unnamed)");
+                    }
                     av_free(title);
                     break;
 
