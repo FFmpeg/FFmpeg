@@ -2139,6 +2139,156 @@ matroska_parse_attachments(AVFormatContext *s)
     return res;
 }
 
+static int
+matroska_parse_chapters(AVFormatContext *s)
+{
+    MatroskaDemuxContext *matroska = s->priv_data;
+    int res = 0;
+    uint32_t id;
+
+    av_log(s, AV_LOG_DEBUG, "parsing chapters...\n");
+
+    while (res == 0) {
+        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+            res = AVERROR(EIO);
+            break;
+        } else if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+
+        switch (id) {
+        case MATROSKA_ID_EDITIONENTRY: {
+            uint64_t end = AV_NOPTS_VALUE, start = AV_NOPTS_VALUE;
+            char* title = NULL;
+            /* if there is more than one chapter edition
+               we take only the first one */
+            if(s->chapters) {
+                    ebml_read_skip(matroska);
+                    break;
+            }
+
+            if ((res = ebml_read_master(matroska, &id)) < 0)
+                break;
+
+            while (res == 0) {
+                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+                    res = AVERROR(EIO);
+                    break;
+                } else if (matroska->level_up) {
+                    matroska->level_up--;
+                    break;
+                }
+
+                switch (id) {
+                case MATROSKA_ID_CHAPTERATOM:
+                    if ((res = ebml_read_master(matroska, &id)) < 0)
+                        break;
+
+                    while (res == 0) {
+                        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+                            res = AVERROR(EIO);
+                            break;
+                        } else if (matroska->level_up) {
+                            matroska->level_up--;
+                            break;
+                        }
+
+                        switch (id) {
+                        case MATROSKA_ID_CHAPTERTIMEEND:
+                            res = ebml_read_uint(matroska, &id, &end);
+                            break;
+
+                        case MATROSKA_ID_CHAPTERTIMESTART:
+                            res = ebml_read_uint(matroska, &id, &start);
+                            break;
+
+                        case MATROSKA_ID_CHAPTERDISPLAY:
+                            if ((res = ebml_read_master(matroska, &id)) < 0)
+                                break;
+
+                            while (res == 0) {
+                                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+                                    res = AVERROR(EIO);
+                                    break;
+                                } else if (matroska->level_up) {
+                                    matroska->level_up--;
+                                    break;
+                                }
+
+                                switch (id) {
+                                case MATROSKA_ID_CHAPSTRING:
+                                    res = ebml_read_utf8(matroska, &id, &title);
+                                    break;
+
+                                default:
+                                    av_log(s, AV_LOG_INFO, "Ignoring unknown Chapter display ID 0x%x\n", id);
+                                case EBML_ID_VOID:
+                                    res = ebml_read_skip(matroska);
+                                    break;
+                                }
+
+                                if (matroska->level_up) {
+                                    matroska->level_up--;
+                                    break;
+                                }
+                            }
+                            break;
+
+                        default:
+                            av_log(s, AV_LOG_INFO, "Ignoring unknown Chapter atom ID 0x%x\n", id);
+                        case MATROSKA_ID_CHAPTERUID:
+                        case MATROSKA_ID_CHAPTERFLAGHIDDEN:
+                        case EBML_ID_VOID:
+                            res = ebml_read_skip(matroska);
+                            break;
+                        }
+
+                        if (matroska->level_up) {
+                            matroska->level_up--;
+                            break;
+                        }
+                    }
+
+                    if(start != AV_NOPTS_VALUE && end != AV_NOPTS_VALUE)
+                        res = ff_new_chapter(s, start * AV_TIME_BASE / 1000000000 , end * AV_TIME_BASE / 1000000000, title ? title : "(unnamed)");
+                    av_free(title);
+                    break;
+
+                default:
+                    av_log(s, AV_LOG_INFO, "Ignoring unknown Edition entry ID 0x%x\n", id);
+                case MATROSKA_ID_EDITIONUID:
+                case MATROSKA_ID_EDITIONFLAGHIDDEN:
+                case EBML_ID_VOID:
+                    res = ebml_read_skip(matroska);
+                    break;
+                }
+
+
+                if (matroska->level_up) {
+                    matroska->level_up--;
+                    break;
+                }
+            }
+        break;
+        }
+
+        default:
+            av_log(s, AV_LOG_INFO, "Expected an Edition entry (0x%x), but found 0x%x\n", MATROSKA_ID_EDITIONENTRY, id);
+        case EBML_ID_VOID:
+            res = ebml_read_skip(matroska);
+            break;
+        }
+
+        if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+    }
+
+    return res;
+}
+
 #define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
 
 static int
@@ -2288,6 +2438,13 @@ matroska_read_header (AVFormatContext    *s,
                 /* Do not read the master - this will be done in the next
                  * call to matroska_read_packet. */
                 res = 1;
+                break;
+            }
+
+            case MATROSKA_ID_CHAPTERS: {
+                if ((res = ebml_read_master(matroska, &id)) < 0)
+                    return res;
+                res = matroska_parse_chapters(s);
                 break;
             }
 
