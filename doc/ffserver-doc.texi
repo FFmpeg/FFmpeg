@@ -196,6 +196,8 @@ ffserver [options]
 @section Options
 @c man begin OPTIONS
 @table @option
+@item -version
+Show version.
 @item -L
 Print the license.
 @item -h

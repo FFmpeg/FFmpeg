@@ -4349,6 +4349,7 @@ static void opt_show_help(void)
 
 static const OptionDef options[] = {
     { "h", OPT_EXIT, {(void*)opt_show_help}, "show help" },
+    { "version", OPT_EXIT, {(void*)show_version}, "show version" },
     { "L", OPT_EXIT, {(void*)show_license}, "show license" },
     { "n", OPT_BOOL, {(void *)&no_launch }, "enable no-launch mode" },
     { "d", 0, {(void*)opt_debug}, "enable debug mode" },
