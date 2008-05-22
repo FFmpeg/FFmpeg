@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 13
+#define LIBAVFORMAT_VERSION_MINOR 14
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -389,6 +389,11 @@ typedef struct AVProgram {
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
                                          (streams are added dynamically) */
 
+typedef struct AVChapter {
+    int64_t start, end; /**< chapter start/end time in AV_TIME_BASE units */
+    char *title; /**< chapter title */
+} AVChapter;
+
 #define MAX_STREAMS 20
 
 /**
@@ -514,6 +519,9 @@ typedef struct AVFormatContext {
      * obtained from real-time capture devices.
      */
     unsigned int max_picture_buffer;
+
+    int num_chapters;
+    AVChapter **chapters;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -743,6 +751,18 @@ void av_close_input_file(AVFormatContext *s);
  */
 AVStream *av_new_stream(AVFormatContext *s, int id);
 AVProgram *av_new_program(AVFormatContext *s, int id);
+
+/**
+ * Add a new chapter.
+ * This function is NOT part of the public API
+ * and should be ONLY used by demuxers.
+ *
+ * @param s media file handle
+ * @param start chapter start time in AV_TIME_BASE units
+ * @param end chapter end time in AV_TIME_BASE units
+ * @param title chapter title
+ */
+int ff_new_chapter(AVFormatContext *s, int64_t start, int64_t end, const char *title);
 
 /**
  * Set the pts for a given stream.

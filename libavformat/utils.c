@@ -2148,6 +2148,11 @@ void av_close_input_stream(AVFormatContext *s)
     av_freep(&s->programs);
     flush_packet_queue(s);
     av_freep(&s->priv_data);
+    while(s->num_chapters--) {
+        av_free(s->chapters[s->num_chapters]->title);
+        av_free(s->chapters[s->num_chapters]);
+    }
+    av_freep(&s->chapters);
     av_free(s);
 }
 
@@ -2229,6 +2234,19 @@ void av_set_program_name(AVProgram *program, char *provider_name, char *name)
     }
 }
 
+int ff_new_chapter(AVFormatContext *s, int64_t start, int64_t end, const char *title)
+{
+    AVChapter *chapter = av_mallocz(sizeof(AVChapter));
+    if(!chapter)
+        return AVERROR(ENOMEM);
+    chapter->title = av_strdup(title);
+    chapter->start = start;
+    chapter->end = end;
+
+    dynarray_add(&s->chapters, &s->num_chapters, chapter);
+
+    return 0;
+}
 
 /************************************************************/
 /* output media file */
