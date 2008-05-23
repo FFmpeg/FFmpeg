@@ -2239,6 +2239,7 @@ int ff_new_chapter(AVFormatContext *s, int64_t start, int64_t end, const char *t
     AVChapter *chapter = av_mallocz(sizeof(AVChapter));
     if(!chapter)
         return AVERROR(ENOMEM);
+    if (title)
     chapter->title = av_strdup(title);
     chapter->start = start;
     chapter->end = end;
