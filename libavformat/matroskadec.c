@@ -2254,7 +2254,7 @@ matroska_parse_chapters(AVFormatContext *s)
                         start = start * AV_TIME_BASE / 1000000000;
                         if (end != AV_NOPTS_VALUE)
                             end = end * AV_TIME_BASE / 1000000000;
-                        res = ff_new_chapter(s, start, end, title ? title : "(unnamed)");
+                        res = ff_new_chapter(s, start, end, title);
                     }
                     av_free(title);
                     break;
