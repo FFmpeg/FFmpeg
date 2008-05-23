@@ -2251,7 +2251,6 @@ int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const
     }
     if(chapter->title)
         av_free(chapter->title);
-    if (title)
         chapter->title = av_strdup(title);
     chapter->id    = id;
     chapter->start = start;
