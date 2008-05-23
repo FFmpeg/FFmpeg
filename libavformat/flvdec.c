@@ -281,7 +281,7 @@ static int flv_read_header(AVFormatContext *s,
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, type, size, flags, is_audio, next, pos;
-    unsigned pts;
+    unsigned dts;
     AVStream *st = NULL;
 
  for(;;){
@@ -289,9 +289,9 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     url_fskip(s->pb, 4); /* size of previous packet */
     type = get_byte(s->pb);
     size = get_be24(s->pb);
-    pts = get_be24(s->pb);
-    pts |= get_byte(s->pb) << 24;
-//    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, pts:%d\n", type, size, pts);
+    dts = get_be24(s->pb);
+    dts |= get_byte(s->pb) << 24;
+//    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
     if (url_feof(s->pb))
         return AVERROR(EIO);
     url_fskip(s->pb, 3); /* stream id, always 0 */
@@ -337,7 +337,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         continue;
     }
     if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
-        av_add_index_entry(st, pos, pts, size, 0, AVINDEX_KEYFRAME);
+        av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
     break;
  }
 
@@ -376,7 +376,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;
-    pkt->pts = pts;
+    pkt->dts = dts;
     pkt->stream_index = st->index;
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
