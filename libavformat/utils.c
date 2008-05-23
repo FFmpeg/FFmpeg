@@ -850,6 +850,18 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 return ret;
             }
 
+            if(s->cur_pkt.pts != AV_NOPTS_VALUE &&
+               s->cur_pkt.dts != AV_NOPTS_VALUE &&
+               s->cur_pkt.pts < s->cur_pkt.dts){
+                av_log(s, AV_LOG_WARNING, "Invalid timestamps stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
+                    s->cur_pkt.stream_index,
+                    s->cur_pkt.pts,
+                    s->cur_pkt.dts,
+                    s->cur_pkt.size);
+//                av_free_packet(&s->cur_pkt);
+//                return -1;
+            }
+
             st = s->streams[s->cur_pkt.stream_index];
             if(st->codec->debug & FF_DEBUG_PTS)
                 av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
