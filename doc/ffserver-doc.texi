@@ -200,6 +200,8 @@ ffserver [options]
 Show version.
 @item -L
 Print the license.
+@item -formats
+Show available formats, codecs, protocols, ...
 @item -h
 Print the help.
 @item -f @var{configfile}
