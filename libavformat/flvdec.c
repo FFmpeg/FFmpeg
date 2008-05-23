@@ -239,7 +239,7 @@ static AVStream *create_stream(AVFormatContext *s, int is_audio){
     if (!st)
         return NULL;
     st->codec->codec_type = is_audio ? CODEC_TYPE_AUDIO : CODEC_TYPE_VIDEO;
-    av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
+    av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
 }
 
