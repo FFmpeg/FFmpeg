@@ -522,7 +522,7 @@ typedef struct AVFormatContext {
      */
     unsigned int max_picture_buffer;
 
-    int num_chapters;
+    int nb_chapters;
     AVChapter **chapters;
 } AVFormatContext;
 
