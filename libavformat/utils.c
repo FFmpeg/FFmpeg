@@ -2234,7 +2234,7 @@ void av_set_program_name(AVProgram *program, char *provider_name, char *name)
     }
 }
 
-int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const char *title)
+AVChapter *ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const char *title)
 {
     AVChapter *chapter = NULL;
     int i;
@@ -2246,7 +2246,7 @@ int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const
     if(!chapter){
         chapter= av_mallocz(sizeof(AVChapter));
         if(!chapter)
-            return AVERROR(ENOMEM);
+            return NULL;
         dynarray_add(&s->chapters, &s->nb_chapters, chapter);
     }
     if(chapter->title)
@@ -2256,7 +2256,7 @@ int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const
     chapter->start = start;
     chapter->end   = end;
 
-    return 0;
+    return chapter;
 }
 
 /************************************************************/
