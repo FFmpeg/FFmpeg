@@ -393,6 +393,7 @@ static int decode_info_header(NUTContext *nut){
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
+    AVChapter *chapter= NULL;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
@@ -402,6 +403,13 @@ static int decode_info_header(NUTContext *nut){
     chapter_start= ff_get_v(bc);
     chapter_len  = ff_get_v(bc);
     count        = ff_get_v(bc);
+
+    if(chapter_id && !stream_id_plus1){
+        int64_t start= chapter_start / nut->time_base_count;
+        chapter= ff_new_chapter(s, chapter_id, start, start + chapter_len, NULL);
+        chapter->time_base= nut->time_base[chapter_start % nut->time_base_count];
+    }
+
     for(i=0; i<count; i++){
         get_str(bc, name, sizeof(name));
         value= get_s(bc);
@@ -441,6 +449,10 @@ static int decode_info_header(NUTContext *nut){
                 av_strlcpy(s->comment  , str_value, sizeof(s->comment));
             else if(!strcmp(name, "Disposition"))
                 set_disposition_bits(s, str_value, stream_id_plus1 - 1);
+        }
+        if(chapter && !strcmp(type, "UTF-8")){
+            if(!strcmp(name, "Title"))
+                chapter->title= av_strdup(str_value);
         }
     }
 
