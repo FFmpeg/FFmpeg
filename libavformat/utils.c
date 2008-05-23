@@ -2246,7 +2246,7 @@ void av_set_program_name(AVProgram *program, char *provider_name, char *name)
     }
 }
 
-AVChapter *ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const char *title)
+AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int64_t start, int64_t end, const char *title)
 {
     AVChapter *chapter = NULL;
     int i;
@@ -2265,6 +2265,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end
         av_free(chapter->title);
     chapter->title = av_strdup(title);
     chapter->id    = id;
+    chapter->time_base= time_base;
     chapter->start = start;
     chapter->end   = end;
 

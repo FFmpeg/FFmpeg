@@ -2254,10 +2254,7 @@ matroska_parse_chapters(AVFormatContext *s)
                     }
 
                     if (start != AV_NOPTS_VALUE && uid != -1) {
-                        start = start * AV_TIME_BASE / 1000000000;
-                        if (end != AV_NOPTS_VALUE)
-                            end = end * AV_TIME_BASE / 1000000000;
-                        if(!ff_new_chapter(s, uid, start, end, title))
+                        if(!ff_new_chapter(s, uid, (AVRational){1, 1000000000}, start, end, title))
                             res= AVERROR(ENOMEM);
                     }
                     av_free(title);

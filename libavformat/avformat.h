@@ -776,13 +776,13 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  *
  * @param s media file handle
  * @param id unique id for this chapter
- * @param start chapter start time in AV_TIME_BASE units
- * @param end chapter end time in AV_TIME_BASE units
+ * @param start chapter start time in time_base units
+ * @param end chapter end time in time_base units
  * @param title chapter title
  *
  * @return AVChapter or NULL if error.
  */
-AVChapter *ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const char *title);
+AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int64_t start, int64_t end, const char *title);
 
 /**
  * Set the pts for a given stream.
