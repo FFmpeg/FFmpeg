@@ -77,6 +77,7 @@ enum {
     FLV_CODECID_PCM_LE              = 3 << FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_NELLYMOSER_8HZ_MONO = 5 << FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_NELLYMOSER          = 6 << FLV_AUDIO_CODECID_OFFSET,
+    FLV_CODECID_AAC                 = 10<< FLV_AUDIO_CODECID_OFFSET,
 };
 
 enum {
@@ -85,6 +86,7 @@ enum {
     FLV_CODECID_VP6     = 4,
     FLV_CODECID_VP6A    = 5,
     FLV_CODECID_SCREEN2 = 6,
+    FLV_CODECID_H264    = 7,
 };
 
 enum {
