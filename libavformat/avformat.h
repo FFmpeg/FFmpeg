@@ -760,11 +760,12 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  * and should be ONLY used by demuxers.
  *
  * @param s media file handle
+ * @param id unique id for this chapter
  * @param start chapter start time in AV_TIME_BASE units
  * @param end chapter end time in AV_TIME_BASE units
  * @param title chapter title
  */
-int ff_new_chapter(AVFormatContext *s, int64_t start, int64_t end, const char *title);
+int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const char *title);
 
 /**
  * Set the pts for a given stream.

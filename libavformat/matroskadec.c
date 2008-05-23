@@ -2160,6 +2160,7 @@ matroska_parse_chapters(AVFormatContext *s)
         switch (id) {
         case MATROSKA_ID_EDITIONENTRY: {
             uint64_t end = AV_NOPTS_VALUE, start = AV_NOPTS_VALUE;
+            int64_t uid= -1;
             char* title = NULL;
             /* if there is more than one chapter edition
                we take only the first one */
@@ -2235,9 +2236,11 @@ matroska_parse_chapters(AVFormatContext *s)
                             }
                             break;
 
+                        case MATROSKA_ID_CHAPTERUID:
+                            res = ebml_read_uint(matroska, &id, &uid);
+                            break;
                         default:
                             av_log(s, AV_LOG_INFO, "Ignoring unknown Chapter atom ID 0x%x\n", id);
-                        case MATROSKA_ID_CHAPTERUID:
                         case MATROSKA_ID_CHAPTERFLAGHIDDEN:
                         case EBML_ID_VOID:
                             res = ebml_read_skip(matroska);
@@ -2250,11 +2253,11 @@ matroska_parse_chapters(AVFormatContext *s)
                         }
                     }
 
-                    if (start != AV_NOPTS_VALUE) {
+                    if (start != AV_NOPTS_VALUE && uid != -1) {
                         start = start * AV_TIME_BASE / 1000000000;
                         if (end != AV_NOPTS_VALUE)
                             end = end * AV_TIME_BASE / 1000000000;
-                        res = ff_new_chapter(s, start, end, title);
+                        res = ff_new_chapter(s, uid, start, end, title);
                     }
                     av_free(title);
                     break;
