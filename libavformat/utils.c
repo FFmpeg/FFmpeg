@@ -2254,7 +2254,7 @@ int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const
     chapter->title = av_strdup(title);
     chapter->id    = id;
     chapter->start = start;
-    chapter->end = end;
+    chapter->end   = end;
 
     return 0;
 }
