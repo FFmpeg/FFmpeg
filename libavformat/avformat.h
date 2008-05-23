@@ -390,6 +390,8 @@ typedef struct AVProgram {
                                          (streams are added dynamically) */
 
 typedef struct AVChapter {
+    int id;                 ///< Unique id to identify the chapter
+    AVRational time_base;   ///< Timebase in which the start/end timestamps are specified
     int64_t start, end; /**< chapter start/end time in AV_TIME_BASE units */
     char *title; /**< chapter title */
 } AVChapter;
