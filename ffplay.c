@@ -2436,6 +2436,7 @@ static const OptionDef options[] = {
     { "h", OPT_EXIT, {(void*)show_help}, "show help" },
     { "version", OPT_EXIT, {(void*)show_version}, "show version" },
     { "L", OPT_EXIT, {(void*)show_license}, "show license" },
+    { "formats", OPT_EXIT, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "x", HAS_ARG | OPT_FUNC2, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG | OPT_FUNC2, {(void*)opt_height}, "force displayed height", "height" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },

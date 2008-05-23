@@ -35,6 +35,8 @@ show help
 show version
 @item -L
 show license
+@item -formats
+Show available formats, codecs, protocols, ...
 @item -x @var{width}
 force displayed width
 @item -y @var{height}
