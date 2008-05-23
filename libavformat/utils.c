@@ -2245,8 +2245,8 @@ int ff_new_chapter(AVFormatContext *s, int id, int64_t start, int64_t end, const
 
     if(!chapter){
         chapter= av_mallocz(sizeof(AVChapter));
-    if(!chapter)
-        return AVERROR(ENOMEM);
+        if(!chapter)
+            return AVERROR(ENOMEM);
         dynarray_add(&s->chapters, &s->num_chapters, chapter);
     }
     if(chapter->title)
