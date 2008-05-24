@@ -144,8 +144,10 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
         return NULL;
     }
 
-    if(avfilter_graph_add_filter(ctx, filt) < 0)
+    if(avfilter_graph_add_filter(ctx, filt) < 0) {
+        avfilter_destroy(filt);
         return NULL;
+    }
 
     if(avfilter_init_filter(filt, args, NULL)) {
         av_log(log_ctx, AV_LOG_ERROR,
@@ -164,19 +166,24 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
 {
     char *opts = NULL;
     char *name = consume_string(buf);
+    AVFilterContext *ret;
 
     if(**buf == '=') {
         (*buf)++;
         opts = consume_string(buf);
     }
 
-    return create_filter(graph, index, name, opts, log_ctx);
+    ret = create_filter(graph, index, name, opts, log_ctx);
+    av_free(name);
+    av_free(opts);
+    return ret;
 }
 
 static void free_inout(AVFilterInOut *head)
 {
     while(head) {
         AVFilterInOut *next = head->next;
+        av_free(head->name);
         av_free(head);
         head = next;
     }
@@ -222,6 +229,7 @@ static int link_filter_inouts(AVFilterContext *filter,
         if(p->filter) {
             if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx))
                 return -1;
+            av_free(p->name);
             av_free(p);
         } else {
             p->filter = filter;
@@ -318,6 +326,8 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
             if(link_filter(input->filter, input->pad_idx,
                            match->filter, match->pad_idx, log_ctx) < 0)
                 return -1;
+            av_free(match->name);
+            av_free(name);
             av_free(match);
             av_free(input);
         } else {
