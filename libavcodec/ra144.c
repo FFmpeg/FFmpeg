@@ -181,30 +181,24 @@ static void final(const short *i1, const short *i2,
 
 static unsigned int rms(const int *data, int f)
 {
-    const int *c;
     int x;
-    unsigned int res;
-    int b;
+    unsigned int res = 0x10000;
+    int b = 0;
 
-    c = data;
-    b = 0;
-    res = 0x10000;
     for (x=0; x<10; x++) {
-        res = (((0x1000000 - (*c) * (*c)) >> 12) * res) >> 12;
+        res = (((0x1000000 - (*data) * (*data)) >> 12) * res) >> 12;
 
         if (res == 0)
             return 0;
 
-        if (res <= 0x3fff) {
-            while (res <= 0x3fff) {
-                b++;
-                res <<= 2;
-            }
-        } else {
             if (res > 0x10000)
                 return 0; /* We're screwed, might as well go out with a bang. :P */
+
+        while (res <= 0x3fff) {
+            b++;
+            res <<= 2;
         }
-        c++;
+        data++;
     }
 
     if (res > 0)
