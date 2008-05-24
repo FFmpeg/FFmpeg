@@ -50,8 +50,14 @@ static int create_filter(AVFilterGraph *ctx, int index, char *name,
     char tmp[20];
 
     snprintf(tmp, 20, "%d", index);
-    if(!(filterdef = avfilter_get_by_name(name)) ||
-       !(filt = avfilter_open(filterdef, tmp))) {
+
+    if(!(filterdef = avfilter_get_by_name(name))) {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "no such filter: '%s'\n", name);
+        return -1;
+    }
+
+    if(!(filt = avfilter_open(filterdef, tmp))) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "error creating filter '%s'\n", name);
         return -1;
@@ -62,7 +68,7 @@ static int create_filter(AVFilterGraph *ctx, int index, char *name,
 
     if(avfilter_init_filter(filt, args, NULL)) {
         av_log(&log_ctx, AV_LOG_ERROR,
-               "error initializing filter '%s'\n", name);
+               "error initializing filter '%s' with args '%s'\n", name, args);
         return -1;
     }
 
