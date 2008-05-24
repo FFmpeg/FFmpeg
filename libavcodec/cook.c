@@ -132,8 +132,6 @@ typedef struct cook {
     /* generatable tables and related variables */
     int                 gain_size_factor;
     float               gain_table[23];
-    float               pow2tab[127];
-    float               rootpow2tab[127];
 
     /* data buffers */
 
@@ -147,6 +145,9 @@ typedef struct cook {
 
     const float         *cplscales[5];
 } COOKContext;
+
+static float     pow2tab[127];
+static float rootpow2tab[127];
 
 /* debug functions */
 
@@ -183,11 +184,11 @@ static void dump_short_table(short* table, int size, int delimiter) {
 /*************** init functions ***************/
 
 /* table generator */
-static void init_pow2table(COOKContext *q){
+static void init_pow2table(void){
     int i;
     for (i=-63 ; i<64 ; i++){
-        q->    pow2tab[63+i]=     pow(2, i);
-        q->rootpow2tab[63+i]=sqrt(pow(2, i));
+            pow2tab[63+i]=     pow(2, i);
+        rootpow2tab[63+i]=sqrt(pow(2, i));
     }
 }
 
@@ -196,7 +197,7 @@ static void init_gain_table(COOKContext *q) {
     int i;
     q->gain_size_factor = q->samples_per_channel/8;
     for (i=0 ; i<23 ; i++) {
-        q->gain_table[i] = pow((double)q->pow2tab[i+52] ,
+        q->gain_table[i] = pow(pow2tab[i+52] ,
                                (1.0/(double)q->gain_size_factor));
     }
 }
@@ -542,7 +543,7 @@ static void scalar_dequant_float(COOKContext *q, int index, int quant_index,
             f1 = dither_tab[index];
             if (av_random(&q->random_state) < 0x80000000) f1 = -f1;
         }
-        mlt_p[i] = f1 * q->rootpow2tab[quant_index+63];
+        mlt_p[i] = f1 * rootpow2tab[quant_index+63];
     }
 }
 /**
@@ -670,7 +671,7 @@ static void interpolate_float(COOKContext *q, float* buffer,
                         int gain_index, int gain_index_next){
     int i;
     float fc1, fc2;
-    fc1 = q->pow2tab[gain_index+63];
+    fc1 = pow2tab[gain_index+63];
 
     if(gain_index == gain_index_next){              //static gain
         for(i=0 ; i<q->gain_size_factor ; i++){
@@ -699,7 +700,7 @@ static void interpolate_float(COOKContext *q, float* buffer,
 static void imlt_window_float (COOKContext *q, float *buffer1,
                                cook_gains *gains_ptr, float *previous_buffer)
 {
-    const float fc = q->pow2tab[gains_ptr->previous[0] + 63];
+    const float fc = pow2tab[gains_ptr->previous[0] + 63];
     int i;
     /* The weird thing here, is that the two halves of the time domain
      * buffer are swapped. Also, the newest data, that we save away for
@@ -1113,7 +1114,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->numvector_size = (1 << q->log2_numvector_size);
 
     /* Generate tables */
-    init_pow2table(q);
+    init_pow2table();
     init_gain_table(q);
     init_cplscales_table(q);
 
