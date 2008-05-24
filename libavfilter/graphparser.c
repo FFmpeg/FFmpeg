@@ -94,68 +94,41 @@ static void consume_whitespace(const char **buf)
 }
 
 /**
- * Copy the first size bytes of input string to a null-terminated string,
- * removing any control character. Ex: "aaa'bb'c\'c\\" -> "aaabbc'c\"
- */
-static void copy_unquoted(char *out, const char *in, int size)
-{
-    int i;
-    for (i=0; i < size; i++) {
-        if (in[i] == '\'')
-            continue;
-        else if (in[i] == '\\') {
-            if (i+1 == size) {
-                *out = 0;
-                return;
-            }
-            i++;
-        }
-        *out++ = in[i];
-    }
-    *out=0;
-}
-
-/**
  * Consumes a string from *buf.
  * @return a copy of the consumed string, which should be free'd after use
  */
 static char *consume_string(const char **buf)
 {
-    const char *start;
-    char *ret;
-    int size;
+    char *out = av_malloc(strlen(*buf));
+    const char *in = *buf;
+    char *ret = out;
 
     consume_whitespace(buf);
 
-    if (!(**buf))
-        return av_mallocz(1);
-
-    start = *buf;
-
-    while(1) {
-        *buf += strcspn(*buf, " ()=,'\\");
-        if (**buf == '\\')
-            *buf+=2;
-        else
+    do{
+        char c = *in++;
+        switch (c) {
+        case '\\':
+            *out++= *in++;
             break;
-    }
+        case '\'':
+            while(*in && *in != '\'')
+                *out++= *in++;
+            if(*in) in++;
+            break;
+        case 0:
+        case ')':
+        case '(':
+        case '=':
+        case ',':
+            *out++= 0;
+            break;
+        default:
+            *out++= c;
+        }
+    } while(out[-1]);
 
-    if (**buf == '\'') {
-        const char *p = *buf;
-        do {
-            p++;
-            p = strchr(p, '\'');
-        } while (p && p[-1] == '\\');
-        if (p)
-            *buf = p + 1;
-        else
-            *buf += strlen(*buf); // Move the pointer to the null end byte
-    }
-
-    size = *buf - start + 1;
-    ret = av_malloc(size);
-    copy_unquoted(ret, start, size-1);
-
+    *buf = in-1;
     return ret;
 }
 
