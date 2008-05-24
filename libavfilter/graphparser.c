@@ -188,7 +188,7 @@ enum LinkType {
 typedef struct AVFilterInOut {
     enum LinkType type;
     char *name;
-    AVFilterContext *instance;
+    AVFilterContext *filter;
     int pad_idx;
 
     struct AVFilterInOut *next;
@@ -208,14 +208,14 @@ static void free_inout(AVFilterInOut *head)
  * Parse "(a1)(link2) ... (etc)"
  */
 static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
-                        enum LinkType type, AVFilterContext *instance)
+                        enum LinkType type, AVFilterContext *filter)
 {
     int pad = firstpad;
     while (**buf == '(') {
         AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
         parse_link_name(buf, &inoutn->name);
         inoutn->type = type;
-        inoutn->instance = instance;
+        inoutn->filter = filter;
         inoutn->pad_idx = pad++;
         inoutn->next = *inout;
         *inout = inoutn;
@@ -284,17 +284,17 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
 
     head = inout;
     for (; inout != NULL; inout = inout->next) {
-        if (inout->instance == NULL)
+        if (inout->filter == NULL)
             continue; // Already processed
 
         if (!strcmp(inout->name, "in")) {
-            if(link_filter(in, inpad, inout->instance, inout->pad_idx))
+            if(link_filter(in, inpad, inout->filter, inout->pad_idx))
                 goto fail;
 
         } else if (!strcmp(inout->name, "out")) {
             has_out = 1;
 
-            if(link_filter(inout->instance, inout->pad_idx, out, outpad))
+            if(link_filter(inout->filter, inout->pad_idx, out, outpad))
                 goto fail;
 
         } else {
@@ -320,11 +320,11 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
                 goto fail;
             }
 
-            if (link_filter(src->instance, src->pad_idx, dst->instance, dst->pad_idx) < 0)
+            if (link_filter(src->filter, src->pad_idx, dst->filter, dst->pad_idx) < 0)
                 goto fail;
 
-            src->instance = NULL;
-            dst->instance = NULL;
+            src->filter = NULL;
+            dst->filter = NULL;
         }
     }
 
