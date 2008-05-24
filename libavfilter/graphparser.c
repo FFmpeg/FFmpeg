@@ -241,8 +241,7 @@ static int link_filter_inouts(AVFilterContext *filter,
 
     pad = filter->output_count;
     while(pad--) {
-        AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
-        currlinkn->name    = NULL;
+        AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
         currlinkn->type    = LinkTypeOut;
         currlinkn->filter  = filter;
         currlinkn->pad_idx = pad;
@@ -280,11 +279,10 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
             link_to_add = match;
         } else {
             /* Not in the list, so add it as an input */
-            link_to_add = av_malloc(sizeof(AVFilterInOut));
+            link_to_add = av_mallocz(sizeof(AVFilterInOut));
 
             link_to_add->name    = name;
             link_to_add->type    = LinkTypeIn;
-            link_to_add->filter  = NULL;
             link_to_add->pad_idx = pad;
         }
 
