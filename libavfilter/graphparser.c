@@ -263,12 +263,13 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
     AVFilterContext *last_filt = NULL;
 
-    consume_whitespace(&filters);
-
     do {
         AVFilterContext *filter;
         int oldpad = pad;
-        const char *inouts = filters;
+        const char *inouts;
+
+        consume_whitespace(&filters);
+        inouts = filters;
 
         // We need to parse the inputs of the filter after we create it, so
         // skip it by now
@@ -295,6 +296,9 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         }
 
         pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, filter);
+
+        consume_whitespace(&filters);
+
         chr = *filters++;
         index++;
         last_filt = filter;
