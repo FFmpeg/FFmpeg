@@ -120,6 +120,8 @@ static char *consume_string(const char **buf)
         case '[':
         case '=':
         case ',':
+        case ' ':
+        case '\n':
             *out++= 0;
             break;
         default:
@@ -128,6 +130,8 @@ static char *consume_string(const char **buf)
     } while(out[-1]);
 
     (*buf)--;
+    consume_whitespace(buf);
+
     return ret;
 }
 
