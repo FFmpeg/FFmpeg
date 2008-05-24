@@ -341,7 +341,6 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 {
     int index = 0;
     char chr = 0;
-    int pad = 0;
 
     AVFilterInOut *currInputs = NULL;
 
@@ -349,9 +348,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         AVFilterContext *filter;
         filters += consume_whitespace(filters);
 
-        pad = parse_inputs(&filters, &currInputs, &openLinks, log_ctx);
-
-        if(pad < 0)
+        if(parse_inputs(&filters, &currInputs, &openLinks, log_ctx) < 0)
             goto fail;
 
         filter = parse_filter(&filters, graph, index, log_ctx);
@@ -362,17 +359,14 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         if(filter->input_count == 1 && !currInputs && !index) {
             // First input can be ommitted if it is "[in]"
             const char *tmp = "[in]";
-            pad = parse_inputs(&tmp, &currInputs, &openLinks, log_ctx);
-            if(pad < 0)
+            if(parse_inputs(&tmp, &currInputs, &openLinks, log_ctx))
                 goto fail;
         }
 
         if(link_filter_inouts(filter, &currInputs, &openLinks, log_ctx) < 0)
             goto fail;
 
-        pad = parse_outputs(&filters, &currInputs, &openLinks, log_ctx);
-
-        if(pad < 0)
+        if(parse_outputs(&filters, &currInputs, &openLinks, log_ctx))
             goto fail;
 
         filters += consume_whitespace(filters);
