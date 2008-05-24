@@ -265,7 +265,7 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
 
         parse_link_name(buf, &name);
 
-        if (!name)
+        if(!name)
             return -1;
 
         handle_link(name, inout, pad++, type, filter);
