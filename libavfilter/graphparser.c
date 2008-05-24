@@ -94,14 +94,15 @@ static char *consume_string(const char **buf)
  * @arg name a pointer (that need to be free'd after use) to the name between
  *           parenthesis
  */
-static void parse_link_name(const char **buf, char **name, AVClass *log_ctx)
+static char *parse_link_name(const char **buf, AVClass *log_ctx)
 {
     const char *start = *buf;
+    char *name;
     (*buf)++;
 
-    *name = consume_string(buf);
+    name = consume_string(buf);
 
-    if(!*name[0]) {
+    if(!name[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Bad (empty?) label found in the following: \"%s\".\n", start);
         goto fail;
@@ -111,8 +112,10 @@ static void parse_link_name(const char **buf, char **name, AVClass *log_ctx)
         av_log(log_ctx, AV_LOG_ERROR,
                "Mismatched '[' found in the following: \"%s\".\n", start);
     fail:
-        av_freep(name);
+        av_freep(&name);
     }
+
+    return name;
 }
 
 static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
@@ -255,11 +258,9 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
     int pad = 0;
 
     while(**buf == '[') {
-        char *name;
+        char *name = parse_link_name(buf, log_ctx);
         AVFilterInOut *link_to_add;
         AVFilterInOut *match;
-
-        parse_link_name(buf, &name, log_ctx);
 
         if(!name)
             return -1;
@@ -301,13 +302,11 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
     int pad = 0;
 
     while(**buf == '[') {
-        char *name;
+        char *name = parse_link_name(buf, log_ctx);
         AVFilterInOut *match;
 
         AVFilterInOut *input = *currInputs;
         *currInputs = (*currInputs)->next;
-
-        parse_link_name(buf, &name, log_ctx);
 
         if(!name)
             return -1;
