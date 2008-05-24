@@ -150,6 +150,29 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
     return filt;
 }
 
+/**
+ * Parse "filter=params"
+ * @arg name a pointer (that need to be free'd after use) to the name of the
+ *           filter
+ * @arg ars  a pointer (that need to be free'd after use) to the args of the
+ *           filter
+ */
+static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
+                                     int index, AVClass *log_ctx)
+{
+    char *opts;
+    char *name = consume_string(buf);
+
+    if(**buf == '=') {
+        (*buf)++;
+        opts = consume_string(buf);
+    } else {
+        opts = NULL;
+    }
+
+    return create_filter(graph, index, name, opts, log_ctx);
+}
+
 static void free_inout(AVFilterInOut *head)
 {
     while(head) {
@@ -224,29 +247,6 @@ static int link_filter_inouts(AVFilterContext *filter,
     }
 
     return 0;
-}
-
-/**
- * Parse "filter=params"
- * @arg name a pointer (that need to be free'd after use) to the name of the
- *           filter
- * @arg ars  a pointer (that need to be free'd after use) to the args of the
- *           filter
- */
-static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
-                                     int index, AVClass *log_ctx)
-{
-    char *opts;
-    char *name = consume_string(buf);
-
-    if(**buf == '=') {
-        (*buf)++;
-        opts = consume_string(buf);
-    } else {
-        opts = NULL;
-    }
-
-    return create_filter(graph, index, name, opts, log_ctx);
 }
 
 static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
