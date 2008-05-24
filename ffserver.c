@@ -3302,7 +3302,7 @@ static void build_file_streams(void)
 {
     FFStream *stream, *stream_next;
     AVFormatContext *infile;
-    int i;
+    int i, ret;
 
     /* gather all streams */
     for(stream = first_stream; stream != NULL; stream = stream_next) {
@@ -3320,9 +3320,9 @@ static void build_file_streams(void)
                 stream->ap_in->mpeg2ts_compute_pcr = 1;
             }
 
-            if (av_open_input_file(&infile, stream->feed_filename,
-                                   stream->ifmt, 0, stream->ap_in) < 0) {
-                http_log("%s not found", stream->feed_filename);
+            if ((ret = av_open_input_file(&infile, stream->feed_filename,
+                                          stream->ifmt, 0, stream->ap_in)) < 0) {
+                http_log("could not open %s: %d\n", stream->feed_filename, ret);
                 /* remove stream (no need to spend more time on it) */
             fail:
                 remove_stream(stream);
