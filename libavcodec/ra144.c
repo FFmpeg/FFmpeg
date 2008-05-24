@@ -365,7 +365,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int a, c;
     int i;
-    signed short *shptr;
     int16_t *data = vdata;
     unsigned int val;
 
@@ -397,15 +396,12 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     /* do output */
     for (c=0; c<4; c++) {
-        unsigned int gval = glob->gbuf1[c];
-        unsigned short *gsp = glob->gbuf2[c];
-        signed short output_buffer[40];
+        do_output_subblock(glob, glob->gbuf2[c], glob->gbuf1[c], data, &gb);
 
-        do_output_subblock(glob, gsp, gval, output_buffer, &gb);
-
-        shptr = output_buffer;
-        while (shptr < output_buffer + BLOCKSIZE)
-            *data++ = av_clip_int16(*(shptr++) << 2);
+        for (i=0; i<BLOCKSIZE; i++) {
+            *data = av_clip_int16(*data << 2);
+            data++;
+        }
     }
 
     glob->oldval = val;
