@@ -273,10 +273,10 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
                         AVFilterInOut **openLinks, AVClass *log_ctx)
 {
     int pad = 0;
-    AVFilterInOut *p;
 
     while (**buf == '[') {
         char *name;
+        AVFilterInOut *p;
 
         parse_link_name(buf, &name, log_ctx);
 
