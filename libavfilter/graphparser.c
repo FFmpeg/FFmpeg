@@ -268,7 +268,9 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
         if(!name)
             return -1;
 
-        handle_link(name, inout, pad++, type, filter);
+        if(handle_link(name, inout, pad++, type, filter) < 0)
+            return -1;
+
         consume_whitespace(buf);
     }
     return pad;
