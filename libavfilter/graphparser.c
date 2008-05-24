@@ -218,13 +218,14 @@ static int link_filter_inouts(AVFilterContext *filter,
 
     while(pad--) {
         AVFilterInOut *p = *currInputs;
-        *currInputs = (*currInputs)->next;
         if(!p) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "Not enough inputs specified for the \"%s\" filter.\n",
                    filter->filter->name);
             return -1;
         }
+
+        *currInputs = (*currInputs)->next;
 
         if(p->filter) {
             if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx))
