@@ -2261,7 +2261,6 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
             return NULL;
         dynarray_add(&s->chapters, &s->nb_chapters, chapter);
     }
-    if(chapter->title)
         av_free(chapter->title);
     chapter->title = av_strdup(title);
     chapter->id    = id;
