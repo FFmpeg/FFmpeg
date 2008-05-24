@@ -274,8 +274,8 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
         if(chr == ',') {
             if (link_filter(last_filt, oldpad, filter, 0) < 0)
                 goto fail;
-
         }
+
         pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, filter);
         chr = *filters++;
         index++;
