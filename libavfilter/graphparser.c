@@ -211,7 +211,7 @@ static int link_filter_inouts(AVFilterContext *filter,
         if(!p) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "Not enough inputs specified for the \"%s\" filter.\n",
-                   filter->name);
+                   filter->filter->name);
             return -1;
         }
 
@@ -231,7 +231,7 @@ static int link_filter_inouts(AVFilterContext *filter,
     if(*currInputs) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Too many inputs specified for the \"%s\" filter.\n",
-               filter->name);
+               filter->filter->name);
         return -1;
     }
 
