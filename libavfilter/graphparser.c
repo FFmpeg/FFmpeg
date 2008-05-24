@@ -225,10 +225,10 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
             return -1;
         }
 
-        inoutn->type = type;
-        inoutn->filter = filter;
+        inoutn->type    = type;
+        inoutn->filter  = filter;
         inoutn->pad_idx = pad++;
-        inoutn->next = *inout;
+        inoutn->next    = *inout;
         *inout = inoutn;
     }
     return pad;
