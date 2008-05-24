@@ -100,21 +100,20 @@ static void consume_whitespace(const char **buf)
 static char *consume_string(const char **buf)
 {
     char *out = av_malloc(strlen(*buf) + 1);
-    const char *in = *buf;
     char *ret = out;
 
     consume_whitespace(buf);
 
     do{
-        char c = *in++;
+        char c = *(*buf)++;
         switch (c) {
         case '\\':
-            *out++= *in++;
+            *out++= *(*buf)++;
             break;
         case '\'':
-            while(*in && *in != '\'')
-                *out++= *in++;
-            if(*in) in++;
+            while(**buf && **buf != '\'')
+                *out++= *(*buf)++;
+            if(**buf) (*buf)++;
             break;
         case 0:
         case ']':
@@ -128,7 +127,7 @@ static char *consume_string(const char **buf)
         }
     } while(out[-1]);
 
-    *buf = in-1;
+    (*buf)--;
     return ret;
 }
 
