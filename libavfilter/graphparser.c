@@ -149,29 +149,6 @@ static void parse_link_name(const char **buf, char **name, AVClass *log_ctx)
     }
 }
 
-/**
- * Parse "filter=params"
- * @arg name a pointer (that need to be free'd after use) to the name of the
- *           filter
- * @arg ars  a pointer (that need to be free'd after use) to the args of the
- *           filter
- */
-static AVFilterContext *parse_filter(const char **buf,
-                                     AVFilterGraph *graph, int index,
-                                     AVClass *log_ctx)
-{
-    char *name, *opts;
-    name = consume_string(buf);
-
-    if(**buf == '=') {
-        (*buf)++;
-        opts = consume_string(buf);
-    } else {
-        opts = NULL;
-    }
-
-    return create_filter(graph, index, name, opts, log_ctx);
-}
 
 enum LinkType {
     LinkTypeIn,
@@ -199,68 +176,206 @@ static void free_inout(AVFilterInOut *head)
     }
 }
 
-/**
- * Parse "[a1][link2] ... [etc]"
- */
-static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
-                        enum LinkType type, AVFilterContext *filter,
-                        AVClass *log_ctx)
+static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
 {
+    AVFilterInOut *ret;
+    AVFilterInOut *p;
+
+    if(!links || !*links)
+        return NULL;
+
+    if(!strcmp((*links)->name, label)) {
+        ret = *links;
+        *links = (*links)->next;
+        return ret;
+    }
+
+    /* First check if the label is not in the openLinks list */
+    for(p = *links; p->next && strcmp(p->next->name, label); p = p->next);
+
+    if(!p->next)
+        return NULL;
+
+    ret = p->next;
+
+    p->next = p->next->next;
+
+    return ret;
+}
+
+
+static int link_filter_inouts(AVFilterContext *filter,
+                              AVFilterInOut **currInputs,
+                              AVFilterInOut **openLinks, AVClass *log_ctx)
+{
+    AVFilterInOut *p;
+    int pad = 0;
+
+    pad = filter->input_count;
+    while(pad) {
+        p = *currInputs;
+        pad--;
+        if(!p) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Not enough inputs specified for the \"%s\" filter.\n",
+                   filter->name);
+            return -1;
+        }
+
+        if(p->filter) {
+            if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx))
+                return -1;
+            *currInputs = (*currInputs)->next;
+            av_free(p);
+        } else {
+            p = *currInputs;
+            *currInputs = (*currInputs)->next;
+            p->filter = filter;
+            p->pad_idx = pad;
+            p->next = *openLinks;
+            *openLinks = p;
+        }
+    }
+
+
+    if(*currInputs) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Too many inputs specified for the \"%s\" filter.\n",
+               filter->name);
+        return -1;
+    }
+
+    pad = filter->output_count;
+    while(pad) {
+        AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
+        pad--;
+        currlinkn->name    = NULL;
+        currlinkn->type    = LinkTypeOut;
+        currlinkn->filter  = filter;
+        currlinkn->pad_idx = pad;
+        currlinkn->next    = *currInputs;
+        *currInputs = currlinkn;
+    }
+
+    return 0;
+}
+
+/**
+ * Parse "filter=params"
+ * @arg name a pointer (that need to be free'd after use) to the name of the
+ *           filter
+ * @arg ars  a pointer (that need to be free'd after use) to the args of the
+ *           filter
+ */
+static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
+                                     int index, AVClass *log_ctx)
+{
+    char *opts;
+    char *name = consume_string(buf);
+
+    if(**buf == '=') {
+        (*buf)++;
+        opts = consume_string(buf);
+    } else {
+        opts = NULL;
+    }
+
+    return create_filter(graph, index, name, opts, log_ctx);
+}
+
+static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
+                        AVFilterInOut **openLinks, AVClass *log_ctx)
+{
+    int pad = 0;
+    AVFilterInOut *p;
+
     while (**buf == '[') {
         char *name;
-        AVFilterInOut *p = *inout;
 
         parse_link_name(buf, &name, log_ctx);
 
         if(!name)
             return -1;
 
-        for (; p && strcmp(p->name, name); p = p->next);
+        /* First check if the label is not in the openLinks list */
+        p = extract_inout(name, openLinks);
 
+        /* Not in the list, so add it as an input */
         if(!p) {
-            // First label apearence, add it to the linked list
-            AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
+            AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
 
-            inoutn->name    = name;
-            inoutn->type    = type;
-            inoutn->filter  = filter;
-            inoutn->pad_idx = pad;
-            inoutn->next    = *inout;
-            *inout = inoutn;
+            currlinkn->name    = name;
+            currlinkn->type    = LinkTypeIn;
+            currlinkn->filter  = NULL;
+            currlinkn->pad_idx = pad;
+            currlinkn->next    = *currInputs;
+            *currInputs = currlinkn;
         } else {
-
-            if(p->type == LinkTypeIn && type == LinkTypeOut) {
-                if(link_filter(filter, pad, p->filter, p->pad_idx, log_ctx) < 0)
-                    return -1;
-            } else if(p->type == LinkTypeOut && type == LinkTypeIn) {
-                if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx) < 0)
-                    return -1;
-            } else {
+            /* A label of a open link. Make it one of the inputs of the next
+               filter */
+            AVFilterInOut *currlinkn = p;
+            if (p->type != LinkTypeOut) {
                 av_log(log_ctx, AV_LOG_ERROR,
-                       "Two links named '%s' are either both input or both output\n",
-                       name);
+                       "Label \"%s\" appears twice as input!\n", p->name);
                 return -1;
             }
-
-            p->filter = NULL;
+            currlinkn->next = *currInputs;
+            *currInputs = currlinkn;
         }
-
-        pad++;
         consume_whitespace(buf);
+        pad++;
     }
 
     return pad;
 }
 
-static const char *skip_inouts(const char *buf)
+static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
+                         AVFilterInOut **openLinks, AVClass *log_ctx)
 {
-    while (*buf == '[') {
-        buf += strcspn(buf, "]") + 1;
-        consume_whitespace(&buf);
-    }
-    return buf;
-}
+    int pad = 0;
 
+    while (**buf == '[') {
+        char *name;
+        AVFilterInOut *match;
+
+        parse_link_name(buf, &name, log_ctx);
+
+        if(!name)
+            return -1;
+
+        /* First check if the label is not in the openLinks list */
+        match = extract_inout(name, openLinks);
+
+        /* Not in the list, so add the first input as a openLink */
+        if(!match) {
+            AVFilterInOut *p = *currInputs;
+            *currInputs = (*currInputs)->next;
+            p->next = *openLinks;
+            p->type = LinkTypeOut;
+            p->name = name;
+            *openLinks = p;
+        } else {
+            /* A label of a open link. Link it. */
+            AVFilterInOut *p = *currInputs;
+            if (match->type != LinkTypeIn) {
+                av_log(log_ctx, AV_LOG_ERROR,
+                       "Label \"%s\" appears twice as output!\n", match->name);
+                return -1;
+            }
+
+            *currInputs = (*currInputs)->next;
+            if(link_filter(p->filter, p->pad_idx,
+                           match->filter, match->pad_idx, log_ctx) < 0)
+                return -1;
+            av_free(match);
+            av_free(p);
+        }
+        consume_whitespace(buf);
+        pad++;
+    }
+
+    return pad;
+}
 
 /**
  * Parse a string describing a filter graph.
@@ -270,95 +385,77 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
                          AVFilterContext *out, int outpad,
                          AVClass *log_ctx)
 {
-    AVFilterInOut *inout=NULL;
-    AVFilterInOut  *head=NULL;
-
     int index = 0;
     char chr = 0;
     int pad = 0;
-    int has_out = 0;
 
-    AVFilterContext *last_filt = NULL;
+    AVFilterInOut *currInputs=NULL;
+    AVFilterInOut *openLinks  = av_malloc(sizeof(AVFilterInOut));
+
+    openLinks->name = "in";
+    openLinks->filter = in;
+    openLinks->type = LinkTypeOut;
+    openLinks->pad_idx = inpad;
+    openLinks->next = av_malloc(sizeof(AVFilterInOut));
+
+    openLinks->next->name = "out";
+    openLinks->next->filter = out;
+    openLinks->next->type = LinkTypeIn;
+    openLinks->next->pad_idx = outpad;
+    openLinks->next->next = NULL;
 
     do {
         AVFilterContext *filter;
-        int oldpad = pad;
-        const char *inouts;
-
         consume_whitespace(&filters);
-        inouts = filters;
 
-        // We need to parse the inputs of the filter after we create it, so
-        // skip it by now
-        filters = skip_inouts(filters);
-
-        if(!(filter = parse_filter(&filters, graph, index, log_ctx)))
-            goto fail;
-
-        pad = parse_inouts(&inouts, &inout, chr == ',', LinkTypeIn, filter,
-                           log_ctx);
+        pad = parse_inputs(&filters, &currInputs, &openLinks, log_ctx);
 
         if(pad < 0)
             goto fail;
 
-        // If the first filter has an input and none was given, it is
-        // implicitly the input of the whole graph.
-        if(pad == 0 && filter->input_count == 1) {
-            if(link_filter(in, inpad, filter, 0, log_ctx))
+        if(!(filter = parse_filter(&filters, graph, index, log_ctx)))
+            goto fail;
+
+        if(filter->input_count == 1 && !currInputs && !index) {
+            // First input can be ommitted if it is "[in]"
+            const char *tmp = "[in]";
+            pad = parse_inputs(&tmp, &currInputs, &openLinks, log_ctx);
+            if (pad < 0)
                 goto fail;
         }
 
-        if(chr == ',') {
-            if(link_filter(last_filt, oldpad, filter, 0, log_ctx) < 0)
-                goto fail;
-        }
+        if(link_filter_inouts(filter, &currInputs, &openLinks, log_ctx) < 0)
+            goto fail;
 
-        pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, filter, log_ctx);
+        pad = parse_outputs(&filters, &currInputs, &openLinks, log_ctx);
 
-        if (pad < 0)
+        if(pad < 0)
             goto fail;
 
         consume_whitespace(&filters);
-
         chr = *filters++;
+
+        if (chr == ';' && currInputs) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Could not find a output to link when parsing \"%s\"\n",
+                   filters - 1);
+            goto fail;
+        }
         index++;
-        last_filt = filter;
     } while (chr == ',' || chr == ';');
 
-    head = inout;
-    // Process remaining labels. Only inputs and outputs should be left.
-    for (; inout; inout = inout->next) {
-        if(!inout->filter)
-            continue; // Already processed
-
-        if(!strcmp(inout->name, "in")) {
-            if(link_filter(in, inpad, inout->filter, inout->pad_idx, log_ctx))
-                goto fail;
-
-        } else if(!strcmp(inout->name, "out")) {
-            has_out = 1;
-
-            if(link_filter(inout->filter, inout->pad_idx, out, outpad, log_ctx))
-                goto fail;
-
-        } else {
-            av_log(log_ctx, AV_LOG_ERROR, "Unmatched link: %s.\n",
-                   inout->name);
-                goto fail;
-        }
-    }
-
-    free_inout(head);
-
-    if(!has_out) {
-        if(link_filter(last_filt, pad, out, outpad, log_ctx))
+    if(openLinks && !strcmp(openLinks->name, "out") && currInputs) {
+        // Last output can be ommitted if it is "[out]"
+        const char *tmp = "[out]";
+        if(parse_outputs(&tmp, &currInputs, &openLinks, log_ctx) < 0)
             goto fail;
     }
 
     return 0;
 
  fail:
-    free_inout(head);
     avfilter_destroy_graph(graph);
+    free_inout(openLinks);
+    free_inout(currInputs);
     return -1;
 }
