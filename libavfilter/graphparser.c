@@ -212,7 +212,7 @@ static void insert_inout(AVFilterInOut **inouts, AVFilterInOut *element)
 
 static int link_filter_inouts(AVFilterContext *filter,
                               AVFilterInOut **currInputs,
-                              AVFilterInOut **openLinks, AVClass *log_ctx)
+                              AVFilterInOut **openInputs, AVClass *log_ctx)
 {
     int pad = filter->input_count;
 
@@ -249,7 +249,6 @@ static int link_filter_inouts(AVFilterContext *filter,
     pad = filter->output_count;
     while(pad--) {
         AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
-        currlinkn->type    = LinkTypeOut;
         currlinkn->filter  = filter;
         currlinkn->pad_idx = pad;
         insert_inout(currInputs, currlinkn);
@@ -259,7 +258,7 @@ static int link_filter_inouts(AVFilterContext *filter,
 }
 
 static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
-                        AVFilterInOut **openLinks, AVClass *log_ctx)
+                        AVFilterInOut **openOutputs, AVClass *log_ctx)
 {
     int pad = 0;
 
@@ -270,23 +269,15 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
         if(!name)
             return -1;
 
-        /* First check if the label is not in the openLinks list */
-        match = extract_inout(name, openLinks);
+        /* First check if the label is not in the openOutputs list */
+        match = extract_inout(name, openOutputs);
 
         if(match) {
-            /* A label of a open link. Make it one of the inputs of the next
-               filter */
-            if(match->type != LinkTypeOut) {
-                av_log(log_ctx, AV_LOG_ERROR,
-                       "Label \"%s\" appears twice as input!\n", match->name);
-                return -1;
-            }
             av_free(name);
         } else {
             /* Not in the list, so add it as an input */
             match = av_mallocz(sizeof(AVFilterInOut));
             match->name    = name;
-            match->type    = LinkTypeIn;
             match->pad_idx = pad;
         }
 
@@ -300,7 +291,8 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
 }
 
 static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
-                         AVFilterInOut **openLinks, AVClass *log_ctx)
+                         AVFilterInOut **openInputs,
+                         AVFilterInOut **openOutputs, AVClass *log_ctx)
 {
     int pad = 0;
 
@@ -314,17 +306,10 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
         if(!name)
             return -1;
 
-        /* First check if the label is not in the openLinks list */
-        match = extract_inout(name, openLinks);
+        /* First check if the label is not in the openInputs list */
+        match = extract_inout(name, openInputs);
 
         if(match) {
-            /* A label of a open link. Link it. */
-            if(match->type != LinkTypeIn) {
-                av_log(log_ctx, AV_LOG_ERROR,
-                       "Label \"%s\" appears twice as output!\n", match->name);
-                return -1;
-            }
-
             if(link_filter(input->filter, input->pad_idx,
                            match->filter, match->pad_idx, log_ctx) < 0)
                 return -1;
@@ -333,9 +318,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
             av_free(match);
             av_free(input);
         } else {
-            /* Not in the list, so add the first input as a openLink */
-            input->next = *openLinks;
-            input->type = LinkTypeOut;
+            /* Not in the list, so add the first input as a openOutput */
             input->name = name;
             insert_inout(openOutputs, input);
         }
@@ -347,7 +330,8 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
 }
 
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *openLinks, AVClass *log_ctx)
+                         AVFilterInOut *openInputs,
+                         AVFilterInOut *openOutputs, AVClass *log_ctx)
 {
     int index = 0;
     char chr = 0;
@@ -358,7 +342,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         AVFilterContext *filter;
         filters += consume_whitespace(filters);
 
-        if(parse_inputs(&filters, &currInputs, &openLinks, log_ctx) < 0)
+        if(parse_inputs(&filters, &currInputs, &openOutputs, log_ctx) < 0)
             goto fail;
 
         filter = parse_filter(&filters, graph, index, log_ctx);
@@ -369,14 +353,15 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         if(filter->input_count == 1 && !currInputs && !index) {
             /* First input can be ommitted if it is "[in]" */
             const char *tmp = "[in]";
-            if(parse_inputs(&tmp, &currInputs, &openLinks, log_ctx))
+            if(parse_inputs(&tmp, &currInputs, &openOutputs, log_ctx) < 0)
                 goto fail;
         }
 
-        if(link_filter_inouts(filter, &currInputs, &openLinks, log_ctx) < 0)
+        if(link_filter_inouts(filter, &currInputs, &openInputs, log_ctx) < 0)
             goto fail;
 
-        if(parse_outputs(&filters, &currInputs, &openLinks, log_ctx))
+        if(parse_outputs(&filters, &currInputs, &openInputs, &openOutputs,
+                         log_ctx) < 0)
             goto fail;
 
         filters += consume_whitespace(filters);
@@ -391,10 +376,11 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         index++;
     } while(chr == ',' || chr == ';');
 
-    if(openLinks && !strcmp(openLinks->name, "out") && currInputs) {
+    if(openInputs && !strcmp(openInputs->name, "out") && currInputs) {
         /* Last output can be ommitted if it is "[out]" */
         const char *tmp = "[out]";
-        if(parse_outputs(&tmp, &currInputs, &openLinks, log_ctx) < 0)
+        if(parse_outputs(&tmp, &currInputs, &openInputs,
+                         &openOutputs, log_ctx) < 0)
             goto fail;
     }
 
@@ -402,7 +388,8 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
  fail:
     avfilter_destroy_graph(graph);
-    free_inout(openLinks);
+    free_inout(openInputs);
+    free_inout(openOutputs);
     free_inout(currInputs);
     return -1;
 }

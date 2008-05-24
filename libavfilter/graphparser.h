@@ -25,16 +25,10 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-enum LinkType {
-    LinkTypeIn,
-    LinkTypeOut,
-};
-
 /**
  * A linked-list of the inputs/outputs of the filter chain.
  */
 typedef struct AVFilterInOut {
-    enum LinkType type;
     const char *name;
     AVFilterContext *filter;
     int pad_idx;
@@ -51,6 +45,7 @@ typedef struct AVFilterInOut {
  * @return        zero on success, -1 on error
  */
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *inouts, AVClass *log_ctx);
+                         AVFilterInOut *inputs, AVFilterInOut *outputs,
+                         AVClass *log_ctx);
 
 #endif  /* FFMPEG_GRAPHPARSER_H */
