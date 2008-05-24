@@ -91,8 +91,8 @@ static char *consume_string(const char **buf)
 
 /**
  * Parse "[linkname]"
- * @arg name a pointer (that need to be free'd after use) to the name between
- *           parenthesis
+ * @param name a pointer (that need to be free'd after use) to the name between
+ *        parenthesis
  */
 static char *parse_link_name(const char **buf, AVClass *log_ctx)
 {
