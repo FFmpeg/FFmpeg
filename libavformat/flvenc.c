@@ -44,8 +44,6 @@ static const AVCodecTag flv_audio_codec_ids[] = {
 };
 
 typedef struct FLVContext {
-    int hasAudio;
-    int hasVideo;
     int reserved;
     offset_t duration_offset;
     offset_t filesize_offset;
@@ -132,38 +130,26 @@ static int flv_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
-    int i, width, height, samplerate, samplesize, channels, audiocodecid, videocodecid;
+    AVCodecContext *audio_enc = NULL, *video_enc = NULL;
+    int i;
     double framerate = 0.0;
     int metadata_size_pos, data_size;
-
-    flv->hasAudio = 0;
-    flv->hasVideo = 0;
 
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_VIDEO) {
-            width = enc->width;
-            height = enc->height;
             if (s->streams[i]->r_frame_rate.den && s->streams[i]->r_frame_rate.num) {
                 framerate = av_q2d(s->streams[i]->r_frame_rate);
             } else {
                 framerate = 1/av_q2d(s->streams[i]->codec->time_base);
             }
-            flv->hasVideo=1;
-
-            videocodecid = enc->codec_tag;
-            if(videocodecid == 0) {
+            video_enc = enc;
+            if(enc->codec_tag == 0) {
                 av_log(enc, AV_LOG_ERROR, "video codec not compatible with flv\n");
                 return -1;
             }
         } else {
-            flv->hasAudio=1;
-            samplerate = enc->sample_rate;
-            channels = enc->channels;
-
-            audiocodecid = enc->codec_tag;
-            samplesize = (enc->codec_id == CODEC_ID_PCM_S8) ? 8 : 16;
-
+            audio_enc = enc;
             if(get_audio_flags(enc)<0)
                 return -1;
         }
@@ -171,8 +157,8 @@ static int flv_write_header(AVFormatContext *s)
     }
     put_tag(pb,"FLV");
     put_byte(pb,1);
-    put_byte(pb,   FLV_HEADER_FLAG_HASAUDIO * flv->hasAudio
-                 + FLV_HEADER_FLAG_HASVIDEO * flv->hasVideo);
+    put_byte(pb,   FLV_HEADER_FLAG_HASAUDIO * !!audio_enc
+                 + FLV_HEADER_FLAG_HASVIDEO * !!video_enc);
     put_be32(pb,9);
     put_be32(pb,0);
 
@@ -202,18 +188,18 @@ static int flv_write_header(AVFormatContext *s)
 
     /* mixed array (hash) with size and string/type/data tuples */
     put_byte(pb, AMF_DATA_TYPE_MIXEDARRAY);
-    put_be32(pb, 5*flv->hasVideo + 4*flv->hasAudio + 2); // +2 for duration and file size
+    put_be32(pb, 5*!!video_enc + 4*!!audio_enc + 2); // +2 for duration and file size
 
     put_amf_string(pb, "duration");
     flv->duration_offset= url_ftell(pb);
     put_amf_double(pb, 0); // delayed write
 
-    if(flv->hasVideo){
+    if(video_enc){
         put_amf_string(pb, "width");
-        put_amf_double(pb, width);
+        put_amf_double(pb, video_enc->width);
 
         put_amf_string(pb, "height");
-        put_amf_double(pb, height);
+        put_amf_double(pb, video_enc->height);
 
         put_amf_string(pb, "videodatarate");
         put_amf_double(pb, s->bit_rate / 1024.0);
@@ -222,21 +208,21 @@ static int flv_write_header(AVFormatContext *s)
         put_amf_double(pb, framerate);
 
         put_amf_string(pb, "videocodecid");
-        put_amf_double(pb, videocodecid);
+        put_amf_double(pb, video_enc->codec_tag);
     }
 
-    if(flv->hasAudio){
+    if(audio_enc){
         put_amf_string(pb, "audiosamplerate");
-        put_amf_double(pb, samplerate);
+        put_amf_double(pb, audio_enc->sample_rate);
 
         put_amf_string(pb, "audiosamplesize");
-        put_amf_double(pb, samplesize);
+        put_amf_double(pb, audio_enc->codec_id == CODEC_ID_PCM_S8 ? 8 : 16);
 
         put_amf_string(pb, "stereo");
-        put_amf_bool(pb, (channels == 2));
+        put_amf_bool(pb, audio_enc->channels == 2);
 
         put_amf_string(pb, "audiocodecid");
-        put_amf_double(pb, audiocodecid);
+        put_amf_double(pb, audio_enc->codec_tag);
     }
 
     put_amf_string(pb, "filesize");
