@@ -293,7 +293,7 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
 
         // If the first filter has an input and none was given, it is
         // implicitly the input of the whole graph.
-        if (pad == 0 && graph->filters[graph->filter_count-1]->input_count == 1) {
+        if (pad == 0 && filter->input_count == 1) {
             if(link_filter(in, inpad, filter, 0))
                 goto fail;
         }
