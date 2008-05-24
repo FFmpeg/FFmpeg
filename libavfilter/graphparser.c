@@ -307,8 +307,8 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
     } while (chr == ',' || chr == ';');
 
     head = inout;
-    for (; inout != NULL; inout = inout->next) {
-        if(inout->filter == NULL)
+    for (; inout; inout = inout->next) {
+        if(!inout->filter)
             continue; // Already processed
 
         if(!strcmp(inout->name, "in")) {
