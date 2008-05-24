@@ -95,11 +95,11 @@ static char *consume_string(const char **buf)
         char c = *(*buf)++;
         switch (c) {
         case '\\':
-            *out++= *(*buf)++;
+            *out++ = *(*buf)++;
             break;
         case '\'':
             while(**buf && **buf != '\'')
-                *out++= *(*buf)++;
+                *out++ = *(*buf)++;
             if(**buf) (*buf)++;
             break;
         case 0:
@@ -110,10 +110,10 @@ static char *consume_string(const char **buf)
         case ';':
         case ' ':
         case '\n':
-            *out++= 0;
+            *out++ = 0;
             break;
         default:
-            *out++= c;
+            *out++ = c;
         }
     } while(out[-1]);
 
@@ -200,7 +200,7 @@ static int link_filter_inouts(AVFilterContext *filter,
 
     pad = filter->input_count;
     while(pad--) {
-        AVFilterInOut *p= *currInputs;
+        AVFilterInOut *p = *currInputs;
         *currInputs = (*currInputs)->next;
         if(!p) {
             av_log(log_ctx, AV_LOG_ERROR,
@@ -371,7 +371,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
     char chr = 0;
     int pad = 0;
 
-    AVFilterInOut *currInputs=NULL;
+    AVFilterInOut *currInputs = NULL;
     AVFilterInOut *openLinks  = av_malloc(sizeof(AVFilterInOut));
 
     openLinks->name    = "in";
