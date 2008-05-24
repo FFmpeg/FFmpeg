@@ -27,6 +27,60 @@
 #define FRAC_BITS 13
 #include "mathops.h"
 
+const int16_t ff_acelp_interp_filter[61] =
+{ /* (0.15) */
+  29443, 28346, 25207, 20449, 14701,  8693,
+   3143, -1352, -4402, -5865, -5850, -4673,
+  -2783,  -672,  1211,  2536,  3130,  2991,
+   2259,  1170,     0, -1001, -1652, -1868,
+  -1666, -1147,  -464,   218,   756,  1060,
+   1099,   904,   550,   135,  -245,  -514,
+   -634,  -602,  -451,  -231,     0,   191,
+    308,   340,   296,   198,    78,   -36,
+   -120,  -163,  -165,  -132,   -79,   -19,
+     34,    73,    91,    89,    70,    38,
+      0,
+};
+
+void ff_acelp_interpolate(
+        int16_t* out,
+        const int16_t* in,
+        const int16_t* filter_coeffs,
+        int precision,
+        int pitch_delay_frac,
+        int filter_length,
+        int length)
+{
+    int n, i;
+
+    assert(pitch_delay_frac >= 0 && pitch_delay_frac < precision);
+
+    for(n=0; n<length; n++)
+    {
+        int idx = 0;
+        int v = 0x4000;
+
+        for(i=0; i<filter_length;)
+        {
+
+            /* The reference G.729 and AMR fixed point code performs clipping after
+               each of the two following accumulations.
+               Since clipping affects only the synthetic OVERFLOW test without
+               causing an int type overflow, it was moved outside the loop. */
+
+            /*  R(x):=ac_v[-k+x]
+                v += R(n-i)*ff_acelp_interp_filter(t+6i)
+                v += R(n+i+1)*ff_acelp_interp_filter(6-t+6i) */
+
+            v += in[n + i] * filter_coeffs[idx + pitch_delay_frac];
+            idx += precision;
+            i++;
+            v += in[n - i] * filter_coeffs[idx - pitch_delay_frac];
+        }
+        out[n] = av_clip_int16(v >> 15);
+    }
+}
+
 void ff_acelp_convolve_circ(
         int16_t* fc_out,
         const int16_t* fc_in,

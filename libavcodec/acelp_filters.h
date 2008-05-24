@@ -26,6 +26,83 @@
 #include <stdint.h>
 
 /**
+ * low-pass FIR (Finite Impulse Response) filter coefficients
+ *
+ *   A similar filter is named b30 in G.729.
+ *
+ *   G.729 specification says:
+ *     b30 is based on Hamming windowed sinc functions, truncated at +/-29 and
+ *     padded with zeros at +/-30 b30[30]=0.
+ *     The filter has a cut-off frequency (-3 dB) at 3600 Hz in the oversampled
+ *     domain.
+ *
+ *   After some analysis, I found this approximation:
+ *
+ *                                    PI * x
+ *   Hamm(x,N) = 0.53836-0.46164*cos(--------)
+ *                                      N-1
+ *                                      ---
+ *                                       2
+ *
+ *                                                             PI * x
+ *   Hamm'(x,k) = Hamm(x - k, 2*k+1) =  0.53836 + 0.46164*cos(--------)
+ *                                                                k
+ *
+ *             sin(PI * x)
+ *   Sinc(x) = ----------- (normalized sinc function)
+ *               PI * x
+ *
+ *   h(t,B) = 2 * B * Sinc(2 * B * t) (impulse response of sinc low-pass filter)
+ *
+ *   b(k,B, n) = Hamm'(n, k) * h(n, B)
+ *
+ *
+ *       3600
+ *   B = ----
+ *       8000
+ *
+ *   3600 - cut-off frequency
+ *   8000 - sampling rate
+ *   k    - filter order
+ *
+ *   ff_acelp_interp_filter[6*i+j] = b(10, 3600/8000, i+j/6)
+ *
+ * The filter assumes the following order of fractions (X - integer delay):
+ *
+ * 1/3 precision: X     1/3      2/3      X     1/3      2/3      X
+ * 1/6 precision: X 1/6 2/6 3/6  4/6  5/6 X 1/6 2/6 3/6  4/6  5/6 X
+ *
+ * The filter can be used for 1/3 precision, too, by
+ * passing 2*pitch_delay_frac as third parameter to the interpolation routine.
+ *
+ */
+extern const int16_t ff_acelp_interp_filter[61];
+
+/**
+ * \brief Generic interpolation routine
+ * \param out [out] buffer for interpolated data
+ * \param in input data
+ * \param filter_coeffs interpolation filter coefficients (0.15)
+ * \param precision filter is able to interpolate with 1/precision precision of pitch delay
+ * \param pitch_delay_frac pitch delay, fractional part [0..precision-1]
+ * \param filter_length filter length
+ * \param length length of speech data to process
+ *
+ * filter_coeffs contains coefficients of the positive half of the symmetric
+ * interpolation filter. filter_coeffs[0] should the central (unpaired) coefficient.
+ * See ff_acelp_interp_filter fot example.
+ *
+ */
+void ff_acelp_interpolate(
+        int16_t* out,
+        const int16_t* in,
+        const int16_t* filter_coeffs,
+        int precision,
+        int pitch_delay_frac,
+        int filter_length,
+        int length);
+
+/**
  * \brief Circularly convolve fixed vector with a phase dispersion impulse
  *        response filter (D.6.2 of G.729 and 6.1.5 of AMR).
  * \param fc_out vector with filter applied
