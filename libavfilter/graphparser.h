@@ -46,9 +46,7 @@ typedef struct AVFilterInOut {
  * Add to a graph a graph described by a string.
  * @param graph   the filter graph where to link the parsed graph context
  * @param filters string to be parsed
- * @param in      input to the graph to be parsed (TODO: allow several)
- * @param inpad   pad index of the input
- * @param out     output to the graph to be parsed (TODO: allow several)
+ * @param inouts  linked list to the inputs and outputs of the graph
  * @param outpad  pad index of the output
  * @return        zero on success, -1 on error
  */
