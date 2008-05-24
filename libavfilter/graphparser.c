@@ -231,7 +231,6 @@ static int link_filter_inouts(AVFilterContext *filter,
         }
     }
 
-
     if(*currInputs) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Too many inputs specified for the \"%s\" filter.\n",
@@ -357,7 +356,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
             goto fail;
 
         if(filter->input_count == 1 && !currInputs && !index) {
-            // First input can be ommitted if it is "[in]"
+            /* First input can be ommitted if it is "[in]" */
             const char *tmp = "[in]";
             if(parse_inputs(&tmp, &currInputs, &openLinks, log_ctx))
                 goto fail;
@@ -382,7 +381,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
     } while(chr == ',' || chr == ';');
 
     if(openLinks && !strcmp(openLinks->name, "out") && currInputs) {
-        // Last output can be ommitted if it is "[out]"
+        /* Last output can be ommitted if it is "[out]" */
         const char *tmp = "[out]";
         if(parse_outputs(&tmp, &currInputs, &openLinks, log_ctx) < 0)
             goto fail;
