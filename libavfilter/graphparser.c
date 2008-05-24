@@ -139,20 +139,27 @@ static char *consume_string(const char **buf)
  */
 static void parse_link_name(const char **buf, char **name)
 {
+    const char *start = *buf;
     (*buf)++;
 
     *name = consume_string(buf);
 
-    if(!*name[0])
+    if(!*name[0]) {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "Bad (empty?) label found in the following: \"%s\".\n", start);
         goto fail;
+    }
 
-    if(*(*buf)++ != ']')
+    if(*(*buf)++ != ']') {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "Mismatched '[' found in the following: \"%s\".\n", start);
         goto fail;
+    }
 
     return;
+
  fail:
     av_freep(name);
-    av_log(&log_ctx, AV_LOG_ERROR, "Could not parse link name!\n");
 }
 
 /**
@@ -212,6 +219,12 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
     while (**buf == '[') {
         AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
         parse_link_name(buf, &inoutn->name);
+
+        if (!inoutn->name) {
+            av_free(inoutn);
+            return -1;
+        }
+
         inoutn->type = type;
         inoutn->filter = filter;
         inoutn->pad_idx = pad++;
@@ -262,6 +275,9 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
             goto fail;
 
         pad = parse_inouts(&inouts, &inout, chr == ',', LinkTypeIn, filter);
+
+        if(pad < 0)
+            goto fail;
 
         // If the first filter has an input and none was given, it is
         // implicitly the input of the whole graph.
