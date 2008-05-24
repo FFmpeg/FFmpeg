@@ -197,6 +197,11 @@ static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
     return ret;
 }
 
+static void insert_inout(AVFilterInOut **inouts, AVFilterInOut *element)
+{
+    element->next = *inouts;
+    *inouts = element;
+}
 
 static int link_filter_inouts(AVFilterContext *filter,
                               AVFilterInOut **currInputs,
@@ -222,8 +227,7 @@ static int link_filter_inouts(AVFilterContext *filter,
         } else {
             p->filter = filter;
             p->pad_idx = pad;
-            p->next = *openLinks;
-            *openLinks = p;
+            insert_inout(openInputs, p);
         }
     }
 
@@ -242,8 +246,7 @@ static int link_filter_inouts(AVFilterContext *filter,
         currlinkn->type    = LinkTypeOut;
         currlinkn->filter  = filter;
         currlinkn->pad_idx = pad;
-        currlinkn->next    = *currInputs;
-        *currInputs = currlinkn;
+        insert_inout(currInputs, currlinkn);
     }
 
     return 0;
@@ -284,8 +287,9 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
             link_to_add->filter  = NULL;
             link_to_add->pad_idx = pad;
         }
-        link_to_add->next = *currInputs;
-        *currInputs = link_to_add;
+
+        insert_inout(currInputs, link_to_add);
+
         *buf += consume_whitespace(*buf);
         pad++;
     }
@@ -329,7 +333,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
             input->next = *openLinks;
             input->type = LinkTypeOut;
             input->name = name;
-            *openLinks = input;
+            insert_inout(openOutputs, input);
         }
         *buf += consume_whitespace(*buf);
         pad++;
