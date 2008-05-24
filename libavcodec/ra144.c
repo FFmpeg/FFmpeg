@@ -252,37 +252,23 @@ static void dec1(Real144_internal *glob, const int *data, const int *inp,
 
 static int eq(const short *in, int *target)
 {
-    int retval;
-    int a;
-    int b;
-    int c;
+    int retval = 0;
+    int b, c, i;
     unsigned int u;
-    const short *sptr;
-    int *ptr1, *ptr2, *ptr3;
-    int *bp1, *bp2;
     int buffer1[10];
     int buffer2[10];
+    int *bp1 = buffer1;
+    int *bp2 = buffer2;
 
-    retval = 0;
-    bp1 = buffer1;
-    bp2 = buffer2;
-    ptr2 = (ptr3 = buffer2) + 9;
-    sptr = in;
+    for (i=0; i < 10; i++)
+        buffer2[i] = in[i];
 
-    while (ptr2 >= ptr3)
-        *(ptr3++) = *(sptr++);
+    u = target[9] = bp2[9];
 
-    target += 9;
-    a = bp2[9];
-    *target = a;
-
-    if (a + 0x1000 > 0x1fff)
+    if (u + 0x1000 > 0x1fff)
         return 0; /* We're screwed, might as well go out with a bang. :P */
 
-    c = 8;
-    u = a;
-
-    while (c >= 0) {
+    for (c=8; c >= 0; c--) {
         if (u == 0x1000)
             u++;
 
@@ -294,13 +280,10 @@ static int eq(const short *in, int *target)
         if (b == 0)
             b++;
 
-        ptr2 = bp1;
-        ptr1 = (ptr3 = bp2) + c;
-
         for (u=0; u<=c; u++)
-            *(ptr2++) = ((*(ptr3++) - (((*target) * (*(ptr1--))) >> 12)) * (0x1000000 / b)) >> 12;
+            bp1[u] = ((bp2[u] - ((target[c+1] * bp2[c-u]) >> 12)) * (0x1000000 / b)) >> 12;
 
-        *(--target) = u = bp1[(c--)];
+        target[c] = u = bp1[c];
 
         if ((u + 0x1000) > 0x1fff)
             retval = 1;
