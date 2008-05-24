@@ -185,18 +185,11 @@ static void dump_short_table(short* table, int size, int delimiter) {
 /* table generator */
 static void init_pow2table(COOKContext *q){
     int i;
+    q->rootpow2tab[63] =
     q->pow2tab[63] = 1.0;
     for (i=1 ; i<64 ; i++){
         q->pow2tab[63+i]=(float)((uint64_t)1<<i);
         q->pow2tab[63-i]=1.0/(float)((uint64_t)1<<i);
-    }
-}
-
-/* table generator */
-static void init_rootpow2table(COOKContext *q){
-    int i;
-    q->rootpow2tab[63] = 1.0;
-    for (i=1 ; i<64 ; i++){
         q->rootpow2tab[63+i]=sqrt((float)((uint64_t)1<<i));
         q->rootpow2tab[63-i]=sqrt(1.0/(float)((uint64_t)1<<i));
     }
@@ -1124,7 +1117,6 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->numvector_size = (1 << q->log2_numvector_size);
 
     /* Generate tables */
-    init_rootpow2table(q);
     init_pow2table(q);
     init_gain_table(q);
     init_cplscales_table(q);
