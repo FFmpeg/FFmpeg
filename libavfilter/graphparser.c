@@ -233,15 +233,17 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
         inoutn->pad_idx = pad++;
         inoutn->next    = *inout;
         *inout = inoutn;
+        consume_whitespace(buf);
     }
     return pad;
 }
 
 static const char *skip_inouts(const char *buf)
 {
-    while (*buf == '[')
+    while (*buf == '[') {
         buf += strcspn(buf, "]") + 1;
-
+        consume_whitespace(&buf);
+    }
     return buf;
 }
 
