@@ -287,7 +287,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
         if(match) {
             /* A label of a open link. Make it one of the inputs of the next
                filter */
-            if (match->type != LinkTypeOut) {
+            if(match->type != LinkTypeOut) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Label \"%s\" appears twice as input!\n", match->name);
                 return -1;
@@ -334,7 +334,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
 
         if(match) {
             /* A label of a open link. Link it. */
-            if (match->type != LinkTypeIn) {
+            if(match->type != LinkTypeIn) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Label \"%s\" appears twice as output!\n", match->name);
                 return -1;
@@ -402,7 +402,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
             // First input can be ommitted if it is "[in]"
             const char *tmp = "[in]";
             pad = parse_inputs(&tmp, &currInputs, &openLinks, log_ctx);
-            if (pad < 0)
+            if(pad < 0)
                 goto fail;
         }
 
@@ -417,7 +417,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         consume_whitespace(&filters);
         chr = *filters++;
 
-        if (chr == ';' && currInputs) {
+        if(chr == ';' && currInputs) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "Could not find a output to link when parsing \"%s\"\n",
                    filters - 1);
