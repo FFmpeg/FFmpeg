@@ -41,9 +41,9 @@ static int link_filter(AVFilterContext *src, int srcpad,
     return 0;
 }
 
-static void consume_whitespace(const char **buf)
+static int consume_whitespace(const char *buf)
 {
-    *buf += strspn(*buf, " \n\t");
+    return strspn(buf, " \n\t");
 }
 
 /**
@@ -55,7 +55,7 @@ static char *consume_string(const char **buf)
     char *out = av_malloc(strlen(*buf) + 1);
     char *ret = out;
 
-    consume_whitespace(buf);
+    *buf += consume_whitespace(*buf);
 
     do{
         char c = *(*buf)++;
@@ -84,7 +84,7 @@ static char *consume_string(const char **buf)
     } while(out[-1]);
 
     (*buf)--;
-    consume_whitespace(buf);
+    *buf += consume_whitespace(*buf);
 
     return ret;
 }
@@ -288,7 +288,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
         }
         link_to_add->next = *currInputs;
         *currInputs = link_to_add;
-        consume_whitespace(buf);
+        *buf += consume_whitespace(*buf);
         pad++;
     }
 
@@ -335,7 +335,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
             input->name = name;
             *openLinks = input;
         }
-        consume_whitespace(buf);
+        *buf += consume_whitespace(*buf);
         pad++;
     }
 
@@ -356,7 +356,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
     do {
         AVFilterContext *filter;
-        consume_whitespace(&filters);
+        filters += consume_whitespace(filters);
 
         pad = parse_inputs(&filters, &currInputs, &openLinks, log_ctx);
 
@@ -382,7 +382,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         if(pad < 0)
             goto fail;
 
-        consume_whitespace(&filters);
+        filters += consume_whitespace(filters);
         chr = *filters++;
 
         if(chr == ';' && currInputs) {
