@@ -224,10 +224,9 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
 
 static const char *skip_inouts(const char *buf)
 {
-    while (*buf == '[') {
-        buf += strcspn(buf, "]");
-        buf++;
-    }
+    while (*buf == '[')
+        buf += strcspn(buf, "]") + 1;
+
     return buf;
 }
 
