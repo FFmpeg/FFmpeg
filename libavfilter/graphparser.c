@@ -117,8 +117,8 @@ static char *consume_string(const char **buf)
             if(*in) in++;
             break;
         case 0:
-        case ')':
-        case '(':
+        case ']':
+        case '[':
         case '=':
         case ',':
             *out++= 0;
@@ -146,7 +146,7 @@ static void parse_link_name(const char **buf, char **name)
     if (!*name[0])
         goto fail;
 
-    if (*(*buf)++ != ')')
+    if (*(*buf)++ != ']')
         goto fail;
 
     return;
@@ -211,7 +211,7 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
                         enum LinkType type, AVFilterContext *filter)
 {
     int pad = firstpad;
-    while (**buf == '(') {
+    while (**buf == '[') {
         AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
         parse_link_name(buf, &inoutn->name);
         inoutn->type = type;
@@ -225,8 +225,8 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
 
 static const char *skip_inouts(const char *buf)
 {
-    while (*buf == '(') {
-        buf += strcspn(buf, ")");
+    while (*buf == '[') {
+        buf += strcspn(buf, "]");
         buf++;
     }
     return buf;
