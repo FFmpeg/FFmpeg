@@ -156,13 +156,9 @@ static void parse_link_name(const char **buf, char **name)
     if(*(*buf)++ != ']') {
         av_log(&log_ctx, AV_LOG_ERROR,
                "Mismatched '[' found in the following: \"%s\".\n", start);
-        goto fail;
+    fail:
+        av_freep(name);
     }
-
-    return;
-
- fail:
-    av_freep(name);
 }
 
 /**
