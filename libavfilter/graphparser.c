@@ -99,7 +99,7 @@ static void consume_whitespace(const char **buf)
  */
 static char *consume_string(const char **buf)
 {
-    char *out = av_malloc(strlen(*buf));
+    char *out = av_malloc(strlen(*buf) + 1);
     const char *in = *buf;
     char *ret = out;
 
