@@ -56,7 +56,10 @@ static int create_filter(AVFilterGraph *ctx, int index, char *name,
                "error creating filter '%s'\n", name);
         return -1;
     }
-    avfilter_graph_add_filter(ctx, filt);
+
+    if (avfilter_graph_add_filter(ctx, filt) < 0)
+        return -1;
+
     if(avfilter_init_filter(filt, args, NULL)) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "error initializing filter '%s'\n", name);
