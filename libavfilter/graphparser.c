@@ -182,12 +182,12 @@ static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
 
 
     while(*links && strcmp((*links)->name, label))
-        links= &((*links)->next);
+        links = &((*links)->next);
 
-    ret= *links;
+    ret = *links;
 
     if(ret)
-        *links= ret->next;
+        *links = ret->next;
 
     return ret;
 }
@@ -377,17 +377,17 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
     AVFilterInOut *currInputs=NULL;
     AVFilterInOut *openLinks  = av_malloc(sizeof(AVFilterInOut));
 
-    openLinks->name = "in";
-    openLinks->filter = in;
-    openLinks->type = LinkTypeOut;
+    openLinks->name    = "in";
+    openLinks->filter  = in;
+    openLinks->type    = LinkTypeOut;
     openLinks->pad_idx = inpad;
-    openLinks->next = av_malloc(sizeof(AVFilterInOut));
+    openLinks->next    = av_malloc(sizeof(AVFilterInOut));
 
-    openLinks->next->name = "out";
-    openLinks->next->filter = out;
-    openLinks->next->type = LinkTypeIn;
+    openLinks->next->name    = "out";
+    openLinks->next->filter  = out;
+    openLinks->next->type    = LinkTypeIn;
     openLinks->next->pad_idx = outpad;
-    openLinks->next->next = NULL;
+    openLinks->next->next    = NULL;
 
     do {
         AVFilterContext *filter;
