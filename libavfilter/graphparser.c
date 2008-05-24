@@ -197,8 +197,7 @@ typedef struct AVFilterInOut {
 static void free_inout(AVFilterInOut *head)
 {
     while (head) {
-        AVFilterInOut *next;
-        next = head->next;
+        AVFilterInOut *next = head->next;
         av_free(head);
         head = next;
     }
