@@ -185,13 +185,9 @@ static void dump_short_table(short* table, int size, int delimiter) {
 /* table generator */
 static void init_pow2table(COOKContext *q){
     int i;
-    q->rootpow2tab[63] =
-    q->pow2tab[63] = 1.0;
-    for (i=1 ; i<64 ; i++){
-        q->pow2tab[63+i]=(float)((uint64_t)1<<i);
-        q->pow2tab[63-i]=1.0/(float)((uint64_t)1<<i);
-        q->rootpow2tab[63+i]=sqrt((float)((uint64_t)1<<i));
-        q->rootpow2tab[63-i]=sqrt(1.0/(float)((uint64_t)1<<i));
+    for (i=-63 ; i<64 ; i++){
+        q->    pow2tab[63+i]=     pow(2, i);
+        q->rootpow2tab[63+i]=sqrt(pow(2, i));
     }
 }
 
