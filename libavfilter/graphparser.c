@@ -180,7 +180,6 @@ static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
 {
     AVFilterInOut *ret;
 
-
     while(*links && strcmp((*links)->name, label))
         links = &((*links)->next);
 
