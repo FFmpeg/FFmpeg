@@ -335,6 +335,9 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
         pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, filter);
 
+        if(pad < 0)
+            goto fail;
+
         consume_whitespace(&filters);
 
         chr = *filters++;
