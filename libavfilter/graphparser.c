@@ -41,8 +41,8 @@ static const AVClass filter_parser_class = {
 
 static const AVClass *log_ctx = &filter_parser_class;
 
-static int create_filter(AVFilterGraph *ctx, int index, char *name,
-                         char *args)
+static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
+                                      char *name, char *args)
 {
     AVFilterContext *filt;
 
@@ -54,46 +54,34 @@ static int create_filter(AVFilterGraph *ctx, int index, char *name,
     if(!(filterdef = avfilter_get_by_name(name))) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "no such filter: '%s'\n", name);
-        return -1;
+        return NULL;
     }
 
     if(!(filt = avfilter_open(filterdef, tmp))) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "error creating filter '%s'\n", name);
-        return -1;
+        return NULL;
     }
 
     if (avfilter_graph_add_filter(ctx, filt) < 0)
-        return -1;
+        return NULL;
 
     if(avfilter_init_filter(filt, args, NULL)) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "error initializing filter '%s' with args '%s'\n", name, args);
-        return -1;
+        return NULL;
     }
 
-    return 0;
+    return filt;
 }
 
-static int link_filter(AVFilterGraph *ctx, int src, int srcpad,
-                       int dst, int dstpad)
+static int link_filter(AVFilterContext *src, int srcpad,
+                       AVFilterContext *dst, int dstpad)
 {
-    AVFilterContext *filt, *filtb;
-
-    char tmp[20];
-
-    snprintf(tmp, 20, "%d", src);
-    if(!(filt = avfilter_graph_get_filter(ctx, tmp))) {
-        av_log(&log_ctx, AV_LOG_ERROR, "link source does not exist in graph\n");
-        return -1;
-    }
-    snprintf(tmp, 20, "%d", dst);
-    if(!(filtb = avfilter_graph_get_filter(ctx, tmp))) {
-        av_log(&log_ctx, AV_LOG_ERROR, "link destination does not exist in graph\n");
-        return -1;
-    }
-    if(avfilter_link(filt, srcpad, filtb, dstpad)) {
-        av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+    if(avfilter_link(src, srcpad, dst, dstpad)) {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "cannot create the link %s:%d -> %s:%d\n",
+               src->filter->name, srcpad, dst->filter->name, dstpad);
         return -1;
     }
 
@@ -201,7 +189,7 @@ static void parse_link_name(const char **buf, char **name)
  * @arg ars  a pointer (that need to be free'd after use) to the args of the
  *           filter
  */
-static int parse_filter(const char **buf, AVFilterGraph *graph, int index)
+static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph, int index)
 {
     char *name, *opts;
     name = consume_string(buf);
@@ -227,7 +215,7 @@ enum LinkType {
 typedef struct AVFilterInOut {
     enum LinkType type;
     char *name;
-    int instance;
+    AVFilterContext *instance;
     int pad_idx;
 
     struct AVFilterInOut *next;
@@ -247,7 +235,7 @@ static void free_inout(AVFilterInOut *head)
  * Parse "(a1)(link2) ... (etc)"
  */
 static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
-                        enum LinkType type, int instance)
+                        enum LinkType type, AVFilterContext *instance)
 {
     int pad = firstpad;
     while (**buf == '(') {
@@ -262,6 +250,16 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
     return pad;
 }
 
+static const char *skip_inouts(const char *buf)
+{
+    while (*buf == '(') {
+        buf += strcspn(buf, ")");
+        buf++;
+    }
+    return buf;
+}
+
+
 /**
  * Parse a string describing a filter graph.
  */
@@ -275,70 +273,61 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
     int pad = 0;
     int has_out = 0;
 
-    char tmp[20];
-    AVFilterContext *filt;
+    AVFilterContext *last_filt = NULL;
 
     consume_whitespace(&filters);
 
     do {
+        AVFilterContext *filter;
         int oldpad = pad;
+        const char *inouts = filters;
 
-        pad = parse_inouts(&filters, &inout, chr == ',', LinkTypeIn, index);
+        // We need to parse the inputs of the filter after we create it, so
+        // skip it by now
+        filters = skip_inouts(filters);
 
-        if (parse_filter(&filters, graph, index) < 0)
+        if (!(filter = parse_filter(&filters, graph, index)))
             goto fail;
+
+        pad = parse_inouts(&inouts, &inout, chr == ',', LinkTypeIn, filter);
 
         // If the first filter has an input and none was given, it is
         // implicitly the input of the whole graph.
         if (pad == 0 && graph->filters[graph->filter_count-1]->input_count == 1) {
-            snprintf(tmp, 20, "%d", index);
-            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-                goto fail;
-            }
-            if(avfilter_link(in, inpad, filt, 0)) {
+            if(avfilter_link(in, inpad, filter, 0)) {
                 av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
                 goto fail;
             }
         }
 
         if(chr == ',') {
-            if (link_filter(graph, index-1, oldpad, index, 0) < 0)
+            if (link_filter(last_filt, oldpad, filter, 0) < 0)
                 goto fail;
 
         }
-        pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, index);
+        pad = parse_inouts(&filters, &inout, 0, LinkTypeOut, filter);
         chr = *filters++;
         index++;
+        last_filt = filter;
     } while (chr == ',' || chr == ';');
 
     head = inout;
     for (; inout != NULL; inout = inout->next) {
-        if (inout->instance == -1)
+        if (inout->instance == NULL)
             continue; // Already processed
 
         if (!strcmp(inout->name, "in")) {
-            snprintf(tmp, 20, "%d", inout->instance);
-            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-                goto fail;
-            }
-            if(avfilter_link(in, inpad, filt, inout->pad_idx)) {
+            if(avfilter_link(in, inpad, inout->instance, inout->pad_idx)) {
                 av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
                 goto fail;
             }
         } else if (!strcmp(inout->name, "out")) {
             has_out = 1;
-            snprintf(tmp, 20, "%d", inout->instance);
-            if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-                av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-                goto fail;
-            }
 
-            if(avfilter_link(filt, inout->pad_idx, out, outpad)) {
+            if(avfilter_link(inout->instance, inout->pad_idx, out, outpad)) {
                 av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
                 goto fail;
-        }
+            }
 
         } else {
             AVFilterInOut *p, *src, *dst;
@@ -363,24 +352,18 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
                 goto fail;
             }
 
-            if (link_filter(graph, src->instance, src->pad_idx, dst->instance, dst->pad_idx) < 0)
+            if (link_filter(src->instance, src->pad_idx, dst->instance, dst->pad_idx) < 0)
                 goto fail;
 
-            src->instance = -1;
-            dst->instance = -1;
+            src->instance = NULL;
+            dst->instance = NULL;
         }
     }
 
     free_inout(head);
 
     if (!has_out) {
-        snprintf(tmp, 20, "%d", index-1);
-        if(!(filt = avfilter_graph_get_filter(graph, tmp))) {
-            av_log(&log_ctx, AV_LOG_ERROR, "filter owning exported pad does not exist\n");
-            goto fail;
-        }
-
-        if(avfilter_link(filt, pad, out, outpad)) {
+        if(avfilter_link(last_filt, pad, out, outpad)) {
             av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
             goto fail;
         }
