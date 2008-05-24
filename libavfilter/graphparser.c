@@ -201,9 +201,8 @@ static int link_filter_inouts(AVFilterContext *filter,
     int pad = 0;
 
     pad = filter->input_count;
-    while(pad) {
+    while(pad--) {
         p = *currInputs;
-        pad--;
         if(!p) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "Not enough inputs specified for the \"%s\" filter.\n",
@@ -235,9 +234,8 @@ static int link_filter_inouts(AVFilterContext *filter,
     }
 
     pad = filter->output_count;
-    while(pad) {
+    while(pad--) {
         AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
-        pad--;
         currlinkn->name    = NULL;
         currlinkn->type    = LinkTypeOut;
         currlinkn->filter  = filter;
