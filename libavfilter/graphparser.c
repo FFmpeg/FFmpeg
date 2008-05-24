@@ -258,7 +258,6 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
 
     while(**buf == '[') {
         char *name = parse_link_name(buf, log_ctx);
-        AVFilterInOut *link_to_add;
         AVFilterInOut *match;
 
         if(!name)
@@ -275,18 +274,15 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
                        "Label \"%s\" appears twice as input!\n", match->name);
                 return -1;
             }
-
-            link_to_add = match;
         } else {
             /* Not in the list, so add it as an input */
-            link_to_add = av_mallocz(sizeof(AVFilterInOut));
-
-            link_to_add->name    = name;
-            link_to_add->type    = LinkTypeIn;
-            link_to_add->pad_idx = pad;
+            match = av_mallocz(sizeof(AVFilterInOut));
+            match->name    = name;
+            match->type    = LinkTypeIn;
+            match->pad_idx = pad;
         }
 
-        insert_inout(currInputs, link_to_add);
+        insert_inout(currInputs, match);
 
         *buf += consume_whitespace(*buf);
         pad++;
