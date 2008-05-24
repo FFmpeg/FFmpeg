@@ -346,14 +346,13 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
  * Parse a string describing a filter graph.
  */
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *inouts, AVClass *log_ctx)
+                         AVFilterInOut *openLinks, AVClass *log_ctx)
 {
     int index = 0;
     char chr = 0;
     int pad = 0;
 
     AVFilterInOut *currInputs = NULL;
-    AVFilterInOut *openLinks  = inouts;
 
     do {
         AVFilterContext *filter;
