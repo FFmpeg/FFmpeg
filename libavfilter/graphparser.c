@@ -199,50 +199,6 @@ static void free_inout(AVFilterInOut *head)
 }
 
 /**
- * Process a link. This funcion looks for a matching label in the *inout
- * linked list. If none is found, it adds this link to the list.
- */
-static int handle_link(char *name, AVFilterInOut **inout, int pad,
-                       enum LinkType type, AVFilterContext *filter,
-                       AVClass *log_ctx)
-{
-    AVFilterInOut *p = *inout;
-
-    for (; p && strcmp(p->name, name); p = p->next);
-
-    if(!p) {
-        // First label apearence, add it to the linked list
-        AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
-
-        inoutn->name    = name;
-        inoutn->type    = type;
-        inoutn->filter  = filter;
-        inoutn->pad_idx = pad;
-        inoutn->next    = *inout;
-        *inout = inoutn;
-         return 0;
-    }
-
-    if(p->type == LinkTypeIn && type == LinkTypeOut) {
-        if(link_filter(filter, pad, p->filter, p->pad_idx, log_ctx) < 0)
-            return -1;
-    } else if(p->type == LinkTypeOut && type == LinkTypeIn) {
-        if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx) < 0)
-            return -1;
-    } else {
-        av_log(log_ctx, AV_LOG_ERROR,
-               "Two links named '%s' are either both input or both output\n",
-               name);
-        return -1;
-    }
-
-    p->filter = NULL;
-
-    return 0;
-}
-
-
-/**
  * Parse "[a1][link2] ... [etc]"
  */
 static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
@@ -251,17 +207,47 @@ static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
 {
     while (**buf == '[') {
         char *name;
+        AVFilterInOut *p = *inout;
 
         parse_link_name(buf, &name, log_ctx);
 
         if(!name)
             return -1;
 
-        if(handle_link(name, inout, pad++, type, filter, log_ctx) < 0)
-            return -1;
+        for (; p && strcmp(p->name, name); p = p->next);
 
+        if(!p) {
+            // First label apearence, add it to the linked list
+            AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
+
+            inoutn->name    = name;
+            inoutn->type    = type;
+            inoutn->filter  = filter;
+            inoutn->pad_idx = pad;
+            inoutn->next    = *inout;
+            *inout = inoutn;
+        } else {
+
+            if(p->type == LinkTypeIn && type == LinkTypeOut) {
+                if(link_filter(filter, pad, p->filter, p->pad_idx, log_ctx) < 0)
+                    return -1;
+            } else if(p->type == LinkTypeOut && type == LinkTypeIn) {
+                if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx) < 0)
+                    return -1;
+            } else {
+                av_log(log_ctx, AV_LOG_ERROR,
+                       "Two links named '%s' are either both input or both output\n",
+                       name);
+                return -1;
+            }
+
+            p->filter = NULL;
+        }
+
+        pad++;
         consume_whitespace(buf);
     }
+
     return pad;
 }
 
