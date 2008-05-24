@@ -107,6 +107,7 @@ static char *consume_string(const char **buf)
         case '[':
         case '=':
         case ',':
+        case ';':
         case ' ':
         case '\n':
             *out++= 0;
