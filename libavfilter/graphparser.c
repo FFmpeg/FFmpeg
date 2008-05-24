@@ -286,17 +286,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
         /* First check if the label is not in the openLinks list */
         p = extract_inout(name, openLinks);
 
-        /* Not in the list, so add it as an input */
-        if(!p) {
-            AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
-
-            currlinkn->name    = name;
-            currlinkn->type    = LinkTypeIn;
-            currlinkn->filter  = NULL;
-            currlinkn->pad_idx = pad;
-            currlinkn->next    = *currInputs;
-            *currInputs = currlinkn;
-        } else {
+        if(p) {
             /* A label of a open link. Make it one of the inputs of the next
                filter */
             AVFilterInOut *currlinkn = p;
@@ -306,6 +296,16 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
                 return -1;
             }
             currlinkn->next = *currInputs;
+            *currInputs = currlinkn;
+        } else {
+            /* Not in the list, so add it as an input */
+            AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
+
+            currlinkn->name    = name;
+            currlinkn->type    = LinkTypeIn;
+            currlinkn->filter  = NULL;
+            currlinkn->pad_idx = pad;
+            currlinkn->next    = *currInputs;
             *currInputs = currlinkn;
         }
         consume_whitespace(buf);
@@ -332,15 +332,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
         /* First check if the label is not in the openLinks list */
         match = extract_inout(name, openLinks);
 
-        /* Not in the list, so add the first input as a openLink */
-        if(!match) {
-            AVFilterInOut *p = *currInputs;
-            *currInputs = (*currInputs)->next;
-            p->next = *openLinks;
-            p->type = LinkTypeOut;
-            p->name = name;
-            *openLinks = p;
-        } else {
+        if(match) {
             /* A label of a open link. Link it. */
             AVFilterInOut *p = *currInputs;
             if (match->type != LinkTypeIn) {
@@ -355,6 +347,14 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
                 return -1;
             av_free(match);
             av_free(p);
+        } else {
+            /* Not in the list, so add the first input as a openLink */
+            AVFilterInOut *p = *currInputs;
+            *currInputs = (*currInputs)->next;
+            p->next = *openLinks;
+            p->type = LinkTypeOut;
+            p->name = name;
+            *openLinks = p;
         }
         consume_whitespace(buf);
         pad++;
