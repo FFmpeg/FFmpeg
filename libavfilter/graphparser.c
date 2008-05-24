@@ -206,10 +206,9 @@ static void free_inout(AVFilterInOut *head)
 /**
  * Parse "[a1][link2] ... [etc]"
  */
-static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
+static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
                         enum LinkType type, AVFilterContext *filter)
 {
-    int pad = firstpad;
     while (**buf == '[') {
         AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
         parse_link_name(buf, &inoutn->name);
