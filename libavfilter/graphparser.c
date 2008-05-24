@@ -47,9 +47,9 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
     AVFilterContext *filt;
 
     AVFilter *filterdef;
-    char tmp[20];
+    char inst_name[30];
 
-    snprintf(tmp, 20, "%d", index);
+    snprintf(inst_name, sizeof(inst_name), "Parsed filter %d", index);
 
     if(!(filterdef = avfilter_get_by_name(name))) {
         av_log(&log_ctx, AV_LOG_ERROR,
@@ -57,7 +57,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
         return NULL;
     }
 
-    if(!(filt = avfilter_open(filterdef, tmp))) {
+    if(!(filt = avfilter_open(filterdef, inst_name))) {
         av_log(&log_ctx, AV_LOG_ERROR,
                "error creating filter '%s'\n", name);
         return NULL;
