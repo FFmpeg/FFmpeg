@@ -129,13 +129,16 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
 
     snprintf(inst_name, sizeof(inst_name), "Parsed filter %d", index);
 
-    if(!(filterdef = avfilter_get_by_name(name))) {
+    filterdef = avfilter_get_by_name(name);
+
+    if(!filterdef) {
         av_log(log_ctx, AV_LOG_ERROR,
                "no such filter: '%s'\n", name);
         return NULL;
     }
 
-    if(!(filt = avfilter_open(filterdef, inst_name))) {
+    filt = avfilter_open(filterdef, inst_name);
+    if(!filt) {
         av_log(log_ctx, AV_LOG_ERROR,
                "error creating filter '%s'\n", name);
         return NULL;
@@ -362,7 +365,9 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         if(pad < 0)
             goto fail;
 
-        if(!(filter = parse_filter(&filters, graph, index, log_ctx)))
+        filter = parse_filter(&filters, graph, index, log_ctx);
+
+        if(!filter)
             goto fail;
 
         if(filter->input_count == 1 && !currInputs && !index) {
