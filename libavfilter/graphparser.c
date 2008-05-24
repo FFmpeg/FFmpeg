@@ -216,7 +216,6 @@ static int link_filter_inouts(AVFilterContext *filter,
             *currInputs = (*currInputs)->next;
             av_free(p);
         } else {
-            p = *currInputs;
             *currInputs = (*currInputs)->next;
             p->filter = filter;
             p->pad_idx = pad;
