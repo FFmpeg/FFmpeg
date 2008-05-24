@@ -63,7 +63,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
         return NULL;
     }
 
-    if (avfilter_graph_add_filter(ctx, filt) < 0)
+    if(avfilter_graph_add_filter(ctx, filt) < 0)
         return NULL;
 
     if(avfilter_init_filter(filt, args, NULL)) {
@@ -143,10 +143,10 @@ static void parse_link_name(const char **buf, char **name)
 
     *name = consume_string(buf);
 
-    if (!*name[0])
+    if(!*name[0])
         goto fail;
 
-    if (*(*buf)++ != ']')
+    if(*(*buf)++ != ']')
         goto fail;
 
     return;
@@ -167,7 +167,7 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph, int
     char *name, *opts;
     name = consume_string(buf);
 
-    if (**buf == '=') {
+    if(**buf == '=') {
         (*buf)++;
         opts = consume_string(buf);
     } else {
@@ -261,20 +261,20 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         // skip it by now
         filters = skip_inouts(filters);
 
-        if (!(filter = parse_filter(&filters, graph, index)))
+        if(!(filter = parse_filter(&filters, graph, index)))
             goto fail;
 
         pad = parse_inouts(&inouts, &inout, chr == ',', LinkTypeIn, filter);
 
         // If the first filter has an input and none was given, it is
         // implicitly the input of the whole graph.
-        if (pad == 0 && filter->input_count == 1) {
+        if(pad == 0 && filter->input_count == 1) {
             if(link_filter(in, inpad, filter, 0))
                 goto fail;
         }
 
         if(chr == ',') {
-            if (link_filter(last_filt, oldpad, filter, 0) < 0)
+            if(link_filter(last_filt, oldpad, filter, 0) < 0)
                 goto fail;
         }
 
@@ -286,14 +286,14 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
     head = inout;
     for (; inout != NULL; inout = inout->next) {
-        if (inout->filter == NULL)
+        if(inout->filter == NULL)
             continue; // Already processed
 
-        if (!strcmp(inout->name, "in")) {
+        if(!strcmp(inout->name, "in")) {
             if(link_filter(in, inpad, inout->filter, inout->pad_idx))
                 goto fail;
 
-        } else if (!strcmp(inout->name, "out")) {
+        } else if(!strcmp(inout->name, "out")) {
             has_out = 1;
 
             if(link_filter(inout->filter, inout->pad_idx, out, outpad))
@@ -304,16 +304,16 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
             for (p = inout->next;
                  p && strcmp(p->name,inout->name); p = p->next);
 
-            if (!p) {
+            if(!p) {
                 av_log(&log_ctx, AV_LOG_ERROR, "Unmatched link: %s.\n",
                        inout->name);
                 goto fail;
             }
 
-            if (p->type == LinkTypeIn && inout->type == LinkTypeOut) {
+            if(p->type == LinkTypeIn && inout->type == LinkTypeOut) {
                 src = inout;
                 dst = p;
-            } else if (p->type == LinkTypeOut && inout->type == LinkTypeIn) {
+            } else if(p->type == LinkTypeOut && inout->type == LinkTypeIn) {
                 src = p;
                 dst = inout;
             } else {
@@ -322,7 +322,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
                 goto fail;
             }
 
-            if (link_filter(src->filter, src->pad_idx, dst->filter, dst->pad_idx) < 0)
+            if(link_filter(src->filter, src->pad_idx, dst->filter, dst->pad_idx) < 0)
                 goto fail;
 
             src->filter = NULL;
@@ -332,7 +332,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
 
     free_inout(head);
 
-    if (!has_out) {
+    if(!has_out) {
         if(link_filter(last_filt, pad, out, outpad))
             goto fail;
     }
