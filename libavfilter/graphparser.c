@@ -214,25 +214,65 @@ static void free_inout(AVFilterInOut *head)
 }
 
 /**
+ * Process a link. This funcion looks for a matching label in the *inout
+ * linked list. If none is found, it adds this link to the list.
+ */
+static int handle_link(char *name, AVFilterInOut **inout, int pad,
+                       enum LinkType type, AVFilterContext *filter)
+{
+    AVFilterInOut *p = *inout;
+
+    for (; p && strcmp(p->name, name); p = p->next);
+
+    if(!p) {
+        // First label apearence, add it to the linked list
+        AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
+
+        inoutn->name    = name;
+        inoutn->type    = type;
+        inoutn->filter  = filter;
+        inoutn->pad_idx = pad;
+        inoutn->next    = *inout;
+        *inout = inoutn;
+         return 0;
+    }
+
+    if(p->type == LinkTypeIn && type == LinkTypeOut) {
+        if(link_filter(filter, pad, p->filter, p->pad_idx) < 0)
+            goto fail;
+    } else if(p->type == LinkTypeOut && type == LinkTypeIn) {
+        if(link_filter(p->filter, p->pad_idx, filter, pad) < 0)
+            goto fail;
+    } else {
+        av_log(&log_ctx, AV_LOG_ERROR,
+               "Two links named '%s' are either both input or both output\n",
+               name);
+        goto fail;
+    }
+
+    p->filter = NULL;
+
+    return 0;
+ fail:
+    return -1;
+}
+
+
+/**
  * Parse "[a1][link2] ... [etc]"
  */
 static int parse_inouts(const char **buf, AVFilterInOut **inout, int pad,
                         enum LinkType type, AVFilterContext *filter)
 {
     while (**buf == '[') {
-        AVFilterInOut *inoutn = av_malloc(sizeof(AVFilterInOut));
-        parse_link_name(buf, &inoutn->name);
+        char *name;
 
-        if (!inoutn->name) {
-            av_free(inoutn);
+        parse_link_name(buf, &name);
+
+        if (!name)
             return -1;
-        }
 
-        inoutn->type    = type;
-        inoutn->filter  = filter;
-        inoutn->pad_idx = pad++;
-        inoutn->next    = *inout;
-        *inout = inoutn;
+        handle_link(name, inout, pad++, type, filter);
         consume_whitespace(buf);
     }
     return pad;
@@ -307,6 +347,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
     } while (chr == ',' || chr == ';');
 
     head = inout;
+    // Process remaining labels. Only inputs and outputs should be left.
     for (; inout; inout = inout->next) {
         if(!inout->filter)
             continue; // Already processed
@@ -322,33 +363,9 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
                 goto fail;
 
         } else {
-            AVFilterInOut *p, *src, *dst;
-            for (p = inout->next;
-                 p && strcmp(p->name,inout->name); p = p->next);
-
-            if(!p) {
-                av_log(&log_ctx, AV_LOG_ERROR, "Unmatched link: %s.\n",
-                       inout->name);
+            av_log(&log_ctx, AV_LOG_ERROR, "Unmatched link: %s.\n",
+                   inout->name);
                 goto fail;
-            }
-
-            if(p->type == LinkTypeIn && inout->type == LinkTypeOut) {
-                src = inout;
-                dst = p;
-            } else if(p->type == LinkTypeOut && inout->type == LinkTypeIn) {
-                src = p;
-                dst = inout;
-            } else {
-                av_log(&log_ctx, AV_LOG_ERROR, "Two links named '%s' are either both input or both output\n",
-                       inout->name);
-                goto fail;
-            }
-
-            if(link_filter(src->filter, src->pad_idx, dst->filter, dst->pad_idx) < 0)
-                goto fail;
-
-            src->filter = NULL;
-            dst->filter = NULL;
         }
     }
 
