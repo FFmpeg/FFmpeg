@@ -183,7 +183,7 @@ enum LinkType {
  */
 typedef struct AVFilterInOut {
     enum LinkType type;
-    char *name;
+    const char *name;
     AVFilterContext *filter;
     int pad_idx;
 
