@@ -145,38 +145,33 @@ static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
 static void final(const short *i1, const short *i2,
                   void *out, int *statbuf, int len)
 {
-    int x, sum, i;
-    int buffer[10];
-    short *ptr;
-    short *ptr2;
+    int x, i;
     unsigned short int work[50];
+    short *ptr = work;
 
     memcpy(work, statbuf,20);
     memcpy(work + 10, i2, len * 2);
 
-    for(i=0; i<10; i++)
-        buffer[9-i] = i1[i];
+    for (i=0; i<len; i++) {
+        int sum = 0;
 
-    ptr2 = (ptr = work) + len;
+        for(x=0; x<10; x++)
+            sum += i1[9-x] * ptr[x];
 
-    while (ptr < ptr2) {
-        for(sum=0, x=0; x<=9; x++)
-            sum += buffer[x] * (ptr[x]);
+        sum >>= 12;
 
-        sum = sum >> 12;
-        x = ptr[10] - sum;
-
-        if (x<-32768 || x>32767) {
+        if (ptr[10] - sum < -32768 || ptr[10] - sum > 32767) {
             memset(out, 0, len * 2);
             memset(statbuf, 0, 20);
             return;
         }
 
-        ptr[10] = x;
+        ptr[10] -= sum;
         ptr++;
     }
-    memcpy(out, ptr+10 - len, len * 2);
-    memcpy(statbuf, ptr, 20);
+
+    memcpy(out, work+10, len * 2);
+    memcpy(statbuf, work + 40, 20);
 }
 
 static unsigned int rms(const int *data, int f)
