@@ -294,10 +294,8 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
         // If the first filter has an input and none was given, it is
         // implicitly the input of the whole graph.
         if (pad == 0 && graph->filters[graph->filter_count-1]->input_count == 1) {
-            if(avfilter_link(in, inpad, filter, 0)) {
-                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            if(link_filter(in, inpad, filter, 0))
                 goto fail;
-            }
         }
 
         if(chr == ',') {
@@ -317,17 +315,14 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
             continue; // Already processed
 
         if (!strcmp(inout->name, "in")) {
-            if(avfilter_link(in, inpad, inout->instance, inout->pad_idx)) {
-                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            if(link_filter(in, inpad, inout->instance, inout->pad_idx))
                 goto fail;
-            }
+
         } else if (!strcmp(inout->name, "out")) {
             has_out = 1;
 
-            if(avfilter_link(inout->instance, inout->pad_idx, out, outpad)) {
-                av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+            if(link_filter(inout->instance, inout->pad_idx, out, outpad))
                 goto fail;
-            }
 
         } else {
             AVFilterInOut *p, *src, *dst;
@@ -363,11 +358,8 @@ int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilt
     free_inout(head);
 
     if (!has_out) {
-        if(avfilter_link(last_filt, pad, out, outpad)) {
-            av_log(&log_ctx, AV_LOG_ERROR, "cannot create link between source and destination filters\n");
+        if(link_filter(last_filt, pad, out, outpad))
             goto fail;
-        }
-
     }
 
     return 0;
