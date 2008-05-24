@@ -188,8 +188,8 @@ static unsigned int rms(const int *data, int f)
         if (res == 0)
             return 0;
 
-            if (res > 0x10000)
-                return 0; /* We're screwed, might as well go out with a bang. :P */
+        if (res > 0x10000)
+            return 0; /* We're screwed, might as well go out with a bang. :P */
 
         while (res <= 0x3fff) {
             b++;
