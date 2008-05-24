@@ -1805,6 +1805,26 @@ enum CodecID av_codec_get_id(const AVCodecTag *tags[4], unsigned int tag)
     return CODEC_ID_NONE;
 }
 
+static void compute_chapters_end(AVFormatContext *s)
+{
+    unsigned int i;
+
+    for (i=0; i+1<s->nb_chapters; i++)
+        if (s->chapters[i]->end == AV_NOPTS_VALUE) {
+            assert(s->chapters[i]->start <= s->chapters[i+1]->start);
+            assert(!av_cmp_q(s->chapters[i]->time_base, s->chapters[i+1]->time_base));
+            s->chapters[i]->end = s->chapters[i+1]->start;
+        }
+
+    if (s->nb_chapters && s->chapters[i]->end == AV_NOPTS_VALUE) {
+        assert(s->start_time != AV_NOPTS_VALUE);
+        assert(s->duration > 0);
+        s->chapters[i]->end = av_rescale_q(s->start_time + s->duration,
+                                           AV_TIME_BASE_Q,
+                                           s->chapters[i]->time_base);
+    }
+}
+
 /* absolute maximum size we read until we abort */
 #define MAX_READ_SIZE        5000000
 
@@ -2074,6 +2094,8 @@ int av_find_stream_info(AVFormatContext *ic)
         }
         url_fseek(ic->pb, ic->data_offset, SEEK_SET);
     }
+
+    compute_chapters_end(ic);
 
 #if 0
     /* correct DTS for B-frame streams with no timestamps */
