@@ -31,8 +31,8 @@
  * @param filters string to be parsed
  * @param in      input to the graph to be parsed (TODO: allow several)
  * @param inpad   pad index of the input
- * @param in      output to the graph to be parsed (TODO: allow several)
- * @param inpad   pad index of the output
+ * @param out     output to the graph to be parsed (TODO: allow several)
+ * @param outpad  pad index of the output
  * @return        zero on success, -1 on error
  */
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad);

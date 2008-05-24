@@ -42,7 +42,7 @@ static const AVClass filter_parser_class = {
 static const AVClass *log_ctx = &filter_parser_class;
 
 static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
-                                      char *name, char *args)
+                                      const char *name, const char *args)
 {
     AVFilterContext *filt;
 
