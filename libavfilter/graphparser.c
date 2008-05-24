@@ -236,7 +236,9 @@ static const char *skip_inouts(const char *buf)
 /**
  * Parse a string describing a filter graph.
  */
-int avfilter_graph_parse_chain(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad)
+int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
+                         AVFilterContext *in, int inpad,
+                         AVFilterContext *out, int outpad)
 {
     AVFilterInOut *inout=NULL;
     AVFilterInOut  *head=NULL;
