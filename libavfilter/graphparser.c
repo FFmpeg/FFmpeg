@@ -281,6 +281,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
                        "Label \"%s\" appears twice as input!\n", match->name);
                 return -1;
             }
+            av_free(name);
         } else {
             /* Not in the list, so add it as an input */
             match = av_mallocz(sizeof(AVFilterInOut));
