@@ -25,6 +25,23 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
+enum LinkType {
+    LinkTypeIn,
+    LinkTypeOut,
+};
+
+/**
+ * A linked-list of the inputs/outputs of the filter chain.
+ */
+typedef struct AVFilterInOut {
+    enum LinkType type;
+    const char *name;
+    AVFilterContext *filter;
+    int pad_idx;
+
+    struct AVFilterInOut *next;
+} AVFilterInOut;
+
 /**
  * Add to a graph a graph described by a string.
  * @param graph   the filter graph where to link the parsed graph context
@@ -36,8 +53,6 @@
  * @return        zero on success, -1 on error
  */
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
-                         AVFilterContext *in, int inpad,
-                         AVFilterContext *out, int outpad,
-                         AVClass *log_ctx);
+                         AVFilterInOut *inouts, AVClass *log_ctx);
 
 #endif  /* FFMPEG_GRAPHPARSER_H */

@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "graphparser.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
@@ -148,24 +149,6 @@ static void parse_link_name(const char **buf, char **name, AVClass *log_ctx)
         av_freep(name);
     }
 }
-
-
-enum LinkType {
-    LinkTypeIn,
-    LinkTypeOut,
-};
-
-/**
- * A linked-list of the inputs/outputs of the filter chain.
- */
-typedef struct AVFilterInOut {
-    enum LinkType type;
-    const char *name;
-    AVFilterContext *filter;
-    int pad_idx;
-
-    struct AVFilterInOut *next;
-} AVFilterInOut;
 
 static void free_inout(AVFilterInOut *head)
 {
@@ -363,28 +346,14 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
  * Parse a string describing a filter graph.
  */
 int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
-                         AVFilterContext *in, int inpad,
-                         AVFilterContext *out, int outpad,
-                         AVClass *log_ctx)
+                         AVFilterInOut *inouts, AVClass *log_ctx)
 {
     int index = 0;
     char chr = 0;
     int pad = 0;
 
     AVFilterInOut *currInputs = NULL;
-    AVFilterInOut *openLinks  = av_malloc(sizeof(AVFilterInOut));
-
-    openLinks->name    = "in";
-    openLinks->filter  = in;
-    openLinks->type    = LinkTypeOut;
-    openLinks->pad_idx = inpad;
-    openLinks->next    = av_malloc(sizeof(AVFilterInOut));
-
-    openLinks->next->name    = "out";
-    openLinks->next->filter  = out;
-    openLinks->next->type    = LinkTypeIn;
-    openLinks->next->pad_idx = outpad;
-    openLinks->next->next    = NULL;
+    AVFilterInOut *openLinks  = inouts;
 
     do {
         AVFilterContext *filter;
