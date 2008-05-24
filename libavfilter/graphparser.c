@@ -38,7 +38,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
     snprintf(inst_name, sizeof(inst_name), "Parsed filter %d", index);
 
     if(!(filterdef = avfilter_get_by_name(name))) {
-        av_log(&log_ctx, AV_LOG_ERROR,
+        av_log(log_ctx, AV_LOG_ERROR,
                "no such filter: '%s'\n", name);
         return NULL;
     }
