@@ -35,6 +35,9 @@
  * @param outpad  pad index of the output
  * @return        zero on success, -1 on error
  */
-int avfilter_parse_graph(AVFilterGraph *graph, const char *filters, AVFilterContext *in, int inpad, AVFilterContext *out, int outpad);
+int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
+                         AVFilterContext *in, int inpad,
+                         AVFilterContext *out, int outpad,
+                         AVClass *log_ctx);
 
 #endif  /* FFMPEG_GRAPHPARSER_H */

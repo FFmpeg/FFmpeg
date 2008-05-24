@@ -225,22 +225,20 @@ static int handle_link(char *name, AVFilterInOut **inout, int pad,
 
     if(p->type == LinkTypeIn && type == LinkTypeOut) {
         if(link_filter(filter, pad, p->filter, p->pad_idx, log_ctx) < 0)
-            goto fail;
+            return -1;
     } else if(p->type == LinkTypeOut && type == LinkTypeIn) {
         if(link_filter(p->filter, p->pad_idx, filter, pad, log_ctx) < 0)
-            goto fail;
+            return -1;
     } else {
         av_log(log_ctx, AV_LOG_ERROR,
                "Two links named '%s' are either both input or both output\n",
                name);
-        goto fail;
+        return -1;
     }
 
     p->filter = NULL;
 
     return 0;
- fail:
-    return -1;
 }
 
 
