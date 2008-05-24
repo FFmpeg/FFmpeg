@@ -207,9 +207,8 @@ static int link_filter_inouts(AVFilterContext *filter,
                               AVFilterInOut **currInputs,
                               AVFilterInOut **openLinks, AVClass *log_ctx)
 {
-    int pad = 0;
+    int pad = filter->input_count;
 
-    pad = filter->input_count;
     while(pad--) {
         AVFilterInOut *p = *currInputs;
         *currInputs = (*currInputs)->next;
