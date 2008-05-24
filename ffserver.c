@@ -3584,7 +3584,8 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
         }
         /* Bitrate tolerance is less for streaming */
         if (av->bit_rate_tolerance == 0)
-            av->bit_rate_tolerance = av->bit_rate / 4;
+            av->bit_rate_tolerance = FFMAX(av->bit_rate / 4,
+                      (int64_t)av->bit_rate*av->time_base.num/av->time_base.den);
         if (av->qmin == 0)
             av->qmin = 3;
         if (av->qmax == 0)
