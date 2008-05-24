@@ -34,7 +34,6 @@ typedef struct {
     unsigned int     oldval;
     unsigned int     gbuf1[4];
     unsigned short   gbuf2[4][30];
-    unsigned int    *decptr;                /* decoder ptr */
 
     /* the swapped buffers */
     unsigned int     swapbuffers[4][10];
@@ -246,7 +245,7 @@ static void dec1(Real144_internal *glob, const int *data, const int *inp,
     short *ptr,*end;
     signed   short  *decsp = glob->gbuf2[block_idx];
 
-     *(glob->decptr++) = rms(data, f);
+    glob->gbuf1[block_idx] = rms(data, f);
     end = (ptr = decsp) + (n * 10);
 
     while (ptr < end)
@@ -314,9 +313,6 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
 
     b = NBLOCKS - a;
 
-    if (l == 0) {
-        glob->decptr = glob->gbuf1;
-    }
     ptr1 = inp;
     ptr2 = inp2;
 
@@ -328,7 +324,7 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     if (result == 1) {
         dec1(glob, data, inp, n, f, l);
     } else {
-        *(glob->decptr++) = rms(work, f);
+        glob->gbuf1[l] = rms(work, f);
     }
 }
 
