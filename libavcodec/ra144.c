@@ -154,19 +154,22 @@ static void final(const short *i1, const short *i2,
 
     for (i=0; i<len; i++) {
         int sum = 0;
+        int new_val;
 
         for(x=0; x<10; x++)
             sum += i1[9-x] * ptr[x];
 
         sum >>= 12;
 
-        if (ptr[10] - sum < -32768 || ptr[10] - sum > 32767) {
+        new_val = ptr[10] - sum;
+
+        if (new_val < -32768 || new_val > 32767) {
             memset(out, 0, len * 2);
             memset(statbuf, 0, 20);
             return;
         }
 
-        ptr[10] -= sum;
+        ptr[10] = new_val;
         ptr++;
     }
 
