@@ -276,6 +276,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
 
     while (**buf == '[') {
         char *name;
+        AVFilterInOut *link_to_add;
         AVFilterInOut *match;
 
         parse_link_name(buf, &name, log_ctx);
@@ -289,25 +290,24 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
         if(match) {
             /* A label of a open link. Make it one of the inputs of the next
                filter */
-            AVFilterInOut *currlinkn = match;
             if (match->type != LinkTypeOut) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Label \"%s\" appears twice as input!\n", match->name);
                 return -1;
             }
-            currlinkn->next = *currInputs;
-            *currInputs = currlinkn;
+
+            link_to_add = match;
         } else {
             /* Not in the list, so add it as an input */
-            AVFilterInOut *currlinkn = av_malloc(sizeof(AVFilterInOut));
+            link_to_add = av_malloc(sizeof(AVFilterInOut));
 
-            currlinkn->name    = name;
-            currlinkn->type    = LinkTypeIn;
-            currlinkn->filter  = NULL;
-            currlinkn->pad_idx = pad;
-            currlinkn->next    = *currInputs;
-            *currInputs = currlinkn;
+            link_to_add->name    = name;
+            link_to_add->type    = LinkTypeIn;
+            link_to_add->filter  = NULL;
+            link_to_add->pad_idx = pad;
         }
+        link_to_add->next = *currInputs;
+        *currInputs = link_to_add;
         consume_whitespace(buf);
         pad++;
     }
@@ -324,6 +324,9 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
         char *name;
         AVFilterInOut *match;
 
+        AVFilterInOut *input = *currInputs;
+        *currInputs = (*currInputs)->next;
+
         parse_link_name(buf, &name, log_ctx);
 
         if(!name)
@@ -334,14 +337,12 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
 
         if(match) {
             /* A label of a open link. Link it. */
-            AVFilterInOut *input = *currInputs;
             if (match->type != LinkTypeIn) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Label \"%s\" appears twice as output!\n", match->name);
                 return -1;
             }
 
-            *currInputs = (*currInputs)->next;
             if(link_filter(input->filter, input->pad_idx,
                            match->filter, match->pad_idx, log_ctx) < 0)
                 return -1;
@@ -349,8 +350,6 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
             av_free(input);
         } else {
             /* Not in the list, so add the first input as a openLink */
-            AVFilterInOut *input = *currInputs;
-            *currInputs = (*currInputs)->next;
             input->next = *openLinks;
             input->type = LinkTypeOut;
             input->name = name;
