@@ -12,8 +12,6 @@ rm -f tests/feed1.ffm
 ./ffserver -d -f tests/test.conf 2> /dev/null &
 FFSERVER_PID=$!
 echo "Waiting for feeds to startup..."
-./ffmpeg -loop_input -flags +bitexact -dct fastint -idct simple -y -f pgmyuv -i tests/vsynth1/%02d.pgm http://localhost:9999/feed1.ffm 2> /dev/null &
-FFMPEG_PID=$!
 (
     cd tests/data || exit $?
     rm -f ff-*;
@@ -30,7 +28,6 @@ FFMPEG_PID=$!
     # the status page is always different
     md5sum $MDFILES > ffserver.regression
 )
-kill $FFMPEG_PID
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
 rm -f tests/feed1.ffm
