@@ -128,8 +128,8 @@ static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
     int b, c, i;
     const short *ptr, *ptr2;
 
-    ptr  = wavtable1 + n * 9;
-    ptr2 = wavtable2 + n * 9;
+    ptr  = wavtable1[n];
+    ptr2 = wavtable2[n];
 
     if (f)
         a = (ptr[0] * m1) >> (ptr2[0] + 1);
