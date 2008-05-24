@@ -169,7 +169,7 @@ typedef struct AVFilterInOut {
 
 static void free_inout(AVFilterInOut *head)
 {
-    while (head) {
+    while(head) {
         AVFilterInOut *next = head->next;
         av_free(head);
         head = next;
@@ -271,7 +271,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **currInputs,
 {
     int pad = 0;
 
-    while (**buf == '[') {
+    while(**buf == '[') {
         char *name;
         AVFilterInOut *link_to_add;
         AVFilterInOut *match;
@@ -317,7 +317,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **currInputs,
 {
     int pad = 0;
 
-    while (**buf == '[') {
+    while(**buf == '[') {
         char *name;
         AVFilterInOut *match;
 
@@ -424,7 +424,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
             goto fail;
         }
         index++;
-    } while (chr == ',' || chr == ';');
+    } while(chr == ',' || chr == ';');
 
     if(openLinks && !strcmp(openLinks->name, "out") && currInputs) {
         // Last output can be ommitted if it is "[out]"
