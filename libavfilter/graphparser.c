@@ -133,7 +133,7 @@ static char *consume_string(const char **buf)
 }
 
 /**
- * Parse "(linkname)"
+ * Parse "[linkname]"
  * @arg name a pointer (that need to be free'd after use) to the name between
  *           parenthesis
  */
@@ -205,7 +205,7 @@ static void free_inout(AVFilterInOut *head)
 }
 
 /**
- * Parse "(a1)(link2) ... (etc)"
+ * Parse "[a1][link2] ... [etc]"
  */
 static int parse_inouts(const char **buf, AVFilterInOut **inout, int firstpad,
                         enum LinkType type, AVFilterContext *filter)
