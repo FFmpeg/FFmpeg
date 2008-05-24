@@ -179,26 +179,15 @@ static void free_inout(AVFilterInOut *head)
 static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
 {
     AVFilterInOut *ret;
-    AVFilterInOut *p;
 
-    if(!links || !*links)
-        return NULL;
 
-    if(!strcmp((*links)->name, label)) {
-        ret = *links;
-        *links = (*links)->next;
-        return ret;
-    }
+    while(*links && strcmp((*links)->name, label))
+        links= &((*links)->next);
 
-    /* First check if the label is not in the openLinks list */
-    for(p = *links; p->next && strcmp(p->next->name, label); p = p->next);
+    ret= *links;
 
-    if(!p->next)
-        return NULL;
-
-    ret = p->next;
-
-    p->next = p->next->next;
+    if(ret)
+        *links= ret->next;
 
     return ret;
 }
