@@ -292,12 +292,10 @@ static int dec2(signed short *decsp, const int *data, const int *inp,
 {
     unsigned const int *ptr1,*ptr2;
     int work[10];
-    int b;
+    int b = NBLOCKS - a;
     int x;
     int result;
     unsigned short *sptr  = decsp;
-
-    b = NBLOCKS - a;
 
     ptr1 = inp;
     ptr2 = inp2;
