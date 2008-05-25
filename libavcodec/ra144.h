@@ -1958,7 +1958,8 @@ static const int16_t decodetable10[7]={
 };
 
 static const int16_t *decodetable[10]={
-decodetable1,decodetable2,decodetable3,decodetable4,decodetable5,
-decodetable6,decodetable7,decodetable8,decodetable9,decodetable10};
+    decodetable1,decodetable2,decodetable3,decodetable4,decodetable5,
+    decodetable6,decodetable7,decodetable8,decodetable9,decodetable10
+};
 
 #endif /* FFMPEG_RA144_H */
