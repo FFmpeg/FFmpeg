@@ -1966,8 +1966,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
-    if (width <= 0 || height <= 0 ||
-        (width % 2) != 0 || (height % 2) != 0)
+    if (width <= 0 || height <= 0)
         return -1;
     s->aspect_ratio_info= get_bits(&s->gb, 4);
     if (s->aspect_ratio_info == 0) {
