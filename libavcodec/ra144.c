@@ -234,12 +234,10 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 static int dec1(signed short *decsp, const int *data, const int *inp,
                  int f)
 {
-    short *ptr,*end;
+    int i;
 
-    end = (ptr = decsp) + 30;
-
-    while (ptr < end)
-        *(ptr++) = *(inp++);
+    for (i=0; i<30; i++)
+        *(decsp++) = *(inp++);
 
     return rms(data, f);
 }
