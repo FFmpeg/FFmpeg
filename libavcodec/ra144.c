@@ -118,25 +118,18 @@ static int irms(const short *data, int factor)
 }
 
 /* multiply/add wavetable */
-static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
+static void add_wav(int n, int f, int *m, const short *s1,
                     const int8_t *s2, const int8_t *s3, short *dest)
 {
-    int a = 0;
-    int b, c, i;
-    const int16_t *ptr;
-    const uint8_t *ptr2;
+    int i;
+    int v[3];
 
-    ptr  = wavtable1[n];
-    ptr2 = wavtable2[n];
-
-    if (f)
-        a = (ptr[0] * m1) >> (ptr2[0] + 1);
-
-    b = (ptr[1] * m2) >> (ptr2[1] + 1);
-    c = (ptr[2] * m3) >> (ptr2[2] + 1);
+    v[0] = 0;
+    for (i=!f; i<3; i++)
+        v[i] = (wavtable1[n][i] * m[i]) >> (wavtable2[n][i] + 1);
 
     for (i=0; i < BLOCKSIZE; i++)
-        dest[i] = ((*(s1++)) * a + (*(s2++)) * b + (*(s3++)) * c) >> 12;
+        dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
 }
 
 
@@ -210,29 +203,29 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 {
     unsigned short int buffer_a[40];
     unsigned short int *block;
-    int e, f, g;
     int a = get_bits(gb, 7);
     int d = get_bits(gb, 8);
     int b = get_bits(gb, 7);
     int c = get_bits(gb, 7);
+    int m[3];
 
     if (a) {
         a += HALFBLOCK - 1;
         rotate_block(glob->buffer_2, buffer_a, a);
     }
 
-    e = ((ftable1[b] >> 4) * gval) >> 8;
-    f = ((ftable2[c] >> 4) * gval) >> 8;
+    m[1] = ((ftable1[b] >> 4) * gval) >> 8;
+    m[2] = ((ftable2[c] >> 4) * gval) >> 8;
 
     if (a)
-        g = irms(buffer_a, gval) >> 12;
+        m[0] = irms(buffer_a, gval) >> 12;
     else
-        g = 0;
+        m[0] = 0;
 
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
     block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(d, a, g, e, f, buffer_a, etable1[b],
+    add_wav(d, a, m, buffer_a, etable1[b],
             etable2[c], block);
 
     final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
