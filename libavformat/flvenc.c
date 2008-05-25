@@ -306,7 +306,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb, enc->extradata_size ? enc->extradata[0] : 0);
     put_buffer(pb, pkt->data, size);
     put_be32(pb,size+flags_size+11); // previous tag size
-    flv->duration = pkt->pts + pkt->duration;
+    flv->duration = FFMAX(flv->duration, pkt->pts + pkt->duration);
 
     put_flush_packet(pb);
     return 0;
