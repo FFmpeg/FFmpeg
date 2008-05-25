@@ -913,8 +913,8 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         }
 
         /* output data */
-        if(av_fifo_generic_read(&stream->fifo, payload_size - stuffing_size, &put_buffer, ctx->pb) < 0)
-            return -1;
+        assert(payload_size - stuffing_size <= av_fifo_size(&stream->fifo));
+        av_fifo_generic_read(&stream->fifo, payload_size - stuffing_size, &put_buffer, ctx->pb);
         stream->bytes_to_iframe -= payload_size - stuffing_size;
     }else{
         payload_size=
