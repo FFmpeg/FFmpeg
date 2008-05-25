@@ -23,7 +23,7 @@
 #define FFMPEG_RA144_H
 
 /* 14.4 data tables */
-static const signed short wavtable1[256][9] = {
+static const int16_t wavtable1[256][9] = {
     { 541,   956,   768, -1011,  -811,  -717,  -571,  -893,  -576},
     { 877,   581,   568,  -997,  -975,  -646,  -752,  -661,  -632},
     { 675,   787,   635,  -519,  -838,  -977,  -890,  -605,  -789},
@@ -1829,7 +1829,7 @@ static const int8_t etable2[128][40]={
     }
 };
 
-static const unsigned long ftable1[128]={
+static const uint32_t ftable1[128]={
     314527,  295599,  293848,  280320,  336779,  291703,  297354,  266749,
     325815,  305109,  310555,  294891,  349515,  300052,  313812,  278588,
     326231,  348357,  322076,  347246,  335655,  327567,  314037,  310198,
@@ -1848,7 +1848,7 @@ static const unsigned long ftable1[128]={
     266749,  297354,  291703,  336779,  280320,  293848,  295599,  314527
 };
 
-static const unsigned long ftable2[128]={
+static const uint32_t ftable2[128]={
     194793,  214093,  222075,  221325,  210734,  211641,  211270,  192855,
     198561,  223821,  229577,  234105,  209600,  214643,  211594,  196292,
     191722,  221201,  215984,  227369,  222035,  236618,  220978,  209746,
@@ -1867,7 +1867,7 @@ static const unsigned long ftable2[128]={
     192855,  211270,  211641,  210734,  221325,  222075,  214093,  194793
 };
 
-static const short decodeval[63]={
+static const int16_t decodeval[63]={
         0,     6,    16,    18,    20,    23,    25,    29,
        32,    36,    41,    46,    51,    57,    65,    73,
        81,    91,   103,   115,   129,   145,   163,   183,
@@ -1878,7 +1878,7 @@ static const short decodeval[63]={
      8192,  9191, 10313, 11571, 12983, 14567, 16345
 };
 
-static const short decodetable1[127]={
+static const int16_t decodetable1[127]={
     -4041, -4029, -4018, -4008, -3998, -3988, -3977, -3966,
     -3954, -3942, -3930, -3918, -3906, -3892, -3879, -3866,
     -3852, -3839, -3825, -3810, -3795, -3779, -3764, -3748,
@@ -1897,7 +1897,7 @@ static const short decodetable1[127]={
      3118,  3240,  3363,  3475,  3588,  3701,  3814
 };
 
-static const short decodetable2[63]={
+static const int16_t decodetable2[63]={
     -3091, -2739, -2386, -2129, -1871, -1648, -1425, -1223,
     -1021,  -835,  -649,  -483,  -316,  -168,   -20,   123,
       267,   406,   544,   677,   810,   937,  1065,  1185,
@@ -1908,7 +1908,7 @@ static const short decodetable2[63]={
      3789,  3829,  3870,  3908,  3947,  3983,  4020
 };
 
-static const short decodetable3[63]={
+static const int16_t decodetable3[63]={
     -3525, -3410, -3295, -3188, -3081, -2985, -2890, -2793,
     -2696, -2603, -2511, -2419, -2328, -2238, -2149, -2064,
     -1979, -1898, -1817, -1737, -1658, -1578, -1498, -1420,
@@ -1919,45 +1919,45 @@ static const short decodetable3[63]={
      1651,  1808,  1965,  2162,  2360,  2607,  2854
 };
 
-static const short decodetable4[31]={
+static const int16_t decodetable4[31]={
     -1845, -1451, -1057,  -790,  -522,  -300,   -77,   111,
       301,   474,   647,   811,   975,  1130,  1285,  1434,
      1582,  1727,  1873,  2018,  2163,  2308,  2452,  2594,
      2735,  2876,  3017,  3158,  3299,  3434,  3569
 };
 
-static const short decodetable5[31]={
+static const int16_t decodetable5[31]={
     -2691, -2439, -2187, -1987, -1788, -1611, -1435, -1276,
     -1118,  -977,  -837,  -704,  -571,  -444,  -316,  -188,
       -59,    71,   201,   336,   470,   614,   759,   918,
      1077,  1267,  1457,  1682,  1908,  2201,  2495
 };
 
-static const short decodetable6[15]={
+static const int16_t decodetable6[15]={
     -1372,  -923,  -474,  -170,   133,   383,   632,   866,
      1100,  1335,  1571,  1823,  2075,  2374,  2672
 };
 
-static const short decodetable7[15]={
+static const int16_t decodetable7[15]={
     -2389, -2088, -1787, -1509, -1231,  -974,  -717,  -478,
      -239,    -2,   234,   502,   770,  1122,  1474
 };
 
-static const short decodetable8[15]={
+static const int16_t decodetable8[15]={
     -1569, -1217,  -864,  -580,  -296,   -47,   200,   435,
       670,   911,  1151,  1430,  1709,  2047,  2385
 };
 
-static const short decodetable9[15]={
+static const int16_t decodetable9[15]={
     -2200, -1904, -1608, -1335, -1062,  -816,  -569,  -344,
      -120,   108,   338,   600,   863,  1242,  1621
 };
 
-static const short decodetable10[7]={
+static const int16_t decodetable10[7]={
      -617,  -213,   190,   496,   802,  1142,  1483
 };
 
-static const short *decodetable[10]={
+static const int16_t *decodetable[10]={
 decodetable1,decodetable2,decodetable3,decodetable4,decodetable5,
 decodetable6,decodetable7,decodetable8,decodetable9,decodetable10};
 

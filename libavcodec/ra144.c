@@ -124,7 +124,7 @@ static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
 {
     int a = 0;
     int b, c, i;
-    const short *ptr;
+    const int16_t *ptr;
     const uint8_t *ptr2;
 
     ptr  = wavtable1[n];
