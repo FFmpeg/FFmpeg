@@ -214,15 +214,13 @@ static void do_output_subblock(Real144_internal *glob,
     if (a) {
         a += HALFBLOCK - 1;
         rotate_block(glob->buffer_2, buffer_a, a);
+        m[0] = irms(buffer_a, gval) >> 12;
+    } else {
+        m[0] = 0;
     }
 
     m[1] = ((ftable1[b] >> 4) * gval) >> 8;
     m[2] = ((ftable2[c] >> 4) * gval) >> 8;
-
-    if (a)
-        m[0] = irms(buffer_a, gval) >> 12;
-    else
-        m[0] = 0;
 
     memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * 2);
