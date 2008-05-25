@@ -240,13 +240,13 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
 }
 
 static void dec1(Real144_internal *glob, const int *data, const int *inp,
-                 int n, int f, int block_idx)
+                 int f, int block_idx)
 {
     short *ptr,*end;
     signed   short  *decsp = glob->gbuf2[block_idx];
 
     glob->gbuf1[block_idx] = rms(data, f);
-    end = (ptr = decsp) + (n * 10);
+    end = (ptr = decsp) + 30;
 
     while (ptr < end)
         *(ptr++) = *(inp++);
@@ -296,7 +296,7 @@ static int eq(const short *in, int *target)
 }
 
 static void dec2(Real144_internal *glob, const int *data, const int *inp,
-                 int n, int f, const int *inp2, int l)
+                 int f, const int *inp2, int l)
 {
     unsigned const int *ptr1,*ptr2;
     int work[10];
@@ -316,13 +316,13 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     ptr1 = inp;
     ptr2 = inp2;
 
-    for (x=0; x<10*n; x++)
+    for (x=0; x<30; x++)
         *(sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
 
     result = eq(decsp, work);
 
     if (result == 1) {
-        dec1(glob, data, inp, n, f, l);
+        dec1(glob, data, inp, f, l);
     } else {
         glob->gbuf1[l] = rms(work, f);
     }
@@ -358,14 +358,14 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(val*glob->oldval) >> 12;
 
-    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, glob->oldval, glob->swapbuf2, 0);
+    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 0);
     if (glob->oldval < val) {
-        dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, a, glob->swapbuf2alt, 1);
+        dec2(glob, glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 1);
     } else {
-        dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, 3, a, glob->swapbuf2, 1);
+        dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 1);
     }
-    dec2(glob, glob->swapbuf1, glob->swapbuf2, 3, val, glob->swapbuf2alt, 2);
-    dec1(glob, glob->swapbuf1, glob->swapbuf2, 3, val, 3);
+    dec2(glob, glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 2);
+    dec1(glob, glob->swapbuf1, glob->swapbuf2, val, 3);
 
     /* do output */
     for (c=0; c<4; c++) {
