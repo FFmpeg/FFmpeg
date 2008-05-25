@@ -307,11 +307,10 @@ static int dec2(signed short *decsp, const int *data, const int *inp,
 
     result = eq(decsp, work);
 
-    if (result == 1) {
+    if (result == 1)
         return dec1(decsp, data, inp, f);
-    } else {
+    else
         return rms(work, f);
-    }
 }
 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
