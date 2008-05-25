@@ -1887,7 +1887,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     char buf[128];
     char input_filename[1024];
     AVFormatContext *s;
-    int buf_size, i;
+    int buf_size, i, ret;
     int64_t stream_pos;
 
     /* find file name */
@@ -1929,9 +1929,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
 #endif
 
     /* open stream */
-    if (av_open_input_file(&s, input_filename, c->stream->ifmt,
-                           buf_size, c->stream->ap_in) < 0) {
-        http_log("%s not found", input_filename);
+    if ((ret = av_open_input_file(&s, input_filename, c->stream->ifmt,
+                                  buf_size, c->stream->ap_in)) < 0) {
+        http_log("could not open %s: %d\n", input_filename, ret);
         return -1;
     }
     s->flags |= AVFMT_FLAG_GENPTS;
