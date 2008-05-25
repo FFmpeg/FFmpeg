@@ -18,9 +18,9 @@ echo "Waiting for feeds to startup..."
     WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
         if [ `expr $file : "a-*"` != 0 ]; then
-            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file
+            wget $WGET_OPTIONS -O - http://localhost:9999/$file > ff-$file
         else
-            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=20000 > ff-$file 2>/dev/null
+            wget $WGET_OPTIONS -O - http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=20000 > ff-$file 2>/dev/null
         fi
         MDFILES="$MDFILES ff-$file"
     done
