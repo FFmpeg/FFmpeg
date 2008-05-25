@@ -199,7 +199,9 @@ static unsigned int rms(const int *data, int f)
 }
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, const unsigned short  *gsp, unsigned int gval, signed short *output_buffer, GetBitContext *gb)
+static void do_output_subblock(Real144_internal *glob,
+                               const unsigned short  *gsp, unsigned int gval,
+                               signed short *output_buffer, GetBitContext *gb)
 {
     unsigned short int buffer_a[40];
     unsigned short int *block;
@@ -222,7 +224,9 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     else
         m[0] = 0;
 
-    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE, (BUFFERSIZE - BLOCKSIZE) * 2);
+    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE,
+            (BUFFERSIZE - BLOCKSIZE) * 2);
+
     block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
 
     add_wav(d, a, m, buffer_a, etable1[b], etable2[c], block);
@@ -230,8 +234,7 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
-static int dec1(signed short *decsp, const int *data, const int *inp,
-                 int f)
+static int dec1(signed short *decsp, const int *data, const int *inp, int f)
 {
     int i;
 
@@ -302,8 +305,8 @@ static int dec2(signed short *decsp, const int *data, const int *inp,
 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
 static int ra144_decode_frame(AVCodecContext * avctx,
-            void *vdata, int *data_size,
-            const uint8_t * buf, int buf_size)
+                              void *vdata, int *data_size,
+                              const uint8_t * buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int gbuf1[4];
