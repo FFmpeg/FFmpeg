@@ -38,7 +38,7 @@ typedef struct AVFifoBuffer {
  * @param size of FIFO
  * @return <0 for failure >=0 otherwise
  */
-int av_fifo_init(AVFifoBuffer *f, int size);
+int av_fifo_init(AVFifoBuffer *f, unsigned int size);
 
 /**
  * Frees an AVFifoBuffer.

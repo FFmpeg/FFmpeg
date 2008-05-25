@@ -1170,7 +1170,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->predecode_packet= pkt_desc;
     stream->next_packet= &pkt_desc->next;
 
-    av_fifo_realloc(&stream->fifo, av_fifo_size(&stream->fifo) + size + 1);
+    av_fifo_realloc(&stream->fifo, av_fifo_size(&stream->fifo) + size);
 
     if (s->is_dvd){
         if (is_iframe && (s->packet_number == 0 || (pts - stream->vobu_start_pts >= 36000))) { // min VOBU length 0.4 seconds (mpucoder)

@@ -22,8 +22,9 @@
 #include "common.h"
 #include "fifo.h"
 
-int av_fifo_init(AVFifoBuffer *f, int size)
+int av_fifo_init(AVFifoBuffer *f, unsigned int size)
 {
+    size= FFMAX(size, size+1);
     f->wptr = f->rptr =
     f->buffer = av_malloc(size);
     f->end = f->buffer + size;
@@ -56,7 +57,7 @@ int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
 void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
     unsigned int old_size= f->end - f->buffer;
 
-    if(old_size < new_size){
+    if(old_size <= new_size){
         int len= av_fifo_size(f);
         AVFifoBuffer f2;
 
