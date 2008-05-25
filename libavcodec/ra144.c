@@ -41,7 +41,7 @@ typedef struct {
     unsigned int    *swapbuf2alt;
 
     unsigned int buffer[5];
-    unsigned short int buffer_2[148];
+    uint16_t buffer_2[148];
 } Real144_internal;
 
 static int ra144_decode_init(AVCodecContext * avctx)
@@ -90,7 +90,7 @@ static void do_voice(const int *a1, int *a2)
 }
 
 /* rotate block */
-static void rotate_block(const short *source, short *target, int offset)
+static void rotate_block(const int16_t *source, int16_t *target, int offset)
 {
     int i=0, k=0;
     source += BUFFERSIZE - offset;
@@ -104,7 +104,7 @@ static void rotate_block(const short *source, short *target, int offset)
 }
 
 /* inverse root mean square */
-static int irms(const short *data, int factor)
+static int irms(const int16_t *data, int factor)
 {
     unsigned int i, sum = 0;
 
@@ -118,8 +118,8 @@ static int irms(const short *data, int factor)
 }
 
 /* multiply/add wavetable */
-static void add_wav(int n, int skip_first, int *m, const short *s1,
-                    const int8_t *s2, const int8_t *s3, short *dest)
+static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
+                    const int8_t *s2, const int8_t *s3, int16_t *dest)
 {
     int i;
     int v[3];
@@ -133,12 +133,12 @@ static void add_wav(int n, int skip_first, int *m, const short *s1,
 }
 
 
-static void final(const short *i1, const short *i2,
+static void final(const int16_t *i1, const int16_t *i2,
                   void *out, int *statbuf, int len)
 {
     int x, i;
-    unsigned short int work[50];
-    short *ptr = work;
+    uint16_t work[50];
+    int16_t *ptr = work;
 
     memcpy(work, statbuf,20);
     memcpy(work + 10, i2, len * 2);
@@ -200,11 +200,11 @@ static unsigned int rms(const int *data, int f)
 
 /* do quarter-block output */
 static void do_output_subblock(Real144_internal *glob,
-                               const unsigned short  *gsp, unsigned int gval,
-                               signed short *output_buffer, GetBitContext *gb)
+                               const uint16_t  *gsp, unsigned int gval,
+                               int16_t *output_buffer, GetBitContext *gb)
 {
-    unsigned short int buffer_a[40];
-    unsigned short int *block;
+    uint16_t buffer_a[40];
+    uint16_t *block;
     int a = get_bits(gb, 7);
     int d = get_bits(gb, 8);
     int b = get_bits(gb, 7);
@@ -234,7 +234,7 @@ static void do_output_subblock(Real144_internal *glob,
     final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
-static int dec1(signed short *decsp, const int *data, const int *inp, int f)
+static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
 {
     int i;
 
@@ -244,7 +244,7 @@ static int dec1(signed short *decsp, const int *data, const int *inp, int f)
     return rms(data, f);
 }
 
-static int eq(const short *in, int *target)
+static int eq(const int16_t *in, int *target)
 {
     int retval = 0;
     int b, c, i;
@@ -287,7 +287,7 @@ static int eq(const short *in, int *target)
     return retval;
 }
 
-static int dec2(signed short *decsp, const int *data, const int *inp,
+static int dec2(int16_t *decsp, const int *data, const int *inp,
                  int f, const int *inp2, int a)
 {
     int work[10];
@@ -310,7 +310,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int gbuf1[4];
-    unsigned short gbuf2[4][30];
+    uint16_t gbuf2[4][30];
     unsigned int a, c;
     int i;
     int16_t *data = vdata;
