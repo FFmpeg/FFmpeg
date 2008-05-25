@@ -324,12 +324,6 @@ static int ac3_parse_header(AC3DecodeContext *s)
     s->center_mix_level             = hdr.center_mix_level;
     s->surround_mix_level           = hdr.surround_mix_level;
 
-    /* set default output to all source channels */
-    s->out_channels = s->channels;
-    s->output_mode = s->channel_mode;
-    if(s->lfe_on)
-        s->output_mode |= AC3_OUTPUT_LFEON;
-
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(s->channel_mode);
     do {
@@ -1188,13 +1182,16 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         }
     }
 
-    /* if frame header is ok, set audio parameters */
-    if (err >= 0) {
+    /* if frame is ok, set audio parameters */
+    if (!err) {
         avctx->sample_rate = s->sample_rate;
         avctx->bit_rate = s->bit_rate;
 
         /* channel config */
         s->out_channels = s->channels;
+        s->output_mode = s->channel_mode;
+        if(s->lfe_on)
+            s->output_mode |= AC3_OUTPUT_LFEON;
         if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
                 avctx->request_channels < s->channels) {
             s->out_channels = avctx->request_channels;
@@ -1207,6 +1204,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
                 s->fbw_channels == s->out_channels)) {
             set_downmix_coeffs(s);
         }
+    } else if (!s->out_channels) {
+        s->out_channels = avctx->channels;
+        if(s->out_channels < s->channels)
+            s->output_mode  = s->out_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
 
     /* parse the audio blocks */
