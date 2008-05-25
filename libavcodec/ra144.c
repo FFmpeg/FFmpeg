@@ -290,17 +290,12 @@ static int eq(const short *in, int *target)
 static int dec2(signed short *decsp, const int *data, const int *inp,
                  int f, const int *inp2, int a)
 {
-    unsigned const int *ptr1,*ptr2;
     int work[10];
     int b = NBLOCKS - a;
     int x;
-    unsigned short *sptr  = decsp;
-
-    ptr1 = inp;
-    ptr2 = inp2;
 
     for (x=0; x<30; x++)
-        *(sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
+        decsp[x] = (a * inp[x] + b * inp2[x]) >> 2;
 
     if (eq(decsp, work))
         return dec1(decsp, data, inp, f);
