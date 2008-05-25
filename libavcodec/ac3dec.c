@@ -1190,23 +1190,23 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* if frame is ok, set audio parameters */
     if (!err) {
-    avctx->sample_rate = s->sample_rate;
-    avctx->bit_rate = s->bit_rate;
+        avctx->sample_rate = s->sample_rate;
+        avctx->bit_rate = s->bit_rate;
 
-    /* channel config */
-    s->out_channels = s->channels;
-    if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
-            avctx->request_channels < s->channels) {
-        s->out_channels = avctx->request_channels;
-        s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
-    }
-    avctx->channels = s->out_channels;
+        /* channel config */
+        s->out_channels = s->channels;
+        if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
+                avctx->request_channels < s->channels) {
+            s->out_channels = avctx->request_channels;
+            s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
+        }
+        avctx->channels = s->out_channels;
 
-    /* set downmixing coefficients if needed */
-    if(s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
-            s->fbw_channels == s->out_channels)) {
-        set_downmix_coeffs(s);
-    }
+        /* set downmixing coefficients if needed */
+        if(s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
+                s->fbw_channels == s->out_channels)) {
+            set_downmix_coeffs(s);
+        }
     }
 
     /* parse the audio blocks */
