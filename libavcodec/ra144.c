@@ -118,14 +118,14 @@ static int irms(const short *data, int factor)
 }
 
 /* multiply/add wavetable */
-static void add_wav(int n, int f, int *m, const short *s1,
+static void add_wav(int n, int skip_first, int *m, const short *s1,
                     const int8_t *s2, const int8_t *s3, short *dest)
 {
     int i;
     int v[3];
 
     v[0] = 0;
-    for (i=!f; i<3; i++)
+    for (i=!skip_first; i<3; i++)
         v[i] = (wavtable1[n][i] * m[i]) >> (wavtable2[n][i] + 1);
 
     for (i=0; i < BLOCKSIZE; i++)
