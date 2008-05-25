@@ -288,19 +288,14 @@ static int eq(const short *in, int *target)
 }
 
 static int dec2(signed short *decsp, const int *data, const int *inp,
-                 int f, const int *inp2, int l)
+                 int f, const int *inp2, int a)
 {
     unsigned const int *ptr1,*ptr2;
     int work[10];
-    int a,b;
+    int b;
     int x;
     int result;
     unsigned short *sptr  = decsp;
-
-    if(l + 1 < NBLOCKS / 2)
-        a = NBLOCKS - (l + 1);
-    else
-        a = l + 1;
 
     b = NBLOCKS - a;
 
@@ -351,13 +346,13 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(val*glob->oldval) >> 12;
 
-    gbuf1[0] = dec2(gbuf2[0], glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 0);
+    gbuf1[0] = dec2(gbuf2[0], glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 3);
     if (glob->oldval < val) {
-        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 1);
+        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 2);
     } else {
-        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 1);
+        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 2);
     }
-    gbuf1[2] = dec2(gbuf2[2], glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 2);
+    gbuf1[2] = dec2(gbuf2[2], glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 3);
     gbuf1[3] = dec1(gbuf2[3], glob->swapbuf1, glob->swapbuf2, val);
 
     /* do output */
