@@ -988,13 +988,15 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* coupling leak information */
-    if (s->cpl_in_use && get_bits1(gbc)) {
+    if (s->cpl_in_use) {
+        if (get_bits1(gbc)) {
         s->bit_alloc_params.cpl_fast_leak = get_bits(gbc, 3);
         s->bit_alloc_params.cpl_slow_leak = get_bits(gbc, 3);
         bit_alloc_stages[CPL_CH] = FFMAX(bit_alloc_stages[CPL_CH], 2);
     } else if (!blk) {
         av_log(s->avctx, AV_LOG_ERROR, "new coupling leak info must be present in block 0\n");
         return -1;
+    }
     }
 
     /* delta bit allocation information */
