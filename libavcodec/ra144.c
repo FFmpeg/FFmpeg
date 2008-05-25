@@ -120,11 +120,12 @@ static int irms(const short *data, int factor)
 
 /* multiply/add wavetable */
 static void add_wav(int n, int f, int m1, int m2, int m3, const short *s1,
-                    const short *s2, const short *s3, short *dest)
+                    const int8_t *s2, const int8_t *s3, short *dest)
 {
     int a = 0;
     int b, c, i;
-    const short *ptr, *ptr2;
+    const short *ptr;
+    const uint8_t *ptr2;
 
     ptr  = wavtable1[n];
     ptr2 = wavtable2[n];

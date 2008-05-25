@@ -282,7 +282,7 @@ static const signed short wavtable1[256][9] = {
     { 814,   744,   543,  -592,  -865,  -790,  -648,  -541,  -577}
 };
 
-static const unsigned short wavtable2[256][9] = {
+static const uint8_t wavtable2[256][9] = {
     {14, 14, 14, 20, 20, 19, 21, 20, 20},
     {14, 14, 14, 20, 20, 20, 20, 21, 21},
     {14, 13, 14, 18, 20, 19, 21, 18, 21},
@@ -541,7 +541,7 @@ static const unsigned short wavtable2[256][9] = {
     { 8, 11, 10, 10, 10, 13,  8, 14, 13}
 };
 
-static const signed short etable1[128][40]={
+static const int8_t etable1[128][40]={
     {
      38,  -4,  15,  -4,  14, -13,  12, -11,  -2,  -6,
      -6, -11, -45, -16, -11, -13,  -7,   6, -12,   4,
@@ -1185,7 +1185,7 @@ static const signed short etable1[128][40]={
     }
 };
 
-static const signed short etable2[128][40]={
+static const int8_t etable2[128][40]={
     {
      73, -32, -60, -15, -26,  59,   2, -33,  30, -10,
      -3, -17,   8,  30,  -1, -26,  -4, -22,  10,  16,
