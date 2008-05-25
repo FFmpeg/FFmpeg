@@ -294,7 +294,6 @@ static int dec2(signed short *decsp, const int *data, const int *inp,
     int work[10];
     int b = NBLOCKS - a;
     int x;
-    int result;
     unsigned short *sptr  = decsp;
 
     ptr1 = inp;
@@ -303,9 +302,7 @@ static int dec2(signed short *decsp, const int *data, const int *inp,
     for (x=0; x<30; x++)
         *(sptr++) = (a * (*ptr1++) + b * (*ptr2++)) >> 2;
 
-    result = eq(decsp, work);
-
-    if (result == 1)
+    if (eq(decsp, work))
         return dec1(decsp, data, inp, f);
     else
         return rms(work, f);
