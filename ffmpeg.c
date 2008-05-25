@@ -2234,7 +2234,7 @@ static int opt_me_threshold(const char *opt, const char *arg)
 
 static int opt_verbose(const char *opt, const char *arg)
 {
-    verbose = parse_number_or_die(opt, arg, OPT_INT64, AV_LOG_QUIET, AV_LOG_DEBUG);
+    verbose = parse_number_or_die(opt, arg, OPT_INT64, -10, 10);
     av_log_set_level(verbose);
     return 0;
 }
