@@ -853,6 +853,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
             for (ch = 1; ch <= fbw_channels; ch++)
                 s->channel_in_cpl[ch] = 0;
         }
+    } else if (!blk) {
+        av_log(s->avctx, AV_LOG_ERROR, "new coupling strategy must be present in block 0\n");
+        return -1;
     }
 
     /* coupling coordinates */
@@ -874,6 +877,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                             s->cpl_coords[ch][bnd] = (cpl_coord_mant + 16) << 21;
                         s->cpl_coords[ch][bnd] >>= (cpl_coord_exp + master_cpl_coord);
                     }
+                } else if (!blk) {
+                    av_log(s->avctx, AV_LOG_ERROR, "new coupling coordinates must be present in block 0\n");
+                    return -1;
                 }
             }
         }
@@ -893,6 +899,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                 s->num_rematrixing_bands -= 1 + (s->start_freq[CPL_CH] == 37);
             for(bnd=0; bnd<s->num_rematrixing_bands; bnd++)
                 s->rematrixing_flags[bnd] = get_bits1(gbc);
+        } else if (!blk) {
+            av_log(s->avctx, AV_LOG_ERROR, "new rematrixing strategy must be present in block 0\n");
+            return -1;
         }
     }
 
@@ -959,6 +968,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
         for(ch=!s->cpl_in_use; ch<=s->channels; ch++) {
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
         }
+    } else if (!blk) {
+        av_log(s->avctx, AV_LOG_ERROR, "new bit allocation info must be present in block 0\n");
+        return -1;
     }
 
     /* signal-to-noise ratio offsets and fast gains (signal-to-mask ratios) */
@@ -970,6 +982,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
             s->fast_gain[ch] = ff_ac3_fast_gain_tab[get_bits(gbc, 3)];
         }
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
+    } else if (!blk) {
+        av_log(s->avctx, AV_LOG_ERROR, "new snr offsets must be present in block 0\n");
+        return -1;
     }
 
     /* coupling leak information */
@@ -977,6 +992,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
         s->bit_alloc_params.cpl_fast_leak = get_bits(gbc, 3);
         s->bit_alloc_params.cpl_slow_leak = get_bits(gbc, 3);
         bit_alloc_stages[CPL_CH] = FFMAX(bit_alloc_stages[CPL_CH], 2);
+    } else if (!blk) {
+        av_log(s->avctx, AV_LOG_ERROR, "new coupling leak info must be present in block 0\n");
+        return -1;
     }
 
     /* delta bit allocation information */
