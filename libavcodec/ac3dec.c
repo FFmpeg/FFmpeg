@@ -818,6 +818,11 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
             /* coupling in use */
             int cpl_begin_freq, cpl_end_freq;
 
+            if (channel_mode < AC3_CHMODE_STEREO) {
+                av_log(s->avctx, AV_LOG_ERROR, "coupling not allowed in mono or dual-mono\n");
+                return -1;
+            }
+
             /* determine which channels are coupled */
             for (ch = 1; ch <= fbw_channels; ch++)
                 s->channel_in_cpl[ch] = get_bits1(gbc);
