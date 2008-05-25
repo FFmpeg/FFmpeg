@@ -32,7 +32,6 @@
 /* internal globals */
 typedef struct {
     unsigned int     oldval;
-    unsigned int     gbuf1[4];
     unsigned short   gbuf2[4][30];
 
     /* the swapped buffers */
@@ -239,17 +238,18 @@ static void do_output_subblock(Real144_internal *glob, const unsigned short  *gs
     final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
 }
 
-static void dec1(Real144_internal *glob, const int *data, const int *inp,
+static int dec1(Real144_internal *glob, const int *data, const int *inp,
                  int f, int block_idx)
 {
     short *ptr,*end;
     signed   short  *decsp = glob->gbuf2[block_idx];
 
-    glob->gbuf1[block_idx] = rms(data, f);
     end = (ptr = decsp) + 30;
 
     while (ptr < end)
         *(ptr++) = *(inp++);
+
+    return rms(data, f);
 }
 
 static int eq(const short *in, int *target)
@@ -295,7 +295,7 @@ static int eq(const short *in, int *target)
     return retval;
 }
 
-static void dec2(Real144_internal *glob, const int *data, const int *inp,
+static int dec2(Real144_internal *glob, const int *data, const int *inp,
                  int f, const int *inp2, int l)
 {
     unsigned const int *ptr1,*ptr2;
@@ -322,9 +322,9 @@ static void dec2(Real144_internal *glob, const int *data, const int *inp,
     result = eq(decsp, work);
 
     if (result == 1) {
-        dec1(glob, data, inp, f, l);
+        return dec1(glob, data, inp, f, l);
     } else {
-        glob->gbuf1[l] = rms(work, f);
+        return rms(work, f);
     }
 }
 
@@ -334,6 +334,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
             const uint8_t * buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
+    unsigned int gbuf1[4];
     unsigned int a, c;
     int i;
     int16_t *data = vdata;
@@ -358,18 +359,18 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(val*glob->oldval) >> 12;
 
-    dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 0);
+    gbuf1[0] = dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 0);
     if (glob->oldval < val) {
-        dec2(glob, glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 1);
+        gbuf1[1] = dec2(glob, glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 1);
     } else {
-        dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 1);
+        gbuf1[1] = dec2(glob, glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 1);
     }
-    dec2(glob, glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 2);
-    dec1(glob, glob->swapbuf1, glob->swapbuf2, val, 3);
+    gbuf1[2] = dec2(glob, glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 2);
+    gbuf1[3] = dec1(glob, glob->swapbuf1, glob->swapbuf2, val, 3);
 
     /* do output */
     for (c=0; c<4; c++) {
-        do_output_subblock(glob, glob->gbuf2[c], glob->gbuf1[c], data, &gb);
+        do_output_subblock(glob, glob->gbuf2[c], gbuf1[c], data, &gb);
 
         for (i=0; i<BLOCKSIZE; i++) {
             *data = av_clip_int16(*data << 2);
