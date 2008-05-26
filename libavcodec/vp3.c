@@ -269,7 +269,7 @@ typedef struct Vp3DecodeContext {
     uint8_t qr_size [2][3][64];
     uint16_t qr_base[2][3][64];
 
-    /* this is a list of indices into the all_fragments array indicating
+    /* this is a list of indexes into the all_fragments array indicating
      * which of the fragments are coded */
     int *coded_fragment_list;
     int coded_fragment_list_index;
@@ -291,19 +291,19 @@ typedef struct Vp3DecodeContext {
     DECLARE_ALIGNED_16(int16_t, qmat[2][4][64]);        //<qmat[is_inter][plane]
 
     /* This table contains superblock_count * 16 entries. Each set of 16
-     * numbers corresponds to the fragment indices 0..15 of the superblock.
+     * numbers corresponds to the fragment indexes 0..15 of the superblock.
      * An entry will be -1 to indicate that no entry corresponds to that
      * index. */
     int *superblock_fragments;
 
     /* This table contains superblock_count * 4 entries. Each set of 4
-     * numbers corresponds to the macroblock indices 0..3 of the superblock.
+     * numbers corresponds to the macroblock indexes 0..3 of the superblock.
      * An entry will be -1 to indicate that no entry corresponds to that
      * index. */
     int *superblock_macroblocks;
 
     /* This table contains macroblock_count * 6 entries. Each set of 6
-     * numbers corresponds to the fragment indices 0..5 which comprise
+     * numbers corresponds to the fragment indexes 0..5 which comprise
      * the macroblock (4 Y fragments and 2 C fragments). */
     int *macroblock_fragments;
     /* This is an array that indicates how a particular macroblock
@@ -1223,7 +1223,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     int ac_c_table;
     int residual_eob_run = 0;
 
-    /* fetch the DC table indices */
+    /* fetch the DC table indexes */
     dc_y_table = get_bits(gb, 4);
     dc_c_table = get_bits(gb, 4);
 
@@ -1239,7 +1239,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
 
-    /* fetch the AC table indices */
+    /* fetch the AC table indexes */
     ac_y_table = get_bits(gb, 4);
     ac_c_table = get_bits(gb, 4);
 
@@ -1331,7 +1331,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     /* DC values for the left, up-left, up, and up-right fragments */
     int vl, vul, vu, vur;
 
-    /* indices for the left, up-left, up, and up-right fragments */
+    /* indexes for the left, up-left, up, and up-right fragments */
     int l, ul, u, ur;
 
     /*

@@ -446,7 +446,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
             last_color = first_color + AV_RL16(&scratch[2]) - 1;
             /* sanity check (since they are 16 bit values) */
             if ((first_color > 0xFF) || (last_color > 0xFF)) {
-                debug_ipmovie("demux_ipmovie: set_palette indices out of range (%d -> %d)\n",
+                debug_ipmovie("demux_ipmovie: set_palette indexes out of range (%d -> %d)\n",
                     first_color, last_color);
                 chunk_type = CHUNK_BAD;
                 break;

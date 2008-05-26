@@ -1431,7 +1431,7 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
     if (q->sub_packet_list_B[0].packet == NULL)
         return;
 
-    /* reset minimum indices for FFT coefficients */
+    /* reset minimum indexes for FFT coefficients */
     q->fft_coefs_index = 0;
     for (i=0; i < 5; i++)
         q->fft_coefs_min_index[i] = -1;
@@ -1481,7 +1481,7 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
         }
     } // Loop on B packets
 
-    /* calculate maximum indices for FFT coefficients */
+    /* calculate maximum indexes for FFT coefficients */
     for (i = 0, j = -1; i < 5; i++)
         if (q->fft_coefs_min_index[i] >= 0) {
             if (j >= 0)

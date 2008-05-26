@@ -79,7 +79,7 @@ static void qtrle_decode_4bpp(QtrleContext *s)
     int rle_code;
     int row_ptr, pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi1, pi2, pi3, pi4, pi5, pi6, pi7, pi8;  /* 8 palette indices */
+    unsigned char pi1, pi2, pi3, pi4, pi5, pi6, pi7, pi8;  /* 8 palette indexes */
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
@@ -122,7 +122,7 @@ static void qtrle_decode_4bpp(QtrleContext *s)
                 /* decode the run length code */
                 rle_code = -rle_code;
                 /* get the next 4 bytes from the stream, treat them as palette
-                 * indices, and output them rle_code times */
+                 * indexes, and output them rle_code times */
                 CHECK_STREAM_PTR(4);
                 pi1 = ((s->buf[stream_ptr]) >> 4) & 0x0f;
                 pi2 = (s->buf[stream_ptr++]) & 0x0f;
@@ -170,7 +170,7 @@ static void qtrle_decode_8bpp(QtrleContext *s)
     int rle_code;
     int row_ptr, pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indices */
+    unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indexes */
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
@@ -213,7 +213,7 @@ static void qtrle_decode_8bpp(QtrleContext *s)
                 /* decode the run length code */
                 rle_code = -rle_code;
                 /* get the next 4 bytes from the stream, treat them as palette
-                 * indices, and output them rle_code times */
+                 * indexes, and output them rle_code times */
                 CHECK_STREAM_PTR(4);
                 pi1 = s->buf[stream_ptr++];
                 pi2 = s->buf[stream_ptr++];

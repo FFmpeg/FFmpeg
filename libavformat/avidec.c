@@ -996,7 +996,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
     if (ENABLE_DV_DEMUXER && avi->dv_demux) {
         /* One and only one real stream for DV in AVI, and it has video  */
-        /* offsets. Calling with other stream indices should have failed */
+        /* offsets. Calling with other stream indexes should have failed */
         /* the av_index_search_timestamp call above.                     */
         assert(stream_index == 0);
 

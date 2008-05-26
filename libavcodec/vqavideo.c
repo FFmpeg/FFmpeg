@@ -54,7 +54,7 @@
  * file. This is an interesting technique, although it makes random file
  * seeking difficult despite the fact that the frames are all intracoded.
  *
- * V1,2 VQA uses 12-bit codebook indices. If the 12-bit indices were
+ * V1,2 VQA uses 12-bit codebook indexes. If the 12-bit indexes were
  * packed into bytes and then RLE compressed, bytewise, the results would
  * be poor. That is why the coding method divides each index into 2 parts,
  * the top 4 bits and the bottom 8 bits, then RL encodes the 4-bit pieces

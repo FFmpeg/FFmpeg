@@ -3017,7 +3017,7 @@ static int vc1_decode_p_mb(VC1Context *v)
       offset_table[6] = { 0, 1, 3, 7, 15, 31 };
     int mb_has_coeffs = 1; /* last_flag */
     int dmv_x, dmv_y; /* Differential MV components */
-    int index, index1; /* LUT indices */
+    int index, index1; /* LUT indexes */
     int val, sign; /* temp values */
     int first_block = 1;
     int dst_idx, off;
@@ -3246,7 +3246,7 @@ static void vc1_decode_b_mb(VC1Context *v)
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
       offset_table[6] = { 0, 1, 3, 7, 15, 31 };
     int mb_has_coeffs = 0; /* last_flag */
-    int index, index1; /* LUT indices */
+    int index, index1; /* LUT indexes */
     int val, sign; /* temp values */
     int first_block = 1;
     int dst_idx, off;

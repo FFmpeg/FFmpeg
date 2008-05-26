@@ -6505,7 +6505,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     int dir;
     /* FIXME: A given frame may occupy more than one position in
      * the reference list. So ref2frm should be populated with
-     * frame numbers, not indices. */
+     * frame numbers, not indexes. */
     static const int ref2frm[34] = {-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
                                     16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
 

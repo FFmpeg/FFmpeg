@@ -421,7 +421,7 @@ struct AVFilterContext
 
 /**
  * A link between two filters.  This contains pointers to the source and
- * destination filters between which this link exists, and the indices of
+ * destination filters between which this link exists, and the indexes of
  * the pads involved.  In addition, this link also contains the parameters
  * which have been negotiated and agreed upon between the filter, such as
  * image dimensions, format, etc

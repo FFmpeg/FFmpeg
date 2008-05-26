@@ -47,7 +47,7 @@ typedef struct DNXHDEncContext {
     AVFrame frame;
     int cid;
     const CIDEntry *cid_table;
-    uint8_t *msip; ///< Macroblock Scan Indices Payload
+    uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
 
     struct DNXHDEncContext *thread[MAX_THREADS];

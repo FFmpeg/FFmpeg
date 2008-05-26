@@ -140,7 +140,7 @@ struct nsv_pcm_header {
 #define TB_NSVF MKBETAG('N', 'S', 'V', 'f')
 #define TB_NSVS MKBETAG('N', 'S', 'V', 's')
 
-/* hardcoded stream indices */
+/* hardcoded stream indexes */
 #define NSV_ST_VIDEO 0
 #define NSV_ST_AUDIO 1
 #define NSV_ST_SUBT 2

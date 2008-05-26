@@ -408,7 +408,7 @@ static int rm_write_trailer(AVFormatContext *s)
         put_be16(pb, 0);
 
         for(i=0;i<s->nb_streams;i++) {
-            put_be32(pb, 0); /* zero indices */
+            put_be32(pb, 0); /* zero indexes */
             put_be16(pb, i); /* stream number */
             put_be32(pb, 0); /* next index */
         }

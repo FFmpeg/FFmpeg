@@ -42,7 +42,7 @@
 #define RLV3_TAG MKBETAG('R', 'L', 'V', '3')
 
 typedef struct Rl2DemuxContext {
-    unsigned int index_pos[2];   ///< indices in the sample tables
+    unsigned int index_pos[2];   ///< indexes in the sample tables
 } Rl2DemuxContext;
 
 
