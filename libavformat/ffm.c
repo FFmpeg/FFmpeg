@@ -296,11 +296,8 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     int len;
 
     len = ffm->packet_end - ffm->packet_ptr;
-    if (!ffm_nopts) {
-        /* XXX: I don't understand this test, so I disabled it for testing */
-        if (size <= len)
-            return 1;
-    }
+    if (size <= len)
+        return 1;
     pos = url_ftell(s->pb);
     if (pos == ffm->write_index) {
         /* exactly at the end of stream */
