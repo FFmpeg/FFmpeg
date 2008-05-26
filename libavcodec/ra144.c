@@ -46,12 +46,12 @@ typedef struct {
 
 static int ra144_decode_init(AVCodecContext * avctx)
 {
-    RA144Context *glob = avctx->priv_data;
+    RA144Context *ractx = avctx->priv_data;
 
-    glob->swapbuf1    = glob->swapbuffers[0];
-    glob->swapbuf2    = glob->swapbuffers[1];
-    glob->swapbuf1alt = glob->swapbuffers[2];
-    glob->swapbuf2alt = glob->swapbuffers[3];
+    ractx->swapbuf1    = ractx->swapbuffers[0];
+    ractx->swapbuf2    = ractx->swapbuffers[1];
+    ractx->swapbuf1alt = ractx->swapbuffers[2];
+    ractx->swapbuf2alt = ractx->swapbuffers[3];
 
     return 0;
 }
@@ -199,7 +199,7 @@ static unsigned int rms(const int *data, int f)
 }
 
 /* do quarter-block output */
-static void do_output_subblock(RA144Context *glob,
+static void do_output_subblock(RA144Context *ractx,
                                const uint16_t  *gsp, unsigned int gval,
                                int16_t *output_buffer, GetBitContext *gb)
 {
@@ -213,7 +213,7 @@ static void do_output_subblock(RA144Context *glob,
 
     if (a) {
         a += HALFBLOCK - 1;
-        rotate_block(glob->buffer_2, buffer_a, a);
+        rotate_block(ractx->buffer_2, buffer_a, a);
         m[0] = irms(buffer_a, gval) >> 12;
     } else {
         m[0] = 0;
@@ -222,14 +222,14 @@ static void do_output_subblock(RA144Context *glob,
     m[1] = ((ftable1[b] >> 4) * gval) >> 8;
     m[2] = ((ftable2[c] >> 4) * gval) >> 8;
 
-    memmove(glob->buffer_2, glob->buffer_2 + BLOCKSIZE,
+    memmove(ractx->buffer_2, ractx->buffer_2 + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * 2);
 
-    block = glob->buffer_2 + BUFFERSIZE - BLOCKSIZE;
+    block = ractx->buffer_2 + BUFFERSIZE - BLOCKSIZE;
 
     add_wav(d, a, m, buffer_a, etable1[b], etable2[c], block);
 
-    final(gsp, block, output_buffer, glob->buffer, BLOCKSIZE);
+    final(gsp, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
 static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
@@ -314,7 +314,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     int16_t *data = vdata;
     unsigned int val;
 
-    RA144Context *glob = avctx->priv_data;
+    RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
     if(buf_size < 20) {
@@ -326,25 +326,25 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     for (i=0; i<10; i++)
         // "<< 1"? Doesn't this make one value out of two of the table useless?
-        glob->swapbuf1[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
+        ractx->swapbuf1[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
 
-    do_voice(glob->swapbuf1, glob->swapbuf2);
+    do_voice(ractx->swapbuf1, ractx->swapbuf2);
 
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
-    a = t_sqrt(val*glob->oldval) >> 12;
+    a = t_sqrt(val*ractx->oldval) >> 12;
 
-    gbuf1[0] = dec2(gbuf2[0], glob->swapbuf1alt, glob->swapbuf2alt, glob->oldval, glob->swapbuf2, 3);
-    if (glob->oldval < val) {
-        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1, glob->swapbuf2, a, glob->swapbuf2alt, 2);
+    gbuf1[0] = dec2(gbuf2[0], ractx->swapbuf1alt, ractx->swapbuf2alt, ractx->oldval, ractx->swapbuf2, 3);
+    if (ractx->oldval < val) {
+        gbuf1[1] = dec2(gbuf2[1], ractx->swapbuf1, ractx->swapbuf2, a, ractx->swapbuf2alt, 2);
     } else {
-        gbuf1[1] = dec2(gbuf2[1], glob->swapbuf1alt, glob->swapbuf2alt, a, glob->swapbuf2, 2);
+        gbuf1[1] = dec2(gbuf2[1], ractx->swapbuf1alt, ractx->swapbuf2alt, a, ractx->swapbuf2, 2);
     }
-    gbuf1[2] = dec2(gbuf2[2], glob->swapbuf1, glob->swapbuf2, val, glob->swapbuf2alt, 3);
-    gbuf1[3] = dec1(gbuf2[3], glob->swapbuf1, glob->swapbuf2, val);
+    gbuf1[2] = dec2(gbuf2[2], ractx->swapbuf1, ractx->swapbuf2, val, ractx->swapbuf2alt, 3);
+    gbuf1[3] = dec1(gbuf2[3], ractx->swapbuf1, ractx->swapbuf2, val);
 
     /* do output */
     for (c=0; c<4; c++) {
-        do_output_subblock(glob, gbuf2[c], gbuf1[c], data, &gb);
+        do_output_subblock(ractx, gbuf2[c], gbuf1[c], data, &gb);
 
         for (i=0; i<BLOCKSIZE; i++) {
             *data = av_clip_int16(*data << 2);
@@ -352,10 +352,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         }
     }
 
-    glob->oldval = val;
+    ractx->oldval = val;
 
-    FFSWAP(unsigned int *, glob->swapbuf1alt, glob->swapbuf1);
-    FFSWAP(unsigned int *, glob->swapbuf2alt, glob->swapbuf2);
+    FFSWAP(unsigned int *, ractx->swapbuf1alt, ractx->swapbuf1);
+    FFSWAP(unsigned int *, ractx->swapbuf2alt, ractx->swapbuf2);
 
     *data_size = 2*160;
     return 20;
