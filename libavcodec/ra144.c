@@ -41,7 +41,7 @@ typedef struct {
     unsigned int    *swapbuf2alt;
 
     unsigned int buffer[5];
-    uint16_t buffer_2[148];
+    uint16_t adapt_cb[148];  //< Adaptative codebook
 } RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
@@ -213,7 +213,7 @@ static void do_output_subblock(RA144Context *ractx,
 
     if (a) {
         a += HALFBLOCK - 1;
-        rotate_block(ractx->buffer_2, buffer_a, a);
+        rotate_block(ractx->adapt_cb, buffer_a, a);
         m[0] = irms(buffer_a, gval) >> 12;
     } else {
         m[0] = 0;
@@ -222,10 +222,10 @@ static void do_output_subblock(RA144Context *ractx,
     m[1] = ((ftable1[b] >> 4) * gval) >> 8;
     m[2] = ((ftable2[c] >> 4) * gval) >> 8;
 
-    memmove(ractx->buffer_2, ractx->buffer_2 + BLOCKSIZE,
+    memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * 2);
 
-    block = ractx->buffer_2 + BUFFERSIZE - BLOCKSIZE;
+    block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
     add_wav(d, a, m, buffer_a, etable1[b], etable2[c], block);
 
