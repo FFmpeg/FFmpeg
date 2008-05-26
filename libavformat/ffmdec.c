@@ -109,6 +109,23 @@ static int ffm_read_data(AVFormatContext *s,
 
 //#define DEBUG_SEEK
 
+/* pos is between 0 and file_size - FFM_PACKET_SIZE. It is translated
+   by the write position inside this function */
+static void ffm_seek1(AVFormatContext *s, offset_t pos1)
+{
+    FFMContext *ffm = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    offset_t pos;
+
+    pos = pos1 + ffm->write_index;
+    if (pos >= ffm->file_size)
+        pos -= (ffm->file_size - FFM_PACKET_SIZE);
+#ifdef DEBUG_SEEK
+    printf("seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
+#endif
+    url_fseek(pb, pos, SEEK_SET);
+}
+
 static int64_t get_pts(AVFormatContext *s, offset_t pos)
 {
     ByteIOContext *pb = s->pb;
@@ -368,23 +385,6 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         break;
     }
     return 0;
-}
-
-/* pos is between 0 and file_size - FFM_PACKET_SIZE. It is translated
-   by the write position inside this function */
-static void ffm_seek1(AVFormatContext *s, offset_t pos1)
-{
-    FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = s->pb;
-    offset_t pos;
-
-    pos = pos1 + ffm->write_index;
-    if (pos >= ffm->file_size)
-        pos -= (ffm->file_size - FFM_PACKET_SIZE);
-#ifdef DEBUG_SEEK
-    printf("seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
-#endif
-    url_fseek(pb, pos, SEEK_SET);
 }
 
 /* seek to a given time in the file. The file read pointer is
