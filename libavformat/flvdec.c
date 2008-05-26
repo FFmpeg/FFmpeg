@@ -51,6 +51,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
             break;
         case FLV_CODECID_PCM_LE:
             acodec->codec_id = acodec->bits_per_sample == 8 ? CODEC_ID_PCM_S8 : CODEC_ID_PCM_S16LE; break;
+        case FLV_CODECID_AAC  : acodec->codec_id = CODEC_ID_AAC;                                    break;
         case FLV_CODECID_ADPCM: acodec->codec_id = CODEC_ID_ADPCM_SWF;                              break;
         case FLV_CODECID_MP3  : acodec->codec_id = CODEC_ID_MP3      ; astream->need_parsing = AVSTREAM_PARSE_FULL; break;
         case FLV_CODECID_NELLYMOSER_8HZ_MONO:
@@ -79,6 +80,9 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
             }
             vcodec->extradata[0] = get_byte(s->pb);
             return 1; // 1 byte body size adjustment for flv_read_packet()
+        case FLV_CODECID_H264:
+            vcodec->codec_id = CODEC_ID_H264;
+            return 3; // not 4, reading packet type will consume one byte
         default:
             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
             vcodec->codec_tag = flv_codecid;
@@ -278,12 +282,24 @@ static int flv_read_header(AVFormatContext *s,
     return 0;
 }
 
+static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
+{
+    av_free(st->codec->extradata);
+    st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
+    st->codec->extradata_size = size;
+    get_buffer(s->pb, st->codec->extradata, st->codec->extradata_size);
+    return 0;
+}
+
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, type, size, flags, is_audio, next, pos;
     unsigned dts;
     AVStream *st = NULL;
 
+ retry:
  for(;;){
     pos = url_ftell(s->pb);
     url_fskip(s->pb, 4); /* size of previous packet */
@@ -367,6 +383,22 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }else{
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK);
+    }
+
+    if (st->codec->codec_id == CODEC_ID_AAC ||
+        st->codec->codec_id == CODEC_ID_H264) {
+        int type = get_byte(s->pb);
+        size--;
+        if (st->codec->codec_id == CODEC_ID_H264) {
+            // cts offset ignored because it might to be signed
+            // and would cause pts < dts
+            get_be24(s->pb);
+        }
+        if (type == 0) {
+            if ((ret = flv_get_extradata(s, st, size - 1)) < 0)
+                return ret;
+            goto retry;
+        }
     }
 
     ret= av_get_packet(s->pb, pkt, size - 1);
