@@ -208,29 +208,30 @@ static void do_output_subblock(RA144Context *ractx,
 {
     uint16_t buffer_a[40];
     uint16_t *block;
-    int a = get_bits(gb, 7);
-    int d = get_bits(gb, 8);
-    int b = get_bits(gb, 7);
-    int c = get_bits(gb, 7);
+    int cba_idx = get_bits(gb, 7); // Index of the adaptative CB. 0 if none.
+    int gain    = get_bits(gb, 8);
+    int cb1_idx = get_bits(gb, 7);
+    int cb2_idx = get_bits(gb, 7);
     int m[3];
 
-    if (a) {
-        a += HALFBLOCK - 1;
-        rotate_block(ractx->adapt_cb, buffer_a, a);
+    if (cba_idx) {
+        cba_idx += HALFBLOCK - 1;
+        rotate_block(ractx->adapt_cb, buffer_a, cba_idx);
         m[0] = irms(buffer_a, gval) >> 12;
     } else {
         m[0] = 0;
     }
 
-    m[1] = ((ftable1[b] >> 4) * gval) >> 8;
-    m[2] = ((ftable2[c] >> 4) * gval) >> 8;
+    m[1] = ((ftable1[cb1_idx] >> 4) * gval) >> 8;
+    m[2] = ((ftable2[cb2_idx] >> 4) * gval) >> 8;
 
     memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * 2);
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(d, a, m, buffer_a, etable1[b], etable2[c], block);
+    add_wav(gain, cba_idx, m, buffer_a, etable1[cb1_idx], etable2[cb2_idx],
+            block);
 
     final(gsp, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
