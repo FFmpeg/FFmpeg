@@ -89,6 +89,8 @@ static int ffm_read_data(AVFormatContext *s,
     while (size > 0) {
     redo:
         len = ffm->packet_end - ffm->packet_ptr;
+        if (len < 0)
+            return -1;
         if (len > size)
             len = size;
         if (len == 0) {
