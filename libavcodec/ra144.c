@@ -42,11 +42,11 @@ typedef struct {
 
     unsigned int buffer[5];
     uint16_t buffer_2[148];
-} Real144_internal;
+} RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
 {
-    Real144_internal *glob = avctx->priv_data;
+    RA144Context *glob = avctx->priv_data;
 
     glob->swapbuf1    = glob->swapbuffers[0];
     glob->swapbuf2    = glob->swapbuffers[1];
@@ -199,7 +199,7 @@ static unsigned int rms(const int *data, int f)
 }
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob,
+static void do_output_subblock(RA144Context *glob,
                                const uint16_t  *gsp, unsigned int gval,
                                int16_t *output_buffer, GetBitContext *gb)
 {
@@ -314,7 +314,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     int16_t *data = vdata;
     unsigned int val;
 
-    Real144_internal *glob = avctx->priv_data;
+    RA144Context *glob = avctx->priv_data;
     GetBitContext gb;
 
     if(buf_size < 20) {
@@ -367,7 +367,7 @@ AVCodec ra_144_decoder =
     "real_144",
     CODEC_TYPE_AUDIO,
     CODEC_ID_RA_144,
-    sizeof(Real144_internal),
+    sizeof(RA144Context),
     ra144_decode_init,
     NULL,
     NULL,
