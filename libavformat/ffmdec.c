@@ -107,6 +107,8 @@ static int ffm_read_data(AVFormatContext *s,
     return size1 - size;
 }
 
+//#define DEBUG_SEEK
+
 static int64_t get_pts(AVFormatContext *s, offset_t pos)
 {
     ByteIOContext *pb = s->pb;
@@ -367,8 +369,6 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     return 0;
 }
-
-//#define DEBUG_SEEK
 
 /* pos is between 0 and file_size - FFM_PACKET_SIZE. It is translated
    by the write position inside this function */
