@@ -32,9 +32,6 @@ CFLAGS = -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 %.d: %.cpp
 	$(DEPEND_CMD) > $@
 
-%.rco: %.rc
-	windres -I$(BUILD_ROOT) $< $@
-
 %$(EXESUF): %.c
 
 install: install-libs install-headers
@@ -69,9 +66,9 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES = *.o *~ *.ho *.rco
+CLEANSUFFIXES = *.o *~ *.ho
 LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
-DISTCLEANSUFFIXES = *.d *.rc
+DISTCLEANSUFFIXES = *.d
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o

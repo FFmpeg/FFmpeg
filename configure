@@ -1084,7 +1084,6 @@ TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
 TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPRC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.rc"
 TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
@@ -1237,15 +1236,12 @@ case $target_os in
             VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
         fi
         disable ffserver
-        enabled shared && enable dllinfo
         SLIBPREF=""
         SLIBSUF=".dll"
         EXESUF=".exe"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_EXTRA_CMD='-lib /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)'
-        SLIB_EXTRA_OBJS="dllinfo.rco"
-        SLIB_EXTRA_DEP='$(SUBDIR)../version.h'
         SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"; \
             install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
@@ -2073,8 +2069,6 @@ if enabled shared; then
     echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak
     echo "SLIB_CREATE_DEF_CMD=${SLIB_CREATE_DEF_CMD}" >> config.mak
     echo "SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}" >> config.mak
-    echo "SLIB_EXTRA_OBJS=${SLIB_EXTRA_OBJS}" >> config.mak
-    echo "SLIB_EXTRA_DEP=${SLIB_EXTRA_DEP}" >> config.mak
     echo "SLIB_INSTALL_EXTRA_CMD=${SLIB_INSTALL_EXTRA_CMD}" >> config.mak
     echo "SLIB_UNINSTALL_EXTRA_CMD=${SLIB_UNINSTALL_EXTRA_CMD}" >> config.mak
 fi
@@ -2220,70 +2214,4 @@ if enabled swscale; then
 else
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
     apply libswscale.pc sed s/^Libs:.*$/Libs:/
-fi
-
-# build dll configuration for windows.
-
-dllinfo_generate() {
-    name=$1
-    description=$2
-    version=$3
-    major=${version%%.*}
-    version_commas=`echo $version | tr . ,`,0
-    dllname=`echo $name | sed s/lib//`
-
-    license_str="This FFmpeg build is distributed under the terms of the GNU $license.\r\n"
-    test "$license" = "unredistributable" &&
-        license_str="This FFmpeg build may not be distributed publicly.\r\n"
-
-    cat <<EOF >$TMPRC
-#include <WinVer.h>
-#include "version.h"
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION $version_commas
- PRODUCTVERSION $version_commas
- FILEFLAGSMASK 0x17L
- FILEFLAGS 0x0L
- FILEOS VOS__WINDOWS32
- FILETYPE VFT_DLL
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "Comments",            "$license_str"
-                                         "Source code is available at http://ffmpeg.org"
-            VALUE "CompanyName",         "FFmpeg"
-            VALUE "FileDescription",     "$description"
-            VALUE "FileVersion",         "$version"
-            VALUE "InternalName",        "$name"
-            VALUE "LegalCopyright",      "(C) 2000-2008 Fabrice Bellard, et al."
-            VALUE "LegalTrademarks",     "FFmpeg"
-            VALUE "OriginalFilename",    "$dllname-$major.dll"
-            VALUE "ProductName",         "$name"
-            VALUE "ProductVersion",      FFMPEG_VERSION
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
-EOF
-
-    if ! cmp -s $TMPRC $name/dllinfo.rc; then
-        mv -f $TMPRC $name/dllinfo.rc
-    fi
-    rm -f $TMPRC
-}
-
-if test "$dllinfo" = "yes"; then
-    dllinfo_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
-    dllinfo_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION"
-    dllinfo_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION"
-    dllinfo_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION"
-    dllinfo_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION"
-    dllinfo_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
-    dllinfo_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION"
 fi
