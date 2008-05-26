@@ -199,11 +199,11 @@ ffserver [options]
 @item -version
 Show version.
 @item -L
-Print the license.
+Show license.
 @item -formats
 Show available formats, codecs, protocols, ...
 @item -h
-Print the help.
+Show help.
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @end table
