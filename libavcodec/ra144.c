@@ -56,7 +56,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-/* lookup square roots in table */
+/**
+ * Evaluate sqrt(x << 24). x must fit in 20 bits. This value is evaluated in a
+ * odd way to make the output identical to the binary decoder.
+ */
 static int t_sqrt(unsigned int x)
 {
     int s = 0;
