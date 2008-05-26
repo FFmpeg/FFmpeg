@@ -148,4 +148,4 @@ void ff_acelp_weighted_vector_sum(
         int shift,
         int length);
 
-#endif // FFMPEG_ACELP_VECTORS_H
+#endif /* FFMPEG_ACELP_VECTORS_H */
