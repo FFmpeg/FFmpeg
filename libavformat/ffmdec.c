@@ -370,12 +370,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             FRAME_HEADER_SIZE)
             return AVERROR(EAGAIN);
 #if 0
-        {
-            int i;
-            for(i=0;i<FRAME_HEADER_SIZE;i++)
-                printf("%02x ", ffm->header[i]);
-            printf("\n");
-        }
+        av_hexdump_log(s, AV_LOG_DEBUG, ffm->header, FRAME_HEADER_SIZE);
 #endif
         ffm->read_state = READ_DATA;
         /* fall thru */
