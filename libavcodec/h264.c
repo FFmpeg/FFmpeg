@@ -4233,7 +4233,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->emu_edge_height= (FRAME_MBAFF || FIELD_PICTURE) ? 0 : h->emu_edge_width;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%u frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%u frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s %s\n",
                h->slice_num,
                (s->picture_structure==PICT_FRAME ? "F" : s->picture_structure==PICT_TOP_FIELD ? "T" : "B"),
                first_mb_in_slice,
@@ -4244,7 +4244,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                s->qscale,
                h->deblocking_filter, h->slice_alpha_c0_offset/2, h->slice_beta_offset/2,
                h->use_weight,
-               h->use_weight==1 && h->use_weight_chroma ? "c" : ""
+               h->use_weight==1 && h->use_weight_chroma ? "c" : "",
+               h->slice_type == FF_B_TYPE ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : ""
                );
     }
 
