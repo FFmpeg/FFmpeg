@@ -106,7 +106,7 @@ void ff_acelp_fc_pulse_per_track(
         int16_t* fc_v,
         const uint8_t *tab1,
         const uint8_t *tab2,
-        int pulse_indices,
+        int pulse_indexes,
         int pulse_signs,
         int pulse_count,
         int bits)
@@ -116,14 +116,14 @@ void ff_acelp_fc_pulse_per_track(
 
     for(i=0; i<pulse_count; i++)
     {
-        fc_v[i + tab1[pulse_indices & mask]] +=
+        fc_v[i + tab1[pulse_indexes & mask]] +=
                 (pulse_signs & 1) ? 8191 : -8192; // +/-1 in (2.13)
 
-        pulse_indices >>= bits;
+        pulse_indexes >>= bits;
         pulse_signs >>= 1;
     }
 
-    fc_v[tab2[pulse_indices]] += (pulse_signs & 1) ? 8191 : -8192;
+    fc_v[tab2[pulse_indexes]] += (pulse_signs & 1) ? 8191 : -8192;
 }
 
 void ff_acelp_weighted_vector_sum(

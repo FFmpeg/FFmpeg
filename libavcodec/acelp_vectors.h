@@ -105,7 +105,7 @@ extern const uint8_t ff_fc_2pulses_9bits_track2_gray[32];
  * \param fc_v [out] decoded fixed codebook vector (2.13)
  * \param tab1 table used for first pulse_count pulses
  * \param tab2 table used for last pulse
- * \param pulse_indices fixed codebook indexes
+ * \param pulse_indexes fixed codebook indexes
  * \param pulse_signs signs of the excitation pulses (0 bit value
  *                     means negative sign)
  * \param bits number of bits per one pulse index
@@ -118,7 +118,7 @@ void ff_acelp_fc_pulse_per_track(
         int16_t* fc_v,
         const uint8_t *tab1,
         const uint8_t *tab2,
-        int pulse_indices,
+        int pulse_indexes,
         int pulse_signs,
         int pulse_count,
         int bits);

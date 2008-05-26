@@ -383,7 +383,7 @@ int dct_quantize_altivec(MpegEncContext* s,
 
         {
         vector bool char zero_01, zero_23, zero_45, zero_67;
-        vector signed char scanIndices_01, scanIndices_23, scanIndices_45, scanIndices_67;
+        vector signed char scanIndexes_01, scanIndexes_23, scanIndexes_45, scanIndexes_67;
         vector signed char negOne = vec_splat_s8(-1);
         vector signed char* scanPtr =
                 (vector signed char*)(s->intra_scantable.inverse);
@@ -400,38 +400,38 @@ int dct_quantize_altivec(MpegEncContext* s,
                 vec_cmpeq(data7, (vector signed short)zero));
 
         // 64 biggest values
-        scanIndices_01 = vec_sel(scanPtr[0], negOne, zero_01);
-        scanIndices_23 = vec_sel(scanPtr[1], negOne, zero_23);
-        scanIndices_45 = vec_sel(scanPtr[2], negOne, zero_45);
-        scanIndices_67 = vec_sel(scanPtr[3], negOne, zero_67);
+        scanIndexes_01 = vec_sel(scanPtr[0], negOne, zero_01);
+        scanIndexes_23 = vec_sel(scanPtr[1], negOne, zero_23);
+        scanIndexes_45 = vec_sel(scanPtr[2], negOne, zero_45);
+        scanIndexes_67 = vec_sel(scanPtr[3], negOne, zero_67);
 
         // 32 largest values
-        scanIndices_01 = vec_max(scanIndices_01, scanIndices_23);
-        scanIndices_45 = vec_max(scanIndices_45, scanIndices_67);
+        scanIndexes_01 = vec_max(scanIndexes_01, scanIndexes_23);
+        scanIndexes_45 = vec_max(scanIndexes_45, scanIndexes_67);
 
         // 16 largest values
-        scanIndices_01 = vec_max(scanIndices_01, scanIndices_45);
+        scanIndexes_01 = vec_max(scanIndexes_01, scanIndexes_45);
 
         // 8 largest values
-        scanIndices_01 = vec_max(vec_mergeh(scanIndices_01, negOne),
-                vec_mergel(scanIndices_01, negOne));
+        scanIndexes_01 = vec_max(vec_mergeh(scanIndexes_01, negOne),
+                vec_mergel(scanIndexes_01, negOne));
 
         // 4 largest values
-        scanIndices_01 = vec_max(vec_mergeh(scanIndices_01, negOne),
-                vec_mergel(scanIndices_01, negOne));
+        scanIndexes_01 = vec_max(vec_mergeh(scanIndexes_01, negOne),
+                vec_mergel(scanIndexes_01, negOne));
 
         // 2 largest values
-        scanIndices_01 = vec_max(vec_mergeh(scanIndices_01, negOne),
-                vec_mergel(scanIndices_01, negOne));
+        scanIndexes_01 = vec_max(vec_mergeh(scanIndexes_01, negOne),
+                vec_mergel(scanIndexes_01, negOne));
 
         // largest value
-        scanIndices_01 = vec_max(vec_mergeh(scanIndices_01, negOne),
-                vec_mergel(scanIndices_01, negOne));
+        scanIndexes_01 = vec_max(vec_mergeh(scanIndexes_01, negOne),
+                vec_mergel(scanIndexes_01, negOne));
 
-        scanIndices_01 = vec_splat(scanIndices_01, 0);
+        scanIndexes_01 = vec_splat(scanIndexes_01, 0);
 
 
-        vec_ste(scanIndices_01, 0, &lastNonZeroChar);
+        vec_ste(scanIndexes_01, 0, &lastNonZeroChar);
 
         lastNonZero = lastNonZeroChar;
 
