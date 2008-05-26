@@ -31,7 +31,7 @@
 
 /* internal globals */
 typedef struct {
-    unsigned int     oldval;
+    unsigned int     old_energy;
 
     /* the swapped buffers */
     unsigned int     lpc_tables[4][10];
@@ -312,7 +312,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     unsigned int a, c;
     int i;
     int16_t *data = vdata;
-    unsigned int val;
+    unsigned int energy;
 
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
@@ -330,17 +330,17 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     do_voice(ractx->lpc_refl, ractx->lpc_coef);
 
-    val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
-    a = t_sqrt(val*ractx->oldval) >> 12;
+    energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
+    a = t_sqrt(energy*ractx->old_energy) >> 12;
 
-    gbuf1[0] = dec2(gbuf2[0], ractx->lpc_refl_old, ractx->lpc_coef_old, ractx->oldval, ractx->lpc_coef, 3);
-    if (ractx->oldval < val) {
+    gbuf1[0] = dec2(gbuf2[0], ractx->lpc_refl_old, ractx->lpc_coef_old, ractx->old_energy, ractx->lpc_coef, 3);
+    if (ractx->old_energy < energy) {
         gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl, ractx->lpc_coef, a, ractx->lpc_coef_old, 2);
     } else {
         gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl_old, ractx->lpc_coef_old, a, ractx->lpc_coef, 2);
     }
-    gbuf1[2] = dec2(gbuf2[2], ractx->lpc_refl, ractx->lpc_coef, val, ractx->lpc_coef_old, 3);
-    gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, val);
+    gbuf1[2] = dec2(gbuf2[2], ractx->lpc_refl, ractx->lpc_coef, energy, ractx->lpc_coef_old, 3);
+    gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, energy);
 
     /* do output */
     for (c=0; c<4; c++) {
@@ -352,7 +352,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         }
     }
 
-    ractx->oldval = val;
+    ractx->old_energy = energy;
 
     FFSWAP(unsigned int *, ractx->lpc_refl_old, ractx->lpc_refl);
     FFSWAP(unsigned int *, ractx->lpc_coef_old, ractx->lpc_coef);
