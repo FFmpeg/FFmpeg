@@ -68,6 +68,7 @@ ogm_header(AVFormatContext *s, int idx)
         acid[4] = 0;
         cid = strtol(acid, NULL, 16);
         st->codec->codec_id = codec_get_id(codec_wav_tags, cid);
+        st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
     p += 4;                     /* useless size field */
