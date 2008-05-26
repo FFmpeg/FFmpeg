@@ -21,7 +21,36 @@
 
 #include "avformat.h"
 #include "ffm.h"
+#ifdef CONFIG_FFSERVER
 #include <unistd.h>
+
+offset_t ffm_read_write_index(int fd)
+{
+    uint8_t buf[8];
+
+    lseek(fd, 8, SEEK_SET);
+    read(fd, buf, 8);
+    return AV_RB64(buf);
+}
+
+void ffm_write_write_index(int fd, offset_t pos)
+{
+    uint8_t buf[8];
+    int i;
+
+    for(i=0;i<8;i++)
+        buf[i] = (pos >> (56 - i * 8)) & 0xff;
+    lseek(fd, 8, SEEK_SET);
+    write(fd, buf, 8);
+}
+
+void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size)
+{
+    FFMContext *ffm = s->priv_data;
+    ffm->write_index = pos;
+    ffm->file_size = file_size;
+}
+#endif // CONFIG_FFSERVER
 
 static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
@@ -432,35 +461,6 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     ffm_seek1(s, pos);
     return 0;
 }
-
-#ifdef CONFIG_FFSERVER
-offset_t ffm_read_write_index(int fd)
-{
-    uint8_t buf[8];
-
-    lseek(fd, 8, SEEK_SET);
-    read(fd, buf, 8);
-    return AV_RB64(buf);
-}
-
-void ffm_write_write_index(int fd, offset_t pos)
-{
-    uint8_t buf[8];
-    int i;
-
-    for(i=0;i<8;i++)
-        buf[i] = (pos >> (56 - i * 8)) & 0xff;
-    lseek(fd, 8, SEEK_SET);
-    write(fd, buf, 8);
-}
-
-void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size)
-{
-    FFMContext *ffm = s->priv_data;
-    ffm->write_index = pos;
-    ffm->file_size = file_size;
-}
-#endif // CONFIG_FFSERVER
 
 static int ffm_read_close(AVFormatContext *s)
 {
