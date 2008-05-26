@@ -34,11 +34,11 @@ typedef struct {
     unsigned int     oldval;
 
     /* the swapped buffers */
-    unsigned int     swapbuffers[4][10];
-    unsigned int    *swapbuf1;
-    unsigned int    *swapbuf2;
-    unsigned int    *swapbuf1alt;
-    unsigned int    *swapbuf2alt;
+    unsigned int     lpc_tables[4][10];
+    unsigned int    *lpc_refl;          //< LPC reflection coefficients
+    unsigned int    *lpc_coef;          //< LPC coefficients
+    unsigned int    *lpc_refl_old;      //< previous frame LPC reflection coefs
+    unsigned int    *lpc_coef_old;      //< previous frame LPC coefficients
 
     unsigned int buffer[5];
     uint16_t adapt_cb[148];  //< Adaptative codebook
@@ -48,10 +48,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
 
-    ractx->swapbuf1    = ractx->swapbuffers[0];
-    ractx->swapbuf2    = ractx->swapbuffers[1];
-    ractx->swapbuf1alt = ractx->swapbuffers[2];
-    ractx->swapbuf2alt = ractx->swapbuffers[3];
+    ractx->lpc_refl     = ractx->lpc_tables[0];
+    ractx->lpc_coef     = ractx->lpc_tables[1];
+    ractx->lpc_refl_old = ractx->lpc_tables[2];
+    ractx->lpc_coef_old = ractx->lpc_tables[3];
 
     return 0;
 }
@@ -326,21 +326,21 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     for (i=0; i<10; i++)
         // "<< 1"? Doesn't this make one value out of two of the table useless?
-        ractx->swapbuf1[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
+        ractx->lpc_refl[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
 
-    do_voice(ractx->swapbuf1, ractx->swapbuf2);
+    do_voice(ractx->lpc_refl, ractx->lpc_coef);
 
     val = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(val*ractx->oldval) >> 12;
 
-    gbuf1[0] = dec2(gbuf2[0], ractx->swapbuf1alt, ractx->swapbuf2alt, ractx->oldval, ractx->swapbuf2, 3);
+    gbuf1[0] = dec2(gbuf2[0], ractx->lpc_refl_old, ractx->lpc_coef_old, ractx->oldval, ractx->lpc_coef, 3);
     if (ractx->oldval < val) {
-        gbuf1[1] = dec2(gbuf2[1], ractx->swapbuf1, ractx->swapbuf2, a, ractx->swapbuf2alt, 2);
+        gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl, ractx->lpc_coef, a, ractx->lpc_coef_old, 2);
     } else {
-        gbuf1[1] = dec2(gbuf2[1], ractx->swapbuf1alt, ractx->swapbuf2alt, a, ractx->swapbuf2, 2);
+        gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl_old, ractx->lpc_coef_old, a, ractx->lpc_coef, 2);
     }
-    gbuf1[2] = dec2(gbuf2[2], ractx->swapbuf1, ractx->swapbuf2, val, ractx->swapbuf2alt, 3);
-    gbuf1[3] = dec1(gbuf2[3], ractx->swapbuf1, ractx->swapbuf2, val);
+    gbuf1[2] = dec2(gbuf2[2], ractx->lpc_refl, ractx->lpc_coef, val, ractx->lpc_coef_old, 3);
+    gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, val);
 
     /* do output */
     for (c=0; c<4; c++) {
@@ -354,8 +354,8 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     ractx->oldval = val;
 
-    FFSWAP(unsigned int *, ractx->swapbuf1alt, ractx->swapbuf1);
-    FFSWAP(unsigned int *, ractx->swapbuf2alt, ractx->swapbuf2);
+    FFSWAP(unsigned int *, ractx->lpc_refl_old, ractx->lpc_refl);
+    FFSWAP(unsigned int *, ractx->lpc_coef_old, ractx->lpc_coef);
 
     *data_size = 2*160;
     return 20;
