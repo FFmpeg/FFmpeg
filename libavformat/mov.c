@@ -408,7 +408,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 MPEG4AudioConfig cfg;
                 ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                          st->codec->extradata_size);
-                if (!cfg.chan_config || cfg.chan_config > 7)
+                if (cfg.chan_config > 7)
                     return -1;
                 st->codec->channels = ff_mpeg4audio_channels[cfg.chan_config];
                 if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
