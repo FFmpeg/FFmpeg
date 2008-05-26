@@ -642,7 +642,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             ts= av_rescale(ts, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
 
 //            av_log(NULL, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
-            if(ts < best_ts){
+            if(ts < best_ts && st->nb_index_entries){
                 best_ts= ts;
                 best_st= st;
                 best_stream_index= i;
