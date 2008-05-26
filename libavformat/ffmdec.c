@@ -104,7 +104,7 @@ static int ffm_read_data(AVFormatContext *s,
             frame_offset = get_be16(pb);
             get_buffer(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
             ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
-            if (ffm->packet_end < ffm->packet)
+            if (ffm->packet_end < ffm->packet || frame_offset < 0)
                 return -1;
             /* if first packet or resynchronization packet, we must
                handle it specifically */
