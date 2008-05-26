@@ -23,8 +23,6 @@
 #include "ffm.h"
 #include <unistd.h>
 
-static int64_t get_pts(AVFormatContext *s, offset_t pos);
-
 static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
     FFMContext *ffm = s->priv_data;
@@ -109,6 +107,19 @@ static int ffm_read_data(AVFormatContext *s,
     return size1 - size;
 }
 
+static int64_t get_pts(AVFormatContext *s, offset_t pos)
+{
+    ByteIOContext *pb = s->pb;
+    int64_t pts;
+
+    ffm_seek1(s, pos);
+    url_fskip(pb, 4);
+    pts = get_be64(pb);
+#ifdef DEBUG_SEEK
+    printf("pts=%0.6f\n", pts / 1000000.0);
+#endif
+    return pts;
+}
 
 static void adjust_write_index(AVFormatContext *s)
 {
@@ -374,20 +385,6 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
     printf("seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
 #endif
     url_fseek(pb, pos, SEEK_SET);
-}
-
-static int64_t get_pts(AVFormatContext *s, offset_t pos)
-{
-    ByteIOContext *pb = s->pb;
-    int64_t pts;
-
-    ffm_seek1(s, pos);
-    url_fskip(pb, 4);
-    pts = get_be64(pb);
-#ifdef DEBUG_SEEK
-    printf("pts=%0.6f\n", pts / 1000000.0);
-#endif
-    return pts;
 }
 
 /* seek to a given time in the file. The file read pointer is
