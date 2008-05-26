@@ -1,5 +1,5 @@
 /*
- * Flash Compatible Streaming Format
+ * Flash Compatible Streaming Format demuxer
  * Copyright (c) 2000 Fabrice Bellard.
  * Copyright (c) 2003 Tinic Uro.
  *
