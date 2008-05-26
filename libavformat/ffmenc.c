@@ -21,7 +21,6 @@
 
 #include "avformat.h"
 #include "ffm.h"
-#include <unistd.h>
 
 /* disable pts hack for testing */
 int ffm_nopts = 0;
