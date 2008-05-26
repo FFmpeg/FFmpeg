@@ -152,7 +152,7 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
     if (pos >= ffm->file_size)
         pos -= (ffm->file_size - FFM_PACKET_SIZE);
 #ifdef DEBUG_SEEK
-    printf("seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
+    av_log(s, AV_LOG_DEBUG, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
 #endif
     url_fseek(pb, pos, SEEK_SET);
 }
@@ -166,7 +166,7 @@ static int64_t get_pts(AVFormatContext *s, offset_t pos)
     url_fskip(pb, 4);
     pts = get_be64(pb);
 #ifdef DEBUG_SEEK
-    printf("pts=%0.6f\n", pts / 1000000.0);
+    av_log(s, AV_LOG_DEBUG, "pts=%0.6f\n", pts / 1000000.0);
 #endif
     return pts;
 }
@@ -422,7 +422,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     double pos1;
 
 #ifdef DEBUG_SEEK
-    printf("wanted_pts=%0.6f\n", wanted_pts / 1000000.0);
+    av_log(s, AV_LOG_DEBUG, "wanted_pts=%0.6f\n", wanted_pts / 1000000.0);
 #endif
     /* find the position using linear interpolation (better than
        dichotomy in typical cases) */
