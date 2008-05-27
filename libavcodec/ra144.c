@@ -35,13 +35,13 @@ typedef struct {
 
     /* the swapped buffers */
     unsigned int     lpc_tables[4][10];
-    unsigned int    *lpc_refl;          //< LPC reflection coefficients
-    unsigned int    *lpc_coef;          //< LPC coefficients
-    unsigned int    *lpc_refl_old;      //< previous frame LPC reflection coefs
-    unsigned int    *lpc_coef_old;      //< previous frame LPC coefficients
+    unsigned int    *lpc_refl;          ///< LPC reflection coefficients
+    unsigned int    *lpc_coef;          ///< LPC coefficients
+    unsigned int    *lpc_refl_old;      ///< previous frame LPC reflection coefs
+    unsigned int    *lpc_coef_old;      ///< previous frame LPC coefficients
 
     unsigned int buffer[5];
-    uint16_t adapt_cb[148];             //< adaptive codebook
+    uint16_t adapt_cb[148];             ///< adaptive codebook
 } RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
