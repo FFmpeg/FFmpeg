@@ -238,15 +238,14 @@ static int swf_write_header(AVFormatContext *s)
     is_avm2 = !strcmp("avm2", s->oformat->name);
 
     put_tag(pb, "FWS");
-    if (is_avm2) {
+    if (is_avm2)
         put_byte(pb, 9);
-    } else if (video_enc && video_enc->codec_id == CODEC_ID_VP6F) {
+    else if (video_enc && video_enc->codec_id == CODEC_ID_VP6F)
         put_byte(pb, 8); /* version (version 8 and above support VP6 codec) */
-    } else if (video_enc && video_enc->codec_id == CODEC_ID_FLV1) {
+    else if (video_enc && video_enc->codec_id == CODEC_ID_FLV1)
         put_byte(pb, 6); /* version (version 6 and above support FLV1 codec) */
-    } else {
+    else
         put_byte(pb, 4); /* version (should use 4 for mpeg audio support) */
-    }
     put_le32(pb, DUMMY_FILE_SIZE); /* dummy size
                                       (will be patched if not streamed) */
 
@@ -263,9 +262,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     /* define a shape with the jpeg inside */
-    if (video_enc && (video_enc->codec_id == CODEC_ID_VP6F ||
-                       video_enc->codec_id == CODEC_ID_FLV1)) {
-    } else if (video_enc && video_enc->codec_id == CODEC_ID_MJPEG) {
+    if (video_enc && video_enc->codec_id == CODEC_ID_MJPEG) {
         put_swf_tag(s, TAG_DEFINESHAPE);
 
         put_le16(pb, SHAPE_ID); /* ID of shape */
@@ -353,9 +350,8 @@ static int swf_write_video(AVFormatContext *s,
     ByteIOContext *pb = s->pb;
 
     /* Flash Player limit */
-    if (swf->swf_frame_number == 16000) {
+    if (swf->swf_frame_number == 16000)
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
-    }
 
     if (swf->video_type == CODEC_ID_VP6F ||
         swf->video_type == CODEC_ID_FLV1) {
@@ -434,8 +430,6 @@ static int swf_write_video(AVFormatContext *s,
         put_le16(pb, 1); /* depth */
         put_swf_matrix(pb, 20 << FRAC_BITS, 0, 0, 20 << FRAC_BITS, 0, 0);
         put_swf_end_tag(s);
-    } else {
-        /* invalid codec */
     }
 
     swf->swf_frame_number ++;
@@ -468,9 +462,8 @@ static int swf_write_audio(AVFormatContext *s,
     SWFContext *swf = s->priv_data;
 
     /* Flash Player limit */
-    if (swf->swf_frame_number == 16000) {
+    if (swf->swf_frame_number == 16000)
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
-    }
 
     if (swf->audio_in_pos + size >= AUDIO_FIFO_SIZE) {
         av_log(s, AV_LOG_ERROR, "audio fifo too small to mux audio essence\n");
@@ -482,9 +475,8 @@ static int swf_write_audio(AVFormatContext *s,
     swf->sound_samples += enc->frame_size;
 
     /* if audio only stream make sure we add swf frames */
-    if (swf->video_type == 0) {
+    if (swf->video_type == 0)
         swf_write_video(s, enc, 0, 0);
-    }
 
     return 0;
 }
