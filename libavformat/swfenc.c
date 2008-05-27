@@ -307,12 +307,10 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     if (audio_enc && audio_enc->codec_id == CODEC_ID_MP3) {
-        int v;
+        int v = 0;
 
         /* start sound */
         put_swf_tag(s, TAG_STREAMHEAD2);
-
-        v = 0;
         switch(audio_enc->sample_rate) {
         case 11025:
             v |= 1 << 2;
