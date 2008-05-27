@@ -1354,7 +1354,8 @@ static int av_seek_frame_generic(AVFormatContext *s,
         int i;
         AVPacket pkt;
 
-        if(st->index_entries && st->nb_index_entries){
+        if(st->nb_index_entries){
+            assert(st->index_entries);
             ie= &st->index_entries[st->nb_index_entries-1];
             url_fseek(s->pb, ie->pos, SEEK_SET);
             av_update_cur_dts(s, st, ie->timestamp);
