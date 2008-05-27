@@ -82,7 +82,7 @@ The following list of video codecs should work on most Windows systems:
 @item wmv2
 .asf only
 @item mpeg4
-only if you have some MPEG-4 codec installed like ffdshow or XviD
+only if you have some MPEG-4 codec installed like ffdshow or Xvid
 @item mpeg1
 .mpg only
 @end table
@@ -194,9 +194,9 @@ Try '-f image2 test%d.jpg'.
 Some codecs, like MPEG-1/2, only allow a small number of fixed framerates.
 Choose a different codec with the -vcodec command line option.
 
-@section How do I encode XviD or DivX video with ffmpeg?
+@section How do I encode Xvid or DivX video with ffmpeg?
 
-Both XviD and DivX (version 4+) are implementations of the ISO MPEG-4
+Both Xvid and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
 same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
 default fourcc stored in an MPEG-4-coded file will be 'FMP4'. If you want

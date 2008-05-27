@@ -1,5 +1,5 @@
 /*
- * xvid Rate control wrapper for lavc video encoders
+ * Xvid rate control wrapper for lavc video encoders
  *
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *

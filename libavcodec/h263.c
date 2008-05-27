@@ -5773,7 +5773,7 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         s->lavc_build= build;
     }
 
-    /* xvid detection */
+    /* Xvid detection */
     e=sscanf(buf, "XviD%d", &build);
     if(e==1){
         s->xvid_build= build;

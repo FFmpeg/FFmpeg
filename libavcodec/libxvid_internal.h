@@ -23,7 +23,7 @@
 
 /**
  * @file libxvid_internal.h
- * common functions for use with the XviD wrappers
+ * common functions for use with the Xvid wrappers
  */
 
 

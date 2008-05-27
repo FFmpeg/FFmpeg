@@ -187,7 +187,7 @@ int ff_rate_control_init(MpegEncContext *s)
 #ifdef CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
-            av_log(s->avctx, AV_LOG_ERROR, "XviD ratecontrol requires libavcodec compiled with XviD support\n");
+            av_log(s->avctx, AV_LOG_ERROR, "Xvid ratecontrol requires libavcodec compiled with Xvid support.\n");
             return -1;
 #endif
         }
