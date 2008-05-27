@@ -116,7 +116,6 @@ void show_banner(const char *program_name, int program_birth_year);
  * Prints the version of the program to stdout. The version message
  * depends on the current versions of the repository and of the libav*
  * libraries.
- * @param program_name name of the program
  */
 void show_version(void);
 
