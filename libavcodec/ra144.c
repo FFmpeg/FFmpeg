@@ -31,7 +31,7 @@
 
 /* internal globals */
 typedef struct {
-    unsigned int     old_energy;
+    unsigned int     old_energy;        ///< previous frame energy
 
     /* the swapped buffers */
     unsigned int     lpc_tables[4][10];
