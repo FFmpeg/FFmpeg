@@ -180,7 +180,6 @@ static int swf_write_header(AVFormatContext *s)
     int i, width, height, rate, rate_base;
     int version;
 
-    swf->audio_in_pos = 0;
     swf->sound_samples = 0;
     swf->swf_frame_number = 0;
     swf->video_frame_number = 0;
@@ -196,6 +195,7 @@ static int swf_write_header(AVFormatContext *s)
                     return -1;
                 }
                 audio_enc = enc;
+                av_fifo_init(&swf->audio_fifo, AUDIO_FIFO_SIZE);
             } else {
                 av_log(s, AV_LOG_ERROR, "SWF muxer only supports MP3\n");
                 return -1;
@@ -421,16 +421,16 @@ static int swf_write_video(AVFormatContext *s,
     swf->swf_frame_number ++;
 
     /* streaming sound always should be placed just before showframe tags */
-    if (swf->audio_type && swf->audio_in_pos) {
+    if (swf->audio_type && av_fifo_size(&swf->audio_fifo)) {
+        int frame_size = av_fifo_size(&swf->audio_fifo);
         put_swf_tag(s, TAG_STREAMBLOCK | TAG_LONG);
         put_le16(pb, swf->sound_samples);
         put_le16(pb, 0); // seek samples
-        put_buffer(pb, swf->audio_fifo, swf->audio_in_pos);
+        av_fifo_generic_read(&swf->audio_fifo, frame_size, &put_buffer, pb);
         put_swf_end_tag(s);
 
         /* update FIFO */
         swf->sound_samples = 0;
-        swf->audio_in_pos = 0;
     }
 
     /* output the frame */
@@ -451,13 +451,12 @@ static int swf_write_audio(AVFormatContext *s,
     if (swf->swf_frame_number == 16000)
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
 
-    if (swf->audio_in_pos + size >= AUDIO_FIFO_SIZE) {
+    if (av_fifo_size(&swf->audio_fifo) + size > AUDIO_FIFO_SIZE) {
         av_log(s, AV_LOG_ERROR, "audio fifo too small to mux audio essence\n");
         return -1;
     }
 
-    memcpy(swf->audio_fifo +  swf->audio_in_pos, buf, size);
-    swf->audio_in_pos += size;
+    av_fifo_generic_write(&swf->audio_fifo, buf, size, NULL);
     swf->sound_samples += enc->frame_size;
 
     /* if audio only stream make sure we add swf frames */
@@ -488,6 +487,8 @@ static int swf_write_trailer(AVFormatContext *s)
         enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_VIDEO)
             video_enc = enc;
+        else
+            av_fifo_free(&swf->audio_fifo);
     }
 
     put_swf_tag(s, TAG_END);

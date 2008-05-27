@@ -23,6 +23,7 @@
 #ifndef FFMPEG_SWF_H
 #define FFMPEG_SWF_H
 
+#include "libavutil/fifo.h"
 #include "avformat.h"
 #include "riff.h"    /* for CodecTag */
 
@@ -73,10 +74,7 @@ typedef struct {
     int video_frame_number;
     int frame_rate;
     int tag;
-
-    uint8_t audio_fifo[AUDIO_FIFO_SIZE];
-    int audio_in_pos;
-
+    AVFifoBuffer audio_fifo;
     int video_type;
     int audio_type;
 } SWFContext;
