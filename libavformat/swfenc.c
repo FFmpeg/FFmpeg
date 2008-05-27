@@ -373,11 +373,7 @@ static int swf_write_video(AVFormatContext *s,
             put_le16(pb, VIDEO_ID);
             put_swf_matrix(pb, 1 << FRAC_BITS, 0, 0, 1 << FRAC_BITS, 0, 0);
             put_le16(pb, swf->video_frame_number);
-            put_byte(pb, 'v');
-            put_byte(pb, 'i');
-            put_byte(pb, 'd');
-            put_byte(pb, 'e');
-            put_byte(pb, 'o');
+            put_tag(pb, "video");
             put_byte(pb, 0x00);
             put_swf_end_tag(s);
         } else {
