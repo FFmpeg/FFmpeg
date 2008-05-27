@@ -604,7 +604,7 @@ static int get_transform_coeffs(AC3DecodeContext *s)
             end = s->end_freq[ch];
         }
         do
-            s->transform_coeffs[ch][end] = 0;
+            s->fixed_coeffs[ch][end] = 0;
         while(++end < 256);
     }
 
