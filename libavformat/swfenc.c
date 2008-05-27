@@ -410,7 +410,7 @@ static int swf_write_video(AVFormatContext *s,
         put_swf_end_tag(s);
     }
 
-    swf->swf_frame_number ++;
+    swf->swf_frame_number++;
 
     /* streaming sound always should be placed just before showframe tags */
     if (swf->audio_enc && av_fifo_size(&swf->audio_fifo)) {
