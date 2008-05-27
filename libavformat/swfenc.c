@@ -410,10 +410,7 @@ static int swf_write_video(AVFormatContext *s,
         put_le16(pb, BITMAP_ID); /* ID of the image */
 
         /* a dummy jpeg header seems to be required */
-        put_byte(pb, 0xff);
-        put_byte(pb, 0xd8);
-        put_byte(pb, 0xff);
-        put_byte(pb, 0xd9);
+        put_be32(pb, 0xffd8ffd9);
         /* write the jpeg image */
         put_buffer(pb, buf, size);
 
