@@ -341,8 +341,6 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation TAGS
-.PHONY: codectest libavtest seektest servertest fulltest test
-.PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
+.PHONY: lib videohook documentation TAGS *test regtest-* swscale-error
 
 -include $(VHOOK_DEPS)
