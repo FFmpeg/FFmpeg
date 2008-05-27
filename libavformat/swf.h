@@ -75,8 +75,7 @@ typedef struct {
     int frame_rate;
     int tag;
     AVFifoBuffer audio_fifo;
-    int video_type;
-    int audio_type;
+    AVCodecContext *audio_enc, *video_enc;
 } SWFContext;
 
 static const AVCodecTag swf_codec_tags[] = {
