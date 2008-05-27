@@ -312,15 +312,9 @@ static int swf_write_header(AVFormatContext *s)
         /* start sound */
         put_swf_tag(s, TAG_STREAMHEAD2);
         switch(audio_enc->sample_rate) {
-        case 11025:
-            v |= 1 << 2;
-            break;
-        case 22050:
-            v |= 2 << 2;
-            break;
-        case 44100:
-            v |= 3 << 2;
-            break;
+        case 11025: v |= 1 << 2; break;
+        case 22050: v |= 2 << 2; break;
+        case 44100: v |= 3 << 2; break;
         default:
             /* not supported */
             av_log(s, AV_LOG_ERROR, "swf does not support that sample rate, choose from (44100, 22050, 11025).\n");
