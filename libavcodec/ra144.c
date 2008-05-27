@@ -41,7 +41,7 @@ typedef struct {
     unsigned int    *lpc_coef_old;      //< previous frame LPC coefficients
 
     unsigned int buffer[5];
-    uint16_t adapt_cb[148];  //< Adaptative codebook
+    uint16_t adapt_cb[148];             //< adaptive codebook
 } RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
@@ -208,7 +208,7 @@ static void do_output_subblock(RA144Context *ractx,
 {
     uint16_t buffer_a[40];
     uint16_t *block;
-    int cba_idx = get_bits(gb, 7); // Index of the adaptative CB. 0 if none.
+    int cba_idx = get_bits(gb, 7); // index of the adaptive CB, 0 if none
     int gain    = get_bits(gb, 8);
     int cb1_idx = get_bits(gb, 7);
     int cb2_idx = get_bits(gb, 7);
