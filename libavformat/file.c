@@ -93,7 +93,7 @@ URLProtocol file_protocol = {
 static int pipe_open(URLContext *h, const char *filename, int flags)
 {
     int fd;
-    const char * final;
+    char *final;
     av_strstart(filename, "pipe:", &filename);
 
     fd = strtol(filename, &final, 10);
