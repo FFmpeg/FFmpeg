@@ -407,16 +407,16 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
 
 void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt)
 {
-    PixFmtInfo info= pix_fmt_info[pix_fmt];
-
-    char is_alpha_char= info.is_alpha ? 'y' : 'n';
-
     /* print header */
     if (pix_fmt < 0)
         snprintf (buf, buf_size,
                   "name      " " nb_channels" " depth" " is_alpha"
             );
-    else
+    else{
+        PixFmtInfo info= pix_fmt_info[pix_fmt];
+
+        char is_alpha_char= info.is_alpha ? 'y' : 'n';
+
         snprintf (buf, buf_size,
                   "%-10s" "      %1d     " "   %2d " "     %c   ",
                   info.name,
@@ -424,6 +424,7 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt)
                   info.depth,
                   is_alpha_char
             );
+    }
 }
 
 int ff_fill_linesize(AVPicture *picture, int pix_fmt, int width)
