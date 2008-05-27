@@ -178,7 +178,7 @@ static int swf_write_header(AVFormatContext *s)
     PutBitContext p;
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
-    int is_avm2;
+    int version;
 
     swf->audio_in_pos = 0;
     swf->sound_samples = 0;
@@ -235,17 +235,18 @@ static int swf_write_header(AVFormatContext *s)
         swf->samples_per_frame = (audio_enc->sample_rate * rate_base) / rate;
     }
 
-    is_avm2 = !strcmp("avm2", s->oformat->name);
-
     put_tag(pb, "FWS");
-    if (is_avm2)
-        put_byte(pb, 9);
+
+    if (!strcmp("avm2", s->oformat->name))
+        version = 9;
     else if (video_enc && video_enc->codec_id == CODEC_ID_VP6F)
-        put_byte(pb, 8); /* version (version 8 and above support VP6 codec) */
+        version = 8; /* version 8 and above support VP6 codec */
     else if (video_enc && video_enc->codec_id == CODEC_ID_FLV1)
-        put_byte(pb, 6); /* version (version 6 and above support FLV1 codec) */
+        version = 6; /* version 6 and above support FLV1 codec */
     else
-        put_byte(pb, 4); /* version (should use 4 for mpeg audio support) */
+        version = 4; /* version 4 for mpeg audio support */
+    put_byte(pb, version);
+
     put_le32(pb, DUMMY_FILE_SIZE); /* dummy size
                                       (will be patched if not streamed) */
 
@@ -255,7 +256,7 @@ static int swf_write_header(AVFormatContext *s)
     put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
 
     /* avm2/swf v9 (also v8?) files require a file attribute tag */
-    if (is_avm2) {
+    if (version == 9) {
         put_swf_tag(s, TAG_FILEATTRIBUTES);
         put_le32(pb, 1<<3); /* set ActionScript v3/AVM2 flag */
         put_swf_end_tag(s);
