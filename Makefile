@@ -307,7 +307,7 @@ $(LAVF_TESTS):
 seektest: codectest libavtest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
 
-test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
+servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
@@ -315,7 +315,7 @@ test-server: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
 ifeq ($(CONFIG_SWSCALE),yes)
-test-server codectest $(CODEC_TESTS) libavtest: swscale_error
+servertest codectest $(CODEC_TESTS) libavtest: swscale_error
 swscale_error:
 	@echo
 	@echo "This regression test is incompatible with --enable-swscale."
@@ -342,7 +342,7 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 
 
 .PHONY: lib videohook documentation TAGS
-.PHONY: codectest libavtest seektest test-server fulltest test
+.PHONY: codectest libavtest seektest servertest fulltest test
 .PHONY: $(CODEC_TESTS) $(LAVF_TESTS) regtest-ref swscale-error
 
 -include $(VHOOK_DEPS)
