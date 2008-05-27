@@ -1996,7 +1996,6 @@ echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$FFMPEG_CONFIGURATION\"" >> $TMPH
 
 echo "PREFIX=$prefix" >> config.mak
-echo "prefix=\$(DESTDIR)\$(PREFIX)" >> config.mak
 echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
 echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
 echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
