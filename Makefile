@@ -160,7 +160,7 @@ uninstall-vhook:
 	-rmdir "$(SHLIBDIR)/vhook/"
 
 clean::
-	rm -f gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
+	rm -f gmon.out $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
@@ -341,6 +341,6 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation TAGS *test regtest-* swscale-error
+.PHONY: lib videohook documentation *test regtest-* swscale-error
 
 -include $(VHOOK_DEPS)
