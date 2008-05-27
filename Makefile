@@ -160,8 +160,7 @@ uninstall-vhook:
 	-rmdir "$(SHLIBDIR)/vhook/"
 
 clean::
-	rm -f gmon.out $(ALLPROGS) $(ALLPROGS_G) \
-	   output_example$(EXESUF)
+	rm -f $(ALLPROGS) $(ALLPROGS_G) output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
 	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
