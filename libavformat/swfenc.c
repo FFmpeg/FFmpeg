@@ -174,7 +174,6 @@ static int swf_write_header(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    AVCodecContext *enc, *audio_enc, *video_enc;
     PutBitContext p;
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
@@ -184,17 +183,15 @@ static int swf_write_header(AVFormatContext *s)
     swf->swf_frame_number = 0;
     swf->video_frame_number = 0;
 
-    video_enc = NULL;
-    audio_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
-        enc = s->streams[i]->codec;
+        AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             if (enc->codec_id == CODEC_ID_MP3) {
                 if (!enc->frame_size) {
                     av_log(s, AV_LOG_ERROR, "audio frame size not set\n");
                     return -1;
                 }
-                audio_enc = enc;
+                swf->audio_enc = enc;
                 av_fifo_init(&swf->audio_fifo, AUDIO_FIFO_SIZE);
             } else {
                 av_log(s, AV_LOG_ERROR, "SWF muxer only supports MP3\n");
@@ -204,7 +201,7 @@ static int swf_write_header(AVFormatContext *s)
             if (enc->codec_id == CODEC_ID_VP6F ||
                 enc->codec_id == CODEC_ID_FLV1 ||
                 enc->codec_id == CODEC_ID_MJPEG) {
-                video_enc = enc;
+                swf->video_enc = enc;
             } else {
                 av_log(s, AV_LOG_ERROR, "SWF muxer only supports VP6, FLV1 and MJPEG\n");
                 return -1;
@@ -212,36 +209,31 @@ static int swf_write_header(AVFormatContext *s)
         }
     }
 
-    if (!video_enc) {
+    if (!swf->video_enc) {
         /* currently, cannot work correctly if audio only */
-        swf->video_type = 0;
         width = 320;
         height = 200;
         rate = 10;
         rate_base= 1;
     } else {
-        swf->video_type = video_enc->codec_id;
-        width = video_enc->width;
-        height = video_enc->height;
-        rate = video_enc->time_base.den;
-        rate_base = video_enc->time_base.num;
+        width = swf->video_enc->width;
+        height = swf->video_enc->height;
+        rate = swf->video_enc->time_base.den;
+        rate_base = swf->video_enc->time_base.num;
     }
 
-    if (!audio_enc) {
-        swf->audio_type = 0;
+    if (!swf->audio_enc)
         swf->samples_per_frame = (44100. * rate_base) / rate;
-    } else {
-        swf->audio_type = audio_enc->codec_id;
-        swf->samples_per_frame = (audio_enc->sample_rate * rate_base) / rate;
-    }
+    else
+        swf->samples_per_frame = (swf->audio_enc->sample_rate * rate_base) / rate;
 
     put_tag(pb, "FWS");
 
     if (!strcmp("avm2", s->oformat->name))
         version = 9;
-    else if (video_enc && video_enc->codec_id == CODEC_ID_VP6F)
+    else if (swf->video_enc && swf->video_enc->codec_id == CODEC_ID_VP6F)
         version = 8; /* version 8 and above support VP6 codec */
-    else if (video_enc && video_enc->codec_id == CODEC_ID_FLV1)
+    else if (swf->video_enc && swf->video_enc->codec_id == CODEC_ID_FLV1)
         version = 6; /* version 6 and above support FLV1 codec */
     else
         version = 4; /* version 4 for mpeg audio support */
@@ -263,7 +255,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     /* define a shape with the jpeg inside */
-    if (video_enc && video_enc->codec_id == CODEC_ID_MJPEG) {
+    if (swf->video_enc && swf->video_enc->codec_id == CODEC_ID_MJPEG) {
         put_swf_tag(s, TAG_DEFINESHAPE);
 
         put_le16(pb, SHAPE_ID); /* ID of shape */
@@ -306,12 +298,12 @@ static int swf_write_header(AVFormatContext *s)
         put_swf_end_tag(s);
     }
 
-    if (audio_enc && audio_enc->codec_id == CODEC_ID_MP3) {
+    if (swf->audio_enc && swf->audio_enc->codec_id == CODEC_ID_MP3) {
         int v = 0;
 
         /* start sound */
         put_swf_tag(s, TAG_STREAMHEAD2);
-        switch(audio_enc->sample_rate) {
+        switch(swf->audio_enc->sample_rate) {
         case 11025: v |= 1 << 2; break;
         case 22050: v |= 2 << 2; break;
         case 44100: v |= 3 << 2; break;
@@ -321,7 +313,7 @@ static int swf_write_header(AVFormatContext *s)
             return -1;
         }
         v |= 0x02; /* 16 bit playback */
-        if (audio_enc->channels == 2)
+        if (swf->audio_enc->channels == 2)
             v |= 0x01; /* stereo playback */
         put_byte(s->pb, v);
         v |= 0x20; /* mp3 compressed */
@@ -346,8 +338,8 @@ static int swf_write_video(AVFormatContext *s,
     if (swf->swf_frame_number == 16000)
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
 
-    if (swf->video_type == CODEC_ID_VP6F ||
-        swf->video_type == CODEC_ID_FLV1) {
+    if (enc->codec_id == CODEC_ID_VP6F ||
+        enc->codec_id == CODEC_ID_FLV1) {
         if (swf->video_frame_number == 0) {
             /* create a new video object */
             put_swf_tag(s, TAG_VIDEOSTREAM);
@@ -356,7 +348,7 @@ static int swf_write_video(AVFormatContext *s,
             put_le16(pb, enc->width);
             put_le16(pb, enc->height);
             put_byte(pb, 0);
-            put_byte(pb,codec_get_tag(swf_codec_tags,swf->video_type));
+            put_byte(pb,codec_get_tag(swf_codec_tags,enc->codec_id));
             put_swf_end_tag(s);
 
             /* place the video object for the first time */
@@ -384,7 +376,7 @@ static int swf_write_video(AVFormatContext *s,
         put_le16(pb, swf->video_frame_number++);
         put_buffer(pb, buf, size);
         put_swf_end_tag(s);
-    } else if (swf->video_type == CODEC_ID_MJPEG) {
+    } else if (enc->codec_id == CODEC_ID_MJPEG) {
         if (swf->swf_frame_number > 0) {
             /* remove the shape */
             put_swf_tag(s, TAG_REMOVEOBJECT);
@@ -421,7 +413,7 @@ static int swf_write_video(AVFormatContext *s,
     swf->swf_frame_number ++;
 
     /* streaming sound always should be placed just before showframe tags */
-    if (swf->audio_type && av_fifo_size(&swf->audio_fifo)) {
+    if (swf->audio_enc && av_fifo_size(&swf->audio_fifo)) {
         int frame_size = av_fifo_size(&swf->audio_fifo);
         put_swf_tag(s, TAG_STREAMBLOCK | TAG_LONG);
         put_le16(pb, swf->sound_samples);
@@ -460,7 +452,7 @@ static int swf_write_audio(AVFormatContext *s,
     swf->sound_samples += enc->frame_size;
 
     /* if audio only stream make sure we add swf frames */
-    if (swf->video_type == 0)
+    if (!swf->video_enc)
         swf_write_video(s, enc, 0, 0);
 
     return 0;
