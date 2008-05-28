@@ -322,7 +322,6 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     st = av_new_stream(s, 0);
-    st = s->streams[0];
     st->codec->width = width;
     st->codec->height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
