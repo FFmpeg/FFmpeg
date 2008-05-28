@@ -34,11 +34,12 @@ typedef struct {
     unsigned int     old_energy;        ///< previous frame energy
 
     /* the swapped buffers */
-    unsigned int     lpc_tables[4][10];
+    unsigned int     refl_tables[2][10];
+    int16_t          coef_tables[2][10];
     unsigned int    *lpc_refl;          ///< LPC reflection coefficients
-    unsigned int    *lpc_coef;          ///< LPC coefficients
+    int16_t         *lpc_coef;          ///< LPC coefficients
     unsigned int    *lpc_refl_old;      ///< previous frame LPC reflection coefs
-    unsigned int    *lpc_coef_old;      ///< previous frame LPC coefficients
+    int16_t         *lpc_coef_old;      ///< previous frame LPC coefficients
 
     unsigned int buffer[5];
     uint16_t adapt_cb[148];             ///< adaptive codebook
@@ -48,10 +49,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
 
-    ractx->lpc_refl     = ractx->lpc_tables[0];
-    ractx->lpc_coef     = ractx->lpc_tables[1];
-    ractx->lpc_refl_old = ractx->lpc_tables[2];
-    ractx->lpc_coef_old = ractx->lpc_tables[3];
+    ractx->lpc_refl     = ractx->refl_tables[0];
+    ractx->lpc_coef     = ractx->coef_tables[0];
+    ractx->lpc_refl_old = ractx->refl_tables[1];
+    ractx->lpc_coef_old = ractx->coef_tables[1];
 
     return 0;
 }
@@ -72,12 +73,16 @@ static int t_sqrt(unsigned int x)
 }
 
 /* do 'voice' */
-static void do_voice(const int *a1, int *a2)
+static void do_voice(const int *a1, int16_t *a2)
 {
     int buffer[10];
+    int buffer2[10];
     int *b1 = buffer;
-    int *b2 = a2;
+    int *b2 = buffer2;
     int x, y;
+
+    for (x=0; x<10; x++)
+        buffer2[x] = a2[x];
 
     for (x=0; x < 10; x++) {
         b1[x] = a1[x] << 4;
@@ -89,7 +94,7 @@ static void do_voice(const int *a1, int *a2)
     }
 
     for (x=0; x < 10; x++)
-        a2[x] >>= 4;
+        a2[x] = buffer2[x] >> 4;
 }
 
 /* rotate block */
@@ -236,7 +241,7 @@ static void do_output_subblock(RA144Context *ractx,
     final(gsp, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
-static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
+static int dec1(int16_t *decsp, const int *data, const int16_t *inp, int f)
 {
     int i;
 
@@ -364,7 +369,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     ractx->old_energy = energy;
 
     FFSWAP(unsigned int *, ractx->lpc_refl_old, ractx->lpc_refl);
-    FFSWAP(unsigned int *, ractx->lpc_coef_old, ractx->lpc_coef);
+    FFSWAP(int16_t *     , ractx->lpc_coef_old, ractx->lpc_coef);
 
     *data_size = 2*160;
     return 20;
