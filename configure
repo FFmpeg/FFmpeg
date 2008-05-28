@@ -59,6 +59,7 @@ show_help(){
   echo "  --logfile=FILE           log tests and output to FILE [config.err]"
   echo "  --disable-logging        do not log configure debug information"
   echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
+  echo "  --bindir=DIR             install binaries in DIR [PREFIX/bin]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include]"
@@ -783,6 +784,7 @@ CMDLINE_SELECT="
 "
 CMDLINE_SET='
     arch
+    bindir
     build_suffix
     cc
     cpu
