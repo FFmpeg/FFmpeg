@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "acelp_vectors.h"
 #include "ra144.h"
 
 #define NBLOCKS         4       /* number of segments within a block */
@@ -304,8 +305,8 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
 
     // Interpolate block coefficients from the this frame forth block and
     // last frame forth block
-    for (x=0; x<30; x++)
-        decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
+    ff_acelp_weighted_vector_sum(decsp, ractx->lpc_coef, ractx->lpc_coef_old,
+                                 a, b, 0, 2, 30);
 
     if (eq(decsp, work)) {
         // The interpolated coefficients are unstable, copy either new or old
