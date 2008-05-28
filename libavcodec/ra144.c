@@ -291,7 +291,6 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
     int work[10];
     int a = block_num + 1;
     int b = NBLOCKS - a;
-    int x;
 
     // Interpolate block coefficients from the this frame forth block and
     // last frame forth block
