@@ -5728,7 +5728,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
 /**
  * decodes the user data stuff in the header.
- * allso inits divx/xvid/lavc_version/build
+ * Also initializes divx/xvid/lavc_version/build.
  */
 static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     char buf[256];

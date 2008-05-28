@@ -3851,7 +3851,7 @@ static void clone_slice(H264Context *dst, H264Context *src)
 
 /**
  * decodes a slice header.
- * this will allso call MPV_common_init() and frame_start() as needed
+ * This will also call MPV_common_init() and frame_start() as needed.
  *
  * @param h h264context
  * @param h0 h264 master context (differs from 'h' when doing sliced based parallel decoding)
