@@ -110,7 +110,7 @@ static int seq_fill_buffer(SeqDemuxContext *seq, ByteIOContext *pb, int buffer_n
         return AVERROR_INVALIDDATA;
 
     seq_buffer = &seq->frame_buffers[buffer_num];
-    if (seq_buffer->fill_size + data_size > seq_buffer->data_size)
+    if (seq_buffer->fill_size + data_size > seq_buffer->data_size || data_size <= 0)
         return AVERROR_INVALIDDATA;
 
     url_fseek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
