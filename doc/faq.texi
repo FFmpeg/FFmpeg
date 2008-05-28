@@ -101,6 +101,14 @@ if some MP3 codec like LAME is installed
 @end table
 
 
+@chapter Compilation
+
+@section @code{error: can't find a register in class 'GENERAL_REGS' while reloading 'asm'}
+
+This is a bug in gcc. Do not report it to us. Instead, please report it to
+the gcc developers. Note that we will not add workarounds for gcc bugs.
+
+
 @chapter Usage
 
 @section ffmpeg does not work; What is wrong?
