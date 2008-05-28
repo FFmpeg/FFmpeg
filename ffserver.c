@@ -171,8 +171,6 @@ typedef struct HTTPContext {
     uint8_t *packet_buffer, *packet_buffer_ptr, *packet_buffer_end;
 } HTTPContext;
 
-static AVFrame dummy_frame;
-
 /* each generated stream is described here */
 enum StreamType {
     STREAM_TYPE_LIVE,
@@ -2024,10 +2022,6 @@ static int http_prepare_data(HTTPContext *c)
             st->priv_data = 0;
             st->codec->frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
-            /* I'm pretty sure that this is not correct...
-             * However, without it, we crash
-             */
-            st->codec->coded_frame = &dummy_frame;
         }
         c->got_key_frame = 0;
 
@@ -2160,7 +2154,6 @@ static int http_prepare_data(HTTPContext *c)
                             codec = ctx->streams[pkt.stream_index]->codec;
                         }
 
-                        codec->coded_frame->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
                         if (c->is_packetized) {
                             int max_packet_size;
                             if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
@@ -3186,7 +3179,6 @@ static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
     fst->codec= avcodec_alloc_context();
     fst->priv_data = av_mallocz(sizeof(FeedData));
     memcpy(fst->codec, codec, sizeof(AVCodecContext));
-    fst->codec->coded_frame = &dummy_frame;
     fst->index = stream->nb_streams;
     av_set_pts_info(fst, 33, 1, 90000);
     stream->streams[stream->nb_streams++] = fst;
