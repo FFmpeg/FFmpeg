@@ -2181,8 +2181,8 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -l${shortname}
-Libs.private: $libs
+Libs: -L\${libdir} -l${shortname} $(disabled shared && echo $libs)
+Libs.private: $(enabled shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
 cat <<EOF > $name-uninstalled.pc
@@ -2196,8 +2196,7 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF}
-Libs.private: $libs
+Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF} $libs
 Cflags: -I\${includedir}
 EOF
 }
