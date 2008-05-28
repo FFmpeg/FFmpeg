@@ -605,8 +605,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);
-    if(avi->non_interleaved)
+    if(avi->non_interleaved) {
+        av_log(s, AV_LOG_INFO, "Non interleaved AVI\n");
         clean_index(s);
+    }
 
     return 0;
 }
