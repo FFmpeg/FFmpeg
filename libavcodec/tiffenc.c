@@ -222,6 +222,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     *p = *pict;
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
+    avctx->coded_frame= &s->picture;
 
     s->compr = TIFF_PACKBITS;
     if (avctx->compression_level == 0) {
