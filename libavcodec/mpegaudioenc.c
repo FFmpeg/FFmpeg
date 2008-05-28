@@ -540,7 +540,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
         /* look for the subband with the largest signal to mask ratio */
         max_sb = -1;
         max_ch = -1;
-        max_smr = 0x80000000;
+        max_smr = INT_MIN;
         for(ch=0;ch<s->nb_channels;ch++) {
             for(i=0;i<s->sblimit;i++) {
                 if (smr[ch][i] > max_smr && subband_status[ch][i] != SB_NOMORE) {
