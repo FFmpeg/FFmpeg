@@ -158,6 +158,12 @@ static int adpcm_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
+
+    if(avctx->trellis && (unsigned)avctx->trellis > 16U){
+        av_log(avctx, AV_LOG_ERROR, "invalid trellis size\n");
+        return -1;
+    }
+
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_WAV:
         avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
