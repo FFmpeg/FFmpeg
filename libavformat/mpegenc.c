@@ -1180,7 +1180,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         }
     }
 
-    av_fifo_write(&stream->fifo, buf, size);
+    av_fifo_generic_write(&stream->fifo, buf, size, NULL);
 
     for(;;){
         int ret= output_packet(ctx, 0);
