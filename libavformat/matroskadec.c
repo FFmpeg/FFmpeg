@@ -2758,10 +2758,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         case 0x1: /* xiph lacing */
         case 0x2: /* fixed-size lacing */
         case 0x3: /* EBML lacing */
-            if (size == 0) {
-                res = -1;
-                break;
-            }
+            assert(size>0); // size <=3 is checked before size-=3 above
             laces = (*data) + 1;
             data += 1;
             size -= 1;
