@@ -253,11 +253,9 @@ static int str_read_packet(AVFormatContext *s,
     StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int channel;
-    int packet_read = 0;
-    int ret = 0;
     AVPacket *pkt;
 
-    while (!packet_read) {
+    while (1) {
 
         if (get_buffer(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
             return AVERROR(EIO);
@@ -340,8 +338,6 @@ printf (" dropping other sector\n");
         if (url_feof(pb))
             return AVERROR(EIO);
     }
-
-    return ret;
 }
 
 static int str_read_close(AVFormatContext *s)
