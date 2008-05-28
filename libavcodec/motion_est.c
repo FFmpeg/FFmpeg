@@ -231,7 +231,7 @@ static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
 static void zero_hpel(uint8_t *a, const uint8_t *b, int stride, int h){
 }
 
-void ff_init_me(MpegEncContext *s){
+int ff_init_me(MpegEncContext *s){
     MotionEstContext * const c= &s->me;
     int cache_size= FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
     int dia_size= FFMAX(FFABS(s->avctx->dia_size)&255, FFABS(s->avctx->pre_dia_size)&255);
@@ -303,6 +303,8 @@ void ff_init_me(MpegEncContext *s){
     }
 
     c->temp= c->scratchpad;
+
+    return 0;
 }
 
 #if 0
