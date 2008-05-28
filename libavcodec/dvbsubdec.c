@@ -274,25 +274,25 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
         object = get_object(ctx, display->object_id);
 
         if (object) {
-            obj_disp = object->display_list;
             obj_disp_ptr = &object->display_list;
+            obj_disp = *obj_disp_ptr;
 
             while (obj_disp && obj_disp != display) {
                 obj_disp_ptr = &obj_disp->object_list_next;
-                obj_disp = obj_disp->object_list_next;
+                obj_disp = *obj_disp_ptr;
             }
 
             if (obj_disp) {
                 *obj_disp_ptr = obj_disp->object_list_next;
 
                 if (!object->display_list) {
-                    obj2 = ctx->object_list;
                     obj2_ptr = &ctx->object_list;
+                    obj2 = *obj2_ptr;
 
                     while (obj2 != object) {
                         assert(obj2);
                         obj2_ptr = &obj2->next;
-                        obj2 = obj2->next;
+                        obj2 = *obj2_ptr;
                     }
 
                     *obj2_ptr = obj2->next;
