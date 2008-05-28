@@ -650,6 +650,9 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 best_stream_index= i;
             }
         }
+        if(!best_st)
+            return -1;
+
         best_ast = best_st->priv_data;
         best_ts= av_rescale(best_ts, best_st->time_base.den, AV_TIME_BASE * (int64_t)best_st->time_base.num); //FIXME a little ugly
         if(best_ast->remaining)
