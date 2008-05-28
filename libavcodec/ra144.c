@@ -289,20 +289,29 @@ static int eq(const int16_t *in, int *target)
     return retval;
 }
 
-static int dec2(int16_t *decsp, const int *data, const int *inp,
-                 int f, const int *inp2, int a)
+static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
+                int copynew, int f)
 {
     int work[10];
+    int a = block_num + 1;
     int b = NBLOCKS - a;
     int x;
 
+    // Interpolate block coefficients from the this frame forth block and
+    // last frame forth block
     for (x=0; x<30; x++)
-        decsp[x] = (a * inp[x] + b * inp2[x]) >> 2;
+        decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
-    if (eq(decsp, work))
-        return dec1(decsp, data, inp, f);
-    else
+    if (eq(decsp, work)) {
+        // The interpolated coefficients are unstable, copy either new or old
+        // coefficients
+        if (copynew)
+            return dec1(decsp, ractx->lpc_refl, ractx->lpc_coef, f);
+        else
+            return dec1(decsp, ractx->lpc_refl_old, ractx->lpc_coef_old, f);
+    } else {
         return rms(work, f);
+    }
 }
 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
@@ -337,13 +346,9 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
     a = t_sqrt(energy*ractx->old_energy) >> 12;
 
-    gbuf1[0] = dec2(gbuf2[0], ractx->lpc_refl_old, ractx->lpc_coef_old, ractx->old_energy, ractx->lpc_coef, 3);
-    if (ractx->old_energy < energy) {
-        gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl, ractx->lpc_coef, a, ractx->lpc_coef_old, 2);
-    } else {
-        gbuf1[1] = dec2(gbuf2[1], ractx->lpc_refl_old, ractx->lpc_coef_old, a, ractx->lpc_coef, 2);
-    }
-    gbuf1[2] = dec2(gbuf2[2], ractx->lpc_refl, ractx->lpc_coef, energy, ractx->lpc_coef_old, 3);
+    gbuf1[0] = dec2(ractx, gbuf2[0], 0, 0, ractx->old_energy);
+    gbuf1[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy, a);
+    gbuf1[2] = dec2(ractx, gbuf2[2], 2, 1, energy);
     gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, energy);
 
     /* do output */
