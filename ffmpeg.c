@@ -904,13 +904,13 @@ static void do_video_out(AVFormatContext *s,
             if(ret>0){
                 pkt.data= bit_buffer;
                 pkt.size= ret;
-                if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
+                if(enc->coded_frame->pts != AV_NOPTS_VALUE)
                     pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
 /*av_log(NULL, AV_LOG_DEBUG, "encoder -> %"PRId64"/%"PRId64"\n",
    pkt.pts != AV_NOPTS_VALUE ? av_rescale(pkt.pts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1,
    pkt.dts != AV_NOPTS_VALUE ? av_rescale(pkt.dts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1);*/
 
-                if(enc->coded_frame && enc->coded_frame->key_frame)
+                if(enc->coded_frame->key_frame)
                     pkt.flags |= PKT_FLAG_KEY;
                 write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                 *frame_size = ret;
@@ -1012,7 +1012,7 @@ static void print_report(AVFormatContext **output_files,
         enc = ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ",
-                     enc->coded_frame && !ost->st->stream_copy ?
+                     !ost->st->stream_copy ?
                      enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
@@ -1021,11 +1021,11 @@ static void print_report(AVFormatContext **output_files,
             frame_number = ost->frame_number;
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3d q=%3.1f ",
                      frame_number, (t>1)?(int)(frame_number/t+0.5) : 0,
-                     enc->coded_frame && !ost->st->stream_copy ?
+                     !ost->st->stream_copy ?
                      enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
             if(is_last_report)
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
-            if(qp_hist && enc->coded_frame){
+            if(qp_hist){
                 int j;
                 int qp= lrintf(enc->coded_frame->quality/(float)FF_QP2LAMBDA);
                 if(qp>=0 && qp<sizeof(qp_histogram)/sizeof(int))
