@@ -155,7 +155,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, ByteIOContext *pb)
 
     for (i = 0; i < 3; i++) {
         if (offset_table[i] != 0) {
-            for (e = i + 1; e < 4 && offset_table[e] == 0; e++);
+            for (e = i + 1; e < 3 && offset_table[e] == 0; e++);
             err = seq_fill_buffer(seq, pb, buffer_num[1 + i],
               offset_table[i],
               offset_table[e] - offset_table[i]);
