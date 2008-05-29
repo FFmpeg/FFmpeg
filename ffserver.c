@@ -3078,7 +3078,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     AVFormatContext *ctx;
     AVStream *st;
     char *ipaddr;
-    URLContext *h;
+    URLContext *h = NULL;
     uint8_t *dummy_buf;
     char buf2[32];
     int max_packet_size;
