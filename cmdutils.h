@@ -30,6 +30,11 @@
 extern const char program_name[];
 
 /**
+ * program birth year, defined by the program for show_banner()
+ */
+extern const int program_birth_year;
+
+/**
  * Parses a string and returns its corresponding value as a double.
  * Exits from the application if the string cannot be correctly
  * parsed or the corresponding value is invalid.
@@ -107,10 +112,8 @@ void print_error(const char *filename, int err);
  * Prints the program banner to stderr. The banner contents depend on the
  * current version of the repository and of the libav* libraries used by
  * the program.
- * @param program_name name of the program
- * @param program_birth_year year of birth of the program
  */
-void show_banner(const char *program_name, int program_birth_year);
+void show_banner(void);
 
 /**
  * Prints the version of the program to stdout. The version message

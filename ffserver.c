@@ -57,7 +57,7 @@
 #undef exit
 
 const char program_name[] = "FFserver";
-static const int program_birth_year = 2000;
+const int program_birth_year = 2000;
 
 static const OptionDef options[];
 
@@ -4361,7 +4361,7 @@ int main(int argc, char **argv)
 
     av_register_all();
 
-    show_banner(program_name, program_birth_year);
+    show_banner();
 
     config_filename = "/etc/ffserver.conf";
 

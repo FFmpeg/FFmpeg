@@ -64,7 +64,7 @@
 #undef exit
 
 const char program_name[] = "FFmpeg";
-static const int program_birth_year = 2000;
+const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */
 typedef struct AVStreamMap {
@@ -3777,7 +3777,7 @@ int main(int argc, char **argv)
     avformat_opts = av_alloc_format_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
-    show_banner(program_name, program_birth_year);
+    show_banner();
     if (argc <= 1) {
         show_help();
         av_exit(1);

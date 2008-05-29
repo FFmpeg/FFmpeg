@@ -40,7 +40,7 @@
 #undef exit
 
 const char program_name[] = "FFplay";
-static const int program_birth_year = 2003;
+const int program_birth_year = 2003;
 
 //#define DEBUG_SYNC
 
@@ -2509,7 +2509,7 @@ int main(int argc, char **argv)
     avdevice_register_all();
     av_register_all();
 
-    show_banner(program_name, program_birth_year);
+    show_banner();
 
     parse_options(argc, argv, options, opt_input_file);
 

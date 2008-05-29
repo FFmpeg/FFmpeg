@@ -196,7 +196,7 @@ void print_error(const char *filename, int err)
     }
 }
 
-void show_banner(const char *program_name, int program_birth_year)
+void show_banner(void)
 {
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2008 Fabrice Bellard, et al.\n",
             program_name, program_birth_year);
