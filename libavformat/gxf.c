@@ -82,6 +82,8 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             return i;
     }
     st = av_new_stream(s, id);
+    if (!st)
+        return AVERROR(ENOMEM);
     switch (format) {
         case 3:
         case 4:
@@ -415,6 +417,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     while (!url_feof(pb)) {
         int track_type, track_id, ret;
         int field_nr;
+        int stream_index;
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
             if (!url_feof(pb))
                 av_log(s, AV_LOG_ERROR, "GXF: sync lost\n");
@@ -435,6 +438,9 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         pkt_len -= 16;
         track_type = get_byte(pb);
         track_id = get_byte(pb);
+        stream_index = get_sindex(s, track_id, track_type);
+        if (stream_index < 0)
+            return stream_index;
         field_nr = get_be32(pb);
         get_be32(pb); // field information
         get_be32(pb); // "timeline" field number
@@ -444,7 +450,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         // field information, it might be better to take this into account
         // as well.
         ret = av_get_packet(pb, pkt, pkt_len);
-        pkt->stream_index = get_sindex(s, track_id, track_type);
+        pkt->stream_index = stream_index;
         pkt->dts = field_nr;
         return ret;
     }
