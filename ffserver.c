@@ -4234,19 +4234,19 @@ static int parse_ffconfig(const char *filename)
                         filename, line_num);
                 errors++;
             } else {
-            if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
-                if (audio_id != CODEC_ID_NONE) {
-                    audio_enc.codec_type = CODEC_TYPE_AUDIO;
-                    audio_enc.codec_id = audio_id;
-                    add_codec(stream, &audio_enc);
+                if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
+                    if (audio_id != CODEC_ID_NONE) {
+                        audio_enc.codec_type = CODEC_TYPE_AUDIO;
+                        audio_enc.codec_id = audio_id;
+                        add_codec(stream, &audio_enc);
+                    }
+                    if (video_id != CODEC_ID_NONE) {
+                        video_enc.codec_type = CODEC_TYPE_VIDEO;
+                        video_enc.codec_id = video_id;
+                        add_codec(stream, &video_enc);
+                    }
                 }
-                if (video_id != CODEC_ID_NONE) {
-                    video_enc.codec_type = CODEC_TYPE_VIDEO;
-                    video_enc.codec_id = video_id;
-                    add_codec(stream, &video_enc);
-                }
-            }
-            stream = NULL;
+                stream = NULL;
             }
         } else if (!strcasecmp(cmd, "<Redirect")) {
             /*********************************************/
