@@ -1607,12 +1607,12 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].dts = pkt->dts;
     trk->trackDuration = pkt->dts - trk->cluster[0].dts + pkt->duration;
 
-        if (pkt->dts != pkt->pts)
-            trk->hasBframes = 1;
-        trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
-        trk->cluster[trk->entry].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
-        if(trk->cluster[trk->entry].key_frame)
-            trk->hasKeyframes++;
+    if (pkt->dts != pkt->pts)
+        trk->hasBframes = 1;
+    trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
+    trk->cluster[trk->entry].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
+    if(trk->cluster[trk->entry].key_frame)
+        trk->hasKeyframes++;
     trk->entry++;
     trk->sampleCount += samplesInChunk;
     mov->mdat_size += size;
