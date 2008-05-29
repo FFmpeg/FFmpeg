@@ -1725,15 +1725,15 @@ static int av_encode(AVFormatContext **output_files,
                     ost->padright = frame_padright;
                     if (!ost->video_resample) {
                         avcodec_get_frame_defaults(&ost->pict_tmp);
-                        if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height ) )
+                        if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
+                                         codec->width, codec->height))
                             goto fail;
                     }
                 }
                 if (ost->video_resample) {
                     avcodec_get_frame_defaults(&ost->pict_tmp);
-                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height ) ) {
+                    if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
+                                         codec->width, codec->height)) {
                         fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                         av_exit(1);
                     }
@@ -1895,12 +1895,12 @@ static int av_encode(AVFormatContext **output_files,
 
         int out_file_index = meta_data_maps[i].out_file;
         int in_file_index = meta_data_maps[i].in_file;
-        if ( out_file_index < 0 || out_file_index >= nb_output_files ) {
+        if (out_file_index < 0 || out_file_index >= nb_output_files) {
             fprintf(stderr, "Invalid output file index %d map_meta_data(%d,%d)\n", out_file_index, out_file_index, in_file_index);
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        if ( in_file_index < 0 || in_file_index >= nb_input_files ) {
+        if (in_file_index < 0 || in_file_index >= nb_input_files) {
             fprintf(stderr, "Invalid input file index %d map_meta_data(%d,%d)\n", in_file_index, out_file_index, in_file_index);
             ret = AVERROR(EINVAL);
             goto fail;
@@ -1935,7 +1935,7 @@ static int av_encode(AVFormatContext **output_files,
         print_sdp(output_files, nb_output_files);
     }
 
-    if ( !using_stdin && verbose >= 0) {
+    if (!using_stdin && verbose >= 0) {
         fprintf(stderr, "Press [q] to stop encoding\n");
         url_set_interrupt_cb(decode_interrupt_cb);
     }
@@ -2697,7 +2697,7 @@ static void opt_input_file(const char *filename)
         filename = "pipe:";
 
     using_stdin |= !strncmp(filename, "pipe:", 5) ||
-                   !strcmp( filename, "/dev/stdin" );
+                    !strcmp(filename, "/dev/stdin");
 
     /* get default parameters from command line */
     ic = av_alloc_format_context();
@@ -3303,7 +3303,7 @@ static void opt_output_file(const char *filename)
             if (url_exist(filename)) {
                 int c;
 
-                if ( !using_stdin ) {
+                if (!using_stdin) {
                     fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                     fflush(stderr);
                     c = getchar();
@@ -3311,11 +3311,11 @@ static void opt_output_file(const char *filename)
                         fprintf(stderr, "Not overwriting - exiting\n");
                         av_exit(1);
                     }
-                                }
-                                else {
+                }
+                else {
                     fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
                     av_exit(1);
-                                }
+                }
             }
         }
 
