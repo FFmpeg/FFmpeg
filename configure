@@ -2179,7 +2179,8 @@ includedir=$incdir
 Name: $name
 Description: $comment
 Version: $version
-Requires: $requires
+Requires: $(disabled shared && echo $requires)
+Requires.private: $(enabled shared && echo $requires)
 Conflicts:
 Libs: -L\${libdir} -l${shortname} $(disabled shared && echo $libs)
 Libs.private: $(enabled shared && echo $libs)
