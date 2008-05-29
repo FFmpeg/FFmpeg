@@ -615,6 +615,7 @@ AVCodec asv1_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name= "ASUS V1",
 };
 
 AVCodec asv2_decoder = {
@@ -627,6 +628,7 @@ AVCodec asv2_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name= "ASUS V2",
 };
 
 #ifdef CONFIG_ENCODERS
