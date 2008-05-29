@@ -55,7 +55,6 @@
 #undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 
-#include "version.h"
 #include "cmdutils.h"
 
 #undef NDEBUG

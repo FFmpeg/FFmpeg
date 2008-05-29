@@ -20,7 +20,6 @@
  */
 
 #include "avformat.h"
-#include "riff.h"
 
 enum SIFFTags{
     TAG_SIFF = MKTAG('S', 'I', 'F', 'F'),

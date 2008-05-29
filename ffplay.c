@@ -27,7 +27,6 @@
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 
-#include "version.h"
 #include "cmdutils.h"
 
 #include <SDL.h>
