@@ -50,7 +50,6 @@
 #include <dlfcn.h>
 #endif
 
-#include "ffserver.h"
 #include "cmdutils.h"
 
 #undef exit
