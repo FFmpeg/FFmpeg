@@ -1607,6 +1607,10 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].dts = pkt->dts;
     trk->trackDuration = pkt->dts - trk->cluster[0].dts + pkt->duration;
 
+    if (pkt->pts == AV_NOPTS_VALUE) {
+        av_log(s, AV_LOG_WARNING, "pts has no value\n");
+        pkt->pts = pkt->dts;
+    }
     if (pkt->dts != pkt->pts)
         trk->hasBframes = 1;
     trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
