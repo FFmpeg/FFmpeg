@@ -2043,152 +2043,152 @@ static int http_prepare_data(HTTPContext *c)
         break;
     case HTTPSTATE_SEND_DATA:
         /* find a new packet */
-            /* read a packet from the input stream */
-            if (c->stream->feed)
-                ffm_set_write_index(c->fmt_in,
-                                    c->stream->feed->feed_write_index,
-                                    c->stream->feed->feed_size);
+        /* read a packet from the input stream */
+        if (c->stream->feed)
+            ffm_set_write_index(c->fmt_in,
+                                c->stream->feed->feed_write_index,
+                                c->stream->feed->feed_size);
 
-            if (c->stream->max_time &&
-                c->stream->max_time + c->start_time - cur_time < 0)
-                /* We have timed out */
-                c->state = HTTPSTATE_SEND_DATA_TRAILER;
-            else {
-                AVPacket pkt;
-            redo:
-                if (av_read_frame(c->fmt_in, &pkt) < 0) {
-                    if (c->stream->feed && c->stream->feed->feed_opened) {
-                        /* if coming from feed, it means we reached the end of the
-                           ffm file, so must wait for more data */
-                        c->state = HTTPSTATE_WAIT_FEED;
-                        return 1; /* state changed */
+        if (c->stream->max_time &&
+            c->stream->max_time + c->start_time - cur_time < 0)
+            /* We have timed out */
+            c->state = HTTPSTATE_SEND_DATA_TRAILER;
+        else {
+            AVPacket pkt;
+        redo:
+            if (av_read_frame(c->fmt_in, &pkt) < 0) {
+                if (c->stream->feed && c->stream->feed->feed_opened) {
+                    /* if coming from feed, it means we reached the end of the
+                       ffm file, so must wait for more data */
+                    c->state = HTTPSTATE_WAIT_FEED;
+                    return 1; /* state changed */
+                } else {
+                    if (c->stream->loop) {
+                        av_close_input_file(c->fmt_in);
+                        c->fmt_in = NULL;
+                        if (open_input_stream(c, "") < 0)
+                            goto no_loop;
+                        goto redo;
                     } else {
-                        if (c->stream->loop) {
-                            av_close_input_file(c->fmt_in);
-                            c->fmt_in = NULL;
-                            if (open_input_stream(c, "") < 0)
-                                goto no_loop;
-                            goto redo;
-                        } else {
-                        no_loop:
-                            /* must send trailer now because eof or error */
-                            c->state = HTTPSTATE_SEND_DATA_TRAILER;
+                    no_loop:
+                        /* must send trailer now because eof or error */
+                        c->state = HTTPSTATE_SEND_DATA_TRAILER;
+                    }
+                }
+            } else {
+                /* update first pts if needed */
+                if (c->first_pts == AV_NOPTS_VALUE) {
+                    c->first_pts = av_rescale_q(pkt.dts, c->fmt_in->streams[pkt.stream_index]->time_base, AV_TIME_BASE_Q);
+                    c->start_time = cur_time;
+                }
+                /* send it to the appropriate stream */
+                if (c->stream->feed) {
+                    /* if coming from a feed, select the right stream */
+                    if (c->switch_pending) {
+                        c->switch_pending = 0;
+                        for(i=0;i<c->stream->nb_streams;i++) {
+                            if (c->switch_feed_streams[i] == pkt.stream_index)
+                                if (pkt.flags & PKT_FLAG_KEY)
+                                    do_switch_stream(c, i);
+                            if (c->switch_feed_streams[i] >= 0)
+                                c->switch_pending = 1;
+                        }
+                    }
+                    for(i=0;i<c->stream->nb_streams;i++) {
+                        if (c->feed_streams[i] == pkt.stream_index) {
+                            pkt.stream_index = i;
+                            if (pkt.flags & PKT_FLAG_KEY)
+                                c->got_key_frame |= 1 << i;
+                            /* See if we have all the key frames, then
+                             * we start to send. This logic is not quite
+                             * right, but it works for the case of a
+                             * single video stream with one or more
+                             * audio streams (for which every frame is
+                             * typically a key frame).
+                             */
+                            if (!c->stream->send_on_key ||
+                                ((c->got_key_frame + 1) >> c->stream->nb_streams))
+                                goto send_it;
                         }
                     }
                 } else {
-                    /* update first pts if needed */
-                    if (c->first_pts == AV_NOPTS_VALUE) {
-                        c->first_pts = av_rescale_q(pkt.dts, c->fmt_in->streams[pkt.stream_index]->time_base, AV_TIME_BASE_Q);
-                        c->start_time = cur_time;
-                    }
-                    /* send it to the appropriate stream */
-                    if (c->stream->feed) {
-                        /* if coming from a feed, select the right stream */
-                        if (c->switch_pending) {
-                            c->switch_pending = 0;
-                            for(i=0;i<c->stream->nb_streams;i++) {
-                                if (c->switch_feed_streams[i] == pkt.stream_index)
-                                    if (pkt.flags & PKT_FLAG_KEY)
-                                        do_switch_stream(c, i);
-                                if (c->switch_feed_streams[i] >= 0)
-                                    c->switch_pending = 1;
-                            }
-                        }
-                        for(i=0;i<c->stream->nb_streams;i++) {
-                            if (c->feed_streams[i] == pkt.stream_index) {
-                                pkt.stream_index = i;
-                                if (pkt.flags & PKT_FLAG_KEY)
-                                    c->got_key_frame |= 1 << i;
-                                /* See if we have all the key frames, then
-                                 * we start to send. This logic is not quite
-                                 * right, but it works for the case of a
-                                 * single video stream with one or more
-                                 * audio streams (for which every frame is
-                                 * typically a key frame).
-                                 */
-                                if (!c->stream->send_on_key ||
-                                    ((c->got_key_frame + 1) >> c->stream->nb_streams))
-                                    goto send_it;
-                            }
-                        }
-                    } else {
-                        AVCodecContext *codec;
+                    AVCodecContext *codec;
 
-                    send_it:
-                        /* specific handling for RTP: we use several
-                           output stream (one for each RTP
-                           connection). XXX: need more abstract handling */
-                        if (c->is_packetized) {
-                            AVStream *st;
-                            /* compute send time and duration */
-                            st = c->fmt_in->streams[pkt.stream_index];
-                            c->cur_pts = av_rescale_q(pkt.dts, st->time_base, AV_TIME_BASE_Q);
-                            if (st->start_time != AV_NOPTS_VALUE)
-                                c->cur_pts -= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
-                            c->cur_frame_duration = av_rescale_q(pkt.duration, st->time_base, AV_TIME_BASE_Q);
+                send_it:
+                    /* specific handling for RTP: we use several
+                       output stream (one for each RTP
+                       connection). XXX: need more abstract handling */
+                    if (c->is_packetized) {
+                        AVStream *st;
+                        /* compute send time and duration */
+                        st = c->fmt_in->streams[pkt.stream_index];
+                        c->cur_pts = av_rescale_q(pkt.dts, st->time_base, AV_TIME_BASE_Q);
+                        if (st->start_time != AV_NOPTS_VALUE)
+                            c->cur_pts -= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
+                        c->cur_frame_duration = av_rescale_q(pkt.duration, st->time_base, AV_TIME_BASE_Q);
 #if 0
-                            printf("index=%d pts=%0.3f duration=%0.6f\n",
-                                   pkt.stream_index,
-                                   (double)c->cur_pts /
-                                   AV_TIME_BASE,
-                                   (double)c->cur_frame_duration /
-                                   AV_TIME_BASE);
+                        printf("index=%d pts=%0.3f duration=%0.6f\n",
+                               pkt.stream_index,
+                               (double)c->cur_pts /
+                               AV_TIME_BASE,
+                               (double)c->cur_frame_duration /
+                               AV_TIME_BASE);
 #endif
-                            /* find RTP context */
-                            c->packet_stream_index = pkt.stream_index;
-                            ctx = c->rtp_ctx[c->packet_stream_index];
-                            if(!ctx) {
-                              av_free_packet(&pkt);
-                              break;
-                            }
-                            codec = ctx->streams[0]->codec;
-                            /* only one stream per RTP connection */
-                            pkt.stream_index = 0;
-                        } else {
-                            ctx = &c->fmt_ctx;
-                            /* Fudge here */
-                            codec = ctx->streams[pkt.stream_index]->codec;
-                        }
-
-                        if (c->is_packetized) {
-                            int max_packet_size;
-                            if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
-                                max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
-                            else
-                                max_packet_size = url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]);
-                            ret = url_open_dyn_packet_buf(&ctx->pb, max_packet_size);
-                        } else {
-                            ret = url_open_dyn_buf(&ctx->pb);
-                        }
-                        if (ret < 0) {
-                            /* XXX: potential leak */
-                            return -1;
-                        }
-                        if (pkt.dts != AV_NOPTS_VALUE)
-                            pkt.dts = av_rescale_q(pkt.dts,
-                                c->fmt_in->streams[pkt.stream_index]->time_base,
-                                ctx->streams[pkt.stream_index]->time_base);
-                        if (pkt.pts != AV_NOPTS_VALUE)
-                            pkt.pts = av_rescale_q(pkt.pts,
-                                c->fmt_in->streams[pkt.stream_index]->time_base,
-                                ctx->streams[pkt.stream_index]->time_base);
-                        if (av_write_frame(ctx, &pkt))
-                            c->state = HTTPSTATE_SEND_DATA_TRAILER;
-
-                        len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
-                        c->cur_frame_bytes = len;
-                        c->buffer_ptr = c->pb_buffer;
-                        c->buffer_end = c->pb_buffer + len;
-
-                        codec->frame_number++;
-                        if (len == 0) {
+                        /* find RTP context */
+                        c->packet_stream_index = pkt.stream_index;
+                        ctx = c->rtp_ctx[c->packet_stream_index];
+                        if(!ctx) {
                             av_free_packet(&pkt);
-                            goto redo;
+                            break;
                         }
+                        codec = ctx->streams[0]->codec;
+                        /* only one stream per RTP connection */
+                        pkt.stream_index = 0;
+                    } else {
+                        ctx = &c->fmt_ctx;
+                        /* Fudge here */
+                        codec = ctx->streams[pkt.stream_index]->codec;
                     }
-                    av_free_packet(&pkt);
+
+                    if (c->is_packetized) {
+                        int max_packet_size;
+                        if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
+                            max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
+                        else
+                            max_packet_size = url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]);
+                        ret = url_open_dyn_packet_buf(&ctx->pb, max_packet_size);
+                    } else {
+                        ret = url_open_dyn_buf(&ctx->pb);
+                    }
+                    if (ret < 0) {
+                        /* XXX: potential leak */
+                        return -1;
+                    }
+                    if (pkt.dts != AV_NOPTS_VALUE)
+                        pkt.dts = av_rescale_q(pkt.dts,
+                                               c->fmt_in->streams[pkt.stream_index]->time_base,
+                                               ctx->streams[pkt.stream_index]->time_base);
+                    if (pkt.pts != AV_NOPTS_VALUE)
+                        pkt.pts = av_rescale_q(pkt.pts,
+                                               c->fmt_in->streams[pkt.stream_index]->time_base,
+                                               ctx->streams[pkt.stream_index]->time_base);
+                    if (av_write_frame(ctx, &pkt))
+                        c->state = HTTPSTATE_SEND_DATA_TRAILER;
+
+                    len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
+                    c->cur_frame_bytes = len;
+                    c->buffer_ptr = c->pb_buffer;
+                    c->buffer_end = c->pb_buffer + len;
+
+                    codec->frame_number++;
+                    if (len == 0) {
+                        av_free_packet(&pkt);
+                        goto redo;
+                    }
                 }
+                av_free_packet(&pkt);
             }
+        }
         break;
     default:
     case HTTPSTATE_SEND_DATA_TRAILER:
