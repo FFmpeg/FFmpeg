@@ -4274,13 +4274,14 @@ static int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: No corresponding <Redirect> for </Redirect>\n",
                         filename, line_num);
                 errors++;
-            }
+            } else {
             if (!redirect->feed_filename[0]) {
                 fprintf(stderr, "%s:%d: No URL found for <Redirect>\n",
                         filename, line_num);
                 errors++;
             }
             redirect = NULL;
+            }
         } else if (!strcasecmp(cmd, "LoadModule")) {
             get_arg(arg, sizeof(arg), &p);
 #ifdef HAVE_DLOPEN
