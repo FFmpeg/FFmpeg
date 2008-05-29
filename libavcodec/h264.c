@@ -7656,6 +7656,15 @@ static int decode_frame(AVCodecContext *avctx,
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
+    if(s->flags&CODEC_FLAG_TRUNCATED){
+        const int next= ff_h264_find_frame_end(h, buf, buf_size);
+        assert((buf_size > 0) || (next == END_NOT_FOUND));
+
+        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
+          return buf_size;
+//printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
+    }
+
    /* no supplementary picture */
     if (buf_size == 0) {
         Picture *out;
@@ -7679,14 +7688,6 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         return 0;
-    }
-
-    if(s->flags&CODEC_FLAG_TRUNCATED){
-        int next= ff_h264_find_frame_end(h, buf, buf_size);
-
-        if( ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf, &buf_size) < 0 )
-            return buf_size;
-//printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
     }
 
     if(h->is_avc && !h->got_avcC) {
