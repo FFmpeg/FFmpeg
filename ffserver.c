@@ -3910,6 +3910,7 @@ static int parse_ffconfig(const char *filename)
             }
         } else if (!strcasecmp(cmd, "Format")) {
             get_arg(arg, sizeof(arg), &p);
+            if (stream) {
             if (!strcmp(arg, "status")) {
                 stream->stream_type = STREAM_TYPE_STATUS;
                 stream->fmt = NULL;
@@ -3928,6 +3929,7 @@ static int parse_ffconfig(const char *filename)
             if (stream->fmt) {
                 audio_id = stream->fmt->audio_codec;
                 video_id = stream->fmt->video_codec;
+            }
             }
         } else if (!strcasecmp(cmd, "InputFormat")) {
             get_arg(arg, sizeof(arg), &p);
