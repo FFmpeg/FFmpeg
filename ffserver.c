@@ -4054,8 +4054,14 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoFrameRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                video_enc.time_base.num= DEFAULT_FRAME_RATE_BASE;
-                video_enc.time_base.den = (int)(strtod(arg, NULL) * video_enc.time_base.num);
+                AVRational frame_rate;
+                if (av_parse_video_frame_rate(&frame_rate, arg) < 0) {
+                    fprintf(stderr, "Incorrect frame rate\n");
+                    errors++;
+                } else {
+                    video_enc.time_base.num = frame_rate.den;
+                    video_enc.time_base.den = frame_rate.num;
+                }
             }
         } else if (!strcasecmp(cmd, "VideoGopSize")) {
             get_arg(arg, sizeof(arg), &p);
