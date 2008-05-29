@@ -4233,7 +4233,7 @@ static int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: No corresponding <Stream> for </Stream>\n",
                         filename, line_num);
                 errors++;
-            }
+            } else {
             if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
                 if (audio_id != CODEC_ID_NONE) {
                     audio_enc.codec_type = CODEC_TYPE_AUDIO;
@@ -4247,6 +4247,7 @@ static int parse_ffconfig(const char *filename)
                 }
             }
             stream = NULL;
+            }
         } else if (!strcasecmp(cmd, "<Redirect")) {
             /*********************************************/
             char *q;
