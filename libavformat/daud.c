@@ -22,6 +22,8 @@
 
 static int daud_header(AVFormatContext *s, AVFormatParameters *ap) {
     AVStream *st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_PCM_S24DAUD;
     st->codec->codec_tag = MKTAG('d', 'a', 'u', 'd');
