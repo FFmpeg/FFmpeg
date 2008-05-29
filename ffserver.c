@@ -2043,9 +2043,6 @@ static int http_prepare_data(HTTPContext *c)
         break;
     case HTTPSTATE_SEND_DATA:
         /* find a new packet */
-        {
-            AVPacket pkt;
-
             /* read a packet from the input stream */
             if (c->stream->feed)
                 ffm_set_write_index(c->fmt_in,
@@ -2057,6 +2054,7 @@ static int http_prepare_data(HTTPContext *c)
                 /* We have timed out */
                 c->state = HTTPSTATE_SEND_DATA_TRAILER;
             else {
+                AVPacket pkt;
             redo:
                 if (av_read_frame(c->fmt_in, &pkt) < 0) {
                     if (c->stream->feed && c->stream->feed->feed_opened) {
@@ -2191,7 +2189,6 @@ static int http_prepare_data(HTTPContext *c)
                     av_free_packet(&pkt);
                 }
             }
-        }
         break;
     default:
     case HTTPSTATE_SEND_DATA_TRAILER:
