@@ -1063,8 +1063,13 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
 
         for(i=0;i<NB_RL_TABLES;i++) {
             init_rl(&rl_table[i], static_rl_table_store[i]);
-            init_vlc_rl(&rl_table[i], 1);
         }
+        INIT_VLC_RL(rl_table[0], 642);
+        INIT_VLC_RL(rl_table[1], 1104);
+        INIT_VLC_RL(rl_table[2], 554);
+        INIT_VLC_RL(rl_table[3], 940);
+        INIT_VLC_RL(rl_table[4], 962);
+        INIT_VLC_RL(rl_table[5], 554);
         for(i=0;i<2;i++) {
             mv = &mv_tables[i];
             init_vlc(&mv->vlc, MV_VLC_BITS, mv->n + 1,

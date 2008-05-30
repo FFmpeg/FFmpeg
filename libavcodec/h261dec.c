@@ -66,7 +66,7 @@ static av_cold void h261_decode_init_vlc(H261Context *h){
                  &h261_cbp_tab[0][1], 2, 1,
                  &h261_cbp_tab[0][0], 2, 1, 1);
         init_rl(&h261_rl_tcoeff, ff_h261_rl_table_store);
-        init_vlc_rl(&h261_rl_tcoeff, 1);
+        INIT_VLC_RL(h261_rl_tcoeff, 552);
     }
 }
 

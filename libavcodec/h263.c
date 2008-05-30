@@ -2924,11 +2924,11 @@ void h263_decode_init_vlc(MpegEncContext *s)
         init_rl(&rvlc_rl_inter, static_rl_table_store[3]);
         init_rl(&rvlc_rl_intra, static_rl_table_store[4]);
         init_rl(&rl_intra_aic, static_rl_table_store[2]);
-        init_vlc_rl(&rl_inter, 1);
-        init_vlc_rl(&rl_intra, 1);
-        init_vlc_rl(&rvlc_rl_inter, 1);
-        init_vlc_rl(&rvlc_rl_intra, 1);
-        init_vlc_rl(&rl_intra_aic, 1);
+        INIT_VLC_RL(rl_inter, 554);
+        INIT_VLC_RL(rl_intra, 554);
+        INIT_VLC_RL(rvlc_rl_inter, 1072);
+        INIT_VLC_RL(rvlc_rl_intra, 1072);
+        INIT_VLC_RL(rl_intra_aic, 554);
         init_vlc(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
                  &DCtab_lum[0][1], 2, 1,
                  &DCtab_lum[0][0], 2, 1, 1);
