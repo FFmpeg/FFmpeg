@@ -50,11 +50,10 @@
 #endif
 #endif
 
-/* Use Apple-specific AltiVec syntax for vector declarations when necessary. */
-#ifdef __APPLE_CC__
-#define AVV(x...) (x)
-#else
+#ifdef HAVE_ALTIVEC_VECTOR_BRACES
 #define AVV(x...) {x}
+#else
+#define AVV(x...) (x)
 #endif
 
 #ifndef M_PI
