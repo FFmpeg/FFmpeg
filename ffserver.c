@@ -2176,8 +2176,10 @@ static int http_prepare_data(HTTPContext *c)
                         pkt.pts = av_rescale_q(pkt.pts,
                                                c->fmt_in->streams[source_index]->time_base,
                                                ctx->streams[pkt.stream_index]->time_base);
-                    if (av_write_frame(ctx, &pkt))
+                    if (av_write_frame(ctx, &pkt) < 0) {
+                        http_log("Error writing frame to output\n");
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
+                    }
 
                     len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
                     c->cur_frame_bytes = len;
