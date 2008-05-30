@@ -12,6 +12,7 @@ rm -f tests/feed1.ffm
 ./ffserver -d -f tests/test.conf 2> /dev/null &
 FFSERVER_PID=$!
 echo "Waiting for feeds to startup..."
+sleep 2
 (
     cd tests/data || exit $?
     rm -f ff-*;
