@@ -80,18 +80,15 @@ static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
-static void init_2d_vlc_rl(RLTable *rl, int use_static)
+static void init_2d_vlc_rl(RLTable *rl)
 {
     int i;
 
     init_vlc(&rl->vlc, TEX_VLC_BITS, rl->n + 2,
              &rl->table_vlc[0][1], 4, 2,
-             &rl->table_vlc[0][0], 4, 2, use_static);
+             &rl->table_vlc[0][0], 4, 2, 1);
 
-    if(use_static)
         rl->rl_vlc[0]= av_mallocz_static(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
-    else
-        rl->rl_vlc[0]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
 
     for(i=0; i<rl->vlc.table_size; i++){
         int code= rl->vlc.table[i][0];
@@ -181,8 +178,8 @@ static void init_vlcs(void)
         init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
         init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
-        init_2d_vlc_rl(&ff_rl_mpeg1, 1);
-        init_2d_vlc_rl(&ff_rl_mpeg2, 1);
+        init_2d_vlc_rl(&ff_rl_mpeg1);
+        init_2d_vlc_rl(&ff_rl_mpeg2);
     }
 }
 
