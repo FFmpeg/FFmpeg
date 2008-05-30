@@ -2100,17 +2100,11 @@ static int http_prepare_data(HTTPContext *c)
                     for(i=0;i<c->stream->nb_streams;i++) {
                         if (c->feed_streams[i] == pkt.stream_index) {
                             pkt.stream_index = i;
-                            if (pkt.flags & PKT_FLAG_KEY)
-                                c->got_key_frame |= 1 << i;
-                            /* See if we have all the key frames, then
-                             * we start to send. This logic is not quite
-                             * right, but it works for the case of a
-                             * single video stream with one or more
-                             * audio streams (for which every frame is
-                             * typically a key frame).
-                             */
-                            if (!c->stream->send_on_key ||
-                                ((c->got_key_frame + 1) >> c->stream->nb_streams))
+                            if (pkt.flags & PKT_FLAG_KEY &&
+                                c->fmt_in->streams[source_index]->codec->codec_type
+                                == CODEC_TYPE_VIDEO)
+                                c->got_key_frame = 1;
+                            if (!c->stream->send_on_key || c->got_key_frame)
                                 goto send_it;
                         }
                     }
