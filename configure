@@ -1531,13 +1531,10 @@ fi
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if enabled altivec; then
     check_cflags -maltivec -mabi=altivec && \
-        check_header altivec.h || \
+        { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } || \
         check_cflags -faltivec
 
     # check if our compiler supports Motorola AltiVec C API
-    enabled altivec_h &&
-        inc_altivec_h="#include <altivec.h>" ||
-        inc_altivec_h=
     check_cc <<EOF || disable altivec
 $inc_altivec_h
 int main(void) {
