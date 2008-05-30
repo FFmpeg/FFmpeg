@@ -84,17 +84,6 @@ static void av_free_static(void)
     av_freep(&array_static);
 }
 
-/**
- * Call av_free_static automatically before it's too late
- */
-
-static void do_free(void) __attribute__ ((destructor));
-
-static void do_free(void)
-{
-    av_free_static();
-}
-
 
 void align_put_bits(PutBitContext *s)
 {
