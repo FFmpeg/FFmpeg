@@ -2099,10 +2099,11 @@ static int http_prepare_data(HTTPContext *c)
                     }
                     for(i=0;i<c->stream->nb_streams;i++) {
                         if (c->feed_streams[i] == pkt.stream_index) {
+                            AVStream *st = c->fmt_in->streams[source_index];
                             pkt.stream_index = i;
-                            if (pkt.flags & PKT_FLAG_KEY &&
-                                c->fmt_in->streams[source_index]->codec->codec_type
-                                == CODEC_TYPE_VIDEO)
+                            if (st->codec->codec_type == CODEC_TYPE_AUDIO ||
+                                (st->codec->codec_type == CODEC_TYPE_VIDEO &&
+                                 pkt.flags & PKT_FLAG_KEY))
                                 c->got_key_frame = 1;
                             if (!c->stream->send_on_key || c->got_key_frame)
                                 goto send_it;
