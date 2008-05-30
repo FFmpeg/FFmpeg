@@ -2477,6 +2477,12 @@ static int http_receive_data(HTTPContext *c)
  fail:
     c->stream->feed_opened = 0;
     close(c->feed_fd);
+    /* wake up any waiting connections to stop waiting for feed */
+    for(c1 = first_http_ctx; c1 != NULL; c1 = c1->next) {
+        if (c1->state == HTTPSTATE_WAIT_FEED &&
+            c1->stream->feed == c->stream->feed)
+            c1->state = HTTPSTATE_SEND_DATA_TRAILER;
+    }
     return -1;
 }
 
