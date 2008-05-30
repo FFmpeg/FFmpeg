@@ -392,8 +392,6 @@ static int av_exit(int ret)
     for(i=0;i<nb_input_files;i++)
         av_close_input_file(input_files[i]);
 
-    av_free_static();
-
     av_free(intra_matrix);
     av_free(inter_matrix);
 
