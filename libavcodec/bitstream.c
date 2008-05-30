@@ -40,7 +40,61 @@
  * and should correctly use static arrays
  */
 attribute_deprecated av_alloc_size(2)
-void *ff_realloc_static(void *ptr, unsigned int size);
+static void *ff_realloc_static(void *ptr, unsigned int size);
+
+static unsigned int last_static = 0;
+static unsigned int allocated_static = 0;
+static void** array_static = NULL;
+
+static void *av_mallocz_static(unsigned int size)
+{
+    void *ptr = av_mallocz(size);
+
+    if(ptr){
+        array_static =av_fast_realloc(array_static, &allocated_static, sizeof(void*)*(last_static+1));
+        if(!array_static)
+            return NULL;
+        array_static[last_static++] = ptr;
+    }
+
+    return ptr;
+}
+
+static void *ff_realloc_static(void *ptr, unsigned int size)
+{
+    int i;
+    if(!ptr)
+      return av_mallocz_static(size);
+    /* Look for the old ptr */
+    for(i = 0; i < last_static; i++) {
+        if(array_static[i] == ptr) {
+            array_static[i] = av_realloc(array_static[i], size);
+            return array_static[i];
+        }
+    }
+    return NULL;
+
+}
+
+static void av_free_static(void)
+{
+    while(last_static){
+        av_freep(&array_static[--last_static]);
+    }
+    av_freep(&array_static);
+}
+
+/**
+ * Call av_free_static automatically before it's too late
+ */
+
+static void do_free(void) __attribute__ ((destructor));
+
+static void do_free(void)
+{
+    av_free_static();
+}
+
 
 void align_put_bits(PutBitContext *s)
 {
