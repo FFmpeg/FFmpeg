@@ -21,7 +21,6 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
-#include "acelp_vectors.h"
 #include "ra144.h"
 
 #define NBLOCKS         4       /* number of segments within a block */
@@ -35,12 +34,11 @@ typedef struct {
     unsigned int     old_energy;        ///< previous frame energy
 
     /* the swapped buffers */
-    unsigned int     refl_tables[2][10];
-    int16_t          coef_tables[2][10];
+    unsigned int     lpc_tables[4][10];
     unsigned int    *lpc_refl;          ///< LPC reflection coefficients
-    int16_t         *lpc_coef;          ///< LPC coefficients
+    unsigned int    *lpc_coef;          ///< LPC coefficients
     unsigned int    *lpc_refl_old;      ///< previous frame LPC reflection coefs
-    int16_t         *lpc_coef_old;      ///< previous frame LPC coefficients
+    unsigned int    *lpc_coef_old;      ///< previous frame LPC coefficients
 
     unsigned int buffer[5];
     uint16_t adapt_cb[148];             ///< adaptive codebook
@@ -50,10 +48,10 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
 
-    ractx->lpc_refl     = ractx->refl_tables[0];
-    ractx->lpc_coef     = ractx->coef_tables[0];
-    ractx->lpc_refl_old = ractx->refl_tables[1];
-    ractx->lpc_coef_old = ractx->coef_tables[1];
+    ractx->lpc_refl     = ractx->lpc_tables[0];
+    ractx->lpc_coef     = ractx->lpc_tables[1];
+    ractx->lpc_refl_old = ractx->lpc_tables[2];
+    ractx->lpc_coef_old = ractx->lpc_tables[3];
 
     return 0;
 }
@@ -74,16 +72,12 @@ static int t_sqrt(unsigned int x)
 }
 
 /* do 'voice' */
-static void do_voice(const int *a1, int16_t *a2)
+static void do_voice(const int *a1, int *a2)
 {
     int buffer[10];
-    int buffer2[10];
     int *b1 = buffer;
-    int *b2 = buffer2;
+    int *b2 = a2;
     int x, y;
-
-    for (x=0; x<10; x++)
-        buffer2[x] = a2[x];
 
     for (x=0; x < 10; x++) {
         b1[x] = a1[x] << 4;
@@ -95,7 +89,7 @@ static void do_voice(const int *a1, int16_t *a2)
     }
 
     for (x=0; x < 10; x++)
-        a2[x] = buffer2[x] >> 4;
+        a2[x] >>= 4;
 }
 
 /* rotate block */
@@ -242,6 +236,16 @@ static void do_output_subblock(RA144Context *ractx,
     final(gsp, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
+static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
+{
+    int i;
+
+    for (i=0; i<30; i++)
+        *(decsp++) = *(inp++);
+
+    return rms(data, f);
+}
+
 static int eq(const int16_t *in, int *target)
 {
     int retval = 0;
@@ -289,22 +293,22 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
                 int copynew, int f)
 {
     int work[10];
+    int a = block_num + 1;
+    int b = NBLOCKS - a;
+    int x;
 
     // Interpolate block coefficients from the this frame forth block and
     // last frame forth block
-    ff_acelp_weighted_vector_sum(decsp, ractx->lpc_coef, ractx->lpc_coef_old,
-                                 block_num + 1, 3 - block_num, 0, 2, 30);
+    for (x=0; x<30; x++)
+        decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
     if (eq(decsp, work)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
-        if (copynew) {
-            memcpy(decsp, ractx->lpc_coef, 30*sizeof(*decsp));
-            return rms(ractx->lpc_refl, f);
-        } else {
-            memcpy(decsp, ractx->lpc_coef_old, 30*sizeof(*decsp));
-            return rms(ractx->lpc_refl_old, f);
-        }
+        if (copynew)
+            return dec1(decsp, ractx->lpc_refl, ractx->lpc_coef, f);
+        else
+            return dec1(decsp, ractx->lpc_refl_old, ractx->lpc_coef_old, f);
     } else {
         return rms(work, f);
     }
@@ -316,16 +320,14 @@ static int ra144_decode_frame(AVCodecContext * avctx,
                               const uint8_t * buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-    RA144Context *ractx = avctx->priv_data;
-    unsigned int refl_rms[4];
-    uint16_t coef_table[3][30];
-    uint16_t *gbuf2[4] =
-        {coef_table[0], coef_table[1], coef_table[2], ractx->lpc_coef};
-    unsigned int c;
+    unsigned int gbuf1[4];
+    uint16_t gbuf2[4][30];
+    unsigned int a, c;
     int i;
     int16_t *data = vdata;
     unsigned int energy;
 
+    RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
     if(buf_size < 20) {
@@ -342,16 +344,16 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     do_voice(ractx->lpc_refl, ractx->lpc_coef);
 
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
+    a = t_sqrt(energy*ractx->old_energy) >> 12;
 
-    refl_rms[0] = dec2(ractx, gbuf2[0], 0, 0, ractx->old_energy);
-    refl_rms[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy,
-                    t_sqrt(energy*ractx->old_energy) >> 12);
-    refl_rms[2] = dec2(ractx, gbuf2[2], 2, 1, energy);
-    refl_rms[3] = rms(ractx->lpc_refl, energy);
+    gbuf1[0] = dec2(ractx, gbuf2[0], 0, 0, ractx->old_energy);
+    gbuf1[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy, a);
+    gbuf1[2] = dec2(ractx, gbuf2[2], 2, 1, energy);
+    gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, energy);
 
     /* do output */
     for (c=0; c<4; c++) {
-        do_output_subblock(ractx, gbuf2[c], refl_rms[c], data, &gb);
+        do_output_subblock(ractx, gbuf2[c], gbuf1[c], data, &gb);
 
         for (i=0; i<BLOCKSIZE; i++) {
             *data = av_clip_int16(*data << 2);
@@ -362,7 +364,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     ractx->old_energy = energy;
 
     FFSWAP(unsigned int *, ractx->lpc_refl_old, ractx->lpc_refl);
-    FFSWAP(int16_t *     , ractx->lpc_coef_old, ractx->lpc_coef);
+    FFSWAP(unsigned int *, ractx->lpc_coef_old, ractx->lpc_coef);
 
     *data_size = 2*160;
     return 20;
