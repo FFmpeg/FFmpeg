@@ -2078,6 +2078,7 @@ static int http_prepare_data(HTTPContext *c)
                     }
                 }
             } else {
+                int source_index = pkt.stream_index;
                 /* update first pts if needed */
                 if (c->first_pts == AV_NOPTS_VALUE) {
                     c->first_pts = av_rescale_q(pkt.dts, c->fmt_in->streams[pkt.stream_index]->time_base, AV_TIME_BASE_Q);
@@ -2169,11 +2170,11 @@ static int http_prepare_data(HTTPContext *c)
                     c->fmt_ctx.pb->is_streamed = 1;
                     if (pkt.dts != AV_NOPTS_VALUE)
                         pkt.dts = av_rescale_q(pkt.dts,
-                                               c->fmt_in->streams[pkt.stream_index]->time_base,
+                                               c->fmt_in->streams[source_index]->time_base,
                                                ctx->streams[pkt.stream_index]->time_base);
                     if (pkt.pts != AV_NOPTS_VALUE)
                         pkt.pts = av_rescale_q(pkt.pts,
-                                               c->fmt_in->streams[pkt.stream_index]->time_base,
+                                               c->fmt_in->streams[source_index]->time_base,
                                                ctx->streams[pkt.stream_index]->time_base);
                     if (av_write_frame(ctx, &pkt))
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
