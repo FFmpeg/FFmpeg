@@ -80,15 +80,21 @@ static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
+
+#define INIT_2D_VLC_RL(rl, static_size)\
+{\
+    static RL_VLC_ELEM rl_vlc_table[static_size];\
+    INIT_VLC_STATIC(&rl.vlc, TEX_VLC_BITS, rl.n + 2,\
+             &rl.table_vlc[0][1], 4, 2,\
+             &rl.table_vlc[0][0], 4, 2, static_size);\
+\
+    rl.rl_vlc[0]= rl_vlc_table;\
+    init_2d_vlc_rl(&rl);\
+}
+
 static void init_2d_vlc_rl(RLTable *rl)
 {
     int i;
-
-    init_vlc(&rl->vlc, TEX_VLC_BITS, rl->n + 2,
-             &rl->table_vlc[0][1], 4, 2,
-             &rl->table_vlc[0][0], 4, 2, 1);
-
-        rl->rl_vlc[0]= av_mallocz_static(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
 
     for(i=0; i<rl->vlc.table_size; i++){
         int code= rl->vlc.table[i][0];
@@ -178,8 +184,8 @@ static void init_vlcs(void)
         init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
         init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
-        init_2d_vlc_rl(&ff_rl_mpeg1);
-        init_2d_vlc_rl(&ff_rl_mpeg2);
+        INIT_2D_VLC_RL(ff_rl_mpeg1, 680);
+        INIT_2D_VLC_RL(ff_rl_mpeg2, 674);
     }
 }
 
