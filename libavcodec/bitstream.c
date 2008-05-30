@@ -76,15 +76,6 @@ static void *ff_realloc_static(void *ptr, unsigned int size)
 
 }
 
-static void av_free_static(void)
-{
-    while(last_static){
-        av_freep(&array_static[--last_static]);
-    }
-    av_freep(&array_static);
-}
-
-
 void align_put_bits(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
