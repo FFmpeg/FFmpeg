@@ -805,6 +805,15 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 #define INIT_VLC_USE_NEW_STATIC 4
 void free_vlc(VLC *vlc);
 
+#define INIT_VLC_STATIC(vlc, bits, a,b,c,d,e,f,g, static_size)\
+{\
+    static VLC_TYPE table[static_size][2];\
+    (vlc)->table= table;\
+    (vlc)->table_allocated= static_size;\
+    init_vlc(vlc, bits, a,b,c,d,e,f,g, INIT_VLC_USE_NEW_STATIC);\
+}
+
+
 /**
  *
  * if the vlc code is invalid and max_depth=1 than no bits will be removed
