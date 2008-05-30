@@ -1531,8 +1531,8 @@ fi
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if enabled altivec; then
-    check_cflags -maltivec -mabi=altivec && \
-        { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } || \
+    check_cflags -maltivec -mabi=altivec &&
+        { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } ||
         check_cflags -faltivec
 
     # check if our compiler supports Motorola AltiVec C API
@@ -2211,9 +2211,9 @@ pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
 pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
-enabled avfilter && \
+enabled avfilter &&
     pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
-enabled postproc && \
+enabled postproc &&
     pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
 if enabled swscale; then
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
