@@ -2164,6 +2164,7 @@ static int http_prepare_data(HTTPContext *c)
                         /* XXX: potential leak */
                         return -1;
                     }
+                    c->fmt_ctx.pb->is_streamed = 1;
                     if (pkt.dts != AV_NOPTS_VALUE)
                         pkt.dts = av_rescale_q(pkt.dts,
                                                c->fmt_in->streams[pkt.stream_index]->time_base,
@@ -2201,6 +2202,7 @@ static int http_prepare_data(HTTPContext *c)
             /* XXX: potential leak */
             return -1;
         }
+        c->fmt_ctx.pb->is_streamed = 1;
         av_write_trailer(ctx);
         len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
