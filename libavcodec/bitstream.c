@@ -42,11 +42,6 @@
 attribute_deprecated av_alloc_size(2)
 static void *ff_realloc_static(void *ptr, unsigned int size);
 
-static void *av_mallocz_static(unsigned int size)
-{
-    return av_mallocz(size);
-}
-
 static void *ff_realloc_static(void *ptr, unsigned int size)
 {
     return av_realloc(ptr, size);
