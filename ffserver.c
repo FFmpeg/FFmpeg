@@ -2031,8 +2031,10 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.pb->is_streamed = 1;
 
         av_set_parameters(&c->fmt_ctx, NULL);
-        if (av_write_header(&c->fmt_ctx) < 0)
+        if (av_write_header(&c->fmt_ctx) < 0) {
+            http_log("Error writing output header\n");
             return -1;
+        }
 
         len = url_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
@@ -2349,8 +2351,10 @@ static int http_start_receive_data(HTTPContext *c)
 
     /* open feed */
     fd = open(c->stream->feed_filename, O_RDWR);
-    if (fd < 0)
+    if (fd < 0) {
+        http_log("Error opening feeder file: %s\n", strerror(errno));
         return -1;
+    }
     c->feed_fd = fd;
 
     c->stream->feed_write_index = ffm_read_write_index(fd);
@@ -2404,7 +2408,10 @@ static int http_receive_data(HTTPContext *c)
             //            printf("writing pos=0x%"PRIx64" size=0x%"PRIx64"\n", feed->feed_write_index, feed->feed_size);
             /* XXX: use llseek or url_seek */
             lseek(c->feed_fd, feed->feed_write_index, SEEK_SET);
-            write(c->feed_fd, c->buffer, FFM_PACKET_SIZE);
+            if (write(c->feed_fd, c->buffer, FFM_PACKET_SIZE) < 0) {
+                http_log("Error writing to feed file: %s\n", strerror(errno));
+                goto fail;
+            }
 
             feed->feed_write_index += FFM_PACKET_SIZE;
             /* update file size */
