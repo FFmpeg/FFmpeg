@@ -442,6 +442,19 @@ AVInputFormat shorten_demuxer = {
     .value = CODEC_ID_SHORTEN,
 };
 
+AVInputFormat mlp_demuxer = {
+    "mlp",
+    "raw mlp",
+    0,
+    NULL,
+    audio_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "mlp",
+    .value = CODEC_ID_MLP,
+};
+
 AVInputFormat flac_demuxer = {
     "flac",
     "raw flac",

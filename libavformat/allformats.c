@@ -100,6 +100,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (MATROSKA, matroska);
     REGISTER_MUXER    (MATROSKA_AUDIO, matroska_audio);
     REGISTER_MUXDEMUX (MJPEG, mjpeg);
+    REGISTER_DEMUXER  (MLP, mlp);
     REGISTER_DEMUXER  (MM, mm);
     REGISTER_MUXDEMUX (MMF, mmf);
     REGISTER_MUXDEMUX (MOV, mov);
