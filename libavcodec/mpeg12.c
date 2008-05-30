@@ -156,28 +156,28 @@ static void init_vlcs(void)
     if (!done) {
         done = 1;
 
-        init_vlc(&dc_lum_vlc, DC_VLC_BITS, 12,
+        INIT_VLC_STATIC(&dc_lum_vlc, DC_VLC_BITS, 12,
                  ff_mpeg12_vlc_dc_lum_bits, 1, 1,
-                 ff_mpeg12_vlc_dc_lum_code, 2, 2, 1);
-        init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 12,
+                 ff_mpeg12_vlc_dc_lum_code, 2, 2, 512);
+        INIT_VLC_STATIC(&dc_chroma_vlc,  DC_VLC_BITS, 12,
                  ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
-                 ff_mpeg12_vlc_dc_chroma_code, 2, 2, 1);
-        init_vlc(&mv_vlc, MV_VLC_BITS, 17,
+                 ff_mpeg12_vlc_dc_chroma_code, 2, 2, 514);
+        INIT_VLC_STATIC(&mv_vlc, MV_VLC_BITS, 17,
                  &ff_mpeg12_mbMotionVectorTable[0][1], 2, 1,
-                 &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 1);
-        init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 36,
+                 &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 518);
+        INIT_VLC_STATIC(&mbincr_vlc, MBINCR_VLC_BITS, 36,
                  &ff_mpeg12_mbAddrIncrTable[0][1], 2, 1,
-                 &ff_mpeg12_mbAddrIncrTable[0][0], 2, 1, 1);
-        init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 64,
+                 &ff_mpeg12_mbAddrIncrTable[0][0], 2, 1, 538);
+        INIT_VLC_STATIC(&mb_pat_vlc, MB_PAT_VLC_BITS, 64,
                  &ff_mpeg12_mbPatTable[0][1], 2, 1,
-                 &ff_mpeg12_mbPatTable[0][0], 2, 1, 1);
+                 &ff_mpeg12_mbPatTable[0][0], 2, 1, 512);
 
-        init_vlc(&mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7,
+        INIT_VLC_STATIC(&mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7,
                  &table_mb_ptype[0][1], 2, 1,
-                 &table_mb_ptype[0][0], 2, 1, 1);
-        init_vlc(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
+                 &table_mb_ptype[0][0], 2, 1, 64);
+        INIT_VLC_STATIC(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                  &table_mb_btype[0][1], 2, 1,
-                 &table_mb_btype[0][0], 2, 1, 1);
+                 &table_mb_btype[0][0], 2, 1, 64);
         init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
         init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
