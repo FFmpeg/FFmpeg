@@ -31,7 +31,7 @@ ffplay:
   ffplay.c
 
 ffserver:
-  ffserver.c, ffserver.h                Alex Beregszaszi
+  ffserver.c, ffserver.h                Baptiste Coudurier
 
 Commandline utility code:
   cmdutils.c, cmdutils.h
