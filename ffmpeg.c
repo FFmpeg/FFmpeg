@@ -2210,7 +2210,7 @@ static int opt_default(const char *opt, const char *arg){
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
     opt_names[opt_name_count++]= o->name;
 
-#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
+#ifdef CONFIG_FFM_MUXER
     /* disable generate of real time pts in ffm (need to be supressed anyway) */
     if(avctx_opts[0]->flags & CODEC_FLAG_BITEXACT)
         ffm_nopts = 1;
