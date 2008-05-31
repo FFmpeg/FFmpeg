@@ -325,6 +325,13 @@ static int ac3_parse_header(AC3DecodeContext *s)
     s->center_mix_level             = hdr.center_mix_level;
     s->surround_mix_level           = hdr.surround_mix_level;
 
+    if(s->lfe_on) {
+        s->start_freq[s->lfe_ch] = 0;
+        s->end_freq[s->lfe_ch] = 7;
+        s->num_exp_groups[s->lfe_ch] = 2;
+        s->channel_in_cpl[s->lfe_ch] = 0;
+    }
+
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !(s->channel_mode);
     do {
@@ -926,9 +933,6 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                 memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
         }
     }
-    s->start_freq[s->lfe_ch] = 0;
-    s->end_freq[s->lfe_ch] = 7;
-    s->num_exp_groups[s->lfe_ch] = 2;
     if (s->cpl_in_use && s->exp_strategy[CPL_CH] != EXP_REUSE) {
         s->num_exp_groups[CPL_CH] = (s->end_freq[CPL_CH] - s->start_freq[CPL_CH]) /
                                     (3 << (s->exp_strategy[CPL_CH] - 1));
