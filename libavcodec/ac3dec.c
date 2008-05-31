@@ -1154,7 +1154,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         }
     }
 
-    /* parse the syncinfo */
     if(err && err != AC3_PARSE_ERROR_CRC) {
         switch(err) {
             case AC3_PARSE_ERROR_SYNC:
@@ -1211,6 +1210,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         if (!err && ac3_parse_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
         }
+
+        /* interleave output samples */
         for (i = 0; i < 256; i++)
             for (ch = 0; ch < s->out_channels; ch++)
                 *(out_samples++) = s->int_output[ch][i];
