@@ -1005,6 +1005,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                     s->dba_lengths[ch][seg] = get_bits(gbc, 4);
                     s->dba_values[ch][seg] = get_bits(gbc, 3);
                 }
+                /* run last 2 bit allocation stages if new dba values */
+                bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
+
             }
         }
     } else if(blk == 0) {
