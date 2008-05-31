@@ -71,7 +71,10 @@ static int t_sqrt(unsigned int x)
     return (ff_sqrt(x << 20) << s) << 2;
 }
 
-/* do 'voice' */
+/**
+ * Evaluate the LPC filter coefficients from the reflection coefficients.
+ * Does the inverse of the eq() function.
+ */
 static void do_voice(const int *a1, int *a2)
 {
     int buffer[10];
@@ -246,6 +249,13 @@ static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
     return rms(data, f);
 }
 
+/**
+ * Evaluate the reflection coefficients from the filter coefficients.
+ * Does the inverse of the do_voice() function.
+ *
+ * @return 1 if one of the reflection coefficients is of magnitude greater than
+ *         4095, 0 if not.
+ */
 static int eq(const int16_t *in, int *target)
 {
     int retval = 0;
