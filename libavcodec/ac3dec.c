@@ -466,7 +466,7 @@ typedef struct {
  * Get the transform coefficients for a particular channel
  * reference: Section 7.3 Quantization and Decoding of Mantissas
  */
-static int get_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
+static void get_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
 {
     GetBitContext *gbc = &s->gbc;
     int i, gcode, tbap, start, end;
@@ -536,8 +536,6 @@ static int get_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_group
         }
         coeffs[i] >>= exps[i];
     }
-
-    return 0;
 }
 
 /**
@@ -576,7 +574,7 @@ static void remove_dithering(AC3DecodeContext *s) {
 /**
  * Get the transform coefficients.
  */
-static int get_transform_coeffs(AC3DecodeContext *s)
+static void get_transform_coeffs(AC3DecodeContext *s)
 {
     int ch, end;
     int got_cplchan = 0;
@@ -586,16 +584,12 @@ static int get_transform_coeffs(AC3DecodeContext *s)
 
     for (ch = 1; ch <= s->channels; ch++) {
         /* transform coefficients for full-bandwidth channel */
-        if (get_transform_coeffs_ch(s, ch, &m))
-            return -1;
+        get_transform_coeffs_ch(s, ch, &m);
         /* tranform coefficients for coupling channel come right after the
            coefficients for the first coupled channel*/
         if (s->channel_in_cpl[ch])  {
             if (!got_cplchan) {
-                if (get_transform_coeffs_ch(s, CPL_CH, &m)) {
-                    av_log(s->avctx, AV_LOG_ERROR, "error in decoupling channels\n");
-                    return -1;
-                }
+                get_transform_coeffs_ch(s, CPL_CH, &m);
                 uncouple_channels(s);
                 got_cplchan = 1;
             }
@@ -611,8 +605,6 @@ static int get_transform_coeffs(AC3DecodeContext *s)
     /* if any channel doesn't use dithering, zero appropriate coefficients */
     if(!s->dither_all)
         remove_dithering(s);
-
-    return 0;
 }
 
 /**
@@ -1058,10 +1050,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
 
     /* unpack the transform coefficients
        this also uncouples channels if coupling is in use. */
-    if (get_transform_coeffs(s)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error in routine get_transform_coeffs\n");
-        return -1;
-    }
+    get_transform_coeffs(s);
 
     /* recover coefficients if rematrixing is in use */
     if(s->channel_mode == AC3_CHMODE_STEREO)
