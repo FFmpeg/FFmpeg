@@ -951,9 +951,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
         s->bit_alloc_params.slow_gain  = ff_ac3_slow_gain_tab[get_bits(gbc, 2)];
         s->bit_alloc_params.db_per_bit = ff_ac3_db_per_bit_tab[get_bits(gbc, 2)];
         s->bit_alloc_params.floor  = ff_ac3_floor_tab[get_bits(gbc, 3)];
-        for(ch=!s->cpl_in_use; ch<=s->channels; ch++) {
+        for(ch=!s->cpl_in_use; ch<=s->channels; ch++)
             bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
-        }
     } else if (!blk) {
         av_log(s->avctx, AV_LOG_ERROR, "new bit allocation info must be present in block 0\n");
         return -1;
