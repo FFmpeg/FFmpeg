@@ -322,7 +322,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int gbuf1[4];
     uint16_t gbuf2[4][30];
-    unsigned int a, c;
+    unsigned int c;
     int i;
     int16_t *data = vdata;
     unsigned int energy;
@@ -344,10 +344,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     do_voice(ractx->lpc_refl, ractx->lpc_coef);
 
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
-    a = t_sqrt(energy*ractx->old_energy) >> 12;
 
     gbuf1[0] = dec2(ractx, gbuf2[0], 0, 0, ractx->old_energy);
-    gbuf1[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy, a);
+    gbuf1[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy,
+                    t_sqrt(energy*ractx->old_energy) >> 12);
     gbuf1[2] = dec2(ractx, gbuf2[2], 2, 1, energy);
     gbuf1[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, energy);
 
