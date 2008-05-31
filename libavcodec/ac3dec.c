@@ -1157,12 +1157,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     if(err != AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_resilience >= FF_ER_CAREFUL) {
         if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
             av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
-            err = 1;
+            err = AC3_PARSE_ERROR_CRC;
         }
     }
 
     /* parse the syncinfo */
-    if(err && err != 1) {
+    if(err && err != AC3_PARSE_ERROR_CRC) {
         switch(err) {
             case AC3_PARSE_ERROR_SYNC:
                 av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
