@@ -3445,8 +3445,11 @@ static void show_help(void)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
                       OPT_EXPERT);
+    printf("\n");
     av_opt_show(avctx_opts[0], NULL);
+    printf("\n");
     av_opt_show(avformat_opts, NULL);
+    printf("\n");
     av_opt_show(sws_opts, NULL);
 }
 
