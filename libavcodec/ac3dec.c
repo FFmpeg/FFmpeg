@@ -903,10 +903,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
     s->exp_strategy[CPL_CH] = EXP_REUSE;
     s->exp_strategy[s->lfe_ch] = EXP_REUSE;
     for (ch = !s->cpl_in_use; ch <= s->channels; ch++) {
-        if(ch == s->lfe_ch)
-            s->exp_strategy[ch] = get_bits(gbc, 1);
-        else
-            s->exp_strategy[ch] = get_bits(gbc, 2);
+        s->exp_strategy[ch] = get_bits(gbc, 2 - (ch == s->lfe_ch));
         if(s->exp_strategy[ch] != EXP_REUSE)
             bit_alloc_stages[ch] = 3;
     }
