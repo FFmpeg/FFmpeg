@@ -1144,12 +1144,29 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     }
 
     /* parse the syncinfo */
+    *data_size = 0;
     err = ac3_parse_header(s);
-    if(err) {
+
+    /* check that reported frame size fits in input buffer */
+    if(s->frame_size > buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
+        err = AC3_PARSE_ERROR_FRAME_SIZE;
+    }
+
+    /* check for crc mismatch */
+    if(err != AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_resilience >= FF_ER_CAREFUL) {
+        if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
+            av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
+            err = 1;
+        }
+    }
+
+    /* parse the syncinfo */
+    if(err && err != 1) {
         switch(err) {
             case AC3_PARSE_ERROR_SYNC:
-                av_log(avctx, AV_LOG_ERROR, "frame sync error : cannot use error concealment\n");
-                return -1;
+                av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
+                break;
             case AC3_PARSE_ERROR_BSID:
                 av_log(avctx, AV_LOG_ERROR, "invalid bitstream id\n");
                 break;
@@ -1165,20 +1182,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             default:
                 av_log(avctx, AV_LOG_ERROR, "invalid header\n");
                 break;
-        }
-    }
-
-    /* check that reported frame size fits in input buffer */
-    if(s->frame_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
-        return -1;
-    }
-
-    /* check for crc mismatch */
-    if(!err && avctx->error_resilience >= FF_ER_CAREFUL) {
-        if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
-            av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
-            err = 1;
         }
     }
 
