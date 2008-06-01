@@ -298,7 +298,7 @@ static int eval_refl(const int16_t *coefs, int *refl)
 }
 
 static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
-                int copynew, int energy)
+                  int copynew, int energy)
 {
     int work[10];
     int a = block_num + 1;
