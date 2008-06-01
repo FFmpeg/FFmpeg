@@ -2542,7 +2542,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
             int v= av_clip_uint8(((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128);
             pal[i]= y + (u<<8) + (v<<16);
         }
-        src2[1]= pal;
+        src2[1]= (uint8_t*)pal;
     }
 
     // copy strides, so they can safely be modified
