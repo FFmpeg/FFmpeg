@@ -239,7 +239,7 @@ static void do_output_subblock(RA144Context *ractx,
     final(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
-static void dec1(int16_t *decsp, const int *inp)
+static void int_to_int16(int16_t *decsp, const int *inp)
 {
     int i;
 
@@ -314,10 +314,10 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
         if (copynew) {
-            dec1(decsp, ractx->lpc_coef);
+            int_to_int16(decsp, ractx->lpc_coef);
             return rms(ractx->lpc_refl, f);
         } else {
-            dec1(decsp, ractx->lpc_coef_old);
+            int_to_int16(decsp, ractx->lpc_coef_old);
             return rms(ractx->lpc_refl_old, f);
         }
     } else {
@@ -361,7 +361,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     refl_rms[2] = dec2(ractx, block_coefs[2], 2, 1, energy);
     refl_rms[3] = rms(ractx->lpc_refl, energy);
 
-    dec1(block_coefs[3], ractx->lpc_coef);
+    int_to_int16(block_coefs[3], ractx->lpc_coef);
 
     /* do output */
     for (c=0; c<4; c++) {
