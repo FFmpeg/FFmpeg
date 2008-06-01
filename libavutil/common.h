@@ -387,4 +387,15 @@ tend= AV_READ_TIME();\
 #define STOP_TIMER(id) {}
 #endif
 
+/**
+ * Returns NULL if CONFIG_SMALL is defined otherwise the argument
+ * without modifications, used to disable the definition of strings
+ * (for example AVCodec long_names).
+ */
+#ifdef CONFIG_SMALL
+#   define NULL_IF_CONFIG_SMALL(x) NULL
+#else
+#   define NULL_IF_CONFIG_SMALL(x) x
+#endif
+
 #endif /* FFMPEG_COMMON_H */
