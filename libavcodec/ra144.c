@@ -174,7 +174,7 @@ static void final(const int16_t *i1, const int16_t *i2,
     memcpy(statbuf, work + 40, 20);
 }
 
-static unsigned int rms(const int *data, int f)
+static unsigned int rms(const int *data, int f, RA144Context *ractx)
 {
     int x;
     unsigned int res = 0x10000;
@@ -186,8 +186,10 @@ static unsigned int rms(const int *data, int f)
         if (res == 0)
             return 0;
 
-        if (res > 0x10000)
-            return 0; /* We're screwed, might as well go out with a bang. :P */
+        if (res > 0x10000) {
+            av_log(ractx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
+            return 0;
+        }
 
         while (res <= 0x3fff) {
             b++;
@@ -254,7 +256,7 @@ static void int_to_int16(int16_t *decsp, const int *inp)
  * @return 1 if one of the reflection coefficients is of magnitude greater than
  *         4095, 0 if not.
  */
-static int eval_refl(const int16_t *coefs, int *refl)
+static int eval_refl(const int16_t *coefs, int *refl, RA144Context *ractx)
 {
     int retval = 0;
     int b, c, i;
@@ -269,8 +271,10 @@ static int eval_refl(const int16_t *coefs, int *refl)
 
     u = refl[9] = bp2[9];
 
-    if (u + 0x1000 > 0x1fff)
-        return 0; /* We're screwed, might as well go out with a bang. :P */
+    if (u + 0x1000 > 0x1fff) {
+        av_log(ractx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
+        return 0;
+    }
 
     for (c=8; c >= 0; c--) {
         if (u == 0x1000)
@@ -310,18 +314,18 @@ static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
     for (x=0; x<30; x++)
         decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
-    if (eval_refl(decsp, work)) {
+    if (eval_refl(decsp, work, ractx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
         if (copynew) {
             int_to_int16(decsp, ractx->lpc_coef);
-            return rms(ractx->lpc_refl, energy);
+            return rms(ractx->lpc_refl, energy, ractx);
         } else {
             int_to_int16(decsp, ractx->lpc_coef_old);
-            return rms(ractx->lpc_refl_old, energy);
+            return rms(ractx->lpc_refl_old, energy, ractx);
         }
     } else {
-        return rms(work, energy);
+        return rms(work, energy, ractx);
     }
 }
 
@@ -359,7 +363,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     refl_rms[1] = interp(ractx, block_coefs[1], 1, energy > ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
     refl_rms[2] = interp(ractx, block_coefs[2], 2, 1, energy);
-    refl_rms[3] = rms(ractx->lpc_refl, energy);
+    refl_rms[3] = rms(ractx->lpc_refl, energy, ractx);
 
     int_to_int16(block_coefs[3], ractx->lpc_coef);
 
