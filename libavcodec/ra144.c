@@ -206,7 +206,7 @@ static unsigned int rms(const int *data, int f)
 
 /* do quarter-block output */
 static void do_output_subblock(RA144Context *ractx,
-                               const uint16_t  *gsp, unsigned int gval,
+                               const uint16_t  *lpc_coefs, unsigned int gval,
                                int16_t *output_buffer, GetBitContext *gb)
 {
     uint16_t buffer_a[40];
@@ -236,7 +236,7 @@ static void do_output_subblock(RA144Context *ractx,
     add_wav(gain, cba_idx, m, buffer_a, etable1[cb1_idx], etable2[cb2_idx],
             block);
 
-    final(gsp, block, output_buffer, ractx->buffer, BLOCKSIZE);
+    final(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
 static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
