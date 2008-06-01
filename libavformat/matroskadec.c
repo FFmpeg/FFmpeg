@@ -60,6 +60,7 @@ typedef struct Track {
     unsigned char *codec_priv;
     int codec_priv_size;
 
+    double time_scale;
     uint64_t default_duration;
     MatroskaTrackFlags flags;
 
@@ -1589,6 +1590,14 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 break;
             }
 
+            case MATROSKA_ID_TRACKTIMECODESCALE: {
+                double num;
+                if ((res = ebml_read_float(matroska, &id, &num)) < 0)
+                    break;
+                track->time_scale = num;
+                break;
+            }
+
             default:
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown track header entry 0x%x - ignoring\n", id);
@@ -2615,7 +2624,7 @@ matroska_read_header (AVFormatContext    *s,
             st = av_new_stream(s, track->stream_index);
             if (st == NULL)
                 return AVERROR(ENOMEM);
-            av_set_pts_info(st, 64, matroska->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
+            av_set_pts_info(st, 64, matroska->time_scale*track->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
             st->codec->codec_id = codec_id;
             st->start_time = 0;
