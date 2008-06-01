@@ -298,7 +298,7 @@ static int eval_refl(const int16_t *coefs, int *refl)
 }
 
 static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
-                int copynew, int f)
+                int copynew, int energy)
 {
     int work[10];
     int a = block_num + 1;
@@ -315,13 +315,13 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
         // coefficients
         if (copynew) {
             int_to_int16(decsp, ractx->lpc_coef);
-            return rms(ractx->lpc_refl, f);
+            return rms(ractx->lpc_refl, energy);
         } else {
             int_to_int16(decsp, ractx->lpc_coef_old);
-            return rms(ractx->lpc_refl_old, f);
+            return rms(ractx->lpc_refl_old, energy);
         }
     } else {
-        return rms(work, f);
+        return rms(work, energy);
     }
 }
 
