@@ -271,14 +271,14 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_
     mm_end = end - 3;
     while (s < mm_end)
     {
-        register unsigned x= *((uint32_t *)s);
+        register unsigned x= *((const uint32_t *)s);
         *((uint32_t *)d) = (x&0x7FFF7FFF) + (x&0x7FE07FE0);
         d+=4;
         s+=4;
     }
     if (s < end)
     {
-        register unsigned short x= *((uint16_t *)s);
+        register unsigned short x= *((const uint16_t *)s);
         *((uint16_t *)d) = (x&0x7FFF) + (x&0x7FE0);
     }
 }
@@ -432,7 +432,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     while (s < end)
     {
-        register int rgb = *(uint32_t*)s; s += 4;
+        register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xFF)>>3) + ((rgb&0xFC00)>>5) + ((rgb&0xF80000)>>8);
     }
 }
@@ -493,7 +493,7 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
 #endif
     while (s < end)
     {
-        register int rgb = *(uint32_t*)s; s += 4;
+        register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xF8)<<8) + ((rgb&0xFC00)>>5) + ((rgb&0xF80000)>>19);
     }
 }
@@ -591,7 +591,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     while (s < end)
     {
-        register int rgb = *(uint32_t*)s; s += 4;
+        register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xFF)>>3) + ((rgb&0xF800)>>6) + ((rgb&0xF80000)>>9);
     }
 }
@@ -652,7 +652,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
 #endif
     while (s < end)
     {
-        register int rgb = *(uint32_t*)s; s += 4;
+        register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xF8)<<7) + ((rgb&0xF800)>>6) + ((rgb&0xF80000)>>19);
     }
 }
@@ -937,7 +937,7 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *mm_end;
 #endif
     uint8_t *d = dst;
-    const uint16_t *s = (uint16_t *)src;
+    const uint16_t *s = (const uint16_t*)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
     asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
@@ -1298,7 +1298,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
     const uint16_t *mm_end;
 #endif
     uint8_t *d = dst;
-    const uint16_t *s = (uint16_t *)src;
+    const uint16_t *s = (const uint16_t*)src;
     end = s + src_size/2;
 #ifdef HAVE_MMX
     asm volatile(PREFETCH"    %0"::"m"(*s):"memory");
@@ -1366,7 +1366,8 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     long idx = 15 - src_size;
-    uint8_t *s = src-idx, *d = dst-idx;
+    const uint8_t *s = src-idx;
+    uint8_t *d = dst-idx;
 #ifdef HAVE_MMX
     asm volatile(
     "test          %0, %0           \n\t"
@@ -1420,7 +1421,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long s
     : "memory");
 #endif
     for (; idx<15; idx+=4) {
-        register int v = *(uint32_t *)&s[idx], g = v & 0xff00ff00;
+        register int v = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
         v &= 0xff00ff;
         *(uint32_t *)&d[idx] = (v>>16) + g + (v<<16);
     }
