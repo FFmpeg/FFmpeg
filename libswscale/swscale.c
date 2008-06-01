@@ -2390,9 +2390,9 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     if (flags&SWS_PRINT_INFO)
     {
 #ifdef DITHER1XBPP
-        char *dither= " dithered";
+        const char *dither= " dithered";
 #else
-        char *dither= "";
+        const char *dither= "";
 #endif
         if (flags&SWS_FAST_BILINEAR)
             av_log(c, AV_LOG_INFO, "FAST_BILINEAR scaler, ");
