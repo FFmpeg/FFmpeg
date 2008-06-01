@@ -996,6 +996,7 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
                        "Unknown entry 0x%x in info header\n", id);
                 /* fall-through */
 
+            case MATROSKA_ID_SEGMENTUID:
             case EBML_ID_VOID:
                 res = ebml_read_skip(matroska);
                 break;
@@ -1595,6 +1596,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
             case EBML_ID_VOID:
             /* we ignore these because they're nothing useful. */
+            case MATROSKA_ID_TRACKFLAGFORCED:
+            case MATROSKA_ID_CODECDECODEALL:
             case MATROSKA_ID_CODECINFOURL:
             case MATROSKA_ID_CODECDOWNLOADURL:
             case MATROSKA_ID_TRACKMINCACHE:
@@ -2080,6 +2083,7 @@ matroska_parse_attachments(AVFormatContext *s)
                 default:
                     av_log(matroska->ctx, AV_LOG_INFO,
                            "Unknown attachedfile ID 0x%x\n", id);
+                case MATROSKA_ID_FILEUID:
                 case EBML_ID_VOID:
                     res = ebml_read_skip(matroska);
                     break;
@@ -2264,6 +2268,7 @@ matroska_parse_chapters(AVFormatContext *s)
                     av_log(s, AV_LOG_INFO, "Ignoring unknown Edition entry ID 0x%x\n", id);
                 case MATROSKA_ID_EDITIONUID:
                 case MATROSKA_ID_EDITIONFLAGHIDDEN:
+                case MATROSKA_ID_EDITIONFLAGDEFAULT:
                 case EBML_ID_VOID:
                     res = ebml_read_skip(matroska);
                     break;
