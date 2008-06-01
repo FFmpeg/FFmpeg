@@ -73,9 +73,9 @@ static int t_sqrt(unsigned int x)
 
 /**
  * Evaluate the LPC filter coefficients from the reflection coefficients.
- * Does the inverse of the eq() function.
+ * Does the inverse of the eval_refl() function.
  */
-static void do_voice(const int *refl, int *coefs)
+static void eval_coefs(const int *refl, int *coefs)
 {
     int buffer[10];
     int *b1 = buffer;
@@ -251,12 +251,12 @@ static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
 
 /**
  * Evaluate the reflection coefficients from the filter coefficients.
- * Does the inverse of the do_voice() function.
+ * Does the inverse of the eval_coefs() function.
  *
  * @return 1 if one of the reflection coefficients is of magnitude greater than
  *         4095, 0 if not.
  */
-static int eq(const int16_t *coefs, int *refl)
+static int eval_refl(const int16_t *coefs, int *refl)
 {
     int retval = 0;
     int b, c, i;
@@ -312,7 +312,7 @@ static int dec2(RA144Context *ractx, int16_t *decsp, int block_num,
     for (x=0; x<30; x++)
         decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
-    if (eq(decsp, work)) {
+    if (eval_refl(decsp, work)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
         if (copynew)
@@ -350,7 +350,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         // "<< 1"? Doesn't this make one value out of two of the table useless?
         ractx->lpc_refl[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
 
-    do_voice(ractx->lpc_refl, ractx->lpc_coef);
+    eval_coefs(ractx->lpc_refl, ractx->lpc_coef);
 
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
 
