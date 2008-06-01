@@ -75,24 +75,24 @@ static int t_sqrt(unsigned int x)
  * Evaluate the LPC filter coefficients from the reflection coefficients.
  * Does the inverse of the eq() function.
  */
-static void do_voice(const int *a1, int *a2)
+static void do_voice(const int *refl, int *coefs)
 {
     int buffer[10];
     int *b1 = buffer;
-    int *b2 = a2;
+    int *b2 = coefs;
     int x, y;
 
     for (x=0; x < 10; x++) {
-        b1[x] = a1[x] << 4;
+        b1[x] = refl[x] << 4;
 
         for (y=0; y < x; y++)
-            b1[y] = ((a1[x] * b2[x-y-1]) >> 12) + b2[y];
+            b1[y] = ((refl[x] * b2[x-y-1]) >> 12) + b2[y];
 
         FFSWAP(int *, b1, b2);
     }
 
     for (x=0; x < 10; x++)
-        a2[x] >>= 4;
+        coefs[x] >>= 4;
 }
 
 /* rotate block */
@@ -256,7 +256,7 @@ static int dec1(int16_t *decsp, const int *data, const int *inp, int f)
  * @return 1 if one of the reflection coefficients is of magnitude greater than
  *         4095, 0 if not.
  */
-static int eq(const int16_t *in, int *target)
+static int eq(const int16_t *coefs, int *refl)
 {
     int retval = 0;
     int b, c, i;
@@ -267,9 +267,9 @@ static int eq(const int16_t *in, int *target)
     int *bp2 = buffer2;
 
     for (i=0; i < 10; i++)
-        buffer2[i] = in[i];
+        buffer2[i] = coefs[i];
 
-    u = target[9] = bp2[9];
+    u = refl[9] = bp2[9];
 
     if (u + 0x1000 > 0x1fff)
         return 0; /* We're screwed, might as well go out with a bang. :P */
@@ -287,9 +287,9 @@ static int eq(const int16_t *in, int *target)
             b++;
 
         for (u=0; u<=c; u++)
-            bp1[u] = ((bp2[u] - ((target[c+1] * bp2[c-u]) >> 12)) * (0x1000000 / b)) >> 12;
+            bp1[u] = ((bp2[u] - ((refl[c+1] * bp2[c-u]) >> 12)) * (0x1000000 / b)) >> 12;
 
-        target[c] = u = bp1[c];
+        refl[c] = u = bp1[c];
 
         if ((u + 0x1000) > 0x1fff)
             retval = 1;
