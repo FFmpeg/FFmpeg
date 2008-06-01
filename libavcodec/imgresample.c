@@ -512,7 +512,12 @@ void img_resample_close(ImgReSampleContext *s)
     av_free(s);
 }
 
-static const AVClass context_class = { "imgresample", NULL, NULL };
+static const char *context_to_name(void* ptr)
+{
+    return "imgconvert";
+}
+
+static const AVClass context_class = { "imgresample", context_to_name, NULL };
 
 struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
                                   int dstW, int dstH, int dstFormat,
