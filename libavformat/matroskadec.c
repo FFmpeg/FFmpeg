@@ -2692,7 +2692,7 @@ matroska_read_header (AVFormatContext    *s,
             stream = matroska->tracks[track]->stream_index;
             if (stream >= 0 && stream < matroska->ctx->nb_streams)
                 av_add_index_entry(matroska->ctx->streams[stream],
-                                   idx->pos, idx->time/matroska->time_scale,
+                                   idx->pos, idx->time/AV_TIME_BASE,
                                    0, 0, AVINDEX_KEYFRAME);
         }
     }
