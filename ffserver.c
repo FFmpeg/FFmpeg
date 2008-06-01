@@ -3330,7 +3330,7 @@ static void build_file_streams(void)
                 /* find all the AVStreams inside and reference them in
                    'stream' */
                 if (av_find_stream_info(infile) < 0) {
-                    http_log("Could not find codec parameters from '%s'",
+                    http_log("Could not find codec parameters from '%s'\n",
                              stream->feed_filename);
                     av_close_input_file(infile);
                     goto fail;
