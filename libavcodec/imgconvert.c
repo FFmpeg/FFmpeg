@@ -2063,7 +2063,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
             uint8_t *iptr = src->data[i];
             optr = dst->data[i] + dst->linesize[i] * (padtop >> y_shift) +
                     (padleft >> x_shift);
-            memcpy(optr, iptr, src->linesize[i]);
+            memcpy(optr, iptr, (width - padleft - padright) >> x_shift);
             iptr += src->linesize[i];
             optr = dst->data[i] + dst->linesize[i] * (padtop >> y_shift) +
                 (dst->linesize[i] - (padright >> x_shift));
@@ -2071,7 +2071,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
             for (y = 0; y < yheight; y++) {
                 memset(optr, color[i], (padleft + padright) >> x_shift);
                 memcpy(optr + ((padleft + padright) >> x_shift), iptr,
-                    src->linesize[i]);
+                       (width - padleft - padright) >> x_shift);
                 iptr += src->linesize[i];
                 optr += dst->linesize[i];
             }
