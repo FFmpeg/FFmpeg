@@ -235,6 +235,8 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
             return -1;
         }
         st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
         get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
 
 //        av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
