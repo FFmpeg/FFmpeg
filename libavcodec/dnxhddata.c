@@ -428,6 +428,8 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx)
 {
     int i, j;
     int mbs = avctx->bit_rate/1000000;
+    if (!mbs)
+        return 0;
     for (i = 0; i < sizeof(ff_dnxhd_cid_table)/sizeof(CIDEntry); i++) {
         const CIDEntry *cid = &ff_dnxhd_cid_table[i];
         if (cid->width == avctx->width && cid->height == avctx->height &&
