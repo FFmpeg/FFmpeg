@@ -1849,7 +1849,7 @@ static int gray16swap(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
     int height= srcSliceH;
     int i, j;
     uint16_t *srcPtr= (uint16_t*)src[0];
-    uint16_t *dstPtr= dst[0] + dstStride[0]*y/2;
+    uint16_t *dstPtr= (uint16_t*)(dst[0] + dstStride[0]*y/2);
     for (i=0; i<height; i++)
     {
         for (j=0; j<length; j++) dstPtr[j] = bswap_16(srcPtr[j]);
