@@ -331,7 +331,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int refl_rms[4];  // RMS of the reflection coefficients
-    uint16_t gbuf2[4][30];
+    uint16_t block_coefs[4][30]; // LPC coefficients of each sub-block
     int i, c;
     int16_t *data = vdata;
     unsigned int energy;
@@ -354,15 +354,16 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
 
-    refl_rms[0] = dec2(ractx, gbuf2[0], 0, 0, ractx->old_energy);
-    refl_rms[1] = dec2(ractx, gbuf2[1], 1, energy > ractx->old_energy,
+    refl_rms[0] = dec2(ractx, block_coefs[0], 0, 0, ractx->old_energy);
+    refl_rms[1] = dec2(ractx, block_coefs[1], 1, energy > ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
-    refl_rms[2] = dec2(ractx, gbuf2[2], 2, 1, energy);
-    refl_rms[3] = dec1(gbuf2[3], ractx->lpc_refl, ractx->lpc_coef, energy);
+    refl_rms[2] = dec2(ractx, block_coefs[2], 2, 1, energy);
+    refl_rms[3] = dec1(block_coefs[3], ractx->lpc_refl, ractx->lpc_coef,
+                       energy);
 
     /* do output */
     for (c=0; c<4; c++) {
-        do_output_subblock(ractx, gbuf2[c], refl_rms[c], data, &gb);
+        do_output_subblock(ractx, block_coefs[c], refl_rms[c], data, &gb);
 
         for (i=0; i<BLOCKSIZE; i++) {
             *data = av_clip_int16(*data << 2);
