@@ -387,7 +387,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
                     vmax = v;
             }
             /* compute the scale factor index using log 2 computations */
-            if (vmax > 0) {
+            if (vmax > 1) {
                 n = av_log2(vmax);
                 /* n is the position of the MSB of vmax. now
                    use at most 2 compares to find the index */
