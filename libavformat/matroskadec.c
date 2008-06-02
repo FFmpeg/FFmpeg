@@ -172,6 +172,8 @@ typedef struct MatroskaDemuxContext {
     AVStream *skip_to_stream;
 } MatroskaDemuxContext;
 
+#define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
+
 /*
  * The first few functions handle EBML file parsing. The rest
  * is the document interpretation. Matroska really just is a
@@ -2307,8 +2309,6 @@ matroska_parse_chapters(AVFormatContext *s)
 
     return res;
 }
-
-#define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
 
 static int
 matroska_aac_profile (char *codec_id)
