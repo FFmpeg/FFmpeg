@@ -123,8 +123,8 @@ int av_parser_parse(AVCodecParserContext *s,
         s->cur_frame_dts[k] = dts;
     }
 
-        if (s->fetch_timestamp){
-            s->fetch_timestamp=0;
+    if (s->fetch_timestamp){
+        s->fetch_timestamp=0;
         s->last_pts = s->pts;
         s->last_dts = s->dts;
         s->dts= s->pts= AV_NOPTS_VALUE;
@@ -150,7 +150,7 @@ int av_parser_parse(AVCodecParserContext *s,
 
         /* offset of the next frame */
         s->next_frame_offset = s->cur_offset + index;
-            s->fetch_timestamp=1;
+        s->fetch_timestamp=1;
     }
     if (index < 0)
         index = 0;
