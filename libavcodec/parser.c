@@ -76,6 +76,21 @@ AVCodecParserContext *av_parser_init(int codec_id)
     return s;
 }
 
+void ff_fetch_timestamp(AVCodecParserContext *s){
+    int i;
+    s->dts= s->pts= AV_NOPTS_VALUE;
+    s->offset= 0;
+    for(i = 0; i < AV_PARSER_PTS_NB; i++) {
+        if (   s->next_frame_offset >= s->cur_frame_offset[i]
+            &&(s->     frame_offset <  s->cur_frame_offset[i] || !s->frame_offset)
+            && s->next_frame_offset <  s->cur_frame_end[i]){
+            s->dts= s->cur_frame_dts[i];
+            s->pts= s->cur_frame_pts[i];
+            s->offset = s->next_frame_offset - s->cur_frame_offset[i];
+        }
+    }
+}
+
 /**
  *
  * @param buf           input
@@ -127,17 +142,7 @@ int av_parser_parse(AVCodecParserContext *s,
         s->fetch_timestamp=0;
         s->last_pts = s->pts;
         s->last_dts = s->dts;
-        s->dts= s->pts= AV_NOPTS_VALUE;
-        s->offset= 0;
-        for(i = 0; i < AV_PARSER_PTS_NB; i++) {
-            if (   s->next_frame_offset >= s->cur_frame_offset[i]
-                &&(s->     frame_offset <  s->cur_frame_offset[i] || !s->frame_offset)
-                && s->next_frame_offset <  s->cur_frame_end[i]){
-                s->dts= s->cur_frame_dts[i];
-                s->pts= s->cur_frame_pts[i];
-                s->offset = s->next_frame_offset - s->cur_frame_offset[i];
-            }
-        }
+        ff_fetch_timestamp(s);
     }
 
     /* WARNING: the returned index can be negative */
