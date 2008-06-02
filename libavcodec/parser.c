@@ -106,7 +106,7 @@ int av_parser_parse(AVCodecParserContext *s,
                     const uint8_t *buf, int buf_size,
                     int64_t pts, int64_t dts)
 {
-    int index, i, k;
+    int index, i;
     uint8_t dummy_buf[FF_INPUT_BUFFER_PADDING_SIZE];
 
     if (buf_size == 0) {
@@ -115,12 +115,12 @@ int av_parser_parse(AVCodecParserContext *s,
         buf = dummy_buf;
     } else {
         /* add a new packet descriptor */
-        k = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
-        s->cur_frame_start_index = k;
-        s->cur_frame_offset[k] = s->cur_offset;
-        s->cur_frame_end[k] = s->cur_offset + buf_size;
-        s->cur_frame_pts[k] = pts;
-        s->cur_frame_dts[k] = dts;
+        i = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
+        s->cur_frame_start_index = i;
+        s->cur_frame_offset[i] = s->cur_offset;
+        s->cur_frame_end[i] = s->cur_offset + buf_size;
+        s->cur_frame_pts[i] = pts;
+        s->cur_frame_dts[i] = dts;
     }
 
     if (s->fetch_timestamp){
