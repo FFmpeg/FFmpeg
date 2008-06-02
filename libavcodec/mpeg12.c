@@ -2156,7 +2156,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     int drop_frame_flag;
     int time_code_hours, time_code_minutes;
     int time_code_seconds, time_code_pictures;
-    int broken_link;
+    int closed_gop, broken_link;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
@@ -2168,15 +2168,16 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     time_code_seconds = get_bits(&s->gb,6);
     time_code_pictures = get_bits(&s->gb,6);
 
+    closed_gop  = get_bits1(&s->gb);
     /*broken_link indicate that after editing the
       reference frames of the first B-Frames after GOP I-Frame
       are missing (open gop)*/
     broken_link = get_bits1(&s->gb);
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "GOP (%2d:%02d:%02d.[%02d]) broken_link=%d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "GOP (%2d:%02d:%02d.[%02d]) closed_gop=%d broken_link=%d\n",
             time_code_hours, time_code_minutes, time_code_seconds,
-            time_code_pictures, broken_link);
+            time_code_pictures, closed_gop, broken_link);
 }
 /**
  * finds the end of the current frame in the bitstream.
