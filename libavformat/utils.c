@@ -1694,7 +1694,7 @@ static int has_codec_parameters(AVCodecContext *enc)
     int val;
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
-        val = enc->sample_rate;
+        val = enc->sample_rate && enc->channels;
         break;
     case CODEC_TYPE_VIDEO:
         val = enc->width && enc->pix_fmt != PIX_FMT_NONE;
