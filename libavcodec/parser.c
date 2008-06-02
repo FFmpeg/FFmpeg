@@ -84,7 +84,8 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     for(i = 0; i < AV_PARSER_PTS_NB; i++) {
         if (   s->next_frame_offset + off >= s->cur_frame_offset[i]
             &&(s->     frame_offset       <  s->cur_frame_offset[i] || !s->frame_offset)
-            && s->next_frame_offset + off <  s->cur_frame_end[i]){
+            //check is disabled  becausue mpeg-ts doesnt send complete PES packets
+            && /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
             s->dts= s->cur_frame_dts[i];
             s->pts= s->cur_frame_pts[i];
             s->offset = s->next_frame_offset - s->cur_frame_offset[i];
