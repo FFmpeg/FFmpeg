@@ -2962,6 +2962,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
                 if (av_new_packet(pkt, pkt_size+offset) < 0) {
+                    av_free(pkt);
                     res = AVERROR(ENOMEM);
                     n = laces-1;
                     break;
