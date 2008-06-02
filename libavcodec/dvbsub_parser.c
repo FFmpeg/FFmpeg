@@ -80,7 +80,7 @@ static int dvbsub_parse(AVCodecParserContext *s,
 
     s->fetch_timestamp = 1;
 
-    if (s->last_pts != s->pts && s->last_pts != AV_NOPTS_VALUE) /* Start of a new packet */
+    if (s->last_pts != s->pts && s->pts != AV_NOPTS_VALUE) /* Start of a new packet */
     {
         if (pc->packet_index != pc->packet_start)
         {
@@ -175,8 +175,8 @@ static int dvbsub_parse(AVCodecParserContext *s,
         pc->packet_start = *poutbuf_size;
     }
 
-    if (s->last_pts == AV_NOPTS_VALUE)
-        s->last_pts = s->pts;
+    if (s->pts == AV_NOPTS_VALUE)
+        s->pts = s->last_pts;
 
     return buf_size;
 }

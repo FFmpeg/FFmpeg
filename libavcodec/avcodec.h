@@ -2837,6 +2837,7 @@ typedef struct AVCodecParserContext {
 #define AV_PARSER_PTS_NB 4
     int cur_frame_start_index;
     int64_t cur_frame_offset[AV_PARSER_PTS_NB];
+    int64_t cur_frame_end[AV_PARSER_PTS_NB];
     int64_t cur_frame_pts[AV_PARSER_PTS_NB];
     int64_t cur_frame_dts[AV_PARSER_PTS_NB];
 
@@ -2844,7 +2845,6 @@ typedef struct AVCodecParserContext {
 #define PARSER_FLAG_COMPLETE_FRAMES           0x0001
 
     int64_t offset;      ///< byte offset from starting packet start
-    int64_t last_offset;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
