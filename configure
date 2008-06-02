@@ -300,6 +300,12 @@ disabled_any(){
     done
 }
 
+set_default(){
+    for opt; do
+        eval test -z "\$$opt" && eval $opt=\$${opt}_default
+    done
+}
+
 is_in(){
     value=$1
     shift
@@ -903,12 +909,12 @@ vhook_extralibs='$ldl'
 logfile="config.err"
 
 # installation paths
-prefix="/usr/local"
-libdir='$(PREFIX)/lib'
-shlibdir="$libdir"
-incdir='$(PREFIX)/include'
-mandir='$(PREFIX)/share/man'
-bindir='$(PREFIX)/bin'
+prefix_default="/usr/local"
+bindir_default='${prefix}/bin'
+incdir_default='${prefix}/include'
+libdir_default='${prefix}/lib'
+mandir_default='${prefix}/share/man'
+shlibdir_default="$libdir_default"
 
 # toolchain
 cc="gcc"
@@ -1167,7 +1173,7 @@ enabled     sparc64       && enable sparc
 # OS specific
 case $target_os in
     beos|haiku|zeta)
-        prefix="$HOME/config"
+        prefix_default="$HOME/config"
         # helps building libavcodec
         add_cflags "-DPIC -fomit-frame-pointer"
         # 3 gcc releases known for BeOS, each with ugly bugs
@@ -1236,7 +1242,7 @@ case $target_os in
             disable need_memalign
             LIBTARGET=x64
         fi
-        shlibdir="$bindir"
+        shlibdir_default="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
         if enabled swscale; then
@@ -1257,7 +1263,7 @@ case $target_os in
         ;;
     cygwin*)
         target_os=cygwin
-        shlibdir="$bindir"
+        shlibdir_default="$bindir"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
         if enabled swscale; then
@@ -1317,6 +1323,8 @@ case $target_os in
         target_os="${target_os}-UNKNOWN"
         ;;
 esac
+
+set_default $PATHS_LIST
 
 add_extralibs $osextralibs
 
@@ -2007,7 +2015,7 @@ echo "#ifndef FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$FFMPEG_CONFIGURATION\"" >> $TMPH
 
-echo "PREFIX=$prefix" >> config.mak
+echo "prefix=$prefix" >> config.mak
 echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
 echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
 echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
