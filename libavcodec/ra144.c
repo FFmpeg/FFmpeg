@@ -174,7 +174,7 @@ static void final(const int16_t *i1, const int16_t *i2,
     memcpy(statbuf, work + 40, 20);
 }
 
-static unsigned int rms(const int *data, int f, RA144Context *ractx)
+static unsigned int rms(const int *data, int f)
 {
     int x;
     unsigned int res = 0x10000;
@@ -185,11 +185,6 @@ static unsigned int rms(const int *data, int f, RA144Context *ractx)
 
         if (res == 0)
             return 0;
-
-        if (res > 0x10000) {
-            av_log(ractx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
-            return 0;
-        }
 
         while (res <= 0x3fff) {
             b++;
@@ -319,13 +314,13 @@ static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
         // coefficients
         if (copynew) {
             int_to_int16(decsp, ractx->lpc_coef);
-            return rms(ractx->lpc_refl, energy, ractx);
+            return rms(ractx->lpc_refl, energy);
         } else {
             int_to_int16(decsp, ractx->lpc_coef_old);
-            return rms(ractx->lpc_refl_old, energy, ractx);
+            return rms(ractx->lpc_refl_old, energy);
         }
     } else {
-        return rms(work, energy, ractx);
+        return rms(work, energy);
     }
 }
 
@@ -363,7 +358,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     refl_rms[1] = interp(ractx, block_coefs[1], 1, energy > ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
     refl_rms[2] = interp(ractx, block_coefs[2], 2, 1, energy);
-    refl_rms[3] = rms(ractx->lpc_refl, energy, ractx);
+    refl_rms[3] = rms(ractx->lpc_refl, energy);
 
     int_to_int16(block_coefs[3], ractx->lpc_coef);
 
