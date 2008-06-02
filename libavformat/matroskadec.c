@@ -1021,16 +1021,15 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
     uint32_t id;
     MatroskaTrack *track;
 
+    /* start with the master */
+    if ((res = ebml_read_master(matroska, &id)) < 0)
+        return res;
+
     av_log(matroska->ctx, AV_LOG_DEBUG, "parsing track, adding stream..,\n");
 
     /* Allocate a generic track. As soon as we know its type we'll realloc. */
     track = av_mallocz(MAX_TRACK_SIZE);
-    matroska->num_tracks++;
     strcpy(track->language, "eng");
-
-    /* start with the master */
-    if ((res = ebml_read_master(matroska, &id)) < 0)
-        return res;
 
     /* try reading the trackentry headers */
     while (res == 0) {
@@ -1088,7 +1087,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                         track->type = MATROSKA_TRACK_TYPE_NONE;
                         break;
                 }
-                matroska->tracks[matroska->num_tracks - 1] = track;
                 break;
             }
 
@@ -1623,6 +1621,11 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
         }
     }
 
+    if (track->type && matroska->num_tracks < ARRAY_SIZE(matroska->tracks)) {
+        matroska->tracks[matroska->num_tracks++] = track;
+    } else {
+        av_free(track);
+    }
     return res;
 }
 
