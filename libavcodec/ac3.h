@@ -85,6 +85,9 @@ typedef struct {
     uint8_t channel_mode;
     uint8_t lfe_on;
     uint8_t frame_type;
+    int center_mix_level;                   ///< Center mix level index
+    int surround_mix_level;                 ///< Surround mix level index
+    uint16_t channel_map;
     /** @} */
 
     /** @defgroup derived Derived values
@@ -95,9 +98,6 @@ typedef struct {
     uint32_t bit_rate;
     uint8_t channels;
     uint16_t frame_size;
-    int center_mix_level;                   ///< Center mix level index
-    int surround_mix_level;                 ///< Surround mix level index
-    uint16_t channel_map;
     /** @} */
 } AC3HeaderInfo;
 
