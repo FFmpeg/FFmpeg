@@ -783,22 +783,27 @@ CMDLINE_SELECT="
     static
     stripping
 "
-CMDLINE_SET='
-    arch
+
+PATHS_LIST='
     bindir
+    incdir
+    libdir
+    mandir
+    prefix
+    shlibdir
+'
+
+CMDLINE_SET="
+    $PATHS_LIST
+    arch
     build_suffix
     cc
     cpu
     cross_prefix
-    incdir
-    libdir
     logfile
-    mandir
-    prefix
-    shlibdir
     source_path
     target_os
-'
+"
 
 # code dependency declarations
 
