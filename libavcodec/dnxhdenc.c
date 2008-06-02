@@ -67,10 +67,10 @@ typedef struct DNXHDEncContext {
     unsigned frame_bits;
     uint8_t *src[3];
 
-    uint32_t *table_vlc_codes;
-    uint8_t  *table_vlc_bits;
-    uint16_t *table_run_codes;
-    uint8_t  *table_run_bits;
+    uint32_t *vlc_codes;
+    uint8_t  *vlc_bits;
+    uint16_t *run_codes;
+    uint8_t  *run_bits;
 
     /** Rate control */
     unsigned slice_bits;
@@ -93,13 +93,13 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
     int i, j, level, run;
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
 
-    CHECKED_ALLOCZ(ctx->table_vlc_codes, max_level*4*sizeof(*ctx->table_vlc_codes));
-    CHECKED_ALLOCZ(ctx->table_vlc_bits,  max_level*4*sizeof(*ctx->table_vlc_bits));
-    CHECKED_ALLOCZ(ctx->table_run_codes, 63*2);
-    CHECKED_ALLOCZ(ctx->table_run_bits,    63);
+    CHECKED_ALLOCZ(ctx->vlc_codes, max_level*4*sizeof(*ctx->vlc_codes));
+    CHECKED_ALLOCZ(ctx->vlc_bits,  max_level*4*sizeof(*ctx->vlc_bits));
+    CHECKED_ALLOCZ(ctx->run_codes, 63*2);
+    CHECKED_ALLOCZ(ctx->run_bits,    63);
 
-    ctx->table_vlc_codes += max_level*2;
-    ctx->table_vlc_bits  += max_level*2;
+    ctx->vlc_codes += max_level*2;
+    ctx->vlc_bits  += max_level*2;
     for (level = -max_level; level < max_level; level++) {
         for (run = 0; run < 2; run++) {
             int index = (level<<1)|run;
@@ -114,29 +114,29 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
                 if (ctx->cid_table->ac_level[j] == alevel &&
                     (!offset || (ctx->cid_table->ac_index_flag[j] && offset)) &&
                     (!run    || (ctx->cid_table->ac_run_flag  [j] && run))) {
-                    assert(!ctx->table_vlc_codes[index]);
+                    assert(!ctx->vlc_codes[index]);
                     if (alevel) {
-                        ctx->table_vlc_codes[index] = (ctx->cid_table->ac_codes[j]<<1)|(sign&1);
-                        ctx->table_vlc_bits [index] = ctx->cid_table->ac_bits[j]+1;
+                        ctx->vlc_codes[index] = (ctx->cid_table->ac_codes[j]<<1)|(sign&1);
+                        ctx->vlc_bits [index] = ctx->cid_table->ac_bits[j]+1;
                     } else {
-                        ctx->table_vlc_codes[index] = ctx->cid_table->ac_codes[j];
-                        ctx->table_vlc_bits [index] = ctx->cid_table->ac_bits [j];
+                        ctx->vlc_codes[index] = ctx->cid_table->ac_codes[j];
+                        ctx->vlc_bits [index] = ctx->cid_table->ac_bits [j];
                     }
                     break;
                 }
             }
             assert(!alevel || j < 257);
             if (offset) {
-                ctx->table_vlc_codes[index] = (ctx->table_vlc_codes[index]<<ctx->cid_table->index_bits)|offset;
-                ctx->table_vlc_bits [index]+= ctx->cid_table->index_bits;
+                ctx->vlc_codes[index] = (ctx->vlc_codes[index]<<ctx->cid_table->index_bits)|offset;
+                ctx->vlc_bits [index]+= ctx->cid_table->index_bits;
             }
         }
     }
     for (i = 0; i < 62; i++) {
         int run = ctx->cid_table->run[i];
         assert(run < 63);
-        ctx->table_run_codes[run] = ctx->cid_table->run_codes[i];
-        ctx->table_run_bits [run] = ctx->cid_table->run_bits[i];
+        ctx->run_codes[run] = ctx->cid_table->run_codes[i];
+        ctx->run_bits [run] = ctx->cid_table->run_bits[i];
     }
     return 0;
  fail:
@@ -321,13 +321,13 @@ static av_always_inline void dnxhd_encode_block(DNXHDEncContext *ctx, DCTELEM *b
         if (slevel) {
             int run_level = i - last_non_zero - 1;
             int rlevel = (slevel<<1)|!!run_level;
-            put_bits(&ctx->m.pb, ctx->table_vlc_bits[rlevel], ctx->table_vlc_codes[rlevel]);
+            put_bits(&ctx->m.pb, ctx->vlc_bits[rlevel], ctx->vlc_codes[rlevel]);
             if (run_level)
-                put_bits(&ctx->m.pb, ctx->table_run_bits[run_level], ctx->table_run_codes[run_level]);
+                put_bits(&ctx->m.pb, ctx->run_bits[run_level], ctx->run_codes[run_level]);
             last_non_zero = i;
         }
     }
-    put_bits(&ctx->m.pb, ctx->table_vlc_bits[0], ctx->table_vlc_codes[0]); // EOB
+    put_bits(&ctx->m.pb, ctx->vlc_bits[0], ctx->vlc_codes[0]); // EOB
 }
 
 static av_always_inline void dnxhd_unquantize_c(DNXHDEncContext *ctx, DCTELEM *block, int n, int qscale, int last_index)
@@ -378,7 +378,7 @@ static av_always_inline int dnxhd_calc_ac_bits(DNXHDEncContext *ctx, DCTELEM *bl
         level = block[j];
         if (level) {
             int run_level = i - last_non_zero - 1;
-            bits += ctx->table_vlc_bits[(level<<1)|!!run_level]+ctx->table_run_bits[run_level];
+            bits += ctx->vlc_bits[(level<<1)|!!run_level]+ctx->run_bits[run_level];
             last_non_zero = i;
         }
     }
@@ -491,7 +491,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg)
                 }
             }
             ctx->mb_rc[qscale][mb].ssd = ssd;
-            ctx->mb_rc[qscale][mb].bits = ac_bits+dc_bits+12+8*ctx->table_vlc_bits[0];
+            ctx->mb_rc[qscale][mb].bits = ac_bits+dc_bits+12+8*ctx->vlc_bits[0];
         }
     }
     return 0;
@@ -826,10 +826,10 @@ static int dnxhd_encode_end(AVCodecContext *avctx)
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
     int i;
 
-    av_free(ctx->table_vlc_codes-max_level*2);
-    av_free(ctx->table_vlc_bits -max_level*2);
-    av_freep(&ctx->table_run_codes);
-    av_freep(&ctx->table_run_bits);
+    av_free(ctx->vlc_codes-max_level*2);
+    av_free(ctx->vlc_bits -max_level*2);
+    av_freep(&ctx->run_codes);
+    av_freep(&ctx->run_bits);
 
     av_freep(&ctx->mb_bits);
     av_freep(&ctx->mb_qscale);
