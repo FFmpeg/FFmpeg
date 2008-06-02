@@ -882,7 +882,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
                 }
                 if(st->parser && (s->iformat->flags & AVFMT_GENERIC_INDEX)){
-                    st->parser->last_frame_offset=
+                    st->parser->next_frame_offset=
                     st->parser->cur_offset= s->cur_pkt.pos;
                 }
             }
