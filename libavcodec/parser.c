@@ -135,12 +135,12 @@ int av_parser_parse(AVCodecParserContext *s,
     } else {
         /* add a new packet descriptor */
         if(pts != AV_NOPTS_VALUE || dts != AV_NOPTS_VALUE){
-        i = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
-        s->cur_frame_start_index = i;
-        s->cur_frame_offset[i] = s->cur_offset;
-        s->cur_frame_end[i] = s->cur_offset + buf_size;
-        s->cur_frame_pts[i] = pts;
-        s->cur_frame_dts[i] = dts;
+            i = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
+            s->cur_frame_start_index = i;
+            s->cur_frame_offset[i] = s->cur_offset;
+            s->cur_frame_end[i] = s->cur_offset + buf_size;
+            s->cur_frame_pts[i] = pts;
+            s->cur_frame_dts[i] = dts;
         }
     }
 
