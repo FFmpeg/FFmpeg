@@ -505,6 +505,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
+        av_free(*str);
         return AVERROR(EIO);
     }
     (*str)[size] = '\0';
