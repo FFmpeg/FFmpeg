@@ -67,7 +67,7 @@ typedef struct DNXHDEncContext {
     unsigned frame_bits;
     uint8_t *src[3];
 
-    uint16_t *table_vlc_codes;
+    uint32_t *table_vlc_codes;
     uint8_t  *table_vlc_bits;
     uint16_t *table_run_codes;
     uint8_t  *table_run_bits;
@@ -90,21 +90,47 @@ typedef struct DNXHDEncContext {
 
 static int dnxhd_init_vlc(DNXHDEncContext *ctx)
 {
-    int i;
+    int i, j, level, run;
+    int max_level = 1<<(ctx->cid_table->bit_depth+2);
 
-    CHECKED_ALLOCZ(ctx->table_vlc_codes, 449*2);
-    CHECKED_ALLOCZ(ctx->table_vlc_bits,    449);
-    CHECKED_ALLOCZ(ctx->table_run_codes,  63*2);
-    CHECKED_ALLOCZ(ctx->table_run_bits,     63);
+    CHECKED_ALLOCZ(ctx->table_vlc_codes, max_level*4*sizeof(*ctx->table_vlc_codes));
+    CHECKED_ALLOCZ(ctx->table_vlc_bits,  max_level*4*sizeof(*ctx->table_vlc_bits));
+    CHECKED_ALLOCZ(ctx->table_run_codes, 63*2);
+    CHECKED_ALLOCZ(ctx->table_run_bits,    63);
 
-    for (i = 0; i < 257; i++) {
-        int level = ctx->cid_table->ac_level[i] +
-            (ctx->cid_table->ac_run_flag[i] << 7) + (ctx->cid_table->ac_index_flag[i] << 8);
-        assert(level < 449);
-        if (ctx->cid_table->ac_level[i] == 64 && ctx->cid_table->ac_index_flag[i])
-            level -= 64; // use 0+(1<<8) level
-        ctx->table_vlc_codes[level] = ctx->cid_table->ac_codes[i];
-        ctx->table_vlc_bits [level] = ctx->cid_table->ac_bits[i];
+    ctx->table_vlc_codes += max_level*2;
+    ctx->table_vlc_bits  += max_level*2;
+    for (level = -max_level; level < max_level; level++) {
+        for (run = 0; run < 2; run++) {
+            int index = (level<<1)|run;
+            int sign, offset = 0, alevel = level;
+
+            MASK_ABS(sign, alevel);
+            if (alevel > 64) {
+                offset = (alevel-1)>>6;
+                alevel -= offset<<6;
+            }
+            for (j = 0; j < 257; j++) {
+                if (ctx->cid_table->ac_level[j] == alevel &&
+                    (!offset || (ctx->cid_table->ac_index_flag[j] && offset)) &&
+                    (!run    || (ctx->cid_table->ac_run_flag  [j] && run))) {
+                    assert(!ctx->table_vlc_codes[index]);
+                    if (alevel) {
+                        ctx->table_vlc_codes[index] = (ctx->cid_table->ac_codes[j]<<1)|(sign&1);
+                        ctx->table_vlc_bits [index] = ctx->cid_table->ac_bits[j]+1;
+                    } else {
+                        ctx->table_vlc_codes[index] = ctx->cid_table->ac_codes[j];
+                        ctx->table_vlc_bits [index] = ctx->cid_table->ac_bits [j];
+                    }
+                    break;
+                }
+            }
+            assert(!alevel || j < 257);
+            if (offset) {
+                ctx->table_vlc_codes[index] = (ctx->table_vlc_codes[index]<<ctx->cid_table->index_bits)|offset;
+                ctx->table_vlc_bits [index]+= ctx->cid_table->index_bits;
+            }
+        }
     }
     for (i = 0; i < 62; i++) {
         int run = ctx->cid_table->run[i];
@@ -284,7 +310,6 @@ static av_always_inline void dnxhd_encode_dc(DNXHDEncContext *ctx, int diff)
 static av_always_inline void dnxhd_encode_block(DNXHDEncContext *ctx, DCTELEM *block, int last_index, int n)
 {
     int last_non_zero = 0;
-    int offset = 0;
     int slevel, i, j;
 
     dnxhd_encode_dc(ctx, block[0] - ctx->m.last_dc[n]);
@@ -295,19 +320,8 @@ static av_always_inline void dnxhd_encode_block(DNXHDEncContext *ctx, DCTELEM *b
         slevel = block[j];
         if (slevel) {
             int run_level = i - last_non_zero - 1;
-            int sign;
-            MASK_ABS(sign, slevel);
-            if (slevel > 64) {
-                offset = (slevel-1) >> 6;
-                slevel = 256 | (slevel & 63); // level 64 is treated as 0
-            }
-            if (run_level)
-                slevel |= 128;
-            put_bits(&ctx->m.pb, ctx->table_vlc_bits[slevel]+1, (ctx->table_vlc_codes[slevel]<<1)|(sign&1));
-            if (offset) {
-                put_bits(&ctx->m.pb, 4, offset);
-                offset = 0;
-            }
+            int rlevel = (slevel<<1)|!!run_level;
+            put_bits(&ctx->m.pb, ctx->table_vlc_bits[rlevel], ctx->table_vlc_codes[rlevel]);
             if (run_level)
                 put_bits(&ctx->m.pb, ctx->table_run_bits[run_level], ctx->table_run_codes[run_level]);
             last_non_zero = i;
@@ -364,13 +378,7 @@ static av_always_inline int dnxhd_calc_ac_bits(DNXHDEncContext *ctx, DCTELEM *bl
         level = block[j];
         if (level) {
             int run_level = i - last_non_zero - 1;
-            level = FFABS(level);
-            if (level > 64) {
-                level = 256 | (level & 63); // level 64 is treated as 0
-                bits += 4;
-            }
-            level |= (!!run_level)<<7;
-            bits += ctx->table_vlc_bits[level]+1 + ctx->table_run_bits[run_level];
+            bits += ctx->table_vlc_bits[(level<<1)|!!run_level]+ctx->table_run_bits[run_level];
             last_non_zero = i;
         }
     }
@@ -512,7 +520,9 @@ static int dnxhd_encode_thread(AVCodecContext *avctx, void *arg)
                 int last_index, overflow;
                 int n = dnxhd_switch_matrix(ctx, i);
                 last_index = ctx->m.dct_quantize((MpegEncContext*)ctx, block, i, qscale, &overflow);
+                //START_TIMER;
                 dnxhd_encode_block(ctx, block, last_index, n);
+                //STOP_TIMER("encode_block");
             }
         }
         if (put_bits_count(&ctx->m.pb)&31)
@@ -813,10 +823,11 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
 static int dnxhd_encode_end(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
+    int max_level = 1<<(ctx->cid_table->bit_depth+2);
     int i;
 
-    av_freep(&ctx->table_vlc_codes);
-    av_freep(&ctx->table_vlc_bits);
+    av_free(ctx->table_vlc_codes-max_level*2);
+    av_free(ctx->table_vlc_bits -max_level*2);
     av_freep(&ctx->table_run_codes);
     av_freep(&ctx->table_run_bits);
 
