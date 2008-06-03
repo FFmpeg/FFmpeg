@@ -157,8 +157,8 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
     if (dba_mode == DBA_REUSE || dba_mode == DBA_NEW) {
         int band, seg, delta;
         band = 0;
-        for (seg = 0; seg < dba_nsegs; seg++) {
-            band += dba_offsets[seg];
+        for (seg = 0; seg < FFMIN(8, dba_nsegs); seg++) {
+            band = FFMIN(49, band + dba_offsets[seg]);
             if (dba_values[seg] >= 4) {
                 delta = (dba_values[seg] - 3) << 7;
             } else {
