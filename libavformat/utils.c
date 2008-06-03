@@ -1004,6 +1004,7 @@ static void flush_packet_queue(AVFormatContext *s)
 
 int av_find_default_stream_index(AVFormatContext *s)
 {
+    int first_audio_index = -1;
     int i;
     AVStream *st;
 
@@ -1014,8 +1015,10 @@ int av_find_default_stream_index(AVFormatContext *s)
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             return i;
         }
+        if (first_audio_index < 0 && st->codec->codec_type == CODEC_TYPE_AUDIO)
+            first_audio_index = i;
     }
-    return 0;
+    return first_audio_index >= 0 ? first_audio_index : 0;
 }
 
 /**
