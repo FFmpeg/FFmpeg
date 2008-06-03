@@ -686,7 +686,7 @@ AVOutputFormat mpegts_muxer = {
     "mpegts",
     "MPEG2 transport stream format",
     "video/x-mpegts",
-    "ts",
+    "ts,m2t",
     sizeof(MpegTSWrite),
     CODEC_ID_MP2,
     CODEC_ID_MPEG2VIDEO,
