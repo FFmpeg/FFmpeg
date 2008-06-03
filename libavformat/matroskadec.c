@@ -1030,6 +1030,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
     /* Allocate a generic track. As soon as we know its type we'll realloc. */
     track = av_mallocz(MAX_TRACK_SIZE);
+    track->time_scale = 1.0;
     strcpy(track->language, "eng");
 
     /* try reading the trackentry headers */
