@@ -194,7 +194,7 @@ static int flic_read_close(AVFormatContext *s)
 
 AVInputFormat flic_demuxer = {
     "flic",
-    "FLI/FLC/FLX animation format",
+    NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation format"),
     sizeof(FlicDemuxContext),
     flic_probe,
     flic_read_header,

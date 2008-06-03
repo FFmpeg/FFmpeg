@@ -189,7 +189,7 @@ static int thp_read_packet(AVFormatContext *s,
 
 AVInputFormat thp_demuxer = {
     "thp",
-    "THP",
+    NULL_IF_CONFIG_SMALL("THP"),
     sizeof(ThpDemuxContext),
     thp_probe,
     thp_read_header,

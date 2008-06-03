@@ -350,7 +350,7 @@ static int dc1394_v2_close(AVFormatContext * context)
 
 AVInputFormat libdc1394_demuxer = {
     .name           = "libdc1394",
-    .long_name      = "dc1394 v.2 A/V grab",
+    .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.2 A/V grab"),
     .priv_data_size = sizeof(struct dc1394_data),
     .read_header    = dc1394_v2_read_header,
     .read_packet    = dc1394_v2_read_packet,
@@ -362,7 +362,7 @@ AVInputFormat libdc1394_demuxer = {
 #if ENABLE_LIBDC1394_1
 AVInputFormat libdc1394_demuxer = {
     .name           = "libdc1394",
-    .long_name      = "dc1394 v.1 A/V grab",
+    .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.1 A/V grab"),
     .priv_data_size = sizeof(struct dc1394_data),
     .read_header    = dc1394_v1_read_header,
     .read_packet    = dc1394_v1_read_packet,

@@ -465,7 +465,7 @@ static int ea_read_packet(AVFormatContext *s,
 
 AVInputFormat ea_demuxer = {
     "ea",
-    "Electronic Arts Multimedia Format",
+    NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia Format"),
     sizeof(EaDemuxContext),
     ea_probe,
     ea_read_header,

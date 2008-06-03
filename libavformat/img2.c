@@ -379,7 +379,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
 #ifdef CONFIG_IMAGE2_DEMUXER
 AVInputFormat image2_demuxer = {
     "image2",
-    "image2 sequence",
+    NULL_IF_CONFIG_SMALL("image2 sequence"),
     sizeof(VideoData),
     image_probe,
     img_read_header,
@@ -393,7 +393,7 @@ AVInputFormat image2_demuxer = {
 #ifdef CONFIG_IMAGE2PIPE_DEMUXER
 AVInputFormat image2pipe_demuxer = {
     "image2pipe",
-    "piped image2 sequence",
+    NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     sizeof(VideoData),
     NULL, /* no probe */
     img_read_header,
@@ -407,7 +407,7 @@ AVInputFormat image2pipe_demuxer = {
 #ifdef CONFIG_IMAGE2_MUXER
 AVOutputFormat image2_muxer = {
     "image2",
-    "image2 sequence",
+    NULL_IF_CONFIG_SMALL("image2 sequence"),
     "",
     "",
     sizeof(VideoData),
@@ -422,7 +422,7 @@ AVOutputFormat image2_muxer = {
 #ifdef CONFIG_IMAGE2PIPE_MUXER
 AVOutputFormat image2pipe_muxer = {
     "image2pipe",
-    "piped image2 sequence",
+    NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     "",
     "",
     sizeof(VideoData),

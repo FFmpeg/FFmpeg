@@ -190,7 +190,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat c93_demuxer = {
     "c93",
-    "Interplay C93",
+    NULL_IF_CONFIG_SMALL("Interplay C93"),
     sizeof(C93DemuxContext),
     probe,
     read_header,

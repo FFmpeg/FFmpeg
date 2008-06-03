@@ -202,7 +202,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
 
 AVInputFormat pva_demuxer = {
     "pva",
-    "pva file and stream format",
+    NULL_IF_CONFIG_SMALL("TechnoTrend PVA file and stream format"),
     sizeof(PVAContext),
     pva_probe,
     pva_read_header,

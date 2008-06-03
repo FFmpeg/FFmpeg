@@ -82,7 +82,7 @@ static int apc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat apc_demuxer = {
     "apc",
-    "CRYO APC format",
+    NULL_IF_CONFIG_SMALL("CRYO APC format"),
     0,
     apc_probe,
     apc_read_header,

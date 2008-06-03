@@ -219,7 +219,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 AVInputFormat mpc_demuxer = {
     "mpc",
-    "musepack",
+    NULL_IF_CONFIG_SMALL("Musepack"),
     sizeof(MPCContext),
     mpc_probe,
     mpc_read_header,

@@ -511,7 +511,7 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 AVInputFormat ape_demuxer = {
     "ape",
-    "Monkey's Audio",
+    NULL_IF_CONFIG_SMALL("Monkey's Audio"),
     sizeof(APEContext),
     ape_probe,
     ape_read_header,

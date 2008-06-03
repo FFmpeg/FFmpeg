@@ -432,7 +432,7 @@ static int rm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat rm_muxer = {
     "rm",
-    "rm format",
+    NULL_IF_CONFIG_SMALL("RM format"),
     "application/vnd.rn-realmedia",
     "rm,ra",
     sizeof(RMContext),

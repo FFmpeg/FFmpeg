@@ -1087,7 +1087,7 @@ static int avi_probe(AVProbeData *p)
 
 AVInputFormat avi_demuxer = {
     "avi",
-    "avi format",
+    NULL_IF_CONFIG_SMALL("AVI format"),
     sizeof(AVIContext),
     avi_probe,
     avi_read_header,

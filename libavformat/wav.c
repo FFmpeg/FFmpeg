@@ -262,7 +262,7 @@ static int wav_read_seek(AVFormatContext *s,
 #ifdef CONFIG_WAV_DEMUXER
 AVInputFormat wav_demuxer = {
     "wav",
-    "wav format",
+    NULL_IF_CONFIG_SMALL("WAV format"),
     sizeof(WAVContext),
     wav_probe,
     wav_read_header,
@@ -276,7 +276,7 @@ AVInputFormat wav_demuxer = {
 #ifdef CONFIG_WAV_MUXER
 AVOutputFormat wav_muxer = {
     "wav",
-    "wav format",
+    NULL_IF_CONFIG_SMALL("WAV format"),
     "audio/x-wav",
     "wav",
     sizeof(WAVContext),

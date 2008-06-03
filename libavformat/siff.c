@@ -227,7 +227,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat siff_demuxer = {
     "siff",
-    "Beam Software SIFF",
+    NULL_IF_CONFIG_SMALL("Beam Software SIFF"),
     sizeof(SIFFContext),
     siff_probe,
     siff_read_header,

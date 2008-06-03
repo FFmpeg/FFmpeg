@@ -315,7 +315,7 @@ static int audio_read_close(AVFormatContext *s1)
 #ifdef CONFIG_OSS_DEMUXER
 AVInputFormat oss_demuxer = {
     "oss",
-    "audio grab and output",
+    NULL_IF_CONFIG_SMALL("audio grab and output"),
     sizeof(AudioData),
     NULL,
     audio_read_header,
@@ -328,7 +328,7 @@ AVInputFormat oss_demuxer = {
 #ifdef CONFIG_OSS_MUXER
 AVOutputFormat oss_muxer = {
     "oss",
-    "audio grab and output",
+    NULL_IF_CONFIG_SMALL("audio grab and output"),
     "",
     "",
     sizeof(AudioData),

@@ -180,7 +180,7 @@ static int au_read_close(AVFormatContext *s)
 #ifdef CONFIG_AU_DEMUXER
 AVInputFormat au_demuxer = {
     "au",
-    "SUN AU Format",
+    NULL_IF_CONFIG_SMALL("SUN AU format"),
     0,
     au_probe,
     au_read_header,
@@ -194,7 +194,7 @@ AVInputFormat au_demuxer = {
 #ifdef CONFIG_AU_MUXER
 AVOutputFormat au_muxer = {
     "au",
-    "SUN AU Format",
+    NULL_IF_CONFIG_SMALL("SUN AU format"),
     "audio/basic",
     "au",
     0,

@@ -584,7 +584,7 @@ static int ogg_probe(AVProbeData *p)
 
 AVInputFormat ogg_demuxer = {
     "ogg",
-    "Ogg",
+    NULL_IF_CONFIG_SMALL("Ogg"),
     sizeof (ogg_t),
     ogg_probe,
     ogg_read_header,

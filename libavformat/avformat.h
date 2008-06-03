@@ -185,6 +185,11 @@ typedef struct AVFormatParameters {
 
 typedef struct AVOutputFormat {
     const char *name;
+    /**
+     * Descriptive name for the format, meant to be more human-readable
+     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * to define it.
+     */
     const char *long_name;
     const char *mime_type;
     const char *extensions; /**< comma separated filename extensions */
@@ -216,6 +221,11 @@ typedef struct AVOutputFormat {
 
 typedef struct AVInputFormat {
     const char *name;
+    /**
+     * Descriptive name for the format, meant to be more human-readable
+     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * to define it.
+     */
     const char *long_name;
     /** size of private data so that it can be allocated in the wrapper */
     int priv_data_size;

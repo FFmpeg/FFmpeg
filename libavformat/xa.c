@@ -108,7 +108,7 @@ static int xa_read_packet(AVFormatContext *s,
 
 AVInputFormat xa_demuxer = {
     "xa",
-    "Maxis XA File Format",
+    NULL_IF_CONFIG_SMALL("Maxis XA File Format"),
     sizeof(MaxisXADemuxContext),
     xa_probe,
     xa_read_header,

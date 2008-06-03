@@ -407,7 +407,7 @@ static int gif_write_trailer(AVFormatContext *s)
 
 AVOutputFormat gif_muxer = {
     "gif",
-    "GIF Animation",
+    NULL_IF_CONFIG_SMALL("GIF Animation"),
     "image/gif",
     "gif",
     sizeof(GIFContext),

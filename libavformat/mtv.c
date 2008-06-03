@@ -176,7 +176,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat mtv_demuxer = {
     "MTV",
-    "MTV format",
+    NULL_IF_CONFIG_SMALL("MTV format"),
     sizeof(MTVDemuxContext),
     mtv_probe,
     mtv_read_header,

@@ -348,7 +348,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat rpl_demuxer = {
     "rpl",
-    "RPL/ARMovie format",
+    NULL_IF_CONFIG_SMALL("RPL/ARMovie format"),
     sizeof(RPLContext),
     rpl_probe,
     rpl_read_header,

@@ -356,7 +356,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 
 AVOutputFormat rtp_muxer = {
     "rtp",
-    "RTP output format",
+    NULL_IF_CONFIG_SMALL("RTP output format"),
     NULL,
     NULL,
     sizeof(RTPDemuxContext),

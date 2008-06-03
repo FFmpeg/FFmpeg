@@ -213,7 +213,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat dsicin_demuxer = {
     "dsicin",
-    "Delphine Software International CIN format",
+    NULL_IF_CONFIG_SMALL("Delphine Software International CIN format"),
     sizeof(CinDemuxContext),
     cin_probe,
     cin_read_header,

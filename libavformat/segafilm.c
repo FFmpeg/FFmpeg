@@ -283,7 +283,7 @@ static int film_read_close(AVFormatContext *s)
 
 AVInputFormat segafilm_demuxer = {
     "film_cpk",
-    "Sega FILM/CPK format",
+    NULL_IF_CONFIG_SMALL("Sega FILM/CPK format"),
     sizeof(FilmDemuxContext),
     film_probe,
     film_read_header,

@@ -431,7 +431,7 @@ static int flac_probe(AVProbeData *p)
 
 AVInputFormat shorten_demuxer = {
     "shn",
-    "raw shorten",
+    NULL_IF_CONFIG_SMALL("raw Shorten"),
     0,
     NULL,
     audio_read_header,
@@ -444,7 +444,7 @@ AVInputFormat shorten_demuxer = {
 
 AVInputFormat mlp_demuxer = {
     "mlp",
-    "raw mlp",
+    NULL_IF_CONFIG_SMALL("raw MLP"),
     0,
     NULL,
     audio_read_header,
@@ -457,7 +457,7 @@ AVInputFormat mlp_demuxer = {
 
 AVInputFormat flac_demuxer = {
     "flac",
-    "raw flac",
+    NULL_IF_CONFIG_SMALL("raw FLAC"),
     0,
     flac_probe,
     audio_read_header,
@@ -471,7 +471,7 @@ AVInputFormat flac_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat flac_muxer = {
     "flac",
-    "raw flac",
+    NULL_IF_CONFIG_SMALL("raw FLAC"),
     "audio/x-flac",
     "flac",
     0,
@@ -486,7 +486,7 @@ AVOutputFormat flac_muxer = {
 #ifdef CONFIG_AC3_DEMUXER
 AVInputFormat ac3_demuxer = {
     "ac3",
-    "raw ac3",
+    NULL_IF_CONFIG_SMALL("raw AC-3"),
     0,
     ac3_probe,
     audio_read_header,
@@ -501,7 +501,7 @@ AVInputFormat ac3_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat ac3_muxer = {
     "ac3",
-    "raw ac3",
+    NULL_IF_CONFIG_SMALL("raw AC-3"),
     "audio/x-ac3",
     "ac3",
     0,
@@ -514,7 +514,7 @@ AVOutputFormat ac3_muxer = {
 
 AVOutputFormat dts_muxer = {
     "dts",
-    "raw dts",
+    NULL_IF_CONFIG_SMALL("raw DTS"),
     "audio/x-dca",
     "dts",
     0,
@@ -529,7 +529,7 @@ AVOutputFormat dts_muxer = {
 
 AVInputFormat dirac_demuxer = {
     "dirac",
-    "raw dirac",
+    NULL_IF_CONFIG_SMALL("raw Dirac"),
     0,
     dirac_probe,
     video_read_header,
@@ -542,7 +542,7 @@ AVInputFormat dirac_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat dirac_muxer = {
     "dirac",
-    "raw dirac",
+    NULL_IF_CONFIG_SMALL("raw Dirac"),
     NULL,
     "drc",
     0,
@@ -556,7 +556,7 @@ AVOutputFormat dirac_muxer = {
 
 AVInputFormat dts_demuxer = {
     "dts",
-    "raw dts",
+    NULL_IF_CONFIG_SMALL("raw DTS"),
     0,
     dts_probe,
     audio_read_header,
@@ -569,7 +569,7 @@ AVInputFormat dts_demuxer = {
 
 AVInputFormat aac_demuxer = {
     "aac",
-    "ADTS AAC",
+    NULL_IF_CONFIG_SMALL("ADTS AAC"),
     0,
     NULL,
     audio_read_header,
@@ -582,7 +582,7 @@ AVInputFormat aac_demuxer = {
 
 AVInputFormat gsm_demuxer = {
     "gsm",
-    "GSM",
+    NULL_IF_CONFIG_SMALL("GSM"),
     0,
     NULL,
     audio_read_header,
@@ -597,7 +597,7 @@ AVInputFormat gsm_demuxer = {
 AVOutputFormat roq_muxer =
 {
     "RoQ",
-    "Id RoQ format",
+    NULL_IF_CONFIG_SMALL("Id RoQ format"),
     NULL,
     "roq",
     0,
@@ -610,7 +610,7 @@ AVOutputFormat roq_muxer =
 
 AVInputFormat h261_demuxer = {
     "h261",
-    "raw h261",
+    NULL_IF_CONFIG_SMALL("raw H.261"),
     0,
     h261_probe,
     video_read_header,
@@ -624,7 +624,7 @@ AVInputFormat h261_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat h261_muxer = {
     "h261",
-    "raw h261",
+    NULL_IF_CONFIG_SMALL("raw H.261"),
     "video/x-h261",
     "h261",
     0,
@@ -638,7 +638,7 @@ AVOutputFormat h261_muxer = {
 
 AVInputFormat h263_demuxer = {
     "h263",
-    "raw h263",
+    NULL_IF_CONFIG_SMALL("raw H.263"),
     0,
     h263_probe,
     video_read_header,
@@ -652,7 +652,7 @@ AVInputFormat h263_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat h263_muxer = {
     "h263",
-    "raw h263",
+    NULL_IF_CONFIG_SMALL("raw H.263"),
     "video/x-h263",
     "h263",
     0,
@@ -666,7 +666,7 @@ AVOutputFormat h263_muxer = {
 
 AVInputFormat m4v_demuxer = {
     "m4v",
-    "raw MPEG4 video format",
+    NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
     0,
     mpeg4video_probe, /** probing for mpeg4 data */
     video_read_header,
@@ -680,7 +680,7 @@ AVInputFormat m4v_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat m4v_muxer = {
     "m4v",
-    "raw MPEG4 video format",
+    NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
     NULL,
     "m4v",
     0,
@@ -694,7 +694,7 @@ AVOutputFormat m4v_muxer = {
 
 AVInputFormat h264_demuxer = {
     "h264",
-    "raw H264 video format",
+    NULL_IF_CONFIG_SMALL("raw H.264 video format"),
     0,
     NULL /*mpegvideo_probe*/,
     video_read_header,
@@ -708,7 +708,7 @@ AVInputFormat h264_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat h264_muxer = {
     "h264",
-    "raw H264 video format",
+    NULL_IF_CONFIG_SMALL("raw H.264 video format"),
     NULL,
     "h264",
     0,
@@ -722,7 +722,7 @@ AVOutputFormat h264_muxer = {
 
 AVInputFormat mpegvideo_demuxer = {
     "mpegvideo",
-    "MPEG video",
+    NULL_IF_CONFIG_SMALL("MPEG video"),
     0,
     mpegvideo_probe,
     video_read_header,
@@ -735,7 +735,7 @@ AVInputFormat mpegvideo_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat mpeg1video_muxer = {
     "mpeg1video",
-    "MPEG video",
+    NULL_IF_CONFIG_SMALL("MPEG video"),
     "video/x-mpeg",
     "mpg,mpeg,m1v",
     0,
@@ -750,7 +750,7 @@ AVOutputFormat mpeg1video_muxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat mpeg2video_muxer = {
     "mpeg2video",
-    "MPEG2 video",
+    NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     NULL,
     "m2v",
     0,
@@ -764,7 +764,7 @@ AVOutputFormat mpeg2video_muxer = {
 
 AVInputFormat mjpeg_demuxer = {
     "mjpeg",
-    "MJPEG video",
+    NULL_IF_CONFIG_SMALL("MJPEG video"),
     0,
     NULL,
     video_read_header,
@@ -777,7 +777,7 @@ AVInputFormat mjpeg_demuxer = {
 
 AVInputFormat ingenient_demuxer = {
     "ingenient",
-    "Ingenient MJPEG",
+    NULL_IF_CONFIG_SMALL("Ingenient MJPEG"),
     0,
     NULL,
     video_read_header,
@@ -791,7 +791,7 @@ AVInputFormat ingenient_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat mjpeg_muxer = {
     "mjpeg",
-    "MJPEG video",
+    NULL_IF_CONFIG_SMALL("MJPEG video"),
     "video/x-mjpeg",
     "mjpg,mjpeg",
     0,
@@ -805,7 +805,7 @@ AVOutputFormat mjpeg_muxer = {
 
 AVInputFormat vc1_demuxer = {
     "vc1",
-    "raw vc1",
+    NULL_IF_CONFIG_SMALL("raw VC-1"),
     0,
     NULL /* vc1_probe */,
     video_read_header,
@@ -820,7 +820,7 @@ AVInputFormat vc1_demuxer = {
 #define PCMINPUTDEF(name, long_name, ext, codec) \
 AVInputFormat pcm_ ## name ## _demuxer = {\
     #name,\
-    long_name,\
+    NULL_IF_CONFIG_SMALL(long_name),\
     0,\
     NULL,\
     raw_read_header,\
@@ -835,7 +835,7 @@ AVInputFormat pcm_ ## name ## _demuxer = {\
 #define PCMOUTPUTDEF(name, long_name, ext, codec) \
 AVOutputFormat pcm_ ## name ## _muxer = {\
     #name,\
-    long_name,\
+    NULL_IF_CONFIG_SMALL(long_name),\
     NULL,\
     ext,\
     0,\
@@ -920,7 +920,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat rawvideo_demuxer = {
     "rawvideo",
-    "raw video format",
+    NULL_IF_CONFIG_SMALL("raw video format"),
     0,
     NULL,
     raw_read_header,
@@ -934,7 +934,7 @@ AVInputFormat rawvideo_demuxer = {
 #ifdef CONFIG_MUXERS
 AVOutputFormat rawvideo_muxer = {
     "rawvideo",
-    "raw video format",
+    NULL_IF_CONFIG_SMALL("raw video format"),
     NULL,
     "yuv,rgb",
     0,
@@ -954,7 +954,7 @@ static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat null_muxer = {
     "null",
-    "null video format",
+    NULL_IF_CONFIG_SMALL("null video format"),
     NULL,
     NULL,
     0,

@@ -593,7 +593,7 @@ static int avi_write_trailer(AVFormatContext *s)
 
 AVOutputFormat avi_muxer = {
     "avi",
-    "avi format",
+    NULL_IF_CONFIG_SMALL("AVI format"),
     "video/x-msvideo",
     "avi",
     sizeof(AVIContext),

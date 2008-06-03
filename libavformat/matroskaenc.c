@@ -819,7 +819,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
 AVOutputFormat matroska_muxer = {
     "matroska",
-    "Matroska File Format",
+    NULL_IF_CONFIG_SMALL("Matroska file format"),
     "video/x-matroska",
     "mkv",
     sizeof(MatroskaMuxContext),
@@ -834,7 +834,7 @@ AVOutputFormat matroska_muxer = {
 
 AVOutputFormat matroska_audio_muxer = {
     "matroska",
-    "Matroska File Format",
+    NULL_IF_CONFIG_SMALL("Matroska file format"),
     "audio/x-matroska",
     "mka",
     sizeof(MatroskaMuxContext),

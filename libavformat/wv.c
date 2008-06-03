@@ -226,7 +226,7 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 
 AVInputFormat wv_demuxer = {
     "wv",
-    "WavPack",
+    NULL_IF_CONFIG_SMALL("WavPack"),
     sizeof(WVContext),
     wv_probe,
     wv_read_header,

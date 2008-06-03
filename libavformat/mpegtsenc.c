@@ -684,7 +684,7 @@ static int mpegts_write_end(AVFormatContext *s)
 
 AVOutputFormat mpegts_muxer = {
     "mpegts",
-    "MPEG2 transport stream format",
+    NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     "video/x-mpegts",
     "ts,m2t",
     sizeof(MpegTSWrite),

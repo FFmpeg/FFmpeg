@@ -442,7 +442,7 @@ static int aiff_read_seek(AVFormatContext *s,
 #ifdef CONFIG_AIFF_DEMUXER
 AVInputFormat aiff_demuxer = {
     "aiff",
-    "Audio IFF",
+    NULL_IF_CONFIG_SMALL("Audio IFF"),
     0,
     aiff_probe,
     aiff_read_header,
@@ -456,7 +456,7 @@ AVInputFormat aiff_demuxer = {
 #ifdef CONFIG_AIFF_MUXER
 AVOutputFormat aiff_muxer = {
     "aiff",
-    "Audio IFF",
+    NULL_IF_CONFIG_SMALL("Audio IFF"),
     "audio/aiff",
     "aif,aiff,afc,aifc",
     sizeof(AIFFOutputContext),

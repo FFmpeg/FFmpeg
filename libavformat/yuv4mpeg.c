@@ -169,7 +169,7 @@ static int yuv4_write_header(AVFormatContext *s)
 #ifdef CONFIG_YUV4MPEGPIPE_MUXER
 AVOutputFormat yuv4mpegpipe_muxer = {
     "yuv4mpegpipe",
-    "YUV4MPEG pipe format",
+    NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
     "",
     "y4m",
     sizeof(int),
@@ -390,7 +390,7 @@ static int yuv4_probe(AVProbeData *pd)
 #ifdef CONFIG_YUV4MPEGPIPE_DEMUXER
 AVInputFormat yuv4mpegpipe_demuxer = {
     "yuv4mpegpipe",
-    "YUV4MPEG pipe format",
+    NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
     sizeof(struct frame_attributes),
     yuv4_probe,
     yuv4_read_header,

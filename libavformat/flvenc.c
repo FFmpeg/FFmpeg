@@ -374,7 +374,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat flv_muxer = {
     "flv",
-    "flv format",
+    NULL_IF_CONFIG_SMALL("FLV format"),
     "video/x-flv",
     "flv",
     sizeof(FLVContext),

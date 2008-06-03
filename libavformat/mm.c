@@ -201,7 +201,7 @@ static int mm_read_close(AVFormatContext *s)
 
 AVInputFormat mm_demuxer = {
     "mm",
-    "American Laser Games MM format",
+    NULL_IF_CONFIG_SMALL("American Laser Games MM format"),
     sizeof(MmDemuxContext),
     mm_probe,
     mm_read_header,

@@ -279,7 +279,7 @@ static int ogg_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ogg_muxer = {
     "ogg",
-    "Ogg format",
+    NULL_IF_CONFIG_SMALL("Ogg"),
     "application/ogg",
     "ogg",
     0,

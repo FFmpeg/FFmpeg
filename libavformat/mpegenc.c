@@ -1221,7 +1221,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 #ifdef CONFIG_MPEG1SYSTEM_MUXER
 AVOutputFormat mpeg1system_muxer = {
     "mpeg",
-    "MPEG1 System format",
+    NULL_IF_CONFIG_SMALL("MPEG-1 System format"),
     "video/mpeg",
     "mpg,mpeg",
     sizeof(MpegMuxContext),
@@ -1235,7 +1235,7 @@ AVOutputFormat mpeg1system_muxer = {
 #ifdef CONFIG_MPEG1VCD_MUXER
 AVOutputFormat mpeg1vcd_muxer = {
     "vcd",
-    "MPEG1 System format (VCD)",
+    NULL_IF_CONFIG_SMALL("MPEG-1 System format (VCD)"),
     "video/mpeg",
     NULL,
     sizeof(MpegMuxContext),
@@ -1249,7 +1249,7 @@ AVOutputFormat mpeg1vcd_muxer = {
 #ifdef CONFIG_MPEG2VOB_MUXER
 AVOutputFormat mpeg2vob_muxer = {
     "vob",
-    "MPEG2 PS format (VOB)",
+    NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
     "video/mpeg",
     "vob",
     sizeof(MpegMuxContext),
@@ -1265,7 +1265,7 @@ AVOutputFormat mpeg2vob_muxer = {
 #ifdef CONFIG_MPEG2SVCD_MUXER
 AVOutputFormat mpeg2svcd_muxer = {
     "svcd",
-    "MPEG2 PS format (VOB)",
+    NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
     "video/mpeg",
     "vob",
     sizeof(MpegMuxContext),
@@ -1281,7 +1281,7 @@ AVOutputFormat mpeg2svcd_muxer = {
 #ifdef CONFIG_MPEG2DVD_MUXER
 AVOutputFormat mpeg2dvd_muxer = {
     "dvd",
-    "MPEG2 PS format (DVD VOB)",
+    NULL_IF_CONFIG_SMALL("MPEG-2 PS format (DVD VOB)"),
     "video/mpeg",
     "dvd",
     sizeof(MpegMuxContext),

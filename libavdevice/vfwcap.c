@@ -456,7 +456,7 @@ static int vfw_read_close(AVFormatContext *s)
 
 AVInputFormat vfwcap_demuxer = {
     "vfwcap",
-    "VFW video capture",
+    NULL_IF_CONFIG_SMALL("VFW video capture"),
     sizeof(struct vfw_ctx),
     NULL,
     vfw_read_header,

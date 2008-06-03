@@ -646,7 +646,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 #ifdef CONFIG_MP3_DEMUXER
 AVInputFormat mp3_demuxer = {
     "mp3",
-    "MPEG audio",
+    NULL_IF_CONFIG_SMALL("MPEG audio"),
     0,
     mp3_read_probe,
     mp3_read_header,
@@ -659,7 +659,7 @@ AVInputFormat mp3_demuxer = {
 #ifdef CONFIG_MP2_MUXER
 AVOutputFormat mp2_muxer = {
     "mp2",
-    "MPEG audio layer 2",
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
     "audio/x-mpeg",
 #ifdef CONFIG_LIBMP3LAME
     "mp2,m2a",
@@ -677,7 +677,7 @@ AVOutputFormat mp2_muxer = {
 #ifdef CONFIG_MP3_MUXER
 AVOutputFormat mp3_muxer = {
     "mp3",
-    "MPEG audio layer 3",
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
     "audio/x-mpeg",
     "mp3",
     0,

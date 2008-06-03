@@ -440,7 +440,7 @@ static int dv_read_close(AVFormatContext *s)
 #ifdef CONFIG_DV_DEMUXER
 AVInputFormat dv_demuxer = {
     "dv",
-    "DV video format",
+    NULL_IF_CONFIG_SMALL("DV video format"),
     sizeof(RawDVContext),
     NULL,
     dv_read_header,

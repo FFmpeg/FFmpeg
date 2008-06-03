@@ -279,7 +279,7 @@ static int roq_read_close(AVFormatContext *s)
 
 AVInputFormat roq_demuxer = {
     "RoQ",
-    "Id RoQ format",
+    NULL_IF_CONFIG_SMALL("Id RoQ format"),
     sizeof(RoqDemuxContext),
     roq_probe,
     roq_read_header,

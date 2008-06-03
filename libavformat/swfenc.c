@@ -503,7 +503,7 @@ static int swf_write_trailer(AVFormatContext *s)
 #ifdef CONFIG_SWF_MUXER
 AVOutputFormat swf_muxer = {
     "swf",
-    "Flash format",
+    NULL_IF_CONFIG_SMALL("Flash format"),
     "application/x-shockwave-flash",
     "swf",
     sizeof(SWFContext),
@@ -517,7 +517,7 @@ AVOutputFormat swf_muxer = {
 #ifdef CONFIG_AVM2_MUXER
 AVOutputFormat avm2_muxer = {
     "avm2",
-    "Flash 9 (AVM2) format",
+    NULL_IF_CONFIG_SMALL("Flash 9 (AVM2) format"),
     "application/x-shockwave-flash",
     NULL,
     sizeof(SWFContext),

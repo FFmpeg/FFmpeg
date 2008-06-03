@@ -118,7 +118,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
 AVInputFormat lmlm4_demuxer = {
     "lmlm4",
-    "lmlm4 raw format",
+    NULL_IF_CONFIG_SMALL("lmlm4 raw format"),
     0,
     lmlm4_probe,
     lmlm4_read_header,

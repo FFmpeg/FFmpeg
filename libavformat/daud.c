@@ -49,7 +49,7 @@ static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
 
 AVInputFormat daud_demuxer = {
     "daud",
-    "D-Cinema audio format",
+    NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
     0,
     NULL,
     daud_header,

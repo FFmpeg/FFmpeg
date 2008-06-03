@@ -94,7 +94,7 @@ static int txd_read_close(AVFormatContext *s) {
 AVInputFormat txd_demuxer =
 {
     "txd",
-    "txd format",
+    NULL_IF_CONFIG_SMALL("txd format"),
     0,
     txd_probe,
     txd_read_header,

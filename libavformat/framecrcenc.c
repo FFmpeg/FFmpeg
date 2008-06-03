@@ -35,7 +35,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat framecrc_muxer = {
     "framecrc",
-    "framecrc testing format",
+    NULL_IF_CONFIG_SMALL("framecrc testing format"),
     NULL,
     "",
     0,

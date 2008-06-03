@@ -169,7 +169,7 @@ static int amr_read_packet(AVFormatContext *s,
 #ifdef CONFIG_AMR_DEMUXER
 AVInputFormat amr_demuxer = {
     "amr",
-    "3gpp amr file format",
+    NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
     0, /*priv_data_size*/
     amr_probe,
     amr_read_header,
@@ -181,7 +181,7 @@ AVInputFormat amr_demuxer = {
 #ifdef CONFIG_AMR_MUXER
 AVOutputFormat amr_muxer = {
     "amr",
-    "3gpp amr file format",
+    NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
     "audio/amr",
     "amr",
     0,

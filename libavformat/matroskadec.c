@@ -3248,7 +3248,7 @@ matroska_read_close (AVFormatContext *s)
 
 AVInputFormat matroska_demuxer = {
     "matroska",
-    "Matroska file format",
+    NULL_IF_CONFIG_SMALL("Matroska file format"),
     sizeof(MatroskaDemuxContext),
     matroska_probe,
     matroska_read_header,

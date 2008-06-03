@@ -813,7 +813,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 
 AVOutputFormat gxf_muxer = {
     "gxf",
-    "GXF format",
+    NULL_IF_CONFIG_SMALL("GXF format"),
     NULL,
     "gxf",
     sizeof(GXFContext),

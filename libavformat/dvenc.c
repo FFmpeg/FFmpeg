@@ -402,7 +402,7 @@ static int dv_write_trailer(struct AVFormatContext *s)
 #ifdef CONFIG_DV_MUXER
 AVOutputFormat dv_muxer = {
     "dv",
-    "DV video format",
+    NULL_IF_CONFIG_SMALL("DV video format"),
     NULL,
     "dv",
     sizeof(DVMuxContext),

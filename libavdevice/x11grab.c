@@ -519,7 +519,7 @@ x11grab_read_close(AVFormatContext *s1)
 AVInputFormat x11_grab_device_demuxer =
 {
     "x11grab",
-    "X11grab",
+    NULL_IF_CONFIG_SMALL("X11grab"),
     sizeof(x11_grab_t),
     NULL,
     x11grab_read_header,

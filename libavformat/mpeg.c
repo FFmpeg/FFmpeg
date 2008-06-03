@@ -583,7 +583,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 
 AVInputFormat mpegps_demuxer = {
     "mpeg",
-    "MPEG PS format",
+    NULL_IF_CONFIG_SMALL("MPEG-PS format"),
     sizeof(MpegDemuxContext),
     mpegps_probe,
     mpegps_read_header,

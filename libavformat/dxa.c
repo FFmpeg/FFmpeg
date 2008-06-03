@@ -204,7 +204,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat dxa_demuxer = {
     "dxa",
-    "dxa",
+    NULL_IF_CONFIG_SMALL("DXA"),
     sizeof(DXAContext),
     dxa_probe,
     dxa_read_header,

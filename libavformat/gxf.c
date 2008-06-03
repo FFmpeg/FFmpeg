@@ -492,7 +492,7 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
 
 AVInputFormat gxf_demuxer = {
     "gxf",
-    "GXF format",
+    NULL_IF_CONFIG_SMALL("GXF format"),
     0,
     gxf_probe,
     gxf_header,

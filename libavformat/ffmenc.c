@@ -253,7 +253,7 @@ static int ffm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ffm_muxer = {
     "ffm",
-    "ffm format",
+    NULL_IF_CONFIG_SMALL("ffm format"),
     "",
     "ffm",
     sizeof(FFMContext),

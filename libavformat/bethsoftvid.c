@@ -225,7 +225,7 @@ static int vid_read_packet(AVFormatContext *s,
 
 AVInputFormat bethsoftvid_demuxer = {
     "bethsoftvid",
-    "Bethesda Softworks 'Daggerfall' VID format",
+    NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
     sizeof(BVID_DemuxContext),
     vid_probe,
     vid_read_header,

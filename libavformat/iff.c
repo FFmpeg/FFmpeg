@@ -192,7 +192,7 @@ static int iff_read_packet(AVFormatContext *s,
 
 AVInputFormat iff_demuxer = {
     "IFF",
-    "IFF format",
+    NULL_IF_CONFIG_SMALL("IFF format"),
     sizeof(IffDemuxContext),
     iff_probe,
     iff_read_header,

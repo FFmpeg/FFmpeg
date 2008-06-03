@@ -147,7 +147,7 @@ static int sol_read_close(AVFormatContext *s)
 
 AVInputFormat sol_demuxer = {
     "sol",
-    "Sierra SOL Format",
+    NULL_IF_CONFIG_SMALL("Sierra SOL format"),
     0,
     sol_probe,
     sol_read_header,

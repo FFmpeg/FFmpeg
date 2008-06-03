@@ -91,7 +91,7 @@ static int cdata_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ea_cdata_demuxer = {
     "ea_cdata",
-    "Electronic Arts cdata",
+    NULL_IF_CONFIG_SMALL("Electronic Arts cdata"),
     sizeof(CdataDemuxContext),
     cdata_probe,
     cdata_read_header,

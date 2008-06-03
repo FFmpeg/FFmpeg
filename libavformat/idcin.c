@@ -288,7 +288,7 @@ static int idcin_read_close(AVFormatContext *s)
 
 AVInputFormat idcin_demuxer = {
     "idcin",
-    "Id CIN format",
+    NULL_IF_CONFIG_SMALL("Id CIN format"),
     sizeof(IdcinDemuxContext),
     idcin_probe,
     idcin_read_header,

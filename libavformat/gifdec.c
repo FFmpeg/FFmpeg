@@ -581,7 +581,7 @@ static int gif_read_close(AVFormatContext *s1)
 AVInputFormat gif_demuxer =
 {
     "gif",
-    "gif format",
+    NULL_IF_CONFIG_SMALL("GIF format"),
     sizeof(GifState),
     gif_video_probe,
     gif_read_header,

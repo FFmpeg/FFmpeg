@@ -635,7 +635,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 
 AVInputFormat v4l2_demuxer = {
     "video4linux2",
-    "video grab",
+    NULL_IF_CONFIG_SMALL("video grab"),
     sizeof(struct video_data),
     NULL,
     v4l2_read_header,

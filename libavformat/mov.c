@@ -1914,7 +1914,7 @@ static int mov_read_close(AVFormatContext *s)
 
 AVInputFormat mov_demuxer = {
     "mov,mp4,m4a,3gp,3g2,mj2",
-    "QuickTime/MPEG4/Motion JPEG 2000 format",
+    NULL_IF_CONFIG_SMALL("QuickTime/MPEG-4/Motion JPEG 2000 format"),
     sizeof(MOVContext),
     mov_probe,
     mov_read_header,

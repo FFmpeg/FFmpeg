@@ -304,7 +304,7 @@ static int mmf_read_seek(AVFormatContext *s,
 #ifdef CONFIG_MMF_DEMUXER
 AVInputFormat mmf_demuxer = {
     "mmf",
-    "mmf format",
+    NULL_IF_CONFIG_SMALL("mmf format"),
     sizeof(MMFContext),
     mmf_probe,
     mmf_read_header,
@@ -316,7 +316,7 @@ AVInputFormat mmf_demuxer = {
 #ifdef CONFIG_MMF_MUXER
 AVOutputFormat mmf_muxer = {
     "mmf",
-    "mmf format",
+    NULL_IF_CONFIG_SMALL("mmf format"),
     "application/vnd.smaf",
     "mmf",
     sizeof(MMFContext),

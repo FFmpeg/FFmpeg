@@ -419,7 +419,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat flv_demuxer = {
     "flv",
-    "flv format",
+    NULL_IF_CONFIG_SMALL("FLV format"),
     0,
     flv_probe,
     flv_read_header,

@@ -56,7 +56,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
 
 AVOutputFormat crc_muxer = {
     "crc",
-    "crc testing format",
+    NULL_IF_CONFIG_SMALL("CRC testing format"),
     NULL,
     "",
     sizeof(CRCState),

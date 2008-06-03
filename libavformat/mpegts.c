@@ -1499,7 +1499,7 @@ void mpegts_parse_close(MpegTSContext *ts)
 
 AVInputFormat mpegts_demuxer = {
     "mpegts",
-    "MPEG2 transport stream format",
+    NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     sizeof(MpegTSContext),
     mpegts_probe,
     mpegts_read_header,
@@ -1512,7 +1512,7 @@ AVInputFormat mpegts_demuxer = {
 
 AVInputFormat mpegtsraw_demuxer = {
     "mpegtsraw",
-    "MPEG2 raw transport stream format",
+    NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
     sizeof(MpegTSContext),
     NULL,
     mpegts_read_header,

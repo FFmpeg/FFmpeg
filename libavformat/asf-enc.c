@@ -815,7 +815,7 @@ static int asf_write_trailer(AVFormatContext *s)
 #ifdef CONFIG_ASF_MUXER
 AVOutputFormat asf_muxer = {
     "asf",
-    "asf format",
+    NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
@@ -836,7 +836,7 @@ AVOutputFormat asf_muxer = {
 #ifdef CONFIG_ASF_STREAM_MUXER
 AVOutputFormat asf_stream_muxer = {
     "asf_stream",
-    "asf format",
+    NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
