@@ -1028,7 +1028,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
 
     av_log(matroska->ctx, AV_LOG_DEBUG, "parsing track, adding stream..,\n");
 
-    /* Allocate a generic track. As soon as we know its type we'll realloc. */
+    /* Allocate a generic track. */
     track = av_mallocz(MAX_TRACK_SIZE);
     track->time_scale = 1.0;
     strcpy(track->language, "eng");
