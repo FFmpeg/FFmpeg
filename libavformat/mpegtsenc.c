@@ -61,8 +61,8 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
             b |= 0x40;
         *q++ = b;
         *q++ = s->pid;
-        s->cc = (s->cc + 1) & 0xf;
         *q++ = 0x10 | s->cc;
+        s->cc = (s->cc + 1) & 0xf;
         if (first)
             *q++ = 0; /* 0 offset */
         len1 = TS_PACKET_SIZE - (q - packet);
