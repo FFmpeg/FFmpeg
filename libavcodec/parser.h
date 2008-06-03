@@ -59,4 +59,11 @@ int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf,
 void ff_parse_close(AVCodecParserContext *s);
 void ff_parse1_close(AVCodecParserContext *s);
 
+/**
+ * Fetches timestamps for a specific byte within the current access unit.
+ * @param off byte position within the access unit.
+ * @param remove if 1 then found timestamps will be removed, if 0 they will not
+ */
+void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove);
+
 #endif /* FFMPEG_PARSER_H */
