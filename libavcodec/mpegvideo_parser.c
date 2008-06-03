@@ -29,6 +29,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 {
     ParseContext1 *pc = s->priv_data;
     const uint8_t *buf_end;
+    const uint8_t *buf_start= buf;
     uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
@@ -43,6 +44,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         bytes_left = buf_end - buf;
         switch(start_code) {
         case PICTURE_START_CODE:
+            ff_fetch_timestamp(s, buf-buf_start-4, 1);
+
             if (bytes_left >= 2) {
                 s->pict_type = (buf[1] >> 3) & 7;
             }
