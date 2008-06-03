@@ -306,7 +306,6 @@ static void readQuantSpectralCoeffs (GetBitContext *gb, int selector, int coding
 
     if (codingFlag != 0) {
         /* constant length coding (CLC) */
-        //FIXME we don't have any samples coded in CLC mode
         numBits = CLCLengthTab[selector];
 
         if (selector > 1) {
