@@ -1158,7 +1158,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         switch(err) {
             case AC3_PARSE_ERROR_SYNC:
                 av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
-                break;
+                return -1;
             case AC3_PARSE_ERROR_BSID:
                 av_log(avctx, AV_LOG_ERROR, "invalid bitstream id\n");
                 break;
