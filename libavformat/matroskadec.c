@@ -1888,6 +1888,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
             case MATROSKA_ID_SEEKENTRY: {
                 uint32_t seek_id = 0, peek_id_cache = 0;
                 uint64_t seek_pos = (uint64_t) -1, t;
+                int dummy_level = 0;
 
                 if ((res = ebml_read_master(matroska, &id)) < 0)
                     break;
@@ -1964,6 +1965,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         level.length = (uint64_t)-1;
                         matroska->levels[matroska->num_levels] = level;
                         matroska->num_levels++;
+                        dummy_level = 1;
 
                         /* check ID */
                         if (!(id = ebml_peek_id (matroska,
@@ -2000,6 +2002,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
                     finish:
                         /* remove dummy level */
+                        if (dummy_level)
                         while (matroska->num_levels) {
                             matroska->num_levels--;
                             length =
