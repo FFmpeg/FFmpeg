@@ -134,11 +134,6 @@ typedef struct MatroskaDemuxContext {
     MatroskaLevel levels[EBML_MAX_DEPTH];
     int level_up;
 
-    /* matroska stuff */
-    char *writing_app;
-    char *muxing_app;
-    int64_t created;
-
     /* timescale in the file */
     int64_t time_scale;
 
@@ -524,19 +519,6 @@ ebml_read_utf8 (MatroskaDemuxContext *matroska,
                 char                **str)
 {
   return ebml_read_ascii(matroska, id, str);
-}
-
-/*
- * Read the next element as a date (nanoseconds since 1/1/2000).
- * 0 is success, < 0 is failure.
- */
-
-static int
-ebml_read_date (MatroskaDemuxContext *matroska,
-                uint32_t             *id,
-                int64_t              *date)
-{
-  return ebml_read_sint(matroska, id, date);
 }
 
 /*
@@ -971,35 +953,14 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
                 break;
             }
 
-            case MATROSKA_ID_WRITINGAPP: {
-                char *text;
-                if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
-                    break;
-                matroska->writing_app = text;
-                break;
-            }
-
-            case MATROSKA_ID_MUXINGAPP: {
-                char *text;
-                if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
-                    break;
-                matroska->muxing_app = text;
-                break;
-            }
-
-            case MATROSKA_ID_DATEUTC: {
-                int64_t time;
-                if ((res = ebml_read_date(matroska, &id, &time)) < 0)
-                    break;
-                matroska->created = time;
-                break;
-            }
-
             default:
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown entry 0x%x in info header\n", id);
                 /* fall-through */
 
+            case MATROSKA_ID_WRITINGAPP:
+            case MATROSKA_ID_MUXINGAPP:
+            case MATROSKA_ID_DATEUTC:
             case MATROSKA_ID_SEGMENTUID:
             case EBML_ID_VOID:
                 res = ebml_read_skip(matroska);
@@ -3225,8 +3186,6 @@ matroska_read_close (AVFormatContext *s)
     MatroskaDemuxContext *matroska = s->priv_data;
     int n = 0;
 
-    av_free(matroska->writing_app);
-    av_free(matroska->muxing_app);
     av_free(matroska->index);
 
     matroska_clear_queue(matroska);
