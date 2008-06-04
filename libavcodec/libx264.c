@@ -260,6 +260,8 @@ X264_init(AVCodecContext *avctx)
 
     x4->params.i_threads = avctx->thread_count;
 
+    x4->params.b_interlaced = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
+
     if(avctx->flags & CODEC_FLAG_GLOBAL_HEADER){
         x4->params.b_repeat_headers = 0;
     }
