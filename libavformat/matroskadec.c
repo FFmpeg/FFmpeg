@@ -2003,13 +2003,13 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                     finish:
                         /* remove dummy level */
                         if (dummy_level)
-                        while (matroska->num_levels) {
-                            matroska->num_levels--;
-                            length =
-                                matroska->levels[matroska->num_levels].length;
-                            if (length == (uint64_t)-1)
-                                break;
-                        }
+                            while (matroska->num_levels) {
+                                matroska->num_levels--;
+                                length =
+                                  matroska->levels[matroska->num_levels].length;
+                                if (length == (uint64_t)-1)
+                                    break;
+                            }
 
                         /* seek back */
                         if ((res = ebml_read_seek(matroska, before_pos)) < 0)
