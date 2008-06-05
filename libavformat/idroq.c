@@ -1,5 +1,5 @@
 /*
- * Id RoQ (.roq) File Demuxer
+ * id RoQ (.roq) File Demuxer
  * Copyright (c) 2003 The ffmpeg Project
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file idroq.c
- * Id RoQ format file demuxer
+ * id RoQ format file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .roq file format, visit:
  *   http://www.csse.monash.edu.au/~timf/
@@ -279,7 +279,7 @@ static int roq_read_close(AVFormatContext *s)
 
 AVInputFormat roq_demuxer = {
     "RoQ",
-    NULL_IF_CONFIG_SMALL("Id RoQ format"),
+    NULL_IF_CONFIG_SMALL("id RoQ format"),
     sizeof(RoqDemuxContext),
     roq_probe,
     roq_read_header,

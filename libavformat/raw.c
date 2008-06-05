@@ -597,7 +597,7 @@ AVInputFormat gsm_demuxer = {
 AVOutputFormat roq_muxer =
 {
     "RoQ",
-    NULL_IF_CONFIG_SMALL("Id RoQ format"),
+    NULL_IF_CONFIG_SMALL("id RoQ format"),
     NULL,
     "roq",
     0,
