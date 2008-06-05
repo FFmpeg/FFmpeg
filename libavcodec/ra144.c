@@ -34,11 +34,11 @@ typedef struct {
     unsigned int     old_energy;        ///< previous frame energy
 
     /* the swapped buffers */
-    unsigned int     lpc_tables[4][10];
-    unsigned int    *lpc_refl;          ///< LPC reflection coefficients
+    unsigned int     lpc_tables[2][10];
     unsigned int    *lpc_coef;          ///< LPC coefficients
-    unsigned int    *lpc_refl_old;      ///< previous frame LPC reflection coefs
     unsigned int    *lpc_coef_old;      ///< previous frame LPC coefficients
+    unsigned int     lpc_refl_rms;
+    unsigned int     lpc_refl_rms_old;
 
     unsigned int buffer[5];
     uint16_t adapt_cb[148];             ///< adaptive codebook
@@ -48,10 +48,8 @@ static int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
 
-    ractx->lpc_refl     = ractx->lpc_tables[0];
-    ractx->lpc_coef     = ractx->lpc_tables[1];
-    ractx->lpc_refl_old = ractx->lpc_tables[2];
-    ractx->lpc_coef_old = ractx->lpc_tables[3];
+    ractx->lpc_coef     = ractx->lpc_tables[0];
+    ractx->lpc_coef_old = ractx->lpc_tables[1];
 
     return 0;
 }
@@ -318,10 +316,10 @@ static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
         // coefficients
         if (copynew) {
             int_to_int16(decsp, ractx->lpc_coef);
-            return rescale_rms(rms(ractx->lpc_refl), energy);
+            return rescale_rms(ractx->lpc_refl_rms, energy);
         } else {
             int_to_int16(decsp, ractx->lpc_coef_old);
-            return rescale_rms(rms(ractx->lpc_refl_old), energy);
+            return rescale_rms(ractx->lpc_refl_rms_old, energy);
         }
     } else {
         return rescale_rms(rms(work), energy);
@@ -336,6 +334,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int refl_rms[4];  // RMS of the reflection coefficients
     uint16_t block_coefs[4][30]; // LPC coefficients of each sub-block
+    unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
     int i, c;
     int16_t *data = vdata;
     unsigned int energy;
@@ -352,9 +351,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     for (i=0; i<10; i++)
         // "<< 1"? Doesn't this make one value out of two of the table useless?
-        ractx->lpc_refl[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
+        lpc_refl[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
 
-    eval_coefs(ractx->lpc_refl, ractx->lpc_coef);
+    eval_coefs(lpc_refl, ractx->lpc_coef);
+    ractx->lpc_refl_rms = rms(lpc_refl);
 
     energy = decodeval[get_bits(&gb, 5) << 1]; // Useless table entries?
 
@@ -362,7 +362,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     refl_rms[1] = interp(ractx, block_coefs[1], 1, energy > ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
     refl_rms[2] = interp(ractx, block_coefs[2], 2, 1, energy);
-    refl_rms[3] = rescale_rms(rms(ractx->lpc_refl), energy);
+    refl_rms[3] = rescale_rms(ractx->lpc_refl_rms, energy);
 
     int_to_int16(block_coefs[3], ractx->lpc_coef);
 
@@ -377,8 +377,8 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     }
 
     ractx->old_energy = energy;
+    ractx->lpc_refl_rms_old = ractx->lpc_refl_rms;
 
-    FFSWAP(unsigned int *, ractx->lpc_refl_old, ractx->lpc_refl);
     FFSWAP(unsigned int *, ractx->lpc_coef_old, ractx->lpc_coef);
 
     *data_size = 2*160;
