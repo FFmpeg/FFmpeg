@@ -220,6 +220,8 @@ X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_UMH;
     else if(avctx->me_method == ME_FULL)
         x4->params.analyse.i_me_method = X264_ME_ESA;
+    else if(avctx->me_method == ME_TESA)
+        x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
     x4->params.analyse.i_me_range = avctx->me_range;
