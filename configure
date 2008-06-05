@@ -1459,7 +1459,7 @@ if test $cpu != "generic"; then
         sparc64)
             add_cflags "-mcpu=v9"
         ;;
-        arm*)
+        arm*|cortex*)
             add_cflags "-mcpu=$cpu"
         ;;
         *)
