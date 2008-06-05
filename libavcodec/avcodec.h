@@ -374,7 +374,7 @@ enum Motion_Est_ID {
     ME_HEX,         ///< hexagon based search
     ME_UMH,         ///< uneven multi-hexagon search
     ME_ITER,        ///< iterative search
-    ME_TESA,        ///< thresholded exhaustive search algorithm
+    ME_TESA,        ///< transformed exhaustive search algorithm
 };
 
 enum AVDiscard{
