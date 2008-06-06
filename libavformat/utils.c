@@ -2496,9 +2496,8 @@ static void truncate_ts(AVStream *st, AVPacket *pkt){
 
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret;
+    int ret = compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
 
-    ret=compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
     if(ret<0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
 
