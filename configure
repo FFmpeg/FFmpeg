@@ -955,7 +955,7 @@ vhook="default"
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 VHOOKSHFLAGS='$(SHFLAGS)'
-LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
+LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUILD_ROOT)/libswscale -Wl,-rpath-link,\$(BUILD_ROOT)/libavfilter -Wl,-rpath-link,\$(BUILD_ROOT)/libavdevice -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
 LIBSUF=".a"
