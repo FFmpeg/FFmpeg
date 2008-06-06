@@ -58,14 +58,14 @@ static void flush_packet(AVFormatContext *s)
 /* 'first' is true if first data of a frame */
 static void ffm_write_data(AVFormatContext *s,
                            const uint8_t *buf, int size,
-                           int64_t pts, int first)
+                           int64_t pts, int header)
 {
     FFMContext *ffm = s->priv_data;
     int len;
 
-    if (first && ffm->frame_offset == 0)
+    if (header && ffm->frame_offset == 0)
         ffm->frame_offset = ffm->packet_ptr - ffm->packet + FFM_HEADER_SIZE;
-    if (first && ffm->pts == 0)
+    if (header && ffm->pts == 0)
         ffm->pts = pts;
 
     /* write as many packets as needed */
