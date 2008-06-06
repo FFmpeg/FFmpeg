@@ -79,7 +79,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
 
 /* first is true if we read the frame header */
 static int ffm_read_data(AVFormatContext *s,
-                         uint8_t *buf, int size, int first)
+                         uint8_t *buf, int size, int header)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -122,7 +122,7 @@ static int ffm_read_data(AVFormatContext *s,
                 if ((frame_offset & 0x7fff) < FFM_HEADER_SIZE)
                     return -1;
                 ffm->packet_ptr = ffm->packet + (frame_offset & 0x7fff) - FFM_HEADER_SIZE;
-                if (!first)
+                if (!header)
                     break;
             } else {
                 ffm->packet_ptr = ffm->packet;
@@ -133,7 +133,7 @@ static int ffm_read_data(AVFormatContext *s,
         buf += len;
         ffm->packet_ptr += len;
         size -= len;
-        first = 0;
+        header = 0;
     }
     return size1 - size;
 }
