@@ -433,12 +433,6 @@ static int aiff_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int aiff_read_seek(AVFormatContext *s,
-                          int stream_index, int64_t timestamp, int flags)
-{
-    return pcm_read_seek(s, stream_index, timestamp, flags);
-}
-
 #ifdef CONFIG_AIFF_DEMUXER
 AVInputFormat aiff_demuxer = {
     "aiff",
@@ -448,7 +442,7 @@ AVInputFormat aiff_demuxer = {
     aiff_read_header,
     aiff_read_packet,
     NULL,
-    aiff_read_seek,
+    pcm_read_seek,
     .codec_tag= (const AVCodecTag*[]){codec_aiff_tags, 0},
 };
 #endif
