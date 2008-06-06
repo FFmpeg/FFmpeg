@@ -393,7 +393,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         }
     }
 
-    if (header.compression > 17) {
+    if (header.compression >= 17) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid compression type (%d)\n", header.compression);
         return -1;
     }
