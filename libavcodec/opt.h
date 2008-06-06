@@ -42,14 +42,14 @@ enum AVOptionType{
 };
 
 /**
- * AVOption.
+ * AVOption
  */
 typedef struct AVOption {
     const char *name;
 
     /**
-     * short English text help.
-     * @todo what about other languages
+     * short English help text
+     * @todo What about other languages?
      */
     const char *help;
     int offset;             ///< offset to context structure where the parsed value should be stored
