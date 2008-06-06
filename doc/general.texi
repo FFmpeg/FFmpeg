@@ -442,6 +442,8 @@ affect both debug and release builds. In the tree view on the left hand
 side, select "C/C++ / General", then edit the "Additional Include
 Directories" setting to contain the path where the FFmpeg includes were
 installed (i.e. @file{c:\msys\1.0\local\include}).
+Do not add MinGW's include directory here, or the include files will
+conflict with MSVC's.
 
 @item Still in the "Project / Properties" dialog box, select
 "Linker / General" from the tree view and edit the
