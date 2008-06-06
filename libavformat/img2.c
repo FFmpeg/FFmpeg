@@ -399,7 +399,6 @@ AVInputFormat image2pipe_demuxer = {
     img_read_header,
     img_read_packet,
     img_read_close,
-    NULL,
 };
 #endif
 
