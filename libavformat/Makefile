@@ -1,7 +1,3 @@
-#
-# libavformat Makefile
-# (c) 2000-2003 Fabrice Bellard
-#
 include $(SUBDIR)../config.mak
 
 NAME = avformat

@@ -1,7 +1,3 @@
-#
-# Main ffmpeg Makefile
-# (c) 2000-2004 Fabrice Bellard
-#
 include config.mak
 
 SRC_DIR = $(SRC_PATH_BARE)

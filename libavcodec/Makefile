@@ -1,7 +1,3 @@
-#
-# libavcodec Makefile
-# (c) 2000-2005 Fabrice Bellard
-#
 include $(SUBDIR)../config.mak
 
 NAME = avcodec
