@@ -474,10 +474,6 @@ FFmpeg, so you must add this line before @code{#include}ing libav*:
 #define inline _inline
 @end example
 
-@item If you used @file{output_example.c} as your sample application,
-you will have to edit the @code{#include}s to point to the files which
-are under the @file{ffmpeg} directory (i.e. @code{<ffmpeg/avformat.h>}).
-
 @item Build your application, everything should work.
 
 @end enumerate
