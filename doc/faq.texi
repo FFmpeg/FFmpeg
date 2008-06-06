@@ -38,7 +38,7 @@ No. Windows DLLs are not portable, bloated and often slow.
 Moreover FFmpeg strives to support all codecs natively.
 A DLL loader is not conducive to that goal.
 
-@section My bugreport/mail to ffmpeg-devel/user has not received any replies.
+@section My bug report/mail to ffmpeg-devel/user has not received any replies.
 
 Likely reasons
 @itemize
@@ -69,7 +69,7 @@ documentation.
 @section Which codecs are supported by Windows?
 
 Windows does not support standard formats like MPEG very well, unless you
-install some additional codecs
+install some additional codecs.
 
 The following list of video codecs should work on most Windows systems:
 @table @option
@@ -82,7 +82,7 @@ The following list of video codecs should work on most Windows systems:
 @item wmv2
 .asf only
 @item mpeg4
-only if you have some MPEG-4 codec installed like ffdshow or Xvid
+Only if you have some MPEG-4 codec like ffdshow or Xvid installed.
 @item mpeg1
 .mpg only
 @end table
@@ -96,8 +96,9 @@ The following list of audio codecs should work on most Windows systems:
 @item adpcm_ima_wav
 @item adpcm_ms
 @item pcm
+always
 @item mp3
-if some MP3 codec like LAME is installed
+If some MP3 codec like LAME is installed.
 @end table
 
 
@@ -111,12 +112,12 @@ the gcc developers. Note that we will not add workarounds for gcc bugs.
 
 @chapter Usage
 
-@section ffmpeg does not work; What is wrong?
+@section ffmpeg does not work; what is wrong?
 
 Try a @code{make distclean} in the ffmpeg source directory before the build. If this does not help see
 (@url{http://ffmpeg.org/bugreports.html}).
 
-@section How do I encode single pictures to movies?
+@section How do I encode single pictures into movies?
 
 First, rename your pictures to follow a numerical sequence.
 For example, img1.jpg, img2.jpg, img3.jpg,...
@@ -160,7 +161,8 @@ Beware that there is no "jpeg" codec. Use "mjpeg" instead.
 
 @section I get "Unsupported codec (id=86043) for input stream #0.1". What is the problem?
 
-This is the Qcelp codec, FFmpeg has no support for that codec currently. Try mencoder/mplayer it might work.
+This is the Qcelp codec, FFmpeg has no support for that codec currently.
+Try MEncoder/MPlayer, it might work.
 
 @section Why do I see a slight quality degradation with multithreaded MPEG* encoding?
 
@@ -170,7 +172,7 @@ quite logical that there is a small reduction of quality. This is not a bug.
 
 @section How can I read from the standard input or write to the standard output?
 
-Use @file{-} as filename.
+Use @file{-} as file name.
 
 @section Why does FFmpeg not decode audio in VOB files?
 
@@ -206,7 +208,7 @@ Choose a different codec with the -vcodec command line option.
 
 Both Xvid and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
-same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
+same standard). Thus, use '-vcodec mpeg4' to encode in these formats. The
 default fourcc stored in an MPEG-4-coded file will be 'FMP4'. If you want
 a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will
 force the fourcc 'xvid' to be stored as the video fourcc rather than the
@@ -362,7 +364,7 @@ examining all of the vbv_delay values and making complicated computations."
 
 Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
 examine the source code for one of the many open source projects that
-already incorporate ffmpeg at (@url{projects.html}).
+already incorporate FFmpeg at (@url{projects.html}).
 
 @section Can you support my C compiler XXX?
 
@@ -404,7 +406,7 @@ No. These tools are too bloated and they complicate the build.
 
 @section Why not rewrite ffmpeg in object-oriented C++?
 
-ffmpeg is already organized in a highly modular manner and does not need to
+FFmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
 read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
@@ -412,14 +414,14 @@ read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
 @section Why are the ffmpeg programs devoid of debugging symbols?
 
 The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
-information. Those binaries are strip'd to create ffmpeg, ffplay, etc. If
+information. Those binaries are stripped to create ffmpeg, ffplay, etc. If
 you need the debug information, used the *_g versions.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
 Yes, as long as the code is optional and can easily and cleanly be placed
 under #ifdef CONFIG_GPL without breaking anything. So for example a new codec
-or filter would be OK under GPL while a bugfix to LGPL code would not.
+or filter would be OK under GPL while a bug fix to LGPL code would not.
 
 @section I want to compile xyz.c alone but my compiler produced many errors.
 

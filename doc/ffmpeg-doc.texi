@@ -124,7 +124,7 @@ Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
 file:index' specifies which input stream is used for each output
 stream, in the order of the definition of output streams.
 
-* You can transcode decrypted VOBs
+* You can transcode decrypted VOBs:
 
 @example
 ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec libmp3lame -ab 128k snatch.avi
@@ -206,7 +206,7 @@ Show available formats, codecs, protocols, ...
 Force format.
 
 @item -i @var{filename}
-input filename
+input file name
 
 @item -y
 Overwrite output files.
@@ -419,7 +419,7 @@ Add a new video stream to the current output stream.
 Set pixel format. Use 'list' as parameter to show all the supported
 pixel formats.
 @item -sws_flags @var{flags}
-Set SwScaler flags (only available when compiled with SwScaler support).
+Set SwScaler flags (only available when compiled with swscale support).
 @item -g @var{gop_size}
 Set the group of pictures size.
 @item -intra
@@ -801,7 +801,7 @@ Fabrice Bellard
 
 @section Protocols
 
-The filename can be @file{-} to read from standard input or to write
+The file name can be @file{-} to read from standard input or to write
 to standard output.
 
 FFmpeg also handles many protocols specified with an URL syntax.

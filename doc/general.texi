@@ -72,8 +72,8 @@ library:
 @item DV               @tab  X @tab  X
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games.
-@item Playstation STR  @tab    @tab X
-@item Id RoQ           @tab X  @tab X
+@item PlayStation STR  @tab    @tab X
+@item id RoQ           @tab X  @tab X
 @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Interplay MVE    @tab    @tab X
 @tab Format used in various Interplay computer games.
@@ -83,7 +83,7 @@ library:
 @tab Used in many Sega Saturn console games.
 @item Westwood Studios VQA/AUD  @tab    @tab X
 @tab Multimedia formats used in Westwood Studios games.
-@item Id Cinematic (.cin) @tab    @tab X
+@item id Cinematic (.cin) @tab    @tab X
 @tab Used in Quake II.
 @item FLIC format      @tab    @tab X
 @tab .fli/.flc files
@@ -112,7 +112,7 @@ library:
 @item MXF @tab    @tab X
 @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item SEQ @tab    @tab X
-@tab Tiertex .seq files used in the DOS CDROM version of the game Flashback.
+@tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item DXA @tab    @tab X
 @tab This format is used in non-Windows version of Feeble Files game and
 different game cutscenes repacked for use with ScummVM.
@@ -211,8 +211,8 @@ following image formats are supported:
 @item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
 @item 4X Video               @tab     @tab  X @tab Used in certain computer games.
-@item Sony Playstation MDEC  @tab     @tab  X
-@item Id RoQ                 @tab  X  @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item Sony PlayStation MDEC  @tab     @tab  X
+@item id RoQ                 @tab  X  @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Xan/WC3                @tab     @tab  X @tab Used in Wing Commander III .MVE files.
 @item Interplay Video        @tab     @tab  X @tab Used in Interplay .MVE files.
 @item Apple Animation        @tab  X  @tab  X @tab fourcc: 'rle '
@@ -223,7 +223,7 @@ following image formats are supported:
 @item Microsoft RLE          @tab     @tab  X
 @item Microsoft Video-1      @tab     @tab  X
 @item Westwood VQA           @tab     @tab  X
-@item Id Cinematic Video     @tab     @tab  X @tab Used in Quake II.
+@item id Cinematic Video     @tab     @tab  X @tab Used in Quake II.
 @item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
 @item FLIC video             @tab     @tab  X
 @item Duck TrueMotion v1     @tab     @tab  X @tab fourcc: DUCK
@@ -248,7 +248,7 @@ following image formats are supported:
 @item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
 @item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
 @item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
-@item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CDROM FlashBack game.
+@item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CD-ROM FlashBack game.
 @item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
 @item AVID DNxHD             @tab   X @tab  X @tab aka SMPTE VC3
 @item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
@@ -311,7 +311,7 @@ following image formats are supported:
 @item AMR-WB                 @tab X    @tab X
 @tab Supported through an external library.
 @item DV audio               @tab      @tab X
-@item Id RoQ DPCM            @tab X    @tab X
+@item id RoQ DPCM            @tab X    @tab X
 @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Interplay MVE DPCM     @tab      @tab X
 @tab Used in various Interplay computer games.
@@ -340,7 +340,7 @@ following image formats are supported:
 @item Intel Music Coder      @tab      @tab X
 @item Musepack               @tab      @tab X
 @tab SV7 and SV8 are supported
-@item DT$ Coherent Audio     @tab      @tab X
+@item DTS Coherent Audio     @tab      @tab X
 @item ATRAC 3                @tab      @tab X
 @item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported
 @item Nellymoser ASAO        @tab      @tab X

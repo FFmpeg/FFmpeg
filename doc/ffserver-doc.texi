@@ -22,7 +22,7 @@ etc. are not covered here. Read @file{ffmpeg-doc.html} for more
 information.
 @c man end
 
-@chapter QuickStart
+@chapter Quick Start
 
 [Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
 
@@ -211,7 +211,7 @@ Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 
 @ignore
 
-@setfilename ffsserver
+@setfilename ffserver
 @settitle FFserver video server
 
 @c man begin SEEALSO

@@ -43,7 +43,7 @@ Force displayed width.
 Force displayed height.
 @item -s @var{size}
 Set frame size (WxH or abbreviation), needed for videos which don't
-contain a header with the framesize like raw YUV.
+contain a header with the frame size like raw YUV.
 @item -an
 Disable audio.
 @item -vn
@@ -129,7 +129,7 @@ Seek to percentage in file corresponding to fraction of width.
 @settitle FFplay media player
 
 @c man begin SEEALSO
-ffmpeg(1), ffserver(1) and the html documentation of @file{ffmpeg}.
+ffmpeg(1), ffserver(1) and the HTML documentation of @file{ffmpeg}.
 @c man end
 
 @c man begin AUTHOR
