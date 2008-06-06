@@ -303,11 +303,6 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 }
 
-static int img_read_close(AVFormatContext *s1)
-{
-    return 0;
-}
-
 #ifdef CONFIG_MUXERS
 /******************************************************/
 /* image output */
@@ -384,7 +379,7 @@ AVInputFormat image2_demuxer = {
     image_probe,
     img_read_header,
     img_read_packet,
-    img_read_close,
+    NULL,
     NULL,
     NULL,
     AVFMT_NOFILE,
@@ -398,7 +393,6 @@ AVInputFormat image2pipe_demuxer = {
     NULL, /* no probe */
     img_read_header,
     img_read_packet,
-    img_read_close,
 };
 #endif
 
