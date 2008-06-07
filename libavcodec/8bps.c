@@ -21,7 +21,7 @@
 
 /**
  * @file 8bps.c
- * QT 8BPS Video Decoder by Roberto Togni <rtogni at bresciaonline dot it>
+ * QT 8BPS Video Decoder by Roberto Togni
  * For more information about the 8BPS format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  *
