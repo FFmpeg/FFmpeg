@@ -95,6 +95,18 @@ static const float gain_levels[9] = {
 };
 
 /**
+ * Table for center mix levels
+ * reference: Section 5.4.2.4 cmixlev
+ */
+static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
+
+/**
+ * Table for surround mix levels
+ * reference: Section 5.4.2.5 surmixlev
+ */
+static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
+
+/**
  * Table for default stereo downmixing coefficients
  * reference: Section 7.8.2 Downmixing Into Two Channels
  */
@@ -383,8 +395,8 @@ static int ac3_parse_header(AC3DecodeContext *s)
 static void set_downmix_coeffs(AC3DecodeContext *s)
 {
     int i;
-    float cmix = gain_levels[s->center_mix_level];
-    float smix = gain_levels[s->surround_mix_level];
+    float cmix = gain_levels[center_levels[s->center_mix_level]];
+    float smix = gain_levels[surround_levels[s->surround_mix_level]];
 
     for(i=0; i<s->fbw_channels; i++) {
         s->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
