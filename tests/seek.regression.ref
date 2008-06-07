@@ -2832,57 +2832,57 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
 tests/data/b-libav.ffm
 ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 0 ts:0.788334 flags:0
-ret: 0 st: 0 dts:0.840000 pts:0.840000 pos:311296 size:12220 flags:0
+ret: 0 st: 1 dts:0.731429 pts:0.731429 pos:307200 size:209 flags:1
 ret: 0 st: 0 ts:-0.317499 flags:1
-ret:-11
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ret: 0 st: 1 ts:2.576668 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 1 ts:1.470835 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
-ret:-11
+ret: 0 st: 0 dts:0.339592 pts:0.339592 pos:147456 size:12220 flags:0
 ret: 0 st:-1 ts:-0.740831 flags:1
-ret:-11
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ret: 0 st: 0 ts:2.153336 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 0 ts:1.047503 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 1 ts:-0.058330 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 1 ts:2.835837 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.574694 pts:0.574694 pos:253952 size:209 flags:1
 ret: 0 st: 0 ts:-0.481662 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 0 ts:2.412505 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 1 ts:1.306672 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 1 ts:0.200839 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.182857 pts:0.182857 pos:102400 size:209 flags:1
 ret: 0 st:-1 ts:-0.904994 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:1.989173 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 0 ts:0.883340 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.809796 pts:0.809796 pos:331776 size:209 flags:1
 ret: 0 st: 0 ts:-0.222493 flags:1
-ret:-11
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ret: 0 st: 1 ts:2.671674 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 1 ts:1.565841 flags:1
-ret:-11
+ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret:-11
+ret: 0 st: 1 dts:0.365714 pts:0.365714 pos:167936 size:209 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
-ret:-11
+ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
 ----------------
 tests/data/b-libav.flv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:31385 flags:1
