@@ -42,6 +42,7 @@
 
 #define AC3_MAX_COEFS   256
 #define AC3_BLOCK_SIZE  256
+#define MAX_BLOCKS        6
 
 typedef struct {
     AVCodecContext *avctx;                  ///< parent context
@@ -63,7 +64,7 @@ typedef struct {
 ///@}
 
 ///@defgroup cpl standard coupling
-    int cpl_in_use;                         ///< coupling in use                        (cplinu)
+    int cpl_in_use[MAX_BLOCKS];             ///< coupling in use                        (cplinu)
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[18];                    ///< phase flags                            (phsflg)
