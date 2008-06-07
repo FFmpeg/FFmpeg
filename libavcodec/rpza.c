@@ -21,7 +21,7 @@
 
 /**
  * @file rpza.c
- * QT RPZA Video Decoder by Roberto Togni <rtogni@bresciaonline.it>
+ * QT RPZA Video Decoder by Roberto Togni
  * For more information about the RPZA format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  *
