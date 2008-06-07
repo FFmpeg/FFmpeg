@@ -85,6 +85,7 @@ typedef struct {
     uint8_t channel_mode;
     uint8_t lfe_on;
     uint8_t frame_type;
+    int substreamid;                        ///< substream identification
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
     uint16_t channel_map;

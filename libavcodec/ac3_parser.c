@@ -99,6 +99,7 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
         hdr->frame_size = ff_ac3_frame_size_tab[frame_size_code][hdr->sr_code] * 2;
         hdr->frame_type = EAC3_FRAME_TYPE_AC3_CONVERT; //EAC3_FRAME_TYPE_INDEPENDENT;
+        hdr->substreamid = 0;
     } else {
         /* Enhanced AC-3 */
         hdr->crc1 = 0;
@@ -106,7 +107,7 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
         if(hdr->frame_type == EAC3_FRAME_TYPE_RESERVED)
             return AC3_PARSE_ERROR_FRAME_TYPE;
 
-        skip_bits(gbc, 3); // skip substream id
+        hdr->substreamid = get_bits(gbc, 3);
 
         hdr->frame_size = (get_bits(gbc, 11) + 1) << 1;
         if(hdr->frame_size < AC3_HEADER_SIZE)

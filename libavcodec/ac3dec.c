@@ -134,6 +134,7 @@ typedef struct {
 
     int sample_rate;                        ///< sample frequency, in Hz
     int bit_rate;                           ///< stream bit rate, in bits-per-second
+    int substreamid;                        ///< substream identification
     int frame_size;                         ///< current frame size, in bytes
 
     int channels;                           ///< number of total channels
@@ -326,6 +327,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
     s->center_mix_level             = hdr.center_mix_level;
     s->surround_mix_level           = hdr.surround_mix_level;
     s->num_blocks                   = hdr.num_blocks;
+    s->substreamid                  = hdr.substreamid;
 
     if(s->lfe_on) {
         s->start_freq[s->lfe_ch] = 0;
