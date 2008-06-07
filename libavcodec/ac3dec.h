@@ -40,6 +40,9 @@
 
 #define AC3_OUTPUT_LFEON  8
 
+#define AC3_MAX_COEFS   256
+#define AC3_BLOCK_SIZE  256
+
 typedef struct {
     AVCodecContext *avctx;                  ///< parent context
     GetBitContext gbc;                      ///< bitstream reader
@@ -97,7 +100,7 @@ typedef struct {
 
 ///@defgroup exponents exponents
     int num_exp_groups[AC3_MAX_CHANNELS];   ///< Number of exponent groups
-    int8_t dexps[AC3_MAX_CHANNELS][256];    ///< decoded exponents
+    int8_t dexps[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///< decoded exponents
     int exp_strategy[AC3_MAX_CHANNELS];     ///< exponent strategies
 ///@}
 
@@ -105,8 +108,8 @@ typedef struct {
     AC3BitAllocParameters bit_alloc_params;     ///< bit allocation parameters
     int snr_offset[AC3_MAX_CHANNELS];           ///< signal-to-noise ratio offsets
     int fast_gain[AC3_MAX_CHANNELS];            ///< fast gain values (signal-to-mask ratio)
-    uint8_t bap[AC3_MAX_CHANNELS][256];         ///< bit allocation pointers
-    int16_t psd[AC3_MAX_CHANNELS][256];         ///< scaled exponents
+    uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< bit allocation pointers
+    int16_t psd[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< scaled exponents
     int16_t band_psd[AC3_MAX_CHANNELS][50];     ///< interpolated exponents
     int16_t mask[AC3_MAX_CHANNELS][50];         ///< masking curve values
     int dba_mode[AC3_MAX_CHANNELS];             ///< delta bit allocation mode
@@ -134,16 +137,16 @@ typedef struct {
     float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}
 
-    int fixed_coeffs[AC3_MAX_CHANNELS][256];    ///> fixed-point transform coefficients
+    int fixed_coeffs[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///> fixed-point transform coefficients
 
 ///@defgroup arrays aligned arrays
-    DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][256]); ///< transform coefficients
-    DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][256]);            ///< delay - added to the next block
-    DECLARE_ALIGNED_16(float, window[256]);                             ///< window coefficients
-    DECLARE_ALIGNED_16(float, tmp_output[512]);                         ///< temporary storage for output before windowing
-    DECLARE_ALIGNED_16(float, tmp_imdct[256]);                          ///< temporary storage for imdct transform
-    DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][256]);           ///< output after imdct transform and windowing
-    DECLARE_ALIGNED_16(short, int_output[AC3_MAX_CHANNELS-1][256]);     ///< final 16-bit integer output
+    DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][AC3_MAX_COEFS]);   ///< transform coefficients
+    DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]);             ///< delay - added to the next block
+    DECLARE_ALIGNED_16(float, window[AC3_BLOCK_SIZE]);                              ///< window coefficients
+    DECLARE_ALIGNED_16(float, tmp_output[AC3_BLOCK_SIZE*2]);                        ///< temporary storage for output before windowing
+    DECLARE_ALIGNED_16(float, tmp_imdct[AC3_BLOCK_SIZE]);                           ///< temporary storage for imdct transform
+    DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]);            ///< output after imdct transform and windowing
+    DECLARE_ALIGNED_16(short, int_output[AC3_MAX_CHANNELS-1][AC3_BLOCK_SIZE]);      ///< final 16-bit integer output
 ///@}
 } AC3DecodeContext;
 
