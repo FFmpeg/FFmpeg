@@ -1610,11 +1610,11 @@ static void compute_stats(HTTPContext *c)
     url_fprintf(pb, "Pragma: no-cache\r\n");
     url_fprintf(pb, "\r\n");
 
-    url_fprintf(pb, "<HEAD><TITLE>FFServer Status</TITLE>\n");
+    url_fprintf(pb, "<HEAD><TITLE>%s Status</TITLE>\n", program_name);
     if (c->stream->feed_filename)
         url_fprintf(pb, "<link rel=\"shortcut icon\" href=\"%s\">\n", c->stream->feed_filename);
     url_fprintf(pb, "</HEAD>\n<BODY>");
-    url_fprintf(pb, "<H1>FFServer Status</H1>\n");
+    url_fprintf(pb, "<H1>%s Status</H1>\n", program_name);
     /* format status */
     url_fprintf(pb, "<H2>Available Streams</H2>\n");
     url_fprintf(pb, "<TABLE cellspacing=0 cellpadding=4>\n");
