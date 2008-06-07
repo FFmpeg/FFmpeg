@@ -4385,7 +4385,7 @@ int main(int argc, char **argv)
 
     parse_options(argc, argv, options, NULL);
 
-    putenv("http_proxy");               /* Kill the http_proxy */
+    unsetenv("http_proxy");             /* Kill the http_proxy */
 
     av_init_random(av_gettime() + (getpid() << 16), &random_state);
 
