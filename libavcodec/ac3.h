@@ -88,6 +88,7 @@ typedef struct {
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
     uint16_t channel_map;
+    int num_blocks;                         ///< number of audio blocks
     /** @} */
 
     /** @defgroup derived Derived values

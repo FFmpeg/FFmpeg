@@ -111,6 +111,7 @@ static const uint8_t ac3_default_coeffs[8][5][2] = {
 #define AC3_OUTPUT_LFEON  8
 
 typedef struct {
+    int num_blocks;                         ///< number of audio blocks
     int channel_mode;                       ///< channel mode (acmod)
     int block_switch[AC3_MAX_CHANNELS];     ///< block switch flags
     int dither_flag[AC3_MAX_CHANNELS];      ///< dither flags
@@ -324,6 +325,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
     s->frame_size                   = hdr.frame_size;
     s->center_mix_level             = hdr.center_mix_level;
     s->surround_mix_level           = hdr.surround_mix_level;
+    s->num_blocks                   = hdr.num_blocks;
 
     if(s->lfe_on) {
         s->start_freq[s->lfe_ch] = 0;
@@ -1206,7 +1208,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     }
 
     /* parse the audio blocks */
-    for (blk = 0; blk < NB_BLOCKS; blk++) {
+    for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && ac3_parse_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
         }
@@ -1216,7 +1218,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             for (ch = 0; ch < s->out_channels; ch++)
                 *(out_samples++) = s->int_output[ch][i];
     }
-    *data_size = NB_BLOCKS * 256 * avctx->channels * sizeof (int16_t);
+    *data_size = s->num_blocks * 256 * avctx->channels * sizeof (int16_t);
     return s->frame_size;
 }
 
