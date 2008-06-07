@@ -454,6 +454,13 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
         pos -= FFM_PACKET_SIZE;
  found:
     ffm_seek1(s, pos);
+
+    /* reset read state */
+    ffm->read_state = READ_HEADER;
+    ffm->packet_ptr = ffm->packet;
+    ffm->packet_end = ffm->packet;
+    ffm->first_packet = 1;
+
     return 0;
 }
 
