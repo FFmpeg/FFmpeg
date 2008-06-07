@@ -50,27 +50,27 @@ typedef struct {
 
 ///@defgroup bsi bit stream information
 ///@{
-    int frame_type;                         ///< frame type (strmtyp)
+    int frame_type;                         ///< frame type                             (strmtyp)
     int substreamid;                        ///< substream identification
     int frame_size;                         ///< current frame size, in bytes
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int sample_rate;                        ///< sample frequency, in Hz
     int num_blocks;                         ///< number of audio blocks
-    int channel_mode;                       ///< channel mode (acmod)
+    int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
 ///@}
 
 ///@defgroup cpl standard coupling
-    int cpl_in_use;                         ///< coupling in use
-    int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling
-    int phase_flags_in_use;                 ///< phase flags in use
-    int phase_flags[18];                    ///< phase flags
-    int num_cpl_subbands;                   ///< number of coupling sub bands
-    int num_cpl_bands;                      ///< number of coupling bands
-    int cpl_band_struct[18];                ///< coupling band structure
-    int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates
+    int cpl_in_use;                         ///< coupling in use                        (cplinu)
+    int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
+    int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
+    int phase_flags[18];                    ///< phase flags                            (phsflg)
+    int num_cpl_subbands;                   ///< number of coupling sub bands           (ncplsubnd)
+    int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
+    int cpl_band_struct[18];                ///< coupling band structure                (cplbndstrc)
+    int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates                   (cplco)
 ///@}
 
 ///@defgroup channel channel
@@ -89,25 +89,25 @@ typedef struct {
 ///@}
 
 ///@defgroup bandwidth bandwidth
-    int start_freq[AC3_MAX_CHANNELS];       ///< start frequency bin
-    int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin
+    int start_freq[AC3_MAX_CHANNELS];       ///< start frequency bin                    (strtmant)
+    int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin                      (endmant)
 ///@}
 
 ///@defgroup rematrixing rematrixing
-    int num_rematrixing_bands;              ///< number of rematrixing bands
-    int rematrixing_flags[4];               ///< rematrixing flags
+    int num_rematrixing_bands;              ///< number of rematrixing bands            (nrematbnd)
+    int rematrixing_flags[4];               ///< rematrixing flags                      (rematflg)
 ///@}
 
 ///@defgroup exponents exponents
-    int num_exp_groups[AC3_MAX_CHANNELS];           ///< Number of exponent groups
+    int num_exp_groups[AC3_MAX_CHANNELS];           ///< Number of exponent groups      (nexpgrp)
     int8_t dexps[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///< decoded exponents
-    int exp_strategy[AC3_MAX_CHANNELS];             ///< exponent strategies
+    int exp_strategy[AC3_MAX_CHANNELS];             ///< exponent strategies            (expstr)
 ///@}
 
 ///@defgroup bitalloc bit allocation
     AC3BitAllocParameters bit_alloc_params;         ///< bit allocation parameters
-    int snr_offset[AC3_MAX_CHANNELS];               ///< signal-to-noise ratio offsets
-    int fast_gain[AC3_MAX_CHANNELS];                ///< fast gain values (signal-to-mask ratio)
+    int snr_offset[AC3_MAX_CHANNELS];               ///< signal-to-noise ratio offsets  (snroffst)
+    int fast_gain[AC3_MAX_CHANNELS];                ///< fast gain values/SMR's         (fgain)
     uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< bit allocation pointers
     int16_t psd[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< scaled exponents
     int16_t band_psd[AC3_MAX_CHANNELS][50];         ///< interpolated exponents
@@ -121,12 +121,12 @@ typedef struct {
 
 ///@defgroup dithering zero-mantissa dithering
     int dither_all;                         ///< true if all channels are dithered
-    int dither_flag[AC3_MAX_CHANNELS];      ///< dither flags
+    int dither_flag[AC3_MAX_CHANNELS];      ///< dither flags                           (dithflg)
     AVRandomState dith_state;               ///< for dither generation
 ///@}
 
 ///@defgroup imdct IMDCT
-    int block_switch[AC3_MAX_CHANNELS];     ///< block switch flags
+    int block_switch[AC3_MAX_CHANNELS];     ///< block switch flags                     (blksw)
     MDCTContext imdct_512;                  ///< for 512 sample IMDCT
     MDCTContext imdct_256;                  ///< for 256 sample IMDCT
 ///@}
