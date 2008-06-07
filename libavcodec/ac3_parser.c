@@ -63,6 +63,10 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 
     hdr->num_blocks = 6;
 
+    /* set default mix levels */
+    hdr->center_mix_level   = 3;  // -4.5dB
+    hdr->surround_mix_level = 4;  // -6.0dB
+
     if(hdr->bitstream_id <= 10) {
         /* Normal AC-3 */
         hdr->crc1 = get_bits(gbc, 16);
@@ -78,10 +82,6 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 
         skip_bits(gbc, 3); // skip bitstream mode
         hdr->channel_mode = get_bits(gbc, 3);
-
-        /* set default mix levels */
-        hdr->center_mix_level   = 3;  // -4.5dB
-        hdr->surround_mix_level = 4;  // -6.0dB
 
         if(hdr->channel_mode == AC3_CHMODE_STEREO) {
             skip_bits(gbc, 2); // skip dsurmod
