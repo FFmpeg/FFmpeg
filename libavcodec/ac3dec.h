@@ -102,7 +102,7 @@ typedef struct {
 ///@defgroup exponents exponents
     int num_exp_groups[AC3_MAX_CHANNELS];           ///< Number of exponent groups      (nexpgrp)
     int8_t dexps[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///< decoded exponents
-    int exp_strategy[AC3_MAX_CHANNELS];             ///< exponent strategies            (expstr)
+    int exp_strategy[MAX_BLOCKS][AC3_MAX_CHANNELS]; ///< exponent strategies            (expstr)
 ///@}
 
 ///@defgroup bitalloc bit allocation

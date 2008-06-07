@@ -843,18 +843,18 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* exponent strategies for each channel */
-    s->exp_strategy[CPL_CH] = EXP_REUSE;
-    s->exp_strategy[s->lfe_ch] = EXP_REUSE;
+    s->exp_strategy[blk][CPL_CH] = EXP_REUSE;
+    s->exp_strategy[blk][s->lfe_ch] = EXP_REUSE;
     for (ch = !cpl_in_use; ch <= s->channels; ch++) {
-        s->exp_strategy[ch] = get_bits(gbc, 2 - (ch == s->lfe_ch));
-        if(s->exp_strategy[ch] != EXP_REUSE)
+        s->exp_strategy[blk][ch] = get_bits(gbc, 2 - (ch == s->lfe_ch));
+        if(s->exp_strategy[blk][ch] != EXP_REUSE)
             bit_alloc_stages[ch] = 3;
     }
 
     /* channel bandwidth */
     for (ch = 1; ch <= fbw_channels; ch++) {
         s->start_freq[ch] = 0;
-        if (s->exp_strategy[ch] != EXP_REUSE) {
+        if (s->exp_strategy[blk][ch] != EXP_REUSE) {
             int group_size;
             int prev = s->end_freq[ch];
             if (s->channel_in_cpl[ch])
@@ -867,22 +867,22 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                 }
                 s->end_freq[ch] = bandwidth_code * 3 + 73;
             }
-            group_size = 3 << (s->exp_strategy[ch] - 1);
+            group_size = 3 << (s->exp_strategy[blk][ch] - 1);
             s->num_exp_groups[ch] = (s->end_freq[ch]+group_size-4) / group_size;
             if(blk > 0 && s->end_freq[ch] != prev)
                 memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
         }
     }
-    if (cpl_in_use && s->exp_strategy[CPL_CH] != EXP_REUSE) {
+    if (cpl_in_use && s->exp_strategy[blk][CPL_CH] != EXP_REUSE) {
         s->num_exp_groups[CPL_CH] = (s->end_freq[CPL_CH] - s->start_freq[CPL_CH]) /
-                                    (3 << (s->exp_strategy[CPL_CH] - 1));
+                                    (3 << (s->exp_strategy[blk][CPL_CH] - 1));
     }
 
     /* decode exponents for each channel */
     for (ch = !cpl_in_use; ch <= s->channels; ch++) {
-        if (s->exp_strategy[ch] != EXP_REUSE) {
+        if (s->exp_strategy[blk][ch] != EXP_REUSE) {
             s->dexps[ch][0] = get_bits(gbc, 4) << !ch;
-            decode_exponents(gbc, s->exp_strategy[ch],
+            decode_exponents(gbc, s->exp_strategy[blk][ch],
                              s->num_exp_groups[ch], s->dexps[ch][0],
                              &s->dexps[ch][s->start_freq[ch]+!!ch]);
             if(ch != CPL_CH && ch != s->lfe_ch)
