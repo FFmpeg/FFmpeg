@@ -72,6 +72,9 @@ static const uint8_t quantization_tab[16] = {
 static float dynamic_range_tab[256];
 
 /** Adjustments in dB gain */
+#define LEVEL_PLUS_3DB          1.4142135623730950
+#define LEVEL_PLUS_1POINT5DB    1.1892071150027209
+#define LEVEL_MINUS_1POINT5DB   0.8408964152537145
 #define LEVEL_MINUS_3DB         0.7071067811865476
 #define LEVEL_MINUS_4POINT5DB   0.5946035575013605
 #define LEVEL_MINUS_6DB         0.5000000000000000
@@ -79,12 +82,15 @@ static float dynamic_range_tab[256];
 #define LEVEL_ZERO              0.0000000000000000
 #define LEVEL_ONE               1.0000000000000000
 
-static const float gain_levels[6] = {
-    LEVEL_ZERO,
+static const float gain_levels[9] = {
+    LEVEL_PLUS_3DB,
+    LEVEL_PLUS_1POINT5DB,
     LEVEL_ONE,
+    LEVEL_MINUS_1POINT5DB,
     LEVEL_MINUS_3DB,
     LEVEL_MINUS_4POINT5DB,
     LEVEL_MINUS_6DB,
+    LEVEL_ZERO,
     LEVEL_MINUS_9DB
 };
 
@@ -93,14 +99,14 @@ static const float gain_levels[6] = {
  * reference: Section 7.8.2 Downmixing Into Two Channels
  */
 static const uint8_t ac3_default_coeffs[8][5][2] = {
-    { { 1, 0 }, { 0, 1 },                               },
-    { { 2, 2 },                                         },
-    { { 1, 0 }, { 0, 1 },                               },
-    { { 1, 0 }, { 3, 3 }, { 0, 1 },                     },
-    { { 1, 0 }, { 0, 1 }, { 4, 4 },                     },
-    { { 1, 0 }, { 3, 3 }, { 0, 1 }, { 5, 5 },           },
-    { { 1, 0 }, { 0, 1 }, { 4, 0 }, { 0, 4 },           },
-    { { 1, 0 }, { 3, 3 }, { 0, 1 }, { 4, 0 }, { 0, 4 }, },
+    { { 2, 7 }, { 7, 2 },                               },
+    { { 4, 4 },                                         },
+    { { 2, 7 }, { 7, 2 },                               },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 },                     },
+    { { 2, 7 }, { 7, 2 }, { 6, 6 },                     },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 8, 8 },           },
+    { { 2, 7 }, { 7, 2 }, { 6, 7 }, { 7, 6 },           },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 6, 7 }, { 7, 6 }, },
 };
 
 /* override ac3.h to include coupling channel */

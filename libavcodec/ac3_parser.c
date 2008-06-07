@@ -37,13 +37,13 @@ static const uint8_t eac3_blocks[4] = {
  * Table for center mix levels
  * reference: Section 5.4.2.4 cmixlev
  */
-static const uint8_t center_levels[4] = { 2, 3, 4, 3 };
+static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
 
 /**
  * Table for surround mix levels
  * reference: Section 5.4.2.5 surmixlev
  */
-static const uint8_t surround_levels[4] = { 2, 4, 0, 4 };
+static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
 
 
 int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
