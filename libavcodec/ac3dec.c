@@ -1047,7 +1047,7 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
                                       s->start_freq[ch], s->end_freq[ch],
                                       s->snr_offset[ch],
                                       s->bit_alloc_params.floor,
-                                      s->bap[ch]);
+                                      ff_ac3_bap_tab, s->bap[ch]);
         }
     }
 
