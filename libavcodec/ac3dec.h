@@ -99,24 +99,24 @@ typedef struct {
 ///@}
 
 ///@defgroup exponents exponents
-    int num_exp_groups[AC3_MAX_CHANNELS];   ///< Number of exponent groups
+    int num_exp_groups[AC3_MAX_CHANNELS];           ///< Number of exponent groups
     int8_t dexps[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///< decoded exponents
-    int exp_strategy[AC3_MAX_CHANNELS];     ///< exponent strategies
+    int exp_strategy[AC3_MAX_CHANNELS];             ///< exponent strategies
 ///@}
 
 ///@defgroup bitalloc bit allocation
-    AC3BitAllocParameters bit_alloc_params;     ///< bit allocation parameters
-    int snr_offset[AC3_MAX_CHANNELS];           ///< signal-to-noise ratio offsets
-    int fast_gain[AC3_MAX_CHANNELS];            ///< fast gain values (signal-to-mask ratio)
+    AC3BitAllocParameters bit_alloc_params;         ///< bit allocation parameters
+    int snr_offset[AC3_MAX_CHANNELS];               ///< signal-to-noise ratio offsets
+    int fast_gain[AC3_MAX_CHANNELS];                ///< fast gain values (signal-to-mask ratio)
     uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< bit allocation pointers
     int16_t psd[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< scaled exponents
-    int16_t band_psd[AC3_MAX_CHANNELS][50];     ///< interpolated exponents
-    int16_t mask[AC3_MAX_CHANNELS][50];         ///< masking curve values
-    int dba_mode[AC3_MAX_CHANNELS];             ///< delta bit allocation mode
-    int dba_nsegs[AC3_MAX_CHANNELS];            ///< number of delta segments
-    uint8_t dba_offsets[AC3_MAX_CHANNELS][8];   ///< delta segment offsets
-    uint8_t dba_lengths[AC3_MAX_CHANNELS][8];   ///< delta segment lengths
-    uint8_t dba_values[AC3_MAX_CHANNELS][8];    ///< delta values for each segment
+    int16_t band_psd[AC3_MAX_CHANNELS][50];         ///< interpolated exponents
+    int16_t mask[AC3_MAX_CHANNELS][50];             ///< masking curve values
+    int dba_mode[AC3_MAX_CHANNELS];                 ///< delta bit allocation mode
+    int dba_nsegs[AC3_MAX_CHANNELS];                ///< number of delta segments
+    uint8_t dba_offsets[AC3_MAX_CHANNELS][8];       ///< delta segment offsets
+    uint8_t dba_lengths[AC3_MAX_CHANNELS][8];       ///< delta segment lengths
+    uint8_t dba_values[AC3_MAX_CHANNELS][8];        ///< delta values for each segment
 ///@}
 
 ///@defgroup dithering zero-mantissa dithering
