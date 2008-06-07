@@ -236,9 +236,49 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
  */
 static int ac3_parse_header(AC3DecodeContext *s)
 {
+    GetBitContext *gbc = &s->gbc;
+    int i;
+
+    /* read the rest of the bsi. read twice for dual mono mode. */
+    i = !(s->channel_mode);
+    do {
+        skip_bits(gbc, 5); // skip dialog normalization
+        if (get_bits1(gbc))
+            skip_bits(gbc, 8); //skip compression
+        if (get_bits1(gbc))
+            skip_bits(gbc, 8); //skip language code
+        if (get_bits1(gbc))
+            skip_bits(gbc, 7); //skip audio production information
+    } while (i--);
+
+    skip_bits(gbc, 2); //skip copyright bit and original bitstream bit
+
+    /* skip the timecodes (or extra bitstream information for Alternate Syntax)
+       TODO: read & use the xbsi1 downmix levels */
+    if (get_bits1(gbc))
+        skip_bits(gbc, 14); //skip timecode1 / xbsi1
+    if (get_bits1(gbc))
+        skip_bits(gbc, 14); //skip timecode2 / xbsi2
+
+    /* skip additional bitstream info */
+    if (get_bits1(gbc)) {
+        i = get_bits(gbc, 6);
+        do {
+            skip_bits(gbc, 8);
+        } while(i--);
+    }
+
+    return 0;
+}
+
+/**
+ * Common function to parse AC3 or E-AC3 frame header
+ */
+static int parse_frame_header(AC3DecodeContext *s)
+{
     AC3HeaderInfo hdr;
     GetBitContext *gbc = &s->gbc;
-    int err, i;
+    int err;
 
     err = ff_ac3_parse_header(gbc, &hdr);
     if(err)
@@ -271,36 +311,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
         s->channel_in_cpl[s->lfe_ch] = 0;
     }
 
-    /* read the rest of the bsi. read twice for dual mono mode. */
-    i = !(s->channel_mode);
-    do {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc))
-            skip_bits(gbc, 8); //skip compression
-        if (get_bits1(gbc))
-            skip_bits(gbc, 8); //skip language code
-        if (get_bits1(gbc))
-            skip_bits(gbc, 7); //skip audio production information
-    } while (i--);
-
-    skip_bits(gbc, 2); //skip copyright bit and original bitstream bit
-
-    /* skip the timecodes (or extra bitstream information for Alternate Syntax)
-       TODO: read & use the xbsi1 downmix levels */
-    if (get_bits1(gbc))
-        skip_bits(gbc, 14); //skip timecode1 / xbsi1
-    if (get_bits1(gbc))
-        skip_bits(gbc, 14); //skip timecode2 / xbsi2
-
-    /* skip additional bitstream info */
-    if (get_bits1(gbc)) {
-        i = get_bits(gbc, 6);
-        do {
-            skip_bits(gbc, 8);
-        } while(i--);
-    }
-
-    return 0;
+    return ac3_parse_header(s);
 }
 
 /**
@@ -1081,7 +1092,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* parse the syncinfo */
     *data_size = 0;
-    err = ac3_parse_header(s);
+    err = parse_frame_header(s);
 
     /* check that reported frame size fits in input buffer */
     if(s->frame_size > buf_size) {
