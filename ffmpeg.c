@@ -3636,6 +3636,41 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_preset(const char *opt, const char *arg)
+{
+    FILE *f;
+    char tmp[100], tmp2[100];
+    char *home= getenv("HOME");
+
+    snprintf(tmp, sizeof(tmp), "%s/.ffmpeg/%s.ffpreset", home, arg);
+    f= fopen(tmp, "r");
+    if(!f){
+        char *codec_name= *opt == 'v' ? video_codec_name :
+                          *opt == 'a' ? audio_codec_name :
+                                        subtitle_codec_name;
+        snprintf(tmp, sizeof(tmp), "%s/.ffmpeg/%s-%s.ffpreset", home, codec_name, arg);
+        f= fopen(tmp, "r");
+    }
+
+    if(!f){
+        fprintf(stderr, "Preset file not found\n");
+        av_exit(1);
+    }
+
+    while(!feof(f)){
+        int e= fscanf(f, "%99[^=]=%99[^\n]\n", tmp, tmp2);
+        if(e!=2){
+            fprintf(stderr, "Preset file invalid\n");
+            av_exit(1);
+        }
+        opt_default(tmp, tmp2);
+    }
+
+    fclose(f);
+
+    return 0;
+}
+
 static const OptionDef options[] = {
     /* main options */
     { "L", OPT_EXIT, {(void*)show_license}, "show license" },
@@ -3757,6 +3792,10 @@ static const OptionDef options[] = {
     { "absf", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
     { "vbsf", OPT_FUNC2 | HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
     { "sbsf", OPT_FUNC2 | HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
+
+    { "apre", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_preset}, "", "preset" },
+    { "vpre", OPT_FUNC2 | HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_preset}, "", "preset" },
+    { "spre", OPT_FUNC2 | HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_preset}, "", "preset" },
 
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
