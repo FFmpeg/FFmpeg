@@ -129,6 +129,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (NUT, nut);
     REGISTER_DEMUXER  (NUV, nuv);
     REGISTER_MUXDEMUX (OGG, ogg);
+    REGISTER_DEMUXER  (OMA, oma);
     REGISTER_MUXDEMUX (PCM_ALAW,  pcm_alaw);
     REGISTER_MUXDEMUX (PCM_MULAW, pcm_mulaw);
     REGISTER_MUXDEMUX (PCM_S16BE, pcm_s16be);
