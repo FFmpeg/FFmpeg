@@ -3639,7 +3639,7 @@ static int opt_bsf(const char *opt, const char *arg)
 static int opt_preset(const char *opt, const char *arg)
 {
     FILE *f=NULL;
-    char tmp[100], tmp2[100];
+    char tmp[1000], tmp2[1000];
     int i;
     const char *base[3]= { getenv("HOME"),
                            "/usr/local/share",
@@ -3664,7 +3664,7 @@ static int opt_preset(const char *opt, const char *arg)
     }
 
     while(!feof(f)){
-        int e= fscanf(f, "%99[^=]=%99[^\n]\n", tmp, tmp2);
+        int e= fscanf(f, "%999[^=]=%999[^\n]\n", tmp, tmp2);
         if(e!=2){
             fprintf(stderr, "Preset file invalid\n");
             av_exit(1);
