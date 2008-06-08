@@ -3638,18 +3638,24 @@ static int opt_bsf(const char *opt, const char *arg)
 
 static int opt_preset(const char *opt, const char *arg)
 {
-    FILE *f;
+    FILE *f=NULL;
     char tmp[100], tmp2[100];
-    char *home= getenv("HOME");
+    int i;
+    const char *base[3]= { getenv("HOME"),
+                           "/usr/local/share",
+                           "/usr/share",
+                         };
 
-    snprintf(tmp, sizeof(tmp), "%s/.ffmpeg/%s.ffpreset", home, arg);
+    for(i=!base[0]; i<3 && !f; i++){
+        snprintf(tmp, sizeof(tmp), "%s/%sffmpeg/%s.ffpreset", base[i], i ? "" : ".", arg);
     f= fopen(tmp, "r");
     if(!f){
         char *codec_name= *opt == 'v' ? video_codec_name :
                           *opt == 'a' ? audio_codec_name :
                                         subtitle_codec_name;
-        snprintf(tmp, sizeof(tmp), "%s/.ffmpeg/%s-%s.ffpreset", home, codec_name, arg);
+            snprintf(tmp, sizeof(tmp), "%s/%sffmpeg/%s-%s.ffpreset", base[i],  i ? "" : ".", codec_name, arg);
         f= fopen(tmp, "r");
+    }
     }
 
     if(!f){
