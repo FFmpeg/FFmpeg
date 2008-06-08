@@ -1109,3 +1109,9 @@ const uint8_t ff_eac3_frm_expstr[32][6] = {
  */
 const uint8_t ff_eac3_default_cpl_band_struct[18] =
 { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1 };
+
+/**
+ * Table of bin locations for rematrixing bands
+ * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
+ */
+const uint8_t ff_ac3_rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };

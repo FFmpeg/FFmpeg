@@ -39,15 +39,10 @@
 #include "bitstream.h"
 #include "dsputil.h"
 #include "ac3dec.h"
+#include "ac3dec_data.h"
 
 /** Maximum possible frame size when the specification limit is ignored */
 #define AC3_MAX_FRAME_SIZE 21695
-
-/**
- * Table of bin locations for rematrixing bands
- * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
- */
-static const uint8_t rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };
 
 /** table for grouping exponents */
 static uint8_t exp_ungroup_tab[128][3];
@@ -579,8 +574,8 @@ static void do_rematrixing(AC3DecodeContext *s)
 
     for(bnd=0; bnd<s->num_rematrixing_bands; bnd++) {
         if(s->rematrixing_flags[bnd]) {
-            bndend = FFMIN(end, rematrix_band_tab[bnd+1]);
-            for(i=rematrix_band_tab[bnd]; i<bndend; i++) {
+            bndend = FFMIN(end, ff_ac3_rematrix_band_tab[bnd+1]);
+            for(i=ff_ac3_rematrix_band_tab[bnd]; i<bndend; i++) {
                 tmp0 = s->fixed_coeffs[1][i];
                 tmp1 = s->fixed_coeffs[2][i];
                 s->fixed_coeffs[1][i] = tmp0 + tmp1;
