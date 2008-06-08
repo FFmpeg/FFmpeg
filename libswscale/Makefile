@@ -7,7 +7,7 @@ OBJS = rgb2rgb.o swscale.o
 
 OBJS-$(ARCH_BFIN)          +=  swscale_bfin.o yuv2rgb_bfin.o
 OBJS-$(CONFIG_GPL)         +=  yuv2rgb.o
-OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.c
+OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.o
 OBJS-$(HAVE_ALTIVEC)       +=  yuv2rgb_altivec.o
 OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
 
