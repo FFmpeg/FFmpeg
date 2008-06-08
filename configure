@@ -1244,7 +1244,7 @@ case $target_os in
             disable need_memalign
             LIBTARGET=x64
         fi
-        shlibdir_default="$bindir"
+        shlibdir_default="$bindir_default"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
         if enabled swscale; then
@@ -1265,7 +1265,7 @@ case $target_os in
         ;;
     cygwin*)
         target_os=cygwin
-        shlibdir_default="$bindir"
+        shlibdir_default="$bindir_default"
         VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
         VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
         if enabled swscale; then
