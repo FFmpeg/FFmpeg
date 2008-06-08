@@ -59,19 +59,39 @@ typedef struct {
     int num_blocks;                         ///< number of audio blocks
     int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
+    int channel_map;                        ///< custom channel map
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
+    int eac3;                               ///< indicates if current frame is E-AC-3
 ///@}
+
+///@defgroup audfrm frame syntax parameters
+    int snr_offset_strategy;                ///< SNR offset strategy                    (snroffststr)
+    int block_switch_syntax;                ///< block switch syntax enabled            (blkswe)
+    int dither_flag_syntax;                 ///< dither flag syntax enabled             (dithflage)
+    int bit_allocation_syntax;              ///< bit allocation model syntax enabled    (bamode)
+    int fast_gain_syntax;                   ///< fast gain codes enabled                (frmfgaincode)
+    int dba_syntax;                         ///< delta bit allocation syntax enabled    (dbaflde)
+    int skip_syntax;                        ///< skip field syntax enabled              (skipflde)
+ ///@}
 
 ///@defgroup cpl standard coupling
     int cpl_in_use[MAX_BLOCKS];             ///< coupling in use                        (cplinu)
+    int cpl_strategy_exists[MAX_BLOCKS];    ///< coupling strategy exists               (cplstre)
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[18];                    ///< phase flags                            (phsflg)
     int num_cpl_subbands;                   ///< number of coupling sub bands           (ncplsubnd)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
     int cpl_band_struct[18];                ///< coupling band structure                (cplbndstrc)
+    int firstchincpl;                       ///< first channel in coupling
+    int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
     int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates                   (cplco)
+///@}
+
+///@defgroup aht adaptive hybrid transform
+    int channel_uses_aht[AC3_MAX_CHANNELS];                 ///< channel AHT in use     (chahtinu)
+    int pre_mantissa[6][AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< pre-IDCT mantissas
 ///@}
 
 ///@defgroup channel channel
@@ -107,6 +127,7 @@ typedef struct {
 
 ///@defgroup bitalloc bit allocation
     AC3BitAllocParameters bit_alloc_params;         ///< bit allocation parameters
+    int first_cpl_leak;                             ///< first coupling leak state      (firstcplleak)
     int snr_offset[AC3_MAX_CHANNELS];               ///< signal-to-noise ratio offsets  (snroffst)
     int fast_gain[AC3_MAX_CHANNELS];                ///< fast gain values/SMR's         (fgain)
     uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< bit allocation pointers
