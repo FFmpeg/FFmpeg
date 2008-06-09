@@ -99,7 +99,11 @@ av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
     x->vop_flags = XVID_VOP_HALFPEL; /* Bare minimum quality */
     if( xvid_flags & CODEC_FLAG_4MV )
         x->vop_flags |= XVID_VOP_INTER4V; /* Level 3 */
-    if( xvid_flags & CODEC_FLAG_TRELLIS_QUANT)
+    if( avctx->trellis
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+        || xvid_flags & CODEC_FLAG_TRELLIS_QUANT
+#endif
+        )
         x->vop_flags |= XVID_VOP_TRELLISQUANT; /* Level 5 */
     if( xvid_flags & CODEC_FLAG_AC_PRED )
         x->vop_flags |= XVID_VOP_HQACPRED; /* Level 6 */
