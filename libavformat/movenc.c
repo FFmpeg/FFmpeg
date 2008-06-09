@@ -81,7 +81,7 @@ typedef struct MOVContext {
 } MOVContext;
 
 //FIXME support 64 bit variant with wide placeholders
-static offset_t updateSize (ByteIOContext *pb, offset_t pos)
+static offset_t updateSize(ByteIOContext *pb, offset_t pos)
 {
     offset_t curpos = url_ftell(pb);
     url_fseek(pb, pos, SEEK_SET);
@@ -92,7 +92,7 @@ static offset_t updateSize (ByteIOContext *pb, offset_t pos)
 }
 
 /* Chunk offset atom */
-static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int i;
     int mode64 = 0; //   use 32 bit size variant if possible
@@ -115,7 +115,7 @@ static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
 }
 
 /* Sample size atom */
-static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int equalChunks = 1;
     int i, j, entries = 0, tst = -1, oldtst = -1;
@@ -152,7 +152,7 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
 }
 
 /* Sample to chunk atom */
-static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int index = 0, oldval = -1, i;
     offset_t entryPos, curpos;
@@ -182,7 +182,7 @@ static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
 }
 
 /* Sync sample atom */
-static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t curpos, entryPos;
     int i, index = 0;
@@ -253,7 +253,7 @@ static void putDescr(ByteIOContext *pb, int tag, unsigned int size)
     put_byte(pb, size & 0x7F);
 }
 
-static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
+static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
 {
     offset_t pos = url_ftell(pb);
     int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
@@ -302,7 +302,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     return updateSize (pb, pos);
 }
 
-static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
 
@@ -334,7 +334,7 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
-static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack *track)
 {
     put_be32(pb, track->vosLen+8);
     put_tag(pb, "glbl");
@@ -342,7 +342,7 @@ static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack* track)
     return 8+track->vosLen;
 }
 
-static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     int version = track->mode == MODE_MOV &&
@@ -569,7 +569,7 @@ static int mov_write_uuid_tag_ipod(ByteIOContext *pb)
     return 28;
 }
 
-static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     char compressor_name[32];
@@ -633,7 +633,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
-static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
@@ -647,7 +647,7 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack *track)
 {
     MOV_stts_t *ctts_entries;
     uint32_t entries = 0;
@@ -681,7 +681,7 @@ static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
 }
 
 /* Time to sample atom */
-static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack *track)
 {
     MOV_stts_t *stts_entries;
     uint32_t entries = -1;
@@ -736,7 +736,7 @@ static int mov_write_dref_tag(ByteIOContext *pb)
     return 28;
 }
 
-static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
@@ -783,7 +783,7 @@ static int mov_write_vmhd_tag(ByteIOContext *pb)
     return 0x14;
 }
 
-static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
 {
     const char *descr, *hdlr, *hdlr_type;
     offset_t pos = url_ftell(pb);
@@ -816,7 +816,7 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
@@ -832,7 +832,7 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int version = track->trackDuration < INT32_MAX ? 0 : 1;
 
@@ -862,7 +862,7 @@ static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
     return 32;
 }
 
-static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
@@ -873,7 +873,7 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int64_t duration = av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
@@ -964,7 +964,7 @@ static int mov_write_uuid_tag_psp(ByteIOContext *pb, MOVTrack *mov)
     return 0x34;
 }
 
-static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
@@ -1052,7 +1052,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     return 0x6c;
 }
 
-static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext* mov,
+static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext *mov,
                                      AVFormatContext *s)
 {
     offset_t pos = url_ftell(pb);
@@ -1111,7 +1111,7 @@ static int mov_write_day_tag(ByteIOContext *pb, int year, int long_style)
 }
 
 /* iTunes track number */
-static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext* mov,
+static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     int size = 0;
@@ -1137,7 +1137,7 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext* mov,
 }
 
 /* iTunes meta data list */
-static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext* mov,
+static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     offset_t pos = url_ftell(pb);
@@ -1157,7 +1157,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext* mov,
 }
 
 /* iTunes meta data tag */
-static int mov_write_meta_tag(ByteIOContext *pb, MOVContext* mov,
+static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     int size = 0;
@@ -1176,7 +1176,7 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext* mov,
     return size;
 }
 
-static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
+static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     int i, req = 0;
@@ -1224,7 +1224,8 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     return 0;
 }
 
-static int utf8len(const uint8_t *b){
+static int utf8len(const uint8_t *b)
+{
     int len=0;
     int val;
     while(*b){
@@ -1234,7 +1235,7 @@ static int utf8len(const uint8_t *b){
     return len;
 }
 
-static int ascii_to_wc (ByteIOContext *pb, const uint8_t *b)
+static int ascii_to_wc(ByteIOContext *pb, const uint8_t *b)
 {
     int val;
     while(*b){
@@ -1245,12 +1246,12 @@ static int ascii_to_wc (ByteIOContext *pb, const uint8_t *b)
     return 0;
 }
 
-static uint16_t language_code (const char *str)
+static uint16_t language_code(const char *str)
 {
     return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
-static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
+static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     size_t len, size;
     offset_t pos, curpos;
@@ -1360,7 +1361,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     return updateSize(pb, pos);
 }
 
-static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
+static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 {
     put_be32(pb, 8);    // placeholder for extended size field (64 bit)
     put_tag(pb, mov->mode == MODE_MOV ? "wide" : "free");
