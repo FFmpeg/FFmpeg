@@ -326,6 +326,8 @@ static const AVOption options[]={
 {"cryptokey", "decryption key", OFFSET(key), FF_OPT_TYPE_BINARY, 0, 0, 0, D},
 {"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), FF_OPT_TYPE_INT, 1<<20, 0, INT_MAX, D},
 {"rtbufsize", "max memory used for buffering real-time frames", OFFSET(max_picture_buffer), FF_OPT_TYPE_INT, 3041280, 0, INT_MAX, D}, /* defaults to 1s of 15fps 352x288 YUYV422 video */
+{"fdebug", "print specific debug info", OFFSET(debug), FF_OPT_TYPE_FLAGS, DEFAULT, 0, INT_MAX, E|D, "fdebug"},
+{"ts", NULL, 0, FF_OPT_TYPE_CONST, FF_FDEBUG_TS, INT_MIN, INT_MAX, E|D, "fdebug"},
 {NULL},
 };
 
@@ -880,7 +882,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             st = s->streams[s->cur_pkt.stream_index];
-            if(st->codec->debug & FF_DEBUG_PTS)
+            if(s->debug & FF_FDEBUG_TS)
                 av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
                     s->cur_pkt.stream_index,
                     s->cur_pkt.pts,
@@ -905,7 +907,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
-    if(st->codec->debug & FF_DEBUG_PTS)
+    if(s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
             pkt->stream_index,
             pkt->pts,

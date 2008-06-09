@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 15
+#define LIBAVFORMAT_VERSION_MINOR 16
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -549,6 +549,12 @@ typedef struct AVFormatContext {
 
     unsigned int nb_chapters;
     AVChapter **chapters;
+
+    /**
+     * Flags to enable debuging.
+     */
+    int debug;
+#define FF_FDEBUG_TS        0x0001
 } AVFormatContext;
 
 typedef struct AVPacketList {
