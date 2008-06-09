@@ -1183,7 +1183,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
 
     if (s->title[0]   || s->author[0] || s->album[0] || s->year ||
         s->comment[0] || s->genre[0]  || s->track ||
-       (mov->mode == MODE_MOV &&
+        (mov->mode == MODE_MOV &&
          (mov->tracks[0].enc && !mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))) {
         offset_t pos = url_ftell(pb);
 
