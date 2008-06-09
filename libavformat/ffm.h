@@ -29,8 +29,9 @@
 #define PACKET_ID       0x666d
 
 /* each packet contains frames (which can span several packets */
-#define FRAME_HEADER_SIZE    8
+#define FRAME_HEADER_SIZE    16
 #define FLAG_KEY_FRAME       0x01
+#define FLAG_DTS             0x02
 
 enum {
     READ_HEADER,
@@ -41,11 +42,10 @@ typedef struct FFMContext {
     /* only reading mode */
     offset_t write_index, file_size;
     int read_state;
-    uint8_t header[FRAME_HEADER_SIZE];
+    uint8_t header[FRAME_HEADER_SIZE+4];
 
     /* read and write */
     int first_packet; /* true if first packet, needed to set the discontinuity tag */
-    int first_frame_in_packet; /* true if first frame in packet, needed to know if PTS information is valid */
     int packet_size;
     int frame_offset;
     int64_t pts;

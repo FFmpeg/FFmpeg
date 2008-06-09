@@ -197,6 +197,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int64_t pts;
     uint8_t header[FRAME_HEADER_SIZE];
+    int header_size = FRAME_HEADER_SIZE;
 
     pts = s->timestamp + pkt->pts;
     /* packet size & key_frame */
@@ -206,7 +207,13 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
         header[1] |= FLAG_KEY_FRAME;
     AV_WB24(header+2, pkt->size);
     AV_WB24(header+5, pkt->duration);
-    ffm_write_data(s, header, FRAME_HEADER_SIZE, pts, 1);
+    AV_WB64(header+8, pts);
+    if (pkt->pts != pkt->dts) {
+        header[1] |= FLAG_DTS;
+        AV_WB32(header+16, pkt->pts - pkt->dts);
+        header_size += 4;
+    }
+    ffm_write_data(s, header, header_size, pts, 1);
     ffm_write_data(s, pkt->data, pkt->size, pts, 0);
 
     return 0;

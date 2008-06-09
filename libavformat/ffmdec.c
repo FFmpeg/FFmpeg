@@ -100,7 +100,6 @@ static int ffm_read_data(AVFormatContext *s,
             get_be16(pb); /* PACKET_ID */
             fill_size = get_be16(pb);
             ffm->pts = get_be64(pb);
-            ffm->first_frame_in_packet = 1;
             frame_offset = get_be16(pb);
             get_buffer(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
             ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
@@ -361,7 +360,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     switch(ffm->read_state) {
     case READ_HEADER:
-        if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE)) {
+        if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE+4)) {
             return AVERROR(EAGAIN);
         }
         dprintf(s, "pos=%08"PRIx64" spos=%"PRIx64", write_index=%"PRIx64" size=%"PRIx64"\n",
@@ -369,6 +368,9 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
             return AVERROR(EAGAIN);
+        if (ffm->header[1] & FLAG_DTS)
+            if (ffm_read_data(s, ffm->header+16, 4, 1) != 4)
+                return AVERROR(EAGAIN);
 #if 0
         av_hexdump_log(s, AV_LOG_DEBUG, ffm->header, FRAME_HEADER_SIZE);
 #endif
@@ -400,11 +402,11 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_free_packet(pkt);
             return AVERROR(EAGAIN);
         }
-        if (ffm->first_frame_in_packet)
-        {
-            pkt->pts = ffm->pts;
-            ffm->first_frame_in_packet = 0;
-        }
+        pkt->pts = AV_RB64(ffm->header+8);
+        if (ffm->header[1] & FLAG_DTS)
+            pkt->dts = pkt->pts - AV_RB32(ffm->header+16);
+        else
+            pkt->dts = pkt->pts;
         pkt->duration = duration;
         break;
     }

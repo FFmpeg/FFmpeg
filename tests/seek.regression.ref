@@ -2830,7 +2830,7 @@ ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:144000 flags:1
 ----------------
 tests/data/b-libav.ffm
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:8192 size:24795 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
@@ -2838,15 +2838,15 @@ ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 0 ts:0.788334 flags:0
 ret: 0 st: 1 dts:0.731429 pts:0.731429 pos:307200 size:209 flags:1
 ret: 0 st: 0 ts:-0.317499 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:8192 size:24795 flags:1
 ret: 0 st: 1 ts:2.576668 flags:0
 ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 1 ts:1.470835 flags:1
 ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
-ret: 0 st: 0 dts:0.339592 pts:0.339592 pos:147456 size:12220 flags:0
+ret: 0 st: 1 dts:0.313469 pts:0.313469 pos:147456 size:209 flags:1
 ret: 0 st:-1 ts:-0.740831 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:8192 size:24795 flags:1
 ret: 0 st: 0 ts:2.153336 flags:0
 ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 0 ts:1.047503 flags:1
@@ -2874,15 +2874,15 @@ ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st: 0 ts:0.883340 flags:0
 ret: 0 st: 1 dts:0.809796 pts:0.809796 pos:331776 size:209 flags:1
 ret: 0 st: 0 ts:-0.222493 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:8192 size:24795 flags:1
 ret: 0 st: 1 ts:2.671674 flags:0
 ret: 0 st: 1 dts:0.888163 pts:0.888163 pos:356352 size:209 flags:1
 ret: 0 st: 1 ts:1.565841 flags:1
 ret: 0 st: 1 dts:0.940408 pts:0.940408 pos:380928 size:209 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 1 dts:0.365714 pts:0.365714 pos:167936 size:209 flags:1
+ret: 0 st: 0 dts:0.400000 pts:0.440000 pos:172032 size:12546 flags:0
 ret: 0 st:-1 ts:-0.645825 flags:1
-ret: 0 st: 0 dts:0.040000 pts:0.040000 pos:8192 size:24795 flags:1
+ret: 0 st: 0 dts:-0.040000 pts:0.000000 pos:8192 size:24795 flags:1
 ----------------
 tests/data/b-libav.flv
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:199 size:31385 flags:1
