@@ -168,6 +168,10 @@ static int ffm_write_header(AVFormatContext *s)
         default:
             return -1;
         }
+        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            put_be32(pb, codec->extradata_size);
+            put_buffer(pb, codec->extradata, codec->extradata_size);
+        }
     }
 
     /* flush until end of block reached */

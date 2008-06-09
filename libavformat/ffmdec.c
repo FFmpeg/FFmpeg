@@ -320,7 +320,13 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         default:
             goto fail;
         }
-
+        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            codec->extradata_size = get_be32(pb);
+            codec->extradata = av_malloc(codec->extradata_size);
+            if (!codec->extradata)
+                return AVERROR(ENOMEM);
+            get_buffer(pb, codec->extradata, codec->extradata_size);
+        }
     }
 
     /* get until end of block reached */
