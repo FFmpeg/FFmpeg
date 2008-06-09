@@ -1787,7 +1787,6 @@ static void apply_loop_filter(Vp3DecodeContext *s)
         for (y = 0; y < height; y++) {
 
             for (x = 0; x < width; x++) {
-START_TIMER
                 /* do not perform left edge filter for left columns frags */
                 if ((x > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
@@ -1827,7 +1826,6 @@ START_TIMER
                 }
 
                 fragment++;
-STOP_TIMER("loop filter")
             }
         }
     }
@@ -2229,9 +2227,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.qscale_table= s->qscale_table; //FIXME allocate individual tables per AVFrame
     s->current_frame.qstride= 0;
 
-    {START_TIMER
     init_frame(s, &gb);
-    STOP_TIMER("init_frame")}
 
 #if KEYFRAMES_ONLY
 if (!s->keyframe) {
@@ -2246,31 +2242,22 @@ if (!s->keyframe) {
 } else {
 #endif
 
-    {START_TIMER
     if (unpack_superblocks(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
         return -1;
     }
-    STOP_TIMER("unpack_superblocks")}
-    {START_TIMER
     if (unpack_modes(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_modes\n");
         return -1;
     }
-    STOP_TIMER("unpack_modes")}
-    {START_TIMER
     if (unpack_vectors(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_vectors\n");
         return -1;
     }
-    STOP_TIMER("unpack_vectors")}
-    {START_TIMER
     if (unpack_dct_coeffs(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
         return -1;
     }
-    STOP_TIMER("unpack_dct_coeffs")}
-    {START_TIMER
 
     reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
     if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
@@ -2279,16 +2266,11 @@ if (!s->keyframe) {
         reverse_dc_prediction(s, s->fragment_start[2],
             s->fragment_width / 2, s->fragment_height / 2);
     }
-    STOP_TIMER("reverse_dc_prediction")}
-    {START_TIMER
 
     for (i = 0; i < s->macroblock_height; i++)
         render_slice(s, i);
-    STOP_TIMER("render_fragments")}
 
-    {START_TIMER
     apply_loop_filter(s);
-    STOP_TIMER("apply_loop_filter")}
 #if KEYFRAMES_ONLY
 }
 #endif
