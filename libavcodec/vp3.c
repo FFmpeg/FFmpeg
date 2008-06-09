@@ -150,7 +150,6 @@ typedef struct Vp3Fragment {
     /* this is the macroblock that the fragment belongs to */
     uint16_t macroblock;
     uint8_t coding_method;
-    uint8_t coeff_count;
     int8_t motion_x;
     int8_t motion_y;
 } Vp3Fragment;
@@ -255,6 +254,7 @@ typedef struct Vp3DecodeContext {
     int fragment_height;
 
     Vp3Fragment *all_fragments;
+    uint8_t *coeff_counts;
     Coeff *coeffs;
     Coeff *next_coeff;
     int fragment_start[3];
@@ -588,7 +588,7 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
     /* zero out all of the fragment information */
     s->coded_fragment_list_index = 0;
     for (i = 0; i < s->fragment_count; i++) {
-        s->all_fragments[i].coeff_count = 0;
+        s->coeff_counts[i] = 0;
         s->all_fragments[i].motion_x = 127;
         s->all_fragments[i].motion_y = 127;
         s->all_fragments[i].next_coeff= NULL;
@@ -1160,10 +1160,11 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     }
 
     for (i = first_fragment; i <= last_fragment; i++) {
+        int fragment_num = s->coded_fragment_list[i];
 
-        fragment = &s->all_fragments[s->coded_fragment_list[i]];
-        if (fragment->coeff_count > coeff_index)
+        if (s->coeff_counts[fragment_num] > coeff_index)
             continue;
+        fragment = &s->all_fragments[fragment_num];
 
         if (!eob_run) {
             /* decode a VLC into a token */
@@ -1189,10 +1190,10 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         }
 
         if (!eob_run) {
-            fragment->coeff_count += zero_run;
-            if (fragment->coeff_count < 64){
+            s->coeff_counts[fragment_num] += zero_run;
+            if (s->coeff_counts[fragment_num] < 64){
                 fragment->next_coeff->coeff= coeff;
-                fragment->next_coeff->index= perm[fragment->coeff_count++]; //FIXME perm here already?
+                fragment->next_coeff->index= perm[s->coeff_counts[fragment_num]++]; //FIXME perm here already?
                 fragment->next_coeff->next= s->next_coeff;
                 s->next_coeff->next=NULL;
                 fragment->next_coeff= s->next_coeff++;
@@ -1200,9 +1201,9 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             debug_vlc(" fragment %d coeff = %d\n",
                 s->coded_fragment_list[i], fragment->next_coeff[coeff_index]);
         } else {
-            fragment->coeff_count |= 128;
+            s->coeff_counts[fragment_num] |= 128;
             debug_vlc(" fragment %d eob with %d coefficients\n",
-                s->coded_fragment_list[i], fragment->coeff_count&127);
+                s->coded_fragment_list[i], s->coeff_counts[fragment_num]&127);
             eob_run--;
         }
     }
@@ -1474,8 +1475,8 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                 s->coeffs[i].coeff += predicted_dc;
                 /* save the DC */
                 last_dc[current_frame_type] = DC_COEFF(i);
-                if(DC_COEFF(i) && !(s->all_fragments[i].coeff_count&127)){
-                    s->all_fragments[i].coeff_count= 129;
+                if(DC_COEFF(i) && !(s->coeff_counts[i]&127)){
+                    s->coeff_counts[i]= 129;
 //                    s->all_fragments[i].next_coeff= s->next_coeff;
                     s->coeffs[i].next= s->next_coeff;
                     (s->next_coeff++)->next=NULL;
@@ -2007,6 +2008,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         s->fragment_start[2]);
 
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
+    s->coeff_counts = av_malloc(s->fragment_count * sizeof(*s->coeff_counts));
     s->coeffs = av_malloc(s->fragment_count * sizeof(Coeff) * 65);
     s->coded_fragment_list = av_malloc(s->fragment_count * sizeof(int));
     s->pixel_addresses_initialized = 0;
@@ -2317,6 +2319,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
 
     av_free(s->superblock_coding);
     av_free(s->all_fragments);
+    av_free(s->coeff_counts);
     av_free(s->coeffs);
     av_free(s->coded_fragment_list);
     av_free(s->superblock_fragments);
