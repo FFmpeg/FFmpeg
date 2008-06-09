@@ -193,8 +193,6 @@ static int ffm_write_header(AVFormatContext *s)
 
 static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    FFMContext *ffm = s->priv_data;
-    AVStream *st = s->streams[pkt->stream_index];
     int64_t pts;
     uint8_t header[FRAME_HEADER_SIZE];
     int header_size = FRAME_HEADER_SIZE;
