@@ -32,7 +32,7 @@
 #include "libavformat/os_support.h"
 #include "libavformat/rtp.h"
 #include "libavformat/rtsp.h"
-
+#include "libavcodec/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -3677,6 +3677,18 @@ static void load_module(const char *filename)
 }
 #endif
 
+static int opt_default(const char *opt, const char *arg,
+                       AVCodecContext *avctx, int type)
+{
+    const AVOption *o  = NULL;
+    const AVOption *o2 = av_find_opt(avctx, opt, NULL, type, type);
+    if(o2)
+        o = av_set_string(avctx, opt, arg);
+    if(!o)
+        return -1;
+    return 0;
+}
+
 static int parse_ffconfig(const char *filename)
 {
     FILE *f;
@@ -3881,6 +3893,7 @@ static int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: Already in a tag\n",
                         filename, line_num);
             } else {
+                const AVClass *class;
                 stream = av_mallocz(sizeof(FFStream));
                 *last_stream = stream;
                 last_stream = &stream->next;
@@ -3890,8 +3903,15 @@ static int parse_ffconfig(const char *filename)
                 if (*q)
                     *q = '\0';
                 stream->fmt = guess_stream_format(NULL, stream->filename, NULL);
+                /* fetch avclass so AVOption works
+                 * FIXME try to use avcodec_get_context_defaults2
+                 * without changing defaults too much */
+                avcodec_get_context_defaults(&video_enc);
+                class = video_enc.av_class;
                 memset(&audio_enc, 0, sizeof(AVCodecContext));
                 memset(&video_enc, 0, sizeof(AVCodecContext));
+                audio_enc.av_class = class;
+                video_enc.av_class = class;
                 audio_id = CODEC_ID_NONE;
                 video_id = CODEC_ID_NONE;
                 if (stream->fmt) {
@@ -4087,6 +4107,24 @@ static int parse_ffconfig(const char *filename)
             if (stream) {
                 video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                 video_enc.flags |= CODEC_FLAG_4MV;
+            }
+        } else if (!strcasecmp(cmd, "AVOptionVideo") ||
+                   !strcasecmp(cmd, "AVOptionAudio")) {
+            char arg2[1024];
+            AVCodecContext *avctx;
+            int type;
+            get_arg(arg, sizeof(arg), &p);
+            get_arg(arg2, sizeof(arg2), &p);
+            if (!strcasecmp(cmd, "AVOptionVideo")) {
+                avctx = &video_enc;
+                type = AV_OPT_FLAG_VIDEO_PARAM;
+            } else {
+                avctx = &audio_enc;
+                type = AV_OPT_FLAG_AUDIO_PARAM;
+            }
+            if (opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
+                fprintf(stderr, "AVOption error: %s %s\n", arg, arg2);
+                errors++;
             }
         } else if (!strcasecmp(cmd, "VideoTag")) {
             get_arg(arg, sizeof(arg), &p);
