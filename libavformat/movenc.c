@@ -1148,8 +1148,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
     mov_write_string_tag(pb, "\251wrt", s->author        , 1);
     mov_write_string_tag(pb, "\251alb", s->album         , 1);
     mov_write_day_tag(pb, s->year ,1);
-    if(mov->tracks[0].enc && !(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))
-        mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 1);
+    mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 1);
     mov_write_string_tag(pb, "\251cmt", s->comment       , 1);
     mov_write_string_tag(pb, "\251gen", s->genre         , 1);
     mov_write_trkn_tag(pb, mov, s);
@@ -1180,11 +1179,16 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     int i;
+    int bitexact = 0;
 
-    if (s->title[0]   || s->author[0] || s->album[0] || s->year ||
-        s->comment[0] || s->genre[0]  || s->track ||
-        (mov->mode == MODE_MOV &&
-         (mov->tracks[0].enc && !(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT)))) {
+    for (i = 0; i < s->nb_streams; i++)
+        if (mov->tracks[i].enc->flags & CODEC_FLAG_BITEXACT) {
+            bitexact = 1;
+            break;
+        }
+
+    if (!bitexact && (s->title[0] || s->author[0] || s->album[0] || s->year ||
+                      s->comment[0] || s->genre[0]  || s->track)) {
         offset_t pos = url_ftell(pb);
 
         put_be32(pb, 0); /* size */
@@ -1198,8 +1202,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
             mov_write_string_tag(pb, "\251aut", s->author        , 0);
             mov_write_string_tag(pb, "\251alb", s->album         , 0);
             mov_write_day_tag(pb, s->year, 0);
-            if(mov->tracks[0].enc && !(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))
-                mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
+            mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
             mov_write_string_tag(pb, "\251des", s->comment       , 0);
             mov_write_string_tag(pb, "\251gen", s->genre         , 0);
         }
