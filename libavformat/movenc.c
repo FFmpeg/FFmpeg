@@ -1163,7 +1163,7 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
 
     // only save meta tag if required
     if (s->title[0] || s->author[0] || s->album[0] || s->year ||
-         s->comment[0] || s->genre[0] || s->track) {
+        s->comment[0] || s->genre[0] || s->track) {
         offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "meta");
