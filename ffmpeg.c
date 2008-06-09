@@ -427,6 +427,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
     AVFormatContext *ic;
+    int nopts = 0;
 
     err = av_open_input_file(&ic, filename, NULL, FFM_PACKET_SIZE, NULL);
     if (err < 0)
@@ -442,7 +443,12 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         st->codec = avcodec_alloc_context();
         memcpy(st->codec, ic->streams[i]->codec, sizeof(AVCodecContext));
         s->streams[i] = st;
+        if(st->codec->flags & CODEC_FLAG_BITEXACT)
+            nopts = 1;
     }
+
+    if (!nopts)
+        s->timestamp = av_gettime();
 
     av_close_input_file(ic);
     return 0;
@@ -2177,8 +2183,6 @@ static void opt_format(const char *arg)
     }
 }
 
-extern int ffm_nopts;
-
 static int opt_default(const char *opt, const char *arg){
     int type;
     const AVOption *o= NULL;
@@ -2209,12 +2213,6 @@ static int opt_default(const char *opt, const char *arg){
     //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
     opt_names[opt_name_count++]= o->name;
-
-#ifdef CONFIG_FFM_MUXER
-    /* disable generate of real time pts in ffm (need to be supressed anyway) */
-    if(avctx_opts[0]->flags & CODEC_FLAG_BITEXACT)
-        ffm_nopts = 1;
-#endif
 
     if(avctx_opts[0]->debug)
         av_log_set_level(AV_LOG_DEBUG);

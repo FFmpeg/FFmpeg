@@ -51,7 +51,6 @@ typedef struct FFMContext {
     int64_t pts;
     uint8_t *packet_ptr, *packet_end;
     uint8_t packet[FFM_PACKET_SIZE];
-    int64_t start_time;
 } FFMContext;
 
 #endif /* FFMPEG_FFM_H */

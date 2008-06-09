@@ -22,9 +22,6 @@
 #include "avformat.h"
 #include "ffm.h"
 
-/* disable pts hack for testing */
-int ffm_nopts = 0;
-
 static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -173,12 +170,6 @@ static int ffm_write_header(AVFormatContext *s)
         }
     }
 
-    /* hack to have real time */
-    if (ffm_nopts)
-        ffm->start_time = 0;
-    else
-        ffm->start_time = av_gettime();
-
     /* flush until end of block reached */
     while ((url_ftell(pb) % ffm->packet_size) != 0)
         put_byte(pb, 0);
@@ -203,7 +194,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pts;
     uint8_t header[FRAME_HEADER_SIZE];
 
-    pts = ffm->start_time + pkt->pts;
+    pts = s->timestamp + pkt->pts;
     /* packet size & key_frame */
     header[0] = pkt->stream_index;
     header[1] = 0;
