@@ -1216,6 +1216,26 @@ static uint16_t language_code(const char *str)
     return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
+static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
+                                  const char *tag, const char *str)
+{
+    offset_t pos = url_ftell(pb);
+    if (!utf8len(str))
+        return 0;
+    put_be32(pb, 0);   /* size */
+    put_tag (pb, tag); /* type */
+    put_be32(pb, 0);   /* version + flags */
+    if (!strcmp(tag, "yrrc"))
+        put_be16(pb, s->year);
+    else {
+        put_be16(pb, language_code("eng")); /* language */
+        ascii_to_wc(pb, str);
+        if (!strcmp(tag, "albm") && s->year)
+            put_byte(pb, s->year);
+    }
+    return updateSize(pb, pos);
+}
+
 static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
@@ -1235,6 +1255,14 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
         put_be32(pb, 0); /* size */
         put_tag(pb, "udta");
 
+        if (mov->mode == MODE_3GP || mov->mode == MODE_3G2) {
+            mov_write_3gp_udta_tag(pb, s, "titl", s->title);
+            mov_write_3gp_udta_tag(pb, s, "auth", s->author);
+            mov_write_3gp_udta_tag(pb, s, "gnre", s->genre);
+            mov_write_3gp_udta_tag(pb, s, "dscp", s->comment);
+            mov_write_3gp_udta_tag(pb, s, "albm", s->album);
+            mov_write_3gp_udta_tag(pb, s, "yrrc", "nil");
+        } else {
         /* iTunes meta data */
         mov_write_meta_tag(pb, mov, s);
 
@@ -1247,7 +1275,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
             mov_write_string_tag(pb, "\251des", s->comment       , 0);
             mov_write_string_tag(pb, "\251gen", s->genre         , 0);
         }
-
+        }
         return updateSize(pb, pos);
     }
 
@@ -1330,7 +1358,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
 
     if (mov->mode == MODE_PSP)
         mov_write_uuidusmt_tag(pb, s);
-    else if (mov->mode != MODE_3GP && mov->mode != MODE_3G2)
+    else
         mov_write_udta_tag(pb, mov, s);
 
     return updateSize(pb, pos);
