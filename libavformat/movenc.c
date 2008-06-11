@@ -1254,9 +1254,23 @@ static uint16_t language_code(const char *str)
     return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
+static int mov_write_psp_udta_tag(ByteIOContext *pb,
+                                  const char *str, const char *lang, int type)
+{
+    int len = utf8len(str)+1;
+    if(len<=0)
+        return 0;
+    put_be16(pb, len*2+10);            /* size */
+    put_be32(pb, type);                /* type */
+    put_be16(pb, language_code(lang)); /* language */
+    put_be16(pb, 0x01);                /* ? */
+    ascii_to_wc(pb, str);
+    return len*2+10;
+}
+
 static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
 {
-    size_t len, size;
+    size_t size;
     offset_t pos, curpos;
 
     size = 0;
@@ -1283,39 +1297,10 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be16(pb, 0x021C);               /* data */
         size += 12;
 
-        // Encoder
-        len = utf8len(LIBAVCODEC_IDENT)+1;
-        if(len<=0)
-            goto not_utf8;
-        put_be16(pb, len*2+10);             /* size */
-        put_be32(pb, 0x04);                 /* type */
-        put_be16(pb, language_code("eng")); /* language */
-        put_be16(pb, 0x01);                 /* ? */
-        ascii_to_wc(pb, LIBAVCODEC_IDENT);
-        size += len*2+10;
-
-        // Title
-        len = utf8len(s->title)+1;
-        if(len<=0)
-            goto not_utf8;
-        put_be16(pb, len*2+10);             /* size */
-        put_be32(pb, 0x01);                 /* type */
-        put_be16(pb, language_code("eng")); /* language */
-        put_be16(pb, 0x01);                 /* ? */
-        ascii_to_wc(pb, s->title);
-        size += len*2+10;
-
-        // Date
+        size += mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
+        size += mov_write_psp_udta_tag(pb, s->title,              "eng", 0x01);
 //        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
-        len = utf8len("2006/04/01 11:11:11")+1;
-        if(len<=0)
-            goto not_utf8;
-        put_be16(pb, len*2+10);    /* size */
-        put_be32(pb, 0x03);        /* type */
-        put_be16(pb, language_code("und")); /* language */
-        put_be16(pb, 0x01);        /* ? */
-        ascii_to_wc(pb, "2006/04/01 11:11:11");
-        size += len*2+10;
+        size += mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
 
         // size
         curpos = url_ftell(pb);
@@ -1327,9 +1312,6 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
     }
 
     return size;
-not_utf8:
-    av_log(s, AV_LOG_ERROR, "not utf8\n");
-    return -1;
 }
 
 static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
