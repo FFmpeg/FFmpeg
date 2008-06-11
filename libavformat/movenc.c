@@ -1189,6 +1189,33 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
     return size;
 }
 
+static int utf8len(const uint8_t *b)
+{
+    int len=0;
+    int val;
+    while(*b){
+        GET_UTF8(val, *b++, return -1;)
+        len++;
+    }
+    return len;
+}
+
+static int ascii_to_wc(ByteIOContext *pb, const uint8_t *b)
+{
+    int val;
+    while(*b){
+        GET_UTF8(val, *b++, return -1;)
+        put_be16(pb, val);
+    }
+    put_be16(pb, 0x00);
+    return 0;
+}
+
+static uint16_t language_code(const char *str)
+{
+    return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
+}
+
 static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
@@ -1225,33 +1252,6 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
     }
 
     return 0;
-}
-
-static int utf8len(const uint8_t *b)
-{
-    int len=0;
-    int val;
-    while(*b){
-        GET_UTF8(val, *b++, return -1;)
-        len++;
-    }
-    return len;
-}
-
-static int ascii_to_wc(ByteIOContext *pb, const uint8_t *b)
-{
-    int val;
-    while(*b){
-        GET_UTF8(val, *b++, return -1;)
-        put_be16(pb, val);
-    }
-    put_be16(pb, 0x00);
-    return 0;
-}
-
-static uint16_t language_code(const char *str)
-{
-    return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
 static void mov_write_psp_udta_tag(ByteIOContext *pb,
