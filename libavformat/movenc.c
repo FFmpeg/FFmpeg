@@ -1302,7 +1302,7 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be32(pb, 0x01);                 /* type */
         put_be16(pb, language_code("eng")); /* language */
         put_be16(pb, 0x01);                 /* ? */
-        ascii_to_wc (pb, s->title);
+        ascii_to_wc(pb, s->title);
         size += len*2+10;
 
         // Date
@@ -1314,7 +1314,7 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be32(pb, 0x03);        /* type */
         put_be16(pb, language_code("und")); /* language */
         put_be16(pb, 0x01);        /* ? */
-        ascii_to_wc (pb, "2006/04/01 11:11:11");
+        ascii_to_wc(pb, "2006/04/01 11:11:11");
         size += len*2+10;
 
         // size
@@ -1376,7 +1376,7 @@ static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 }
 
 /* TODO: This needs to be more general */
-static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
+static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
 
