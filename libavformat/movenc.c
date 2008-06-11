@@ -1351,6 +1351,7 @@ static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
+    int i;
 
     put_be32(pb, 0x14); /* size */
     put_tag(pb, "ftyp");
@@ -1361,9 +1362,17 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
-    else if (mov->mode == MODE_MP4 || mov->mode == MODE_IPOD)
+    else if (mov->mode == MODE_MP4)
         put_tag(pb, "isom");
-    else
+    else if (mov->mode == MODE_IPOD) {
+        for (i = 0; i < s->nb_streams; i++)
+            if (s->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
+                put_tag(pb, "M4V ");
+                break;
+            }
+        if (i == s->nb_streams)
+            put_tag(pb, "M4A ");
+    } else
         put_tag(pb, "qt  ");
 
     put_be32(pb, 0x200);
@@ -1374,8 +1383,10 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
-    else if (mov->mode == MODE_MP4 || mov->mode == MODE_IPOD)
+    else if (mov->mode == MODE_MP4)
         put_tag(pb, "mp41");
+    else if (mov->mode == MODE_IPOD)
+        put_tag(pb, "isom");
     else
         put_tag(pb, "qt  ");
 }
