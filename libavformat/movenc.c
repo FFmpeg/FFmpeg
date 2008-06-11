@@ -397,6 +397,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AMR_NB)
         mov_write_amr_tag(pb, track);
+    else if (track->enc->codec_id == CODEC_ID_ALAC)
+        mov_write_extradata_tag(pb, track);
     else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
@@ -503,15 +505,27 @@ static const AVCodecTag mov_pix_fmt_tags[] = {
     { PIX_FMT_BGR32_1, MKTAG('r','a','w',' ') },
 };
 
+static const AVCodecTag codec_ipod_tags[] = {
+    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
+    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
+};
+
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
-    if (track->mode == MODE_MP4 || track->mode == MODE_PSP || track->mode == MODE_IPOD) {
+    if (track->mode == MODE_MP4 || track->mode == MODE_PSP) {
         if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
             return 0;
         if (track->enc->codec_id == CODEC_ID_H264)           tag = MKTAG('a','v','c','1');
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
+    } else if (track->mode == MODE_IPOD) {
+        tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
+        if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
+            av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
+                   "Quicktime/Ipod might not play the file\n");
     } else if (track->mode == MODE_3GP || track->mode == MODE_3G2) {
         tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
     } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
