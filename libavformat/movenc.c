@@ -111,7 +111,7 @@ static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack *track)
         else
             put_be32(pb, track->cluster[i].pos);
     }
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 /* Sample size atom */
@@ -148,7 +148,7 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack *track)
             }
         }
     }
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 /* Sample to chunk atom */
@@ -178,7 +178,7 @@ static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb, index); // rewrite size
     url_fseek(pb, curpos, SEEK_SET);
 
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 /* Sync sample atom */
@@ -202,7 +202,7 @@ static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack *track)
     url_fseek(pb, entryPos, SEEK_SET);
     put_be32(pb, index); // rewrite size
     url_fseek(pb, curpos, SEEK_SET);
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 static int mov_write_amr_tag(ByteIOContext *pb, MOVTrack *track)
@@ -299,7 +299,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
     // SL descriptor
     putDescr(pb, 0x06, 1);
     put_byte(pb, 0x02);
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
@@ -331,7 +331,7 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb, 8);     /* size */
     put_be32(pb, 0);     /* null tag */
 
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack *track)
@@ -402,7 +402,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
     else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 static int mov_write_d263_tag(ByteIOContext *pb)
@@ -644,7 +644,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
     } else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
-    return updateSize (pb, pos);
+    return updateSize(pb, pos);
 }
 
 static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack *track)
