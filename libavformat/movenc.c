@@ -1254,26 +1254,23 @@ static uint16_t language_code(const char *str)
     return (((str[0]-0x60) & 0x1F) << 10) + (((str[1]-0x60) & 0x1F) << 5) + ((str[2]-0x60) & 0x1F);
 }
 
-static int mov_write_psp_udta_tag(ByteIOContext *pb,
+static void mov_write_psp_udta_tag(ByteIOContext *pb,
                                   const char *str, const char *lang, int type)
 {
     int len = utf8len(str)+1;
     if(len<=0)
-        return 0;
+        return;
     put_be16(pb, len*2+10);            /* size */
     put_be32(pb, type);                /* type */
     put_be16(pb, language_code(lang)); /* language */
     put_be16(pb, 0x01);                /* ? */
     ascii_to_wc(pb, str);
-    return len*2+10;
 }
 
 static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
 {
-    size_t size;
-    offset_t pos, curpos;
+    offset_t pos, pos2;
 
-    size = 0;
     if (s->title[0]) {
         pos = url_ftell(pb);
         put_be32(pb, 0); /* size placeholder*/
@@ -1282,12 +1279,11 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be32(pb, 0x21d24fce); /* 96 bit UUID */
         put_be32(pb, 0xbb88695c);
         put_be32(pb, 0xfac9c740);
-        size += 24;
 
+        pos2 = url_ftell(pb);
         put_be32(pb, 0); /* size placeholder*/
         put_tag(pb, "MTDT");
         put_be16(pb, 4);
-        size += 10;
 
         // ?
         put_be16(pb, 0x0C);                 /* size */
@@ -1295,23 +1291,17 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be16(pb, language_code("und")); /* language */
         put_be16(pb, 0x0);                  /* ? */
         put_be16(pb, 0x021C);               /* data */
-        size += 12;
 
-        size += mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
-        size += mov_write_psp_udta_tag(pb, s->title,              "eng", 0x01);
+        mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
+        mov_write_psp_udta_tag(pb, s->title,              "eng", 0x01);
 //        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
-        size += mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
+        mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
 
-        // size
-        curpos = url_ftell(pb);
-        url_fseek(pb, pos, SEEK_SET);
-        put_be32(pb, size);
-        url_fseek(pb, pos+24, SEEK_SET);
-        put_be32(pb, size-24);
-        url_fseek(pb, curpos, SEEK_SET);
+        updateSize(pb, pos2);
+        return updateSize(pb, pos);
     }
 
-    return size;
+    return 0;
 }
 
 static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
