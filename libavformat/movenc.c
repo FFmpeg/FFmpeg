@@ -1263,9 +1263,6 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
             mov_write_3gp_udta_tag(pb, s, "albm", s->album);
             mov_write_3gp_udta_tag(pb, s, "yrrc", "nil");
         } else {
-            /* iTunes meta data */
-            mov_write_meta_tag(pb, mov, s);
-
             if(mov->mode == MODE_MOV){ // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
                 mov_write_string_tag(pb, "\251nam", s->title         , 0);
                 mov_write_string_tag(pb, "\251aut", s->author        , 0);
@@ -1274,6 +1271,9 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                 mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
                 mov_write_string_tag(pb, "\251des", s->comment       , 0);
                 mov_write_string_tag(pb, "\251gen", s->genre         , 0);
+            } else {
+            /* iTunes meta data */
+            mov_write_meta_tag(pb, mov, s);
             }
         }
         return updateSize(pb, pos);
