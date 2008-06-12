@@ -244,5 +244,5 @@ AVCodec pcx_decoder = {
     pcx_decode_frame,
     0,
     NULL,
-    .long_name = "PC Paintbrush PCX image",
+    .long_name = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

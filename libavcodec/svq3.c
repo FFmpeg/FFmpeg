@@ -983,5 +983,5 @@ AVCodec svq3_decoder = {
     decode_end,
     svq3_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .long_name = "Sorenson Vector Quantizer 3",
+    .long_name = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3"),
 };

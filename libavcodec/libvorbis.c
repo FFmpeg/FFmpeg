@@ -217,5 +217,5 @@ AVCodec libvorbis_encoder = {
     oggvorbis_encode_frame,
     oggvorbis_encode_close,
     .capabilities= CODEC_CAP_DELAY,
-    .long_name= "libvorbis Vorbis",
+    .long_name= NULL_IF_CONFIG_SMALL("libvorbis Vorbis"),
 } ;

@@ -370,5 +370,5 @@ AVCodec libdirac_encoder = {
     libdirac_encode_close,
    .capabilities= CODEC_CAP_DELAY,
    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, -1},
-   .long_name= "libdirac Dirac 2.2",
+   .long_name= NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
 } ;

@@ -1236,7 +1236,7 @@ AVCodec dvvideo_encoder = {
     dvvideo_init,
     dvvideo_encode_frame,
     .pix_fmts = (enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name = "DV (Digital Video)",
+    .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
 #endif // CONFIG_DVVIDEO_ENCODER
 
@@ -1252,6 +1252,6 @@ AVCodec dvvideo_decoder = {
     dvvideo_decode_frame,
     CODEC_CAP_DR1,
     NULL,
-    .long_name = "DV (Digital Video)",
+    .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
 #endif

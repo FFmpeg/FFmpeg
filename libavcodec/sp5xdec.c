@@ -199,7 +199,7 @@ AVCodec sp5x_decoder = {
     sp5x_decode_frame,
     CODEC_CAP_DR1,
     NULL,
-    .long_name = "Sunplus JPEG (SP5X)"
+    .long_name = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
 };
 
 AVCodec amv_decoder = {
@@ -211,5 +211,5 @@ AVCodec amv_decoder = {
     NULL,
     ff_mjpeg_decode_end,
     sp5x_decode_frame,
-    .long_name = "AMV Video",
+    .long_name = NULL_IF_CONFIG_SMALL("AMV Video"),
 };

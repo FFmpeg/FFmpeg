@@ -135,5 +135,5 @@ AVCodec xl_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Miro VideoXL",
+    .long_name = NULL_IF_CONFIG_SMALL("Miro VideoXL"),
 };

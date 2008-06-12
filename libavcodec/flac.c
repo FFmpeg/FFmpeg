@@ -774,5 +774,5 @@ AVCodec flac_decoder = {
     flac_decode_close,
     flac_decode_frame,
     .flush= flac_flush,
-    .long_name= "FLAC (Free Lossless Audio Codec)"
+    .long_name= NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

@@ -4661,7 +4661,7 @@ AVCodec snow_decoder = {
     decode_frame,
     0 /*CODEC_CAP_DR1*/ /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL,
-    .long_name = "Snow",
+    .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
 
 #ifdef CONFIG_SNOW_ENCODER
@@ -4673,7 +4673,7 @@ AVCodec snow_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .long_name = "Snow",
+    .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
 #endif
 

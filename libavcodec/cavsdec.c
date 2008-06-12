@@ -699,5 +699,5 @@ AVCodec cavs_decoder = {
     cavs_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= cavs_flush,
-    .long_name= "Chinese AVS video (AVS1-P2, JiZhun profile)",
+    .long_name= NULL_IF_CONFIG_SMALL("Chinese AVS video (AVS1-P2, JiZhun profile)"),
 };

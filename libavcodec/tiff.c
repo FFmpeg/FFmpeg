@@ -496,5 +496,5 @@ AVCodec tiff_decoder = {
     decode_frame,
     0,
     NULL,
-    .long_name = "TIFF image",
+    .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
 };

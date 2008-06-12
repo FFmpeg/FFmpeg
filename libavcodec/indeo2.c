@@ -219,5 +219,5 @@ AVCodec indeo2_decoder = {
     NULL,
     ir2_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Intel Indeo 2",
+    .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 2"),
 };

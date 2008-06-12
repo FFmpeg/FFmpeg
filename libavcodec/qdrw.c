@@ -151,5 +151,5 @@ AVCodec qdraw_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Apple QuickDraw",
+    .long_name = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
 };

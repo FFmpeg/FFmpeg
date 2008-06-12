@@ -862,7 +862,7 @@ AVCodec wmav1_decoder =
     NULL,
     ff_wma_end,
     wma_decode_superframe,
-    .long_name = "Windows Media Audio 1",
+    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
 
 AVCodec wmav2_decoder =
@@ -875,5 +875,5 @@ AVCodec wmav2_decoder =
     NULL,
     ff_wma_end,
     wma_decode_superframe,
-    .long_name = "Windows Media Audio 2",
+    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };

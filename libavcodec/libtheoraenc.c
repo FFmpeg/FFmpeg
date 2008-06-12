@@ -277,5 +277,5 @@ AVCodec libtheora_encoder =
     .close = encode_close,
     .encode = encode_frame,
     .pix_fmts = supported_pixel_formats,
-    .long_name = "libtheora Theora",
+    .long_name = NULL_IF_CONFIG_SMALL("libtheora Theora"),
 };

@@ -267,6 +267,6 @@ AVCodec mdec_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name="Sony PlayStation MDEC (Motion DECoder)",
+    .long_name= NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
 };
 

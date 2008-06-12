@@ -178,5 +178,5 @@ AVCodec bfi_decoder = {
     .init = bfi_decode_init,
     .close = bfi_decode_close,
     .decode = bfi_decode_frame,
-    .long_name = "Brute Force & Ignorance",
+    .long_name = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
 };

@@ -2445,7 +2445,7 @@ AVCodec mpeg1video_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name= "MPEG-1 video",
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
 AVCodec mpeg2video_decoder = {
@@ -2459,7 +2459,7 @@ AVCodec mpeg2video_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name= "MPEG-2 video",
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
 };
 
 //legacy decoder
@@ -2474,7 +2474,7 @@ AVCodec mpegvideo_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name= "MPEG-1 video",
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
 #ifdef HAVE_XVMC
@@ -2508,7 +2508,7 @@ AVCodec mpeg_xvmc_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED| CODEC_CAP_HWACCEL | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name = "MPEG-1 video XvMC (X-Video Motion Compensation)",
+    .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video XvMC (X-Video Motion Compensation)"),
 };
 
 #endif

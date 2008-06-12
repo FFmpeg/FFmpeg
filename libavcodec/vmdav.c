@@ -561,7 +561,7 @@ AVCodec vmdvideo_decoder = {
     vmdvideo_decode_end,
     vmdvideo_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Sierra VMD video",
+    .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
 };
 
 AVCodec vmdaudio_decoder = {
@@ -573,5 +573,5 @@ AVCodec vmdaudio_decoder = {
     NULL,
     NULL,
     vmdaudio_decode_frame,
-    .long_name = "Sierra VMD audio",
+    .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
 };

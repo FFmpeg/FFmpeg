@@ -222,5 +222,5 @@ AVCodec liba52_decoder = {
     NULL,
     a52_decode_end,
     a52_decode_frame,
-    .long_name = "liba52 ATSC A/52 / AC-3",
+    .long_name = NULL_IF_CONFIG_SMALL("liba52 ATSC A/52 / AC-3"),
 };

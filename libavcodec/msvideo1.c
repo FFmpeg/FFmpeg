@@ -339,5 +339,5 @@ AVCodec msvideo1_decoder = {
     msvideo1_decode_end,
     msvideo1_decode_frame,
     CODEC_CAP_DR1,
-    .long_name= "Microsoft Video 1",
+    .long_name= NULL_IF_CONFIG_SMALL("Microsoft Video 1"),
 };

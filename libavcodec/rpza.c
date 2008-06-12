@@ -283,5 +283,5 @@ AVCodec rpza_decoder = {
     rpza_decode_end,
     rpza_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "QuickTime video (RPZA)",
+    .long_name = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
 };

@@ -1610,7 +1610,7 @@ AVCodec name ## _encoder = {                    \
     adpcm_encode_frame,                         \
     adpcm_encode_close,                         \
     NULL,                                       \
-    .long_name = long_name_,                    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
 #define ADPCM_ENCODER(id,name,long_name_)
@@ -1627,7 +1627,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     adpcm_decode_frame,                         \
-    .long_name = long_name_,                    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
 #define ADPCM_DECODER(id,name,long_name_)

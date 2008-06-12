@@ -227,5 +227,5 @@ AVCodec tiertexseqvideo_decoder = {
     seqvideo_decode_end,
     seqvideo_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Tiertex Limited SEQ video",
+    .long_name = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ video"),
 };

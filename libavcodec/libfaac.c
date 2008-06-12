@@ -151,5 +151,5 @@ AVCodec libfaac_encoder = {
     Faac_encode_init,
     Faac_encode_frame,
     Faac_encode_close,
-    .long_name = "libfaac AAC (Advanced Audio Codec)",
+    .long_name = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Codec)"),
 };

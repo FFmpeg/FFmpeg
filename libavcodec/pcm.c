@@ -530,7 +530,7 @@ AVCodec name ## _encoder = {                    \
     pcm_encode_frame,                           \
     pcm_encode_close,                           \
     NULL,                                       \
-    .long_name = long_name_,                    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
 #define PCM_ENCODER(id,name,long_name_)
@@ -547,7 +547,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     pcm_decode_frame,                           \
-    .long_name = long_name_,                    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
 #define PCM_DECODER(id,name,long_name_)

@@ -341,6 +341,6 @@ AVCodec tscc_decoder = {
         decode_end,
         decode_frame,
         CODEC_CAP_DR1,
-        .long_name = "TechSmith Screen Capture Codec",
+        .long_name = NULL_IF_CONFIG_SMALL("TechSmith Screen Capture Codec"),
 };
 

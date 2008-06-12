@@ -484,5 +484,5 @@ AVCodec smc_decoder = {
     smc_decode_end,
     smc_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "QuickTime Graphics (SMC)",
+    .long_name = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
 };

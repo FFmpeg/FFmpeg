@@ -396,5 +396,5 @@ AVCodec ra_144_decoder =
     NULL,
     NULL,
     ra144_decode_frame,
-    .long_name = "RealAudio 1.0 (14.4K)",
+    .long_name = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
 };

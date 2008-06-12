@@ -202,5 +202,5 @@ AVCodec mmvideo_decoder = {
     mm_decode_end,
     mm_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "American Laser Games MM Video",
+    .long_name = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
 };

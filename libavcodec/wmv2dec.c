@@ -492,5 +492,5 @@ AVCodec wmv2_decoder = {
     wmv2_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name = "Windows Media Video 8",
+    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
 };

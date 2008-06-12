@@ -445,5 +445,5 @@ AVCodec png_encoder = {
     encode_frame,
     NULL, //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
-    .long_name= "PNG image",
+    .long_name= NULL_IF_CONFIG_SMALL("PNG image"),
 };

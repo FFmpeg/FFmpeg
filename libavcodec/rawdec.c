@@ -162,5 +162,5 @@ AVCodec rawvideo_decoder = {
     NULL,
     raw_close_decoder,
     raw_decode,
-    .long_name = "raw video",
+    .long_name = NULL_IF_CONFIG_SMALL("raw video"),
 };

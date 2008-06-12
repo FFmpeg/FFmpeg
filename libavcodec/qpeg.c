@@ -316,5 +316,5 @@ AVCodec qpeg_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Q-team QPEG",
+    .long_name = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
 };

@@ -206,6 +206,6 @@ AVCodec nellymoser_decoder = {
     NULL,
     decode_end,
     decode_tag,
-    .long_name = "Nellymoser Asao",
+    .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
 };
 

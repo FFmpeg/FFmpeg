@@ -1264,5 +1264,5 @@ AVCodec dca_decoder = {
     .priv_data_size = sizeof(DCAContext),
     .init = dca_decode_init,
     .decode = dca_decode_frame,
-    .long_name = "DCA (DTS Coherent Acoustics)",
+    .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
 };

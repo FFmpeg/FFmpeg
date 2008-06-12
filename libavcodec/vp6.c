@@ -638,7 +638,7 @@ AVCodec vp6_decoder = {
     vp56_free,
     vp56_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "On2 VP6",
+    .long_name = NULL_IF_CONFIG_SMALL("On2 VP6"),
 };
 
 /* flash version, not flipped upside-down */
@@ -652,7 +652,7 @@ AVCodec vp6f_decoder = {
     vp56_free,
     vp56_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "On2 VP6 (Flash version)"
+    .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version)"),
 };
 
 /* flash version, not flipped upside-down, with alpha channel */
@@ -666,5 +666,5 @@ AVCodec vp6a_decoder = {
     vp56_free,
     vp56_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "On2 VP6 (Flash version, with alpha channel)",
+    .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
 };

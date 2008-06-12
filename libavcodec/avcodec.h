@@ -2245,7 +2245,11 @@ typedef struct AVCodec {
     void (*flush)(AVCodecContext *);
     const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
     const enum PixelFormat *pix_fmts;       ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-    const char *long_name;                  ///< descriptive name for the codec, meant to be more human readable than \p name
+    /**
+     * Descriptive name for the codec, meant to be more human readable than \p name.
+     * You \e should use the NULL_IF_CONFIG_SMALL() macro to define it.
+     */
+    const char *long_name;
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
 } AVCodec;
 

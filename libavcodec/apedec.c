@@ -917,5 +917,5 @@ AVCodec ape_decoder = {
     NULL,
     ape_decode_close,
     ape_decode_frame,
-    .long_name = "Monkey's Audio",
+    .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
 };

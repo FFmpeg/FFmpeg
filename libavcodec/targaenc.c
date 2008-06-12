@@ -156,5 +156,5 @@ AVCodec targa_encoder = {
     .init = targa_encode_init,
     .encode = targa_encode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB555, PIX_FMT_GRAY8, PIX_FMT_NONE},
-    .long_name= "Truevision Targa image",
+    .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

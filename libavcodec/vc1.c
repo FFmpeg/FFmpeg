@@ -4137,7 +4137,7 @@ AVCodec vc1_decoder = {
     vc1_decode_frame,
     CODEC_CAP_DELAY,
     NULL,
-    .long_name = "SMPTE VC-1",
+    .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
 };
 
 AVCodec wmv3_decoder = {
@@ -4151,5 +4151,5 @@ AVCodec wmv3_decoder = {
     vc1_decode_frame,
     CODEC_CAP_DELAY,
     NULL,
-    .long_name = "Windows Media Video 9",
+    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
 };

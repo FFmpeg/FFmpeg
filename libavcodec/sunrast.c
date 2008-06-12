@@ -192,5 +192,5 @@ AVCodec sunrast_decoder = {
     sunrast_decode_frame,
     0,
     NULL,
-    .long_name = "Sun Rasterfile image",
+    .long_name = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
 };

@@ -1084,5 +1084,5 @@ AVCodec vorbis_encoder = {
     vorbis_encode_frame,
     vorbis_encode_close,
     .capabilities= CODEC_CAP_DELAY,
-    .long_name = "Vorbis",
+    .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
 };

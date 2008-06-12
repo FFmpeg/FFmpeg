@@ -304,7 +304,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     dpcm_decode_frame,                          \
-    .long_name = long_name_,                    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 
 DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "Interplay DPCM");

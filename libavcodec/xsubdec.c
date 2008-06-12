@@ -133,5 +133,5 @@ AVCodec xsub_decoder = {
     NULL,
     NULL,
     decode_frame,
-    .long_name = "XSUB",
+    .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
 };

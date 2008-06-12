@@ -380,6 +380,6 @@ AVCodec escape124_decoder = {
     escape124_decode_close,
     escape124_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Escape 124",
+    .long_name = NULL_IF_CONFIG_SMALL("Escape 124"),
 };
 

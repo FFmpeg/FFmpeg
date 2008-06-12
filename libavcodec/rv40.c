@@ -276,5 +276,5 @@ AVCodec rv40_decoder = {
     ff_rv34_decode_end,
     ff_rv34_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .long_name = "RealVideo 4.0",
+    .long_name = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
 };

@@ -887,5 +887,5 @@ AVCodec truemotion2_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Duck TrueMotion 2.0",
+    .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0"),
 };

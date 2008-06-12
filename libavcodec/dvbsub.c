@@ -408,5 +408,5 @@ AVCodec dvbsub_encoder = {
     sizeof(DVBSubtitleContext),
     NULL,
     dvbsub_encode,
-    .long_name = "DVB subtitles",
+    .long_name = NULL_IF_CONFIG_SMALL("DVB subtitles"),
 };

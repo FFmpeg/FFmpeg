@@ -330,6 +330,6 @@ AVCodec h261_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= "H.261",
+    .long_name= NULL_IF_CONFIG_SMALL("H.261"),
 };
 

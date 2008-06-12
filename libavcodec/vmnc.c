@@ -518,6 +518,6 @@ AVCodec vmnc_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    .long_name = "VMware Screen Codec / VMware Video",
+    .long_name = NULL_IF_CONFIG_SMALL("VMware Screen Codec / VMware Video"),
 };
 

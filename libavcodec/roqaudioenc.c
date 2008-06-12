@@ -174,5 +174,5 @@ AVCodec roq_dpcm_encoder = {
     roq_dpcm_encode_frame,
     roq_dpcm_encode_close,
     NULL,
-    .long_name = "id RoQ DPCM",
+    .long_name = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
 };

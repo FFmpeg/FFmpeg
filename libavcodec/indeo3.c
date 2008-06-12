@@ -1135,5 +1135,5 @@ AVCodec indeo3_decoder = {
     indeo3_decode_frame,
     0,
     NULL,
-    .long_name = "Intel Indeo 3",
+    .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
 };

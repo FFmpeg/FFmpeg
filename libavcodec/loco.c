@@ -282,5 +282,5 @@ AVCodec loco_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "LOCO",
+    .long_name = NULL_IF_CONFIG_SMALL("LOCO"),
 };

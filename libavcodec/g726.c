@@ -413,7 +413,7 @@ AVCodec adpcm_g726_encoder = {
     g726_encode_frame,
     g726_close,
     NULL,
-    .long_name = "G.726 ADPCM",
+    .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif //CONFIG_ENCODERS
 
@@ -426,5 +426,5 @@ AVCodec adpcm_g726_decoder = {
     NULL,
     g726_close,
     g726_decode_frame,
-    .long_name = "G.726 ADPCM",
+    .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };

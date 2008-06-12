@@ -250,5 +250,5 @@ AVCodec targa_decoder = {
     decode_frame,
     0,
     NULL,
-    .long_name = "Truevision Targa image",
+    .long_name = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

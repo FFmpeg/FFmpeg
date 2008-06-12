@@ -1430,5 +1430,5 @@ AVCodec dvbsub_decoder = {
     NULL,
     dvbsub_close_decoder,
     dvbsub_decode,
-    .long_name = "DVB subtitles",
+    .long_name = NULL_IF_CONFIG_SMALL("DVB subtitles"),
 };

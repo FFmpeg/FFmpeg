@@ -258,5 +258,5 @@ AVCodec bmp_decoder = {
     NULL,
     bmp_decode_end,
     bmp_decode_frame,
-    .long_name = "BMP image",
+    .long_name = NULL_IF_CONFIG_SMALL("BMP image"),
 };

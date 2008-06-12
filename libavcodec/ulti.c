@@ -411,6 +411,6 @@ AVCodec ulti_decoder = {
     ulti_decode_frame,
     CODEC_CAP_DR1,
     NULL,
-    .long_name = "IBM UltiMotion",
+    .long_name = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
 };
 

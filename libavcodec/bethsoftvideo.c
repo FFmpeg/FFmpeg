@@ -136,5 +136,5 @@ AVCodec bethsoftvid_decoder = {
     .init = bethsoftvid_decode_init,
     .close = bethsoftvid_decode_end,
     .decode = bethsoftvid_decode_frame,
-    .long_name = "Bethesda VID video",
+    .long_name = NULL_IF_CONFIG_SMALL("Bethesda VID video"),
 };

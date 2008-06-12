@@ -325,7 +325,7 @@ AVCodec name ## _decoder = {    \
     NULL,                       \
     faac_decode_end,            \
     faac_decode_frame,          \
-    .long_name = long_name_,    \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 }
 
 // FIXME - raw AAC files - maybe just one entry will be enough

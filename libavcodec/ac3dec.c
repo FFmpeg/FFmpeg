@@ -1198,5 +1198,5 @@ AVCodec ac3_decoder = {
     .init = ac3_decode_init,
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
-    .long_name = "ATSC A/52 / AC-3",
+    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52 / AC-3"),
 };

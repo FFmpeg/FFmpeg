@@ -463,5 +463,5 @@ AVCodec cinepak_decoder = {
     cinepak_decode_end,
     cinepak_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Cinepak",
+    .long_name = NULL_IF_CONFIG_SMALL("Cinepak"),
 };

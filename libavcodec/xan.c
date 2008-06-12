@@ -471,7 +471,7 @@ AVCodec xan_wc3_decoder = {
     xan_decode_end,
     xan_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Wing Commander III / Xan",
+    .long_name = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
 };
 
 /*

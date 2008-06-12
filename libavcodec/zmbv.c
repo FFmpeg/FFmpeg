@@ -662,6 +662,6 @@ AVCodec zmbv_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    .long_name = "Zip Motion Blocks Video",
+    .long_name = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
 };
 

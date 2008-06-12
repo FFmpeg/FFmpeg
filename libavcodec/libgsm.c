@@ -117,7 +117,7 @@ AVCodec libgsm_encoder = {
     libgsm_init,
     libgsm_encode_frame,
     libgsm_close,
-    .long_name = "libgsm GSM",
+    .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM"),
 };
 
 AVCodec libgsm_ms_encoder = {
@@ -128,7 +128,7 @@ AVCodec libgsm_ms_encoder = {
     libgsm_init,
     libgsm_encode_frame,
     libgsm_close,
-    .long_name = "libgsm GSM Microsoft variant",
+    .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
 };
 
 static int libgsm_decode_frame(AVCodecContext *avctx,
@@ -158,7 +158,7 @@ AVCodec libgsm_decoder = {
     NULL,
     libgsm_close,
     libgsm_decode_frame,
-    .long_name = "libgsm GSM",
+    .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM"),
 };
 
 AVCodec libgsm_ms_decoder = {
@@ -170,5 +170,5 @@ AVCodec libgsm_ms_decoder = {
     NULL,
     libgsm_close,
     libgsm_decode_frame,
-    .long_name = "libgsm GSM Microsoft variant",
+    .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
 };

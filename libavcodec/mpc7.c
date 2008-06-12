@@ -273,5 +273,5 @@ AVCodec mpc7_decoder = {
     NULL,
     mpc7_decode_frame,
     .flush = mpc7_decode_flush,
-    .long_name = "Musepack SV7",
+    .long_name = NULL_IF_CONFIG_SMALL("Musepack SV7"),
 };

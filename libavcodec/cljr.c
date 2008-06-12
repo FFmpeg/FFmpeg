@@ -140,7 +140,7 @@ AVCodec cljr_decoder = {
     NULL,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = "Cirrus Logic AccuPak",
+    .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
 #if 0
 #ifdef CONFIG_ENCODERS
@@ -153,7 +153,7 @@ AVCodec cljr_encoder = {
     encode_init,
     encode_frame,
     //encode_end,
-    .long_name = "Cirrus Logic AccuPak",
+    .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
 
 #endif //CONFIG_ENCODERS
