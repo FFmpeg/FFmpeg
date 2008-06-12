@@ -1630,6 +1630,8 @@ static int av_encode(AVFormatContext **output_files,
                         }
                     }
                     if (!found) {
+                        int i= ost->file_index;
+                        dump_format(output_files[i], i, output_files[i]->filename, 1);
                         fprintf(stderr, "Could not find input stream matching output stream #%d.%d\n",
                                 ost->file_index, ost->index);
                         av_exit(1);
