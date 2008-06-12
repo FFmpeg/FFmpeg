@@ -2389,7 +2389,7 @@ static void opt_frame_pix_fmt(const char *arg)
     frame_pix_fmt = avcodec_get_pix_fmt(arg);
 }
 
-static void opt_sync(const char *arg)
+static int opt_sync(const char *opt, const char *arg)
 {
     if (!strcmp(arg, "audio"))
         av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -2398,9 +2398,10 @@ static void opt_sync(const char *arg)
     else if (!strcmp(arg, "ext"))
         av_sync_type = AV_SYNC_EXTERNAL_CLOCK;
     else {
-        show_help();
+        fprintf(stderr, "Unknown value for %s: %s\n", opt, arg);
         exit(1);
     }
+    return 0;
 }
 
 static int opt_seek(const char *opt, const char *arg)
@@ -2463,7 +2464,7 @@ static const OptionDef options[] = {
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&idct}, "set idct algo",  "algo" },
     { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_resilience}, "set error detection threshold (0-4)",  "threshold" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
-    { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
+    { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { NULL, },
 };
