@@ -443,6 +443,12 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         st->codec = avcodec_alloc_context();
         memcpy(st->codec, ic->streams[i]->codec, sizeof(AVCodecContext));
         s->streams[i] = st;
+
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO && audio_stream_copy)
+            st->stream_copy = 1;
+        else if (st->codec->codec_type == CODEC_TYPE_VIDEO && video_stream_copy)
+            st->stream_copy = 1;
+
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
     }
