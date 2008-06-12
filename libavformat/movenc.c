@@ -526,7 +526,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
             av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
                    "Quicktime/Ipod might not play the file\n");
-    } else if (track->mode == MODE_3GP || track->mode == MODE_3G2) {
+    } else if (track->mode & MODE_3GP) {
         tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
     } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
                         (tag == MKTAG('d','v','c','p') ||
@@ -1255,7 +1255,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
         put_be32(pb, 0); /* size */
         put_tag(pb, "udta");
 
-        if (mov->mode == MODE_3GP || mov->mode == MODE_3G2) {
+        if (mov->mode & MODE_3GP) {
             mov_write_3gp_udta_tag(pb, s, "titl", s->title);
             mov_write_3gp_udta_tag(pb, s, "auth", s->author);
             mov_write_3gp_udta_tag(pb, s, "gnre", s->genre);
@@ -1384,7 +1384,7 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if (mov->mode == MODE_3GP)
         put_tag(pb, "3gp4");
-    else if (mov->mode == MODE_3G2)
+    else if (mov->mode & MODE_3G2)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
@@ -1405,7 +1405,7 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if (mov->mode == MODE_3GP)
         put_tag(pb, "3gp4");
-    else if (mov->mode == MODE_3G2)
+    else if (mov->mode & MODE_3G2)
         put_tag(pb, "3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
@@ -1494,7 +1494,7 @@ static int mov_write_header(AVFormatContext *s)
 
     if (s->oformat != NULL) {
         if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3G2;
+        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
         else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
