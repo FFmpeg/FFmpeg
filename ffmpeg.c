@@ -3203,8 +3203,9 @@ static void opt_output_file(const char *filename)
         av_strstart(filename, "http:", NULL)) {
         /* special case for files sent to ffserver: we get the stream
            parameters from ffserver */
-        if (read_ffserver_streams(oc, filename) < 0) {
-            fprintf(stderr, "Could not read stream parameters from '%s'\n", filename);
+        int err = read_ffserver_streams(oc, filename);
+        if (err < 0) {
+            print_error(filename, err);
             av_exit(1);
         }
     } else {
