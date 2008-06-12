@@ -2507,13 +2507,14 @@ static void opt_top_field_first(const char *arg)
     top_field_first= atoi(arg);
 }
 
-static void opt_thread_count(const char *arg)
+static int opt_thread_count(const char *opt, const char *arg)
 {
-    thread_count= atoi(arg);
+    thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
 #if !defined(HAVE_THREADS)
     if (verbose >= 0)
         fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
+    return 0;
 }
 
 static int opt_audio_rate(const char *opt, const char *arg)
@@ -3683,7 +3684,7 @@ static const OptionDef options[] = {
     { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "number of times to loop output in formats that support looping (0 loops forever)", "" },
     { "v", HAS_ARG | OPT_FUNC2, {(void*)opt_verbose}, "set the logging verbosity level", "number" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
-    { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
+    { "threads", OPT_FUNC2 | HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
