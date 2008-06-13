@@ -58,8 +58,8 @@ e9e884a7c6b77d1aeeb4cb56ac150f92 *./tests/data/a-h263p.avi
 2389564 ./tests/data/a-h263p.avi
 0bb16a352798c997cb36e167f4fa8f3c *./tests/data/h263p.vsynth.out.yuv
 stddev:  2.07 PSNR:41.77 bytes:7602176
-520a3f041c5edf57183e7c5a8b902cc4 *./tests/data/a-odivx.mp4
-550783 ./tests/data/a-odivx.mp4
+df90a4c50f47577d8fc83a0184499266 *./tests/data/a-odivx.mp4
+550787 ./tests/data/a-odivx.mp4
 a1c691f3be526ecbf3be3152d5bab88c *./tests/data/mpeg4.vsynth.out.yuv
 stddev:  7.99 PSNR:30.06 bytes:7602176
 6c58e5707afe056b072d2ce21b3b8e4f *./tests/data/a-huffyuv.avi

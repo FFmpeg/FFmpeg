@@ -1406,6 +1406,7 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if(mov->mode != MODE_MOV){
         put_tag(pb, "isom");
+        put_tag(pb, "iso2");
     }
 
     if (mov->mode == MODE_3GP)
