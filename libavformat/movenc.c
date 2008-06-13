@@ -1404,6 +1404,10 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     put_be32(pb, 0x200);
 
+    if(mov->mode != MODE_MOV){
+        put_tag(pb, "isom");
+    }
+
     if (mov->mode == MODE_3GP)
         put_tag(pb, "3gp4");
     else if (mov->mode & MODE_3G2)
@@ -1412,9 +1416,7 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
         put_tag(pb, "mp41");
-    else if (mov->mode == MODE_IPOD)
-        put_tag(pb, "isom");
-    else
+    else if(mov->mode == MODE_MOV)
         put_tag(pb, "qt  ");
     return updateSize(pb, pos);
 }
