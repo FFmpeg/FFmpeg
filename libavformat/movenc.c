@@ -1377,9 +1377,10 @@ static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
+    offset_t pos = url_ftell(pb);
     int i;
 
-    put_be32(pb, 0x14); /* size */
+    put_be32(pb, 0); /* size */
     put_tag(pb, "ftyp");
 
     if (mov->mode == MODE_3GP)
@@ -1415,6 +1416,7 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "isom");
     else
         put_tag(pb, "qt  ");
+    return updateSize(pb, pos);
 }
 
 static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
