@@ -1412,7 +1412,8 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "iso2");
         if(has_h264)
             put_tag(pb, "avc1");
-    }
+    }else
+        put_tag(pb, "qt  ");
 
     if (mov->mode == MODE_3GP)
         put_tag(pb, has_h264 ? "3gp6":"3gp4");
@@ -1422,8 +1423,6 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
         put_tag(pb, "mp41");
-    else if(mov->mode == MODE_MOV)
-        put_tag(pb, "qt  ");
     return updateSize(pb, pos);
 }
 
