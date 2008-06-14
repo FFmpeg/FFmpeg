@@ -1378,11 +1378,13 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     offset_t pos = url_ftell(pb);
-    int has_h264 = 0;
+    int has_h264 = 0, has_video = 0;
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO)
+            has_video = 1;
         if (st->codec->codec_id == CODEC_ID_H264)
             has_h264 = 1;
     }
@@ -1398,15 +1400,9 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
         put_tag(pb, "isom");
-    else if (mov->mode == MODE_IPOD) {
-        for (i = 0; i < s->nb_streams; i++)
-            if (s->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
-                put_tag(pb, "M4V ");
-                break;
-            }
-        if (i == s->nb_streams)
-            put_tag(pb, "M4A ");
-    } else
+    else if (mov->mode == MODE_IPOD)
+        put_tag(pb, has_video ? "M4V ":"M4A ");
+    else
         put_tag(pb, "qt  ");
 
     put_be32(pb, 0x200);
