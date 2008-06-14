@@ -1378,7 +1378,14 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     offset_t pos = url_ftell(pb);
+    int has_h264 = 0;
     int i;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        if (st->codec->codec_id == CODEC_ID_H264)
+            has_h264 = 1;
+    }
 
     put_be32(pb, 0); /* size */
     put_tag(pb, "ftyp");
@@ -1407,6 +1414,8 @@ static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     if(mov->mode != MODE_MOV){
         put_tag(pb, "isom");
         put_tag(pb, "iso2");
+        if(has_h264)
+            put_tag(pb, "avc1");
     }
 
     if (mov->mode == MODE_3GP)
