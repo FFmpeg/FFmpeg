@@ -1374,7 +1374,7 @@ static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 }
 
 /* TODO: This needs to be more general */
-static void mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
+static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     offset_t pos = url_ftell(pb);
