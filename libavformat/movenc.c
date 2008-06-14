@@ -1393,9 +1393,9 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     put_tag(pb, "ftyp");
 
     if (mov->mode == MODE_3GP)
-        put_tag(pb, "3gp4");
+        put_tag(pb, has_h264 ? "3gp6":"3gp4");
     else if (mov->mode & MODE_3G2)
-        put_tag(pb, "3g2a");
+        put_tag(pb, has_h264 ? "3g2b":"3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
@@ -1415,9 +1415,9 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     }
 
     if (mov->mode == MODE_3GP)
-        put_tag(pb, "3gp4");
+        put_tag(pb, has_h264 ? "3gp6":"3gp4");
     else if (mov->mode & MODE_3G2)
-        put_tag(pb, "3g2a");
+        put_tag(pb, has_h264 ? "3g2b":"3g2a");
     else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
