@@ -1379,6 +1379,7 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     offset_t pos = url_ftell(pb);
     int has_h264 = 0, has_video = 0;
+    int minor = 0x200;
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -1392,11 +1393,13 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     put_be32(pb, 0); /* size */
     put_tag(pb, "ftyp");
 
-    if (mov->mode == MODE_3GP)
-        put_tag(pb, has_h264 ? "3gp6":"3gp4");
-    else if (mov->mode & MODE_3G2)
-        put_tag(pb, has_h264 ? "3g2b":"3g2a");
-    else if (mov->mode == MODE_PSP)
+    if (mov->mode == MODE_3GP) {
+        put_tag(pb, has_h264 ? "3gp6"  : "3gp4");
+        minor =     has_h264 ?   0x100 :   0x200;
+    } else if (mov->mode & MODE_3G2) {
+        put_tag(pb, has_h264 ? "3g2b"  : "3g2a");
+        minor =     has_h264 ? 0x20000 : 0x10000;
+    }else if (mov->mode == MODE_PSP)
         put_tag(pb, "MSNV");
     else if (mov->mode == MODE_MP4)
         put_tag(pb, "isom");
@@ -1405,7 +1408,7 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     else
         put_tag(pb, "qt  ");
 
-    put_be32(pb, 0x200);
+    put_be32(pb, minor);
 
     if(mov->mode == MODE_MOV)
         put_tag(pb, "qt  ");
