@@ -23,6 +23,8 @@
 #ifndef FFMPEG_ACELP_VECTORS_H
 #define FFMPEG_ACELP_VECTORS_H
 
+#include <stdint.h>
+
 /*
  * Track|Pulse|        Positions
  * -------------------------------------------------------------------------

@@ -22,6 +22,8 @@
 #ifndef FFMPEG_RA144_H
 #define FFMPEG_RA144_H
 
+#include <stdint.h>
+
 /* 14.4 data tables */
 static const int16_t wavtable1[256][9] = {
     { 541,   956,   768, -1011,  -811,  -717,  -571,  -893,  -576},
