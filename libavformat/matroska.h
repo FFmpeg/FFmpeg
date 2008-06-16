@@ -183,19 +183,6 @@ typedef enum {
 } MatroskaTrackType;
 
 typedef enum {
-  MATROSKA_EYE_MODE_MONO  = 0x0,
-  MATROSKA_EYE_MODE_RIGHT = 0x1,
-  MATROSKA_EYE_MODE_LEFT  = 0x2,
-  MATROSKA_EYE_MODE_BOTH  = 0x3,
-} MatroskaEyeMode;
-
-typedef enum {
-  MATROSKA_ASPECT_RATIO_MODE_FREE  = 0x0,
-  MATROSKA_ASPECT_RATIO_MODE_KEEP  = 0x1,
-  MATROSKA_ASPECT_RATIO_MODE_FIXED = 0x2,
-} MatroskaAspectRatioMode;
-
-typedef enum {
   MATROSKA_TRACK_ENCODING_COMP_ZLIB        = 0,
   MATROSKA_TRACK_ENCODING_COMP_BZLIB       = 1,
   MATROSKA_TRACK_ENCODING_COMP_LZO         = 2,

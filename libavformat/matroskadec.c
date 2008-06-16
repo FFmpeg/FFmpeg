@@ -55,7 +55,6 @@ typedef struct Track {
     char language[4];
 
     char *codec_id;
-    char *codec_name;
 
     unsigned char *codec_priv;
     int codec_priv_size;
@@ -79,9 +78,6 @@ typedef struct MatroskaVideoTrack {
     int display_height;
 
     uint32_t fourcc;
-
-    MatroskaAspectRatioMode ar_mode;
-    MatroskaEyeMode eye_mode;
 
     //..
 } MatroskaVideoTrack;
@@ -1153,46 +1149,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             break;
                         }
 
-                        /* stereo mode (whether the video has two streams,
-                         * where one is for the left eye and the other for
-                         * the right eye, which creates a 3D-like
-                         * effect) */
-                        case MATROSKA_ID_VIDEOSTEREOMODE: {
-                            uint64_t num;
-                            if ((res = ebml_read_uint(matroska, &id,
-                                                      &num)) < 0)
-                                break;
-                            if (num != MATROSKA_EYE_MODE_MONO &&
-                                num != MATROSKA_EYE_MODE_LEFT &&
-                                num != MATROSKA_EYE_MODE_RIGHT &&
-                                num != MATROSKA_EYE_MODE_BOTH) {
-                                av_log(matroska->ctx, AV_LOG_INFO,
-                                       "Ignoring unknown eye mode 0x%x\n",
-                                       (uint32_t) num);
-                                break;
-                            }
-                            videotrack->eye_mode = num;
-                            break;
-                        }
-
-                        /* aspect ratio behaviour */
-                        case MATROSKA_ID_VIDEOASPECTRATIO: {
-                            uint64_t num;
-                            if ((res = ebml_read_uint(matroska, &id,
-                                                      &num)) < 0)
-                                break;
-                            if (num != MATROSKA_ASPECT_RATIO_MODE_FREE &&
-                                num != MATROSKA_ASPECT_RATIO_MODE_KEEP &&
-                                num != MATROSKA_ASPECT_RATIO_MODE_FIXED) {
-                                av_log(matroska->ctx, AV_LOG_INFO,
-                                       "Ignoring unknown aspect ratio 0x%x\n",
-                                       (uint32_t) num);
-                                break;
-                            }
-                            videotrack->ar_mode = num;
-                            break;
-                        }
-
                         /* colorspace (only matters for raw video)
                          * fourcc */
                         case MATROSKA_ID_VIDEOCOLORSPACE: {
@@ -1210,6 +1166,8 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                                    "0x%x - ignoring\n", id);
                             /* pass-through */
 
+                        case MATROSKA_ID_VIDEOSTEREOMODE:
+                        case MATROSKA_ID_VIDEOASPECTRATIO:
                         case EBML_ID_VOID:
                             res = ebml_read_skip(matroska);
                             break;
@@ -1325,15 +1283,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                     break;
                 track->codec_priv = data;
                 track->codec_priv_size = size;
-                break;
-            }
-
-                /* name of the codec */
-            case MATROSKA_ID_CODECNAME: {
-                char *text;
-                if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
-                    break;
-                track->codec_name = text;
                 break;
             }
 
@@ -1569,6 +1518,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
             case EBML_ID_VOID:
             /* we ignore these because they're nothing useful. */
             case MATROSKA_ID_TRACKFLAGFORCED:
+            case MATROSKA_ID_CODECNAME:
             case MATROSKA_ID_CODECDECODEALL:
             case MATROSKA_ID_CODECINFOURL:
             case MATROSKA_ID_CODECDOWNLOADURL:
@@ -3194,7 +3144,6 @@ matroska_read_close (AVFormatContext *s)
     for (n = 0; n < matroska->num_tracks; n++) {
         MatroskaTrack *track = matroska->tracks[n];
         av_free(track->codec_id);
-        av_free(track->codec_name);
         av_free(track->codec_priv);
         av_free(track->name);
 
