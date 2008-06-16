@@ -55,12 +55,12 @@ you run the ffserver ./configure, make sure that you have the
 LAME is important as it allows for streaming audio to Windows Media Player.
 Don't ask why the other audio types do not work.
 
-As a simple test, just run the following two command lines (assuming that you
-have a V4L video capture card):
+As a simple test, just run the following two command lines where INPUTFILE
+is some file which you can decode with ffmpeg:
 
 @example
 ./ffserver -f doc/ffserver.conf &
-./ffmpeg http://localhost:8090/feed1.ffm
+./ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
 @end example
 
 At this point you should be able to go to your Windows machine and fire up
