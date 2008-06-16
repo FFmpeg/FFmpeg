@@ -32,9 +32,9 @@
  * instead of simply using 32bit integer arithmetic.
  */
 typedef struct Float11 {
-    int sign;   /**< 1bit sign */
-    int exp;    /**< 4bit exponent */
-    int mant;   /**< 6bit mantissa */
+    uint8_t sign;   /**< 1bit sign */
+    uint8_t exp;    /**< 4bit exponent */
+    uint8_t mant;   /**< 6bit mantissa */
 } Float11;
 
 static inline Float11* i2f(int i, Float11* f)
