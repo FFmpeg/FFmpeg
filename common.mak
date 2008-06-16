@@ -68,7 +68,7 @@ depend dep: $(DEPS)
 
 CLEANSUFFIXES = *.o *~ *.ho
 LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
-DISTCLEANSUFFIXES = *.d
+DISTCLEANSUFFIXES = *.d *.pc
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o

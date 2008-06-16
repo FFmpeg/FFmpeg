@@ -2192,7 +2192,7 @@ comment=$2
 version=$3
 libs=$4
 requires=$5
-cat <<EOF > $name.pc
+cat <<EOF > $name/$name.pc
 prefix=$prefix
 exec_prefix=\${prefix}
 libdir=$libdir
@@ -2208,7 +2208,7 @@ Libs: -L\${libdir} -l${shortname} $(disabled shared && echo $libs)
 Libs.private: $(enabled shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
-cat <<EOF > $name-uninstalled.pc
+cat <<EOF > $name/$name-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}/$name
@@ -2236,5 +2236,5 @@ if enabled swscale; then
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 else
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
-    apply libswscale.pc sed s/^Libs:.*$/Libs:/
+    apply libswscale/libswscale.pc sed s/^Libs:.*$/Libs:/
 fi

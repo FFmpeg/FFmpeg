@@ -164,7 +164,7 @@ clean::
 	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
 distclean::
-	rm -f version.h config.* *.pc vhook/*.d
+	rm -f version.h config.* vhook/*.d
 
 # regression tests
 
