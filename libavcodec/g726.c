@@ -390,7 +390,7 @@ static int g726_decode_frame(AVCodecContext *avctx,
     }
 
     while (get_bits_count(&gb) + c->code_size <= buf_size*8)
-        *samples++ = g726_decode(&c->c, get_bits(&gb, c->code_size) & mask);
+        *samples++ = g726_decode(&c->c, get_bits(&gb, c->code_size));
 
     c->bits_left = buf_size*8 - get_bits_count(&gb);
     c->bit_buffer = get_bits(&gb, c->bits_left);
