@@ -272,11 +272,11 @@ static av_cold int g726_reset(G726Context* c, int index)
 
     c->tbls = &G726Tables_pool[index];
     for (i=0; i<2; i++) {
-        i2f(0, &c->sr[i]);
+        c->sr[i].mant = 1<<5;
         c->pk[i] = 1;
     }
     for (i=0; i<6; i++) {
-        i2f(0, &c->dq[i]);
+        c->dq[i].mant = 1<<5;
     }
     c->yu = 544;
     c->yl = 34816;
