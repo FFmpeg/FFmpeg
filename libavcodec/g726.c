@@ -334,6 +334,10 @@ static av_cold int g726_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "G726: unsupported audio format\n");
         return -1;
     }
+    if(index>3){
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number of bits %d\n", index+2);
+        return -1;
+    }
     g726_reset(&c->c, index);
     c->code_size = c->c.tbls->bits;
     c->bit_buffer = 0;
