@@ -381,9 +381,6 @@ static int g726_decode_frame(AVCodecContext *avctx,
     uint8_t mask;
     GetBitContext gb;
 
-    if (!buf_size)
-        goto out;
-
     mask = (1<<c->code_size) - 1;
     init_get_bits(&gb, buf, buf_size * 8);
     if (c->bits_left) {
@@ -398,7 +395,6 @@ static int g726_decode_frame(AVCodecContext *avctx,
     c->bits_left = buf_size*8 - get_bits_count(&gb);
     c->bit_buffer = get_bits(&gb, c->bits_left);
 
-out:
     *data_size = (uint8_t*)samples - (uint8_t*)data;
     return buf_size;
 }
