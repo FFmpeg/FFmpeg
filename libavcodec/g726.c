@@ -266,11 +266,11 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
     return av_clip(re_signal << 2, -0xffff, 0xffff);
 }
 
-static av_cold int g726_reset(G726Context* c, int bit_rate)
+static av_cold int g726_reset(G726Context* c, int index)
 {
     int i;
 
-    c->tbls = &G726Tables_pool[bit_rate/8000 - 2];
+    c->tbls = &G726Tables_pool[index];
     for (i=0; i<2; i++) {
         i2f(0, &c->sr[i]);
         c->a[i] = 0;
@@ -322,6 +322,7 @@ typedef struct AVG726Context {
 static av_cold int g726_init(AVCodecContext * avctx)
 {
     AVG726Context* c = (AVG726Context*)avctx->priv_data;
+    unsigned int index= (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
 
     if (avctx->channels != 1 ||
         (avctx->bit_rate != 16000 && avctx->bit_rate != 24000 &&
@@ -333,7 +334,7 @@ static av_cold int g726_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "G726: unsupported audio format\n");
         return -1;
     }
-    g726_reset(&c->c, avctx->bit_rate);
+    g726_reset(&c->c, index);
     c->code_size = c->c.tbls->bits;
     c->bit_buffer = 0;
     c->bits_left = 0;
