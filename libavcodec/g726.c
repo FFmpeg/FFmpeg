@@ -65,7 +65,7 @@ static inline int sgn(int value)
 typedef struct G726Tables {
     int  bits;          /**< bits per sample */
     const int* quant;         /**< quantization table */
-    const int* iquant;        /**< inverse quantization table */
+    const int16_t* iquant;    /**< inverse quantization table */
     const int16_t* W;         /**< special table #1 ;-) */
     const uint8_t* F;         /**< special table #2 */
 } G726Tables;
@@ -93,7 +93,7 @@ typedef struct G726Context {
 
 static const int quant_tbl16[] =                  /**< 16kbit/s 2bits per sample */
            { 260, INT_MAX };
-static const int iquant_tbl16[] =
+static const int16_t iquant_tbl16[] =
            { 116, 365, 365, 116 };
 static const int16_t W_tbl16[] =
            { -22, 439, 439, -22 };
@@ -102,8 +102,8 @@ static const uint8_t F_tbl16[] =
 
 static const int quant_tbl24[] =                  /**< 24kbit/s 3bits per sample */
            {  7, 217, 330, INT_MAX };
-static const int iquant_tbl24[] =
-           { INT_MIN, 135, 273, 373, 373, 273, 135, INT_MIN };
+static const int16_t iquant_tbl24[] =
+           { INT16_MIN, 135, 273, 373, 373, 273, 135, INT16_MIN };
 static const int16_t W_tbl24[] =
            { -4,  30, 137, 582, 582, 137,  30, -4 };
 static const uint8_t F_tbl24[] =
@@ -111,9 +111,9 @@ static const uint8_t F_tbl24[] =
 
 static const int quant_tbl32[] =                  /**< 32kbit/s 4bits per sample */
            { -125,  79, 177, 245, 299, 348, 399, INT_MAX };
-static const int iquant_tbl32[] =
-           { INT_MIN,   4, 135, 213, 273, 323, 373, 425,
-                 425, 373, 323, 273, 213, 135,   4, INT_MIN };
+static const int16_t iquant_tbl32[] =
+         { INT16_MIN,   4, 135, 213, 273, 323, 373, 425,
+                 425, 373, 323, 273, 213, 135,   4, INT16_MIN };
 static const int16_t W_tbl32[] =
            { -12,  18,  41,  64, 112, 198, 355, 1122,
             1122, 355, 198, 112,  64,  41,  18, -12};
@@ -123,11 +123,11 @@ static const uint8_t F_tbl32[] =
 static const int quant_tbl40[] =                  /**< 40kbit/s 5bits per sample */
            { -122, -16,  67, 138, 197, 249, 297, 338,
               377, 412, 444, 474, 501, 527, 552, INT_MAX };
-static const int iquant_tbl40[] =
-           { INT_MIN, -66,  28, 104, 169, 224, 274, 318,
+static const int16_t iquant_tbl40[] =
+         { INT16_MIN, -66,  28, 104, 169, 224, 274, 318,
                  358, 395, 429, 459, 488, 514, 539, 566,
                  566, 539, 514, 488, 459, 429, 395, 358,
-                 318, 274, 224, 169, 104,  28, -66, INT_MIN };
+                 318, 274, 224, 169, 104,  28, -66, INT16_MIN };
 static const int16_t W_tbl40[] =
            {   14,  14,  24,  39,  40,  41,   58,  100,
               141, 179, 219, 280, 358, 440,  529,  696,
