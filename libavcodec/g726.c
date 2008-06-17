@@ -183,7 +183,7 @@ static inline int16_t inverse_quant(G726Context* c, int i)
     return (dql < 0) ? 0 : ((dqt<<7) >> (14-dex));
 }
 
-static int16_t g726_iterate(G726Context* c, int16_t I)
+static int16_t g726_decode(G726Context* c, int16_t I)
 {
     int dq, re_signal, pk0, fa1, i, tr, ylint, ylfrac, thr2, al, dq0;
     Float11 f;
@@ -286,18 +286,13 @@ static av_cold int g726_reset(G726Context* c, int index)
     return 0;
 }
 
-static int16_t g726_decode(G726Context* c, int16_t i)
-{
-    return g726_iterate(c, i);
-}
-
 #ifdef CONFIG_ENCODERS
 static int16_t g726_encode(G726Context* c, int16_t sig)
 {
     uint8_t i;
 
     i = quant(c, sig/4 - c->se) & ((1<<c->tbls->bits) - 1);
-    g726_iterate(c, i);
+    g726_decode(c, i);
     return i;
 }
 #endif
