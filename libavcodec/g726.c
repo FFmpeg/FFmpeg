@@ -180,7 +180,7 @@ static inline int16_t inverse_quant(G726Context* c, int i)
     dql = c->tbls->iquant[i] + (c->y >> 2);
     dex = (dql>>7) & 0xf;        /* 4bit exponent */
     dqt = (1<<7) + (dql & 0x7f); /* log2 -> linear */
-    return (dql < 0) ? 0 : ((dqt<<7) >> (14-dex));
+    return (dql < 0) ? 0 : ((dqt<<dex) >> 7);
 }
 
 static int16_t g726_decode(G726Context* c, int16_t I)
