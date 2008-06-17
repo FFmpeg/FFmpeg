@@ -3401,6 +3401,9 @@ static void show_help(void)
     printf("\n");
     show_help_options(options, "Main options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
+    show_help_options(options, "\nAdvanced options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
+                      OPT_EXPERT);
     show_help_options(options, "\nVideo options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
                       OPT_VIDEO);
@@ -3419,9 +3422,6 @@ static void show_help(void)
     show_help_options(options, "\nAudio/Video grab options:\n",
                       OPT_GRAB,
                       OPT_GRAB);
-    show_help_options(options, "\nAdvanced options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
-                      OPT_EXPERT);
     printf("\n");
     av_opt_show(avctx_opts[0], NULL);
     printf("\n");
