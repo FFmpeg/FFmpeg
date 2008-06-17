@@ -423,7 +423,7 @@ static int audio_read_close(AVFormatContext *s1)
 
 static AVInputFormat audio_beos_demuxer = {
     "audio_beos",
-    "audio grab and output",
+    NULL_IF_CONFIG_SMALL("audio grab and output"),
     sizeof(AudioData),
     NULL,
     audio_read_header,
@@ -435,7 +435,7 @@ static AVInputFormat audio_beos_demuxer = {
 
 AVOutputFormat audio_beos_muxer = {
     "audio_beos",
-    "audio grab and output",
+    NULL_IF_CONFIG_SMALL("audio grab and output"),
     "",
     "",
     sizeof(AudioData),
