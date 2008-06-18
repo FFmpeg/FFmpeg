@@ -198,10 +198,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     ylint = (c->yl >> 15);
     ylfrac = (c->yl >> 10) & 0x1f;
     thr2 = (ylint > 9) ? 0x1f << 10 : (0x20 + ylfrac) << ylint;
-    if (c->td == 1 && abs(dq) > ((thr2+(thr2>>1))>>1))
-        tr = 1;
-    else
-        tr = 0;
+    tr= (c->td == 1 && abs(dq) > ((3*thr2)>>2));
 
     /* Update second order predictor coefficient A2 and A1 */
     pk0 = (c->sez + dq) ? sgn(c->sez + dq) : 0;
