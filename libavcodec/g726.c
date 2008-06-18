@@ -231,8 +231,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     i2f(dq, &c->dq[0]);
     c->dq[0].sign = I >> (c->tbls->bits - 1); /* Isn't it crazy ?!?! */
 
-    /* Update tone detect [I'm not sure 'tr == 0' is really needed] */
-    c->td = (tr == 0 && c->a[1] < -11776);
+    c->td = c->a[1] < -11776;
 
     /* Update Ap */
     c->dms += ((c->tbls->F[I]<<9) - c->dms) >> 5;
