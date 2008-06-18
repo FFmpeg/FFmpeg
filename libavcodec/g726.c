@@ -301,8 +301,6 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 
 typedef struct AVG726Context {
     G726Context c;
-    int bits_left;
-    int bit_buffer;
     int code_size;
 } AVG726Context;
 
@@ -325,8 +323,6 @@ static av_cold int g726_init(AVCodecContext * avctx)
     }
     g726_reset(&c->c, index);
     c->code_size = c->c.tbls->bits;
-    c->bit_buffer = 0;
-    c->bits_left = 0;
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
@@ -367,23 +363,15 @@ static int g726_decode_frame(AVCodecContext *avctx,
 {
     AVG726Context *c = avctx->priv_data;
     short *samples = data;
-    uint8_t code;
-    uint8_t mask;
     GetBitContext gb;
 
-    mask = (1<<c->code_size) - 1;
     init_get_bits(&gb, buf, buf_size * 8);
-    if (c->bits_left) {
-        int s = c->code_size - c->bits_left;
-        code = (c->bit_buffer << s) | get_bits(&gb, s);
-        *samples++ = g726_decode(&c->c, code & mask);
-    }
 
     while (get_bits_count(&gb) + c->code_size <= buf_size*8)
         *samples++ = g726_decode(&c->c, get_bits(&gb, c->code_size));
 
-    c->bits_left = buf_size*8 - get_bits_count(&gb);
-    c->bit_buffer = get_bits(&gb, c->bits_left);
+    if(buf_size*8 != get_bits_count(&gb))
+        av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
 
     *data_size = (uint8_t*)samples - (uint8_t*)data;
     return buf_size;
