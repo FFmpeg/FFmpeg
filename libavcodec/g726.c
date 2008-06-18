@@ -244,7 +244,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
         c->ap += (0x200 - c->ap) >> 4;
 
     /* Update Yu and Yl */
-    c->yu = av_clip(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
+    c->yu = av_clip(c->y + c->tbls->W[I] + ((-c->y)>>5), 544, 5120);
     c->yl += c->yu + ((-c->yl)>>6);
 
     /* Next iteration for Y */
