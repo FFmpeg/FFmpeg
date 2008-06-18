@@ -238,7 +238,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     c->dml += ((c->tbls->F[I]<<11) - c->dml) >> 7;
     if (tr)
         c->ap = 256;
-    else if (c->y > 1535 && !c->td && (abs((c->dms << 2) - c->dml) < (c->dml >> 3)))
+    else if (c->y > 1535 && !c->td && abs((c->dms << 2) - c->dml) < (c->dml >> 3))
         c->ap += (-c->ap) >> 4;
     else
         c->ap += (0x200 - c->ap) >> 4;
