@@ -89,6 +89,7 @@ typedef struct G726Context {
     int se;             /**< estimated signal for the next iteration */
     int sez;            /**< estimated second order prediction */
     int y;              /**< quantizer scaling factor for the next iteration */
+    int code_size;
 } G726Context;
 
 static const int quant_tbl16[] =                  /**< 16kbit/s 2bits per sample */
@@ -299,14 +300,9 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 
 /* Interfacing to the libavcodec */
 
-typedef struct AVG726Context {
-    G726Context c;
-    int code_size;
-} AVG726Context;
-
 static av_cold int g726_init(AVCodecContext * avctx)
 {
-    AVG726Context* c = (AVG726Context*)avctx->priv_data;
+    G726Context* c = avctx->priv_data;
     unsigned int index= (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
 
     if (avctx->bit_rate % avctx->sample_rate && avctx->codec->encode) {
@@ -321,8 +317,8 @@ static av_cold int g726_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of bits %d\n", index+2);
         return -1;
     }
-    g726_reset(&c->c, index);
-    c->code_size = c->c.tbls->bits;
+    g726_reset(c, index);
+    c->code_size = c->tbls->bits;
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
@@ -342,14 +338,14 @@ static av_cold int g726_close(AVCodecContext *avctx)
 static int g726_encode_frame(AVCodecContext *avctx,
                             uint8_t *dst, int buf_size, void *data)
 {
-    AVG726Context *c = avctx->priv_data;
+    G726Context *c = avctx->priv_data;
     short *samples = data;
     PutBitContext pb;
 
     init_put_bits(&pb, dst, 1024*1024);
 
     for (; buf_size; buf_size--)
-        put_bits(&pb, c->code_size, g726_encode(&c->c, *samples++));
+        put_bits(&pb, c->code_size, g726_encode(c, *samples++));
 
     flush_put_bits(&pb);
 
@@ -361,14 +357,14 @@ static int g726_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              const uint8_t *buf, int buf_size)
 {
-    AVG726Context *c = avctx->priv_data;
+    G726Context *c = avctx->priv_data;
     short *samples = data;
     GetBitContext gb;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
     while (get_bits_count(&gb) + c->code_size <= buf_size*8)
-        *samples++ = g726_decode(&c->c, get_bits(&gb, c->code_size));
+        *samples++ = g726_decode(c, get_bits(&gb, c->code_size));
 
     if(buf_size*8 != get_bits_count(&gb))
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
@@ -382,7 +378,7 @@ AVCodec adpcm_g726_encoder = {
     "g726",
     CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
-    sizeof(AVG726Context),
+    sizeof(G726Context),
     g726_init,
     g726_encode_frame,
     g726_close,
@@ -395,7 +391,7 @@ AVCodec adpcm_g726_decoder = {
     "g726",
     CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
-    sizeof(AVG726Context),
+    sizeof(G726Context),
     g726_init,
     NULL,
     g726_close,
