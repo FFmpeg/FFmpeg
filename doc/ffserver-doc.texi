@@ -26,6 +26,24 @@ information.
 
 [Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
 
+@section How does it work?
+
+FFserver receives prerecorded files or FFM streams from some ffmpeg
+instance as input, then streams them over RTP/RTSP/HTTP.
+
+An ffserver instance will listen on some port as specified in the
+configuration file. You can launch one or more instances of ffmpeg and
+send one or more FFM streams to the port where ffserver is expecting
+to receive them. Alternately, you can make ffserver launch such ffmpeg
+instances at startup.
+
+Input streams are called feeds, and each one is specified by a <Feed>
+section in the configuration file.
+
+For each feed you can have different output streams in various
+formats, each one specified by a <Stream> section in the configuration
+file.
+
 @section What can this do?
 
 When properly configured and running, you can capture video and audio in real
