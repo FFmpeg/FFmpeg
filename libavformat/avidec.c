@@ -415,6 +415,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 //FIXME
                 codec_type = CODEC_TYPE_DATA; //CODEC_TYPE_SUB ?  FIXME
                 break;
+            case MKTAG('d', 'a', 't', 's'):
+                codec_type = CODEC_TYPE_DATA;
+                break;
             default:
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
