@@ -184,7 +184,7 @@ static inline int16_t inverse_quant(G726Context* c, int i)
     return (dql < 0) ? 0 : ((dqt<<dex) >> 7);
 }
 
-static int16_t g726_decode(G726Context* c, int16_t I)
+static int16_t g726_decode(G726Context* c, int I)
 {
     int dq, re_signal, pk0, fa1, i, tr, ylint, ylfrac, thr2, al, dq0;
     Float11 f;
