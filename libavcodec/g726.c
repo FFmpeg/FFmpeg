@@ -63,7 +63,6 @@ static inline int sgn(int value)
 }
 
 typedef struct G726Tables {
-    int  bits;          /**< bits per sample */
     const int* quant;         /**< quantization table */
     const int16_t* iquant;    /**< inverse quantization table */
     const int16_t* W;         /**< special table #1 ;-) */
@@ -139,10 +138,10 @@ static const uint8_t F_tbl40[] =
              6, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
 
 static const G726Tables G726Tables_pool[] =
-           {{ 2, quant_tbl16, iquant_tbl16, W_tbl16, F_tbl16 },
-            { 3, quant_tbl24, iquant_tbl24, W_tbl24, F_tbl24 },
-            { 4, quant_tbl32, iquant_tbl32, W_tbl32, F_tbl32 },
-            { 5, quant_tbl40, iquant_tbl40, W_tbl40, F_tbl40 }};
+           {{ quant_tbl16, iquant_tbl16, W_tbl16, F_tbl16 },
+            { quant_tbl24, iquant_tbl24, W_tbl24, F_tbl24 },
+            { quant_tbl32, iquant_tbl32, W_tbl32, F_tbl32 },
+            { quant_tbl40, iquant_tbl40, W_tbl40, F_tbl40 }};
 
 
 /**
@@ -165,7 +164,7 @@ static inline uint8_t quant(G726Context* c, int d)
 
     if (sign)
         i = ~i;
-    if (c->tbls.bits != 2 && i == 0) /* I'm not sure this is a good idea */
+    if (c->code_size != 2 && i == 0) /* I'm not sure this is a good idea */
         i = 0xff;
 
     return i;
@@ -188,7 +187,7 @@ static int16_t g726_decode(G726Context* c, int I)
 {
     int dq, re_signal, pk0, fa1, i, tr, ylint, ylfrac, thr2, al, dq0;
     Float11 f;
-    int I_sig= I >> (c->tbls.bits - 1);
+    int I_sig= I >> (c->code_size - 1);
 
     dq = inverse_quant(c, I);
 
@@ -290,7 +289,7 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 {
     uint8_t i;
 
-    i = quant(c, sig/4 - c->se) & ((1<<c->tbls.bits) - 1);
+    i = quant(c, sig/4 - c->se) & ((1<<c->code_size) - 1);
     g726_decode(c, i);
     return i;
 }
@@ -316,7 +315,7 @@ static av_cold int g726_init(AVCodecContext * avctx)
         return -1;
     }
     g726_reset(c, index);
-    c->code_size = c->tbls.bits;
+    c->code_size = index+2;
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
