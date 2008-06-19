@@ -76,7 +76,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
                         }
                         r1 = r;
                     } else {
-                        if (r - r1 < max_packet_size) {
+                        if (r - r1 < max_packet_size - 4) {
                             len = r1 - buf1 - 4;
                             end_of_slice = 1;
                         }
