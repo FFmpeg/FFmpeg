@@ -71,7 +71,7 @@ typedef struct G726Tables {
 } G726Tables;
 
 typedef struct G726Context {
-    const G726Tables* tbls;   /**< static tables needed for computation */
+    G726Tables tbls;    /**< static tables needed for computation */
 
     Float11 sr[2];      /**< prev. reconstructed samples */
     Float11 dq[6];      /**< prev. difference */
@@ -160,12 +160,12 @@ static inline uint8_t quant(G726Context* c, int d)
     exp = av_log2_16bit(d);
     dln = ((exp<<7) + (((d<<7)>>exp)&0x7f)) - (c->y>>2);
 
-    while (c->tbls->quant[i] < INT_MAX && c->tbls->quant[i] < dln)
+    while (c->tbls.quant[i] < INT_MAX && c->tbls.quant[i] < dln)
         ++i;
 
     if (sign)
         i = ~i;
-    if (c->tbls->bits != 2 && i == 0) /* I'm not sure this is a good idea */
+    if (c->tbls.bits != 2 && i == 0) /* I'm not sure this is a good idea */
         i = 0xff;
 
     return i;
@@ -178,7 +178,7 @@ static inline int16_t inverse_quant(G726Context* c, int i)
 {
     int dql, dex, dqt;
 
-    dql = c->tbls->iquant[i] + (c->y >> 2);
+    dql = c->tbls.iquant[i] + (c->y >> 2);
     dex = (dql>>7) & 0xf;        /* 4bit exponent */
     dqt = (1<<7) + (dql & 0x7f); /* log2 -> linear */
     return (dql < 0) ? 0 : ((dqt<<dex) >> 7);
@@ -188,7 +188,7 @@ static int16_t g726_decode(G726Context* c, int I)
 {
     int dq, re_signal, pk0, fa1, i, tr, ylint, ylfrac, thr2, al, dq0;
     Float11 f;
-    int I_sig= I >> (c->tbls->bits - 1);
+    int I_sig= I >> (c->tbls.bits - 1);
 
     dq = inverse_quant(c, I);
 
@@ -236,8 +236,8 @@ static int16_t g726_decode(G726Context* c, int I)
     c->td = c->a[1] < -11776;
 
     /* Update Ap */
-    c->dms += ((c->tbls->F[I]<<9) - c->dms) >> 5;
-    c->dml += ((c->tbls->F[I]<<11) - c->dml) >> 7;
+    c->dms += ((c->tbls.F[I]<<9) - c->dms) >> 5;
+    c->dml += ((c->tbls.F[I]<<11) - c->dml) >> 7;
     if (tr)
         c->ap = 256;
     else if (c->y > 1535 && !c->td && abs((c->dms << 2) - c->dml) < (c->dml >> 3))
@@ -246,7 +246,7 @@ static int16_t g726_decode(G726Context* c, int I)
         c->ap += (0x200 - c->ap) >> 4;
 
     /* Update Yu and Yl */
-    c->yu = av_clip(c->y + c->tbls->W[I] + ((-c->y)>>5), 544, 5120);
+    c->yu = av_clip(c->y + c->tbls.W[I] + ((-c->y)>>5), 544, 5120);
     c->yl += c->yu + ((-c->yl)>>6);
 
     /* Next iteration for Y */
@@ -269,7 +269,7 @@ static av_cold int g726_reset(G726Context* c, int index)
 {
     int i;
 
-    c->tbls = &G726Tables_pool[index];
+    c->tbls = G726Tables_pool[index];
     for (i=0; i<2; i++) {
         c->sr[i].mant = 1<<5;
         c->pk[i] = 1;
@@ -290,7 +290,7 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 {
     uint8_t i;
 
-    i = quant(c, sig/4 - c->se) & ((1<<c->tbls->bits) - 1);
+    i = quant(c, sig/4 - c->se) & ((1<<c->tbls.bits) - 1);
     g726_decode(c, i);
     return i;
 }
@@ -316,7 +316,7 @@ static av_cold int g726_init(AVCodecContext * avctx)
         return -1;
     }
     g726_reset(c, index);
-    c->code_size = c->tbls->bits;
+    c->code_size = c->tbls.bits;
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
