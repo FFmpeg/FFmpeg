@@ -137,7 +137,7 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
 }
 
 
-static void final(const int16_t *i1, const int16_t *i2,
+static void final(const int16_t *lpc_coefs, const int16_t *adapt_coef,
                   void *out, int *statbuf, int len)
 {
     int x, i;
@@ -145,14 +145,14 @@ static void final(const int16_t *i1, const int16_t *i2,
     int16_t *ptr = work;
 
     memcpy(work, statbuf,20);
-    memcpy(work + 10, i2, len * 2);
+    memcpy(work + 10, adapt_coef, len * 2);
 
     for (i=0; i<len; i++) {
         int sum = 0;
         int new_val;
 
         for(x=0; x<10; x++)
-            sum += i1[9-x] * ptr[x];
+            sum += lpc_coefs[9-x] * ptr[x];
 
         sum >>= 12;
 
