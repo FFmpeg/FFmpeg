@@ -351,7 +351,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     for (i=0; i<10; i++)
         // "<< 1"? Doesn't this make one value out of two of the table useless?
-        lpc_refl[i] = decodetable[i][get_bits(&gb, sizes[i]) << 1];
+        lpc_refl[i] = lpc_refl_cb[i][get_bits(&gb, sizes[i]) << 1];
 
     eval_coefs(lpc_refl, ractx->lpc_coef);
     ractx->lpc_refl_rms = rms(lpc_refl);
