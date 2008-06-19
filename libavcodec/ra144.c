@@ -135,9 +135,8 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
         dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
 }
 
-
 static void lpc_filter(const int16_t *lpc_coefs, const int16_t *adapt_coef,
-                  void *out, int *statbuf, int len)
+                       void *out, int *statbuf, int len)
 {
     int x, i;
     uint16_t work[50];
@@ -331,7 +330,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
                               const uint8_t * buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-    unsigned int refl_rms[4];  // RMS of the reflection coefficients
+    unsigned int refl_rms[4];    // RMS of the reflection coefficients
     uint16_t block_coefs[4][30]; // LPC coefficients of each sub-block
     unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
     int i, c;
@@ -383,7 +382,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     *data_size = 2*160;
     return 20;
 }
-
 
 AVCodec ra_144_decoder =
 {
