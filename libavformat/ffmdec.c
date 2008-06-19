@@ -344,7 +344,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
         if (st) {
-            av_freep(&st->priv_data);
             av_free(st);
         }
     }
@@ -466,18 +465,6 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     return 0;
 }
 
-static int ffm_read_close(AVFormatContext *s)
-{
-    AVStream *st;
-    int i;
-
-    for(i=0;i<s->nb_streams;i++) {
-        st = s->streams[i];
-        av_freep(&st->priv_data);
-    }
-    return 0;
-}
-
 static int ffm_probe(AVProbeData *p)
 {
     if (
@@ -494,6 +481,6 @@ AVInputFormat ffm_demuxer = {
     ffm_probe,
     ffm_read_header,
     ffm_read_packet,
-    ffm_read_close,
+    NULL,
     ffm_seek,
 };
