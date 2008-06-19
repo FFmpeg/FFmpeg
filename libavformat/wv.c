@@ -187,11 +187,6 @@ static int wv_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int wv_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st = s->streams[stream_index];
@@ -231,6 +226,6 @@ AVInputFormat wv_demuxer = {
     wv_probe,
     wv_read_header,
     wv_read_packet,
-    wv_read_close,
+    NULL,
     wv_read_seek,
 };
