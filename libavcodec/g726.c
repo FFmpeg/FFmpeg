@@ -235,8 +235,8 @@ static int16_t g726_decode(G726Context* c, int I)
     c->td = c->a[1] < -11776;
 
     /* Update Ap */
-    c->dms += ((c->tbls.F[I]<<9) - c->dms) >> 5;
-    c->dml += ((c->tbls.F[I]<<11) - c->dml) >> 7;
+    c->dms += (c->tbls.F[I]<<4) + ((- c->dms) >> 5);
+    c->dml += (c->tbls.F[I]<<4) + ((- c->dml) >> 7);
     if (tr)
         c->ap = 256;
     else {
