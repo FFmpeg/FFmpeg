@@ -44,6 +44,28 @@ For each feed you can have different output streams in various
 formats, each one specified by a <Stream> section in the configuration
 file.
 
+@section Status stream
+
+FFserver supports an HTTP interface which exposes the current status
+of the server.
+
+Simply point your browser to the address of the special status stream
+specified in the configuration file.
+
+For example if you have:
+@example
+<Stream status.html>
+Format status
+
+# Only allow local people to get the status
+ACL allow localhost
+ACL allow 192.168.0.0 192.168.255.255
+</Stream>
+@end example
+
+then the server will post a page with the status information when
+the special stream @file{status.html} is requested.
+
 @section What can this do?
 
 When properly configured and running, you can capture video and audio in real
