@@ -238,12 +238,12 @@ static void do_output_subblock(RA144Context *ractx,
     lpc_filter(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
-static void int_to_int16(int16_t *decsp, const int *inp)
+static void int_to_int16(int16_t *out, const int *inp)
 {
     int i;
 
     for (i=0; i<30; i++)
-        *(decsp++) = *(inp++);
+        *(out++) = *(inp++);
 }
 
 /**
@@ -298,7 +298,7 @@ static int eval_refl(const int16_t *coefs, int *refl, RA144Context *ractx)
     return retval;
 }
 
-static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
+static int interp(RA144Context *ractx, int16_t *out, int block_num,
                   int copynew, int energy)
 {
     int work[10];
@@ -309,16 +309,16 @@ static int interp(RA144Context *ractx, int16_t *decsp, int block_num,
     // Interpolate block coefficients from the this frame forth block and
     // last frame forth block
     for (x=0; x<30; x++)
-        decsp[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
+        out[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
-    if (eval_refl(decsp, work, ractx)) {
+    if (eval_refl(out, work, ractx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
         if (copynew) {
-            int_to_int16(decsp, ractx->lpc_coef);
+            int_to_int16(out, ractx->lpc_coef);
             return rescale_rms(ractx->lpc_refl_rms, energy);
         } else {
-            int_to_int16(decsp, ractx->lpc_coef_old);
+            int_to_int16(out, ractx->lpc_coef_old);
             return rescale_rms(ractx->lpc_refl_rms_old, energy);
         }
     } else {
