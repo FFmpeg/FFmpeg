@@ -188,6 +188,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
 {
     int dq, re_signal, pk0, fa1, i, tr, ylint, ylfrac, thr2, al, dq0;
     Float11 f;
+    int I_sig= I >> (c->tbls->bits - 1);
 
     dq = inverse_quant(c, I);
 
@@ -197,7 +198,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     thr2 = (ylint > 9) ? 0x1f << 10 : (0x20 + ylfrac) << ylint;
     tr= (c->td == 1 && dq > ((3*thr2)>>2));
 
-    if (I >> (c->tbls->bits - 1))  /* get the sign */
+    if (I_sig)  /* get the sign */
         dq = -dq;
     re_signal = c->se + dq;
 
@@ -230,7 +231,7 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     for (i=5; i>0; i--)
         c->dq[i] = c->dq[i-1];
     i2f(dq, &c->dq[0]);
-    c->dq[0].sign = I >> (c->tbls->bits - 1); /* Isn't it crazy ?!?! */
+    c->dq[0].sign = I_sig; /* Isn't it crazy ?!?! */
 
     c->td = c->a[1] < -11776;
 
