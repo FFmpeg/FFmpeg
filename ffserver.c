@@ -257,7 +257,7 @@ static void close_connection(HTTPContext *c);
 static int handle_connection(HTTPContext *c);
 static int http_parse_request(HTTPContext *c);
 static int http_send_data(HTTPContext *c);
-static void compute_stats(HTTPContext *c);
+static void compute_status(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
 static int http_start_receive_data(HTTPContext *c);
 static int http_receive_data(HTTPContext *c);
@@ -1522,7 +1522,7 @@ static int http_parse_request(HTTPContext *c)
 #endif
 
     if (c->stream->stream_type == STREAM_TYPE_STATUS)
-        goto send_stats;
+        goto send_status;
 
     /* open input stream */
     if (open_input_stream(c, info) < 0) {
@@ -1571,8 +1571,8 @@ static int http_parse_request(HTTPContext *c)
     c->buffer_end = q;
     c->state = HTTPSTATE_SEND_HEADER;
     return 0;
- send_stats:
-    compute_stats(c);
+ send_status:
+    compute_status(c);
     c->http_error = 200; /* horrible : we use this value to avoid
                             going to the send data state */
     c->state = HTTPSTATE_SEND_HEADER;
@@ -1589,7 +1589,7 @@ static void fmt_bytecount(ByteIOContext *pb, int64_t count)
     url_fprintf(pb, "%"PRId64"%c", count, *s);
 }
 
-static void compute_stats(HTTPContext *c)
+static void compute_status(HTTPContext *c)
 {
     HTTPContext *c1;
     FFStream *stream;
