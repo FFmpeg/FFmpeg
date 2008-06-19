@@ -29,7 +29,6 @@
 #define BUFFERSIZE      146     /* for do_output */
 
 
-/* internal globals */
 typedef struct {
     unsigned int     old_energy;        ///< previous frame energy
 
