@@ -9,10 +9,16 @@ vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
 vpath %.S $(SRC_DIR)
 
+ifeq ($(SRC_DIR),$(SRC_PATH_BARE))
+BUILD_ROOT_REL = .
+else
+BUILD_ROOT_REL = ..
+endif
+
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
-CFLAGS = -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-         -D_ISOC9X_SOURCE -I$(BUILD_ROOT) -I$(SRC_PATH) $(OPTFLAGS)
+CFLAGS := -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
+          -D_ISOC9X_SOURCE -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
@@ -33,6 +39,14 @@ CFLAGS = -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 	$(DEPEND_CMD) > $@
 
 %$(EXESUF): %.c
+
+SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
+ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
+$(BUILD_ROOT_REL)/version.h: $(SVN_ENTRIES)
+endif
+
+$(BUILD_ROOT_REL)/version.h:
+	$(SRC_PATH)/version.sh $(SRC_PATH) $@
 
 install: install-libs install-headers
 
