@@ -224,15 +224,15 @@ static void do_output_subblock(RA144Context *ractx,
         m[0] = 0;
     }
 
-    m[1] = ((ftable1[cb1_idx] >> 4) * gval) >> 8;
-    m[2] = ((ftable2[cb2_idx] >> 4) * gval) >> 8;
+    m[1] = ((cb1_base[cb1_idx] >> 4) * gval) >> 8;
+    m[2] = ((cb2_base[cb2_idx] >> 4) * gval) >> 8;
 
     memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * 2);
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(gain, cba_idx, m, buffer_a, etable1[cb1_idx], etable2[cb2_idx],
+    add_wav(gain, cba_idx, m, buffer_a, cb1_vects[cb1_idx], cb2_vects[cb2_idx],
             block);
 
     lpc_filter(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
