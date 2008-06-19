@@ -373,11 +373,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int yuv4_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 static int yuv4_probe(AVProbeData *pd)
 {
     /* check file header */
@@ -395,7 +390,6 @@ AVInputFormat yuv4mpegpipe_demuxer = {
     yuv4_probe,
     yuv4_read_header,
     yuv4_read_packet,
-    yuv4_read_close,
     .extensions = "y4m"
 };
 #endif
