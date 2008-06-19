@@ -190,15 +190,16 @@ static int16_t g726_decode(G726Context* c, int16_t I)
     Float11 f;
 
     dq = inverse_quant(c, I);
-    if (I >> (c->tbls->bits - 1))  /* get the sign */
-        dq = -dq;
-    re_signal = c->se + dq;
 
     /* Transition detect */
     ylint = (c->yl >> 15);
     ylfrac = (c->yl >> 10) & 0x1f;
     thr2 = (ylint > 9) ? 0x1f << 10 : (0x20 + ylfrac) << ylint;
-    tr= (c->td == 1 && abs(dq) > ((3*thr2)>>2));
+    tr= (c->td == 1 && dq > ((3*thr2)>>2));
+
+    if (I >> (c->tbls->bits - 1))  /* get the sign */
+        dq = -dq;
+    re_signal = c->se + dq;
 
     /* Update second order predictor coefficient A2 and A1 */
     pk0 = (c->sez + dq) ? sgn(c->sez + dq) : 0;
