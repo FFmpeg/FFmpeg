@@ -137,7 +137,7 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
 }
 
 
-static void final(const int16_t *lpc_coefs, const int16_t *adapt_coef,
+static void lpc_filter(const int16_t *lpc_coefs, const int16_t *adapt_coef,
                   void *out, int *statbuf, int len)
 {
     int x, i;
@@ -235,7 +235,7 @@ static void do_output_subblock(RA144Context *ractx,
     add_wav(gain, cba_idx, m, buffer_a, etable1[cb1_idx], etable2[cb2_idx],
             block);
 
-    final(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
+    lpc_filter(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
 }
 
 static void int_to_int16(int16_t *decsp, const int *inp)
