@@ -130,7 +130,7 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
 
     v[0] = 0;
     for (i=!skip_first; i<3; i++)
-        v[i] = (wavtable1[n][i] * m[i]) >> (wavtable2[n][i] + 1);
+        v[i] = (gain_val_tab[n][i] * m[i]) >> (gain_exp_tab[n][i] + 1);
 
     for (i=0; i < BLOCKSIZE; i++)
         dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
