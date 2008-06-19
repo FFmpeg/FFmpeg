@@ -185,13 +185,6 @@ static int flic_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int flic_read_close(AVFormatContext *s)
-{
-//    FlicDemuxContext *flic = s->priv_data;
-
-    return 0;
-}
-
 AVInputFormat flic_demuxer = {
     "flic",
     NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation format"),
@@ -199,5 +192,4 @@ AVInputFormat flic_demuxer = {
     flic_probe,
     flic_read_header,
     flic_read_packet,
-    flic_read_close,
 };

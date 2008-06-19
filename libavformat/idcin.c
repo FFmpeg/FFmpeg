@@ -280,12 +280,6 @@ static int idcin_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int idcin_read_close(AVFormatContext *s)
-{
-
-    return 0;
-}
-
 AVInputFormat idcin_demuxer = {
     "idcin",
     NULL_IF_CONFIG_SMALL("id CIN format"),
@@ -293,5 +287,4 @@ AVInputFormat idcin_demuxer = {
     idcin_probe,
     idcin_read_header,
     idcin_read_packet,
-    idcin_read_close,
 };

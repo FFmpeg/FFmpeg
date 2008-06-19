@@ -87,10 +87,6 @@ next_chunk:
     return ret <= 0 ? AVERROR(EIO) : ret;
 }
 
-static int txd_read_close(AVFormatContext *s) {
-    return 0;
-}
-
 AVInputFormat txd_demuxer =
 {
     "txd",
@@ -99,5 +95,4 @@ AVInputFormat txd_demuxer =
     txd_probe,
     txd_read_header,
     txd_read_packet,
-    txd_read_close,
 };

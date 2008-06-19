@@ -172,11 +172,6 @@ static int au_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int au_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 #ifdef CONFIG_AU_DEMUXER
 AVInputFormat au_demuxer = {
     "au",
@@ -185,7 +180,7 @@ AVInputFormat au_demuxer = {
     au_probe,
     au_read_header,
     au_read_packet,
-    au_read_close,
+    NULL,
     pcm_read_seek,
     .codec_tag= (const AVCodecTag*[]){codec_au_tags, 0},
 };

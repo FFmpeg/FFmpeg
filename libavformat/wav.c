@@ -235,11 +235,6 @@ static int wav_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int wav_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 static int wav_read_seek(AVFormatContext *s,
                          int stream_index, int64_t timestamp, int flags)
 {
@@ -267,7 +262,7 @@ AVInputFormat wav_demuxer = {
     wav_probe,
     wav_read_header,
     wav_read_packet,
-    wav_read_close,
+    NULL,
     wav_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
     .codec_tag= (const AVCodecTag*[]){codec_wav_tags, 0},

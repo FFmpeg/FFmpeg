@@ -607,13 +607,6 @@ static int ipmovie_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int ipmovie_read_close(AVFormatContext *s)
-{
-//    IPMVEContext *ipmovie = s->priv_data;
-
-    return 0;
-}
-
 AVInputFormat ipmovie_demuxer = {
     "ipmovie",
     NULL_IF_CONFIG_SMALL("Interplay MVE format"),
@@ -621,5 +614,4 @@ AVInputFormat ipmovie_demuxer = {
     ipmovie_probe,
     ipmovie_read_header,
     ipmovie_read_packet,
-    ipmovie_read_close,
 };

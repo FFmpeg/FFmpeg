@@ -140,11 +140,6 @@ static int sol_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int sol_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 AVInputFormat sol_demuxer = {
     "sol",
     NULL_IF_CONFIG_SMALL("Sierra SOL format"),
@@ -152,6 +147,6 @@ AVInputFormat sol_demuxer = {
     sol_probe,
     sol_read_header,
     sol_read_packet,
-    sol_read_close,
+    NULL,
     pcm_read_seek,
 };

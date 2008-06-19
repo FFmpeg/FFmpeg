@@ -270,13 +270,6 @@ static int roq_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int roq_read_close(AVFormatContext *s)
-{
-//    RoqDemuxContext *roq = s->priv_data;
-
-    return 0;
-}
-
 AVInputFormat roq_demuxer = {
     "RoQ",
     NULL_IF_CONFIG_SMALL("id RoQ format"),
@@ -284,5 +277,4 @@ AVInputFormat roq_demuxer = {
     roq_probe,
     roq_read_header,
     roq_read_packet,
-    roq_read_close,
 };

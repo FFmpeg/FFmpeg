@@ -188,11 +188,6 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int raw_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
 {
@@ -436,7 +431,6 @@ AVInputFormat shorten_demuxer = {
     NULL,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "shn",
     .value = CODEC_ID_SHORTEN,
@@ -449,7 +443,6 @@ AVInputFormat mlp_demuxer = {
     NULL,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mlp",
     .value = CODEC_ID_MLP,
@@ -462,7 +455,6 @@ AVInputFormat flac_demuxer = {
     flac_probe,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
     .value = CODEC_ID_FLAC,
@@ -491,7 +483,6 @@ AVInputFormat ac3_demuxer = {
     ac3_probe,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
     .value = CODEC_ID_AC3,
@@ -534,7 +525,6 @@ AVInputFormat dirac_demuxer = {
     dirac_probe,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_DIRAC,
 };
@@ -561,7 +551,6 @@ AVInputFormat dts_demuxer = {
     dts_probe,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "dts",
     .value = CODEC_ID_DTS,
@@ -574,7 +563,6 @@ AVInputFormat aac_demuxer = {
     NULL,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aac",
     .value = CODEC_ID_AAC,
@@ -587,7 +575,6 @@ AVInputFormat gsm_demuxer = {
     NULL,
     audio_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "gsm",
     .value = CODEC_ID_GSM,
@@ -615,7 +602,6 @@ AVInputFormat h261_demuxer = {
     h261_probe,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "h261",
     .value = CODEC_ID_H261,
@@ -643,7 +629,6 @@ AVInputFormat h263_demuxer = {
     h263_probe,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
 //    .extensions = "h263", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H263,
@@ -671,7 +656,6 @@ AVInputFormat m4v_demuxer = {
     mpeg4video_probe, /** probing for mpeg4 data */
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "m4v", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_MPEG4,
@@ -699,7 +683,6 @@ AVInputFormat h264_demuxer = {
     NULL /*mpegvideo_probe*/,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "h26l,h264,264", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H264,
@@ -727,7 +710,6 @@ AVInputFormat mpegvideo_demuxer = {
     mpegvideo_probe,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_MPEG1VIDEO,
 };
@@ -769,7 +751,6 @@ AVInputFormat mjpeg_demuxer = {
     NULL,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mjpg,mjpeg",
     .value = CODEC_ID_MJPEG,
@@ -782,7 +763,6 @@ AVInputFormat ingenient_demuxer = {
     NULL,
     video_read_header,
     ingenient_read_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "cgi", // FIXME
     .value = CODEC_ID_MJPEG,
@@ -810,7 +790,6 @@ AVInputFormat vc1_demuxer = {
     NULL /* vc1_probe */,
     video_read_header,
     raw_read_partial_packet,
-    raw_read_close,
     .extensions = "vc1",
     .value = CODEC_ID_VC1,
 };
@@ -825,7 +804,7 @@ AVInputFormat pcm_ ## name ## _demuxer = {\
     NULL,\
     raw_read_header,\
     raw_read_packet,\
-    raw_read_close,\
+    NULL,\
     pcm_read_seek,\
     .flags= AVFMT_GENERIC_INDEX,\
     .extensions = ext,\
@@ -925,7 +904,6 @@ AVInputFormat rawvideo_demuxer = {
     NULL,
     raw_read_header,
     rawvideo_read_packet,
-    raw_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "yuv,cif,qcif,rgb",
     .value = CODEC_ID_RAWVIDEO,

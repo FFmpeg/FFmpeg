@@ -196,14 +196,6 @@ static int wsaud_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int wsaud_read_close(AVFormatContext *s)
-{
-//    WsAudDemuxContext *wsaud = s->priv_data;
-
-    return 0;
-}
-
-
 static int wsvqa_probe(AVProbeData *p)
 {
     /* need 12 bytes to qualify */
@@ -378,13 +370,6 @@ static int wsvqa_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int wsvqa_read_close(AVFormatContext *s)
-{
-//    WsVqaDemuxContext *wsvqa = s->priv_data;
-
-    return 0;
-}
-
 #ifdef CONFIG_WSAUD_DEMUXER
 AVInputFormat wsaud_demuxer = {
     "wsaud",
@@ -393,7 +378,6 @@ AVInputFormat wsaud_demuxer = {
     wsaud_probe,
     wsaud_read_header,
     wsaud_read_packet,
-    wsaud_read_close,
 };
 #endif
 #ifdef CONFIG_WSVQA_DEMUXER
@@ -404,6 +388,5 @@ AVInputFormat wsvqa_demuxer = {
     wsvqa_probe,
     wsvqa_read_header,
     wsvqa_read_packet,
-    wsvqa_read_close,
 };
 #endif

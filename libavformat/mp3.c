@@ -549,11 +549,6 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int mp3_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 #ifdef CONFIG_MUXERS
 /* simple formats */
 
@@ -651,7 +646,6 @@ AVInputFormat mp3_demuxer = {
     mp3_read_probe,
     mp3_read_header,
     mp3_read_packet,
-    mp3_read_close,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mp2,mp3,m2a", /* XXX: use probe */
 };

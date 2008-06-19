@@ -542,11 +542,6 @@ static int mpegps_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int mpegps_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
                                int64_t *ppos, int64_t pos_limit)
 {
@@ -588,7 +583,7 @@ AVInputFormat mpegps_demuxer = {
     mpegps_probe,
     mpegps_read_header,
     mpegps_read_packet,
-    mpegps_read_close,
+    NULL,
     NULL, //mpegps_read_seek,
     mpegps_read_dts,
     .flags = AVFMT_SHOW_IDS,
