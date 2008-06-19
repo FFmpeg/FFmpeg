@@ -1960,7 +1960,7 @@ static const int16_t lpc_refl_cb10[7]={
 };
 
 static const int16_t *lpc_refl_cb[10]={
-    lpc_refl_cb1, lpc_refl_ cb2,lpc_refl_cb3, lpc_refl_cb4, lpc_refl_cb5,
+    lpc_refl_cb1, lpc_refl_cb2, lpc_refl_cb3, lpc_refl_cb4, lpc_refl_cb5,
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
