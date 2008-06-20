@@ -1899,7 +1899,6 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
             url_fclose(sc->pb);
-        av_freep(&sc);
     }
     if(mov->dv_demux){
         for(i=0; i<mov->dv_fctx->nb_streams; i++){

@@ -2203,6 +2203,7 @@ void av_close_input_stream(AVFormatContext *s)
         av_free(st->codec->extradata);
         av_free(st->codec);
         av_free(st->filename);
+        av_free(st->priv_data);
         av_free(st);
     }
     for(i=s->nb_programs-1; i>=0; i--) {
