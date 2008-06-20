@@ -156,7 +156,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
-        goto fail;
+        return -1;
     get_le64(pb);
     get_le32(pb);
     get_byte(pb);
@@ -181,7 +181,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         }
         if (gsize < 24)
-            goto fail;
+            return -1;
         if (!memcmp(&g, &file_header, sizeof(GUID))) {
             get_guid(pb, &asf->hdr.guid);
             asf->hdr.file_size          = get_le64(pb);
@@ -207,11 +207,11 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             st = av_new_stream(s, 0);
             if (!st)
-                goto fail;
+                return AVERROR(ENOMEM);
             av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
             asf_st = av_mallocz(sizeof(ASFStream));
             if (!asf_st)
-                goto fail;
+                return AVERROR(ENOMEM);
             st->priv_data = asf_st;
             start_time = asf->hdr.preroll;
 
@@ -232,7 +232,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 test_for_ext_stream_audio = 1;
                 type = CODEC_TYPE_UNKNOWN;
             } else {
-                goto fail;
+                return -1;
             }
             get_guid(pb, &g);
             total_size = get_le64(pb);
@@ -513,7 +513,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
 #endif
         } else if (url_feof(pb)) {
-            goto fail;
+            return -1;
         } else {
             url_fseek(pb, gsize - 24, SEEK_CUR);
         }
@@ -523,7 +523,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_byte(pb);
     get_byte(pb);
     if (url_feof(pb))
-        goto fail;
+        return -1;
     asf->data_offset = url_ftell(pb);
     asf->packet_size_left = 0;
 
@@ -543,17 +543,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     return 0;
-
- fail:
-     for(i=0;i<s->nb_streams;i++) {
-        AVStream *st = s->streams[i];
-        if (st) {
-            av_free(st->priv_data);
-            av_free(st->codec->extradata);
-        }
-        av_free(st);
-    }
-    return -1;
 }
 
 #define DO_2BITS(bits, var, defval) \

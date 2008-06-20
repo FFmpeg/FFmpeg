@@ -405,7 +405,16 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     return 0;
  fail:
     if (ic) {
+        int i;
         av_freep(&ic->priv_data);
+        for(i=0;i<ic->nb_streams;i++) {
+            AVStream *st = ic->streams[i];
+            if (st) {
+                av_free(st->priv_data);
+                av_free(st->codec->extradata);
+            }
+            av_free(st);
+        }
     }
     av_free(ic);
     *ic_ptr = NULL;

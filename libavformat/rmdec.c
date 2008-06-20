@@ -297,7 +297,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for(;;) {
         if (url_feof(pb))
-            goto fail;
+            return -1;
         tag = get_le32(pb);
         tag_size = get_be32(pb);
         get_be16(pb);
@@ -311,7 +311,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                tag_size);
 #endif
         if (tag_size < 10 && tag != MKTAG('D', 'A', 'T', 'A'))
-            goto fail;
+            return -1;
         switch(tag) {
         case MKTAG('P', 'R', 'O', 'P'):
             /* file header */
@@ -336,7 +336,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case MKTAG('M', 'D', 'P', 'R'):
             st = av_new_stream(s, 0);
             if (!st)
-                goto fail;
+                return AVERROR(ENOMEM);
             st->id = get_be16(pb);
             get_be32(pb); /* max bit rate */
             st->codec->bit_rate = get_be32(pb); /* bit rate */
@@ -369,12 +369,6 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_be32(pb); /* next data header */
     rm->curpic_num = -1;
     return 0;
-
- fail:
-    for(i=0;i<s->nb_streams;i++) {
-        av_free(s->streams[i]);
-    }
-    return AVERROR(EIO);
 }
 
 static int get_num(ByteIOContext *pb, int *len)

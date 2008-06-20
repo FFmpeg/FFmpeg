@@ -597,10 +597,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* check stream number */
     if (stream_index != s->nb_streams - 1) {
     fail:
-        for(i=0;i<s->nb_streams;i++) {
-            av_freep(&s->streams[i]->codec->extradata);
-            av_freep(&s->streams[i]);
-        }
         return -1;
     }
 
