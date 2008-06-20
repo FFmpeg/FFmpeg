@@ -2551,7 +2551,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
         pktl= pktl->next;
     }
 
-    if(s->nb_streams == stream_count || (flush && stream_count)){
+    if(stream_count && (s->nb_streams == stream_count || flush)){
         pktl= s->packet_buffer;
         *out= pktl->pkt;
 
