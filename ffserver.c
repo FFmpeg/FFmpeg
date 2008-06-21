@@ -2032,6 +2032,14 @@ static int http_prepare_data(HTTPContext *c)
         }
         c->fmt_ctx.pb->is_streamed = 1;
 
+        /*
+         * HACK to avoid mpeg ps muxer to spit many underflow errors
+         * Default value from FFmpeg
+         * Try to set it use configuration option
+         */
+        c->fmt_ctx.preload   = (int)(0.5*AV_TIME_BASE);
+        c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
+
         av_set_parameters(&c->fmt_ctx, NULL);
         if (av_write_header(&c->fmt_ctx) < 0) {
             http_log("Error writing output header\n");
