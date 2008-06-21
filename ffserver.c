@@ -654,8 +654,10 @@ static void new_connection(int server_fd, int is_rtsp)
     len = sizeof(from_addr);
     fd = accept(server_fd, (struct sockaddr *)&from_addr,
                 &len);
-    if (fd < 0)
+    if (fd < 0) {
+        http_log("error during accept %s\n", strerror(errno));
         return;
+    }
     ff_socket_nonblock(fd, 1);
 
     /* XXX: should output a warning page when coming
