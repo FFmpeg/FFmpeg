@@ -3791,7 +3791,8 @@ static int parse_ffconfig(const char *filename)
             } else
                 max_bandwidth = llval;
         } else if (!strcasecmp(cmd, "CustomLog")) {
-            get_arg(logfilename, sizeof(logfilename), &p);
+            if (!ffserver_debug)
+                get_arg(logfilename, sizeof(logfilename), &p);
         } else if (!strcasecmp(cmd, "<Feed")) {
             /*********************************************/
             /* Feed related options */
@@ -4392,6 +4393,7 @@ static void opt_debug()
 {
     ffserver_debug = 1;
     ffserver_daemon = 0;
+    logfilename[0] = '-';
 }
 
 static void opt_show_help(void)
