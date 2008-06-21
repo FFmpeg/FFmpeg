@@ -754,6 +754,7 @@ static void close_connection(HTTPContext *c)
             /* prepare header */
             if (url_open_dyn_buf(&ctx->pb) >= 0) {
                 av_write_trailer(ctx);
+                av_freep(&c->pb_buffer);
                 url_close_dyn_buf(ctx->pb, &c->pb_buffer);
             }
         }
