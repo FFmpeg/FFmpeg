@@ -4504,7 +4504,7 @@ int main(int argc, char **argv)
     }
 
     if (http_server() < 0) {
-        fprintf(stderr, "Could not start server\n");
+        http_log("Could not start server\n");
         exit(1);
     }
 
