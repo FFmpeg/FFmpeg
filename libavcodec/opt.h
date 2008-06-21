@@ -52,12 +52,20 @@ typedef struct AVOption {
      * @todo What about other languages?
      */
     const char *help;
-    int offset;             ///< offset to context structure where the parsed value should be stored
+
+    /**
+     * The offset relative to the context structure where the option
+     * value is stored. It should be 0 for named constant.
+     */
+    int offset;
     enum AVOptionType type;
 
+    /**
+     * the default value for non-constant and value for constant scalars
+     */
     double default_val;
-    double min;
-    double max;
+    double min;                 ///< minimum valid value for the option
+    double max;                 ///< maximum valid value for the option
 
     int flags;
 #define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
@@ -67,6 +75,12 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
 //FIXME think about enc-audio, ... style flags
+
+    /**
+     * The logical unit to which the option belongs. Non-constant
+     * options and corresponding named constants share the same
+     * unit. May be NULL.
+     */
     const char *unit;
 } AVOption;
 
