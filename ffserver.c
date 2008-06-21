@@ -295,8 +295,8 @@ static int need_to_start_children;
 static int nb_max_connections;
 static int nb_connections;
 
-static int max_bandwidth;
-static int current_bandwidth;
+static uint64_t max_bandwidth;
+static uint64_t current_bandwidth;
 
 static int64_t cur_time;           // Making this global saves on passing it around everywhere
 
@@ -1315,7 +1315,7 @@ static int http_parse_request(HTTPContext *c)
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "\r\n");
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<html><head><title>Too busy</title></head><body>\r\n");
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<p>The server is too busy to serve your request at this time.</p>\r\n");
-        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<p>The bandwidth being served (including your stream) is %dkbit/sec, and this exceeds the limit of %dkbit/sec.</p>\r\n",
+        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<p>The bandwidth being served (including your stream) is %lldkbit/sec, and this exceeds the limit of %lldkbit/sec.</p>\r\n",
             current_bandwidth, max_bandwidth);
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "</body></html>\r\n");
 
@@ -1811,7 +1811,7 @@ static void compute_status(HTTPContext *c)
     url_fprintf(pb, "Number of connections: %d / %d<BR>\n",
                  nb_connections, nb_max_connections);
 
-    url_fprintf(pb, "Bandwidth in use: %dk / %dk<BR>\n",
+    url_fprintf(pb, "Bandwidth in use: %lldk / %lldk<BR>\n",
                  current_bandwidth, max_bandwidth);
 
     url_fprintf(pb, "<TABLE>\n");
