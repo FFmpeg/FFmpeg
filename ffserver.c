@@ -378,7 +378,7 @@ static void start_children(FFStream *feed)
             feed->pid = fork();
 
             if (feed->pid < 0) {
-                fprintf(stderr, "Unable to create children\n");
+                http_log("Unable to create children\n");
                 exit(1);
             }
             if (!feed->pid) {
@@ -486,8 +486,8 @@ static void start_multicast(void)
                 continue;
 
             if (open_input_stream(rtp_c, "") < 0) {
-                fprintf(stderr, "Could not open input stream for stream '%s'\n",
-                        stream->filename);
+                http_log("Could not open input stream for stream '%s'\n",
+                         stream->filename);
                 continue;
             }
 
@@ -497,8 +497,8 @@ static void start_multicast(void)
                 dest_addr.sin_port = htons(stream->multicast_port +
                                            2 * stream_index);
                 if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, NULL) < 0) {
-                    fprintf(stderr, "Could not open output stream '%s/streamid=%d'\n",
-                            stream->filename, stream_index);
+                    http_log("Could not open output stream '%s/streamid=%d'\n",
+                             stream->filename, stream_index);
                     exit(1);
                 }
             }
@@ -3463,8 +3463,8 @@ static void build_feed_streams(void)
 
             /* only write the header of the ffm file */
             if (url_fopen(&s->pb, feed->feed_filename, URL_WRONLY) < 0) {
-                fprintf(stderr, "Could not open output feed file '%s'\n",
-                        feed->feed_filename);
+                http_log("Could not open output feed file '%s'\n",
+                         feed->feed_filename);
                 exit(1);
             }
             s->oformat = feed->fmt;
@@ -3476,7 +3476,7 @@ static void build_feed_streams(void)
             }
             av_set_parameters(s, NULL);
             if (av_write_header(s) < 0) {
-                fprintf(stderr, "Container doesn't supports the required parameters\n");
+                http_log("Container doesn't supports the required parameters\n");
                 exit(1);
             }
             /* XXX: need better api */
@@ -3486,7 +3486,7 @@ static void build_feed_streams(void)
         /* get feed size and write index */
         fd = open(feed->feed_filename, O_RDONLY);
         if (fd < 0) {
-            fprintf(stderr, "Could not open output feed file '%s'\n",
+            http_log("Could not open output feed file '%s'\n",
                     feed->feed_filename);
             exit(1);
         }
