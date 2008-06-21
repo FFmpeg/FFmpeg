@@ -3776,14 +3776,15 @@ static int parse_ffconfig(const char *filename)
                 nb_max_connections = val;
             }
         } else if (!strcasecmp(cmd, "MaxBandwidth")) {
+            int64_t llval;
             get_arg(arg, sizeof(arg), &p);
-            val = atoi(arg);
-            if (val < 10 || val > 100000) {
+            llval = atoll(arg);
+            if (llval < 10 || llval > 10000000) {
                 fprintf(stderr, "%s:%d: Invalid MaxBandwidth: %s\n",
                         filename, line_num, arg);
                 errors++;
             } else
-                max_bandwidth = val;
+                max_bandwidth = llval;
         } else if (!strcasecmp(cmd, "CustomLog")) {
             get_arg(logfilename, sizeof(logfilename), &p);
         } else if (!strcasecmp(cmd, "<Feed")) {
