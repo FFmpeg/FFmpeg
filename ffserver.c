@@ -215,7 +215,7 @@ typedef struct FFStream {
     time_t pid_start;  /* Of ffmpeg process */
     char **child_argv;
     struct FFStream *next;
-    int bandwidth; /* bandwidth, in kbits/s */
+    unsigned bandwidth; /* bandwidth, in kbits/s */
     /* RTSP options */
     char *rtsp_option;
     /* multicast specific */
@@ -3509,7 +3509,8 @@ static void build_feed_streams(void)
 /* compute the bandwidth used by each stream */
 static void compute_bandwidth(void)
 {
-    int bandwidth, i;
+    unsigned bandwidth;
+    int i;
     FFStream *stream;
 
     for(stream = first_stream; stream != NULL; stream = stream->next) {
