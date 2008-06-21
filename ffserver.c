@@ -77,7 +77,7 @@ enum HTTPState {
     RTSPSTATE_SEND_PACKET,
 };
 
-const char *http_state[] = {
+static const char *http_state[] = {
     "HTTP_WAIT_REQUEST",
     "HTTP_SEND_HEADER",
 
