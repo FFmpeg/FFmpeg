@@ -4448,7 +4448,6 @@ int main(int argc, char **argv)
     nb_max_connections = 5;
     max_bandwidth = 1000;
     first_stream = NULL;
-    logfilename[0] = '\0';
 
     memset(&sigact, 0, sizeof(sigact));
     sigact.sa_handler = handle_child_exit;
