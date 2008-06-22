@@ -392,12 +392,12 @@ static void start_children(FFStream *feed)
 
                 if (!ffserver_debug) {
                     i = open("/dev/null", O_RDWR);
-                    if (i)
+                    if (i != -1) {
                         dup2(i, 0);
-                    dup2(i, 1);
-                    dup2(i, 2);
-                    if (i)
+                        dup2(i, 1);
+                        dup2(i, 2);
                         close(i);
+                    }
                 }
 
                 av_strlcpy(pathname, my_program_name, sizeof(pathname));
