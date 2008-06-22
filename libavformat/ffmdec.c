@@ -310,6 +310,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->frame_skip_cmp = get_be32(pb);
             codec->rc_buffer_aggressivity = av_int2dbl(get_be64(pb));
             codec->codec_tag = get_be32(pb);
+            codec->thread_count = get_byte(pb);
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);

@@ -449,6 +449,11 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         else if (st->codec->codec_type == CODEC_TYPE_VIDEO && video_stream_copy)
             st->stream_copy = 1;
 
+        if(!st->codec->thread_count)
+            st->codec->thread_count = 1;
+        if(st->codec->thread_count>1)
+            avcodec_thread_init(st->codec, st->codec->thread_count);
+
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
     }

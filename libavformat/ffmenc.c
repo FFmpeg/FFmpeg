@@ -158,6 +158,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, codec->frame_skip_cmp);
             put_be64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
             put_be32(pb, codec->codec_tag);
+            put_byte(pb, codec->thread_count);
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
