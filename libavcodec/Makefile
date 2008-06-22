@@ -274,6 +274,7 @@ OBJS-$(CONFIG_ADPCM_ADX_DECODER)       += adxdec.o
 OBJS-$(CONFIG_ADPCM_ADX_ENCODER)       += adxenc.o
 OBJS-$(CONFIG_ADPCM_CT_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_DECODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_EA_MAXIS_XA_DECODER) += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_R1_DECODER)     += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_R2_DECODER)     += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_R3_DECODER)     += adpcm.o
