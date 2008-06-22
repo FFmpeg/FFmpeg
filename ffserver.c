@@ -339,14 +339,11 @@ static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ..
 
 static void log_connection(HTTPContext *c)
 {
-    char buf2[32];
-
     if (c->suppress_log)
         return;
 
-    http_log("%s - - [%s] \"%s %s %s\" %d %"PRId64"\n",
-             inet_ntoa(c->from_addr.sin_addr),
-             ctime1(buf2), c->method, c->url,
+    http_log("%s - - [%s] \"%s %s\" %d %"PRId64"\n",
+             inet_ntoa(c->from_addr.sin_addr), c->method, c->url,
              c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
 }
 
