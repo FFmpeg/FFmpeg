@@ -148,9 +148,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
 
     /* Generate overlap window */
     if (!sine_window[0])
-        for (i=0 ; i<128; i++) {
-            sine_window[i] = sin((i + 0.5) / 256.0 * M_PI);
-        }
+        ff_sine_window_init(sine_window, 128);
 
     return 0;
 }

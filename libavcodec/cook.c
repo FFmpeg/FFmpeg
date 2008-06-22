@@ -239,9 +239,9 @@ static int init_cook_mlt(COOKContext *q) {
       return -1;
 
     /* Initialize the MLT window: simple sine window. */
-    alpha = M_PI / (2.0 * (float)mlt_size);
+    ff_sine_window_init(q->mlt_window, mlt_size);
     for(j=0 ; j<mlt_size ; j++)
-        q->mlt_window[j] = sin((j + 0.5) * alpha) * sqrt(2.0 / q->samples_per_channel);
+        q->mlt_window[j] *= sqrt(2.0 / q->samples_per_channel);
 
     /* Initialize the MDCT. */
     if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1)) {

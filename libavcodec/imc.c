@@ -102,8 +102,9 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
         q->old_floor[i] = 1.0;
 
     /* Build mdct window, a simple sine window normalized with sqrt(2) */
+    ff_sine_window_init(q->mdct_sine_window, COEFFS);
     for(i = 0; i < COEFFS; i++)
-        q->mdct_sine_window[i] = sin((i + 0.5) / 512.0 * M_PI) * sqrt(2.0);
+        q->mdct_sine_window[i] *= sqrt(2.0);
     for(i = 0; i < COEFFS/2; i++){
         q->post_cos[i] = cos(i / 256.0 * M_PI);
         q->post_sin[i] = sin(i / 256.0 * M_PI);

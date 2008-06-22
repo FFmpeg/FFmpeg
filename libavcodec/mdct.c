@@ -48,6 +48,13 @@ void ff_kbd_window_init(float *window, float alpha, int n)
        window[i] = sqrt(local_window[i] / sum);
 }
 
+// Generate a sine window.
+void ff_sine_window_init(float *window, int n) {
+    int i;
+    for(i = 0; i < n; i++)
+        window[i] = sin((i + 0.5) / (2 * n) * M_PI);
+}
+
 /**
  * init MDCT or IMDCT computation.
  */
