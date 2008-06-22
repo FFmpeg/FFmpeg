@@ -47,7 +47,6 @@ static void flush_packet(AVFormatContext *s)
 
     /* prepare next packet */
     ffm->frame_offset = 0; /* no key frame */
-    ffm->pts = 0; /* no pts */
     ffm->packet_ptr = ffm->packet;
     ffm->first_packet = 0;
 }
@@ -60,10 +59,10 @@ static void ffm_write_data(AVFormatContext *s,
     FFMContext *ffm = s->priv_data;
     int len;
 
-    if (header && ffm->frame_offset == 0)
+    if (header && ffm->frame_offset == 0) {
         ffm->frame_offset = ffm->packet_ptr - ffm->packet + FFM_HEADER_SIZE;
-    if (header && ffm->pts == 0)
         ffm->pts = pts;
+    }
 
     /* write as many packets as needed */
     while (size > 0) {
