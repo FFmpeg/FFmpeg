@@ -2887,6 +2887,9 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     memcpy (pkt->data, matroska->tracks[track]->encoding_settings, offset);
                 memcpy (pkt->data+offset, pkt_data, pkt_size);
 
+                if (pkt_data != data)
+                    av_free(pkt_data);
+
                 if (n == 0)
                     pkt->flags = is_keyframe;
                 pkt->stream_index = stream_index;
