@@ -1610,6 +1610,23 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
         }
     }
 
+    if (track->codec_priv_size && track->encoding_scope & 2) {
+        uint8_t *orig_priv = track->codec_priv;
+        int offset = matroska_decode_buffer(&track->codec_priv,
+                                            &track->codec_priv_size, track);
+        if (offset > 0) {
+            track->codec_priv = av_malloc(track->codec_priv_size + offset);
+            memcpy(track->codec_priv, track->encoding_settings, offset);
+            memcpy(track->codec_priv+offset, orig_priv, track->codec_priv_size);
+            track->codec_priv_size += offset;
+            av_free(orig_priv);
+        } else if (!offset) {
+            av_free(orig_priv);
+        } else
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "Failed to decode codec private data\n");
+    }
+
     if (track->type && matroska->num_tracks < ARRAY_SIZE(matroska->tracks)) {
         matroska->tracks[matroska->num_tracks++] = track;
     } else {
