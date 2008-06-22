@@ -4463,8 +4463,6 @@ int main(int argc, char **argv)
 
     av_init_random(av_gettime() + (getpid() << 16), &random_state);
 
-    first_stream = NULL;
-
     memset(&sigact, 0, sizeof(sigact));
     sigact.sa_handler = handle_child_exit;
     sigact.sa_flags = SA_NOCLDSTOP | SA_RESTART;
