@@ -482,6 +482,7 @@ static void clear_blocks_mmx(DCTELEM *blocks)
 static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
     x86_reg i=0;
     asm volatile(
+        "jmp 2f                         \n\t"
         "1:                             \n\t"
         "movq  (%1, %0), %%mm0          \n\t"
         "movq  (%2, %0), %%mm1          \n\t"
@@ -492,8 +493,9 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         "paddb %%mm0, %%mm1             \n\t"
         "movq %%mm1, 8(%2, %0)          \n\t"
         "add $16, %0                    \n\t"
+        "2:                             \n\t"
         "cmp %3, %0                     \n\t"
-        " jb 1b                         \n\t"
+        " js 1b                         \n\t"
         : "+r" (i)
         : "r"(src), "r"(dst), "r"((x86_reg)w-15)
     );
@@ -504,6 +506,7 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
 static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     x86_reg i=0;
     asm volatile(
+        "jmp 2f                         \n\t"
         "1:                             \n\t"
         "movq   (%2, %0), %%mm0         \n\t"
         "movq  8(%2, %0), %%mm1         \n\t"
@@ -512,8 +515,9 @@ static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         "movq %%mm0,  (%1, %0)          \n\t"
         "movq %%mm1, 8(%1, %0)          \n\t"
         "add $16, %0                    \n\t"
+        "2:                             \n\t"
         "cmp %4, %0                     \n\t"
-        " jb 1b                         \n\t"
+        " js 1b                         \n\t"
         : "+r" (i)
         : "r"(dst), "r"(src1), "r"(src2), "r"((x86_reg)w-15)
     );
