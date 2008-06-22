@@ -512,17 +512,27 @@ static void start_multicast(void)
 /* main loop of the http server */
 static int http_server(void)
 {
-    int server_fd, ret, rtsp_server_fd, delay, delay1;
+    int server_fd = 0, rtsp_server_fd = 0;
+    int ret, delay, delay1;
     struct pollfd poll_table[HTTP_MAX_CONNECTIONS + 2], *poll_entry;
     HTTPContext *c, *c_next;
 
+    if (my_http_addr.sin_port) {
     server_fd = socket_open_listen(&my_http_addr);
     if (server_fd < 0)
         return -1;
+    }
 
+    if (my_rtsp_addr.sin_port) {
     rtsp_server_fd = socket_open_listen(&my_rtsp_addr);
     if (rtsp_server_fd < 0)
         return -1;
+    }
+
+    if (!rtsp_server_fd && !server_fd) {
+        http_log("HTTP and RTSP disabled.\n");
+        return -1;
+    }
 
     http_log("ffserver started.\n");
 
@@ -535,13 +545,16 @@ static int http_server(void)
 
     for(;;) {
         poll_entry = poll_table;
+        if (server_fd) {
         poll_entry->fd = server_fd;
         poll_entry->events = POLLIN;
         poll_entry++;
-
+        }
+        if (rtsp_server_fd) {
         poll_entry->fd = rtsp_server_fd;
         poll_entry->events = POLLIN;
         poll_entry++;
+        }
 
         /* wait for events on each HTTP handle */
         c = first_http_ctx;
@@ -620,13 +633,17 @@ static int http_server(void)
         }
 
         poll_entry = poll_table;
+        if (server_fd) {
         /* new HTTP connection request ? */
         if (poll_entry->revents & POLLIN)
             new_connection(server_fd, 0);
         poll_entry++;
+        }
+        if (rtsp_server_fd) {
         /* new RTSP connection request ? */
         if (poll_entry->revents & POLLIN)
             new_connection(rtsp_server_fd, 1);
+        }
     }
 }
 
@@ -4445,16 +4462,6 @@ int main(int argc, char **argv)
     unsetenv("http_proxy");             /* Kill the http_proxy */
 
     av_init_random(av_gettime() + (getpid() << 16), &random_state);
-
-    /* address on which the server will handle HTTP connections */
-    my_http_addr.sin_family = AF_INET;
-    my_http_addr.sin_port = htons (8080);
-    my_http_addr.sin_addr.s_addr = htonl (INADDR_ANY);
-
-    /* address on which the server will handle RTSP connections */
-    my_rtsp_addr.sin_family = AF_INET;
-    my_rtsp_addr.sin_port = htons (5454);
-    my_rtsp_addr.sin_addr.s_addr = htonl (INADDR_ANY);
 
     nb_max_connections = 5;
     max_bandwidth = 1000;
