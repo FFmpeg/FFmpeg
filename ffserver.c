@@ -306,10 +306,19 @@ static FILE *logfile = NULL;
 
 static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
 {
+    static int print_prefix = 1;
     va_list ap;
     va_start(ap, fmt);
 
     if (logfile) {
+        if (print_prefix) {
+            time_t current = time(0);
+            char buffer[32];
+            strncpy(buffer, ctime(&current), 31);
+            buffer[strlen(buffer)-1] = 0; // remove '\n'
+            fprintf(logfile, "%s ", buffer);
+        }
+        print_prefix = strstr(fmt, "\n") != NULL;
         vfprintf(logfile, fmt, ap);
         fflush(logfile);
     }
