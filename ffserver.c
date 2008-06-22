@@ -2040,10 +2040,7 @@ static int http_prepare_data(HTTPContext *c)
         av_strlcpy(c->fmt_ctx.title, c->stream->title,
                    sizeof(c->fmt_ctx.title));
 
-        /* open output stream by using specified codecs */
-        c->fmt_ctx.oformat = c->stream->fmt;
-        c->fmt_ctx.nb_streams = c->stream->nb_streams;
-        for(i=0;i<c->fmt_ctx.nb_streams;i++) {
+        for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *st;
             AVStream *src;
             st = av_mallocz(sizeof(AVStream));
@@ -2060,6 +2057,10 @@ static int http_prepare_data(HTTPContext *c)
             st->codec->frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
         }
+        /* set output format parameters */
+        c->fmt_ctx.oformat = c->stream->fmt;
+        c->fmt_ctx.nb_streams = c->stream->nb_streams;
+
         c->got_key_frame = 0;
 
         /* prepare header and save header data in a stream */
