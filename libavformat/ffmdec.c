@@ -99,7 +99,7 @@ static int ffm_read_data(AVFormatContext *s,
     retry_read:
             get_be16(pb); /* PACKET_ID */
             fill_size = get_be16(pb);
-            ffm->pts = get_be64(pb);
+            ffm->dts = get_be64(pb);
             frame_offset = get_be16(pb);
             get_buffer(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
             ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
@@ -156,18 +156,18 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
     url_fseek(pb, pos, SEEK_SET);
 }
 
-static int64_t get_pts(AVFormatContext *s, offset_t pos)
+static int64_t get_dts(AVFormatContext *s, offset_t pos)
 {
     ByteIOContext *pb = s->pb;
-    int64_t pts;
+    int64_t dts;
 
     ffm_seek1(s, pos);
     url_fskip(pb, 4);
-    pts = get_be64(pb);
+    dts = get_be64(pb);
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_DEBUG, "pts=%0.6f\n", pts / 1000000.0);
 #endif
-    return pts;
+    return dts;
 }
 
 static void adjust_write_index(AVFormatContext *s)
@@ -184,18 +184,18 @@ static void adjust_write_index(AVFormatContext *s)
     pos_min = 0;
     pos_max = ffm->file_size - 2 * FFM_PACKET_SIZE;
 
-    pts_start = get_pts(s, pos_min);
+    pts_start = get_dts(s, pos_min);
 
-    pts = get_pts(s, pos_max);
+    pts = get_dts(s, pos_max);
 
     if (pts - 100000 > pts_start)
         goto end;
 
     ffm->write_index = FFM_PACKET_SIZE;
 
-    pts_start = get_pts(s, pos_min);
+    pts_start = get_dts(s, pos_min);
 
-    pts = get_pts(s, pos_max);
+    pts = get_dts(s, pos_max);
 
     if (pts - 100000 <= pts_start) {
         while (1) {
@@ -207,7 +207,7 @@ static void adjust_write_index(AVFormatContext *s)
             if (newpos == pos_min)
                 break;
 
-            newpts = get_pts(s, newpos);
+            newpts = get_dts(s, newpos);
 
             if (newpts - 100000 <= pts) {
                 pos_max = newpos;
@@ -220,7 +220,7 @@ static void adjust_write_index(AVFormatContext *s)
     }
 
     //printf("Adjusted write index from %"PRId64" to %"PRId64": pts=%0.6f\n", orig_write_index, ffm->write_index, pts / 1000000.);
-    //printf("pts range %0.6f - %0.6f\n", get_pts(s, 0) / 1000000. , get_pts(s, ffm->file_size - 2 * FFM_PACKET_SIZE) / 1000000. );
+    //printf("pts range %0.6f - %0.6f\n", get_dts(s, 0) / 1000000. , get_dts(s, ffm->file_size - 2 * FFM_PACKET_SIZE) / 1000000. );
 
  end:
     url_fseek(pb, ptr, SEEK_SET);
@@ -337,7 +337,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ffm->packet_ptr = ffm->packet;
     ffm->packet_end = ffm->packet;
     ffm->frame_offset = 0;
-    ffm->pts = 0;
+    ffm->dts = 0;
     ffm->read_state = READ_HEADER;
     ffm->first_packet = 1;
     return 0;
@@ -431,8 +431,8 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     pos_min = 0;
     pos_max = ffm->file_size - 2 * FFM_PACKET_SIZE;
     while (pos_min <= pos_max) {
-        pts_min = get_pts(s, pos_min);
-        pts_max = get_pts(s, pos_max);
+        pts_min = get_dts(s, pos_min);
+        pts_max = get_dts(s, pos_max);
         /* linear interpolation */
         pos1 = (double)(pos_max - pos_min) * (double)(wanted_pts - pts_min) /
             (double)(pts_max - pts_min);
@@ -441,7 +441,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
             pos = pos_min;
         else if (pos >= pos_max)
             pos = pos_max;
-        pts = get_pts(s, pos);
+        pts = get_dts(s, pos);
         /* check if we are lucky */
         if (pts == wanted_pts) {
             goto found;

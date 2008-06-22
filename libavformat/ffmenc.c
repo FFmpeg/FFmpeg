@@ -37,7 +37,7 @@ static void flush_packet(AVFormatContext *s)
     /* put header */
     put_be16(pb, PACKET_ID);
     put_be16(pb, fill_size);
-    put_be64(pb, ffm->pts);
+    put_be64(pb, ffm->dts);
     h = ffm->frame_offset;
     if (ffm->first_packet)
         h |= 0x8000;
@@ -54,14 +54,14 @@ static void flush_packet(AVFormatContext *s)
 /* 'first' is true if first data of a frame */
 static void ffm_write_data(AVFormatContext *s,
                            const uint8_t *buf, int size,
-                           int64_t pts, int header)
+                           int64_t dts, int header)
 {
     FFMContext *ffm = s->priv_data;
     int len;
 
     if (header && ffm->frame_offset == 0) {
         ffm->frame_offset = ffm->packet_ptr - ffm->packet + FFM_HEADER_SIZE;
-        ffm->pts = pts;
+        ffm->dts = dts;
     }
 
     /* write as many packets as needed */
@@ -180,7 +180,7 @@ static int ffm_write_header(AVFormatContext *s)
     ffm->packet_end = ffm->packet + ffm->packet_size - FFM_HEADER_SIZE;
     assert(ffm->packet_end >= ffm->packet);
     ffm->frame_offset = 0;
-    ffm->pts = 0;
+    ffm->dts = 0;
     ffm->first_packet = 1;
 
     return 0;

@@ -48,7 +48,7 @@ typedef struct FFMContext {
     int first_packet; /* true if first packet, needed to set the discontinuity tag */
     int packet_size;
     int frame_offset;
-    int64_t pts;
+    int64_t dts;
     uint8_t *packet_ptr, *packet_end;
     uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
