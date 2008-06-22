@@ -318,12 +318,9 @@ static char *ctime1(char *buf2)
     return buf2;
 }
 
-static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
+static void http_vlog(const char *fmt, va_list vargs)
 {
     static int print_prefix = 1;
-    va_list ap;
-    va_start(ap, fmt);
-
     if (logfile) {
         if (print_prefix) {
             char buf[32];
@@ -331,10 +328,29 @@ static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ..
             fprintf(logfile, "%s ", buf);
         }
         print_prefix = strstr(fmt, "\n") != NULL;
-        vfprintf(logfile, fmt, ap);
+        vfprintf(logfile, fmt, vargs);
         fflush(logfile);
     }
-    va_end(ap);
+}
+
+void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
+{
+    va_list vargs;
+    va_start(vargs, fmt);
+    http_vlog(fmt, vargs);
+    va_end(vargs);
+}
+
+static void http_av_log(void *ptr, int level, const char *fmt, va_list vargs)
+{
+    static int print_prefix = 1;
+    AVClass *avc = ptr ? *(AVClass**)ptr : NULL;
+    if (level > av_log_level)
+        return;
+    if (print_prefix && avc)
+        http_log("[%s @ %p]", avc->item_name(ptr), avc);
+    print_prefix = strstr(fmt, "\n") != NULL;
+    http_vlog(fmt, vargs);
 }
 
 static void log_connection(HTTPContext *c)
@@ -4518,6 +4534,7 @@ int main(int argc, char **argv)
             logfile = stdout;
         else
             logfile = fopen(logfilename, "a");
+        av_log_set_callback(http_av_log);
     }
 
     if (http_server() < 0) {
