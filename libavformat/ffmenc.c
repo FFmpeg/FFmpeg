@@ -74,13 +74,8 @@ static void ffm_write_data(AVFormatContext *s,
         ffm->packet_ptr += len;
         buf += len;
         size -= len;
-        if (ffm->packet_ptr >= ffm->packet_end) {
-            /* special case : no pts in packet : we leave the current one */
-            if (ffm->pts == 0)
-                ffm->pts = pts;
-
+        if (ffm->packet_ptr >= ffm->packet_end)
             flush_packet(s);
-        }
     }
 }
 
