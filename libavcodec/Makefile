@@ -233,6 +233,7 @@ OBJS-$(CONFIG_ZMBV_ENCODER)            += zmbvenc.o
 OBJS-$(CONFIG_PCM_ALAW_DECODER)        += pcm.o
 OBJS-$(CONFIG_PCM_ALAW_ENCODER)        += pcm.o
 OBJS-$(CONFIG_PCM_DVD_DECODER)         += pcm.o
+OBJS-$(CONFIG_PCM_DVD_ENCODER)         += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_DECODER)       += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_ENCODER)       += pcm.o
 OBJS-$(CONFIG_PCM_S8_DECODER)          += pcm.o
