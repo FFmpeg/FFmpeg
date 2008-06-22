@@ -2482,41 +2482,32 @@ static int http_receive_data(HTTPContext *c)
             }
         } else {
             /* We have a header in our hands that contains useful data */
-            AVFormatContext s;
+            AVFormatContext *s = NULL;
+            ByteIOContext *pb;
             AVInputFormat *fmt_in;
             int i;
 
-            memset(&s, 0, sizeof(s));
-
-            url_open_buf(&s.pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
-            s.pb->is_streamed = 1;
+            url_open_buf(&pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
+            pb->is_streamed = 1;
 
             /* use feed output format name to find corresponding input format */
             fmt_in = av_find_input_format(feed->fmt->name);
             if (!fmt_in)
                 goto fail;
 
-            if (fmt_in->priv_data_size > 0) {
-                s.priv_data = av_mallocz(fmt_in->priv_data_size);
-                if (!s.priv_data)
-                    goto fail;
-            } else
-                s.priv_data = NULL;
-
-            if (fmt_in->read_header(&s, 0) < 0) {
-                av_freep(&s.priv_data);
-                goto fail;
-            }
+            av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL);
 
             /* Now we have the actual streams */
-            if (s.nb_streams != feed->nb_streams) {
-                av_freep(&s.priv_data);
+            if (s->nb_streams != feed->nb_streams) {
+                av_close_input_stream(s);
                 goto fail;
             }
-            for (i = 0; i < s.nb_streams; i++)
+
+            for (i = 0; i < s->nb_streams; i++)
                 memcpy(feed->streams[i]->codec,
-                       s.streams[i]->codec, sizeof(AVCodecContext));
-            av_freep(&s.priv_data);
+                       s->streams[i]->codec, sizeof(AVCodecContext));
+
+            av_close_input_stream(s);
         }
         c->buffer_ptr = c->buffer;
     }
