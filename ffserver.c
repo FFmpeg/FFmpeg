@@ -2224,7 +2224,6 @@ static int http_prepare_data(HTTPContext *c)
                     if (av_write_frame(ctx, &pkt) < 0) {
                         http_log("Error writing frame to output\n");
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
-                        return 1;
                     }
 
                     len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
