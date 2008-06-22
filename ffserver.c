@@ -1614,7 +1614,7 @@ static void compute_status(HTTPContext *c)
     url_fprintf(pb, "\r\n");
 
     url_fprintf(pb, "<HEAD><TITLE>%s Status</TITLE>\n", program_name);
-    if (c->stream->feed_filename)
+    if (c->stream->feed_filename[0])
         url_fprintf(pb, "<link rel=\"shortcut icon\" href=\"%s\">\n", c->stream->feed_filename);
     url_fprintf(pb, "</HEAD>\n<BODY>");
     url_fprintf(pb, "<H1>%s Status</H1>\n", program_name);
