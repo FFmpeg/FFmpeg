@@ -2494,7 +2494,10 @@ static int http_receive_data(HTTPContext *c)
             if (!fmt_in)
                 goto fail;
 
-            av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL);
+            if (av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL) < 0) {
+                av_free(pb);
+                goto fail;
+            }
 
             /* Now we have the actual streams */
             if (s->nb_streams != feed->nb_streams) {
