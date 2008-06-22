@@ -2486,13 +2486,13 @@ static int http_receive_data(HTTPContext *c)
             AVInputFormat *fmt_in;
             int i;
 
-            url_open_buf(&pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
-            pb->is_streamed = 1;
-
             /* use feed output format name to find corresponding input format */
             fmt_in = av_find_input_format(feed->fmt->name);
             if (!fmt_in)
                 goto fail;
+
+            url_open_buf(&pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
+            pb->is_streamed = 1;
 
             if (av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL) < 0) {
                 av_free(pb);
