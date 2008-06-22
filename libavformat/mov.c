@@ -1634,6 +1634,7 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
+{ MKTAG('a','v','s','s'), mov_read_extradata },
 { MKTAG('c','o','6','4'), mov_read_stco },
 { MKTAG('c','t','t','s'), mov_read_ctts }, /* composition time to sample */
 { MKTAG('d','i','n','f'), mov_read_default },
