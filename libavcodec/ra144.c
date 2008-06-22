@@ -366,9 +366,8 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     for (c=0; c<4; c++) {
         do_output_subblock(ractx, block_coefs[c], refl_rms[c], &gb);
 
-        for (i=0; i<BLOCKSIZE; i++) {
+        for (i=0; i<BLOCKSIZE; i++)
             *data++ = av_clip_int16(ractx->curr_sblock[i + 10] << 2);
-        }
     }
 
     ractx->old_energy = energy;
