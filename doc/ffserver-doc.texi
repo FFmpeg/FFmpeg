@@ -246,6 +246,10 @@ Show available formats, codecs, protocols, ...
 Show help.
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
+@item -n
+Enable no-launch mode. This option disables all the Launch directives
+within the various <Stream> sections. FFserver will not launch any
+ffmpeg instance, so you will have to launch them manually.
 @end table
 @c man end
 
