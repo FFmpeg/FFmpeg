@@ -202,10 +202,11 @@ static void vp6_parse_vector_models(vp56_context_t *s)
                 model->vector_fdv[comp][node] = vp56_rac_gets_nn(c, 7);
 }
 
+/* nodes must ascend by count, but with descending symbol order */
 static int vp6_huff_cmp(const void *va, const void *vb)
 {
     const Node *a = va, *b = vb;
-    return a->count >= b->count;
+    return (a->count - b->count)*16 + (b->sym - a->sym);
 }
 
 static void vp6_build_huff_tree(vp56_context_t *s, uint8_t coeff_model[],
