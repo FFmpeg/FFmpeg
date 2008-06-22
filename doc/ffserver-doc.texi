@@ -16,6 +16,11 @@ several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
 specify a big enough feed storage in ffserver.conf).
 
+FFserver runs in daemon mode by default; that is, it puts itself in
+the background and detaches from its TTY, unless it is launched in
+debug mode or a NoDaemon option is specified in the configuration
+file.
+
 This documentation covers only the streaming aspects of ffserver /
 ffmpeg. All questions about parameters for ffmpeg, codec questions,
 etc. are not covered here. Read @file{ffmpeg-doc.html} for more
