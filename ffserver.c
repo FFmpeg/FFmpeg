@@ -292,10 +292,10 @@ static int ffserver_daemon;
 static int no_launch;
 static int need_to_start_children;
 
-static int nb_max_connections;
+static int nb_max_connections = 5;
 static int nb_connections;
 
-static uint64_t max_bandwidth;
+static uint64_t max_bandwidth = 1000;
 static uint64_t current_bandwidth;
 
 static int64_t cur_time;           // Making this global saves on passing it around everywhere
@@ -4463,8 +4463,6 @@ int main(int argc, char **argv)
 
     av_init_random(av_gettime() + (getpid() << 16), &random_state);
 
-    nb_max_connections = 5;
-    max_bandwidth = 1000;
     first_stream = NULL;
 
     memset(&sigact, 0, sizeof(sigact));
