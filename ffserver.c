@@ -2047,7 +2047,6 @@ static int http_prepare_data(HTTPContext *c)
             AVStream *st;
             AVStream *src;
             st = av_mallocz(sizeof(AVStream));
-            st->codec= avcodec_alloc_context();
             c->fmt_ctx.streams[i] = st;
             /* if file or feed, then just take streams from FFStream struct */
             if (!c->stream->feed ||
