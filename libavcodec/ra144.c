@@ -39,7 +39,9 @@ typedef struct {
     unsigned int     lpc_refl_rms;
     unsigned int     lpc_refl_rms_old;
 
-    unsigned int buffer[5];
+    /** the current subblock padded by the last 10 values of the previous one*/
+    int16_t curr_sblock[50];
+
     uint16_t adapt_cb[148];             ///< adaptive codebook
 } RA144Context;
 
@@ -136,14 +138,13 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
 }
 
 static void lpc_filter(const int16_t *lpc_coefs, const int16_t *adapt_coef,
-                       void *out, int *statbuf, int len)
+                       uint16_t *statbuf, int len)
 {
     int x, i;
-    uint16_t work[50];
-    int16_t *ptr = work;
+    int16_t *ptr = statbuf;
 
-    memcpy(work, statbuf,20);
-    memcpy(work + 10, adapt_coef, len * 2);
+    memcpy(statbuf, statbuf + 40, 20);
+    memcpy(statbuf + 10, adapt_coef, len * 2);
 
     for (i=0; i<len; i++) {
         int sum = 0;
@@ -157,17 +158,13 @@ static void lpc_filter(const int16_t *lpc_coefs, const int16_t *adapt_coef,
         new_val = ptr[10] - sum;
 
         if (new_val < -32768 || new_val > 32767) {
-            memset(out, 0, len * 2);
-            memset(statbuf, 0, 20);
+            memset(statbuf, 0, 100);
             return;
         }
 
         ptr[10] = new_val;
         ptr++;
     }
-
-    memcpy(out, work+10, len * 2);
-    memcpy(statbuf, work + 40, 20);
 }
 
 static unsigned int rescale_rms(int rms, int energy)
@@ -204,7 +201,7 @@ static unsigned int rms(const int *data)
 /* do quarter-block output */
 static void do_output_subblock(RA144Context *ractx,
                                const uint16_t  *lpc_coefs, unsigned int gval,
-                               int16_t *output_buffer, GetBitContext *gb)
+                               GetBitContext *gb)
 {
     uint16_t buffer_a[40];
     uint16_t *block;
@@ -233,7 +230,7 @@ static void do_output_subblock(RA144Context *ractx,
     add_wav(gain, cba_idx, m, buffer_a, cb1_vects[cb1_idx], cb2_vects[cb2_idx],
             block);
 
-    lpc_filter(lpc_coefs, block, output_buffer, ractx->buffer, BLOCKSIZE);
+    lpc_filter(lpc_coefs, block, ractx->curr_sblock, BLOCKSIZE);
 }
 
 static void int_to_int16(int16_t *out, const int *inp)
@@ -367,11 +364,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     /* do output */
     for (c=0; c<4; c++) {
-        do_output_subblock(ractx, block_coefs[c], refl_rms[c], data, &gb);
+        do_output_subblock(ractx, block_coefs[c], refl_rms[c], &gb);
 
         for (i=0; i<BLOCKSIZE; i++) {
-            *data = av_clip_int16(*data << 2);
-            data++;
+            *data++ = av_clip_int16(ractx->curr_sblock[i + 10] << 2);
         }
     }
 
