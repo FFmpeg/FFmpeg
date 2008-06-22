@@ -232,7 +232,6 @@ static int init_cook_vlc_tables(COOKContext *q) {
 
 static int init_cook_mlt(COOKContext *q) {
     int j;
-    float alpha;
     int mlt_size = q->samples_per_channel;
 
     if ((q->mlt_window = av_malloc(sizeof(float)*mlt_size)) == 0)
