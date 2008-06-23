@@ -31,7 +31,6 @@
 typedef struct {
     unsigned int     old_energy;        ///< previous frame energy
 
-    /* the swapped buffers */
     unsigned int     lpc_tables[2][10];
     unsigned int    *lpc_coef;          ///< LPC coefficients
     unsigned int    *lpc_coef_old;      ///< previous frame LPC coefficients
