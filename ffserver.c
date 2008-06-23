@@ -3135,7 +3135,6 @@ static int rtp_new_av_stream(HTTPContext *c,
     char *ipaddr;
     URLContext *h = NULL;
     uint8_t *dummy_buf;
-    char buf2[32];
     int max_packet_size;
 
     /* now we can open the relevant output stream */
@@ -3196,9 +3195,8 @@ static int rtp_new_av_stream(HTTPContext *c,
         goto fail;
     }
 
-    http_log("%s:%d - - [%s] \"PLAY %s/streamid=%d %s\"\n",
+    http_log("%s:%d - - \"PLAY %s/streamid=%d %s\"\n",
              ipaddr, ntohs(dest_addr->sin_port),
-             ctime1(buf2),
              c->stream->filename, stream_index, c->protocol);
 
     /* normally, no packets should be output here, but the packet size may be checked */
