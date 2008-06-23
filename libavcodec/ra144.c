@@ -41,7 +41,9 @@ typedef struct {
     /** the current subblock padded by the last 10 values of the previous one*/
     int16_t curr_sblock[50];
 
-    uint16_t adapt_cb[148];             ///< adaptive codebook
+    /** adaptive codebook. Its size is two units bigger to avoid a
+     *  buffer overflow */
+    uint16_t adapt_cb[148];
 } RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
