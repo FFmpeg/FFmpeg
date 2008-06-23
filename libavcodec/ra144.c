@@ -94,8 +94,11 @@ static void eval_coefs(const int *refl, int *coefs)
         coefs[x] >>= 4;
 }
 
-/* rotate block */
-static void rotate_block(const int16_t *source, int16_t *target, int offset)
+/**
+ * Copy the last offset values of *source to *target. If those values are not
+ * enough to fill the target buffer, fill it with another copy of those values.
+ */
+static void copy_and_dup(const int16_t *source, int16_t *target, int offset)
 {
     source += BUFFERSIZE - offset;
 
@@ -215,7 +218,7 @@ static void do_output_subblock(RA144Context *ractx,
 
     if (cba_idx) {
         cba_idx += HALFBLOCK - 1;
-        rotate_block(ractx->adapt_cb, buffer_a, cba_idx);
+        copy_and_dup(ractx->adapt_cb, buffer_a, cba_idx);
         m[0] = irms(buffer_a, gval) >> 12;
     } else {
         m[0] = 0;
