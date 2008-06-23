@@ -162,7 +162,7 @@ static void lpc_filter(const int16_t *lpc_coefs, uint16_t *in, int len)
         new_val = ptr[10] - sum;
 
         if (new_val < -32768 || new_val > 32767) {
-            memset(in, 0, 100);
+            memset(in, 0, 50*sizeof(*in));
             return;
         }
 
@@ -224,7 +224,7 @@ static void do_output_subblock(RA144Context *ractx,
     m[2] = ((cb2_base[cb2_idx] >> 4) * gval) >> 8;
 
     memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
-            (BUFFERSIZE - BLOCKSIZE) * 2);
+            (BUFFERSIZE - BLOCKSIZE) * sizeof(*ractx->adapt_cb));
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
