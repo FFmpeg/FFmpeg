@@ -110,7 +110,7 @@ static void copy_and_dup(const int16_t *source, int16_t *target, int offset)
     }
 }
 
-/* inverse root mean square */
+/** inverse root mean square */
 static int irms(const int16_t *data, int factor)
 {
     unsigned int i, sum = 0;
@@ -124,7 +124,6 @@ static int irms(const int16_t *data, int factor)
     return (0x20000000 / (t_sqrt(sum) >> 8)) * factor;
 }
 
-/* multiply/add wavetable */
 static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
                     const int8_t *s2, const int8_t *s3, int16_t *dest)
 {
@@ -203,7 +202,6 @@ static unsigned int rms(const int *data)
     return res;
 }
 
-/* do quarter-block output */
 static void do_output_subblock(RA144Context *ractx,
                                const uint16_t  *lpc_coefs, unsigned int gval,
                                GetBitContext *gb)
@@ -372,7 +370,6 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
     int_to_int16(block_coefs[3], ractx->lpc_coef);
 
-    /* do output */
     for (c=0; c<4; c++) {
         do_output_subblock(ractx, block_coefs[c], refl_rms[c], &gb);
 
