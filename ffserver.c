@@ -2158,10 +2158,10 @@ static int http_prepare_data(HTTPContext *c)
                         }
                     }
                 } else {
+                send_it:
                     AVCodecContext *codec;
                     AVStream *ist = c->fmt_in->streams[source_index];
                     AVStream *ost = ctx->streams[pkt.stream_index];
-                send_it:
                     /* specific handling for RTP: we use several
                        output stream (one for each RTP
                        connection). XXX: need more abstract handling */
