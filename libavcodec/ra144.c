@@ -171,7 +171,7 @@ static void lpc_filter(const int16_t *lpc_coefs, uint16_t *in, int len)
     }
 }
 
-static unsigned int rescale_rms(int rms, int energy)
+static unsigned int rescale_rms(unsigned int rms, unsigned int energy)
 {
     return (rms * energy) >> 10;
 }
