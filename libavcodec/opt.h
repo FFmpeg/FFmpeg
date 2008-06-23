@@ -55,7 +55,7 @@ typedef struct AVOption {
 
     /**
      * The offset relative to the context structure where the option
-     * value is stored. It should be 0 for named constant.
+     * value is stored. It should be 0 for named constants.
      */
     int offset;
     enum AVOptionType type;
