@@ -111,7 +111,7 @@ static void copy_and_dup(const int16_t *source, int16_t *target, int offset)
 }
 
 /** inverse root mean square */
-static int irms(const int16_t *data, int factor)
+static int irms(const int16_t *data)
 {
     unsigned int i, sum = 0;
 
@@ -121,7 +121,7 @@ static int irms(const int16_t *data, int factor)
     if (sum == 0)
         return 0; /* OOPS - division by zero */
 
-    return (0x20000000 / (t_sqrt(sum) >> 8)) * factor;
+    return 0x20000000 / (t_sqrt(sum) >> 8);
 }
 
 static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
@@ -217,7 +217,7 @@ static void do_output_subblock(RA144Context *ractx,
     if (cba_idx) {
         cba_idx += BLOCKSIZE/2 - 1;
         copy_and_dup(ractx->adapt_cb, buffer_a, cba_idx);
-        m[0] = irms(buffer_a, gval) >> 12;
+        m[0] = (irms(buffer_a) * gval) >> 12;
     } else {
         m[0] = 0;
     }
