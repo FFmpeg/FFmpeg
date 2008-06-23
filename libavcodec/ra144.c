@@ -97,14 +97,13 @@ static void eval_coefs(const int *refl, int *coefs)
 /* rotate block */
 static void rotate_block(const int16_t *source, int16_t *target, int offset)
 {
-    int i=0, k=0;
     source += BUFFERSIZE - offset;
 
-    while (i<BLOCKSIZE) {
-        target[i++] = source[k++];
-
-        if (k == offset)
-            k = 0;
+    if (offset > BLOCKSIZE) {
+        memcpy(target, source, BLOCKSIZE*sizeof(*target));
+    } else {
+        memcpy(target, source, offset*sizeof(*target));
+        memcpy(target + offset, source, (BLOCKSIZE - offset)*sizeof(*target));
     }
 }
 
