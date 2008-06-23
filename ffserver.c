@@ -2497,9 +2497,18 @@ static int http_receive_data(HTTPContext *c)
                 goto fail;
             }
 
-            for (i = 0; i < s->nb_streams; i++)
-                memcpy(feed->streams[i]->codec,
-                       s->streams[i]->codec, sizeof(AVCodecContext));
+            for (i = 0; i < s->nb_streams; i++) {
+                AVStream *fst = feed->streams[i];
+                AVStream *st = s->streams[i];
+                memcpy(fst->codec, st->codec, sizeof(AVCodecContext));
+                if (fst->codec->extradata_size) {
+                    fst->codec->extradata = av_malloc(fst->codec->extradata_size);
+                    if (!fst->codec->extradata)
+                        goto fail;
+                    memcpy(fst->codec->extradata, st->codec->extradata,
+                           fst->codec->extradata_size);
+                }
+            }
 
             av_close_input_stream(s);
             av_free(pb);
