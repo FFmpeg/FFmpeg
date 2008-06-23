@@ -220,8 +220,8 @@ static void do_output_subblock(RA144Context *ractx,
         m[0] = 0;
     }
 
-    m[1] = ((cb1_base[cb1_idx] >> 4) * gval) >> 8;
-    m[2] = ((cb2_base[cb2_idx] >> 4) * gval) >> 8;
+    m[1] = (cb1_base[cb1_idx] * gval) >> 8;
+    m[2] = (cb2_base[cb2_idx] * gval) >> 8;
 
     memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
             (BUFFERSIZE - BLOCKSIZE) * sizeof(*ractx->adapt_cb));
