@@ -136,10 +136,10 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
         dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
 }
 
-static void lpc_filter(const int16_t *lpc_coefs, uint16_t *statbuf, int len)
+static void lpc_filter(const int16_t *lpc_coefs, uint16_t *in, int len)
 {
     int x, i;
-    int16_t *ptr = statbuf;
+    int16_t *ptr = in;
 
     for (i=0; i<len; i++) {
         int sum = 0;
@@ -153,7 +153,7 @@ static void lpc_filter(const int16_t *lpc_coefs, uint16_t *statbuf, int len)
         new_val = ptr[10] - sum;
 
         if (new_val < -32768 || new_val > 32767) {
-            memset(statbuf, 0, 100);
+            memset(in, 0, 100);
             return;
         }
 
