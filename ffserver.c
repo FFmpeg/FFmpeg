@@ -2162,7 +2162,6 @@ static int http_prepare_data(HTTPContext *c)
                     AVStream *ist, *ost;
                 send_it:
                     ist = c->fmt_in->streams[source_index];
-                    ost = ctx->streams[pkt.stream_index];
                     /* specific handling for RTP: we use several
                        output stream (one for each RTP
                        connection). XXX: need more abstract handling */
@@ -2193,7 +2192,7 @@ static int http_prepare_data(HTTPContext *c)
                     } else {
                         ctx = &c->fmt_ctx;
                         /* Fudge here */
-                        codec = ost->codec;
+                        codec = ctx->streams[pkt.stream_index]->codec;
                     }
 
                     if (c->is_packetized) {
@@ -2210,6 +2209,8 @@ static int http_prepare_data(HTTPContext *c)
                         /* XXX: potential leak */
                         return -1;
                     }
+                    ost = ctx->streams[pkt.stream_index];
+
                     c->fmt_ctx.pb->is_streamed = 1;
                     if (pkt.dts != AV_NOPTS_VALUE)
                         pkt.dts = av_rescale_q(pkt.dts, ist->time_base, ost->time_base);
