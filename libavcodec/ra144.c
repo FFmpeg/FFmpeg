@@ -183,7 +183,7 @@ static unsigned int rms(const int *data)
     int b = 0;
 
     for (x=0; x<10; x++) {
-        res = (((0x1000000 - (*data) * (*data)) >> 12) * res) >> 12;
+        res = (((0x1000000 - data[x]*data[x]) >> 12) * res) >> 12;
 
         if (res == 0)
             return 0;
@@ -192,7 +192,6 @@ static unsigned int rms(const int *data)
             b++;
             res <<= 2;
         }
-        data++;
     }
 
     res = t_sqrt(res);
