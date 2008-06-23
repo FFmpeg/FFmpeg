@@ -136,6 +136,13 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
         dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
 }
 
+/**
+ * LPC Filter. Each output value is predicted from the 10 previous computed
+ * ones. It overwrites the input with the output.
+ *
+ * @param in the input of the filter. It should be an array of size len + 10.
+ * The 10 first input values are used to evaluate the first filtered one.
+ */
 static void lpc_filter(const int16_t *lpc_coefs, uint16_t *in, int len)
 {
     int x, i;
