@@ -2166,13 +2166,11 @@ static int http_prepare_data(HTTPContext *c)
                        output stream (one for each RTP
                        connection). XXX: need more abstract handling */
                     if (c->is_packetized) {
-                        AVStream *st;
                         /* compute send time and duration */
-                        st = c->fmt_in->streams[source_index];
-                        c->cur_pts = av_rescale_q(pkt.dts, st->time_base, AV_TIME_BASE_Q);
-                        if (st->start_time != AV_NOPTS_VALUE)
-                            c->cur_pts -= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
-                        c->cur_frame_duration = av_rescale_q(pkt.duration, st->time_base, AV_TIME_BASE_Q);
+                        c->cur_pts = av_rescale_q(pkt.dts, ist->time_base, AV_TIME_BASE_Q);
+                        if (ist->start_time != AV_NOPTS_VALUE)
+                            c->cur_pts -= av_rescale_q(ist->start_time, ist->time_base, AV_TIME_BASE_Q);
+                        c->cur_frame_duration = av_rescale_q(pkt.duration, ist->time_base, AV_TIME_BASE_Q);
 #if 0
                         printf("index=%d pts=%0.3f duration=%0.6f\n",
                                pkt.stream_index,
