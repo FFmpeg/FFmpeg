@@ -23,9 +23,9 @@
 #include "bitstream.h"
 #include "ra144.h"
 
-#define NBLOCKS         4       /* number of segments within a block */
-#define BLOCKSIZE       40      /* (quarter) block size in 16-bit words (80 bytes) */
-#define BUFFERSIZE      146     /* for do_output */
+#define NBLOCKS         4       ///< number of subblocks within a block
+#define BLOCKSIZE       40      ///< subblock size in 16-bit words
+#define BUFFERSIZE      146     ///< the size of the adaptive codebook
 
 
 typedef struct {
