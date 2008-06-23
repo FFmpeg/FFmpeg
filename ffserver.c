@@ -2168,7 +2168,7 @@ static int http_prepare_data(HTTPContext *c)
                     if (c->is_packetized) {
                         AVStream *st;
                         /* compute send time and duration */
-                        st = c->fmt_in->streams[pkt.stream_index];
+                        st = c->fmt_in->streams[source_index];
                         c->cur_pts = av_rescale_q(pkt.dts, st->time_base, AV_TIME_BASE_Q);
                         if (st->start_time != AV_NOPTS_VALUE)
                             c->cur_pts -= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
