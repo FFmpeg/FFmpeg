@@ -74,7 +74,7 @@ static int t_sqrt(unsigned int x)
  * Evaluate the LPC filter coefficients from the reflection coefficients.
  * Does the inverse of the eval_refl() function.
  */
-static void eval_coefs(const int *refl, int *coefs)
+static void eval_coefs(int *coefs, const int *refl)
 {
     int buffer[10];
     int *b1 = buffer;
@@ -98,7 +98,7 @@ static void eval_coefs(const int *refl, int *coefs)
  * Copy the last offset values of *source to *target. If those values are not
  * enough to fill the target buffer, fill it with another copy of those values.
  */
-static void copy_and_dup(const int16_t *source, int16_t *target, int offset)
+static void copy_and_dup(int16_t *target, const int16_t *source, int offset)
 {
     source += BUFFERSIZE - offset;
 
@@ -124,8 +124,8 @@ static int irms(const int16_t *data)
     return 0x20000000 / (t_sqrt(sum) >> 8);
 }
 
-static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
-                    const int8_t *s2, const int8_t *s3, int16_t *dest)
+static void add_wav(int16_t *dest, int n, int skip_first, int *m,
+                    const int16_t *s1, const int8_t *s2, const int8_t *s3)
 {
     int i;
     int v[3];
@@ -145,7 +145,7 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
  * @param in the input of the filter. It should be an array of size len + 10.
  * The 10 first input values are used to evaluate the first filtered one.
  */
-static void lpc_filter(const int16_t *lpc_coefs, uint16_t *in, int len)
+static void lpc_filter(uint16_t *in, const int16_t *lpc_coefs, int len)
 {
     int x, i;
     int16_t *ptr = in;
@@ -214,7 +214,7 @@ static void do_output_subblock(RA144Context *ractx,
 
     if (cba_idx) {
         cba_idx += BLOCKSIZE/2 - 1;
-        copy_and_dup(ractx->adapt_cb, buffer_a, cba_idx);
+        copy_and_dup(buffer_a, ractx->adapt_cb, cba_idx);
         m[0] = (irms(buffer_a) * gval) >> 12;
     } else {
         m[0] = 0;
@@ -228,15 +228,15 @@ static void do_output_subblock(RA144Context *ractx,
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(gain, cba_idx, m, buffer_a, cb1_vects[cb1_idx], cb2_vects[cb2_idx],
-            block);
+    add_wav(block, gain, cba_idx, m, buffer_a,
+            cb1_vects[cb1_idx], cb2_vects[cb2_idx]);
 
     memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
            10*sizeof(*ractx->curr_sblock));
     memcpy(ractx->curr_sblock + 10, block,
            BLOCKSIZE*sizeof(*ractx->curr_sblock));
 
-    lpc_filter(lpc_coefs, ractx->curr_sblock, BLOCKSIZE);
+    lpc_filter(ractx->curr_sblock, lpc_coefs, BLOCKSIZE);
 }
 
 static void int_to_int16(int16_t *out, const int *inp)
@@ -254,7 +254,7 @@ static void int_to_int16(int16_t *out, const int *inp)
  * @return 1 if one of the reflection coefficients is of magnitude greater than
  *         4095, 0 if not.
  */
-static int eval_refl(const int16_t *coefs, int *refl, RA144Context *ractx)
+static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
 {
     int retval = 0;
     int b, c, i;
@@ -312,7 +312,7 @@ static int interp(RA144Context *ractx, int16_t *out, int block_num,
     for (x=0; x<30; x++)
         out[x] = (a * ractx->lpc_coef[x] + b * ractx->lpc_coef_old[x])>> 2;
 
-    if (eval_refl(out, work, ractx)) {
+    if (eval_refl(work, out, ractx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
         if (copynew) {
@@ -355,7 +355,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
         // "<< 1"? Doesn't this make one value out of two of the table useless?
         lpc_refl[i] = lpc_refl_cb[i][get_bits(&gb, sizes[i]) << 1];
 
-    eval_coefs(lpc_refl, ractx->lpc_coef);
+    eval_coefs(ractx->lpc_coef, lpc_refl);
     ractx->lpc_refl_rms = rms(lpc_refl);
 
     energy = energy_tab[get_bits(&gb, 5) << 1]; // Useless table entries?
