@@ -277,7 +277,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     ByteIOContext *pb = s->pb;
     unsigned int tag;
-    int tag_size, i;
+    int tag_size;
     unsigned int start_time, duration;
     char buf[128];
     int flags = 0;
