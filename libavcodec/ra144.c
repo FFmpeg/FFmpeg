@@ -272,7 +272,7 @@ static int eval_refl(const int16_t *coefs, int *refl, RA144Context *ractx)
 
     if (u + 0x1000 > 0x1fff) {
         av_log(ractx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
-        return 0;
+        return 1;
     }
 
     for (c=8; c >= 0; c--) {
