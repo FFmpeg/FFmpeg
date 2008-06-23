@@ -4496,7 +4496,6 @@ int main(int argc, char **argv)
         } else {
             /* child */
             setsid();
-            chdir("/");
             close(0);
             open("/dev/null", O_RDWR);
             if (strcmp(logfilename, "-") != 0) {
@@ -4519,6 +4518,9 @@ int main(int argc, char **argv)
             logfile = fopen(logfilename, "a");
         av_log_set_callback(http_av_log);
     }
+
+    if (ffserver_daemon)
+        chdir("/");
 
     if (http_server() < 0) {
         http_log("Could not start server\n");
