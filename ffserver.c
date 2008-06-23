@@ -1692,8 +1692,7 @@ static void compute_status(HTTPContext *c)
                         stream->conns_served);
             fmt_bytecount(pb, stream->bytes_served);
             switch(stream->stream_type) {
-            case STREAM_TYPE_LIVE:
-                {
+            case STREAM_TYPE_LIVE: {
                     int audio_bit_rate = 0;
                     int video_bit_rate = 0;
                     const char *audio_codec_name = "";
@@ -1931,13 +1930,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
         strcpy(input_filename, c->stream->feed->feed_filename);
         buf_size = FFM_PACKET_SIZE;
         /* compute position (absolute time) */
-        if (find_info_tag(buf, sizeof(buf), "date", info))
-        {
+        if (find_info_tag(buf, sizeof(buf), "date", info)) {
             stream_pos = parse_date(buf, 0);
             if (stream_pos == INT64_MIN)
                 return -1;
-        }
-        else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
+        } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
             stream_pos = av_gettime() - prebuffer * (int64_t)1000000;
         } else
@@ -1946,13 +1943,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
         strcpy(input_filename, c->stream->feed_filename);
         buf_size = 0;
         /* compute position (relative time) */
-        if (find_info_tag(buf, sizeof(buf), "date", info))
-        {
+        if (find_info_tag(buf, sizeof(buf), "date", info)) {
             stream_pos = parse_date(buf, 1);
             if (stream_pos == INT64_MIN)
                 return -1;
-        }
-        else
+        } else
             stream_pos = 0;
     }
     if (input_filename[0] == '\0')
