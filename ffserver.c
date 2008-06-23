@@ -2159,7 +2159,8 @@ static int http_prepare_data(HTTPContext *c)
                     }
                 } else {
                     AVCodecContext *codec;
-
+                    AVStream *ist = c->fmt_in->streams[source_index];
+                    AVStream *ost = ctx->streams[pkt.stream_index];
                 send_it:
                     /* specific handling for RTP: we use several
                        output stream (one for each RTP
@@ -2193,7 +2194,7 @@ static int http_prepare_data(HTTPContext *c)
                     } else {
                         ctx = &c->fmt_ctx;
                         /* Fudge here */
-                        codec = ctx->streams[pkt.stream_index]->codec;
+                        codec = ost->codec;
                     }
 
                     if (c->is_packetized) {
@@ -2212,16 +2213,10 @@ static int http_prepare_data(HTTPContext *c)
                     }
                     c->fmt_ctx.pb->is_streamed = 1;
                     if (pkt.dts != AV_NOPTS_VALUE)
-                        pkt.dts = av_rescale_q(pkt.dts,
-                                               c->fmt_in->streams[source_index]->time_base,
-                                               ctx->streams[pkt.stream_index]->time_base);
+                        pkt.dts = av_rescale_q(pkt.dts, ist->time_base, ost->time_base);
                     if (pkt.pts != AV_NOPTS_VALUE)
-                        pkt.pts = av_rescale_q(pkt.pts,
-                                               c->fmt_in->streams[source_index]->time_base,
-                                               ctx->streams[pkt.stream_index]->time_base);
-                    pkt.duration = av_rescale_q(pkt.duration,
-                                                c->fmt_in->streams[source_index]->time_base,
-                                                ctx->streams[pkt.stream_index]->time_base);
+                        pkt.pts = av_rescale_q(pkt.pts, ist->time_base, ost->time_base);
+                    pkt.duration = av_rescale_q(pkt.duration, ist->time_base, ost->time_base);
                     if (av_write_frame(ctx, &pkt) < 0) {
                         http_log("Error writing frame to output\n");
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
