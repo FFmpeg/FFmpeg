@@ -25,7 +25,6 @@
 
 #define NBLOCKS         4       /* number of segments within a block */
 #define BLOCKSIZE       40      /* (quarter) block size in 16-bit words (80 bytes) */
-#define HALFBLOCK       20      /* BLOCKSIZE/2 */
 #define BUFFERSIZE      146     /* for do_output */
 
 
@@ -217,7 +216,7 @@ static void do_output_subblock(RA144Context *ractx,
     int m[3];
 
     if (cba_idx) {
-        cba_idx += HALFBLOCK - 1;
+        cba_idx += BLOCKSIZE/2 - 1;
         copy_and_dup(ractx->adapt_cb, buffer_a, cba_idx);
         m[0] = irms(buffer_a, gval) >> 12;
     } else {
