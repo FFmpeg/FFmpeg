@@ -136,14 +136,10 @@ static void add_wav(int n, int skip_first, int *m, const int16_t *s1,
         dest[i] = ((*(s1++))*v[0] + (*(s2++))*v[1] + (*(s3++))*v[2]) >> 12;
 }
 
-static void lpc_filter(const int16_t *lpc_coefs, const int16_t *adapt_coef,
-                       uint16_t *statbuf, int len)
+static void lpc_filter(const int16_t *lpc_coefs, uint16_t *statbuf, int len)
 {
     int x, i;
     int16_t *ptr = statbuf;
-
-    memcpy(statbuf, statbuf + 40, 20);
-    memcpy(statbuf + 10, adapt_coef, len * 2);
 
     for (i=0; i<len; i++) {
         int sum = 0;
@@ -229,7 +225,12 @@ static void do_output_subblock(RA144Context *ractx,
     add_wav(gain, cba_idx, m, buffer_a, cb1_vects[cb1_idx], cb2_vects[cb2_idx],
             block);
 
-    lpc_filter(lpc_coefs, block, ractx->curr_sblock, BLOCKSIZE);
+    memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
+           10*sizeof(*ractx->curr_sblock));
+    memcpy(ractx->curr_sblock + 10, block,
+           BLOCKSIZE*sizeof(*ractx->curr_sblock));
+
+    lpc_filter(lpc_coefs, ractx->curr_sblock, BLOCKSIZE);
 }
 
 static void int_to_int16(int16_t *out, const int *inp)
