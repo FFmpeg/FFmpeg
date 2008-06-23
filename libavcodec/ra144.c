@@ -195,7 +195,6 @@ static unsigned int rms(const int *data)
         data++;
     }
 
-    if (res > 0)
         res = t_sqrt(res);
 
     res >>= (b + 10);
