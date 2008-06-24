@@ -202,9 +202,8 @@ static unsigned int rms(const int *data)
     return res;
 }
 
-static void do_output_subblock(RA144Context *ractx,
-                               const uint16_t  *lpc_coefs, int gval,
-                               GetBitContext *gb)
+static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
+                               int gval, GetBitContext *gb)
 {
     uint16_t buffer_a[40];
     uint16_t *block;
