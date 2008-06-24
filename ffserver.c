@@ -3986,25 +3986,25 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "Format")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-            if (!strcmp(arg, "status")) {
-                stream->stream_type = STREAM_TYPE_STATUS;
-                stream->fmt = NULL;
-            } else {
-                stream->stream_type = STREAM_TYPE_LIVE;
-                /* jpeg cannot be used here, so use single frame jpeg */
-                if (!strcmp(arg, "jpeg"))
-                    strcpy(arg, "mjpeg");
-                stream->fmt = guess_stream_format(arg, NULL, NULL);
-                if (!stream->fmt) {
-                    fprintf(stderr, "%s:%d: Unknown Format: %s\n",
-                            filename, line_num, arg);
-                    errors++;
+                if (!strcmp(arg, "status")) {
+                    stream->stream_type = STREAM_TYPE_STATUS;
+                    stream->fmt = NULL;
+                } else {
+                    stream->stream_type = STREAM_TYPE_LIVE;
+                    /* jpeg cannot be used here, so use single frame jpeg */
+                    if (!strcmp(arg, "jpeg"))
+                        strcpy(arg, "mjpeg");
+                    stream->fmt = guess_stream_format(arg, NULL, NULL);
+                    if (!stream->fmt) {
+                        fprintf(stderr, "%s:%d: Unknown Format: %s\n",
+                                filename, line_num, arg);
+                        errors++;
+                    }
                 }
-            }
-            if (stream->fmt) {
-                audio_id = stream->fmt->audio_codec;
-                video_id = stream->fmt->video_codec;
-            }
+                if (stream->fmt) {
+                    audio_id = stream->fmt->audio_codec;
+                    video_id = stream->fmt->video_codec;
+                }
             }
         } else if (!strcasecmp(cmd, "InputFormat")) {
             get_arg(arg, sizeof(arg), &p);
