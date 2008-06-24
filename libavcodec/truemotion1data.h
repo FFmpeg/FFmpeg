@@ -46,10 +46,10 @@ static const int16_t cdt3[8] = { 0, -2, 2, -8, 8, -18, 18, -40 };
 static const int16_t fat_cdt3[8] = { 0, 40, 80, -76, 160, -154, 236, -236 };
 
 /* all the delta tables to choose from, at all 4 delta levels */
-static const int16_t *ydts[] = { ydt1, ydt2, ydt3, ydt4, NULL };
-static const int16_t *fat_ydts[] = { fat_ydt3, fat_ydt3, fat_ydt3, fat_ydt4, NULL };
-static const int16_t *cdts[] = { cdt1, cdt1, cdt2, cdt3, NULL };
-static const int16_t *fat_cdts[] = { fat_cdt2, fat_cdt2, fat_cdt2, fat_cdt3, NULL };
+static const int16_t * const ydts[] = { ydt1, ydt2, ydt3, ydt4, NULL };
+static const int16_t * const fat_ydts[] = { fat_ydt3, fat_ydt3, fat_ydt3, fat_ydt4, NULL };
+static const int16_t * const cdts[] = { cdt1, cdt1, cdt2, cdt3, NULL };
+static const int16_t * const fat_cdts[] = { fat_cdt2, fat_cdt2, fat_cdt2, fat_cdt3, NULL };
 
 static const uint8_t pc_tbl2[] = {
 0x8,0x00,0x00,0x00,0x00,
@@ -828,6 +828,6 @@ static const uint8_t pc_tbl4[] = {
 0x2,0x77
 };
 
-static const uint8_t *tables[] = { pc_tbl2, pc_tbl3, pc_tbl4 };
+static const uint8_t * const tables[] = { pc_tbl2, pc_tbl3, pc_tbl4 };
 
 #endif /* FFMPEG_TRUEMOTION1DATA_H */

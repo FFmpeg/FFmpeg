@@ -1075,7 +1075,7 @@ static av_cold int vorbis_encode_close(AVCodecContext * avccontext)
     return 0 ;
 }
 
-AVCodec vorbis_encoder = {
+const AVCodec vorbis_encoder = {
     "vorbis",
     CODEC_TYPE_AUDIO,
     CODEC_ID_VORBIS,

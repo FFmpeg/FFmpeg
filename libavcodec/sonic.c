@@ -481,7 +481,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
 }
 #endif /* CONFIG_ENCODERS */
 
-static int samplerate_table[] =
+static const int samplerate_table[] =
     { 44100, 22050, 11025, 96000, 48000, 32000, 24000, 16000, 8000 };
 
 #ifdef CONFIG_ENCODERS

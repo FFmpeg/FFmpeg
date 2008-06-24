@@ -24,7 +24,7 @@
 #include "avcodec.h"
 
 extern const float ff_vorbis_floor1_inverse_db_table[256];
-extern const float * ff_vorbis_vwin[8];
+extern const float * const ff_vorbis_vwin[8];
 
 typedef struct {
     uint_fast16_t x;

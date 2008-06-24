@@ -254,17 +254,17 @@ static const int16_t fft_level_index_table[256] = {
     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
 };
 
-static uint8_t last_coeff[3] = {
+static const uint8_t last_coeff[3] = {
     4, 7, 10
 };
 
-static uint8_t coeff_per_sb_for_avg[3][30] = {
+static const uint8_t coeff_per_sb_for_avg[3][30] = {
     { 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
     { 0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 },
     { 0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9 }
 };
 
-static uint32_t dequant_table[3][10][30] = {
+static const uint32_t dequant_table[3][10][30] = {
     { { 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
       { 0, 256, 256, 205, 154, 102, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
       { 0, 0, 0, 51, 102, 154, 205, 256, 238, 219, 201, 183, 165, 146, 128, 110, 91, 73, 55, 37, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -297,14 +297,14 @@ static uint32_t dequant_table[3][10][30] = {
       { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 43, 85, 128, 171, 213, 256, 213, 171, 128, 85, 43 } }
 };
 
-static uint8_t coeff_per_sb_for_dequant[3][30] = {
+static const uint8_t coeff_per_sb_for_dequant[3][30] = {
     { 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
     { 0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 },
     { 0, 1, 2, 3, 4, 4, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9 }
 };
 
 /* first index is subband, 2nd index is 0, 1 or 3 (2 is unused) */
-static int8_t tone_level_idx_offset_table[30][4] = {
+static const int8_t tone_level_idx_offset_table[30][4] = {
     { -50, -50,  0, -50 },
     { -50, -50,  0, -50 },
     { -50,  -9,  0, -19 },
@@ -339,7 +339,7 @@ static int8_t tone_level_idx_offset_table[30][4] = {
 
 /* all my samples have 1st index 0 or 1 */
 /* second index is subband, only indexes 0-29 seem to be used */
-static int8_t coding_method_table[5][30] = {
+static const int8_t coding_method_table[5][30] = {
     { 34, 30, 24, 24, 16, 16, 16, 16, 10, 10, 10, 10, 10, 10, 10,
       10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
     },
@@ -513,7 +513,7 @@ static const uint8_t fft_subpackets[32] = {
 };
 
 /* first index is joined_stereo, second index is 0 or 2 (1 is unused) */
-static float dequant_1bit[2][3] = {
+static const float dequant_1bit[2][3] = {
     {-0.920000f, 0.000000f, 0.920000f },
     {-0.890000f, 0.000000f, 0.890000f }
 };

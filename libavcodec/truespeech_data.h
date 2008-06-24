@@ -66,7 +66,7 @@ static const int16_t ts_cb_7[8] = {
     0xCEF0, 0xE4F9, 0xF6BB, 0x0646, 0x14F5, 0x23FF, 0x356F, 0x4A8D,
 };
 
-static const int16_t *ts_codebook[8] = {
+static const int16_t * const ts_codebook[8] = {
     ts_cb_0, ts_cb_1, ts_cb_2, ts_cb_3, ts_cb_4, ts_cb_5, ts_cb_6, ts_cb_7
 };
 

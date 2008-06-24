@@ -97,11 +97,11 @@ static const uint8_t huff_tab_sizes[7] = {
   9, 5, 7, 9, 15, 31, 63,
 };
 
-static const uint8_t* huff_codes[7] = {
+static const uint8_t* const huff_codes[7] = {
   huffcode1,huffcode2,huffcode3,huffcode4,huffcode5,huffcode6,huffcode7,
 };
 
-static const uint8_t* huff_bits[7] = {
+static const uint8_t* const huff_bits[7] = {
   huffbits1,huffbits2,huffbits3,huffbits4,huffbits5,huffbits6,huffbits7,
 };
 

@@ -38,6 +38,6 @@ extern const int32_t ff_mpa_enwindow[257];
 extern const int ff_mpa_sblimit_table[5];
 extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];
-extern const unsigned char *ff_mpa_alloc_tables[5];
+extern const unsigned char * const ff_mpa_alloc_tables[5];
 
 #endif /* FFMPEG_MPEGAUDIODATA_H */

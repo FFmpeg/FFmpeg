@@ -48,7 +48,7 @@ typedef struct DPCMContext {
 
 #define SE_16BIT(x)  if (x & 0x8000) x -= 0x10000;
 
-static int interplay_delta_table[] = {
+static const int interplay_delta_table[] = {
          0,      1,      2,      3,      4,      5,      6,      7,
          8,      9,     10,     11,     12,     13,     14,     15,
         16,     17,     18,     19,     20,     21,     22,     23,

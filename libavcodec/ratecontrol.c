@@ -67,7 +67,7 @@ int ff_rate_control_init(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     int i;
     const char *error = NULL;
-    static const char *const_names[]={
+    static const char * const const_names[]={
         "PI",
         "E",
         "iTex",
@@ -99,7 +99,7 @@ int ff_rate_control_init(MpegEncContext *s)
         (void *)qp2bits,
         NULL
     };
-    static const char *func1_names[]={
+    static const char * const func1_names[]={
         "bits2qp",
         "qp2bits",
         NULL

@@ -94,14 +94,14 @@ static const AVOption *set_all_opt(void *v, const char *unit, double d){
     return ret;
 }
 
-static double const_values[]={
+static const double const_values[]={
     M_PI,
     M_E,
     FF_QP2LAMBDA,
     0
 };
 
-static const char *const_names[]={
+static const char * const const_names[]={
     "PI",
     "E",
     "QP2LAMBDA",

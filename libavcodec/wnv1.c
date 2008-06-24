@@ -36,7 +36,7 @@ typedef struct WNV1Context{
     GetBitContext gb;
 } WNV1Context;
 
-static uint16_t code_tab[16][2]={
+static const uint16_t code_tab[16][2]={
 {0x1FD,9}, {0xFD,8}, {0x7D,7}, {0x3D,6}, {0x1D,5}, {0x0D,4}, {0x005,3},
 {0x000,1},
 {0x004,3}, {0x0C,4}, {0x1C,5}, {0x3C,6}, {0x7C,7}, {0xFC,8}, {0x1FC,9}, {0xFF,8}

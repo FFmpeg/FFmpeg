@@ -76,7 +76,7 @@ static const uint32_t shift_1[] = {
     0x80000000, 0x80000000, 0x80000000, 0x80000000
 };
 
-static const uint32_t *shift_16 = shift_1 + 4;
+static const uint32_t * const shift_16 = shift_1 + 4;
 #endif
 
 #define MAX_ORDER 16
@@ -87,7 +87,7 @@ typedef struct TTAFilter {
     int32_t dl[MAX_ORDER];
 } TTAFilter;
 
-static int32_t ttafilter_configs[4][2] = {
+static const int32_t ttafilter_configs[4][2] = {
     {10, 1},
     {9, 1},
     {10, 1},

@@ -59,7 +59,7 @@ typedef struct Parser{
     double var[VARS];
 } Parser;
 
-static int8_t si_prefixes['z' - 'E' + 1]={
+static const int8_t si_prefixes['z' - 'E' + 1]={
     ['y'-'E']= -24,
     ['z'-'E']= -21,
     ['a'-'E']= -18,

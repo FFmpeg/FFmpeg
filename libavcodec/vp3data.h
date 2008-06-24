@@ -405,7 +405,7 @@ static const int16_t coeff_table_token_22[1024] = {
     -573, -574, -575, -576, -577, -578, -579, -580
 };
 
-static const int16_t *coeff_tables[32] = {
+static const int16_t *const coeff_tables[32] = {
     NULL,
     NULL,
     NULL,

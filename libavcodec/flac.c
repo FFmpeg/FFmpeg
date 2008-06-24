@@ -75,15 +75,15 @@ typedef struct FLACContext {
 
 #define METADATA_TYPE_STREAMINFO 0
 
-static int sample_rate_table[] =
+static const int sample_rate_table[] =
 { 0, 0, 0, 0,
   8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
   0, 0, 0, 0 };
 
-static int sample_size_table[] =
+static const int sample_size_table[] =
 { 0, 8, 12, 0, 16, 20, 24, 0 };
 
-static int blocksize_table[] = {
+static const int blocksize_table[] = {
      0,    192, 576<<0, 576<<1, 576<<2, 576<<3,      0,      0,
 256<<0, 256<<1, 256<<2, 256<<3, 256<<4, 256<<5, 256<<6, 256<<7
 };

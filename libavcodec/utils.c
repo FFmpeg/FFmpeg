@@ -1369,7 +1369,7 @@ typedef struct {
     int rate_num, rate_den;
 } VideoFrameRateAbbr;
 
-static VideoFrameSizeAbbr video_frame_size_abbrs[] = {
+static const VideoFrameSizeAbbr video_frame_size_abbrs[] = {
     { "ntsc",      720, 480 },
     { "pal",       720, 576 },
     { "qntsc",     352, 240 }, /* VCD compliant NTSC */
@@ -1408,7 +1408,7 @@ static VideoFrameSizeAbbr video_frame_size_abbrs[] = {
     { "hd1080",   1920,1080 },
 };
 
-static VideoFrameRateAbbr video_frame_rate_abbrs[]= {
+static const VideoFrameRateAbbr video_frame_rate_abbrs[]= {
     { "ntsc",      30000, 1001 },
     { "pal",          25,    1 },
     { "qntsc",     30000, 1001 }, /* VCD compliant NTSC */

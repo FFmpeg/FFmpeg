@@ -94,7 +94,7 @@ static const float imc_exp_tab[32] = {
     1.778280e02, 3.162278e02, 5.623413e02, 1.000000e03,
     1.778280e03, 3.162278e03, 5.623413e03, 1.000000e04
 };
-static const float *imc_exp_tab2 = imc_exp_tab + 8;
+static const float * const imc_exp_tab2 = imc_exp_tab + 8;
 
 
 static const uint8_t imc_cb_select[4][32] = {

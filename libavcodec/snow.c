@@ -363,7 +363,7 @@ static const uint8_t obmc4[16]={
 //error:0.000000
 };
 
-static const uint8_t *obmc_tab[4]={
+static const uint8_t * const obmc_tab[4]={
     obmc32, obmc16, obmc8, obmc4
 };
 

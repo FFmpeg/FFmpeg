@@ -221,5 +221,5 @@ static const unsigned char alloc_table_4[] = {
  2,  0,  1,  3,
 };
 
-const unsigned char *ff_mpa_alloc_tables[5] =
+const unsigned char * const ff_mpa_alloc_tables[5] =
 { alloc_table_0, alloc_table_1, alloc_table_2, alloc_table_3, alloc_table_4, };

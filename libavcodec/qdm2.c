@@ -361,7 +361,7 @@ static void qdm2_init_vlc(void)
 
 
 /* for floating point to fixed point conversion */
-static float f2i_scale = (float) (1 << (FRAC_BITS - 15));
+static const float f2i_scale = (float) (1 << (FRAC_BITS - 15));
 
 
 static int qdm2_get_vlc (GetBitContext *gb, VLC *vlc, int flag, int depth)
