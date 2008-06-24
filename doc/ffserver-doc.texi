@@ -25,9 +25,6 @@ This documentation covers only the streaming aspects of ffserver /
 ffmpeg. All questions about parameters for ffmpeg, codec questions,
 etc. are not covered here. Read @file{ffmpeg-doc.html} for more
 information.
-@c man end
-
-@chapter Quick Start
 
 [Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
 
@@ -229,6 +226,7 @@ may be in the future and so is unlikely to be useful.
 
 You use this by adding the ?date= to the end of the URL for the stream.
 For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
+@c man end
 
 @chapter Invocation
 @section Syntax
