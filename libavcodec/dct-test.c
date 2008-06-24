@@ -32,16 +32,13 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "libavutil/common.h"
 #include "dsputil.h"
 
 #include "simple_idct.h"
 #include "faandct.h"
 #include "faanidct.h"
 #include "i386/idct_xvid.h"
-
-#ifndef MAX
-#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
-#endif
 
 #undef printf
 #undef random
@@ -288,7 +285,7 @@ void dct_error(const char *name, int is_idct,
         }
 #endif
     }
-    for(i=0; i<64; i++) sysErrMax= MAX(sysErrMax, FFABS(sysErr[i]));
+    for(i=0; i<64; i++) sysErrMax= FFMAX(sysErrMax, FFABS(sysErr[i]));
 
 #if 1 // dump systematic errors
     for(i=0; i<64; i++){
