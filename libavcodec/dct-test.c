@@ -531,7 +531,10 @@ int main(int argc, char **argv)
 
     init_fdct();
     idct_mmx_init();
+
+#ifndef mm_flags
     mm_flags = mm_support();
+#endif
 
     for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
