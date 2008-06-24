@@ -68,7 +68,7 @@ extern void fdct_altivec (DCTELEM *block);
 
 
 struct algo {
-  char *name;
+  const char *name;
   enum { FDCT, IDCT } is_idct;
   void (* func) (DCTELEM *block);
   void (* ref)  (DCTELEM *block);
