@@ -33,8 +33,6 @@
 #undef exit
 #undef random
 
-int mm_flags;
-
 /* reference fft */
 
 #define MUL16(a,b) ((a) * (b))
