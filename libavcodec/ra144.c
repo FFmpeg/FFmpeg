@@ -358,7 +358,7 @@ static int ra144_decode_frame(AVCodecContext * avctx,
     eval_coefs(ractx->lpc_coef, lpc_refl);
     ractx->lpc_refl_rms = rms(lpc_refl);
 
-    energy = energy_tab[get_bits(&gb, 5) << 1]; // Useless table entries?
+    energy = energy_tab[get_bits(&gb, 5)];
 
     refl_rms[0] = interp(ractx, block_coefs[0], 0, 0, ractx->old_energy);
     refl_rms[1] = interp(ractx, block_coefs[1], 1, energy > ractx->old_energy,
