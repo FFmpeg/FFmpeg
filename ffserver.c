@@ -407,6 +407,23 @@ static void start_children(FFStream *feed)
                 char *slash;
                 int i;
 
+                av_strlcpy(pathname, my_program_name, sizeof(pathname));
+
+                slash = strrchr(pathname, '/');
+                if (!slash)
+                    slash = pathname;
+                else
+                    slash++;
+                strcpy(slash, "ffmpeg");
+
+                if (ffserver_debug) {
+                    fprintf(stdout, "Launch commandline: ");
+                    fprintf(stdout, "%s ", pathname);
+                    for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
+                        fprintf(stdout, "%s ", feed->child_argv[i]);
+                    fprintf(stdout, "\n");
+                }
+
                 for (i = 3; i < 256; i++)
                     close(i);
 
@@ -419,15 +436,6 @@ static void start_children(FFStream *feed)
                         close(i);
                     }
                 }
-
-                av_strlcpy(pathname, my_program_name, sizeof(pathname));
-
-                slash = strrchr(pathname, '/');
-                if (!slash)
-                    slash = pathname;
-                else
-                    slash++;
-                strcpy(slash, "ffmpeg");
 
                 /* This is needed to make relative pathnames work */
                 chdir(my_program_dir);
@@ -3883,15 +3891,6 @@ static int parse_ffconfig(const char *filename)
                         (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
                     inet_ntoa(my_http_addr.sin_addr),
                     ntohs(my_http_addr.sin_port), feed->filename);
-
-                if (ffserver_debug)
-                {
-                    int j;
-                    fprintf(stdout, "Launch commandline: ");
-                    for (j = 0; j <= i; j++)
-                        fprintf(stdout, "%s ", feed->child_argv[j]);
-                    fprintf(stdout, "\n");
-                }
             }
         } else if (!strcasecmp(cmd, "ReadOnlyFile")) {
             if (feed) {
