@@ -301,7 +301,7 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
 }
 
 static int interp(RA144Context *ractx, int16_t *out, int block_num,
-                  int copynew, int energy)
+                  int copyold, int energy)
 {
     int work[10];
     int a = block_num + 1;
@@ -316,13 +316,8 @@ static int interp(RA144Context *ractx, int16_t *out, int block_num,
     if (eval_refl(work, out, ractx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients
-        if (copynew) {
-            int_to_int16(out, ractx->lpc_coef[0]);
-            return rescale_rms(ractx->lpc_refl_rms[0], energy);
-        } else {
-            int_to_int16(out, ractx->lpc_coef[1]);
-            return rescale_rms(ractx->lpc_refl_rms[1], energy);
-        }
+        int_to_int16(out, ractx->lpc_coef[copyold]);
+        return rescale_rms(ractx->lpc_refl_rms[copyold], energy);
     } else {
         return rescale_rms(rms(work), energy);
     }
@@ -359,10 +354,10 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     energy = energy_tab[get_bits(&gb, 5)];
 
-    refl_rms[0] = interp(ractx, block_coefs[0], 0, 0, ractx->old_energy);
-    refl_rms[1] = interp(ractx, block_coefs[1], 1, energy > ractx->old_energy,
+    refl_rms[0] = interp(ractx, block_coefs[0], 0, 1, ractx->old_energy);
+    refl_rms[1] = interp(ractx, block_coefs[1], 1, energy <= ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
-    refl_rms[2] = interp(ractx, block_coefs[2], 2, 1, energy);
+    refl_rms[2] = interp(ractx, block_coefs[2], 2, 0, energy);
     refl_rms[3] = rescale_rms(ractx->lpc_refl_rms[0], energy);
 
     int_to_int16(block_coefs[3], ractx->lpc_coef[0]);
