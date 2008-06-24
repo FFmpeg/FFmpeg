@@ -416,11 +416,11 @@ static void start_children(FFStream *feed)
                     slash++;
                 strcpy(slash, "ffmpeg");
 
-                    http_log("Launch commandline: ");
-                    http_log("%s ", pathname);
-                    for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
-                        http_log("%s ", feed->child_argv[i]);
-                    http_log("\n");
+                http_log("Launch commandline: ");
+                http_log("%s ", pathname);
+                for (i = 1; feed->child_argv[i] && feed->child_argv[i][0]; i++)
+                    http_log("%s ", feed->child_argv[i]);
+                http_log("\n");
 
                 for (i = 3; i < 256; i++)
                     close(i);
