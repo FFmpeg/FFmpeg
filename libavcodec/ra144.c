@@ -330,9 +330,8 @@ static int interp(RA144Context *ractx, int16_t *out, int block_num,
 }
 
 /* Uncompress one block (20 bytes -> 160*2 bytes) */
-static int ra144_decode_frame(AVCodecContext * avctx,
-                              void *vdata, int *data_size,
-                              const uint8_t * buf, int buf_size)
+static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
+                              int *data_size, const uint8_t *buf, int buf_size)
 {
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int refl_rms[4];    // RMS of the reflection coefficients
