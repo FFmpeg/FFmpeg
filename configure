@@ -1399,7 +1399,7 @@ if test $target_os = darwin; then
     fi
 fi
 
-disabled optimizations || add_cflags -fomit-frame-pointer
+disabled optimizations || check_cflags -fomit-frame-pointer
 
 # Add processor-specific flags
 if test $cpu != "generic"; then
