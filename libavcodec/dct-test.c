@@ -528,13 +528,10 @@ int main(int argc, char **argv)
     int test_idct = 0, test_248_dct = 0;
     int c,i;
     int test=1;
+    int cpu_flags = mm_support();
 
     init_fdct();
     idct_mmx_init();
-
-#ifndef mm_flags
-    mm_flags = mm_support();
-#endif
 
     for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
@@ -568,7 +565,7 @@ int main(int argc, char **argv)
         idct248_error("SIMPLE-C", ff_simple_idct248_put);
     } else {
       for (i=0;algos[i].name;i++)
-        if (algos[i].is_idct == test_idct && !(~mm_flags & algos[i].mm_support)) {
+        if (algos[i].is_idct == test_idct && !(~cpu_flags & algos[i].mm_support)) {
           dct_error (algos[i].name, algos[i].is_idct, algos[i].func, algos[i].ref, algos[i].format, test);
         }
     }
