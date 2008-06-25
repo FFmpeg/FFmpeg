@@ -28,6 +28,7 @@
 #include "parser.h"
 
 typedef struct AACAC3ParseContext {
+    ParseContext pc;
     int frame_size;
     int header_size;
     int (*sync)(uint64_t state, struct AACAC3ParseContext *hdr_info,
@@ -38,7 +39,6 @@ typedef struct AACAC3ParseContext {
     int bit_rate;
     int samples;
 
-    ParseContext pc;
     int remaining_size;
     uint64_t state;
 

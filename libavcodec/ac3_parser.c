@@ -192,5 +192,5 @@ AVCodecParser ac3_parser = {
     sizeof(AACAC3ParseContext),
     ac3_parse_init,
     ff_aac_ac3_parse,
-    NULL,
+    ff_parse_close,
 };
