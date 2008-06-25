@@ -206,8 +206,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
 
-            put_bits(&s->pb, 12, s->width);
-            put_bits(&s->pb, 12, s->height);
+            put_bits(&s->pb, 12, s->width  & 0xFFF);
+            put_bits(&s->pb, 12, s->height & 0xFFF);
 
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
@@ -272,8 +272,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
                 put_bits(&s->pb, 1, s->progressive_sequence);
                 put_bits(&s->pb, 2, s->chroma_format);
-                put_bits(&s->pb, 2, 0); //horizontal size ext
-                put_bits(&s->pb, 2, 0); //vertical size ext
+                put_bits(&s->pb, 2, s->width >>12);
+                put_bits(&s->pb, 2, s->height>>12);
                 put_bits(&s->pb, 12, v>>18); //bitrate ext
                 put_bits(&s->pb, 1, 1); //marker
                 put_bits(&s->pb, 8, vbv_buffer_size >>10); //vbv buffer ext
