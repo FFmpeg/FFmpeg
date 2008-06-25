@@ -67,7 +67,7 @@ static int oma_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     static const uint16_t srate_tab[6] = {320,441,480,882,960,0};
-    int     ret, ea3_taglen, EA3_pos, framesize, jsflag, samplerate, channel_id;
+    int     ret, ea3_taglen, EA3_pos, framesize, jsflag, samplerate;
     uint32_t codec_params;
     int16_t eid;
     uint8_t buf[EA3_HEADER_SIZE];
@@ -101,21 +101,27 @@ static int oma_read_header(AVFormatContext *s,
     }
 
     codec_params = AV_RB24(&buf[33]);
-    channel_id = (codec_params >> 10) & 7;
-    samplerate = srate_tab[(codec_params >> 13) & 7]*100;
 
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
 
+    st->start_time = 0;
+    st->codec->codec_type  = CODEC_TYPE_AUDIO;
+    st->codec->codec_tag   = buf[32];
+    st->codec->codec_id    = codec_get_id(codec_oma_tags, st->codec->codec_tag);
+
     switch (buf[32]) {
         case OMA_CODECID_ATRAC3:
+            samplerate = srate_tab[(codec_params >> 13) & 7]*100;
             if (samplerate != 44100)
                 av_log(s, AV_LOG_ERROR, "Unsupported sample rate, send sample file to developers: %d\n", samplerate);
 
             framesize = (codec_params & 0x3FF) * 8;
             jsflag = (codec_params >> 17) & 1; /* get stereo coding mode, 1 for joint-stereo */
-            channel_id = 2;
+            st->codec->channels    = 2;
+            st->codec->sample_rate = samplerate;
+            st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
 
             /* fake the atrac3 extradata (wav format, makes stream copy to wav work) */
             st->codec->extradata_size = 14;
@@ -130,9 +136,15 @@ static int oma_read_header(AVFormatContext *s,
             AV_WL16(&edata[8],  jsflag);        // coding mode
             AV_WL16(&edata[10], 1);             // always 1
             // AV_WL16(&edata[12], 0);          // always 0
+
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
         case OMA_CODECID_ATRAC3P:
+            st->codec->channels = (codec_params >> 10) & 7;
             framesize = ((codec_params & 0x3FF) * 8) + 8;
+            st->codec->sample_rate = srate_tab[(codec_params >> 13) & 7]*100;
+            st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
             break;
         default:
@@ -141,17 +153,7 @@ static int oma_read_header(AVFormatContext *s,
             break;
     }
 
-    st->codec->codec_type  = CODEC_TYPE_AUDIO;
-    st->codec->codec_tag   = buf[32];
-    st->codec->codec_id    = codec_get_id(codec_oma_tags, st->codec->codec_tag);
-    st->codec->channels    = channel_id;
-    st->codec->sample_rate = samplerate;
-    st->codec->bit_rate    = samplerate * framesize * 8 / 1024;
     st->codec->block_align = framesize;
-
-    st->start_time = 0;
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-
     url_fseek(s->pb, EA3_pos + EA3_HEADER_SIZE, SEEK_SET);
 
     return 0;
