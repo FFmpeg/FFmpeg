@@ -81,7 +81,7 @@ static int rtp_write_header(AVFormatContext *s1)
         }
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             /* FIXME: We should round down here... */
-            s->max_frames_per_packet = av_rescale_q(s1->max_delay, AV_TIME_BASE_Q, st->codec->time_base);
+            s->max_frames_per_packet = av_rescale_q(s1->max_delay, (AVRational){1, 1000000}, st->codec->time_base);
         }
     }
 
@@ -126,7 +126,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 
     if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) s->first_rtcp_ntp_time = ntp_time;
     s->last_rtcp_ntp_time = ntp_time;
-    rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, AV_TIME_BASE_Q,
+    rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
                           s1->streams[0]->time_base) + s->base_timestamp;
     put_byte(s1->pb, (RTP_VERSION << 6));
     put_byte(s1->pb, 200);
