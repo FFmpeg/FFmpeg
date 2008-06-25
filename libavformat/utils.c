@@ -1729,6 +1729,8 @@ static int has_codec_parameters(AVCodecContext *enc)
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
         val = enc->sample_rate && enc->channels;
+        if(enc->codec_id == CODEC_ID_VORBIS && !enc->frame_size)
+            return 0;
         break;
     case CODEC_TYPE_VIDEO:
         val = enc->width && enc->pix_fmt != PIX_FMT_NONE;
