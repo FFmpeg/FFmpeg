@@ -172,11 +172,8 @@ typedef struct Vp3Fragment {
 #define MODE_COPY             8
 
 /* There are 6 preset schemes, plus a free-form scheme */
-static int ModeAlphabet[7][CODING_MODE_COUNT] =
+static const int ModeAlphabet[6][CODING_MODE_COUNT] =
 {
-    /* this is the custom scheme */
-    { 0, 0, 0, 0, 0, 0, 0, 0 },
-
     /* scheme 1: Last motion vector dominates */
     {    MODE_INTER_LAST_MV,    MODE_INTER_PRIOR_LAST,
          MODE_INTER_PLUS_MV,    MODE_INTER_NO_MV,
@@ -877,6 +874,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
     int current_macroblock;
     int current_fragment;
     int coding_mode;
+    int custom_mode_alphabet[CODING_MODE_COUNT];
 
     debug_vp3("  vp3: unpacking encoding modes\n");
 
@@ -896,12 +894,17 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
         if (scheme == 0) {
             debug_modes("    custom mode alphabet ahead:\n");
             for (i = 0; i < 8; i++)
-                ModeAlphabet[scheme][get_bits(gb, 3)] = i;
+                custom_mode_alphabet[get_bits(gb, 3)] = i;
         }
 
-        for (i = 0; i < 8; i++)
-            debug_modes("      mode[%d][%d] = %d\n", scheme, i,
-                ModeAlphabet[scheme][i]);
+        for (i = 0; i < 8; i++) {
+            if(scheme)
+                debug_modes("      mode[%d][%d] = %d\n", scheme, i,
+                    ModeAlphabet[scheme-1][i]);
+            else
+                debug_modes("      mode[0][%d] = %d\n", i,
+                    custom_mode_alphabet[i]);
+        }
 
         /* iterate through all of the macroblocks that contain 1 or more
          * coded fragments */
@@ -921,8 +924,11 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 /* mode 7 means get 3 bits for each coding mode */
                 if (scheme == 7)
                     coding_mode = get_bits(gb, 3);
+                else if(scheme == 0)
+                    coding_mode = custom_mode_alphabet
+                        [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
                 else
-                    coding_mode = ModeAlphabet[scheme]
+                    coding_mode = ModeAlphabet[scheme-1]
                         [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
 
                 s->macroblock_coding[current_macroblock] = coding_mode;
