@@ -4483,7 +4483,7 @@ int main(int argc, char **argv)
     /* open log file if needed */
     if (logfilename[0] != '\0') {
         if (!strcmp(logfilename, "-"))
-            logfile = stderr;
+            logfile = stdout;
         else
             logfile = fopen(logfilename, "a");
         av_log_set_callback(http_av_log);
