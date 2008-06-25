@@ -783,8 +783,8 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     }
     else
     {
-        v->zz_8x4 = ff_vc1_simple_progressive_8x4_zz;
-        v->zz_4x8 = ff_vc1_simple_progressive_4x8_zz;
+        v->zz_8x4 = wmv2_scantableA;
+        v->zz_4x8 = wmv2_scantableB;
         v->res_sm = get_bits(gb, 2); //reserved
         if (v->res_sm)
         {
@@ -2398,11 +2398,11 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
 
         if(v->s.ac_pred) {
             if(!dc_pred_dir)
-                zz_table = ff_vc1_horizontal_zz;
+                zz_table = wmv1_scantable[2];
             else
-                zz_table = ff_vc1_vertical_zz;
+                zz_table = wmv1_scantable[3];
         } else
-            zz_table = ff_vc1_normal_zz;
+            zz_table = wmv1_scantable[1];
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
@@ -2581,11 +2581,11 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
 
         if(v->s.ac_pred) {
             if(!dc_pred_dir)
-                zz_table = ff_vc1_horizontal_zz;
+                zz_table = wmv1_scantable[2];
             else
-                zz_table = ff_vc1_vertical_zz;
+                zz_table = wmv1_scantable[3];
         } else
-            zz_table = ff_vc1_normal_zz;
+            zz_table = wmv1_scantable[1];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
@@ -2786,7 +2786,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         const int8_t *zz_table;
         int k;
 
-        zz_table = ff_vc1_simple_progressive_8x8_zz;
+        zz_table = wmv1_scantable[0];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
@@ -2928,7 +2928,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             i += skip;
             if(i > 63)
                 break;
-            idx = ff_vc1_simple_progressive_8x8_zz[i++];
+            idx = wmv1_scantable[0][i++];
             block[idx] = value * scale;
             if(!v->pquantizer)
                 block[idx] += (block[idx] < 0) ? -mquant : mquant;

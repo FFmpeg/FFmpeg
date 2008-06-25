@@ -64,9 +64,9 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
 
 static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
     build_vlc(&s->vlcs[0][0], ff_mjpeg_bits_dc_luminance,
-              ff_mjpeg_val_dc_luminance, 12, 0, 0);
+              ff_mjpeg_val_dc, 12, 0, 0);
     build_vlc(&s->vlcs[0][1], ff_mjpeg_bits_dc_chrominance,
-              ff_mjpeg_val_dc_chrominance, 12, 0, 0);
+              ff_mjpeg_val_dc, 12, 0, 0);
     build_vlc(&s->vlcs[1][0], ff_mjpeg_bits_ac_luminance,
               ff_mjpeg_val_ac_luminance, 251, 0, 1);
     build_vlc(&s->vlcs[1][1], ff_mjpeg_bits_ac_chrominance,

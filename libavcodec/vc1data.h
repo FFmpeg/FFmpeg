@@ -143,12 +143,6 @@ extern const uint8_t ff_vc1_mv_diff_bits[4][73];
 /* DC differentials low+hi-mo, p217 are the same as in msmpeg4data .h */
 
 /* Scantables/ZZ scan are at 11.9 (p262) and 8.1.1.12 (p10) */
-extern const int8_t ff_vc1_normal_zz[64];
-extern const int8_t ff_vc1_horizontal_zz [64];
-extern const int8_t ff_vc1_vertical_zz [64];
-extern const int8_t ff_vc1_simple_progressive_8x8_zz [64];
-extern const int8_t ff_vc1_simple_progressive_8x4_zz [32];
-extern const int8_t ff_vc1_simple_progressive_4x8_zz [32];
 extern const int8_t ff_vc1_simple_progressive_4x4_zz [16];
 extern const int8_t ff_vc1_adv_progressive_8x4_zz [32];
 extern const int8_t ff_vc1_adv_progressive_4x8_zz [32];

@@ -76,7 +76,6 @@ extern RLTable rl_table[NB_RL_TABLES];
 extern const uint8_t wmv1_y_dc_scale_table[32];
 extern const uint8_t wmv1_c_dc_scale_table[32];
 extern const uint8_t old_ff_y_dc_scale_table[32];
-extern const uint8_t old_ff_c_dc_scale_table[32];
 
 extern MVTable mv_tables[2];
 
