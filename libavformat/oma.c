@@ -147,6 +147,10 @@ static int oma_read_header(AVFormatContext *s,
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
             break;
+        case OMA_CODECID_MP3:
+            st->need_parsing = AVSTREAM_PARSE_FULL;
+            framesize = 1024;
+            break;
         default:
             av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n",buf[32]);
             return -1;
