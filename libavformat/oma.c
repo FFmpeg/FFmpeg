@@ -52,11 +52,15 @@
 enum {
     OMA_CODECID_ATRAC3  = 0,
     OMA_CODECID_ATRAC3P = 1,
+    OMA_CODECID_MP3     = 3,
+    OMA_CODECID_LPCM    = 4,
+    OMA_CODECID_WMA     = 5,
 };
 
 static const AVCodecTag codec_oma_tags[] = {
     { CODEC_ID_ATRAC3,  OMA_CODECID_ATRAC3 },
     { CODEC_ID_ATRAC3P, OMA_CODECID_ATRAC3P },
+    { CODEC_ID_MP3,     OMA_CODECID_MP3 },
 };
 
 static int oma_read_header(AVFormatContext *s,
