@@ -255,7 +255,7 @@ within the various <Stream> sections. FFserver will not launch any
 ffmpeg instance, so you will have to launch them manually.
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
-messages to stderr and causes ffserver to run in the foreground
+messages to stdout and causes ffserver to run in the foreground
 rather than as a daemon.
 @end table
 @c man end
