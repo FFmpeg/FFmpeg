@@ -243,11 +243,11 @@ static int mlp_parse(AVCodecParserContext *s,
         // Only check when this isn't a sync frame - syncs have a checksum.
 
         parity_bits = 0;
-        for (i = 0; i <= mp->num_substreams; i++) {
+        for (i = -1; i < mp->num_substreams; i++) {
             parity_bits ^= buf[p++];
             parity_bits ^= buf[p++];
 
-            if (i == 0 || buf[p-2] & 0x80) {
+            if (i < 0 || buf[p-2] & 0x80) {
                 parity_bits ^= buf[p++];
                 parity_bits ^= buf[p++];
             }
