@@ -564,9 +564,6 @@ static int http_server(void)
 
     start_children(first_feed);
 
-    first_http_ctx = NULL;
-    nb_connections = 0;
-
     start_multicast();
 
     for(;;) {
