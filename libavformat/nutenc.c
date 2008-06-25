@@ -650,6 +650,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     int store_sp=0;
     int ret;
 
+    if(pkt->pts < 0)
+        return -1;
+
     if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
         write_headers(nut, bc);
 
