@@ -4480,6 +4480,15 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    /* open log file if needed */
+    if (logfilename[0] != '\0') {
+        if (!strcmp(logfilename, "-"))
+            logfile = stderr;
+        else
+            logfile = fopen(logfilename, "a");
+        av_log_set_callback(http_av_log);
+    }
+
     build_file_streams();
 
     build_feed_streams();
@@ -4513,15 +4522,6 @@ int main(int argc, char **argv)
 
     /* signal init */
     signal(SIGPIPE, SIG_IGN);
-
-    /* open log file if needed */
-    if (logfilename[0] != '\0') {
-        if (!strcmp(logfilename, "-"))
-            logfile = stderr;
-        else
-            logfile = fopen(logfilename, "a");
-        av_log_set_callback(http_av_log);
-    }
 
     if (ffserver_daemon)
         chdir("/");
