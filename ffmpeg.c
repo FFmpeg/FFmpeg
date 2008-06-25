@@ -1339,7 +1339,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.pts= AV_NOPTS_VALUE;
 
                         if (pkt->dts == AV_NOPTS_VALUE)
-                            opkt.dts = av_rescale_q(ist->next_pts, AV_TIME_BASE_Q, ost->st->time_base);
+                            opkt.dts = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ost->st->time_base);
                         else
                             opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
 
