@@ -36,11 +36,11 @@
 #define RIFF_TAG MKTAG('R', 'I', 'F', 'F')
 #define CDXA_TAG MKTAG('C', 'D', 'X', 'A')
 
-#define RAW_CD_SECTOR_SIZE 2352
+#define RAW_CD_SECTOR_SIZE      2352
 #define RAW_CD_SECTOR_DATA_SIZE 2304
-#define VIDEO_DATA_CHUNK_SIZE 0x7E0
-#define VIDEO_DATA_HEADER_SIZE 0x38
-#define RIFF_HEADER_SIZE 0x2C
+#define VIDEO_DATA_CHUNK_SIZE   0x7E0
+#define VIDEO_DATA_HEADER_SIZE  0x38
+#define RIFF_HEADER_SIZE        0x2C
 
 #define CDXA_TYPE_MASK     0x0E
 #define CDXA_TYPE_DATA     0x08
@@ -169,8 +169,8 @@ static int str_read_header(AVFormatContext *s,
                 str->channels[channel].video_stream_index = st->index;
 
                 st->codec->codec_type = CODEC_TYPE_VIDEO;
-                st->codec->codec_id = CODEC_ID_MDEC;
-                st->codec->codec_tag = 0;  /* no fourcc */
+                st->codec->codec_id   = CODEC_ID_MDEC;
+                st->codec->codec_tag  = 0;  /* no fourcc */
                 st->codec->width      = AV_RL16(&sector[0x28]);
                 st->codec->height     = AV_RL16(&sector[0x2A]);
             }
@@ -190,10 +190,10 @@ static int str_read_header(AVFormatContext *s,
                 str->channels[channel].audio_stream_index = st->index;
 
                 fmt = sector[0x13];
-                st->codec->codec_type = CODEC_TYPE_AUDIO;
-                st->codec->codec_id = CODEC_ID_ADPCM_XA;
-                st->codec->codec_tag = 0;  /* no fourcc */
-                st->codec->channels = (fmt&1)?2:1;
+                st->codec->codec_type  = CODEC_TYPE_AUDIO;
+                st->codec->codec_id    = CODEC_ID_ADPCM_XA;
+                st->codec->codec_tag   = 0;  /* no fourcc */
+                st->codec->channels    = (fmt&1)?2:1;
                 st->codec->sample_rate = (fmt&4)?18900:37800;
             //    st->codec->bit_rate = 0; //FIXME;
                 st->codec->block_align = 128;
