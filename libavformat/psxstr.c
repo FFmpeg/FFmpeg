@@ -202,7 +202,7 @@ static int str_read_packet(AVFormatContext *s,
 
         case CDXA_TYPE_AUDIO:
             if(str->channels[channel].audio_stream_index < 0){
-                int fmt;
+                int fmt = sector[0x13];
                 /* allocate a new AVStream */
                 st = av_new_stream(s, 0);
                 if (!st)
@@ -210,7 +210,6 @@ static int str_read_packet(AVFormatContext *s,
 
                 str->channels[channel].audio_stream_index = st->index;
 
-                fmt = sector[0x13];
                 st->codec->codec_type  = CODEC_TYPE_AUDIO;
                 st->codec->codec_id    = CODEC_ID_ADPCM_XA;
                 st->codec->codec_tag   = 0;  /* no fourcc */
