@@ -220,14 +220,14 @@ static int str_read_packet(AVFormatContext *s,
 
                 av_set_pts_info(st, 64, 128, st->codec->sample_rate);
             }
-                pkt = ret_pkt;
-                if (av_new_packet(pkt, 2304))
-                    return AVERROR(EIO);
-                memcpy(pkt->data,sector+24,2304);
+            pkt = ret_pkt;
+            if (av_new_packet(pkt, 2304))
+                return AVERROR(EIO);
+            memcpy(pkt->data,sector+24,2304);
 
-                pkt->stream_index =
-                    str->channels[channel].audio_stream_index;
-                return 0;
+            pkt->stream_index =
+                str->channels[channel].audio_stream_index;
+            return 0;
             break;
         default:
             av_log(s, AV_LOG_WARNING, "Unknown sector type %02X\n", sector[0x12]);
