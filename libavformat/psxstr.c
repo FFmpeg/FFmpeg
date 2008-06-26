@@ -274,12 +274,23 @@ static int str_read_packet(AVFormatContext *s,
                 int current_sector = AV_RL16(&sector[0x1C]);
                 int sector_count   = AV_RL16(&sector[0x1E]);
                 int frame_size = AV_RL32(&sector[0x24]);
-                int bytes_to_copy;
+
+                if(!(   frame_size>=0
+                     && current_sector < sector_count
+                     && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
+                    av_log(s, AV_LOG_ERROR, "Invalid parameters %d %d %d\n", current_sector, sector_count, frame_size);
+                    return AVERROR_INVALIDDATA;
+                }
+
 //        printf("%d %d %d\n",current_sector,sector_count,frame_size);
                 /* if this is the first sector of the frame, allocate a pkt */
                 pkt = &str->tmp_pkt;
-                if (current_sector == 0) {
-                    if (av_new_packet(pkt, frame_size))
+
+                if(pkt->size != sector_count*VIDEO_DATA_CHUNK_SIZE){
+                    if(pkt->data)
+                        av_log(s, AV_LOG_ERROR, "missmatching sector_count\n");
+                    av_free_packet(pkt);
+                    if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
                         return AVERROR(EIO);
 
                     pkt->pos= url_ftell(pb) - RAW_CD_SECTOR_SIZE;
@@ -293,15 +304,15 @@ static int str_read_packet(AVFormatContext *s,
                        str->pts += (90000 / 15);
                 }
 
-                /* load all the constituent chunks in the video packet */
-                bytes_to_copy = frame_size - current_sector*VIDEO_DATA_CHUNK_SIZE;
-                if (bytes_to_copy>0) {
-                    if (bytes_to_copy>VIDEO_DATA_CHUNK_SIZE) bytes_to_copy=VIDEO_DATA_CHUNK_SIZE;
-                    memcpy(pkt->data + current_sector*VIDEO_DATA_CHUNK_SIZE,
-                        sector + VIDEO_DATA_HEADER_SIZE, bytes_to_copy);
-                }
+                memcpy(pkt->data + current_sector*VIDEO_DATA_CHUNK_SIZE,
+                       sector + VIDEO_DATA_HEADER_SIZE,
+                       VIDEO_DATA_CHUNK_SIZE);
+
                 if (current_sector == sector_count-1) {
+                    pkt->size= frame_size;
                     *ret_pkt = *pkt;
+                    pkt->data= NULL;
+                    pkt->size= -1;
                     return 0;
                 }
 
