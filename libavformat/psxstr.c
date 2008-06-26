@@ -151,7 +151,7 @@ static int str_read_packet(AVFormatContext *s,
                      && current_sector < sector_count
                      && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
                     av_log(s, AV_LOG_ERROR, "Invalid parameters %d %d %d\n", current_sector, sector_count, frame_size);
-                    return AVERROR_INVALIDDATA;
+                    break;
                 }
 
                 if(str->channels[channel].video_stream_index < 0){
