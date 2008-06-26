@@ -230,6 +230,7 @@ static int str_read_packet(AVFormatContext *s,
                 return 0;
             break;
         default:
+            av_log(s, AV_LOG_WARNING, "Unknown sector type %02X\n", sector[0x12]);
             /* drop the sector and move on */
             break;
         }
