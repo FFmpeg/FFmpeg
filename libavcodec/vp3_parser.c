@@ -36,7 +36,8 @@ static int parse(AVCodecParserContext *s,
 }
 
 AVCodecParser vp3_parser = {
-    { CODEC_ID_THEORA, CODEC_ID_VP3 },
+    { CODEC_ID_THEORA, CODEC_ID_VP3,
+      CODEC_ID_VP6,    CODEC_ID_VP6F, CODEC_ID_VP6A },
     0,
     NULL,
     parse,
