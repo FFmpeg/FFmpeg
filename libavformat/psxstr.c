@@ -78,7 +78,6 @@ typedef struct StrDemuxContext {
 
     int64_t pts;
 
-    unsigned char *video_chunk;
     AVPacket tmp_pkt;
 } StrDemuxContext;
 
@@ -137,7 +136,6 @@ static int str_read_header(AVFormatContext *s,
     str->pts = 0;
     str->audio_channel = -1;  /* assume to audio or video */
     str->video_channel = -1;
-    str->video_chunk = NULL;
 
 
     /* skip over any RIFF header */
@@ -354,8 +352,6 @@ printf (" dropping other sector\n");
 static int str_read_close(AVFormatContext *s)
 {
     StrDemuxContext *str = s->priv_data;
-
-    av_free(str->video_chunk);
 
     return 0;
 }
