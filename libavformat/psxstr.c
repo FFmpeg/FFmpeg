@@ -50,20 +50,10 @@
 #define STR_MAGIC (0x80010160)
 
 typedef struct StrChannel {
-
-    int type;
-#define STR_AUDIO 0
-#define STR_VIDEO 1
-
     /* video parameters */
-    int width;
-    int height;
     int video_stream_index;
 
     /* audio parameters */
-    int sample_rate;
-    int channels;
-    int bits;
     int audio_stream_index;
 } StrChannel;
 
@@ -169,9 +159,6 @@ static int str_read_header(AVFormatContext *s,
                 if (AV_RL32(&sector[0x18]) != STR_MAGIC)
                     break;
                 str->video_channel = channel;
-                str->channels[channel].type = STR_VIDEO;
-                str->channels[channel].width = AV_RL16(&sector[0x28]);
-                str->channels[channel].height = AV_RL16(&sector[0x2A]);
 
                 /* allocate a new AVStream */
                 st = av_new_stream(s, 0);
@@ -184,8 +171,8 @@ static int str_read_header(AVFormatContext *s,
                 st->codec->codec_type = CODEC_TYPE_VIDEO;
                 st->codec->codec_id = CODEC_ID_MDEC;
                 st->codec->codec_tag = 0;  /* no fourcc */
-                st->codec->width = str->channels[channel].width;
-                st->codec->height = str->channels[channel].height;
+                st->codec->width      = AV_RL16(&sector[0x28]);
+                st->codec->height     = AV_RL16(&sector[0x2A]);
             }
             break;
 
@@ -194,19 +181,11 @@ static int str_read_header(AVFormatContext *s,
             if (str->audio_channel == -1) {
                 int fmt;
                 str->audio_channel = channel;
-                str->channels[channel].type = STR_AUDIO;
-                str->channels[channel].channels =
-                    (sector[0x13] & 0x01) ? 2 : 1;
-                str->channels[channel].sample_rate =
-                    (sector[0x13] & 0x04) ? 18900 : 37800;
-                str->channels[channel].bits =
-                    (sector[0x13] & 0x10) ? 8 : 4;
 
                 /* allocate a new AVStream */
                 st = av_new_stream(s, 0);
                 if (!st)
                     return AVERROR(ENOMEM);
-                av_set_pts_info(st, 64, 128, str->channels[channel].sample_rate);
 
                 str->channels[channel].audio_stream_index = st->index;
 
@@ -218,6 +197,8 @@ static int str_read_header(AVFormatContext *s,
                 st->codec->sample_rate = (fmt&4)?18900:37800;
             //    st->codec->bit_rate = 0; //FIXME;
                 st->codec->block_align = 128;
+
+                av_set_pts_info(st, 64, 128, st->codec->sample_rate);
             }
             break;
 
@@ -226,17 +207,6 @@ static int str_read_header(AVFormatContext *s,
             break;
         }
     }
-
-if (str->video_channel != -1)
-  av_log (s, AV_LOG_DEBUG, " video channel = %d, %d x %d %d\n", str->video_channel,
-    str->channels[str->video_channel].width,
-    str->channels[str->video_channel].height,str->channels[str->video_channel].video_stream_index);
-if (str->audio_channel != -1)
-   av_log (s, AV_LOG_DEBUG, " audio channel = %d, %d Hz, %d channels, %d bits/sample %d\n",
-    str->audio_channel,
-    str->channels[str->audio_channel].sample_rate,
-    str->channels[str->audio_channel].channels,
-    str->channels[str->audio_channel].bits,str->channels[str->audio_channel].audio_stream_index);
 
     /* back to the start */
     url_fseek(pb, start, SEEK_SET);
