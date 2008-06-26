@@ -3785,6 +3785,9 @@ int main(int argc, char **argv)
     avdevice_register_all();
     av_register_all();
 
+    if(isatty(STDIN_FILENO))
+        url_set_interrupt_cb(decode_interrupt_cb);
+
     for(i=0; i<CODEC_TYPE_NB; i++){
         avctx_opts[i]= avcodec_alloc_context2(i);
     }
