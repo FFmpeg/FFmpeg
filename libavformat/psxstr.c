@@ -52,6 +52,7 @@
 typedef struct StrChannel {
     /* video parameters */
     int video_stream_index;
+    AVPacket tmp_pkt;
 
     /* audio parameters */
     int audio_stream_index;
@@ -62,13 +63,7 @@ typedef struct StrDemuxContext {
     /* a STR file can contain up to 32 channels of data */
     StrChannel channels[32];
 
-    /* only decode the first audio and video channels encountered */
-    int video_channel;
-    int audio_channel;
-
     int64_t pts;
-
-    AVPacket tmp_pkt;
 } StrDemuxContext;
 
 static const char sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
@@ -124,9 +119,6 @@ static int str_read_header(AVFormatContext *s,
 
     /* initialize context members */
     str->pts = 0;
-    str->audio_channel = -1;  /* assume to audio or video */
-    str->video_channel = -1;
-
 
     /* skip over any RIFF header */
     if (get_buffer(pb, sector, RIFF_HEADER_SIZE) != RIFF_HEADER_SIZE)
@@ -137,6 +129,11 @@ static int str_read_header(AVFormatContext *s,
         start = 0;
 
     url_fseek(pb, start, SEEK_SET);
+
+    for(i=0; i<32; i++){
+        str->channels[i].video_stream_index=
+        str->channels[i].audio_stream_index= -1;
+    }
 
     /* check through the first 32 sectors for individual channels */
     for (i = 0; i < 32; i++) {
@@ -153,12 +150,11 @@ static int str_read_header(AVFormatContext *s,
 
         case CDXA_TYPE_DATA:
         case CDXA_TYPE_VIDEO:
-            /* check if this channel gets to be the dominant video channel */
-            if (str->video_channel == -1) {
                 /* qualify the magic number */
                 if (AV_RL32(&sector[0x18]) != STR_MAGIC)
                     break;
-                str->video_channel = channel;
+                if(str->channels[channel].video_stream_index != -1)
+                    break;
 
                 /* allocate a new AVStream */
                 st = av_new_stream(s, 0);
@@ -173,14 +169,14 @@ static int str_read_header(AVFormatContext *s,
                 st->codec->codec_tag  = 0;  /* no fourcc */
                 st->codec->width      = AV_RL16(&sector[0x28]);
                 st->codec->height     = AV_RL16(&sector[0x2A]);
-            }
             break;
 
         case CDXA_TYPE_AUDIO:
-            /* check if this channel gets to be the dominant audio channel */
-            if (str->audio_channel == -1) {
+            {
                 int fmt;
-                str->audio_channel = channel;
+
+                if(str->channels[channel].audio_stream_index != -1)
+                    break;
 
                 /* allocate a new AVStream */
                 st = av_new_stream(s, 0);
@@ -236,8 +232,7 @@ static int str_read_packet(AVFormatContext *s,
 
         case CDXA_TYPE_DATA:
         case CDXA_TYPE_VIDEO:
-            /* check if this the video channel we care about */
-            if (channel == str->video_channel) {
+            {
 
                 int current_sector = AV_RL16(&sector[0x1C]);
                 int sector_count   = AV_RL16(&sector[0x1E]);
@@ -252,7 +247,7 @@ static int str_read_packet(AVFormatContext *s,
 
 //        printf("%d %d %d\n",current_sector,sector_count,frame_size);
                 /* if this is the first sector of the frame, allocate a pkt */
-                pkt = &str->tmp_pkt;
+                pkt = &str->channels[channel].tmp_pkt;
 
                 if(pkt->size != sector_count*VIDEO_DATA_CHUNK_SIZE){
                     if(pkt->data)
@@ -268,7 +263,7 @@ static int str_read_packet(AVFormatContext *s,
 
                     /* if there is no audio, adjust the pts after every video
                      * frame; assume 15 fps */
-                   if (str->audio_channel != -1)
+                   if (0)
                        str->pts += (90000 / 15);
                 }
 
@@ -292,8 +287,6 @@ static int str_read_packet(AVFormatContext *s,
 printf (" dropping audio sector\n");
 #endif
 #if 1
-            /* check if this the video channel we care about */
-            if (channel == str->audio_channel) {
                 pkt = ret_pkt;
                 if (av_new_packet(pkt, 2304))
                     return AVERROR(EIO);
@@ -303,7 +296,6 @@ printf (" dropping audio sector\n");
                     str->channels[channel].audio_stream_index;
                 //pkt->pts = str->pts;
                 return 0;
-            }
 #endif
             break;
         default:
