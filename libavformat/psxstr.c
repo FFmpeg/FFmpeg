@@ -242,6 +242,11 @@ static int str_read_packet(AVFormatContext *s,
 static int str_read_close(AVFormatContext *s)
 {
     StrDemuxContext *str = s->priv_data;
+    int i;
+    for(i=0; i<32; i++){
+        if(str->channels[i].tmp_pkt.data)
+            av_free_packet(&str->channels[i].tmp_pkt);
+    }
 
     return 0;
 }
