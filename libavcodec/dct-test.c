@@ -69,7 +69,7 @@ struct algo {
   enum { FDCT, IDCT } is_idct;
   void (* func) (DCTELEM *block);
   void (* ref)  (DCTELEM *block);
-  enum formattag { NO_PERM,MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM, SSE2_PERM } format;
+  enum formattag { NO_PERM,MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM, SSE2_PERM, LIBMPEG2_PERM } format;
   int  mm_support;
 };
 
@@ -235,6 +235,9 @@ void dct_error(const char *name, int is_idct,
         } else if (form == SSE2_PERM) {
             for(i=0; i<64; i++)
                 block[(i&0x38) | idct_sse2_row_perm[i&7]] = block1[i];
+        } else if (form == LIBMPEG2_PERM) {
+            for(i=0; i<64; i++)
+                block[(i&0x38) | ((i&6) >> 1) | ((i&1) << 2)] = block1[i];
         } else {
             for(i=0; i<64; i++)
                 block[i]= block1[i];
