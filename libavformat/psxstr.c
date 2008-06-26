@@ -31,8 +31,6 @@
 
 #include "avformat.h"
 
-//#define PRINTSTUFF
-
 #define RIFF_TAG MKTAG('R', 'I', 'F', 'F')
 #define CDXA_TAG MKTAG('C', 'D', 'X', 'A')
 
@@ -91,19 +89,6 @@ static int str_probe(AVProbeData *p)
     return 50;
 }
 
-#if 0
-static void dump(unsigned char *buf,size_t len)
-{
-    int i;
-    for(i=0;i<len;i++) {
-        if ((i&15)==0) av_log(NULL, AV_LOG_DEBUG, "%04x  ",i);
-        av_log(NULL, AV_LOG_DEBUG, "%02x ",buf[i]);
-        if ((i&15)==15) av_log(NULL, AV_LOG_DEBUG, "\n");
-    }
-    av_log(NULL, AV_LOG_DEBUG, "\n");
-}
-#endif
-
 static int str_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
@@ -134,8 +119,6 @@ static int str_read_header(AVFormatContext *s,
     for (i = 0; i < 32; i++) {
         if (get_buffer(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
             return AVERROR(EIO);
-
-//printf("%02x %02x %02x %02x\n",sector[0x10],sector[0x11],sector[0x12],sector[0x13]);
 
         channel = sector[0x11];
         if (channel >= 32)
@@ -240,7 +223,6 @@ static int str_read_packet(AVFormatContext *s,
                     return AVERROR_INVALIDDATA;
                 }
 
-//        printf("%d %d %d\n",current_sector,sector_count,frame_size);
                 /* if this is the first sector of the frame, allocate a pkt */
                 pkt = &str->channels[channel].tmp_pkt;
 
@@ -272,10 +254,6 @@ static int str_read_packet(AVFormatContext *s,
             break;
 
         case CDXA_TYPE_AUDIO:
-#ifdef PRINTSTUFF
-printf (" dropping audio sector\n");
-#endif
-#if 1
                 pkt = ret_pkt;
                 if (av_new_packet(pkt, 2304))
                     return AVERROR(EIO);
@@ -284,13 +262,9 @@ printf (" dropping audio sector\n");
                 pkt->stream_index =
                     str->channels[channel].audio_stream_index;
                 return 0;
-#endif
             break;
         default:
             /* drop the sector and move on */
-#ifdef PRINTSTUFF
-printf (" dropping other sector\n");
-#endif
             break;
         }
 
