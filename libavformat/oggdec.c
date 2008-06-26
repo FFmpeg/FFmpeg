@@ -468,16 +468,6 @@ ogg_get_length (AVFormatContext * s)
 
     ogg->size = size;
     ogg_restore (s, 0);
-    ogg_save (s);
-    while (!ogg_read_page (s, &i)) {
-        if (i == idx && ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
-            break;
-    }
-    if (i == idx) {
-        s->streams[idx]->start_time = ogg_gptopts (s, idx, ogg->streams[idx].granule);
-        s->streams[idx]->duration -= s->streams[idx]->start_time;
-    }
-    ogg_restore (s, 0);
 
     return 0;
 }
