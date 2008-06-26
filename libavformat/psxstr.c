@@ -94,11 +94,9 @@ static int str_read_header(AVFormatContext *s,
 {
     ByteIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
-    AVStream *st;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int start;
     int i;
-    int channel;
 
     /* skip over any RIFF header */
     if (get_buffer(pb, sector, RIFF_HEADER_SIZE) != RIFF_HEADER_SIZE)
@@ -115,75 +113,7 @@ static int str_read_header(AVFormatContext *s,
         str->channels[i].audio_stream_index= -1;
     }
 
-    /* check through the first 32 sectors for individual channels */
-    for (i = 0; i < 32; i++) {
-        if (get_buffer(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
-            return AVERROR(EIO);
-
-        channel = sector[0x11];
-        if (channel >= 32)
-            return AVERROR_INVALIDDATA;
-
-        switch (sector[0x12] & CDXA_TYPE_MASK) {
-
-        case CDXA_TYPE_DATA:
-        case CDXA_TYPE_VIDEO:
-                /* qualify the magic number */
-                if (AV_RL32(&sector[0x18]) != STR_MAGIC)
-                    break;
-                if(str->channels[channel].video_stream_index != -1)
-                    break;
-
-                /* allocate a new AVStream */
-                st = av_new_stream(s, 0);
-                if (!st)
-                    return AVERROR(ENOMEM);
-                av_set_pts_info(st, 64, 1, 15);
-
-                str->channels[channel].video_stream_index = st->index;
-
-                st->codec->codec_type = CODEC_TYPE_VIDEO;
-                st->codec->codec_id   = CODEC_ID_MDEC;
-                st->codec->codec_tag  = 0;  /* no fourcc */
-                st->codec->width      = AV_RL16(&sector[0x28]);
-                st->codec->height     = AV_RL16(&sector[0x2A]);
-            break;
-
-        case CDXA_TYPE_AUDIO:
-            {
-                int fmt;
-
-                if(str->channels[channel].audio_stream_index != -1)
-                    break;
-
-                /* allocate a new AVStream */
-                st = av_new_stream(s, 0);
-                if (!st)
-                    return AVERROR(ENOMEM);
-
-                str->channels[channel].audio_stream_index = st->index;
-
-                fmt = sector[0x13];
-                st->codec->codec_type  = CODEC_TYPE_AUDIO;
-                st->codec->codec_id    = CODEC_ID_ADPCM_XA;
-                st->codec->codec_tag   = 0;  /* no fourcc */
-                st->codec->channels    = (fmt&1)?2:1;
-                st->codec->sample_rate = (fmt&4)?18900:37800;
-            //    st->codec->bit_rate = 0; //FIXME;
-                st->codec->block_align = 128;
-
-                av_set_pts_info(st, 64, 128, st->codec->sample_rate);
-            }
-            break;
-
-        default:
-            /* ignore */
-            break;
-        }
-    }
-
-    /* back to the start */
-    url_fseek(pb, start, SEEK_SET);
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     return 0;
 }
@@ -196,6 +126,7 @@ static int str_read_packet(AVFormatContext *s,
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int channel;
     AVPacket *pkt;
+    AVStream *st;
 
     while (1) {
 
@@ -221,6 +152,22 @@ static int str_read_packet(AVFormatContext *s,
                      && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
                     av_log(s, AV_LOG_ERROR, "Invalid parameters %d %d %d\n", current_sector, sector_count, frame_size);
                     return AVERROR_INVALIDDATA;
+                }
+
+                if(str->channels[channel].video_stream_index < 0){
+                    /* allocate a new AVStream */
+                    st = av_new_stream(s, 0);
+                    if (!st)
+                        return AVERROR(ENOMEM);
+                    av_set_pts_info(st, 64, 1, 15);
+
+                    str->channels[channel].video_stream_index = st->index;
+
+                    st->codec->codec_type = CODEC_TYPE_VIDEO;
+                    st->codec->codec_id   = CODEC_ID_MDEC;
+                    st->codec->codec_tag  = 0;  /* no fourcc */
+                    st->codec->width      = AV_RL16(&sector[0x28]);
+                    st->codec->height     = AV_RL16(&sector[0x2A]);
                 }
 
                 /* if this is the first sector of the frame, allocate a pkt */
@@ -254,6 +201,26 @@ static int str_read_packet(AVFormatContext *s,
             break;
 
         case CDXA_TYPE_AUDIO:
+            if(str->channels[channel].audio_stream_index < 0){
+                int fmt;
+                /* allocate a new AVStream */
+                st = av_new_stream(s, 0);
+                if (!st)
+                    return AVERROR(ENOMEM);
+
+                str->channels[channel].audio_stream_index = st->index;
+
+                fmt = sector[0x13];
+                st->codec->codec_type  = CODEC_TYPE_AUDIO;
+                st->codec->codec_id    = CODEC_ID_ADPCM_XA;
+                st->codec->codec_tag   = 0;  /* no fourcc */
+                st->codec->channels    = (fmt&1)?2:1;
+                st->codec->sample_rate = (fmt&4)?18900:37800;
+            //    st->codec->bit_rate = 0; //FIXME;
+                st->codec->block_align = 128;
+
+                av_set_pts_info(st, 64, 128, st->codec->sample_rate);
+            }
                 pkt = ret_pkt;
                 if (av_new_packet(pkt, 2304))
                     return AVERROR(EIO);
