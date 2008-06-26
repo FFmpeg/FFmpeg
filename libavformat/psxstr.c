@@ -62,8 +62,6 @@ typedef struct StrDemuxContext {
 
     /* a STR file can contain up to 32 channels of data */
     StrChannel channels[32];
-
-    int64_t pts;
 } StrDemuxContext;
 
 static const char sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
@@ -116,9 +114,6 @@ static int str_read_header(AVFormatContext *s,
     int start;
     int i;
     int channel;
-
-    /* initialize context members */
-    str->pts = 0;
 
     /* skip over any RIFF header */
     if (get_buffer(pb, sector, RIFF_HEADER_SIZE) != RIFF_HEADER_SIZE)
@@ -259,12 +254,6 @@ static int str_read_packet(AVFormatContext *s,
                     pkt->pos= url_ftell(pb) - RAW_CD_SECTOR_SIZE;
                     pkt->stream_index =
                         str->channels[channel].video_stream_index;
-               //     pkt->pts = str->pts;
-
-                    /* if there is no audio, adjust the pts after every video
-                     * frame; assume 15 fps */
-                   if (0)
-                       str->pts += (90000 / 15);
                 }
 
                 memcpy(pkt->data + current_sector*VIDEO_DATA_CHUNK_SIZE,
@@ -294,7 +283,6 @@ printf (" dropping audio sector\n");
 
                 pkt->stream_index =
                     str->channels[channel].audio_stream_index;
-                //pkt->pts = str->pts;
                 return 0;
 #endif
             break;
