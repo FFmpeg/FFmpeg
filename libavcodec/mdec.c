@@ -31,9 +31,6 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 typedef struct MDECContext{
     AVCodecContext *avctx;
     DSPContext dsp;
@@ -90,7 +87,6 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
                 i += run;
                 j = scantable[i];
                 level= (level*qscale*quant_matrix[j])>>3;
-//                level= (level-1)|1;
                 level = (level ^ SHOW_SBITS(re, &a->gb, 1)) - SHOW_SBITS(re, &a->gb, 1);
                 LAST_SKIP_BITS(re, &a->gb, 1);
             } else {
@@ -192,8 +188,6 @@ static int decode_frame(AVCodecContext *avctx,
     a->last_dc[1]=
     a->last_dc[2]= 128;
 
-//    printf("qscale:%d (0x%X), version:%d (0x%X)\n", a->qscale, a->qscale, a->version, a->version);
-
     for(a->mb_x=0; a->mb_x<a->mb_width; a->mb_x++){
         for(a->mb_y=0; a->mb_y<a->mb_height; a->mb_y++){
             if( decode_mb(a, a->block) <0)
@@ -233,12 +227,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     mdec_common_init(avctx);
     init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
-/*
-    for(i=0; i<64; i++){
-        int index= ff_zigzag_direct[i];
-        a->intra_matrix[i]= 64*ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
-    }
-*/
+
     p->qstride= a->mb_width;
     p->qscale_table= av_mallocz( p->qstride * a->mb_height);
     avctx->pix_fmt= PIX_FMT_YUV420P;
