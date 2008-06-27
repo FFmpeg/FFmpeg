@@ -1015,6 +1015,9 @@ static int mxf_read_close(AVFormatContext *s)
         case MaterialPackage:
             av_freep(&((MXFPackage *)mxf->metadata_sets[i])->tracks_refs);
             break;
+        case Track:
+            mxf->metadata_sets[i] = NULL; /* will be freed later */
+            break;
         default:
             break;
         }
