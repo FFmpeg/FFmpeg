@@ -203,8 +203,6 @@ static int decode_frame(AVCodecContext *avctx,
     *picture= *(AVFrame*)&a->picture;
     *data_size = sizeof(AVPicture);
 
-    emms_c();
-
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
