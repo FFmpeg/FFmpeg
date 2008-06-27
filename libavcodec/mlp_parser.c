@@ -295,7 +295,7 @@ static int mlp_parse(AVCodecParserContext *s,
 
 lost_sync:
     mp->in_sync = 0;
-    return -1;
+    return 1;
 }
 
 AVCodecParser mlp_parser = {
