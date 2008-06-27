@@ -1531,7 +1531,8 @@ static int mov_write_header(AVFormatContext *s)
         track->mode = mov->mode;
         track->tag = mov_find_codec_tag(s, track);
         if (!track->tag) {
-            av_log(s, AV_LOG_ERROR, "track %d: could not find tag for codec\n", i);
+            av_log(s, AV_LOG_ERROR, "track %d: could not find tag, "
+                   "codec not currently supported in container\n", i);
             return -1;
         }
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
