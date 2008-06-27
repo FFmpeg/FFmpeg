@@ -189,7 +189,7 @@ static int ffm_write_header(AVFormatContext *s)
 static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int64_t dts;
-    uint8_t header[FRAME_HEADER_SIZE];
+    uint8_t header[FRAME_HEADER_SIZE+4];
     int header_size = FRAME_HEADER_SIZE;
 
     dts = s->timestamp + pkt->dts;
