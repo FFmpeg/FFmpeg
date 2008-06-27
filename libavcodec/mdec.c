@@ -38,7 +38,6 @@ typedef struct MDECContext{
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame picture;
-    PutBitContext pb;
     GetBitContext gb;
     ScanTable scantable;
     int version;
