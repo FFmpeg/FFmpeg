@@ -203,8 +203,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-//    p->quality= (32 + a->inv_qscale/2)/a->inv_qscale;
-//    memset(p->qscale_table, p->quality, p->qstride*a->mb_height);
+    p->quality= a->qscale * FF_QP2LAMBDA;
+    memset(p->qscale_table, a->qscale, p->qstride*a->mb_height);
 
     *picture= *(AVFrame*)&a->picture;
     *data_size = sizeof(AVPicture);
