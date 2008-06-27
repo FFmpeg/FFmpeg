@@ -157,7 +157,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     MDECContext * const a = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p= &a->picture;
     int i;
 
     if(p->data[0])
@@ -200,7 +200,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->quality= a->qscale * FF_QP2LAMBDA;
     memset(p->qscale_table, a->qscale, p->qstride*a->mb_height);
 
-    *picture= *(AVFrame*)&a->picture;
+    *picture   = a->picture;
     *data_size = sizeof(AVPicture);
 
     return (get_bits_count(&a->gb)+31)/32*4;
@@ -214,13 +214,13 @@ static av_cold void mdec_common_init(AVCodecContext *avctx){
     a->mb_width   = (avctx->coded_width  + 15) / 16;
     a->mb_height  = (avctx->coded_height + 15) / 16;
 
-    avctx->coded_frame= (AVFrame*)&a->picture;
+    avctx->coded_frame= &a->picture;
     a->avctx= avctx;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
-    AVFrame *p= (AVFrame*)&a->picture;
+    AVFrame *p= &a->picture;
 
     mdec_common_init(avctx);
     init_vlcs();
