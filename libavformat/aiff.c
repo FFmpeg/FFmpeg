@@ -44,7 +44,7 @@ static const AVCodecTag codec_aiff_tags[] = {
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-static int aiff_codec_get_id (int bps)
+static int aiff_codec_get_id(int bps)
 {
     if (bps <= 8)
         return CODEC_ID_PCM_S8;
