@@ -46,9 +46,7 @@ typedef struct MTVDemuxContext {
     unsigned int        img_height;        //
     unsigned int        img_segment_size;  ///< size of image segment
     unsigned int        video_fps;         //
-    unsigned int        audio_subsegments; ///< audio subsegments on one segment
-
-    uint8_t             audio_packet_count;
+    unsigned int        full_segment_size;
 
 } MTVDemuxContext;
 
@@ -67,6 +65,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MTVDemuxContext    *mtv = s->priv_data;
     ByteIOContext      *pb  = s->pb;
     AVStream           *st;
+    unsigned int        audio_subsegments;
 
 
     url_fskip(pb, 3);
@@ -81,14 +80,13 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     mtv->img_height        = get_le16(pb);
     mtv->img_segment_size  = get_le16(pb);
     url_fskip(pb, 4);
-    mtv->audio_subsegments = get_le16(pb);
-    mtv->video_fps         = (mtv->audio_br / 4) / mtv->audio_subsegments;
+    audio_subsegments = get_le16(pb);
+    mtv->full_segment_size =
+        audio_subsegments * (MTV_AUDIO_PADDING_SIZE + MTV_ASUBCHUNK_DATA_SIZE) +
+        mtv->img_segment_size;
+    mtv->video_fps         = (mtv->audio_br / 4) / audio_subsegments;
 
     /* FIXME Add sanity check here */
-
-    /* first packet is always audio*/
-
-    mtv->audio_packet_count = 1;
 
     /* all systems go! init decoders */
 
@@ -139,7 +137,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = 0;
 
-    if(mtv->audio_subsegments >= mtv->audio_packet_count)
+    if((url_ftell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
         url_fskip(pb, MTV_AUDIO_PADDING_SIZE);
 
@@ -147,7 +145,6 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(ret != MTV_ASUBCHUNK_DATA_SIZE)
             return AVERROR(EIO);
 
-        mtv->audio_packet_count++;
         pkt->pos -= MTV_AUDIO_PADDING_SIZE;
         pkt->stream_index = AUDIO_SID;
 
@@ -168,7 +165,6 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
         for(i=0;i<mtv->img_segment_size/2;i++)
             *((uint16_t *)pkt->data+i) = bswap_16(*((uint16_t *)pkt->data+i));
 #endif
-        mtv->audio_packet_count = 1;
         pkt->stream_index = VIDEO_SID;
     }
 
