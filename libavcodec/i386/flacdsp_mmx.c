@@ -30,12 +30,12 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
     x86_reg j =  n2*sizeof(int32_t);
     asm volatile(
         "movsd   %0,     %%xmm7 \n\t"
-        "movapd  %1,     %%xmm6 \n\t"
-        "movapd  %2,     %%xmm5 \n\t"
+        "movapd  "MANGLE(ff_pd_1)",     %%xmm6 \n\t"
+        "movapd  "MANGLE(ff_pd_2)",     %%xmm5 \n\t"
         "movlhps %%xmm7, %%xmm7 \n\t"
         "subpd   %%xmm5, %%xmm7 \n\t"
         "addsd   %%xmm6, %%xmm7 \n\t"
-        ::"m"(c), "m"(*ff_pd_1), "m"(*ff_pd_2)
+        ::"m"(c)
     );
 #define WELCH(MOVPD, offset)\
     asm volatile(\
@@ -85,9 +85,9 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
         x86_reg i = -len*sizeof(double);
         if(j == lag-2) {
             asm volatile(
-                "movsd     %6,     %%xmm0 \n\t"
-                "movsd     %6,     %%xmm1 \n\t"
-                "movsd     %6,     %%xmm2 \n\t"
+                "movsd     "MANGLE(ff_pd_1)",     %%xmm0 \n\t"
+                "movsd     "MANGLE(ff_pd_1)",     %%xmm1 \n\t"
+                "movsd     "MANGLE(ff_pd_1)",     %%xmm2 \n\t"
                 "1:                       \n\t"
                 "movapd   (%4,%0), %%xmm3 \n\t"
                 "movupd -8(%5,%0), %%xmm4 \n\t"
@@ -110,12 +110,12 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "movsd     %%xmm1, %2     \n\t"
                 "movsd     %%xmm2, %3     \n\t"
                 :"+&r"(i), "=m"(autoc[j]), "=m"(autoc[j+1]), "=m"(autoc[j+2])
-                :"r"(data1+len), "r"(data1+len-j), "m"(*ff_pd_1)
+                :"r"(data1+len), "r"(data1+len-j)
             );
         } else {
             asm volatile(
-                "movsd     %5,     %%xmm0 \n\t"
-                "movsd     %5,     %%xmm1 \n\t"
+                "movsd     "MANGLE(ff_pd_1)",     %%xmm0 \n\t"
+                "movsd     "MANGLE(ff_pd_1)",     %%xmm1 \n\t"
                 "1:                       \n\t"
                 "movapd   (%3,%0), %%xmm3 \n\t"
                 "movupd -8(%4,%0), %%xmm4 \n\t"
@@ -132,7 +132,7 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "movsd     %%xmm0, %1     \n\t"
                 "movsd     %%xmm1, %2     \n\t"
                 :"+&r"(i), "=m"(autoc[j]), "=m"(autoc[j+1])
-                :"r"(data1+len), "r"(data1+len-j), "m"(*ff_pd_1)
+                :"r"(data1+len), "r"(data1+len-j)
             );
         }
     }
