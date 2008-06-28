@@ -33,7 +33,6 @@
 #include <math.h>
 
 #include "libavutil/common.h"
-#include "dsputil.h"
 
 #include "simple_idct.h"
 #include "faandct.h"
@@ -78,6 +77,8 @@ struct algo {
 #else
 #define FAAN_SCALE NO_PERM
 #endif
+
+static int cpu_flags;
 
 struct algo algos[] = {
   {"REF-DBL",         0, fdct,               fdct, NO_PERM},
@@ -172,6 +173,14 @@ static DCTELEM block[64] __attribute__ ((aligned (16)));
 static DCTELEM block1[64] __attribute__ ((aligned (8)));
 static DCTELEM block_org[64] __attribute__ ((aligned (8)));
 
+static inline void mmx_emms(void)
+{
+#ifdef HAVE_MMX
+    if (cpu_flags & MM_MMX)
+        asm volatile ("emms\n\t");
+#endif
+}
+
 void dct_error(const char *name, int is_idct,
                void (*fdct_func)(DCTELEM *block),
                void (*fdct_ref)(DCTELEM *block), int form, int test)
@@ -249,7 +258,7 @@ void dct_error(const char *name, int is_idct,
 #endif
 
         fdct_func(block);
-        emms_c(); /* for ff_mmx_idct */
+        mmx_emms();
 
         if (form == SCALE_PERM) {
             for(i=0; i<64; i++) {
@@ -346,7 +355,7 @@ void dct_error(const char *name, int is_idct,
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    emms_c();
+    mmx_emms();
 
     printf("%s %s: %0.1f kdct/s\n",
            is_idct ? "IDCT" : "DCT",
@@ -506,7 +515,7 @@ void idct248_error(const char *name,
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    emms_c();
+    mmx_emms();
 
     printf("%s %s: %0.1f kdct/s\n",
            1 ? "IDCT248" : "DCT248",
@@ -528,7 +537,7 @@ int main(int argc, char **argv)
     int test_idct = 0, test_248_dct = 0;
     int c,i;
     int test=1;
-    int cpu_flags = mm_support();
+    cpu_flags = mm_support();
 
     init_fdct();
     idct_mmx_init();
