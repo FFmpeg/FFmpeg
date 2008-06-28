@@ -196,7 +196,8 @@ static int faac_decode_frame(AVCodecContext *avctx,
                s->faacDecGetErrorMessage(frame_info.error));
         return -1;
     }
-
+    if (!avctx->frame_size)
+        avctx->frame_size = frame_info.samples/avctx->channels;
     frame_info.samples *= s->sample_size;
     memcpy(data, out, frame_info.samples); // CHECKME - can we cheat this one
 
