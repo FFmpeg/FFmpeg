@@ -148,6 +148,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
 
         mtv->audio_packet_count++;
+        pkt->pos -= MTV_AUDIO_PADDING_SIZE;
         pkt->stream_index = AUDIO_SID;
 
     }else
