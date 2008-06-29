@@ -121,6 +121,10 @@ int ff_acelp_lp_synthesis_filter(
 {
     int i,n;
 
+    // These two lines are two avoid a -1 subtraction in the main loop
+    filter_length++;
+    filter_coeffs--;
+
     for(n=0; n<buffer_length; n++)
     {
         int sum = rounder;

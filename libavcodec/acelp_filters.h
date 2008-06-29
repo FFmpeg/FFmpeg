@@ -125,7 +125,7 @@ void ff_acelp_convolve_circ(
  * \param filter_coeffs filter coefficients (-0x8000 <= (3.12) < 0x8000)
  * \param in input signal
  * \param buffer_length amount of data to process
- * \param filter_length filter length (11 for 10th order LP filter)
+ * \param filter_length filter length (10 for 10th order LP filter)
  * \param stop_on_overflow   1 - return immediately if overflow occurs
  *                           0 - ignore overflows
  * \param rounder the amount to add for rounding (usually 0x800 or 0xfff)
