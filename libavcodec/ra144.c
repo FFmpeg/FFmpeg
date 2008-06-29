@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "ra144.h"
+#include "acelp_filters.h"
 
 #define NBLOCKS         4       ///< number of subblocks within a block
 #define BLOCKSIZE       40      ///< subblock size in 16-bit words
@@ -140,39 +141,6 @@ static void add_wav(int16_t *dest, int n, int skip_first, int *m,
         dest[i] = (s1[i]*v[0] + s2[i]*v[1] + s3[i]*v[2]) >> 12;
 }
 
-/**
- * LPC Filter. Each output value is predicted from the 10 previous computed
- * ones. It overwrites the input with the output.
- *
- * @param in the input of the filter. It should be an array of size len + 10.
- * The 10 first input values are used to evaluate the first filtered one.
- */
-static void lpc_filter(uint16_t *in, const int16_t *lpc_coefs, int len)
-{
-    int x, i;
-    int16_t *ptr = in;
-
-    for (i=0; i<len; i++) {
-        int sum = 0;
-        int new_val;
-
-        for(x=0; x<10; x++)
-            sum += lpc_coefs[9-x] * ptr[x];
-
-        sum >>= 12;
-
-        new_val = ptr[10] - sum;
-
-        if (new_val < -32768 || new_val > 32767) {
-            memset(in, 0, 50*sizeof(*in));
-            return;
-        }
-
-        ptr[10] = new_val;
-        ptr++;
-    }
-}
-
 static unsigned int rescale_rms(unsigned int rms, unsigned int energy)
 {
     return (rms * energy) >> 10;
@@ -237,7 +205,12 @@ static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
     memcpy(ractx->curr_sblock + 10, block,
            BLOCKSIZE*sizeof(*ractx->curr_sblock));
 
-    lpc_filter(ractx->curr_sblock, lpc_coefs, BLOCKSIZE);
+    if (ff_acelp_lp_synthesis_filter(
+                                     ractx->curr_sblock + 10, lpc_coefs -1,
+                                     ractx->curr_sblock + 10, BLOCKSIZE,
+                                     11, 1, 0xfff)
+        )
+        memset(ractx->curr_sblock, 0, 50*sizeof(*ractx->curr_sblock));
 }
 
 static void int_to_int16(int16_t *out, const int *inp)
