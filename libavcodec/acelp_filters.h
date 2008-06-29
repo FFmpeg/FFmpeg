@@ -128,6 +128,7 @@ void ff_acelp_convolve_circ(
  * \param filter_length filter length (11 for 10th order LP filter)
  * \param stop_on_overflow   1 - return immediately if overflow occurs
  *                           0 - ignore overflows
+ * \param rounder the amount to add for rounding (usually 0x800 or 0xfff)
  *
  * \return 1 if overflow occurred, 0 - otherwise
  *
@@ -142,7 +143,8 @@ int ff_acelp_lp_synthesis_filter(
         const int16_t* in,
         int buffer_length,
         int filter_length,
-        int stop_on_overflow);
+        int stop_on_overflow,
+        int rounder);
 
 /**
  * \brief Calculates coefficients of weighted A(z/weight) filter.
