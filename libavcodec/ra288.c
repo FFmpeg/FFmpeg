@@ -20,6 +20,8 @@
  */
 
 #include "avcodec.h"
+#define ALT_BITSTREAM_READER_LE
+#include "bitstream.h"
 #include "ra288.h"
 
 typedef struct {
@@ -39,28 +41,15 @@ typedef struct {
 static void unpack(unsigned short *tgt, const unsigned char *src,
                    unsigned int len)
 {
-    int x, y, z;
-    int n, temp;
-    int buffer[len];
+    int i = 0;
+    GetBitContext gb;
 
-    for (x=0; x < len; tgt[x++] = 0)
-        buffer[x] = 9 + (x & 1);
+    init_get_bits(&gb, src, len * 8);
 
-    for (x=y=z=0; x < len/*was 38*/; x++) {
-        n = buffer[y] - z;
-        temp = src[x];
-
-        if (n < 8)
-            temp &= 255 >> (8 - n);
-
-        tgt[y] += temp << z;
-
-        if (n <= 8) {
-            tgt[++y] += src[x] >> n;
-            z = 8 - n;
-        } else
-            z += 8;
-  }
+    while (get_bits_count(&gb) + 9 + (i&1) <= len*8) {
+        tgt[i] = get_bits(&gb, 9 + (i&1));
+        i++;
+    }
 }
 
 /* Decode and produce output */
