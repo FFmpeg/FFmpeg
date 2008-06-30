@@ -203,6 +203,15 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 }
 #endif
 
+int mm_support(void)
+{
+    int result = 0;
+#ifdef HAVE_IWMMXT
+    result |= MM_IWMMXT;
+#endif /* result */
+    return result;
+}
+
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
 {
     int idct_algo= avctx->idct_algo;
