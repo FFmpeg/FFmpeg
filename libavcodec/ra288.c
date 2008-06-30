@@ -35,13 +35,6 @@ typedef struct {
     float lhist[10];
 } Real288_internal;
 
-static int ra288_decode_init(AVCodecContext * avctx)
-{
-    Real288_internal *glob = avctx->priv_data;
-    memset(glob, 0, sizeof(Real288_internal));
-    return 0;
-}
-
 static void prodsum(float *tgt, float *src, int len, int n);
 static void co(int n, int i, int j, float *in, float *out, float *st1, float *st2, const float *table);
 static int pred(float *in, float *tgt, int n);
@@ -293,7 +286,7 @@ AVCodec ra_288_decoder =
     CODEC_TYPE_AUDIO,
     CODEC_ID_RA_288,
     sizeof(Real288_internal),
-    ra288_decode_init,
+    NULL,
     NULL,
     NULL,
     ra288_decode_frame,
