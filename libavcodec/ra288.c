@@ -35,12 +35,6 @@ typedef struct {
     float lhist[10];
 } Real288_internal;
 
-static void prodsum(float *tgt, float *src, int len, int n);
-static void co(int n, int i, int j, float *in, float *out, float *st1, float *st2, const float *table);
-static int pred(float *in, float *tgt, int n);
-static void colmult(float *tgt, float *m1, const float *m2, int n);
-
-
 /* initial decode */
 static void unpack(unsigned short *tgt, const unsigned char *src,
                    unsigned int len)
@@ -67,27 +61,6 @@ static void unpack(unsigned short *tgt, const unsigned char *src,
         } else
             z += 8;
   }
-}
-
-static void update(Real288_internal *glob)
-{
-    int x,y;
-    float buffer1[40], temp1[37];
-    float buffer2[8], temp2[11];
-
-    for (x=0, y=glob->phasep+5; x < 40; buffer1[x++] = glob->output[(y++)%40]);
-
-    co(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b, table1);
-
-    if (pred(temp1, glob->st1, 36))
-        colmult(glob->pr1, glob->st1, table1a, 36);
-
-    for (x=0, y=glob->phase + 1; x < 8; buffer2[x++] = glob->history[(y++) % 8]);
-
-    co(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
-
-    if (pred(temp2, glob->st2, 10))
-        colmult(glob->pr2, glob->st2, table2a, 10);
 }
 
 /* Decode and produce output */
@@ -194,6 +167,20 @@ static int pred(float *in, float *tgt, int n)
     }
 }
 
+/* product sum (lsf) */
+static void prodsum(float *tgt, float *src, int len, int n)
+{
+    unsigned int x;
+    float *p1, *p2;
+    double sum;
+
+    while (n >= 0) {
+        p1 = (p2 = src) - n;
+        for (sum=0, x=len; x--; sum += (*p1++) * (*p2++));
+        tgt[n--] = sum;
+    }
+}
+
 static void co(int n, int i, int j, float *in, float *out, float *st1,
                float *st2, const float *table)
 {
@@ -223,18 +210,25 @@ static void co(int n, int i, int j, float *in, float *out, float *st1,
     *out *= 1.00390625; /* to prevent clipping */
 }
 
-/* product sum (lsf) */
-static void prodsum(float *tgt, float *src, int len, int n)
+static void update(Real288_internal *glob)
 {
-    unsigned int x;
-    float *p1, *p2;
-    double sum;
+    int x,y;
+    float buffer1[40], temp1[37];
+    float buffer2[8], temp2[11];
 
-    while (n >= 0) {
-        p1 = (p2 = src) - n;
-        for (sum=0, x=len; x--; sum += (*p1++) * (*p2++));
-        tgt[n--] = sum;
-    }
+    for (x=0, y=glob->phasep+5; x < 40; buffer1[x++] = glob->output[(y++)%40]);
+
+    co(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b, table1);
+
+    if (pred(temp1, glob->st1, 36))
+        colmult(glob->pr1, glob->st1, table1a, 36);
+
+    for (x=0, y=glob->phase + 1; x < 8; buffer2[x++] = glob->history[(y++) % 8]);
+
+    co(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
+
+    if (pred(temp2, glob->st2, 10))
+        colmult(glob->pr2, glob->st2, table2a, 10);
 }
 
 static void * decode_block(AVCodecContext * avctx, const unsigned char *in,
