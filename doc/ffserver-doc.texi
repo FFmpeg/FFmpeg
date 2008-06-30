@@ -26,8 +26,6 @@ ffmpeg. All questions about parameters for ffmpeg, codec questions,
 etc. are not covered here. Read @file{ffmpeg-doc.html} for more
 information.
 
-[Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
-
 @section How does it work?
 
 FFserver receives prerecorded files or FFM streams from some ffmpeg
