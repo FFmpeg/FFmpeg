@@ -61,7 +61,7 @@ typedef struct AVOption {
     enum AVOptionType type;
 
     /**
-     * the default value for non-constant and value for constant scalars
+     * the default value for scalar options
      */
     double default_val;
     double min;                 ///< minimum valid value for the option
