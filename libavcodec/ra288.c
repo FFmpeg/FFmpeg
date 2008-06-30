@@ -205,14 +205,24 @@ static void update(Real288_internal *glob)
         colmult(glob->pr2, glob->st2, table2a, 10);
 }
 
-static void * decode_block(AVCodecContext * avctx, const unsigned char *in,
-                           signed short int *out, unsigned len)
+/* Decode a block (celp) */
+static int ra288_decode_frame(AVCodecContext * avctx, void *data,
+                              int *data_size, const uint8_t * buf,
+                              int buf_size)
 {
+    int16_t *out = data;
     int x, y;
     Real288_internal *glob = avctx->priv_data;
     GetBitContext gb;
 
-    init_get_bits(&gb, in, len * 8);
+    if (buf_size < avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Error! Input buffer is too small [%d<%d]\n",
+               buf_size, avctx->block_align);
+        return 0;
+    }
+
+    init_get_bits(&gb, buf, avctx->block_align * 8);
 
     for (x=0; x < 32; x++) {
         int amp_coef = get_bits(&gb, 3);
@@ -226,27 +236,7 @@ static void * decode_block(AVCodecContext * avctx, const unsigned char *in,
             update(glob);
     }
 
-    return out;
-}
-
-/* Decode a block (celp) */
-static int ra288_decode_frame(AVCodecContext * avctx, void *data,
-                              int *data_size, const uint8_t * buf,
-                              int buf_size)
-{
-    void *datao;
-
-    if (buf_size < avctx->block_align) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Error! Input buffer is too small [%d<%d]\n",
-               buf_size, avctx->block_align);
-        return 0;
-    }
-
-    datao = data;
-    data = decode_block(avctx, buf, (signed short *)data, avctx->block_align);
-
-    *data_size = (char *)data - (char *)datao;
+    *data_size = (char *)out - (char *)data;
     return avctx->block_align;
 }
 
