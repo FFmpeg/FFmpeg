@@ -53,8 +53,7 @@ typedef struct MLPHeaderInfo
 } MLPHeaderInfo;
 
 
-int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, const uint8_t *buf,
-                           unsigned int buf_size);
+int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
 
 #endif /* FFMPEG_MLP_PARSER_H */
 
