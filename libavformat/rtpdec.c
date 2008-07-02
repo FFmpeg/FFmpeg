@@ -365,16 +365,16 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
  */
 static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
 {
-            if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
-                int64_t addend;
+    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
+        int64_t addend;
+        int delta_timestamp;
 
-                int delta_timestamp;
-                /* compute pts from timestamp with received ntp_time */
-                delta_timestamp = timestamp - s->last_rtcp_timestamp;
-                /* convert to the PTS timebase */
-                addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
-                pkt->pts = addend + delta_timestamp;
-            }
+        /* compute pts from timestamp with received ntp_time */
+        delta_timestamp = timestamp - s->last_rtcp_timestamp;
+        /* convert to the PTS timebase */
+        addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
+        pkt->pts = addend + delta_timestamp;
+    }
     pkt->stream_index = s->st->index;
 }
 
