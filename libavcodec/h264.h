@@ -70,6 +70,10 @@
 #endif
 #define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF || FIELD_PICTURE)
 
+#ifndef ENABLE_H264_ENCODER
+#define ENABLE_H264_ENCODER 0
+#endif
+
 /**
  * Sequence parameter set
  */
