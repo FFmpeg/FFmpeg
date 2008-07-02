@@ -282,6 +282,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
     s->st = st;
     s->rtp_payload_data = rtp_payload_data;
     rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
+    av_set_pts_info(s->st, 32, 1, 90000);
     if (!strcmp(ff_rtp_enc_name(payload_type), "MP2T")) {
         s->ts = mpegts_parse_open(s->ic);
         if (s->ts == NULL) {
@@ -299,6 +300,9 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
             st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
         default:
+            if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+                av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+            }
             break;
         }
     }
@@ -361,32 +365,16 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
  */
 static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
 {
-    switch(s->st->codec->codec_id) {
-        case CODEC_ID_MP2:
-        case CODEC_ID_MPEG1VIDEO:
-        case CODEC_ID_MPEG2VIDEO:
             if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
                 int64_t addend;
 
                 int delta_timestamp;
-                /* XXX: is it really necessary to unify the timestamp base ? */
                 /* compute pts from timestamp with received ntp_time */
                 delta_timestamp = timestamp - s->last_rtcp_timestamp;
-                /* convert to 90 kHz without overflow */
-                addend = (s->last_rtcp_ntp_time - s->first_rtcp_ntp_time) >> 14;
-                addend = (addend * 5625) >> 14;
+                /* convert to the PTS timebase */
+                addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
                 pkt->pts = addend + delta_timestamp;
             }
-            break;
-        case CODEC_ID_AAC:
-        case CODEC_ID_H264:
-        case CODEC_ID_MPEG4:
-            pkt->pts = timestamp;
-            break;
-        default:
-            /* no timestamp info yet */
-            break;
-    }
     pkt->stream_index = s->st->index;
 }
 
