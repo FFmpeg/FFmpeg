@@ -5549,11 +5549,9 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
             }
 
             if( is_dc ) {
-                if( get_cabac_bypass( CC ) ) block[j] = -coeff_abs;
-                else                                block[j] =  coeff_abs;
+                block[j] = get_cabac_bypass_sign( CC, -coeff_abs );
             }else{
-                if( get_cabac_bypass( CC ) ) block[j] = (-coeff_abs * qmul[j] + 32) >> 6;
-                else                                block[j] = ( coeff_abs * qmul[j] + 32) >> 6;
+                block[j] = (get_cabac_bypass_sign( CC, -coeff_abs ) * qmul[j] + 32) >> 6;
             }
         }
     }
