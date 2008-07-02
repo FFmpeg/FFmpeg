@@ -238,7 +238,8 @@ static int mlp_parse(AVCodecParserContext *s,
     sync_present = (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
 
     if (!sync_present) {
-        // First nibble of a frame is a parity check of the first few nibbles.
+        /* The first nibble of a frame is a parity check of the 4-byte
+         * access unit header and all the 2- or 4-byte substream headers. */
         // Only check when this isn't a sync frame - syncs have a checksum.
 
         parity_bits = 0;
