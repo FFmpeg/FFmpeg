@@ -5514,7 +5514,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
         }
     }
 
-    for( coeff_count--; coeff_count >= 0; coeff_count-- ) {
+    while( coeff_count-- ) {
         uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;
 
         int j= scantable[index[coeff_count]];
