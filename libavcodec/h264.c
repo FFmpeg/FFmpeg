@@ -5342,22 +5342,22 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
     int ctx = 0;
 
     if( is_dc ) {
-    if( cat == 0 ) {
-        nza = h->left_cbp&0x100;
-        nzb = h-> top_cbp&0x100;
+        if( cat == 0 ) {
+            nza = h->left_cbp&0x100;
+            nzb = h-> top_cbp&0x100;
+        } else {
+            nza = (h->left_cbp>>(6+idx))&0x01;
+            nzb = (h-> top_cbp>>(6+idx))&0x01;
+        }
     } else {
-        nza = (h->left_cbp>>(6+idx))&0x01;
-        nzb = (h-> top_cbp>>(6+idx))&0x01;
-    }
-    } else {
-    if( cat == 1 || cat == 2 ) {
-        nza = h->non_zero_count_cache[scan8[idx] - 1];
-        nzb = h->non_zero_count_cache[scan8[idx] - 8];
-    } else {
-        assert(cat == 4);
-        nza = h->non_zero_count_cache[scan8[16+idx] - 1];
-        nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
-    }
+        if( cat == 1 || cat == 2 ) {
+            nza = h->non_zero_count_cache[scan8[idx] - 1];
+            nzb = h->non_zero_count_cache[scan8[idx] - 8];
+        } else {
+            assert(cat == 4);
+            nza = h->non_zero_count_cache[scan8[16+idx] - 1];
+            nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
+        }
     }
 
     if( nza > 0 )
@@ -5447,10 +5447,10 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
     if( is_dc || cat != 5 ) {
         if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, is_dc ) ] ) == 0 ) {
             if( !is_dc ) {
-            if( cat == 1 || cat == 2 )
-                h->non_zero_count_cache[scan8[n]] = 0;
-            else
-                h->non_zero_count_cache[scan8[16+n]] = 0;
+                if( cat == 1 || cat == 2 )
+                    h->non_zero_count_cache[scan8[n]] = 0;
+                else
+                    h->non_zero_count_cache[scan8[16+n]] = 0;
             }
 
 #ifdef CABAC_ON_STACK
@@ -5499,19 +5499,19 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
     assert(coeff_count > 0);
 
     if( is_dc ) {
-    if( cat == 0 )
-        h->cbp_table[h->mb_xy] |= 0x100;
-    else
-        h->cbp_table[h->mb_xy] |= 0x40 << n;
+        if( cat == 0 )
+            h->cbp_table[h->mb_xy] |= 0x100;
+        else
+            h->cbp_table[h->mb_xy] |= 0x40 << n;
     } else {
-    if( cat == 1 || cat == 2 )
-        h->non_zero_count_cache[scan8[n]] = coeff_count;
-    else if( cat == 4 )
-        h->non_zero_count_cache[scan8[16+n]] = coeff_count;
-    else {
-        assert( cat == 5 );
-        fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
-    }
+        if( cat == 1 || cat == 2 )
+            h->non_zero_count_cache[scan8[n]] = coeff_count;
+        else if( cat == 4 )
+            h->non_zero_count_cache[scan8[16+n]] = coeff_count;
+        else {
+            assert( cat == 5 );
+            fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
+        }
     }
 
     for( coeff_count--; coeff_count >= 0; coeff_count-- ) {
