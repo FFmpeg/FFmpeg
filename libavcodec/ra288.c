@@ -45,7 +45,6 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
     double sum, sumsum;
     float *p1, *p2;
     float buffer[5];
-    const float *table;
 
     for (x=36; x--; glob->sb[x+5] = glob->sb[x]);
 
@@ -58,7 +57,6 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
     }
 
     f = amptable[amp_coef];
-    table = codetable[cb_coef];
 
     /* convert log and do rms */
     for (sum=32, x=10; x--; sum -= glob->pr2[x] * glob->lhist[x]);
@@ -71,7 +69,7 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
     sumsum = exp(sum * 0.1151292546497) * f;    /* pow(10.0,sum/20)*f */
 
     for (sum=0, x=5; x--;) {
-        buffer[x] = table[x] * sumsum;
+        buffer[x] = codetable[cb_coef][x] * sumsum;
         sum += buffer[x] * buffer[x];
     }
 
