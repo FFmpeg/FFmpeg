@@ -394,9 +394,11 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         ic->priv_data = NULL;
     }
 
+    if (ic->iformat->read_header) {
     err = ic->iformat->read_header(ic, ap);
     if (err < 0)
         goto fail;
+    }
 
     if (pb && !ic->data_offset)
         ic->data_offset = url_ftell(ic->pb);
