@@ -58,7 +58,7 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
     }
 
     f = amptable[amp_coef];
-    table = codetable + cb_coef * 5;
+    table = codetable[cb_coef];
 
     /* convert log and do rms */
     for (sum=32, x=10; x--; sum -= glob->pr2[x] * glob->lhist[x]);
