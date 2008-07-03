@@ -51,7 +51,7 @@ int ff_exp2(uint16_t power);
 int ff_log2(uint32_t value);
 
 /**
- * \brief Calculates the dot product
+ * \brief returns the dot product
  * \param a input data array
  * \param b input data array
  * \param length number of elements
