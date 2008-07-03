@@ -55,9 +55,9 @@ int ff_log2(uint32_t value);
  * \param a input data array
  * \param b input data array
  * \param length number of elements
- * \param shift right shift by this value will be done before multiplication
+ * \param shift right shift by this value will be done after multiplication
  *
- * \return sum of multiplications
+ * \return dot product = sum of elementwise products
  */
 static int dot_product(const int16_t* a, const int16_t* b, int length, int shift)
 {
