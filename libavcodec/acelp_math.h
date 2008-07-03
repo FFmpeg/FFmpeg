@@ -51,23 +51,21 @@ int ff_exp2(uint16_t power);
 int ff_log2(uint32_t value);
 
 /**
- * \brief Calculates sum of array element multiplications
- * \param speech input data array
+ * \brief Calculates the dot product
+ * \param a input data array
+ * \param b input data array
  * \param length number of elements
- * \param offset offset for calculation of sum of s[i]*s[i+offset]
  * \param shift right shift by this value will be done before multiplication
  *
  * \return sum of multiplications
- *
- * \note array must be at least length+offset long!
  */
-static int sum_of_squares(const int16_t* speech, int length, int offset, int shift)
+static int dot_product(const int16_t* a, const int16_t* b, int length, int shift)
 {
-    const int16_t* speech_end;
     int sum = 0;
+    int i;
 
-    for(speech_end=speech+length; speech<speech_end; speech++)
-       sum += (speech[0] * speech[offset]) >> shift;
+    for(i=0; i<length; i++)
+        sum += (a[i] * b[i]) >> shift;
 
     return sum;
 }

@@ -103,7 +103,7 @@ int16_t ff_acelp_decode_gain_code(
         mr_energy += quant_energy[i] * ma_prediction_coeff[i];
 
 #ifdef G729_BITEXACT
-    mr_energy += (((-6165LL * ff_log2(sum_of_squares(fc_v, subframe_size, 0, 0))) >> 3) & ~0x3ff);
+    mr_energy += (((-6165LL * ff_log2(dot_product(fc_v, fc_v, subframe_size, 0))) >> 3) & ~0x3ff);
 
     mr_energy = (5439 * (mr_energy >> 15)) >> 8;           // (0.15) = (0.15) * (7.23)
 
@@ -113,7 +113,7 @@ int16_t ff_acelp_decode_gain_code(
            );
 #else
     mr_energy = gain_corr_factor * exp(M_LN10 / (20 << 23) * mr_energy) /
-                sqrt(sum_of_squares(fc_v, subframe_size, 0, 0));
+                sqrt(dot_product(fc_v, fc_v, subframe_size, 0));
     return mr_energy >> 12;
 #endif
 }
