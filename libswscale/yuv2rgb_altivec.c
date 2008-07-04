@@ -1,8 +1,26 @@
 /*
-  marc.hoffman@analog.com    March 8, 2004
+ * AltiVec acceleration for colorspace conversion
+ *
+ * copyright (C) 2004 Marc Hoffman <marc.hoffman@analog.com>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
-  AltiVec acceleration for colorspace conversion revision 0.2
-
+/*
   convert I420 YV12 to RGB in various formats,
     it rejects images that are not in 420 formats
     it rejects images that don't have widths of multiples of 16
@@ -61,24 +79,6 @@
 
   Integrated luma prescaling adjustment for saturation/contrast/brightness adjustment.
 */
-
-/*
- * This file is part of FFmpeg.
- *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * FFmpeg is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with FFmpeg; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- */
 
 #include <stdio.h>
 #include <stdlib.h>
