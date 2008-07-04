@@ -185,6 +185,8 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstle
     char *q;
     int len;
 
+    if(dstlen > 0)
+        dst[0]= 0;
     if(taglen < 1)
         return;
 
