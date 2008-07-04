@@ -41,16 +41,14 @@ typedef struct {
 static void decode(Real288_internal *glob, float gain, int cb_coef)
 {
     unsigned int x, y;
-    float f;
     double sum, sumsum;
-    float *p1, *p2;
     float buffer[5];
 
     for (x=36; x--; glob->sb[x+5] = glob->sb[x]);
 
     for (x=5; x--;) {
-        p1 = glob->sb+x;
-        p2 = glob->pr1;
+        float *p1 = glob->sb+x;
+        float *p2 = glob->pr1;
         for (sum=0, y=36; y--; sum -= (*(++p1))*(*(p2++)));
 
         glob->sb[x] = sum;
@@ -84,7 +82,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
 
     /* output */
     for (x=0; x < 5; x++) {
-        f = glob->sb[4-x] + buffer[x];
+        float f = glob->sb[4-x] + buffer[x];
 
         if (f > 4095)
             f = 4095;
@@ -105,9 +103,7 @@ static void colmult(float *tgt, float *m1, const float *m2, int n)
 static int pred(float *in, float *tgt, int n)
 {
     int x, y;
-    float *p1, *p2;
     double f0, f1, f2;
-    float temp;
 
     if (in[n] == 0)
         return 0;
@@ -116,11 +112,12 @@ static int pred(float *in, float *tgt, int n)
         return 0;
 
     for (x=1 ; ; x++) {
+        float *p1 = in + x;
+        float *p2 = tgt;
+
         if (n < x)
             return 1;
 
-        p1 = in + x;
-        p2 = tgt;
         f1 = *(p1--);
         for (y=x; --y; f1 += (*(p1--))*(*(p2++)));
 
@@ -128,7 +125,7 @@ static int pred(float *in, float *tgt, int n)
         p2 = tgt;
         *(p1--) = f2 = -f1/f0;
         for (y=x >> 1; y--;) {
-            temp = *p2 + *p1 * f2;
+            float temp = *p2 + *p1 * f2;
             *(p1--) += *p2 * f2;
             *(p2++) = temp;
         }
@@ -141,11 +138,11 @@ static int pred(float *in, float *tgt, int n)
 static void prodsum(float *tgt, float *src, int len, int n)
 {
     unsigned int x;
-    float *p1, *p2;
     double sum;
 
     while (n >= 0) {
-        p1 = (p2 = src) - n;
+        float *p2 = src;
+        float *p1 = p2 - n;
         for (sum=0, x=len; x--; sum += (*p1++) * (*p2++));
         tgt[n--] = sum;
     }
