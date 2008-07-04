@@ -24,74 +24,73 @@
 
 
 /*
-    YUV420 to RGB565 conversion.  This routine takes a YUV 420 planar macroblock
-    and converts it to RGB565.  R:5 bits, G:6 bits, B:5 bits.. packed into shorts
+YUV420 to RGB565 conversion.  This routine takes a YUV 420 planar macroblock
+and converts it to RGB565.  R:5 bits, G:6 bits, B:5 bits.. packed into shorts
 
 
-    The following calculation is used for the conversion:
+The following calculation is used for the conversion:
 
-      r = clipz((y-oy)*cy  + crv*(v-128))
-      g = clipz((y-oy)*cy  + cgv*(v-128) + cgu*(u-128))
-      b = clipz((y-oy)*cy  + cbu*(u-128))
+  r = clipz((y-oy)*cy  + crv*(v-128))
+  g = clipz((y-oy)*cy  + cgv*(v-128) + cgu*(u-128))
+  b = clipz((y-oy)*cy  + cbu*(u-128))
 
-    y,u,v are pre scaled by a factor of 4 i.e. left shifted to gain precision.
-
-
-    New factorization to eliminate the truncation error which was
-    occuring due to the byteop3p.
+y,u,v are pre scaled by a factor of 4 i.e. left shifted to gain precision.
 
 
-  1) use the bytop16m to subtract quad bytes we use this in U8 this
-   then so the offsets need to be renormalized to 8bits.
+New factorization to eliminate the truncation error which was
+occuring due to the byteop3p.
 
-  2) scale operands up by a factor of 4 not 8 because Blackfin
-     multiplies include a shift.
 
-  3) compute into the accumulators cy*yx0, cy*yx1
+1) use the bytop16m to subtract quad bytes we use this in U8 this
+ then so the offsets need to be renormalized to 8bits.
 
-  4) compute each of the linear equations
-      r = clipz((y-oy)*cy  + crv*(v-128))
+2) scale operands up by a factor of 4 not 8 because Blackfin
+   multiplies include a shift.
 
-      g = clipz((y-oy)*cy  + cgv*(v-128) + cgu*(u-128))
+3) compute into the accumulators cy*yx0, cy*yx1
 
-      b = clipz((y-oy)*cy  + cbu*(u-128))
+4) compute each of the linear equations
+     r = clipz((y - oy) * cy  + crv * (v - 128))
 
-     reuse of the accumulators requires that we actually multiply
-     twice once with addition and the second time with a subtaction.
+     g = clipz((y - oy) * cy  + cgv * (v - 128) + cgu * (u - 128))
 
-     because of this we need to compute the equations in the order R B
-     then G saving the writes for B in the case of 24/32 bit color
-     formats.
+     b = clipz((y - oy) * cy  + cbu * (u - 128))
 
-    api: yuv2rgb_kind (uint8_t *Y, uint8_t *U, uint8_t *V, int *out,
-                       int dW, uint32_t *coeffs);
+   reuse of the accumulators requires that we actually multiply
+   twice once with addition and the second time with a subtaction.
 
-        A          B
-        ---        ---
-        i2 = cb    i3 = cr
-        i1 = coeff i0 = y
+   because of this we need to compute the equations in the order R B
+   then G saving the writes for B in the case of 24/32 bit color
+   formats.
 
-  Where coeffs have the following layout in memory.
+   api: yuv2rgb_kind (uint8_t *Y, uint8_t *U, uint8_t *V, int *out,
+                      int dW, uint32_t *coeffs);
 
-  uint32_t oy,oc,zero,cy,crv,rmask,cbu,bmask,cgu,cgv;
+       A          B
+       ---        ---
+       i2 = cb    i3 = cr
+       i1 = coeff i0 = y
 
-  coeffs is a pointer to oy.
+Where coeffs have the following layout in memory.
 
-  the {rgb} masks are only utilized by the 565 packing algorithm. Note the data
-  replication is used to simplify the internal algorithms for the dual mac architecture
-  of BlackFin.
+uint32_t oy,oc,zero,cy,crv,rmask,cbu,bmask,cgu,cgv;
 
-  All routines are exported with _ff_bfin_ as a symbol prefix
+coeffs is a pointer to oy.
 
-  rough performance gain compared against -O3:
+the {rgb} masks are only utilized by the 565 packing algorithm. Note the data
+replication is used to simplify the internal algorithms for the dual mac architecture
+of BlackFin.
 
-  2779809/1484290 187.28%
+All routines are exported with _ff_bfin_ as a symbol prefix
 
-  which translates to ~33c/pel to ~57c/pel for the reference vs 17.5
-  c/pel for the optimized implementations. Not sure why there is such a
-  huge variation on the reference codes on Blackfin I guess it must have
-  to do with the memory system.
+rough performance gain compared against -O3:
 
+2779809/1484290 187.28%
+
+which translates to ~33c/pel to ~57c/pel for the reference vs 17.5
+c/pel for the optimized implementations. Not sure why there is such a
+huge variation on the reference codes on Blackfin I guess it must have
+to do with the memory system.
 */
 
 #define mL3 .text

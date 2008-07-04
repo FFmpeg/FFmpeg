@@ -21,63 +21,63 @@
  */
 
 /*
-  convert I420 YV12 to RGB in various formats,
-    it rejects images that are not in 420 formats
-    it rejects images that don't have widths of multiples of 16
-    it rejects images that don't have heights of multiples of 2
-  reject defers to C simulation codes.
+convert I420 YV12 to RGB in various formats,
+  it rejects images that are not in 420 formats
+  it rejects images that don't have widths of multiples of 16
+  it rejects images that don't have heights of multiples of 2
+reject defers to C simulation codes.
 
-  lots of optimizations to be done here
+lots of optimizations to be done here
 
-  1. need to fix saturation code, I just couldn't get it to fly with packs and adds.
-     so we currently use max min to clip
+1. need to fix saturation code, I just couldn't get it to fly with packs and adds.
+   so we currently use max min to clip
 
-  2. the inefficient use of chroma loading needs a bit of brushing up
+2. the inefficient use of chroma loading needs a bit of brushing up
 
-  3. analysis of pipeline stalls needs to be done, use shark to identify pipeline stalls
+3. analysis of pipeline stalls needs to be done, use shark to identify pipeline stalls
 
 
-  MODIFIED to calculate coeffs from currently selected color space.
-  MODIFIED core to be a macro which you spec the output format.
-  ADDED UYVY conversion which is never called due to some thing in SWSCALE.
-  CORRECTED algorithim selection to be strict on input formats.
-  ADDED runtime detection of altivec.
+MODIFIED to calculate coeffs from currently selected color space.
+MODIFIED core to be a macro which you spec the output format.
+ADDED UYVY conversion which is never called due to some thing in SWSCALE.
+CORRECTED algorithim selection to be strict on input formats.
+ADDED runtime detection of altivec.
 
-  ADDED altivec_yuv2packedX vertical scl + RGB converter
+ADDED altivec_yuv2packedX vertical scl + RGB converter
 
-  March 27,2004
-  PERFORMANCE ANALYSIS
+March 27,2004
+PERFORMANCE ANALYSIS
 
-  The C version use 25% of the processor or ~250Mips for D1 video rawvideo used as test
-  The ALTIVEC version uses 10% of the processor or ~100Mips for D1 video same sequence
+The C version use 25% of the processor or ~250Mips for D1 video rawvideo used as test
+The ALTIVEC version uses 10% of the processor or ~100Mips for D1 video same sequence
 
-  720*480*30  ~10MPS
+720*480*30  ~10MPS
 
-  so we have roughly 10clocks per pixel this is too high something has to be wrong.
+so we have roughly 10clocks per pixel this is too high something has to be wrong.
 
-  OPTIMIZED clip codes to utilize vec_max and vec_packs removing the need for vec_min.
+OPTIMIZED clip codes to utilize vec_max and vec_packs removing the need for vec_min.
 
-  OPTIMIZED DST OUTPUT cache/dma controls. we are pretty much
-  guaranteed to have the input video frame it was just decompressed so
-  it probably resides in L1 caches.  However we are creating the
-  output video stream this needs to use the DSTST instruction to
-  optimize for the cache.  We couple this with the fact that we are
-  not going to be visiting the input buffer again so we mark it Least
-  Recently Used.  This shaves 25% of the processor cycles off.
+OPTIMIZED DST OUTPUT cache/dma controls. we are pretty much
+guaranteed to have the input video frame it was just decompressed so
+it probably resides in L1 caches.  However we are creating the
+output video stream this needs to use the DSTST instruction to
+optimize for the cache.  We couple this with the fact that we are
+not going to be visiting the input buffer again so we mark it Least
+Recently Used.  This shaves 25% of the processor cycles off.
 
-  Now MEMCPY is the largest mips consumer in the system, probably due
-  to the inefficient X11 stuff.
+Now MEMCPY is the largest mips consumer in the system, probably due
+to the inefficient X11 stuff.
 
-  GL libraries seem to be very slow on this machine 1.33Ghz PB running
-  Jaguar, this is not the case for my 1Ghz PB.  I thought it might be
-  a versioning issues, however I have libGL.1.2.dylib for both
-  machines. ((We need to figure this out now))
+GL libraries seem to be very slow on this machine 1.33Ghz PB running
+Jaguar, this is not the case for my 1Ghz PB.  I thought it might be
+a versioning issues, however I have libGL.1.2.dylib for both
+machines. ((We need to figure this out now))
 
-  GL2 libraries work now with patch for RGB32
+GL2 libraries work now with patch for RGB32
 
-  NOTE quartz vo driver ARGB32_to_RGB24 consumes 30% of the processor
+NOTE quartz vo driver ARGB32_to_RGB24 consumes 30% of the processor
 
-  Integrated luma prescaling adjustment for saturation/contrast/brightness adjustment.
+Integrated luma prescaling adjustment for saturation/contrast/brightness adjustment.
 */
 
 #include <stdio.h>
