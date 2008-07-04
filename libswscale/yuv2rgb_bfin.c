@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
- *                    April 20, 2007
  *
- * Blackfin Video Color Space Converters Operations
- *  convert I420 YV12 to RGB in various formats,
+ * Blackfin video color space converter operations
+ * convert I420 YV12 to RGB in various formats
  *
  * This file is part of FFmpeg.
  *
@@ -200,7 +199,7 @@ SwsFunc ff_bfin_yuv2rgb_get_func_ptr (SwsContext *c)
         return 0;
     }
 
-    av_log(c, AV_LOG_INFO, "BlackFin Accelerated Color Space Converter %s\n",
+    av_log(c, AV_LOG_INFO, "BlackFin accelerated color space converter %s\n",
            sws_format_name (c->dstFormat));
 
     return f;

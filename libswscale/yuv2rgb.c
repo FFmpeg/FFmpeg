@@ -39,7 +39,7 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-#define DITHER1XBPP // only for mmx
+#define DITHER1XBPP // only for MMX
 
 const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
@@ -155,8 +155,8 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_00ffw)   = 0x00ff00ff00ff00ffULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_redmask) = 0xf8f8f8f8f8f8f8f8ULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 
-// the volatile is required because gcc otherwise optimizes some writes away not knowing that these
-// are read in the asm block
+// The volatile is required because gcc otherwise optimizes some writes away
+// not knowing that these are read in the ASM block.
 static volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
@@ -641,7 +641,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     }
 #endif
 
-    av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found\n");
+    av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found.\n");
 
     switch(c->dstFormat){
     case PIX_FMT_BGR32:

@@ -37,7 +37,7 @@
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
-/* this struct should be aligned on at least 32-byte boundary */
+/* This struct should be aligned on at least a 32-byte boundary. */
 typedef struct SwsContext{
     /**
      * info on struct for av_log
@@ -73,7 +73,7 @@ typedef struct SwsContext{
     int16_t *vChrFilter;
     int16_t *vChrFilterPos;
 
-    uint8_t formatConvBuffer[VOF]; //FIXME dynamic alloc, but we have to change a lot of code for this to be useful
+    uint8_t formatConvBuffer[VOF]; //FIXME dynamic allocation, but we have to change a lot of code for this to be useful
 
     int hLumFilterSize;
     int hChrFilterSize;
@@ -122,7 +122,7 @@ typedef struct SwsContext{
 #define V_OFFSET              "10*8"
 #define LUM_MMX_FILTER_OFFSET "11*8"
 #define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
-#define DSTW_OFFSET           "11*8+4*4*256*2" //do not change, it is hardcoded in the asm
+#define DSTW_OFFSET           "11*8+4*4*256*2" //do not change, it is hardcoded in the ASM
 #define ESP_OFFSET            "11*8+4*4*256*2+8"
 #define VROUNDER_OFFSET       "11*8+4*4*256*2+16"
 #define U_TEMP                "11*8+4*4*256*2+24"

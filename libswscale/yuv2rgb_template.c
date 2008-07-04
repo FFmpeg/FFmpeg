@@ -1,5 +1,5 @@
 /*
- * yuv2rgb_mmx.c, Software YUV to RGB converter with Intel MMX "technology"
+ * yuv2rgb_mmx.c, software YUV to RGB converter with Intel MMX "technology"
  *
  * Copyright (C) 2000, Silicon Integrated System Corp.
  *
@@ -31,7 +31,7 @@
 #undef SFENCE
 
 #ifdef HAVE_3DNOW
-/* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
+/* On K6 femms is faster than emms. On K7 femms is directly mapped on emms. */
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
@@ -147,8 +147,8 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         g6Dither= ff_dither4[y&1];
         g5Dither= ff_dither8[y&1];
         r5Dither= ff_dither8[(y+1)&1];
-        /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
-           pixels in each iteration */
+        /* This MMX assembly code deals with a SINGLE scan line at a time,
+         * it converts 8 pixels in each iteration. */
         asm volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
@@ -156,8 +156,8 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         "movq (%5, %0, 2), %%mm6;" /* Load 8  Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
         //".balign 16     \n\t"
         "1:             \n\t"
-        /* no speed diference on my p3@500 with prefetch,
-         * if it is faster for anyone with -benchmark then tell me
+        /* No speed difference on my p3@500 with prefetch,
+         * if it is faster for anyone with -benchmark then tell me.
         PREFETCH" 64(%0) \n\t"
         PREFETCH" 64(%1) \n\t"
         PREFETCH" 64(%2) \n\t"
@@ -180,7 +180,7 @@ YUV2RGB
         "movq %%mm0, %%mm5;" /* Copy B7-B0 */
         "movq %%mm2, %%mm7;" /* Copy G7-G0 */
 
-        /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+        /* convert RGB24 plane to RGB16 pack for pixel 0-3 */
         "punpcklbw %%mm4, %%mm2;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */
         "punpcklbw %%mm1, %%mm0;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
@@ -190,7 +190,7 @@ YUV2RGB
         "movq 8 (%5, %0, 2), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
         MOVNTQ "      %%mm0, (%1);" /* store pixel 0-3 */
 
-        /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+        /* convert RGB24 plane to RGB16 pack for pixel 0-3 */
         "punpckhbw %%mm4, %%mm7;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */
         "punpckhbw %%mm1, %%mm5;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
@@ -242,8 +242,8 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         g6Dither= ff_dither4[y&1];
         g5Dither= ff_dither8[y&1];
         r5Dither= ff_dither8[(y+1)&1];
-        /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
-           pixels in each iteration */
+        /* This MMX assembly code deals with a SINGLE scan line at a time,
+         * it converts 8 pixels in each iteration. */
         asm volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
@@ -271,7 +271,7 @@ YUV2RGB
         "movq %%mm0, %%mm5;" /* Copy B7-B0 */
         "movq %%mm2, %%mm7;" /* Copy G7-G0 */
 
-        /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+        /* convert RGB24 plane to RGB16 pack for pixel 0-3 */
         "punpcklbw %%mm4, %%mm2;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3_0_0_0 */
         "punpcklbw %%mm1, %%mm0;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
@@ -281,7 +281,7 @@ YUV2RGB
         "movq 8 (%5, %0, 2), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
         MOVNTQ "      %%mm0, (%1);"  /* store pixel 0-3 */
 
-        /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+        /* convert RGB24 plane to RGB16 pack for pixel 0-3 */
         "punpckhbw %%mm4, %%mm7;" /* 0_0_0_0 0_0_0_0 0_g7g6g5 g4g3_0_0 */
         "punpckhbw %%mm1, %%mm5;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
@@ -326,8 +326,8 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
-        /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
-           pixels in each iteration */
+        /* This MMX assembly code deals with a SINGLE scan line at a time,
+         * it converts 8 pixels in each iteration. */
         asm volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
@@ -472,8 +472,8 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
-        /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
-           pixels in each iteration */
+        /* This MMX assembly code deals with a SINGLE scan line at a time,
+         * it converts 8 pixels in each iteration. */
         asm volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
  *
- * Blackfin Software Video SCALER Operations
+ * Blackfin software video scaler operations
  *
  * This file is part of FFmpeg.
  *

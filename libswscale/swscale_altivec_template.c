@@ -245,12 +245,12 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
         src_v = vec_mergeh(src_v, (vector signed short)vzero);
 
         filter_v = vec_ld(i << 3, filter);
-        // the 3 above is 2 (filterSize == 4) + 1 (sizeof(short) == 2)
+        // The 3 above is 2 (filterSize == 4) + 1 (sizeof(short) == 2).
 
-        // the neat trick : we only care for half the elements,
+        // The neat trick: We only care for half the elements,
         // high or low depending on (i<<3)%16 (it's 0 or 8 here),
-        // and we're going to use vec_mule, so we chose
-        // carefully how to "unpack" the elements into the even slots
+        // and we're going to use vec_mule, so we choose
+        // carefully how to "unpack" the elements into the even slots.
         if ((i << 3) % 16)
             filter_v = vec_mergel(filter_v, (vector signed short)vzero);
         else
@@ -405,12 +405,12 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
         return srcSliceH;
     }
 
-    /* this code assume:
+    /* This code assumes:
 
     1) dst is 16 bytes-aligned
     2) dstStride is a multiple of 16
     3) width is a multiple of 16
-    4) lum&chrom stride are multiple of 8
+    4) lum & chrom stride are multiples of 8
     */
 
     for (y=0; y<height; y++) {
@@ -482,12 +482,12 @@ static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int
         return srcSliceH;
     }
 
-    /* this code assume:
+    /* This code assumes:
 
     1) dst is 16 bytes-aligned
     2) dstStride is a multiple of 16
     3) width is a multiple of 16
-    4) lum&chrom stride are multiple of 8
+    4) lum & chrom stride are multiples of 8
     */
 
     for (y=0; y<height; y++) {

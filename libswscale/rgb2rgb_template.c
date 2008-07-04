@@ -1,11 +1,11 @@
 /*
- *  rgb2rgb.c, Software RGB to RGB convertor
- *  pluralize by Software PAL8 to RGB convertor
- *               Software YUV to YUV convertor
- *               Software YUV to RGB convertor
- *  Written by Nick Kurshev.
- *  palette & YUV & runtime CPU stuff by Michael (michaelni@gmx.at)
- *  lot of big-endian byteorder fixes by Alex Beregszaszi
+ * software RGB to RGB converter
+ * pluralize by software PAL8 to RGB converter
+ *              software YUV to YUV converter
+ *              software YUV to RGB converter
+ * Written by Nick Kurshev.
+ * palette & YUV & runtime CPU stuff by Michael (michaelni@gmx.at)
+ * lot of big-endian byte order fixes by Alex Beregszaszi
  *
  * This file is part of FFmpeg.
  *
@@ -23,7 +23,7 @@
  * along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * The C code (not assembly, mmx, ...) of this file can be used
+ * The C code (not assembly, MMX, ...) of this file can be used
  * under the LGPL license.
  */
 
@@ -229,10 +229,10 @@ static inline void RENAME(rgb32to24)(const uint8_t *src, uint8_t *dst, long src_
 }
 
 /*
- Original by Strepto/Astral
- ported to gcc & bugfixed : A'rpi
+ original by Strepto/Astral
+ ported to gcc & bugfixed: A'rpi
  MMX2, 3DNOW optimization by Nick Kurshev
- 32 bit C version, and and&add trick by Michael Niedermayer
+ 32-bit C version, and and&add trick by Michael Niedermayer
 */
 static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_size)
 {
@@ -926,9 +926,9 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
    ----------------
    1 1 0 1 1  1 1 0
    |=======|  |===|
-       |      Leftmost Bits Repeated to Fill Open Bits
+       |      leftmost bits repeated to fill open bits
        |
-   Original Bits
+   original bits
 */
 static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
@@ -1006,7 +1006,7 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
         :"=m"(*d)
         :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r), "m"(mmx_null)
         :"memory");
-        /* Borrowed 32 to 24 */
+        /* borrowed 32 to 24 */
         asm volatile(
         "movq       %%mm0, %%mm4    \n\t"
         "movq       %%mm3, %%mm5    \n\t"
@@ -1147,7 +1147,7 @@ static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, long src_
         :"=m"(*d)
         :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
         :"memory");
-        /* Borrowed 32 to 24 */
+        /* borrowed 32 to 24 */
         asm volatile(
         "movq       %%mm0, %%mm4    \n\t"
         "movq       %%mm3, %%mm5    \n\t"
@@ -1479,7 +1479,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
     asm volatile(SFENCE:::"memory");
     asm volatile(EMMS:::"memory");
 
-    if (mmx_size==23) return; //finihsed, was multiple of 8
+    if (mmx_size==23) return; //finished, was multiple of 8
 
     src+= src_size;
     dst+= src_size;
@@ -1638,8 +1638,8 @@ asm(    EMMS"       \n\t"
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 16 (if
- * this is a problem for anyone then tell me, and I will fix it).
+ * Height should be a multiple of 2 and width should be a multiple of 16.
+ * (If this is a problem for anyone then tell me, and I will fix it.)
  */
 static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                                       long width, long height,
@@ -1720,7 +1720,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
                 (vc[0] << 8) + (yc[1] << 0);
 #else
             *idst++ = uc[0] + (yc[0] << 8) +
-                (vc[0] << 16) + (yc[1] << 24);
+               (vc[0] << 16) + (yc[1] << 24);
 #endif
             yc += 2;
             uc++;
@@ -1744,8 +1744,8 @@ asm(    EMMS"       \n\t"
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 16 (if
- * this is a problem for anyone then tell me, and I will fix it).
+ * Height should be a multiple of 2 and width should be a multiple of 16
+ * (If this is a problem for anyone then tell me, and I will fix it.)
  */
 static inline void RENAME(yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                                       long width, long height,
@@ -1766,8 +1766,8 @@ static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usr
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 16 (if
- * this is a problem for anyone then tell me, and I will fix it).
+ * Height should be a multiple of 2 and width should be a multiple of 16.
+ * (If this is a problem for anyone then tell me, and I will fix it.)
  */
 static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                       long width, long height,
@@ -2002,9 +2002,9 @@ asm volatile(   EMMS"       \n\t"
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 16 (if
- * this is a problem for anyone then tell me, and I will fix it).
- * Chrominance data is only taken from every secound line, others are ignored.
+ * Height should be a multiple of 2 and width should be a multiple of 16.
+ * (If this is a problem for anyone then tell me, and I will fix it.)
+ * Chrominance data is only taken from every second line, others are ignored.
  * FIXME: Write HQ version.
  */
 static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
@@ -2128,9 +2128,9 @@ asm volatile(   EMMS"       \n\t"
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 2 (if
- * this is a problem for anyone then tell me, and I will fix it).
- * Chrominance data is only taken from every secound line,
+ * Height should be a multiple of 2 and width should be a multiple of 2.
+ * (If this is a problem for anyone then tell me, and I will fix it.)
+ * Chrominance data is only taken from every second line,
  * others are ignored in the C version.
  * FIXME: Write HQ version.
  */

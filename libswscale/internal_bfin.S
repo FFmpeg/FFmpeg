@@ -2,8 +2,8 @@
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
  *                    April 20, 2007
  *
- * Blackfin Video Color Space Converters Operations
- *  convert I420 YV12 to RGB in various formats,
+ * Blackfin video color space converter operations
+ * convert I420 YV12 to RGB in various formats
  *
  * This file is part of FFmpeg.
  *
@@ -24,8 +24,8 @@
 
 
 /*
-YUV420 to RGB565 conversion.  This routine takes a YUV 420 planar macroblock
-and converts it to RGB565.  R:5 bits, G:6 bits, B:5 bits.. packed into shorts
+YUV420 to RGB565 conversion. This routine takes a YUV 420 planar macroblock
+and converts it to RGB565. R:5 bits, G:6 bits, B:5 bits.. packed into shorts.
 
 
 The following calculation is used for the conversion:
@@ -34,36 +34,36 @@ The following calculation is used for the conversion:
   g = clipz((y-oy)*cy  + cgv*(v-128) + cgu*(u-128))
   b = clipz((y-oy)*cy  + cbu*(u-128))
 
-y,u,v are pre scaled by a factor of 4 i.e. left shifted to gain precision.
+y,u,v are prescaled by a factor of 4 i.e. left-shifted to gain precision.
 
 
 New factorization to eliminate the truncation error which was
-occuring due to the byteop3p.
+occurring due to the byteop3p.
 
 
-1) use the bytop16m to subtract quad bytes we use this in U8 this
+1) Use the bytop16m to subtract quad bytes we use this in U8 this
  then so the offsets need to be renormalized to 8bits.
 
-2) scale operands up by a factor of 4 not 8 because Blackfin
+2) Scale operands up by a factor of 4 not 8 because Blackfin
    multiplies include a shift.
 
-3) compute into the accumulators cy*yx0, cy*yx1
+3) Compute into the accumulators cy*yx0, cy*yx1.
 
-4) compute each of the linear equations
+4) Compute each of the linear equations:
      r = clipz((y - oy) * cy  + crv * (v - 128))
 
      g = clipz((y - oy) * cy  + cgv * (v - 128) + cgu * (u - 128))
 
      b = clipz((y - oy) * cy  + cbu * (u - 128))
 
-   reuse of the accumulators requires that we actually multiply
-   twice once with addition and the second time with a subtaction.
+   Reuse of the accumulators requires that we actually multiply
+   twice once with addition and the second time with a subtraction.
 
-   because of this we need to compute the equations in the order R B
+   Because of this we need to compute the equations in the order R B
    then G saving the writes for B in the case of 24/32 bit color
    formats.
 
-   api: yuv2rgb_kind (uint8_t *Y, uint8_t *U, uint8_t *V, int *out,
+   API: yuv2rgb_kind (uint8_t *Y, uint8_t *U, uint8_t *V, int *out,
                       int dW, uint32_t *coeffs);
 
        A          B
@@ -77,13 +77,13 @@ uint32_t oy,oc,zero,cy,crv,rmask,cbu,bmask,cgu,cgv;
 
 coeffs is a pointer to oy.
 
-the {rgb} masks are only utilized by the 565 packing algorithm. Note the data
-replication is used to simplify the internal algorithms for the dual mac architecture
-of BlackFin.
+The {rgb} masks are only utilized by the 565 packing algorithm. Note the data
+replication is used to simplify the internal algorithms for the dual Mac
+architecture of BlackFin.
 
-All routines are exported with _ff_bfin_ as a symbol prefix
+All routines are exported with _ff_bfin_ as a symbol prefix.
 
-rough performance gain compared against -O3:
+Rough performance gain compared against -O3:
 
 2779809/1484290 187.28%
 
