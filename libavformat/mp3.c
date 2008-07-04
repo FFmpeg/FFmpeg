@@ -205,7 +205,7 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstle
         break;
 
     case 3:  /* UTF-8 */
-        len = FFMIN(taglen, dstlen);
+        len = FFMIN(taglen, dstlen-1);
         get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
