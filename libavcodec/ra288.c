@@ -38,7 +38,7 @@ typedef struct {
 } Real288_internal;
 
 /* Decode and produce output */
-static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
+static void decode(Real288_internal *glob, float gain, int cb_coef)
 {
     unsigned int x, y;
     float f;
@@ -56,8 +56,6 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
         glob->sb[x] = sum;
     }
 
-    f = amptable[amp_coef];
-
     /* convert log and do rms */
     for (sum=32, x=10; x--; sum -= glob->pr2[x] * glob->lhist[x]);
 
@@ -66,7 +64,7 @@ static void decode(Real288_internal *glob, int amp_coef, int cb_coef)
     else if (sum > 60)
         sum = 60;
 
-    sumsum = exp(sum * 0.1151292546497) * f;    /* pow(10.0,sum/20)*f */
+    sumsum = exp(sum * 0.1151292546497) * gain;    /* pow(10.0,sum/20)*f */
 
     for (sum=0, x=5; x--;) {
         buffer[x] = codetable[cb_coef][x] * sumsum;
@@ -223,10 +221,10 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
     for (x=0; x < 32; x++) {
-        int amp_coef = get_bits(&gb, 3);
+        float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (x&1));
         glob->phasep = (glob->phase = x & 7) * 5;
-        decode(glob, amp_coef, cb_coef);
+        decode(glob, gain, cb_coef);
 
         for (y=0; y<5; *(out++) = 8 * glob->output[glob->phasep+(y++)]);
 
