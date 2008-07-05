@@ -130,7 +130,6 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
 
 static av_cold int decode_init(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
-    int i;
 
     s->avctx = avctx;
     av_init_random(0, &s->random_state);
