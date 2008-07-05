@@ -65,8 +65,8 @@ static int truehd_channels(int chanmap)
 static int crc_init = 0;
 static AVCRC crc_2D[1024];
 
-/** MLP uses checksums that seem to be based on the standard CRC algorithm,
- *  but not (in implementation terms, the table lookup and XOR are reversed).
+/** MLP uses checksums that seem to be based on the standard CRC algorithm, but
+ *  are not (in implementation terms, the table lookup and XOR are reversed).
  *  We can implement this behavior using a standard av_crc on all but the
  *  last element, then XOR that with the last element.
  */
@@ -99,13 +99,13 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
     assert(get_bits_count(gb) == 0);
 
     if (gb->size_in_bits < 28 << 3) {
-        av_log(log, AV_LOG_ERROR, "Packet too short, unable to read major sync\n");
+        av_log(log, AV_LOG_ERROR, "packet too short, unable to read major sync\n");
         return -1;
     }
 
     checksum = mlp_checksum16(gb->buffer, 26);
     if (checksum != AV_RL16(gb->buffer+26)) {
-        av_log(log, AV_LOG_ERROR, "Major sync info header checksum error\n");
+        av_log(log, AV_LOG_ERROR, "major sync info header checksum error\n");
         return -1;
     }
 
