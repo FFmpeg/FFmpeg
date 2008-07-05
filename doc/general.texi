@@ -347,7 +347,7 @@ following image formats are supported:
 @item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported
 @item Nellymoser ASAO        @tab      @tab X
 @item 8SVX Audio             @tab      @tab X
-@item MLP/TrueHD             @tab     @tab  X @tab Used in DVD-Audio and Blu-Ray discs.
+@item MLP/TrueHD             @tab      @tab X @tab Used in DVD-Audio and Blu-Ray discs.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
