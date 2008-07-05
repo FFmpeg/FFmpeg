@@ -1636,6 +1636,7 @@ AVCodec name ## _decoder = {                    \
 #define ADPCM_CODEC(id,name,long_name_)         \
     ADPCM_ENCODER(id,name,long_name_) ADPCM_DECODER(id,name,long_name_)
 
+/* Note: Do not forget to add new entries to the Makefile as well. */
 ADPCM_DECODER(CODEC_ID_ADPCM_4XM, adpcm_4xm, "4X Movie ADPCM");
 ADPCM_DECODER(CODEC_ID_ADPCM_CT, adpcm_ct, "Creative Technology ADPCM");
 ADPCM_DECODER(CODEC_ID_ADPCM_EA, adpcm_ea, "Electronic Arts ADPCM");

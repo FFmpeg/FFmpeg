@@ -556,6 +556,7 @@ AVCodec name ## _decoder = {                    \
 #define PCM_CODEC(id, name, long_name_)         \
     PCM_ENCODER(id,name,long_name_) PCM_DECODER(id,name,long_name_)
 
+/* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW, pcm_alaw, "A-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_DVD, pcm_dvd, "signed 16|20|24-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_MULAW, pcm_mulaw, "mu-law PCM");
