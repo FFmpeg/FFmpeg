@@ -24,6 +24,8 @@
  * MLP parser
  */
 
+#include <stdint.h>
+
 #include "libavutil/crc.h"
 #include "bitstream.h"
 #include "parser.h"

@@ -24,6 +24,8 @@
  * MLP decoder
  */
 
+#include <stdint.h>
+
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "bitstream.h"
