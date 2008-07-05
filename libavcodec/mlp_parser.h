@@ -27,7 +27,7 @@
 #ifndef FFMPEG_MLP_PARSER_H
 #define FFMPEG_MLP_PARSER_H
 
-#include <inttypes.h>
+#include "bitstream.h"
 
 typedef struct MLPHeaderInfo
 {
