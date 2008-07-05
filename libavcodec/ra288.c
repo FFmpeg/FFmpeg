@@ -57,9 +57,8 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
     for (x=35; x >= 0; x--)
         glob->sb[x+5] = glob->sb[x];
 
-    for (x=4; x >= 0; x--) {
+    for (x=4; x >= 0; x--)
         glob->sb[x] = -scalar_product_float(glob->sb + x + 1, glob->pr1, 36);
-    }
 
     /* convert log and do rms */
     sum = 32. - scalar_product_float(glob->pr2, glob->lhist, 10);
