@@ -37,6 +37,16 @@ typedef struct {
     float lhist[10];
 } Real288_internal;
 
+static inline float scalar_product_float(float * v1, float * v2, int size)
+{
+    float res = 0.;
+
+    while (size--)
+        res += *v1++ * *v2++;
+
+    return res;
+}
+
 /* Decode and produce output */
 static void decode(Real288_internal *glob, float gain, int cb_coef)
 {
@@ -48,19 +58,11 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
         glob->sb[x+5] = glob->sb[x];
 
     for (x=4; x >= 0; x--) {
-        float *p1 = glob->sb+x;
-        float *p2 = glob->pr1;
-        sum = 0;
-        for (y=0; y < 36; y++)
-            sum -= (*(++p1))*(*(p2++));
-
-        glob->sb[x] = sum;
+        glob->sb[x] = -scalar_product_float(glob->sb + x + 1, glob->pr1, 36);
     }
 
     /* convert log and do rms */
-    sum = 32;
-    for (x=0; x < 10; x++)
-        sum -= glob->pr2[x] * glob->lhist[x];
+    sum = 32. - scalar_product_float(glob->pr2, glob->lhist, 10);
 
     if (sum < 0)
         sum = 0;
@@ -148,17 +150,9 @@ static int pred(float *in, float *tgt, int n)
 /* product sum (lsf) */
 static void prodsum(float *tgt, float *src, int len, int n)
 {
-    unsigned int x;
-    double sum;
+    for (; n >= 0; n--)
+        tgt[n] = scalar_product_float(src, src - n, len);
 
-    while (n >= 0) {
-        float *p2 = src;
-        float *p1 = p2 - n;
-        sum = 0;
-        for (x=0; x < len; x++)
-            sum += (*p1++) * (*p2++);
-        tgt[n--] = sum;
-    }
 }
 
 static void co(int n, int i, int j, float *in, float *out, float *st1,
