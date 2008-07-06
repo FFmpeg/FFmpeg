@@ -185,7 +185,7 @@ static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int seqvideo_decode_frame(AVCodecContext *avctx,
+static int seqvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  const uint8_t *buf, int buf_size)
 {
@@ -207,7 +207,7 @@ static av_cold int seqvideo_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int seqvideo_decode_end(AVCodecContext *avctx)
+static av_cold int seqvideo_decode_end(AVCodecContext *avctx)
 {
     SeqVideoContext *seq = avctx->priv_data;
 
