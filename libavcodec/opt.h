@@ -85,6 +85,18 @@ typedef struct AVOption {
 } AVOption;
 
 
+/**
+ * Looks for an option in \p obj. Looks only for the options which
+ * have the flags set as specified in \p mask and \p flags (that is,
+ * for which it is the case that opt->flags & mask == flags).
+ *
+ * @param[in] obj a pointer to a struct whose first element is a
+ * pointer to an #AVClass
+ * @param[in] name the name of the option to look for
+ * @param[in] unit the unit of the option to look for, or any if NULL
+ * @return a pointer to the option found, or NULL if no option
+ * has been found
+ */
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
 const AVOption *av_set_string(void *obj, const char *name, const char *val);
 const AVOption *av_set_double(void *obj, const char *name, double n);
