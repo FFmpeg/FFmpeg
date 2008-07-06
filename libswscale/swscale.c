@@ -1732,68 +1732,65 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
 static int packedCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                      int srcSliceH, uint8_t* dst[], int dstStride[]){
+                      int srcSliceH, uint8_t* dst[], int dstStride[])
+{
+    if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
+        memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
+    else
+    {
+        int i;
+        uint8_t *srcPtr= src[0];
+        uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+        int length=0;
 
+        /* universal length finder */
+        while(length+c->srcW <= FFABS(dstStride[0])
+           && length+c->srcW <= FFABS(srcStride[0])) length+= c->srcW;
+        ASSERT(length!=0);
 
-        if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
-            memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
-        else
+        for (i=0; i<srcSliceH; i++)
         {
-            int i;
-            uint8_t *srcPtr= src[0];
-            uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
-            int length=0;
-
-            /* universal length finder */
-            while(length+c->srcW <= FFABS(dstStride[0])
-               && length+c->srcW <= FFABS(srcStride[0])) length+= c->srcW;
-            ASSERT(length!=0);
-
-            for (i=0; i<srcSliceH; i++)
-            {
-                memcpy(dstPtr, srcPtr, length);
-                srcPtr+= srcStride[0];
-                dstPtr+= dstStride[0];
-            }
+            memcpy(dstPtr, srcPtr, length);
+            srcPtr+= srcStride[0];
+            dstPtr+= dstStride[0];
         }
-
+    }
     return srcSliceH;
 }
+
 static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
+    int plane;
+    for (plane=0; plane<3; plane++)
+    {
+        int length= plane==0 ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
+        int y=      plane==0 ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
+        int height= plane==0 ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
 
-        int plane;
-        for (plane=0; plane<3; plane++)
+        if ((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
         {
-            int length= plane==0 ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
-            int y=      plane==0 ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
-            int height= plane==0 ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
-
-            if ((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
-            {
-                if (!isGray(c->dstFormat))
-                    memset(dst[plane], 128, dstStride[plane]*height);
-            }
+            if (!isGray(c->dstFormat))
+                memset(dst[plane], 128, dstStride[plane]*height);
+        }
+        else
+        {
+            if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
+                memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
             else
             {
-                if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
-                    memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
-                else
+                int i;
+                uint8_t *srcPtr= src[plane];
+                uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
+                for (i=0; i<height; i++)
                 {
-                    int i;
-                    uint8_t *srcPtr= src[plane];
-                    uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
-                    for (i=0; i<height; i++)
-                    {
-                        memcpy(dstPtr, srcPtr, length);
-                        srcPtr+= srcStride[plane];
-                        dstPtr+= dstStride[plane];
-                    }
+                    memcpy(dstPtr, srcPtr, length);
+                    srcPtr+= srcStride[plane];
+                    dstPtr+= dstStride[plane];
                 }
             }
         }
-
+    }
     return srcSliceH;
 }
 
