@@ -3944,6 +3944,28 @@ void ff_float_to_int16_c(int16_t *dst, const float *src, int len){
     }
 }
 
+static void add_int16_c(int16_t * v1, int16_t * v2, int order)
+{
+    while (order--)
+       *v1++ += *v2++;
+}
+
+static void sub_int16_c(int16_t * v1, int16_t * v2, int order)
+{
+    while (order--)
+        *v1++ -= *v2++;
+}
+
+static int32_t scalarproduct_int16_c(int16_t * v1, int16_t * v2, int order, int shift)
+{
+    int res = 0;
+
+    while (order--)
+        res += (*v1++ * *v2++) >> shift;
+
+    return res;
+}
+
 #define W0 2048
 #define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */
 #define W2 2676 /* 2048*sqrt (2)*cos (2*pi/16) */
@@ -4429,6 +4451,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add_add = ff_vector_fmul_add_add_c;
     c->float_to_int16 = ff_float_to_int16_c;
+    c->add_int16 = add_int16_c;
+    c->sub_int16 = sub_int16_c;
+    c->scalarproduct_int16 = scalarproduct_int16_c;
 
     c->shrink[0]= ff_img_copy_plane;
     c->shrink[1]= ff_shrink22;

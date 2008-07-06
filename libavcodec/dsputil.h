@@ -451,6 +451,23 @@ typedef struct DSPContext {
     void (*x8_setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
            int * range, int * sum,  int edges);
 
+    /* ape functions */
+    /**
+     * Add contents of the second vector to the first one.
+     * @param len length of vectors, should be multiple of 8
+     */
+    void (*add_int16)(int16_t *v1/*align 16*/, int16_t *v2, int len);
+    /**
+     * Add contents of the second vector to the first one.
+     * @param len length of vectors, should be multiple of 8
+     */
+    void (*sub_int16)(int16_t *v1/*align 16*/, int16_t *v2, int len);
+    /**
+     * Calculate scalar product of two vectors.
+     * @param len length of vectors, should be multiple of 8
+     * @param shift number of bits to discard from product
+     */
+    int32_t (*scalarproduct_int16)(int16_t *v1, int16_t *v2/*align 16*/, int len, int shift);
 } DSPContext;
 
 void dsputil_static_init(void);

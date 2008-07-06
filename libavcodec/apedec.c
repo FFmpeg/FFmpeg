@@ -161,29 +161,6 @@ typedef struct APEContext {
 } APEContext;
 
 // TODO: dsputilize
-static inline void vector_add(int16_t * v1, int16_t * v2, int order)
-{
-    while (order--)
-       *v1++ += *v2++;
-}
-
-// TODO: dsputilize
-static inline void vector_sub(int16_t * v1, int16_t * v2, int order)
-{
-    while (order--)
-        *v1++ -= *v2++;
-}
-
-// TODO: dsputilize
-static inline int32_t scalarproduct(int16_t * v1, int16_t * v2, int order)
-{
-    int res = 0;
-
-    while (order--)
-        res += *v1++ * *v2++;
-
-    return res;
-}
 
 static av_cold int ape_decode_init(AVCodecContext * avctx)
 {
@@ -672,19 +649,19 @@ static void init_filter(APEContext * ctx, APEFilter *f, int16_t * buf, int order
     do_init_filter(&f[1], buf + order * 3 + HISTORY_SIZE, order);
 }
 
-static inline void do_apply_filter(int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
+static inline void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
 {
     int res;
     int absres;
 
     while (count--) {
         /* round fixedpoint scalar product */
-        res = (scalarproduct(f->delay - order, f->coeffs, order) + (1 << (fracbits - 1))) >> fracbits;
+        res = (ctx->dsp.scalarproduct_int16(f->delay - order, f->coeffs, order, 0) + (1 << (fracbits - 1))) >> fracbits;
 
         if (*data < 0)
-            vector_add(f->coeffs, f->adaptcoeffs - order, order);
+            ctx->dsp.add_int16(f->coeffs, f->adaptcoeffs - order, order);
         else if (*data > 0)
-            vector_sub(f->coeffs, f->adaptcoeffs - order, order);
+            ctx->dsp.sub_int16(f->coeffs, f->adaptcoeffs - order, order);
 
         res += *data;
 
@@ -736,9 +713,9 @@ static void apply_filter(APEContext * ctx, APEFilter *f,
                          int32_t * data0, int32_t * data1,
                          int count, int order, int fracbits)
 {
-    do_apply_filter(ctx->fileversion, &f[0], data0, count, order, fracbits);
+    do_apply_filter(ctx, ctx->fileversion, &f[0], data0, count, order, fracbits);
     if (data1)
-        do_apply_filter(ctx->fileversion, &f[1], data1, count, order, fracbits);
+        do_apply_filter(ctx, ctx->fileversion, &f[1], data1, count, order, fracbits);
 }
 
 static void ape_apply_filters(APEContext * ctx, int32_t * decoded0,
