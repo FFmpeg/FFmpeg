@@ -121,7 +121,7 @@ int ff_acelp_lp_synthesis_filter(
 {
     int i,n;
 
-    // These two lines are two avoid a -1 subtraction in the main loop
+    // These two lines are to avoid a -1 subtraction in the main loop
     filter_length++;
     filter_coeffs--;
 
