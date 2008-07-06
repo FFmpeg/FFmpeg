@@ -29,6 +29,8 @@
 
 #include "dsputil_altivec.h"
 
+#include "types_altivec.h"
+
 static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
                                      int size) {
     int i, size16;
@@ -74,7 +76,68 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     return u.score[3];
 }
 
+static void add_int16_altivec(int16_t * v1, int16_t * v2, int order)
+{
+    int i;
+    register vec_s16_t vec, *pv;
+
+    for(i = 0; i < order; i += 8){
+        pv = (vec_s16_t*)v2;
+        vec = vec_perm(pv[0], pv[1], vec_lvsl(0, v2));
+        vec_st(vec_add(vec_ld(0, v1), vec), 0, v1);
+        v1 += 8;
+        v2 += 8;
+    }
+}
+
+static void sub_int16_altivec(int16_t * v1, int16_t * v2, int order)
+{
+    int i;
+    register vec_s16_t vec, *pv;
+
+    for(i = 0; i < order; i += 8){
+        pv = (vec_s16_t*)v2;
+        vec = vec_perm(pv[0], pv[1], vec_lvsl(0, v2));
+        vec_st(vec_sub(vec_ld(0, v1), vec), 0, v1);
+        v1 += 8;
+        v2 += 8;
+    }
+}
+
+static int32_t scalarproduct_int16_altivec(int16_t * v1, int16_t * v2, int order, const int shift)
+{
+    int i;
+    LOAD_ZERO;
+    register vec_s16_t vec1, *pv;
+    register vec_s32_t res = vec_splat_s32(0), t;
+    register vec_u32_t shifts;
+    DECLARE_ALIGNED_16(int32_t, ires);
+
+    shifts = zero_u32v;
+    if(shift & 0x10) shifts = vec_add(shifts, vec_sl(vec_splat_u32(0x08), vec_splat_u32(0x1)));
+    if(shift & 0x08) shifts = vec_add(shifts, vec_splat_u32(0x08));
+    if(shift & 0x04) shifts = vec_add(shifts, vec_splat_u32(0x04));
+    if(shift & 0x02) shifts = vec_add(shifts, vec_splat_u32(0x02));
+    if(shift & 0x01) shifts = vec_add(shifts, vec_splat_u32(0x01));
+
+    for(i = 0; i < order; i += 8){
+        pv = (vec_s16_t*)v1;
+        vec1 = vec_perm(pv[0], pv[1], vec_lvsl(0, v1));
+        t = vec_msum(vec1, vec_ld(0, v2), zero_s32v);
+        t = vec_sr(t, shifts);
+        res = vec_sums(t, res);
+        v1 += 8;
+        v2 += 8;
+    }
+    res = vec_splat(res, 3);
+    vec_ste(res, 0, &ires);
+    return ires;
+}
+
 void int_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_altivec;
+    c->add_int16 = add_int16_altivec;
+    c->sub_int16 = sub_int16_altivec;
+    c->scalarproduct_int16 = scalarproduct_int16_altivec;
 }
