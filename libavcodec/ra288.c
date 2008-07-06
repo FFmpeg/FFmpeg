@@ -54,8 +54,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
     double sum, sumsum;
     float buffer[5];
 
-    for (x=35; x >= 0; x--)
-        glob->sb[x+5] = glob->sb[x];
+    memmove(glob->sb + 5, glob->sb, 36 * sizeof(*glob->sb));
 
     for (x=4; x >= 0; x--)
         glob->sb[x] = -scalar_product_float(glob->sb + x + 1, glob->pr1, 36);
@@ -81,8 +80,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
         sum = 1;
 
     /* shift and store */
-    for (x=10; x > 0; x--)
-        glob->lhist[x] = glob->lhist[x-1];
+    memmove(glob->lhist, glob->lhist - 1, 10 * sizeof(*glob->lhist));
 
     *glob->lhist = glob->history[glob->phase] = 10 * log10(sum) - 32;
 
