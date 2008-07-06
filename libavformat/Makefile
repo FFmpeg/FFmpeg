@@ -33,8 +33,10 @@ OBJS-$(CONFIG_BFI_DEMUXER)               += bfi.o
 OBJS-$(CONFIG_C93_DEMUXER)               += c93.o vocdec.o voc.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
+OBJS-$(CONFIG_DIRAC_MUXER)               += raw.o
 OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DTS_DEMUXER)               += raw.o
+OBJS-$(CONFIG_DTS_MUXER)                 += raw.o
 OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
 OBJS-$(CONFIG_DXA_DEMUXER)               += dxa.o riff.o
@@ -51,6 +53,7 @@ OBJS-$(CONFIG_FOURXM_DEMUXER)            += 4xm.o
 OBJS-$(CONFIG_FRAMECRC_MUXER)            += framecrcenc.o
 OBJS-$(CONFIG_GIF_MUXER)                 += gif.o
 OBJS-$(CONFIG_GIF_DEMUXER)               += gifdec.o
+OBJS-$(CONFIG_GSM_DEMUXER)               += raw.o
 OBJS-$(CONFIG_GXF_DEMUXER)               += gxf.o
 OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o
 OBJS-$(CONFIG_H261_DEMUXER)              += raw.o
@@ -117,7 +120,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparsevorbis.o \
                                             riff.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
-OBJS-$(CONFIG_OMA_DEMUXER)               += oma.o
+OBJS-$(CONFIG_OMA_DEMUXER)               += oma.o raw.o
 OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += raw.o
 OBJS-$(CONFIG_PCM_ALAW_MUXER)            += raw.o
 OBJS-$(CONFIG_PCM_MULAW_DEMUXER)         += raw.o
