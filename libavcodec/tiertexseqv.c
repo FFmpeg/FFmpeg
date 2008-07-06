@@ -32,8 +32,6 @@
 typedef struct SeqVideoContext {
     AVCodecContext *avctx;
     AVFrame frame;
-    unsigned int palette[256];
-    unsigned char block[8 * 8];
 } SeqVideoContext;
 
 
@@ -72,22 +70,23 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq, const unsigned 
     const unsigned char *color_table;
     int b, i, len, bits;
     GetBitContext gb;
+    unsigned char block[8 * 8];
 
     len = *src++;
     if (len & 0x80) {
         switch (len & 3) {
         case 1:
-            src = seq_unpack_rle_block(src, seq->block, sizeof(seq->block));
+            src = seq_unpack_rle_block(src, block, sizeof(block));
             for (b = 0; b < 8; b++) {
-                memcpy(dst, &seq->block[b * 8], 8);
+                memcpy(dst, &block[b * 8], 8);
                 dst += seq->frame.linesize[0];
             }
             break;
         case 2:
-            src = seq_unpack_rle_block(src, seq->block, sizeof(seq->block));
+            src = seq_unpack_rle_block(src, block, sizeof(block));
             for (i = 0; i < 8; i++) {
                 for (b = 0; b < 8; b++)
-                    dst[b * seq->frame.linesize[0]] = seq->block[i * 8 + b];
+                    dst[b * seq->frame.linesize[0]] = block[i * 8 + b];
                 ++dst;
             }
             break;
@@ -139,16 +138,17 @@ static void seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int
     int flags, i, j, x, y, op;
     unsigned char c[3];
     unsigned char *dst;
+    uint32_t *palette;
 
     flags = *data++;
 
     if (flags & 1) {
+        palette = (uint32_t *)seq->frame.data[1];
         for (i = 0; i < 256; i++) {
             for (j = 0; j < 3; j++, data++)
                 c[j] = (*data << 2) | (*data >> 4);
-            seq->palette[i] = AV_RB24(c);
+            palette[i] = AV_RB24(c);
         }
-        memcpy(seq->frame.data[1], seq->palette, sizeof(seq->palette));
         seq->frame.palette_has_changed = 1;
     }
 
