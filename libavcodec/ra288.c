@@ -69,9 +69,8 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
 
     sumsum = exp(sum * 0.1151292546497) * gain;    /* pow(10.0,sum/20)*f */
 
-    for (x=0; x < 5; x++) {
+    for (x=0; x < 5; x++)
         buffer[x] = codetable[cb_coef][x] * sumsum;
-    }
 
     sum = scalar_product_float(buffer, buffer, 5) / 5;
 
