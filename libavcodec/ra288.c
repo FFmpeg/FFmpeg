@@ -196,7 +196,7 @@ static void update(Real288_internal *glob)
 
     y = glob->phase + 1;
     for (x=0; x < 8; x++)
-        buffer2[x] = glob->history[(y++) % 8];
+        buffer2[x] = glob->history[(y++) & 7];
 
     co(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
 
