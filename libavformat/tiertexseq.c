@@ -285,7 +285,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
         return rc;
 
     pkt->stream_index = seq->audio_stream_index;
-    pkt->pts = seq->current_frame_pts++;
+    seq->current_frame_pts++;
 
     seq->audio_buffer_full = 0;
     return 0;
