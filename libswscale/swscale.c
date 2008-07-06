@@ -1731,11 +1731,10 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 }
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
-static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int packedCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[]){
 
-    if (isPacked(c->srcFormat))
-    {
+
         if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
             memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
         else
@@ -1757,9 +1756,13 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
                 dstPtr+= dstStride[0];
             }
         }
-    }
-    else
-    { /* Planar YUV or gray */
+
+    return srcSliceH;
+}
+static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                      int srcSliceH, uint8_t* dst[], int dstStride[])
+{
+
         int plane;
         for (plane=0; plane<3; plane++)
         {
@@ -1790,7 +1793,7 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
                 }
             }
         }
-    }
+
     return srcSliceH;
 }
 
@@ -2208,7 +2211,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
             || (isPlanarYUV(srcFormat) && isGray(dstFormat))
             || (isPlanarYUV(dstFormat) && isGray(srcFormat)))
         {
-            c->swScale= simpleCopy;
+            if (isPacked(c->srcFormat))
+                c->swScale= packedCopy;
+            else /* Planar YUV or gray */
+                c->swScale= planarCopy;
         }
 
         /* gray16{le,be} conversions */
