@@ -88,12 +88,6 @@ untested special converters
 
 #define RET 0xC3 //near return opcode for X86
 
-#ifdef MP_DEBUG
-#define ASSERT(x) assert(x);
-#else
-#define ASSERT(x) ;
-#endif
-
 #ifdef M_PI
 #define PI M_PI
 #else
@@ -1060,7 +1054,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         else if (flags&SWS_BILINEAR)     sizeFactor=  2.0;
         else {
             sizeFactor= 0.0; //GCC warning killer
-            ASSERT(0)
+            assert(0);
         }
 
         if (xInc1 <= 1.0)       filterSizeInSrc= sizeFactor; // upscale
@@ -1145,7 +1139,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
                 }
                 else {
                     coeff= 0.0; //GCC warning killer
-                    ASSERT(0)
+                    assert(0);
                 }
 
                 filter[i*filterSize + j]= coeff;
@@ -1158,11 +1152,11 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     /* apply src & dst Filter to filter -> filter2
        av_free(filter);
     */
-    ASSERT(filterSize>0)
+    assert(filterSize>0);
     filter2Size= filterSize;
     if (srcFilter) filter2Size+= srcFilter->length - 1;
     if (dstFilter) filter2Size+= dstFilter->length - 1;
-    ASSERT(filter2Size>0)
+    assert(filter2Size>0);
     filter2= av_malloc(filter2Size*dstW*sizeof(double));
 
     for (i=0; i<dstW; i++)
@@ -1177,7 +1171,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         if (srcFilter) outVec= sws_getConvVec(srcFilter, &scaleFilter);
         else           outVec= &scaleFilter;
 
-        ASSERT(outVec->length == filter2Size)
+        assert(outVec->length == filter2Size);
         //FIXME dstFilter
 
         for (j=0; j<outVec->length; j++)
@@ -1252,9 +1246,9 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
             filterAlign= 1;
     }
 
-    ASSERT(minFilterSize > 0)
+    assert(minFilterSize > 0);
     filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
-    ASSERT(filterSize > 0)
+    assert(filterSize > 0);
     filter= av_malloc(filterSize*dstW*sizeof(double));
     if (filterSize >= MAX_FILTER_SIZE)
         return -1;
@@ -1746,7 +1740,7 @@ static int packedCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
         /* universal length finder */
         while(length+c->srcW <= FFABS(dstStride[0])
            && length+c->srcW <= FFABS(srcStride[0])) length+= c->srcW;
-        ASSERT(length!=0);
+        assert(length!=0);
 
         for (i=0; i<srcSliceH; i++)
         {
@@ -2388,7 +2382,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
     assert(2*VOFW == VOF);
 
-    ASSERT(c->chrDstH <= dstH)
+    assert(c->chrDstH <= dstH);
 
     if (flags&SWS_PRINT_INFO)
     {

@@ -3039,8 +3039,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         if (firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
         if (firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
         //printf("%d %d %d\n", firstChrSrcY, lastInChrBuf, vChrBufSize);
-        ASSERT(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1)
-        ASSERT(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1)
+        assert(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
+        assert(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
         // Do we have enough lines in this slice to output the dstY line
         if (lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample))
@@ -3051,9 +3051,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 uint8_t *s= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
                 lumBufIndex++;
                 //printf("%d %d %d %d\n", lumBufIndex, vLumBufSize, lastInLumBuf,  lastLumSrcY);
-                ASSERT(lumBufIndex < 2*vLumBufSize)
-                ASSERT(lastInLumBuf + 1 - srcSliceY < srcSliceH)
-                ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
+                assert(lumBufIndex < 2*vLumBufSize);
+                assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
+                assert(lastInLumBuf + 1 - srcSliceY >= 0);
                 //printf("%d %d\n", lumBufIndex, vLumBufSize);
                 RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
                                 flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
@@ -3066,9 +3066,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
                 uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
                 chrBufIndex++;
-                ASSERT(chrBufIndex < 2*vChrBufSize)
-                ASSERT(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH))
-                ASSERT(lastInChrBuf + 1 - chrSrcSliceY >= 0)
+                assert(chrBufIndex < 2*vChrBufSize);
+                assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
+                assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
                 //FIXME replace parameters through context struct (some at least)
 
                 if (!(isGray(srcFormat) || isGray(dstFormat)))
@@ -3094,9 +3094,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             {
                 uint8_t *s= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
                 lumBufIndex++;
-                ASSERT(lumBufIndex < 2*vLumBufSize)
-                ASSERT(lastInLumBuf + 1 - srcSliceY < srcSliceH)
-                ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
+                assert(lumBufIndex < 2*vLumBufSize);
+                assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
+                assert(lastInLumBuf + 1 - srcSliceY >= 0);
                 RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
                                 flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
                                 funnyYCode, c->srcFormat, formatConvBuffer,
@@ -3108,9 +3108,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
                 uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
                 chrBufIndex++;
-                ASSERT(chrBufIndex < 2*vChrBufSize)
-                ASSERT(lastInChrBuf + 1 - chrSrcSliceY < chrSrcSliceH)
-                ASSERT(lastInChrBuf + 1 - chrSrcSliceY >= 0)
+                assert(chrBufIndex < 2*vChrBufSize);
+                assert(lastInChrBuf + 1 - chrSrcSliceY < chrSrcSliceH);
+                assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
 
                 if (!(isGray(srcFormat) || isGray(dstFormat)))
                     RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
@@ -3199,8 +3199,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             }
             else
             {
-                ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
-                ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
+                assert(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
+                assert(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
                 if (vLumFilterSize == 1 && vChrFilterSize == 2) //unscaled RGB
                 {
                     int chrAlpha= vChrFilter[2*dstY+1];
@@ -3250,8 +3250,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             }
             else
             {
-                ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
-                ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
+                assert(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
+                assert(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
                 yuv2packedXinC(c,
                     vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
                     vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
