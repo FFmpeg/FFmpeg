@@ -29,7 +29,7 @@ typedef struct {
     float output[40];
     float pr1[36];
     float pr2[10];
-    int   phase, phasep;
+    int   phase;
 
     float st1a[111], st1b[37], st1[37];
     float st2a[38], st2b[11], st2[11];
@@ -95,7 +95,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
         else if (f < -4095)
             f = -4095;
 
-        glob->output[glob->phasep+x] = glob->sb[4-x] = f;
+        glob->output[glob->phase*5+x] = glob->sb[4-x] = f;
     }
 }
 
@@ -185,7 +185,7 @@ static void update(Real288_internal *glob)
     float buffer1[40], temp1[37];
     float buffer2[8], temp2[11];
 
-    y = glob->phasep+5;
+    y = glob->phase*5+5;
     for (x=0;  x < 40; x++)
         buffer1[x] = glob->output[(y++)%40];
 
@@ -226,11 +226,11 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     for (x=0; x < 32; x++) {
         float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (x&1));
-        glob->phasep = (glob->phase = x & 7) * 5;
+        glob->phase = x & 7;
         decode(glob, gain, cb_coef);
 
         for (y=0; y < 5; y++)
-            *(out++) = 8 * glob->output[glob->phasep + y];
+            *(out++) = 8 * glob->output[glob->phase*5 + y];
 
         if (glob->phase == 3)
             update(glob);
