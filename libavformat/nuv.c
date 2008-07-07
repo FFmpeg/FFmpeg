@@ -179,7 +179,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         ctx->a_id = -1;
 
     get_codec_data(pb, vst, ast, is_mythtv);
-    ctx->rtjpg_video = vst->codec->codec_id == CODEC_ID_NUV;
+    ctx->rtjpg_video = vst && vst->codec->codec_id == CODEC_ID_NUV;
     return 0;
 }
 
