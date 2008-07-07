@@ -424,6 +424,9 @@ static int flac_probe(AVProbeData *p)
     else                          return AVPROBE_SCORE_MAX / 2;
 }
 
+
+/* Note: Do not forget to add new entries to the Makefile as well. */
+
 AVInputFormat shorten_demuxer = {
     "shn",
     NULL_IF_CONFIG_SMALL("raw Shorten"),
