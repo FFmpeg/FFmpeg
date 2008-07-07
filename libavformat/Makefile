@@ -33,6 +33,7 @@ OBJS-$(CONFIG_BFI_DEMUXER)               += bfi.o
 OBJS-$(CONFIG_C93_DEMUXER)               += c93.o vocdec.o voc.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
+OBJS-$(CONFIG_DIRAC_DEMUXER)             += raw.o
 OBJS-$(CONFIG_DIRAC_MUXER)               += raw.o
 OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DTS_DEMUXER)               += raw.o
