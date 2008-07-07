@@ -2045,18 +2045,25 @@ static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     );
 }
 static void float_to_int16_sse(int16_t *dst, const float *src, long len){
-    int i;
-    for(i=0; i<len; i+=4) {
-        asm volatile(
-            "cvtps2pi    %1, %%mm0 \n\t"
-            "cvtps2pi    %2, %%mm1 \n\t"
-            "packssdw %%mm1, %%mm0 \n\t"
-            "movq     %%mm0, %0    \n\t"
-            :"=m"(dst[i])
-            :"m"(src[i]), "m"(src[i+2])
-        );
-    }
-    asm volatile("emms");
+    asm volatile(
+        "add        %0          , %0        \n\t"
+        "lea         (%2,%0,2)  , %2        \n\t"
+        "add        %0          , %1        \n\t"
+        "neg        %0                      \n\t"
+        "1:                                 \n\t"
+        "cvtps2pi    (%2,%0,2)  , %%mm0     \n\t"
+        "cvtps2pi   8(%2,%0,2)  , %%mm1     \n\t"
+        "cvtps2pi  16(%2,%0,2)  , %%mm2     \n\t"
+        "cvtps2pi  24(%2,%0,2)  , %%mm3     \n\t"
+        "packssdw   %%mm1       , %%mm0     \n\t"
+        "packssdw   %%mm3       , %%mm2     \n\t"
+        "movq       %%mm0       ,  (%1,%0)  \n\t"
+        "movq       %%mm2       , 8(%1,%0)  \n\t"
+        "add        $16         , %0        \n\t"
+        " js 1b                             \n\t"
+        "emms                               \n\t"
+        :"+r"(len), "+r"(dst), "+r"(src)
+    );
 }
 
 extern void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
