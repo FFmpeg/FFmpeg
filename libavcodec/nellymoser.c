@@ -147,7 +147,6 @@ void ff_nelly_get_sample_bits(const float *buf, int *bits)
     bitsum = sum_bits(sbuf, shift_saved, small_off);
 
     if (bitsum != NELLY_DETAIL_BITS) {
-        shift = 0;
         off = bitsum - NELLY_DETAIL_BITS;
 
         for(shift=0; FFABS(off) <= 16383; shift++)
