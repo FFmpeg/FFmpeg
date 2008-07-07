@@ -849,28 +849,28 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
 #endif
 
 
-PCMDEF(s16le, "pcm signed 16 bit little endian format",
+PCMDEF(s16le, "PCM signed 16 bit little-endian format",
        LE_DEF("sw"), CODEC_ID_PCM_S16LE)
 
-PCMDEF(s16be, "pcm signed 16 bit big endian format",
+PCMDEF(s16be, "PCM signed 16 bit big-endian format",
        BE_DEF("sw"), CODEC_ID_PCM_S16BE)
 
-PCMDEF(u16le, "pcm unsigned 16 bit little endian format",
+PCMDEF(u16le, "PCM unsigned 16 bit little-endian format",
        LE_DEF("uw"), CODEC_ID_PCM_U16LE)
 
-PCMDEF(u16be, "pcm unsigned 16 bit big endian format",
+PCMDEF(u16be, "PCM unsigned 16 bit big-endian format",
        BE_DEF("uw"), CODEC_ID_PCM_U16BE)
 
-PCMDEF(s8, "pcm signed 8 bit format",
+PCMDEF(s8, "PCM signed 8 bit format",
        "sb", CODEC_ID_PCM_S8)
 
-PCMDEF(u8, "pcm unsigned 8 bit format",
+PCMDEF(u8, "PCM unsigned 8 bit format",
        "ub", CODEC_ID_PCM_U8)
 
-PCMDEF(mulaw, "pcm mu law format",
+PCMDEF(mulaw, "PCM mu-law format",
        "ul", CODEC_ID_PCM_MULAW)
 
-PCMDEF(alaw, "pcm A law format",
+PCMDEF(alaw, "PCM A-law format",
        "al", CODEC_ID_PCM_ALAW)
 
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
