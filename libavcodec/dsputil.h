@@ -63,7 +63,7 @@ void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block);
 
 void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1,
                               const float *src2, int src3, int blocksize, int step);
-void ff_float_to_int16_c(int16_t *dst, const float *src, int len);
+void ff_float_to_int16_c(int16_t *dst, const float *src, long len);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
@@ -367,7 +367,7 @@ typedef struct DSPContext {
 
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
      * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
-    void (*float_to_int16)(int16_t *dst, const float *src, int len);
+    void (*float_to_int16)(int16_t *dst, const float *src, long len);
 
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);

@@ -2022,7 +2022,7 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
 }
 
-static void float_to_int16_3dnow(int16_t *dst, const float *src, int len){
+static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     // not bit-exact: pf2id uses different rounding than C and SSE
     asm volatile(
         "add        %0          , %0        \n\t"
@@ -2044,7 +2044,7 @@ static void float_to_int16_3dnow(int16_t *dst, const float *src, int len){
         :"+r"(len), "+r"(dst), "+r"(src)
     );
 }
-static void float_to_int16_sse(int16_t *dst, const float *src, int len){
+static void float_to_int16_sse(int16_t *dst, const float *src, long len){
     int i;
     for(i=0; i<len; i+=4) {
         asm volatile(
