@@ -2024,18 +2024,25 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
 
 static void float_to_int16_3dnow(int16_t *dst, const float *src, int len){
     // not bit-exact: pf2id uses different rounding than C and SSE
-    int i;
-    for(i=0; i<len; i+=4) {
-        asm volatile(
-            "pf2id       %1, %%mm0 \n\t"
-            "pf2id       %2, %%mm1 \n\t"
-            "packssdw %%mm1, %%mm0 \n\t"
-            "movq     %%mm0, %0    \n\t"
-            :"=m"(dst[i])
-            :"m"(src[i]), "m"(src[i+2])
-        );
-    }
-    asm volatile("femms");
+    asm volatile(
+        "add        %0          , %0        \n\t"
+        "lea         (%2,%0,2)  , %2        \n\t"
+        "add        %0          , %1        \n\t"
+        "neg        %0                      \n\t"
+        "1:                                 \n\t"
+        "pf2id       (%2,%0,2)  , %%mm0     \n\t"
+        "pf2id      8(%2,%0,2)  , %%mm1     \n\t"
+        "pf2id     16(%2,%0,2)  , %%mm2     \n\t"
+        "pf2id     24(%2,%0,2)  , %%mm3     \n\t"
+        "packssdw   %%mm1       , %%mm0     \n\t"
+        "packssdw   %%mm3       , %%mm2     \n\t"
+        "movq       %%mm0       ,  (%1,%0)  \n\t"
+        "movq       %%mm2       , 8(%1,%0)  \n\t"
+        "add        $16         , %0        \n\t"
+        " js 1b                             \n\t"
+        "femms                              \n\t"
+        :"+r"(len), "+r"(dst), "+r"(src)
+    );
 }
 static void float_to_int16_sse(int16_t *dst, const float *src, int len){
     int i;
