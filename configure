@@ -2212,8 +2212,8 @@ EOF
 cat <<EOF > $name/$name-uninstalled.pc
 prefix=
 exec_prefix=
-libdir=\${pcfiledir}/$name
-includedir=\${pcfiledir}
+libdir=\${pcfiledir}
+includedir=\${pcfiledir}/..
 
 Name: $name
 Description: $comment
