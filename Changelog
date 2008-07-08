@@ -123,6 +123,7 @@ version <next>
 - BFI video decoder
 - OMA demuxer
 - MLP/TrueHD decoder
+- Electronic Arts CMV decoder
 
 version 0.4.9-pre1:
 
