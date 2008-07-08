@@ -52,7 +52,6 @@
 #define MM_PALETTE_SIZE     (MM_PALETTE_COUNT*3)
 
 typedef struct {
-  AVPaletteControl palette_control;
   unsigned int audio_pts, video_pts;
 } MmDemuxContext;
 
@@ -101,7 +100,6 @@ static int mm_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = width;
     st->codec->height = height;
-    st->codec->palctrl = &mm->palette_control;
     av_set_pts_info(st, 64, 1, frame_rate);
 
     /* audio stream */
@@ -117,7 +115,6 @@ static int mm_read_header(AVFormatContext *s,
         av_set_pts_info(st, 64, 1, 8000); /* 8000 hz */
     }
 
-    mm->palette_control.palette_changed = 0;
     mm->audio_pts = 0;
     mm->video_pts = 0;
     return 0;
@@ -129,9 +126,7 @@ static int mm_read_packet(AVFormatContext *s,
     MmDemuxContext *mm = s->priv_data;
     ByteIOContext *pb = s->pb;
     unsigned char preamble[MM_PREAMBLE_SIZE];
-    unsigned char pal[MM_PALETTE_SIZE];
     unsigned int type, length;
-    int i;
 
     while(1) {
 
@@ -144,22 +139,6 @@ static int mm_read_packet(AVFormatContext *s,
 
         switch(type) {
         case MM_TYPE_PALETTE :
-            url_fseek(pb, 4, SEEK_CUR);  /* unknown data */
-            if (get_buffer(pb, pal, MM_PALETTE_SIZE) != MM_PALETTE_SIZE)
-                return AVERROR(EIO);
-            url_fseek(pb, length - (4 + MM_PALETTE_SIZE), SEEK_CUR);
-
-            for (i=0; i<MM_PALETTE_COUNT; i++) {
-                int r = pal[i*3 + 0];
-                int g = pal[i*3 + 1];
-                int b = pal[i*3 + 2];
-                mm->palette_control.palette[i] = (r << 16) | (g << 8) | (b);
-                /* repeat palette, where each components is multiplied by four */
-                mm->palette_control.palette[i+128] = (r << 18) | (g << 10) | (b<<2);
-            }
-            mm->palette_control.palette_changed = 1;
-            break;
-
         case MM_TYPE_INTER :
         case MM_TYPE_INTRA :
         case MM_TYPE_INTRA_HH :
@@ -174,7 +153,9 @@ static int mm_read_packet(AVFormatContext *s,
                 return AVERROR(EIO);
             pkt->size = length + MM_PREAMBLE_SIZE;
             pkt->stream_index = 0;
-            pkt->pts = mm->video_pts++;
+            pkt->pts = mm->video_pts;
+            if (type!=MM_TYPE_PALETTE)
+                mm->video_pts++;
             return 0;
 
         case MM_TYPE_AUDIO :

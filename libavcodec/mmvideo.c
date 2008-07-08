@@ -1,6 +1,6 @@
 /*
  * American Laser Games MM Video Decoder
- * Copyright (c) 2006 Peter Ross
+ * Copyright (c) 2006,2008 Peter Ross
  *
  * This file is part of FFmpeg.
  *
@@ -41,10 +41,12 @@
 #define MM_TYPE_INTER_HH    0xd
 #define MM_TYPE_INTRA_HHV   0xe
 #define MM_TYPE_INTER_HHV   0xf
+#define MM_TYPE_PALETTE     0x31
 
 typedef struct MmContext {
     AVCodecContext *avctx;
     AVFrame frame;
+    int palette[AVPALETTE_COUNT];
 } MmContext;
 
 static av_cold int mm_decode_init(AVCodecContext *avctx)
@@ -52,11 +54,6 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     MmContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-
-    if (s->avctx->palctrl == NULL) {
-        av_log(avctx, AV_LOG_ERROR, "mmvideo: palette expected.\n");
-        return -1;
-    }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
@@ -70,6 +67,17 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     }
 
     return 0;
+}
+
+static void mm_decode_pal(MmContext *s, const uint8_t *buf, const uint8_t *buf_end)
+{
+    int i;
+    buf += 4;
+    for (i=0; i<128 && buf+2<buf_end; i++) {
+        s->palette[i] = AV_RB24(buf);
+        s->palette[i+128] = s->palette[i]<<2;
+        buf += 3;
+    }
 }
 
 static void mm_decode_intra(MmContext * s, int half_horiz, int half_vert, const uint8_t *buf, int buf_size)
@@ -153,19 +161,15 @@ static int mm_decode_frame(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     MmContext *s = avctx->priv_data;
-    AVPaletteControl *palette_control = avctx->palctrl;
+    const uint8_t *buf_end = buf+buf_size;
     int type;
-
-    if (palette_control->palette_changed) {
-        memcpy(s->frame.data[1], palette_control->palette, AVPALETTE_SIZE);
-        palette_control->palette_changed = 0;
-    }
 
     type = AV_RL16(&buf[0]);
     buf += MM_PREAMBLE_SIZE;
     buf_size -= MM_PREAMBLE_SIZE;
 
     switch(type) {
+    case MM_TYPE_PALETTE   : mm_decode_pal(s, buf, buf_end); return buf_size;
     case MM_TYPE_INTRA     : mm_decode_intra(s, 0, 0, buf, buf_size); break;
     case MM_TYPE_INTRA_HH  : mm_decode_intra(s, 1, 0, buf, buf_size); break;
     case MM_TYPE_INTRA_HHV : mm_decode_intra(s, 1, 1, buf, buf_size); break;
@@ -175,6 +179,8 @@ static int mm_decode_frame(AVCodecContext *avctx,
     default :
         return -1;
     }
+
+    memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
