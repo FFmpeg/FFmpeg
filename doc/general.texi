@@ -77,6 +77,10 @@ library:
 @item GXF                       @tab X @tab X
      @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
           playout servers.
+@item id Cinematic              @tab   @tab X
+     @tab Used in Quake II.
+@item id RoQ                    @tab X @tab X
+     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item IFF                       @tab   @tab X
      @tab Interchange File Format
 @item Interplay MVE             @tab   @tab X
@@ -109,6 +113,13 @@ library:
 @item PVA                       @tab   @tab X
      @tab Used by TechnoTrend DVB PCI boards.
 @item PlayStation STR           @tab   @tab X
+@item raw AC-3                  @tab X @tab X
+@item raw CRI ADX audio         @tab X @tab X
+@item raw MJPEG                 @tab X @tab X
+@item raw MPEG video            @tab X @tab X
+@item raw MPEG-4 video          @tab X @tab X
+@item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
+@item raw Shorten audio         @tab    @tab  X
 @item RL2                       @tab   @tab X
      @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RealMedia                 @tab X @tab X
@@ -132,17 +143,6 @@ library:
      @tab Multimedia format used in Origin's Wing Commander III computer game.
 @item Westwood Studios VQA/AUD  @tab   @tab X
      @tab Multimedia formats used in Westwood Studios games.
-@item id Cinematic              @tab   @tab X
-     @tab Used in Quake II.
-@item id RoQ                    @tab X @tab X
-     @tab Used in Quake III, Jedi Knight 2, other computer games.
-@item raw AC-3                  @tab X @tab X
-@item raw CRI ADX audio         @tab X @tab X
-@item raw MJPEG                 @tab X @tab X
-@item raw MPEG video            @tab X @tab X
-@item raw MPEG-4 video          @tab X @tab X
-@item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
-@item raw Shorten audio         @tab    @tab  X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
