@@ -83,7 +83,7 @@ library:
 @tab Used in many Sega Saturn console games.
 @item Westwood Studios VQA/AUD  @tab    @tab X
 @tab Multimedia formats used in Westwood Studios games.
-@item id Cinematic (.cin) @tab    @tab X
+@item id Cinematic @tab    @tab X
 @tab Used in Quake II.
 @item FLIC             @tab    @tab X
 @tab .fli/.flc files
@@ -96,7 +96,7 @@ library:
 @tab Used in various EA games; files have extensions like WVE and UV2.
 @item MAXIS EA XA      @tab    @tab X
 @tab Used in Sim City 3000; file extension .xa.
-@item Nullsoft Video (NSV) @tab    @tab X
+@item Nullsoft Video @tab    @tab X
 @item ADTS AAC audio @tab X @tab X
 @item Creative VOC @tab X @tab X @tab Created for the Sound Blaster Pro.
 @item American Laser Games MM  @tab    @tab X
