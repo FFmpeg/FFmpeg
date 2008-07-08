@@ -176,93 +176,152 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
+@item 4X Video               @tab     @tab  X
+     @tab Used in certain computer games.
+@item American Laser Games Video  @tab    @tab X
+     @tab Used in games like Mad Dog McCree.
+@item AMV                    @tab     @tab  X
+     @tab Used in Chinese MP3 players.
+@item Apple Animation        @tab  X  @tab  X
+     @tab fourcc: 'rle '
+@item Apple Graphics         @tab     @tab  X
+     @tab fourcc: 'smc '
+@item Apple MJPEG-B          @tab     @tab  X
+@item Apple QuickDraw        @tab     @tab  X
+     @tab fourcc: qdrw
+@item Apple Video            @tab     @tab  X
+     @tab fourcc: rpza
+@item Asus v1                @tab  X  @tab  X
+     @tab fourcc: ASV1
+@item Asus v2                @tab  X  @tab  X
+     @tab fourcc: ASV2
+@item ATI VCR1               @tab     @tab  X
+     @tab fourcc: VCR1
+@item ATI VCR2               @tab     @tab  X
+     @tab fourcc: VCR2
+@item Autodesk RLE           @tab     @tab  X
+     @tab fourcc: AASC
+@item AVID DNxHD             @tab   X @tab  X
+     @tab aka SMPTE VC3
+@item AVS Video              @tab     @tab  X
+     @tab Video encoding used by the Creature Shock game.
+@item Bethsoft VID           @tab     @tab  X
+     @tab Used in some games from Bethesda Softworks.
+@item C93 Video              @tab     @tab  X
+     @tab Codec used in Cyberia game.
+@item CamStudio              @tab     @tab  X
+     @tab fourcc: CSCD
+@item Cin Video              @tab     @tab  X
+     @tab Codec used in Delphine Software games.
+@item Cinepak                @tab     @tab  X
+@item Cirrus Logic AccuPak   @tab     @tab  X
+     @tab fourcc: CLJR
+@item Creative YUV           @tab     @tab  X
+     @tab fourcc: CYUV
+@item Duck TrueMotion v1     @tab     @tab  X
+     @tab fourcc: DUCK
+@item Duck TrueMotion v2     @tab     @tab  X
+     @tab fourcc: TM20
+@item DV                     @tab  X  @tab  X
+@item DXA Video              @tab     @tab  X
+     @tab Codec originally used in Feeble Files game.
+@item Electronic Arts CMV    @tab     @tab  X
+     @tab Used in NHL 95 game.
+@item FFmpeg Video 1         @tab  X  @tab  X
+     @tab experimental lossless codec (fourcc: FFV1)
+@item Flash Screen Video     @tab  X  @tab  X
+     @tab fourcc: FSV1
+@item FLIC video             @tab     @tab  X
+@item FLV                    @tab  X  @tab  X
+     @tab Sorenson H.263 used in Flash
+@item Fraps FPS1             @tab     @tab  X
+@item H.261                  @tab  X  @tab  X
+@item H.263(+)               @tab  X  @tab  X
+     @tab also known as RealVideo 1.0
+@item H.264                  @tab     @tab  X
+@item HuffYUV                @tab  X  @tab  X
+@item IBM Ultimotion         @tab     @tab  X
+     @tab fourcc: ULTI
+@item id Cinematic Video     @tab     @tab  X
+     @tab Used in Quake II.
+@item id RoQ                 @tab  X  @tab  X
+     @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item Intel Indeo 3          @tab     @tab  X
+@item Interplay Video        @tab     @tab  X
+     @tab Used in Interplay .MVE files.
+@item JPEG-LS                @tab  X  @tab  X
+     @tab fourcc: MJLS, lossless and near-lossless is supported.
+@item KMVC                   @tab     @tab  X
+     @tab Codec used in Worms games.
+@item LOCO                   @tab     @tab  X
+@item lossless MJPEG         @tab  X  @tab  X
+@item Microsoft RLE          @tab     @tab  X
+@item Microsoft Video-1      @tab     @tab  X
+@item Mimic                  @tab     @tab  X
+     @tab Used in MSN Messenger Webcam streams.
+@item Miro VideoXL           @tab     @tab  X
+     @tab fourcc: VIXL
+@item MJPEG                  @tab  X  @tab  X
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-2 video           @tab  X  @tab  X
 @item MPEG-4                 @tab  X  @tab  X
 @item MSMPEG4 V1             @tab  X  @tab  X
 @item MSMPEG4 V2             @tab  X  @tab  X
 @item MSMPEG4 V3             @tab  X  @tab  X
-@item WMV7                   @tab  X  @tab  X
-@item WMV8                   @tab  X  @tab  X
-@item WMV9                   @tab     @tab  X @tab not completely working
-@item VC-1                   @tab     @tab  X
-@item H.261                  @tab  X  @tab  X
-@item H.263(+)               @tab  X  @tab  X @tab also known as RealVideo 1.0
-@item H.264                  @tab     @tab  X
+@item MSZH                   @tab     @tab  X
+     @tab Part of LCL
+@item On2 VP3                @tab     @tab  X
+     @tab still experimental
+@item On2 VP5                @tab     @tab  X
+     @tab fourcc: VP50
+@item On2 VP6                @tab     @tab  X
+     @tab fourcc: VP60,VP61,VP62
+@item planar RGB             @tab     @tab  X
+     @tab fourcc: 8BPS
+@item QPEG                   @tab     @tab  X
+     @tab fourccs: QPEG, Q1.0, Q1.1
 @item RealVideo 1.0          @tab  X  @tab  X
 @item RealVideo 2.0          @tab  X  @tab  X
-@item MJPEG                  @tab  X  @tab  X
-@item lossless MJPEG         @tab  X  @tab  X
-@item JPEG-LS                @tab  X  @tab  X @tab fourcc: MJLS, lossless and near-lossless is supported.
-@item Apple MJPEG-B          @tab     @tab  X
-@item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
-@item DV                     @tab  X  @tab  X
-@item HuffYUV                @tab  X  @tab  X
-@item FFmpeg Video 1         @tab  X  @tab  X @tab experimental lossless codec (fourcc: FFV1)
-@item Snow                   @tab  X  @tab  X @tab experimental wavelet codec (fourcc: SNOW)
-@item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
-@item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
-@item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
-@item Sorenson Video 1       @tab  X  @tab  X @tab fourcc: SVQ1
-@item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
-@item On2 VP3                @tab     @tab  X @tab still experimental
-@item On2 VP5                @tab     @tab  X @tab fourcc: VP50
-@item On2 VP6                @tab     @tab  X @tab fourcc: VP60,VP61,VP62
-@item Theora                 @tab  X  @tab  X @tab still experimental
-@item Intel Indeo 3          @tab     @tab  X
-@item FLV                    @tab  X  @tab  X @tab Sorenson H.263 used in Flash
-@item Flash Screen Video     @tab  X  @tab  X @tab fourcc: FSV1
-@item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
-@item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
-@item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
-@item 4X Video               @tab     @tab  X @tab Used in certain computer games.
+@item Renderware TXD         @tab     @tab  X
+     @tab Texture dictionaries used by the Renderware Engine.
+@item RTjpeg                 @tab     @tab  X
+     @tab Video encoding used in NuppelVideo files.
+@item Smacker Video          @tab     @tab  X
+     @tab Video encoding used in Smacker.
+@item Snow                   @tab  X  @tab  X
+     @tab experimental wavelet codec (fourcc: SNOW)
 @item Sony PlayStation MDEC  @tab     @tab  X
-@item id RoQ                 @tab  X  @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
-@item Xan/WC3                @tab     @tab  X @tab Used in Wing Commander III .MVE files.
-@item Interplay Video        @tab     @tab  X @tab Used in Interplay .MVE files.
-@item Apple Animation        @tab  X  @tab  X @tab fourcc: 'rle '
-@item Apple Graphics         @tab     @tab  X @tab fourcc: 'smc '
-@item Apple Video            @tab     @tab  X @tab fourcc: rpza
-@item Apple QuickDraw        @tab     @tab  X @tab fourcc: qdrw
-@item Cinepak                @tab     @tab  X
-@item Microsoft RLE          @tab     @tab  X
-@item Microsoft Video-1      @tab     @tab  X
+@item Sorenson Video 1       @tab  X  @tab  X
+     @tab fourcc: SVQ1
+@item Sorenson Video 3       @tab     @tab  X
+     @tab fourcc: SVQ3
+@item Sunplus MJPEG          @tab     @tab  X
+     @tab fourcc: SP5X
+@item TechSmith Camtasia     @tab     @tab  X
+     @tab fourcc: TSCC
+@item Theora                 @tab  X  @tab  X
+     @tab still experimental
+@item THP                    @tab     @tab  X
+     @tab Used on the Nintendo GameCube.
+@item Tiertex Seq Video      @tab     @tab  X
+     @tab Codec used in DOS CD-ROM FlashBack game.
+@item VC-1                   @tab     @tab  X
+@item VMD Video              @tab     @tab  X
+     @tab Used in Sierra VMD files.
+@item VMware Video           @tab     @tab  X
+     @tab Codec used in videos captured by VMware.
 @item Westwood VQA           @tab     @tab  X
-@item id Cinematic Video     @tab     @tab  X @tab Used in Quake II.
-@item planar RGB             @tab     @tab  X @tab fourcc: 8BPS
-@item FLIC video             @tab     @tab  X
-@item Duck TrueMotion v1     @tab     @tab  X @tab fourcc: DUCK
-@item Duck TrueMotion v2     @tab     @tab  X @tab fourcc: TM20
-@item VMD Video              @tab     @tab  X @tab Used in Sierra VMD files.
-@item MSZH                   @tab     @tab  X @tab Part of LCL
-@item ZLIB                   @tab  X  @tab  X @tab Part of LCL, encoder experimental
-@item TechSmith Camtasia     @tab     @tab  X @tab fourcc: TSCC
-@item IBM Ultimotion         @tab     @tab  X @tab fourcc: ULTI
-@item Miro VideoXL           @tab     @tab  X @tab fourcc: VIXL
-@item QPEG                   @tab     @tab  X @tab fourccs: QPEG, Q1.0, Q1.1
-@item LOCO                   @tab     @tab  X @tab
-@item Winnov WNV1            @tab     @tab  X @tab
-@item Autodesk RLE           @tab     @tab  X @tab fourcc: AASC
-@item Fraps FPS1             @tab     @tab  X @tab
-@item CamStudio              @tab     @tab  X @tab fourcc: CSCD
-@item American Laser Games Video  @tab    @tab X @tab Used in games like Mad Dog McCree.
-@item ZMBV                   @tab   X @tab  X @tab Encoder works only in PAL8.
-@item AVS Video              @tab     @tab  X @tab Video encoding used by the Creature Shock game.
-@item Smacker Video          @tab     @tab  X @tab Video encoding used in Smacker.
-@item RTjpeg                 @tab     @tab  X @tab Video encoding used in NuppelVideo files.
-@item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
-@item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
-@item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
-@item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CD-ROM FlashBack game.
-@item DXA Video              @tab     @tab  X @tab Codec originally used in Feeble Files game.
-@item AVID DNxHD             @tab   X @tab  X @tab aka SMPTE VC3
-@item C93 Video              @tab     @tab  X @tab Codec used in Cyberia game.
-@item THP                    @tab     @tab  X @tab Used on the Nintendo GameCube.
-@item Bethsoft VID           @tab     @tab  X @tab Used in some games from Bethesda Softworks.
-@item Renderware TXD         @tab     @tab  X @tab Texture dictionaries used by the Renderware Engine.
-@item AMV                    @tab     @tab  X @tab Used in Chinese MP3 players.
-@item Mimic                  @tab     @tab  X @tab Used in MSN Messenger Webcam streams.
-@item Electronic Arts CMV    @tab     @tab  X @tab Used in NHL 95 game.
+@item Winnov WNV1            @tab     @tab  X
+@item WMV7                   @tab  X  @tab  X
+@item WMV8                   @tab  X  @tab  X
+@item WMV9                   @tab     @tab  X
+     @tab not completely working
+@item Xan/WC3                @tab     @tab  X
+     @tab Used in Wing Commander III .MVE files.
+@item ZLIB                   @tab  X  @tab  X
+     @tab part of LCL, encoder experimental
+@item ZMBV                   @tab   X @tab  X
+     @tab Encoder works only in PAL8.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
