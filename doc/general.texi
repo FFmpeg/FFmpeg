@@ -57,7 +57,7 @@ library:
 @item FLV              @tab  X @tab X
 @tab Macromedia Flash video files
 @item Real Audio and Video @tab X @tab X
-@item Raw AC3 @tab X  @tab  X
+@item Raw AC-3 @tab X  @tab  X
 @item Raw MJPEG @tab X  @tab  X
 @item Raw MPEG video @tab X  @tab  X
 @item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X
@@ -100,7 +100,7 @@ library:
 @item ADTS AAC audio @tab X @tab X
 @item Creative VOC @tab X @tab X @tab Created for the Sound Blaster Pro.
 @item American Laser Games MM  @tab    @tab X
-@tab Multimedia format used in games like Mad Dog McCree
+@tab Multimedia format used in games like Mad Dog McCree.
 @item AVS @tab    @tab X
 @tab Multimedia format used by the Creature Shock game.
 @item Smacker @tab    @tab X
@@ -114,7 +114,7 @@ library:
 @item SEQ @tab    @tab X
 @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item DXA @tab    @tab X
-@tab This format is used in non-Windows version of Feeble Files game and
+@tab This format is used in the non-Windows version of the Feeble Files game and
 different game cutscenes repacked for use with ScummVM.
 @item THP @tab    @tab X
 @tab Used on the Nintendo GameCube.
@@ -126,7 +126,7 @@ different game cutscenes repacked for use with ScummVM.
 @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item Monkey's Audio @tab    @tab X
 @item SIFF @tab    @tab X
-@tab Audio and video format used in some games by Beam Software
+@tab Audio and video format used in some games by Beam Software.
 @item LMLM4 @tab    @tab X
 @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item PVA @tab    @tab X
@@ -138,9 +138,9 @@ different game cutscenes repacked for use with ScummVM.
 @item IFF @tab    @tab X
 @tab Interchange File Format
 @item BFI @tab    @tab X
-@tab Brute Force & Ignorance, used in Flash Traffic: City of Angels
+@tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
 @item OMA @tab    @tab X
-@tab Audio format used in Sony Sonic Stage and Sony Vegas
+@tab Audio format used in Sony Sonic Stage and Sony Vegas.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -158,8 +158,8 @@ following image formats are supported:
 @item JPEG         @tab X @tab X @tab Progressive JPEG is not supported.
 @item .Y.U.V       @tab X @tab X @tab one raw file per component
 @item animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated.
-@item PNG          @tab X @tab X @tab 2 bit and 4 bit/pixel not supported yet.
-@item Targa        @tab   @tab X @tab Targa (.TGA) image format.
+@item PNG          @tab X @tab X @tab 2/4 bpp not supported yet
+@item Targa        @tab   @tab X @tab Targa (.TGA) image format
 @item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @item SGI          @tab X @tab X @tab SGI RGB image format
 @item PTX          @tab   @tab X @tab V.Flash PTX format
@@ -190,7 +190,7 @@ following image formats are supported:
 @item RealVideo 2.0          @tab  X  @tab  X
 @item MJPEG                  @tab  X  @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
-@item JPEG-LS                @tab  X  @tab  X @tab fourcc: MJLS, lossless and near-lossless is supported
+@item JPEG-LS                @tab  X  @tab  X @tab fourcc: MJLS, lossless and near-lossless is supported.
 @item Apple MJPEG-B          @tab     @tab  X
 @item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
 @item DV                     @tab  X  @tab  X
@@ -242,8 +242,8 @@ following image formats are supported:
 @item Autodesk Animator Studio Codec  @tab     @tab  X @tab fourcc: AASC
 @item Fraps FPS1             @tab     @tab  X @tab
 @item CamStudio              @tab     @tab  X @tab fourcc: CSCD
-@item American Laser Games Video  @tab    @tab X @tab Used in games like Mad Dog McCree
-@item ZMBV                   @tab   X @tab  X @tab Encoder works only on PAL8
+@item American Laser Games Video  @tab    @tab X @tab Used in games like Mad Dog McCree.
+@item ZMBV                   @tab   X @tab  X @tab Encoder works only in PAL8.
 @item AVS Video              @tab     @tab  X @tab Video encoding used by the Creature Shock game.
 @item Smacker Video          @tab     @tab  X @tab Video encoding used in Smacker.
 @item RTjpeg                 @tab     @tab  X @tab Video encoding used in NuppelVideo files.
@@ -271,7 +271,7 @@ following image formats are supported:
 @item MPEG audio layer 2     @tab  IX  @tab  IX
 @item MPEG audio layer 1/3   @tab X   @tab  IX
 @tab MP3 encoding is supported through the external library LAME.
-@item AC3                    @tab  IX  @tab  IX
+@item AC-3                   @tab  IX  @tab  IX
 @tab liba52 is used internally for decoding.
 @item Vorbis                 @tab  X   @tab  X
 @item WMA V1/V2              @tab X    @tab X
@@ -308,7 +308,7 @@ following image formats are supported:
 @item RA288                  @tab      @tab X
 @tab Real 28800 bit/s codec
 @item RADnet                 @tab X    @tab IX
-@tab Real low bitrate AC3 codec, liba52 is used for decoding.
+@tab Real low bitrate AC-3 codec, liba52 is used for decoding.
 @item AMR-NB                 @tab X    @tab X
 @tab Supported through an external library.
 @item AMR-WB                 @tab X    @tab X
@@ -331,9 +331,9 @@ following image formats are supported:
 @item FFmpeg Sonic           @tab X    @tab X
 @tab experimental lossy/lossless codec
 @item Qdesign QDM2           @tab      @tab X
-@tab there are still some distortions
+@tab There are still some distortions.
 @item Real COOK              @tab      @tab X
-@tab All versions except 5.1 are supported
+@tab All versions except 5.1 are supported.
 @item DSP Group TrueSpeech   @tab      @tab X
 @item True Audio (TTA)       @tab      @tab X
 @item Smacker Audio          @tab      @tab X
@@ -342,10 +342,10 @@ following image formats are supported:
 @tab Codec used in Delphine Software games.
 @item Intel Music Coder      @tab      @tab X
 @item Musepack               @tab      @tab X
-@tab SV7 and SV8 are supported
+@tab SV7 and SV8 are supported.
 @item DTS Coherent Audio     @tab      @tab X
 @item ATRAC 3                @tab      @tab X
-@item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported
+@item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported.
 @item Nellymoser ASAO        @tab      @tab X
 @item 8SVX Audio             @tab      @tab X
 @item MLP/TrueHD             @tab      @tab X @tab Used in DVD-Audio and Blu-Ray discs.
