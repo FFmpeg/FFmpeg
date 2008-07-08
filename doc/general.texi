@@ -56,19 +56,19 @@ library:
 @tab Only embedded audio is decoded.
 @item FLV              @tab  X @tab X
 @tab Macromedia Flash video files
-@item Real Audio and Video @tab X @tab X
-@item Raw AC-3 @tab X  @tab  X
-@item Raw MJPEG @tab X  @tab  X
-@item Raw MPEG video @tab X  @tab  X
-@item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X
-@item Raw CRI ADX audio @tab X  @tab  X
-@item Raw Shorten audio @tab    @tab  X
+@item RealMedia @tab X @tab X
+@item raw AC-3 @tab X  @tab  X
+@item raw MJPEG @tab X  @tab  X
+@item raw MPEG video @tab X  @tab  X
+@item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
+@item raw CRI ADX audio @tab X  @tab  X
+@item raw Shorten audio @tab    @tab  X
 @item SUN AU format @tab X  @tab  X
 @item NUT @tab X @tab X @tab NUT Open Container Format
 @item QuickTime        @tab X @tab  X
 @item MPEG-4           @tab X @tab  X
 @tab MPEG-4 is a variant of QuickTime.
-@item Raw MPEG4 video  @tab  X @tab  X
+@item raw MPEG-4 video  @tab  X @tab  X
 @item DV               @tab  X @tab  X
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games.
@@ -85,7 +85,7 @@ library:
 @tab Multimedia formats used in Westwood Studios games.
 @item id Cinematic (.cin) @tab    @tab X
 @tab Used in Quake II.
-@item FLIC format      @tab    @tab X
+@item FLIC             @tab    @tab X
 @tab .fli/.flc files
 @item Sierra VMD       @tab    @tab X
 @tab Used in Sierra CD-ROM games.
@@ -96,7 +96,7 @@ library:
 @tab Used in various EA games; files have extensions like WVE and UV2.
 @item MAXIS EA XA      @tab    @tab X
 @tab Used in Sim City 3000; file extension .xa.
-@item Nullsoft Video (NSV) format @tab    @tab X
+@item Nullsoft Video (NSV) @tab    @tab X
 @item ADTS AAC audio @tab X @tab X
 @item Creative VOC @tab X @tab X @tab Created for the Sound Blaster Pro.
 @item American Laser Games MM  @tab    @tab X
@@ -182,7 +182,7 @@ following image formats are supported:
 @item WMV7                   @tab  X  @tab  X
 @item WMV8                   @tab  X  @tab  X @tab not completely working
 @item WMV9                   @tab     @tab  X @tab not completely working
-@item VC1                    @tab     @tab  X
+@item VC-1                   @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263(+)               @tab  X  @tab  X @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
@@ -196,7 +196,7 @@ following image formats are supported:
 @item DV                     @tab  X  @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item FFmpeg Video 1         @tab  X  @tab  X @tab experimental lossless codec (fourcc: FFV1)
-@item FFmpeg Snow            @tab  X  @tab  X @tab experimental wavelet codec (fourcc: SNOW)
+@item Snow                   @tab  X  @tab  X @tab experimental wavelet codec (fourcc: SNOW)
 @item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
 @item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
@@ -226,7 +226,7 @@ following image formats are supported:
 @item Microsoft Video-1      @tab     @tab  X
 @item Westwood VQA           @tab     @tab  X
 @item id Cinematic Video     @tab     @tab  X @tab Used in Quake II.
-@item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
+@item planar RGB             @tab     @tab  X @tab fourcc: 8BPS
 @item FLIC video             @tab     @tab  X
 @item Duck TrueMotion v1     @tab     @tab  X @tab fourcc: DUCK
 @item Duck TrueMotion v2     @tab     @tab  X @tab fourcc: TM20
@@ -239,7 +239,7 @@ following image formats are supported:
 @item QPEG                   @tab     @tab  X @tab fourccs: QPEG, Q1.0, Q1.1
 @item LOCO                   @tab     @tab  X @tab
 @item Winnov WNV1            @tab     @tab  X @tab
-@item Autodesk Animator Studio Codec  @tab     @tab  X @tab fourcc: AASC
+@item Autodesk RLE           @tab     @tab  X @tab fourcc: AASC
 @item Fraps FPS1             @tab     @tab  X @tab
 @item CamStudio              @tab     @tab  X @tab fourcc: CSCD
 @item American Laser Games Video  @tab    @tab X @tab Used in games like Mad Dog McCree.
