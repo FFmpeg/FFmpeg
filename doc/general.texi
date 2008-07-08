@@ -308,7 +308,7 @@ following image formats are supported:
 @item RA288                  @tab      @tab X
 @tab Real 28800 bit/s codec
 @item RADnet                 @tab X    @tab IX
-@tab Real low bitrate AC-3 codec, liba52 is used for decoding.
+@tab real low bitrate AC-3 codec
 @item AMR-NB                 @tab X    @tab X
 @tab Supported through an external library.
 @item AMR-WB                 @tab X    @tab X
