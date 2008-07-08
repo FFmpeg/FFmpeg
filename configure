@@ -2020,6 +2020,7 @@ echo "#ifndef FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$FFMPEG_CONFIGURATION\"" >> $TMPH
 
+echo "FFMPEG_CONFIGURATION=$FFMPEG_CONFIGURATION" >> config.mak
 echo "prefix=$prefix" >> config.mak
 echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
 echo "SHLIBDIR=\$(DESTDIR)$shlibdir" >> config.mak
