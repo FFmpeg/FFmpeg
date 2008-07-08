@@ -627,7 +627,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     AVStream *st= s->streams[stream_index];
     AVPacketList *pktl= s->packet_buffer;
 
-    if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE)
+    if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE || st->cur_dts == AV_NOPTS_VALUE)
         return;
 
     st->first_dts= dts - st->cur_dts;
@@ -746,6 +746,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             of the frame we are displaying, i.e. the last I- or P-frame */
             if (st->last_IP_duration == 0)
                 st->last_IP_duration = pkt->duration;
+            if(pkt->dts != AV_NOPTS_VALUE)
             st->cur_dts = pkt->dts + st->last_IP_duration;
             st->last_IP_duration  = pkt->duration;
             st->last_IP_pts= pkt->pts;
@@ -768,6 +769,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
+            if(pkt->pts != AV_NOPTS_VALUE)
             st->cur_dts = pkt->pts + pkt->duration;
         }
     }

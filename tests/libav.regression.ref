@@ -11,7 +11,7 @@ bdb7484c68db722f66ba1630cf79844c *./tests/data/b-libav.mpg
 ./tests/data/b-libav.mpg CRC=0x2b71a386
 447b005e527cf495ec13092e788f028d *./tests/data/b-libav.ts
 471692 ./tests/data/b-libav.ts
-./tests/data/b-libav.ts CRC=0xd14320e2
+./tests/data/b-libav.ts CRC=0xcc4948e1
 d6fdeb9f7083cc827f9510c6c4517dc0 *./tests/data/b-libav.swf
 335771 ./tests/data/b-libav.swf
 ./tests/data/b-libav.swf CRC=0xe14e8847
