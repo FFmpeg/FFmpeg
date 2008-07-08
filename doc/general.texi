@@ -98,7 +98,6 @@ library:
      @tab Used by MSN Messenger webcam streams.
 @item MXF                       @tab   @tab X
      @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
-@item Macromedia Flash          @tab X @tab X
 @item Matroska                  @tab X @tab X
 @item Monkey's Audio            @tab   @tab X
 @item NUT                       @tab X @tab X
