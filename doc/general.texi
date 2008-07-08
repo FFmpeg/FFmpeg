@@ -94,8 +94,8 @@ library:
      @tab also known as DVB Transport Stream
 @item MPEG-4                    @tab X @tab X
      @tab MPEG-4 is a variant of QuickTime.
-@item MSN TCP Webcam            @tab   @tab X
-     @tab Used by MSN Messenger Webcam streams.
+@item MSN TCP webcam            @tab   @tab X
+     @tab Used by MSN Messenger webcam streams.
 @item MXF                       @tab   @tab X
      @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item Macromedia Flash          @tab X @tab X
@@ -203,15 +203,15 @@ following image formats are supported:
      @tab fourcc: AASC
 @item AVID DNxHD             @tab   X @tab  X
      @tab aka SMPTE VC3
-@item AVS Video              @tab     @tab  X
+@item AVS video              @tab     @tab  X
      @tab Video encoding used by the Creature Shock game.
 @item Bethsoft VID           @tab     @tab  X
      @tab Used in some games from Bethesda Softworks.
-@item C93 Video              @tab     @tab  X
+@item C93 video              @tab     @tab  X
      @tab Codec used in Cyberia game.
 @item CamStudio              @tab     @tab  X
      @tab fourcc: CSCD
-@item Cin Video              @tab     @tab  X
+@item Cin video              @tab     @tab  X
      @tab Codec used in Delphine Software games.
 @item Cinepak                @tab     @tab  X
 @item Cirrus Logic AccuPak   @tab     @tab  X
@@ -242,7 +242,7 @@ following image formats are supported:
 @item HuffYUV                @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
      @tab fourcc: ULTI
-@item id Cinematic Video     @tab     @tab  X
+@item id Cinematic video     @tab     @tab  X
      @tab Used in Quake II.
 @item id RoQ                 @tab  X  @tab  X
      @tab Used in Quake III, Jedi Knight 2, other computer games.
@@ -262,8 +262,8 @@ following image formats are supported:
 @item Miro VideoXL           @tab     @tab  X
      @tab fourcc: VIXL
 @item MJPEG                  @tab  X  @tab  X
-@item MPEG-1 video           @tab  X  @tab  X
-@item MPEG-2 video           @tab  X  @tab  X
+@item MPEG-1                 @tab  X  @tab  X
+@item MPEG-2                 @tab  X  @tab  X
 @item MPEG-4                 @tab  X  @tab  X
 @item MSMPEG4 V1             @tab  X  @tab  X
 @item MSMPEG4 V2             @tab  X  @tab  X
@@ -286,7 +286,7 @@ following image formats are supported:
      @tab Texture dictionaries used by the Renderware Engine.
 @item RTjpeg                 @tab     @tab  X
      @tab Video encoding used in NuppelVideo files.
-@item Smacker Video          @tab     @tab  X
+@item Smacker video          @tab     @tab  X
      @tab Video encoding used in Smacker.
 @item Snow                   @tab  X  @tab  X
      @tab experimental wavelet codec (fourcc: SNOW)
@@ -303,7 +303,7 @@ following image formats are supported:
      @tab still experimental
 @item THP                    @tab     @tab  X
      @tab Used on the Nintendo GameCube.
-@item Tiertex Seq Video      @tab     @tab  X
+@item Tiertex Seq video      @tab     @tab  X
      @tab Codec used in DOS CD-ROM FlashBack game.
 @item VC-1                   @tab     @tab  X
 @item VMD Video              @tab     @tab  X
@@ -348,8 +348,8 @@ following image formats are supported:
 @item Apple MACE 6           @tab     @tab  X
 @item ATRAC 3                @tab     @tab  X
 @item CD-ROM XA ADPCM        @tab     @tab  X
-@item Cin Audio              @tab     @tab  X
-     @tab Codec used in Delphine Software games.
+@item Cin audio              @tab     @tab  X
+     @tab Codec used in Delphine Software International games.
 @item Creative ADPCM         @tab     @tab  X
      @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
 @item CRI ADX ADPCM          @tab  X  @tab  X
@@ -397,20 +397,20 @@ following image formats are supported:
      @tab real low bitrate AC-3 codec
 @item Real COOK              @tab     @tab  X
      @tab All versions except 5.1 are supported.
-@item Shorten lossless audio @tab     @tab  X
+@item Shorten                @tab     @tab  X
 @item Sierra Online DPCM     @tab     @tab  X
      @tab Used in Sierra Online game audio files.
-@item Smacker Audio          @tab     @tab  X
+@item Smacker audio          @tab     @tab  X
 @item SMJPEG IMA ADPCM       @tab     @tab  X
      @tab Used in certain Loki game ports.
 @item THP ADPCM              @tab     @tab  X
      @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
 @item Vorbis                 @tab  X  @tab  X
-@item WavPack Audio          @tab     @tab  X
+@item WavPack                @tab     @tab  X
 @item Westwood Studios IMA ADPCM @tab     @tab  X
      @tab Used in Westwood Studios games like Command and Conquer.
-@item WMA V1/V2              @tab  X  @tab  X
+@item WMA v1/v2              @tab  X  @tab  X
 @item Xan DPCM               @tab     @tab  X
      @tab Used in Origin's Wing Commander IV AVI files.
 @end multitable
