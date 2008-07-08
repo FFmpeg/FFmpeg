@@ -100,6 +100,7 @@ library:
      @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item Matroska                  @tab X @tab X
 @item Monkey's Audio            @tab   @tab X
+@item MOV/QuickTime             @tab X @tab X
 @item NUT                       @tab X @tab X
      @tab NUT Open Container Format
 @item Nullsoft Video            @tab   @tab X
@@ -108,7 +109,6 @@ library:
 @item PVA                       @tab   @tab X
      @tab Used by TechnoTrend DVB PCI boards.
 @item PlayStation STR           @tab   @tab X
-@item QuickTime                 @tab X @tab X
 @item RL2                       @tab   @tab X
      @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RealMedia                 @tab X @tab X
