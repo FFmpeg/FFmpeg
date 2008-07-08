@@ -272,7 +272,7 @@ following image formats are supported:
 @item MPEG audio layer 1/3   @tab X   @tab  IX
 @tab MP3 encoding is supported through the external library LAME.
 @item AC-3                   @tab  IX  @tab  IX
-@tab liba52 is used internally for decoding.
+@tab liba52 can be used alternatively for decoding.
 @item Vorbis                 @tab  X   @tab  X
 @item WMA V1/V2              @tab X    @tab X
 @item AAC                    @tab X    @tab X
