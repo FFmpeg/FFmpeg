@@ -730,10 +730,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-    if(st->cur_dts == AV_NOPTS_VALUE){
-        st->cur_dts = 0; //FIXME maybe set it to 0 during init
-    }
-
 //    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
     /* interpolate PTS and DTS if they are not present */
     if(delay==0 || (delay==1 && pc)){
@@ -2263,7 +2259,11 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st->id = id;
     st->start_time = AV_NOPTS_VALUE;
     st->duration = AV_NOPTS_VALUE;
-    st->cur_dts = AV_NOPTS_VALUE;
+        /* we set the current DTS to 0 so that formats without any timestamps
+           but durations get some timestamps, formats with some unknown
+           timestamps have their first few packets buffered and the
+           timestamps corrected before they are returned to the user */
+    st->cur_dts = 0;
     st->first_dts = AV_NOPTS_VALUE;
 
     /* default pts setting is MPEG-like */
