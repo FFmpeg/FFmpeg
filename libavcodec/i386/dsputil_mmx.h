@@ -57,6 +57,18 @@ extern const uint64_t ff_pb_FC;
 extern const double ff_pd_1[2];
 extern const double ff_pd_2[2];
 
+#define LOAD4(stride,in,a,b,c,d)\
+    "movq 0*"#stride"+"#in", "#a"\n\t"\
+    "movq 1*"#stride"+"#in", "#b"\n\t"\
+    "movq 2*"#stride"+"#in", "#c"\n\t"\
+    "movq 3*"#stride"+"#in", "#d"\n\t"
+
+#define STORE4(stride,out,a,b,c,d)\
+    "movq "#a", 0*"#stride"+"#out"\n\t"\
+    "movq "#b", 1*"#stride"+"#out"\n\t"\
+    "movq "#c", 2*"#stride"+"#out"\n\t"\
+    "movq "#d", 3*"#stride"+"#out"\n\t"
+
 /* in/out: mma=mma+mmb, mmb=mmb-mma */
 #define SUMSUB_BA( a, b ) \
     "paddw "#b", "#a" \n\t"\

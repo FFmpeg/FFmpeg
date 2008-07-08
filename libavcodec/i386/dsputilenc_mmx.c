@@ -998,18 +998,6 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     "paddusw %%xmm1, %%xmm0           \n\t"
 #endif
 
-#define LOAD4(o, a, b, c, d)\
-    "movq "#o"(%1),    "#a"           \n\t"\
-    "movq "#o"+8(%1),  "#b"           \n\t"\
-    "movq "#o"+16(%1), "#c"           \n\t"\
-    "movq "#o"+24(%1), "#d"           \n\t"\
-
-#define STORE4(o, a, b, c, d)\
-    "movq "#a", "#o"(%1)              \n\t"\
-    "movq "#b", "#o"+8(%1)            \n\t"\
-    "movq "#c", "#o"+16(%1)           \n\t"\
-    "movq "#d", "#o"+24(%1)           \n\t"\
-
 /* FIXME: HSUM_* saturates at 64k, while an 8x8 hadamard or dct block can get up to
  * about 100k on extreme inputs. But that's very unlikely to occur in natural video,
  * and it's even more unlikely to not have any alternative mvs/modes with lower cost. */
@@ -1053,11 +1041,11 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
         "movq %%mm7, 96(%1)             \n\t"\
 \
         TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)\
-        STORE4(0 , %%mm0, %%mm3, %%mm7, %%mm2)\
+        STORE4(8,  0(%1), %%mm0, %%mm3, %%mm7, %%mm2)\
 \
         "movq 96(%1), %%mm7             \n\t"\
         TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)\
-        STORE4(64, %%mm4, %%mm7, %%mm0, %%mm6)\
+        STORE4(8, 64(%1), %%mm4, %%mm7, %%mm0, %%mm6)\
 \
         : "=r" (sum)\
         : "r"(temp)\
@@ -1071,7 +1059,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
         "movq %%mm7, 96(%1)             \n\t"\
 \
         TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)\
-        STORE4(32, %%mm0, %%mm3, %%mm7, %%mm2)\
+        STORE4(8, 32(%1), %%mm0, %%mm3, %%mm7, %%mm2)\
 \
         "movq 96(%1), %%mm7             \n\t"\
         TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)\
@@ -1079,7 +1067,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
         "movq %%mm6, %%mm7              \n\t"\
         "movq %%mm0, %%mm6              \n\t"\
 \
-        LOAD4(64, %%mm0, %%mm1, %%mm2, %%mm3)\
+        LOAD4(8, 64(%1), %%mm0, %%mm1, %%mm2, %%mm3)\
 \
         HADAMARD48\
         "movq %%mm7, 64(%1)             \n\t"\
@@ -1095,8 +1083,8 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
         "paddusw %%mm1, %%mm0           \n\t"\
         "movq %%mm0, 64(%1)             \n\t"\
 \
-        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)\
-        LOAD4(32, %%mm4, %%mm5, %%mm6, %%mm7)\
+        LOAD4(8,  0(%1), %%mm0, %%mm1, %%mm2, %%mm3)\
+        LOAD4(8, 32(%1), %%mm4, %%mm5, %%mm6, %%mm7)\
 \
         HADAMARD48\
         "movq %%mm7, (%1)               \n\t"\
