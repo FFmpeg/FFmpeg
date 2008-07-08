@@ -747,7 +747,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             if (st->last_IP_duration == 0)
                 st->last_IP_duration = pkt->duration;
             if(pkt->dts != AV_NOPTS_VALUE)
-            st->cur_dts = pkt->dts + st->last_IP_duration;
+                st->cur_dts = pkt->dts + st->last_IP_duration;
             st->last_IP_duration  = pkt->duration;
             st->last_IP_pts= pkt->pts;
             /* cannot compute PTS if not present (we can compute it only
@@ -770,7 +770,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
             if(pkt->pts != AV_NOPTS_VALUE)
-            st->cur_dts = pkt->pts + pkt->duration;
+                st->cur_dts = pkt->pts + pkt->duration;
         }
     }
 
