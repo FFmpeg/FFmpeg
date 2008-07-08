@@ -1,5 +1,6 @@
 /* Electronic Arts Multimedia File Demuxer
  * Copyright (c) 2004  The ffmpeg Project
+ * Copyright (c) 2006-2008 Peter Ross
  *
  * This file is part of FFmpeg.
  *
@@ -45,6 +46,7 @@
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')    /* CMV header */
+#define MVIf_TAG MKTAG('M', 'V', 'I', 'f')    /* CMV i-frame */
 
 typedef struct EaDemuxContext {
     int big_endian;
@@ -299,6 +301,11 @@ static int process_ea_header(AVFormatContext *s) {
                 err = process_audio_header_sead(s);
                 break;
 
+            case MVIh_TAG :
+                ea->video_codec = CODEC_ID_CMV;
+                ea->time_base = (AVRational){0,0};
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -441,9 +448,17 @@ static int ea_read_packet(AVFormatContext *s,
             packet_read = 1;
             break;
 
+        case MVIh_TAG:
+            key = PKT_FLAG_KEY;
+        case MVIf_TAG:
+            url_fseek(pb, -8, SEEK_CUR);     // include chunk preamble
+            chunk_size += 8;
+            goto get_video_packet;
+
         case MV0K_TAG:
             key = PKT_FLAG_KEY;
         case MV0F_TAG:
+get_video_packet:
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret != chunk_size)
                 ret = AVERROR_IO;
