@@ -305,7 +305,6 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     printf("%d: write len=%d\n", pkt->stream_index, size);
 #endif
 
-    /* XXX: mpeg pts hardcoded. RTCP send every 0.5 seconds */
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
     if (s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
