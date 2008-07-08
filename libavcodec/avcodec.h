@@ -186,6 +186,7 @@ enum CodecID {
     CODEC_ID_ESCAPE124,
     CODEC_ID_DIRAC,
     CODEC_ID_BFI,
+    CODEC_ID_CMV,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
