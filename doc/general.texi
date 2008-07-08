@@ -180,7 +180,7 @@ following image formats are supported:
 @item MSMPEG4 V2             @tab  X  @tab  X
 @item MSMPEG4 V3             @tab  X  @tab  X
 @item WMV7                   @tab  X  @tab  X
-@item WMV8                   @tab  X  @tab  X @tab not completely working
+@item WMV8                   @tab  X  @tab  X
 @item WMV9                   @tab     @tab  X @tab not completely working
 @item VC-1                   @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
