@@ -115,7 +115,7 @@ static int hexchar2int(char c) {
     return -1;
 }
 
-const AVOption *av_set_string(void *obj, const char *name, const char *val){
+const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
         return set_all_opt(obj, o->unit, o->default_val);
@@ -195,8 +195,17 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
         return NULL;
     }
 
+    if(alloc){
+        av_free((void*)(((uint8_t*)obj) + o->offset));
+        val= av_strdup(val);
+    }
+
     memcpy(((uint8_t*)obj) + o->offset, &val, sizeof(val));
     return o;
+}
+
+const AVOption *av_set_string(void *obj, const char *name, const char *val){
+    return av_set_string2(obj, name, val, 0);
 }
 
 const AVOption *av_set_double(void *obj, const char *name, double n){

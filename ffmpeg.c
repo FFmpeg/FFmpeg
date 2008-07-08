@@ -2203,19 +2203,19 @@ static int opt_default(const char *opt, const char *arg){
     for(type=0; type<CODEC_TYPE_NB; type++){
         const AVOption *o2 = av_find_opt(avctx_opts[0], opt, NULL, opt_types[type], opt_types[type]);
         if(o2)
-            o = av_set_string(avctx_opts[type], opt, arg);
+            o = av_set_string2(avctx_opts[type], opt, arg, 1);
     }
     if(!o)
-        o = av_set_string(avformat_opts, opt, arg);
+        o = av_set_string2(avformat_opts, opt, arg, 1);
     if(!o)
-        o = av_set_string(sws_opts, opt, arg);
+        o = av_set_string2(sws_opts, opt, arg, 1);
     if(!o){
         if(opt[0] == 'a')
-            o = av_set_string(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg);
+            o = av_set_string2(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg, 1);
         else if(opt[0] == 'v')
-            o = av_set_string(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg);
+            o = av_set_string2(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg, 1);
         else if(opt[0] == 's')
-            o = av_set_string(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg);
+            o = av_set_string2(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg, 1);
     }
     if(!o)
         return -1;
@@ -2694,7 +2694,7 @@ static void set_context_opts(void *ctx, void *opts_ctx, int flags)
         const char *str= av_get_string(opts_ctx, opt_names[i], &opt, buf, sizeof(buf));
         /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
         if(str && ((opt->flags & flags) == flags))
-            av_set_string(ctx, opt_names[i], str);
+            av_set_string2(ctx, opt_names[i], str, 1);
     }
 }
 

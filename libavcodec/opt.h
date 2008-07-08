@@ -98,7 +98,17 @@ typedef struct AVOption {
  * has been found
  */
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
-const AVOption *av_set_string(void *obj, const char *name, const char *val);
+
+attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, const char *val);
+
+/**
+ * Sets the field of obj with the given name to value.
+ * @param alloc when 1 then the old value will be av_freed() and the
+ *                     new av_strduped()
+ *              when 0 then no av_free() nor av_strdup() will be used
+ */
+const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc);
+
 const AVOption *av_set_double(void *obj, const char *name, double n);
 const AVOption *av_set_q(void *obj, const char *name, AVRational n);
 const AVOption *av_set_int(void *obj, const char *name, int64_t n);
