@@ -259,6 +259,7 @@ following image formats are supported:
 @item Renderware TXD         @tab     @tab  X @tab Texture dictionaries used by the Renderware Engine.
 @item AMV                    @tab     @tab  X @tab Used in Chinese MP3 players.
 @item Mimic                  @tab     @tab  X @tab Used in MSN Messenger Webcam streams.
+@item Electronic Arts CMV    @tab     @tab  X @tab Used in NHL 95 game.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
