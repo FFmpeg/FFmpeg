@@ -47,7 +47,7 @@ typedef struct {
     int channels;
     int frame_size; /* in bytes ! */
     int codec_id;
-    int flip_left : 1;
+    unsigned int flip_left : 1;
     uint8_t buffer[AUDIO_BLOCK_SIZE];
     int buffer_ptr;
 } AudioData;

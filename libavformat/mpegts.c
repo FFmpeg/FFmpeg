@@ -63,8 +63,8 @@ typedef struct MpegTSSectionFilter {
     int section_index;
     int section_h_size;
     uint8_t *section_buf;
-    int check_crc:1;
-    int end_of_section_reached:1;
+    unsigned int check_crc:1;
+    unsigned int end_of_section_reached:1;
     SectionCallback *section_cb;
     void *opaque;
 } MpegTSSectionFilter;

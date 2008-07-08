@@ -160,13 +160,13 @@ typedef struct AVFormatParameters {
     enum PixelFormat pix_fmt;
     int channel; /**< used to select dv channel */
     const char *standard; /**< tv standard, NTSC, PAL, SECAM */
-    int mpeg2ts_raw:1;  /**< force raw MPEG2 transport stream output, if possible */
-    int mpeg2ts_compute_pcr:1; /**< compute exact PCR for each transport
-                                  stream packet (only meaningful if
-                                  mpeg2ts_raw is TRUE) */
-    int initial_pause:1;       /**< do not begin to play the stream
-                                  immediately (RTSP only) */
-    int prealloced_context:1;
+    unsigned int mpeg2ts_raw:1;  /**< force raw MPEG2 transport stream output, if possible */
+    unsigned int mpeg2ts_compute_pcr:1; /**< compute exact PCR for each transport
+                                            stream packet (only meaningful if
+                                            mpeg2ts_raw is TRUE) */
+    unsigned int initial_pause:1;       /**< do not begin to play the stream
+                                            immediately (RTSP only) */
+    unsigned int prealloced_context:1;
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
     enum CodecID video_codec_id;
     enum CodecID audio_codec_id;
