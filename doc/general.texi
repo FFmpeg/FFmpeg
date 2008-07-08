@@ -330,87 +330,89 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .1 .7
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
-@item MPEG audio layer 2     @tab  IX  @tab  IX
-@item MPEG audio layer 1/3   @tab X   @tab  IX
-@tab MP3 encoding is supported through the external library LAME.
-@item AC-3                   @tab  IX  @tab  IX
-@tab liba52 can be used alternatively for decoding.
-@item Vorbis                 @tab  X   @tab  X
-@item WMA V1/V2              @tab X    @tab X
-@item AAC                    @tab X    @tab X
-@tab Supported through the external library libfaac/libfaad.
-@item Microsoft ADPCM        @tab X    @tab X
-@item AMV IMA ADPCM          @tab      @tab X
-@tab Used in AMV files
-@item MS IMA ADPCM           @tab X    @tab X
-@item QT IMA ADPCM           @tab X    @tab X
-@item 4X IMA ADPCM           @tab      @tab X
-@item G.726  ADPCM           @tab X    @tab X
-@item Duck DK3 IMA ADPCM     @tab      @tab X
-@tab Used in some Sega Saturn console games.
-@item Duck DK4 IMA ADPCM     @tab      @tab X
-@tab Used in some Sega Saturn console games.
-@item Westwood Studios IMA ADPCM @tab      @tab X
-@tab Used in Westwood Studios games like Command and Conquer.
-@item SMJPEG IMA ADPCM       @tab      @tab X
-@tab Used in certain Loki game ports.
-@item CD-ROM XA ADPCM        @tab      @tab X
-@item CRI ADX ADPCM          @tab X    @tab X
-@tab Used in Sega Dreamcast games.
-@item Electronic Arts ADPCM  @tab      @tab X
-@tab Used in various EA titles.
-@item MAXIS EA ADPCM         @tab      @tab X
-@tab Used in Sim City 3000.
-@item Creative ADPCM         @tab      @tab X
-@tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
-@item THP ADPCM              @tab      @tab X
-@tab Used on the Nintendo GameCube.
-@item RA144                  @tab      @tab X
-@tab Real 14400 bit/s codec
-@item RA288                  @tab      @tab X
-@tab Real 28800 bit/s codec
-@item RADnet                 @tab X    @tab IX
-@tab real low bitrate AC-3 codec
-@item AMR-NB                 @tab X    @tab X
-@tab Supported through an external library.
-@item AMR-WB                 @tab X    @tab X
-@tab Supported through an external library.
-@item DV audio               @tab      @tab X
-@item id RoQ DPCM            @tab X    @tab X
-@tab Used in Quake III, Jedi Knight 2, other computer games.
-@item Interplay MVE DPCM     @tab      @tab X
-@tab Used in various Interplay computer games.
-@item Xan DPCM               @tab      @tab X
-@tab Used in Origin's Wing Commander IV AVI files.
-@item Sierra Online DPCM     @tab      @tab X
-@tab Used in Sierra Online game audio files.
-@item Apple MACE 3           @tab      @tab X
-@item Apple MACE 6           @tab      @tab X
-@item FLAC lossless audio    @tab X    @tab X
-@item Shorten lossless audio @tab      @tab X
-@item Apple lossless audio   @tab      @tab X
-@tab QuickTime fourcc 'alac'
-@item FFmpeg Sonic           @tab X    @tab X
-@tab experimental lossy/lossless codec
-@item Qdesign QDM2           @tab      @tab X
-@tab There are still some distortions.
-@item Real COOK              @tab      @tab X
-@tab All versions except 5.1 are supported.
-@item DSP Group TrueSpeech   @tab      @tab X
-@item True Audio (TTA)       @tab      @tab X
-@item Smacker Audio          @tab      @tab X
-@item WavPack Audio          @tab      @tab X
-@item Cin Audio              @tab      @tab X
-@tab Codec used in Delphine Software games.
-@item Intel Music Coder      @tab      @tab X
-@item Musepack               @tab      @tab X
-@tab SV7 and SV8 are supported.
-@item DTS Coherent Audio     @tab      @tab X
-@item ATRAC 3                @tab      @tab X
-@item Monkey's Audio         @tab      @tab X @tab Only versions 3.97-3.99 are supported.
-@item Nellymoser ASAO        @tab      @tab X
-@item 8SVX Audio             @tab      @tab X
-@item MLP/TrueHD             @tab      @tab X @tab Used in DVD-Audio and Blu-Ray discs.
+@item 4X IMA ADPCM           @tab     @tab  X
+@item 8SVX audio             @tab     @tab  X
+@item AAC                    @tab  X  @tab  X
+     @tab Supported through the external library libfaac/libfaad.
+@item AC-3                   @tab IX  @tab IX
+     @tab liba52 can be used alternatively for decoding.
+@item AMR-NB                 @tab  X  @tab  X
+     @tab Supported through an external library.
+@item AMR-WB                 @tab  X  @tab  X
+     @tab Supported through an external library.
+@item AMV IMA ADPCM          @tab     @tab  X
+     @tab Used in AMV files
+@item Apple lossless audio   @tab     @tab  X
+     @tab QuickTime fourcc 'alac'
+@item Apple MACE 3           @tab     @tab  X
+@item Apple MACE 6           @tab     @tab  X
+@item ATRAC 3                @tab     @tab  X
+@item CD-ROM XA ADPCM        @tab     @tab  X
+@item Cin Audio              @tab     @tab  X
+     @tab Codec used in Delphine Software games.
+@item Creative ADPCM         @tab     @tab  X
+     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
+@item CRI ADX ADPCM          @tab  X  @tab  X
+     @tab Used in Sega Dreamcast games.
+@item DSP Group TrueSpeech   @tab     @tab  X
+@item DTS Coherent Audio     @tab     @tab  X
+@item Duck DK3 IMA ADPCM     @tab     @tab  X
+     @tab Used in some Sega Saturn console games.
+@item Duck DK4 IMA ADPCM     @tab     @tab  X
+     @tab Used in some Sega Saturn console games.
+@item DV audio               @tab     @tab  X
+@item Electronic Arts ADPCM  @tab     @tab  X
+     @tab Used in various EA titles.
+@item FFmpeg Sonic           @tab  X  @tab  X
+     @tab experimental lossy/lossless codec
+@item FLAC lossless audio    @tab  X  @tab  X
+@item G.726  ADPCM           @tab  X  @tab  X
+@item id RoQ DPCM            @tab  X  @tab  X
+     @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item Intel Music Coder      @tab     @tab  X
+@item Interplay MVE DPCM     @tab     @tab  X
+     @tab Used in various Interplay computer games.
+@item MAXIS EA ADPCM         @tab     @tab  X
+     @tab Used in Sim City 3000.
+@item Microsoft ADPCM        @tab  X  @tab  X
+@item MLP/TrueHD             @tab     @tab  X
+     @tab Used in DVD-Audio and Blu-Ray discs.
+@item Monkey's Audio         @tab     @tab  X
+     @tab Only versions 3.97-3.99 are supported.
+@item MPEG audio layer 1/3   @tab  X  @tab IX
+     @tab MP3 encoding is supported through the external library LAME.
+@item MPEG audio layer 2     @tab IX  @tab IX
+@item MS IMA ADPCM           @tab  X  @tab  X
+@item Musepack               @tab     @tab  X
+     @tab SV7 and SV8 are supported.
+@item Nellymoser ASAO        @tab     @tab  X
+@item Qdesign QDM2           @tab     @tab  X
+     @tab There are still some distortions.
+@item QT IMA ADPCM           @tab  X  @tab  X
+@item RA144                  @tab     @tab  X
+     @tab Real 14400 bit/s codec
+@item RA288                  @tab     @tab  X
+     @tab Real 28800 bit/s codec
+@item RADnet                 @tab  X  @tab IX
+     @tab real low bitrate AC-3 codec
+@item Real COOK              @tab     @tab  X
+     @tab All versions except 5.1 are supported.
+@item Shorten lossless audio @tab     @tab  X
+@item Sierra Online DPCM     @tab     @tab  X
+     @tab Used in Sierra Online game audio files.
+@item Smacker Audio          @tab     @tab  X
+@item SMJPEG IMA ADPCM       @tab     @tab  X
+     @tab Used in certain Loki game ports.
+@item THP ADPCM              @tab     @tab  X
+     @tab Used on the Nintendo GameCube.
+@item True Audio (TTA)       @tab     @tab  X
+@item Vorbis                 @tab  X  @tab  X
+@item WavPack Audio          @tab     @tab  X
+@item Westwood Studios IMA ADPCM @tab     @tab  X
+     @tab Used in Westwood Studios games like Command and Conquer.
+@item WMA V1/V2              @tab  X  @tab  X
+@item Xan DPCM               @tab     @tab  X
+     @tab Used in Origin's Wing Commander IV AVI files.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
