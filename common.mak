@@ -38,6 +38,8 @@ CFLAGS := -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 %.d: %.cpp
 	$(DEPEND_CMD) > $@
 
+%.o: %.d
+
 %$(EXESUF): %.c
 
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
