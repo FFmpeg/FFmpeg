@@ -3646,7 +3646,7 @@ static int opt_preset(const char *opt, const char *arg)
         }else if(!strcmp(tmp, "scodec")){
             opt_subtitle_codec(tmp2);
         }else
-        opt_default(tmp, tmp2);
+            opt_default(tmp, tmp2);
     }
 
     fclose(f);
