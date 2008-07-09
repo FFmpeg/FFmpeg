@@ -72,7 +72,6 @@ untested special converters
 #include "rgb2rgb.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/bswap.h"
-#include "libavcodec/opt.h"
 
 #undef MOVNTQ
 #undef PAVGB
@@ -231,44 +230,6 @@ extern const uint8_t dither_2x2_8[2][8];
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
-
-static const char * sws_context_to_name(void * ptr) {
-    return "swscaler";
-}
-
-#define OFFSET(x) offsetof(SwsContext, x)
-#define DEFAULT 0
-#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-
-static const AVOption options[] = {
-    { "sws_flags", "scaler/cpu flags", OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, 0, UINT_MAX, VE, "sws_flags" },
-    { "fast_bilinear", "fast bilinear", 0, FF_OPT_TYPE_CONST, SWS_FAST_BILINEAR, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "bilinear", "bilinear", 0, FF_OPT_TYPE_CONST, SWS_BILINEAR, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "bicubic", "bicubic", 0, FF_OPT_TYPE_CONST, SWS_BICUBIC, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "experimental", "experimental", 0, FF_OPT_TYPE_CONST, SWS_X, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "neighbor", "nearest neighbor", 0, FF_OPT_TYPE_CONST, SWS_POINT, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "area", "averaging area", 0, FF_OPT_TYPE_CONST, SWS_AREA, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "bicublin", "luma bicubic, chroma bilinear", 0, FF_OPT_TYPE_CONST, SWS_BICUBLIN, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "gauss", "gaussian", 0, FF_OPT_TYPE_CONST, SWS_GAUSS, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "sinc", "sinc", 0, FF_OPT_TYPE_CONST, SWS_SINC, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "lanczos", "lanczos", 0, FF_OPT_TYPE_CONST, SWS_LANCZOS, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "spline", "natural bicubic spline", 0, FF_OPT_TYPE_CONST, SWS_SPLINE, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "print_info", "print info", 0, FF_OPT_TYPE_CONST, SWS_PRINT_INFO, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "accurate_rnd", "accurate rounding", 0, FF_OPT_TYPE_CONST, SWS_ACCURATE_RND, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "mmx", "MMX SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_MMX, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "mmx2", "MMX2 SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_MMX2, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "3dnow", "3DNOW SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_3DNOW, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "altivec", "AltiVec SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_ALTIVEC, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "bfin", "Blackfin SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_BFIN, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "full_chroma_int", "full chroma interpolation", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INT, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { "full_chroma_inp", "full chroma input", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INP, INT_MIN, INT_MAX, VE, "sws_flags" },
-    { NULL }
-};
-
-#undef VE
-#undef DEFAULT
-
-static const AVClass sws_context_class = { "SWScaler", sws_context_to_name, options };
 
 const char *sws_format_name(enum PixelFormat format)
 {

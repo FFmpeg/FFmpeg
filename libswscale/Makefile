@@ -3,7 +3,7 @@ include $(SUBDIR)../config.mak
 NAME = swscale
 FFLIBS = avutil
 
-OBJS = rgb2rgb.o swscale.o
+OBJS = rgb2rgb.o swscale.o swscale_avoption.o
 
 OBJS-$(ARCH_BFIN)          +=  swscale_bfin.o yuv2rgb_bfin.o
 OBJS-$(CONFIG_GPL)         +=  yuv2rgb.o
