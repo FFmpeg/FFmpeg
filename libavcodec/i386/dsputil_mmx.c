@@ -2066,6 +2066,23 @@ static void float_to_int16_sse(int16_t *dst, const float *src, long len){
     );
 }
 
+static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
+    asm volatile(
+        "add        %0          , %0        \n\t"
+        "lea         (%2,%0,2)  , %2        \n\t"
+        "add        %0          , %1        \n\t"
+        "neg        %0                      \n\t"
+        "1:                                 \n\t"
+        "cvtps2dq    (%2,%0,2)  , %%xmm0    \n\t"
+        "cvtps2dq  16(%2,%0,2)  , %%xmm1    \n\t"
+        "packssdw   %%xmm1      , %%xmm0    \n\t"
+        "movdqa     %%xmm0      ,  (%1,%0)  \n\t"
+        "add        $16         , %0        \n\t"
+        " js 1b                             \n\t"
+        :"+r"(len), "+r"(dst), "+r"(src)
+    );
+}
+
 extern void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
 extern void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
 extern void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
@@ -2440,6 +2457,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->float_to_int16 = float_to_int16_sse;
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
+        }
+        if(mm_flags & MM_SSE2){
+            c->float_to_int16 = float_to_int16_sse2;
         }
         if(mm_flags & MM_3DNOW)
             c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse
