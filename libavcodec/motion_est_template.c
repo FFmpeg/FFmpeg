@@ -776,6 +776,41 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
     return hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, 2);
 }
 
+static int full_search(MpegEncContext * s, int *best, int dmin,
+                                       int src_index, int ref_index, int const penalty_factor,
+                                       int size, int h, int flags)
+{
+    MotionEstContext * const c= &s->me;
+    me_cmp_func cmpf, chroma_cmpf;
+    LOAD_COMMON
+    LOAD_COMMON2
+    int map_generation= c->map_generation;
+    int x,y, d;
+    const int dia_size= c->dia_size&0xFF;
+
+    cmpf= s->dsp.me_cmp[size];
+    chroma_cmpf= s->dsp.me_cmp[size+1];
+
+    for(y=FFMAX(-dia_size, ymin); y<=FFMIN(dia_size,ymax); y++){
+        for(x=FFMAX(-dia_size, xmin); x<=FFMIN(dia_size,xmax); x++){
+            CHECK_MV(x, y);
+        }
+    }
+
+    x= best[0];
+    y= best[1];
+    d= dmin;
+    CHECK_CLIPPED_MV(x  , y);
+    CHECK_CLIPPED_MV(x+1, y);
+    CHECK_CLIPPED_MV(x, y+1);
+    CHECK_CLIPPED_MV(x-1, y);
+    CHECK_CLIPPED_MV(x, y-1);
+    best[0]= x;
+    best[1]= y;
+
+    return d;
+}
+
 #define SAB_CHECK_MV(ax,ay)\
 {\
     const int key= ((ay)<<ME_MAP_MV_BITS) + (ax) + map_generation;\
@@ -980,6 +1015,8 @@ static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dm
         return   sab_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<2)
         return small_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
+    else if(c->dia_size>1024)
+        return          full_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size>768)
         return           umh_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size>512)
