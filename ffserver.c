@@ -3732,7 +3732,7 @@ static int opt_default(const char *opt, const char *arg,
     const AVOption *o  = NULL;
     const AVOption *o2 = av_find_opt(avctx, opt, NULL, type, type);
     if(o2)
-        o = av_set_string(avctx, opt, arg);
+        o = av_set_string2(avctx, opt, arg, 1);
     if(!o)
         return -1;
     return 0;
