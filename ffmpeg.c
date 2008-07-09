@@ -3639,6 +3639,13 @@ static int opt_preset(const char *opt, const char *arg)
             fprintf(stderr, "Preset file invalid\n");
             av_exit(1);
         }
+        if(!strcmp(tmp, "acodec")){
+            opt_audio_codec(tmp2);
+        }else if(!strcmp(tmp, "vcodec")){
+            opt_video_codec(tmp2);
+        }else if(!strcmp(tmp, "scodec")){
+            opt_subtitle_codec(tmp2);
+        }else
         opt_default(tmp, tmp2);
     }
 
