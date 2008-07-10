@@ -41,29 +41,29 @@ library:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Supported File Format @tab Encoding @tab Decoding @tab Comments
-@item 4xm               @tab   @tab X
+@item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
 @item ADTS AAC audio            @tab X @tab X
+@item American Laser Games MM   @tab   @tab X
+    @tab Multimedia format used in games like Mad Dog McCree.
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
 @item AVM2 (Flash 9)            @tab X @tab X
     @tab Only embedded audio is decoded.
 @item AVS                       @tab   @tab X
     @tab Multimedia format used by the Creature Shock game.
-@item American Laser Games MM   @tab   @tab X
-    @tab Multimedia format used in games like Mad Dog McCree.
-@item BFI                       @tab   @tab X
-    @tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
 @item Bethsoft VID              @tab   @tab X
     @tab Used in some games from Bethesda Softworks.
+@item BFI                       @tab   @tab X
+    @tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
 @item C93                       @tab   @tab X
     @tab Used in the game Cyberia from Interplay.
 @item CIN                       @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
-@item CRYO APC                  @tab   @tab X
-    @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item Creative VOC              @tab X @tab X
     @tab Created for the Sound Blaster Pro.
+@item CRYO APC                  @tab   @tab X
+    @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item DV                        @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
@@ -76,7 +76,7 @@ library:
     @tab Macromedia Flash video files
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
-          playout servers.
+         playout servers.
 @item id Cinematic              @tab   @tab X
     @tab Used in Quake II.
 @item id RoQ                    @tab X @tab X
@@ -87,8 +87,11 @@ library:
     @tab Format used in various Interplay computer games.
 @item LMLM4                     @tab   @tab X
     @tab Used by Linux Media Labs MPEG-4 PCI boards
+@item Matroska                  @tab X @tab X
 @item MAXIS EA XA               @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.
+@item Monkey's Audio            @tab   @tab X
+@item MOV/QuickTime             @tab X @tab X
 @item MPEG audio                @tab X @tab X
 @item MPEG-1 systems            @tab X @tab X
     @tab muxed audio and video
@@ -102,17 +105,14 @@ library:
     @tab Used by MSN Messenger webcam streams.
 @item MXF                       @tab   @tab X
     @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
-@item Matroska                  @tab X @tab X
-@item Monkey's Audio            @tab   @tab X
-@item MOV/QuickTime             @tab X @tab X
+@item Nullsoft Video            @tab   @tab X
 @item NUT                       @tab X @tab X
     @tab NUT Open Container Format
-@item Nullsoft Video            @tab   @tab X
 @item OMA                       @tab   @tab X
     @tab Audio format used in Sony Sonic Stage and Sony Vegas.
+@item PlayStation STR           @tab   @tab X
 @item PVA                       @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
-@item PlayStation STR           @tab   @tab X
 @item raw AC-3                  @tab X @tab X
 @item raw CRI ADX audio         @tab X @tab X
 @item raw MJPEG                 @tab X @tab X
@@ -120,22 +120,22 @@ library:
 @item raw MPEG-4 video          @tab X @tab X
 @item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
+@item RealMedia                 @tab X @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
-@item RealMedia                 @tab X @tab X
-@item SEQ                       @tab   @tab X
-    @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
-@item SIFF                      @tab   @tab X
-    @tab Audio and video format used in some games by Beam Software.
-@item SUN AU format             @tab X @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.
+@item SEQ                       @tab   @tab X
+    @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item Sierra Online             @tab   @tab X
     @tab .sol files used in Sierra Online games.
 @item Sierra VMD                @tab   @tab X
     @tab Used in Sierra CD-ROM games.
+@item SIFF                      @tab   @tab X
+    @tab Audio and video format used in some games by Beam Software.
 @item Smacker                   @tab   @tab X
     @tab Multimedia format used by many games.
+@item SUN AU format             @tab X @tab X
 @item THP                       @tab   @tab X
     @tab Used on the Nintendo GameCube.
 @item WAV                       @tab X @tab X
@@ -154,6 +154,7 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Supported Image Format @tab Encoding @tab Decoding @tab Comments
+@item .Y.U.V       @tab X @tab X @tab one raw file per component
 @item animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated.
 @item JPEG         @tab X @tab X @tab Progressive JPEG is not supported.
 @item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support.
@@ -164,9 +165,8 @@ following image formats are supported:
 @item PTX          @tab   @tab X @tab V.Flash PTX format
 @item RAS          @tab   @tab X @tab Sun Rasterfile
 @item SGI          @tab X @tab X @tab SGI RGB image format
-@item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @item Targa        @tab   @tab X @tab Targa (.TGA) image format
-@item .Y.U.V       @tab X @tab X @tab one raw file per component
+@item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
