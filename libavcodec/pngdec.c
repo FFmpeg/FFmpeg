@@ -383,7 +383,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     PNGDecContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p= &s->picture;
     uint32_t tag, length;
     int ret, crc;
 
@@ -582,8 +582,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
  exit_loop:
-    *picture= *(AVFrame*)&s->picture;
-    *data_size = sizeof(AVPicture);
+    *picture= s->picture;
+    *data_size = sizeof(AVFrame);
 
     ret = s->bytestream - s->bytestream_start;
  the_end:
@@ -600,8 +600,8 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int png_dec_init(AVCodecContext *avctx){
     PNGDecContext *s = avctx->priv_data;
 
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame= (AVFrame*)&s->picture;
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame= &s->picture;
     dsputil_init(&s->dsp, avctx);
 
     return 0;
