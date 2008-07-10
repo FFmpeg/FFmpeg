@@ -70,6 +70,7 @@ unsigned int ff_dirac_schro_get_video_format_idx (AVCodecContext *avccontext)
 void ff_dirac_schro_queue_init (FfmpegDiracSchroQueue *queue)
 {
     queue->p_head = queue->p_tail = NULL;
+    queue->size = 0;
 }
 
 void ff_dirac_schro_queue_free (FfmpegDiracSchroQueue *queue,
@@ -96,6 +97,7 @@ int ff_dirac_schro_queue_push_back (FfmpegDiracSchroQueue *queue, void *p_data)
         queue->p_tail->next = p_new;
     queue->p_tail = p_new;
 
+    ++queue->size;
     return 0;
 }
 
@@ -106,6 +108,7 @@ void *ff_dirac_schro_queue_pop (FfmpegDiracSchroQueue *queue)
     if (top != NULL) {
         void *data = top->data;
         queue->p_head = queue->p_head->next;
+        --queue->size;
         av_freep (&top);
         return data;
     }

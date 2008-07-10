@@ -80,6 +80,8 @@ typedef struct FfmpegDiracSchroQueue
     FfmpegDiracSchroQueueElement *p_head;
     /** Pointer to tail of queue */
     FfmpegDiracSchroQueueElement *p_tail;
+    /** Queue size*/
+    int size;
 } FfmpegDiracSchroQueue;
 
 /**
