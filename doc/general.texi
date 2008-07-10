@@ -47,71 +47,71 @@ library:
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
 @item AVM2 (Flash 9)            @tab X @tab X
-     @tab Only embedded audio is decoded.
+    @tab Only embedded audio is decoded.
 @item AVS                       @tab   @tab X
-     @tab Multimedia format used by the Creature Shock game.
+    @tab Multimedia format used by the Creature Shock game.
 @item American Laser Games MM   @tab   @tab X
-     @tab Multimedia format used in games like Mad Dog McCree.
+    @tab Multimedia format used in games like Mad Dog McCree.
 @item BFI                       @tab   @tab X
-     @tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
+    @tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
 @item Bethsoft VID              @tab   @tab X
-     @tab Used in some games from Bethesda Softworks.
+    @tab Used in some games from Bethesda Softworks.
 @item C93                       @tab   @tab X
-     @tab Used in the game Cyberia from Interplay.
+    @tab Used in the game Cyberia from Interplay.
 @item CIN                       @tab   @tab X
-     @tab Multimedia format used by Delphine Software games.
+    @tab Multimedia format used by Delphine Software games.
 @item CRYO APC                  @tab   @tab X
-     @tab Audio format used in some games by CRYO Interactive Entertainment.
+    @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item Creative VOC              @tab X @tab X
-     @tab Created for the Sound Blaster Pro.
+    @tab Created for the Sound Blaster Pro.
 @item DV                        @tab X @tab X
 @item DXA                       @tab   @tab X
-     @tab This format is used in the non-Windows version of the Feeble Files
-          game and different game cutscenes repacked for use with ScummVM.
+    @tab This format is used in the non-Windows version of the Feeble Files
+         game and different game cutscenes repacked for use with ScummVM.
 @item Electronic Arts Multimedia  @tab    @tab X
-     @tab Used in various EA games; files have extensions like WVE and UV2.
+    @tab Used in various EA games; files have extensions like WVE and UV2.
 @item FLIC                      @tab   @tab X
-     @tab .fli/.flc files
+    @tab .fli/.flc files
 @item FLV                       @tab X @tab X
-     @tab Macromedia Flash video files
+    @tab Macromedia Flash video files
 @item GXF                       @tab X @tab X
-     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
+    @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
           playout servers.
 @item id Cinematic              @tab   @tab X
-     @tab Used in Quake II.
+    @tab Used in Quake II.
 @item id RoQ                    @tab X @tab X
-     @tab Used in Quake III, Jedi Knight 2, other computer games.
+    @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item IFF                       @tab   @tab X
-     @tab Interchange File Format
+    @tab Interchange File Format
 @item Interplay MVE             @tab   @tab X
-     @tab Format used in various Interplay computer games.
+    @tab Format used in various Interplay computer games.
 @item LMLM4                     @tab   @tab X
-     @tab Used by Linux Media Labs MPEG-4 PCI boards
+    @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item MAXIS EA XA               @tab   @tab X
-     @tab Used in Sim City 3000; file extension .xa.
+    @tab Used in Sim City 3000; file extension .xa.
 @item MPEG audio                @tab X @tab X
 @item MPEG-1 systems            @tab X @tab X
-     @tab muxed audio and video
+    @tab muxed audio and video
 @item MPEG-2 PS                 @tab X @tab X
-     @tab also known as @code{VOB} file
+    @tab also known as @code{VOB} file
 @item MPEG-2 TS                 @tab   @tab X
-     @tab also known as DVB Transport Stream
+    @tab also known as DVB Transport Stream
 @item MPEG-4                    @tab X @tab X
-     @tab MPEG-4 is a variant of QuickTime.
+    @tab MPEG-4 is a variant of QuickTime.
 @item MSN TCP webcam            @tab   @tab X
-     @tab Used by MSN Messenger webcam streams.
+    @tab Used by MSN Messenger webcam streams.
 @item MXF                       @tab   @tab X
-     @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
+    @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item Matroska                  @tab X @tab X
 @item Monkey's Audio            @tab   @tab X
 @item MOV/QuickTime             @tab X @tab X
 @item NUT                       @tab X @tab X
-     @tab NUT Open Container Format
+    @tab NUT Open Container Format
 @item Nullsoft Video            @tab   @tab X
 @item OMA                       @tab   @tab X
-     @tab Audio format used in Sony Sonic Stage and Sony Vegas.
+    @tab Audio format used in Sony Sonic Stage and Sony Vegas.
 @item PVA                       @tab   @tab X
-     @tab Used by TechnoTrend DVB PCI boards.
+    @tab Used by TechnoTrend DVB PCI boards.
 @item PlayStation STR           @tab   @tab X
 @item raw AC-3                  @tab X @tab X
 @item raw CRI ADX audio         @tab X @tab X
@@ -121,28 +121,28 @@ library:
 @item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
 @item RL2                       @tab   @tab X
-     @tab Audio and video format used in some games by Entertainment Software Partners.
+    @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RealMedia                 @tab X @tab X
 @item SEQ                       @tab   @tab X
-     @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
+    @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item SIFF                      @tab   @tab X
-     @tab Audio and video format used in some games by Beam Software.
+    @tab Audio and video format used in some games by Beam Software.
 @item SUN AU format             @tab X @tab X
 @item Sega FILM/CPK             @tab   @tab X
-     @tab Used in many Sega Saturn console games.
+    @tab Used in many Sega Saturn console games.
 @item Sierra Online             @tab   @tab X
-     @tab .sol files used in Sierra Online games.
+    @tab .sol files used in Sierra Online games.
 @item Sierra VMD                @tab   @tab X
-     @tab Used in Sierra CD-ROM games.
+    @tab Used in Sierra CD-ROM games.
 @item Smacker                   @tab   @tab X
-     @tab Multimedia format used by many games.
+    @tab Multimedia format used by many games.
 @item THP                       @tab   @tab X
-     @tab Used on the Nintendo GameCube.
+    @tab Used on the Nintendo GameCube.
 @item WAV                       @tab X @tab X
 @item WC3 Movie                 @tab   @tab X
-     @tab Multimedia format used in Origin's Wing Commander III computer game.
+    @tab Multimedia format used in Origin's Wing Commander III computer game.
 @item Westwood Studios VQA/AUD  @tab   @tab X
-     @tab Multimedia formats used in Westwood Studios games.
+    @tab Multimedia formats used in Westwood Studios games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -176,90 +176,90 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1 .4
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item 4X Video               @tab     @tab  X
-     @tab Used in certain computer games.
+    @tab Used in certain computer games.
 @item American Laser Games Video  @tab    @tab X
-     @tab Used in games like Mad Dog McCree.
+    @tab Used in games like Mad Dog McCree.
 @item AMV                    @tab     @tab  X
-     @tab Used in Chinese MP3 players.
+    @tab Used in Chinese MP3 players.
 @item Apple Animation        @tab  X  @tab  X
-     @tab fourcc: 'rle '
+    @tab fourcc: 'rle '
 @item Apple Graphics         @tab     @tab  X
-     @tab fourcc: 'smc '
+    @tab fourcc: 'smc '
 @item Apple MJPEG-B          @tab     @tab  X
 @item Apple QuickDraw        @tab     @tab  X
-     @tab fourcc: qdrw
+    @tab fourcc: qdrw
 @item Apple Video            @tab     @tab  X
-     @tab fourcc: rpza
+    @tab fourcc: rpza
 @item Asus v1                @tab  X  @tab  X
-     @tab fourcc: ASV1
+    @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X
-     @tab fourcc: ASV2
+    @tab fourcc: ASV2
 @item ATI VCR1               @tab     @tab  X
-     @tab fourcc: VCR1
+    @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X
-     @tab fourcc: VCR2
+    @tab fourcc: VCR2
 @item Autodesk RLE           @tab     @tab  X
-     @tab fourcc: AASC
+    @tab fourcc: AASC
 @item AVID DNxHD             @tab   X @tab  X
-     @tab aka SMPTE VC3
+    @tab aka SMPTE VC3
 @item AVS video              @tab     @tab  X
-     @tab Video encoding used by the Creature Shock game.
+    @tab Video encoding used by the Creature Shock game.
 @item Bethsoft VID           @tab     @tab  X
-     @tab Used in some games from Bethesda Softworks.
+    @tab Used in some games from Bethesda Softworks.
 @item C93 video              @tab     @tab  X
-     @tab Codec used in Cyberia game.
+    @tab Codec used in Cyberia game.
 @item CamStudio              @tab     @tab  X
-     @tab fourcc: CSCD
+    @tab fourcc: CSCD
 @item Cin video              @tab     @tab  X
-     @tab Codec used in Delphine Software games.
+    @tab Codec used in Delphine Software games.
 @item Cinepak                @tab     @tab  X
 @item Cirrus Logic AccuPak   @tab     @tab  X
-     @tab fourcc: CLJR
+    @tab fourcc: CLJR
 @item Creative YUV           @tab     @tab  X
-     @tab fourcc: CYUV
+    @tab fourcc: CYUV
 @item Duck TrueMotion v1     @tab     @tab  X
-     @tab fourcc: DUCK
+    @tab fourcc: DUCK
 @item Duck TrueMotion v2     @tab     @tab  X
-     @tab fourcc: TM20
+    @tab fourcc: TM20
 @item DV                     @tab  X  @tab  X
 @item DXA Video              @tab     @tab  X
-     @tab Codec originally used in Feeble Files game.
+    @tab Codec originally used in Feeble Files game.
 @item Electronic Arts CMV    @tab     @tab  X
-     @tab Used in NHL 95 game.
+    @tab Used in NHL 95 game.
 @item FFmpeg Video 1         @tab  X  @tab  X
-     @tab experimental lossless codec (fourcc: FFV1)
+    @tab experimental lossless codec (fourcc: FFV1)
 @item Flash Screen Video     @tab  X  @tab  X
-     @tab fourcc: FSV1
+    @tab fourcc: FSV1
 @item FLIC video             @tab     @tab  X
 @item FLV                    @tab  X  @tab  X
-     @tab Sorenson H.263 used in Flash
+    @tab Sorenson H.263 used in Flash
 @item Fraps FPS1             @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263(+)               @tab  X  @tab  X
-     @tab also known as RealVideo 1.0
+    @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
-     @tab fourcc: ULTI
+    @tab fourcc: ULTI
 @item id Cinematic video     @tab     @tab  X
-     @tab Used in Quake II.
+    @tab Used in Quake II.
 @item id RoQ                 @tab  X  @tab  X
-     @tab Used in Quake III, Jedi Knight 2, other computer games.
+    @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Intel Indeo 3          @tab     @tab  X
 @item Interplay Video        @tab     @tab  X
-     @tab Used in Interplay .MVE files.
+    @tab Used in Interplay .MVE files.
 @item JPEG-LS                @tab  X  @tab  X
-     @tab fourcc: MJLS, lossless and near-lossless is supported.
+    @tab fourcc: MJLS, lossless and near-lossless is supported.
 @item KMVC                   @tab     @tab  X
-     @tab Codec used in Worms games.
+    @tab Codec used in Worms games.
 @item LOCO                   @tab     @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
 @item Microsoft RLE          @tab     @tab  X
 @item Microsoft Video-1      @tab     @tab  X
 @item Mimic                  @tab     @tab  X
-     @tab Used in MSN Messenger Webcam streams.
+    @tab Used in MSN Messenger Webcam streams.
 @item Miro VideoXL           @tab     @tab  X
-     @tab fourcc: VIXL
+    @tab fourcc: VIXL
 @item MJPEG                  @tab  X  @tab  X
 @item MPEG-1                 @tab  X  @tab  X
 @item MPEG-2                 @tab  X  @tab  X
@@ -268,59 +268,59 @@ following image formats are supported:
 @item MSMPEG4 V2             @tab  X  @tab  X
 @item MSMPEG4 V3             @tab  X  @tab  X
 @item MSZH                   @tab     @tab  X
-     @tab Part of LCL
+    @tab Part of LCL
 @item On2 VP3                @tab     @tab  X
-     @tab still experimental
+    @tab still experimental
 @item On2 VP5                @tab     @tab  X
-     @tab fourcc: VP50
+    @tab fourcc: VP50
 @item On2 VP6                @tab     @tab  X
-     @tab fourcc: VP60,VP61,VP62
+    @tab fourcc: VP60,VP61,VP62
 @item planar RGB             @tab     @tab  X
-     @tab fourcc: 8BPS
+    @tab fourcc: 8BPS
 @item QPEG                   @tab     @tab  X
-     @tab fourccs: QPEG, Q1.0, Q1.1
+    @tab fourccs: QPEG, Q1.0, Q1.1
 @item RealVideo 1.0          @tab  X  @tab  X
 @item RealVideo 2.0          @tab  X  @tab  X
 @item Renderware TXD         @tab     @tab  X
-     @tab Texture dictionaries used by the Renderware Engine.
+    @tab Texture dictionaries used by the Renderware Engine.
 @item RTjpeg                 @tab     @tab  X
-     @tab Video encoding used in NuppelVideo files.
+    @tab Video encoding used in NuppelVideo files.
 @item Smacker video          @tab     @tab  X
-     @tab Video encoding used in Smacker.
+    @tab Video encoding used in Smacker.
 @item Snow                   @tab  X  @tab  X
-     @tab experimental wavelet codec (fourcc: SNOW)
+    @tab experimental wavelet codec (fourcc: SNOW)
 @item Sony PlayStation MDEC  @tab     @tab  X
 @item Sorenson Video 1       @tab  X  @tab  X
-     @tab fourcc: SVQ1
+    @tab fourcc: SVQ1
 @item Sorenson Video 3       @tab     @tab  X
-     @tab fourcc: SVQ3
+    @tab fourcc: SVQ3
 @item Sunplus MJPEG          @tab     @tab  X
-     @tab fourcc: SP5X
+    @tab fourcc: SP5X
 @item TechSmith Camtasia     @tab     @tab  X
-     @tab fourcc: TSCC
+    @tab fourcc: TSCC
 @item Theora                 @tab  X  @tab  X
-     @tab still experimental
+    @tab still experimental
 @item THP                    @tab     @tab  X
-     @tab Used on the Nintendo GameCube.
+    @tab Used on the Nintendo GameCube.
 @item Tiertex Seq video      @tab     @tab  X
-     @tab Codec used in DOS CD-ROM FlashBack game.
+    @tab Codec used in DOS CD-ROM FlashBack game.
 @item VC-1                   @tab     @tab  X
 @item VMD Video              @tab     @tab  X
-     @tab Used in Sierra VMD files.
+    @tab Used in Sierra VMD files.
 @item VMware Video           @tab     @tab  X
-     @tab Codec used in videos captured by VMware.
+    @tab Codec used in videos captured by VMware.
 @item Westwood VQA           @tab     @tab  X
 @item Winnov WNV1            @tab     @tab  X
 @item WMV7                   @tab  X  @tab  X
 @item WMV8                   @tab  X  @tab  X
 @item WMV9                   @tab     @tab  X
-     @tab not completely working
+    @tab not completely working
 @item Xan/WC3                @tab     @tab  X
-     @tab Used in Wing Commander III .MVE files.
+    @tab Used in Wing Commander III .MVE files.
 @item ZLIB                   @tab  X  @tab  X
-     @tab part of LCL, encoder experimental
+    @tab part of LCL, encoder experimental
 @item ZMBV                   @tab   X @tab  X
-     @tab Encoder works only in PAL8.
+    @tab Encoder works only in PAL8.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -332,86 +332,86 @@ following image formats are supported:
 @item 4X IMA ADPCM           @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  X  @tab  X
-     @tab Supported through the external library libfaac/libfaad.
+    @tab Supported through the external library libfaac/libfaad.
 @item AC-3                   @tab IX  @tab IX
-     @tab liba52 can be used alternatively for decoding.
+    @tab liba52 can be used alternatively for decoding.
 @item AMR-NB                 @tab  X  @tab  X
-     @tab Supported through an external library.
+    @tab Supported through an external library.
 @item AMR-WB                 @tab  X  @tab  X
-     @tab Supported through an external library.
+    @tab Supported through an external library.
 @item AMV IMA ADPCM          @tab     @tab  X
-     @tab Used in AMV files
+    @tab Used in AMV files
 @item Apple lossless audio   @tab     @tab  X
-     @tab QuickTime fourcc 'alac'
+    @tab QuickTime fourcc 'alac'
 @item Apple MACE 3           @tab     @tab  X
 @item Apple MACE 6           @tab     @tab  X
 @item ATRAC 3                @tab     @tab  X
 @item CD-ROM XA ADPCM        @tab     @tab  X
 @item Cin audio              @tab     @tab  X
-     @tab Codec used in Delphine Software International games.
+    @tab Codec used in Delphine Software International games.
 @item Creative ADPCM         @tab     @tab  X
-     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
+    @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
 @item CRI ADX ADPCM          @tab  X  @tab  X
-     @tab Used in Sega Dreamcast games.
+    @tab Used in Sega Dreamcast games.
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DTS Coherent Audio     @tab     @tab  X
 @item Duck DK3 IMA ADPCM     @tab     @tab  X
-     @tab Used in some Sega Saturn console games.
+    @tab Used in some Sega Saturn console games.
 @item Duck DK4 IMA ADPCM     @tab     @tab  X
-     @tab Used in some Sega Saturn console games.
+    @tab Used in some Sega Saturn console games.
 @item DV audio               @tab     @tab  X
 @item Electronic Arts ADPCM  @tab     @tab  X
-     @tab Used in various EA titles.
+    @tab Used in various EA titles.
 @item FFmpeg Sonic           @tab  X  @tab  X
-     @tab experimental lossy/lossless codec
+    @tab experimental lossy/lossless codec
 @item FLAC lossless audio    @tab  X  @tab  X
 @item G.726  ADPCM           @tab  X  @tab  X
 @item id RoQ DPCM            @tab  X  @tab  X
-     @tab Used in Quake III, Jedi Knight 2, other computer games.
+    @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Intel Music Coder      @tab     @tab  X
 @item Interplay MVE DPCM     @tab     @tab  X
-     @tab Used in various Interplay computer games.
+    @tab Used in various Interplay computer games.
 @item MAXIS EA ADPCM         @tab     @tab  X
-     @tab Used in Sim City 3000.
+    @tab Used in Sim City 3000.
 @item Microsoft ADPCM        @tab  X  @tab  X
 @item MLP/TrueHD             @tab     @tab  X
-     @tab Used in DVD-Audio and Blu-Ray discs.
+    @tab Used in DVD-Audio and Blu-Ray discs.
 @item Monkey's Audio         @tab     @tab  X
-     @tab Only versions 3.97-3.99 are supported.
+    @tab Only versions 3.97-3.99 are supported.
 @item MPEG audio layer 1/3   @tab  X  @tab IX
-     @tab MP3 encoding is supported through the external library LAME.
+    @tab MP3 encoding is supported through the external library LAME.
 @item MPEG audio layer 2     @tab IX  @tab IX
 @item MS IMA ADPCM           @tab  X  @tab  X
 @item Musepack               @tab     @tab  X
-     @tab SV7 and SV8 are supported.
+    @tab SV7 and SV8 are supported.
 @item Nellymoser ASAO        @tab     @tab  X
 @item Qdesign QDM2           @tab     @tab  X
-     @tab There are still some distortions.
+    @tab There are still some distortions.
 @item QT IMA ADPCM           @tab  X  @tab  X
 @item RA144                  @tab     @tab  X
-     @tab Real 14400 bit/s codec
+    @tab Real 14400 bit/s codec
 @item RA288                  @tab     @tab  X
-     @tab Real 28800 bit/s codec
+    @tab Real 28800 bit/s codec
 @item RADnet                 @tab  X  @tab IX
-     @tab real low bitrate AC-3 codec
+    @tab real low bitrate AC-3 codec
 @item Real COOK              @tab     @tab  X
-     @tab All versions except 5.1 are supported.
+    @tab All versions except 5.1 are supported.
 @item Shorten                @tab     @tab  X
 @item Sierra Online DPCM     @tab     @tab  X
-     @tab Used in Sierra Online game audio files.
+    @tab Used in Sierra Online game audio files.
 @item Smacker audio          @tab     @tab  X
 @item SMJPEG IMA ADPCM       @tab     @tab  X
-     @tab Used in certain Loki game ports.
+    @tab Used in certain Loki game ports.
 @item THP ADPCM              @tab     @tab  X
-     @tab Used on the Nintendo GameCube.
+    @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
 @item Vorbis                 @tab  X  @tab  X
 @item WavPack                @tab     @tab  X
 @item Westwood Studios IMA ADPCM @tab     @tab  X
-     @tab Used in Westwood Studios games like Command and Conquer.
+    @tab Used in Westwood Studios games like Command and Conquer.
 @item WMA v1/v2              @tab  X  @tab  X
 @item Xan DPCM               @tab     @tab  X
-     @tab Used in Origin's Wing Commander IV AVI files.
+    @tab Used in Origin's Wing Commander IV AVI files.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
