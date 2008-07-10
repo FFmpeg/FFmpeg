@@ -124,6 +124,8 @@ version <next>
 - OMA demuxer
 - MLP/TrueHD decoder
 - Electronic Arts CMV decoder
+- Motion Pixels Video decoder
+- Motion Pixels MVI demuxer
 
 version 0.4.9-pre1:
 

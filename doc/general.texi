@@ -91,6 +91,7 @@ library:
 @item MAXIS EA XA               @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.
 @item Monkey's Audio            @tab   @tab X
+@item Motion Pixels MVI         @tab   @tab X
 @item MOV/QuickTime             @tab X @tab X
 @item MPEG audio                @tab X @tab X
 @item MPEG-1 systems            @tab X @tab X
@@ -263,6 +264,7 @@ following image formats are supported:
 @item Miro VideoXL           @tab     @tab  X
     @tab fourcc: VIXL
 @item MJPEG                  @tab  X  @tab  X
+@item Motion Pixels Video    @tab     @tab  X
 @item MPEG-1                 @tab  X  @tab  X
 @item MPEG-2                 @tab  X  @tab  X
 @item MPEG-4                 @tab  X  @tab  X
