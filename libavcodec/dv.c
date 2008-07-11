@@ -1000,7 +1000,7 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_DVVIDEO_ENCODER
 static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
