@@ -29,6 +29,7 @@ struct frame_attributes {
     int top_field_first;
 };
 
+#ifdef CONFIG_YUV4MPEGPIPE_MUXER
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
     AVStream *st;
@@ -166,7 +167,6 @@ static int yuv4_write_header(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_YUV4MPEGPIPE_MUXER
 AVOutputFormat yuv4mpegpipe_muxer = {
     "yuv4mpegpipe",
     NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
