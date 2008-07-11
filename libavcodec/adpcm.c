@@ -85,12 +85,12 @@ static const int AdaptationTable[] = {
         768, 614, 512, 409, 307, 230, 230, 230
 };
 
-static const int AdaptCoeff1[] = {
-        256, 512, 0, 192, 240, 460, 392
+static const int8_t AdaptCoeff1[] = {
+        64, 128, 0, 48, 60, 115, 98
 };
 
-static const int AdaptCoeff2[] = {
-        0, -256, 0, 64, 0, -208, -232
+static const int8_t AdaptCoeff2[] = {
+        0, -64, 0, 16, 0, -52, -58
 };
 
 /* These are for CD-ROM XA ADPCM */
@@ -226,7 +226,7 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
 {
     int predictor, nibble, bias;
 
-    predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 256;
+    predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 64;
 
     nibble= sample - predictor;
     if(nibble>=0) bias= c->idelta/2;
@@ -330,7 +330,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
             const int step = nodes[j]->step;
             int nidx;
             if(version == CODEC_ID_ADPCM_MS) {
-                const int predictor = ((nodes[j]->sample1 * c->coeff1) + (nodes[j]->sample2 * c->coeff2)) / 256;
+                const int predictor = ((nodes[j]->sample1 * c->coeff1) + (nodes[j]->sample2 * c->coeff2)) / 64;
                 const int div = (sample - predictor) / step;
                 const int nmin = av_clip(div-range, -8, 6);
                 const int nmax = av_clip(div+range, -7, 7);
