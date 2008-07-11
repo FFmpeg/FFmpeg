@@ -5746,6 +5746,7 @@ decode_intra_mb:
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
         s->current_picture.mb_type[mb_xy]= mb_type;
+        h->last_qscale_diff = 0;
         return 0;
     }
 
