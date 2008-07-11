@@ -360,37 +360,6 @@ static int id3v1_parse_tag(AVFormatContext *s, const uint8_t *buf)
     return 0;
 }
 
-static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
-{
-    int v, i;
-
-    memset(buf, 0, ID3v1_TAG_SIZE); /* fail safe */
-    buf[0] = 'T';
-    buf[1] = 'A';
-    buf[2] = 'G';
-    strncpy(buf + 3, s->title, 30);
-    strncpy(buf + 33, s->author, 30);
-    strncpy(buf + 63, s->album, 30);
-    v = s->year;
-    if (v > 0) {
-        for(i = 0;i < 4; i++) {
-            buf[96 - i] = '0' + (v % 10);
-            v = v / 10;
-        }
-    }
-    strncpy(buf + 97, s->comment, 30);
-    if (s->track != 0) {
-        buf[125] = 0;
-        buf[126] = s->track;
-    }
-    for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
-        if (!strcasecmp(s->genre, id3v1_genre_str[i])) {
-            buf[127] = i;
-            break;
-        }
-    }
-}
-
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -552,6 +521,37 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 #ifdef CONFIG_MUXERS
+static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
+{
+    int v, i;
+
+    memset(buf, 0, ID3v1_TAG_SIZE); /* fail safe */
+    buf[0] = 'T';
+    buf[1] = 'A';
+    buf[2] = 'G';
+    strncpy(buf + 3, s->title, 30);
+    strncpy(buf + 33, s->author, 30);
+    strncpy(buf + 63, s->album, 30);
+    v = s->year;
+    if (v > 0) {
+        for(i = 0;i < 4; i++) {
+            buf[96 - i] = '0' + (v % 10);
+            v = v / 10;
+        }
+    }
+    strncpy(buf + 97, s->comment, 30);
+    if (s->track != 0) {
+        buf[125] = 0;
+        buf[126] = s->track;
+    }
+    for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
+        if (!strcasecmp(s->genre, id3v1_genre_str[i])) {
+            buf[127] = i;
+            break;
+        }
+    }
+}
+
 /* simple formats */
 
 static void id3v2_put_size(AVFormatContext *s, int size)
