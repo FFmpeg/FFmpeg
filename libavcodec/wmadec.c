@@ -682,25 +682,25 @@ static int wma_decode_block(WMACodecContext *s)
 
 next:
     for(ch = 0; ch < s->nb_channels; ch++) {
-            int n4, index, n;
+        int n4, index, n;
 
-            n = s->block_len;
-            n4 = s->block_len / 2;
-            if(s->channel_coded[ch]){
+        n = s->block_len;
+        n4 = s->block_len / 2;
+        if(s->channel_coded[ch]){
             s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize],
-                          s->output, s->coefs[ch], s->mdct_tmp);
-            }else
-                memset(s->output, 0, sizeof(s->output));
+                                              s->output, s->coefs[ch], s->mdct_tmp);
+        }else
+            memset(s->output, 0, sizeof(s->output));
 
-            /* multiply by the window and add in the frame */
-            index = (s->frame_len / 2) + s->block_pos - n4;
-            wma_window(s, &s->frame_out[ch][index]);
+        /* multiply by the window and add in the frame */
+        index = (s->frame_len / 2) + s->block_pos - n4;
+        wma_window(s, &s->frame_out[ch][index]);
 
-            /* specific fast case for ms-stereo : add to second
-               channel if it is not coded */
-            if (s->ms_stereo && !s->channel_coded[1]) {
-                wma_window(s, &s->frame_out[1][index]);
-            }
+        /* specific fast case for ms-stereo : add to second
+            channel if it is not coded */
+        if (s->ms_stereo && !s->channel_coded[1]) {
+            wma_window(s, &s->frame_out[1][index]);
+        }
     }
 
     /* update block number */
