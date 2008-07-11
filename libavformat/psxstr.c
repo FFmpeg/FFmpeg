@@ -67,9 +67,9 @@ static const char sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xf
 static int str_probe(AVProbeData *p)
 {
     int start;
+    uint8_t *sector;
 
-    /* need at least 0x38 bytes to validate */
-    if (p->buf_size < 0x38)
+    if (p->buf_size < RAW_CD_SECTOR_SIZE)
         return 0;
 
     if ((AV_RL32(&p->buf[0]) == RIFF_TAG) &&
@@ -80,8 +80,17 @@ static int str_probe(AVProbeData *p)
     } else
         start = 0;
 
+    sector= p->buf + start;
+
     /* look for CD sync header (00, 0xFF x 10, 00) */
     if (memcmp(p->buf+start,sync_header,sizeof(sync_header)))
+        return 0;
+
+    if(sector[0x11] >= 32)
+        return 0;
+    if(   (sector[0x12] & CDXA_TYPE_MASK) != CDXA_TYPE_VIDEO
+       && (sector[0x12] & CDXA_TYPE_MASK) != CDXA_TYPE_AUDIO
+       && (sector[0x12] & CDXA_TYPE_MASK) != CDXA_TYPE_DATA)
         return 0;
 
     /* MPEG files (like those ripped from VCDs) can also look like this;
