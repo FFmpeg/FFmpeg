@@ -401,12 +401,13 @@ static int wma_decode_block(WMACodecContext *s)
         s->channel_coded[ch] = a;
         v |= a;
     }
+
+    bsize = s->frame_len_bits - s->block_len_bits;
+
     /* if no channel coded, no need to go further */
     /* XXX: fix potential framing problems */
     if (!v)
         goto next;
-
-    bsize = s->frame_len_bits - s->block_len_bits;
 
     /* read total gain and extract corresponding number of bits for
        coef escape coding */
@@ -679,14 +680,17 @@ static int wma_decode_block(WMACodecContext *s)
         }
     }
 
+next:
     for(ch = 0; ch < s->nb_channels; ch++) {
-        if (s->channel_coded[ch]) {
             int n4, index, n;
 
             n = s->block_len;
             n4 = s->block_len / 2;
+            if(s->channel_coded[ch]){
             s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize],
                           s->output, s->coefs[ch], s->mdct_tmp);
+            }else
+                memset(s->output, 0, sizeof(s->output));
 
             /* multiply by the window and add in the frame */
             index = (s->frame_len / 2) + s->block_pos - n4;
@@ -697,9 +701,8 @@ static int wma_decode_block(WMACodecContext *s)
             if (s->ms_stereo && !s->channel_coded[1]) {
                 wma_window(s, &s->frame_out[1][index]);
             }
-        }
     }
- next:
+
     /* update block number */
     s->block_num++;
     s->block_pos += s->block_len;
