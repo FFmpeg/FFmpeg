@@ -29,6 +29,14 @@ typedef struct {
 
 static int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
+static int mmf_rate(int code)
+{
+    if((code < 0) || (code > 4))
+        return -1;
+    return mmf_rates[code];
+}
+
+#ifdef CONFIG_MUXERS
 static int mmf_rate_code(int rate)
 {
     int i;
@@ -38,14 +46,6 @@ static int mmf_rate_code(int rate)
     return -1;
 }
 
-static int mmf_rate(int code)
-{
-    if((code < 0) || (code > 4))
-        return -1;
-    return mmf_rates[code];
-}
-
-#ifdef CONFIG_MUXERS
 /* Copy of end_tag() from avienc.c, but for big-endian chunk size */
 static void end_tag_be(ByteIOContext *pb, offset_t start)
 {
