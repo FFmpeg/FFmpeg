@@ -781,6 +781,11 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         skip_bits(&s->gb, 4); /* super frame index */
         nb_frames = get_bits(&s->gb, 4) - 1;
 
+        if((nb_frames+1) * s->nb_channels * s->frame_len * sizeof(int16_t) > *data_size){
+            av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
+            goto fail;
+        }
+
         bit_offset = get_bits(&s->gb, s->byte_offset_bits + 3);
 
         if (s->last_superframe_len > 0) {
@@ -836,6 +841,10 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         s->last_superframe_len = len;
         memcpy(s->last_superframe, buf + pos, len);
     } else {
+        if(s->nb_channels * s->frame_len * sizeof(int16_t) > *data_size){
+            av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
+            goto fail;
+        }
         /* single frame decode */
         if (wma_decode_frame(s, samples) < 0)
             goto fail;
