@@ -1200,10 +1200,12 @@ unsigned avcodec_version( void )
   return LIBAVCODEC_VERSION_INT;
 }
 
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 unsigned avcodec_build( void )
 {
   return LIBAVCODEC_BUILD;
 }
+#endif
 
 void avcodec_init(void)
 {

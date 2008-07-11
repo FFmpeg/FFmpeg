@@ -2516,8 +2516,10 @@ AVCodec *av_codec_next(AVCodec *c);
 
 /* returns LIBAVCODEC_VERSION_INT constant */
 unsigned avcodec_version(void);
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 /* returns LIBAVCODEC_BUILD constant */
-unsigned avcodec_build(void);
+attribute_deprecated unsigned avcodec_build(void);
+#endif
 
 /**
  * Initializes libavcodec.
