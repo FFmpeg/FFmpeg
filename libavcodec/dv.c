@@ -1137,6 +1137,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c, ui
     return 5;
 }
 
+#ifdef CONFIG_DVVIDEO_ENCODER
 static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
 {
     int chan, i, j, k;
@@ -1187,7 +1188,6 @@ static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
 }
 
 
-#ifdef CONFIG_ENCODERS
 static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
                                 void *data)
 {
