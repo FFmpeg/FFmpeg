@@ -906,12 +906,6 @@ should also be avoided if they don't make the code easier to understand.
     Incrementing the third component means a noteworthy binary compatible
     change (e.g. encoder bug fix that matters for the decoder).
 @item
-    If you add a new codec, remember to update the changelog, add it to
-    the supported codecs table in the documentation and bump the second
-    component of the @file{libavcodec} version number appropriately. If
-    it has a fourcc, add it to @file{libavformat/riff.c}, even if it
-    is only a decoder.
-@item
     Compiler warnings indicate potential bugs or code with bad style. If a type of
     warning always points to correct and clean code, that warning should
     be disabled, not the code changed.
@@ -956,6 +950,40 @@ and has no lrint()')
 
 Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
+
+@section New codecs or formats checklist
+
+@enumerate
+@item
+    Did you use av_cold for codec initialization and close functions?
+@item
+    Did you add a long_name under NULL_IF_CONFIG_SMALL to the AVCodec or
+    AVInputFormat/AVOutputFormat struct?
+@item
+    Did you bump the minor version number in @file{avcodec.h} or
+    @file{avformat.h}?
+@item
+    Did you register it in @file{allcodecs.c} or @file{allformats.c}?
+@item
+    Did you add the CodecID to @file{avcodec.h}?
+@item
+    If it has a fourcc, did you add it to @file{libavformat/riff.c},
+    even if it is only a decoder?
+@item
+    Did you add a rule to compile the appropriate files in the Makefile?
+    Remember to do this even if you're just adding a format to a file that is
+    already being compiled by some other rule, like a raw demuxer.
+@item
+    Did you add an entry to the table of supported formats or codecs in the
+    documentation?
+@item
+    Did you add an entry in the Changelog?
+@item
+    If it depends on a parser or a library, did you add that dependency in
+    configure?
+@item
+    Did you "svn add" the appropriate files before commiting?
+@end enumerate
 
 @section patch submission checklist
 
