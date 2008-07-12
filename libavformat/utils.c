@@ -1942,8 +1942,6 @@ int av_find_stream_info(AVFormatContext *ic)
     offset_t old_offset = url_ftell(ic->pb);
     int64_t codec_info_duration[MAX_STREAMS]={0};
     int codec_info_nb_frames[MAX_STREAMS]={0};
-    AVProbeData probe_data[MAX_STREAMS];
-    int codec_identified[MAX_STREAMS]={0};
 
     duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
     if (!duration_error) return AVERROR(ENOMEM);
@@ -1969,7 +1967,6 @@ int av_find_stream_info(AVFormatContext *ic)
         last_dts[i]= AV_NOPTS_VALUE;
     }
 
-    memset(probe_data, 0, sizeof(probe_data));
     count = 0;
     read_size = 0;
     for(;;) {
@@ -2056,14 +2053,6 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             if(last == AV_NOPTS_VALUE || duration_count[index]<=1)
                 last_dts[pkt->stream_index]= pkt->dts;
-
-            if (st->codec->codec_id == CODEC_ID_NONE) {
-                AVProbeData *pd = &(probe_data[st->index]);
-                pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
-                memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
-                pd->buf_size += pkt->size;
-                memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
-            }
         }
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
@@ -2143,36 +2132,12 @@ int av_find_stream_info(AVFormatContext *ic)
                 }
             }
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            if (st->codec->codec_id == CODEC_ID_NONE && probe_data[st->index].buf_size > 0) {
-                codec_identified[st->index] = set_codec_from_probe_data(st, &(probe_data[st->index]), 1);
-                if (codec_identified[st->index]) {
-                    st->need_parsing = AVSTREAM_PARSE_FULL;
-                }
-            }
             if(!st->codec->bits_per_sample)
                 st->codec->bits_per_sample= av_get_bits_per_sample(st->codec->codec_id);
         }
     }
 
     av_estimate_timings(ic, old_offset);
-
-    for(i=0;i<ic->nb_streams;i++) {
-        st = ic->streams[i];
-        if (codec_identified[st->index])
-            break;
-    }
-    //FIXME this is a mess
-    if(i!=ic->nb_streams){
-        av_read_frame_flush(ic);
-        for(i=0;i<ic->nb_streams;i++) {
-            st = ic->streams[i];
-            if (codec_identified[st->index]) {
-                av_seek_frame(ic, st->index, 0.0, 0);
-            }
-            st->cur_dts= st->first_dts;
-        }
-        url_fseek(ic->pb, ic->data_offset, SEEK_SET);
-    }
 
     compute_chapters_end(ic);
 
@@ -2202,9 +2167,6 @@ int av_find_stream_info(AVFormatContext *ic)
 #endif
 
     av_free(duration_error);
-    for(i=0;i<MAX_STREAMS;i++){
-        av_freep(&(probe_data[i].buf));
-    }
 
     return ret;
 }
