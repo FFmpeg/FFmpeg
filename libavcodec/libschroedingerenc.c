@@ -57,6 +57,12 @@ typedef struct FfmpegSchroEncoderParams
     /** Schroedinger encoder handle*/
     SchroEncoder* encoder;
 
+    /** buffer to store encoder output before writing it to the frame queue*/
+    unsigned char *enc_buf;
+
+    /** Size of encoder buffer*/
+    int enc_buf_size;
+
     /** queue storing encoded frames */
     FfmpegDiracSchroQueue enc_frame_queue;
 
@@ -255,6 +261,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
     SchroBuffer *enc_buf;
     int presentation_frame;
     int parse_code;
+    int last_frame_in_sequence = 0;
 
     if(data == NULL) {
         /* Push end of sequence if not already signalled. */
@@ -285,15 +292,37 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
                                           &presentation_frame);
             assert (enc_buf->length > 0);
             assert (enc_buf->length <= buf_size);
+            parse_code = enc_buf->data[4];
+
+            /* All non-frame data is prepended to actual frame data to
+             * be able to set the pts correctly. So we don't write data
+             * to the frame output queue until we actually have a frame
+             */
+             p_schro_params->enc_buf = av_realloc (
+                                p_schro_params->enc_buf,
+                                p_schro_params->enc_buf_size + enc_buf->length
+                                );
+
+            memcpy(p_schro_params->enc_buf+p_schro_params->enc_buf_size,
+                   enc_buf->data, enc_buf->length);
+            p_schro_params->enc_buf_size += enc_buf->length;
+
+
+            if (state == SCHRO_STATE_END_OF_STREAM) {
+                p_schro_params->eos_pulled = 1;
+                go = 0;
+            }
+
+            if (!SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+                schro_buffer_unref (enc_buf);
+                break;
+            }
 
             /* Create output frame. */
             p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
             /* Set output data. */
-            p_frame_output->size     = enc_buf->length;
-            p_frame_output->p_encbuf = av_malloc(enc_buf->length);
-            memcpy(p_frame_output->p_encbuf, enc_buf->data, enc_buf->length);
-
-            parse_code = enc_buf->data[4];
+            p_frame_output->size     = p_schro_params->enc_buf_size;
+            p_frame_output->p_encbuf = p_schro_params->enc_buf;
             if (SCHRO_PARSE_CODE_IS_INTRA(parse_code) &&
                 SCHRO_PARSE_CODE_IS_REFERENCE(parse_code)) {
                 p_frame_output->key_frame = 1;
@@ -301,23 +330,18 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
 
             /* Parse the coded frame number from the bitstream. Bytes 14
              * through 17 represesent the frame number. */
-            if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code))
-            {
-                assert (enc_buf->length >= 17);
                 p_frame_output->frame_num = (enc_buf->data[13] << 24) +
                                             (enc_buf->data[14] << 16) +
                                             (enc_buf->data[15] <<  8) +
                                              enc_buf->data[16];
-            }
 
             ff_dirac_schro_queue_push_back (&p_schro_params->enc_frame_queue,
                                             p_frame_output);
+            p_schro_params->enc_buf_size = 0;
+            p_schro_params->enc_buf      = NULL;
+
             schro_buffer_unref (enc_buf);
 
-            if (state == SCHRO_STATE_END_OF_STREAM) {
-                p_schro_params->eos_pulled = 1;
-                   go = 0;
-            }
             break;
 
         case SCHRO_STATE_NEED_FRAME:
@@ -334,6 +358,11 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
     }
 
     /* Copy 'next' frame in queue. */
+
+    if (p_schro_params->enc_frame_queue.size == 1 &&
+        p_schro_params->eos_pulled)
+        last_frame_in_sequence = 1;
+
     p_frame_output =
                ff_dirac_schro_queue_pop (&p_schro_params->enc_frame_queue);
 
@@ -347,6 +376,17 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
      * to be of constant frame rate. */
     avccontext->coded_frame->pts = p_frame_output->frame_num;
     enc_size = p_frame_output->size;
+
+    /* Append the end of sequence information to the last frame in the
+     * sequence. */
+    if (last_frame_in_sequence && p_schro_params->enc_buf_size > 0)
+    {
+        memcpy (frame + enc_size, p_schro_params->enc_buf,
+                p_schro_params->enc_buf_size);
+        enc_size += p_schro_params->enc_buf_size;
+        av_freep (&p_schro_params->enc_buf);
+        p_schro_params->enc_buf_size = 0;
+    }
 
     /* free frame */
     SchroedingerFreeFrame (p_frame_output);
@@ -366,6 +406,11 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
     /* Free data in the output frame queue. */
     ff_dirac_schro_queue_free (&p_schro_params->enc_frame_queue,
                                SchroedingerFreeFrame);
+
+
+    /* Free the encoder buffer. */
+    if (p_schro_params->enc_buf_size)
+        av_freep(&p_schro_params->enc_buf);
 
     /* Free the video format structure. */
     av_freep(&p_schro_params->format);
