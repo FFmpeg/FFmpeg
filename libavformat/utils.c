@@ -589,11 +589,11 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
 
             if(av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)){
-            set_codec_from_probe_data(st, pd, 1);
-            if(st->codec->codec_id != CODEC_ID_PROBE){
-                pd->buf_size=0;
-                av_freep(&pd->buf);
-            }
+                set_codec_from_probe_data(st, pd, 1);
+                if(st->codec->codec_id != CODEC_ID_PROBE){
+                    pd->buf_size=0;
+                    av_freep(&pd->buf);
+                }
             }
         }
     }
