@@ -520,6 +520,22 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
 /*******************************************************/
 
+static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt){
+    AVPacketList *pktl;
+    AVPacketList **plast_pktl= packet_buffer;
+
+    while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
+
+    pktl = av_mallocz(sizeof(AVPacketList));
+    if (!pktl)
+        return NULL;
+
+    /* add the packet in the buffered packet list */
+    *plast_pktl = pktl;
+    pktl->pkt= *pkt;
+    return &pktl->pkt;
+}
+
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
@@ -943,22 +959,6 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             pkt->flags);
 
     return 0;
-}
-
-static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt){
-    AVPacketList *pktl;
-    AVPacketList **plast_pktl= packet_buffer;
-
-    while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
-
-    pktl = av_mallocz(sizeof(AVPacketList));
-    if (!pktl)
-        return NULL;
-
-    /* add the packet in the buffered packet list */
-    *plast_pktl = pktl;
-    pktl->pkt= *pkt;
-    return &pktl->pkt;
 }
 
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
