@@ -269,11 +269,13 @@ disable(){
 }
 
 enabled(){
-    eval test "x\$$1" = "xyes"
+    test "${1#!}" = "$1" && op== || op=!=
+    eval test "x\$${1#!}" $op "xyes"
 }
 
 disabled(){
-    eval test "x\$$1" = "xno"
+    test "${1#!}" = "$1" && op== || op=!=
+    eval test "x\$${1#!}" $op "xno"
 }
 
 enabled_all(){
@@ -317,6 +319,7 @@ is_in(){
 
 check_deps(){
     for cfg; do
+        cfg="${cfg#!}"
         enabled ${cfg}_checking && die "Circular dependency for $cfg."
         disabled ${cfg}_checking && continue
         enable ${cfg}_checking
