@@ -299,9 +299,9 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
     fmt = av_probe_input_format2(pd, 1, &score);
 
     if (fmt) {
-        if (strncmp(fmt->name, "mp3", 3) == 0)
+        if (!strcmp(fmt->name, "mp3"))
             st->codec->codec_id = CODEC_ID_MP3;
-        else if (strncmp(fmt->name, "ac3", 3) == 0)
+        else if (!strcmp(fmt->name, "ac3"))
             st->codec->codec_id = CODEC_ID_AC3;
         else if (!strcmp(fmt->name, "mpegvideo"))
             st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
