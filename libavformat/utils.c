@@ -931,9 +931,9 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static AVPacket *add_to_pktbuf(AVFormatContext *s, AVPacket *pkt){
-    AVPacketList *pktl= s->packet_buffer;
-    AVPacketList **plast_pktl= &s->packet_buffer;
+static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt){
+    AVPacketList *pktl;
+    AVPacketList **plast_pktl= packet_buffer;
 
     while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
 
@@ -991,7 +991,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     return ret;
             }
 
-            if(av_dup_packet(add_to_pktbuf(s, pkt)) < 0)
+            if(av_dup_packet(add_to_pktbuf(&s->packet_buffer, pkt)) < 0)
                 return AVERROR(ENOMEM);
         }else{
             assert(!s->packet_buffer);
@@ -1984,7 +1984,7 @@ int av_find_stream_info(AVFormatContext *ic)
             break;
         }
 
-        pkt= add_to_pktbuf(ic, &pkt1);
+        pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1);
         if(av_dup_packet(pkt) < 0)
             return AVERROR(ENOMEM);
 
