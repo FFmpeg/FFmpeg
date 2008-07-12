@@ -227,7 +227,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             } else if (!memcmp(&g, &video_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_VIDEO;
             } else if (!memcmp(&g, &command_stream, sizeof(GUID))) {
-                type = CODEC_TYPE_UNKNOWN;
+                type = CODEC_TYPE_DATA;
             } else if (!memcmp(&g, &ext_stream_embed_stream_header, sizeof(GUID))) {
                 test_for_ext_stream_audio = 1;
                 type = CODEC_TYPE_UNKNOWN;
