@@ -55,6 +55,12 @@ typedef struct FfmpegDiracEncoderParams
     /** input frame buffer */
     unsigned char *p_in_frame_buf;
 
+    /** buffer to store encoder output before writing it to the frame queue */
+    unsigned char *enc_buf;
+
+    /** size of encoder buffer */
+    int enc_buf_size;
+
     /** queue storing encoded frames */
     FfmpegDiracSchroQueue enc_frame_queue;
 
@@ -236,6 +242,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     FfmpegDiracSchroEncodedFrame* p_frame_output = NULL;
     FfmpegDiracSchroEncodedFrame* p_next_output_frame = NULL;
     int go = 1;
+    int last_frame_in_sequence = 0;
 
     if (data == NULL) {
         /* push end of sequence if not already signalled */
@@ -278,18 +285,39 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
         case ENC_STATE_AVAIL:
         case ENC_STATE_EOS:
             assert (p_dirac_params->p_encoder->enc_buf.size > 0);
-            /* create output frame */
-            p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
-            /* set output data */
-            p_frame_output->p_encbuf =
-                         av_malloc(p_dirac_params->p_encoder->enc_buf.size);
 
-            memcpy(p_frame_output->p_encbuf,
+            /* All non-frame data is prepended to actual frame data to
+             * be able to set the pts correctly. So we don't write data
+             * to the frame output queue until we actually have a frame
+             */
+
+            p_dirac_params->enc_buf = av_realloc (
+                                      p_dirac_params->enc_buf,
+                                      p_dirac_params->enc_buf_size +
+                                      p_dirac_params->p_encoder->enc_buf.size
+                                      );
+            memcpy(p_dirac_params->enc_buf + p_dirac_params->enc_buf_size,
                    p_dirac_params->p_encoder->enc_buf.buffer,
                    p_dirac_params->p_encoder->enc_buf.size);
 
-            p_frame_output->size = p_dirac_params->p_encoder->enc_buf.size;
+            p_dirac_params->enc_buf_size +=
+                                     p_dirac_params->p_encoder->enc_buf.size;
 
+            if (state == ENC_STATE_EOS) {
+                p_dirac_params->eos_pulled = 1;
+                go = 0;
+            }
+
+            /* If non-frame data, don't output it until it we get an
+             * encoded frame back from the encoder. */
+            if (p_dirac_params->p_encoder->enc_pparams.pnum == -1)
+                break;
+
+            /* create output frame */
+            p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
+            /* set output data */
+            p_frame_output->size     = p_dirac_params->enc_buf_size;
+            p_frame_output->p_encbuf = p_dirac_params->enc_buf;
             p_frame_output->frame_num =
                             p_dirac_params->p_encoder->enc_pparams.pnum;
 
@@ -300,10 +328,8 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
             ff_dirac_schro_queue_push_back (&p_dirac_params->enc_frame_queue,
                                             p_frame_output);
 
-            if (state == ENC_STATE_EOS) {
-                p_dirac_params->eos_pulled = 1;
-                go = 0;
-            }
+            p_dirac_params->enc_buf_size = 0;
+            p_dirac_params->enc_buf      = NULL;
             break;
 
         case ENC_STATE_BUFFER:
@@ -322,6 +348,11 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     }
 
     /* copy 'next' frame in queue */
+
+    if (p_dirac_params->enc_frame_queue.size == 1 &&
+        p_dirac_params->eos_pulled)
+        last_frame_in_sequence = 1;
+
     p_next_output_frame =
           ff_dirac_schro_queue_pop(&p_dirac_params->enc_frame_queue);
 
@@ -335,6 +366,17 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
      * of constant framerate. */
     avccontext->coded_frame->pts = p_next_output_frame->frame_num;
     enc_size = p_next_output_frame->size;
+
+    /* Append the end of sequence information to the last frame in the
+     * sequence. */
+    if (last_frame_in_sequence && p_dirac_params->enc_buf_size > 0)
+    {
+        memcpy (frame + enc_size, p_dirac_params->enc_buf,
+                p_dirac_params->enc_buf_size);
+        enc_size += p_dirac_params->enc_buf_size;
+        av_freep (&p_dirac_params->enc_buf);
+        p_dirac_params->enc_buf_size = 0;
+    }
 
     /* free frame */
     DiracFreeFrame(p_next_output_frame);
@@ -352,6 +394,10 @@ static int libdirac_encode_close(AVCodecContext *avccontext)
     /* free data in the output frame queue */
     ff_dirac_schro_queue_free(&p_dirac_params->enc_frame_queue,
                               DiracFreeFrame);
+
+    /* free the encoder buffer */
+    if (p_dirac_params->enc_buf_size)
+        av_freep(&p_dirac_params->enc_buf);
 
     /* free the input frame buffer */
     av_freep(&p_dirac_params->p_in_frame_buf);
