@@ -79,7 +79,6 @@ typedef struct {
     int codewords[COEFFS];     ///< raw codewords read from bitstream
     float sqrt_tab[30];
     GetBitContext gb;
-    VLC huffman_vlc[4][4];
     int decoder_reset;
     float one_div_log2;
 
@@ -89,6 +88,15 @@ typedef struct {
     DECLARE_ALIGNED_16(float, out_samples[COEFFS]);
 } IMCContext;
 
+static VLC huffman_vlc[4][4];
+
+#define VLC_TABLES_SIZE 9512
+
+static const int vlc_offsets[17] = {
+    0,     640, 1156, 1732, 2308, 2852, 3396, 3924,
+    4452, 5220, 5860, 6628, 7268, 7908, 8424, 8936, VLC_TABLES_SIZE};
+
+static VLC_TYPE vlc_tables[VLC_TABLES_SIZE][2];
 
 static av_cold int imc_decode_init(AVCodecContext * avctx)
 {
@@ -135,9 +143,11 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     /* initialize the VLC tables */
     for(i = 0; i < 4 ; i++) {
         for(j = 0; j < 4; j++) {
-            init_vlc (&q->huffman_vlc[i][j], 9, imc_huffman_sizes[i],
+            huffman_vlc[i][j].table = vlc_tables[vlc_offsets[i * 4 + j]];
+            huffman_vlc[i][j].table_allocated = vlc_offsets[i * 4 + j + 1] - vlc_offsets[i * 4 + j];
+            init_vlc(&huffman_vlc[i][j], 9, imc_huffman_sizes[i],
                      imc_huffman_lens[i][j], 1, 1,
-                     imc_huffman_bits[i][j], 2, 2, 1);
+                     imc_huffman_bits[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
         }
     }
     q->one_div_log2 = 1/log(2);
@@ -210,10 +220,10 @@ static void imc_read_level_coeffs(IMCContext* q, int stream_format_code, int* le
     int s;
 
     s = stream_format_code >> 1;
-    hufftab[0] = &q->huffman_vlc[s][0];
-    hufftab[1] = &q->huffman_vlc[s][1];
-    hufftab[2] = &q->huffman_vlc[s][2];
-    hufftab[3] = &q->huffman_vlc[s][3];
+    hufftab[0] = &huffman_vlc[s][0];
+    hufftab[1] = &huffman_vlc[s][1];
+    hufftab[2] = &huffman_vlc[s][2];
+    hufftab[3] = &huffman_vlc[s][3];
     cb_sel = imc_cb_select[s];
 
     if(stream_format_code & 4)
