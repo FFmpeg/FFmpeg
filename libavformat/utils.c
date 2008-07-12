@@ -540,11 +540,29 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
     AVStream *st;
+
+    for(;;){
+        AVPacketList *pktl = s->raw_packet_buffer;
+
+        if (pktl) {
+            *pkt = pktl->pkt;
+            if(s->streams[pkt->stream_index]->codec->codec_id != CODEC_ID_PROBE){
+                s->raw_packet_buffer = pktl->next;
+                av_free(pktl);
+                return 0;
+            }
+        }
+
     av_init_packet(pkt);
     ret= s->iformat->read_packet(s, pkt);
     if (ret < 0)
         return ret;
     st= s->streams[pkt->stream_index];
+
+        if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
+            return ret;
+
+        add_to_pktbuf(&s->raw_packet_buffer, pkt);
 
     switch(st->codec->codec_type){
     case CODEC_TYPE_VIDEO:
@@ -558,7 +576,21 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         break;
     }
 
-    return ret;
+        if(st->codec->codec_id == CODEC_ID_PROBE){
+            AVProbeData *pd = &st->probe_data;
+
+            pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
+            memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
+            pd->buf_size += pkt->size;
+            memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
+
+            set_codec_from_probe_data(st, pd, 1);
+            if(st->codec->codec_id != CODEC_ID_PROBE){
+                pd->buf_size=0;
+                av_freep(&pd->buf);
+            }
+        }
+    }
 }
 
 /**********************************************************/

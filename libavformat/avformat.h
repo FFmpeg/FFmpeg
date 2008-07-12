@@ -391,6 +391,8 @@ typedef struct AVStream {
     char *filename; /**< source filename of the stream */
 
     int disposition; /**< AV_DISPOSITION_* bitfield */
+
+    AVProbeData probe_data;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -555,6 +557,14 @@ typedef struct AVFormatContext {
      */
     int debug;
 #define FF_FDEBUG_TS        0x0001
+
+    /**
+     * raw packets from the demuxer, prior to parsing and decoding.
+     * This buffer is used for buffering packets until the codec can
+     * be identified, as parsing cannot be done without knowing the
+     * codec.
+     */
+    struct AVPacketList *raw_packet_buffer;
 } AVFormatContext;
 
 typedef struct AVPacketList {

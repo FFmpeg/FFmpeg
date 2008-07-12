@@ -264,7 +264,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (is_dvr_ms_audio) {
                     // codec_id and codec_tag are unreliable in dvr_ms
                     // files. Set them later by probing stream.
-                    st->codec->codec_id = CODEC_ID_NONE;
+                    st->codec->codec_id = CODEC_ID_PROBE;
                     st->codec->codec_tag = 0;
                 }
                 st->need_parsing = AVSTREAM_PARSE_FULL;
