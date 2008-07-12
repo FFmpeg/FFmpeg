@@ -293,6 +293,20 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
     return av_probe_input_format2(pd, is_opened, &score);
 }
 
+static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
+{
+    AVInputFormat *fmt;
+    fmt = av_probe_input_format2(pd, 1, &score);
+
+    if (fmt) {
+        if (strncmp(fmt->name, "mp3", 3) == 0)
+            st->codec->codec_id = CODEC_ID_MP3;
+        else if (strncmp(fmt->name, "ac3", 3) == 0)
+            st->codec->codec_id = CODEC_ID_AC3;
+    }
+    return !!fmt;
+}
+
 /************************************************************/
 /* input media file */
 
@@ -1783,20 +1797,6 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
   }
  fail:
     return ret;
-}
-
-static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
-{
-    AVInputFormat *fmt;
-    fmt = av_probe_input_format2(pd, 1, &score);
-
-    if (fmt) {
-        if (strncmp(fmt->name, "mp3", 3) == 0)
-            st->codec->codec_id = CODEC_ID_MP3;
-        else if (strncmp(fmt->name, "ac3", 3) == 0)
-            st->codec->codec_id = CODEC_ID_AC3;
-    }
-    return !!fmt;
 }
 
 unsigned int codec_get_tag(const AVCodecTag *tags, int id)
