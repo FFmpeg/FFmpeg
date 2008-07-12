@@ -553,28 +553,28 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-    av_init_packet(pkt);
-    ret= s->iformat->read_packet(s, pkt);
-    if (ret < 0)
-        return ret;
-    st= s->streams[pkt->stream_index];
+        av_init_packet(pkt);
+        ret= s->iformat->read_packet(s, pkt);
+        if (ret < 0)
+            return ret;
+        st= s->streams[pkt->stream_index];
 
         if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
             return ret;
 
         add_to_pktbuf(&s->raw_packet_buffer, pkt);
 
-    switch(st->codec->codec_type){
-    case CODEC_TYPE_VIDEO:
-        if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
-        break;
-    case CODEC_TYPE_AUDIO:
-        if(s->audio_codec_id)   st->codec->codec_id= s->audio_codec_id;
-        break;
-    case CODEC_TYPE_SUBTITLE:
-        if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
-        break;
-    }
+        switch(st->codec->codec_type){
+        case CODEC_TYPE_VIDEO:
+            if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
+            break;
+        case CODEC_TYPE_AUDIO:
+            if(s->audio_codec_id)   st->codec->codec_id= s->audio_codec_id;
+            break;
+        case CODEC_TYPE_SUBTITLE:
+            if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
+            break;
+        }
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
