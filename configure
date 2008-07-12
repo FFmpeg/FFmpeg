@@ -831,7 +831,7 @@ ssse3_deps="x86"
 vis_deps="sparc"
 
 # decoders / encoders
-ac3_decoder_deps="gpl"
+ac3_decoder_deps="gpl !liba52"
 dxa_decoder_deps="zlib"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
@@ -849,7 +849,7 @@ libamr_nb_decoder_deps="libamr_nb"
 libamr_nb_encoder_deps="libamr_nb"
 libamr_wb_decoder_deps="libamr_wb"
 libamr_wb_encoder_deps="libamr_wb"
-libdirac_decoder_deps="libdirac"
+libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
 libfaac_encoder_deps="libfaac"
 libfaad_decoder_deps="libfaad"
@@ -1687,12 +1687,6 @@ enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lv
 enabled libx264    && require  x264 x264.h x264_encoder_open -lx264 -lm
 enabled libxvid    && require  Xvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
-
-# disable the native AC-3 decoder if liba52 is enabled
-enabled liba52 && disable ac3_decoder
-
-# disable the slower libdirac decoder if libschroedinger is enabled
-enabled libschroedinger && enabled libdirac && disable libdirac_decoder
 
 # libdc1394 check
 if enabled libdc1394; then
