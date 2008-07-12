@@ -1686,6 +1686,10 @@ static int av_encode(AVFormatContext **output_files,
                 codec->time_base = ist->st->time_base;
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
+                if(audio_volume != 256) {
+                    fprintf(stderr,"-acodec copy and -vol are incompatible (frames are not decoded)\n");
+                    av_exit(1);
+                }
                 codec->sample_rate = icodec->sample_rate;
                 codec->channels = icodec->channels;
                 codec->frame_size = icodec->frame_size;
