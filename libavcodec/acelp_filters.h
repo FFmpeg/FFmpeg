@@ -90,7 +90,7 @@ extern const int16_t ff_acelp_interp_filter[61];
  *
  * filter_coeffs contains coefficients of the positive half of the symmetric
  * interpolation filter. filter_coeffs[0] should the central (unpaired) coefficient.
- * See ff_acelp_interp_filter fot example.
+ * See ff_acelp_interp_filter for an example.
  *
  */
 void ff_acelp_interpolate(
