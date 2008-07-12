@@ -37,7 +37,7 @@
  * \param lsfq_max maximum allowed LSF value
  * \param lp_order LP filter order
  */
-void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsqf_min, int lsfq_max, int lp_order);
+void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, int lsfq_max, int lp_order);
 
 /**
  * \brief Convert LSF to LSP

@@ -66,7 +66,7 @@ extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
  * \note (EE) Reference G.729D code also uses gray decoding for each
  *            pulse index before looking up the value in the table.
  *
- * Used in G.729 @6.4k (with gray coding), AMD @5.9k (without gray coding)
+ * Used in G.729 @6.4k (with gray coding), AMR @5.9k (without gray coding)
  */
 extern const uint8_t ff_fc_2pulses_9bits_track1[16];
 extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
