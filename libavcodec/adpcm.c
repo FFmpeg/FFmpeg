@@ -85,7 +85,7 @@ static const int AdaptationTable[] = {
         768, 614, 512, 409, 307, 230, 230, 230
 };
 
-static const int8_t AdaptCoeff1[] = {
+static const uint8_t AdaptCoeff1[] = {
         64, 128, 0, 48, 60, 115, 98
 };
 
