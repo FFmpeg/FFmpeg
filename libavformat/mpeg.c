@@ -459,7 +459,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
             codec_id = CODEC_ID_CAVS;
         else
-            codec_id = CODEC_ID_MPEG2VIDEO;
+            codec_id = CODEC_ID_PROBE;
         type = CODEC_TYPE_VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
