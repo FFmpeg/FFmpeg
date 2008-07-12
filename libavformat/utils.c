@@ -303,6 +303,10 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
             st->codec->codec_id = CODEC_ID_MP3;
         else if (strncmp(fmt->name, "ac3", 3) == 0)
             st->codec->codec_id = CODEC_ID_AC3;
+        else if (!strcmp(fmt->name, "mpegvideo"))
+            st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
+        else if (!strcmp(fmt->name, "h264"))
+            st->codec->codec_id = CODEC_ID_H264;
     }
     return !!fmt;
 }
