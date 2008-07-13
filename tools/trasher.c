@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     count= atoi(argv[2]);
     maxburst= atoi(argv[3]);
 
-    srand (time (0));
+    srandom (time (0));
 
     fseek(f, 0, SEEK_END);
     length= ftell(f);
