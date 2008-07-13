@@ -166,7 +166,7 @@ static inline void asv1_put_level(PutBitContext *pb, int level){
     if(index <= 6) put_bits(pb, level_tab[index][1], level_tab[index][0]);
     else{
         put_bits(pb, level_tab[3][1], level_tab[3][0]);
-        put_bits(pb, 8, level&0xFF);
+        put_sbits(pb, 8, level);
     }
 }
 

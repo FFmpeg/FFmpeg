@@ -61,7 +61,7 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
 
     temp_ref= s->picture_number * (int64_t)30000 * s->avctx->time_base.num /
                          (1001 * (int64_t)s->avctx->time_base.den); //FIXME maybe this should use a timestamp
-    put_bits(&s->pb, 5, temp_ref & 0x1f); /* TemporalReference */
+    put_sbits(&s->pb, 5, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */
     put_bits(&s->pb, 1, 0); /* camera  off */
@@ -309,7 +309,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
                 put_bits(&s->pb, 6, run);
                 assert(slevel != 0);
                 assert(level <= 127);
-                put_bits(&s->pb, 8, slevel & 0xff);
+                put_sbits(&s->pb, 8, slevel);
             } else {
                 put_bits(&s->pb, 1, sign);
             }

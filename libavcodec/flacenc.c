@@ -1236,13 +1236,6 @@ static void channel_decorrelation(FlacEncodeContext *ctx)
     }
 }
 
-static void put_sbits(PutBitContext *pb, int bits, int32_t val)
-{
-    assert(bits >= 0 && bits <= 31);
-
-    put_bits(pb, bits, val & ((1<<bits)-1));
-}
-
 static void write_utf8(PutBitContext *pb, uint32_t val)
 {
     uint8_t tmp;

@@ -469,7 +469,7 @@ static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k, int lim
         }
         put_bits(pb, e, 1);
         if(k)
-            put_bits(pb, k, i&((1<<k)-1));
+            put_sbits(pb, k, i);
     }else{
         while(limit > 31) {
             put_bits(pb, 31, 0);

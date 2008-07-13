@@ -184,7 +184,7 @@ static void put_header(MpegEncContext *s, int header)
 {
     align_put_bits(&s->pb);
     put_bits(&s->pb, 16, header>>16);
-    put_bits(&s->pb, 16, header&0xFFFF);
+    put_sbits(&s->pb, 16, header);
 }
 
 /* put sequence header if needed */
@@ -206,8 +206,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
 
-            put_bits(&s->pb, 12, s->width  & 0xFFF);
-            put_bits(&s->pb, 12, s->height & 0xFFF);
+            put_sbits(&s->pb, 12, s->width );
+            put_sbits(&s->pb, 12, s->height);
 
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
@@ -242,9 +242,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 vbv_buffer_size = (( 20 * s->bit_rate) / (1151929 / 2)) * 8 * 1024;
             vbv_buffer_size= (vbv_buffer_size + 16383) / 16384;
 
-            put_bits(&s->pb, 18, v & 0x3FFFF);
+            put_sbits(&s->pb, 18, v);
             put_bits(&s->pb, 1, 1); /* marker */
-            put_bits(&s->pb, 10, vbv_buffer_size & 0x3FF);
+            put_sbits(&s->pb, 10, vbv_buffer_size);
 
             constraint_parameter_flag=
                 s->width <= 768 && s->height <= 576 &&
@@ -557,7 +557,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                     put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp][1], ff_mpeg12_mbPatTable[cbp][0]);
                 } else {
                     put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp>>2][1], ff_mpeg12_mbPatTable[cbp>>2][0]);
-                    put_bits(&s->pb, 2, cbp & 3);
+                    put_sbits(&s->pb, 2, cbp);
                 }
             }
             s->f_count++;
@@ -640,7 +640,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                     put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp][1], ff_mpeg12_mbPatTable[cbp][0]);
                 } else {
                     put_bits(&s->pb, ff_mpeg12_mbPatTable[cbp>>2][1], ff_mpeg12_mbPatTable[cbp>>2][0]);
-                    put_bits(&s->pb, 2, cbp & 3);
+                    put_sbits(&s->pb, 2, cbp);
                 }
             }
         }
@@ -908,16 +908,16 @@ static void mpeg1_encode_block(MpegEncContext *s,
                 put_bits(&s->pb, 6, run);
                 if(s->codec_id == CODEC_ID_MPEG1VIDEO){
                     if (alevel < 128) {
-                        put_bits(&s->pb, 8, level & 0xff);
+                        put_sbits(&s->pb, 8, level);
                     } else {
                         if (level < 0) {
                             put_bits(&s->pb, 16, 0x8001 + level + 255);
                         } else {
-                            put_bits(&s->pb, 16, level & 0xffff);
+                            put_sbits(&s->pb, 16, level);
                         }
                     }
                 }else{
-                    put_bits(&s->pb, 12, level & 0xfff);
+                    put_sbits(&s->pb, 12, level);
                 }
             }
             last_non_zero = i;

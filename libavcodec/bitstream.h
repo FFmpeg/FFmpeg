@@ -315,6 +315,13 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 }
 #endif
 
+static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
+{
+    assert(bits >= 0 && bits <= 31);
+
+    put_bits(pb, bits, val & ((1<<bits)-1));
+}
+
 
 static inline uint8_t* pbBufPtr(PutBitContext *s)
 {

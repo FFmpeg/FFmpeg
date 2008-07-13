@@ -369,7 +369,7 @@ void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
 
         put_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
 
-        put_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
+        put_sbits(&s->pb, nbits, mant);
     }
 }
 
@@ -421,7 +421,7 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
 
             put_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
 
-            put_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
+            put_sbits(&s->pb, nbits, mant);
             run = 0;
         }
     }

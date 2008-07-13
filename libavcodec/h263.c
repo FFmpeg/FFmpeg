@@ -249,7 +249,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 22, 0x20); /* PSC */
     temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->time_base.num / //FIXME use timestamp
                          (coded_frame_rate_base * (int64_t)s->avctx->time_base.den);
-    put_bits(&s->pb, 8, temp_ref & 0xff); /* TemporalReference */
+    put_sbits(&s->pb, 8, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 1);     /* marker */
     put_bits(&s->pb, 1, 0);     /* h263 id */
@@ -326,7 +326,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
                 put_bits(&s->pb, 1, best_clock_code);
                 put_bits(&s->pb, 7, best_divisor);
             }
-            put_bits(&s->pb, 2, (temp_ref>>8)&3);
+            put_sbits(&s->pb, 2, temp_ref>>8);
         }
 
         /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
@@ -2224,11 +2224,11 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                 assert(slevel != 0);
 
                 if(level < 128)
-                    put_bits(&s->pb, 8, slevel & 0xff);
+                    put_sbits(&s->pb, 8, slevel);
                 else{
                     put_bits(&s->pb, 8, 128);
-                    put_bits(&s->pb, 5, slevel & 0x1f);
-                    put_bits(&s->pb, 6, (slevel>>5)&0x3f);
+                    put_sbits(&s->pb, 5, slevel);
+                    put_sbits(&s->pb, 6, slevel>>5);
                 }
               }else{
                 if(level < 64) { // 7-bit level
@@ -2236,14 +2236,14 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                         put_bits(&s->pb, 1, last);
                         put_bits(&s->pb, 6, run);
 
-                        put_bits(&s->pb, 7, slevel & 0x7f);
+                        put_sbits(&s->pb, 7, slevel);
                     } else {
                         /* 11-bit level */
                         put_bits(&s->pb, 1, 1);
                         put_bits(&s->pb, 1, last);
                         put_bits(&s->pb, 6, run);
 
-                        put_bits(&s->pb, 11, slevel & 0x7ff);
+                        put_sbits(&s->pb, 11, slevel);
                     }
               }
             } else {
@@ -2804,7 +2804,7 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
                         put_bits(ac_pb, 1, last);
                         put_bits(ac_pb, 6, run);
                         put_bits(ac_pb, 1, 1);
-                        put_bits(ac_pb, 12, slevel & 0xfff);
+                        put_sbits(ac_pb, 12, slevel);
                         put_bits(ac_pb, 1, 1);
                     } else {
                         /* second escape */

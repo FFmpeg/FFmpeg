@@ -957,7 +957,7 @@ else
                             put_bits(&s->pb, s->esc3_level_length, level);
                         }else{
                             put_bits(&s->pb, 6, run);
-                            put_bits(&s->pb, 8, slevel & 0xff);
+                            put_sbits(&s->pb, 8, slevel);
                         }
                     } else {
                         /* second escape */
