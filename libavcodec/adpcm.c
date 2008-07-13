@@ -972,8 +972,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         for(i=0; i<avctx->channels; i++){
             cs = &(c->status[i]);
-            cs->predictor = *samples++ = (int16_t)(src[0] + (src[1]<<8));
-            src+=2;
+            cs->predictor = *samples++ = (int16_t)bytestream_get_le16(&src);
 
             cs->step_index = *src++;
             if (cs->step_index > 88){
@@ -996,13 +995,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         break;
     case CODEC_ID_ADPCM_4XM:
         cs = &(c->status[0]);
-        c->status[0].predictor= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        c->status[0].predictor= (int16_t)bytestream_get_le16(&src);
         if(st){
-            c->status[1].predictor= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+            c->status[1].predictor= (int16_t)bytestream_get_le16(&src);
         }
-        c->status[0].step_index= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        c->status[0].step_index= (int16_t)bytestream_get_le16(&src);
         if(st){
-            c->status[1].step_index= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+            c->status[1].step_index= (int16_t)bytestream_get_le16(&src);
         }
         if (cs->step_index < 0) cs->step_index = 0;
         if (cs->step_index > 88) cs->step_index = 88;
@@ -1030,25 +1029,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         block_predictor[1] = 0;
         if (st)
             block_predictor[1] = av_clip(*src++, 0, 7);
-        c->status[0].idelta = (int16_t)((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-        src+=2;
+        c->status[0].idelta = (int16_t)bytestream_get_le16(&src);
         if (st){
-            c->status[1].idelta = (int16_t)((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-            src+=2;
+            c->status[1].idelta = (int16_t)bytestream_get_le16(&src);
         }
         c->status[0].coeff1 = AdaptCoeff1[block_predictor[0]];
         c->status[0].coeff2 = AdaptCoeff2[block_predictor[0]];
         c->status[1].coeff1 = AdaptCoeff1[block_predictor[1]];
         c->status[1].coeff2 = AdaptCoeff2[block_predictor[1]];
 
-        c->status[0].sample1 = ((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-        src+=2;
-        if (st) c->status[1].sample1 = ((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-        if (st) src+=2;
-        c->status[0].sample2 = ((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-        src+=2;
-        if (st) c->status[1].sample2 = ((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
-        if (st) src+=2;
+        c->status[0].sample1 = bytestream_get_le16(&src);
+        if (st) c->status[1].sample1 = bytestream_get_le16(&src);
+        c->status[0].sample2 = bytestream_get_le16(&src);
+        if (st) c->status[1].sample2 = bytestream_get_le16(&src);
 
         *samples++ = c->status[0].sample2;
         if (st) *samples++ = c->status[1].sample2;
@@ -1064,14 +1057,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
-        c->status[0].predictor = (int16_t)(src[0] | (src[1] << 8));
-        c->status[0].step_index = src[2];
-        src += 4;
+        c->status[0].predictor  = (int16_t)bytestream_get_le16(&src);
+        c->status[0].step_index = *src++;
+        src++;
         *samples++ = c->status[0].predictor;
         if (st) {
-            c->status[1].predictor = (int16_t)(src[0] | (src[1] << 8));
-            c->status[1].step_index = src[2];
-            src += 4;
+            c->status[1].predictor  = (int16_t)bytestream_get_le16(&src);
+            c->status[1].step_index = *src++;
+            src++;
             *samples++ = c->status[1].predictor;
         }
         while (src < buf + buf_size) {
@@ -1099,8 +1092,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if(buf_size + 16 > (samples_end - samples)*3/8)
             return -1;
 
-        c->status[0].predictor = (int16_t)(src[10] | (src[11] << 8));
-        c->status[1].predictor = (int16_t)(src[12] | (src[13] << 8));
+        c->status[0].predictor  = (int16_t)AV_RL16(src + 10);
+        c->status[1].predictor  = (int16_t)AV_RL16(src + 12);
         c->status[0].step_index = src[14];
         c->status[1].step_index = src[15];
         /* sign extend the predictors */
@@ -1196,14 +1189,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             break;
         }
         src += 4;
-        current_left_sample = (int16_t)AV_RL16(src);
-        src += 2;
-        previous_left_sample = (int16_t)AV_RL16(src);
-        src += 2;
-        current_right_sample = (int16_t)AV_RL16(src);
-        src += 2;
-        previous_right_sample = (int16_t)AV_RL16(src);
-        src += 2;
+        current_left_sample   = (int16_t)bytestream_get_le16(&src);
+        previous_left_sample  = (int16_t)bytestream_get_le16(&src);
+        current_right_sample  = (int16_t)bytestream_get_le16(&src);
+        previous_right_sample = (int16_t)bytestream_get_le16(&src);
 
         for (count1 = 0; count1 < samples_in_chunk/28;count1++) {
             coeff1l = ea_adpcm_table[ *src >> 4       ];
