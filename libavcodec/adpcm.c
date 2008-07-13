@@ -604,15 +604,15 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             bytestream_put_le16(&dst, c->status[i].idelta);
         }
         for(i=0; i<avctx->channels; i++){
+            c->status[i].sample2= *samples++;
+        }
+        for(i=0; i<avctx->channels; i++){
             c->status[i].sample1= *samples++;
 
             bytestream_put_le16(&dst, c->status[i].sample1);
         }
-        for(i=0; i<avctx->channels; i++){
-            c->status[i].sample2= *samples++;
-
+        for(i=0; i<avctx->channels; i++)
             bytestream_put_le16(&dst, c->status[i].sample2);
-        }
 
         if(avctx->trellis > 0) {
             int n = avctx->block_align - 7*avctx->channels;
@@ -1050,10 +1050,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (st) c->status[1].sample2 = ((*src & 0xFF) | ((src[1] << 8) & 0xFF00));
         if (st) src+=2;
 
-        *samples++ = c->status[0].sample1;
-        if (st) *samples++ = c->status[1].sample1;
         *samples++ = c->status[0].sample2;
         if (st) *samples++ = c->status[1].sample2;
+        *samples++ = c->status[0].sample1;
+        if (st) *samples++ = c->status[1].sample1;
         for(;n>0;n--) {
             *samples++ = adpcm_ms_expand_nibble(&c->status[0 ], src[0] >> 4  );
             *samples++ = adpcm_ms_expand_nibble(&c->status[st], src[0] & 0x0F);

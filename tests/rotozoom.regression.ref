@@ -181,10 +181,10 @@ efdae2746040dbc27be402b149556f1e *./tests/data/a-adpcm_qt.aiff
 281184 ./tests/data/a-adpcm_qt.aiff
 5a2084ad27674d5cf3bc2945061e7910 *./tests/data/adpcm_ima_qt.rotozoom.out.wav
 stddev:915.35 PSNR:37.09 bytes:1056768
-628d4789cf9ee16a756ac54b7fd8650d *./tests/data/a-adpcm_ms.wav
+88a0c48c9bc6d50a84c408151c6a3d64 *./tests/data/a-adpcm_ms.wav
 267320 ./tests/data/a-adpcm_ms.wav
-91a84bb4f319a3a0bf0c0441b3d3a529 *./tests/data/adpcm_ms.rotozoom.out.wav
-stddev:1050.18 PSNR:35.89 bytes:1054720
+d5f98f5136040be42232a34df92d61f2 *./tests/data/adpcm_ms.rotozoom.out.wav
+stddev:1051.84 PSNR:35.88 bytes:1054720
 ab11d9151644cbff27827b7e89f37aa9 *./tests/data/a-adpcm_yam.wav
 264248 ./tests/data/a-adpcm_yam.wav
 e92cec8c07913ffb91ad2b11f79cdc00 *./tests/data/adpcm_yam.rotozoom.out.wav
