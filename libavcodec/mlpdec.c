@@ -1119,7 +1119,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                  && get_bits1(&gb) == 0);
 
         skip_bits(&gb, (-get_bits_count(&gb)) & 15);
-        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 48 &&
+        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 32 &&
             (show_bits_long(&gb, 32) == 0xd234d234 ||
              show_bits_long(&gb, 20) == 0xd234e)) {
             skip_bits(&gb, 18);
@@ -1133,7 +1133,8 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             } else
                 skip_bits(&gb, 13);
         }
-        if (substream_parity_present[substr]) {
+        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 16 &&
+            substream_parity_present[substr]) {
             uint8_t parity, checksum;
 
             parity = calculate_parity(buf, substream_data_len[substr] - 2);
