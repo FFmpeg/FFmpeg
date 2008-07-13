@@ -225,6 +225,20 @@ static inline av_const int16_t av_clip_int16(int a)
     else                    return a;
 }
 
+/**
+ * clip a float value into the amin-amax range
+ * @param a value to clip
+ * @param amin minimum value of the clip range
+ * @param amax maximum value of the clip range
+ * @return clipped value
+ */
+static inline av_const float av_clipf(float a, float amin, float amax)
+{
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
 /* math */
 int64_t av_const ff_gcd(int64_t a, int64_t b);
 

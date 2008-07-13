@@ -88,14 +88,8 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
 
     /* output */
     for (x=0; x < 5; x++) {
-        float f = glob->sb[4-x] + buffer[x];
-
-        if (f > 4095)
-            f = 4095;
-        else if (f < -4095)
-            f = -4095;
-
-        glob->output[glob->phase*5+x] = glob->sb[4-x] = f;
+        glob->output[glob->phase*5+x] = glob->sb[4-x] =
+            av_clipf(glob->sb[4-x] + buffer[x], -4095, 4095);
     }
 }
 
