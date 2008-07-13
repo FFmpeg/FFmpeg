@@ -1025,10 +1025,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         n = buf_size - 7 * avctx->channels;
         if (n < 0)
             return -1;
-        block_predictor[0] = av_clip(*src++, 0, 7);
+        block_predictor[0] = av_clip(*src++, 0, 6);
         block_predictor[1] = 0;
         if (st)
-            block_predictor[1] = av_clip(*src++, 0, 7);
+            block_predictor[1] = av_clip(*src++, 0, 6);
         c->status[0].idelta = (int16_t)bytestream_get_le16(&src);
         if (st){
             c->status[1].idelta = (int16_t)bytestream_get_le16(&src);
