@@ -126,6 +126,7 @@ version <next>
 - Electronic Arts CMV decoder
 - Motion Pixels Video decoder
 - Motion Pixels MVI demuxer
+- removed GIF decoder/demuxer
 
 version 0.4.9-pre1:
 
