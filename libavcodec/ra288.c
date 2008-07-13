@@ -51,8 +51,8 @@ static inline float scalar_product_float(float * v1, float * v2, int size)
 static void decode(Real288_internal *glob, float gain, int cb_coef)
 {
     int x, y;
-    double sum, sumsum;
-    float buffer[5];
+    double sumsum;
+    float sum, buffer[5];
 
     memmove(glob->sb + 5, glob->sb, 36 * sizeof(*glob->sb));
 
