@@ -131,7 +131,7 @@ int ff_lzw_decode_init(LZWState *p, int csize, const uint8_t *buf, int buf_size,
 {
     struct LZWState *s = (struct LZWState *)p;
 
-    if(csize < 1 || csize > LZW_MAXBITS)
+    if(csize < 1 || csize >= LZW_MAXBITS)
         return -1;
     /* read buffer */
     s->pbuf = buf;
