@@ -82,7 +82,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (FLV, flv);
     REGISTER_DEMUXER  (FOURXM, fourxm);
     REGISTER_MUXER    (FRAMECRC, framecrc);
-    REGISTER_MUXDEMUX (GIF, gif);
+    REGISTER_MUXER    (GIF, gif);
     REGISTER_DEMUXER  (GSM, gsm);
     REGISTER_MUXDEMUX (GXF, gxf);
     REGISTER_MUXDEMUX (H261, h261);
