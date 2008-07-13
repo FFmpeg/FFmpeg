@@ -62,10 +62,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
     /* convert log and do rms */
     sum = 32. - scalar_product_float(glob->pr2, glob->lhist, 10);
 
-    if (sum < 0)
-        sum = 0;
-    else if (sum > 60)
-        sum = 60;
+    sum = av_clipf(sum, 0, 60);
 
     sumsum = exp(sum * 0.1151292546497) * gain;    /* pow(10.0,sum/20)*f */
 
