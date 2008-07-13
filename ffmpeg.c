@@ -85,6 +85,7 @@ static const OptionDef options[];
 
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];
+static double input_files_ts_scale[MAX_FILES][MAX_STREAMS];
 static int nb_input_files = 0;
 
 static AVFormatContext *output_files[MAX_FILES];
@@ -2053,6 +2054,13 @@ static int av_encode(AVFormatContext **output_files,
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts += av_rescale_q(input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q, ist->st->time_base);
 
+        if(input_files_ts_scale[file_index][pkt.stream_index]){
+            if(pkt.pts != AV_NOPTS_VALUE)
+                pkt.pts *= input_files_ts_scale[file_index][pkt.stream_index];
+            if(pkt.dts != AV_NOPTS_VALUE)
+                pkt.dts *= input_files_ts_scale[file_index][pkt.stream_index];
+        }
+
 //        fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n", ist->next_pts, pkt.dts, input_files_ts_offset[ist->file_index], ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE) {
             int64_t pkt_dts= av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
@@ -2644,6 +2652,23 @@ static void opt_map_meta_data(const char *arg)
         p++;
 
     m->in_file = strtol(p, &p, 0);
+}
+
+static void opt_input_ts_scale(const char *arg)
+{
+    unsigned int stream;
+    double scale;
+    char *p;
+
+    stream = strtol(arg, &p, 0);
+    if (*p)
+        p++;
+    scale= strtod(p, &p);
+
+    if(stream >= MAX_STREAMS)
+        av_exit(1);
+
+    input_files_ts_scale[nb_input_files][stream]= scale;
 }
 
 static int opt_recording_time(const char *opt, const char *arg)
@@ -3675,6 +3700,7 @@ static const OptionDef options[] = {
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", OPT_FUNC2 | HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
+    { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
     { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
