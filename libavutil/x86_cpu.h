@@ -68,6 +68,10 @@ typedef int32_t x86_reg;
 #    define HAVE_7REGS 1
 #endif
 
+#if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && (defined(HAVE_EBX_AVAILABLE) || defined(HAVE_EBP_AVAILABLE)))
+#    define HAVE_6REGS 1
+#endif
+
 #if defined(ARCH_X86_64) && defined(PIC)
 #    define BROKEN_RELOCATIONS 1
 #endif

@@ -2022,6 +2022,39 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
 }
 
+static void vector_fmul_window_sse(float *dst, const float *src0, const float *src1,
+                                   const float *win, float add_bias, int len){
+#ifdef HAVE_6REGS
+    if(add_bias == 0){
+        x86_reg i = -len*2;
+        x86_reg j = len*2-16;
+        asm volatile(
+            "1: \n"
+            "movaps       (%5,%0), %%xmm0 \n"
+            "movaps       (%5,%1), %%xmm1 \n"
+            "movaps        %%xmm0, %%xmm2 \n"
+            "movaps        %%xmm1, %%xmm3 \n"
+            "shufps $0x1b, %%xmm2, %%xmm2 \n"
+            "shufps $0x1b, %%xmm3, %%xmm3 \n"
+            "mulps        (%4,%0), %%xmm0 \n"
+            "mulps        (%4,%1), %%xmm1 \n"
+            "mulps        (%3,%0), %%xmm3 \n"
+            "mulps        (%3,%1), %%xmm2 \n"
+            "addps         %%xmm3, %%xmm0 \n"
+            "addps         %%xmm2, %%xmm1 \n"
+            "movaps        %%xmm0, (%2,%0) \n"
+            "movaps        %%xmm1, (%2,%1) \n"
+            "sub $16, %1 \n"
+            "add $16, %0 \n"
+            "jl 1b \n"
+            :"+r"(i), "+r"(j)
+            :"r"(dst+len/2), "r"(src0+len/2), "r"(src1+len/2), "r"(win+len/2)
+        );
+    }else
+#endif
+        ff_vector_fmul_window_c(dst, src0, src1, win, add_bias, len);
+}
+
 static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     // not bit-exact: pf2id uses different rounding than C and SSE
     asm volatile(
@@ -2082,6 +2115,87 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
         :"+r"(len), "+r"(dst), "+r"(src)
     );
 }
+
+#define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
+/* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
+static av_noinline void float_to_int16_interleave2_##cpu(int16_t *dst, const float *src, long len, int channels){\
+    DECLARE_ALIGNED_16(int16_t, tmp[len*channels]);\
+    int i,j,c;\
+    float_to_int16_##cpu(tmp, src, len*channels);\
+    for(c=0; c<channels; c++){\
+        int16_t *ptmp = tmp+c*len;\
+        for(i=0, j=c; i<len; i++, j+=channels)\
+            dst[j] = ptmp[i];\
+    }\
+}\
+\
+static void float_to_int16_interleave_##cpu(int16_t *dst, const float *src, long len, int channels){\
+    if(channels==1)\
+        float_to_int16_##cpu(dst, src, len);\
+    else if(channels>2)\
+        float_to_int16_interleave2_##cpu(dst, src, len, channels);\
+    else{\
+        float *src1;\
+        asm volatile(\
+            "shl $2, %0 \n"\
+            "add %0, %1 \n"\
+            "add %0, %2 \n"\
+            "lea (%2,%0), %3 \n"\
+            "neg %0 \n"\
+            body\
+            :"+r"(len), "+r"(dst), "+r"(src), "=r"(src1)\
+        );\
+    }\
+}
+
+FLOAT_TO_INT16_INTERLEAVE(3dnow,
+    "1:                         \n"
+    "pf2id     (%2,%0), %%mm0   \n"
+    "pf2id    8(%2,%0), %%mm1   \n"
+    "pf2id     (%3,%0), %%mm2   \n"
+    "pf2id    8(%3,%0), %%mm3   \n"
+    "packssdw    %%mm1, %%mm0   \n"
+    "packssdw    %%mm3, %%mm2   \n"
+    "movq        %%mm0, %%mm1   \n"
+    "punpcklwd   %%mm2, %%mm0   \n"
+    "punpckhwd   %%mm2, %%mm1   \n"
+    "movq        %%mm0,  (%1,%0)\n"
+    "movq        %%mm0, 8(%1,%0)\n"
+    "add $16, %0                \n"
+    "js 1b                      \n"
+    "femms                      \n"
+)
+
+FLOAT_TO_INT16_INTERLEAVE(sse,
+    "1:                         \n"
+    "cvtps2pi  (%2,%0), %%mm0   \n"
+    "cvtps2pi 8(%2,%0), %%mm1   \n"
+    "cvtps2pi  (%3,%0), %%mm2   \n"
+    "cvtps2pi 8(%3,%0), %%mm3   \n"
+    "packssdw    %%mm1, %%mm0   \n"
+    "packssdw    %%mm3, %%mm2   \n"
+    "movq        %%mm0, %%mm1   \n"
+    "punpcklwd   %%mm2, %%mm0   \n"
+    "punpckhwd   %%mm2, %%mm1   \n"
+    "movq        %%mm0,  (%1,%0)\n"
+    "movq        %%mm0, 8(%1,%0)\n"
+    "add $16, %0                \n"
+    "js 1b                      \n"
+    "emms                       \n"
+)
+
+FLOAT_TO_INT16_INTERLEAVE(sse2,
+    "1:                         \n"
+    "cvtps2dq  (%2,%0), %%xmm0  \n"
+    "cvtps2dq  (%3,%0), %%xmm1  \n"
+    "packssdw   %%xmm1, %%xmm0  \n"
+    "movhlps    %%xmm0, %%xmm1  \n"
+    "punpcklwd  %%xmm1, %%xmm0  \n"
+    "movdqa     %%xmm0, (%1,%0) \n"
+    "add $16, %0                \n"
+    "js 1b                      \n"
+)
+
 
 extern void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
 extern void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
@@ -2519,8 +2633,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(mm_flags & MM_3DNOW){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
             c->vector_fmul = vector_fmul_3dnow;
-            if(!(avctx->flags & CODEC_FLAG_BITEXACT))
+            if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16 = float_to_int16_3dnow;
+                c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
+            }
         }
         if(mm_flags & MM_3DNOWEXT)
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
@@ -2528,11 +2644,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->vector_fmul = vector_fmul_sse;
             c->float_to_int16 = float_to_int16_sse;
+            c->float_to_int16_interleave = float_to_int16_interleave_sse;
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
+            c->vector_fmul_window = vector_fmul_window_sse;
         }
         if(mm_flags & MM_SSE2){
             c->float_to_int16 = float_to_int16_sse2;
+            c->float_to_int16_interleave = float_to_int16_interleave_sse2;
         }
         if(mm_flags & MM_3DNOW)
             c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse

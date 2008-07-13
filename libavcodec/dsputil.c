@@ -3930,17 +3930,40 @@ void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1, 
         dst[i*step] = src0[i] * src1[i] + src2[i] + src3;
 }
 
+void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len){
+    int i;
+    for(i=0; i<len; i++)
+        dst[i] = src0[i]*win[len-i-1] + src1[i]*win[i] + add_bias;
+}
+
+static av_always_inline int float_to_int16_one(const float *src){
+    int_fast32_t tmp = *(const int32_t*)src;
+    if(tmp & 0xf0000){
+        tmp = (0x43c0ffff - tmp)>>31;
+        // is this faster on some gcc/cpu combinations?
+//      if(tmp > 0x43c0ffff) tmp = 0xFFFF;
+//      else                 tmp = 0;
+    }
+    return tmp - 0x8000;
+}
+
 void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
     int i;
-    for(i=0; i<len; i++) {
-        int_fast32_t tmp = ((const int32_t*)src)[i];
-        if(tmp & 0xf0000){
-            tmp = (0x43c0ffff - tmp)>>31;
-            // is this faster on some gcc/cpu combinations?
-//          if(tmp > 0x43c0ffff) tmp = 0xFFFF;
-//          else                 tmp = 0;
+    for(i=0; i<len; i++)
+        dst[i] = float_to_int16_one(src+i);
+}
+
+void ff_float_to_int16_interleave_c(int16_t *dst, const float *src, long len, int channels){
+    int i,j,c;
+    if(channels==2){
+        for(i=0; i<len; i++){
+            dst[2*i]   = float_to_int16_one(src+i);
+            dst[2*i+1] = float_to_int16_one(src+i+len);
         }
-        dst[i] = tmp - 0x8000;
+    }else{
+        for(c=0; c<channels; c++, src+=len)
+            for(i=0, j=c; i<len; i++, j+=channels)
+                dst[j] = float_to_int16_one(src+i);
     }
 }
 
@@ -4450,7 +4473,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add_add = ff_vector_fmul_add_add_c;
+    c->vector_fmul_window = ff_vector_fmul_window_c;
     c->float_to_int16 = ff_float_to_int16_c;
+    c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
     c->add_int16 = add_int16_c;
     c->sub_int16 = sub_int16_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
