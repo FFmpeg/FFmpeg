@@ -741,7 +741,7 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType codec_type)
         flags= AV_OPT_FLAG_SUBTITLE_PARAM;
     av_opt_set_defaults2(s, flags, flags);
 
-    s->rc_eq= "tex^qComp";
+    s->rc_eq= av_strdup("tex^qComp");
     s->time_base= (AVRational){0,1};
     s->get_buffer= avcodec_default_get_buffer;
     s->release_buffer= avcodec_default_release_buffer;
