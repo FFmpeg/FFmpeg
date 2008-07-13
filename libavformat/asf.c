@@ -49,7 +49,7 @@ static const GUID stream_bitrate_guid = { /* (http://get.to/sdp) */
 #ifdef DEBUG
 #define PRINT_IF_GUID(g,cmp) \
 if (!memcmp(g, &cmp, sizeof(GUID))) \
-    printf("(GUID: %s) ", #cmp)
+    dprintf(NULL, "(GUID: %s) ", #cmp)
 
 static void print_guid(const GUID *g)
 {
@@ -77,12 +77,14 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, metadata_header);
     else PRINT_IF_GUID(g, stream_bitrate_guid);
     else
-        printf("(GUID: unknown) ");
+        dprintf(NULL, "(GUID: unknown) ");
     for(i=0;i<16;i++)
-        printf(" 0x%02x,", (*g)[i]);
-    printf("}\n");
+        dprintf(NULL, " 0x%02x,", (*g)[i]);
+    dprintf(NULL, "}\n");
 }
 #undef PRINT_IF_GUID
+#else
+#define print_guid(g)
 #endif
 
 static void get_guid(ByteIOContext *s, GUID *g)
@@ -165,11 +167,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(;;) {
         get_guid(pb, &g);
         gsize = get_le64(pb);
-#ifdef DEBUG
-        printf("%08"PRIx64": ", url_ftell(pb) - 24);
+        dprintf(s, "%08"PRIx64": ", url_ftell(pb) - 24);
         print_guid(&g);
-        printf("  size=0x%"PRIx64"\n", gsize);
-#endif
+        dprintf(s, "  size=0x%"PRIx64"\n", gsize);
         if (!memcmp(&g, &data_header, sizeof(GUID))) {
             asf->data_object_offset = url_ftell(pb);
             // if not streaming, gsize is not unlimited (how?), and there is enough space in the file..
@@ -625,9 +625,7 @@ static int asf_get_packet(AVFormatContext *s)
     if (packet_length < asf->hdr.min_pktsize)
         padsize += asf->hdr.min_pktsize - packet_length;
     asf->packet_padsize = padsize;
-#ifdef DEBUG
-    printf("packet: size=%d padsize=%d  left=%d\n", asf->packet_size, asf->packet_padsize, asf->packet_size_left);
-#endif
+    dprintf(s, "packet: size=%d padsize=%d  left=%d\n", asf->packet_size, asf->packet_padsize, asf->packet_size_left);
     return 0;
 }
 
