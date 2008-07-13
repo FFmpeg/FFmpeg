@@ -49,7 +49,6 @@
 //#define A32_BITSTREAM_READER
 #   endif
 #endif
-#define LIBMPEG2_BITSTREAM_READER_HACK //add BERO
 
 extern const uint8_t ff_reverse[256];
 
@@ -484,25 +483,12 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         (gb)->cache= name##_cache;\
         (gb)->buffer_ptr= name##_buffer_ptr;\
 
-#ifdef LIBMPEG2_BITSTREAM_READER_HACK
-
 #   define UPDATE_CACHE(name, gb)\
     if(name##_bit_count >= 0){\
-        name##_cache+= (int)be2me_16(*(uint16_t*)name##_buffer_ptr) << name##_bit_count;\
-        name##_buffer_ptr += 2;\
-        name##_bit_count-= 16;\
-    }\
-
-#else
-
-#   define UPDATE_CACHE(name, gb)\
-    if(name##_bit_count >= 0){\
-        name##_cache+= ((name##_buffer_ptr[0]<<8) + name##_buffer_ptr[1]) << name##_bit_count;\
+        name##_cache+= AV_RB16(name##_buffer_ptr) << name##_bit_count; \
         name##_buffer_ptr+=2;\
         name##_bit_count-= 16;\
     }\
-
-#endif
 
 #   define SKIP_CACHE(name, gb, num)\
         name##_cache <<= (num);\
