@@ -3931,9 +3931,18 @@ void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1, 
 }
 
 void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = src0[i]*win[len-i-1] + src1[i]*win[i] + add_bias;
+    int i,j;
+    dst += len;
+    win += len;
+    src0+= len;
+    for(i=-len, j=len-1; i<0; i++, j--) {
+        float s0 = src0[i];
+        float s1 = src1[j];
+        float wi = win[i];
+        float wj = win[j];
+        dst[i] = s0*wj - s1*wi + add_bias;
+        dst[j] = s0*wi + s1*wj + add_bias;
+    }
 }
 
 static av_always_inline int float_to_int16_one(const float *src){

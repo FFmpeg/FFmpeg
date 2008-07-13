@@ -100,16 +100,9 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
     (pim) = _are * _bim + _aim * _bre;\
 }
 
-/**
- * Compute inverse MDCT of size N = 2^nbits
- * @param output N samples
- * @param input N/2 samples
- * @param tmp N/2 samples
- */
-void ff_imdct_calc(MDCTContext *s, FFTSample *output,
-                   const FFTSample *input, FFTSample *tmp)
+static void imdct_c(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
 {
-    int k, n8, n4, n2, n, j;
+    int k, n4, n2, n, j;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
@@ -119,7 +112,6 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
     n = 1 << s->nbits;
     n2 = n >> 1;
     n4 = n >> 2;
-    n8 = n >> 3;
 
     /* pre rotation */
     in1 = input;
@@ -137,6 +129,25 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
     for(k = 0; k < n4; k++) {
         CMUL(z[k].re, z[k].im, z[k].re, z[k].im, tcos[k], tsin[k]);
     }
+}
+
+/**
+ * Compute inverse MDCT of size N = 2^nbits
+ * @param output N samples
+ * @param input N/2 samples
+ * @param tmp N/2 samples
+ */
+void ff_imdct_calc(MDCTContext *s, FFTSample *output,
+                   const FFTSample *input, FFTSample *tmp)
+{
+    int k, n8, n2, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+    n = 1 << s->nbits;
+    n2 = n >> 1;
+    n8 = n >> 3;
+
+    imdct_c(s, input, tmp);
+
     for(k = 0; k < n8; k++) {
         output[2*k] = -z[n8 + k].im;
         output[n2-1-2*k] = z[n8 + k].im;
@@ -149,6 +160,32 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
 
         output[n2 + 2*k+1]=z[n8-k-1].im;
         output[n-2 - 2 * k] = z[n8-k-1].im;
+    }
+}
+
+/**
+ * Compute the middle half of the inverse MDCT of size N = 2^nbits,
+ * thus excluding the parts that can be derived by symmetry
+ * @param output N/2 samples
+ * @param input N/2 samples
+ * @param tmp N/2 samples
+ */
+void ff_imdct_half(MDCTContext *s, FFTSample *output,
+                   const FFTSample *input, FFTSample *tmp)
+{
+    int k, n8, n4, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+    n = 1 << s->nbits;
+    n4 = n >> 2;
+    n8 = n >> 3;
+
+    imdct_c(s, input, tmp);
+
+    for(k = 0; k < n8; k++) {
+        output[n4-1-2*k]   =  z[n8+k].im;
+        output[n4-1-2*k-1] = -z[n8-k-1].re;
+        output[n4 + 2*k]   = -z[n8+k].re;
+        output[n4 + 2*k+1] =  z[n8-k-1].im;
     }
 }
 

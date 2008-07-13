@@ -2022,33 +2022,71 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
 }
 
+static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float *src1,
+                                      const float *win, float add_bias, int len){
+#ifdef HAVE_6REGS
+    if(add_bias == 0){
+        x86_reg i = -len*4;
+        x86_reg j = len*4-8;
+        asm volatile(
+            "1: \n"
+            "pswapd  (%5,%1), %%mm1 \n"
+            "movq    (%5,%0), %%mm0 \n"
+            "pswapd  (%4,%1), %%mm5 \n"
+            "movq    (%3,%0), %%mm4 \n"
+            "movq      %%mm0, %%mm2 \n"
+            "movq      %%mm1, %%mm3 \n"
+            "pfmul     %%mm4, %%mm2 \n" // src0[len+i]*win[len+i]
+            "pfmul     %%mm5, %%mm3 \n" // src1[    j]*win[len+j]
+            "pfmul     %%mm4, %%mm1 \n" // src0[len+i]*win[len+j]
+            "pfmul     %%mm5, %%mm0 \n" // src1[    j]*win[len+i]
+            "pfadd     %%mm3, %%mm2 \n"
+            "pfsub     %%mm0, %%mm1 \n"
+            "pswapd    %%mm2, %%mm2 \n"
+            "movq      %%mm1, (%2,%0) \n"
+            "movq      %%mm2, (%2,%1) \n"
+            "sub $8, %1 \n"
+            "add $8, %0 \n"
+            "jl 1b \n"
+            "femms \n"
+            :"+r"(i), "+r"(j)
+            :"r"(dst+len), "r"(src0+len), "r"(src1), "r"(win+len)
+        );
+    }else
+#endif
+        ff_vector_fmul_window_c(dst, src0, src1, win, add_bias, len);
+}
+
 static void vector_fmul_window_sse(float *dst, const float *src0, const float *src1,
                                    const float *win, float add_bias, int len){
 #ifdef HAVE_6REGS
     if(add_bias == 0){
-        x86_reg i = -len*2;
-        x86_reg j = len*2-16;
+        x86_reg i = -len*4;
+        x86_reg j = len*4-16;
         asm volatile(
             "1: \n"
-            "movaps       (%5,%0), %%xmm0 \n"
             "movaps       (%5,%1), %%xmm1 \n"
+            "movaps       (%5,%0), %%xmm0 \n"
+            "movaps       (%4,%1), %%xmm5 \n"
+            "movaps       (%3,%0), %%xmm4 \n"
+            "shufps $0x1b, %%xmm1, %%xmm1 \n"
+            "shufps $0x1b, %%xmm5, %%xmm5 \n"
             "movaps        %%xmm0, %%xmm2 \n"
             "movaps        %%xmm1, %%xmm3 \n"
+            "mulps         %%xmm4, %%xmm2 \n" // src0[len+i]*win[len+i]
+            "mulps         %%xmm5, %%xmm3 \n" // src1[    j]*win[len+j]
+            "mulps         %%xmm4, %%xmm1 \n" // src0[len+i]*win[len+j]
+            "mulps         %%xmm5, %%xmm0 \n" // src1[    j]*win[len+i]
+            "addps         %%xmm3, %%xmm2 \n"
+            "subps         %%xmm0, %%xmm1 \n"
             "shufps $0x1b, %%xmm2, %%xmm2 \n"
-            "shufps $0x1b, %%xmm3, %%xmm3 \n"
-            "mulps        (%4,%0), %%xmm0 \n"
-            "mulps        (%4,%1), %%xmm1 \n"
-            "mulps        (%3,%0), %%xmm3 \n"
-            "mulps        (%3,%1), %%xmm2 \n"
-            "addps         %%xmm3, %%xmm0 \n"
-            "addps         %%xmm2, %%xmm1 \n"
-            "movaps        %%xmm0, (%2,%0) \n"
-            "movaps        %%xmm1, (%2,%1) \n"
+            "movaps        %%xmm1, (%2,%0) \n"
+            "movaps        %%xmm2, (%2,%1) \n"
             "sub $16, %1 \n"
             "add $16, %0 \n"
             "jl 1b \n"
             :"+r"(i), "+r"(j)
-            :"r"(dst+len/2), "r"(src0+len/2), "r"(src1+len/2), "r"(win+len/2)
+            :"r"(dst+len), "r"(src0+len), "r"(src1), "r"(win+len)
         );
     }else
 #endif
@@ -2638,8 +2676,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
             }
         }
-        if(mm_flags & MM_3DNOWEXT)
+        if(mm_flags & MM_3DNOWEXT){
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
+            c->vector_fmul_window = vector_fmul_window_3dnow2;
+        }
         if(mm_flags & MM_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->vector_fmul = vector_fmul_sse;

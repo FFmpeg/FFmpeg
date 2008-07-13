@@ -59,6 +59,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     }
     s->fft_calc = ff_fft_calc_c;
     s->imdct_calc = ff_imdct_calc;
+    s->imdct_half = ff_imdct_half;
     s->exptab1 = NULL;
 
 #ifdef HAVE_MMX
@@ -67,6 +68,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (has_vectors & MM_3DNOWEXT) {
         /* 3DNowEx for K7/K8 */
         s->imdct_calc = ff_imdct_calc_3dn2;
+        s->imdct_half = ff_imdct_half_3dn2;
         s->fft_calc = ff_fft_calc_3dn2;
     } else if (has_vectors & MM_3DNOW) {
         /* 3DNow! for K6-2/3 */
@@ -74,6 +76,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     } else if (has_vectors & MM_SSE) {
         /* SSE for P3/P4 */
         s->imdct_calc = ff_imdct_calc_sse;
+        s->imdct_half = ff_imdct_half_sse;
         s->fft_calc = ff_fft_calc_sse;
     } else {
         shuffle = 0;

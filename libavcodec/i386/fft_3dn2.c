@@ -124,10 +124,9 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
     asm volatile("femms");
 }
 
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
-                        const FFTSample *input, FFTSample *tmp)
+static void imdct_3dn2(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
 {
-    long n8, n4, n2, n;
+    long n4, n2, n;
     x86_reg k;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
@@ -138,7 +137,6 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
     n = 1 << s->nbits;
     n2 = n >> 1;
     n4 = n >> 2;
-    n8 = n >> 3;
 
     /* pre rotation */
     in1 = input;
@@ -182,6 +180,20 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
             :"m"(tcos[k]), "m"(tsin[k])
         );
     }
+}
+
+void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
+                        const FFTSample *input, FFTSample *tmp)
+{
+    x86_reg k;
+    long n8, n2, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+
+    n = 1 << s->nbits;
+    n2 = n >> 1;
+    n8 = n >> 3;
+
+    imdct_3dn2(s, input, tmp);
 
     k = n-8;
     asm volatile("movd %0, %%mm7" ::"r"(1<<31));
@@ -207,6 +219,43 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
         "jge 1b \n\t"
         :"+r"(k)
         :"r"(output), "r"(output+n2), "r"(output+n), "r"(z+n8)
+        :"memory"
+    );
+    asm volatile("femms");
+}
+
+void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output,
+                        const FFTSample *input, FFTSample *tmp)
+{
+    x86_reg j, k;
+    long n8, n4, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+
+    n = 1 << s->nbits;
+    n4 = n >> 2;
+    n8 = n >> 3;
+
+    imdct_3dn2(s, input, tmp);
+
+    j = -n;
+    k = n-8;
+    asm volatile("movd %0, %%mm7" ::"r"(1<<31));
+    asm volatile(
+        "1: \n\t"
+        "movq    (%3,%1), %%mm0 \n\t" // z[n8+k]
+        "pswapd  (%3,%0), %%mm1 \n\t" // z[n8-1-k]
+        "movq      %%mm0, %%mm2 \n\t"
+        "punpckldq %%mm1, %%mm0 \n\t"
+        "punpckhdq %%mm2, %%mm1 \n\t"
+        "pxor      %%mm7, %%mm0 \n\t"
+        "pxor      %%mm7, %%mm1 \n\t"
+        "movq      %%mm0, (%2,%1) \n\t" // output[n4+2*k]   = { -z[n8+k].re, z[n8-1-k].im }
+        "movq      %%mm1, (%2,%0) \n\t" // output[n4-2-2*k] = { -z[n8-1-k].re, z[n8+k].im }
+        "sub $8, %1 \n\t"
+        "add $8, %0 \n\t"
+        "jl 1b \n\t"
+        :"+r"(j), "+r"(k)
+        :"r"(output+n4), "r"(z+n8)
         :"memory"
     );
     asm volatile("femms");

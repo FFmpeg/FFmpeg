@@ -899,10 +899,10 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
 
     vc->channel_residues= av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->channel_floors  = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->saved           = av_mallocz((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->saved           = av_mallocz((vc->blocksize[1]/4)*vc->audio_channels * sizeof(float));
     vc->ret             = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->buf             = av_malloc( vc->blocksize[1]                       * sizeof(float));
-    vc->buf_tmp         = av_malloc( vc->blocksize[1]                       * sizeof(float));
+    vc->buf             = av_malloc( vc->blocksize[1]/2                     * sizeof(float));
+    vc->buf_tmp         = av_malloc( vc->blocksize[1]/2                     * sizeof(float));
     vc->previous_window=0;
 
     ff_mdct_init(&vc->mdct[0], bl0, 1);
@@ -1520,23 +1520,23 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     for(j=0;j<vc->audio_channels;++j) {
         uint_fast16_t bs0=vc->blocksize[0];
         uint_fast16_t bs1=vc->blocksize[1];
-        float *saved=vc->saved+j*bs1/2;
+        float *saved=vc->saved+j*bs1/4;
         float *ret=vc->ret+j*retlen;
         float *buf=vc->buf;
         const float *win=vc->win[blockflag&previous_window];
 
-        vc->mdct[0].fft.imdct_calc(&vc->mdct[blockflag], buf, vc->channel_floors+j*blocksize/2, vc->buf_tmp);
+        vc->mdct[0].fft.imdct_half(&vc->mdct[blockflag], buf, vc->channel_floors+j*blocksize/2, vc->buf_tmp);
 
         if(blockflag == previous_window) {
-            vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, blocksize/2);
+            vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, blocksize/4);
         } else if(blockflag > previous_window) {
-            vc->dsp.vector_fmul_window(ret, saved, buf+(bs1-bs0)/4, win, fadd_bias, bs0/2);
-            copy_normalize(ret+bs0/2, buf+(bs1+bs0)/4, (bs1-bs0)/4, vc->exp_bias, fadd_bias);
+            vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, bs0/4);
+            copy_normalize(ret+bs0/2, buf+bs0/4, (bs1-bs0)/4, vc->exp_bias, fadd_bias);
         } else {
             copy_normalize(ret, saved, (bs1-bs0)/4, vc->exp_bias, fadd_bias);
-            vc->dsp.vector_fmul_window(ret+(bs1-bs0)/4, saved+(bs1-bs0)/4, buf, win, fadd_bias, bs0/2);
+            vc->dsp.vector_fmul_window(ret+(bs1-bs0)/4, saved+(bs1-bs0)/4, buf, win, fadd_bias, bs0/4);
         }
-        memcpy(saved, buf+blocksize/2, blocksize/2*sizeof(float));
+        memcpy(saved, buf+blocksize/4, blocksize/4*sizeof(float));
     }
 
     vc->previous_window = blockflag;

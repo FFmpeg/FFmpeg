@@ -142,11 +142,10 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
     } while (nblocks != 0);
 }
 
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp)
+static void imdct_sse(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
 {
     x86_reg k;
-    long n8, n4, n2, n;
+    long n4, n2, n;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
@@ -156,7 +155,6 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
     n = 1 << s->nbits;
     n2 = n >> 1;
     n4 = n >> 2;
-    n8 = n >> 3;
 
 #ifdef ARCH_X86_64
     asm volatile ("movaps %0, %%xmm8\n\t"::"m"(*p1m1p1m1));
@@ -260,6 +258,20 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
 #endif
         );
     }
+}
+
+void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
+                       const FFTSample *input, FFTSample *tmp)
+{
+    x86_reg k;
+    long n8, n2, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+
+    n = 1 << s->nbits;
+    n2 = n >> 1;
+    n8 = n >> 3;
+
+    imdct_sse(s, input, tmp);
 
     /*
        Mnemonics:
@@ -297,6 +309,44 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
         "jle 1b \n\t"
         :"+r"(k)
         :"r"(output), "r"(output+n2), "r"(output+n), "r"(z+n8)
+        :"memory"
+    );
+}
+
+void ff_imdct_half_sse(MDCTContext *s, FFTSample *output,
+                       const FFTSample *input, FFTSample *tmp)
+{
+    x86_reg j, k;
+    long n8, n4, n;
+    FFTComplex *z = (FFTComplex *)tmp;
+
+    n = 1 << s->nbits;
+    n4 = n >> 2;
+    n8 = n >> 3;
+
+    imdct_sse(s, input, tmp);
+
+    j = -n;
+    k = n-16;
+    asm volatile("movaps %0, %%xmm7 \n\t"::"m"(*m1m1m1m1));
+    asm volatile(
+        "1: \n\t"
+        "movaps     (%3,%1), %%xmm0 \n\t"
+        "movaps     (%3,%0), %%xmm1 \n\t"
+        "xorps       %%xmm7, %%xmm0 \n\t"
+        "movaps      %%xmm0, %%xmm2 \n\t"
+        "shufps $141,%%xmm1, %%xmm0 \n\t"
+        "shufps $216,%%xmm1, %%xmm2 \n\t"
+        "shufps $54, %%xmm0, %%xmm0 \n\t"
+        "shufps $156,%%xmm2, %%xmm2 \n\t"
+        "xorps       %%xmm7, %%xmm0 \n\t"
+        "movaps      %%xmm2, (%2,%1) \n\t"
+        "movaps      %%xmm0, (%2,%0) \n\t"
+        "sub $16, %1 \n\t"
+        "add $16, %0 \n\t"
+        "jl 1b \n\t"
+        :"+r"(j), "+r"(k)
+        :"r"(output+n4), "r"(z+n8)
         :"memory"
     );
 }
