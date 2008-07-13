@@ -69,9 +69,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
     for (x=0; x < 5; x++)
         buffer[x] = codetable[cb_coef][x] * sumsum;
 
-    sum = scalar_product_float(buffer, buffer, 5) / 5;
-
-    sum = FFMAX(sum, 1);
+    sum = FFMAX(1, scalar_product_float(buffer, buffer, 5) / 5);
 
     /* shift and store */
     memmove(glob->lhist, glob->lhist - 1, 10 * sizeof(*glob->lhist));
