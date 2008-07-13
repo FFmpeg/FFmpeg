@@ -61,6 +61,14 @@ static av_always_inline int MULH(int a, int b){
 #   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
 #endif
 
+#ifndef MAC64
+#   define MAC64(d, a, b) ((d) += MUL64(a, b))
+#endif
+
+#ifndef MLS64
+#   define MLS64(d, a, b) ((d) -= MUL64(a, b))
+#endif
+
 /* signed 16x16 -> 32 multiply add accumulate */
 #ifndef MAC16
 #   define MAC16(rt, ra, rb) rt += (ra) * (rb)
@@ -69,6 +77,10 @@ static av_always_inline int MULH(int a, int b){
 /* signed 16x16 -> 32 multiply */
 #ifndef MUL16
 #   define MUL16(ra, rb) ((ra) * (rb))
+#endif
+
+#ifndef MLS16
+#   define MLS16(rt, ra, rb) ((rt) -= (ra) * (rb))
 #endif
 
 #endif /* FFMPEG_MATHOPS_H */
