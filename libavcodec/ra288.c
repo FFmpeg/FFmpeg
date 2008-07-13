@@ -74,8 +74,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
 
     sum = scalar_product_float(buffer, buffer, 5) / 5;
 
-    if (sum < 1)
-        sum = 1;
+    sum = FFMAX(sum, 1);
 
     /* shift and store */
     memmove(glob->lhist, glob->lhist - 1, 10 * sizeof(*glob->lhist));
