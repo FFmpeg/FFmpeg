@@ -173,7 +173,7 @@ static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 static int subtitle_stream_copy = 0;
-static int video_sync_method= 1;
+static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
@@ -797,7 +797,7 @@ static void do_video_out(AVFormatContext *s,
 
     *frame_size = 0;
 
-    if(video_sync_method){
+    if(video_sync_method>0 || (video_sync_method && av_q2d(enc->time_base) > 0.001)){
         double vdelta;
         vdelta = get_sync_ipts(ost) / av_q2d(enc->time_base) - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
