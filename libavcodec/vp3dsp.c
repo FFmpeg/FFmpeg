@@ -190,7 +190,7 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
                 dst[4*stride]=
                 dst[5*stride]=
                 dst[6*stride]=
-                dst[7*stride]= 128 + ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
+                dst[7*stride]= cm[128 + ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20)];
             }else{
                 if(ip[0*8]){
                     int v= ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
