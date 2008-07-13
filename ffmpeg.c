@@ -1139,7 +1139,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
     len = pkt->size;
     ptr = pkt->data;
-    while (len > 0) {
+
+    //while we have more to decode or while the decoder did output something on EOF
+    while (len > 0 || (!pkt && ist->next_pts != ist->pts)) {
     handle_eof:
         ist->pts= ist->next_pts;
 
