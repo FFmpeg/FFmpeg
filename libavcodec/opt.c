@@ -196,7 +196,7 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
     }
 
     if(alloc){
-        av_free((void*)(((uint8_t*)obj) + o->offset));
+        av_free(*(void**)(((uint8_t*)obj) + o->offset));
         val= av_strdup(val);
     }
 
