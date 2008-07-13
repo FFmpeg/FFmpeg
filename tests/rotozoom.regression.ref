@@ -195,8 +195,8 @@ e48b800e2d9be6afcd430d4f08a34eb6 *./tests/data/adpcm_swf.rotozoom.out.wav
 stddev:934.30 PSNR:36.91 bytes:1056768
 c3382f03ce2efb5d475240d288a33898 *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
-c4228df189aad9567a037727d0e763e4 *./tests/data/flac.rotozoom.out.wav
-stddev: 33.31 PSNR:65.87 bytes:1040384
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.rotozoom.out.wav
+stddev:  0.00 PSNR:99.99 bytes:1056768
 4435d87463cd6c5407bd88cca241ca56 *./tests/data/a-wmav1.asf
 106004 ./tests/data/a-wmav1.asf
 stddev:12251.50 PSNR:14.56 bytes:1056768

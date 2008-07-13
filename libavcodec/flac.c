@@ -624,7 +624,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
             buf_size += s->bitstream_size;
             s->bitstream_size= buf_size;
 
-            if(buf_size < s->max_framesize){
+            if(buf_size < s->max_framesize && input_buf_size){
 //                printf("wanna more data ...\n");
                 return input_buf_size;
             }
@@ -773,6 +773,7 @@ AVCodec flac_decoder = {
     NULL,
     flac_decode_close,
     flac_decode_frame,
+    CODEC_CAP_DELAY,
     .flush= flac_flush,
     .long_name= NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };
