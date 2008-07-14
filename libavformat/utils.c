@@ -563,11 +563,6 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         st= s->streams[pkt->stream_index];
 
-        if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
-            return ret;
-
-        add_to_pktbuf(&s->raw_packet_buffer, pkt);
-
         switch(st->codec->codec_type){
         case CODEC_TYPE_VIDEO:
             if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
@@ -579,6 +574,11 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
             break;
         }
+
+        if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
+            return ret;
+
+        add_to_pktbuf(&s->raw_packet_buffer, pkt);
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
