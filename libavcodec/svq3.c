@@ -835,6 +835,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   if (buf_size == 0) {
     if (s->next_picture_ptr && !s->low_delay) {
       *(AVFrame *) data = *(AVFrame *) &s->next_picture;
+      s->next_picture_ptr= NULL;
       *data_size = sizeof(AVFrame);
     }
     return 0;
