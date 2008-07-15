@@ -526,8 +526,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     capabilities = 0;
     s->fd = device_open(s1, &capabilities);
     if (s->fd < 0) {
-        av_free(st);
-
         return AVERROR(EIO);
     }
     av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
@@ -553,7 +551,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format.\n");
         close(s->fd);
-        av_free(st);
 
         return AVERROR(EIO);
     }
@@ -576,7 +573,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     if (res < 0) {
         close(s->fd);
-        av_free(st);
 
         return AVERROR(EIO);
     }
