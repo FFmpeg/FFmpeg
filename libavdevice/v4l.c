@@ -258,7 +258,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
  fail:
     if (video_fd >= 0)
         close(video_fd);
-    av_free(st);
     return AVERROR(EIO);
 }
 
