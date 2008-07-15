@@ -40,6 +40,8 @@ static av_always_inline av_const uint16_t bswap_16(uint16_t x)
     asm("rorw $8, %0" : "+r"(x));
 #elif defined(ARCH_SH4)
     asm("swap.b %0,%0" : "=r"(x) : "0"(x));
+#elif defined(HAVE_ARMV6)
+    asm("rev16 %0, %0" : "+r"(x));
 #else
     x= (x>>8) | (x<<8);
 #endif
@@ -62,6 +64,8 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
         "swap.w %0,%0\n"
         "swap.b %0,%0\n"
         : "=r"(x) : "0"(x));
+#elif defined(HAVE_ARMV6)
+    asm("rev %0, %0" : "+r"(x));
 #elif defined(ARCH_ARM)
     uint32_t t;
     asm ("eor %1, %0, %0, ror #16 \n\t"
