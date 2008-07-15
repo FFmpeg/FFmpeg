@@ -153,9 +153,6 @@ typedef struct vorbis_context_s {
     float *channel_residues;
     float *channel_floors;
     float *saved;
-    float *ret;
-    float *buf;
-    float *buf_tmp;
     uint_fast32_t add_bias; // for float->int conversion
     uint_fast32_t exp_bias;
 } vorbis_context;
@@ -181,9 +178,6 @@ static void vorbis_free(vorbis_context *vc) {
     av_freep(&vc->channel_residues);
     av_freep(&vc->channel_floors);
     av_freep(&vc->saved);
-    av_freep(&vc->ret);
-    av_freep(&vc->buf);
-    av_freep(&vc->buf_tmp);
 
     av_freep(&vc->residues);
     av_freep(&vc->modes);
@@ -900,9 +894,6 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->channel_residues= av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->channel_floors  = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
     vc->saved           = av_mallocz((vc->blocksize[1]/4)*vc->audio_channels * sizeof(float));
-    vc->ret             = av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
-    vc->buf             = av_malloc( vc->blocksize[1]/2                     * sizeof(float));
-    vc->buf_tmp         = av_malloc( vc->blocksize[1]/2                     * sizeof(float));
     vc->previous_window=0;
 
     ff_mdct_init(&vc->mdct[0], bl0, 1);
@@ -1423,7 +1414,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     uint_fast8_t mode_number;
     uint_fast8_t blockflag;
     uint_fast16_t blocksize;
-    int_fast32_t i,j;
+    int_fast32_t i,j,dir;
     uint_fast8_t no_residue[vc->audio_channels];
     uint_fast8_t do_not_decode[vc->audio_channels];
     vorbis_mapping *mapping;
@@ -1525,15 +1516,18 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 // MDCT, overlap/add, save data for next overlapping  FPMATH
 
     retlen = (blocksize + vc->blocksize[previous_window])/4;
-    for(j=0;j<vc->audio_channels;++j) {
+    dir = retlen <= blocksize/2; // pick an order so that ret[] can reuse residues[] without stepping on any data we need
+    for(j=dir?0:vc->audio_channels-1; (unsigned)j<vc->audio_channels; j+=dir*2-1) {
         uint_fast16_t bs0=vc->blocksize[0];
         uint_fast16_t bs1=vc->blocksize[1];
+        float *residue=vc->channel_residues+res_chan[j]*blocksize/2;
+        float *floor=vc->channel_floors+j*blocksize/2;
         float *saved=vc->saved+j*bs1/4;
-        float *ret=vc->ret+j*retlen;
-        float *buf=vc->buf;
+        float *ret=vc->channel_residues+j*retlen;
+        float *buf=floor;
         const float *win=vc->win[blockflag&previous_window];
 
-        vc->mdct[0].fft.imdct_half(&vc->mdct[blockflag], buf, vc->channel_floors+j*blocksize/2, vc->buf_tmp);
+        vc->mdct[0].fft.imdct_half(&vc->mdct[blockflag], buf, floor, residue);
 
         if(blockflag == previous_window) {
             vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, blocksize/4);
@@ -1585,7 +1579,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
-    vc->dsp.float_to_int16_interleave(data, vc->ret, len, vc->audio_channels);
+    vc->dsp.float_to_int16_interleave(data, vc->channel_residues, len, vc->audio_channels);
     *data_size=len*2*vc->audio_channels;
 
     return buf_size ;
