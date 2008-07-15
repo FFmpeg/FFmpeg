@@ -830,6 +830,9 @@ neon_deps="armv4l"
 ssse3_deps="x86"
 vis_deps="sparc"
 
+# system headers and functions
+byteswap_h_deps="!armv4l"
+
 # decoders / encoders
 ac3_decoder_deps="gpl !liba52"
 dxa_decoder_deps="zlib"
