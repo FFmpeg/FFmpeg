@@ -33,10 +33,20 @@
          hi; })
 #endif
 
+#ifdef HAVE_ARMV6
+static inline av_const int MULH(int a, int b)
+{
+    int r;
+    asm ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
+#define MULH MULH
+#else
 #define MULH(a, b) \
     ({ int lo, hi;\
      asm ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));\
      hi; })
+#endif
 
 #if defined(HAVE_ARMV5TE)
 
