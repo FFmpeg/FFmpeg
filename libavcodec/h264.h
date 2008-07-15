@@ -51,6 +51,8 @@
 
 #define MAX_MMCO_COUNT 66
 
+#define MAX_DELAYED_PIC_COUNT 16
+
 /* Compiling in interlaced support reduces the speed
  * of progressive decoding by about 2%. */
 #define ALLOW_INTERLACE
@@ -334,7 +336,7 @@ typedef struct H264Context{
     Picture ref_list[2][48];         /**< 0..15: frame refs, 16..47: mbaff field refs.
                                           Reordered version of default_ref_list
                                           according to picture reordering in slice header */
-    Picture *delayed_pic[18]; //FIXME size?
+    Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
     Picture *delayed_output_pic;
 
     /**
