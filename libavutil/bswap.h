@@ -66,7 +66,7 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
         : "=r"(x) : "0"(x));
 #elif defined(HAVE_ARMV6)
     asm("rev %0, %0" : "+r"(x));
-#elif defined(ARCH_ARM)
+#elif defined(ARCH_ARMV4L)
     uint32_t t;
     asm ("eor %1, %0, %0, ror #16 \n\t"
          "bic %1, %1, #0xFF0000   \n\t"
