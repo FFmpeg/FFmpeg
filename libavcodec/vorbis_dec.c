@@ -1330,6 +1330,14 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                         vec[voffs+k     ]+=codebook.codevectors[coffs  ];  // FPMATH
                                         vec[voffs+k+vlen]+=codebook.codevectors[coffs+1];  // FPMATH
                                     }
+                                } else if(dim==4) {
+                                    for(k=0;k<step;++k, voffs+=2) {
+                                        coffs=get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * 4;
+                                        vec[voffs       ]+=codebook.codevectors[coffs  ];  // FPMATH
+                                        vec[voffs+1     ]+=codebook.codevectors[coffs+2];  // FPMATH
+                                        vec[voffs+vlen  ]+=codebook.codevectors[coffs+1];  // FPMATH
+                                        vec[voffs+vlen+1]+=codebook.codevectors[coffs+3];  // FPMATH
+                                    }
                                 } else
                                 for(k=0;k<step;++k) {
                                     coffs=get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
