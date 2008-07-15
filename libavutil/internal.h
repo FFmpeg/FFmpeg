@@ -154,6 +154,13 @@ extern const uint32_t ff_inverse[256];
             );\
         ret;\
     })
+#elif defined(HAVE_ARMV6)
+static inline av_const int FASTDIV(int a, int b)
+{
+    int r;
+    asm volatile("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(ff_inverse[b]));
+    return r;
+}
 #elif defined(ARCH_ARMV4L)
 #    define FASTDIV(a,b) \
     ({\
