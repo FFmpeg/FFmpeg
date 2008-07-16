@@ -348,7 +348,7 @@ static void http_av_log(void *ptr, int level, const char *fmt, va_list vargs)
     if (level > av_log_level)
         return;
     if (print_prefix && avc)
-        http_log("[%s @ %p]", avc->item_name(ptr), avc);
+        http_log("[%s @ %p]", avc->item_name(ptr), ptr);
     print_prefix = strstr(fmt, "\n") != NULL;
     http_vlog(fmt, vargs);
 }
