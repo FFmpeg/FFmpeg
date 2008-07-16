@@ -1553,6 +1553,8 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 {
     vorbis_context *vc = avccontext->priv_data ;
     GetBitContext *gb = &(vc->gb);
+    const float *channel_ptrs[vc->audio_channels];
+    int i;
 
     int_fast16_t len;
 
@@ -1579,7 +1581,9 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
-    vc->dsp.float_to_int16_interleave(data, vc->channel_residues, len, vc->audio_channels);
+    for(i=0; i<vc->audio_channels; i++)
+        channel_ptrs[i] = vc->channel_residues+i*len;
+    vc->dsp.float_to_int16_interleave(data, channel_ptrs, len, vc->audio_channels);
     *data_size=len*2*vc->audio_channels;
 
     return buf_size ;

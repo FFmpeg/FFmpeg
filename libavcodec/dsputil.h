@@ -372,7 +372,7 @@ typedef struct DSPContext {
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
      * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
     void (*float_to_int16)(int16_t *dst, const float *src, long len);
-    void (*float_to_int16_interleave)(int16_t *dst, const float *src, long len, int channels);
+    void (*float_to_int16_interleave)(int16_t *dst, const float **src, long len, int channels);
 
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);

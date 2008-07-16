@@ -3962,17 +3962,17 @@ void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
         dst[i] = float_to_int16_one(src+i);
 }
 
-void ff_float_to_int16_interleave_c(int16_t *dst, const float *src, long len, int channels){
+void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
     int i,j,c;
     if(channels==2){
         for(i=0; i<len; i++){
-            dst[2*i]   = float_to_int16_one(src+i);
-            dst[2*i+1] = float_to_int16_one(src+i+len);
+            dst[2*i]   = float_to_int16_one(src[0]+i);
+            dst[2*i+1] = float_to_int16_one(src[1]+i);
         }
     }else{
-        for(c=0; c<channels; c++, src+=len)
+        for(c=0; c<channels; c++)
             for(i=0, j=c; i<len; i++, j+=channels)
-                dst[j] = float_to_int16_one(src+i);
+                dst[j] = float_to_int16_one(src[c]+i);
     }
 }
 

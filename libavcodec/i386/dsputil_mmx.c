@@ -2156,32 +2156,32 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
 
 #define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
-static av_noinline void float_to_int16_interleave2_##cpu(int16_t *dst, const float *src, long len, int channels){\
-    DECLARE_ALIGNED_16(int16_t, tmp[len*channels]);\
+static av_noinline void float_to_int16_interleave2_##cpu(int16_t *dst, const float **src, long len, int channels){\
+    DECLARE_ALIGNED_16(int16_t, tmp[len]);\
     int i,j,c;\
-    float_to_int16_##cpu(tmp, src, len*channels);\
     for(c=0; c<channels; c++){\
-        int16_t *ptmp = tmp+c*len;\
+        float_to_int16_##cpu(tmp, src[c], len);\
         for(i=0, j=c; i<len; i++, j+=channels)\
-            dst[j] = ptmp[i];\
+            dst[j] = tmp[i];\
     }\
 }\
 \
-static void float_to_int16_interleave_##cpu(int16_t *dst, const float *src, long len, int channels){\
+static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, long len, int channels){\
     if(channels==1)\
-        float_to_int16_##cpu(dst, src, len);\
+        float_to_int16_##cpu(dst, src[0], len);\
     else if(channels>2)\
         float_to_int16_interleave2_##cpu(dst, src, len, channels);\
     else{\
-        float *src1;\
+        const float *src0 = src[0];\
+        const float *src1 = src[1];\
         asm volatile(\
             "shl $2, %0 \n"\
             "add %0, %1 \n"\
             "add %0, %2 \n"\
-            "lea (%2,%0), %3 \n"\
+            "add %0, %3 \n"\
             "neg %0 \n"\
             body\
-            :"+r"(len), "+r"(dst), "+r"(src), "=r"(src1)\
+            :"+r"(len), "+r"(dst), "+r"(src0), "+r"(src1)\
         );\
     }\
 }
