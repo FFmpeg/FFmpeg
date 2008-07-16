@@ -2204,7 +2204,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     if(avctx->codec_id == CODEC_ID_SVQ3)
         avctx->pix_fmt= PIX_FMT_YUVJ420P;
     else
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+        avctx->pix_fmt= PIX_FMT_YUV420P;
 
     decode_init_vlc();
 
