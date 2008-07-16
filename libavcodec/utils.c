@@ -973,6 +973,7 @@ int avcodec_close(AVCodecContext *avctx)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
     av_freep(&avctx->priv_data);
+    av_freep(&avctx->rc_eq);
     avctx->codec = NULL;
     entangled_thread_counter--;
     return 0;
