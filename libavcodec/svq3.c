@@ -704,7 +704,7 @@ static int svq3_decode_slice_header (H264Context *h) {
     skip_bits(&s->gb, 8);
 
     if (length > 0) {
-      memmove ((uint8_t *) &s->gb.buffer[get_bits_count(&s->gb) >> 3],
+      memcpy ((uint8_t *) &s->gb.buffer[get_bits_count(&s->gb) >> 3],
              &s->gb.buffer[s->gb.size_in_bits >> 3], (length - 1));
     }
   }
