@@ -97,7 +97,7 @@ static void colmult(float *tgt, const float *m1, const float *m2, int n)
         *(tgt++) = (*(m1++)) * (*(m2++));
 }
 
-static int pred(float *in, float *tgt, int n)
+static int pred(const float *in, float *tgt, int n)
 {
     int x, y;
     double f0, f1, f2;
