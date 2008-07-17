@@ -262,6 +262,15 @@ LAVF_REG     = tests/data/lavf.regression
 ROTOZOOM_REG = tests/data/rotozoom.regression
 VSYNTH_REG   = tests/data/vsynth.regression
 
+ifeq ($(CONFIG_SWSCALE),yes)
+servertest codectest $(CODEC_TESTS) libavtest: swscale_error
+swscale_error:
+	@echo
+	@echo "This regression test is incompatible with --enable-swscale."
+	@echo
+	@exit 1
+endif
+
 codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
 	diff -u -w $(FFMPEG_REFFILE)   $(VSYNTH_REG)
 	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
@@ -300,15 +309,6 @@ servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo "test fails randomly. Treat the results accordingly."
 	@echo
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
-
-ifeq ($(CONFIG_SWSCALE),yes)
-servertest codectest $(CODEC_TESTS) libavtest: swscale_error
-swscale_error:
-	@echo
-	@echo "This regression test is incompatible with --enable-swscale."
-	@echo
-	@exit 1
-endif
 
 tests/vsynth1/00.pgm: tests/videogen$(EXESUF)
 	mkdir -p tests/vsynth1
