@@ -973,29 +973,20 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
 #ifdef HAVE_MMX
-    if (uDest)
-    {
-        asm volatile(
-            YSCALEYUV2YV121
-            :: "r" (chrSrc + chrDstW), "r" (uDest + chrDstW),
-            "g" (-chrDstW)
-            : "%"REG_a
-        );
+    long p= uDest ? 3 : 1;
+    uint8_t *src[3]= {lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
+    uint8_t *dst[3]= {dest, uDest, vDest};
+    long counter[3] = {dstW, chrDstW, chrDstW};
 
+    while(p--){
         asm volatile(
             YSCALEYUV2YV121
-            :: "r" (chrSrc + VOFW + chrDstW), "r" (vDest + chrDstW),
-            "g" (-chrDstW)
+            :: "r" (src[p]), "r" (dst[p] + counter[p]),
+            "g" (-counter[p])
             : "%"REG_a
         );
     }
 
-    asm volatile(
-        YSCALEYUV2YV121
-        :: "r" (lumSrc + dstW), "r" (dest + dstW),
-        "g" (-dstW)
-        : "%"REG_a
-    );
 #else
     int i;
     for (i=0; i<dstW; i++)
