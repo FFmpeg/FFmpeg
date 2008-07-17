@@ -1006,14 +1006,14 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
             );
         }
     }else{
-    while(p--){
-        asm volatile(
-            YSCALEYUV2YV121
-            :: "r" (src[p]), "r" (dst[p] + counter[p]),
-            "g" (-counter[p])
-            : "%"REG_a
-        );
-    }
+        while(p--){
+            asm volatile(
+                YSCALEYUV2YV121
+                :: "r" (src[p]), "r" (dst[p] + counter[p]),
+                "g" (-counter[p])
+                : "%"REG_a
+            );
+        }
     }
 
 #else
