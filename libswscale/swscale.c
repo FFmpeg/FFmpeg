@@ -2014,6 +2014,23 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         return NULL;
     }
 
+    i= flags & ( SWS_POINT
+                |SWS_AREA
+                |SWS_FAST_BILINEAR
+                |SWS_BICUBIC
+                |SWS_X
+                |SWS_GAUSS
+                |SWS_LANCZOS
+                |SWS_SINC
+                |SWS_SPLINE
+                |SWS_BICUBLIN);
+    if(!i || (i & (i-1)))
+    {
+        av_log(NULL, AV_LOG_ERROR, "swScaler: Exactly one scaler algorithm must be choosen\n");
+        return NULL;
+    }
+
+
     /* sanity check */
     if (srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
     {
