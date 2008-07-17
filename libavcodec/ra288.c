@@ -111,7 +111,7 @@ static int pred(float *in, float *tgt, int n)
     in--; // To avoid a -1 subtraction in the inner loop
 
     for (x=1; x <= n; x++) {
-        float *p1 = in + x;
+        float *p1 = tgt + x - 1;
         float *p2 = tgt;
 
         f1 = in[x+1];
@@ -119,8 +119,6 @@ static int pred(float *in, float *tgt, int n)
         for (y=0; y < x - 1; y++)
             f1 += in[x-y]*tgt[y];
 
-        p1 = tgt + x - 1;
-        p2 = tgt;
         *(p1--) = f2 = -f1/f0;
         for (y=x >> 1; y--;) {
             float temp = *p2 + *p1 * f2;
