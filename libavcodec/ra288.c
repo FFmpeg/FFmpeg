@@ -108,12 +108,9 @@ static int pred(float *in, float *tgt, int n)
     if ((f0 = *in) <= 0)
         return 0;
 
-    for (x=1 ; ; x++) {
+    for (x=1; x <= n; x++) {
         float *p1 = in + x;
         float *p2 = tgt;
-
-        if (n < x)
-            return 1;
 
         f1 = *(p1--);
 
@@ -131,6 +128,8 @@ static int pred(float *in, float *tgt, int n)
         if ((f0 += f1*f2) < 0)
             return 0;
     }
+
+    return 1;
 }
 
 /* product sum (lsf) */
