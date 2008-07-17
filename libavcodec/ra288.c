@@ -37,7 +37,8 @@ typedef struct {
     float lhist[10];
 } Real288_internal;
 
-static inline float scalar_product_float(float * v1, float * v2, int size)
+static inline float scalar_product_float(const float * v1, const float * v2,
+                                         int size)
 {
     float res = 0.;
 
@@ -90,7 +91,7 @@ static void decode(Real288_internal *glob, float gain, int cb_coef)
 }
 
 /* column multiply */
-static void colmult(float *tgt, float *m1, const float *m2, int n)
+static void colmult(float *tgt, const float *m1, const float *m2, int n)
 {
     while (n--)
         *(tgt++) = (*(m1++)) * (*(m2++));
@@ -133,19 +134,19 @@ static int pred(float *in, float *tgt, int n)
 }
 
 /* product sum (lsf) */
-static void prodsum(float *tgt, float *src, int len, int n)
+static void prodsum(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
         tgt[n] = scalar_product_float(src, src - n, len);
 
 }
 
-static void co(int n, int i, int j, float *in, float *out, float *st1,
+static void co(int n, int i, int j, const float *in, float *out, float *st1,
                float *st2, const float *table)
 {
     int a, b, c;
     unsigned int x;
-    float *fp;
+    const float *fp;
     float buffer1[37];
     float buffer2[37];
     float work[111];
