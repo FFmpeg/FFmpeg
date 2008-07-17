@@ -181,6 +181,24 @@
     "add                   $8, %%"REG_a"  \n\t"\
     "jnc                   1b             \n\t"
 
+#define YSCALEYUV2YV121_ACCURATE \
+    "mov %2, %%"REG_a"                    \n\t"\
+    "pcmpeqw %%mm7, %%mm7                 \n\t"\
+    "psrlw                 $15, %%mm7     \n\t"\
+    "psllw                  $6, %%mm7     \n\t"\
+    ASMALIGN(4) /* FIXME Unroll? */\
+    "1:                                   \n\t"\
+    "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
+    "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
+    "paddw              %%mm7, %%mm0      \n\t"\
+    "paddw              %%mm7, %%mm1      \n\t"\
+    "psraw                 $7, %%mm0      \n\t"\
+    "psraw                 $7, %%mm1      \n\t"\
+    "packuswb           %%mm1, %%mm0      \n\t"\
+    MOVNTQ(%%mm0, (%1, %%REGa))\
+    "add                   $8, %%"REG_a"  \n\t"\
+    "jnc                   1b             \n\t"
+
 /*
     :: "m" (-lumFilterSize), "m" (-chrFilterSize),
        "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
@@ -969,7 +987,7 @@ yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
              dest, uDest, dstW, chrDstW, dstFormat);
 }
 
-static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
+static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chrSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
 #ifdef HAVE_MMX
@@ -978,6 +996,16 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
     uint8_t *dst[3]= {dest, uDest, vDest};
     long counter[3] = {dstW, chrDstW, chrDstW};
 
+    if (c->flags & SWS_ACCURATE_RND){
+        while(p--){
+            asm volatile(
+                YSCALEYUV2YV121_ACCURATE
+                :: "r" (src[p]), "r" (dst[p] + counter[p]),
+                "g" (-counter[p])
+                : "%"REG_a
+            );
+        }
+    }else{
     while(p--){
         asm volatile(
             YSCALEYUV2YV121
@@ -985,6 +1013,7 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
             "g" (-counter[p])
             : "%"REG_a
         );
+    }
     }
 
 #else
@@ -3178,7 +3207,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 {
                     int16_t *lumBuf = lumPixBuf[0];
                     int16_t *chrBuf= chrPixBuf[0];
-                    RENAME(yuv2yuv1)(lumBuf, chrBuf, dest, uDest, vDest, dstW, chrDstW);
+                    RENAME(yuv2yuv1)(c, lumBuf, chrBuf, dest, uDest, vDest, dstW, chrDstW);
                 }
                 else //General YV12
                 {
