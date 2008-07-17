@@ -180,6 +180,7 @@ typedef struct {
     uint32_t vtag, atag;
     uint16_t vwidth, vheight;
     int16_t avsync;
+    AVRational framerate;
     //DVDemuxContext* dv_demux;
 } NSVContext;
 
@@ -428,6 +429,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
         framerate= (AVRational){i, 1};
 
     nsv->avsync = get_le16(pb);
+    nsv->framerate = framerate;
 #ifdef DEBUG
     print_tag("NSV NSVs vtag", vtag, 0);
     print_tag("NSV NSVs atag", atag, 0);
@@ -647,8 +649,8 @@ null_chunk_retry:
         if( nsv->state == NSV_HAS_READ_NSVS && st[NSV_ST_VIDEO] ) {
             /* on a nsvs frame we have new information on a/v sync */
             pkt->dts = (((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset-1);
-            pkt->dts *= (int64_t)1000 * st[NSV_ST_VIDEO]->time_base.num;
-            pkt->dts += (int64_t)nsv->avsync * st[NSV_ST_VIDEO]->time_base.den;
+            pkt->dts *= (int64_t)1000        * nsv->framerate.den;
+            pkt->dts += (int64_t)nsv->avsync * nsv->framerate.num;
             PRINT(("NSV AUDIO: sync:%d, dts:%"PRId64, nsv->avsync, pkt->dts));
         }
         nst->frame_offset++;
