@@ -2016,6 +2016,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
     i= flags & ( SWS_POINT
                 |SWS_AREA
+                |SWS_BILINEAR
                 |SWS_FAST_BILINEAR
                 |SWS_BICUBIC
                 |SWS_X
