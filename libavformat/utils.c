@@ -2020,8 +2020,10 @@ int av_find_stream_info(AVFormatContext *ic)
         }
 
         pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1);
-        if(av_dup_packet(pkt) < 0)
+        if(av_dup_packet(pkt) < 0) {
+            av_free(duration_error);
             return AVERROR(ENOMEM);
+        }
 
         read_size += pkt->size;
 
