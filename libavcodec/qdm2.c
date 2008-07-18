@@ -1438,10 +1438,10 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
 
     /* process subpackets ordered by type, largest type first */
     for (i = 0, max = 256; i < q->sub_packets_B; i++) {
-        QDM2SubPacket *packet;
+        QDM2SubPacket *packet= NULL;
 
         /* find subpacket with largest type less than max */
-        for (j = 0, min = 0, packet = NULL; j < q->sub_packets_B; j++) {
+        for (j = 0, min = 0; j < q->sub_packets_B; j++) {
             value = q->sub_packet_list_B[j].packet->type;
             if (value > min && value < max) {
                 min = value;
