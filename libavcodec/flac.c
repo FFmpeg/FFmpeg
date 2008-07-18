@@ -68,8 +68,8 @@ typedef struct FLACContext {
 
     int32_t *decoded[MAX_CHANNELS];
     uint8_t *bitstream;
-    int bitstream_size;
-    int bitstream_index;
+    unsigned int bitstream_size;
+    unsigned int bitstream_index;
     unsigned int allocated_bitstream_size;
 } FLACContext;
 
