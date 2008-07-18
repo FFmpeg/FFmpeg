@@ -1699,6 +1699,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('m','d','a','t'):
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
+        case MKTAG('f','t','y','p'):
             return AVPROBE_SCORE_MAX;
         /* those are more common words, so rate then a bit less */
         case MKTAG('e','d','i','w'): /* xdcam files have reverted first tags */
@@ -1708,7 +1709,6 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('p','i','c','t'):
             return AVPROBE_SCORE_MAX - 5;
         case MKTAG(0x82,0x82,0x7f,0x7d ):
-        case MKTAG('f','t','y','p'):
         case MKTAG('s','k','i','p'):
         case MKTAG('u','u','i','d'):
         case MKTAG('p','r','f','l'):
