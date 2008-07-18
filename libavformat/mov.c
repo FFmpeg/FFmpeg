@@ -1708,7 +1708,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('j','u','n','k'):
         case MKTAG('p','i','c','t'):
             return AVPROBE_SCORE_MAX - 5;
-        case MKTAG(0x82,0x82,0x7f,0x7d ):
+        case MKTAG(0x82,0x82,0x7f,0x7d):
         case MKTAG('s','k','i','p'):
         case MKTAG('u','u','i','d'):
         case MKTAG('p','r','f','l'):
