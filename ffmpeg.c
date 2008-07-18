@@ -154,7 +154,7 @@ static char *subtitle_language = NULL;
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 
-static int64_t recording_time = 0;
+static int64_t recording_time = INT64_MAX;
 static int64_t start_time = 0;
 static int64_t rec_timestamp = 0;
 static int64_t input_ts_offset = 0;
@@ -2020,7 +2020,7 @@ static int av_encode(AVFormatContext **output_files,
         }
 
         /* finish if recording time exhausted */
-        if (recording_time > 0 && opts_min >= (recording_time / 1000000.0))
+        if (opts_min >= (recording_time / 1000000.0))
             break;
 
         /* finish if limit size exhausted */
