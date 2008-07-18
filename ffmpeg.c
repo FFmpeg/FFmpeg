@@ -928,6 +928,7 @@ static void do_video_out(AVFormatContext *s,
                     pkt.flags |= PKT_FLAG_KEY;
                 write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                 *frame_size = ret;
+                video_size += ret;
                 //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
                 //        enc->frame_number-1, enc->real_pict_num, ret,
                 //        enc->pict_type);
@@ -1301,7 +1302,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             break;
                         case CODEC_TYPE_VIDEO:
                             do_video_out(os, ost, ist, &picture, &frame_size);
-                            video_size += frame_size;
                             if (vstats_filename && frame_size)
                                 do_video_stats(os, ost, frame_size);
                             break;
