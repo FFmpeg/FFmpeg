@@ -37,7 +37,17 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define AV_WN32(a, b) (((struct unaligned_32 *) (a))->l) = (b)
 #define AV_WN64(a, b) (((struct unaligned_64 *) (a))->l) = (b)
 
-#else /* __GNUC__ */
+#elif defined(__DECC)
+
+#define AV_RN16(a) (*((const __unaligned uint16_t*)(a)))
+#define AV_RN32(a) (*((const __unaligned uint32_t*)(a)))
+#define AV_RN64(a) (*((const __unaligned uint64_t*)(a)))
+
+#define AV_WN16(a, b) *((__unaligned uint16_t*)(a)) = (b)
+#define AV_WN32(a, b) *((__unaligned uint32_t*)(a)) = (b)
+#define AV_WN64(a, b) *((__unaligned uint64_t*)(a)) = (b)
+
+#else
 
 #define AV_RN16(a) (*((const uint16_t*)(a)))
 #define AV_RN32(a) (*((const uint32_t*)(a)))
