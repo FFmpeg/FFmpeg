@@ -1020,7 +1020,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
     int i;
     for (i=0; i<dstW; i++)
     {
-        int val= lumSrc[i]>>7;
+        int val= (lumSrc[i]+64)>>7;
 
         if (val&256){
             if (val<0) val=0;
@@ -1033,8 +1033,8 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
     if (uDest)
         for (i=0; i<chrDstW; i++)
         {
-            int u=chrSrc[i]>>7;
-            int v=chrSrc[i + VOFW]>>7;
+            int u=(chrSrc[i       ]+64)>>7;
+            int v=(chrSrc[i + VOFW]+64)>>7;
 
             if ((u|v)&256){
                 if (u<0)        u=0;
