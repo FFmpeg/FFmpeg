@@ -2259,6 +2259,7 @@ static int frame_start(H264Context *h){
         memset(h->slice_table, -1, (s->mb_height*s->mb_stride-1) * sizeof(uint8_t));
 
 //    s->decode= (s->flags&CODEC_FLAG_PSNR) || !s->encoding || s->current_picture.reference /*|| h->contains_intra*/ || 1;
+    s->current_picture_ptr->reference= 0;
     return 0;
 }
 
