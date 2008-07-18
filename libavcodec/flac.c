@@ -139,7 +139,8 @@ static void allocate_buffers(FLACContext *s){
         s->decoded[i] = av_realloc(s->decoded[i], sizeof(int32_t)*s->max_blocksize);
     }
 
-    s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
+    if(s->allocated_bitstream_size < s->max_framesize)
+        s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
 }
 
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
