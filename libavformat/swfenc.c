@@ -344,6 +344,7 @@ static int swf_write_video(AVFormatContext *s,
             /* create a new video object */
             put_swf_tag(s, TAG_VIDEOSTREAM);
             put_le16(pb, VIDEO_ID);
+            swf->vframes_pos = url_ftell(pb);
             put_le16(pb, 15000); /* hard flash player limit */
             put_le16(pb, enc->width);
             put_le16(pb, enc->height);
@@ -494,6 +495,8 @@ static int swf_write_trailer(AVFormatContext *s)
         url_fseek(pb, 4, SEEK_SET);
         put_le32(pb, file_size);
         url_fseek(pb, swf->duration_pos, SEEK_SET);
+        put_le16(pb, swf->video_frame_number);
+        url_fseek(pb, swf->vframes_pos, SEEK_SET);
         put_le16(pb, swf->video_frame_number);
         url_fseek(pb, file_size, SEEK_SET);
     }
