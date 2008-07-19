@@ -684,7 +684,7 @@ static void fill_coding_method_array (sb_int8_array tone_level_idx, sb_int8_arra
         SAMPLES_NEEDED
         for (ch = 0; ch < nb_channels; ch++)
             for (sb = 0; sb < 30; sb++) {
-                for (j = 1; j < 64; j++) {
+                for (j = 1; j < 63; j++) {  // The loop only iterates to 63 so the code doesn't overflow the buffer
                     add1 = tone_level_idx[ch][sb][j] - 10;
                     if (add1 < 0)
                         add1 = 0;
