@@ -7820,9 +7820,6 @@ static int decode_frame(AVCodecContext *avctx,
 
         //FIXME do something with unavailable reference frames
 
-#if 0 //decode order
-            *data_size = sizeof(AVFrame);
-#else
             /* Sort B-frames into display order */
 
             if(h->sps.bitstream_restriction_flag
@@ -7881,7 +7878,6 @@ static int decode_frame(AVCodecContext *avctx,
 
                 h->outputed_poc = out->poc;
             }
-#endif
 
             if(out)
                 *pict= *(AVFrame*)out;
