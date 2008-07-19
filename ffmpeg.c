@@ -129,7 +129,6 @@ static char *video_codec_name = NULL;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int do_deinterlace = 0;
-static int strict = 0;
 static int top_field_first = -1;
 static int me_threshold = 0;
 static int intra_dc_precision = 8;
@@ -2507,11 +2506,6 @@ static void opt_qscale(const char *arg)
     }
 }
 
-static void opt_strict(const char *arg)
-{
-    strict= atoi(arg);
-}
-
 static void opt_top_field_first(const char *arg)
 {
     top_field_first= atoi(arg);
@@ -3047,7 +3041,6 @@ static void new_video_stream(AVFormatContext *oc)
             video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
         video_enc->me_threshold= me_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
-        video_enc->strict_std_compliance = strict;
 
         if (do_psnr)
             video_enc->flags|= CODEC_FLAG_PSNR;
@@ -3089,7 +3082,6 @@ static void new_audio_stream(AVFormatContext *oc)
 
     audio_enc = st->codec;
     audio_enc->codec_type = CODEC_TYPE_AUDIO;
-    audio_enc->strict_std_compliance = strict;
 
     if(audio_codec_tag)
         audio_enc->codec_tag= audio_codec_tag;
@@ -3754,7 +3746,6 @@ static const OptionDef options[] = {
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_FUNC2 | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "threshold" },
-    { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
       "use same video quality as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
