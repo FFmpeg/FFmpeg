@@ -3269,15 +3269,11 @@ static inline int unreference_pic(H264Context *h, Picture *pic, int refmask){
     if (pic->reference &= refmask) {
         return 0;
     } else {
-        if(pic == h->delayed_output_pic)
-            pic->reference=DELAYED_PIC_REF;
-        else{
             for(i = 0; h->delayed_pic[i]; i++)
                 if(pic == h->delayed_pic[i]){
                     pic->reference=DELAYED_PIC_REF;
                     break;
                 }
-        }
         return 1;
     }
 }
@@ -3312,9 +3308,7 @@ static void flush_dpb(AVCodecContext *avctx){
             h->delayed_pic[i]->reference= 0;
         h->delayed_pic[i]= NULL;
     }
-    if(h->delayed_output_pic)
-        h->delayed_output_pic->reference= 0;
-    h->delayed_output_pic= NULL;
+    h->outputed_poc= INT_MIN;
     idr(h);
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
@@ -7783,7 +7777,6 @@ static int decode_frame(AVCodecContext *avctx,
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS) || (s->mb_y >= s->mb_height && s->mb_height)){
         Picture *out = s->current_picture_ptr;
         Picture *cur = s->current_picture_ptr;
-        Picture *prev = h->delayed_output_pic;
         int i, pics, cross_idr, out_of_order, out_idx;
 
         s->mb_y= 0;
@@ -7860,21 +7853,21 @@ static int decode_frame(AVCodecContext *avctx,
                     out_idx = i;
                 }
 
-            out_of_order = !cross_idr && prev && out->poc < prev->poc;
+            out_of_order = !cross_idr && out->poc < h->outputed_poc;
 
-            if(prev && pics <= s->avctx->has_b_frames || out_of_order)
-                out = prev;
+            if(pics <= s->avctx->has_b_frames || out_of_order)
+                out = NULL;
 
             if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
                 { }
             else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
                || (s->low_delay &&
-                ((!cross_idr && prev && out->poc > prev->poc + 2)
+                ((!cross_idr && out && out->poc > h->outputed_poc + 2)
                  || cur->pict_type == FF_B_TYPE)))
             {
                 s->low_delay = 0;
                 s->avctx->has_b_frames++;
-                out = prev;
+                out= NULL;
             }
 
             if(out_of_order || pics > s->avctx->has_b_frames){
@@ -7882,13 +7875,12 @@ static int decode_frame(AVCodecContext *avctx,
                     h->delayed_pic[i] = h->delayed_pic[i+1];
             }
 
-            if(prev == out)
-                *data_size = 0;
-            else
+            if(out){
                 *data_size = sizeof(AVFrame);
-            if(prev && prev != out && prev->reference == DELAYED_PIC_REF)
-                prev->reference = 0;
-            h->delayed_output_pic = out;
+
+                out->reference &= ~DELAYED_PIC_REF;
+                h->outputed_poc = out->poc;
+            }
 #endif
 
             if(out)

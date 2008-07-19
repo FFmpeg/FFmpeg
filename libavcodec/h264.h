@@ -337,7 +337,7 @@ typedef struct H264Context{
                                           Reordered version of default_ref_list
                                           according to picture reordering in slice header */
     Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
-    Picture *delayed_output_pic;
+    int outputed_poc;
 
     /**
      * memory management control operations buffer.
