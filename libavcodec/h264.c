@@ -7856,7 +7856,7 @@ static int decode_frame(AVCodecContext *avctx,
                 { }
             else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
                || (s->low_delay &&
-                ((!cross_idr && out && out->poc > h->outputed_poc + 2)
+                ((!cross_idr && out->poc > h->outputed_poc + 2)
                  || cur->pict_type == FF_B_TYPE)))
             {
                 s->low_delay = 0;
