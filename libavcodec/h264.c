@@ -7866,6 +7866,8 @@ static int decode_frame(AVCodecContext *avctx,
                 s->avctx->has_b_frames++;
             }
 
+            if(out_of_order || pics > s->avctx->has_b_frames)
+                out->reference &= ~DELAYED_PIC_REF;
             if(pics <= s->avctx->has_b_frames || out_of_order)
                 out = NULL;
 
@@ -7877,7 +7879,6 @@ static int decode_frame(AVCodecContext *avctx,
             if(out){
                 *data_size = sizeof(AVFrame);
 
-                out->reference &= ~DELAYED_PIC_REF;
                 h->outputed_poc = out->poc;
             }
 #endif
