@@ -195,7 +195,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         return -1;
 
     if(s->internal_buffer==NULL){
-        s->internal_buffer= av_mallocz(INTERNAL_BUFFER_SIZE*sizeof(InternalBuffer));
+        s->internal_buffer= av_mallocz((INTERNAL_BUFFER_SIZE+1)*sizeof(InternalBuffer));
     }
 #if 0
     s->internal_buffer= av_fast_realloc(
@@ -206,7 +206,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 #endif
 
     buf= &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
-    picture_number= &(((InternalBuffer*)s->internal_buffer)[INTERNAL_BUFFER_SIZE-1]).last_pic_num; //FIXME ugly hack
+    picture_number= &(((InternalBuffer*)s->internal_buffer)[INTERNAL_BUFFER_SIZE]).last_pic_num; //FIXME ugly hack
     (*picture_number)++;
 
     if(buf->base[0] && (buf->width != w || buf->height != h || buf->pix_fmt != s->pix_fmt)){
