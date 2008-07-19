@@ -1452,6 +1452,9 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
         max = min;
 
         /* check for errors (?) */
+        if (!packet)
+            return;
+
         if (i == 0 && (packet->type < 16 || packet->type >= 48 || fft_subpackets[packet->type - 16]))
             return;
 
