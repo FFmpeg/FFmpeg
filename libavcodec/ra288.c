@@ -140,7 +140,6 @@ static void prodsum(float *tgt, const float *src, int len, int n)
 static void co(int n, int i, int j, const float *in, float *out, float *st1,
                float *st2, const float *table)
 {
-    int a, b, c;
     unsigned int x;
     const float *fp;
     float buffer1[37];
@@ -148,16 +147,15 @@ static void co(int n, int i, int j, const float *in, float *out, float *st1,
     float work[111];
 
     /* rotate and multiply */
-    c = (b = (a = n + i) + j) - i;
     fp = st1 + i;
-    for (x=0; x < b; x++) {
-        if (x == c)
+    for (x=0; x < n + i + j; x++) {
+        if (x == n + j)
             fp=in;
         work[x] = *(table++) * (*(st1++) = *(fp++));
     }
 
     prodsum(buffer1, work + n, i, n);
-    prodsum(buffer2, work + a, j, n);
+    prodsum(buffer2, work + n + i, j, n);
 
     for (x=0;x<=n;x++) {
         *st2 = *st2 * (0.5625) + buffer1[x];
