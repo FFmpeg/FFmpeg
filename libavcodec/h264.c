@@ -7855,9 +7855,6 @@ static int decode_frame(AVCodecContext *avctx,
 
             out_of_order = !cross_idr && out->poc < h->outputed_poc;
 
-            if(pics <= s->avctx->has_b_frames || out_of_order)
-                out = NULL;
-
             if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
                 { }
             else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
@@ -7867,8 +7864,10 @@ static int decode_frame(AVCodecContext *avctx,
             {
                 s->low_delay = 0;
                 s->avctx->has_b_frames++;
-                out= NULL;
             }
+
+            if(pics <= s->avctx->has_b_frames || out_of_order)
+                out = NULL;
 
             if(out_of_order || pics > s->avctx->has_b_frames){
                 for(i=out_idx; h->delayed_pic[i]; i++)
