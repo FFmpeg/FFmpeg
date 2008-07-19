@@ -911,6 +911,8 @@ static void roq_encode_video(RoqContext *enc)
     reconstruct_and_encode_image(enc, &tempData, enc->width, enc->height,
                                  enc->width*enc->height/64);
 
+    enc->avctx->coded_frame = enc->current_frame;
+
     /* Rotate frame history */
     FFSWAP(AVFrame *, enc->current_frame, enc->last_frame);
     FFSWAP(motion_vect *, enc->last_motion4, enc->this_motion4);
