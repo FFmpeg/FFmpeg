@@ -281,7 +281,7 @@ AVOutputFormat ogg_muxer = {
     "ogg",
     NULL_IF_CONFIG_SMALL("Ogg"),
     "application/ogg",
-    "ogg",
+    "ogg,ogv",
     0,
     CODEC_ID_FLAC,
     CODEC_ID_THEORA,
