@@ -753,8 +753,8 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
     /* coupling strategy */
     if (get_bits1(gbc)) {
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
-        cpl_in_use = get_bits1(gbc);
-        if (cpl_in_use) {
+        s->cpl_in_use[blk] = get_bits1(gbc);
+        if (s->cpl_in_use[blk]) {
             /* coupling in use */
             int cpl_begin_freq, cpl_end_freq;
 
@@ -797,9 +797,9 @@ static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
         av_log(s->avctx, AV_LOG_ERROR, "new coupling strategy must be present in block 0\n");
         return -1;
     } else {
-        cpl_in_use = s->cpl_in_use[blk-1];
+        s->cpl_in_use[blk] = s->cpl_in_use[blk-1];
     }
-    s->cpl_in_use[blk] = cpl_in_use;
+    cpl_in_use = s->cpl_in_use[blk];
 
     /* coupling coordinates */
     if (cpl_in_use) {
