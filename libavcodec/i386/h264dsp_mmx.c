@@ -20,6 +20,9 @@
 
 #include "dsputil_mmx.h"
 
+DECLARE_ALIGNED_8 (static const uint64_t, ff_pb_3_1  ) = 0x0103010301030103ULL;
+DECLARE_ALIGNED_8 (static const uint64_t, ff_pb_7_3  ) = 0x0307030703070307ULL;
+
 /***********************************/
 /* IDCT */
 
@@ -623,7 +626,7 @@ static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
 }
 
 static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
-                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1 ) {
+                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1, int field ) {
     int dir;
     asm volatile(
         "pxor %%mm7, %%mm7 \n\t"
@@ -632,6 +635,13 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
         "movq %2, %%mm4 \n\t"
         ::"m"(ff_pb_1), "m"(ff_pb_3), "m"(ff_pb_7)
     );
+    if(field)
+        asm volatile(
+            "movq %0, %%mm5 \n\t"
+            "movq %1, %%mm4 \n\t"
+            ::"m"(ff_pb_3_1), "m"(ff_pb_7_3)
+        );
+
     // could do a special case for dir==0 && edges==1, but it only reduces the
     // average filter time by 1.2%
     for( dir=1; dir>=0; dir-- ) {
