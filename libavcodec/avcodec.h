@@ -1117,7 +1117,14 @@ typedef struct AVCodecContext {
     /**
      * strictly follow the standard (MPEG4, ...).
      * - encoding: Set by user.
-     * - decoding: unused
+     * - decoding: Set by user.
+     * Setting this to STRICT or higher means the encoder and decoder will
+     * generally do stupid things. While setting it to inofficial or lower
+     * will mean the encoder might use things that are not supported by all
+     * spec compliant decoders. Decoders make no difference between normal,
+     * inofficial and experimental, that is they always try to decode things
+     * when they can unless they are explicitly asked to behave stupid
+     * (=strictly conform to the specs)
      */
     int strict_std_compliance;
 #define FF_COMPLIANCE_VERY_STRICT   2 ///< Strictly conform to a older more strict version of the spec or reference software.
