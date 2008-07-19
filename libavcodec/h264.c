@@ -7863,26 +7863,19 @@ static int decode_frame(AVCodecContext *avctx,
                 s->avctx->has_b_frames++;
             }
 
-            if(out_of_order || pics > s->avctx->has_b_frames)
-                out->reference &= ~DELAYED_PIC_REF;
-            if(pics <= s->avctx->has_b_frames || out_of_order)
-                out = NULL;
-
             if(out_of_order || pics > s->avctx->has_b_frames){
+                out->reference &= ~DELAYED_PIC_REF;
                 for(i=out_idx; h->delayed_pic[i]; i++)
                     h->delayed_pic[i] = h->delayed_pic[i+1];
             }
-
-            if(out){
+            if(!out_of_order && pics > s->avctx->has_b_frames){
                 *data_size = sizeof(AVFrame);
 
                 h->outputed_poc = out->poc;
-            }
-
-            if(out)
                 *pict= *(AVFrame*)out;
-            else
+            }else{
                 av_log(avctx, AV_LOG_DEBUG, "no picture\n");
+            }
         }
     }
 
