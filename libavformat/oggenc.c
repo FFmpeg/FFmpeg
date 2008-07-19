@@ -225,7 +225,7 @@ int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacket *pkt,
             next_granule = av_rescale_q(next_pkt->pts + next_pkt->duration,
                                         st2->time_base, AV_TIME_BASE_Q);
             cur_granule = av_rescale_q(pkt->pts + pkt->duration,
-                                        st->time_base, AV_TIME_BASE_Q);
+                                       st->time_base, AV_TIME_BASE_Q);
             if (next_granule > cur_granule)
                 break;
             next_point= &(*next_point)->next;
