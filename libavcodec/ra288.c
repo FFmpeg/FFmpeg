@@ -155,12 +155,12 @@ static void co(int n, int i, int j, const float *in, float *out, float *st1,
         work[x] = table[x] * st1[x];
     }
 
-    prodsum(buffer1, work + n, i, n);
+    prodsum(buffer1, work + n    , i, n);
     prodsum(buffer2, work + n + i, j, n);
 
-    for (x=0;x<=n;x++) {
+    for (x=0; x <= n; x++) {
         st2[x] = st2[x] * 0.5625 + buffer1[x];
-        out[x] = st2[x] + buffer2[x];
+        out[x] = st2[x]          + buffer2[x];
     }
     *out *= 1.00390625; /* to prevent clipping */
 }
