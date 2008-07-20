@@ -300,8 +300,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
                     perfdata[j][i][powerpc_data_max] = 0x0000000000000000ULL;
                     perfdata[j][i][powerpc_data_sum] = 0x0000000000000000ULL;
                     perfdata[j][i][powerpc_data_num] = 0x0000000000000000ULL;
-                  }
-              }
+                }
+            }
         }
 #endif /* CONFIG_POWERPC_PERF */
     }
