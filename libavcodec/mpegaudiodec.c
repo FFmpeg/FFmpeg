@@ -1577,7 +1577,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                    part. We must go back into the data */
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
-                av_log(NULL, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
+                av_log(s->avctx, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
                 if(s->error_resilience >= FF_ER_COMPLIANT)
                     s_index=0;
                 break;
@@ -1613,10 +1613,10 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     bits_left = end_pos2 - get_bits_count(&s->gb);
 //av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
     if (bits_left < 0/* || bits_left > 500*/) {
-        av_log(NULL, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
+        av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
     }else if(bits_left > 0 && s->error_resilience >= FF_ER_AGGRESSIVE){
-        av_log(NULL, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
+        av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
     }
     memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
@@ -2057,7 +2057,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             if (blocksplit_flag) {
                 g->block_type = get_bits(&s->gb, 2);
                 if (g->block_type == 0){
-                    av_log(NULL, AV_LOG_ERROR, "invalid block type\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "invalid block type\n");
                     return -1;
                 }
                 g->switch_point = get_bits1(&s->gb);
@@ -2109,7 +2109,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
         for(ch=0;ch<s->nb_channels;ch++) {
             g = &granules[ch][gr];
             if(get_bits_count(&s->gb)<0){
-                av_log(NULL, AV_LOG_ERROR, "mdb:%d, lastbuf:%d skipping granule %d\n",
+                av_log(s->avctx, AV_LOG_ERROR, "mdb:%d, lastbuf:%d skipping granule %d\n",
                                             main_data_begin, s->last_buf_size, gr);
                 skip_bits_long(&s->gb, g->part2_3_length);
                 memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));
@@ -2316,7 +2316,7 @@ static int mp_decode_frame(MPADecodeContext *s,
                 memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
                 s->last_buf_size=i;
             }else
-                av_log(NULL, AV_LOG_ERROR, "invalid old backstep %d\n", i);
+                av_log(s->avctx, AV_LOG_ERROR, "invalid old backstep %d\n", i);
             s->gb= s->in_gb;
             s->in_gb.buffer= NULL;
         }
@@ -2326,7 +2326,7 @@ static int mp_decode_frame(MPADecodeContext *s,
         i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
 
         if(i<0 || i > BACKSTEP_SIZE || nb_frames<0){
-            av_log(NULL, AV_LOG_ERROR, "invalid new backstep %d\n", i);
+            av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n", i);
             i= FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
         }
         assert(i <= buf_size - HEADER_SIZE && i>= 0);
