@@ -41,15 +41,15 @@ do { \
 // transposes a matrix consisting of four vectors with four elements each
 #define TRANSPOSE4(a,b,c,d) \
 do { \
-  __typeof__(a) _trans_ach = vec_mergeh(a, c); \
-  __typeof__(a) _trans_acl = vec_mergel(a, c); \
-  __typeof__(a) _trans_bdh = vec_mergeh(b, d); \
-  __typeof__(a) _trans_bdl = vec_mergel(b, d); \
- \
-  a = vec_mergeh(_trans_ach, _trans_bdh); \
-  b = vec_mergel(_trans_ach, _trans_bdh); \
-  c = vec_mergeh(_trans_acl, _trans_bdl); \
-  d = vec_mergel(_trans_acl, _trans_bdl); \
+    __typeof__(a) _trans_ach = vec_mergeh(a, c); \
+    __typeof__(a) _trans_acl = vec_mergel(a, c); \
+    __typeof__(a) _trans_bdh = vec_mergeh(b, d); \
+    __typeof__(a) _trans_bdl = vec_mergel(b, d); \
+                                                 \
+    a = vec_mergeh(_trans_ach, _trans_bdh);      \
+    b = vec_mergel(_trans_ach, _trans_bdh);      \
+    c = vec_mergeh(_trans_acl, _trans_bdl);      \
+    d = vec_mergel(_trans_acl, _trans_bdl);      \
 } while (0)
 
 
@@ -58,19 +58,19 @@ do { \
 // target address is four-byte aligned (which should be always).
 #define LOAD4(vec, address) \
 { \
-    __typeof__(vec)* _load_addr = (__typeof__(vec)*)(address); \
-    vector unsigned char _perm_vec = vec_lvsl(0,(address)); \
-    vec = vec_ld(0, _load_addr); \
-    vec = vec_perm(vec, vec, _perm_vec); \
-    vec = vec_splat(vec, 0); \
+    __typeof__(vec)* _load_addr = (__typeof__(vec)*)(address);  \
+    vector unsigned char _perm_vec = vec_lvsl(0,(address));     \
+    vec = vec_ld(0, _load_addr);                                \
+    vec = vec_perm(vec, vec, _perm_vec);                        \
+    vec = vec_splat(vec, 0);                                    \
 }
 
 
 #define FOUROF(a) AVV(a,a,a,a)
 
 int dct_quantize_altivec(MpegEncContext* s,
-                        DCTELEM* data, int n,
-                        int qscale, int* overflow)
+                         DCTELEM* data, int n,
+                         int qscale, int* overflow)
 {
     int lastNonZero;
     vector float row0, row1, row2, row3, row4, row5, row6, row7;
@@ -137,10 +137,8 @@ int dct_quantize_altivec(MpegEncContext* s,
 
         int whichPass, whichHalf;
 
-        for(whichPass = 1; whichPass<=2; whichPass++)
-        {
-            for(whichHalf = 1; whichHalf<=2; whichHalf++)
-            {
+        for(whichPass = 1; whichPass<=2; whichPass++) {
+            for(whichHalf = 1; whichHalf<=2; whichHalf++) {
                 vector float tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
                 vector float tmp10, tmp11, tmp12, tmp13;
                 vector float z1, z2, z3, z4, z5;
@@ -235,8 +233,7 @@ int dct_quantize_altivec(MpegEncContext* s,
                 SWAP(row7, alt7);
             }
 
-            if (whichPass == 1)
-            {
+            if (whichPass == 1) {
                 // transpose the data for the second pass
 
                 // First, block transpose the upper right with lower left.
@@ -261,8 +258,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         const vector signed int* qmat;
         vector float bias, negBias;
 
-        if (s->mb_intra)
-        {
+        if (s->mb_intra) {
             vector signed int baseVector;
 
             // We must cache element 0 in the intra case
@@ -272,9 +268,7 @@ int dct_quantize_altivec(MpegEncContext* s,
 
             qmat = (vector signed int*)s->q_intra_matrix[qscale];
             biasAddr = &(s->intra_quant_bias);
-        }
-        else
-        {
+        } else {
             qmat = (vector signed int*)s->q_inter_matrix[qscale];
             biasAddr = &(s->inter_quant_bias);
         }
@@ -439,8 +433,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         // and handle it using the vector unit if we can.  This is the permute used
         // by the altivec idct, so it is common when using the altivec dct.
 
-        if ((lastNonZero > 0) && (s->dsp.idct_permutation_type == FF_TRANSPOSE_IDCT_PERM))
-        {
+        if ((lastNonZero > 0) && (s->dsp.idct_permutation_type == FF_TRANSPOSE_IDCT_PERM)) {
             TRANSPOSE8(data0, data1, data2, data3, data4, data5, data6, data7);
         }
 
@@ -456,10 +449,8 @@ int dct_quantize_altivec(MpegEncContext* s,
     }
 
     // special handling of block[0]
-    if (s->mb_intra)
-    {
-        if (!s->h263_aic)
-        {
+    if (s->mb_intra) {
+        if (!s->h263_aic) {
             if (n < 4)
                 oldBaseValue /= s->y_dc_scale;
             else
@@ -474,8 +465,7 @@ int dct_quantize_altivec(MpegEncContext* s,
     // need to permute the "no" permutation case.
     if ((lastNonZero > 0) &&
         (s->dsp.idct_permutation_type != FF_TRANSPOSE_IDCT_PERM) &&
-        (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM))
-    {
+        (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM)) {
         ff_block_permute(data, s->dsp.idct_permutation,
                 s->intra_scantable.scantable, lastNonZero);
     }
@@ -483,10 +473,8 @@ int dct_quantize_altivec(MpegEncContext* s,
     return lastNonZero;
 }
 
-/*
-  AltiVec version of dct_unquantize_h263
-  this code assumes `block' is 16 bytes-aligned
-*/
+/* AltiVec version of dct_unquantize_h263
+   this code assumes `block' is 16 bytes-aligned */
 void dct_unquantize_h263_altivec(MpegEncContext *s,
                                  DCTELEM *block, int n, int qscale)
 {
@@ -517,82 +505,81 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     }
 
     {
-      register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
-      DECLARE_ALIGNED_16(short, qmul8[]) =
-          {
-            qmul, qmul, qmul, qmul,
-            qmul, qmul, qmul, qmul
-          };
-      DECLARE_ALIGNED_16(short, qadd8[]) =
-          {
-            qadd, qadd, qadd, qadd,
-            qadd, qadd, qadd, qadd
-          };
-      DECLARE_ALIGNED_16(short, nqadd8[]) =
-          {
-            -qadd, -qadd, -qadd, -qadd,
-            -qadd, -qadd, -qadd, -qadd
-          };
-      register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
-      register vector bool short blockv_null, blockv_neg;
-      register short backup_0 = block[0];
-      register int j = 0;
+        register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
+        DECLARE_ALIGNED_16(short, qmul8[]) =
+            {
+              qmul, qmul, qmul, qmul,
+              qmul, qmul, qmul, qmul
+            };
+        DECLARE_ALIGNED_16(short, qadd8[]) =
+            {
+              qadd, qadd, qadd, qadd,
+              qadd, qadd, qadd, qadd
+            };
+        DECLARE_ALIGNED_16(short, nqadd8[]) =
+            {
+              -qadd, -qadd, -qadd, -qadd,
+              -qadd, -qadd, -qadd, -qadd
+            };
+        register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
+        register vector bool short blockv_null, blockv_neg;
+        register short backup_0 = block[0];
+        register int j = 0;
 
-      qmulv = vec_ld(0, qmul8);
-      qaddv = vec_ld(0, qadd8);
-      nqaddv = vec_ld(0, nqadd8);
+        qmulv = vec_ld(0, qmul8);
+        qaddv = vec_ld(0, qadd8);
+        nqaddv = vec_ld(0, nqadd8);
 
-#if 0 // block *is* 16 bytes-aligned, it seems.
-      // first make sure block[j] is 16 bytes-aligned
-      for(j = 0; (j <= nCoeffs) && ((((unsigned long)block) + (j << 1)) & 0x0000000F) ; j++) {
-        level = block[j];
-        if (level) {
-          if (level < 0) {
-                level = level * qmul - qadd;
-            } else {
-                level = level * qmul + qadd;
+#if 0   // block *is* 16 bytes-aligned, it seems.
+        // first make sure block[j] is 16 bytes-aligned
+        for(j = 0; (j <= nCoeffs) && ((((unsigned long)block) + (j << 1)) & 0x0000000F) ; j++) {
+            level = block[j];
+            if (level) {
+                if (level < 0) {
+                    level = level * qmul - qadd;
+                } else {
+                    level = level * qmul + qadd;
+                }
+                block[j] = level;
             }
-            block[j] = level;
         }
-      }
 #endif
 
-      // vectorize all the 16 bytes-aligned blocks
-      // of 8 elements
-      for(; (j + 7) <= nCoeffs ; j+=8)
-      {
-        blockv = vec_ld(j << 1, block);
-        blockv_neg = vec_cmplt(blockv, vczero);
-        blockv_null = vec_cmpeq(blockv, vczero);
-        // choose between +qadd or -qadd as the third operand
-        temp1 = vec_sel(qaddv, nqaddv, blockv_neg);
-        // multiply & add (block{i,i+7} * qmul [+-] qadd)
-        temp1 = vec_mladd(blockv, qmulv, temp1);
-        // put 0 where block[{i,i+7} used to have 0
-        blockv = vec_sel(temp1, blockv, blockv_null);
-        vec_st(blockv, j << 1, block);
-      }
-
-      // if nCoeffs isn't a multiple of 8, finish the job
-      // using good old scalar units.
-      // (we could do it using a truncated vector,
-      // but I'm not sure it's worth the hassle)
-      for(; j <= nCoeffs ; j++) {
-        level = block[j];
-        if (level) {
-          if (level < 0) {
-                level = level * qmul - qadd;
-            } else {
-                level = level * qmul + qadd;
-            }
-            block[j] = level;
+        // vectorize all the 16 bytes-aligned blocks
+        // of 8 elements
+        for(; (j + 7) <= nCoeffs ; j+=8) {
+            blockv = vec_ld(j << 1, block);
+            blockv_neg = vec_cmplt(blockv, vczero);
+            blockv_null = vec_cmpeq(blockv, vczero);
+            // choose between +qadd or -qadd as the third operand
+            temp1 = vec_sel(qaddv, nqaddv, blockv_neg);
+            // multiply & add (block{i,i+7} * qmul [+-] qadd)
+            temp1 = vec_mladd(blockv, qmulv, temp1);
+            // put 0 where block[{i,i+7} used to have 0
+            blockv = vec_sel(temp1, blockv, blockv_null);
+            vec_st(blockv, j << 1, block);
         }
-      }
 
-      if (i == 1)
-      { // cheat. this avoid special-casing the first iteration
-        block[0] = backup_0;
-      }
+        // if nCoeffs isn't a multiple of 8, finish the job
+        // using good old scalar units.
+        // (we could do it using a truncated vector,
+        // but I'm not sure it's worth the hassle)
+        for(; j <= nCoeffs ; j++) {
+            level = block[j];
+            if (level) {
+                if (level < 0) {
+                    level = level * qmul - qadd;
+                } else {
+                    level = level * qmul + qadd;
+                }
+                block[j] = level;
+            }
+        }
+
+        if (i == 1) {
+            // cheat. this avoid special-casing the first iteration
+            block[0] = backup_0;
+        }
     }
 POWERPC_PERF_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
 }
@@ -605,11 +592,9 @@ void MPV_common_init_altivec(MpegEncContext *s)
 {
     if ((mm_flags & MM_ALTIVEC) == 0) return;
 
-    if (s->avctx->lowres==0)
-    {
+    if (s->avctx->lowres==0) {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
-                (s->avctx->idct_algo == FF_IDCT_ALTIVEC))
-        {
+            (s->avctx->idct_algo == FF_IDCT_ALTIVEC)) {
             s->dsp.idct_put = idct_put_altivec;
             s->dsp.idct_add = idct_add_altivec;
             s->dsp.idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
@@ -618,15 +603,13 @@ void MPV_common_init_altivec(MpegEncContext *s)
 
     // Test to make sure that the dct required alignments are met.
     if ((((long)(s->q_intra_matrix) & 0x0f) != 0) ||
-        (((long)(s->q_inter_matrix) & 0x0f) != 0))
-    {
+        (((long)(s->q_inter_matrix) & 0x0f) != 0)) {
         av_log(s->avctx, AV_LOG_INFO, "Internal Error: q-matrix blocks must be 16-byte aligned "
                 "to use AltiVec DCT. Reverting to non-AltiVec version.\n");
         return;
     }
 
-    if (((long)(s->intra_scantable.inverse) & 0x0f) != 0)
-    {
+    if (((long)(s->intra_scantable.inverse) & 0x0f) != 0) {
         av_log(s->avctx, AV_LOG_INFO, "Internal Error: scan table blocks must be 16-byte aligned "
                 "to use AltiVec DCT. Reverting to non-AltiVec version.\n");
         return;
@@ -634,8 +617,7 @@ void MPV_common_init_altivec(MpegEncContext *s)
 
 
     if ((s->avctx->dct_algo == FF_DCT_AUTO) ||
-            (s->avctx->dct_algo == FF_DCT_ALTIVEC))
-    {
+            (s->avctx->dct_algo == FF_DCT_ALTIVEC)) {
 #if 0 /* seems to cause trouble under some circumstances */
         s->dct_quantize = dct_quantize_altivec;
 #endif

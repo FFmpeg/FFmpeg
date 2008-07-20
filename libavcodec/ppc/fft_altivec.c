@@ -33,21 +33,21 @@
 /* butter fly op */
 #define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1) \
 {\
-  FFTSample ax, ay, bx, by;\
-  bx=pre1;\
-  by=pim1;\
-  ax=qre1;\
-  ay=qim1;\
-  pre = (bx + ax);\
-  pim = (by + ay);\
-  qre = (bx - ax);\
-  qim = (by - ay);\
+    FFTSample ax, ay, bx, by;\
+    bx=pre1;\
+    by=pim1;\
+    ax=qre1;\
+    ay=qim1;\
+    pre = (bx + ax);\
+    pim = (by + ay);\
+    qre = (bx - ax);\
+    qim = (by - ay);\
 }
 #define MUL16(a,b) ((a) * (b))
 #define CMUL(pre, pim, are, aim, bre, bim) \
 {\
-   pre = (MUL16(are, bre) - MUL16(aim, bim));\
-   pim = (MUL16(are, bim) + MUL16(bre, aim));\
+    pre = (MUL16(are, bre) - MUL16(aim, bim));\
+    pim = (MUL16(are, bim) + MUL16(bre, aim));\
 }
 
 
@@ -85,14 +85,11 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
         c1 = vcii(p,p,n,n);
 
-        if (s->inverse)
-            {
-                c2 = vcii(p,p,n,p);
-            }
-        else
-            {
-                c2 = vcii(p,p,p,n);
-            }
+        if (s->inverse) {
+            c2 = vcii(p,p,n,p);
+        } else {
+            c2 = vcii(p,p,p,n);
+        }
 
         j = (np >> 2);
         do {

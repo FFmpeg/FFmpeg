@@ -379,8 +379,7 @@ void ff_snow_vertical_compose97i_altivec(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, 
     v4=(vector signed int *)b4;
     v5=(vector signed int *)b5;
 
-    for (i=0; i< w4;i++)
-    {
+    for (i=0; i< w4;i++) {
 
     #if 0
         b4[i] -= (3*(b3[i] + b5[i])+4)>>3;
@@ -782,8 +781,8 @@ void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
 void snow_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
 #if 0
-        c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
-        c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
-        c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
+    c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
+    c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
+    c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
 #endif
 }

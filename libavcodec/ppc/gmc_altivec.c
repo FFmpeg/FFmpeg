@@ -36,16 +36,16 @@ void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int str
 {
 POWERPC_PERF_DECLARE(altivec_gmc1_num, GMC1_PERF_COND);
     const DECLARE_ALIGNED_16(unsigned short, rounder_a[8]) =
-      {rounder, rounder, rounder, rounder,
-       rounder, rounder, rounder, rounder};
+        {rounder, rounder, rounder, rounder,
+         rounder, rounder, rounder, rounder};
     const DECLARE_ALIGNED_16(unsigned short, ABCD[8]) =
-      {
-        (16-x16)*(16-y16), /* A */
-        (   x16)*(16-y16), /* B */
-        (16-x16)*(   y16), /* C */
-        (   x16)*(   y16), /* D */
-        0, 0, 0, 0         /* padding */
-      };
+        {
+            (16-x16)*(16-y16), /* A */
+            (   x16)*(16-y16), /* B */
+            (16-x16)*(   y16), /* C */
+            (   x16)*(   y16), /* D */
+            0, 0, 0, 0         /* padding */
+        };
     register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
     register const vector unsigned short vcsr8 = (const vector unsigned short)vec_splat_u16(8);
     register vector unsigned char dstv, dstv2, src_0, src_1, srcvA, srcvB, srcvC, srcvD;
@@ -74,73 +74,67 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
     src_1 = vec_ld(16, src);
     srcvA = vec_perm(src_0, src_1, vec_lvsl(0, src));
 
-    if (src_really_odd != 0x0000000F)
-    { // if src & 0xF == 0xF, then (src+1) is properly aligned on the second vector.
-      srcvB = vec_perm(src_0, src_1, vec_lvsl(1, src));
-    }
-    else
-    {
-      srcvB = src_1;
+    if (src_really_odd != 0x0000000F) {
+        // if src & 0xF == 0xF, then (src+1) is properly aligned
+        // on the second vector.
+        srcvB = vec_perm(src_0, src_1, vec_lvsl(1, src));
+    } else {
+        srcvB = src_1;
     }
     srcvA = vec_mergeh(vczero, srcvA);
     srcvB = vec_mergeh(vczero, srcvB);
 
-    for(i=0; i<h; i++)
-    {
-      dst_odd = (unsigned long)dst & 0x0000000F;
-      src_really_odd = (((unsigned long)src) + stride) & 0x0000000F;
+    for(i=0; i<h; i++) {
+        dst_odd = (unsigned long)dst & 0x0000000F;
+        src_really_odd = (((unsigned long)src) + stride) & 0x0000000F;
 
-      dstv = vec_ld(0, dst);
+        dstv = vec_ld(0, dst);
 
-      // we we'll be able to pick-up our 9 char elements
-      // at src + stride from those 32 bytes
-      // then reuse the resulting 2 vectors srvcC and srcvD
-      // as the next srcvA and srcvB
-      src_0 = vec_ld(stride + 0, src);
-      src_1 = vec_ld(stride + 16, src);
-      srcvC = vec_perm(src_0, src_1, vec_lvsl(stride + 0, src));
+        // we we'll be able to pick-up our 9 char elements
+        // at src + stride from those 32 bytes
+        // then reuse the resulting 2 vectors srvcC and srcvD
+        // as the next srcvA and srcvB
+        src_0 = vec_ld(stride + 0, src);
+        src_1 = vec_ld(stride + 16, src);
+        srcvC = vec_perm(src_0, src_1, vec_lvsl(stride + 0, src));
 
-      if (src_really_odd != 0x0000000F)
-      { // if src & 0xF == 0xF, then (src+1) is properly aligned on the second vector.
-        srcvD = vec_perm(src_0, src_1, vec_lvsl(stride + 1, src));
-      }
-      else
-      {
-        srcvD = src_1;
-      }
+        if (src_really_odd != 0x0000000F) {
+            // if src & 0xF == 0xF, then (src+1) is properly aligned
+            // on the second vector.
+            srcvD = vec_perm(src_0, src_1, vec_lvsl(stride + 1, src));
+        } else {
+            srcvD = src_1;
+        }
 
-      srcvC = vec_mergeh(vczero, srcvC);
-      srcvD = vec_mergeh(vczero, srcvD);
+        srcvC = vec_mergeh(vczero, srcvC);
+        srcvD = vec_mergeh(vczero, srcvD);
 
 
-      // OK, now we (finally) do the math :-)
-      // those four instructions replaces 32 int muls & 32 int adds.
-      // isn't AltiVec nice ?
-      tempA = vec_mladd((vector unsigned short)srcvA, Av, rounderV);
-      tempB = vec_mladd((vector unsigned short)srcvB, Bv, tempA);
-      tempC = vec_mladd((vector unsigned short)srcvC, Cv, tempB);
-      tempD = vec_mladd((vector unsigned short)srcvD, Dv, tempC);
+        // OK, now we (finally) do the math :-)
+        // those four instructions replaces 32 int muls & 32 int adds.
+        // isn't AltiVec nice ?
+        tempA = vec_mladd((vector unsigned short)srcvA, Av, rounderV);
+        tempB = vec_mladd((vector unsigned short)srcvB, Bv, tempA);
+        tempC = vec_mladd((vector unsigned short)srcvC, Cv, tempB);
+        tempD = vec_mladd((vector unsigned short)srcvD, Dv, tempC);
 
-      srcvA = srcvC;
-      srcvB = srcvD;
+        srcvA = srcvC;
+        srcvB = srcvD;
 
-      tempD = vec_sr(tempD, vcsr8);
+        tempD = vec_sr(tempD, vcsr8);
 
-      dstv2 = vec_pack(tempD, (vector unsigned short)vczero);
+        dstv2 = vec_pack(tempD, (vector unsigned short)vczero);
 
-      if (dst_odd)
-      {
-        dstv2 = vec_perm(dstv, dstv2, vcprm(0,1,s0,s1));
-      }
-      else
-      {
-        dstv2 = vec_perm(dstv, dstv2, vcprm(s0,s1,2,3));
-      }
+        if (dst_odd) {
+            dstv2 = vec_perm(dstv, dstv2, vcprm(0,1,s0,s1));
+        } else {
+            dstv2 = vec_perm(dstv, dstv2, vcprm(s0,s1,2,3));
+        }
 
-      vec_st(dstv2, 0, dst);
+        vec_st(dstv2, 0, dst);
 
-      dst += stride;
-      src += stride;
+        dst += stride;
+        src += stride;
     }
 
 POWERPC_PERF_STOP_COUNT(altivec_gmc1_num, GMC1_PERF_COND);

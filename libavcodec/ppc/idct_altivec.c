@@ -22,7 +22,6 @@
  * NOTE: This code is based on GPL code from the libmpeg2 project.  The
  * author, Michel Lespinasses, has given explicit permission to release
  * under LGPL as part of ffmpeg.
- *
  */
 
 /*

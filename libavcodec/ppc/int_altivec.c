@@ -38,7 +38,7 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     vector signed short vpix2, vdiff, vpix1l,vpix1h;
     union { vector signed int vscore;
             int32_t score[4];
-           } u;
+          } u;
     u.vscore = vec_splat_s32(0);
 //
 //XXX lazy way, fix it later
