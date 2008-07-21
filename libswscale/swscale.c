@@ -932,6 +932,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     int minFilterSize;
     double *filter=NULL;
     double *filter2=NULL;
+    int ret= -1;
 #if defined(ARCH_X86)
     if (flags & SWS_CPU_CAPS_MMX)
         asm volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
@@ -1211,8 +1212,8 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
     assert(filterSize > 0);
     filter= av_malloc(filterSize*dstW*sizeof(double));
-    if (filterSize >= MAX_FILTER_SIZE)
-        return -1;
+    if (filterSize >= MAX_FILTER_SIZE || !filter)
+        goto error;
     *outFilterSize= filterSize;
 
     if (flags&SWS_PRINT_INFO)
@@ -1228,7 +1229,6 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
             else               filter[i*filterSize + j]= filter2[i*filter2Size + j];
         }
     }
-    av_freep(&filter2);
 
 
     //FIXME try to align filterpos if possible
@@ -1296,8 +1296,11 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         (*outFilter)[j + i]= (*outFilter)[j + i - (*outFilterSize)];
     }
 
+    ret=0;
+error:
     av_free(filter);
-    return 0;
+    av_free(filter2);
+    return ret;
 }
 
 #ifdef COMPILE_MMX2
