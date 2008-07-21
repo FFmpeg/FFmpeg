@@ -178,6 +178,7 @@ show_help(){
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --disable-debug          disable debugging symbols"
+  echo "  --enable-debug=LEVEL     set the debug level [$debuglevel]"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
   echo "  --disable-optimizations  disable compiler optimizations"
   echo "  --enable-extra-warnings  enable more compiler warnings"
