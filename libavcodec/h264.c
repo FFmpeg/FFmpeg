@@ -4161,15 +4161,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(FRAME_MBAFF)
         fill_mbaff_ref_list(h);
 
-     h->ref2frm[1][0]= h->ref2frm[1][1]= -1;
-     for(j=0; j<2; j++){
-         h->ref2frm[j][  0]=
-         h->ref2frm[j][  1]= -1;
-         for(i=0; i<48; i++)
-             h->ref2frm[j][i+2]= 4*h->ref_list[j][i].frame_num
-                                 +(h->ref_list[j][i].reference&3);
-     }
-
     if( h->slice_type_nos != FF_I_TYPE && h->pps.cabac ){
         tmp = get_ue_golomb(&s->gb);
         if(tmp > 2){
@@ -4244,6 +4235,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     h0->last_slice_type = slice_type;
     h->slice_num = ++h0->current_slice;
+
+    for(j=0; j<2; j++){
+        int *ref2frm= h->ref2frm[h->slice_num&15][j];
+        ref2frm[0]=
+        ref2frm[1]= -1;
+        for(i=0; i<48; i++)
+            ref2frm[i+2]= 4*h->ref_list[j][i].frame_num
+                          +(h->ref_list[j][i].reference&3);
+    }
 
     h->emu_edge_width= (s->flags&CODEC_FLAG_EMU_EDGE) ? 0 : 16;
     h->emu_edge_height= (FRAME_MBAFF || FIELD_PICTURE) ? 0 : h->emu_edge_width;
@@ -6627,6 +6627,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         int edge;
         const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
         const int mbm_type = s->current_picture.mb_type[mbm_xy];
+        int (*ref2frm) [48+2] = h->ref2frm[ h->slice_num          &15 ];
+        int (*ref2frmm)[48+2] = h->ref2frm[ h->slice_table[mbm_xy]&15 ];
         int start = h->slice_table[mbm_xy] == 255 ? 1 : 0;
 
         const int edges = (mb_type & (MB_TYPE_16x16|MB_TYPE_SKIP))
@@ -6695,6 +6697,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             /* mbn_xy: neighbor macroblock */
             const int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
             const int mbn_type = s->current_picture.mb_type[mbn_xy];
+            int (*ref2frmn)[48+2] = edge > 0 ? ref2frm : ref2frmm;
             int16_t bS[4];
             int qp;
 
@@ -6732,11 +6735,11 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     int b_idx= 8 + 4 + edge * (dir ? 8:1);
                     int bn_idx= b_idx - (dir ? 8:1);
                     int v = 0;
-                    int xn= h->slice_type_nos == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
+                    int xn= h->slice_type_nos == FF_B_TYPE && ref2frm[0][h->ref_cache[0][b_idx]+2] != ref2frmn[0][h->ref_cache[0][bn_idx]+2];
 
                     for( l = 0; !v && l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
                         int ln= l^xn;
-                        v |= h->ref2frm[l][h->ref_cache[l][b_idx]+2] != h->ref2frm[ln][h->ref_cache[ln][bn_idx]+2] ||
+                        v |= ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
                              FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
                              FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
                     }
@@ -6758,11 +6761,11 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     }
                     else if(!mv_done)
                     {
-                        int xn= h->slice_type_nos == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
+                        int xn= h->slice_type_nos == FF_B_TYPE && ref2frm[0][h->ref_cache[0][b_idx]+2] != ref2frmn[0][h->ref_cache[0][bn_idx]+2];
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
                             int ln= l^xn;
-                            if( h->ref2frm[l][h->ref_cache[l][b_idx]+2] != h->ref2frm[ln][h->ref_cache[ln][bn_idx]+2] ||
+                            if( ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
                                 FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
                                 FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
                                 bS[i] = 1;
