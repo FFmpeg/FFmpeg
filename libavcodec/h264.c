@@ -4216,7 +4216,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type != FF_I_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type_nos != FF_I_TYPE)
        ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type == FF_B_TYPE)
        ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
         h->deblocking_filter= 0;
@@ -4554,7 +4554,7 @@ static int decode_mb_cavlc(H264Context *h){
             mb_type -= 23;
             goto decode_intra_mb;
         }
-    }else if(h->slice_type == FF_P_TYPE /*|| h->slice_type == FF_SP_TYPE */){
+    }else if(h->slice_type_nos == FF_P_TYPE){
         if(mb_type < 5){
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
@@ -4563,7 +4563,9 @@ static int decode_mb_cavlc(H264Context *h){
             goto decode_intra_mb;
         }
     }else{
-       assert(h->slice_type == FF_I_TYPE);
+       assert(h->slice_type_nos == FF_I_TYPE);
+        if(h->slice_type == FF_SI_TYPE && mb_type)
+            mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
             av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
@@ -5059,9 +5061,9 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
 static int decode_cabac_mb_type( H264Context *h ) {
     MpegEncContext * const s = &h->s;
 
-    if( h->slice_type == FF_I_TYPE ) {
+    if( h->slice_type_nos == FF_I_TYPE ) {
         return decode_cabac_intra_mb_type(h, 3, 1);
-    } else if( h->slice_type == FF_P_TYPE ) {
+    } else if( h->slice_type_nos == FF_P_TYPE ) {
         if( get_cabac_noinline( &h->cabac, &h->cabac_state[14] ) == 0 ) {
             /* P-type */
             if( get_cabac_noinline( &h->cabac, &h->cabac_state[15] ) == 0 ) {
@@ -5690,7 +5692,7 @@ static int decode_mb_cabac(H264Context *h) {
             mb_type -= 23;
             goto decode_intra_mb;
         }
-    } else if( h->slice_type == FF_P_TYPE ) {
+    } else if( h->slice_type_nos == FF_P_TYPE ) {
         if( mb_type < 5) {
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
@@ -5699,7 +5701,9 @@ static int decode_mb_cabac(H264Context *h) {
             goto decode_intra_mb;
         }
     } else {
-       assert(h->slice_type == FF_I_TYPE);
+        if(h->slice_type == FF_SI_TYPE && mb_type)
+            mb_type--;
+        assert(h->slice_type_nos == FF_I_TYPE);
 decode_intra_mb:
         partition_count = 0;
         cbp= i_mb_type_info[mb_type].cbp;
@@ -6820,7 +6824,7 @@ static int decode_slice(struct AVCodecContext *avctx, H264Context *h){
         /* calculate pre-state */
         for( i= 0; i < 460; i++ ) {
             int pre;
-            if( h->slice_type == FF_I_TYPE )
+            if( h->slice_type_nos == FF_I_TYPE )
                 pre = av_clip( ((cabac_context_init_I[i][0] * s->qscale) >>4 ) + cabac_context_init_I[i][1], 1, 126 );
             else
                 pre = av_clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
@@ -7587,7 +7591,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if(hx->redundant_pic_count==0 && hx->s.hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type!=FF_B_TYPE)
-               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type==FF_I_TYPE)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
                && avctx->skip_frame < AVDISCARD_ALL)
                 context_count++;
             break;
@@ -7612,7 +7616,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                && s->hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type!=FF_B_TYPE)
-               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type==FF_I_TYPE)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
                && avctx->skip_frame < AVDISCARD_ALL)
                 context_count++;
             break;
