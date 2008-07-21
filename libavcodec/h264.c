@@ -1001,11 +1001,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             int refc = h->ref_cache[list][scan8[0] - 8 + 4];
             if(refc == -2)
                 refc = h->ref_cache[list][scan8[0] - 8 - 1];
-            ref[list] = refa;
-            if(ref[list] < 0 || (refb < ref[list] && refb >= 0))
-                ref[list] = refb;
-            if(ref[list] < 0 || (refc < ref[list] && refc >= 0))
-                ref[list] = refc;
+            ref[list] = FFMIN3((unsigned)refa, (unsigned)refb, (unsigned)refc);
             if(ref[list] < 0)
                 ref[list] = -1;
         }
