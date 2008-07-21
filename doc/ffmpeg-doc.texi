@@ -388,8 +388,14 @@ Disable video recording.
 Set video bitrate tolerance (in bit/s).
 @item -maxrate @var{bitrate}
 Set max video bitrate (in bit/s).
+Requires -bufsize to be set.
 @item -minrate @var{bitrate}
 Set min video bitrate (in bit/s).
+Most useful in setting up a CBR encode:
+@example
+ffmpeg -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
+@end example
+It is of little use elsewise.
 @item -bufsize @var{size}
 Set video buffer verifier buffer size (in bits).
 @item -vcodec @var{codec}
