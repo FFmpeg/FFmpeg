@@ -481,7 +481,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 *(uint32_t*)h->mvd_cache [list][scan8[4 ]]=
                 *(uint32_t*)h->mvd_cache [list][scan8[12]]= 0;
 
-                if(h->slice_type == FF_B_TYPE){
+                if(h->slice_type_nos == FF_B_TYPE){
                     fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, 0, 1);
 
                     if(IS_DIRECT(top_type)){
@@ -1356,7 +1356,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         }
     }
 
-    if(h->slice_type == FF_B_TYPE && h->pps.cabac){
+    if(h->slice_type_nos == FF_B_TYPE && h->pps.cabac){
         if(IS_8X8(mb_type)){
             uint8_t *direct_table = &h->direct_table[b8_xy];
             direct_table[1+0*h->b8_stride] = IS_DIRECT(h->sub_mb_type[1]) ? 1 : 0;
@@ -2867,7 +2867,7 @@ static int fill_default_ref_list(H264Context *h){
         frame_list[1] = h->default_ref_list[1];
     }
 
-    if(h->slice_type==FF_B_TYPE){
+    if(h->slice_type_nos==FF_B_TYPE){
         int list;
         int len[2];
         int short_len[2];
@@ -2989,7 +2989,7 @@ static int fill_default_ref_list(H264Context *h){
     for (i=0; i<h->ref_count[0]; i++) {
         tprintf(h->s.avctx, "List0: %s fn:%d 0x%p\n", (h->default_ref_list[0][i].long_ref ? "LT" : "ST"), h->default_ref_list[0][i].pic_id, h->default_ref_list[0][i].data[0]);
     }
-    if(h->slice_type==FF_B_TYPE){
+    if(h->slice_type_nos==FF_B_TYPE){
         for (i=0; i<h->ref_count[1]; i++) {
             tprintf(h->s.avctx, "List1: %s fn:%d 0x%p\n", (h->default_ref_list[1][i].long_ref ? "LT" : "ST"), h->default_ref_list[1][i].pic_id, h->default_ref_list[1][i].data[0]);
         }
@@ -3132,7 +3132,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
         }
     }
 
-    if(h->slice_type==FF_B_TYPE && !h->direct_spatial_mv_pred)
+    if(h->slice_type_nos==FF_B_TYPE && !h->direct_spatial_mv_pred)
         direct_dist_scale_factor(h);
     direct_ref_list_init(h);
     return 0;
@@ -3215,7 +3215,7 @@ static int pred_weight_table(H264Context *h){
                 }
             }
         }
-        if(h->slice_type != FF_B_TYPE) break;
+        if(h->slice_type_nos != FF_B_TYPE) break;
     }
     h->use_weight= h->use_weight || h->use_weight_chroma;
     return 0;
@@ -4115,7 +4115,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[1]= h->pps.ref_count[1];
 
     if(h->slice_type_nos != FF_I_TYPE){
-        if(h->slice_type == FF_B_TYPE){
+        if(h->slice_type_nos == FF_B_TYPE){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
             if(FIELD_PICTURE && h->direct_spatial_mv_pred)
                 av_log(h->s.avctx, AV_LOG_ERROR, "PAFF + spatial direct mode is not implemented\n");
@@ -4124,7 +4124,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         if(num_ref_idx_active_override_flag){
             h->ref_count[0]= get_ue_golomb(&s->gb) + 1;
-            if(h->slice_type==FF_B_TYPE)
+            if(h->slice_type_nos==FF_B_TYPE)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
 
             if(h->ref_count[0]-1 > 32-1 || h->ref_count[1]-1 > 32-1){
@@ -4133,7 +4133,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 return -1;
             }
         }
-        if(h->slice_type == FF_B_TYPE)
+        if(h->slice_type_nos == FF_B_TYPE)
             h->list_count= 2;
         else
             h->list_count= 1;
@@ -4148,9 +4148,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         return -1;
 
     if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
-       || (h->pps.weighted_bipred_idc==1 && h->slice_type==FF_B_TYPE ) )
+       ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== FF_B_TYPE ) )
         pred_weight_table(h);
-    else if(h->pps.weighted_bipred_idc==2 && h->slice_type==FF_B_TYPE)
+    else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE)
         implicit_weight_table(h);
     else
         h->use_weight = 0;
@@ -4217,7 +4217,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
        ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type_nos != FF_I_TYPE)
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type == FF_B_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type_nos == FF_B_TYPE)
        ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
         h->deblocking_filter= 0;
 
@@ -4477,7 +4477,7 @@ static void decode_mb_skip(H264Context *h){
     if(MB_FIELD)
         mb_type|= MB_TYPE_INTERLACED;
 
-    if( h->slice_type == FF_B_TYPE )
+    if( h->slice_type_nos == FF_B_TYPE )
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
@@ -4546,7 +4546,7 @@ static int decode_mb_cavlc(H264Context *h){
     h->prev_mb_skipped= 0;
 
     mb_type= get_ue_golomb(&s->gb);
-    if(h->slice_type == FF_B_TYPE){
+    if(h->slice_type_nos == FF_B_TYPE){
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -4671,7 +4671,7 @@ decode_intra_mb:
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if(h->slice_type == FF_B_TYPE){
+        if(h->slice_type_nos == FF_B_TYPE){
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb(&s->gb);
                 if(h->sub_mb_type[i] >=13){
@@ -5076,7 +5076,7 @@ static int decode_cabac_mb_type( H264Context *h ) {
         } else {
             return decode_cabac_intra_mb_type(h, 17, 0) + 5;
         }
-    } else if( h->slice_type == FF_B_TYPE ) {
+    } else if( h->slice_type_nos == FF_B_TYPE ) {
         const int mba_xy = h->left_mb_xy[0];
         const int mbb_xy = h->top_mb_xy;
         int ctx = 0;
@@ -5146,7 +5146,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     if( h->slice_table[mbb_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mbb_xy] ))
         ctx++;
 
-    if( h->slice_type == FF_B_TYPE )
+    if( h->slice_type_nos == FF_B_TYPE )
         ctx += 13;
     return get_cabac_noinline( &h->cabac, &h->cabac_state[11+ctx] );
 }
@@ -5283,7 +5283,7 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
     int ref  = 0;
     int ctx  = 0;
 
-    if( h->slice_type == FF_B_TYPE) {
+    if( h->slice_type_nos == FF_B_TYPE) {
         if( refa > 0 && !h->direct_cache[scan8[n] - 1] )
             ctx++;
         if( refb > 0 && !h->direct_cache[scan8[n] - 8] )
@@ -5684,7 +5684,7 @@ static int decode_mb_cabac(H264Context *h) {
         return -1;
     }
 
-    if( h->slice_type == FF_B_TYPE ) {
+    if( h->slice_type_nos == FF_B_TYPE ) {
         if( mb_type < 23 ){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -5807,7 +5807,7 @@ decode_intra_mb:
     } else if( partition_count == 4 ) {
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if( h->slice_type == FF_B_TYPE ) {
+        if( h->slice_type_nos == FF_B_TYPE ) {
             for( i = 0; i < 4; i++ ) {
                 h->sub_mb_type[i] = decode_cabac_b_mb_sub_type( h );
                 sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
@@ -6506,7 +6506,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
             int step = IS_8x8DCT(mb_type) ? 2 : 1;
             edges = (mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
-                                              (h->slice_type == FF_B_TYPE), edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
+                                              (h->slice_type_nos == FF_B_TYPE), edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
         }
         if( IS_INTRA(s->current_picture.mb_type[mb_xy-1]) )
             bSv[0][0] = 0x0004000400040004ULL;
@@ -6732,9 +6732,9 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     int b_idx= 8 + 4 + edge * (dir ? 8:1);
                     int bn_idx= b_idx - (dir ? 8:1);
                     int v = 0;
-                    int xn= h->slice_type == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
+                    int xn= h->slice_type_nos == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
 
-                    for( l = 0; !v && l < 1 + (h->slice_type == FF_B_TYPE); l++ ) {
+                    for( l = 0; !v && l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
                         int ln= l^xn;
                         v |= h->ref2frm[l][h->ref_cache[l][b_idx]+2] != h->ref2frm[ln][h->ref_cache[ln][bn_idx]+2] ||
                              FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
@@ -6758,9 +6758,9 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     }
                     else if(!mv_done)
                     {
-                        int xn= h->slice_type == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
+                        int xn= h->slice_type_nos == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
                         bS[i] = 0;
-                        for( l = 0; l < 1 + (h->slice_type == FF_B_TYPE); l++ ) {
+                        for( l = 0; l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
                             int ln= l^xn;
                             if( h->ref2frm[l][h->ref_cache[l][b_idx]+2] != h->ref2frm[ln][h->ref_cache[ln][bn_idx]+2] ||
                                 FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
@@ -7590,7 +7590,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             s->current_picture_ptr->key_frame|= (hx->nal_unit_type == NAL_IDR_SLICE);
             if(hx->redundant_pic_count==0 && hx->s.hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
-               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type!=FF_B_TYPE)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
                && avctx->skip_frame < AVDISCARD_ALL)
                 context_count++;
@@ -7615,7 +7615,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                && s->context_initialized
                && s->hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
-               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type!=FF_B_TYPE)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
                && avctx->skip_frame < AVDISCARD_ALL)
                 context_count++;
