@@ -990,6 +990,8 @@ typedef struct AVCodecContext {
 
     /**
      * qscale factor between IP and B-frames
+     * If > 0 then the last P-frame quantizer will be used (q= lastp_q*factor+offset).
+     * If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -1135,8 +1137,6 @@ typedef struct AVCodecContext {
 
     /**
      * qscale offset between IP and B-frames
-     * If > 0 then the last P-frame quantizer will be used (q= lastp_q*factor+offset).
-     * If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
      * - encoding: Set by user.
      * - decoding: unused
      */
