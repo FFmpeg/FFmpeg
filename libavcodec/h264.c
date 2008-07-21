@@ -6727,7 +6727,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     int b_idx= 8 + 4 + edge * (dir ? 8:1);
                     int bn_idx= b_idx - (dir ? 8:1);
                     int v = 0;
-                    int xn= (h->ref_cache[0][ b_idx] ^ h->ref_cache[0][bn_idx]) < 0;
+                    int xn= h->slice_type == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
 
                     for( l = 0; !v && l < 1 + (h->slice_type == FF_B_TYPE); l++ ) {
                         int ln= l^xn;
@@ -6753,7 +6753,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     }
                     else if(!mv_done)
                     {
-                        int xn= (h->ref_cache[0][ b_idx] ^ h->ref_cache[0][bn_idx]) < 0;
+                        int xn= h->slice_type == FF_B_TYPE && h->ref2frm[0][h->ref_cache[0][b_idx]+2] != h->ref2frm[0][h->ref_cache[0][bn_idx]+2];
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type == FF_B_TYPE); l++ ) {
                             int ln= l^xn;
