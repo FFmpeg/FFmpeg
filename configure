@@ -135,7 +135,6 @@ show_help(){
   echo "  --disable-zlib           disable zlib [default=no]"
   echo "  --disable-bzlib          disable bzlib [default=no]"
   echo "  --disable-vhook          disable video hooking support"
-  echo "  --disable-debug          disable debugging symbols"
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
   echo "                           MPEG audio decoding [default=no]"
   echo "  --enable-gray            enable full grayscale support (slower color)"
@@ -178,6 +177,7 @@ show_help(){
   echo "  --list-outdevs           show all available output devices"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
+  echo "  --disable-debug          disable debugging symbols"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
   echo "  --disable-optimizations  disable compiler optimizations"
   echo "  --enable-extra-warnings  enable more compiler warnings"
