@@ -4147,7 +4147,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(decode_ref_pic_list_reordering(h) < 0)
         return -1;
 
-    if(   (h->pps.weighted_pred          && (h->slice_type_nos == FF_P_TYPE ))
+    if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
        || (h->pps.weighted_bipred_idc==1 && h->slice_type==FF_B_TYPE ) )
         pred_weight_table(h);
     else if(h->pps.weighted_bipred_idc==2 && h->slice_type==FF_B_TYPE)
