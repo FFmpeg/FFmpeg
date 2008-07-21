@@ -3031,7 +3031,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
 
     print_short_term(h);
     print_long_term(h);
-    if(h->slice_type==FF_I_TYPE || h->slice_type==FF_SI_TYPE) return 0; //FIXME move before func
+    if(h->slice_type_nos==FF_I_TYPE) return 0; //FIXME move before func
 
     for(list=0; list<h->list_count; list++){
         memcpy(h->ref_list[list], h->default_ref_list[list], sizeof(Picture)*h->ref_count[list]);
@@ -3908,6 +3908,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         default_ref_list_done = 1;
     }
     h->slice_type= slice_type;
+    h->slice_type_nos= slice_type & 3;
 
     s->pict_type= h->slice_type; // to make a few old func happy, it's wrong though
     if (s->pict_type == FF_B_TYPE && s0->last_picture_ptr == NULL) {
@@ -4113,7 +4114,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[0]= h->pps.ref_count[0];
     h->ref_count[1]= h->pps.ref_count[1];
 
-    if(h->slice_type == FF_P_TYPE || h->slice_type == FF_SP_TYPE || h->slice_type == FF_B_TYPE){
+    if(h->slice_type_nos != FF_I_TYPE){
         if(h->slice_type == FF_B_TYPE){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
             if(FIELD_PICTURE && h->direct_spatial_mv_pred)
@@ -4146,7 +4147,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(decode_ref_pic_list_reordering(h) < 0)
         return -1;
 
-    if(   (h->pps.weighted_pred          && (h->slice_type == FF_P_TYPE || h->slice_type == FF_SP_TYPE ))
+    if(   (h->pps.weighted_pred          && (h->slice_type_nos == FF_P_TYPE ))
        || (h->pps.weighted_bipred_idc==1 && h->slice_type==FF_B_TYPE ) )
         pred_weight_table(h);
     else if(h->pps.weighted_bipred_idc==2 && h->slice_type==FF_B_TYPE)
@@ -4169,7 +4170,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                                  +(h->ref_list[j][i].reference&3);
      }
 
-    if( h->slice_type != FF_I_TYPE && h->slice_type != FF_SI_TYPE && h->pps.cabac ){
+    if( h->slice_type_nos != FF_I_TYPE && h->pps.cabac ){
         tmp = get_ue_golomb(&s->gb);
         if(tmp > 2){
             av_log(s->avctx, AV_LOG_ERROR, "cabac_init_idc overflow\n");
@@ -4521,7 +4522,7 @@ static int decode_mb_cavlc(H264Context *h){
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
-    if(h->slice_type != FF_I_TYPE && h->slice_type != FF_SI_TYPE){
+    if(h->slice_type_nos != FF_I_TYPE){
         if(s->mb_skip_run==-1)
             s->mb_skip_run= get_ue_golomb(&s->gb);
 
@@ -4687,7 +4688,7 @@ decode_intra_mb:
                 h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
-            assert(h->slice_type == FF_P_TYPE || h->slice_type == FF_SP_TYPE); //FIXME SP correct ?
+            assert(h->slice_type_nos == FF_P_TYPE); //FIXME SP correct ?
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb(&s->gb);
                 if(h->sub_mb_type[i] >=4){
@@ -5636,7 +5637,7 @@ static int decode_mb_cabac(H264Context *h) {
     s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?)
 
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
-    if( h->slice_type != FF_I_TYPE && h->slice_type != FF_SI_TYPE ) {
+    if( h->slice_type_nos != FF_I_TYPE ) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
         if( FRAME_MBAFF && s->mb_x==0 && (s->mb_y&1)==0 )

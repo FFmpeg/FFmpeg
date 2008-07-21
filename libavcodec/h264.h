@@ -270,6 +270,7 @@ typedef struct H264Context{
     uint8_t *slice_table_base;
     uint8_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
     int slice_type;
+    int slice_type_nos;        ///< S free slice type (SI/SP are remapped to I/P)
     int slice_type_fixed;
 
     //interlacing specific flags
