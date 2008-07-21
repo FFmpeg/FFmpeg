@@ -211,7 +211,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     if ( argc > 1 )
     {
         *ctxp = av_mallocz(sizeof(ContextInfo));
-        if ( ctxp != NULL && argc > 1 )
+        if ( *ctxp != NULL && argc > 1 )
         {
             ContextInfo *info = (ContextInfo *)*ctxp;
             info->rw = rwpipe_open( argc - 1, &argv[ 1 ] );
