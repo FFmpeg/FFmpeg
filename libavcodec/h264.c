@@ -7430,11 +7430,9 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     }
 
     build_qp_table(pps, 0, pps->chroma_qp_index_offset[0]);
-    if(pps->chroma_qp_index_offset[0] != pps->chroma_qp_index_offset[1]) {
-        build_qp_table(pps, 1, pps->chroma_qp_index_offset[1]);
+    build_qp_table(pps, 1, pps->chroma_qp_index_offset[1]);
+    if(pps->chroma_qp_index_offset[0] != pps->chroma_qp_index_offset[1])
         h->pps.chroma_qp_diff= 1;
-    } else
-        memcpy(pps->chroma_qp_table[1], pps->chroma_qp_table[0], 256);
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         av_log(h->s.avctx, AV_LOG_DEBUG, "pps:%u sps:%u %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d/%d %s %s %s %s\n",
