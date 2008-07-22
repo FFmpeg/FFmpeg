@@ -3539,6 +3539,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 pic= remove_long(h, j);
                 if(pic) unreference_pic(h, pic, 0);
             }
+            s->current_picture_ptr->frame_num= 0;
             break;
         default: assert(0);
         }
