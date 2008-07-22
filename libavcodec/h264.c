@@ -6731,14 +6731,23 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     int b_idx= 8 + 4 + edge * (dir ? 8:1);
                     int bn_idx= b_idx - (dir ? 8:1);
                     int v = 0;
-                    int xn= h->slice_type_nos == FF_B_TYPE && ref2frm[0][h->ref_cache[0][b_idx]+2] != ref2frmn[0][h->ref_cache[0][bn_idx]+2];
 
                     for( l = 0; !v && l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
-                        int ln= l^xn;
-                        v |= ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
-                             FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
-                             FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
+                        v |= ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[l][h->ref_cache[l][bn_idx]+2] ||
+                             FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                             FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
                     }
+
+                    if(h->slice_type_nos == FF_B_TYPE && v){
+                        v=0;
+                        for( l = 0; !v && l < 2; l++ ) {
+                            int ln= 1-l;
+                            v |= ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
+                                FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
+                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
+                        }
+                    }
+
                     bS[0] = bS[1] = bS[2] = bS[3] = v;
                     mv_done = 1;
                 }
@@ -6757,15 +6766,26 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     }
                     else if(!mv_done)
                     {
-                        int xn= h->slice_type_nos == FF_B_TYPE && ref2frm[0][h->ref_cache[0][b_idx]+2] != ref2frmn[0][h->ref_cache[0][bn_idx]+2];
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
-                            int ln= l^xn;
-                            if( ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
-                                FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
-                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
+                            if( ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[l][h->ref_cache[l][bn_idx]+2] ||
+                                FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
                                 bS[i] = 1;
                                 break;
+                            }
+                        }
+
+                        if(h->slice_type_nos == FF_B_TYPE && bS[i]){
+                            bS[i] = 0;
+                            for( l = 0; l < 2; l++ ) {
+                                int ln= 1-l;
+                                if( ref2frm[l][h->ref_cache[l][b_idx]+2] != ref2frmn[ln][h->ref_cache[ln][bn_idx]+2] ||
+                                    FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
+                                    FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
+                                    bS[i] = 1;
+                                    break;
+                                }
                             }
                         }
                     }
