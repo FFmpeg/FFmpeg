@@ -2712,6 +2712,8 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             tprintf(h->s.avctx, "call filter_mb\n");
             backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
             fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
+            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
+            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
             filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         }
     }
@@ -4611,8 +4613,6 @@ decode_intra_mb:
 
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
-        h->chroma_qp[0] = get_chroma_qp(h, 0, 0);
-        h->chroma_qp[1] = get_chroma_qp(h, 1, 0);
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
 
@@ -5756,8 +5756,6 @@ decode_intra_mb:
         h->chroma_pred_mode_table[mb_xy] = 0;
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
-        h->chroma_qp[0] = get_chroma_qp(h, 0, 0);
-        h->chroma_qp[1] = get_chroma_qp(h, 1, 0);
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
         s->current_picture.mb_type[mb_xy]= mb_type;
