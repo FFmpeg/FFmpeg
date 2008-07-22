@@ -1584,7 +1584,7 @@ static void chroma_dc_dct_c(DCTELEM *block){
  * gets the chroma qp.
  */
 static inline int get_chroma_qp(H264Context *h, int t, int qscale){
-    return h->pps.chroma_qp_table[t][qscale & 0xff];
+    return h->pps.chroma_qp_table[t][qscale];
 }
 
 //FIXME need to check that this does not overflow signed 32 bit for low qp, I am not sure, it's very close
@@ -7337,8 +7337,8 @@ static void
 build_qp_table(PPS *pps, int t, int index)
 {
     int i;
-    for(i = 0; i < 255; i++)
-        pps->chroma_qp_table[t][i & 0xff] = chroma_qp[av_clip(i + index, 0, 51)];
+    for(i = 0; i < 52; i++)
+        pps->chroma_qp_table[t][i] = chroma_qp[av_clip(i + index, 0, 51)];
 }
 
 static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
