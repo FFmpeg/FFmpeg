@@ -441,9 +441,10 @@ maximum video quantizer scale (VBR)
 @item -qdiff @var{q}
 maximum difference between the quantizer scales (VBR)
 @item -qblur @var{blur}
-video quantizer scale blur (VBR)
+video quantizer scale blur (VBR) (range 0.0 - 1.0)
 @item -qcomp @var{compression}
-video quantizer scale compression (VBR)
+video quantizer scale compression (VBR) (default 0.5).
+Constant of ratecontrol equation. Recommended range for default rc_eq: 0.0-1.0
 
 @item -lmin @var{lambda}
 minimum video lagrange factor (VBR)
