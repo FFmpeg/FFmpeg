@@ -7896,11 +7896,6 @@ static int decode_frame(AVCodecContext *avctx,
             if(cur->reference == 0)
                 cur->reference = DELAYED_PIC_REF;
 
-            cross_idr = 0;
-            for(i=0; h->delayed_pic[i]; i++)
-                if(h->delayed_pic[i]->poc==0)
-                    cross_idr = 1;
-
             out = h->delayed_pic[0];
             out_idx = 0;
             for(i=1; h->delayed_pic[i] && h->delayed_pic[i]->poc; i++)
@@ -7908,6 +7903,7 @@ static int decode_frame(AVCodecContext *avctx,
                     out = h->delayed_pic[i];
                     out_idx = i;
                 }
+            cross_idr = !h->delayed_pic[0]->poc || !h->delayed_pic[i];
 
             out_of_order = !cross_idr && out->poc < h->outputed_poc;
 
