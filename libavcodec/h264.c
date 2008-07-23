@@ -3539,6 +3539,12 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 pic= remove_long(h, j);
                 if(pic) unreference_pic(h, pic, 0);
             }
+            s->current_picture_ptr->poc=
+            s->current_picture_ptr->field_poc[0]=
+            s->current_picture_ptr->field_poc[1]=
+            h->poc_lsb=
+            h->poc_msb=
+            h->frame_num=
             s->current_picture_ptr->frame_num= 0;
             break;
         default: assert(0);
@@ -3599,7 +3605,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                "number of reference frames exceeds max (probably "
                "corrupt input), discarding one\n");
 
-        if (h->long_ref_count) {
+        if (h->long_ref_count && !h->short_ref_count) {
             for (i = 0; i < 16; ++i)
                 if (h->long_ref[i])
                     break;
@@ -4018,6 +4024,16 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     if(h0->current_slice == 0){
+        while(h->frame_num !=  h->prev_frame_num &&
+              h->frame_num != (h->prev_frame_num+1)%(1<<h->sps.log2_max_frame_num)){
+            av_log(NULL, AV_LOG_DEBUG, "Frame num gap %d %d\n", h->frame_num, h->prev_frame_num);
+            frame_start(h);
+            h->prev_frame_num++;
+            h->prev_frame_num %= 1<<h->sps.log2_max_frame_num;
+            s->current_picture_ptr->frame_num= h->prev_frame_num;
+            execute_ref_pic_marking(h, NULL, 0);
+        }
+
         /* See if we have a decoded first field looking for a pair... */
         if (s0->first_field) {
             assert(s0->current_picture_ptr);
@@ -7738,7 +7754,7 @@ static int decode_frame(AVCodecContext *avctx,
 //FIXME factorize this with the output code below
         out = h->delayed_pic[0];
         out_idx = 0;
-        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && h->delayed_pic[i]->poc; i++)
             if(h->delayed_pic[i]->poc < out->poc){
                 out = h->delayed_pic[i];
                 out_idx = i;
@@ -7821,13 +7837,13 @@ static int decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
         s->current_picture_ptr->pict_type= s->pict_type;
 
-        h->prev_frame_num_offset= h->frame_num_offset;
-        h->prev_frame_num= h->frame_num;
         if(!s->dropable) {
+            execute_ref_pic_marking(h, h->mmco, h->mmco_index);
             h->prev_poc_msb= h->poc_msb;
             h->prev_poc_lsb= h->poc_lsb;
-            execute_ref_pic_marking(h, h->mmco, h->mmco_index);
         }
+        h->prev_frame_num_offset= h->frame_num_offset;
+        h->prev_frame_num= h->frame_num;
 
         /*
          * FIXME: Error handling code does not seem to support interlaced
@@ -7887,7 +7903,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             out = h->delayed_pic[0];
             out_idx = 0;
-            for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+            for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && h->delayed_pic[i]->poc; i++)
                 if(h->delayed_pic[i]->poc < out->poc){
                     out = h->delayed_pic[i];
                     out_idx = i;
