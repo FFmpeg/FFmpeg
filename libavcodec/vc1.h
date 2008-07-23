@@ -304,6 +304,8 @@ typedef struct VC1Context{
     int p_frame_skipped;
     int bi_type;
     int x8_type;
+
+    uint32_t *cbp_base, *cbp;
 } VC1Context;
 
 #endif /* FFMPEG_VC1_H */
