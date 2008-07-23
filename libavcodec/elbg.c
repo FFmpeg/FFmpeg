@@ -249,8 +249,12 @@ static void try_shift_candidate(elbg_data *elbg, int idx[3])
     int j, k, olderror=0, newerror, cont=0;
     int newutility[3];
     int newcentroid[3][elbg->dim];
-    int *newcentroid_ptrs[3] = { newcentroid[0], newcentroid[1], newcentroid[2] };
+    int *newcentroid_ptrs[3];
     cell *tempcell;
+
+    newcentroid_ptrs[0] = newcentroid[0];
+    newcentroid_ptrs[1] = newcentroid[1];
+    newcentroid_ptrs[2] = newcentroid[2];
 
     for (j=0; j<3; j++)
         olderror += elbg->utility[idx[j]];
