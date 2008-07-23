@@ -7730,7 +7730,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
-   /* no supplementary picture */
+   /* end of stream, output whats still in the buffers */
     if (buf_size == 0) {
         Picture *out;
         int i, out_idx;
