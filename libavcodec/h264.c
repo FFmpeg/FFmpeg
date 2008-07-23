@@ -7887,7 +7887,7 @@ static int decode_frame(AVCodecContext *avctx,
                     out = h->delayed_pic[i];
                     out_idx = i;
                 }
-            cross_idr = !h->delayed_pic[0]->poc || !h->delayed_pic[i];
+            cross_idr = !h->delayed_pic[0]->poc || !!h->delayed_pic[i];
 
             out_of_order = !cross_idr && out->poc < h->outputed_poc;
 
