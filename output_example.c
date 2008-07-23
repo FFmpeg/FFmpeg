@@ -156,6 +156,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
 
+    if (c->coded_frame->pts != AV_NOPTS_VALUE)
     pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
     pkt.flags |= PKT_FLAG_KEY;
     pkt.stream_index= st->index;
@@ -380,6 +381,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
             AVPacket pkt;
             av_init_packet(&pkt);
 
+            if (c->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
             if(c->coded_frame->key_frame)
                 pkt.flags |= PKT_FLAG_KEY;
