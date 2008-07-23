@@ -306,12 +306,11 @@ static void do_shiftings(elbg_data *elbg)
             if (elbg->utility_inc[elbg->numCB-1] == 0)
                 return;
 
+            idx[1] = get_high_utility_cell(elbg);
             idx[2] = get_closest_codebook(elbg, idx[0]);
-            do {
-                idx[1] = get_high_utility_cell(elbg);
-            } while (idx[1] == idx[0] || idx[1] == idx[2]);
 
-            try_shift_candidate(elbg, idx);
+            if (idx[1] != idx[0] && idx[1] != idx[2])
+                try_shift_candidate(elbg, idx);
         }
 }
 
