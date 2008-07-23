@@ -7712,17 +7712,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
  * returns the number of bytes consumed for building the current frame
  */
 static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
-    if(s->flags&CODEC_FLAG_TRUNCATED){
-        pos -= s->parse_context.last_index;
-        if(pos<0) pos=0; // FIXME remove (unneeded?)
-
-        return pos;
-    }else{
         if(pos==0) pos=1; //avoid infinite loops (i doubt that is needed but ...)
         if(pos+10>buf_size) pos=buf_size; // oops ;)
 
         return pos;
-    }
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -7736,15 +7729,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
-
-    if(s->flags&CODEC_FLAG_TRUNCATED){
-        const int next= ff_h264_find_frame_end(h, buf, buf_size);
-        assert((buf_size > 0) || (next == END_NOT_FOUND));
-
-        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
-          return buf_size;
-//printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
-    }
 
    /* no supplementary picture */
     if (buf_size == 0) {
@@ -8166,7 +8150,7 @@ AVCodec h264_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
 };
