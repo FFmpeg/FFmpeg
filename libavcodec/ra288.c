@@ -196,7 +196,7 @@ static void update(Real288_internal *glob)
                      syn_window);
 
     if (!eval_lpc_coeffs(temp1, glob->st1, 36))
-        colmult(glob->pr1, glob->st1, table1a, 36);
+        colmult(glob->pr1, glob->st1, syn_bw_tab, 36);
 
     memcpy(buffer2    , glob->history + 4, 4*sizeof(*buffer2));
     memcpy(buffer2 + 4, glob->history    , 4*sizeof(*buffer2));
@@ -205,7 +205,7 @@ static void update(Real288_internal *glob)
                      gain_window);
 
     if (!eval_lpc_coeffs(temp2, glob->st2, 10))
-        colmult(glob->pr2, glob->st2, table2a, 10);
+        colmult(glob->pr2, glob->st2, gain_bw_tab, 10);
 }
 
 /* Decode a block (celp) */
