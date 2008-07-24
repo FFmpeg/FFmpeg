@@ -137,6 +137,20 @@ static void prodsum(float *tgt, const float *src, int len, int n)
 
 }
 
+/**
+ * Hybrid window filtering. See blocks 36 and 49 of the G.728 specification.
+ *
+ * @param order   the order of the filter
+ * @param n       the length of the input
+ * @param non_rec the number of non recursive samples
+ * @param out     the filter output
+ * @param in      pointer to the input of the filter
+ * @param hist    pointer to the input history of the filter. It is updated by
+ *                this function.
+ * @param out     pointer to the non recursive part of the output
+ * @param out2    pointer to the recursive part of the output
+ * @param window  pointer to the windowing function table
+ */
 static void do_hybrid_window(int order, int n, int non_rec, const float *in,
                              float *out, float *hist, float *out2,
                              const float *window)
@@ -146,7 +160,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     float buffer2[37];
     float work[111];
 
-    /* rotate and multiply */
+    /* update history */
     memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
     memcpy (hist + order + non_rec, in      , n                *sizeof(*hist));
 
