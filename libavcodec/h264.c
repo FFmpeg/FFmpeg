@@ -4897,8 +4897,10 @@ decode_intra_mb:
     h->cbp = cbp;
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
-        if(get_bits1(&s->gb))
+        if(get_bits1(&s->gb)){
             mb_type |= MB_TYPE_8x8DCT;
+            h->cbp_table[mb_xy]= cbp;
+        }
     }
     s->current_picture.mb_type[mb_xy]= mb_type;
 
@@ -6574,6 +6576,43 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
            && (mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
            && (mb_y == 0 || ((qp + s->current_picture.qscale_table[h->top_mb_xy] + 1)>>1) <= qp_thresh)){
             return;
+        }
+    }
+
+    // CAVLC 8x8dct requires NNZ values for residual decoding that differ from what the loop filter needs
+    if(!h->pps.cabac && h->pps.transform_8x8_mode){
+        int top_type, left_type[2];
+        top_type     = s->current_picture.mb_type[h->top_mb_xy]    ;
+        left_type[0] = s->current_picture.mb_type[h->left_mb_xy[0]];
+        left_type[1] = s->current_picture.mb_type[h->left_mb_xy[1]];
+
+        if(IS_8x8DCT(top_type)){
+            h->non_zero_count_cache[4+8*0]=
+            h->non_zero_count_cache[5+8*0]= h->cbp_table[h->top_mb_xy] & 4;
+            h->non_zero_count_cache[6+8*0]=
+            h->non_zero_count_cache[7+8*0]= h->cbp_table[h->top_mb_xy] & 8;
+        }
+        if(IS_8x8DCT(left_type[0])){
+            h->non_zero_count_cache[3+8*1]=
+            h->non_zero_count_cache[3+8*2]= h->cbp_table[h->left_mb_xy[0]]&2; //FIXME check MBAFF
+        }
+        if(IS_8x8DCT(left_type[1])){
+            h->non_zero_count_cache[3+8*3]=
+            h->non_zero_count_cache[3+8*4]= h->cbp_table[h->left_mb_xy[1]]&8; //FIXME check MBAFF
+        }
+
+        if(IS_8x8DCT(mb_type)){
+            h->non_zero_count_cache[scan8[0   ]]= h->non_zero_count_cache[scan8[1   ]]=
+            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= h->cbp_table[mb_xy] & 1;
+
+            h->non_zero_count_cache[scan8[0+ 4]]= h->non_zero_count_cache[scan8[1+ 4]]=
+            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= h->cbp_table[mb_xy] & 2;
+
+            h->non_zero_count_cache[scan8[0+ 8]]= h->non_zero_count_cache[scan8[1+ 8]]=
+            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= h->cbp_table[mb_xy] & 4;
+
+            h->non_zero_count_cache[scan8[0+12]]= h->non_zero_count_cache[scan8[1+12]]=
+            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= h->cbp_table[mb_xy] & 8;
         }
     }
 
