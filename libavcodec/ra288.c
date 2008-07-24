@@ -137,8 +137,9 @@ static void prodsum(float *tgt, const float *src, int len, int n)
 
 }
 
-static void do_hybrid_window(int n, int i, int j, const float *in, float *out, float *st1,
-               float *st2, const float *table)
+static void do_hybrid_window(int order, int n, int non_rec, const float *in,
+                             float *out, float *hist, float *out2,
+                             const float *window)
 {
     unsigned int x;
     float buffer1[37];
@@ -146,17 +147,17 @@ static void do_hybrid_window(int n, int i, int j, const float *in, float *out, f
     float work[111];
 
     /* rotate and multiply */
-    memmove(st1        , st1 + i, (n + j)*sizeof(*st1));
-    memcpy (st1 + n + j, in     , i      *sizeof(*st1));
+    memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
+    memcpy (hist + order + non_rec, in      , n                *sizeof(*hist));
 
-    colmult(work, table, st1, n + i + j);
+    colmult(work, window, hist, order + n + non_rec);
 
-    prodsum(buffer1, work + n    , i, n);
-    prodsum(buffer2, work + n + i, j, n);
+    prodsum(buffer1, work + order    , n      , order);
+    prodsum(buffer2, work + order + n, non_rec, order);
 
-    for (x=0; x <= n; x++) {
-        st2[x] = st2[x] * 0.5625 + buffer1[x];
-        out[x] = st2[x]          + buffer2[x];
+    for (x=0; x <= order; x++) {
+        out2[x] = out2[x] * 0.5625 + buffer1[x];
+        out [x] = out2[x]          + buffer2[x];
     }
 
     /* Multiply by the white noise correcting factor (WNCF) */
@@ -171,7 +172,8 @@ static void update(Real288_internal *glob)
     memcpy(buffer1     , glob->output + 20, 20*sizeof(*buffer1));
     memcpy(buffer1 + 20, glob->output     , 20*sizeof(*buffer1));
 
-    do_hybrid_window(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b, table1);
+    do_hybrid_window(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b,
+                     table1);
 
     if (pred(temp1, glob->st1, 36))
         colmult(glob->pr1, glob->st1, table1a, 36);
@@ -179,7 +181,8 @@ static void update(Real288_internal *glob)
     memcpy(buffer2    , glob->history + 4, 4*sizeof(*buffer2));
     memcpy(buffer2 + 4, glob->history    , 4*sizeof(*buffer2));
 
-    do_hybrid_window(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
+    do_hybrid_window(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b,
+                     table2);
 
     if (pred(temp2, glob->st2, 10))
         colmult(glob->pr2, glob->st2, table2a, 10);
