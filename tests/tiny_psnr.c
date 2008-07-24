@@ -113,7 +113,7 @@ int main(int argc,char* argv[]){
 
     if(argc<3){
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
-        printf("for wav files use the following:\n");
+        printf("For WAV files use the following:\n");
         printf("./tiny_psnr file1.wav file2.wav 2 0 44 to skip the header.\n");
         return -1;
     }
@@ -121,7 +121,7 @@ int main(int argc,char* argv[]){
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
     if(!f[0] || !f[1]){
-        fprintf(stderr, "couldnt open input files\n");
+        fprintf(stderr, "Could not open input files.\n");
         return -1;
     }
     fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
