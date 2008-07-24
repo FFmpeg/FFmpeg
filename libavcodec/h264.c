@@ -3699,10 +3699,10 @@ static int init_poc(H264Context *h){
     const int max_frame_num= 1<<h->sps.log2_max_frame_num;
     int field_poc[2];
 
-        if(h->frame_num < h->prev_frame_num)
-            h->frame_num_offset= h->prev_frame_num_offset + max_frame_num;
-        else
-            h->frame_num_offset= h->prev_frame_num_offset;
+    if(h->frame_num < h->prev_frame_num)
+        h->frame_num_offset= h->prev_frame_num_offset + max_frame_num;
+    else
+        h->frame_num_offset= h->prev_frame_num_offset;
 
     if(h->sps.poc_type==0){
         const int max_poc_lsb= 1<<h->sps.log2_max_poc_lsb;
@@ -3754,8 +3754,10 @@ static int init_poc(H264Context *h){
             field_poc[1] += h->delta_poc[1];
     }else{
         int poc;
-            if(h->nal_ref_idc) poc= 2*(h->frame_num_offset + h->frame_num);
-            else               poc= 2*(h->frame_num_offset + h->frame_num) - 1;
+
+        if(h->nal_ref_idc) poc= 2*(h->frame_num_offset + h->frame_num);
+        else               poc= 2*(h->frame_num_offset + h->frame_num) - 1;
+
         field_poc[0]= poc;
         field_poc[1]= poc;
     }
