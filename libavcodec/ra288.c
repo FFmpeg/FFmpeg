@@ -141,19 +141,15 @@ static void co(int n, int i, int j, const float *in, float *out, float *st1,
                float *st2, const float *table)
 {
     unsigned int x;
-    const float *fp;
     float buffer1[37];
     float buffer2[37];
     float work[111];
 
     /* rotate and multiply */
-    fp = st1 + i;
-    for (x=0; x < n + i + j; x++) {
-        if (x == n + j)
-            fp=in;
-        st1[x] = *(fp++);
-        work[x] = table[x] * st1[x];
-    }
+    memmove(st1        , st1 + i, (n + j)*sizeof(*st1));
+    memcpy (st1 + n + j, in     , i      *sizeof(*st1));
+
+    colmult(work, table, st1, n + i + j);
 
     prodsum(buffer1, work + n    , i, n);
     prodsum(buffer2, work + n + i, j, n);
