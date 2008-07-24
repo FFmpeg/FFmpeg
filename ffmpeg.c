@@ -2235,7 +2235,7 @@ static int opt_default(const char *opt, const char *arg){
 
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avctx_opts, opt, NULL), (int)av_get_int(avctx_opts, opt, NULL));
 
-    //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
+    //FIXME we should always use avctx_opts, ... for storing options so there will not be any need to keep track of what i set over this
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
     opt_names[opt_name_count++]= o->name;
 

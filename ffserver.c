@@ -1497,9 +1497,8 @@ static int http_parse_request(HTTPContext *c)
     if (c->post) {
         /* if post, it means a feed is being sent */
         if (!stream->is_feed) {
-            /* However it might be a status report from WMP! Lets log the data
-             * as it might come in handy one day
-             */
+            /* However it might be a status report from WMP! Let us log the
+             * data as it might come in handy one day. */
             char *logline = 0;
             int client_id = 0;
 
