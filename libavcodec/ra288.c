@@ -184,7 +184,10 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     *out *= 257./256.;
 }
 
-static void update(Real288_internal *glob)
+/**
+ * Backward synthesis filter. Find the LPC coefficients from past speech data.
+ */
+static void backward_filter(Real288_internal *glob)
 {
     float buffer1[40], temp1[37];
     float buffer2[8], temp2[11];
@@ -237,7 +240,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
             *(out++) = 8 * glob->output[glob->phase*5 + y];
 
         if (glob->phase == 3)
-            update(glob);
+            backward_filter(glob);
     }
 
     *data_size = (char *)out - (char *)data;
