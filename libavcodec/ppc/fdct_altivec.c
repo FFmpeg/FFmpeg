@@ -58,9 +58,9 @@
 
 
 static vector float fdctconsts[3] = {
-    AVV( W0, W1, W2, W3 ),
-    AVV( W4, W5, W6, W7 ),
-    AVV( W8, W9, WA, WB )
+    { W0, W1, W2, W3 },
+    { W4, W5, W6, W7 },
+    { W8, W9, WA, WB }
 };
 
 #define LD_W0 vec_splat(cnsts0, 0)

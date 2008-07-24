@@ -725,7 +725,6 @@ HAVE_LIST="
     $ARCH_EXT_LIST
     $THREADS_LIST
     altivec_h
-    altivec_vector_braces
     arpa_inet_h
     bswap
     byteswap_h
@@ -1567,10 +1566,9 @@ int main(void) {
 EOF
 
     # check if our compiler supports braces for vector declarations
-    check_cc <<EOF && enable altivec_vector_braces
+    check_cc <<EOF || die "You need a compiler that supports {} in AltiVec vector declarations."
 $inc_altivec_h
-#define AVV(x...) {x}
-int main (void) { (vector int) AVV(1); return 0; }
+int main (void) { (vector int) {1}; return 0; }
 EOF
 fi
 

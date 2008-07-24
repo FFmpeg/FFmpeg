@@ -50,14 +50,6 @@
 #endif
 #endif
 
-#ifdef HAVE_ALTIVEC
-#ifdef HAVE_ALTIVEC_VECTOR_BRACES
-#define AVV(x...) {x}
-#else
-#define AVV(x...) (x)
-#endif
-#endif
-
 #ifndef M_PI
 #define M_PI    3.14159265358979323846
 #endif

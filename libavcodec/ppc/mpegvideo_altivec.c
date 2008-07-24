@@ -66,7 +66,7 @@ do { \
 }
 
 
-#define FOUROF(a) AVV(a,a,a,a)
+#define FOUROF(a) {a,a,a,a}
 
 int dct_quantize_altivec(MpegEncContext* s,
                          DCTELEM* data, int n,

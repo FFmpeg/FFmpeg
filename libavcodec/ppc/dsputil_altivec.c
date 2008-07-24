@@ -277,7 +277,7 @@ int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
     sad = (vector unsigned int)vec_splat_u32(0);
 
-    permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
 
     for (i = 0; i < h; i++) {
         /* Read potentially unaligned pixels into t1 and t2
@@ -358,7 +358,7 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
     sum = (vector unsigned int)vec_splat_u32(0);
 
-    permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
 
 
     for (i = 0; i < h; i++) {
@@ -990,20 +990,20 @@ POWERPC_PERF_DECLARE(altivec_hadamard8_diff8x8_num, 1);
 POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
     {
     register const vector signed short vprod1 =(const vector signed short)
-                                        AVV( 1,-1, 1,-1, 1,-1, 1,-1);
+                                               { 1,-1, 1,-1, 1,-1, 1,-1 };
     register const vector signed short vprod2 =(const vector signed short)
-                                        AVV( 1, 1,-1,-1, 1, 1,-1,-1);
+                                               { 1, 1,-1,-1, 1, 1,-1,-1 };
     register const vector signed short vprod3 =(const vector signed short)
-                                        AVV( 1, 1, 1, 1,-1,-1,-1,-1);
+                                               { 1, 1, 1, 1,-1,-1,-1,-1 };
     register const vector unsigned char perm1 = (const vector unsigned char)
-      AVV(0x02, 0x03, 0x00, 0x01, 0x06, 0x07, 0x04, 0x05,
-          0x0A, 0x0B, 0x08, 0x09, 0x0E, 0x0F, 0x0C, 0x0D);
+        {0x02, 0x03, 0x00, 0x01, 0x06, 0x07, 0x04, 0x05,
+         0x0A, 0x0B, 0x08, 0x09, 0x0E, 0x0F, 0x0C, 0x0D};
     register const vector unsigned char perm2 = (const vector unsigned char)
-      AVV(0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02, 0x03,
-          0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x09, 0x0A, 0x0B);
+        {0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02, 0x03,
+         0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x09, 0x0A, 0x0B};
     register const vector unsigned char perm3 = (const vector unsigned char)
-      AVV(0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-          0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07);
+        {0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
 #define ONEITERBUTTERFLY(i, res)                                          \
     {                                                                     \
@@ -1130,23 +1130,23 @@ static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, 
         (const vector unsigned char)vec_splat_u8(0);
     {
     register const vector signed short vprod1 REG_v(v16)=
-        (const vector signed short)AVV( 1,-1, 1,-1, 1,-1, 1,-1);
+        (const vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1 };
     register const vector signed short vprod2 REG_v(v17)=
-        (const vector signed short)AVV( 1, 1,-1,-1, 1, 1,-1,-1);
+        (const vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1 };
     register const vector signed short vprod3 REG_v(v18)=
-        (const vector signed short)AVV( 1, 1, 1, 1,-1,-1,-1,-1);
+        (const vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1 };
     register const vector unsigned char perm1 REG_v(v19)=
         (const vector unsigned char)
-        AVV(0x02, 0x03, 0x00, 0x01, 0x06, 0x07, 0x04, 0x05,
-            0x0A, 0x0B, 0x08, 0x09, 0x0E, 0x0F, 0x0C, 0x0D);
+        {0x02, 0x03, 0x00, 0x01, 0x06, 0x07, 0x04, 0x05,
+         0x0A, 0x0B, 0x08, 0x09, 0x0E, 0x0F, 0x0C, 0x0D};
     register const vector unsigned char perm2 REG_v(v20)=
         (const vector unsigned char)
-        AVV(0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02, 0x03,
-            0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x09, 0x0A, 0x0B);
+        {0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02, 0x03,
+         0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x09, 0x0A, 0x0B};
     register const vector unsigned char perm3 REG_v(v21)=
         (const vector unsigned char)
-        AVV(0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07);
+        {0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
 #define ONEITERBUTTERFLY(i, res1, res2)                                   \
     {                                                                     \
