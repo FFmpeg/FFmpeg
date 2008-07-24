@@ -1371,6 +1371,11 @@ static int mov_read_udta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    int i;
+    int width;
+    int height;
+    int64_t disp_transform[2];
+    int display_matrix[3][2];
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     int version = get_byte(pb);
 
@@ -1402,12 +1407,36 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_be16(pb); /* volume */
     get_be16(pb); /* reserved */
 
-    url_fskip(pb, 36); /* display matrix */
+    //read in the display matrix (outlined in ISO 14496-12, Section 6.2.2)
+    // they're kept in fixed point format through all calculations
+    // ignore u,v,z b/c we don't need the scale factor to calc aspect ratio
+    for (i = 0; i < 3; i++) {
+        display_matrix[i][0] = get_be32(pb);   // 16.16 fixed point
+        display_matrix[i][1] = get_be32(pb);   // 16.16 fixed point
+        get_be32(pb);           // 2.30 fixed point (not used)
+    }
 
-    /* those are fixed-point */
-    get_be32(pb); /* track width */
-    get_be32(pb); /* track height */
+    width = get_be32(pb);       // 16.16 fixed point track width
+    height = get_be32(pb);      // 16.16 fixed point track height
 
+    //transform the display width/height according to the matrix
+    // skip this if the display matrix is the default identity matrix
+    // to keep the same scale, use [width height 1<<16]
+    if (width && height &&
+        (display_matrix[0][0] != 65536 || display_matrix[0][1]           ||
+        display_matrix[1][0]           || display_matrix[1][1] != 65536  ||
+        display_matrix[2][0]           || display_matrix[2][1])) {
+        for (i = 0; i < 2; i++)
+            disp_transform[i] =
+                (int64_t)  width  * display_matrix[0][i] +
+                (int64_t)  height * display_matrix[1][i] +
+                ((int64_t) display_matrix[2][i] << 16);
+
+        //sample aspect ratio is new width/height divided by old width/height
+        st->codec->sample_aspect_ratio = av_d2q(
+            ((double) disp_transform[0] * height) /
+            ((double) disp_transform[1] * width), INT_MAX);
+    }
     return 0;
 }
 
