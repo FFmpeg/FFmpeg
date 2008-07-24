@@ -137,7 +137,7 @@ static void prodsum(float *tgt, const float *src, int len, int n)
 
 }
 
-static void co(int n, int i, int j, const float *in, float *out, float *st1,
+static void do_hybrid_window(int n, int i, int j, const float *in, float *out, float *st1,
                float *st2, const float *table)
 {
     unsigned int x;
@@ -158,7 +158,9 @@ static void co(int n, int i, int j, const float *in, float *out, float *st1,
         st2[x] = st2[x] * 0.5625 + buffer1[x];
         out[x] = st2[x]          + buffer2[x];
     }
-    *out *= 257./256.; /* to prevent clipping */
+
+    /* Multiply by the white noise correcting factor (WNCF) */
+    *out *= 257./256.;
 }
 
 static void update(Real288_internal *glob)
@@ -169,7 +171,7 @@ static void update(Real288_internal *glob)
     memcpy(buffer1     , glob->output + 20, 20*sizeof(*buffer1));
     memcpy(buffer1 + 20, glob->output     , 20*sizeof(*buffer1));
 
-    co(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b, table1);
+    do_hybrid_window(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b, table1);
 
     if (pred(temp1, glob->st1, 36))
         colmult(glob->pr1, glob->st1, table1a, 36);
@@ -177,7 +179,7 @@ static void update(Real288_internal *glob)
     memcpy(buffer2    , glob->history + 4, 4*sizeof(*buffer2));
     memcpy(buffer2 + 4, glob->history    , 4*sizeof(*buffer2));
 
-    co(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
+    do_hybrid_window(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b, table2);
 
     if (pred(temp2, glob->st2, 10))
         colmult(glob->pr2, glob->st2, table2a, 10);
