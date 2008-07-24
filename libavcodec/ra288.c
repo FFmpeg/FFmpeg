@@ -187,7 +187,7 @@ static void update(Real288_internal *glob)
     memcpy(buffer1 + 20, glob->output     , 20*sizeof(*buffer1));
 
     do_hybrid_window(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b,
-                     table1);
+                     syn_window);
 
     if (pred(temp1, glob->st1, 36))
         colmult(glob->pr1, glob->st1, table1a, 36);
@@ -196,7 +196,7 @@ static void update(Real288_internal *glob)
     memcpy(buffer2 + 4, glob->history    , 4*sizeof(*buffer2));
 
     do_hybrid_window(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b,
-                     table2);
+                     gain_window);
 
     if (pred(temp2, glob->st2, 10))
         colmult(glob->pr2, glob->st2, table2a, 10);
