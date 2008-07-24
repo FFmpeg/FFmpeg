@@ -2264,6 +2264,10 @@ static int frame_start(H264Context *h){
     // mark frames as reference later "naturally".
     if(s->codec_id != CODEC_ID_SVQ3)
         s->current_picture_ptr->reference= 0;
+
+    s->current_picture_ptr->field_poc[0]=
+    s->current_picture_ptr->field_poc[1]= INT_MAX;
+
     return 0;
 }
 
@@ -3698,6 +3702,7 @@ static int init_poc(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int max_frame_num= 1<<h->sps.log2_max_frame_num;
     int field_poc[2];
+    Picture *cur = s->current_picture_ptr;
 
     h->frame_num_offset= h->prev_frame_num_offset;
     if(h->frame_num < h->prev_frame_num)
@@ -3761,18 +3766,11 @@ static int init_poc(H264Context *h){
         field_poc[1]= poc;
     }
 
-    if(s->picture_structure != PICT_BOTTOM_FIELD) {
+    if(s->picture_structure != PICT_BOTTOM_FIELD)
         s->current_picture_ptr->field_poc[0]= field_poc[0];
-        s->current_picture_ptr->poc = field_poc[0];
-    }
-    if(s->picture_structure != PICT_TOP_FIELD) {
+    if(s->picture_structure != PICT_TOP_FIELD)
         s->current_picture_ptr->field_poc[1]= field_poc[1];
-        s->current_picture_ptr->poc = field_poc[1];
-    }
-    if(!FIELD_PICTURE || !s->first_field) {
-        Picture *cur = s->current_picture_ptr;
-        cur->poc= FFMIN(cur->field_poc[0], cur->field_poc[1]);
-    }
+    cur->poc= FFMIN(cur->field_poc[0], cur->field_poc[1]);
 
     return 0;
 }
@@ -7877,7 +7875,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         MPV_frame_end(s);
 
-        if (s->first_field) {
+        if (cur->field_poc[0]==INT_MAX || cur->field_poc[1]==INT_MAX) {
             /* Wait for second field. */
             *data_size = 0;
 
