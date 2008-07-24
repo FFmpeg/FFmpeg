@@ -158,7 +158,7 @@ static void co(int n, int i, int j, const float *in, float *out, float *st1,
         st2[x] = st2[x] * 0.5625 + buffer1[x];
         out[x] = st2[x]          + buffer2[x];
     }
-    *out *= 1.00390625; /* to prevent clipping */
+    *out *= 257./256.; /* to prevent clipping */
 }
 
 static void update(Real288_internal *glob)
