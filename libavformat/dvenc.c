@@ -255,7 +255,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
             av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
         av_fifo_generic_write(&c->audio_data[i], data, data_size, NULL);
 
-        /* Lets see if we've got enough audio for one DV frame */
+        /* Let us see if we've got enough audio for one DV frame. */
         c->has_audio |= ((reqasize <= av_fifo_size(&c->audio_data[i])) << i);
 
         break;
@@ -263,7 +263,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         break;
     }
 
-    /* Lets see if we have enough data to construct one DV frame */
+    /* Let us see if we have enough data to construct one DV frame. */
     if (c->has_video == 1 && c->has_audio + 1 == 1<<c->n_ast) {
         dv_inject_metadata(c, *frame);
         c->has_audio = 0;

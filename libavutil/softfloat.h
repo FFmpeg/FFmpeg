@@ -74,7 +74,7 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
 /**
  *
  * @return will not be more denormalized then a+b, so if either input is
- *         normalized then the output wont be worse then the other input
+ *         normalized then the output will not be worse then the other input
  *         if both are normalized then the output will be normalized
  */
 static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){

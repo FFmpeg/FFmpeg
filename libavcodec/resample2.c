@@ -230,7 +230,7 @@ void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensa
  * @param consumed the number of samples of src which have been consumed are returned here
  * @param src_size the number of unconsumed samples available
  * @param dst_size the amount of space in samples available in dst
- * @param update_ctx if this is 0 then the context wont be modified, that way several channels can be resampled with the same context
+ * @param update_ctx If this is 0 then the context will not be modified, that way several channels can be resampled with the same context.
  * @return the number of samples written in dst or -1 if an error occurred
  */
 int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx){
