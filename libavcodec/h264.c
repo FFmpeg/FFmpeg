@@ -3303,6 +3303,7 @@ static void idr(H264Context *h){
         h->short_ref[i]= NULL;
     }
     h->short_ref_count=0;
+    h->prev_frame_num= 0;
 }
 
 /* forget old pics after a seek */
