@@ -156,7 +156,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         vst->codec->width = width;
         vst->codec->height = height;
         vst->codec->bits_per_sample = 10;
-        vst->codec->sample_aspect_ratio = av_d2q(aspect, 10000);
+        vst->codec->sample_aspect_ratio = av_d2q(aspect * height / width, 10000);
         vst->r_frame_rate = av_d2q(fps, 60000);
         av_set_pts_info(vst, 32, 1, 1000);
     } else
