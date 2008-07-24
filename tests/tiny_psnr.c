@@ -120,6 +120,10 @@ int main(int argc,char* argv[]){
 
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
+    if(!f[0] || !f[1]){
+        fprintf(stderr, "couldnt open input files\n");
+        return -1;
+    }
     fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
 
     fseek(f[0],skip_bytes,SEEK_CUR);
