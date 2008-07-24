@@ -148,12 +148,12 @@ static void prodsum(float *tgt, const float *src, int len, int n)
  *
  * @param order   the order of the filter
  * @param n       the length of the input
- * @param non_rec the number of non recursive samples
+ * @param non_rec the number of non-recursive samples
  * @param out     the filter output
  * @param in      pointer to the input of the filter
  * @param hist    pointer to the input history of the filter. It is updated by
  *                this function.
- * @param out     pointer to the non recursive part of the output
+ * @param out     pointer to the non-recursive part of the output
  * @param out2    pointer to the recursive part of the output
  * @param window  pointer to the windowing function table
  */
