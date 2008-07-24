@@ -97,7 +97,13 @@ static void colmult(float *tgt, const float *m1, const float *m2, int n)
         *(tgt++) = (*(m1++)) * (*(m2++));
 }
 
-static int pred(const float *in, float *tgt, int n)
+/**
+ * Converts autocorrelation coefficients to LPC coefficients using the
+ * Levinson-Durbin algorithm. See blocks 37 and 50 of the G.728 specification.
+ *
+ * @return 1 if success, 0 if fail
+ */
+static int eval_lpc_coeffs(const float *in, float *tgt, int n)
 {
     int x, y;
     double f0, f1, f2;
@@ -189,7 +195,7 @@ static void update(Real288_internal *glob)
     do_hybrid_window(36, 40, 35, buffer1, temp1, glob->st1a, glob->st1b,
                      syn_window);
 
-    if (pred(temp1, glob->st1, 36))
+    if (eval_lpc_coeffs(temp1, glob->st1, 36))
         colmult(glob->pr1, glob->st1, table1a, 36);
 
     memcpy(buffer2    , glob->history + 4, 4*sizeof(*buffer2));
@@ -198,7 +204,7 @@ static void update(Real288_internal *glob)
     do_hybrid_window(10, 8, 20, buffer2, temp2, glob->st2a, glob->st2b,
                      gain_window);
 
-    if (pred(temp2, glob->st2, 10))
+    if (eval_lpc_coeffs(temp2, glob->st2, 10))
         colmult(glob->pr2, glob->st2, table2a, 10);
 }
 
