@@ -385,7 +385,12 @@ blue (default = 000000 (black)).
 @item -vn
 Disable video recording.
 @item -bt @var{tolerance}
-Set video bitrate tolerance (in bit/s).
+Set video bitrate tolerance (in bits, default 4000k).
+Has a minimum value of: (target_bitrate/target_framerate).
+In 1-pass mode, bitrate tolerance specifies how far ratecontrol is
+willing to deviate from the target average bitrate value. This is
+not related to min/max bitrate. Lowering tolerance too much has
+an adverse effect on quality.
 @item -maxrate @var{bitrate}
 Set max video bitrate (in bit/s).
 Requires -bufsize to be set.
