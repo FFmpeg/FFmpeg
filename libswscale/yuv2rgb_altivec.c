@@ -223,22 +223,22 @@ do {                                                                          \
 #define vec_unh(x) \
     (vector signed short) \
         vec_perm(x,(typeof(x)){0}, \
-                 (vector unsigned char){0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,\
-                                        0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07})
+                 ((vector unsigned char){0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,\
+                                         0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07}))
 #define vec_unl(x) \
     (vector signed short) \
         vec_perm(x,(typeof(x)){0}, \
-                 (vector unsigned char){0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,\
-                                        0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F})
+                 ((vector unsigned char){0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,\
+                                         0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F}))
 
 #define vec_clip_s16(x) \
-    vec_max (vec_min (x, (vector signed short){235,235,235,235,235,235,235,235}), \
-                         (vector signed short){ 16, 16, 16, 16, 16, 16, 16, 16 })
+    vec_max (vec_min (x, ((vector signed short){235,235,235,235,235,235,235,235})), \
+                         ((vector signed short){ 16, 16, 16, 16, 16, 16, 16, 16}))
 
 #define vec_packclp(x,y) \
     (vector unsigned char)vec_packs \
-        ((vector unsigned short)vec_max (x,(vector signed short) {0}), \
-         (vector unsigned short)vec_max (y,(vector signed short) {0}))
+        ((vector unsigned short)vec_max (x,((vector signed short) {0})), \
+         (vector unsigned short)vec_max (y,((vector signed short) {0})))
 
 //#define out_pixels(a,b,c,ptr) vec_mstrgb32(typeof(a),((typeof (a)){0}),a,a,a,ptr)
 
