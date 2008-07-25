@@ -61,6 +61,7 @@ static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
+static void remove_long_at_index(H264Context *h, int i);
 
 static av_always_inline uint32_t pack16to32(int a, int b){
 #ifdef WORDS_BIGENDIAN
@@ -3297,10 +3298,10 @@ static void idr(H264Context *h){
     for(i=0; i<16; i++){
         if (h->long_ref[i] != NULL) {
             unreference_pic(h, h->long_ref[i], 0);
-            h->long_ref[i]= NULL;
+            remove_long_at_index(h, i);
         }
     }
-    h->long_ref_count=0;
+    assert(h->long_ref_count==0);
 
     for(i=0; i<h->short_ref_count; i++){
         unreference_pic(h, h->short_ref[i], 0);
@@ -3393,6 +3394,8 @@ static Picture * remove_short(H264Context *h, int frame_num){
  * @param i index into h->long_ref of picture to remove.
  */
 static void remove_long_at_index(H264Context *h, int i){
+    assert(h->long_ref[i]->long_ref == 1);
+    h->long_ref[i]->long_ref= 0;
     h->long_ref[i]= NULL;
     h->long_ref_count--;
 }
