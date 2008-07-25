@@ -137,6 +137,8 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     get_byte(pb); // 'P' == progressive, 'I' == interlaced
     url_fskip(pb, 3); // padding
     aspect = av_int2dbl(get_le64(pb));
+    if (aspect > 0.9999 && aspect < 1.0001)
+        aspect = 4.0 / 3.0;
     fps = av_int2dbl(get_le64(pb));
 
     // number of packets per stream type, -1 means unknown, e.g. streaming
