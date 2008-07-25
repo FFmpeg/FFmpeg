@@ -3632,9 +3632,9 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
     h->mmco_index= 0;
     if(h->nal_unit_type == NAL_IDR_SLICE){ //FIXME fields
         s->broken_link= get_bits1(gb) -1;
-        h->mmco[0].long_arg= get_bits1(gb) - 1; // current_long_term_idx
-        if(h->mmco[0].long_arg != -1){
+        if(get_bits1(gb)){
             h->mmco[0].opcode= MMCO_LONG;
+            h->mmco[0].long_arg= 0;
             h->mmco_index= 1;
         }
     }else{
