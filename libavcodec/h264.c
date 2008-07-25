@@ -2953,10 +2953,10 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                             ref = h->short_ref[i];
                             assert(ref->reference);
                             assert(!ref->long_ref);
-                            if(ref->data[0] != NULL &&
+                            if(
                                    ref->frame_num == frame_num &&
                                    (ref->reference & pic_structure)
-                                   ) // ignore non-existing pictures by testing data[0] pointer
+                              )
                                 break;
                         }
                         if(i>=0)
