@@ -3625,6 +3625,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
     MpegEncContext * const s = &h->s;
     int i;
 
+    h->mmco_index= 0;
     if(h->nal_unit_type == NAL_IDR_SLICE){ //FIXME fields
         s->broken_link= get_bits1(gb) -1;
         h->mmco[0].long_arg= get_bits1(gb) - 1; // current_long_term_idx
