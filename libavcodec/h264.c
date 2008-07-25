@@ -3577,7 +3577,6 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 memmove(&h->short_ref[1], &h->short_ref[0], h->short_ref_count*sizeof(Picture*));
 
             h->short_ref[0]= s->current_picture_ptr;
-            h->short_ref[0]->long_ref=0;
             h->short_ref_count++;
             s->current_picture_ptr->reference |= s->picture_structure;
         }
