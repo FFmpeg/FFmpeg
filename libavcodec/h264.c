@@ -3551,9 +3551,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         }
     }
 
-    if (!current_ref_assigned && FIELD_PICTURE &&
-            !s->first_field && s->current_picture_ptr->reference) {
-
+    if (!current_ref_assigned) {
         /* Second field of complementary field pair; the first field of
          * which is already referenced. If short referenced, it
          * should be first entry in short_ref. If not, it must exist
@@ -3569,17 +3567,6 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                                              "in complementary field pair "
                                              "(first field is long term)\n");
         } else {
-            /*
-             * First field in reference, but not in any sensible place on our
-             * reference lists. This shouldn't happen unless reference
-             * handling somewhere else is wrong.
-             */
-            assert(0);
-        }
-        current_ref_assigned = 1;
-    }
-
-    if(!current_ref_assigned){
         pic= remove_short(h, s->current_picture_ptr->frame_num);
         if(pic){
             unreference_pic(h, pic, 0);
