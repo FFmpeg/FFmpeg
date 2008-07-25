@@ -2956,7 +2956,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                             if(ref->data[0] != NULL &&
                                    ref->frame_num == frame_num &&
                                    (ref->reference & pic_structure) &&
-                                   ref->long_ref == 0) // ignore non-existing pictures by testing data[0] pointer
+                                   ) // ignore non-existing pictures by testing data[0] pointer
                                 break;
                         }
                         if(i>=0)
