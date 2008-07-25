@@ -2268,6 +2268,7 @@ static int frame_start(H264Context *h){
 
     s->current_picture_ptr->field_poc[0]=
     s->current_picture_ptr->field_poc[1]= INT_MAX;
+    assert(s->current_picture_ptr->long_ref==0);
 
     return 0;
 }
