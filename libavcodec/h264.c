@@ -3454,7 +3454,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         av_log(h->s.avctx, AV_LOG_DEBUG, "no mmco here\n");
 
     for(i=0; i<mmco_count; i++){
-        int structure, frame_num, unref_pic;
+        int structure, frame_num;
         if(s->avctx->debug&FF_DEBUG_MMCO)
             av_log(h->s.avctx, AV_LOG_DEBUG, "mmco:%d %d %d\n", h->mmco[i].opcode, h->mmco[i].short_pic_num, h->mmco[i].long_arg);
 
@@ -3498,27 +3498,15 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: unref long failure\n");
             break;
         case MMCO_LONG:
-            unref_pic = 1;
-            if (FIELD_PICTURE && !s->first_field) {
-                if (h->long_ref[mmco[i].long_arg] == s->current_picture_ptr) {
-                    /* Just mark second field as referenced */
-                    unref_pic = 0;
-                } else if (s->current_picture_ptr->reference) {
+                    // Comment below left from previous code as it is an interresting note.
                     /* First field in pair is in short term list or
                      * at a different long term index.
                      * This is not allowed; see 7.4.3, notes 2 and 3.
                      * Report the problem and keep the pair where it is,
                      * and mark this field valid.
                      */
-                    av_log(h->s.avctx, AV_LOG_ERROR,
-                        "illegal long term reference assignment for second "
-                        "field in complementary field pair (first field is "
-                        "short term or has non-matching long index)\n");
-                    unref_pic = 0;
-                }
-            }
 
-            if (unref_pic) {
+            if (h->long_ref[mmco[i].long_arg] != s->current_picture_ptr) {
                 pic= remove_long(h, mmco[i].long_arg);
                 if(pic) unreference_pic(h, pic, 0);
 
