@@ -61,7 +61,7 @@ static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
-static Picture * remove_long(H264Context *h, int i);
+static Picture * remove_long(H264Context *h, int i, int ref_mask);
 
 static av_always_inline uint32_t pack16to32(int a, int b){
 #ifdef WORDS_BIGENDIAN
@@ -3297,10 +3297,7 @@ static void idr(H264Context *h){
     int i;
 
     for(i=0; i<16; i++){
-        if (h->long_ref[i] != NULL) {
-            unreference_pic(h, h->long_ref[i], 0);
-            remove_long(h, i);
-        }
+        remove_long(h, i, 0);
     }
     assert(h->long_ref_count==0);
 
@@ -3393,15 +3390,17 @@ static Picture * remove_short(H264Context *h, int frame_num){
  * that list.
  * @return the removed picture or NULL if an error occurs
  */
-static Picture * remove_long(H264Context *h, int i){
+static Picture * remove_long(H264Context *h, int i, int ref_mask){
     Picture *pic;
 
     pic= h->long_ref[i];
     if (pic){
-        assert(h->long_ref[i]->long_ref == 1);
-        h->long_ref[i]->long_ref= 0;
-        h->long_ref[i]= NULL;
-        h->long_ref_count--;
+        if(unreference_pic(h, pic, ref_mask)){
+            assert(h->long_ref[i]->long_ref == 1);
+            h->long_ref[i]->long_ref= 0;
+            h->long_ref[i]= NULL;
+            h->long_ref_count--;
+        }
     }
 
     return pic;
@@ -3474,8 +3473,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             } else {
                 int frame_num = mmco[i].short_pic_num >> FIELD_PICTURE;
 
-                pic= remove_long(h, mmco[i].long_arg);
-                if(pic) unreference_pic(h, pic, 0);
+                remove_long(h, mmco[i].long_arg, 0);
 
                 h->long_ref[ mmco[i].long_arg ]= remove_short(h, frame_num);
                 if (h->long_ref[ mmco[i].long_arg ]){
@@ -3488,8 +3486,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             j = pic_num_extract(h, mmco[i].long_arg, &structure);
             pic = h->long_ref[j];
             if (pic) {
-                if (unreference_pic(h, pic, structure ^ PICT_FRAME))
-                    remove_long(h, j);
+                remove_long(h, j, structure ^ PICT_FRAME);
             } else if(s->avctx->debug&FF_DEBUG_MMCO)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: unref long failure\n");
             break;
@@ -3503,8 +3500,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                      */
 
             if (h->long_ref[mmco[i].long_arg] != s->current_picture_ptr) {
-                pic= remove_long(h, mmco[i].long_arg);
-                if(pic) unreference_pic(h, pic, 0);
+                remove_long(h, mmco[i].long_arg, 0);
 
                 h->long_ref[ mmco[i].long_arg ]= s->current_picture_ptr;
                 h->long_ref[ mmco[i].long_arg ]->long_ref=1;
@@ -3518,8 +3514,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             assert(mmco[i].long_arg <= 16);
             // just remove the long term which index is greater than new max
             for(j = mmco[i].long_arg; j<16; j++){
-                pic = remove_long(h, j);
-                if (pic) unreference_pic(h, pic, 0);
+                remove_long(h, j, 0);
             }
             break;
         case MMCO_RESET:
@@ -3528,8 +3523,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 if(pic) unreference_pic(h, pic, 0);
             }
             for(j = 0; j < 16; j++) {
-                pic= remove_long(h, j);
-                if(pic) unreference_pic(h, pic, 0);
+                remove_long(h, j, 0);
             }
             s->current_picture_ptr->poc=
             s->current_picture_ptr->field_poc[0]=
@@ -3590,13 +3584,12 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                     break;
 
             assert(i < 16);
-            pic = h->long_ref[i];
-            remove_long(h, i);
+            remove_long(h, i, 0);
         } else {
             pic = h->short_ref[h->short_ref_count - 1];
             remove_short_at_index(h, h->short_ref_count - 1);
+            unreference_pic(h, pic, 0);
         }
-        unreference_pic(h, pic, 0);
     }
 
     print_short_term(h);
