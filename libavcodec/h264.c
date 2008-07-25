@@ -3460,6 +3460,8 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             frame_num = pic_num_extract(h, mmco[i].short_pic_num, &structure);
             pic = find_short(h, frame_num, &j);
             if(!pic){
+                if(mmco[i].opcode != MMCO_SHORT2LONG || !h->long_ref[mmco[i].long_arg]
+                   || h->long_ref[mmco[i].long_arg]->frame_num != frame_num)
                 av_log(h->s.avctx, AV_LOG_ERROR, "mmco: unref short failure\n");
                 continue;
             }
