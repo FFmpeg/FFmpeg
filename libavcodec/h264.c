@@ -3370,7 +3370,7 @@ static void remove_short_at_index(H264Context *h, int i){
  *
  * @return the removed picture or NULL if an error occurs
  */
-static Picture * remove_short(H264Context *h, int frame_num){
+static Picture * remove_short(H264Context *h, int frame_num, int ref_mask){
     MpegEncContext * const s = &h->s;
     Picture *pic;
     int i;
@@ -3379,8 +3379,10 @@ static Picture * remove_short(H264Context *h, int frame_num){
         av_log(h->s.avctx, AV_LOG_DEBUG, "remove short %d count %d\n", frame_num, h->short_ref_count);
 
     pic = find_short(h, frame_num, &i);
-    if (pic)
+    if (pic){
+        if(unreference_pic(h, pic, ref_mask))
         remove_short_at_index(h, i);
+    }
 
     return pic;
 }
@@ -3467,14 +3469,14 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         case MMCO_SHORT2UNUSED:
             if(s->avctx->debug&FF_DEBUG_MMCO)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: unref short %d count %d\n", h->mmco[i].short_pic_num, h->short_ref_count);
-                if (unreference_pic(h, pic, structure ^ PICT_FRAME))
-                    remove_short_at_index(h, j);
+            remove_short(h, frame_num, structure ^ PICT_FRAME);
             break;
         case MMCO_SHORT2LONG:
                 if (h->long_ref[mmco[i].long_arg] != pic)
                     remove_long(h, mmco[i].long_arg, 0);
 
-                h->long_ref[ mmco[i].long_arg ]= remove_short(h, frame_num);
+                remove_short_at_index(h, j);
+                h->long_ref[ mmco[i].long_arg ]= pic;
                 if (h->long_ref[ mmco[i].long_arg ]){
                     h->long_ref[ mmco[i].long_arg ]->long_ref=1;
                     h->long_ref_count++;
@@ -3517,8 +3519,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             break;
         case MMCO_RESET:
             while(h->short_ref_count){
-                pic= remove_short(h, h->short_ref[0]->frame_num);
-                if(pic) unreference_pic(h, pic, 0);
+                remove_short(h, h->short_ref[0]->frame_num, 0);
             }
             for(j = 0; j < 16; j++) {
                 remove_long(h, j, 0);
@@ -3551,9 +3552,8 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                                              "in complementary field pair "
                                              "(first field is long term)\n");
         } else {
-            pic= remove_short(h, s->current_picture_ptr->frame_num);
+            pic= remove_short(h, s->current_picture_ptr->frame_num, 0);
             if(pic){
-                unreference_pic(h, pic, 0);
                 av_log(h->s.avctx, AV_LOG_ERROR, "illegal short term buffer state detected\n");
             }
 
@@ -3585,8 +3585,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             remove_long(h, i, 0);
         } else {
             pic = h->short_ref[h->short_ref_count - 1];
-            remove_short_at_index(h, h->short_ref_count - 1);
-            unreference_pic(h, pic, 0);
+            remove_short(h, pic->frame_num, 0);
         }
     }
 
