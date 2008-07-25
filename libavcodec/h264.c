@@ -61,7 +61,7 @@ static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
-static void remove_long_at_index(H264Context *h, int i);
+static Picture * remove_long(H264Context *h, int i);
 
 static av_always_inline uint32_t pack16to32(int a, int b){
 #ifdef WORDS_BIGENDIAN
@@ -3299,7 +3299,7 @@ static void idr(H264Context *h){
     for(i=0; i<16; i++){
         if (h->long_ref[i] != NULL) {
             unreference_pic(h, h->long_ref[i], 0);
-            remove_long_at_index(h, i);
+            remove_long(h, i);
         }
     }
     assert(h->long_ref_count==0);
@@ -3390,27 +3390,19 @@ static Picture * remove_short(H264Context *h, int frame_num){
 
 /**
  * Remove a picture from the long term reference list by its index in
- * that list.  This does no checking on the provided index; it is assumed
- * to be valid. The removed entry is set to NULL. Other entries are unaffected.
- * @param i index into h->long_ref of picture to remove.
- */
-static void remove_long_at_index(H264Context *h, int i){
-    assert(h->long_ref[i]->long_ref == 1);
-    h->long_ref[i]->long_ref= 0;
-    h->long_ref[i]= NULL;
-    h->long_ref_count--;
-}
-
-/**
- *
+ * that list.
  * @return the removed picture or NULL if an error occurs
  */
 static Picture * remove_long(H264Context *h, int i){
     Picture *pic;
 
     pic= h->long_ref[i];
-    if (pic)
-        remove_long_at_index(h, i);
+    if (pic){
+        assert(h->long_ref[i]->long_ref == 1);
+        h->long_ref[i]->long_ref= 0;
+        h->long_ref[i]= NULL;
+        h->long_ref_count--;
+    }
 
     return pic;
 }
@@ -3497,7 +3489,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             pic = h->long_ref[j];
             if (pic) {
                 if (unreference_pic(h, pic, structure ^ PICT_FRAME))
-                    remove_long_at_index(h, j);
+                    remove_long(h, j);
             } else if(s->avctx->debug&FF_DEBUG_MMCO)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: unref long failure\n");
             break;
@@ -3599,7 +3591,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
             assert(i < 16);
             pic = h->long_ref[i];
-            remove_long_at_index(h, i);
+            remove_long(h, i);
         } else {
             pic = h->short_ref[h->short_ref_count - 1];
             remove_short_at_index(h, h->short_ref_count - 1);
