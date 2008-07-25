@@ -3581,6 +3581,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         h->short_ref_count++;
         s->current_picture_ptr->reference |= s->picture_structure;
     }
+    }
 
     if (h->long_ref_count + h->short_ref_count > h->sps.ref_frame_count){
 
