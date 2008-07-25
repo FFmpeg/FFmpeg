@@ -2954,7 +2954,8 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                             assert(ref->reference);
                             assert(!ref->long_ref);
                             if(
-                                   ref->frame_num == frame_num
+                                   ref->frame_num == frame_num &&
+                                   (ref->reference & pic_structure)
                               )
                                 break;
                         }
@@ -2972,7 +2973,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         }
                         ref = h->long_ref[long_idx];
                         assert(!(ref && !ref->reference));
-                        if(ref){
+                        if(ref && (ref->reference & pic_structure)){
                             ref->pic_id= pic_id;
                             assert(ref->long_ref);
                             i=0;
