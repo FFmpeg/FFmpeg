@@ -280,6 +280,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     }
     s->internal_buffer_count++;
 
+    if(s->debug&FF_DEBUG_BUFFERS)
+        av_log(s, AV_LOG_DEBUG, "default_get_buffer called on pic %p, %d buffers used\n", pic, s->internal_buffer_count);
+
     return 0;
 }
 
@@ -307,6 +310,9 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
 //        pic->base[i]=NULL;
     }
 //printf("R%X\n", pic->opaque);
+
+    if(s->debug&FF_DEBUG_BUFFERS)
+        av_log(s, AV_LOG_DEBUG, "default_release_buffer called on pic %p, %d buffers used\n", pic, s->internal_buffer_count);
 }
 
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
@@ -577,6 +583,7 @@ static const AVOption options[]={
 {"bugs", NULL, 0, FF_OPT_TYPE_CONST, FF_DEBUG_BUGS, INT_MIN, INT_MAX, V|D, "debug"},
 {"vis_qp", "visualize quantization parameter (QP), lower QP are tinted greener", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_QP, INT_MIN, INT_MAX, V|D, "debug"},
 {"vis_mb_type", "visualize block types", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MB_TYPE, INT_MIN, INT_MAX, V|D, "debug"},
+{"buffers", "picture buffer allocations", 0, FF_OPT_TYPE_CONST, FF_DEBUG_BUFFERS, INT_MIN, INT_MAX, V|D, "debug"},
 {"vismv", "visualize motion vectors (MVs)", OFFSET(debug_mv), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, V|D, "debug_mv"},
 {"pf", "forward predicted MVs of P-frames", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MV_P_FOR, INT_MIN, INT_MAX, V|D, "debug_mv"},
 {"bf", "forward predicted MVs of B-frames", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MV_B_FOR, INT_MIN, INT_MAX, V|D, "debug_mv"},

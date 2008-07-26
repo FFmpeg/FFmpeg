@@ -1462,6 +1462,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_BUGS        0x00001000
 #define FF_DEBUG_VIS_QP      0x00002000
 #define FF_DEBUG_VIS_MB_TYPE 0x00004000
+#define FF_DEBUG_BUFFERS     0x00008000
 
     /**
      * debug
