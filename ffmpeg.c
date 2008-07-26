@@ -639,6 +639,7 @@ static void do_audio_out(AVFormatContext *s,
         case CODEC_ID_PCM_S32BE:
         case CODEC_ID_PCM_U32LE:
         case CODEC_ID_PCM_U32BE:
+        case CODEC_ID_PCM_F32BE:
             size_out = size_out << 1;
             break;
         case CODEC_ID_PCM_S24LE:

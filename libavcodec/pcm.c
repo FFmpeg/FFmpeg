@@ -107,6 +107,9 @@ static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
 static av_cold int pcm_encode_init(AVCodecContext *avctx)
 {
     avctx->frame_size = 1;
+    if (avctx->codec->id==CODEC_ID_PCM_F32BE && avctx->sample_fmt!=SAMPLE_FMT_FLT) {
+        return -1;
+    }
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         build_xlaw_table(linear_to_alaw, alaw2linear, 0xd5);
@@ -123,6 +126,7 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
     case CODEC_ID_PCM_S32BE:
     case CODEC_ID_PCM_U32LE:
     case CODEC_ID_PCM_U32BE:
+    case CODEC_ID_PCM_F32BE:
         avctx->block_align = 4 * avctx->channels;
         break;
     case CODEC_ID_PCM_S24LE:
@@ -198,6 +202,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S32BE:
     case CODEC_ID_PCM_U32LE:
     case CODEC_ID_PCM_U32BE:
+    case CODEC_ID_PCM_F32BE:
         sample_size = 4;
         break;
     case CODEC_ID_PCM_S24LE:
@@ -222,6 +227,16 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     dst = frame;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_F32BE:
+        {
+        float *fsamples = data;
+        for(;n>0;n--) {
+            float fv = *fsamples++;
+            bytestream_put_be32(&dst, av_flt2int(fv));
+        }
+        samples = (void*)fsamples;
+        }
+        break;
     case CODEC_ID_PCM_S32LE:
         encode_from16(4, 1, 0, &samples, &dst, n);
         break;
@@ -342,6 +357,15 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
     default:
         break;
     }
+
+    switch(avctx->codec->id) {
+    case CODEC_ID_PCM_F32BE:
+        avctx->sample_fmt = SAMPLE_FMT_FLT;
+        break;
+    default:
+        avctx->sample_fmt = SAMPLE_FMT_S16;
+        break;
+    }
     return 0;
 }
 
@@ -407,6 +431,15 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         src2[c] = &src[c*n];
 
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_F32BE:
+        {
+        float *fsamples = data;
+        n = buf_size >> 2;
+        for(;n>0;n--)
+            *fsamples++ = av_int2flt(bytestream_get_be32(&src));
+        samples = (void*)fsamples;
+        break;
+        }
     case CODEC_ID_PCM_S32LE:
         decode_to16(4, 1, 0, &src, &samples, buf_size);
         break;
@@ -559,6 +592,7 @@ AVCodec name ## _decoder = {                    \
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW, pcm_alaw, "A-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_DVD, pcm_dvd, "signed 16|20|24-bit big-endian PCM");
+PCM_CODEC  (CODEC_ID_PCM_F32BE, pcm_f32be, "32-bit floating point big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_MULAW, pcm_mulaw, "mu-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_S8, pcm_s8, "signed 8-bit PCM");
 PCM_CODEC  (CODEC_ID_PCM_S16BE, pcm_s16be, "signed 16-bit big-endian PCM");
