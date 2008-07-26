@@ -119,7 +119,7 @@ library:
 @item raw MJPEG                 @tab X @tab X
 @item raw MPEG video            @tab X @tab X
 @item raw MPEG-4 video          @tab X @tab X
-@item raw PCM 8/16 bits, mu-law/A-law @tab X  @tab  X
+@item raw PCM 8/16/32 bits, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
 @item RealMedia                 @tab X @tab X
 @item RL2                       @tab   @tab X
