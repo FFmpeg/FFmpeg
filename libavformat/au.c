@@ -39,6 +39,7 @@ static const AVCodecTag codec_au_tags[] = {
     { CODEC_ID_PCM_MULAW, 1 },
     { CODEC_ID_PCM_S8, 2 },
     { CODEC_ID_PCM_S16BE, 3 },
+    { CODEC_ID_PCM_F32BE, 6 },
     { CODEC_ID_PCM_ALAW, 27 },
     { 0, 0 },
 };
