@@ -2911,7 +2911,6 @@ static int decode_ref_pic_list_reordering(H264Context *h){
 
     print_short_term(h);
     print_long_term(h);
-    if(h->slice_type_nos==FF_I_TYPE) return 0; //FIXME move before function
 
     for(list=0; list<h->list_count; list++){
         memcpy(h->ref_list[list], h->default_ref_list[list], sizeof(Picture)*h->ref_count[list]);
@@ -3988,7 +3987,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         fill_default_ref_list(h);
     }
 
-    if(decode_ref_pic_list_reordering(h) < 0)
+    if(h->slice_type_nos!=FF_I_TYPE && decode_ref_pic_list_reordering(h) < 0)
         return -1;
 
     if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
