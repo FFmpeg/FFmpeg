@@ -347,6 +347,7 @@ enum SampleFormat {
     SAMPLE_FMT_S24,             ///< signed 24 bits
     SAMPLE_FMT_S32,             ///< signed 32 bits
     SAMPLE_FMT_FLT,             ///< float
+    SAMPLE_FMT_NB               ///< Number of sample formats. DO NOT USE if dynamically linking to libavcodec
 };
 
 /* in bytes */
@@ -2264,6 +2265,7 @@ typedef struct AVCodec {
      */
     const char *long_name;
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
+    const enum SampleFormat *sample_fmts;   ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
 } AVCodec;
 
 /**
