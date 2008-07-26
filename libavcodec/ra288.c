@@ -31,8 +31,18 @@ typedef struct {
     float pr2[10];
     int   phase;
 
-    float st1a[111], st1b[37], st1[37];
-    float st2a[38], st2b[11], st2[11];
+    float sp_hist[111]; ///< Speech data history (spec: SB)
+
+    /** Speech part of the gain autocorrelation (spec: REXP) */
+    float sp_rec[37];
+
+    float st1[37];
+    float gain_hist[38];   ///< Log-gain history (spec: SBLG)
+
+    /** Recursive part of the gain autocorrelation (spec: REXPLG) */
+    float gain_rec[11];
+
+    float st2[11];
     float sb[41];
     float lhist[10];
 } RA288Context;
@@ -193,7 +203,7 @@ static void backward_filter(RA288Context *ractx)
     memcpy(buffer1     , ractx->output + 20, 20*sizeof(*buffer1));
     memcpy(buffer1 + 20, ractx->output     , 20*sizeof(*buffer1));
 
-    do_hybrid_window(36, 40, 35, buffer1, temp1, ractx->st1a, ractx->st1b,
+    do_hybrid_window(36, 40, 35, buffer1, temp1, ractx->sp_hist, ractx->sp_rec,
                      syn_window);
 
     if (!eval_lpc_coeffs(temp1, ractx->st1, 36))
@@ -202,7 +212,7 @@ static void backward_filter(RA288Context *ractx)
     memcpy(buffer2    , ractx->history + 4, 4*sizeof(*buffer2));
     memcpy(buffer2 + 4, ractx->history    , 4*sizeof(*buffer2));
 
-    do_hybrid_window(10, 8, 20, buffer2, temp2, ractx->st2a, ractx->st2b,
+    do_hybrid_window(10, 8, 20, buffer2, temp2, ractx->gain_hist, ractx->gain_rec,
                      gain_window);
 
     if (!eval_lpc_coeffs(temp2, ractx->st2, 10))
