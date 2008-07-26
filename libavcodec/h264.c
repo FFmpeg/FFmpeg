@@ -3418,7 +3418,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
          * which is already referenced. If short referenced, it
          * should be first entry in short_ref. If not, it must exist
          * in long_ref; trying to put it on the short list here is an
-         * error in the encoded bit stream (ref: 7.4.3, NOTE 2 and 3).
+         * error in the encoded bit stream (ref: 7.4.3.3, NOTE 2 and 3).
          */
         if (h->short_ref_count && h->short_ref[0] == s->current_picture_ptr) {
             /* Just mark the second field valid */
