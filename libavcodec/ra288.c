@@ -36,13 +36,11 @@ typedef struct {
     /** Speech part of the gain autocorrelation (spec: REXP) */
     float sp_rec[37];
 
-    float st1[37];
     float gain_hist[38];   ///< Log-gain history (spec: SBLG)
 
     /** Recursive part of the gain autocorrelation (spec: REXPLG) */
     float gain_rec[11];
 
-    float st2[11];
     float sb[41];
     float lhist[10];
 } RA288Context;
@@ -199,6 +197,8 @@ static void backward_filter(RA288Context *ractx)
 {
     float buffer1[40], temp1[37];
     float buffer2[8], temp2[11];
+    float st1[37];
+    float st2[11];
 
     memcpy(buffer1     , ractx->output + 20, 20*sizeof(*buffer1));
     memcpy(buffer1 + 20, ractx->output     , 20*sizeof(*buffer1));
@@ -206,8 +206,8 @@ static void backward_filter(RA288Context *ractx)
     do_hybrid_window(36, 40, 35, buffer1, temp1, ractx->sp_hist, ractx->sp_rec,
                      syn_window);
 
-    if (!eval_lpc_coeffs(temp1, ractx->st1, 36))
-        colmult(ractx->pr1, ractx->st1, syn_bw_tab, 36);
+    if (!eval_lpc_coeffs(temp1, st1, 36))
+        colmult(ractx->pr1, st1, syn_bw_tab, 36);
 
     memcpy(buffer2    , ractx->history + 4, 4*sizeof(*buffer2));
     memcpy(buffer2 + 4, ractx->history    , 4*sizeof(*buffer2));
@@ -215,8 +215,8 @@ static void backward_filter(RA288Context *ractx)
     do_hybrid_window(10, 8, 20, buffer2, temp2, ractx->gain_hist, ractx->gain_rec,
                      gain_window);
 
-    if (!eval_lpc_coeffs(temp2, ractx->st2, 10))
-        colmult(ractx->pr2, ractx->st2, gain_bw_tab, 10);
+    if (!eval_lpc_coeffs(temp2, st2, 10))
+        colmult(ractx->pr2, st2, gain_bw_tab, 10);
 }
 
 /* Decode a block (celp) */
