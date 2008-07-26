@@ -48,6 +48,12 @@ static inline float scalar_product_float(const float * v1, const float * v2,
     return res;
 }
 
+static void colmult(float *tgt, const float *m1, const float *m2, int n)
+{
+    while (n--)
+        *(tgt++) = (*(m1++)) * (*(m2++));
+}
+
 /* Decode and produce output */
 static void decode(RA288Context *ractx, float gain, int cb_coef)
 {
@@ -88,12 +94,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
         ractx->output[ractx->phase*5+x] = ractx->sb[4-x] =
             av_clipf(ractx->sb[4-x] + buffer[x], -4095, 4095);
     }
-}
-
-static void colmult(float *tgt, const float *m1, const float *m2, int n)
-{
-    while (n--)
-        *(tgt++) = (*(m1++)) * (*(m2++));
 }
 
 /**
