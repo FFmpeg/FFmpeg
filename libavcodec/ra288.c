@@ -35,7 +35,7 @@ typedef struct {
     float st2a[38], st2b[11], st2[11];
     float sb[41];
     float lhist[10];
-} Real288_internal;
+} RA288Context;
 
 static inline float scalar_product_float(const float * v1, const float * v2,
                                          int size)
@@ -49,7 +49,7 @@ static inline float scalar_product_float(const float * v1, const float * v2,
 }
 
 /* Decode and produce output */
-static void decode(Real288_internal *glob, float gain, int cb_coef)
+static void decode(RA288Context *glob, float gain, int cb_coef)
 {
     int x, y;
     double sumsum;
@@ -187,7 +187,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
 /**
  * Backward synthesis filter. Find the LPC coefficients from past speech data.
  */
-static void backward_filter(Real288_internal *glob)
+static void backward_filter(RA288Context *glob)
 {
     float buffer1[40], temp1[37];
     float buffer2[8], temp2[11];
@@ -218,7 +218,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 {
     int16_t *out = data;
     int x, y;
-    Real288_internal *glob = avctx->priv_data;
+    RA288Context *glob = avctx->priv_data;
     GetBitContext gb;
 
     if (buf_size < avctx->block_align) {
@@ -252,7 +252,7 @@ AVCodec ra_288_decoder =
     "real_288",
     CODEC_TYPE_AUDIO,
     CODEC_ID_RA_288,
-    sizeof(Real288_internal),
+    sizeof(RA288Context),
     NULL,
     NULL,
     NULL,
