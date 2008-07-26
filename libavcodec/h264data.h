@@ -112,6 +112,14 @@ static const uint8_t inter_cbp_to_golomb[48]={
   6, 24, 25, 20, 26, 21, 46, 28, 27, 47, 22, 29, 23, 30, 31, 12
 };
 
+static const uint8_t golomb_to_inter_cbp_gray[16]={
+ 0, 1, 2, 4, 8, 3, 5,10,12,15, 7,11,13,14, 6, 9,
+};
+
+static const uint8_t golomb_to_intra4x4_cbp_gray[16]={
+15, 0, 7,11,13,14, 3, 5,10,12, 1, 2, 4, 8, 6, 9,
+};
+
 static const uint8_t chroma_dc_coeff_token_len[4*5]={
  2, 0, 0, 0,
  6, 1, 0, 0,

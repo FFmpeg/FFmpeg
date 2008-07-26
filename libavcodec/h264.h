@@ -57,6 +57,8 @@
  * of progressive decoding by about 2%. */
 #define ALLOW_INTERLACE
 
+#define ALLOW_NOCHROMA
+
 #ifdef ALLOW_INTERLACE
 #define MB_MBAFF h->mb_mbaff
 #define MB_FIELD h->mb_field_decoding_flag
@@ -72,6 +74,12 @@
 #endif
 #define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF || FIELD_PICTURE)
 
+#ifdef ALLOW_NOCHROMA
+#define CHROMA h->sps.chroma_format_idc
+#else
+#define CHROMA 1
+#endif
+
 #ifndef ENABLE_H264_ENCODER
 #define ENABLE_H264_ENCODER 0
 #endif
@@ -83,6 +91,7 @@ typedef struct SPS{
 
     int profile_idc;
     int level_idc;
+    int chroma_format_idc;
     int transform_bypass;              ///< qpprime_y_zero_transform_bypass_flag
     int log2_max_frame_num;            ///< log2_max_frame_num_minus4 + 4
     int poc_type;                      ///< pic_order_cnt_type

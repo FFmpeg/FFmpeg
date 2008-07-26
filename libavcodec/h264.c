@@ -3079,6 +3079,7 @@ static int pred_weight_table(H264Context *h){
                 h->luma_offset[list][i]= 0;
             }
 
+            if(CHROMA){
             chroma_weight_flag= get_bits1(&s->gb);
             if(chroma_weight_flag){
                 int j;
@@ -3095,6 +3096,7 @@ static int pred_weight_table(H264Context *h){
                     h->chroma_weight[list][i][j]= chroma_def;
                     h->chroma_offset[list][i][j]= 0;
                 }
+            }
             }
         }
         if(h->slice_type_nos != FF_B_TYPE) break;
@@ -4438,6 +4440,7 @@ decode_intra_mb:
                 h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= get_bits(&s->gb, 8);
             }
         }
+        if(CHROMA){
         for(y=0; y<8; y++){
             const int index= 256 + 4*(y&3) + 32*(y>>2);
             for(x=0; x<8; x++){
@@ -4451,6 +4454,7 @@ decode_intra_mb:
                 tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
                 h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
             }
+        }
         }
 
         // In deblocking, the quantizer is 0
@@ -4503,11 +4507,12 @@ decode_intra_mb:
                 if(h->intra16x16_pred_mode < 0)
                     return -1;
             }
-
+            if(CHROMA){
             pred_mode= check_intra_pred_mode(h, get_ue_golomb(&s->gb));
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
+            }
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
@@ -4713,10 +4718,15 @@ decode_intra_mb:
             return -1;
         }
 
+        if(CHROMA){
         if(IS_INTRA4x4(mb_type))
             cbp= golomb_to_intra4x4_cbp[cbp];
         else
             cbp= golomb_to_inter_cbp[cbp];
+        }else{
+            if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
+            else                     cbp= golomb_to_inter_cbp_gray[cbp];
+        }
     }
     h->cbp = cbp;
 
@@ -5578,6 +5588,7 @@ decode_intra_mb:
                 h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= *ptr++;
             }
         }
+        if(CHROMA){
         for(y=0; y<8; y++){
             const int index= 256 + 4*(y&3) + 32*(y>>2);
             for(x=0; x<8; x++){
@@ -5591,6 +5602,7 @@ decode_intra_mb:
                 tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", *ptr);
                 h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
             }
+        }
         }
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
@@ -5638,12 +5650,14 @@ decode_intra_mb:
             h->intra16x16_pred_mode= check_intra_pred_mode( h, h->intra16x16_pred_mode );
             if( h->intra16x16_pred_mode < 0 ) return -1;
         }
+        if(CHROMA){
         h->chroma_pred_mode_table[mb_xy] =
         pred_mode                        = decode_cabac_mb_chroma_pre_mode( h );
 
         pred_mode= check_intra_pred_mode( h, pred_mode );
         if( pred_mode < 0 ) return -1;
         h->chroma_pred_mode= pred_mode;
+        }
     } else if( partition_count == 4 ) {
         int i, j, sub_partition_count[4], list, ref[2][4];
 
@@ -5845,6 +5859,7 @@ decode_intra_mb:
 
     if( !IS_INTRA16x16( mb_type ) ) {
         cbp  = decode_cabac_mb_cbp_luma( h );
+        if(CHROMA)
         cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
     }
 
@@ -7130,14 +7145,17 @@ static inline int decode_seq_parameter_set(H264Context *h){
     sps->level_idc= level_idc;
 
     if(sps->profile_idc >= 100){ //high profile
-        if(get_ue_golomb(&s->gb) == 3) //chroma_format_idc
+        sps->chroma_format_idc= get_ue_golomb(&s->gb);
+        if(sps->chroma_format_idc == 3)
             get_bits1(&s->gb);  //residual_color_transform_flag
         get_ue_golomb(&s->gb);  //bit_depth_luma_minus8
         get_ue_golomb(&s->gb);  //bit_depth_chroma_minus8
         sps->transform_bypass = get_bits1(&s->gb);
         decode_scaling_matrices(h, sps, NULL, 1, sps->scaling_matrix4, sps->scaling_matrix8);
-    }else
+    }else{
         sps->scaling_matrix_present = 0;
+        sps->chroma_format_idc= 1;
+    }
 
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
     sps->poc_type= get_ue_golomb(&s->gb);
@@ -7219,7 +7237,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
         decode_vui_parameters(h, sps);
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s\n",
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
                sps->ref_frame_count,
@@ -7228,7 +7246,8 @@ static inline int decode_seq_parameter_set(H264Context *h){
                sps->direct_8x8_inference_flag ? "8B8" : "",
                sps->crop_left, sps->crop_right,
                sps->crop_top, sps->crop_bottom,
-               sps->vui_parameters_present_flag ? "VUI" : ""
+               sps->vui_parameters_present_flag ? "VUI" : "",
+               ((const char*[]){"Gray","420","422","444"})[sps->chroma_format_idc]
                );
     }
     return 0;
