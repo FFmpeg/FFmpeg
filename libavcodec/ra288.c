@@ -135,7 +135,6 @@ static int eval_lpc_coeffs(const float *in, float *tgt, int n)
     return 0;
 }
 
-/* product sum (lsf) */
 static void prodsum(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
