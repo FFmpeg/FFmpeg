@@ -51,7 +51,7 @@ static inline float scalar_product_float(const float * v1, const float * v2,
 static void colmult(float *tgt, const float *m1, const float *m2, int n)
 {
     while (n--)
-        *(tgt++) = (*(m1++)) * (*(m2++));
+        *tgt++ = *m1++ * *m2++;
 }
 
 /* Decode and produce output */
