@@ -90,7 +90,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     }
 }
 
-/* column multiply */
 static void colmult(float *tgt, const float *m1, const float *m2, int n)
 {
     while (n--)
