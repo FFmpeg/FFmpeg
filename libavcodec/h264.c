@@ -3371,7 +3371,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                     // Comment below left from previous code as it is an interresting note.
                     /* First field in pair is in short term list or
                      * at a different long term index.
-                     * This is not allowed; see 7.4.3, notes 2 and 3.
+                     * This is not allowed; see 7.4.3.3, notes 2 and 3.
                      * Report the problem and keep the pair where it is,
                      * and mark this field valid.
                      */
