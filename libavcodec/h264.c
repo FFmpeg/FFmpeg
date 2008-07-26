@@ -3080,23 +3080,23 @@ static int pred_weight_table(H264Context *h){
             }
 
             if(CHROMA){
-            chroma_weight_flag= get_bits1(&s->gb);
-            if(chroma_weight_flag){
-                int j;
-                for(j=0; j<2; j++){
-                    h->chroma_weight[list][i][j]= get_se_golomb(&s->gb);
-                    h->chroma_offset[list][i][j]= get_se_golomb(&s->gb);
-                    if(   h->chroma_weight[list][i][j] != chroma_def
-                       || h->chroma_offset[list][i][j] != 0)
-                        h->use_weight_chroma= 1;
+                chroma_weight_flag= get_bits1(&s->gb);
+                if(chroma_weight_flag){
+                    int j;
+                    for(j=0; j<2; j++){
+                        h->chroma_weight[list][i][j]= get_se_golomb(&s->gb);
+                        h->chroma_offset[list][i][j]= get_se_golomb(&s->gb);
+                        if(   h->chroma_weight[list][i][j] != chroma_def
+                        || h->chroma_offset[list][i][j] != 0)
+                            h->use_weight_chroma= 1;
+                    }
+                }else{
+                    int j;
+                    for(j=0; j<2; j++){
+                        h->chroma_weight[list][i][j]= chroma_def;
+                        h->chroma_offset[list][i][j]= 0;
+                    }
                 }
-            }else{
-                int j;
-                for(j=0; j<2; j++){
-                    h->chroma_weight[list][i][j]= chroma_def;
-                    h->chroma_offset[list][i][j]= 0;
-                }
-            }
             }
         }
         if(h->slice_type_nos != FF_B_TYPE) break;
@@ -4441,20 +4441,20 @@ decode_intra_mb:
             }
         }
         if(CHROMA){
-        for(y=0; y<8; y++){
-            const int index= 256 + 4*(y&3) + 32*(y>>2);
-            for(x=0; x<8; x++){
-                tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
-                h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
+            for(y=0; y<8; y++){
+                const int index= 256 + 4*(y&3) + 32*(y>>2);
+                for(x=0; x<8; x++){
+                    tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
+                    h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
+                }
             }
-        }
-        for(y=0; y<8; y++){
-            const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
-            for(x=0; x<8; x++){
-                tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
-                h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
+            for(y=0; y<8; y++){
+                const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
+                for(x=0; x<8; x++){
+                    tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
+                    h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
+                }
             }
-        }
         }
 
         // In deblocking, the quantizer is 0
@@ -4475,44 +4475,44 @@ decode_intra_mb:
 
     //mb_pred
     if(IS_INTRA(mb_type)){
-            int pred_mode;
+        int pred_mode;
 //            init_top_left_availability(h);
-            if(IS_INTRA4x4(mb_type)){
-                int i;
-                int di = 1;
-                if(dct8x8_allowed && get_bits1(&s->gb)){
-                    mb_type |= MB_TYPE_8x8DCT;
-                    di = 4;
-                }
+        if(IS_INTRA4x4(mb_type)){
+            int i;
+            int di = 1;
+            if(dct8x8_allowed && get_bits1(&s->gb)){
+                mb_type |= MB_TYPE_8x8DCT;
+                di = 4;
+            }
 
 //                fill_intra4x4_pred_table(h);
-                for(i=0; i<16; i+=di){
-                    int mode= pred_intra_mode(h, i);
+            for(i=0; i<16; i+=di){
+                int mode= pred_intra_mode(h, i);
 
-                    if(!get_bits1(&s->gb)){
-                        const int rem_mode= get_bits(&s->gb, 3);
-                        mode = rem_mode + (rem_mode >= mode);
-                    }
-
-                    if(di==4)
-                        fill_rectangle( &h->intra4x4_pred_mode_cache[ scan8[i] ], 2, 2, 8, mode, 1 );
-                    else
-                        h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
+                if(!get_bits1(&s->gb)){
+                    const int rem_mode= get_bits(&s->gb, 3);
+                    mode = rem_mode + (rem_mode >= mode);
                 }
-                write_back_intra_pred_mode(h);
-                if( check_intra4x4_pred_mode(h) < 0)
-                    return -1;
-            }else{
-                h->intra16x16_pred_mode= check_intra_pred_mode(h, h->intra16x16_pred_mode);
-                if(h->intra16x16_pred_mode < 0)
-                    return -1;
+
+                if(di==4)
+                    fill_rectangle( &h->intra4x4_pred_mode_cache[ scan8[i] ], 2, 2, 8, mode, 1 );
+                else
+                    h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
             }
-            if(CHROMA){
+            write_back_intra_pred_mode(h);
+            if( check_intra4x4_pred_mode(h) < 0)
+                return -1;
+        }else{
+            h->intra16x16_pred_mode= check_intra_pred_mode(h, h->intra16x16_pred_mode);
+            if(h->intra16x16_pred_mode < 0)
+                return -1;
+        }
+        if(CHROMA){
             pred_mode= check_intra_pred_mode(h, get_ue_golomb(&s->gb));
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
-            }
+        }
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
@@ -4719,10 +4719,8 @@ decode_intra_mb:
         }
 
         if(CHROMA){
-        if(IS_INTRA4x4(mb_type))
-            cbp= golomb_to_intra4x4_cbp[cbp];
-        else
-            cbp= golomb_to_inter_cbp[cbp];
+            if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp[cbp];
+            else                     cbp= golomb_to_inter_cbp   [cbp];
         }else{
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
             else                     cbp= golomb_to_inter_cbp_gray[cbp];
@@ -5589,20 +5587,20 @@ decode_intra_mb:
             }
         }
         if(CHROMA){
-        for(y=0; y<8; y++){
-            const int index= 256 + 4*(y&3) + 32*(y>>2);
-            for(x=0; x<8; x++){
-                tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", *ptr);
-                h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+            for(y=0; y<8; y++){
+                const int index= 256 + 4*(y&3) + 32*(y>>2);
+                for(x=0; x<8; x++){
+                    tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", *ptr);
+                    h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+                }
             }
-        }
-        for(y=0; y<8; y++){
-            const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
-            for(x=0; x<8; x++){
-                tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", *ptr);
-                h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+            for(y=0; y<8; y++){
+                const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
+                for(x=0; x<8; x++){
+                    tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", *ptr);
+                    h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+                }
             }
-        }
         }
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
@@ -5651,12 +5649,12 @@ decode_intra_mb:
             if( h->intra16x16_pred_mode < 0 ) return -1;
         }
         if(CHROMA){
-        h->chroma_pred_mode_table[mb_xy] =
-        pred_mode                        = decode_cabac_mb_chroma_pre_mode( h );
+            h->chroma_pred_mode_table[mb_xy] =
+            pred_mode                        = decode_cabac_mb_chroma_pre_mode( h );
 
-        pred_mode= check_intra_pred_mode( h, pred_mode );
-        if( pred_mode < 0 ) return -1;
-        h->chroma_pred_mode= pred_mode;
+            pred_mode= check_intra_pred_mode( h, pred_mode );
+            if( pred_mode < 0 ) return -1;
+            h->chroma_pred_mode= pred_mode;
         }
     } else if( partition_count == 4 ) {
         int i, j, sub_partition_count[4], list, ref[2][4];
@@ -5860,7 +5858,7 @@ decode_intra_mb:
     if( !IS_INTRA16x16( mb_type ) ) {
         cbp  = decode_cabac_mb_cbp_luma( h );
         if(CHROMA)
-        cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
+            cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
     }
 
     h->cbp_table[mb_xy] = h->cbp = cbp;
