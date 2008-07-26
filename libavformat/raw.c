@@ -350,7 +350,7 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
 static int h264_probe(AVProbeData *p)
 {
     uint32_t code= -1;
-    int sps=0, pps=0, idr=0, res=0;
+    int sps=0, pps=0, idr=0, res=0, sli=0;
     int i;
 
     for(i=0; i<p->buf_size; i++){
@@ -376,6 +376,7 @@ static int h264_probe(AVProbeData *p)
                 res++;
 
             switch(type){
+            case     1:   sli++; break;
             case     5:   idr++; break;
             case     7:
                 if(p->buf[i+2]&0x0F)
@@ -386,7 +387,7 @@ static int h264_probe(AVProbeData *p)
             }
         }
     }
-    if(sps && pps && idr && res<(sps+pps+idr))
+    if(sps && pps && (idr||sli>3) && res<(sps+pps+idr))
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
