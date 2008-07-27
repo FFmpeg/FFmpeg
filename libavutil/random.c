@@ -28,11 +28,6 @@ see http://en.wikipedia.org/wiki/Mersenne_twister for an explanation of this alg
 #include <stdio.h>
 #include "random.h"
 
-#ifdef TEST
-#include "common.h"
-#include "log.h"
-#endif
-
 
 /* Period parameters */
 #define M 397
@@ -80,6 +75,8 @@ void av_random_generate_untempered_numbers(AVRandomState *state)
 }
 
 #ifdef TEST
+#include "common.h"
+#include "log.h"
 void main(void)
 {
     int x=0;
