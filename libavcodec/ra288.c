@@ -195,24 +195,18 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
  */
 static void backward_filter(RA288Context *ractx)
 {
-    float buffer1[40], temp1[37];
-    float buffer2[8], temp2[11];
+    float temp1[37];
+    float temp2[11];
     float st1[37];
     float st2[11];
 
-    memcpy(buffer1     , ractx->output + 20, 20*sizeof(*buffer1));
-    memcpy(buffer1 + 20, ractx->output     , 20*sizeof(*buffer1));
-
-    do_hybrid_window(36, 40, 35, buffer1, temp1, ractx->sp_hist, ractx->sp_rec,
+    do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist, ractx->sp_rec,
                      syn_window);
 
     if (!eval_lpc_coeffs(temp1, st1, 36))
         colmult(ractx->pr1, st1, syn_bw_tab, 36);
 
-    memcpy(buffer2    , ractx->history + 4, 4*sizeof(*buffer2));
-    memcpy(buffer2 + 4, ractx->history    , 4*sizeof(*buffer2));
-
-    do_hybrid_window(10, 8, 20, buffer2, temp2, ractx->gain_hist, ractx->gain_rec,
+    do_hybrid_window(10, 8, 20, ractx->history, temp2, ractx->gain_hist, ractx->gain_rec,
                      gain_window);
 
     if (!eval_lpc_coeffs(temp2, st2, 10))
@@ -241,13 +235,13 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     for (x=0; x < 32; x++) {
         float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (x&1));
-        ractx->phase = x & 7;
+        ractx->phase = (x + 4) & 7;
         decode(ractx, gain, cb_coef);
 
         for (y=0; y < 5; y++)
             *(out++) = 8 * ractx->output[ractx->phase*5 + y];
 
-        if (ractx->phase == 3)
+        if (ractx->phase == 7)
             backward_filter(ractx);
     }
 
