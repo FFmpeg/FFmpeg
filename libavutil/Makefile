@@ -39,7 +39,7 @@ HEADERS = adler32.h \
           rational.h \
           sha1.h
 
-TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 sha1 softfloat tree)
+TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 random sha1 softfloat tree)
 
 include $(SUBDIR)../subdir.mak
 
