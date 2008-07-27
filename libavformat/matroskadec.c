@@ -31,6 +31,7 @@
 #include "avformat.h"
 /* For codec_get_id(). */
 #include "riff.h"
+#include "isom.h"
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
@@ -2548,6 +2549,15 @@ matroska_read_header (AVFormatContext    *s,
                 tag = AV_RL16(track->codec_priv);
                 codec_id = codec_get_id(codec_wav_tags, tag);
 
+            }
+
+            if (!strcmp(track->codec_id, "V_QUICKTIME") &&
+                (track->codec_priv_size >= 86) &&
+                (track->codec_priv != NULL)) {
+                MatroskaVideoTrack *vtrack = (MatroskaVideoTrack *) track;
+
+                vtrack->fourcc = AV_RL32(track->codec_priv);
+                codec_id = codec_get_id(codec_movvideo_tags, vtrack->fourcc);
             }
 
             else if (codec_id == CODEC_ID_AAC && !track->codec_priv_size) {

@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "riff.h"
+#include "isom.h"
 #include "matroska.h"
 #include "avc.h"
 #include "libavutil/md5.h"
@@ -467,7 +468,7 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
     }
 }
 
-static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec, int native_id)
+static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec, int native_id, int qt_id)
 {
     ByteIOContext *dyn_cp;
     uint8_t *codecpriv;
@@ -487,6 +488,12 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         else if (codec->extradata_size)
             put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (qt_id) {
+            if (!codec->codec_tag)
+                codec->codec_tag = codec_get_tag(codec_movvideo_tags, codec->codec_id);
+            if (codec->extradata_size)
+                put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
+        } else {
         if (!codec->codec_tag)
             codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
         if (!codec->codec_tag) {
@@ -495,6 +502,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         }
 
         put_bmp_header(dyn_cp, codec, codec_bmp_tags, 0);
+        }
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
         if (!codec->codec_tag)
@@ -530,6 +538,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         AVCodecContext *codec = st->codec;
         ebml_master subinfo, track;
         int native_id = 0;
+        int qt_id = 0;
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
         int sample_rate = codec->sample_rate;
         int output_sample_rate = 0;
@@ -566,7 +575,17 @@ static int mkv_write_tracks(AVFormatContext *s)
             case CODEC_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
-                if (!native_id)
+                if (!native_id &&
+                      codec_get_tag(codec_movvideo_tags, codec->codec_id) &&
+                    (!codec_get_tag(codec_bmp_tags,      codec->codec_id)
+                     || codec->codec_id == CODEC_ID_SVQ1
+                     || codec->codec_id == CODEC_ID_SVQ3
+                     || codec->codec_id == CODEC_ID_CINEPAK))
+                    qt_id = 1;
+
+                if (qt_id)
+                    put_ebml_string(pb, MATROSKA_ID_CODECID, "V_QUICKTIME");
+                else if (!native_id)
                     // if there is no mkv-specific codec ID, use VFW mode
                     put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
 
@@ -607,7 +626,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.");
                 break;
         }
-        ret = mkv_write_codecprivate(s, pb, codec, native_id);
+        ret = mkv_write_codecprivate(s, pb, codec, native_id, qt_id);
         if (ret < 0) return ret;
 
         end_ebml_master(pb, track);
