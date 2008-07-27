@@ -77,7 +77,7 @@ void av_random_generate_untempered_numbers(AVRandomState *state)
 #ifdef TEST
 #include "common.h"
 #include "log.h"
-void main(void)
+int main(void)
 {
     int x=0;
     int i, j;
@@ -92,5 +92,6 @@ void main(void)
         STOP_TIMER("624 calls of av_random");
     }
     av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);
+    return 0;
 }
 #endif
