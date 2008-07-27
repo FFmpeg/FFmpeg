@@ -2192,6 +2192,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     }
 
     h->thread_context[0] = h;
+    h->outputed_poc = INT_MIN;
     return 0;
 }
 
