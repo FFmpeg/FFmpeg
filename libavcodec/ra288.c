@@ -74,11 +74,13 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
         ractx->sb[x] = -scalar_product_float(ractx->sb + x + 1,
                                              ractx->sp_lpc, 36);
 
-    /* convert log and do rms */
+    /* block 46 of G.728 spec */
     sum = 32. - scalar_product_float(ractx->gain_lpc, ractx->lhist, 10);
 
+    /* block 47 of G.728 spec */
     sum = av_clipf(sum, 0, 60);
 
+    /* block 48 of G.728 spec */
     sumsum = exp(sum * 0.1151292546497) * gain;    /* pow(10.0,sum/20)*f */
 
     for (x=0; x < 5; x++)
