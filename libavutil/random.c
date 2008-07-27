@@ -28,9 +28,7 @@ see http://en.wikipedia.org/wiki/Mersenne_twister for an explanation of this alg
 #include <stdio.h>
 #include "random.h"
 
-//#define DEBUG
-
-#ifdef DEBUG
+#ifdef TEST
 #include "common.h"
 #include "log.h"
 #endif
@@ -81,8 +79,8 @@ void av_random_generate_untempered_numbers(AVRandomState *state)
     state->index = 0;
 }
 
-#ifdef DEBUG
-void av_benchmark_random(void)
+#ifdef TEST
+void main(void)
 {
     int x=0;
     int i, j;

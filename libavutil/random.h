@@ -63,7 +63,4 @@ static inline double av_random_real1(AVRandomState *state)
     return av_random(state) * (1.0 / 4294967296.0);
 }
 
-// only available if DEBUG is defined in the .c file
-void av_benchmark_random(void);
-
 #endif /* FFMPEG_RANDOM_H */
