@@ -477,7 +477,7 @@ static int ffm_probe(AVProbeData *p)
 
 AVInputFormat ffm_demuxer = {
     "ffm",
-    NULL_IF_CONFIG_SMALL("ffm format"),
+    NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
     sizeof(FFMContext),
     ffm_probe,
     ffm_read_header,
