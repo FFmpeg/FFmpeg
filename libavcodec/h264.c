@@ -79,13 +79,19 @@ const uint8_t ff_div6[52]={
 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
 };
 
+static const int left_block_options[4][8]={
+    {0,1,2,3,7,10,8,11},
+    {2,2,3,3,8,11,8,11},
+    {0,0,1,1,7,10,7,10},
+    {0,2,0,2,7,10,7,10}
+};
 
 static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
-    int left_block[8];
+    int * left_block;
     int topleft_partition= -1;
     int i;
 
@@ -101,14 +107,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     topleft_xy = top_xy - 1;
     topright_xy= top_xy + 1;
     left_xy[1] = left_xy[0] = mb_xy-1;
-    left_block[0]= 0;
-    left_block[1]= 1;
-    left_block[2]= 2;
-    left_block[3]= 3;
-    left_block[4]= 7;
-    left_block[5]= 10;
-    left_block[6]= 8;
-    left_block[7]= 11;
+    left_block = left_block_options[0];
     if(FRAME_MBAFF){
         const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
         const int top_pair_xy      = pair_xy     - s->mb_stride;
@@ -147,34 +146,13 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
             left_xy[1] = left_xy[0] = pair_xy - 1;
             if (curr_mb_frame_flag) {
                 if (bottom) {
-                    left_block[0]= 2;
-                    left_block[1]= 2;
-                    left_block[2]= 3;
-                    left_block[3]= 3;
-                    left_block[4]= 8;
-                    left_block[5]= 11;
-                    left_block[6]= 8;
-                    left_block[7]= 11;
+                    left_block = left_block_options[1];
                 } else {
-                    left_block[0]= 0;
-                    left_block[1]= 0;
-                    left_block[2]= 1;
-                    left_block[3]= 1;
-                    left_block[4]= 7;
-                    left_block[5]= 10;
-                    left_block[6]= 7;
-                    left_block[7]= 10;
+                    left_block= left_block_options[2];
                 }
             } else {
                 left_xy[1] += s->mb_stride;
-                //left_block[0]= 0;
-                left_block[1]= 2;
-                left_block[2]= 0;
-                left_block[3]= 2;
-                //left_block[4]= 7;
-                left_block[5]= 10;
-                left_block[6]= 7;
-                left_block[7]= 10;
+                left_block = left_block_options[3];
             }
         }
     }
