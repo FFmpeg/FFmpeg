@@ -3108,7 +3108,6 @@ static int vc1_decode_p_mb(VC1Context *v)
     int cbp; /* cbp decoding stuff */
     int mqdiff, mquant; /* MB quantization */
     int ttmb = v->ttfrm; /* MB Transform type */
-    int status;
 
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
       offset_table[6] = { 0, 1, 3, 7, 15, 31 };
