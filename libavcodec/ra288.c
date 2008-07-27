@@ -25,7 +25,6 @@
 #include "ra288.h"
 
 typedef struct {
-    float history[8];
     float output[40];
     float sp_lpc[36];   ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10]; ///< LPC coefficients for gain (spec: GB)
@@ -92,7 +91,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     /* shift and store */
     memmove(ractx->lhist, ractx->lhist - 1, 10 * sizeof(*ractx->lhist));
 
-    *ractx->lhist = ractx->history[ractx->phase] = 10 * log10(sum) - 32;
+    *ractx->lhist = 10 * log10(sum) - 32;
 
     for (x=1; x < 5; x++)
         for (y=x-1; y >= 0; y--)
@@ -198,6 +197,11 @@ static void backward_filter(RA288Context *ractx)
 {
     float temp1[37]; // RTMP in the spec
     float temp2[11]; // GPTPMP in the spec
+    float history[8];
+    int i;
+
+    for (i=0 ; i < 8; i++)
+        history[i] = ractx->lhist[7-i];
 
     do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
@@ -205,7 +209,7 @@ static void backward_filter(RA288Context *ractx)
     if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
         colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
-    do_hybrid_window(10, 8, 20, ractx->history, temp2, ractx->gain_hist,
+    do_hybrid_window(10, 8, 20, history, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
     if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
