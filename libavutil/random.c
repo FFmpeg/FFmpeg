@@ -87,15 +87,12 @@ void main(void)
     AVRandomState state;
 
     av_init_random(0xdeadbeef, &state);
-    for (j = 0; j < 100; j++) {
-        START_TIMER;
-        x+= av_random(&state);
-        STOP_TIMER("first call to av_random");
-        for (i = 1; i < AV_RANDOM_N; i++) {
-            START_TIMER;
+    for (j = 0; j < 10000; j++) {
+        START_TIMER
+        for (i = 0; i < 624; i++) {
             x+= av_random(&state);
-            STOP_TIMER("AV_RANDOM_N calls of av_random");
         }
+        STOP_TIMER("624 calls of av_random");
     }
     av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);
 }
