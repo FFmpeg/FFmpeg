@@ -259,7 +259,7 @@ things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd'.
 but beware the '-g 100' might cause problems with some decoders.
 Things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd.
 
-@section Interlaced video looks very bad when encoded with ffmpeg, whats wrong?
+@section Interlaced video looks very bad when encoded with ffmpeg, what is wrong?
 
 You should use '-flags +ilme+ildct' and maybe '-flags +alt' for interlaced
 material, and try '-top 0/1' if the result looks really messed-up.
