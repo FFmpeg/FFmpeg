@@ -197,20 +197,18 @@ static void backward_filter(RA288Context *ractx)
 {
     float temp1[37];
     float temp2[11];
-    float st1[37];
-    float st2[11];
 
     do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist, ractx->sp_rec,
                      syn_window);
 
-    if (!eval_lpc_coeffs(temp1, st1, 36))
-        colmult(ractx->pr1, st1, syn_bw_tab, 36);
+    if (!eval_lpc_coeffs(temp1, ractx->pr1, 36))
+        colmult(ractx->pr1, ractx->pr1, syn_bw_tab, 36);
 
     do_hybrid_window(10, 8, 20, ractx->history, temp2, ractx->gain_hist, ractx->gain_rec,
                      gain_window);
 
-    if (!eval_lpc_coeffs(temp2, st2, 10))
-        colmult(ractx->pr2, st2, gain_bw_tab, 10);
+    if (!eval_lpc_coeffs(temp2, ractx->pr2, 10))
+        colmult(ractx->pr2, ractx->pr2, gain_bw_tab, 10);
 }
 
 /* Decode a block (celp) */
