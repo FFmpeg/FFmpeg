@@ -27,8 +27,8 @@
 typedef struct {
     float history[8];
     float output[40];
-    float pr1[36];
-    float pr2[10];
+    float sp_lpc[36];   ///< LPC coefficients for speech data (spec: A)
+    float gain_lpc[10]; ///< LPC coefficients for gain (spec: GB)
     int   phase;
 
     float sp_hist[111]; ///< Speech data history (spec: SB)
@@ -72,10 +72,11 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     memmove(ractx->sb + 5, ractx->sb, 36 * sizeof(*ractx->sb));
 
     for (x=4; x >= 0; x--)
-        ractx->sb[x] = -scalar_product_float(ractx->sb + x + 1, ractx->pr1, 36);
+        ractx->sb[x] = -scalar_product_float(ractx->sb + x + 1,
+                                             ractx->sp_lpc, 36);
 
     /* convert log and do rms */
-    sum = 32. - scalar_product_float(ractx->pr2, ractx->lhist, 10);
+    sum = 32. - scalar_product_float(ractx->gain_lpc, ractx->lhist, 10);
 
     sum = av_clipf(sum, 0, 60);
 
@@ -95,7 +96,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     for (x=1; x < 5; x++)
         for (y=x-1; y >= 0; y--)
-            buffer[x] -= ractx->pr1[x-y-1] * buffer[y];
+            buffer[x] -= ractx->sp_lpc[x-y-1] * buffer[y];
 
     /* output */
     for (x=0; x < 5; x++) {
@@ -195,20 +196,20 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
  */
 static void backward_filter(RA288Context *ractx)
 {
-    float temp1[37];
-    float temp2[11];
+    float temp1[37]; // RTMP in the spec
+    float temp2[11]; // GPTPMP in the spec
 
-    do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist, ractx->sp_rec,
-                     syn_window);
+    do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist,
+                     ractx->sp_rec, syn_window);
 
-    if (!eval_lpc_coeffs(temp1, ractx->pr1, 36))
-        colmult(ractx->pr1, ractx->pr1, syn_bw_tab, 36);
+    if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
+        colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
-    do_hybrid_window(10, 8, 20, ractx->history, temp2, ractx->gain_hist, ractx->gain_rec,
-                     gain_window);
+    do_hybrid_window(10, 8, 20, ractx->history, temp2, ractx->gain_hist,
+                     ractx->gain_rec, gain_window);
 
-    if (!eval_lpc_coeffs(temp2, ractx->pr2, 10))
-        colmult(ractx->pr2, ractx->pr2, gain_bw_tab, 10);
+    if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
+        colmult(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
 }
 
 /* Decode a block (celp) */
