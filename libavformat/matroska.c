@@ -59,6 +59,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_REAL/ATRC"      , CODEC_ID_ATRAC3},
     {"A_REAL/COOK"      , CODEC_ID_COOK},
 //    {"A_REAL/SIPR"      , CODEC_ID_SIPRO},
+    {"A_QUICKTIME/QDM2" , CODEC_ID_QDM2},
 
     {"S_TEXT/UTF8"      , CODEC_ID_TEXT},
     {"S_TEXT/ASCII"     , CODEC_ID_TEXT},

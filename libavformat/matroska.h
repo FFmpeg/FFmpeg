@@ -210,7 +210,7 @@ typedef enum {
  */
 
 typedef struct CodecTags{
-    char str[16];
+    char str[20];
     enum CodecID id;
 }CodecTags;
 
