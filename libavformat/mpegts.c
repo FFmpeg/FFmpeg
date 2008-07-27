@@ -970,7 +970,7 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
             codec_id = CODEC_ID_AC3;
         } else {
             codec_type = CODEC_TYPE_VIDEO;
-            codec_id = CODEC_ID_MPEG1VIDEO;
+            codec_id = CODEC_ID_PROBE;
         }
         break;
     }
