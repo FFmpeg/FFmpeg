@@ -164,19 +164,15 @@ then applied to the next input or output file.
 ffmpeg -i input.avi -b 64k output.avi
 @end example
 
-* To force the frame rate of the input and output file to 24 fps:
-@example
-ffmpeg -r 24 -i input.avi output.avi
-@end example
-
 * To force the frame rate of the output file to 24 fps:
 @example
 ffmpeg -i input.avi -r 24 output.avi
 @end example
 
-* To force the frame rate of input file to 1 fps and the output file to 24 fps:
+* To force the frame rate of the input file (valid for raw formats only)
+to 1 fps and the frame rate of the output file to 24 fps:
 @example
-ffmpeg -r 1 -i input.avi -r 24 output.avi
+ffmpeg -r 1 -i input.m2v -r 24 output.avi
 @end example
 
 The format option may be needed for raw input files.
