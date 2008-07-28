@@ -153,6 +153,11 @@ static void prodsum(float *tgt, const float *src, int len, int n)
 /**
  * Hybrid window filtering. See blocks 36 and 49 of the G.728 specification.
  *
+ * @note This function is slightly different from that described in the spec.
+ *       It expects in[0] to be the newest sample and in[n-1] to be the oldest
+ *       one stored. The spec has in the more ordinary way (in[0] the oldest
+ *       and in[n-1] the newest).
+ *
  * @param order   the order of the filter
  * @param n       the length of the input
  * @param non_rec the number of non-recursive samples
@@ -175,7 +180,9 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
 
     /* update history */
     memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
-    memcpy (hist + order + non_rec, in      , n                *sizeof(*hist));
+
+    for (x=0; x < n; x++)
+        hist[order + non_rec + x] = in[n-x-1];
 
     colmult(work, window, hist, order + n + non_rec);
 
@@ -198,23 +205,14 @@ static void backward_filter(RA288Context *ractx)
 {
     float temp1[37]; // RTMP in the spec
     float temp2[11]; // GPTPMP in the spec
-    float history[8];
-    float speech[40];
-    int i;
 
-    for (i=0 ; i < 8; i++)
-        history[i] = ractx->lhist[7-i];
-
-    for (i=0; i < 40; i++)
-        speech[i] = ractx->sb[39-i];
-
-    do_hybrid_window(36, 40, 35, speech, temp1, ractx->sp_hist,
+    do_hybrid_window(36, 40, 35, ractx->sb, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
 
     if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
         colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
-    do_hybrid_window(10, 8, 20, history, temp2, ractx->gain_hist,
+    do_hybrid_window(10, 8, 20, ractx->lhist, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
     if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
