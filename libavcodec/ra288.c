@@ -25,11 +25,11 @@
 #include "ra288.h"
 
 typedef struct {
-    float sp_lpc[36];   ///< LPC coefficients for speech data (spec: A)
-    float gain_lpc[10]; ///< LPC coefficients for gain (spec: GB)
+    float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
+    float gain_lpc[10];    ///< LPC coefficients for gain (spec: GB)
     int   phase;
 
-    float sp_hist[111]; ///< Speech data history (spec: SB)
+    float sp_hist[111];    ///< Speech data history (spec: SB)
 
     /** Speech part of the gain autocorrelation (spec: REXP) */
     float sp_rec[37];
