@@ -25,7 +25,6 @@
 #include "ra288.h"
 
 typedef struct {
-    float output[40];
     float sp_lpc[36];   ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10]; ///< LPC coefficients for gain (spec: GB)
     int   phase;
@@ -101,7 +100,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* output */
     for (x=0; x < 5; x++) {
-        ractx->output[ractx->phase*5+x] = ractx->sb[4-x] =
+        ractx->sb[4-x] =
             av_clipf(ractx->sb[4-x] + buffer[x], -4095, 4095);
     }
 }
@@ -200,12 +199,16 @@ static void backward_filter(RA288Context *ractx)
     float temp1[37]; // RTMP in the spec
     float temp2[11]; // GPTPMP in the spec
     float history[8];
+    float speech[40];
     int i;
 
     for (i=0 ; i < 8; i++)
         history[i] = ractx->lhist[7-i];
 
-    do_hybrid_window(36, 40, 35, ractx->output, temp1, ractx->sp_hist,
+    for (i=0; i < 40; i++)
+        speech[i] = ractx->sb[39-i];
+
+    do_hybrid_window(36, 40, 35, speech, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
 
     if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
@@ -244,7 +247,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         decode(ractx, gain, cb_coef);
 
         for (y=0; y < 5; y++)
-            *(out++) = 8 * ractx->output[ractx->phase*5 + y];
+            *(out++) = 8 * ractx->sb[4 - y];
 
         if (ractx->phase == 7)
             backward_filter(ractx);
