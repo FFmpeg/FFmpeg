@@ -27,7 +27,6 @@
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10];    ///< LPC coefficients for gain (spec: GB)
-    int   phase;
 
     float sp_hist[111];    ///< Speech data history (spec: SB)
 
@@ -239,13 +238,12 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     for (x=0; x < 32; x++) {
         float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (x&1));
-        ractx->phase = (x + 4) & 7;
         decode(ractx, gain, cb_coef);
 
         for (y=0; y < 5; y++)
             *(out++) = 8 * ractx->sp_block[4 - y];
 
-        if (ractx->phase == 7)
+        if ((x & 7) == 3)
             backward_filter(ractx);
     }
 
