@@ -171,9 +171,9 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
                              const float *window)
 {
     unsigned int x;
-    float buffer1[37];
-    float buffer2[37];
-    float work[111];
+    float buffer1[order + 1];
+    float buffer2[order + 1];
+    float work[order + n + non_rec];
 
     /* update history */
     memmove(hist, hist + n, (order + non_rec)*sizeof(*hist));
