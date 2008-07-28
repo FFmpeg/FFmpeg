@@ -60,7 +60,6 @@ static void colmult(float *tgt, const float *m1, const float *m2, int n)
         *tgt++ = *m1++ * *m2++;
 }
 
-/* Decode and produce output */
 static void decode(RA288Context *ractx, float gain, int cb_coef)
 {
     int x, y;
@@ -217,7 +216,6 @@ static void backward_filter(RA288Context *ractx)
         colmult(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
 }
 
-/* Decode a block (celp) */
 static int ra288_decode_frame(AVCodecContext * avctx, void *data,
                               int *data_size, const uint8_t * buf,
                               int buf_size)
