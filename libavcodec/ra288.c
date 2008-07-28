@@ -39,8 +39,8 @@ typedef struct {
     /** Recursive part of the gain autocorrelation (spec: REXPLG) */
     float gain_rec[11];
 
-    float sb[41];
-    float lhist[10];
+    float sp_block[41];    ///< Speech data of four blocks (spec: STTMP)
+    float gain_block[10];  ///< Gain data of four blocks (spec: GSTATE)
 } RA288Context;
 
 static inline float scalar_product_float(const float * v1, const float * v2,
@@ -66,14 +66,14 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     double sumsum;
     float sum, buffer[5];
 
-    memmove(ractx->sb + 5, ractx->sb, 36 * sizeof(*ractx->sb));
+    memmove(ractx->sp_block + 5, ractx->sp_block, 36*sizeof(*ractx->sp_block));
 
     for (x=4; x >= 0; x--)
-        ractx->sb[x] = -scalar_product_float(ractx->sb + x + 1,
+        ractx->sp_block[x] = -scalar_product_float(ractx->sp_block + x + 1,
                                              ractx->sp_lpc, 36);
 
     /* block 46 of G.728 spec */
-    sum = 32. - scalar_product_float(ractx->gain_lpc, ractx->lhist, 10);
+    sum = 32. - scalar_product_float(ractx->gain_lpc, ractx->gain_block, 10);
 
     /* block 47 of G.728 spec */
     sum = av_clipf(sum, 0, 60);
@@ -89,9 +89,10 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     sum = FFMAX(sum, 1);
 
     /* shift and store */
-    memmove(ractx->lhist, ractx->lhist - 1, 10 * sizeof(*ractx->lhist));
+    memmove(ractx->gain_block, ractx->gain_block - 1,
+            10 * sizeof(*ractx->gain_block));
 
-    *ractx->lhist = 10 * log10(sum) - 32;
+    *ractx->gain_block = 10 * log10(sum) - 32;
 
     for (x=1; x < 5; x++)
         for (y=x-1; y >= 0; y--)
@@ -99,7 +100,8 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* output */
     for (x=0; x < 5; x++)
-        ractx->sb[4-x] = av_clipf(ractx->sb[4-x] + buffer[x], -4095, 4095);
+        ractx->sp_block[4-x] =
+            av_clipf(ractx->sp_block[4-x] + buffer[x], -4095, 4095);
 }
 
 /**
@@ -203,13 +205,13 @@ static void backward_filter(RA288Context *ractx)
     float temp1[37]; // RTMP in the spec
     float temp2[11]; // GPTPMP in the spec
 
-    do_hybrid_window(36, 40, 35, ractx->sb, temp1, ractx->sp_hist,
+    do_hybrid_window(36, 40, 35, ractx->sp_block, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
 
     if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
         colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
-    do_hybrid_window(10, 8, 20, ractx->lhist, temp2, ractx->gain_hist,
+    do_hybrid_window(10, 8, 20, ractx->gain_block, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
     if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
@@ -241,7 +243,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         decode(ractx, gain, cb_coef);
 
         for (y=0; y < 5; y++)
-            *(out++) = 8 * ractx->sb[4 - y];
+            *(out++) = 8 * ractx->sp_block[4 - y];
 
         if (ractx->phase == 7)
             backward_filter(ractx);
