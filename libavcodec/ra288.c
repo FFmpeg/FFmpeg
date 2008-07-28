@@ -238,6 +238,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     for (x=0; x < 32; x++) {
         float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (x&1));
+
         decode(ractx, gain, cb_coef);
 
         for (y=0; y < 5; y++)
