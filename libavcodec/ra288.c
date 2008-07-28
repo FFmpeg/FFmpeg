@@ -79,7 +79,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     sum = av_clipf(sum, 0, 60);
 
     /* block 48 of G.728 spec */
-    sumsum = exp(sum * 0.1151292546497) * gain;    /* pow(10.0,sum/20)*f */
+    sumsum = exp(sum * 0.1151292546497) * gain; /* pow(10.0,sum/20)*gain */
 
     for (x=0; x < 5; x++)
         buffer[x] = codetable[cb_coef][x] * sumsum;
