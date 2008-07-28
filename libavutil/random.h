@@ -35,7 +35,14 @@ typedef struct {
 void av_init_random(unsigned int seed, AVRandomState *state); ///< to be inlined, the struct must be visible, so it doesn't make sense to try and keep it opaque with malloc/free like calls
 void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerate the untempered numbers (must be done every 624 iterations, or it will loop)
 
-/** generates a random number on [0,0xffffffff]-interval */
+/**
+ * generates a random number on [0,0xffffffff]-interval
+ *
+ * Please do NOT use the mersenne twister, it is slow, use the random generator
+ * from lfg.c/h or a simple LCG like state= state*1664525+1013904223.
+ * If you still choose to use MT, expect that you will have to provide
+ * some evidence that it makes a difference for the case where you use it.
+ */
 static inline unsigned int av_random(AVRandomState *state)
 {
     unsigned int y;
