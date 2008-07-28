@@ -29,6 +29,12 @@ typedef struct {
 
 void av_lfg_init(AVLFG *c, unsigned int seed);
 
+/**
+ * Gets the next random unsigned 32bit number.
+ *
+ * Please also consider a simple LCG like state= state*1664525+1013904223,
+ * it may be good enough and faster for your specific use case.
+ */
 static inline unsigned int av_lfg_get(AVLFG *c){
     c->state[c->index & 63] = c->state[(c->index-24) & 63] + c->state[(c->index-55) & 63];
     return c->state[c->index++ & 63];
