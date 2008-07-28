@@ -1597,6 +1597,8 @@ static int av_encode(AVFormatContext **output_files,
 
                 /* Sanity check that the stream types match */
                 if (ist_table[ost->source_index]->st->codec->codec_type != ost->st->codec->codec_type) {
+                    int i= ost->file_index;
+                    dump_format(output_files[i], i, output_files[i]->filename, 1);
                     fprintf(stderr, "Codec type mismatch for mapping #%d.%d -> #%d.%d\n",
                         stream_maps[n-1].file_index, stream_maps[n-1].stream_index,
                         ost->file_index, ost->index);
