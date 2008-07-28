@@ -99,10 +99,8 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
             buffer[x] -= ractx->sp_lpc[x-y-1] * buffer[y];
 
     /* output */
-    for (x=0; x < 5; x++) {
-        ractx->sb[4-x] =
-            av_clipf(ractx->sb[4-x] + buffer[x], -4095, 4095);
-    }
+    for (x=0; x < 5; x++)
+        ractx->sb[4-x] = av_clipf(ractx->sb[4-x] + buffer[x], -4095, 4095);
 }
 
 /**
