@@ -177,7 +177,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     float work[111];
 
     /* update history */
-    memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
+    memmove(hist, hist + n, (order + non_rec)*sizeof(*hist));
 
     for (x=0; x < n; x++)
         hist[order + non_rec + x] = in[n-x-1];
