@@ -5356,10 +5356,10 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
         }
     }
 
-    while( coeff_count-- ) {
+    do {
         uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;
 
-        int j= scantable[index[coeff_count]];
+        int j= scantable[index[--coeff_count]];
 
         if( get_cabac( CC, ctx ) == 0 ) {
             node_ctx = coeff_abs_level_transition[0][node_ctx];
@@ -5396,7 +5396,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
                 block[j] = (get_cabac_bypass_sign( CC, -coeff_abs ) * qmul[j] + 32) >> 6;
             }
         }
-    }
+    } while( coeff_count );
 #ifdef CABAC_ON_STACK
             h->cabac.range     = cc.range     ;
             h->cabac.low       = cc.low       ;
