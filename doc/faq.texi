@@ -109,6 +109,11 @@ If some MP3 codec like LAME is installed.
 This is a bug in gcc. Do not report it to us. Instead, please report it to
 the gcc developers. Note that we will not add workarounds for gcc bugs.
 
+Also note that (some of) the gcc developers believe this is not a bug or
+not a bug they should fix:
+@url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=11203}.
+Then again, some of them do not know the difference between an undecidable
+problem and an NP-hard problem...
 
 @chapter Usage
 
