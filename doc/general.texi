@@ -898,11 +898,12 @@ should also be avoided if they don't make the code easier to understand.
 @item
     Remember to check if you need to bump versions for the specific libav
     parts (libavutil, libavcodec, libavformat) you are changing. You need
-    to change the version integer and the version string.
+    to change the version integer.
     Incrementing the first component means no backward compatibility to
     previous versions (e.g. removal of a function from the public API).
     Incrementing the second component means backward compatible change
-    (e.g. addition of a function to the public API).
+    (e.g. addition of a function to the public API or extension of an
+    existing data structure).
     Incrementing the third component means a noteworthy binary compatible
     change (e.g. encoder bug fix that matters for the decoder).
 @item
