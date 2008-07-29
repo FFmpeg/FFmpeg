@@ -66,6 +66,7 @@ void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1,
 void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1,
                              const float *win, float add_bias, int len);
 void ff_float_to_int16_c(int16_t *dst, const float *src, long len);
+void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];

@@ -926,7 +926,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext) {
     vc->avccontext = avccontext;
     dsputil_init(&vc->dsp, avccontext);
 
-    if(vc->dsp.float_to_int16 == ff_float_to_int16_c) {
+    if(vc->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         vc->add_bias = 385;
         vc->exp_bias = 0;
     } else {
