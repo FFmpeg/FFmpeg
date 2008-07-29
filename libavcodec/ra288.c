@@ -171,7 +171,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
                              float *out, float *hist, float *out2,
                              const float *window)
 {
-    unsigned int i;
+    int i;
     float buffer1[order + 1];
     float buffer2[order + 1];
     float work[order + n + non_rec];
