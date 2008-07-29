@@ -61,14 +61,14 @@ static void colmult(float *tgt, const float *m1, const float *m2, int n)
 
 static void decode(RA288Context *ractx, float gain, int cb_coef)
 {
-    int x, y;
+    int i, j;
     double sumsum;
     float sum, buffer[5];
 
     memmove(ractx->sp_block + 5, ractx->sp_block, 36*sizeof(*ractx->sp_block));
 
-    for (x=4; x >= 0; x--)
-        ractx->sp_block[x] = -scalar_product_float(ractx->sp_block + x + 1,
+    for (i=4; i >= 0; i--)
+        ractx->sp_block[i] = -scalar_product_float(ractx->sp_block + i + 1,
                                              ractx->sp_lpc, 36);
 
     /* block 46 of G.728 spec */
@@ -80,8 +80,8 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     /* block 48 of G.728 spec */
     sumsum = exp(sum * 0.1151292546497) * gain; /* pow(10.0,sum/20)*gain */
 
-    for (x=0; x < 5; x++)
-        buffer[x] = codetable[cb_coef][x] * sumsum;
+    for (i=0; i < 5; i++)
+        buffer[i] = codetable[cb_coef][i] * sumsum;
 
     sum = scalar_product_float(buffer, buffer, 5) / 5;
 
@@ -93,14 +93,14 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     *ractx->gain_block = 10 * log10(sum) - 32;
 
-    for (x=1; x < 5; x++)
-        for (y=x-1; y >= 0; y--)
-            buffer[x] -= ractx->sp_lpc[x-y-1] * buffer[y];
+    for (i=1; i < 5; i++)
+        for (j=i-1; j >= 0; j--)
+            buffer[i] -= ractx->sp_lpc[i-j-1] * buffer[j];
 
     /* output */
-    for (x=0; x < 5; x++)
-        ractx->sp_block[4-x] =
-            av_clipf(ractx->sp_block[4-x] + buffer[x], -4095, 4095);
+    for (i=0; i < 5; i++)
+        ractx->sp_block[4-i] =
+            av_clipf(ractx->sp_block[4-i] + buffer[i], -4095, 4095);
 }
 
 /**
@@ -111,7 +111,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
  */
 static int eval_lpc_coeffs(const float *in, float *tgt, int n)
 {
-    int x, y;
+    int i, j;
     double f0, f1, f2;
 
     if (in[n] == 0)
@@ -122,17 +122,17 @@ static int eval_lpc_coeffs(const float *in, float *tgt, int n)
 
     in--; // To avoid a -1 subtraction in the inner loop
 
-    for (x=1; x <= n; x++) {
-        f1 = in[x+1];
+    for (i=1; i <= n; i++) {
+        f1 = in[i+1];
 
-        for (y=0; y < x - 1; y++)
-            f1 += in[x-y]*tgt[y];
+        for (j=0; j < i - 1; j++)
+            f1 += in[i-j]*tgt[j];
 
-        tgt[x-1] = f2 = -f1/f0;
-        for (y=0; y < x >> 1; y++) {
-            float temp = tgt[y] + tgt[x-y-2]*f2;
-            tgt[x-y-2] += tgt[y]*f2;
-            tgt[y] = temp;
+        tgt[i-1] = f2 = -f1/f0;
+        for (j=0; j < i >> 1; j++) {
+            float temp = tgt[j] + tgt[i-j-2]*f2;
+            tgt[i-j-2] += tgt[j]*f2;
+            tgt[j] = temp;
         }
         if ((f0 += f1*f2) < 0)
             return -1;
@@ -171,7 +171,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
                              float *out, float *hist, float *out2,
                              const float *window)
 {
-    unsigned int x;
+    unsigned int i;
     float buffer1[order + 1];
     float buffer2[order + 1];
     float work[order + n + non_rec];
@@ -179,17 +179,17 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     /* update history */
     memmove(hist, hist + n, (order + non_rec)*sizeof(*hist));
 
-    for (x=0; x < n; x++)
-        hist[order + non_rec + x] = in[n-x-1];
+    for (i=0; i < n; i++)
+        hist[order + non_rec + i] = in[n-i-1];
 
     colmult(work, window, hist, order + n + non_rec);
 
     prodsum(buffer1, work + order    , n      , order);
     prodsum(buffer2, work + order + n, non_rec, order);
 
-    for (x=0; x <= order; x++) {
-        out2[x] = out2[x] * 0.5625 + buffer1[x];
-        out [x] = out2[x]          + buffer2[x];
+    for (i=0; i <= order; i++) {
+        out2[i] = out2[i] * 0.5625 + buffer1[i];
+        out [i] = out2[i]          + buffer2[i];
     }
 
     /* Multiply by the white noise correcting factor (WNCF) */
@@ -222,7 +222,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
                               int buf_size)
 {
     int16_t *out = data;
-    int x, y;
+    int i, j;
     RA288Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
@@ -235,16 +235,16 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
-    for (x=0; x < 32; x++) {
+    for (i=0; i < 32; i++) {
         float gain = amptable[get_bits(&gb, 3)];
-        int cb_coef = get_bits(&gb, 6 + (x&1));
+        int cb_coef = get_bits(&gb, 6 + (i&1));
 
         decode(ractx, gain, cb_coef);
 
-        for (y=0; y < 5; y++)
-            *(out++) = 8 * ractx->sp_block[4 - y];
+        for (j=0; j < 5; j++)
+            *(out++) = 8 * ractx->sp_block[4 - j];
 
-        if ((x & 7) == 3)
+        if ((i & 7) == 3)
             backward_filter(ractx);
     }
 
