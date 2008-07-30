@@ -48,7 +48,7 @@ static inline unsigned int av_lfg_get(AVLFG *c){
 static inline unsigned int av_mlfg_get(AVLFG *c){
     unsigned int a= c->state[(c->index-55) & 63];
     unsigned int b= c->state[(c->index-24) & 63];
-    return c->state[c->index++ & 63] = a*b+a+b;
+    return c->state[c->index++ & 63] = 2*a*b+a+b;
 }
 
 #endif //FFMPEG_LFG_H
