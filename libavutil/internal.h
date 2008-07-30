@@ -106,7 +106,7 @@
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
 
-#ifdef USE_FASTMEMCPY
+#ifdef CONFIG_FASTMEMCPY
 #    include "libvo/fastmemcpy.h"
 #    define memcpy(a,b,c) fast_memcpy(a,b,c)
 #endif
