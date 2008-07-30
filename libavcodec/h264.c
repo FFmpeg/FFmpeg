@@ -2502,30 +2502,12 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     }
 
     if (!simple && IS_INTRA_PCM(mb_type)) {
-        unsigned int x, y;
-
-        // The pixels are stored in h->mb array in the same order as levels,
-        // copy them in output in the correct order.
-        for(i=0; i<16; i++) {
-            for (y=0; y<4; y++) {
-                for (x=0; x<4; x++) {
-                    *(dest_y + block_offset[i] + y*linesize + x) = h->mb[i*16+y*4+x];
-                }
-            }
+        for (i=0; i<16; i++) {
+            memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
         }
-        for(i=16; i<16+4; i++) {
-            for (y=0; y<4; y++) {
-                for (x=0; x<4; x++) {
-                    *(dest_cb + block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
-                }
-            }
-        }
-        for(i=20; i<20+4; i++) {
-            for (y=0; y<4; y++) {
-                for (x=0; x<4; x++) {
-                    *(dest_cr + block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
-                }
-            }
+        for (i=0; i<8; i++) {
+            memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
+            memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
         }
     } else {
         if(IS_INTRA(mb_type)){
@@ -4405,34 +4387,14 @@ decode_intra_mb:
     h->slice_table[ mb_xy ]= h->slice_num;
 
     if(IS_INTRA_PCM(mb_type)){
-        unsigned int x, y;
+        unsigned int x;
 
         // We assume these blocks are very rare so we do not optimize it.
         align_get_bits(&s->gb);
 
         // The pixels are stored in the same order as levels in h->mb array.
-        for(y=0; y<16; y++){
-            const int index= 4*(y&3) + 32*((y>>2)&1) + 128*(y>>3);
-            for(x=0; x<16; x++){
-                tprintf(s->avctx, "LUMA ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
-                h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= get_bits(&s->gb, 8);
-            }
-        }
-        if(CHROMA){
-            for(y=0; y<8; y++){
-                const int index= 256 + 4*(y&3) + 32*(y>>2);
-                for(x=0; x<8; x++){
-                    tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
-                    h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
-                }
-            }
-            for(y=0; y<8; y++){
-                const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
-                for(x=0; x<8; x++){
-                    tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
-                    h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
-                }
-            }
+        for(x=0; x < (CHROMA ? 384 : 256); x++){
+            ((uint8_t*)h->mb)[x]= get_bits(&s->gb, 8);
         }
 
         // In deblocking, the quantizer is 0
@@ -5545,7 +5507,6 @@ decode_intra_mb:
 
     if(IS_INTRA_PCM(mb_type)) {
         const uint8_t *ptr;
-        unsigned int x, y;
 
         // We assume these blocks are very rare so we do not optimize it.
         // FIXME The two following lines get the bitstream position in the cabac
@@ -5557,28 +5518,9 @@ decode_intra_mb:
         }
 
         // The pixels are stored in the same order as levels in h->mb array.
-        for(y=0; y<16; y++){
-            const int index= 4*(y&3) + 32*((y>>2)&1) + 128*(y>>3);
-            for(x=0; x<16; x++){
-                tprintf(s->avctx, "LUMA ICPM LEVEL (%3d)\n", *ptr);
-                h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= *ptr++;
-            }
-        }
+        memcpy(h->mb, ptr, 256); ptr+=256;
         if(CHROMA){
-            for(y=0; y<8; y++){
-                const int index= 256 + 4*(y&3) + 32*(y>>2);
-                for(x=0; x<8; x++){
-                    tprintf(s->avctx, "CHROMA U ICPM LEVEL (%3d)\n", *ptr);
-                    h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
-                }
-            }
-            for(y=0; y<8; y++){
-                const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
-                for(x=0; x<8; x++){
-                    tprintf(s->avctx, "CHROMA V ICPM LEVEL (%3d)\n", *ptr);
-                    h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
-                }
-            }
+            memcpy(h->mb+128, ptr, 128); ptr+=128;
         }
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
