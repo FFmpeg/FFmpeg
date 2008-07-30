@@ -1026,8 +1026,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             continue;
 
 //        assert(st2->codec->block_align);
-        assert(st2->time_base.den == ast2->rate);
-        assert(st2->time_base.num == ast2->scale);
+        assert((int64_t)st2->time_base.num*ast2->rate == (int64_t)st2->time_base.den*ast2->scale);
         index = av_index_search_timestamp(
                 st2,
                 av_rescale(timestamp, st2->time_base.den*(int64_t)st->time_base.num, st->time_base.den * (int64_t)st2->time_base.num),
