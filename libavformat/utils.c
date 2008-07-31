@@ -1430,7 +1430,7 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 static int av_seek_frame_generic(AVFormatContext *s,
                                  int stream_index, int64_t timestamp, int flags)
 {
-    int index;
+    int index, ret;
     AVStream *st;
     AVIndexEntry *ie;
 
@@ -1445,11 +1445,13 @@ static int av_seek_frame_generic(AVFormatContext *s,
         if(st->nb_index_entries){
             assert(st->index_entries);
             ie= &st->index_entries[st->nb_index_entries-1];
-            url_fseek(s->pb, ie->pos, SEEK_SET);
+            if ((ret = url_fseek(s->pb, ie->pos, SEEK_SET)) < 0)
+                return ret;
             av_update_cur_dts(s, st, ie->timestamp);
-        }else
-            url_fseek(s->pb, 0, SEEK_SET);
-
+        }else{
+            if ((ret = url_fseek(s->pb, 0, SEEK_SET)) < 0)
+                return ret;
+        }
         for(i=0;; i++) {
             int ret = av_read_frame(s, &pkt);
             if(ret<0)
@@ -1471,8 +1473,8 @@ static int av_seek_frame_generic(AVFormatContext *s,
             return 0;
     }
     ie = &st->index_entries[index];
-    url_fseek(s->pb, ie->pos, SEEK_SET);
-
+    if ((ret = url_fseek(s->pb, ie->pos, SEEK_SET)) < 0)
+        return ret;
     av_update_cur_dts(s, st, ie->timestamp);
 
     return 0;
