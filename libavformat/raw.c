@@ -221,7 +221,7 @@ int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st;
-    int block_align, byte_rate;
+    int block_align, byte_rate, ret;
     int64_t pos;
 
     st = s->streams[0];
@@ -243,7 +243,8 @@ int pcm_read_seek(AVFormatContext *s,
 
     /* recompute exact position */
     st->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
-    url_fseek(s->pb, pos + s->data_offset, SEEK_SET);
+    if ((ret = url_fseek(s->pb, pos + s->data_offset, SEEK_SET)) < 0)
+        return ret;
     return 0;
 }
 
