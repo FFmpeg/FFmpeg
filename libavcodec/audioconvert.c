@@ -25,7 +25,49 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "avcodec.h"
+#include "audioconvert.h"
+
+typedef struct SampleFmtInfo {
+    const char *name;
+    int bits;
+} SampleFmtInfo;
+
+/** this table gives more information about formats */
+static const SampleFmtInfo sample_fmt_info[SAMPLE_FMT_NB] = {
+    [SAMPLE_FMT_U8]  = { .name = "u8",  .bits = 8 },
+    [SAMPLE_FMT_S16] = { .name = "s16", .bits = 16 },
+    [SAMPLE_FMT_S24] = { .name = "s24", .bits = 24 },
+    [SAMPLE_FMT_S32] = { .name = "s32", .bits = 32 },
+    [SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 }
+};
+
+const char *avcodec_get_sample_fmt_name(int sample_fmt)
+{
+    if (sample_fmt < 0 || sample_fmt >= SAMPLE_FMT_NB)
+        return NULL;
+    return sample_fmt_info[sample_fmt].name;
+}
+
+enum SampleFormat avcodec_get_sample_fmt(const char* name)
+{
+    int i;
+
+    for (i=0; i < SAMPLE_FMT_NB; i++)
+        if (!strcmp(sample_fmt_info[i].name, name))
+            return i;
+    return SAMPLE_FMT_NONE;
+}
+
+void avcodec_sample_fmt_string (char *buf, int buf_size, int sample_fmt)
+{
+    /* print header */
+    if (sample_fmt < 0)
+        snprintf (buf, buf_size, "name  " " depth");
+    else if (sample_fmt < SAMPLE_FMT_NB) {
+        SampleFmtInfo info= sample_fmt_info[sample_fmt];
+        snprintf (buf, buf_size, "%-6s" "   %2d ", info.name, info.bits);
+    }
+}
 
 int av_audio_convert(void *maybe_dspcontext_or_something_av_convert_specific,
                      void *out[6], int out_stride[6], enum SampleFormat out_fmt,
