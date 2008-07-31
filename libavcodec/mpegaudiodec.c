@@ -84,7 +84,19 @@ static void compute_antialias_float(MPADecodeContext *s, GranuleDef *g);
 
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
+static VLC_TYPE huff_vlc_tables[
+  0+128+128+128+130+128+154+166+
+  142+204+190+170+542+460+662+414
+  ][2];
+static const int huff_vlc_tables_sizes[16] = {
+  0, 128, 128, 128, 130, 128, 154, 166,
+  142, 204, 190, 170, 542, 460, 662, 414
+};
 static VLC huff_quad_vlc[2];
+static VLC_TYPE huff_quad_vlc_tables[128+16][2];
+static const int huff_quad_vlc_tables_sizes[2] = {
+  128, 16
+};
 /* computed from band_size_long */
 static uint16_t band_index_long[9][23];
 /* XXX: free when all decoders are closed */
@@ -324,6 +336,8 @@ static int decode_init(AVCodecContext * avctx)
         s->compute_antialias= compute_antialias_float;
 
     if (!init && !avctx->parse_only) {
+        int offset;
+
         /* scale factors table for layer 1/2 */
         for(i=0;i<64;i++) {
             int shift, mod;
@@ -351,6 +365,7 @@ static int decode_init(AVCodecContext * avctx)
         ff_mpa_synth_init(window);
 
         /* huffman decode tables */
+        offset = 0;
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
             int xsize, x, y;
@@ -373,13 +388,25 @@ static int decode_init(AVCodecContext * avctx)
             }
 
             /* XXX: fail test */
+            huff_vlc[i].table = huff_vlc_tables+offset;
+            huff_vlc[i].table_allocated = huff_vlc_tables_sizes[i];
             init_vlc(&huff_vlc[i], 7, 512,
-                     tmp_bits, 1, 1, tmp_codes, 2, 2, 1);
+                     tmp_bits, 1, 1, tmp_codes, 2, 2,
+                     INIT_VLC_USE_NEW_STATIC);
+            offset += huff_vlc_tables_sizes[i];
         }
+        assert(offset == sizeof(huff_vlc_tables)/(sizeof(VLC_TYPE)*2));
+
+        offset = 0;
         for(i=0;i<2;i++) {
+            huff_quad_vlc[i].table = huff_quad_vlc_tables+offset;
+            huff_quad_vlc[i].table_allocated = huff_quad_vlc_tables_sizes[i];
             init_vlc(&huff_quad_vlc[i], i == 0 ? 7 : 4, 16,
-                     mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1, 1);
+                     mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1,
+                     INIT_VLC_USE_NEW_STATIC);
+            offset += huff_quad_vlc_tables_sizes[i];
         }
+        assert(offset == sizeof(huff_quad_vlc_tables)/(sizeof(VLC_TYPE)*2));
 
         for(i=0;i<9;i++) {
             k = 0;
