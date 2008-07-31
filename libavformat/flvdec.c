@@ -324,6 +324,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         is_audio=0;
         flags = get_byte(s->pb);
+        if ((flags & 0xf0) == 0x50) { /* video info / command frame */
+            url_fskip(s->pb, size - 1);
+            continue;
+        }
     } else {
         if (type == FLV_TAG_TYPE_META && size > 13+1+4)
             flv_read_metabody(s, next);
