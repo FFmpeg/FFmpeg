@@ -560,8 +560,8 @@ int MPV_common_init(MpegEncContext *s)
     s->parse_context.state= -1;
     if((s->avctx->debug&(FF_DEBUG_VIS_QP|FF_DEBUG_VIS_MB_TYPE)) || (s->avctx->debug_mv)){
        s->visualization_buffer[0] = av_malloc((s->mb_width*16 + 2*EDGE_WIDTH) * s->mb_height*16 + 2*EDGE_WIDTH);
-       s->visualization_buffer[1] = av_malloc((s->mb_width*8 + EDGE_WIDTH) * s->mb_height*8 + EDGE_WIDTH);
-       s->visualization_buffer[2] = av_malloc((s->mb_width*8 + EDGE_WIDTH) * s->mb_height*8 + EDGE_WIDTH);
+       s->visualization_buffer[1] = av_malloc((s->mb_width*16 + 2*EDGE_WIDTH) * s->mb_height*16 + 2*EDGE_WIDTH);
+       s->visualization_buffer[2] = av_malloc((s->mb_width*16 + 2*EDGE_WIDTH) * s->mb_height*16 + 2*EDGE_WIDTH);
     }
 
     s->context_initialized = 1;
@@ -1164,7 +1164,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         int mb_y;
         uint8_t *ptr;
         int i;
-        int h_chroma_shift, v_chroma_shift;
+        int h_chroma_shift, v_chroma_shift, block_height;
         const int width = s->avctx->width;
         const int height= s->avctx->height;
         const int mv_sample_log2= 4 - pict->motion_subsample_log2;
@@ -1178,6 +1178,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         }
         pict->type= FF_BUFFER_TYPE_COPY;
         ptr= pict->data[0];
+        block_height = 16>>v_chroma_shift;
 
         for(mb_y=0; mb_y<s->mb_height; mb_y++){
             int mb_x;
@@ -1255,9 +1256,9 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                 if((s->avctx->debug&FF_DEBUG_VIS_QP) && pict->motion_val){
                     uint64_t c= (pict->qscale_table[mb_index]*128/31) * 0x0101010101010101ULL;
                     int y;
-                    for(y=0; y<8; y++){
-                        *(uint64_t*)(pict->data[1] + 8*mb_x + (8*mb_y + y)*pict->linesize[1])= c;
-                        *(uint64_t*)(pict->data[2] + 8*mb_x + (8*mb_y + y)*pict->linesize[2])= c;
+                    for(y=0; y<block_height; y++){
+                        *(uint64_t*)(pict->data[1] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[1])= c;
+                        *(uint64_t*)(pict->data[2] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[2])= c;
                     }
                 }
                 if((s->avctx->debug&FF_DEBUG_VIS_MB_TYPE) && pict->motion_val){
@@ -1297,9 +1298,9 @@ v= (int)(128 + r*sin(theta*3.141592/180));
 
                     u*= 0x0101010101010101ULL;
                     v*= 0x0101010101010101ULL;
-                    for(y=0; y<8; y++){
-                        *(uint64_t*)(pict->data[1] + 8*mb_x + (8*mb_y + y)*pict->linesize[1])= u;
-                        *(uint64_t*)(pict->data[2] + 8*mb_x + (8*mb_y + y)*pict->linesize[2])= v;
+                    for(y=0; y<block_height; y++){
+                        *(uint64_t*)(pict->data[1] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[1])= u;
+                        *(uint64_t*)(pict->data[2] + 8*mb_x + (block_height*mb_y + y)*pict->linesize[2])= v;
                     }
 
                     //segmentation
