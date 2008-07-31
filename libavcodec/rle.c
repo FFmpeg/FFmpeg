@@ -70,9 +70,9 @@ int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *ptr , int bpp, i
         } else {
             /* fall back on uncompressed */
             count = count_pixels(ptr, w-x, bpp, 0);
+            if(out + bpp*count >= outbuf + out_size) return -1;
             *out++ = (count ^ xor_raw) + add_raw;
 
-            if(out + bpp*count > outbuf + out_size) return -1;
             memcpy(out, ptr, bpp * count);
             out += bpp * count;
         }
