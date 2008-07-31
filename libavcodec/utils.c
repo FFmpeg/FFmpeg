@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "opt.h"
 #include "imgconvert.h"
+#include "audioconvert.h"
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
@@ -1147,6 +1148,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      ", %d Hz, %s",
                      enc->sample_rate,
                      channels_str);
+        }
+        if (enc->sample_fmt != SAMPLE_FMT_NONE) {
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", %s", avcodec_get_sample_fmt_name(enc->sample_fmt));
         }
 
         /* for PCM codecs, compute bitrate directly */
