@@ -119,6 +119,7 @@ static av_cold int a52_decode_init(AVCodecContext *avctx)
         avctx->channels = avctx->request_channels;
     }
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

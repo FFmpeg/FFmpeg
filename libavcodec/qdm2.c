@@ -1931,6 +1931,8 @@ static int qdm2_decode_init(AVCodecContext *avctx)
 
     qdm2_init(s);
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
+
 //    dump_context(s);
     return 0;
 }

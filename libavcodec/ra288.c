@@ -42,6 +42,12 @@ typedef struct {
     float gain_block[10];  ///< Gain data of four blocks (spec: GSTATE)
 } RA288Context;
 
+static av_cold int ra288_decode_init(AVCodecContext *avctx)
+{
+    avctx->sample_fmt = SAMPLE_FMT_S16;
+    return 0;
+}
+
 static inline float scalar_product_float(const float * v1, const float * v2,
                                          int size)
 {
@@ -258,7 +264,7 @@ AVCodec ra_288_decoder =
     CODEC_TYPE_AUDIO,
     CODEC_ID_RA_288,
     sizeof(RA288Context),
-    NULL,
+    ra288_decode_init,
     NULL,
     NULL,
     ra288_decode_frame,

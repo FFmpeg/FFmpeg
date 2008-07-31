@@ -54,6 +54,7 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 {
 //    TSContext *c = avctx->priv_data;
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

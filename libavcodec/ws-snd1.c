@@ -40,6 +40,7 @@ static av_cold int ws_snd_decode_init(AVCodecContext * avctx)
 {
 //    WSSNDContext *c = avctx->priv_data;
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

@@ -336,6 +336,7 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

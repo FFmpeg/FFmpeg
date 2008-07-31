@@ -198,6 +198,7 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
     }
 
     dsputil_init(&s->dsp, avctx);
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

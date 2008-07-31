@@ -558,6 +558,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

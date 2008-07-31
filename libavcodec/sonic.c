@@ -828,6 +828,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     }
     s->int_samples = av_mallocz(4* s->frame_size);
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

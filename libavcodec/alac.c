@@ -594,6 +594,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
 
     alac->numchannels = alac->avctx->channels;
     alac->bytespersample = (avctx->bits_per_sample / 8) * alac->numchannels;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
 
     return 0;
 }

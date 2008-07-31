@@ -126,6 +126,7 @@ static int wma_decode_init(AVCodecContext * avctx)
         wma_lsp_to_curve_init(s, s->frame_len);
     }
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

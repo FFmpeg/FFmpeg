@@ -177,6 +177,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
                  &mpc8_q8_codes[i], 1, 1, INIT_VLC_USE_STATIC);
     }
     vlc_initialized = 1;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

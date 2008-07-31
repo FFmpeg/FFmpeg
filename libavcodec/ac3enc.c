@@ -1364,5 +1364,6 @@ AVCodec ac3_encoder = {
     AC3_encode_frame,
     AC3_encode_close,
     NULL,
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52 / AC-3"),
 };

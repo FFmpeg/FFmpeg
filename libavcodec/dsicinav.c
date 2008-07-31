@@ -305,6 +305,7 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     cin->avctx = avctx;
     cin->initial_decode_frame = 1;
     cin->delta = 0;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
 
     return 0;
 }

@@ -190,5 +190,6 @@ AVCodec adpcm_adx_encoder = {
     adx_encode_frame,
     adx_encode_close,
     NULL,
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("SEGA CRI ADX"),
 };

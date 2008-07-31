@@ -446,6 +446,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     s->channels = avctx->channels;
     s->bits = avctx->bits_per_sample;
     s->block_align = avctx->block_align;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
 
     av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
             s->channels, s->bits, s->block_align, avctx->sample_rate);

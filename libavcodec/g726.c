@@ -323,6 +323,9 @@ static av_cold int g726_init(AVCodecContext * avctx)
         return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
 
+    if (avctx->codec->decode)
+        avctx->sample_fmt = SAMPLE_FMT_S16;
+
     return 0;
 }
 
@@ -381,6 +384,7 @@ AVCodec adpcm_g726_encoder = {
     g726_encode_frame,
     g726_close,
     NULL,
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif //CONFIG_ENCODERS

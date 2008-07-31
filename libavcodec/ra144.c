@@ -58,6 +58,7 @@ static int ra144_decode_init(AVCodecContext * avctx)
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

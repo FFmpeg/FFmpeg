@@ -360,6 +360,7 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->stereo = (avctx->channels == 2);
+    avctx->sample_fmt = SAMPLE_FMT_S16;
 
     return 0;
 }

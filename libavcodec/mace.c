@@ -396,6 +396,7 @@ static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
     if (avctx->channels > 2)
         return -1;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

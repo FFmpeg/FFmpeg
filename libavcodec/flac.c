@@ -113,6 +113,7 @@ static av_cold int flac_decode_init(AVCodecContext * avctx)
         }
     }
 
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 

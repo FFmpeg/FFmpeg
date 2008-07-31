@@ -698,6 +698,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     default:
         break;
     }
+    avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
 
@@ -1599,6 +1600,7 @@ AVCodec name ## _encoder = {                    \
     adpcm_encode_frame,                         \
     adpcm_encode_close,                         \
     NULL,                                       \
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
