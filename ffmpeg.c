@@ -32,6 +32,7 @@
 #include "libswscale/swscale.h"
 #include "libavformat/framehook.h"
 #include "libavcodec/opt.h"
+#include "libavcodec/audioconvert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/avstring.h"
 #include "libavformat/os_support.h"
@@ -103,6 +104,7 @@ static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
+static enum SampleFormat audio_sample_fmt = SAMPLE_FMT_NONE;
 static int frame_padtop  = 0;
 static int frame_padbottom = 0;
 static int frame_padleft  = 0;
@@ -2455,13 +2457,13 @@ static void opt_frame_pad_right(const char *arg)
     }
 }
 
-static void list_pix_fmts(void)
+static void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), int nb_fmts)
 {
     int i;
-    char pix_fmt_str[128];
-    for (i=-1; i < PIX_FMT_NB; i++) {
-        avcodec_pix_fmt_string (pix_fmt_str, sizeof(pix_fmt_str), i);
-        fprintf(stdout, "%s\n", pix_fmt_str);
+    char fmt_str[128];
+    for (i=-1; i < nb_fmts; i++) {
+        get_fmt_string (fmt_str, sizeof(fmt_str), i);
+        fprintf(stdout, "%s\n", fmt_str);
     }
 }
 
@@ -2470,7 +2472,7 @@ static void opt_frame_pix_fmt(const char *arg)
     if (strcmp(arg, "list"))
         frame_pix_fmt = avcodec_get_pix_fmt(arg);
     else {
-        list_pix_fmts();
+        list_fmts(avcodec_pix_fmt_string, PIX_FMT_NB);
         av_exit(0);
     }
 }
@@ -2522,6 +2524,16 @@ static int opt_thread_count(const char *opt, const char *arg)
         fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
     return 0;
+}
+
+static void opt_audio_sample_fmt(const char *arg)
+{
+    if (strcmp(arg, "list"))
+        audio_sample_fmt = avcodec_get_sample_fmt(arg);
+    else {
+        list_fmts(avcodec_sample_fmt_string, SAMPLE_FMT_NB);
+        av_exit(0);
+    }
 }
 
 static int opt_audio_rate(const char *opt, const char *arg)
