@@ -50,8 +50,11 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
     lame_set_in_samplerate(s->gfp, avctx->sample_rate);
     lame_set_out_samplerate(s->gfp, avctx->sample_rate);
     lame_set_num_channels(s->gfp, avctx->channels);
-    /* lame 3.91 dies on quality != 5 */
-    lame_set_quality(s->gfp, 5);
+    if(avctx->compression_level == FF_COMPRESSION_DEFAULT) {
+        lame_set_quality(s->gfp, 5);
+    } else {
+        lame_set_quality(s->gfp, avctx->compression_level);
+    }
     /* lame 3.91 doesn't work in mono */
     lame_set_mode(s->gfp, JOINT_STEREO);
     lame_set_brate(s->gfp, avctx->bit_rate/1000);
