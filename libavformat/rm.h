@@ -22,6 +22,7 @@
 #ifndef FFMPEG_RM_H
 #define FFMPEG_RM_H
 
+#include <stdint.h>
 #include "avformat.h"
 
 

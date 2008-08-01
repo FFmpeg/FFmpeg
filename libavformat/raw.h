@@ -22,6 +22,7 @@
 #ifndef FFMPEG_RAW_H
 #define FFMPEG_RAW_H
 
+#include <stdint.h>
 #include "avformat.h"
 
 int pcm_read_seek(AVFormatContext *s,

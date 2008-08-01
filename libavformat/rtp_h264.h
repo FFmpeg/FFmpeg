@@ -22,6 +22,7 @@
 #ifndef FFMPEG_RTP_H264_H
 #define FFMPEG_RTP_H264_H
 
+#include <stdint.h>
 #include "rtp_internal.h"
 
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;

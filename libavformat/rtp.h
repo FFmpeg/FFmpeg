@@ -21,6 +21,7 @@
 #ifndef FFMPEG_RTP_H
 #define FFMPEG_RTP_H
 
+#include <stdint.h>
 #include "libavcodec/avcodec.h"
 #include "avformat.h"
 
