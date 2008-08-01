@@ -27,8 +27,6 @@
  * miscellaneous OS support macros and functions.
  */
 
-#include "config.h"
-
 #ifdef __MINGW32__
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>

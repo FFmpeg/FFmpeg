@@ -22,7 +22,6 @@
 #ifndef FFMPEG_NUT_H
 #define FFMPEG_NUT_H
 
-#include <stdint.h>
 //#include <limits.h>
 //#include "libavutil/adler32.h"
 //#include "libavcodec/mpegaudio.h"

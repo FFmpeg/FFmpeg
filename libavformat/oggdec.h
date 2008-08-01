@@ -25,7 +25,6 @@
 #ifndef FFMPEG_OGGDEC_H
 #define FFMPEG_OGGDEC_H
 
-#include <stdint.h>
 #include "avformat.h"
 
 typedef struct ogg_codec {

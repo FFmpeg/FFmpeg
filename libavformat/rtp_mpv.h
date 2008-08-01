@@ -20,7 +20,6 @@
 #ifndef FFMPEG_RTP_MPV_H
 #define FFMPEG_RTP_MPV_H
 
-#include <stdint.h>
 #include "avformat.h"
 
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);

@@ -25,7 +25,6 @@
 
 #include "libavutil/fifo.h"
 #include "avformat.h"
-#include "avio.h"
 #include "riff.h"    /* for CodecTag */
 
 /* should have a generic way to indicate probable size */

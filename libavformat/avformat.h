@@ -35,7 +35,6 @@
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
-#include <stdint.h>
 #include <time.h>
 #include <stdio.h>  /* FILE */
 #include "libavcodec/avcodec.h"

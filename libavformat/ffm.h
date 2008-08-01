@@ -22,9 +22,7 @@
 #ifndef FFMPEG_FFM_H
 #define FFMPEG_FFM_H
 
-#include <stdint.h>
 #include "avformat.h"
-#include "avio.h"
 
 /* The FFM file is made of blocks of fixed size */
 #define FFM_HEADER_SIZE 14
