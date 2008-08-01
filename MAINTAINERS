@@ -28,13 +28,13 @@ ffmpeg:
     vhook/imlib2.c
 
 ffplay:
-  ffplay.c
+  ffplay.c                              Michael Niedermayer
 
 ffserver:
   ffserver.c, ffserver.h                Baptiste Coudurier
 
 Commandline utility code:
-  cmdutils.c, cmdutils.h
+  cmdutils.c, cmdutils.h                Michael Niedermayer
 
 QuickTime faststart:
   qt-faststart.c                        Mike Melanson
@@ -54,9 +54,9 @@ libavutil
 =========
 
 External Interfaces:
-  libavutil/avutil.h
+  libavutil/avutil.h                    Michael Niedermayer
 Internal Interfaces:
-  libavutil/common.h
+  libavutil/common.h                    Michael Niedermayer
 
 Other:
   intfloat*                             Michael Niedermayer
@@ -73,13 +73,13 @@ Generic Parts:
   External Interfaces:
     avcodec.h                           Michael Niedermayer
   utility code:
-    utils.c
-    mem.c
-    opt.c, opt.h
+    utils.c                             Michael Niedermayer
+    mem.c                               Michael Niedermayer
+    opt.c, opt.h                        Michael Niedermayer
   arithmetic expression evaluator:
     eval.c                              Michael Niedermayer
   audio and video frame extraction:
-    parser.c
+    parser.c                            Michael Niedermayer
   bitstream reading:
     bitstream.c, bitstream.h            Michael Niedermayer
   CABAC:
@@ -96,7 +96,7 @@ Generic Parts:
   motion estimation:
     motion*                             Michael Niedermayer
   rate control:
-    ratecontrol.c
+    ratecontrol.c                       Michael Niedermayer
     libxvid_rc.c                        Michael Niedermayer
   simple IDCT:
     simple_idct.c, simple_idct.h        Michael Niedermayer
@@ -219,9 +219,9 @@ libavformat
 
 Generic parts:
   External Interface:
-    libavformat/avformat.h
+    libavformat/avformat.h              Michael Niedermayer
   Utility Code:
-    libavformat/utils.c
+    libavformat/utils.c                 Michael Niedermayer
 
 
 Muxers/Demuxers:
