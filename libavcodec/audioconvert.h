@@ -54,4 +54,38 @@ const char *avcodec_get_sample_fmt_name(int sample_fmt);
  */
 enum SampleFormat avcodec_get_sample_fmt(const char* name);
 
+struct AVAudioConvert;
+typedef struct AVAudioConvert AVAudioConvert;
+
+/**
+ * Create an audio sample format converter context
+ * @param out_fmt Output sample format
+ * @param out_channels Number of output channels
+ * @param in_fmt Input sample format
+ * @param in_channels Number of input channels
+ * @param[in] matrix Channel mixing matrix (of dimension in_channel*out_channels). Set to NULL to ignore.
+ * @param flags See FF_MM_xx
+ * @return NULL on error
+ */
+AVAudioConvert *av_audio_convert_alloc(enum SampleFormat out_fmt, int out_channels,
+                                       enum SampleFormat in_fmt, int in_channels,
+                                       const float *matrix, int flags);
+
+/**
+ * Free audio sample format converter context
+ */
+void av_audio_convert_free(AVAudioConvert *ctx);
+
+/**
+ * Convert between audio sample formats
+ * @param[in] out array of output buffers for each channel. set to NULL to ignore processing of the given channel.
+ * @param[in] out_stride distance between consecutive input samples (measured in bytes)
+ * @param[in] in array of input buffers for each channel
+ * @param[in] in_stride distance between consecutive output samples (measured in bytes)
+ * @param len length of audio frame size (measured in samples)
+ */
+int av_audio_convert(AVAudioConvert *ctx,
+                           void * const out[6], const int out_stride[6],
+                     const void * const  in[6], const int  in_stride[6], int len);
+
 #endif /* FFMPEG_AUDIOCONVERT_H */

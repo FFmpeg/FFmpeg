@@ -70,27 +70,51 @@ void avcodec_sample_fmt_string (char *buf, int buf_size, int sample_fmt)
     }
 }
 
-int av_audio_convert(void *maybe_dspcontext_or_something_av_convert_specific,
-                     void *out[6], int out_stride[6], enum SampleFormat out_fmt,
-                     void * in[6], int  in_stride[6], enum SampleFormat  in_fmt, int len){
+struct AVAudioConvert {
+    int in_channels, out_channels;
+    int fmt_pair;
+};
+
+AVAudioConvert *av_audio_convert_alloc(enum SampleFormat out_fmt, int out_channels,
+                                       enum SampleFormat in_fmt, int in_channels,
+                                       const const float *matrix, int flags)
+{
+    AVAudioConvert *ctx;
+    if (in_channels!=out_channels)
+        return NULL;  /* FIXME: not supported */
+    ctx = av_malloc(sizeof(AVAudioConvert));
+    if (!ctx)
+        return NULL;
+    ctx->in_channels = in_channels;
+    ctx->out_channels = out_channels;
+    ctx->fmt_pair = out_fmt + SAMPLE_FMT_NB*in_fmt;
+    return ctx;
+}
+
+void av_audio_convert_free(AVAudioConvert *ctx)
+{
+    av_free(ctx);
+}
+
+int av_audio_convert(AVAudioConvert *ctx,
+                           void * const out[6], const int out_stride[6],
+                     const void * const  in[6], const int  in_stride[6], int len)
+{
     int ch;
-    const int isize= FFMIN( in_fmt+1, 4);
-    const int osize= FFMIN(out_fmt+1, 4);
-    const int fmt_pair= out_fmt + 5*in_fmt;
 
     //FIXME optimize common cases
 
-    for(ch=0; ch<6; ch++){
-        const int is=  in_stride[ch] * isize;
-        const int os= out_stride[ch] * osize;
+    for(ch=0; ch<ctx->out_channels; ch++){
+        const int is=  in_stride[ch];
+        const int os= out_stride[ch];
         uint8_t *pi=  in[ch];
         uint8_t *po= out[ch];
-        uint8_t *end= po + os;
+        uint8_t *end= po + os*len;
         if(!out[ch])
             continue;
 
 #define CONV(ofmt, otype, ifmt, expr)\
-if(fmt_pair == ofmt + 5*ifmt){\
+if(ctx->fmt_pair == ofmt + SAMPLE_FMT_NB*ifmt){\
     do{\
         *(otype*)po = expr; pi += is; po += os;\
     }while(po < end);\
