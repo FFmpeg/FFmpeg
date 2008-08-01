@@ -623,6 +623,9 @@ apply(){
     "$@" < "$file" > "$file.tmp" && mv "$file.tmp" "$file" || rm "$file.tmp"
 }
 
+# CONFIG_LIST contains configurable options, while HAVE_LIST is for
+# system-dependent things.
+
 COMPONENT_LIST="
     bsfs
     decoders
