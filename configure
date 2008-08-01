@@ -1754,12 +1754,11 @@ fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
-check_type sys/socket.h socklen_t
-
 ##########################################
 # Network check
 
 if enabled network; then
+    check_type sys/socket.h socklen_t
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
