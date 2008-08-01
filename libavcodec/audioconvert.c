@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "avcodec.h"
 #include "audioconvert.h"
 
 typedef struct SampleFmtInfo {
