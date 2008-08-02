@@ -26,6 +26,7 @@
 #include "libavformat/rtsp.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
+#include "libavcodec/audioconvert.h"
 
 #include "cmdutils.h"
 
@@ -127,12 +128,16 @@ typedef struct VideoState {
     int audio_hw_buf_size;
     /* samples output by the codec. we reserve more space for avsync
        compensation */
-    DECLARE_ALIGNED(16,uint8_t,audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);
+    DECLARE_ALIGNED(16,uint8_t,audio_buf1[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);
+    DECLARE_ALIGNED(16,uint8_t,audio_buf2[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);
+    uint8_t *audio_buf;
     unsigned int audio_buf_size; /* in bytes */
     int audio_buf_index; /* in bytes */
     AVPacket audio_pkt;
     uint8_t *audio_pkt_data;
     int audio_pkt_size;
+    enum SampleFormat audio_src_fmt;
+    AVAudioConvert *reformat_ctx;
 
     int show_audio; /* if true, display audio samples */
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
@@ -1568,7 +1573,7 @@ static int synchronize_audio(VideoState *is, short *samples,
 }
 
 /* decode one audio frame and returns its uncompressed size */
-static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double *pts_ptr)
+static int audio_decode_frame(VideoState *is, double *pts_ptr)
 {
     AVPacket *pkt = &is->audio_pkt;
     AVCodecContext *dec= is->audio_st->codec;
@@ -1578,9 +1583,9 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (is->audio_pkt_size > 0) {
-            data_size = buf_size;
+            data_size = sizeof(is->audio_buf1);
             len1 = avcodec_decode_audio2(dec,
-                                        (int16_t *)audio_buf, &data_size,
+                                        (int16_t *)is->audio_buf1, &data_size,
                                         is->audio_pkt_data, is->audio_pkt_size);
             if (len1 < 0) {
                 /* if error, we skip the frame */
@@ -1592,6 +1597,39 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
             is->audio_pkt_size -= len1;
             if (data_size <= 0)
                 continue;
+
+            if (dec->sample_fmt != is->audio_src_fmt) {
+                if (is->reformat_ctx)
+                    av_audio_convert_free(is->reformat_ctx);
+                is->reformat_ctx= av_audio_convert_alloc(SAMPLE_FMT_S16, 1,
+                                                         dec->sample_fmt, 1, NULL, 0);
+                if (!is->reformat_ctx) {
+                    fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
+                        avcodec_get_sample_fmt_name(dec->sample_fmt),
+                        avcodec_get_sample_fmt_name(SAMPLE_FMT_S16));
+                        break;
+                }
+                is->audio_src_fmt= dec->sample_fmt;
+            }
+
+            if (is->reformat_ctx) {
+                const void *ibuf[6]= {is->audio_buf1};
+                void *obuf[6]= {is->audio_buf2};
+                int istride[6]= {av_get_bits_per_sample_format(dec->sample_fmt)/8};
+                int ostride[6]= {2};
+                int len= data_size/istride[0];
+                if (av_audio_convert(is->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
+                    printf("av_audio_convert() failed\n");
+                    break;
+                }
+                is->audio_buf= is->audio_buf2;
+                /* FIXME: existing code assume that data_size equals framesize*channels*2
+                          remove this legacy cruft */
+                data_size= len*2;
+            }else{
+                is->audio_buf= is->audio_buf1;
+            }
+
             /* if no pts, then compute it */
             pts = is->audio_clock;
             *pts_ptr = pts;
@@ -1655,7 +1693,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
-           audio_size = audio_decode_frame(is, is->audio_buf, sizeof(is->audio_buf), &pts);
+           audio_size = audio_decode_frame(is, &pts);
            if (audio_size < 0) {
                 /* if error, just output silence */
                is->audio_buf_size = 1024;
@@ -1731,6 +1769,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             return -1;
         }
         is->audio_hw_buf_size = spec.size;
+        is->audio_src_fmt= SAMPLE_FMT_S16;
     }
 
     if(thread_count>1)
@@ -1797,6 +1836,8 @@ static void stream_component_close(VideoState *is, int stream_index)
         SDL_CloseAudio();
 
         packet_queue_end(&is->audioq);
+        if (is->reformat_ctx)
+            av_audio_convert_free(is->reformat_ctx);
         break;
     case CODEC_TYPE_VIDEO:
         packet_queue_abort(&is->videoq);
