@@ -1571,6 +1571,7 @@ static int synchronize_audio(VideoState *is, short *samples,
 static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double *pts_ptr)
 {
     AVPacket *pkt = &is->audio_pkt;
+    AVCodecContext *dec= is->audio_st->codec;
     int n, len1, data_size;
     double pts;
 
@@ -1578,7 +1579,7 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
         /* NOTE: the audio packet can contain several frames */
         while (is->audio_pkt_size > 0) {
             data_size = buf_size;
-            len1 = avcodec_decode_audio2(is->audio_st->codec,
+            len1 = avcodec_decode_audio2(dec,
                                         (int16_t *)audio_buf, &data_size,
                                         is->audio_pkt_data, is->audio_pkt_size);
             if (len1 < 0) {
@@ -1594,9 +1595,9 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
             /* if no pts, then compute it */
             pts = is->audio_clock;
             *pts_ptr = pts;
-            n = 2 * is->audio_st->codec->channels;
+            n = 2 * dec->channels;
             is->audio_clock += (double)data_size /
-                (double)(n * is->audio_st->codec->sample_rate);
+                (double)(n * dec->sample_rate);
 #if defined(DEBUG_SYNC)
             {
                 static double last_clock;
@@ -1621,7 +1622,7 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
         if (packet_queue_get(&is->audioq, pkt, 1) < 0)
             return -1;
         if(pkt->data == flush_pkt.data){
-            avcodec_flush_buffers(is->audio_st->codec);
+            avcodec_flush_buffers(dec);
             continue;
         }
 
