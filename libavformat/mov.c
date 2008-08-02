@@ -832,7 +832,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             } else
                 st->codec->palctrl = NULL;
         } else if(st->codec->codec_type==CODEC_TYPE_AUDIO) {
-            int bits_per_sample;
+            int bits_per_sample, flags;
             uint16_t version = get_be16(pb);
 
             st->codec->codec_id = id;
@@ -862,9 +862,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     st->codec->channels = get_be32(pb);
                     get_be32(pb); /* always 0x7F000000 */
                     st->codec->bits_per_sample = get_be32(pb); /* bits per channel if sound is uncompressed */
-                    get_be32(pb); /* lcpm format specific flag */
+                    flags = get_be32(pb); /* lcpm format specific flag */
                     sc->bytes_per_frame = get_be32(pb); /* bytes per audio packet if constant */
                     sc->samples_per_frame = get_be32(pb); /* lpcm frames per audio packet if constant */
+                    if (flags & 2) // big endian
+                        st->codec->codec_id = CODEC_ID_PCM_S16BE;
                 }
             }
 
