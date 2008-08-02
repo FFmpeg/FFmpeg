@@ -848,6 +848,26 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
             st->codec->sample_rate = ((get_be32(pb) >> 16));
 
+            //Read QT version 1 fields. In version 0 these do not exist.
+            dprintf(c->fc, "version =%d, isom =%d\n",version,c->isom);
+            if(!c->isom) {
+                if(version==1) {
+                    sc->samples_per_frame = get_be32(pb);
+                    get_be32(pb); /* bytes per packet */
+                    sc->bytes_per_frame = get_be32(pb);
+                    get_be32(pb); /* bytes per sample */
+                } else if(version==2) {
+                    get_be32(pb); /* sizeof struct only */
+                    st->codec->sample_rate = av_int2dbl(get_be64(pb)); /* float 64 */
+                    st->codec->channels = get_be32(pb);
+                    get_be32(pb); /* always 0x7F000000 */
+                    get_be32(pb); /* bits per channel if sound is uncompressed */
+                    get_be32(pb); /* lcpm format specific flag */
+                    get_be32(pb); /* bytes per audio packet if constant */
+                    get_be32(pb); /* lpcm frames per audio packet if constant */
+                }
+            }
+
             switch (st->codec->codec_id) {
             case CODEC_ID_PCM_S8:
             case CODEC_ID_PCM_U8:
@@ -880,26 +900,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 break;
             default:
                 break;
-            }
-
-            //Read QT version 1 fields. In version 0 these do not exist.
-            dprintf(c->fc, "version =%d, isom =%d\n",version,c->isom);
-            if(!c->isom) {
-                if(version==1) {
-                    sc->samples_per_frame = get_be32(pb);
-                    get_be32(pb); /* bytes per packet */
-                    sc->bytes_per_frame = get_be32(pb);
-                    get_be32(pb); /* bytes per sample */
-                } else if(version==2) {
-                    get_be32(pb); /* sizeof struct only */
-                    st->codec->sample_rate = av_int2dbl(get_be64(pb)); /* float 64 */
-                    st->codec->channels = get_be32(pb);
-                    get_be32(pb); /* always 0x7F000000 */
-                    get_be32(pb); /* bits per channel if sound is uncompressed */
-                    get_be32(pb); /* lcpm format specific flag */
-                    get_be32(pb); /* bytes per audio packet if constant */
-                    get_be32(pb); /* lpcm frames per audio packet if constant */
-                }
             }
 
             bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
