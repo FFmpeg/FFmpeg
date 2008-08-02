@@ -879,7 +879,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 if (st->codec->bits_per_sample == 8)
                     st->codec->codec_id = CODEC_ID_PCM_S8;
                 else if (st->codec->bits_per_sample == 24)
-                    st->codec->codec_id = CODEC_ID_PCM_S24BE;
+                    st->codec->codec_id =
+                        st->codec->codec_id == CODEC_ID_PCM_S16BE ?
+                        CODEC_ID_PCM_S24BE : CODEC_ID_PCM_S24LE;
                 break;
             /* set values for old format before stsd version 1 appeared */
             case CODEC_ID_MACE3:
