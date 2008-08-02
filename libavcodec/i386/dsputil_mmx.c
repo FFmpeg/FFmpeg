@@ -788,7 +788,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 }
 
 #define PAETH(cpu, abs3)\
-void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
+static void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
 {\
     x86_reg i = -bpp;\
     x86_reg end = w-3;\
