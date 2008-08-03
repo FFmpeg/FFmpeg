@@ -665,6 +665,41 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+/**
+ * Compute codec id for 'lpcm' tag.
+ * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
+ */
+static int mov_get_lpcm_codec_id(int bps, int flags)
+{
+    if (flags & 1) { // floating point
+        if (flags & 2) { // big endian
+            if      (bps == 32) return CODEC_ID_PCM_F32BE;
+          //else if (bps == 64) return CODEC_ID_PCM_F64BE;
+        } else {
+          //if      (bps == 32) return CODEC_ID_PCM_F32LE;
+          //else if (bps == 64) return CODEC_ID_PCM_F64LE;
+        }
+    } else {
+        if (flags & 2) {
+            if      (bps == 8)
+                // signed integer
+                if (flags & 4)  return CODEC_ID_PCM_S8;
+                else            return CODEC_ID_PCM_U8;
+            else if (bps == 16) return CODEC_ID_PCM_S16BE;
+            else if (bps == 24) return CODEC_ID_PCM_S24BE;
+            else if (bps == 32) return CODEC_ID_PCM_S32BE;
+        } else {
+            if      (bps == 8)
+                if (flags & 4)  return CODEC_ID_PCM_S8;
+                else            return CODEC_ID_PCM_U8;
+            if      (bps == 16) return CODEC_ID_PCM_S16LE;
+            else if (bps == 24) return CODEC_ID_PCM_S24LE;
+            else if (bps == 32) return CODEC_ID_PCM_S32LE;
+        }
+    }
+    return 0;
+}
+
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
@@ -865,8 +900,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     flags = get_be32(pb); /* lcpm format specific flag */
                     sc->bytes_per_frame = get_be32(pb); /* bytes per audio packet if constant */
                     sc->samples_per_frame = get_be32(pb); /* lpcm frames per audio packet if constant */
-                    if (flags & 2) // big endian
-                        st->codec->codec_id = CODEC_ID_PCM_S16BE;
+                    if (format == MKTAG('l','p','c','m'))
+                        st->codec->codec_id = mov_get_lpcm_codec_id(st->codec->bits_per_sample, flags);
                 }
             }
 
