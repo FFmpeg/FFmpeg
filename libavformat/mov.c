@@ -692,7 +692,7 @@ static int mov_get_lpcm_codec_id(int bps, int flags)
             if      (bps == 8)
                 if (flags & 4)  return CODEC_ID_PCM_S8;
                 else            return CODEC_ID_PCM_U8;
-            if      (bps == 16) return CODEC_ID_PCM_S16LE;
+            else if (bps == 16) return CODEC_ID_PCM_S16LE;
             else if (bps == 24) return CODEC_ID_PCM_S24LE;
             else if (bps == 32) return CODEC_ID_PCM_S32LE;
         }
