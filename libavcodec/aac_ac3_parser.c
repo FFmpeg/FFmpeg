@@ -1,5 +1,5 @@
 /*
- * Common AAC and AC3 parser
+ * Common AAC and AC-3 parser
  * Copyright (c) 2003 Fabrice Bellard.
  * Copyright (c) 2003 Michael Niedermayer.
  *
@@ -71,7 +71,7 @@ get_next:
 
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
-    /* allow downmixing to stereo (or mono for AC3) */
+    /* allow downmixing to stereo (or mono for AC-3) */
     if(avctx->request_channels > 0 &&
             avctx->request_channels < s->channels &&
             (avctx->request_channels <= 2 ||

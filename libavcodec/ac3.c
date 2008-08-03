@@ -1,5 +1,5 @@
 /*
- * Common code between AC3 encoder and decoder
+ * Common code between the AC-3 encoder and decoder
  * Copyright (c) 2000 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3.c
- * Common code between AC3 encoder and decoder.
+ * Common code between the AC-3 encoder and decoder.
  */
 
 #include "avcodec.h"
@@ -197,7 +197,7 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
     } while (end > band_start_tab[j++]);
 }
 
-/* AC3 bit allocation. The algorithm is the one described in the AC3
+/* AC-3 bit allocation. The algorithm is the one described in the AC-3
    spec. */
 void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    int8_t *exp, int start, int end,

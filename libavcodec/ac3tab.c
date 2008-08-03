@@ -1,5 +1,5 @@
 /*
- * AC3 tables
+ * AC-3 tables
  * copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3tab.c
- * tables taken directly from AC3 spec.
+ * tables taken directly from the AC-3 spec.
  */
 
 #include "ac3tab.h"
@@ -88,7 +88,7 @@ const uint16_t ff_ac3_bitrate_tab[19] = {
     160, 192, 224, 256, 320, 384, 448, 512, 576, 640
 };
 
-/* AC3 MDCT window */
+/* AC-3 MDCT window */
 
 /* MDCT window */
 const int16_t ff_ac3_window[256] = {

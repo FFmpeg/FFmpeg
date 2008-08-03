@@ -1,5 +1,5 @@
 /*
- * AC3 parser prototypes
+ * AC-3 parser prototypes
  * Copyright (c) 2003 Fabrice Bellard.
  * Copyright (c) 2003 Michael Niedermayer.
  *

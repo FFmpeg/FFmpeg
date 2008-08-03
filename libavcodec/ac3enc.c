@@ -1,5 +1,5 @@
 /*
- * The simplest AC3 encoder
+ * The simplest AC-3 encoder
  * Copyright (c) 2000 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3enc.c
- * The simplest AC3 encoder.
+ * The simplest AC-3 encoder.
  */
 //#define DEBUG
 //#define DEBUG_BITALLOC
@@ -705,7 +705,7 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* output the AC3 frame header */
+/* output the AC-3 frame header */
 static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 {
     init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
@@ -772,7 +772,7 @@ static inline int asym_quant(int c, int e, int qbits)
     return v & ((1 << qbits)-1);
 }
 
-/* Output one audio block. There are NB_BLOCKS audio blocks in one AC3
+/* Output one audio block. There are NB_BLOCKS audio blocks in one AC-3
    frame */
 static void output_audio_block(AC3EncodeContext *s,
                                uint8_t exp_strategy[AC3_MAX_CHANNELS],

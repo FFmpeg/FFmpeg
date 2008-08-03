@@ -228,7 +228,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 /**
  * Parse the 'sync info' and 'bit stream info' from the AC-3 bitstream.
  * GetBitContext within AC3DecodeContext must point to
- * start of the synchronized ac3 bitstream.
+ * the start of the synchronized AC-3 bitstream.
  */
 static int ac3_parse_header(AC3DecodeContext *s)
 {
@@ -268,7 +268,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
 }
 
 /**
- * Common function to parse AC3 or E-AC3 frame header
+ * Common function to parse AC-3 or E-AC-3 frame header
  */
 static int parse_frame_header(AC3DecodeContext *s)
 {

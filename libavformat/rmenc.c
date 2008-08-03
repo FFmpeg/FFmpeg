@@ -185,7 +185,7 @@ static void rv10_write_header(AVFormatContext *ctx,
             case 8000:
                 fscode = 3;
             }
-            put_be16(s, fscode); /* codec additional info, for AC3, seems
+            put_be16(s, fscode); /* codec additional info, for AC-3, seems
                                      to be a frequency code */
             /* special hack to compensate rounding errors... */
             if (coded_frame_size == 557)
@@ -325,7 +325,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     write_packet_header(s, stream, size, !!(flags & PKT_FLAG_KEY));
 
-    /* for AC3, the words seems to be reversed */
+    /* for AC-3, the words seem to be reversed */
     for(i=0;i<size;i+=2) {
         buf1[i] = buf[i+1];
         buf1[i+1] = buf[i];

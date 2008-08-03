@@ -1,5 +1,5 @@
 /*
- * AC3 and E-AC3 decoder tables
+ * AC-3 and E-AC-3 decoder tables
  * Copyright (c) 2007 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3dec_data.c
- * tables taken directly from AC3 spec.
+ * tables taken directly from the AC-3 spec.
  */
 
 #include "ac3dec_data.h"

@@ -1,5 +1,5 @@
 /*
- * Common code between AC3 and E-AC3 decoder
+ * Common code between the AC-3 and E-AC-3 decoders
  * Copyright (c) 2007 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3.h
- * Common code between AC3 and E-AC3 decoder.
+ * Common code between the AC-3 and E-AC-3 decoders.
  */
 
 #ifndef FFMPEG_AC3DEC_H

@@ -154,7 +154,7 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
         s->filter_channels = s->output_channels;
 
 /*
- * ac3 output is the only case where filter_channels could be greater than 2.
+ * AC-3 output is the only case where filter_channels could be greater than 2.
  * input channels can't be greater than 2, so resample the 2 channels and then
  * expand to 6 channels after the resampling.
  */

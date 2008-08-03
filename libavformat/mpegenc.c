@@ -234,7 +234,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
 
                 id = stream->id;
                 if (id < 0xc0) {
-                    /* special case for private streams (AC3 use that) */
+                    /* special case for private streams (AC-3 uses that) */
                     if (private_stream_coded)
                         continue;
                     private_stream_coded = 1;
@@ -581,7 +581,7 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
         }
 
         if (stream->id < 0xc0) {
-            /* AC3/LPCM private data header */
+            /* AC-3/LPCM private data header */
             buf_index += 4;
             if (stream->id >= 0xa0) {
                 int n;
@@ -906,7 +906,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                 put_byte(ctx->pb, stream->lpcm_header[1]);
                 put_byte(ctx->pb, stream->lpcm_header[2]);
             } else if (id >= 0x40) {
-                /* AC3 */
+                /* AC-3 */
                 put_byte(ctx->pb, nb_frames);
                 put_be16(ctx->pb, trailer_size+1);
             }

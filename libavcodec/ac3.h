@@ -1,5 +1,5 @@
 /*
- * Common code between AC3 encoder and decoder
+ * Common code between the AC-3 encoder and decoder
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file ac3.h
- * Common code between AC3 encoder and decoder.
+ * Common code between the AC-3 encoder and decoder.
  */
 
 #ifndef FFMPEG_AC3_H
@@ -32,7 +32,7 @@
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
 #define AC3_MAX_CHANNELS 6 /* including LFE channel */
 
-#define NB_BLOCKS 6 /* number of PCM blocks inside an AC3 frame */
+#define NB_BLOCKS 6 /* number of PCM blocks inside an AC-3 frame */
 #define AC3_FRAME_SIZE (NB_BLOCKS * 256)
 
 /* exponent encoding strategy */

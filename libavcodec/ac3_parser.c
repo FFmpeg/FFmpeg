@@ -1,5 +1,5 @@
 /*
- * AC3 parser
+ * AC-3 parser
  * Copyright (c) 2003 Fabrice Bellard.
  * Copyright (c) 2003 Michael Niedermayer.
  *
