@@ -92,7 +92,7 @@ static int nb_input_files = 0;
 static AVFormatContext *output_files[MAX_FILES];
 static int nb_output_files = 0;
 
-static AVStreamMap stream_maps[MAX_FILES];
+static AVStreamMap stream_maps[MAX_FILES*MAX_STREAMS];
 static int nb_stream_maps;
 
 static AVMetaDataMap meta_data_maps[MAX_FILES];
