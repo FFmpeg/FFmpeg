@@ -3812,6 +3812,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             h->mb_aff_frame = h->sps.mb_aff;
         }
     }
+    h->mb_field_decoding_flag= s->picture_structure != PICT_FRAME;
 
     if(h0->current_slice == 0){
         while(h->frame_num !=  h->prev_frame_num &&
