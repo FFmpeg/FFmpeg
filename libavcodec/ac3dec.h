@@ -90,7 +90,7 @@ typedef struct {
 ///@}
 
 ///@defgroup aht adaptive hybrid transform
-    int channel_uses_aht[AC3_MAX_CHANNELS];                 ///< channel AHT in use     (chahtinu)
+    int channel_uses_aht[AC3_MAX_CHANNELS];                         ///< channel AHT in use (chahtinu)
     int pre_mantissa[AC3_MAX_CHANNELS][AC3_MAX_COEFS][MAX_BLOCKS];  ///< pre-IDCT mantissas
 ///@}
 
