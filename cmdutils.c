@@ -223,7 +223,7 @@ void show_version(void) {
            "libavcodec  %d\n"
            "libavformat %d\n"
            "libavdevice %d\n",
-           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD, LIBAVDEVICE_BUILD);
+           LIBAVUTIL_BUILD, avcodec_version(), LIBAVFORMAT_BUILD, LIBAVDEVICE_BUILD);
 }
 
 void show_license(void)
