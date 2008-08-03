@@ -150,9 +150,9 @@ static av_cold void ac3_tables_init(void)
        reference: Section 7.3.5 Ungrouping of Mantissas */
     for(i=0; i<32; i++) {
         /* bap=1 mantissas */
-        b1_mantissas[i][0] = symmetric_dequant( i / 9     , 3);
-        b1_mantissas[i][1] = symmetric_dequant((i % 9) / 3, 3);
-        b1_mantissas[i][2] = symmetric_dequant((i % 9) % 3, 3);
+        b1_mantissas[i][0] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][0], 3);
+        b1_mantissas[i][1] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][1], 3);
+        b1_mantissas[i][2] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][2], 3);
     }
     for(i=0; i<128; i++) {
         /* bap=2 mantissas */
