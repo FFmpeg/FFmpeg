@@ -4348,8 +4348,7 @@ static int decode_mb_cavlc(H264Context *h){
     if(FRAME_MBAFF){
         if( (s->mb_y&1) == 0 )
             h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&s->gb);
-    }else
-        h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
+    }
 
     h->prev_mb_skipped= 0;
 
@@ -5467,8 +5466,7 @@ static int decode_mb_cabac(H264Context *h) {
         if( (s->mb_y&1) == 0 )
             h->mb_mbaff =
             h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
-    }else
-        h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
+    }
 
     h->prev_mb_skipped = 0;
 
