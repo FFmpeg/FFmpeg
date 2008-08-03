@@ -257,6 +257,8 @@ typedef struct AVOutputStream {
     /* audio only */
     int audio_resample;
     ReSampleContext *resample; /* for audio resampling */
+    int reformat_pair;
+    AVAudioConvert *reformat_ctx;
     AVFifoBuffer fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
 } AVOutputStream;
@@ -513,6 +515,7 @@ static void do_audio_out(AVFormatContext *s,
     uint8_t *buftmp;
     static uint8_t *audio_buf = NULL;
     static uint8_t *audio_out = NULL;
+    static uint8_t *audio_out2 = NULL;
     const int audio_out_size= 4*MAX_AUDIO_PACKET_SIZE;
 
     int size_out, frame_bytes, ret;
@@ -539,6 +542,26 @@ static void do_audio_out(AVFormatContext *s,
                     enc->channels, enc->sample_rate);
             av_exit(1);
         }
+    }
+
+#define MAKE_SFMT_PAIR(a,b) ((a)+SAMPLE_FMT_NB*(b))
+    if (dec->sample_fmt!=enc->sample_fmt &&
+        MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt)!=ost->reformat_pair) {
+        if (!audio_out2)
+            audio_out2 = av_malloc(audio_out_size);
+        if (!audio_out2)
+            av_exit(1);
+        if (ost->reformat_ctx)
+            av_audio_convert_free(ost->reformat_ctx);
+        ost->reformat_ctx = av_audio_convert_alloc(enc->sample_fmt, 1,
+                                                   dec->sample_fmt, 1, NULL, 0);
+        if (!ost->reformat_ctx) {
+            fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
+                avcodec_get_sample_fmt_name(dec->sample_fmt),
+                avcodec_get_sample_fmt_name(enc->sample_fmt));
+            av_exit(1);
+        }
+        ost->reformat_pair=MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt);
     }
 
     if(audio_sync_method){
@@ -597,6 +620,22 @@ static void do_audio_out(AVFormatContext *s,
     } else {
         buftmp = buf;
         size_out = size;
+    }
+
+    if (dec->sample_fmt!=enc->sample_fmt) {
+        const void *ibuf[6]= {buftmp};
+        void *obuf[6]= {audio_out2};
+        int istride[6]= {av_get_bits_per_sample_format(dec->sample_fmt)/8};
+        int ostride[6]= {av_get_bits_per_sample_format(enc->sample_fmt)/8};
+        int len= size_out/istride[0];
+        if (av_audio_convert(ost->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
+            printf("av_audio_convert() failed\n");
+            return;
+        }
+        buftmp = audio_out2;
+        /* FIXME: existing code assume that size_out equals framesize*channels*2
+                  remove this legacy cruft */
+        size_out = len*2;
     }
 
     /* now encode as many frames as possible */
@@ -1726,6 +1765,7 @@ static int av_encode(AVFormatContext **output_files,
             case CODEC_TYPE_AUDIO:
                 if (av_fifo_init(&ost->fifo, 1024))
                     goto fail;
+                ost->reformat_pair = MAKE_SFMT_PAIR(SAMPLE_FMT_NONE,SAMPLE_FMT_NONE);
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
                 ist->decoding_needed = 1;
@@ -2162,6 +2202,8 @@ static int av_encode(AVFormatContext **output_files,
                     sws_freeContext(ost->img_resample_ctx);
                 if (ost->resample)
                     audio_resample_close(ost->resample);
+                if (ost->reformat_ctx)
+                    av_audio_convert_free(ost->reformat_ctx);
                 av_free(ost);
             }
         }
@@ -2763,6 +2805,7 @@ static void opt_input_file(const char *filename)
     ap->width = frame_width + frame_padleft + frame_padright;
     ap->height = frame_height + frame_padtop + frame_padbottom;
     ap->pix_fmt = frame_pix_fmt;
+   // ap->sample_fmt = audio_sample_fmt; //FIXME:not implemented in libavformat
     ap->channel = video_channel;
     ap->standard = video_standard;
     ap->video_codec_id = find_codec_or_die(video_codec_name, CODEC_TYPE_VIDEO, 0);
@@ -2827,6 +2870,7 @@ static void opt_input_file(const char *filename)
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
+            audio_sample_fmt = enc->sample_fmt;
             if(audio_disable)
                 ic->streams[i]->discard= AVDISCARD_ALL;
             break;
@@ -3109,6 +3153,7 @@ static void new_audio_stream(AVFormatContext *oc)
         st->stream_copy = 1;
         audio_enc->channels = audio_channels;
     } else {
+        AVCodec *codec;
         codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, CODEC_TYPE_AUDIO);
 
         set_context_opts(audio_enc, avctx_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
@@ -3116,6 +3161,7 @@ static void new_audio_stream(AVFormatContext *oc)
         if (audio_codec_name)
             codec_id = find_codec_or_die(audio_codec_name, CODEC_TYPE_AUDIO, 1);
         audio_enc->codec_id = codec_id;
+        codec = avcodec_find_encoder(codec_id);
 
         if (audio_qscale > QSCALE_NONE) {
             audio_enc->flags |= CODEC_FLAG_QSCALE;
@@ -3123,6 +3169,17 @@ static void new_audio_stream(AVFormatContext *oc)
         }
         audio_enc->thread_count = thread_count;
         audio_enc->channels = audio_channels;
+        audio_enc->sample_fmt = audio_sample_fmt;
+
+        if(codec && codec->sample_fmts){
+            const enum SampleFormat *p= codec->sample_fmts;
+            for(; *p!=-1; p++){
+                if(*p == audio_enc->sample_fmt)
+                    break;
+            }
+            if(*p == -1)
+                audio_enc->sample_fmt = codec->sample_fmts[0];
+        }
     }
     audio_enc->sample_rate = audio_sample_rate;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
@@ -3793,6 +3850,7 @@ static const OptionDef options[] = {
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "newaudio", OPT_AUDIO, {(void*)opt_new_audio_stream}, "add a new audio stream to the current output stream" },
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
+    { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
