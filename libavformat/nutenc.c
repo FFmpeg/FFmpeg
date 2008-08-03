@@ -814,7 +814,7 @@ AVOutputFormat nut_muxer = {
 #elif defined(CONFIG_LIBMP3LAME)
     CODEC_ID_MP3,
 #else
-    CODEC_ID_MP2, /* AC3 needs liba52 decoder */
+    CODEC_ID_MP2,
 #endif
     CODEC_ID_MPEG4,
     write_header,
