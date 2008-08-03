@@ -44,8 +44,11 @@
 /** Maximum possible frame size when the specification limit is ignored */
 #define AC3_MAX_FRAME_SIZE 21695
 
-/** table for grouping exponents */
-static uint8_t exp_ungroup_tab[128][3];
+/**
+ * table for ungrouping 3 values in 7 bits.
+ * used for exponents and bap=2 mantissas
+ */
+static uint8_t ungroup_3_in_7_bits_tab[128][3];
 
 
 /** tables for ungrouping mantissas */
@@ -135,6 +138,14 @@ static av_cold void ac3_tables_init(void)
 {
     int i;
 
+    /* generate table for ungrouping 3 values in 7 bits
+       reference: Section 7.1.3 Exponent Decoding */
+    for(i=0; i<128; i++) {
+        ungroup_3_in_7_bits_tab[i][0] =  i / 25;
+        ungroup_3_in_7_bits_tab[i][1] = (i % 25) / 5;
+        ungroup_3_in_7_bits_tab[i][2] = (i % 25) % 5;
+    }
+
     /* generate grouped mantissa tables
        reference: Section 7.3.5 Ungrouping of Mantissas */
     for(i=0; i<32; i++) {
@@ -145,9 +156,9 @@ static av_cold void ac3_tables_init(void)
     }
     for(i=0; i<128; i++) {
         /* bap=2 mantissas */
-        b2_mantissas[i][0] = symmetric_dequant( i / 25     , 5);
-        b2_mantissas[i][1] = symmetric_dequant((i % 25) / 5, 5);
-        b2_mantissas[i][2] = symmetric_dequant((i % 25) % 5, 5);
+        b2_mantissas[i][0] = symmetric_dequant(ungroup_3_in_7_bits_tab[i][0], 5);
+        b2_mantissas[i][1] = symmetric_dequant(ungroup_3_in_7_bits_tab[i][1], 5);
+        b2_mantissas[i][2] = symmetric_dequant(ungroup_3_in_7_bits_tab[i][2], 5);
 
         /* bap=4 mantissas */
         b4_mantissas[i][0] = symmetric_dequant(i / 11, 11);
@@ -169,14 +180,6 @@ static av_cold void ac3_tables_init(void)
     for(i=0; i<256; i++) {
         int v = (i >> 5) - ((i >> 7) << 3) - 5;
         dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
-    }
-
-    /* generate exponent tables
-       reference: Section 7.1.3 Exponent Decoding */
-    for(i=0; i<128; i++) {
-        exp_ungroup_tab[i][0] =  i / 25;
-        exp_ungroup_tab[i][1] = (i % 25) / 5;
-        exp_ungroup_tab[i][2] = (i % 25) % 5;
     }
 }
 
@@ -361,9 +364,9 @@ static void decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
     group_size = exp_strategy + (exp_strategy == EXP_D45);
     for(grp=0,i=0; grp<ngrps; grp++) {
         expacc = get_bits(gbc, 7);
-        dexp[i++] = exp_ungroup_tab[expacc][0];
-        dexp[i++] = exp_ungroup_tab[expacc][1];
-        dexp[i++] = exp_ungroup_tab[expacc][2];
+        dexp[i++] = ungroup_3_in_7_bits_tab[expacc][0];
+        dexp[i++] = ungroup_3_in_7_bits_tab[expacc][1];
+        dexp[i++] = ungroup_3_in_7_bits_tab[expacc][2];
     }
 
     /* convert to absolute exps and expand groups */
