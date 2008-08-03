@@ -390,7 +390,7 @@ void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift)
 const char *avcodec_get_pix_fmt_name(int pix_fmt)
 {
     if (pix_fmt < 0 || pix_fmt >= PIX_FMT_NB)
-        return "???";
+        return NULL;
     else
         return pix_fmt_info[pix_fmt].name;
 }
@@ -401,8 +401,8 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
 
     for (i=0; i < PIX_FMT_NB; i++)
          if (!strcmp(pix_fmt_info[i].name, name))
-             break;
-    return i;
+             return i;
+    return PIX_FMT_NONE;
 }
 
 void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt)
