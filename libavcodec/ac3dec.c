@@ -283,9 +283,6 @@ static int parse_frame_header(AC3DecodeContext *s)
     if(err)
         return err;
 
-    if(hdr.bitstream_id > 10)
-        return AC3_PARSE_ERROR_BSID;
-
     /* get decoding parameters from header info */
     s->bit_alloc_params.sr_code     = hdr.sr_code;
     s->channel_mode                 = hdr.channel_mode;
@@ -309,6 +306,9 @@ static int parse_frame_header(AC3DecodeContext *s)
         s->num_exp_groups[s->lfe_ch] = 2;
         s->channel_in_cpl[s->lfe_ch] = 0;
     }
+
+    if(hdr.bitstream_id > 10)
+        return AC3_PARSE_ERROR_BSID;
 
     return ac3_parse_header(s);
 }
