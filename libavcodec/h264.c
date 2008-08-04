@@ -49,13 +49,28 @@
 #define DELAYED_PIC_REF 4
 
 static VLC coeff_token_vlc[4];
+static VLC_TYPE coeff_token_vlc_tables[520+332+280+256][2];
+static const int coeff_token_vlc_tables_size[4]={520,332,280,256};
+
 static VLC chroma_dc_coeff_token_vlc;
+static VLC_TYPE chroma_dc_coeff_token_vlc_table[256][2];
+static const int chroma_dc_coeff_token_vlc_table_size = 256;
 
 static VLC total_zeros_vlc[15];
+static VLC_TYPE total_zeros_vlc_tables[15][512][2];
+static const int total_zeros_vlc_tables_size = 512;
+
 static VLC chroma_dc_total_zeros_vlc[3];
+static VLC_TYPE chroma_dc_total_zeros_vlc_tables[3][8][2];
+static const int chroma_dc_total_zeros_vlc_tables_size = 8;
 
 static VLC run_vlc[6];
+static VLC_TYPE run_vlc_tables[6][8][2];
+static const int run_vlc_tables_size = 8;
+
 static VLC run7_vlc;
+static VLC_TYPE run7_vlc_table[96][2];
+static const int run7_vlc_table_size = 96;
 
 static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
@@ -1937,37 +1952,67 @@ static av_cold void decode_init_vlc(void){
 
     if (!done) {
         int i;
+        int offset;
         done = 1;
 
+        chroma_dc_coeff_token_vlc.table = chroma_dc_coeff_token_vlc_table;
+        chroma_dc_coeff_token_vlc.table_allocated = chroma_dc_coeff_token_vlc_table_size;
         init_vlc(&chroma_dc_coeff_token_vlc, CHROMA_DC_COEFF_TOKEN_VLC_BITS, 4*5,
                  &chroma_dc_coeff_token_len [0], 1, 1,
-                 &chroma_dc_coeff_token_bits[0], 1, 1, 1);
+                 &chroma_dc_coeff_token_bits[0], 1, 1,
+                 INIT_VLC_USE_NEW_STATIC);
 
+        offset = 0;
         for(i=0; i<4; i++){
+            coeff_token_vlc[i].table = coeff_token_vlc_tables+offset;
+            coeff_token_vlc[i].table_allocated = coeff_token_vlc_tables_size[i];
             init_vlc(&coeff_token_vlc[i], COEFF_TOKEN_VLC_BITS, 4*17,
                      &coeff_token_len [i][0], 1, 1,
-                     &coeff_token_bits[i][0], 1, 1, 1);
+                     &coeff_token_bits[i][0], 1, 1,
+                     INIT_VLC_USE_NEW_STATIC);
+            offset += coeff_token_vlc_tables_size[i];
         }
+        /*
+         * This is a one time safety check to make sure that
+         * the packed static coeff_token_vlc table sizes
+         * were initialized correctly.
+         */
+        assert(offset == sizeof(coeff_token_vlc_tables)/(sizeof(VLC_TYPE)*2));
 
         for(i=0; i<3; i++){
-            init_vlc(&chroma_dc_total_zeros_vlc[i], CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 4,
+            chroma_dc_total_zeros_vlc[i].table = chroma_dc_total_zeros_vlc_tables[i];
+            chroma_dc_total_zeros_vlc[i].table_allocated = chroma_dc_total_zeros_vlc_tables_size;
+            init_vlc(&chroma_dc_total_zeros_vlc[i],
+                     CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 4,
                      &chroma_dc_total_zeros_len [i][0], 1, 1,
-                     &chroma_dc_total_zeros_bits[i][0], 1, 1, 1);
+                     &chroma_dc_total_zeros_bits[i][0], 1, 1,
+                     INIT_VLC_USE_NEW_STATIC);
         }
         for(i=0; i<15; i++){
-            init_vlc(&total_zeros_vlc[i], TOTAL_ZEROS_VLC_BITS, 16,
+            total_zeros_vlc[i].table = total_zeros_vlc_tables[i];
+            total_zeros_vlc[i].table_allocated = total_zeros_vlc_tables_size;
+            init_vlc(&total_zeros_vlc[i],
+                     TOTAL_ZEROS_VLC_BITS, 16,
                      &total_zeros_len [i][0], 1, 1,
-                     &total_zeros_bits[i][0], 1, 1, 1);
+                     &total_zeros_bits[i][0], 1, 1,
+                     INIT_VLC_USE_NEW_STATIC);
         }
 
         for(i=0; i<6; i++){
-            init_vlc(&run_vlc[i], RUN_VLC_BITS, 7,
+            run_vlc[i].table = run_vlc_tables[i];
+            run_vlc[i].table_allocated = run_vlc_tables_size;
+            init_vlc(&run_vlc[i],
+                     RUN_VLC_BITS, 7,
                      &run_len [i][0], 1, 1,
-                     &run_bits[i][0], 1, 1, 1);
+                     &run_bits[i][0], 1, 1,
+                     INIT_VLC_USE_NEW_STATIC);
         }
+        run7_vlc.table = run7_vlc_table,
+        run7_vlc.table_allocated = run7_vlc_table_size;
         init_vlc(&run7_vlc, RUN7_VLC_BITS, 16,
                  &run_len [6][0], 1, 1,
-                 &run_bits[6][0], 1, 1, 1);
+                 &run_bits[6][0], 1, 1,
+                 INIT_VLC_USE_NEW_STATIC);
     }
 }
 
