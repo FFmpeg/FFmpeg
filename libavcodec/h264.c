@@ -917,10 +917,6 @@ static inline void direct_ref_list_init(H264Context * const h){
     int list, i, j;
     int sidx= s->picture_structure&1;
     int ref1sidx= ref1->reference&1;
-    if(cur->pict_type == FF_I_TYPE)
-        cur->ref_count[sidx][0] = 0;
-    if(cur->pict_type != FF_B_TYPE)
-        cur->ref_count[sidx][1] = 0;
     for(list=0; list<2; list++){
         cur->ref_count[sidx][list] = h->ref_count[list];
         for(j=0; j<h->ref_count[list]; j++)
