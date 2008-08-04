@@ -1150,8 +1150,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
 
-        if(FRAME_MBAFF){
-            if(IS_INTERLACED(*mb_type)){
+            if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
                 map_col_to_list0[0] = h->map_col_to_list0_field[0];
                 map_col_to_list0[1] = h->map_col_to_list0_field[1];
                 dist_scale_factor = h->dist_scale_factor_field;
@@ -1244,7 +1243,6 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 }
                 return;
             }
-        }
 
         /* one-to-one mv scaling */
 
