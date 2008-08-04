@@ -121,37 +121,7 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
         break;
     }
 
-    switch(avctx->codec->id) {
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_U32LE:
-    case CODEC_ID_PCM_U32BE:
-    case CODEC_ID_PCM_F32BE:
-        avctx->block_align = 4 * avctx->channels;
-        break;
-    case CODEC_ID_PCM_S24LE:
-    case CODEC_ID_PCM_S24BE:
-    case CODEC_ID_PCM_U24LE:
-    case CODEC_ID_PCM_U24BE:
-    case CODEC_ID_PCM_S24DAUD:
-        avctx->block_align = 3 * avctx->channels;
-        break;
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_U16LE:
-    case CODEC_ID_PCM_U16BE:
-        avctx->block_align = 2 * avctx->channels;
-        break;
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_U8:
-    case CODEC_ID_PCM_MULAW:
-    case CODEC_ID_PCM_ALAW:
-        avctx->block_align = avctx->channels;
-        break;
-    default:
-        break;
-    }
-
+    avctx->block_align = avctx->channels * av_get_bits_per_sample(avctx->codec->id)/8;
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
 
@@ -197,31 +167,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     short *samples;
     unsigned char *dst;
 
-    switch(avctx->codec->id) {
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_U32LE:
-    case CODEC_ID_PCM_U32BE:
-    case CODEC_ID_PCM_F32BE:
-        sample_size = 4;
-        break;
-    case CODEC_ID_PCM_S24LE:
-    case CODEC_ID_PCM_S24BE:
-    case CODEC_ID_PCM_U24LE:
-    case CODEC_ID_PCM_U24BE:
-    case CODEC_ID_PCM_S24DAUD:
-        sample_size = 3;
-        break;
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_U16LE:
-    case CODEC_ID_PCM_U16BE:
-        sample_size = 2;
-        break;
-    default:
-        sample_size = 1;
-        break;
-    }
+    sample_size = av_get_bits_per_sample(avctx->codec->id)/8;
     n = buf_size / sample_size;
     samples = data;
     dst = frame;
