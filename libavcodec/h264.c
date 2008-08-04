@@ -926,6 +926,10 @@ static inline void direct_ref_list_init(H264Context * const h){
         for(j=0; j<h->ref_count[list]; j++)
             cur->ref_poc[sidx][list][j] = h->ref_list[list][j].poc;
     }
+    if(s->picture_structure == PICT_FRAME){
+        memcpy(cur->ref_count[0], cur->ref_count[1], sizeof(cur->ref_count[0]));
+        memcpy(cur->ref_poc  [0], cur->ref_poc  [1], sizeof(cur->ref_poc  [0]));
+    }
     if(cur->pict_type != FF_B_TYPE || h->direct_spatial_mv_pred)
         return;
     for(list=0; list<2; list++){
