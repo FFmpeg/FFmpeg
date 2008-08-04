@@ -880,7 +880,7 @@ static inline void direct_dist_scale_factor(H264Context * const h){
     for(i=0; i<h->ref_count[0]; i++){
         int poc0 = h->ref_list[0][i].poc;
         int td = av_clip(poc1 - poc0, -128, 127);
-        if(td == 0 /* FIXME || pic0 is a long-term ref */){
+        if(td == 0 || h->ref_list[0][i].long_ref){
             h->dist_scale_factor[i] = 256;
         }else{
             int tb = av_clip(poc - poc0, -128, 127);
