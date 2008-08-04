@@ -1185,12 +1185,12 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                     else
                         *mb_type |= MB_TYPE_8x8;
                 }else{
-                    /* field to frame scaling */
-                    /* col_mb_y = (mb_y&~1) + (topAbsDiffPOC < bottomAbsDiffPOC ? 0 : 1)
-                     * but in MBAFF, top and bottom POC are equal */
-                    int dy = (s->mb_y&1) ? 1 : 2;
+                    int cur_poc = s->current_picture_ptr->poc;
+                    int *col_poc = h->ref_list[1]->field_poc;
+                    int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
+                    int dy = 2*col_parity - (s->mb_y&1);
                     mb_types_col[0] =
-                    mb_types_col[1] = h->ref_list[1][0].mb_type[pair_xy+s->mb_stride];
+                    mb_types_col[1] = h->ref_list[1][0].mb_type[pair_xy + col_parity*s->mb_stride];
                     l1ref0 += dy*h->b8_stride;
                     l1ref1 += dy*h->b8_stride;
                     l1mv0 += 2*dy*h->b_stride;
