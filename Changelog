@@ -127,6 +127,7 @@ version <next>
 - Motion Pixels Video decoder
 - Motion Pixels MVI demuxer
 - removed animated GIF decoder/demuxer
+- D-Cinema audio muxer
 
 version 0.4.9-pre1:
 
