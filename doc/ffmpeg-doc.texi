@@ -690,10 +690,11 @@ Synchronize read on input.
 @section Advanced options
 
 @table @option
-@item -map input stream id[:input stream id]
+@item -map @var{input_stream_id}[:@var{sync_stream_id}]
 Set stream mapping from input streams to output streams.
 Just enumerate the input streams in the order you want them in the output.
-[input stream id] sets the (input) stream to sync against.
+@var{sync_stream_id} if specified sets the input stream to sync
+against.
 @item -map_meta_data @var{outfile}:@var{infile}
 Set meta data information of @var{outfile} from @var{infile}.
 @item -debug
