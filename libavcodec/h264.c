@@ -936,9 +936,10 @@ static inline void direct_ref_list_init(H264Context * const h){
 
 static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     MpegEncContext * const s = &h->s;
-    const int mb_xy =   h->mb_xy;
-    const int b8_xy = 2*s->mb_x + 2*s->mb_y*h->b8_stride;
-    const int b4_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
+    const int fieldoff= (s->picture_structure & h->ref_list[1][0].reference) ? 0 : (3-2*s->picture_structure);
+    const int mb_xy =   h->mb_xy + s->mb_stride*fieldoff;
+    const int b8_xy = 2*s->mb_x + 2*s->mb_y*h->b8_stride + 2*h->b8_stride*fieldoff;
+    const int b4_xy = 4*s->mb_x + 4*s->mb_y*h-> b_stride + 4*h-> b_stride*fieldoff;
     const int mb_type_col = h->ref_list[1][0].mb_type[mb_xy];
     const int16_t (*l1mv0)[2] = (const int16_t (*)[2]) &h->ref_list[1][0].motion_val[0][b4_xy];
     const int16_t (*l1mv1)[2] = (const int16_t (*)[2]) &h->ref_list[1][0].motion_val[1][b4_xy];
