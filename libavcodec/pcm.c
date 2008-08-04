@@ -358,14 +358,7 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
         break;
     }
 
-    switch(avctx->codec->id) {
-    case CODEC_ID_PCM_F32BE:
-        avctx->sample_fmt = SAMPLE_FMT_FLT;
-        break;
-    default:
-        avctx->sample_fmt = SAMPLE_FMT_S16;
-        break;
-    }
+    avctx->sample_fmt = avctx->codec->sample_fmts[0];
     return 0;
 }
 
@@ -571,7 +564,7 @@ AVCodec name ## _encoder = {                    \
 #endif
 
 #ifdef CONFIG_DECODERS
-#define PCM_DECODER(id,name,long_name_)         \
+#define PCM_DECODER(id,sample_fmt_,name,long_name_)         \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -581,14 +574,15 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     pcm_decode_frame,                           \
+    .sample_fmts = (enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
-#define PCM_DECODER(id,name,long_name_)
+#define PCM_DECODER(id,sample_fmt_,name,long_name_)
 #endif
 
 #define PCM_CODEC(id, sample_fmt_, name, long_name_)         \
-    PCM_ENCODER(id,sample_fmt_,name,long_name_) PCM_DECODER(id,name,long_name_)
+    PCM_ENCODER(id,sample_fmt_,name,long_name_) PCM_DECODER(id,sample_fmt_,name,long_name_)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW,  SAMPLE_FMT_S16, pcm_alaw, "A-law PCM");
@@ -598,7 +592,7 @@ PCM_CODEC  (CODEC_ID_PCM_MULAW, SAMPLE_FMT_S16, pcm_mulaw, "mu-law PCM");
 PCM_CODEC  (CODEC_ID_PCM_S8,    SAMPLE_FMT_S16, pcm_s8, "signed 8-bit PCM");
 PCM_CODEC  (CODEC_ID_PCM_S16BE, SAMPLE_FMT_S16, pcm_s16be, "signed 16-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_S16LE, SAMPLE_FMT_S16, pcm_s16le, "signed 16-bit little-endian PCM");
-PCM_DECODER(CODEC_ID_PCM_S16LE_PLANAR, pcm_s16le_planar, "16-bit little-endian planar PCM");
+PCM_DECODER(CODEC_ID_PCM_S16LE_PLANAR, SAMPLE_FMT_S16, pcm_s16le_planar, "16-bit little-endian planar PCM");
 PCM_CODEC  (CODEC_ID_PCM_S24BE, SAMPLE_FMT_S16, pcm_s24be, "signed 24-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_S24DAUD, SAMPLE_FMT_S16,  pcm_s24daud, "D-Cinema audio signed 24-bit PCM");
 PCM_CODEC  (CODEC_ID_PCM_S24LE, SAMPLE_FMT_S16, pcm_s24le, "signed 24-bit little-endian PCM");
