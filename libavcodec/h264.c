@@ -1160,6 +1160,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 const int pair_xy = s->mb_x + (s->mb_y&~1)*s->mb_stride;
                 int mb_types_col[2];
                 int y_shift;
+                int ref_shift;
 
                 *mb_type = MB_TYPE_8x8|MB_TYPE_L0L1
                          | (is_b8x8 ? 0 : MB_TYPE_DIRECT2)
@@ -1177,6 +1178,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                         l1mv1 -= 4*h->b_stride;
                     }
                     y_shift = 0;
+                    ref_shift= FRAME_MBAFF ? 0 : 1;
 
                     if(   (mb_types_col[0] & MB_TYPE_16x16_OR_INTRA)
                        && (mb_types_col[1] & MB_TYPE_16x16_OR_INTRA)
@@ -1196,6 +1198,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                     l1mv0 += 2*dy*h->b_stride;
                     l1mv1 += 2*dy*h->b_stride;
                     y_shift = 2;
+                    ref_shift= FRAME_MBAFF ? 2 : 1;
 
                     if((mb_types_col[0] & (MB_TYPE_16x16_OR_INTRA|MB_TYPE_16x8))
                        && !is_b8x8)
@@ -1224,9 +1227,9 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
 
                     ref0 = l1ref0[x8 + (y8*2>>y_shift)*h->b8_stride];
                     if(ref0 >= 0)
-                        ref0 = map_col_to_list0[0][ref0*2>>y_shift];
+                        ref0 = map_col_to_list0[0][ref0*2>>ref_shift];
                     else{
-                        ref0 = map_col_to_list0[1][l1ref1[x8 + (y8*2>>y_shift)*h->b8_stride]*2>>y_shift];
+                        ref0 = map_col_to_list0[1][l1ref1[x8 + (y8*2>>y_shift)*h->b8_stride]*2>>ref_shift];
                         l1mv= l1mv1;
                     }
                     scale = dist_scale_factor[ref0];
