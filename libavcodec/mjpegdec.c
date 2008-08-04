@@ -834,7 +834,8 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
 //            for(){
 //            reset_ls_coding_parameters(s, 0);
 
-            ff_jpegls_decode_picture(s, predictor, point_transform, ilv);
+            if(ff_jpegls_decode_picture(s, predictor, point_transform, ilv) < 0)
+                return -1;
         }else{
             if(s->rgb){
                 if(ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
