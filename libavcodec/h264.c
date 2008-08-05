@@ -1016,10 +1016,10 @@ single_col:
         }
     }
 
-        l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
-        l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
-        l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
-        l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
+    l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
+    l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
+    l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
+    l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
     if(!b8_stride){
         if(s->mb_y&1){
             l1ref0 += h->b8_stride;
