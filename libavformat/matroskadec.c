@@ -190,10 +190,6 @@ typedef struct {
     EbmlList index;
     EbmlList seekhead;
 
-    /* num_streams is the number of streams that av_new_stream() was called
-     * for ( = that are available to the calling program). */
-    int num_streams;
-
     /* byte position of the segment inside the stream */
     offset_t segment_start;
 
@@ -1087,7 +1083,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         }
 
-        st = track->stream = av_new_stream(s, matroska->num_streams++);
+        st = track->stream = av_new_stream(s, 0);
         if (st == NULL)
             return AVERROR(ENOMEM);
 
@@ -1223,7 +1219,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
               attachements[j].bin.data && attachements[j].bin.size > 0)) {
             av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
         } else {
-            AVStream *st = av_new_stream(s, matroska->num_streams++);
+            AVStream *st = av_new_stream(s, 0);
             if (st == NULL)
                 break;
             st->filename          = av_strdup(attachements[j].filename);
