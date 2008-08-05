@@ -461,7 +461,6 @@ static EbmlSyntax matroska_clusters[] = {
  * The opposite isn't done - that's auto-done using master
  * element reading.
  */
-
 static int
 ebml_read_element_level_up (MatroskaDemuxContext *matroska)
 {
@@ -491,7 +490,6 @@ ebml_read_element_level_up (MatroskaDemuxContext *matroska)
  * number.
  * Returns: num. of bytes read. < 0 on error.
  */
-
 static int
 ebml_read_num (MatroskaDemuxContext *matroska,
                int                   max_size,
@@ -542,7 +540,6 @@ ebml_read_num (MatroskaDemuxContext *matroska,
  * Read: the element content data ID.
  * Return: the number of bytes read or < 0 on error.
  */
-
 static int
 ebml_read_element_id (MatroskaDemuxContext *matroska,
                       uint32_t             *id,
@@ -575,7 +572,6 @@ ebml_read_element_id (MatroskaDemuxContext *matroska,
  * Read: element content length.
  * Return: the number of bytes read or < 0 on error.
  */
-
 static int
 ebml_read_element_length (MatroskaDemuxContext *matroska,
                           uint64_t             *length)
@@ -592,7 +588,6 @@ ebml_read_element_length (MatroskaDemuxContext *matroska,
  * Level_up contains the amount of levels that this
  * next element lies higher than the previous one.
  */
-
 static uint32_t
 ebml_peek_id (MatroskaDemuxContext *matroska,
               int                  *level_up)
@@ -609,7 +604,6 @@ ebml_peek_id (MatroskaDemuxContext *matroska,
  * Seek to a given offset.
  * 0 is success, -1 is failure.
  */
-
 static int
 ebml_read_seek (MatroskaDemuxContext *matroska,
                 offset_t              offset)
@@ -626,7 +620,6 @@ ebml_read_seek (MatroskaDemuxContext *matroska,
  * Skip the next element.
  * 0 is success, -1 is failure.
  */
-
 static int
 ebml_read_skip (MatroskaDemuxContext *matroska)
 {
@@ -648,7 +641,6 @@ ebml_read_skip (MatroskaDemuxContext *matroska)
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
-
 static int
 ebml_read_uint (MatroskaDemuxContext *matroska,
                 uint32_t             *id,
@@ -682,7 +674,6 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
  * Read the next element as a float.
  * 0 is success, < 0 is failure.
  */
-
 static int
 ebml_read_float (MatroskaDemuxContext *matroska,
                  uint32_t             *id,
@@ -716,7 +707,6 @@ ebml_read_float (MatroskaDemuxContext *matroska,
  * Read the next element as an ASCII string.
  * 0 is success, < 0 is failure.
  */
-
 static int
 ebml_read_ascii (MatroskaDemuxContext *matroska,
                  uint32_t             *id,
@@ -754,7 +744,6 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
  * are supposed to be sub-elements which can be read separately.
  * 0 is success, < 0 is failure.
  */
-
 static int
 ebml_read_master (MatroskaDemuxContext *matroska,
                   uint32_t             *id)
@@ -785,7 +774,6 @@ ebml_read_master (MatroskaDemuxContext *matroska,
  * Read the next element as binary data.
  * 0 is success, < 0 is failure.
  */
-
 static int
 ebml_read_binary (MatroskaDemuxContext *matroska,
                   uint32_t             *id,
@@ -822,7 +810,6 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
  * Return: number of bytes processed, < 0 on error.
  * XXX: use ebml_read_num().
  */
-
 static int
 matroska_ebmlnum_uint (uint8_t  *data,
                        uint32_t  size,
@@ -864,7 +851,6 @@ matroska_ebmlnum_uint (uint8_t  *data,
 /*
  * Same as above, but signed.
  */
-
 static int
 matroska_ebmlnum_sint (uint8_t  *data,
                        uint32_t  size,
@@ -907,7 +893,6 @@ matroska_find_track_by_num (MatroskaDemuxContext *matroska,
  * Put one packet in an application-supplied AVPacket struct.
  * Returns 0 on success or -1 on failure.
  */
-
 static int
 matroska_deliver_packet (MatroskaDemuxContext *matroska,
                          AVPacket             *pkt)
@@ -935,7 +920,6 @@ matroska_deliver_packet (MatroskaDemuxContext *matroska,
  * Put a packet into our internal queue. Will be delivered to the
  * user/application during the next get_packet() call.
  */
-
 static void
 matroska_queue_packet (MatroskaDemuxContext *matroska,
                        AVPacket             *pkt)
@@ -969,7 +953,6 @@ matroska_clear_queue (MatroskaDemuxContext *matroska)
 /*
  * Autodetecting...
  */
-
 static int
 matroska_probe (AVProbeData *p)
 {
@@ -1007,7 +990,6 @@ matroska_probe (AVProbeData *p)
 
     return 0;
 }
-
 
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, uint32_t expected_id, int once);
@@ -1102,7 +1084,6 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
         res = ebml_parse_id(matroska, syntax, id, data);
         if (once)
             break;
-
 
         if (matroska->level_up) {
             matroska->level_up--;
@@ -1425,16 +1406,13 @@ matroska_read_header (AVFormatContext    *s,
             (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
-
         }
-
         else if (!strcmp(track->codec_id,
                          MATROSKA_CODEC_ID_AUDIO_ACM) &&
                  (track->codec_priv.size >= 18) &&
                  (track->codec_priv.data != NULL)) {
             uint16_t tag = AV_RL16(track->codec_priv.data);
             codec_id = codec_get_id(codec_wav_tags, tag);
-
         }
 
         else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
@@ -1461,7 +1439,6 @@ matroska_read_header (AVFormatContext    *s,
             } else
                 extradata_size = 2;
         }
-
         else if (codec_id == CODEC_ID_TTA) {
             ByteIOContext b;
             extradata_size = 30;
@@ -1477,18 +1454,15 @@ matroska_read_header (AVFormatContext    *s,
             put_le32(&b, track->audio.out_samplerate);
             put_le32(&b, matroska->ctx->duration * track->audio.out_samplerate);
         }
-
         else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
                  codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
             extradata_offset = 26;
             track->codec_priv.size -= extradata_offset;
         }
-
         else if (codec_id == CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
         }
-
         else if (codec_id == CODEC_ID_RA_288 ||
                  codec_id == CODEC_ID_COOK ||
                  codec_id == CODEC_ID_ATRAC3) {
@@ -1562,7 +1536,6 @@ matroska_read_header (AVFormatContext    *s,
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = CODEC_TYPE_SUBTITLE;
         }
-
     }
 
     attachements = attachements_list->elem;
@@ -1856,10 +1829,8 @@ matroska_read_packet (AVFormatContext *s,
     MatroskaDemuxContext *matroska = s->priv_data;
 
     while (matroska_deliver_packet(matroska, pkt)) {
-
         if (matroska->done)
             return AVERROR(EIO);
-
         if (matroska_parse_cluster(matroska) < 0)
             matroska->done = 1;
     }
