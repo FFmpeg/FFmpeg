@@ -95,7 +95,6 @@ typedef struct Track {
      * the calling app uses for this track. */
     uint32_t num;
     uint32_t uid;
-    int stream_index;
 
     char *name;
     char language[4];
@@ -113,6 +112,8 @@ typedef struct Track {
     MatroskaTrackEncodingCompAlgo encoding_algo;
     uint8_t *encoding_settings;
     int encoding_settings_len;
+
+    AVStream *stream;
 } MatroskaTrack;
 
 typedef struct MatroskaVideoTrack {
@@ -2549,7 +2550,6 @@ matroska_read_header (AVFormatContext    *s,
             int extradata_size = 0;
             int extradata_offset = 0;
             track = matroska->tracks[i];
-            track->stream_index = -1;
 
             /* Apply some sanity checks. */
             if (track->codec_id == NULL)
@@ -2681,10 +2681,7 @@ matroska_read_header (AVFormatContext    *s,
                        track->codec_id);
             }
 
-            track->stream_index = matroska->num_streams;
-
-            matroska->num_streams++;
-            st = av_new_stream(s, track->stream_index);
+            st = track->stream = av_new_stream(s, matroska->num_streams++);
             if (st == NULL)
                 return AVERROR(ENOMEM);
             av_set_pts_info(st, 64, matroska->time_scale*track->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
@@ -2752,7 +2749,7 @@ matroska_read_header (AVFormatContext    *s,
             MatroskaDemuxIndex *idx = &matroska->index[i];
             track = matroska_find_track_by_num(matroska, idx->track);
             if (track < 0)  continue;
-            stream = matroska->tracks[track]->stream_index;
+            stream = matroska->tracks[track]->stream->index;
             if (stream >= 0 && stream < matroska->ctx->nb_streams)
                 av_add_index_entry(matroska->ctx->streams[stream],
                                    idx->pos, idx->time/AV_TIME_BASE,
@@ -2777,7 +2774,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     uint32_t *lace_size = NULL;
     int n, flags, laces = 0;
     uint64_t num;
-    int stream_index;
 
     /* first byte(s): tracknum */
     if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
@@ -2796,12 +2792,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         av_free(origdata);
         return res;
     }
-    stream_index = matroska->tracks[track]->stream_index;
-    if (stream_index < 0 || stream_index >= matroska->ctx->nb_streams) {
-        av_free(origdata);
-        return res;
-    }
-    st = matroska->ctx->streams[stream_index];
+    st = matroska->tracks[track]->stream;
     if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
         return res;
@@ -2941,7 +2932,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     memcpy(pkt->data, audiotrack->buf
                            + a * (h*w / a - audiotrack->pkt_cnt--), a);
                     pkt->pos = pos;
-                    pkt->stream_index = stream_index;
+                    pkt->stream_index = st->index;
                     matroska_queue_packet(matroska, pkt);
                 }
             } else {
@@ -2972,7 +2963,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
                 if (n == 0)
                     pkt->flags = is_keyframe;
-                pkt->stream_index = stream_index;
+                pkt->stream_index = st->index;
 
                 pkt->pts = timecode;
                 pkt->pos = pos;
