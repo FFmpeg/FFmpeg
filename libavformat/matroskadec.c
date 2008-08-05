@@ -721,7 +721,7 @@ matroska_ebmlnum_sint (uint8_t  *data,
 }
 
 
-static int
+static MatroskaTrack *
 matroska_find_track_by_num (MatroskaDemuxContext *matroska,
                             int                   num)
 {
@@ -729,9 +729,10 @@ matroska_find_track_by_num (MatroskaDemuxContext *matroska,
 
     for (i = 0; i < matroska->num_tracks; i++)
         if (matroska->tracks[i]->num == num)
-            return i;
+            return matroska->tracks[i];
 
-    return -1;
+    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid track number %d\n", num);
+    return NULL;
 }
 
 
@@ -2745,14 +2746,13 @@ matroska_read_header (AVFormatContext    *s,
     }
 
     if (matroska->index_parsed) {
-        int i, track, stream;
+        int i;
         for (i=0; i<matroska->num_indexes; i++) {
             MatroskaDemuxIndex *idx = &matroska->index[i];
-            track = matroska_find_track_by_num(matroska, idx->track);
-            if (track < 0)  continue;
-            stream = matroska->tracks[track]->stream->index;
-            if (stream >= 0 && stream < matroska->ctx->nb_streams)
-                av_add_index_entry(matroska->ctx->streams[stream],
+            MatroskaTrack *track = matroska_find_track_by_num(matroska,
+                                                              idx->track);
+            if (track && track->stream)
+                av_add_index_entry(track->stream,
                                    idx->pos, idx->time/AV_TIME_BASE,
                                    0, 0, AVINDEX_KEYFRAME);
         }
@@ -2766,8 +2766,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                      int64_t pos, uint64_t cluster_time, uint64_t duration,
                      int is_keyframe)
 {
+    MatroskaTrack *track;
     int res = 0;
-    int track;
     AVStream *st;
     AVPacket *pkt;
     uint8_t *origdata = data;
@@ -2787,19 +2787,19 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
 
     /* fetch track from num */
     track = matroska_find_track_by_num(matroska, num);
-    if (size <= 3 || track < 0 || track >= matroska->num_tracks) {
+    if (size <= 3 || !track || !track->stream) {
         av_log(matroska->ctx, AV_LOG_INFO,
-               "Invalid stream %d or size %u\n", track, size);
+               "Invalid stream %"PRIu64" or size %u\n", num, size);
         av_free(origdata);
         return res;
     }
-    st = matroska->tracks[track]->stream;
+    st = track->stream;
     if (st->discard >= AVDISCARD_ALL) {
         av_free(origdata);
         return res;
     }
     if (duration == AV_NOPTS_VALUE)
-        duration = matroska->tracks[track]->default_duration / matroska->time_scale;
+        duration = track->default_duration / matroska->time_scale;
 
     /* block_time (relative to cluster time) */
     block_time = AV_RB16(data);
@@ -2904,7 +2904,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
             if (st->codec->codec_id == CODEC_ID_RA_288 ||
                 st->codec->codec_id == CODEC_ID_COOK ||
                 st->codec->codec_id == CODEC_ID_ATRAC3) {
-                MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)matroska->tracks[track];
+                MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
                 int a = st->codec->block_align;
                 int sps = audiotrack->sub_packet_size;
                 int cfs = audiotrack->coded_framesize;
@@ -2940,9 +2940,9 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                 int offset = 0, pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
 
-                if (matroska->tracks[track]->encoding_scope & 1) {
+                if (track->encoding_scope & 1) {
                     offset = matroska_decode_buffer(&pkt_data, &pkt_size,
-                                                    matroska->tracks[track]);
+                                                    track);
                     if (offset < 0)
                         continue;
                 }
@@ -2956,7 +2956,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                     break;
                 }
                 if (offset)
-                    memcpy (pkt->data, matroska->tracks[track]->encoding_settings, offset);
+                    memcpy (pkt->data, track->encoding_settings, offset);
                 memcpy (pkt->data+offset, pkt_data, pkt_size);
 
                 if (pkt_data != data)
