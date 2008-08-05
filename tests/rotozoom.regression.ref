@@ -154,6 +154,10 @@ stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
 7200000 ./tests/data/a-dv.dv
 75bf724e37f667f36af50e2051846574 *./tests/data/dv.rotozoom.out.yuv
 stddev:    3.11 PSNR: 38.24 bytes:  7603200/  7603200
+a8f9aaab0220c8895dafa43ebcda916d *./tests/data/a-dv411.dv
+7200000 ./tests/data/a-dv411.dv
+06ab34615153162ad73696672531d448 *./tests/data/dv.rotozoom.out.yuv
+stddev:   10.17 PSNR: 27.97 bytes:  7603200/  7603200
 ac6741e4c79e9ed18f179c4124ede29c *./tests/data/a-dv50.dv
 14400000 ./tests/data/a-dv50.dv
 ad9907f4ef608f025f5fc38b4b067b37 *./tests/data/dv50.rotozoom.out.yuv

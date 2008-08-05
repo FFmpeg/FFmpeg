@@ -154,6 +154,10 @@ c299f64c3e85b928c5bfe71629cee006 *./tests/data/a-dv.dv
 7200000 ./tests/data/a-dv.dv
 3b9ead854b912e43ead976e4e86aab3b *./tests/data/dv.vsynth.out.yuv
 stddev:    8.91 PSNR: 29.12 bytes:  7603200/  7603200
+f3f2d89bbf40b5812c919b7bdf38684b *./tests/data/a-dv411.dv
+7200000 ./tests/data/a-dv411.dv
+b59e4ad3f4eef415752641d087c75d5d *./tests/data/dv.vsynth.out.yuv
+stddev:   30.72 PSNR: 18.37 bytes:  7603200/  7603200
 70dc9a58345e603094dedcac71e2dcd2 *./tests/data/a-dv50.dv
 14400000 ./tests/data/a-dv50.dv
 d727da8c7ce387ebe68845a1be916ee3 *./tests/data/dv50.vsynth.out.yuv

@@ -353,6 +353,9 @@ fi
 if [ -n "$do_dv" ] ; then
 do_video_encoding dv.dv "-dct int" "-s pal -an"
 do_video_decoding "" "-s cif"
+
+do_video_encoding dv411.dv "-dct int" "-s pal -an -pix_fmt yuv411p"
+do_video_decoding "" "-s cif"
 fi
 
 if [ -n "$do_dv50" ] ; then
