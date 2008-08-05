@@ -1161,6 +1161,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 /* FIXME assumes direct_8x8_inference == 1 */
                 const int pair_xy = s->mb_x + (s->mb_y&~1)*s->mb_stride;
                 int mb_types_col[2];
+                int b8_stride = h->b8_stride;
+                int b4_stride = h->b_stride;
                 int y_shift;
                 int ref_shift;
 
@@ -1188,6 +1190,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                         *mb_type |= MB_TYPE_16x8;
                     else
                         *mb_type |= MB_TYPE_8x8;
+                    b8_stride *= 3;
+                    b4_stride *= 6;
                 }else{
                     int cur_poc = s->current_picture_ptr->poc;
                     int *col_poc = h->ref_list[1]->field_poc;
@@ -1207,6 +1211,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                         *mb_type |= MB_TYPE_16x16;
                     else
                         *mb_type |= MB_TYPE_8x8;
+                    b8_stride = 0;
                 }
 
                 for(i8=0; i8<4; i8++){
@@ -1227,18 +1232,18 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                         continue;
                     }
 
-                    ref0 = l1ref0[x8 + (y8*2>>y_shift)*h->b8_stride];
+                    ref0 = l1ref0[x8 + y8*b8_stride];
                     if(ref0 >= 0)
                         ref0 = map_col_to_list0[0][ref0*2>>ref_shift];
                     else{
-                        ref0 = map_col_to_list0[1][l1ref1[x8 + (y8*2>>y_shift)*h->b8_stride]*2>>ref_shift];
+                        ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]*2>>ref_shift];
                         l1mv= l1mv1;
                     }
                     scale = dist_scale_factor[ref0];
                     fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
 
                     {
-                        const int16_t *mv_col = l1mv[x8*3 + (y8*6>>y_shift)*h->b_stride];
+                        const int16_t *mv_col = l1mv[x8*3 + y8*b4_stride];
                         int my_col = (mv_col[1]<<y_shift)/2;
                         int mx = (scale * mv_col[0] + 128) >> 8;
                         int my = (scale * my_col + 128) >> 8;
