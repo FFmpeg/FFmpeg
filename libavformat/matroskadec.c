@@ -250,6 +250,11 @@ static EbmlSyntax matroska_index[] = {
     { 0 }
 };
 
+static EbmlSyntax matroska_tags[] = {
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
 /*
  * The first few functions handle EBML file parsing. The rest
  * is the document interpretation. Matroska really just is a
@@ -1758,37 +1763,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
 static int
 matroska_parse_metadata (MatroskaDemuxContext *matroska)
 {
-    int res = 0;
-    uint32_t id;
-
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-            /* Hm, this is unsupported... */
-            default:
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "Unknown entry 0x%x in metadata header\n", id);
-                /* fall-through */
-
-            case EBML_ID_VOID:
-                res = ebml_read_skip(matroska);
-                break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-    }
-
-    return res;
+    return ebml_parse(matroska, matroska_tags, matroska, MATROSKA_ID_TAGS, 0);
 }
 
 static int
@@ -1914,8 +1889,6 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                                 }
                                 break;
                             case MATROSKA_ID_TAGS:
-                                if ((res = ebml_read_master(matroska, &id)) < 0)
-                                    goto finish;
                                 if (!(res = matroska_parse_metadata(matroska)) ||
                                    url_feof(matroska->ctx->pb)) {
                                     matroska->metadata_parsed = 1;
@@ -2355,8 +2328,6 @@ matroska_read_header (AVFormatContext    *s,
             /* metadata */
             case MATROSKA_ID_TAGS: {
                 if (!matroska->metadata_parsed) {
-                    if ((res = ebml_read_master(matroska, &id)) < 0)
-                        break;
                     res = matroska_parse_metadata(matroska);
                 } else
                     res = ebml_read_skip(matroska);
