@@ -867,8 +867,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     }
 
     if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
-        if ((res = ebml_read_element_id(matroska, &id)) < 0 ||
-            (res = ebml_read_element_length(matroska, &length)) < 0)
+        if ((res = ebml_read_element_length(matroska, &length)) < 0)
             return res;
 
     switch (syntax->type) {
@@ -905,11 +904,18 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     return ebml_parse_elem(matroska, &syntax[i], data);
 }
 
+static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+                      void *data)
+{
+    uint32_t id;
+    int res = ebml_read_element_id(matroska, &id);
+    return res < 0 ? res : ebml_parse_id(matroska, syntax, id, data);
+}
+
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, int once)
 {
     int i, res = 0;
-    uint32_t id = 0;
 
     for (i=0; syntax[i].id; i++)
         switch (syntax[i].type) {
@@ -926,9 +932,7 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
         }
 
     while (!res && !ebml_level_end(matroska)) {
-        res = ebml_read_element_id(matroska, &id);
-        if (!res)
-        res = ebml_parse_id(matroska, syntax, id, data);
+        res = ebml_parse(matroska, syntax, data);
         if (once)
             break;
     }
@@ -1071,7 +1075,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         matroska->levels[matroska->num_levels] = level;
         matroska->num_levels++;
 
-        ebml_parse_id(matroska, matroska_segment, seekhead[i].id, matroska);
+        ebml_parse(matroska, matroska_segment, matroska);
 
         /* remove dummy level */
         while (matroska->num_levels) {
