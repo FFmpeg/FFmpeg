@@ -424,7 +424,7 @@ static int put_xiph_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecCont
 static int put_flac_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec)
 {
     // if the extradata_size is greater than FLAC_STREAMINFO_SIZE,
-    // assume that it's in Matroska's format already
+    // assume that it's in Matroska format already
     if (codec->extradata_size < FLAC_STREAMINFO_SIZE) {
         av_log(s, AV_LOG_ERROR, "Invalid FLAC extradata\n");
         return -1;

@@ -1,6 +1,6 @@
 /*
  * Matroska file demuxer
- * Copyright (c) 2003-2008 The ffmpeg Project
+ * Copyright (c) 2003-2008 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -25,7 +25,7 @@
  * by Ronald Bultje <rbultje@ronald.bitfreak.net>
  * with a little help from Moritz Bunkus <moritz@bunkus.org>
  * totally reworked by Aurelien Jacobs <aurel@gnuage.org>
- * Specs available on the matroska project page: http://www.matroska.org/.
+ * Specs available on the Matroska project page: http://www.matroska.org/.
  */
 
 #include "avformat.h"
@@ -176,7 +176,7 @@ typedef struct {
 typedef struct {
     AVFormatContext *ctx;
 
-    /* ebml stuff */
+    /* EBML stuff */
     int num_levels;
     MatroskaLevel levels[EBML_MAX_DEPTH];
     int level_up;
@@ -193,7 +193,7 @@ typedef struct {
     /* byte position of the segment inside the stream */
     offset_t segment_start;
 
-    /* The packet queue. */
+    /* the packet queue */
     AVPacket **packets;
     int num_packets;
 
@@ -449,7 +449,7 @@ static EbmlSyntax matroska_clusters[] = {
 };
 
 /*
- * Return: whether we reached the end of a level in the hierarchy or not
+ * Return: Whether we reached the end of a level in the hierarchy or not.
  */
 static int ebml_level_end(MatroskaDemuxContext *matroska)
 {
@@ -472,7 +472,7 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
  * number of 0-bits followed by a one. The position of the first
  * "one" bit inside the first byte indicates the length of this
  * number.
- * Returns: num. of bytes read. < 0 on error.
+ * Returns: number of bytes read, < 0 on error
  */
 static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
                          int max_size, uint64_t *number)
@@ -480,7 +480,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
     int len_mask = 0x80, read = 1, n = 1;
     int64_t total = 0;
 
-    /* the first byte tells us the length in bytes - get_byte() can normally
+    /* The first byte tells us the length in bytes - get_byte() can normally
      * return 0, but since that's not a valid first ebmlID byte, we can
      * use it safely here to catch EOS. */
     if (!(total = get_byte(pb))) {
@@ -528,7 +528,7 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
     if (size < 1 || size > 8)
         return AVERROR_INVALIDDATA;
 
-    /* big-endian ordening; build up number */
+    /* big-endian ordering; build up number */
     *num = 0;
     while (n++ < size)
         *num = (*num << 8) | get_byte(pb);
@@ -559,7 +559,7 @@ static int ebml_read_float(ByteIOContext *pb, int size, double *num)
 static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
 {
     av_free(*str);
-    /* ebml strings are usually not 0-terminated, so we allocate one
+    /* EBML strings are usually not 0-terminated, so we allocate one
      * byte more, read the string and NULL-terminate it ourselves. */
     if (!(*str = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
@@ -615,7 +615,7 @@ static int ebml_read_master(MatroskaDemuxContext *matroska, int length)
 
 /*
  * Read signed/unsigned "EBML" numbers.
- * Return: number of bytes processed, < 0 on error.
+ * Return: number of bytes processed, < 0 on error
  */
 static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
                                  uint8_t *data, uint32_t size, uint64_t *num)
@@ -769,7 +769,7 @@ static int matroska_probe(AVProbeData *p)
     int len_mask = 0x80, size = 1, n = 1;
     char probe_data[] = "matroska";
 
-    /* ebml header? */
+    /* EBML header? */
     if (AV_RB32(p->buf) != EBML_ID_HEADER)
         return 0;
 
@@ -785,11 +785,11 @@ static int matroska_probe(AVProbeData *p)
     while (n < size)
         total = (total << 8) | p->buf[4 + n++];
 
-    /* does the probe data contain the whole header? */
+    /* Does the probe data contain the whole header? */
     if (p->buf_size < 4 + size + total)
       return 0;
 
-    /* the header must contain the document type 'matroska'. For now,
+    /* The header must contain the document type 'matroska'. For now,
      * we don't parse the whole header but simply check for the
      * availability of that array of characters inside the header.
      * Not fully fool-proof, but good enough. */
@@ -912,7 +912,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         if (url_fseek(matroska->ctx->pb, offset, SEEK_SET) != offset)
             continue;
 
-        /* we don't want to lose our seekhead level, so we add
+        /* We don't want to lose our seekhead level, so we add
          * a dummy. This is a crude hack. */
         if (matroska->num_levels == EBML_MAX_DEPTH) {
             av_log(matroska->ctx, AV_LOG_INFO,
@@ -1375,7 +1375,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             lace_size[0] = size;
             break;
 
-        case 0x1: /* xiph lacing */
+        case 0x1: /* Xiph lacing */
         case 0x2: /* fixed-size lacing */
         case 0x3: /* EBML lacing */
             assert(size>0); // size <=3 is checked before size-=3 above
@@ -1385,7 +1385,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             lace_size = av_mallocz(laces * sizeof(int));
 
             switch ((flags & 0x06) >> 1) {
-                case 0x1: /* xiph lacing */ {
+                case 0x1: /* Xiph lacing */ {
                     uint8_t temp;
                     uint32_t total = 0;
                     for (n = 0; res == 0 && n < laces - 1; n++) {
@@ -1540,7 +1540,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaBlock *blocks;
     int i, res;
     if (matroska->has_cluster_id){
-        /* For the first cluster we parse, it's ID was already read as
+        /* For the first cluster we parse, its ID was already read as
            part of matroska_read_header(), so don't read it again */
         res = ebml_parse_id(matroska, matroska_clusters,
                             MATROSKA_ID_CLUSTER, &cluster);

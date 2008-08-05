@@ -43,13 +43,13 @@
 #define EBML_ID_VOID               0xEC
 
 /*
- * Matroska element IDs. max. 32-bit.
+ * Matroska element IDs, max. 32 bit
  */
 
 /* toplevel segment */
 #define MATROSKA_ID_SEGMENT    0x18538067
 
-/* matroska top-level master IDs */
+/* Matroska top-level master IDs */
 #define MATROSKA_ID_INFO       0x1549A966
 #define MATROSKA_ID_TRACKS     0x1654AE6B
 #define MATROSKA_ID_CUES       0x1C53BB6B
@@ -190,7 +190,7 @@ typedef enum {
 } MatroskaTrackEncodingCompAlgo;
 
 /*
- * Matroska Codec IDs. Strings.
+ * Matroska Codec IDs, strings
  */
 
 typedef struct CodecTags{
