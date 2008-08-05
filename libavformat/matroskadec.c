@@ -2563,6 +2563,10 @@ matroska_read_header (AVFormatContext    *s,
                 }
             }
 
+            st = track->stream = av_new_stream(s, matroska->num_streams++);
+            if (st == NULL)
+                return AVERROR(ENOMEM);
+
             /* Set the FourCC from the CodecID. */
             /* This is the MS compatibility mode which stores a
              * BITMAPINFOHEADER in the CodecPrivate. */
@@ -2681,9 +2685,6 @@ matroska_read_header (AVFormatContext    *s,
                        track->codec_id);
             }
 
-            st = track->stream = av_new_stream(s, matroska->num_streams++);
-            if (st == NULL)
-                return AVERROR(ENOMEM);
             av_set_pts_info(st, 64, matroska->time_scale*track->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
             st->codec->codec_id = codec_id;
