@@ -593,43 +593,16 @@ ebml_read_seek (MatroskaDemuxContext *matroska,
 }
 
 /*
- * Skip the next element.
- * 0 is success, -1 is failure.
- */
-static int
-ebml_read_skip (MatroskaDemuxContext *matroska)
-{
-    ByteIOContext *pb = matroska->ctx->pb;
-    uint32_t id;
-    uint64_t length;
-    int res;
-
-    if ((res = ebml_read_element_id(matroska, &id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &length)) < 0)
-        return res;
-
-    url_fskip(pb, length);
-
-    return 0;
-}
-
-/*
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
 static int
-ebml_read_uint (MatroskaDemuxContext *matroska,
-                uint32_t             *id,
+ebml_read_uint (ByteIOContext *pb,
+                int            size,
                 uint64_t             *num)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
-    int n = 0, size, res;
-    uint64_t rlength;
+    int n = 0;
 
-    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &rlength)) < 0)
-        return res;
-    size = rlength;
     if (size < 1 || size > 8)
         return AVERROR_INVALIDDATA;
 
@@ -646,19 +619,10 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
  * 0 is success, < 0 is failure.
  */
 static int
-ebml_read_float (MatroskaDemuxContext *matroska,
-                 uint32_t             *id,
+ebml_read_float (ByteIOContext *pb,
+                 int            size,
                  double               *num)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
-    int size, res;
-    uint64_t rlength;
-
-    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &rlength)) < 0)
-        return res;
-    size = rlength;
-
     if (size == 4) {
         *num= av_int2flt(get_be32(pb));
     } else if(size==8){
@@ -674,22 +638,14 @@ ebml_read_float (MatroskaDemuxContext *matroska,
  * 0 is success, < 0 is failure.
  */
 static int
-ebml_read_ascii (MatroskaDemuxContext *matroska,
-                 uint32_t             *id,
+ebml_read_ascii (ByteIOContext *pb,
+                 int            size,
                  char                **str)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
-    int size, res;
-    uint64_t rlength;
-
-    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &rlength)) < 0)
-        return res;
-    size = rlength;
-
+    av_free(*str);
     /* ebml strings are usually not 0-terminated, so we allocate one
      * byte more, read the string and NULL-terminate it ourselves. */
-    if (size < 0 || !(*str = av_malloc(size + 1)))
+    if (!(*str = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
     if (get_buffer(pb, (uint8_t *) *str, size) != size) {
         av_free(*str);
@@ -707,16 +663,10 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
  */
 static int
 ebml_read_master (MatroskaDemuxContext *matroska,
-                  uint32_t             *id)
+                  int                   length)
 {
     ByteIOContext *pb = matroska->ctx->pb;
-    uint64_t length;
     MatroskaLevel *level;
-    int res;
-
-    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &length)) < 0)
-        return res;
 
     if (matroska->num_levels >= EBML_MAX_DEPTH) {
         av_log(matroska->ctx, AV_LOG_ERROR,
@@ -736,24 +686,16 @@ ebml_read_master (MatroskaDemuxContext *matroska,
  * 0 is success, < 0 is failure.
  */
 static int
-ebml_read_binary (MatroskaDemuxContext *matroska,
-                  uint32_t             *id,
+ebml_read_binary (ByteIOContext *pb,
+                  int            length,
                   uint8_t             **binary,
                   int                  *size)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
-    uint64_t rlength;
-    int res;
-
-    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
-        (res = ebml_read_element_length(matroska, &rlength)) < 0)
-        return res;
-    *size = rlength;
-
-    if (!(*binary = av_malloc(*size)))
+    if (!(*binary = av_malloc(length)))
         return AVERROR(ENOMEM);
 
-    if (get_buffer(pb, *binary, *size) != *size)
+    *size = length;
+    if (get_buffer(pb, *binary, length) != length)
         return AVERROR(EIO);
 
     return 0;
@@ -951,7 +893,9 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                            EbmlSyntax *syntax, void *data)
 {
+    ByteIOContext *pb = matroska->ctx->pb;
     uint32_t id = syntax->id;
+    uint64_t length;
     EbmlBin *bin;
     int res;
 
@@ -965,24 +909,28 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     }
     bin = data;
 
+    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
+        if ((res = ebml_read_element_id(matroska, &id)) < 0 ||
+            (res = ebml_read_element_length(matroska, &length)) < 0)
+            return res;
+
     switch (syntax->type) {
-    case EBML_UINT:  res = ebml_read_uint (matroska, &id, data);  break;
-    case EBML_FLOAT: res = ebml_read_float(matroska, &id, data);  break;
+    case EBML_UINT:  res = ebml_read_uint  (pb, length, data);  break;
+    case EBML_FLOAT: res = ebml_read_float (pb, length, data);  break;
     case EBML_STR:
-    case EBML_UTF8:  av_free(*(char **)data);
-                     res = ebml_read_ascii(matroska, &id, data);  break;
+    case EBML_UTF8:  res = ebml_read_ascii (pb, length, data);  break;
     case EBML_BIN:   av_free(bin->data);
                      bin->pos = url_ftell(matroska->ctx->pb);
-                     res = ebml_read_binary(matroska, &id, &bin->data,
+                     res = ebml_read_binary(pb, length, &bin->data,
                                                            &bin->size); break;
-    case EBML_NEST:  if ((res=ebml_read_master(matroska, &id)) < 0)
+    case EBML_NEST:  if ((res=ebml_read_master(matroska, length)) < 0)
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
                          matroska->segment_start = url_ftell(matroska->ctx->pb);
                      return ebml_parse(matroska, syntax->def.n, data, 0);
     case EBML_PASS:  return ebml_parse(matroska, syntax->def.n, data, 1);
     case EBML_STOP:  *(int *)data = 1;      return 1;
-    default:         return ebml_read_skip(matroska);
+    default:         url_fskip(pb, length); return 0;
     }
     if (res == AVERROR_INVALIDDATA)
         av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
