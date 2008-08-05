@@ -973,16 +973,6 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 int *col_poc = h->ref_list[1]->field_poc;
                 int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
                 mb_xy= s->mb_x + ((s->mb_y&~1) + col_parity)*s->mb_stride;
-                l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
-                l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
-                l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
-                l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
-                if(s->mb_y&1){
-                    l1ref0 +=   b8_stride;
-                    l1ref1 +=   b8_stride;
-                    l1mv0  += 2*b4_stride;
-                    l1mv1  += 2*b4_stride;
-                }
                 b8_stride = 0;
             }
         }else if(!(s->picture_structure & h->ref_list[1][0].reference)){// FL -> FL & differ parity
@@ -1026,11 +1016,17 @@ single_col:
         }
     }
 
-    if(b8_stride){
         l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
         l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
         l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
         l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
+    if(!b8_stride){
+        if(s->mb_y&1){
+            l1ref0 += h->b8_stride;
+            l1ref1 += h->b8_stride;
+            l1mv0  +=  2*b4_stride;
+            l1mv1  +=  2*b4_stride;
+        }
     }
 
     if(h->direct_spatial_mv_pred){
