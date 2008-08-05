@@ -1011,18 +1011,18 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
 single_col:
             mb_type_col[0] =
             mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy];
-    if(IS_8X8(mb_type_col[0]) && !h->sps.direct_8x8_inference_flag){
-        /* FIXME save sub mb types from previous frames (or derive from MVs)
-         * so we know exactly what block size to use */
-        sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
-        *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
-    }else if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
-        sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
-        *mb_type   |= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_16x16 */
-    }else{
-        sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
-        *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
-    }
+            if(IS_8X8(mb_type_col[0]) && !h->sps.direct_8x8_inference_flag){
+                /* FIXME save sub mb types from previous frames (or derive from MVs)
+                * so we know exactly what block size to use */
+                sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
+                *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
+            }else if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
+                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+                *mb_type   |= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_16x16 */
+            }else{
+                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+                *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
+            }
         }
     }
 
@@ -1166,64 +1166,64 @@ single_col:
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
 
-            if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
-                map_col_to_list0[0] = h->map_col_to_list0_field[0];
-                map_col_to_list0[1] = h->map_col_to_list0_field[1];
-                dist_scale_factor = h->dist_scale_factor_field;
-            }
-            if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
-                /* FIXME assumes direct_8x8_inference == 1 */
-                int y_shift;
-                int ref_shift;
+        if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
+            map_col_to_list0[0] = h->map_col_to_list0_field[0];
+            map_col_to_list0[1] = h->map_col_to_list0_field[1];
+            dist_scale_factor = h->dist_scale_factor_field;
+        }
+        if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
+            /* FIXME assumes direct_8x8_inference == 1 */
+            int y_shift;
+            int ref_shift;
 
-                if(IS_INTERLACED(*mb_type)){
-                    /* frame to field scaling */
-                    y_shift = 0;
-                    ref_shift= FRAME_MBAFF ? 0 : 1;
-                }else{
-                    y_shift = 2;
-                    ref_shift= FRAME_MBAFF ? 2 : 1;
+            if(IS_INTERLACED(*mb_type)){
+                /* frame to field scaling */
+                y_shift = 0;
+                ref_shift= FRAME_MBAFF ? 0 : 1;
+            }else{
+                y_shift = 2;
+                ref_shift= FRAME_MBAFF ? 2 : 1;
+            }
+
+            for(i8=0; i8<4; i8++){
+                const int x8 = i8&1;
+                const int y8 = i8>>1;
+                int ref0, scale;
+                const int16_t (*l1mv)[2]= l1mv0;
+
+                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                    continue;
+                h->sub_mb_type[i8] = sub_mb_type;
+
+                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, 0, 1);
+                if(IS_INTRA(mb_type_col[y8])){
+                    fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, 0, 1);
+                    fill_rectangle(&h-> mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
+                    fill_rectangle(&h-> mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
+                    continue;
                 }
 
-                for(i8=0; i8<4; i8++){
-                    const int x8 = i8&1;
-                    const int y8 = i8>>1;
-                    int ref0, scale;
-                    const int16_t (*l1mv)[2]= l1mv0;
-
-                    if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
-                        continue;
-                    h->sub_mb_type[i8] = sub_mb_type;
-
-                    fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, 0, 1);
-                    if(IS_INTRA(mb_type_col[y8])){
-                        fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, 0, 1);
-                        fill_rectangle(&h-> mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
-                        fill_rectangle(&h-> mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
-                        continue;
-                    }
-
-                    ref0 = l1ref0[x8 + y8*b8_stride];
-                    if(ref0 >= 0)
-                        ref0 = map_col_to_list0[0][ref0*2>>ref_shift];
-                    else{
-                        ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]*2>>ref_shift];
-                        l1mv= l1mv1;
-                    }
-                    scale = dist_scale_factor[ref0];
-                    fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
-
-                    {
-                        const int16_t *mv_col = l1mv[x8*3 + y8*b4_stride];
-                        int my_col = (mv_col[1]<<y_shift)/2;
-                        int mx = (scale * mv_col[0] + 128) >> 8;
-                        int my = (scale * my_col + 128) >> 8;
-                        fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mx,my), 4);
-                        fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mx-mv_col[0],my-my_col), 4);
-                    }
+                ref0 = l1ref0[x8 + y8*b8_stride];
+                if(ref0 >= 0)
+                    ref0 = map_col_to_list0[0][ref0*2>>ref_shift];
+                else{
+                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]*2>>ref_shift];
+                    l1mv= l1mv1;
                 }
-                return;
+                scale = dist_scale_factor[ref0];
+                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
+
+                {
+                    const int16_t *mv_col = l1mv[x8*3 + y8*b4_stride];
+                    int my_col = (mv_col[1]<<y_shift)/2;
+                    int mx = (scale * mv_col[0] + 128) >> 8;
+                    int my = (scale * my_col + 128) >> 8;
+                    fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mx,my), 4);
+                    fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mx-mv_col[0],my-my_col), 4);
+                }
             }
+            return;
+        }
 
         /* one-to-one mv scaling */
 
