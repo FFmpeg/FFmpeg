@@ -181,7 +181,6 @@ typedef struct {
     MatroskaLevel levels[EBML_MAX_DEPTH];
     int level_up;
 
-    /* timescale in the file */
     uint64_t time_scale;
     double   duration;
     char    *title;
@@ -455,12 +454,6 @@ static EbmlSyntax matroska_clusters[] = {
     { MATROSKA_ID_CLUSTER,        EBML_NEST, 0, 0, {.n=matroska_cluster} },
     { 0 }
 };
-
-/*
- * The first few functions handle EBML file parsing. The rest
- * is the document interpretation. Matroska really just is a
- * EBML file.
- */
 
 /*
  * Return: the amount of levels in the hierarchy that the
@@ -775,14 +768,12 @@ ebml_read_master (MatroskaDemuxContext *matroska,
         (res = ebml_read_element_length(matroska, &length)) < 0)
         return res;
 
-    /* protect... (Heaven forbids that the '>' is true) */
     if (matroska->num_levels >= EBML_MAX_DEPTH) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "File moves beyond max. allowed depth (%d)\n", EBML_MAX_DEPTH);
         return AVERROR(ENOSYS);
     }
 
-    /* remember level */
     level = &matroska->levels[matroska->num_levels++];
     level->start = url_ftell(pb);
     level->length = length;
@@ -1017,9 +1008,6 @@ matroska_probe (AVProbeData *p)
     return 0;
 }
 
-/*
- * From here on, it's all XML-style DTD stuff... Needs no comments.
- */
 
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, uint32_t expected_id, int once);
@@ -1431,26 +1419,19 @@ matroska_read_header (AVFormatContext    *s,
         if (st == NULL)
             return AVERROR(ENOMEM);
 
-        /* Set the FourCC from the CodecID. */
-        /* This is the MS compatibility mode which stores a
-         * BITMAPINFOHEADER in the CodecPrivate. */
         if (!strcmp(track->codec_id,
                     MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC) &&
             (track->codec_priv.size >= 40) &&
             (track->codec_priv.data != NULL)) {
-            /* Offset of biCompression. Stored in LE. */
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
 
         }
 
-        /* This is the MS compatibility mode which stores a
-         * WAVEFORMATEX in the CodecPrivate. */
         else if (!strcmp(track->codec_id,
                          MATROSKA_CODEC_ID_AUDIO_ACM) &&
                  (track->codec_priv.size >= 18) &&
                  (track->codec_priv.data != NULL)) {
-            /* Offset of wFormatTag. Stored in LE. */
             uint16_t tag = AV_RL16(track->codec_priv.data);
             codec_id = codec_get_id(codec_wav_tags, tag);
 
@@ -1582,7 +1563,6 @@ matroska_read_header (AVFormatContext    *s,
             st->codec->codec_type = CODEC_TYPE_SUBTITLE;
         }
 
-        /* What do we do with private data? E.g. for Vorbis. */
     }
 
     attachements = attachements_list->elem;
@@ -1653,7 +1633,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     int n, flags, laces = 0;
     uint64_t num;
 
-    /* first byte(s): tracknum */
     if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
         return res;
@@ -1661,7 +1640,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     data += n;
     size -= n;
 
-    /* fetch track from num */
     track = matroska_find_track_by_num(matroska, num);
     if (size <= 3 || !track || !track->stream) {
         av_log(matroska->ctx, AV_LOG_INFO,
@@ -1674,7 +1652,6 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     if (duration == AV_NOPTS_VALUE)
         duration = track->default_duration / matroska->time_scale;
 
-    /* block_time (relative to cluster time) */
     block_time = AV_RB16(data);
     data += 2;
     flags = *data++;
@@ -1878,10 +1855,8 @@ matroska_read_packet (AVFormatContext *s,
 {
     MatroskaDemuxContext *matroska = s->priv_data;
 
-    /* Read stream until we have a packet queued. */
     while (matroska_deliver_packet(matroska, pkt)) {
 
-        /* Have we already reached the end? */
         if (matroska->done)
             return AVERROR(EIO);
 
@@ -1900,14 +1875,12 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
     AVStream *st = s->streams[stream_index];
     int index;
 
-    /* find index entry */
     index = av_index_search_timestamp(st, timestamp, flags);
     if (index < 0)
         return 0;
 
     matroska_clear_queue(matroska);
 
-    /* do the seek */
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_stream = st;
