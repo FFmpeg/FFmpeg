@@ -174,6 +174,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_MULAW,       0x0007 },
     { CODEC_ID_WMAVOICE,        0x000A },
     { CODEC_ID_ADPCM_IMA_WAV,   0x0011 },
+    { CODEC_ID_PCM_ZORK,        0x0011 }, /* must come after adpcm_ima_wav in this list */
     { CODEC_ID_ADPCM_YAMAHA,    0x0020 },
     { CODEC_ID_TRUESPEECH,      0x0022 },
     { CODEC_ID_GSM_MS,          0x0031 },
@@ -241,7 +242,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
         enc->codec_id == CODEC_ID_PCM_ALAW ||
-        enc->codec_id == CODEC_ID_PCM_MULAW) {
+        enc->codec_id == CODEC_ID_PCM_MULAW ||
+        enc->codec_id == CODEC_ID_PCM_ZORK) {
         bps = 8;
     } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
