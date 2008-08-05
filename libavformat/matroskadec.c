@@ -1218,12 +1218,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                             if ((res = ebml_read_uint(matroska, &id,
                                                       &num)) < 0)
                                 break;
-                            if (num)
-                                track->flags |=
-                                    MATROSKA_VIDEOTRACK_INTERLACED;
-                            else
-                                track->flags &=
-                                    ~MATROSKA_VIDEOTRACK_INTERLACED;
                             break;
                         }
 
@@ -1391,10 +1385,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                if (num)
-                    track->flags |= MATROSKA_TRACK_ENABLED;
-                else
-                    track->flags &= ~MATROSKA_TRACK_ENABLED;
                 break;
             }
 
@@ -1416,10 +1406,6 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                if (num)
-                    track->flags |= MATROSKA_TRACK_LACING;
-                else
-                    track->flags &= ~MATROSKA_TRACK_LACING;
                 break;
             }
 

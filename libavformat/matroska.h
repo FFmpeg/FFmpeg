@@ -195,15 +195,8 @@ typedef enum {
  */
 
 typedef enum {
-  MATROSKA_TRACK_ENABLED = (1<<0),
   MATROSKA_TRACK_DEFAULT = (1<<1),
-  MATROSKA_TRACK_LACING  = (1<<2),
-  MATROSKA_TRACK_SHIFT   = (1<<16)
 } MatroskaTrackFlags;
-
-typedef enum {
-  MATROSKA_VIDEOTRACK_INTERLACED = (MATROSKA_TRACK_SHIFT<<0)
-} MatroskaVideoTrackFlags;
 
 /*
  * Matroska Codec IDs. Strings.
