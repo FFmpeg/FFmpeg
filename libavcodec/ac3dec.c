@@ -383,7 +383,7 @@ static void decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
  * range using the coupling coefficients and coupling coordinates.
  * reference: Section 7.4.3 Coupling Coordinate Format
  */
-static void uncouple_channels(AC3DecodeContext *s)
+static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 {
     int i, j, ch, bnd, subbnd;
 
@@ -546,7 +546,7 @@ static void get_transform_coeffs(AC3DecodeContext *s)
         if (s->channel_in_cpl[ch])  {
             if (!got_cplchan) {
                 get_transform_coeffs_ch(s, CPL_CH, &m);
-                uncouple_channels(s);
+                calc_transform_coeffs_cpl(s);
                 got_cplchan = 1;
             }
             end = s->end_freq[CPL_CH];
