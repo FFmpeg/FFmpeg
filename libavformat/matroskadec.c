@@ -205,9 +205,6 @@ typedef struct MatroskaDemuxContext {
     AVPacket **packets;
     int num_packets;
 
-    /* have we already parse metadata/cues/clusters? */
-    int metadata_parsed;
-    int index_parsed;
     int done;
     int has_cluster_id;
 
