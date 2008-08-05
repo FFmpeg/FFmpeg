@@ -1,6 +1,6 @@
 /*
- * Matroska file demuxer (no muxer yet)
- * Copyright (c) 2003-2004 The ffmpeg Project
+ * Matroska file demuxer
+ * Copyright (c) 2003-2008 The ffmpeg Project
  *
  * This file is part of FFmpeg.
  *
@@ -24,8 +24,8 @@
  * Matroska file demuxer
  * by Ronald Bultje <rbultje@ronald.bitfreak.net>
  * with a little help from Moritz Bunkus <moritz@bunkus.org>
- * Specs available on the matroska project page:
- * http://www.matroska.org/.
+ * totally reworked by Aurelien Jacobs <aurel@gnuage.org>
+ * Specs available on the matroska project page: http://www.matroska.org/.
  */
 
 #include "avformat.h"
