@@ -43,7 +43,7 @@
 #define EBML_ID_VOID               0xEC
 
 /*
- * Matroska element IDs, max. 32 bit
+ * Matroska element IDs, max. 32 bits
  */
 
 /* toplevel segment */
