@@ -846,7 +846,7 @@ static int matroska_probe(AVProbeData *p)
     return 0;
 }
 
-static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, int once);
 
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
@@ -881,8 +881,8 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
                          matroska->segment_start = url_ftell(matroska->ctx->pb);
-                     return ebml_parse(matroska, syntax->def.n, data, 0);
-    case EBML_PASS:  return ebml_parse(matroska, syntax->def.n, data, 1);
+                     return ebml_parse_nest(matroska, syntax->def.n, data, 0);
+    case EBML_PASS:  return ebml_parse_nest(matroska, syntax->def.n, data, 1);
     case EBML_STOP:  *(int *)data = 1;      return 1;
     default:         url_fskip(pb, length); return 0;
     }
@@ -905,7 +905,7 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     return ebml_parse_elem(matroska, &syntax[i], data);
 }
 
-static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, int once)
 {
     int i, res = 0;
@@ -1125,7 +1125,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     matroska->ctx = s;
 
     /* First read the EBML header. */
-    if (ebml_parse(matroska, ebml_syntax, &ebml, 1)
+    if (ebml_parse_nest(matroska, ebml_syntax, &ebml, 1)
         || ebml.version > EBML_VERSION       || ebml.max_size > sizeof(uint64_t)
         || ebml.id_length > sizeof(uint32_t) || strcmp(ebml.doctype, "matroska")
         || ebml.doctype_version > 2) {
@@ -1138,7 +1138,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
-    if (ebml_parse(matroska, matroska_segments, matroska, 1) < 0)
+    if (ebml_parse_nest(matroska, matroska_segments, matroska, 1) < 0)
         return -1;
     matroska_execute_seekhead(matroska);
 
@@ -1628,7 +1628,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaCluster cluster = { 0 };
     EbmlList *blocks_list;
     MatroskaBlock *blocks;
-    int i, res = ebml_parse(matroska, matroska_clusters, &cluster, 1);
+    int i, res = ebml_parse_nest(matroska, matroska_clusters, &cluster, 1);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
     for (i=0; !res && i<blocks_list->nb_elem; i++)
