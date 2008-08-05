@@ -194,9 +194,6 @@ typedef struct {
      * for ( = that are available to the calling program). */
     int num_streams;
 
-    /* cache for ID peeking */
-    uint32_t peek_id;
-
     /* byte position of the segment inside the stream */
     offset_t segment_start;
 
@@ -534,16 +531,10 @@ static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
     int read;
     uint64_t total;
 
-    /* if we re-call this, use our cached ID */
-    if (matroska->peek_id != 0) {
-        *id = matroska->peek_id;
-        return 0;
-    }
-
     /* read out the "EBML number", include tag in ID */
     if ((read = ebml_read_num(matroska, 4, &total)) < 0)
         return read;
-    *id = matroska->peek_id  = total | (1 << (read * 7));
+    *id = total | (1 << (read * 7));
 
     return 0;
 }
@@ -555,9 +546,6 @@ static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
 static int ebml_read_element_length(MatroskaDemuxContext *matroska,
                                     uint64_t *length)
 {
-    /* clear cache since we're now beyond that data point */
-    matroska->peek_id = 0;
-
     /* read out the "EBML number", include tag in ID */
     return ebml_read_num(matroska, 8, length);
 }
@@ -569,9 +557,6 @@ static int ebml_read_element_length(MatroskaDemuxContext *matroska,
 static int ebml_read_seek(MatroskaDemuxContext *matroska, offset_t offset)
 {
     ByteIOContext *pb = matroska->ctx->pb;
-
-    /* clear ID cache, if any */
-    matroska->peek_id = 0;
 
     return (url_fseek(pb, offset, SEEK_SET) == offset) ? 0 : -1;
 }
@@ -1043,7 +1028,6 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 {
     EbmlList *seekhead_list = &matroska->seekhead;
     MatroskaSeekhead *seekhead = seekhead_list->elem;
-    uint32_t peek_id_cache = matroska->peek_id;
     uint32_t level_up = matroska->level_up;
     offset_t before_pos = url_ftell(matroska->ctx->pb);
     MatroskaLevel level;
@@ -1086,7 +1070,6 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 
     /* seek back */
     ebml_read_seek(matroska, before_pos);
-    matroska->peek_id = peek_id_cache;
     matroska->level_up = level_up;
 }
 
@@ -1682,7 +1665,6 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_stream = st;
-    matroska->peek_id = 0;
     av_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
 }
