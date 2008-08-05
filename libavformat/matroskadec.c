@@ -80,6 +80,14 @@ typedef struct {
     int64_t  pos;
 } EbmlBin;
 
+typedef struct {
+    uint64_t version;
+    uint64_t max_size;
+    uint64_t id_length;
+    char    *doctype;
+    uint64_t doctype_version;
+} Ebml;
+
 typedef struct Track {
     MatroskaTrackType type;
 
@@ -202,6 +210,23 @@ typedef struct MatroskaDemuxContext {
 } MatroskaDemuxContext;
 
 #define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
+
+static EbmlSyntax ebml_header[] = {
+    { EBML_ID_EBMLREADVERSION,        EBML_UINT, 0, offsetof(Ebml,version), {.u=EBML_VERSION} },
+    { EBML_ID_EBMLMAXSIZELENGTH,      EBML_UINT, 0, offsetof(Ebml,max_size), {.u=8} },
+    { EBML_ID_EBMLMAXIDLENGTH,        EBML_UINT, 0, offsetof(Ebml,id_length), {.u=4} },
+    { EBML_ID_DOCTYPE,                EBML_STR,  0, offsetof(Ebml,doctype), {.s="(none)"} },
+    { EBML_ID_DOCTYPEREADVERSION,     EBML_UINT, 0, offsetof(Ebml,doctype_version), {.u=1} },
+    { EBML_ID_EBMLVERSION,            EBML_NONE },
+    { EBML_ID_DOCTYPEVERSION,         EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax ebml_syntax[] = {
+    { EBML_ID_HEADER,                 EBML_NEST, 0, 0, {.n=ebml_header} },
+    { 0 }
+};
 
 /*
  * The first few functions handle EBML file parsing. The rest
@@ -692,130 +717,6 @@ matroska_ebmlnum_sint (uint8_t  *data,
         *num = unum - ((1LL << ((7 * res) - 1)) - 1);
 
     return res;
-}
-
-/*
- * Read an EBML header.
- * 0 is success, < 0 is failure.
- */
-
-static int
-ebml_read_header (MatroskaDemuxContext *matroska,
-                  char                **doctype,
-                  int                  *version)
-{
-    uint32_t id;
-    int level_up, res = 0;
-
-    /* default init */
-    if (doctype)
-        *doctype = NULL;
-    if (version)
-        *version = 1;
-
-    if (!(id = ebml_peek_id(matroska, &level_up)) ||
-        level_up != 0 || id != EBML_ID_HEADER) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "This is not an EBML file (id=0x%x/0x%x)\n", id, EBML_ID_HEADER);
-        return AVERROR_INVALIDDATA;
-    }
-    if ((res = ebml_read_master(matroska, &id)) < 0)
-        return res;
-
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &level_up)))
-            return AVERROR(EIO);
-
-        /* end-of-header */
-        if (level_up)
-            break;
-
-        switch (id) {
-            /* is our read version uptodate? */
-            case EBML_ID_EBMLREADVERSION: {
-                uint64_t num;
-
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    return res;
-                if (num > EBML_VERSION) {
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "EBML version %"PRIu64" (> %d) is not supported\n",
-                           num, EBML_VERSION);
-                    return AVERROR_INVALIDDATA;
-                }
-                break;
-            }
-
-            /* we only handle 8 byte lengths at max */
-            case EBML_ID_EBMLMAXSIZELENGTH: {
-                uint64_t num;
-
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    return res;
-                if (num > sizeof(uint64_t)) {
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "Integers of size %"PRIu64" (> %zd) not supported\n",
-                           num, sizeof(uint64_t));
-                    return AVERROR_INVALIDDATA;
-                }
-                break;
-            }
-
-            /* we handle 4 byte IDs at max */
-            case EBML_ID_EBMLMAXIDLENGTH: {
-                uint64_t num;
-
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    return res;
-                if (num > sizeof(uint32_t)) {
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "IDs of size %"PRIu64" (> %zu) not supported\n",
-                            num, sizeof(uint32_t));
-                    return AVERROR_INVALIDDATA;
-                }
-                break;
-            }
-
-            case EBML_ID_DOCTYPE: {
-                char *text;
-
-                if ((res = ebml_read_ascii(matroska, &id, &text)) < 0)
-                    return res;
-                if (doctype) {
-                    if (*doctype)
-                        av_free(*doctype);
-                    *doctype = text;
-                } else
-                    av_free(text);
-                break;
-            }
-
-            case EBML_ID_DOCTYPEREADVERSION: {
-                uint64_t num;
-
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    return res;
-                if (version)
-                    *version = num;
-                break;
-            }
-
-            default:
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "Unknown data type 0x%x in EBML header", id);
-                /* pass-through */
-
-            case EBML_ID_VOID:
-            /* we ignore these two, as they don't tell us anything we
-             * care about */
-            case EBML_ID_EBMLVERSION:
-            case EBML_ID_DOCTYPEVERSION:
-                res = ebml_read_skip (matroska);
-                break;
-        }
-    }
-
-    return 0;
 }
 
 
@@ -2500,31 +2401,24 @@ matroska_read_header (AVFormatContext    *s,
                       AVFormatParameters *ap)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    char *doctype;
-    int version, last_level, res = 0;
+    int last_level, res = 0;
+    Ebml ebml = { 0 };
     uint32_t id;
 
     matroska->ctx = s;
 
     /* First read the EBML header. */
-    doctype = NULL;
-    if ((res = ebml_read_header(matroska, &doctype, &version)) < 0)
-        return res;
-    if ((doctype == NULL) || strcmp(doctype, "matroska")) {
+    if (ebml_parse(matroska, ebml_syntax, &ebml, 0, 1)
+        || ebml.version > EBML_VERSION       || ebml.max_size > sizeof(uint64_t)
+        || ebml.id_length > sizeof(uint32_t) || strcmp(ebml.doctype, "matroska")
+        || ebml.doctype_version > 2) {
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Wrong EBML doctype ('%s' != 'matroska').\n",
-               doctype ? doctype : "(none)");
-        if (doctype)
-            av_free(doctype);
+               "EBML header using unsupported features\n"
+               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
+               ebml.version, ebml.doctype, ebml.doctype_version);
         return AVERROR_NOFMT;
     }
-    av_free(doctype);
-    if (version > 2) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Matroska demuxer version 2 too old for file version %d\n",
-               version);
-        return AVERROR_NOFMT;
-    }
+    ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
     while (1) {
