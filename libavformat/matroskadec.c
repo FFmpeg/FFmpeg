@@ -195,7 +195,9 @@ typedef struct MatroskaDemuxContext {
     int level_up;
 
     /* timescale in the file */
-    int64_t time_scale;
+    uint64_t time_scale;
+    double   duration;
+    char    *title;
     EbmlList attachments;
     EbmlList chapters;
     EbmlList index;
@@ -242,6 +244,18 @@ static EbmlSyntax ebml_header[] = {
 
 static EbmlSyntax ebml_syntax[] = {
     { EBML_ID_HEADER,                 EBML_NEST, 0, 0, {.n=ebml_header} },
+    { 0 }
+};
+
+static EbmlSyntax matroska_info[] = {
+    { MATROSKA_ID_TIMECODESCALE,      EBML_UINT,  0, offsetof(MatroskaDemuxContext,time_scale), {.u=1000000} },
+    { MATROSKA_ID_DURATION,           EBML_FLOAT, 0, offsetof(MatroskaDemuxContext,duration) },
+    { MATROSKA_ID_TITLE,              EBML_UTF8,  0, offsetof(MatroskaDemuxContext,title) },
+    { MATROSKA_ID_WRITINGAPP,         EBML_NONE },
+    { MATROSKA_ID_MUXINGAPP,          EBML_NONE },
+    { MATROSKA_ID_DATEUTC,            EBML_NONE },
+    { MATROSKA_ID_SEGMENTUID,         EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
     { 0 }
 };
 
@@ -1062,67 +1076,14 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
 static int
 matroska_parse_info (MatroskaDemuxContext *matroska)
 {
-    int res = 0;
-    uint32_t id;
+    int res = ebml_parse(matroska, matroska_info, matroska, MATROSKA_ID_INFO, 0);
 
-    av_log(matroska->ctx, AV_LOG_DEBUG, "Parsing info...\n");
-
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-            /* cluster timecode */
-            case MATROSKA_ID_TIMECODESCALE: {
-                uint64_t num;
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
-                    break;
-                matroska->time_scale = num;
-                break;
-            }
-
-            case MATROSKA_ID_DURATION: {
-                double num;
-                if ((res = ebml_read_float(matroska, &id, &num)) < 0)
-                    break;
-                matroska->ctx->duration = num * matroska->time_scale * 1000 / AV_TIME_BASE;
-                break;
-            }
-
-            case MATROSKA_ID_TITLE: {
-                char *text;
-                if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
-                    break;
-                strncpy(matroska->ctx->title, text,
-                        sizeof(matroska->ctx->title)-1);
-                av_free(text);
-                break;
-            }
-
-            default:
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "Unknown entry 0x%x in info header\n", id);
-                /* fall-through */
-
-            case MATROSKA_ID_WRITINGAPP:
-            case MATROSKA_ID_MUXINGAPP:
-            case MATROSKA_ID_DATEUTC:
-            case MATROSKA_ID_SEGMENTUID:
-            case EBML_ID_VOID:
-                res = ebml_read_skip(matroska);
-                break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-    }
+    if (matroska->duration)
+        matroska->ctx->duration = matroska->duration * matroska->time_scale
+                                  * 1000 / AV_TIME_BASE;
+    if (matroska->title)
+        strncpy(matroska->ctx->title, matroska->title,
+                sizeof(matroska->ctx->title)-1);
 
     return res;
 }
@@ -2154,8 +2115,6 @@ matroska_read_header (AVFormatContext    *s,
         switch (id) {
             /* stream info */
             case MATROSKA_ID_INFO: {
-                if ((res = ebml_read_master(matroska, &id)) < 0)
-                    break;
                 res = matroska_parse_info(matroska);
                 break;
             }
