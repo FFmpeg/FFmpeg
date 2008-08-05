@@ -1138,12 +1138,12 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (st == NULL)
             return AVERROR(ENOMEM);
 
-        if (!strcmp(track->codec_id, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC)
+        if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC")
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
-        } else if (!strcmp(track->codec_id, MATROSKA_CODEC_ID_AUDIO_ACM)
+        } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 18
                    && track->codec_priv.data != NULL) {
             uint16_t tag = AV_RL16(track->codec_priv.data);

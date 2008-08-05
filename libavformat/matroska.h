@@ -203,9 +203,6 @@ typedef struct CodecMime{
     enum CodecID id;
 }CodecMime;
 
-#define MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC   "V_MS/VFW/FOURCC"
-#define MATROSKA_CODEC_ID_AUDIO_ACM          "A_MS/ACM"
-
 /* max. depth in the EBML tree structure */
 #define EBML_MAX_DEPTH 16
 

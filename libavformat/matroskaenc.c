@@ -587,7 +587,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                     put_ebml_string(pb, MATROSKA_ID_CODECID, "V_QUICKTIME");
                 else if (!native_id)
                     // if there is no mkv-specific codec ID, use VFW mode
-                    put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC);
+                    put_ebml_string(pb, MATROSKA_ID_CODECID, "V_MS/VFW/FOURCC");
 
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
                 // XXX: interlace flag?
@@ -607,7 +607,7 @@ static int mkv_write_tracks(AVFormatContext *s)
 
                 if (!native_id)
                     // no mkv-specific ID, use ACM mode
-                    put_ebml_string(pb, MATROSKA_ID_CODECID, MATROSKA_CODEC_ID_AUDIO_ACM);
+                    put_ebml_string(pb, MATROSKA_ID_CODECID, "A_MS/ACM");
 
                 subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 0);
                 put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , codec->channels);
