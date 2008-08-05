@@ -1305,10 +1305,6 @@ matroska_read_header (AVFormatContext    *s,
         return -1;
     matroska_execute_seekhead(matroska);
 
-    /* Have we found a cluster? */
-    if (ebml_peek_id(matroska, NULL) != MATROSKA_ID_CLUSTER)
-        return -1;
-
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
