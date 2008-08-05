@@ -159,6 +159,12 @@ typedef struct MatroskaSubtitleTrack {
                                     sizeof(MatroskaSubtitleTrack)))
 
 typedef struct {
+    char *filename;
+    char *mime;
+    EbmlBin bin;
+} MatroskaAttachement;
+
+typedef struct {
     uint64_t start;
     uint64_t end;
     uint64_t uid;
@@ -190,6 +196,7 @@ typedef struct MatroskaDemuxContext {
 
     /* timescale in the file */
     int64_t time_scale;
+    EbmlList attachments;
     EbmlList chapters;
     EbmlList index;
 
@@ -235,6 +242,21 @@ static EbmlSyntax ebml_header[] = {
 
 static EbmlSyntax ebml_syntax[] = {
     { EBML_ID_HEADER,                 EBML_NEST, 0, 0, {.n=ebml_header} },
+    { 0 }
+};
+
+static EbmlSyntax matroska_attachment[] = {
+    { MATROSKA_ID_FILENAME,           EBML_UTF8, 0, offsetof(MatroskaAttachement,filename) },
+    { MATROSKA_ID_FILEMIMETYPE,       EBML_STR,  0, offsetof(MatroskaAttachement,mime) },
+    { MATROSKA_ID_FILEDATA,           EBML_BIN,  0, offsetof(MatroskaAttachement,bin) },
+    { MATROSKA_ID_FILEUID,            EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_attachments[] = {
+    { MATROSKA_ID_ATTACHEDFILE,       EBML_NEST, sizeof(MatroskaAttachement), offsetof(MatroskaDemuxContext,attachments), {.n=matroska_attachment} },
+    { EBML_ID_VOID,                   EBML_NONE },
     { 0 }
 };
 
@@ -1988,110 +2010,37 @@ static int
 matroska_parse_attachments(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    int res = 0;
-    uint32_t id;
+    EbmlList *attachements_list = &matroska->attachments;
+    MatroskaAttachement *attachements;
+    int i, j, res;
 
-    av_log(matroska->ctx, AV_LOG_DEBUG, "parsing attachments...\n");
+    res = ebml_parse(matroska, matroska_attachments, matroska, MATROSKA_ID_ATTACHMENTS, 0);
 
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-        case MATROSKA_ID_ATTACHEDFILE: {
-            char* name = NULL;
-            char* mime = NULL;
-            uint8_t* data = NULL;
-            int i, data_size = 0;
-            AVStream *st;
-
-            if ((res = ebml_read_master(matroska, &id)) < 0)
-                break;
-
-            while (res == 0) {
-                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                    res = AVERROR(EIO);
-                    break;
-                } else if (matroska->level_up) {
-                    matroska->level_up--;
-                    break;
-                }
-
-                switch (id) {
-                case MATROSKA_ID_FILENAME:
-                    res = ebml_read_utf8 (matroska, &id, &name);
-                    break;
-
-                case MATROSKA_ID_FILEMIMETYPE:
-                    res = ebml_read_ascii (matroska, &id, &mime);
-                    break;
-
-                case MATROSKA_ID_FILEDATA:
-                    res = ebml_read_binary(matroska, &id, &data, &data_size);
-                    break;
-
-                default:
-                    av_log(matroska->ctx, AV_LOG_INFO,
-                           "Unknown attachedfile ID 0x%x\n", id);
-                case MATROSKA_ID_FILEUID:
-                case EBML_ID_VOID:
-                    res = ebml_read_skip(matroska);
-                    break;
-                }
-
-                if (matroska->level_up) {
-                    matroska->level_up--;
-                    break;
-                }
-            }
-
-            if (!(name && mime && data && data_size > 0)) {
-                av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
-                break;
-            }
-
-            st = av_new_stream(s, matroska->num_streams++);
+    attachements = attachements_list->elem;
+    for (j=0; j<attachements_list->nb_elem; j++) {
+        if (!(attachements[j].filename && attachements[j].mime &&
+              attachements[j].bin.data && attachements[j].bin.size > 0)) {
+            av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
+        } else {
+            AVStream *st = av_new_stream(s, matroska->num_streams++);
             if (st == NULL)
-                return AVERROR(ENOMEM);
-            st->filename = av_strdup(name);
+                break;
+            st->filename          = av_strdup(attachements[j].filename);
             st->codec->codec_id = CODEC_ID_NONE;
             st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
-            st->codec->extradata = av_malloc(data_size);
+            st->codec->extradata  = av_malloc(attachements[j].bin.size);
             if(st->codec->extradata == NULL)
-                return AVERROR(ENOMEM);
-            st->codec->extradata_size = data_size;
-            memcpy(st->codec->extradata, data, data_size);
+                break;
+            st->codec->extradata_size = attachements[j].bin.size;
+            memcpy(st->codec->extradata, attachements[j].bin.data, attachements[j].bin.size);
 
             for (i=0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++) {
-                if (!strncmp(ff_mkv_mime_tags[i].str, mime,
+                if (!strncmp(ff_mkv_mime_tags[i].str, attachements[j].mime,
                              strlen(ff_mkv_mime_tags[i].str))) {
                     st->codec->codec_id = ff_mkv_mime_tags[i].id;
                     break;
                 }
             }
-
-            av_log(matroska->ctx, AV_LOG_DEBUG, "new attachment: %s, %s, size %d \n", name, mime, data_size);
-            break;
-        }
-
-        default:
-            av_log(matroska->ctx, AV_LOG_INFO,
-                   "Unknown attachments ID 0x%x\n", id);
-            /* fall-through */
-
-        case EBML_ID_VOID:
-            res = ebml_read_skip(matroska);
-            break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
         }
     }
 
@@ -2246,8 +2195,6 @@ matroska_read_header (AVFormatContext    *s,
             }
 
             case MATROSKA_ID_ATTACHMENTS: {
-                if ((res = ebml_read_master(matroska, &id)) < 0)
-                    break;
                 res = matroska_parse_attachments(s);
                 break;
             }
