@@ -559,10 +559,6 @@ ebml_read_element_id (MatroskaDemuxContext *matroska,
         return read;
     *id = matroska->peek_id  = total | (1 << (read * 7));
 
-    /* level tracking */
-    if (level_up)
-        *level_up = ebml_read_element_level_up(matroska);
-
     return read;
 }
 
@@ -591,9 +587,14 @@ ebml_peek_id (MatroskaDemuxContext *matroska,
               int                  *level_up)
 {
     uint32_t id;
+    int res;
 
-    if (ebml_read_element_id(matroska, &id, level_up) < 0)
+    res = ebml_read_element_id(matroska, &id, NULL);
+    if (res < 0)
         return 0;
+
+    if (res > 0 && level_up)
+        *level_up = ebml_read_element_level_up(matroska);
 
     return id;
 }
