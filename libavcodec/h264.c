@@ -1173,17 +1173,8 @@ single_col:
         }
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             /* FIXME assumes direct_8x8_inference == 1 */
-            int y_shift;
-            int ref_shift;
-
-            if(IS_INTERLACED(*mb_type)){
-                /* frame to field scaling */
-                y_shift = 0;
-                ref_shift= FRAME_MBAFF ? 0 : 1;
-            }else{
-                y_shift = 2;
-                ref_shift= FRAME_MBAFF ? 2 : 1;
-            }
+            int y_shift  = 2*!IS_INTERLACED(*mb_type);
+            int ref_shift= FRAME_MBAFF ? y_shift : 1;
 
             for(i8=0; i8<4; i8++){
                 const int x8 = i8&1;
