@@ -147,7 +147,7 @@ static int eval_lpc_coeffs(const float *in, float *tgt, int n)
     return 0;
 }
 
-static void prodsum(float *tgt, const float *src, int len, int n)
+static void convolve(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
         tgt[n] = scalar_product_float(src, src - n, len);
@@ -190,8 +190,8 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
 
     colmult(work, window, hist, order + n + non_rec);
 
-    prodsum(buffer1, work + order    , n      , order);
-    prodsum(buffer2, work + order + n, non_rec, order);
+    convolve(buffer1, work + order    , n      , order);
+    convolve(buffer2, work + order + n, non_rec, order);
 
     for (i=0; i <= order; i++) {
         out2[i] = out2[i] * 0.5625 + buffer1[i];
