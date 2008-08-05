@@ -276,10 +276,9 @@ static int ac3_parse_header(AC3DecodeContext *s)
 static int parse_frame_header(AC3DecodeContext *s)
 {
     AC3HeaderInfo hdr;
-    GetBitContext *gbc = &s->gbc;
     int err;
 
-    err = ff_ac3_parse_header(gbc, &hdr);
+    err = ff_ac3_parse_header(&s->gbc, &hdr);
     if(err)
         return err;
 
