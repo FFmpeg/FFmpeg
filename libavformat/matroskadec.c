@@ -1482,9 +1482,8 @@ matroska_read_header (AVFormatContext    *s,
                 extradata[3] = 0xE5;
                 extradata[4] = 0x80 | (sri<<3);
                 extradata_size = 5;
-            } else {
+            } else
                 extradata_size = 2;
-            }
         }
 
         else if (codec_id == CODEC_ID_TTA) {
@@ -1538,11 +1537,10 @@ matroska_read_header (AVFormatContext    *s,
             }
         }
 
-        if (codec_id == CODEC_ID_NONE) {
+        if (codec_id == CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported CodecID %s.\n",
                    track->codec_id);
-        }
 
         av_set_pts_info(st, 64, matroska->time_scale*track->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
@@ -1677,9 +1675,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         return res;
     }
     st = track->stream;
-    if (st->discard >= AVDISCARD_ALL) {
+    if (st->discard >= AVDISCARD_ALL)
         return res;
-    }
     if (duration == AV_NOPTS_VALUE)
         duration = track->default_duration / matroska->time_scale;
 
@@ -1692,9 +1689,8 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
         is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
 
     if (matroska->skip_to_keyframe) {
-        if (!is_keyframe || st != matroska->skip_to_stream) {
+        if (!is_keyframe || st != matroska->skip_to_stream)
             return res;
-        }
         matroska->skip_to_keyframe = 0;
     }
 
