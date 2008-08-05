@@ -660,10 +660,7 @@ static int matroska_ebmlnum_sint(MatroskaDemuxContext *matroska,
         return res;
 
     /* make signed (weird way) */
-    if (unum == (uint64_t)-1)
-        *num = INT64_MAX;
-    else
-        *num = unum - ((1LL << ((7 * res) - 1)) - 1);
+    *num = unum - ((1LL << (7*res - 1)) - 1);
 
     return res;
 }
