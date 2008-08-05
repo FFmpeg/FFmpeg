@@ -44,6 +44,42 @@
 #include <bzlib.h>
 #endif
 
+typedef enum {
+    EBML_NONE,
+    EBML_UINT,
+    EBML_FLOAT,
+    EBML_STR,
+    EBML_UTF8,
+    EBML_BIN,
+    EBML_NEST,
+    EBML_PASS,
+    EBML_STOP,
+} EbmlType;
+
+typedef const struct EbmlSyntax {
+    uint32_t id;
+    EbmlType type;
+    int list_elem_size;
+    int data_offset;
+    union {
+        uint64_t    u;
+        double      f;
+        const char *s;
+        const struct EbmlSyntax *n;
+    } def;
+} EbmlSyntax;
+
+typedef struct {
+    int nb_elem;
+    void *elem;
+} EbmlList;
+
+typedef struct {
+    int      size;
+    uint8_t *data;
+    int64_t  pos;
+} EbmlBin;
+
 typedef struct Track {
     MatroskaTrackType type;
 
@@ -905,6 +941,133 @@ matroska_probe (AVProbeData *p)
 /*
  * From here on, it's all XML-style DTD stuff... Needs no comments.
  */
+
+static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+                      void *data, uint32_t expected_id, int once);
+
+static int ebml_parse_elem(MatroskaDemuxContext *matroska,
+                           EbmlSyntax *syntax, void *data)
+{
+    uint32_t id = syntax->id;
+    EbmlBin *bin;
+    int res;
+
+    data = (char *)data + syntax->data_offset;
+    if (syntax->list_elem_size) {
+        EbmlList *list = data;
+        list->elem = av_realloc(list->elem, (list->nb_elem+1)*syntax->list_elem_size);
+        data = (char*)list->elem + list->nb_elem*syntax->list_elem_size;
+        memset(data, 0, syntax->list_elem_size);
+        list->nb_elem++;
+    }
+    bin = data;
+
+    switch (syntax->type) {
+    case EBML_UINT:  return ebml_read_uint (matroska, &id, data);
+    case EBML_FLOAT: return ebml_read_float(matroska, &id, data);
+    case EBML_STR:
+    case EBML_UTF8:  av_free(*(char **)data);
+                     return ebml_read_ascii(matroska, &id, data);
+    case EBML_BIN:   av_free(bin->data);
+                     bin->pos = url_ftell(matroska->ctx->pb);
+                     return ebml_read_binary(matroska, &id, &bin->data,
+                                                            &bin->size);
+    case EBML_NEST:  if ((res=ebml_read_master(matroska, &id)) < 0)
+                         return res;
+                     if (id == MATROSKA_ID_SEGMENT)
+                         matroska->segment_start = url_ftell(matroska->ctx->pb);
+                     return ebml_parse(matroska, syntax->def.n, data, 0, 0);
+    case EBML_PASS:  return ebml_parse(matroska, syntax->def.n, data, 0, 1);
+    case EBML_STOP:  *(int *)data = 1;      return 1;
+    default:         return ebml_read_skip(matroska);
+    }
+}
+
+static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+                         uint32_t id, void *data)
+{
+    int i;
+    for (i=0; syntax[i].id; i++)
+        if (id == syntax[i].id)
+            break;
+    if (!syntax[i].id)
+        av_log(matroska->ctx, AV_LOG_INFO, "Unknown entry 0x%X\n", id);
+    return ebml_parse_elem(matroska, &syntax[i], data);
+}
+
+static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
+                      void *data, uint32_t expected_id, int once)
+{
+    int i, res = 0;
+    uint32_t id = 0;
+
+    for (i=0; syntax[i].id; i++)
+        switch (syntax[i].type) {
+        case EBML_UINT:
+            *(uint64_t *)((char *)data+syntax[i].data_offset) = syntax[i].def.u;
+            break;
+        case EBML_FLOAT:
+            *(double   *)((char *)data+syntax[i].data_offset) = syntax[i].def.f;
+            break;
+        case EBML_STR:
+        case EBML_UTF8:
+            *(char    **)((char *)data+syntax[i].data_offset) = av_strdup(syntax[i].def.s);
+            break;
+        }
+
+    if (expected_id) {
+        res = ebml_read_master(matroska, &id);
+        if (id != expected_id)
+            return AVERROR_INVALIDDATA;
+        if (id == MATROSKA_ID_SEGMENT)
+            matroska->segment_start = url_ftell(matroska->ctx->pb);
+    }
+
+    while (!res) {
+        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
+            res = AVERROR(EIO);
+            break;
+        } else if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+
+        res = ebml_parse_id(matroska, syntax, id, data);
+        if (once)
+            break;
+
+
+        if (matroska->level_up) {
+            matroska->level_up--;
+            break;
+        }
+    }
+
+    return res;
+}
+
+static void ebml_free(EbmlSyntax *syntax, void *data)
+{
+    int i, j;
+    for (i=0; syntax[i].id; i++) {
+        void *data_off = (char *)data + syntax[i].data_offset;
+        switch (syntax[i].type) {
+        case EBML_STR:
+        case EBML_UTF8:  av_freep(data_off);                      break;
+        case EBML_BIN:   av_freep(&((EbmlBin *)data_off)->data);  break;
+        case EBML_NEST:
+            if (syntax[i].list_elem_size) {
+                EbmlList *list = data_off;
+                char *ptr = list->elem;
+                for (j=0; j<list->nb_elem; j++, ptr+=syntax[i].list_elem_size)
+                    ebml_free(syntax[i].def.n, ptr);
+                av_free(list->elem);
+            } else
+                ebml_free(syntax[i].def.n, data_off);
+        default:  break;
+        }
+    }
+}
 
 static int
 matroska_parse_info (MatroskaDemuxContext *matroska)
