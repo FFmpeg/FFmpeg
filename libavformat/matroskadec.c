@@ -542,8 +542,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
  */
 static int
 ebml_read_element_id (MatroskaDemuxContext *matroska,
-                      uint32_t             *id,
-                      int                  *level_up)
+                      uint32_t             *id)
 {
     int read;
     uint64_t total;
@@ -589,7 +588,7 @@ ebml_peek_id (MatroskaDemuxContext *matroska,
     uint32_t id;
     int res;
 
-    res = ebml_read_element_id(matroska, &id, NULL);
+    res = ebml_read_element_id(matroska, &id);
     if (res < 0)
         return 0;
 
@@ -627,7 +626,7 @@ ebml_read_skip (MatroskaDemuxContext *matroska)
     uint64_t length;
     int res;
 
-    if ((res = ebml_read_element_id(matroska, &id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, &id)) < 0 ||
         (res = ebml_read_element_length(matroska, &length)) < 0)
         return res;
 
@@ -649,7 +648,7 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
     int n = 0, size, res;
     uint64_t rlength;
 
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
         (res = ebml_read_element_length(matroska, &rlength)) < 0)
         return res;
     size = rlength;
@@ -682,7 +681,7 @@ ebml_read_float (MatroskaDemuxContext *matroska,
     int size, res;
     uint64_t rlength;
 
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
         (res = ebml_read_element_length(matroska, &rlength)) < 0)
         return res;
     size = rlength;
@@ -715,7 +714,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
     int size, res;
     uint64_t rlength;
 
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
         (res = ebml_read_element_length(matroska, &rlength)) < 0)
         return res;
     size = rlength;
@@ -752,7 +751,7 @@ ebml_read_master (MatroskaDemuxContext *matroska,
     MatroskaLevel *level;
     int res;
 
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
         (res = ebml_read_element_length(matroska, &length)) < 0)
         return res;
 
@@ -783,7 +782,7 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
     uint64_t rlength;
     int res;
 
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
+    if ((res = ebml_read_element_id(matroska, id)) < 0 ||
         (res = ebml_read_element_length(matroska, &rlength)) < 0)
         return res;
     *size = rlength;
