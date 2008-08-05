@@ -440,8 +440,8 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(s->flags & CODEC_FLAG_LOW_DELAY){
-        if (s->codec_id != CODEC_ID_MPEG2VIDEO && s->codec_id != CODEC_ID_MPEG1VIDEO){
-            av_log(avctx, AV_LOG_ERROR, "low delay forcing is only available for mpeg1/2\n");
+        if (s->codec_id != CODEC_ID_MPEG2VIDEO){
+            av_log(avctx, AV_LOG_ERROR, "low delay forcing is only available for mpeg2\n");
             return -1;
         }
         if (s->max_b_frames != 0){
