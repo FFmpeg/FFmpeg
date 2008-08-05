@@ -1156,13 +1156,6 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
 {
     int res = ebml_parse(matroska, matroska_info, matroska, MATROSKA_ID_INFO, 0);
 
-    if (matroska->duration)
-        matroska->ctx->duration = matroska->duration * matroska->time_scale
-                                  * 1000 / AV_TIME_BASE;
-    if (matroska->title)
-        strncpy(matroska->ctx->title, matroska->title,
-                sizeof(matroska->ctx->title)-1);
-
     return res;
 }
 
@@ -1246,76 +1239,9 @@ matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
 static int
 matroska_parse_tracks (MatroskaDemuxContext *matroska)
 {
-    MatroskaTrack *tracks;
     int i, res;
 
     res = ebml_parse(matroska, matroska_tracks, matroska, MATROSKA_ID_TRACKS, 0);
-
-    tracks = matroska->tracks.elem;
-    for (i=0; i<matroska->tracks.nb_elem; i++) {
-        MatroskaTrack *track = &tracks[i];
-        EbmlList *encodings_list = &tracks->encodings;
-        MatroskaTrackEncoding *encodings = encodings_list->elem;
-
-        if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
-            track->type != MATROSKA_TRACK_TYPE_AUDIO &&
-            track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
-            av_log(matroska->ctx, AV_LOG_INFO,
-                   "Unknown or unsupported track type %"PRIu64"\n",
-                   track->type);
-            continue;
-        }
-
-        if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            if (!track->default_duration)
-                track->default_duration = 1000000000/track->video.frame_rate;
-            if (!track->video.display_width)
-                track->video.display_width = track->video.pixel_width;
-            if (!track->video.display_height)
-                track->video.display_height = track->video.pixel_height;
-        } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
-            if (!track->audio.out_samplerate)
-                track->audio.out_samplerate = track->audio.samplerate;
-        }
-        if (encodings_list->nb_elem > 1) {
-            av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Multiple combined encodings no supported");
-        } else if (encodings_list->nb_elem == 1) {
-            if (encodings[0].type ||
-                (encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
-#ifdef CONFIG_ZLIB
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
-#endif
-#ifdef CONFIG_BZLIB
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
-#endif
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO)) {
-                encodings[0].scope = 0;
-                av_log(matroska->ctx, AV_LOG_ERROR,
-                       "Unsupported encoding type");
-            } else if (track->codec_priv.size && encodings[0].scope&2) {
-                uint8_t *codec_priv = track->codec_priv.data;
-                int offset = matroska_decode_buffer(&track->codec_priv.data,
-                                                    &track->codec_priv.size,
-                                                    track);
-                if (offset < 0) {
-                    track->codec_priv.data = NULL;
-                    track->codec_priv.size = 0;
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "Failed to decode codec private data\n");
-                } else if (offset > 0) {
-                    track->codec_priv.data = av_malloc(track->codec_priv.size + offset);
-                    memcpy(track->codec_priv.data,
-                           encodings[0].compression.settings.data, offset);
-                    memcpy(track->codec_priv.data+offset, codec_priv,
-                           track->codec_priv.size);
-                    track->codec_priv.size += offset;
-                }
-                if (codec_priv != track->codec_priv.data)
-                    av_free(codec_priv);
-            }
-        }
-    }
 
     return res;
 }
@@ -1425,39 +1351,9 @@ static int
 matroska_parse_attachments(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    EbmlList *attachements_list = &matroska->attachments;
-    MatroskaAttachement *attachements;
     int i, j, res;
 
     res = ebml_parse(matroska, matroska_attachments, matroska, MATROSKA_ID_ATTACHMENTS, 0);
-
-    attachements = attachements_list->elem;
-    for (j=0; j<attachements_list->nb_elem; j++) {
-        if (!(attachements[j].filename && attachements[j].mime &&
-              attachements[j].bin.data && attachements[j].bin.size > 0)) {
-            av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
-        } else {
-            AVStream *st = av_new_stream(s, matroska->num_streams++);
-            if (st == NULL)
-                break;
-            st->filename          = av_strdup(attachements[j].filename);
-            st->codec->codec_id = CODEC_ID_NONE;
-            st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
-            st->codec->extradata  = av_malloc(attachements[j].bin.size);
-            if(st->codec->extradata == NULL)
-                break;
-            st->codec->extradata_size = attachements[j].bin.size;
-            memcpy(st->codec->extradata, attachements[j].bin.data, attachements[j].bin.size);
-
-            for (i=0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++) {
-                if (!strncmp(ff_mkv_mime_tags[i].str, attachements[j].mime,
-                             strlen(ff_mkv_mime_tags[i].str))) {
-                    st->codec->codec_id = ff_mkv_mime_tags[i].id;
-                    break;
-                }
-            }
-        }
-    }
 
     return res;
 }
@@ -1466,18 +1362,9 @@ static int
 matroska_parse_chapters(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    EbmlList *chapters_list = &matroska->chapters;
-    MatroskaChapter *chapters;
     int i, res;
 
     res = ebml_parse(matroska, matroska_chapters, matroska, MATROSKA_ID_CHAPTERS, 0);
-
-    chapters = chapters_list->elem;
-    for (i=0; i<chapters_list->nb_elem; i++)
-        if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid)
-            ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
-                           chapters[i].start, chapters[i].end,
-                           chapters[i].title);
 
     return res;
 }
@@ -1512,6 +1399,10 @@ matroska_read_header (AVFormatContext    *s,
                       AVFormatParameters *ap)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
+    EbmlList *attachements_list = &matroska->attachments;
+    MatroskaAttachement *attachements;
+    EbmlList *chapters_list = &matroska->chapters;
+    MatroskaChapter *chapters;
     MatroskaTrack *tracks;
     EbmlList *index_list;
     MatroskaIndex *index;
@@ -1643,17 +1534,84 @@ matroska_read_header (AVFormatContext    *s,
     if (ebml_peek_id(matroska, NULL) != MATROSKA_ID_CLUSTER)
         return -1;
 
+    if (matroska->duration)
+        matroska->ctx->duration = matroska->duration * matroska->time_scale
+                                  * 1000 / AV_TIME_BASE;
+    if (matroska->title)
+        strncpy(matroska->ctx->title, matroska->title,
+                sizeof(matroska->ctx->title)-1);
+
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
         enum CodecID codec_id = CODEC_ID_NONE;
+        EbmlList *encodings_list = &tracks->encodings;
+        MatroskaTrackEncoding *encodings = encodings_list->elem;
         uint8_t *extradata = NULL;
         int extradata_size = 0;
         int extradata_offset = 0;
 
         /* Apply some sanity checks. */
+        if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
+            track->type != MATROSKA_TRACK_TYPE_AUDIO &&
+            track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
+            av_log(matroska->ctx, AV_LOG_INFO,
+                   "Unknown or unsupported track type %"PRIu64"\n",
+                   track->type);
+            continue;
+        }
         if (track->codec_id == NULL)
             continue;
+
+        if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            if (!track->default_duration)
+                track->default_duration = 1000000000/track->video.frame_rate;
+            if (!track->video.display_width)
+                track->video.display_width = track->video.pixel_width;
+            if (!track->video.display_height)
+                track->video.display_height = track->video.pixel_height;
+        } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
+            if (!track->audio.out_samplerate)
+                track->audio.out_samplerate = track->audio.samplerate;
+        }
+        if (encodings_list->nb_elem > 1) {
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "Multiple combined encodings no supported");
+        } else if (encodings_list->nb_elem == 1) {
+            if (encodings[0].type ||
+                (encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
+#ifdef CONFIG_ZLIB
+                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
+#endif
+#ifdef CONFIG_BZLIB
+                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
+#endif
+                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO)) {
+                encodings[0].scope = 0;
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Unsupported encoding type");
+            } else if (track->codec_priv.size && encodings[0].scope&2) {
+                uint8_t *codec_priv = track->codec_priv.data;
+                int offset = matroska_decode_buffer(&track->codec_priv.data,
+                                                    &track->codec_priv.size,
+                                                    track);
+                if (offset < 0) {
+                    track->codec_priv.data = NULL;
+                    track->codec_priv.size = 0;
+                    av_log(matroska->ctx, AV_LOG_ERROR,
+                           "Failed to decode codec private data\n");
+                } else if (offset > 0) {
+                    track->codec_priv.data = av_malloc(track->codec_priv.size + offset);
+                    memcpy(track->codec_priv.data,
+                           encodings[0].compression.settings.data, offset);
+                    memcpy(track->codec_priv.data+offset, codec_priv,
+                           track->codec_priv.size);
+                    track->codec_priv.size += offset;
+                }
+                if (codec_priv != track->codec_priv.data)
+                    av_free(codec_priv);
+            }
+        }
 
         for(j=0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++){
             if(!strncmp(ff_mkv_codec_tags[j].str, track->codec_id,
@@ -1824,6 +1782,41 @@ matroska_read_header (AVFormatContext    *s,
         /* What do we do with private data? E.g. for Vorbis. */
     }
     res = 0;
+
+    attachements = attachements_list->elem;
+    for (j=0; j<attachements_list->nb_elem; j++) {
+        if (!(attachements[j].filename && attachements[j].mime &&
+              attachements[j].bin.data && attachements[j].bin.size > 0)) {
+            av_log(matroska->ctx, AV_LOG_ERROR, "incomplete attachment\n");
+        } else {
+            AVStream *st = av_new_stream(s, matroska->num_streams++);
+            if (st == NULL)
+                break;
+            st->filename          = av_strdup(attachements[j].filename);
+            st->codec->codec_id = CODEC_ID_NONE;
+            st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
+            st->codec->extradata  = av_malloc(attachements[j].bin.size);
+            if(st->codec->extradata == NULL)
+                break;
+            st->codec->extradata_size = attachements[j].bin.size;
+            memcpy(st->codec->extradata, attachements[j].bin.data, attachements[j].bin.size);
+
+            for (i=0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++) {
+                if (!strncmp(ff_mkv_mime_tags[i].str, attachements[j].mime,
+                             strlen(ff_mkv_mime_tags[i].str))) {
+                    st->codec->codec_id = ff_mkv_mime_tags[i].id;
+                    break;
+                }
+            }
+        }
+    }
+
+    chapters = chapters_list->elem;
+    for (i=0; i<chapters_list->nb_elem; i++)
+        if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid)
+            ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
+                           chapters[i].start, chapters[i].end,
+                           chapters[i].title);
 
     index_list = &matroska->index;
     index = index_list->elem;
