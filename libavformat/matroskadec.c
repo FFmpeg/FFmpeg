@@ -1512,10 +1512,12 @@ matroska_read_header (AVFormatContext    *s,
                       AVFormatParameters *ap)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
+    MatroskaTrack *tracks;
     EbmlList *index_list;
     MatroskaIndex *index;
     int i, j, last_level, res = 0;
     Ebml ebml = { 0 };
+    AVStream *st;
     uint32_t id;
 
     matroska->ctx = s;
@@ -1642,10 +1644,7 @@ matroska_read_header (AVFormatContext    *s,
         return -1;
 
     {
-        MatroskaTrack *tracks = matroska->tracks.elem;
-        int i, j;
-        AVStream *st;
-
+        tracks = matroska->tracks.elem;
         for (i=0; i < matroska->tracks.nb_elem; i++) {
             MatroskaTrack *track = &tracks[i];
             enum CodecID codec_id = CODEC_ID_NONE;
