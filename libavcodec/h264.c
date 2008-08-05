@@ -920,7 +920,7 @@ static inline void direct_ref_list_init(H264Context * const h){
     for(list=0; list<2; list++){
         cur->ref_count[sidx][list] = h->ref_count[list];
         for(j=0; j<h->ref_count[list]; j++)
-            cur->ref_poc[sidx][list][j] = h->ref_list[list][j].poc;
+            cur->ref_poc[sidx][list][j] = 4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3);
     }
     if(s->picture_structure == PICT_FRAME){
         memcpy(cur->ref_count[0], cur->ref_count[1], sizeof(cur->ref_count[0]));
@@ -930,10 +930,12 @@ static inline void direct_ref_list_init(H264Context * const h){
         return;
     for(list=0; list<2; list++){
         for(i=0; i<ref1->ref_count[ref1sidx][list]; i++){
-            const int poc = ref1->ref_poc[ref1sidx][list][i];
+            int poc = ref1->ref_poc[ref1sidx][list][i];
+            if(((poc&3) == 3) != (s->picture_structure == PICT_FRAME))
+                poc= (poc&~3) + s->picture_structure;
             h->map_col_to_list0[list][i] = 0; /* bogus; fills in for missing frames */
             for(j=0; j<h->ref_count[list]; j++)
-                if(h->ref_list[list][j].poc == poc){
+                if(4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3) == poc){
                     h->map_col_to_list0[list][i] = j;
                     break;
                 }
