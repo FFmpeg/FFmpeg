@@ -2709,7 +2709,7 @@ matroska_read_header (AVFormatContext    *s,
 static int
 matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
                      int64_t pos, uint64_t cluster_time, uint64_t duration,
-                     int is_keyframe, int is_bframe)
+                     int is_keyframe)
 {
     int res = 0;
     int track;
@@ -2941,7 +2941,6 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 {
     int res = 0;
     uint32_t id;
-    int is_bframe = 0;
     int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
     uint64_t duration = AV_NOPTS_VALUE;
     uint8_t *data;
@@ -2984,8 +2983,6 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     matroska->packets[last_num_packets]->flags = 0;
                 if ((res = ebml_read_sint(matroska, &id, &num)) < 0)
                     break;
-                if (num > 0)
-                    is_bframe = 1;
                 break;
             }
 
@@ -3010,7 +3007,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
     if (size > 0)
         res = matroska_parse_block(matroska, data, size, pos, cluster_time,
-                                   duration, is_keyframe, is_bframe);
+                                   duration, is_keyframe);
 
     return res;
 }
@@ -3060,7 +3057,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 if (res == 0)
                     res = matroska_parse_block(matroska, data, size, pos,
                                                cluster_time, AV_NOPTS_VALUE,
-                                               -1, 0);
+                                               -1);
                 break;
 
             default:
