@@ -1638,7 +1638,10 @@ matroska_read_header (AVFormatContext    *s,
     matroska_execute_seekhead(matroska);
 
     /* Have we found a cluster? */
-    if (ebml_peek_id(matroska, NULL) == MATROSKA_ID_CLUSTER) {
+    if (ebml_peek_id(matroska, NULL) != MATROSKA_ID_CLUSTER)
+        return -1;
+
+    {
         MatroskaTrack *tracks = matroska->tracks.elem;
         int i, j;
         AVStream *st;
