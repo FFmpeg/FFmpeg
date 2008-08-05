@@ -1356,69 +1356,69 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
             || seekhead[i].id == MATROSKA_ID_CLUSTER)
             continue;
 
-                        /* seek */
-                        if (ebml_read_seek(matroska,
-                                           seekhead[i].pos+matroska->segment_start) < 0)
-                            continue;
+        /* seek */
+        if (ebml_read_seek(matroska,
+                           seekhead[i].pos+matroska->segment_start) < 0)
+            continue;
 
-                        /* we don't want to lose our seekhead level, so we add
-                         * a dummy. This is a crude hack. */
-                        if (matroska->num_levels == EBML_MAX_DEPTH) {
-                            av_log(matroska->ctx, AV_LOG_INFO,
-                                   "Max EBML element depth (%d) reached, "
-                                   "cannot parse further.\n", EBML_MAX_DEPTH);
-                            break;
-                        }
+        /* we don't want to lose our seekhead level, so we add
+         * a dummy. This is a crude hack. */
+        if (matroska->num_levels == EBML_MAX_DEPTH) {
+            av_log(matroska->ctx, AV_LOG_INFO,
+                   "Max EBML element depth (%d) reached, "
+                   "cannot parse further.\n", EBML_MAX_DEPTH);
+            break;
+        }
 
-                        level.start = 0;
-                        level.length = (uint64_t)-1;
-                        matroska->levels[matroska->num_levels] = level;
-                        matroska->num_levels++;
+        level.start = 0;
+        level.length = (uint64_t)-1;
+        matroska->levels[matroska->num_levels] = level;
+        matroska->num_levels++;
 
-                        /* check ID */
-                        if (!(id = ebml_peek_id (matroska,
-                                                 &matroska->level_up)))
-                            goto finish;
-                        if (id != seekhead[i].id) {
-                            av_log(matroska->ctx, AV_LOG_INFO,
-                                   "We looked for ID=0x%x but got "
-                                   "ID=0x%x (pos=%"PRIu64")",
-                                   (int)seekhead[i].id, id, seekhead[i].pos +
-                                   matroska->segment_start);
-                            goto finish;
-                        }
+        /* check ID */
+        if (!(id = ebml_peek_id (matroska,
+                                 &matroska->level_up)))
+            goto finish;
+        if (id != seekhead[i].id) {
+            av_log(matroska->ctx, AV_LOG_INFO,
+                   "We looked for ID=0x%x but got "
+                   "ID=0x%x (pos=%"PRIu64")",
+                   (int)seekhead[i].id, id, seekhead[i].pos +
+                   matroska->segment_start);
+            goto finish;
+        }
 
-                        /* read master + parse */
-                        switch (id) {
-                            case MATROSKA_ID_CUES:
-                                if (!(res = matroska_parse_index(matroska)) ||
-                                    url_feof(matroska->ctx->pb)) {
-                                    matroska->index_parsed = 1;
-                                    res = 0;
-                                }
-                                break;
-                            case MATROSKA_ID_TAGS:
-                                if (!(res = matroska_parse_metadata(matroska)) ||
-                                   url_feof(matroska->ctx->pb)) {
-                                    matroska->metadata_parsed = 1;
-                                    res = 0;
-                                }
-                                break;
-                        }
+        /* read master + parse */
+        switch (id) {
+        case MATROSKA_ID_CUES:
+            if (!(res = matroska_parse_index(matroska)) ||
+                url_feof(matroska->ctx->pb)) {
+                matroska->index_parsed = 1;
+                res = 0;
+            }
+            break;
+        case MATROSKA_ID_TAGS:
+            if (!(res = matroska_parse_metadata(matroska)) ||
+                url_feof(matroska->ctx->pb)) {
+                matroska->metadata_parsed = 1;
+                res = 0;
+            }
+            break;
+        }
 
-                    finish:
-                        /* remove dummy level */
-                            while (matroska->num_levels) {
-                                uint64_t length = matroska->levels[--matroska->num_levels].length;
-                                if (length == (uint64_t)-1)
-                                    break;
-                            }
+    finish:
+        /* remove dummy level */
+        while (matroska->num_levels) {
+            uint64_t length = matroska->levels[--matroska->num_levels].length;
+            if (length == (uint64_t)-1)
+                break;
+        }
     }
 
-                        /* seek back */
-                        ebml_read_seek(matroska, before_pos);
-                        matroska->peek_id = peek_id_cache;
-                        matroska->level_up = level_up;
+    /* seek back */
+    ebml_read_seek(matroska, before_pos);
+    matroska->peek_id = peek_id_cache;
+    matroska->level_up = level_up;
 }
 
 static int
