@@ -849,7 +849,7 @@ static int matroska_probe(AVProbeData *p)
 static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                          uint32_t id, void *data);
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                      void *data, int once);
+                           void *data);
 
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                            EbmlSyntax *syntax, void *data)
@@ -882,7 +882,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
                          matroska->segment_start = url_ftell(matroska->ctx->pb);
-                     return ebml_parse_nest(matroska, syntax->def.n, data, 0);
+                     return ebml_parse_nest(matroska, syntax->def.n, data);
     case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
     case EBML_STOP:  *(int *)data = 1;      return 1;
     default:         url_fskip(pb, length); return 0;
@@ -915,7 +915,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 }
 
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                      void *data, int once)
+                           void *data)
 {
     int i, res = 0;
 
@@ -933,11 +933,8 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
             break;
         }
 
-    while (!res && !ebml_level_end(matroska)) {
+    while (!res && !ebml_level_end(matroska))
         res = ebml_parse(matroska, syntax, data);
-        if (once)
-            break;
-    }
 
     return res;
 }
