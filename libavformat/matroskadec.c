@@ -688,14 +688,15 @@ ebml_read_master (MatroskaDemuxContext *matroska,
 static int
 ebml_read_binary (ByteIOContext *pb,
                   int            length,
-                  uint8_t             **binary,
-                  int                  *size)
+                  EbmlBin       *bin)
 {
-    if (!(*binary = av_malloc(length)))
+    av_free(bin->data);
+    if (!(bin->data = av_malloc(length)))
         return AVERROR(ENOMEM);
 
-    *size = length;
-    if (get_buffer(pb, *binary, length) != length)
+    bin->size = length;
+    bin->pos  = url_ftell(pb);
+    if (get_buffer(pb, bin->data, length) != length)
         return AVERROR(EIO);
 
     return 0;
@@ -896,7 +897,6 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     ByteIOContext *pb = matroska->ctx->pb;
     uint32_t id = syntax->id;
     uint64_t length;
-    EbmlBin *bin;
     int res;
 
     data = (char *)data + syntax->data_offset;
@@ -907,7 +907,6 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         memset(data, 0, syntax->list_elem_size);
         list->nb_elem++;
     }
-    bin = data;
 
     if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
         if ((res = ebml_read_element_id(matroska, &id)) < 0 ||
@@ -919,10 +918,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     case EBML_FLOAT: res = ebml_read_float (pb, length, data);  break;
     case EBML_STR:
     case EBML_UTF8:  res = ebml_read_ascii (pb, length, data);  break;
-    case EBML_BIN:   av_free(bin->data);
-                     bin->pos = url_ftell(matroska->ctx->pb);
-                     res = ebml_read_binary(pb, length, &bin->data,
-                                                           &bin->size); break;
+    case EBML_BIN:   res = ebml_read_binary(pb, length, data);  break;
     case EBML_NEST:  if ((res=ebml_read_master(matroska, length)) < 0)
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
