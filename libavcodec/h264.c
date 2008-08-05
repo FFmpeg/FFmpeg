@@ -1133,12 +1133,12 @@ single_col:
                 fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
 
                 /* col_zero_flag */
-                if(!IS_INTRA(mb_type_col[0]) && (   l1ref0[x8 + y8*h->b8_stride] == 0
-                                              || (l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0
+                if(!IS_INTRA(mb_type_col[0]) && (   l1ref0[x8 + y8*b8_stride] == 0
+                                              || (l1ref0[x8 + y8*b8_stride] < 0 && l1ref1[x8 + y8*b8_stride] == 0
                                                   && (h->x264_build>33 || !h->x264_build)))){
-                    const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
+                    const int16_t (*l1mv)[2]= l1ref0[x8 + y8*b8_stride] == 0 ? l1mv0 : l1mv1;
                     if(IS_SUB_8X8(sub_mb_type)){
-                        const int16_t *mv_col = l1mv[x8*3 + y8*3*h->b_stride];
+                        const int16_t *mv_col = l1mv[x8*3 + y8*3*b4_stride];
                         if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
                                 fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
@@ -1147,7 +1147,7 @@ single_col:
                         }
                     }else
                     for(i4=0; i4<4; i4++){
-                        const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
+                        const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
                         if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
                                 *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
@@ -1253,25 +1253,25 @@ single_col:
                     continue;
                 }
 
-                ref0 = l1ref0[x8 + y8*h->b8_stride];
+                ref0 = l1ref0[x8 + y8*b8_stride];
                 if(ref0 >= 0)
                     ref0 = map_col_to_list0[0][ref0];
                 else{
-                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*h->b8_stride]];
+                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]];
                     l1mv= l1mv1;
                 }
                 scale = dist_scale_factor[ref0];
 
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
                 if(IS_SUB_8X8(sub_mb_type)){
-                    const int16_t *mv_col = l1mv[x8*3 + y8*3*h->b_stride];
+                    const int16_t *mv_col = l1mv[x8*3 + y8*3*b4_stride];
                     int mx = (scale * mv_col[0] + 128) >> 8;
                     int my = (scale * mv_col[1] + 128) >> 8;
                     fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mx,my), 4);
                     fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mx-mv_col[0],my-mv_col[1]), 4);
                 }else
                 for(i4=0; i4<4; i4++){
-                    const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
+                    const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
                     int16_t *mv_l0 = h->mv_cache[0][scan8[i8*4+i4]];
                     mv_l0[0] = (scale * mv_col[0] + 128) >> 8;
                     mv_l0[1] = (scale * mv_col[1] + 128) >> 8;
