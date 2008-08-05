@@ -1386,7 +1386,6 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                     case MATROSKA_ID_TAGS: {
                         uint32_t level_up = matroska->level_up;
                         offset_t before_pos;
-                        uint64_t length;
                         MatroskaLevel level;
 
                         /* remember the peeked ID and the current position */
@@ -1448,9 +1447,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         /* remove dummy level */
                         if (dummy_level)
                             while (matroska->num_levels) {
-                                matroska->num_levels--;
-                                length =
-                                  matroska->levels[matroska->num_levels].length;
+                                uint64_t length = matroska->levels[--matroska->num_levels].length;
                                 if (length == (uint64_t)-1)
                                     break;
                             }
