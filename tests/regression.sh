@@ -183,6 +183,10 @@ do_video_decoding
 do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" "-vcodec mpeg2video -f mpeg2video"
 do_video_decoding
 
+#mpeg2 4:2:2 encoding
+do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+ildct+ilme -flags2 +ivlc -mbd rd" "-vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
+do_video_decoding
+
 # mpeg2
 do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
 do_video_decoding "-idct int"

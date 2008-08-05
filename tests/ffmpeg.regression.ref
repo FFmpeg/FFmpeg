@@ -10,6 +10,10 @@ stddev:    7.68 PSNR: 30.41 bytes:  7603200/  7603200
 787469 ./tests/data/a-mpeg2ivlc-qprd.mpg
 985170ca0ab1ec1edbb37c44d8cfde90 *./tests/data/mpeg2.vsynth.out.yuv
 stddev:   10.09 PSNR: 28.04 bytes:  7603200/  7603200
+b1cfb7a3b2f1f6794dd6b9efec9cc558 *./tests/data/a-mpeg2_422.mpg
+738682 ./tests/data/a-mpeg2_422.mpg
+bf65179abc21dfbe1ca035ce86977579 *./tests/data/mpeg2.vsynth.out.yuv
+stddev:   63.37 PSNR: 12.08 bytes: 10137600/  7603200
 2566ea5760247a9485c8281cb52291a8 *./tests/data/a-mpeg2.mpg
 735853 ./tests/data/a-mpeg2.mpg
 55c22a09e4924977ee2cc4180078d3ae *./tests/data/mpeg2.vsynth.out.yuv

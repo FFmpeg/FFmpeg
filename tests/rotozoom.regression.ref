@@ -10,6 +10,10 @@ stddev:    4.96 PSNR: 34.19 bytes:  7603200/  7603200
 247161 ./tests/data/a-mpeg2ivlc-qprd.mpg
 cc6f08c1a24b58c19de325e79cfa40a3 *./tests/data/mpeg2.rotozoom.out.yuv
 stddev:    4.25 PSNR: 35.55 bytes:  7603200/  7603200
+6f49b4c7941d0f559c2efeeb46d7914b *./tests/data/a-mpeg2_422.mpg
+358018 ./tests/data/a-mpeg2_422.mpg
+da03fae3a0e2d23dbb415bd5005376c3 *./tests/data/mpeg2.rotozoom.out.yuv
+stddev:   54.55 PSNR: 13.38 bytes: 10137600/  7603200
 f979bcca866e6e4cad5dc6cb06e56cfb *./tests/data/a-mpeg2.mpg
 198041 ./tests/data/a-mpeg2.mpg
 f6d9bf24ff8676a7f6076c05cd2c81a3 *./tests/data/mpeg2.rotozoom.out.yuv
