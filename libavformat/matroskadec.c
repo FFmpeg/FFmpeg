@@ -522,23 +522,6 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
 }
 
 /*
- * Read: the element content data ID.
- * 0 is success, < 0 is failure.
- */
-static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
-{
-    int read;
-    uint64_t total;
-
-    /* read out the "EBML number", include tag in ID */
-    if ((read = ebml_read_num(matroska, matroska->ctx->pb, 4, &total)) < 0)
-        return read;
-    *id = total | (1 << (read * 7));
-
-    return 0;
-}
-
-/*
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
@@ -683,8 +666,9 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data)
 {
-    uint32_t id;
-    int res = ebml_read_element_id(matroska, &id);
+    uint64_t id;
+    int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id);
+    id |= 1 << 7*res;
     return res < 0 ? res : ebml_parse_id(matroska, syntax, id, data);
 }
 
