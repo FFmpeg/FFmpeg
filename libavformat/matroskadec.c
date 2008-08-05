@@ -209,6 +209,7 @@ typedef struct MatroskaDemuxContext {
     int metadata_parsed;
     int index_parsed;
     int done;
+    int has_cluster_id;
 
     /* What to skip before effectively reading a packet. */
     int skip_to_keyframe;
@@ -404,6 +405,24 @@ static EbmlSyntax matroska_seekhead_entry[] = {
 static EbmlSyntax matroska_seekhead[] = {
     { MATROSKA_ID_SEEKENTRY,          EBML_NEST, sizeof(MatroskaSeekhead), offsetof(MatroskaDemuxContext,seekhead), {.n=matroska_seekhead_entry} },
     { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_segment[] = {
+    { MATROSKA_ID_INFO,           EBML_NEST, 0, 0, {.n=matroska_info       } },
+    { MATROSKA_ID_TRACKS,         EBML_NEST, 0, 0, {.n=matroska_tracks     } },
+    { MATROSKA_ID_ATTACHMENTS,    EBML_NEST, 0, 0, {.n=matroska_attachments} },
+    { MATROSKA_ID_CHAPTERS,       EBML_NEST, 0, 0, {.n=matroska_chapters   } },
+    { MATROSKA_ID_CUES,           EBML_NEST, 0, 0, {.n=matroska_index      } },
+    { MATROSKA_ID_TAGS,           EBML_NEST, 0, 0, {.n=matroska_tags       } },
+    { MATROSKA_ID_SEEKHEAD,       EBML_NEST, 0, 0, {.n=matroska_seekhead   } },
+    { MATROSKA_ID_CLUSTER,        EBML_STOP, 0, offsetof(MatroskaDemuxContext,has_cluster_id) },
+    { EBML_ID_VOID,               EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_segments[] = {
+    { MATROSKA_ID_SEGMENT,        EBML_NEST, 0, 0, {.n=matroska_segment    } },
     { 0 }
 };
 
@@ -1152,14 +1171,6 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
 }
 
 static int
-matroska_parse_info (MatroskaDemuxContext *matroska)
-{
-    int res = ebml_parse(matroska, matroska_info, matroska, MATROSKA_ID_INFO, 0);
-
-    return res;
-}
-
-static int
 matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
@@ -1237,16 +1248,6 @@ matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
 }
 
 static int
-matroska_parse_tracks (MatroskaDemuxContext *matroska)
-{
-    int i, res;
-
-    res = ebml_parse(matroska, matroska_tracks, matroska, MATROSKA_ID_TRACKS, 0);
-
-    return res;
-}
-
-static int
 matroska_parse_index (MatroskaDemuxContext *matroska)
 {
     return ebml_parse(matroska, matroska_index, matroska, MATROSKA_ID_CUES, 0);
@@ -1256,12 +1257,6 @@ static int
 matroska_parse_metadata (MatroskaDemuxContext *matroska)
 {
     return ebml_parse(matroska, matroska_tags, matroska, MATROSKA_ID_TAGS, 0);
-}
-
-static int
-matroska_parse_seekhead (MatroskaDemuxContext *matroska)
-{
-    return ebml_parse(matroska, matroska_seekhead, matroska, MATROSKA_ID_SEEKHEAD, 0);
 }
 
 static void
@@ -1348,28 +1343,6 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 }
 
 static int
-matroska_parse_attachments(AVFormatContext *s)
-{
-    MatroskaDemuxContext *matroska = s->priv_data;
-    int i, j, res;
-
-    res = ebml_parse(matroska, matroska_attachments, matroska, MATROSKA_ID_ATTACHMENTS, 0);
-
-    return res;
-}
-
-static int
-matroska_parse_chapters(AVFormatContext *s)
-{
-    MatroskaDemuxContext *matroska = s->priv_data;
-    int i, res;
-
-    res = ebml_parse(matroska, matroska_chapters, matroska, MATROSKA_ID_CHAPTERS, 0);
-
-    return res;
-}
-
-static int
 matroska_aac_profile (char *codec_id)
 {
     static const char *aac_profiles[] = {
@@ -1406,10 +1379,9 @@ matroska_read_header (AVFormatContext    *s,
     MatroskaTrack *tracks;
     EbmlList *index_list;
     MatroskaIndex *index;
-    int i, j, last_level, res = 0;
     Ebml ebml = { 0 };
     AVStream *st;
-    uint32_t id;
+    int i, j;
 
     matroska->ctx = s;
 
@@ -1427,107 +1399,8 @@ matroska_read_header (AVFormatContext    *s,
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
-    while (1) {
-        if (!(id = ebml_peek_id(matroska, &last_level)))
-            return AVERROR(EIO);
-        if (id == MATROSKA_ID_SEGMENT)
-            break;
-
-        /* oi! */
-        av_log(matroska->ctx, AV_LOG_INFO,
-               "Expected a Segment ID (0x%x), but received 0x%x!\n",
-               MATROSKA_ID_SEGMENT, id);
-        if ((res = ebml_read_skip(matroska)) < 0)
-            return res;
-    }
-
-    /* We now have a Matroska segment.
-     * Seeks are from the beginning of the segment,
-     * after the segment ID/length. */
-    if ((res = ebml_read_master(matroska, &id)) < 0)
-        return res;
-    matroska->segment_start = url_ftell(s->pb);
-
-    matroska->time_scale = 1000000;
-    /* we've found our segment, start reading the different contents in here */
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-            /* stream info */
-            case MATROSKA_ID_INFO: {
-                res = matroska_parse_info(matroska);
-                break;
-            }
-
-            /* track info headers */
-            case MATROSKA_ID_TRACKS: {
-                res = matroska_parse_tracks(matroska);
-                break;
-            }
-
-            /* stream index */
-            case MATROSKA_ID_CUES: {
-                if (!matroska->index_parsed) {
-                    res = matroska_parse_index(matroska);
-                } else
-                    res = ebml_read_skip(matroska);
-                break;
-            }
-
-            /* metadata */
-            case MATROSKA_ID_TAGS: {
-                if (!matroska->metadata_parsed) {
-                    res = matroska_parse_metadata(matroska);
-                } else
-                    res = ebml_read_skip(matroska);
-                break;
-            }
-
-            /* file index (if seekable, seek to Cues/Tags to parse it) */
-            case MATROSKA_ID_SEEKHEAD: {
-                res = matroska_parse_seekhead(matroska);
-                break;
-            }
-
-            case MATROSKA_ID_ATTACHMENTS: {
-                res = matroska_parse_attachments(s);
-                break;
-            }
-
-            case MATROSKA_ID_CLUSTER: {
-                /* Do not read the master - this will be done in the next
-                 * call to matroska_read_packet. */
-                res = 1;
-                break;
-            }
-
-            case MATROSKA_ID_CHAPTERS: {
-                res = matroska_parse_chapters(s);
-                break;
-            }
-
-            default:
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "Unknown matroska file header ID 0x%x\n", id);
-            /* fall-through */
-
-            case EBML_ID_VOID:
-                res = ebml_read_skip(matroska);
-                break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-    }
+    if (ebml_parse(matroska, matroska_segments, matroska, 0, 1) < 0)
+        return -1;
     matroska_execute_seekhead(matroska);
 
     /* Have we found a cluster? */
@@ -1781,7 +1654,6 @@ matroska_read_header (AVFormatContext    *s,
 
         /* What do we do with private data? E.g. for Vorbis. */
     }
-    res = 0;
 
     attachements = attachements_list->elem;
     for (j=0; j<attachements_list->nb_elem; j++) {
@@ -1834,7 +1706,7 @@ matroska_read_header (AVFormatContext    *s,
         }
     }
 
-    return res;
+    return 0;
 }
 
 static int
@@ -2291,8 +2163,7 @@ matroska_read_close (AVFormatContext *s)
     for (n=0; n < matroska->tracks.nb_elem; n++)
         if (tracks[n].type == MATROSKA_TRACK_TYPE_AUDIO)
             av_free(tracks[n].audio.buf);
-    ebml_free(matroska_tracks, matroska);
-    ebml_free(matroska_index, matroska);
+    ebml_free(matroska_segment, matroska);
 
     return 0;
 }
