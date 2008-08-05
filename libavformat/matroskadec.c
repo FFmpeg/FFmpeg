@@ -630,13 +630,8 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
         (res = ebml_read_element_length(matroska, &rlength)) < 0)
         return res;
     size = rlength;
-    if (size < 1 || size > 8) {
-        offset_t pos = url_ftell(pb);
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid uint element size %d at position %"PRId64" (0x%"PRIx64")\n",
-                size, pos, pos);
+    if (size < 1 || size > 8)
         return AVERROR_INVALIDDATA;
-    }
 
     /* big-endian ordening; build up number */
     *num = 0;
@@ -668,13 +663,8 @@ ebml_read_float (MatroskaDemuxContext *matroska,
         *num= av_int2flt(get_be32(pb));
     } else if(size==8){
         *num= av_int2dbl(get_be64(pb));
-    } else{
-        offset_t pos = url_ftell(pb);
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid float element size %d at position %"PRIu64" (0x%"PRIx64")\n",
-               size, pos, pos);
+    } else
         return AVERROR_INVALIDDATA;
-    }
 
     return 0;
 }
@@ -699,14 +689,9 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
 
     /* ebml strings are usually not 0-terminated, so we allocate one
      * byte more, read the string and NULL-terminate it ourselves. */
-    if (size < 0 || !(*str = av_malloc(size + 1))) {
-        av_log(matroska->ctx, AV_LOG_ERROR, "Memory allocation failed\n");
+    if (size < 0 || !(*str = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
-    }
     if (get_buffer(pb, (uint8_t *) *str, size) != size) {
-        offset_t pos = url_ftell(pb);
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
         av_free(*str);
         return AVERROR(EIO);
     }
@@ -765,18 +750,11 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
         return res;
     *size = rlength;
 
-    if (!(*binary = av_malloc(*size))) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Memory allocation error\n");
+    if (!(*binary = av_malloc(*size)))
         return AVERROR(ENOMEM);
-    }
 
-    if (get_buffer(pb, *binary, *size) != *size) {
-        offset_t pos = url_ftell(pb);
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
+    if (get_buffer(pb, *binary, *size) != *size)
         return AVERROR(EIO);
-    }
 
     return 0;
 }
@@ -988,15 +966,15 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     bin = data;
 
     switch (syntax->type) {
-    case EBML_UINT:  return ebml_read_uint (matroska, &id, data);
-    case EBML_FLOAT: return ebml_read_float(matroska, &id, data);
+    case EBML_UINT:  res = ebml_read_uint (matroska, &id, data);  break;
+    case EBML_FLOAT: res = ebml_read_float(matroska, &id, data);  break;
     case EBML_STR:
     case EBML_UTF8:  av_free(*(char **)data);
-                     return ebml_read_ascii(matroska, &id, data);
+                     res = ebml_read_ascii(matroska, &id, data);  break;
     case EBML_BIN:   av_free(bin->data);
                      bin->pos = url_ftell(matroska->ctx->pb);
-                     return ebml_read_binary(matroska, &id, &bin->data,
-                                                            &bin->size);
+                     res = ebml_read_binary(matroska, &id, &bin->data,
+                                                           &bin->size); break;
     case EBML_NEST:  if ((res=ebml_read_master(matroska, &id)) < 0)
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
@@ -1006,6 +984,11 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     case EBML_STOP:  *(int *)data = 1;      return 1;
     default:         return ebml_read_skip(matroska);
     }
+    if (res == AVERROR_INVALIDDATA)
+        av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
+    else if (res == AVERROR(EIO))
+        av_log(matroska->ctx, AV_LOG_ERROR, "Read error\n");
+    return res;
 }
 
 static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
