@@ -190,15 +190,6 @@ typedef enum {
 } MatroskaTrackEncodingCompAlgo;
 
 /*
- * These aren't in any way "matroska-form" things,
- * it's just something I use in the muxer/demuxer.
- */
-
-typedef enum {
-  MATROSKA_TRACK_DEFAULT = (1<<1),
-} MatroskaTrackFlags;
-
-/*
  * Matroska Codec IDs. Strings.
  */
 

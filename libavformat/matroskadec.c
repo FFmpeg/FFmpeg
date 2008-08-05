@@ -63,7 +63,7 @@ typedef struct Track {
 
     double time_scale;
     uint64_t default_duration;
-    MatroskaTrackFlags flags;
+    uint64_t flag_default;
 
     int encoding_scope;
     MatroskaTrackEncodingCompAlgo encoding_algo;
@@ -1393,10 +1393,7 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                if (num)
-                    track->flags |= MATROSKA_TRACK_DEFAULT;
-                else
-                    track->flags &= ~MATROSKA_TRACK_DEFAULT;
+                track->flag_default = num;
                 break;
             }
 
@@ -2640,7 +2637,7 @@ matroska_read_header (AVFormatContext    *s,
             if (strcmp(track->language, "und"))
                 av_strlcpy(st->language, track->language, 4);
 
-            if (track->flags & MATROSKA_TRACK_DEFAULT)
+            if (track->flag_default)
                 st->disposition |= AV_DISPOSITION_DEFAULT;
 
             if (track->default_duration)
