@@ -35,6 +35,7 @@
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/avstring.h"
 #include "libavutil/lzo.h"
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
@@ -2651,7 +2652,7 @@ matroska_read_header (AVFormatContext    *s,
             st->codec->codec_id = codec_id;
             st->start_time = 0;
             if (strcmp(track->language, "und"))
-                strcpy(st->language, track->language);
+                av_strlcpy(st->language, track->language, 4);
 
             if (track->flags & MATROSKA_TRACK_DEFAULT)
                 st->disposition |= AV_DISPOSITION_DEFAULT;
