@@ -689,45 +689,6 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
 }
 
 /*
- * Read the next element as a signed int.
- * 0 is success, < 0 is failure.
- */
-
-static int
-ebml_read_sint (MatroskaDemuxContext *matroska,
-                uint32_t             *id,
-                int64_t              *num)
-{
-    ByteIOContext *pb = matroska->ctx->pb;
-    int size, n = 1, negative = 0, res;
-    uint64_t rlength;
-
-    if ((res = ebml_read_element_id(matroska, id, NULL)) < 0 ||
-        (res = ebml_read_element_length(matroska, &rlength)) < 0)
-        return res;
-    size = rlength;
-    if (size < 1 || size > 8) {
-        offset_t pos = url_ftell(pb);
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid sint element size %d at position %"PRId64" (0x%"PRIx64")\n",
-                size, pos, pos);
-        return AVERROR_INVALIDDATA;
-    }
-    if ((*num = get_byte(pb)) & 0x80) {
-        negative = 1;
-        *num &= ~0x80;
-    }
-    while (n++ < size)
-        *num = (*num << 8) | get_byte(pb);
-
-    /* make signed */
-    if (negative)
-        *num = *num - (1LL << ((8 * size) - 1));
-
-    return 0;
-}
-
-/*
  * Read the next element as a float.
  * 0 is success, < 0 is failure.
  */
@@ -796,19 +757,6 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
     (*str)[size] = '\0';
 
     return 0;
-}
-
-/*
- * Read the next element as a UTF-8 string.
- * 0 is success, < 0 is failure.
- */
-
-static int
-ebml_read_utf8 (MatroskaDemuxContext *matroska,
-                uint32_t             *id,
-                char                **str)
-{
-  return ebml_read_ascii(matroska, id, str);
 }
 
 /*
