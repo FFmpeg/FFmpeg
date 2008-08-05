@@ -968,7 +968,7 @@ matroska_probe (AVProbeData *p)
 }
 
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                      void *data, uint32_t expected_id, int once);
+                      void *data, int once);
 
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                            EbmlSyntax *syntax, void *data)
@@ -1001,8 +1001,8 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                          return res;
                      if (id == MATROSKA_ID_SEGMENT)
                          matroska->segment_start = url_ftell(matroska->ctx->pb);
-                     return ebml_parse(matroska, syntax->def.n, data, 0, 0);
-    case EBML_PASS:  return ebml_parse(matroska, syntax->def.n, data, 0, 1);
+                     return ebml_parse(matroska, syntax->def.n, data, 0);
+    case EBML_PASS:  return ebml_parse(matroska, syntax->def.n, data, 1);
     case EBML_STOP:  *(int *)data = 1;      return 1;
     default:         return ebml_read_skip(matroska);
     }
@@ -1021,7 +1021,7 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 }
 
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                      void *data, uint32_t expected_id, int once)
+                      void *data, int once)
 {
     int i, res = 0, res2;
     uint32_t id = 0;
@@ -1039,14 +1039,6 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
             *(char    **)((char *)data+syntax[i].data_offset) = av_strdup(syntax[i].def.s);
             break;
         }
-
-    if (expected_id) {
-        res = ebml_read_master(matroska, &id);
-        if (id != expected_id)
-            return AVERROR_INVALIDDATA;
-        if (id == MATROSKA_ID_SEGMENT)
-            matroska->segment_start = url_ftell(matroska->ctx->pb);
-    }
 
     while (!res) {
         res2 = ebml_read_element_id(matroska, &id);
@@ -1261,7 +1253,7 @@ matroska_read_header (AVFormatContext    *s,
     matroska->ctx = s;
 
     /* First read the EBML header. */
-    if (ebml_parse(matroska, ebml_syntax, &ebml, 0, 1)
+    if (ebml_parse(matroska, ebml_syntax, &ebml, 1)
         || ebml.version > EBML_VERSION       || ebml.max_size > sizeof(uint64_t)
         || ebml.id_length > sizeof(uint32_t) || strcmp(ebml.doctype, "matroska")
         || ebml.doctype_version > 2) {
@@ -1274,7 +1266,7 @@ matroska_read_header (AVFormatContext    *s,
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
-    if (ebml_parse(matroska, matroska_segments, matroska, 0, 1) < 0)
+    if (ebml_parse(matroska, matroska_segments, matroska, 1) < 0)
         return -1;
     matroska_execute_seekhead(matroska);
 
@@ -1766,7 +1758,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
     MatroskaCluster cluster = { 0 };
     EbmlList *blocks_list;
     MatroskaBlock *blocks;
-    int i, res = ebml_parse(matroska, matroska_clusters, &cluster, 0, 1);
+    int i, res = ebml_parse(matroska, matroska_clusters, &cluster, 1);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
     for (i=0; !res && i<blocks_list->nb_elem; i++)
