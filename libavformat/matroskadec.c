@@ -595,6 +595,24 @@ static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
 }
 
 /*
+ * Read the next element as binary data.
+ * 0 is success, < 0 is failure.
+ */
+static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
+{
+    av_free(bin->data);
+    if (!(bin->data = av_malloc(length)))
+        return AVERROR(ENOMEM);
+
+    bin->size = length;
+    bin->pos  = url_ftell(pb);
+    if (get_buffer(pb, bin->data, length) != length)
+        return AVERROR(EIO);
+
+    return 0;
+}
+
+/*
  * Read the next element, but only the header. The contents
  * are supposed to be sub-elements which can be read separately.
  * 0 is success, < 0 is failure.
@@ -613,24 +631,6 @@ static int ebml_read_master(MatroskaDemuxContext *matroska, int length)
     level = &matroska->levels[matroska->num_levels++];
     level->start = url_ftell(pb);
     level->length = length;
-
-    return 0;
-}
-
-/*
- * Read the next element as binary data.
- * 0 is success, < 0 is failure.
- */
-static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
-{
-    av_free(bin->data);
-    if (!(bin->data = av_malloc(length)))
-        return AVERROR(ENOMEM);
-
-    bin->size = length;
-    bin->pos  = url_ftell(pb);
-    if (get_buffer(pb, bin->data, length) != length)
-        return AVERROR(EIO);
 
     return 0;
 }
@@ -696,166 +696,8 @@ static int matroska_ebmlnum_sint(uint8_t *data, uint32_t size, int64_t *num)
     return res;
 }
 
-
-static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
-                                                 int num)
-{
-    MatroskaTrack *tracks = matroska->tracks.elem;
-    int i;
-
-    for (i=0; i < matroska->tracks.nb_elem; i++)
-        if (tracks[i].num == num)
-            return &tracks[i];
-
-    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid track number %d\n", num);
-    return NULL;
-}
-
-
-/*
- * Put one packet in an application-supplied AVPacket struct.
- * Returns 0 on success or -1 on failure.
- */
-static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
-                                   AVPacket *pkt)
-{
-    if (matroska->num_packets > 0) {
-        memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
-        av_free(matroska->packets[0]);
-        if (matroska->num_packets > 1) {
-            memmove(&matroska->packets[0], &matroska->packets[1],
-                    (matroska->num_packets - 1) * sizeof(AVPacket *));
-            matroska->packets =
-                av_realloc(matroska->packets, (matroska->num_packets - 1) *
-                           sizeof(AVPacket *));
-        } else {
-            av_freep(&matroska->packets);
-        }
-        matroska->num_packets--;
-        return 0;
-    }
-
-    return -1;
-}
-
-/*
- * Put a packet into our internal queue. Will be delivered to the
- * user/application during the next get_packet() call.
- */
-static void matroska_queue_packet(MatroskaDemuxContext *matroska, AVPacket *pkt)
-{
-    matroska->packets =
-        av_realloc(matroska->packets, (matroska->num_packets + 1) *
-                   sizeof(AVPacket *));
-    matroska->packets[matroska->num_packets] = pkt;
-    matroska->num_packets++;
-}
-
-/*
- * Free all packets in our internal queue.
- */
-static void matroska_clear_queue(MatroskaDemuxContext *matroska)
-{
-    if (matroska->packets) {
-        int n;
-        for (n = 0; n < matroska->num_packets; n++) {
-            av_free_packet(matroska->packets[n]);
-            av_free(matroska->packets[n]);
-        }
-        av_free(matroska->packets);
-        matroska->packets = NULL;
-        matroska->num_packets = 0;
-    }
-}
-
-
-/*
- * Autodetecting...
- */
-static int matroska_probe(AVProbeData *p)
-{
-    uint64_t total = 0;
-    int len_mask = 0x80, size = 1, n = 1;
-    char probe_data[] = "matroska";
-
-    /* ebml header? */
-    if (AV_RB32(p->buf) != EBML_ID_HEADER)
-        return 0;
-
-    /* length of header */
-    total = p->buf[4];
-    while (size <= 8 && !(total & len_mask)) {
-        size++;
-        len_mask >>= 1;
-    }
-    if (size > 8)
-      return 0;
-    total &= (len_mask - 1);
-    while (n < size)
-        total = (total << 8) | p->buf[4 + n++];
-
-    /* does the probe data contain the whole header? */
-    if (p->buf_size < 4 + size + total)
-      return 0;
-
-    /* the header must contain the document type 'matroska'. For now,
-     * we don't parse the whole header but simply check for the
-     * availability of that array of characters inside the header.
-     * Not fully fool-proof, but good enough. */
-    for (n = 4+size; n <= 4+size+total-(sizeof(probe_data)-1); n++)
-        if (!memcmp(p->buf+n, probe_data, sizeof(probe_data)-1))
-            return AVPROBE_SCORE_MAX;
-
-    return 0;
-}
-
-static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                         uint32_t id, void *data);
-static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                           void *data);
-
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
-                           EbmlSyntax *syntax, void *data)
-{
-    ByteIOContext *pb = matroska->ctx->pb;
-    uint32_t id = syntax->id;
-    uint64_t length;
-    int res;
-
-    data = (char *)data + syntax->data_offset;
-    if (syntax->list_elem_size) {
-        EbmlList *list = data;
-        list->elem = av_realloc(list->elem, (list->nb_elem+1)*syntax->list_elem_size);
-        data = (char*)list->elem + list->nb_elem*syntax->list_elem_size;
-        memset(data, 0, syntax->list_elem_size);
-        list->nb_elem++;
-    }
-
-    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
-        if ((res = ebml_read_num(matroska, 8, &length)) < 0)
-            return res;
-
-    switch (syntax->type) {
-    case EBML_UINT:  res = ebml_read_uint  (pb, length, data);  break;
-    case EBML_FLOAT: res = ebml_read_float (pb, length, data);  break;
-    case EBML_STR:
-    case EBML_UTF8:  res = ebml_read_ascii (pb, length, data);  break;
-    case EBML_BIN:   res = ebml_read_binary(pb, length, data);  break;
-    case EBML_NEST:  if ((res=ebml_read_master(matroska, length)) < 0)
-                         return res;
-                     if (id == MATROSKA_ID_SEGMENT)
-                         matroska->segment_start = url_ftell(matroska->ctx->pb);
-                     return ebml_parse_nest(matroska, syntax->def.n, data);
-    case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
-    case EBML_STOP:  *(int *)data = 1;      return 1;
-    default:         url_fskip(pb, length); return 0;
-    }
-    if (res == AVERROR_INVALIDDATA)
-        av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
-    else if (res == AVERROR(EIO))
-        av_log(matroska->ctx, AV_LOG_ERROR, "Read error\n");
-    return res;
-}
+                           EbmlSyntax *syntax, void *data);
 
 static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                          uint32_t id, void *data)
@@ -902,6 +744,49 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     return res;
 }
 
+static int ebml_parse_elem(MatroskaDemuxContext *matroska,
+                           EbmlSyntax *syntax, void *data)
+{
+    ByteIOContext *pb = matroska->ctx->pb;
+    uint32_t id = syntax->id;
+    uint64_t length;
+    int res;
+
+    data = (char *)data + syntax->data_offset;
+    if (syntax->list_elem_size) {
+        EbmlList *list = data;
+        list->elem = av_realloc(list->elem, (list->nb_elem+1)*syntax->list_elem_size);
+        data = (char*)list->elem + list->nb_elem*syntax->list_elem_size;
+        memset(data, 0, syntax->list_elem_size);
+        list->nb_elem++;
+    }
+
+    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
+        if ((res = ebml_read_num(matroska, 8, &length)) < 0)
+            return res;
+
+    switch (syntax->type) {
+    case EBML_UINT:  res = ebml_read_uint  (pb, length, data);  break;
+    case EBML_FLOAT: res = ebml_read_float (pb, length, data);  break;
+    case EBML_STR:
+    case EBML_UTF8:  res = ebml_read_ascii (pb, length, data);  break;
+    case EBML_BIN:   res = ebml_read_binary(pb, length, data);  break;
+    case EBML_NEST:  if ((res=ebml_read_master(matroska, length)) < 0)
+                         return res;
+                     if (id == MATROSKA_ID_SEGMENT)
+                         matroska->segment_start = url_ftell(matroska->ctx->pb);
+                     return ebml_parse_nest(matroska, syntax->def.n, data);
+    case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
+    case EBML_STOP:  *(int *)data = 1;      return 1;
+    default:         url_fskip(pb, length); return 0;
+    }
+    if (res == AVERROR_INVALIDDATA)
+        av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
+    else if (res == AVERROR(EIO))
+        av_log(matroska->ctx, AV_LOG_ERROR, "Read error\n");
+    return res;
+}
+
 static void ebml_free(EbmlSyntax *syntax, void *data)
 {
     int i, j;
@@ -923,6 +808,61 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
         default:  break;
         }
     }
+}
+
+
+/*
+ * Autodetecting...
+ */
+static int matroska_probe(AVProbeData *p)
+{
+    uint64_t total = 0;
+    int len_mask = 0x80, size = 1, n = 1;
+    char probe_data[] = "matroska";
+
+    /* ebml header? */
+    if (AV_RB32(p->buf) != EBML_ID_HEADER)
+        return 0;
+
+    /* length of header */
+    total = p->buf[4];
+    while (size <= 8 && !(total & len_mask)) {
+        size++;
+        len_mask >>= 1;
+    }
+    if (size > 8)
+      return 0;
+    total &= (len_mask - 1);
+    while (n < size)
+        total = (total << 8) | p->buf[4 + n++];
+
+    /* does the probe data contain the whole header? */
+    if (p->buf_size < 4 + size + total)
+      return 0;
+
+    /* the header must contain the document type 'matroska'. For now,
+     * we don't parse the whole header but simply check for the
+     * availability of that array of characters inside the header.
+     * Not fully fool-proof, but good enough. */
+    for (n = 4+size; n <= 4+size+total-(sizeof(probe_data)-1); n++)
+        if (!memcmp(p->buf+n, probe_data, sizeof(probe_data)-1))
+            return AVPROBE_SCORE_MAX;
+
+    return 0;
+}
+
+static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
+                                                 int num)
+{
+    MatroskaTrack *tracks = matroska->tracks.elem;
+    int i;
+
+    for (i=0; i < matroska->tracks.nb_elem; i++)
+        if (tracks[i].num == num)
+            return &tracks[i];
+
+    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid track number %d\n", num);
+    return NULL;
 }
 
 static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
@@ -1376,6 +1316,62 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     return 0;
+}
+
+/*
+ * Put a packet into our internal queue. Will be delivered to the
+ * user/application during the next get_packet() call.
+ */
+static void matroska_queue_packet(MatroskaDemuxContext *matroska, AVPacket *pkt)
+{
+    matroska->packets =
+        av_realloc(matroska->packets, (matroska->num_packets + 1) *
+                   sizeof(AVPacket *));
+    matroska->packets[matroska->num_packets] = pkt;
+    matroska->num_packets++;
+}
+
+/*
+ * Put one packet in an application-supplied AVPacket struct.
+ * Returns 0 on success or -1 on failure.
+ */
+static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
+                                   AVPacket *pkt)
+{
+    if (matroska->num_packets > 0) {
+        memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
+        av_free(matroska->packets[0]);
+        if (matroska->num_packets > 1) {
+            memmove(&matroska->packets[0], &matroska->packets[1],
+                    (matroska->num_packets - 1) * sizeof(AVPacket *));
+            matroska->packets =
+                av_realloc(matroska->packets, (matroska->num_packets - 1) *
+                           sizeof(AVPacket *));
+        } else {
+            av_freep(&matroska->packets);
+        }
+        matroska->num_packets--;
+        return 0;
+    }
+
+    return -1;
+}
+
+/*
+ * Free all packets in our internal queue.
+ */
+static void matroska_clear_queue(MatroskaDemuxContext *matroska)
+{
+    if (matroska->packets) {
+        int n;
+        for (n = 0; n < matroska->num_packets; n++) {
+            av_free_packet(matroska->packets[n]);
+            av_free(matroska->packets[n]);
+        }
+        av_free(matroska->packets);
+        matroska->packets = NULL;
+        matroska->num_packets = 0;
+    }
 }
 
 static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
