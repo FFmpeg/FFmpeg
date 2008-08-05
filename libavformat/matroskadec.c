@@ -1247,18 +1247,6 @@ matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
     return -1;
 }
 
-static int
-matroska_parse_index (MatroskaDemuxContext *matroska)
-{
-    return ebml_parse(matroska, matroska_index, matroska, MATROSKA_ID_CUES, 0);
-}
-
-static int
-matroska_parse_metadata (MatroskaDemuxContext *matroska)
-{
-    return ebml_parse(matroska, matroska_tags, matroska, MATROSKA_ID_TAGS, 0);
-}
-
 static void
 matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 {
@@ -1268,8 +1256,7 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     uint32_t level_up = matroska->level_up;
     offset_t before_pos = url_ftell(matroska->ctx->pb);
     MatroskaLevel level;
-    uint32_t id;
-    int i, res;
+    int i;
 
     for (i=0; i<seekhead_list->nb_elem; i++) {
         if (seekhead[i].pos <= before_pos
@@ -1296,38 +1283,8 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         matroska->levels[matroska->num_levels] = level;
         matroska->num_levels++;
 
-        /* check ID */
-        if (!(id = ebml_peek_id (matroska,
-                                 &matroska->level_up)))
-            goto finish;
-        if (id != seekhead[i].id) {
-            av_log(matroska->ctx, AV_LOG_INFO,
-                   "We looked for ID=0x%x but got "
-                   "ID=0x%x (pos=%"PRIu64")",
-                   (int)seekhead[i].id, id, seekhead[i].pos +
-                   matroska->segment_start);
-            goto finish;
-        }
+        ebml_parse_id(matroska, matroska_segment, seekhead[i].id, matroska);
 
-        /* read master + parse */
-        switch (id) {
-        case MATROSKA_ID_CUES:
-            if (!(res = matroska_parse_index(matroska)) ||
-                url_feof(matroska->ctx->pb)) {
-                matroska->index_parsed = 1;
-                res = 0;
-            }
-            break;
-        case MATROSKA_ID_TAGS:
-            if (!(res = matroska_parse_metadata(matroska)) ||
-                url_feof(matroska->ctx->pb)) {
-                matroska->metadata_parsed = 1;
-                res = 0;
-            }
-            break;
-        }
-
-    finish:
         /* remove dummy level */
         while (matroska->num_levels) {
             uint64_t length = matroska->levels[--matroska->num_levels].length;
