@@ -159,6 +159,13 @@ typedef struct MatroskaSubtitleTrack {
                                     sizeof(MatroskaSubtitleTrack)))
 
 typedef struct {
+    uint64_t start;
+    uint64_t end;
+    uint64_t uid;
+    char    *title;
+} MatroskaChapter;
+
+typedef struct {
     uint64_t track;
     uint64_t pos;
 } MatroskaIndexPos;
@@ -183,6 +190,7 @@ typedef struct MatroskaDemuxContext {
 
     /* timescale in the file */
     int64_t time_scale;
+    EbmlList chapters;
     EbmlList index;
 
     /* num_streams is the number of streams that av_new_stream() was called
@@ -227,6 +235,37 @@ static EbmlSyntax ebml_header[] = {
 
 static EbmlSyntax ebml_syntax[] = {
     { EBML_ID_HEADER,                 EBML_NEST, 0, 0, {.n=ebml_header} },
+    { 0 }
+};
+
+static EbmlSyntax matroska_chapter_display[] = {
+    { MATROSKA_ID_CHAPSTRING,         EBML_UTF8, 0, offsetof(MatroskaChapter,title) },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_chapter_entry[] = {
+    { MATROSKA_ID_CHAPTERTIMESTART,   EBML_UINT, 0, offsetof(MatroskaChapter,start), {.u=AV_NOPTS_VALUE} },
+    { MATROSKA_ID_CHAPTERTIMEEND,     EBML_UINT, 0, offsetof(MatroskaChapter,end), {.u=AV_NOPTS_VALUE} },
+    { MATROSKA_ID_CHAPTERUID,         EBML_UINT, 0, offsetof(MatroskaChapter,uid) },
+    { MATROSKA_ID_CHAPTERDISPLAY,     EBML_NEST, 0, 0, {.n=matroska_chapter_display} },
+    { MATROSKA_ID_CHAPTERFLAGHIDDEN,  EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_chapter[] = {
+    { MATROSKA_ID_CHAPTERATOM,        EBML_NEST, sizeof(MatroskaChapter), offsetof(MatroskaDemuxContext,chapters), {.n=matroska_chapter_entry} },
+    { MATROSKA_ID_EDITIONUID,         EBML_NONE },
+    { MATROSKA_ID_EDITIONFLAGHIDDEN,  EBML_NONE },
+    { MATROSKA_ID_EDITIONFLAGDEFAULT, EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_chapters[] = {
+    { MATROSKA_ID_EDITIONENTRY,       EBML_NEST, 0, 0, {.n=matroska_chapter} },
+    { EBML_ID_VOID,                   EBML_NONE },
     { 0 }
 };
 
@@ -2063,154 +2102,18 @@ static int
 matroska_parse_chapters(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    int res = 0;
-    uint32_t id;
+    EbmlList *chapters_list = &matroska->chapters;
+    MatroskaChapter *chapters;
+    int i, res;
 
-    av_log(s, AV_LOG_DEBUG, "parsing chapters...\n");
+    res = ebml_parse(matroska, matroska_chapters, matroska, MATROSKA_ID_CHAPTERS, 0);
 
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-        case MATROSKA_ID_EDITIONENTRY: {
-            uint64_t end = AV_NOPTS_VALUE, start = AV_NOPTS_VALUE;
-            int64_t uid= -1;
-            char* title = NULL;
-            /* if there is more than one chapter edition
-               we take only the first one */
-            if(s->chapters) {
-                    ebml_read_skip(matroska);
-                    break;
-            }
-
-            if ((res = ebml_read_master(matroska, &id)) < 0)
-                break;
-
-            while (res == 0) {
-                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                    res = AVERROR(EIO);
-                    break;
-                } else if (matroska->level_up) {
-                    matroska->level_up--;
-                    break;
-                }
-
-                switch (id) {
-                case MATROSKA_ID_CHAPTERATOM:
-                    if ((res = ebml_read_master(matroska, &id)) < 0)
-                        break;
-
-                    while (res == 0) {
-                        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                            res = AVERROR(EIO);
-                            break;
-                        } else if (matroska->level_up) {
-                            matroska->level_up--;
-                            break;
-                        }
-
-                        switch (id) {
-                        case MATROSKA_ID_CHAPTERTIMEEND:
-                            res = ebml_read_uint(matroska, &id, &end);
-                            break;
-
-                        case MATROSKA_ID_CHAPTERTIMESTART:
-                            res = ebml_read_uint(matroska, &id, &start);
-                            break;
-
-                        case MATROSKA_ID_CHAPTERDISPLAY:
-                            if ((res = ebml_read_master(matroska, &id)) < 0)
-                                break;
-
-                            while (res == 0) {
-                                if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                                    res = AVERROR(EIO);
-                                    break;
-                                } else if (matroska->level_up) {
-                                    matroska->level_up--;
-                                    break;
-                                }
-
-                                switch (id) {
-                                case MATROSKA_ID_CHAPSTRING:
-                                    res = ebml_read_utf8(matroska, &id, &title);
-                                    break;
-
-                                default:
-                                    av_log(s, AV_LOG_INFO, "Ignoring unknown Chapter display ID 0x%x\n", id);
-                                case EBML_ID_VOID:
-                                    res = ebml_read_skip(matroska);
-                                    break;
-                                }
-
-                                if (matroska->level_up) {
-                                    matroska->level_up--;
-                                    break;
-                                }
-                            }
-                            break;
-
-                        case MATROSKA_ID_CHAPTERUID:
-                            res = ebml_read_uint(matroska, &id, &uid);
-                            break;
-                        default:
-                            av_log(s, AV_LOG_INFO, "Ignoring unknown Chapter atom ID 0x%x\n", id);
-                        case MATROSKA_ID_CHAPTERFLAGHIDDEN:
-                        case EBML_ID_VOID:
-                            res = ebml_read_skip(matroska);
-                            break;
-                        }
-
-                        if (matroska->level_up) {
-                            matroska->level_up--;
-                            break;
-                        }
-                    }
-
-                    if (start != AV_NOPTS_VALUE && uid != -1) {
-                        if(!ff_new_chapter(s, uid, (AVRational){1, 1000000000}, start, end, title))
-                            res= AVERROR(ENOMEM);
-                    }
-                    av_free(title);
-                    break;
-
-                default:
-                    av_log(s, AV_LOG_INFO, "Ignoring unknown Edition entry ID 0x%x\n", id);
-                case MATROSKA_ID_EDITIONUID:
-                case MATROSKA_ID_EDITIONFLAGHIDDEN:
-                case MATROSKA_ID_EDITIONFLAGDEFAULT:
-                case EBML_ID_VOID:
-                    res = ebml_read_skip(matroska);
-                    break;
-                }
-
-
-                if (matroska->level_up) {
-                    matroska->level_up--;
-                    break;
-                }
-            }
-        break;
-        }
-
-        default:
-            av_log(s, AV_LOG_INFO, "Expected an Edition entry (0x%x), but found 0x%x\n", MATROSKA_ID_EDITIONENTRY, id);
-        case EBML_ID_VOID:
-            res = ebml_read_skip(matroska);
-            break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-    }
+    chapters = chapters_list->elem;
+    for (i=0; i<chapters_list->nb_elem; i++)
+        if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid)
+            ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
+                           chapters[i].start, chapters[i].end,
+                           chapters[i].title);
 
     return res;
 }
@@ -2357,8 +2260,6 @@ matroska_read_header (AVFormatContext    *s,
             }
 
             case MATROSKA_ID_CHAPTERS: {
-                if ((res = ebml_read_master(matroska, &id)) < 0)
-                    return res;
                 res = matroska_parse_chapters(s);
                 break;
             }
