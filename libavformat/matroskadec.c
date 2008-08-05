@@ -168,12 +168,12 @@ typedef struct {
     uint64_t pos;
 } MatroskaSeekhead;
 
-typedef struct MatroskaLevel {
+typedef struct {
     uint64_t start;
     uint64_t length;
 } MatroskaLevel;
 
-typedef struct MatroskaDemuxContext {
+typedef struct {
     AVFormatContext *ctx;
 
     /* ebml stuff */
