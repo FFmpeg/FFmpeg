@@ -540,17 +540,6 @@ static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
 }
 
 /*
- * Read: element content length.
- * Return: the number of bytes read or < 0 on error.
- */
-static int ebml_read_element_length(MatroskaDemuxContext *matroska,
-                                    uint64_t *length)
-{
-    /* read out the "EBML number", include tag in ID */
-    return ebml_read_num(matroska, 8, length);
-}
-
-/*
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
@@ -843,7 +832,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     }
 
     if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
-        if ((res = ebml_read_element_length(matroska, &length)) < 0)
+        if ((res = ebml_read_num(matroska, 8, &length)) < 0)
             return res;
 
     switch (syntax->type) {
