@@ -855,7 +855,7 @@ matroska_probe (AVProbeData *p)
 {
     uint64_t total = 0;
     int len_mask = 0x80, size = 1, n = 1;
-    uint8_t probe_data[] = { 'm', 'a', 't', 'r', 'o', 's', 'k', 'a' };
+    char probe_data[] = "matroska";
 
     /* ebml header? */
     if (AV_RB32(p->buf) != EBML_ID_HEADER)
@@ -881,8 +881,8 @@ matroska_probe (AVProbeData *p)
      * we don't parse the whole header but simply check for the
      * availability of that array of characters inside the header.
      * Not fully fool-proof, but good enough. */
-    for (n = 4 + size; n <= 4 + size + total - sizeof(probe_data); n++)
-        if (!memcmp (&p->buf[n], probe_data, sizeof(probe_data)))
+    for (n = 4+size; n <= 4+size+total-(sizeof(probe_data)-1); n++)
+        if (!memcmp(p->buf+n, probe_data, sizeof(probe_data)-1))
             return AVPROBE_SCORE_MAX;
 
     return 0;
