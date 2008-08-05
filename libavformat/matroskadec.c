@@ -456,29 +456,21 @@ static EbmlSyntax matroska_clusters[] = {
 };
 
 /*
- * Return: the amount of levels in the hierarchy that the
- * current element lies higher than the previous one.
- * The opposite isn't done - that's auto-done using master
- * element reading.
+ * Return: whether we reached the end of a level in the hierarchy or not
  */
-static int ebml_read_element_level_up(MatroskaDemuxContext *matroska)
+static int ebml_level_end(MatroskaDemuxContext *matroska)
 {
     ByteIOContext *pb = matroska->ctx->pb;
     offset_t pos = url_ftell(pb);
-    int num = 0;
 
-    while (matroska->num_levels > 0) {
+    if (matroska->num_levels > 0) {
         MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
-
-        if (pos >= level->start + level->length) {
+        if (pos - level->start >= level->length) {
             matroska->num_levels--;
-            num++;
-        } else {
-            break;
+            return 1;
         }
     }
-
-    return num;
+    return 0;
 }
 
 /*
@@ -933,17 +925,10 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
             break;
         }
 
-    while (!res) {
+    while (!res && !ebml_level_end(matroska)) {
         res2 = ebml_read_element_id(matroska, &id);
         if (res2 < 0)
             break;
-        if (res2 > 0)
-            matroska->level_up = ebml_read_element_level_up(matroska);
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
         res = ebml_parse_id(matroska, syntax, id, data);
         if (once)
             break;
