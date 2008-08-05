@@ -478,10 +478,9 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
  * number.
  * Returns: num. of bytes read. < 0 on error.
  */
-static int ebml_read_num(MatroskaDemuxContext *matroska,
+static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
                          int max_size, uint64_t *number)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
     int len_mask = 0x80, read = 1, n = 1;
     int64_t total = 0;
 
@@ -532,7 +531,7 @@ static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
     uint64_t total;
 
     /* read out the "EBML number", include tag in ID */
-    if ((read = ebml_read_num(matroska, 4, &total)) < 0)
+    if ((read = ebml_read_num(matroska, matroska->ctx->pb, 4, &total)) < 0)
         return read;
     *id = total | (1 << (read * 7));
 
@@ -638,53 +637,26 @@ static int ebml_read_master(MatroskaDemuxContext *matroska, int length)
 /*
  * Read signed/unsigned "EBML" numbers.
  * Return: number of bytes processed, < 0 on error.
- * XXX: use ebml_read_num().
  */
-static int matroska_ebmlnum_uint(uint8_t *data, uint32_t size, uint64_t *num)
+static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
+                                 uint8_t *data, uint32_t size, uint64_t *num)
 {
-    int len_mask = 0x80, read = 1, n = 1, num_ffs = 0;
-    uint64_t total;
-
-    if (size <= 0)
-        return AVERROR_INVALIDDATA;
-
-    total = data[0];
-    while (read <= 8 && !(total & len_mask)) {
-        read++;
-        len_mask >>= 1;
-    }
-    if (read > 8)
-        return AVERROR_INVALIDDATA;
-
-    if ((total &= (len_mask - 1)) == len_mask - 1)
-        num_ffs++;
-    if (size < read)
-        return AVERROR_INVALIDDATA;
-    while (n < read) {
-        if (data[n] == 0xff)
-            num_ffs++;
-        total = (total << 8) | data[n];
-        n++;
-    }
-
-    if (read == num_ffs)
-        *num = (uint64_t)-1;
-    else
-        *num = total;
-
-    return read;
+    ByteIOContext pb;
+    init_put_byte(&pb, data, size, 0, NULL, NULL, NULL, NULL);
+    return ebml_read_num(matroska, &pb, 8, num);
 }
 
 /*
  * Same as above, but signed.
  */
-static int matroska_ebmlnum_sint(uint8_t *data, uint32_t size, int64_t *num)
+static int matroska_ebmlnum_sint(MatroskaDemuxContext *matroska,
+                                 uint8_t *data, uint32_t size, int64_t *num)
 {
     uint64_t unum;
     int res;
 
     /* read as unsigned number first */
-    if ((res = matroska_ebmlnum_uint(data, size, &unum)) < 0)
+    if ((res = matroska_ebmlnum_uint(matroska, data, size, &unum)) < 0)
         return res;
 
     /* make signed (weird way) */
@@ -762,7 +734,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     }
 
     if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
-        if ((res = ebml_read_num(matroska, 8, &length)) < 0)
+        if ((res = ebml_read_num(matroska, pb, 8, &length)) < 0)
             return res;
 
     switch (syntax->type) {
@@ -1387,7 +1359,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     int n, flags, laces = 0;
     uint64_t num;
 
-    if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
+    if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
         return res;
     }
@@ -1465,7 +1437,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
                 case 0x3: /* EBML lacing */ {
                     uint32_t total;
-                    n = matroska_ebmlnum_uint(data, size, &num);
+                    n = matroska_ebmlnum_uint(matroska, data, size, &num);
                     if (n < 0) {
                         av_log(matroska->ctx, AV_LOG_INFO,
                                "EBML block data error\n");
@@ -1477,7 +1449,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     for (n = 1; res == 0 && n < laces - 1; n++) {
                         int64_t snum;
                         int r;
-                        r = matroska_ebmlnum_sint (data, size, &snum);
+                        r = matroska_ebmlnum_sint(matroska, data, size, &snum);
                         if (r < 0) {
                             av_log(matroska->ctx, AV_LOG_INFO,
                                    "EBML block data error\n");
