@@ -1928,7 +1928,7 @@ matroska_read_close (AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     MatroskaTrack *tracks = matroska->tracks.elem;
-    int n = 0;
+    int n;
 
     matroska_clear_queue(matroska);
 
