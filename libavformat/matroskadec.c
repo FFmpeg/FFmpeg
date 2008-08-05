@@ -461,8 +461,7 @@ static EbmlSyntax matroska_clusters[] = {
  * The opposite isn't done - that's auto-done using master
  * element reading.
  */
-static int
-ebml_read_element_level_up (MatroskaDemuxContext *matroska)
+static int ebml_read_element_level_up(MatroskaDemuxContext *matroska)
 {
     ByteIOContext *pb = matroska->ctx->pb;
     offset_t pos = url_ftell(pb);
@@ -490,10 +489,8 @@ ebml_read_element_level_up (MatroskaDemuxContext *matroska)
  * number.
  * Returns: num. of bytes read. < 0 on error.
  */
-static int
-ebml_read_num (MatroskaDemuxContext *matroska,
-               int                   max_size,
-               uint64_t             *number)
+static int ebml_read_num(MatroskaDemuxContext *matroska,
+                         int max_size, uint64_t *number)
 {
     ByteIOContext *pb = matroska->ctx->pb;
     int len_mask = 0x80, read = 1, n = 1;
@@ -540,9 +537,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
  * Read: the element content data ID.
  * Return: the number of bytes read or < 0 on error.
  */
-static int
-ebml_read_element_id (MatroskaDemuxContext *matroska,
-                      uint32_t             *id)
+static int ebml_read_element_id(MatroskaDemuxContext *matroska, uint32_t *id)
 {
     int read;
     uint64_t total;
@@ -565,9 +560,8 @@ ebml_read_element_id (MatroskaDemuxContext *matroska,
  * Read: element content length.
  * Return: the number of bytes read or < 0 on error.
  */
-static int
-ebml_read_element_length (MatroskaDemuxContext *matroska,
-                          uint64_t             *length)
+static int ebml_read_element_length(MatroskaDemuxContext *matroska,
+                                    uint64_t *length)
 {
     /* clear cache since we're now beyond that data point */
     matroska->peek_id = 0;
@@ -580,9 +574,7 @@ ebml_read_element_length (MatroskaDemuxContext *matroska,
  * Seek to a given offset.
  * 0 is success, -1 is failure.
  */
-static int
-ebml_read_seek (MatroskaDemuxContext *matroska,
-                offset_t              offset)
+static int ebml_read_seek(MatroskaDemuxContext *matroska, offset_t offset)
 {
     ByteIOContext *pb = matroska->ctx->pb;
 
@@ -596,10 +588,7 @@ ebml_read_seek (MatroskaDemuxContext *matroska,
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
-static int
-ebml_read_uint (ByteIOContext *pb,
-                int            size,
-                uint64_t             *num)
+static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
 {
     int n = 0;
 
@@ -618,10 +607,7 @@ ebml_read_uint (ByteIOContext *pb,
  * Read the next element as a float.
  * 0 is success, < 0 is failure.
  */
-static int
-ebml_read_float (ByteIOContext *pb,
-                 int            size,
-                 double               *num)
+static int ebml_read_float(ByteIOContext *pb, int size, double *num)
 {
     if (size == 4) {
         *num= av_int2flt(get_be32(pb));
@@ -637,10 +623,7 @@ ebml_read_float (ByteIOContext *pb,
  * Read the next element as an ASCII string.
  * 0 is success, < 0 is failure.
  */
-static int
-ebml_read_ascii (ByteIOContext *pb,
-                 int            size,
-                 char                **str)
+static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
 {
     av_free(*str);
     /* ebml strings are usually not 0-terminated, so we allocate one
@@ -661,9 +644,7 @@ ebml_read_ascii (ByteIOContext *pb,
  * are supposed to be sub-elements which can be read separately.
  * 0 is success, < 0 is failure.
  */
-static int
-ebml_read_master (MatroskaDemuxContext *matroska,
-                  int                   length)
+static int ebml_read_master(MatroskaDemuxContext *matroska, int length)
 {
     ByteIOContext *pb = matroska->ctx->pb;
     MatroskaLevel *level;
@@ -685,10 +666,7 @@ ebml_read_master (MatroskaDemuxContext *matroska,
  * Read the next element as binary data.
  * 0 is success, < 0 is failure.
  */
-static int
-ebml_read_binary (ByteIOContext *pb,
-                  int            length,
-                  EbmlBin       *bin)
+static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
 {
     av_free(bin->data);
     if (!(bin->data = av_malloc(length)))
@@ -707,10 +685,7 @@ ebml_read_binary (ByteIOContext *pb,
  * Return: number of bytes processed, < 0 on error.
  * XXX: use ebml_read_num().
  */
-static int
-matroska_ebmlnum_uint (uint8_t  *data,
-                       uint32_t  size,
-                       uint64_t *num)
+static int matroska_ebmlnum_uint(uint8_t *data, uint32_t size, uint64_t *num)
 {
     int len_mask = 0x80, read = 1, n = 1, num_ffs = 0;
     uint64_t total;
@@ -748,10 +723,7 @@ matroska_ebmlnum_uint (uint8_t  *data,
 /*
  * Same as above, but signed.
  */
-static int
-matroska_ebmlnum_sint (uint8_t  *data,
-                       uint32_t  size,
-                       int64_t  *num)
+static int matroska_ebmlnum_sint(uint8_t *data, uint32_t size, int64_t *num)
 {
     uint64_t unum;
     int res;
@@ -770,9 +742,8 @@ matroska_ebmlnum_sint (uint8_t  *data,
 }
 
 
-static MatroskaTrack *
-matroska_find_track_by_num (MatroskaDemuxContext *matroska,
-                            int                   num)
+static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
+                                                 int num)
 {
     MatroskaTrack *tracks = matroska->tracks.elem;
     int i;
@@ -790,9 +761,8 @@ matroska_find_track_by_num (MatroskaDemuxContext *matroska,
  * Put one packet in an application-supplied AVPacket struct.
  * Returns 0 on success or -1 on failure.
  */
-static int
-matroska_deliver_packet (MatroskaDemuxContext *matroska,
-                         AVPacket             *pkt)
+static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
+                                   AVPacket *pkt)
 {
     if (matroska->num_packets > 0) {
         memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
@@ -817,9 +787,7 @@ matroska_deliver_packet (MatroskaDemuxContext *matroska,
  * Put a packet into our internal queue. Will be delivered to the
  * user/application during the next get_packet() call.
  */
-static void
-matroska_queue_packet (MatroskaDemuxContext *matroska,
-                       AVPacket             *pkt)
+static void matroska_queue_packet(MatroskaDemuxContext *matroska, AVPacket *pkt)
 {
     matroska->packets =
         av_realloc(matroska->packets, (matroska->num_packets + 1) *
@@ -831,8 +799,7 @@ matroska_queue_packet (MatroskaDemuxContext *matroska,
 /*
  * Free all packets in our internal queue.
  */
-static void
-matroska_clear_queue (MatroskaDemuxContext *matroska)
+static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 {
     if (matroska->packets) {
         int n;
@@ -850,8 +817,7 @@ matroska_clear_queue (MatroskaDemuxContext *matroska)
 /*
  * Autodetecting...
  */
-static int
-matroska_probe (AVProbeData *p)
+static int matroska_probe(AVProbeData *p)
 {
     uint64_t total = 0;
     int len_mask = 0x80, size = 1, n = 1;
@@ -1009,8 +975,8 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
     }
 }
 
-static int
-matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
+static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
+                                  MatroskaTrack *track)
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t* data = *buf;
@@ -1086,8 +1052,7 @@ matroska_decode_buffer(uint8_t** buf, int* buf_size, MatroskaTrack *track)
     return -1;
 }
 
-static void
-matroska_execute_seekhead(MatroskaDemuxContext *matroska)
+static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 {
     EbmlList *seekhead_list = &matroska->seekhead;
     MatroskaSeekhead *seekhead = seekhead_list->elem;
@@ -1138,8 +1103,7 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     matroska->level_up = level_up;
 }
 
-static int
-matroska_aac_profile (char *codec_id)
+static int matroska_aac_profile(char *codec_id)
 {
     static const char *aac_profiles[] = { "MAIN", "LC", "SSR" };
     int profile;
@@ -1150,8 +1114,7 @@ matroska_aac_profile (char *codec_id)
     return profile + 1;
 }
 
-static int
-matroska_aac_sri (int samplerate)
+static int matroska_aac_sri(int samplerate)
 {
     int sri;
 
@@ -1161,9 +1124,7 @@ matroska_aac_sri (int samplerate)
     return sri;
 }
 
-static int
-matroska_read_header (AVFormatContext    *s,
-                      AVFormatParameters *ap)
+static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     EbmlList *attachements_list = &matroska->attachments;
@@ -1468,10 +1429,9 @@ matroska_read_header (AVFormatContext    *s,
     return 0;
 }
 
-static int
-matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
-                     int64_t pos, uint64_t cluster_time, uint64_t duration,
-                     int is_keyframe)
+static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
+                                int size, int64_t pos, uint64_t cluster_time,
+                                uint64_t duration, int is_keyframe)
 {
     MatroskaTrack *track;
     int res = 0;
@@ -1679,8 +1639,7 @@ matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data, int size,
     return res;
 }
 
-static int
-matroska_parse_cluster (MatroskaDemuxContext *matroska)
+static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
 {
     MatroskaCluster cluster = { 0 };
     EbmlList *blocks_list;
@@ -1698,9 +1657,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
     return res;
 }
 
-static int
-matroska_read_packet (AVFormatContext *s,
-                      AVPacket        *pkt)
+static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
 
@@ -1714,9 +1671,8 @@ matroska_read_packet (AVFormatContext *s,
     return 0;
 }
 
-static int
-matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
-                    int flags)
+static int matroska_read_seek(AVFormatContext *s, int stream_index,
+                              int64_t timestamp, int flags)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     AVStream *st = s->streams[stream_index];
@@ -1736,8 +1692,7 @@ matroska_read_seek (AVFormatContext *s, int stream_index, int64_t timestamp,
     return 0;
 }
 
-static int
-matroska_read_close (AVFormatContext *s)
+static int matroska_read_close(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     MatroskaTrack *tracks = matroska->tracks.elem;
