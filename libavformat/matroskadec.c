@@ -550,8 +550,6 @@ ebml_read_element_id (MatroskaDemuxContext *matroska,
 
     /* if we re-call this, use our cached ID */
     if (matroska->peek_id != 0) {
-        if (level_up)
-            *level_up = 0;
         *id = matroska->peek_id;
         return 0;
     }
@@ -1084,11 +1082,6 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
         res = ebml_parse_id(matroska, syntax, id, data);
         if (once)
             break;
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
     }
 
     return res;
