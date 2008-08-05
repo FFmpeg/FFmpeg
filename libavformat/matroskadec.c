@@ -1631,7 +1631,15 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaCluster cluster = { 0 };
     EbmlList *blocks_list;
     MatroskaBlock *blocks;
-    int i, res = ebml_parse(matroska, matroska_clusters, &cluster);
+    int i, res;
+    if (matroska->has_cluster_id){
+        /* For the first cluster we parse, it's ID was already read as
+           part of matroska_read_header(), so don't read it again */
+        res = ebml_parse_id(matroska, matroska_clusters,
+                            MATROSKA_ID_CLUSTER, &cluster);
+        matroska->has_cluster_id = 0;
+    } else
+        res = ebml_parse(matroska, matroska_clusters, &cluster);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
     for (i=0; !res && i<blocks_list->nb_elem; i++)
