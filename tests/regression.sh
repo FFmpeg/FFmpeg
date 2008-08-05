@@ -184,7 +184,7 @@ do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -fla
 do_video_decoding
 
 #mpeg2 4:2:2 encoding
-do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+ildct+ilme -flags2 +ivlc -mbd rd" "-vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
+do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+mv0+ildct+ilme -flags2 +ivlc -mbd rd" "-vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
 do_video_decoding
 
 # mpeg2
