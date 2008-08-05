@@ -577,28 +577,6 @@ ebml_read_element_length (MatroskaDemuxContext *matroska,
 }
 
 /*
- * Return: the ID of the next element, or 0 on error.
- * Level_up contains the amount of levels that this
- * next element lies higher than the previous one.
- */
-static uint32_t
-ebml_peek_id (MatroskaDemuxContext *matroska,
-              int                  *level_up)
-{
-    uint32_t id;
-    int res;
-
-    res = ebml_read_element_id(matroska, &id);
-    if (res < 0)
-        return 0;
-
-    if (res > 0 && level_up)
-        *level_up = ebml_read_element_level_up(matroska);
-
-    return id;
-}
-
-/*
  * Seek to a given offset.
  * 0 is success, -1 is failure.
  */
@@ -1045,7 +1023,7 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data, uint32_t expected_id, int once)
 {
-    int i, res = 0;
+    int i, res = 0, res2;
     uint32_t id = 0;
 
     for (i=0; syntax[i].id; i++)
@@ -1071,10 +1049,12 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     }
 
     while (!res) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
+        res2 = ebml_read_element_id(matroska, &id);
+        if (res2 < 0)
             break;
-        } else if (matroska->level_up) {
+        if (res2 > 0)
+            matroska->level_up = ebml_read_element_level_up(matroska);
+        if (matroska->level_up) {
             matroska->level_up--;
             break;
         }
