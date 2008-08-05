@@ -711,9 +711,9 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
 }
 
 /**
- * Parse an audio block from AC-3 bitstream.
+ * Decode a single audio block from the AC-3 bitstream.
  */
-static int ac3_parse_audio_block(AC3DecodeContext *s, int blk)
+static int decode_audio_block(AC3DecodeContext *s, int blk)
 {
     int fbw_channels = s->fbw_channels;
     int channel_mode = s->channel_mode;
@@ -1164,10 +1164,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             s->output_mode  = s->out_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
 
-    /* parse the audio blocks */
+    /* decode the audio blocks */
     for (blk = 0; blk < s->num_blocks; blk++) {
-        if (!err && ac3_parse_audio_block(s, blk)) {
-            av_log(avctx, AV_LOG_ERROR, "error parsing the audio block\n");
+        if (!err && decode_audio_block(s, blk)) {
+            av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
         }
 
         /* interleave output samples */
