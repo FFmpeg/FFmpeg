@@ -551,17 +551,6 @@ static int ebml_read_element_length(MatroskaDemuxContext *matroska,
 }
 
 /*
- * Seek to a given offset.
- * 0 is success, -1 is failure.
- */
-static int ebml_read_seek(MatroskaDemuxContext *matroska, offset_t offset)
-{
-    ByteIOContext *pb = matroska->ctx->pb;
-
-    return (url_fseek(pb, offset, SEEK_SET) == offset) ? 0 : -1;
-}
-
-/*
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
@@ -1034,14 +1023,15 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     int i;
 
     for (i=0; i<seekhead_list->nb_elem; i++) {
+        offset_t offset = seekhead[i].pos + matroska->segment_start;
+
         if (seekhead[i].pos <= before_pos
             || seekhead[i].id == MATROSKA_ID_SEEKHEAD
             || seekhead[i].id == MATROSKA_ID_CLUSTER)
             continue;
 
         /* seek */
-        if (ebml_read_seek(matroska,
-                           seekhead[i].pos+matroska->segment_start) < 0)
+        if (url_fseek(matroska->ctx->pb, offset, SEEK_SET) != offset)
             continue;
 
         /* we don't want to lose our seekhead level, so we add
@@ -1069,7 +1059,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     }
 
     /* seek back */
-    ebml_read_seek(matroska, before_pos);
+    url_fseek(matroska->ctx->pb, before_pos, SEEK_SET);
     matroska->level_up = level_up;
 }
 
