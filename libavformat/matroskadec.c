@@ -1400,29 +1400,22 @@ matroska_read_header (AVFormatContext    *s,
         if (st == NULL)
             return AVERROR(ENOMEM);
 
-        if (!strcmp(track->codec_id,
-                    MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC) &&
-            (track->codec_priv.size >= 40) &&
-            (track->codec_priv.data != NULL)) {
+        if (!strcmp(track->codec_id, MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC)
+            && track->codec_priv.size >= 40
+            && track->codec_priv.data != NULL) {
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
-        }
-        else if (!strcmp(track->codec_id,
-                         MATROSKA_CODEC_ID_AUDIO_ACM) &&
-                 (track->codec_priv.size >= 18) &&
-                 (track->codec_priv.data != NULL)) {
+        } else if (!strcmp(track->codec_id, MATROSKA_CODEC_ID_AUDIO_ACM)
+                   && track->codec_priv.size >= 18
+                   && track->codec_priv.data != NULL) {
             uint16_t tag = AV_RL16(track->codec_priv.data);
             codec_id = codec_get_id(codec_wav_tags, tag);
-        }
-
-        else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
-                 (track->codec_priv.size >= 86) &&
-                 (track->codec_priv.data != NULL)) {
+        } else if (!strcmp(track->codec_id, "V_QUICKTIME")
+                   && (track->codec_priv.size >= 86)
+                   && (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
             codec_id=codec_get_id(codec_movvideo_tags, track->video.fourcc);
-        }
-
-        else if (codec_id == CODEC_ID_AAC && !track->codec_priv.size) {
+        } else if (codec_id == CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri = matroska_aac_sri(track->audio.samplerate);
             extradata = av_malloc(5);
@@ -1438,8 +1431,7 @@ matroska_read_header (AVFormatContext    *s,
                 extradata_size = 5;
             } else
                 extradata_size = 2;
-        }
-        else if (codec_id == CODEC_ID_TTA) {
+        } else if (codec_id == CODEC_ID_TTA) {
             ByteIOContext b;
             extradata_size = 30;
             extradata = av_mallocz(extradata_size);
@@ -1453,19 +1445,15 @@ matroska_read_header (AVFormatContext    *s,
             put_le16(&b, track->audio.bitdepth);
             put_le32(&b, track->audio.out_samplerate);
             put_le32(&b, matroska->ctx->duration * track->audio.out_samplerate);
-        }
-        else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
-                 codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
+        } else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
+                   codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
             extradata_offset = 26;
             track->codec_priv.size -= extradata_offset;
-        }
-        else if (codec_id == CODEC_ID_RA_144) {
+        } else if (codec_id == CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
-        }
-        else if (codec_id == CODEC_ID_RA_288 ||
-                 codec_id == CODEC_ID_COOK ||
-                 codec_id == CODEC_ID_ATRAC3) {
+        } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
+                   codec_id == CODEC_ID_ATRAC3) {
             ByteIOContext b;
 
             init_put_byte(&b, track->codec_priv.data,track->codec_priv.size,
