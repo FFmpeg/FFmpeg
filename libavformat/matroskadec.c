@@ -1346,7 +1346,6 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     uint32_t peek_id_cache = matroska->peek_id;
     uint32_t level_up = matroska->level_up;
     offset_t before_pos = url_ftell(matroska->ctx->pb);
-    int dummy_level = 0;
     MatroskaLevel level;
     uint32_t id;
     int i, res;
@@ -1375,7 +1374,6 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
                         level.length = (uint64_t)-1;
                         matroska->levels[matroska->num_levels] = level;
                         matroska->num_levels++;
-                        dummy_level = 1;
 
                         /* check ID */
                         if (!(id = ebml_peek_id (matroska,
@@ -1410,7 +1408,6 @@ matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 
                     finish:
                         /* remove dummy level */
-                        if (dummy_level)
                             while (matroska->num_levels) {
                                 uint64_t length = matroska->levels[--matroska->num_levels].length;
                                 if (length == (uint64_t)-1)
