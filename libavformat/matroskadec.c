@@ -158,16 +158,20 @@ typedef struct MatroskaSubtitleTrack {
                                     sizeof(MatroskaAudioTrack), \
                                     sizeof(MatroskaSubtitleTrack)))
 
+typedef struct {
+    uint64_t track;
+    uint64_t pos;
+} MatroskaIndexPos;
+
+typedef struct {
+    uint64_t time;
+    EbmlList pos;
+} MatroskaIndex;
+
 typedef struct MatroskaLevel {
     uint64_t start;
     uint64_t length;
 } MatroskaLevel;
-
-typedef struct MatroskaDemuxIndex {
-  uint64_t        pos;   /* of the corresponding *cluster*! */
-  uint16_t        track; /* reference to 'num' */
-  uint64_t        time;  /* in nanoseconds */
-} MatroskaDemuxIndex;
 
 typedef struct MatroskaDemuxContext {
     AVFormatContext *ctx;
@@ -179,6 +183,7 @@ typedef struct MatroskaDemuxContext {
 
     /* timescale in the file */
     int64_t time_scale;
+    EbmlList index;
 
     /* num_streams is the number of streams that av_new_stream() was called
      * for ( = that are available to the calling program). */
@@ -201,10 +206,6 @@ typedef struct MatroskaDemuxContext {
     int index_parsed;
     int done;
 
-    /* The index for seeking. */
-    int num_indexes;
-    MatroskaDemuxIndex *index;
-
     /* What to skip before effectively reading a packet. */
     int skip_to_keyframe;
     AVStream *skip_to_stream;
@@ -226,6 +227,26 @@ static EbmlSyntax ebml_header[] = {
 
 static EbmlSyntax ebml_syntax[] = {
     { EBML_ID_HEADER,                 EBML_NEST, 0, 0, {.n=ebml_header} },
+    { 0 }
+};
+
+static EbmlSyntax matroska_index_pos[] = {
+    { MATROSKA_ID_CUETRACK,           EBML_UINT, 0, offsetof(MatroskaIndexPos,track) },
+    { MATROSKA_ID_CUECLUSTERPOSITION, EBML_UINT, 0, offsetof(MatroskaIndexPos,pos)   },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_index_entry[] = {
+    { MATROSKA_ID_CUETIME,            EBML_UINT, 0, offsetof(MatroskaIndex,time) },
+    { MATROSKA_ID_CUETRACKPOSITION,   EBML_NEST, sizeof(MatroskaIndexPos), offsetof(MatroskaIndex,pos), {.n=matroska_index_pos} },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_index[] = {
+    { MATROSKA_ID_POINTENTRY,         EBML_NEST, sizeof(MatroskaIndex), offsetof(MatroskaDemuxContext,index), {.n=matroska_index_entry} },
+    { EBML_ID_VOID,                   EBML_NONE },
     { 0 }
 };
 
@@ -1731,159 +1752,7 @@ matroska_parse_tracks (MatroskaDemuxContext *matroska)
 static int
 matroska_parse_index (MatroskaDemuxContext *matroska)
 {
-    int res = 0;
-    uint32_t id;
-    MatroskaDemuxIndex idx;
-
-    av_log(matroska->ctx, AV_LOG_DEBUG, "parsing index...\n");
-
-    while (res == 0) {
-        if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-            res = AVERROR(EIO);
-            break;
-        } else if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-
-        switch (id) {
-            /* one single index entry ('point') */
-            case MATROSKA_ID_POINTENTRY:
-                if ((res = ebml_read_master(matroska, &id)) < 0)
-                    break;
-
-                /* in the end, we hope to fill one entry with a
-                 * timestamp, a file position and a tracknum */
-                idx.pos   = (uint64_t) -1;
-                idx.time  = (uint64_t) -1;
-                idx.track = (uint16_t) -1;
-
-                while (res == 0) {
-                    if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {
-                        res = AVERROR(EIO);
-                        break;
-                    } else if (matroska->level_up) {
-                        matroska->level_up--;
-                        break;
-                    }
-
-                    switch (id) {
-                        /* one single index entry ('point') */
-                        case MATROSKA_ID_CUETIME: {
-                            uint64_t time;
-                            if ((res = ebml_read_uint(matroska, &id,
-                                                      &time)) < 0)
-                                break;
-                            idx.time = time * matroska->time_scale;
-                            break;
-                        }
-
-                        /* position in the file + track to which it
-                         * belongs */
-                        case MATROSKA_ID_CUETRACKPOSITION:
-                            if ((res = ebml_read_master(matroska, &id)) < 0)
-                                break;
-
-                            while (res == 0) {
-                                if (!(id = ebml_peek_id (matroska,
-                                                    &matroska->level_up))) {
-                                    res = AVERROR(EIO);
-                                    break;
-                                } else if (matroska->level_up) {
-                                    matroska->level_up--;
-                                    break;
-                                }
-
-                                switch (id) {
-                                    /* track number */
-                                    case MATROSKA_ID_CUETRACK: {
-                                        uint64_t num;
-                                        if ((res = ebml_read_uint(matroska,
-                                                          &id, &num)) < 0)
-                                            break;
-                                        idx.track = num;
-                                        break;
-                                    }
-
-                                        /* position in file */
-                                    case MATROSKA_ID_CUECLUSTERPOSITION: {
-                                        uint64_t num;
-                                        if ((res = ebml_read_uint(matroska,
-                                                          &id, &num)) < 0)
-                                            break;
-                                        idx.pos = num+matroska->segment_start;
-                                        break;
-                                    }
-
-                                    default:
-                                        av_log(matroska->ctx, AV_LOG_INFO,
-                                               "Unknown entry 0x%x in "
-                                               "CuesTrackPositions\n", id);
-                                        /* fall-through */
-
-                                    case EBML_ID_VOID:
-                                        res = ebml_read_skip(matroska);
-                                        break;
-                                }
-
-                                if (matroska->level_up) {
-                                    matroska->level_up--;
-                                    break;
-                                }
-                            }
-
-                            break;
-
-                        default:
-                            av_log(matroska->ctx, AV_LOG_INFO,
-                                   "Unknown entry 0x%x in cuespoint "
-                                   "index\n", id);
-                            /* fall-through */
-
-                        case EBML_ID_VOID:
-                            res = ebml_read_skip(matroska);
-                            break;
-                    }
-
-                    if (matroska->level_up) {
-                        matroska->level_up--;
-                        break;
-                    }
-                }
-
-                /* so let's see if we got what we wanted */
-                if (idx.pos   != (uint64_t) -1 &&
-                    idx.time  != (uint64_t) -1 &&
-                    idx.track != (uint16_t) -1) {
-                    if (matroska->num_indexes % 32 == 0) {
-                        /* re-allocate bigger index */
-                        matroska->index =
-                            av_realloc(matroska->index,
-                                       (matroska->num_indexes + 32) *
-                                       sizeof(MatroskaDemuxIndex));
-                    }
-                    matroska->index[matroska->num_indexes] = idx;
-                    matroska->num_indexes++;
-                }
-                break;
-
-            default:
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "Unknown entry 0x%x in cues header\n", id);
-                /* fall-through */
-
-            case EBML_ID_VOID:
-                res = ebml_read_skip(matroska);
-                break;
-        }
-
-        if (matroska->level_up) {
-            matroska->level_up--;
-            break;
-        }
-    }
-
-    return res;
+    return ebml_parse(matroska, matroska_index, matroska, MATROSKA_ID_CUES, 0);
 }
 
 static int
@@ -2036,8 +1905,6 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         }
 
                         /* read master + parse */
-                        if ((res = ebml_read_master(matroska, &id)) < 0)
-                            goto finish;
                         switch (id) {
                             case MATROSKA_ID_CUES:
                                 if (!(res = matroska_parse_index(matroska)) ||
@@ -2047,6 +1914,8 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                                 }
                                 break;
                             case MATROSKA_ID_TAGS:
+                                if ((res = ebml_read_master(matroska, &id)) < 0)
+                                    goto finish;
                                 if (!(res = matroska_parse_metadata(matroska)) ||
                                    url_feof(matroska->ctx->pb)) {
                                     matroska->metadata_parsed = 1;
@@ -2403,7 +2272,9 @@ matroska_read_header (AVFormatContext    *s,
                       AVFormatParameters *ap)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    int last_level, res = 0;
+    EbmlList *index_list;
+    MatroskaIndex *index;
+    int i, j, last_level, res = 0;
     Ebml ebml = { 0 };
     uint32_t id;
 
@@ -2475,8 +2346,6 @@ matroska_read_header (AVFormatContext    *s,
             /* stream index */
             case MATROSKA_ID_CUES: {
                 if (!matroska->index_parsed) {
-                    if ((res = ebml_read_master(matroska, &id)) < 0)
-                        break;
                     res = matroska_parse_index(matroska);
                 } else
                     res = ebml_read_skip(matroska);
@@ -2745,15 +2614,18 @@ matroska_read_header (AVFormatContext    *s,
         res = 0;
     }
 
-    if (matroska->index_parsed) {
-        int i;
-        for (i=0; i<matroska->num_indexes; i++) {
-            MatroskaDemuxIndex *idx = &matroska->index[i];
+    index_list = &matroska->index;
+    index = index_list->elem;
+    for (i=0; i<index_list->nb_elem; i++) {
+        EbmlList *pos_list = &index[i].pos;
+        MatroskaIndexPos *pos = pos_list->elem;
+        for (j=0; j<pos_list->nb_elem; j++) {
             MatroskaTrack *track = matroska_find_track_by_num(matroska,
-                                                              idx->track);
+                                                              pos[j].track);
             if (track && track->stream)
                 av_add_index_entry(track->stream,
-                                   idx->pos, idx->time/AV_TIME_BASE,
+                                   pos[j].pos + matroska->segment_start,
+                                   index[i].time*matroska->time_scale/AV_TIME_BASE,
                                    0, 0, AVINDEX_KEYFRAME);
         }
     }
@@ -3209,8 +3081,6 @@ matroska_read_close (AVFormatContext *s)
     MatroskaDemuxContext *matroska = s->priv_data;
     int n = 0;
 
-    av_free(matroska->index);
-
     matroska_clear_queue(matroska);
 
     for (n = 0; n < matroska->num_tracks; n++) {
@@ -3226,6 +3096,7 @@ matroska_read_close (AVFormatContext *s)
 
         av_free(track);
     }
+    ebml_free(matroska_index, matroska);
 
     return 0;
 }
