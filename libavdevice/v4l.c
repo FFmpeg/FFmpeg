@@ -78,10 +78,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int j;
     int vformat_num = sizeof(video_formats) / sizeof(video_formats[0]);
 
-    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
-        av_log(s1, AV_LOG_ERROR, "Bad capture size (%dx%d) or wrong time base (%d)\n",
-            ap->width, ap->height, ap->time_base.den);
-
+    if (ap->width <= 0 || ap->height <= 0) {
+        av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
+        return -1;
+    }
+    if (ap->time_base.den <= 0) {
+        av_log(s1, AV_LOG_ERROR, "Wrong time base (%d)\n", ap->time_base.den);
         return -1;
     }
 
