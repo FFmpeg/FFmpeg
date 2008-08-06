@@ -128,6 +128,7 @@ version <next>
 - Motion Pixels MVI demuxer
 - removed animated GIF decoder/demuxer
 - D-Cinema audio muxer
+- Electronic Arts TGV decoder
 
 version 0.4.9-pre1:
 

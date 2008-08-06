@@ -62,6 +62,7 @@ OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o
 OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EACMV_DECODER)           += eacmv.o
+OBJS-$(CONFIG_EATGV_DECODER)           += eatgv.o
 OBJS-$(CONFIG_EIGHTBPS_DECODER)        += 8bps.o
 OBJS-$(CONFIG_EIGHTSVX_EXP_DECODER)    += 8svx.o
 OBJS-$(CONFIG_EIGHTSVX_FIB_DECODER)    += 8svx.o
