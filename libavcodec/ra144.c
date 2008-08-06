@@ -246,7 +246,7 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
     for (c=8; c >= 0; c--) {
         b = 0x1000-((u * u) >> 12);
 
-        if (b == 0)
+        if (!b)
             b = -2;
 
         for (u=0; u<=c; u++)
