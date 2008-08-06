@@ -40,6 +40,7 @@
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')    /* TGV i-frame */
+#define fVGT_TAG MKTAG('f', 'V', 'G', 'T')    /* TGV p-frame */
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
 #define MPCh_TAG MKTAG('M', 'P', 'C', 'h')    /* MPEG2 */
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
@@ -307,6 +308,11 @@ static int process_ea_header(AVFormatContext *s) {
                 ea->time_base = (AVRational){0,0};
                 break;
 
+            case kVGT_TAG:
+                ea->video_codec = CODEC_ID_TGV;
+                ea->time_base = (AVRational){0,0};
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -450,8 +456,10 @@ static int ea_read_packet(AVFormatContext *s,
             break;
 
         case MVIh_TAG:
+        case kVGT_TAG:
             key = PKT_FLAG_KEY;
         case MVIf_TAG:
+        case fVGT_TAG:
             url_fseek(pb, -8, SEEK_CUR);     // include chunk preamble
             chunk_size += 8;
             goto get_video_packet;
