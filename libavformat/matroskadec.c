@@ -1268,19 +1268,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 }
 
 /*
- * Put a packet into our internal queue. Will be delivered to the
- * user/application during the next get_packet() call.
- */
-static void matroska_queue_packet(MatroskaDemuxContext *matroska, AVPacket *pkt)
-{
-    matroska->packets =
-        av_realloc(matroska->packets, (matroska->num_packets + 1) *
-                   sizeof(AVPacket *));
-    matroska->packets[matroska->num_packets] = pkt;
-    matroska->num_packets++;
-}
-
-/*
  * Put one packet in an application-supplied AVPacket struct.
  * Returns 0 on success or -1 on failure.
  */
@@ -1484,7 +1471,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                            + a * (h*w / a - track->audio.pkt_cnt--), a);
                     pkt->pos = pos;
                     pkt->stream_index = st->index;
-                    matroska_queue_packet(matroska, pkt);
+                    dynarray_add(&matroska->packets,&matroska->num_packets,pkt);
                 }
             } else {
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
@@ -1520,7 +1507,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 pkt->pos = pos;
                 pkt->duration = duration;
 
-                matroska_queue_packet(matroska, pkt);
+                dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
             }
 
             if (timecode != AV_NOPTS_VALUE)
