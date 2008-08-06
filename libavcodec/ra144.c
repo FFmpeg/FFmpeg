@@ -315,6 +315,9 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
+    if (*data_size < 2*160)
+        return -1;
+
     if(buf_size < 20) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
