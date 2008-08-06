@@ -32,4 +32,6 @@
 
 int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen);
 
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
+
 #endif /* FFMPEG_LZO_H */

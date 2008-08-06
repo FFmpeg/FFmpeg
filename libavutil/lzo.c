@@ -106,6 +106,8 @@ static inline void copy(LZOContext *c, int cnt) {
     c->out = dst + cnt;
 }
 
+static inline void memcpy_backptr(uint8_t *dst, int back, int cnt);
+
 /**
  * \brief copy previously decoded bytes to current position
  * \param back how many bytes back we start
@@ -125,9 +127,14 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
         cnt = FFMAX(c->out_end - dst, 0);
         c->error |= LZO_OUTPUT_FULL;
     }
+    memcpy_backptr(dst, back, cnt);
+    c->out = dst + cnt;
+}
+
+static inline void memcpy_backptr(uint8_t *dst, int back, int cnt) {
+    const uint8_t *src = &dst[-back];
     if (back == 1) {
         memset(dst, *src, cnt);
-        dst += cnt;
     } else {
 #ifdef OUTBUF_PADDED
         COPY2(dst, src);
@@ -155,9 +162,20 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
             }
             memcpy(dst, src, cnt);
         }
-        dst += cnt;
     }
-    c->out = dst;
+}
+
+/**
+ * \brief deliberately overlapping memcpy implementation
+ * \param dst destination buffer; must be padded with 12 additional bytes
+ * \param back how many bytes back we start (the initial size of the overlapping window)
+ * \param cnt number of bytes to copy, must be >= 0
+ *
+ * cnt > back is valid, this will copy the bytes we just copied,
+ * thus creating a repeating pattern with a period length of back.
+ */
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt) {
+    memcpy_backptr(dst, back, cnt);
 }
 
 /**
