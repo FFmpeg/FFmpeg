@@ -154,7 +154,7 @@ static unsigned int rms(const int *data)
 {
     int i;
     unsigned int res = 0x10000;
-    int b = 0;
+    int b = 10;
 
     for (i=0; i < 10; i++) {
         res = (((0x1000000 - data[i]*data[i]) >> 12) * res) >> 12;
@@ -168,10 +168,7 @@ static unsigned int rms(const int *data)
         }
     }
 
-    res = t_sqrt(res);
-
-    res >>= (b + 10);
-    return res;
+    return t_sqrt(res) >> b;
 }
 
 static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
