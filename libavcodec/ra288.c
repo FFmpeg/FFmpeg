@@ -236,6 +236,9 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         return 0;
     }
 
+    if (*data_size < 32*5*2)
+        return -1;
+
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
     for (i=0; i < 32; i++) {
