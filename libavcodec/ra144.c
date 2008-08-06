@@ -244,16 +244,10 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
     }
 
     for (c=8; c >= 0; c--) {
-        if (u == 0x1000)
-            u++;
-
-        if (u == 0xfffff000)
-            u--;
-
         b = 0x1000-((u * u) >> 12);
 
         if (b == 0)
-            b++;
+            b = -2;
 
         for (u=0; u<=c; u++)
             bp1[u] = ((bp2[u] - ((refl[c+1] * bp2[c-u]) >> 12)) * (0x1000000 / b)) >> 12;
