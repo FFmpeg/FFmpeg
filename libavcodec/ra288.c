@@ -70,15 +70,20 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     int i, j;
     double sumsum;
     float sum, buffer[5];
+    float *block = ractx->sp_block + 36; // Current block
 
-    memmove(ractx->sp_block + 5, ractx->sp_block, 36*sizeof(*ractx->sp_block));
+    memmove(ractx->sp_block, ractx->sp_block + 5, 36*sizeof(*ractx->sp_block));
 
-    for (i=4; i >= 0; i--)
-        ractx->sp_block[i] = -scalar_product_float(ractx->sp_block + i + 1,
-                                             ractx->sp_lpc, 36);
+    for (i=0; i < 5; i++) {
+        block[i] = 0.;
+        for (j=0; j < 36; j++)
+            block[i] -= block[i-1-j]*ractx->sp_lpc[j];
+    }
 
     /* block 46 of G.728 spec */
-    sum = 32. - scalar_product_float(ractx->gain_lpc, ractx->gain_block, 10);
+    sum = 32.;
+    for (i=0; i < 10; i++)
+        sum -= ractx->gain_block[9-i] * ractx->gain_lpc[i];
 
     /* block 47 of G.728 spec */
     sum = av_clipf(sum, 0, 60);
@@ -94,10 +99,10 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     sum = FFMAX(sum, 1);
 
     /* shift and store */
-    memmove(ractx->gain_block, ractx->gain_block - 1,
-            10 * sizeof(*ractx->gain_block));
+    memmove(ractx->gain_block, ractx->gain_block + 1,
+            9 * sizeof(*ractx->gain_block));
 
-    *ractx->gain_block = 10 * log10(sum) - 32;
+    ractx->gain_block[9] = 10 * log10(sum) - 32;
 
     for (i=1; i < 5; i++)
         for (j=i-1; j >= 0; j--)
@@ -105,8 +110,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* output */
     for (i=0; i < 5; i++)
-        ractx->sp_block[4-i] =
-            av_clipf(ractx->sp_block[4-i] + buffer[i], -4095, 4095);
+        block[i] = av_clipf(block[i] + buffer[i], -4095, 4095);
 }
 
 /**
@@ -157,11 +161,6 @@ static void convolve(float *tgt, const float *src, int len, int n)
 /**
  * Hybrid window filtering. See blocks 36 and 49 of the G.728 specification.
  *
- * @note This function is slightly different from that described in the spec.
- *       It expects in[0] to be the newest sample and in[n-1] to be the oldest
- *       one stored. The spec has in the more ordinary way (in[0] the oldest
- *       and in[n-1] the newest).
- *
  * @param order   the order of the filter
  * @param n       the length of the input
  * @param non_rec the number of non-recursive samples
@@ -184,9 +183,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
 
     /* update history */
     memmove(hist, hist + n, (order + non_rec)*sizeof(*hist));
-
-    for (i=0; i < n; i++)
-        hist[order + non_rec + i] = in[n-i-1];
+    memcpy (hist + order + non_rec, in, n * sizeof(*hist));
 
     colmult(work, window, hist, order + n + non_rec);
 
@@ -210,13 +207,13 @@ static void backward_filter(RA288Context *ractx)
     float temp1[37]; // RTMP in the spec
     float temp2[11]; // GPTPMP in the spec
 
-    do_hybrid_window(36, 40, 35, ractx->sp_block, temp1, ractx->sp_hist,
+    do_hybrid_window(36, 40, 35, ractx->sp_block+1, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
 
     if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
         colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
-    do_hybrid_window(10, 8, 20, ractx->gain_block, temp2, ractx->gain_hist,
+    do_hybrid_window(10, 8, 20, ractx->gain_block+2, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
     if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
@@ -248,7 +245,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         decode(ractx, gain, cb_coef);
 
         for (j=0; j < 5; j++)
-            *(out++) = 8 * ractx->sp_block[4 - j];
+            *(out++) = 8 * ractx->sp_block[36 + j];
 
         if ((i & 7) == 3)
             backward_filter(ractx);
