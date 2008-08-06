@@ -71,7 +71,7 @@ static int t_sqrt(unsigned int x)
     int s = 2;
     while (x > 0xfff) {
         s++;
-        x = x >> 2;
+        x >>= 2;
     }
 
     return ff_sqrt(x << 20) << s;
