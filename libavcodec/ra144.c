@@ -226,8 +226,7 @@ static void int_to_int16(int16_t *out, const int *inp)
  */
 static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
 {
-    int b, c, i;
-    unsigned int u;
+    int b, i, j;
     int buffer1[10];
     int buffer2[10];
     int *bp1 = buffer1;
@@ -243,18 +242,18 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
         return 1;
     }
 
-    for (c=8; c >= 0; c--) {
-        b = 0x1000-((bp2[c+1] * bp2[c+1]) >> 12);
+    for (i=8; i >= 0; i--) {
+        b = 0x1000-((bp2[i+1] * bp2[i+1]) >> 12);
 
         if (!b)
             b = -2;
 
-        for (u=0; u<=c; u++)
-            bp1[u] = ((bp2[u] - ((refl[c+1] * bp2[c-u]) >> 12)) * (0x1000000 / b)) >> 12;
+        for (j=0; j <= i; j++)
+            bp1[j] = ((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * (0x1000000 / b)) >> 12;
 
-        refl[c] = bp1[c];
+        refl[i] = bp1[i];
 
-        if ((unsigned) bp1[c] + 0x1000 > 0x1fff)
+        if ((unsigned) bp1[i] + 0x1000 > 0x1fff)
             return 1;
 
         FFSWAP(int *, bp1, bp2);
