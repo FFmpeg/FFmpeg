@@ -1304,8 +1304,7 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
             av_free_packet(matroska->packets[n]);
             av_free(matroska->packets[n]);
         }
-        av_free(matroska->packets);
-        matroska->packets = NULL;
+        av_freep(&matroska->packets);
         matroska->num_packets = 0;
     }
 }
