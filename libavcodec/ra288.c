@@ -182,8 +182,8 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     float work[order + n + non_rec];
 
     /* update history */
-    memmove(hist, hist + n, (order + non_rec)*sizeof(*hist));
-    memcpy (hist + order + non_rec, in, n * sizeof(*hist));
+    memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
+    memcpy (hist + order + non_rec, in      , n                *sizeof(*hist));
 
     colmult(work, window, hist, order + n + non_rec);
 
