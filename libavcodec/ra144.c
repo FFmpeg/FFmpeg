@@ -231,7 +231,6 @@ static void int_to_int16(int16_t *out, const int *inp)
  */
 static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
 {
-    int retval = 0;
     int b, c, i;
     unsigned int u;
     int buffer1[10];
@@ -267,11 +266,11 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
         refl[c] = u = bp1[c];
 
         if ((u + 0x1000) > 0x1fff)
-            retval = 1;
+            return 1;
 
         FFSWAP(int *, bp1, bp2);
     }
-    return retval;
+    return 0;
 }
 
 static int interp(RA144Context *ractx, int16_t *out, int block_num,
