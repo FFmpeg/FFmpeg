@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 18
+#define LIBAVFORMAT_VERSION_MINOR 19
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -565,6 +565,9 @@ typedef struct AVFormatContext {
      * codec.
      */
     struct AVPacketList *raw_packet_buffer;
+    struct AVPacketList *raw_packet_buffer_end;
+
+    struct AVPacketList *packet_buffer_end;
 } AVFormatContext;
 
 typedef struct AVPacketList {

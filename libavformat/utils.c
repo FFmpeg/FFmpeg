@@ -524,15 +524,16 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
 /*******************************************************/
 
-static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt){
-    AVPacketList *pktl;
-    AVPacketList **plast_pktl= packet_buffer;
-
-    while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
-
-    pktl = av_mallocz(sizeof(AVPacketList));
+static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
+                               AVPacketList **plast_pktl){
+    AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
     if (!pktl)
         return NULL;
+
+    if (*packet_buffer)
+        (*plast_pktl)->next = pktl;
+    else
+        *packet_buffer = pktl;
 
     /* add the packet in the buffered packet list */
     *plast_pktl = pktl;
@@ -578,7 +579,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
             return ret;
 
-        add_to_pktbuf(&s->raw_packet_buffer, pkt);
+        add_to_pktbuf(&s->raw_packet_buffer, pkt, &s->raw_packet_buffer_end);
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
@@ -1043,7 +1044,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     return ret;
             }
 
-            if(av_dup_packet(add_to_pktbuf(&s->packet_buffer, pkt)) < 0)
+            if(av_dup_packet(add_to_pktbuf(&s->packet_buffer, pkt,
+                                           &s->packet_buffer_end)) < 0)
                 return AVERROR(ENOMEM);
         }else{
             assert(!s->packet_buffer);
@@ -2021,7 +2023,7 @@ int av_find_stream_info(AVFormatContext *ic)
             break;
         }
 
-        pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1);
+        pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1, &ic->packet_buffer_end);
         if(av_dup_packet(pkt) < 0) {
             av_free(duration_error);
             return AVERROR(ENOMEM);
