@@ -203,12 +203,10 @@ static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
 
     memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
            10*sizeof(*ractx->curr_sblock));
-    memcpy(ractx->curr_sblock + 10, block,
-           BLOCKSIZE*sizeof(*ractx->curr_sblock));
 
     if (ff_acelp_lp_synthesis_filter(
                                      ractx->curr_sblock + 10, lpc_coefs,
-                                     ractx->curr_sblock + 10, BLOCKSIZE,
+                                     block, BLOCKSIZE,
                                      10, 1, 0xfff)
         )
         memset(ractx->curr_sblock, 0, 50*sizeof(*ractx->curr_sblock));
