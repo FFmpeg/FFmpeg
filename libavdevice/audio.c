@@ -129,8 +129,6 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
         av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
         goto fail;
     }
-    if (tmp)
-        s->channels = 2;
 
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
