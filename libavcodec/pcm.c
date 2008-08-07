@@ -160,6 +160,24 @@ static inline void encode_from16(int bps, int le, int us,
     if (le) *dst -= bps - 2;
 }
 
+/**
+ * Write PCM samples macro
+ * @param type Datatype of native machine format
+ * @param endian bytestream_put_xxx() suffix
+ * @param src Source pointer (variable name)
+ * @param dst Destination pointer (variable name)
+ * @param n Total number of samples (variable name)
+ * @param offset Sample value offset
+ */
+#define ENCODE(type, endian, src, dst, n, offset) \
+{ \
+    type *samples = src; \
+    for(;n>0;n--) { \
+        register type v = *samples++ + offset; \
+        bytestream_put_##endian(&dst, v); \
+    } \
+}
+
 static int pcm_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
@@ -174,14 +192,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
 
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_F32BE:
-        {
-        float *fsamples = data;
-        for(;n>0;n--) {
-            float fv = *fsamples++;
-            bytestream_put_be32(&dst, av_flt2int(fv));
-        }
-        samples = (void*)fsamples;
-        }
+        ENCODE(int32_t, be32, samples, dst, n, 0)
         break;
     case CODEC_ID_PCM_S32LE:
         encode_from16(4, 1, 0, &samples, &dst, n);
@@ -334,6 +345,25 @@ static inline void decode_to16(int bps, int le, int us,
     if (le) *src -= bps - 2;
 }
 
+/**
+ * Read PCM samples macro
+ * @param type Datatype of native machine format
+ * @param endian bytestream_get_xxx() endian suffix
+ * @param src Source pointer (variable name)
+ * @param dst Destination pointer (variable name)
+ * @param n Total number of samples (variable name)
+ * @param offset Sample value offset
+ */
+#define DECODE(type, endian, src, dst, n, offset) \
+{ \
+    type *dst2 = (type*)dst; \
+    for(;n>0;n--) { \
+        register type v = bytestream_get_##endian(&src); \
+        *dst2++ = v - offset; \
+    } \
+    dst = (short*)dst2; \
+}
+
 static int pcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             const uint8_t *buf, int buf_size)
@@ -371,13 +401,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_F32BE:
-        {
-        float *fsamples = data;
-        for(;n>0;n--)
-            *fsamples++ = av_int2flt(bytestream_get_be32(&src));
-        samples = (void*)fsamples;
+        DECODE(int32_t, be32, src, samples, n, 0)
         break;
-        }
     case CODEC_ID_PCM_S32LE:
         decode_to16(4, 1, 0, &src, &samples, buf_size);
         break;
