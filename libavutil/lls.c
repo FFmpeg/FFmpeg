@@ -30,10 +30,6 @@
 
 #include "lls.h"
 
-#ifdef TEST
-#define av_log(a,b,...) printf(__VA_ARGS__)
-#endif
-
 void av_init_lls(LLSModel *m, int indep_count){
     memset(m, 0, sizeof(LLSModel));
 
@@ -140,7 +136,7 @@ int main(void){
         av_solve_lls(&m, 0.001, 0);
         for(order=0; order<3; order++){
             eval= av_evaluate_lls(&m, var+1, order);
-            av_log(NULL, AV_LOG_DEBUG, "real:%f order:%d pred:%f var:%f coeffs:%f %f %f\n",
+            printf("real:%f order:%d pred:%f var:%f coeffs:%f %f %f\n",
                 var[0], order, eval, sqrt(m.variance[order] / (i+1)),
                 m.coeff[order][0], m.coeff[order][1], m.coeff[order][2]);
         }
