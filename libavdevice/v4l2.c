@@ -510,7 +510,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     frame_rate_base = ap->time_base.num;
 
     if((unsigned)width > 32767 || (unsigned)height > 32767) {
-        av_log(s1, AV_LOG_ERROR, "Wrong size %dx%d\n", width, height);
+        av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", width, height);
 
         return -1;
     }
