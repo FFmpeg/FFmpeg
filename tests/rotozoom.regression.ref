@@ -213,3 +213,63 @@ stddev: 2105.96 PSNR: 29.85 bytes:  1048620/  1058444
 106044 ./tests/data/a-wmav2.asf
 stddev:12255.80 PSNR: 14.55 bytes:  1056812/  1058444
 stddev: 2099.27 PSNR: 29.88 bytes:  1048620/  1058444
+89f5b8dd97e0dddbe59af0d44fd229f3 *./tests/data/a-pcm_alaw.wav
+529256 ./tests/data/a-pcm_alaw.wav
+0568b0b9a72e31559e150e7e09d301cd *./tests/data/pcm.rotozoom.out.wav
+stddev:  101.67 PSNR: 56.18 bytes:  1058444/  1058444
+f443a8eeb1647ec1eeb8370c939e52d4 *./tests/data/a-pcm_mulaw.wav
+529256 ./tests/data/a-pcm_mulaw.wav
+1c3eeaa8814ebd4916780dff80ed6dc5 *./tests/data/pcm.rotozoom.out.wav
+stddev:  103.38 PSNR: 56.03 bytes:  1058444/  1058444
+9b883ee7a5256b26e16c419b76f373d7 *./tests/data/a-pcm_s8.mov
+533937 ./tests/data/a-pcm_s8.mov
+652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.rotozoom.out.wav
+stddev:  147.89 PSNR: 52.92 bytes:  1058444/  1058444
+98cadb3502dbdc99e6e077c28b1a036c *./tests/data/a-pcm_u8.wav
+529244 ./tests/data/a-pcm_u8.wav
+652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.rotozoom.out.wav
+stddev:  147.89 PSNR: 52.92 bytes:  1058444/  1058444
+5c8718508599b5c87af8e9a7158a9e66 *./tests/data/a-pcm_s16be.mov
+1063137 ./tests/data/a-pcm_s16be.mov
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/a-pcm_s16le.wav
+1058444 ./tests/data/a-pcm_s16le.wav
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+01c2f68d239f05489369001b548da455 *./tests/data/a-pcm_u16be.mkv
+1066121 ./tests/data/a-pcm_u16be.mkv
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+a4d25572221ee6ead64f8372cd72cae5 *./tests/data/a-pcm_u16le.mkv
+1066121 ./tests/data/a-pcm_u16le.mkv
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+4bc4cd19722f6456fd0e9b51ee0c30cf *./tests/data/a-pcm_s24be.mov
+1592337 ./tests/data/a-pcm_s24be.mov
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+aaba3cf534ddddf5bcf663bc8c5b5331 *./tests/data/a-pcm_s24le.wav
+1587644 ./tests/data/a-pcm_s24le.wav
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+e60d8004d926d5f27beeb92a9bdd4b3d *./tests/data/a-pcm_s32be.mov
+2121537 ./tests/data/a-pcm_s32be.mov
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+7661c9b6f221d9f57985a9e4d92c4e63 *./tests/data/a-pcm_s32le.wav
+2116844 ./tests/data/a-pcm_s32le.wav
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+118ff3dc83c62ce9ce669eef57e55bb2 *./tests/data/a-pcm_f32be.au
+2116824 ./tests/data/a-pcm_f32be.au
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.rotozoom.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
+8c74234928ed425b1171211a89f67ead *./tests/data/a-pcm_zork.wav
+529256 ./tests/data/a-pcm_zork.wav
+864c8c866ac25642c29a13b122c70709 *./tests/data/pcm.rotozoom.out.wav
+stddev:  633.10 PSNR: 40.29 bytes:  1058444/  1058444
+f0c1c9bae445267d4ab8fb91d4f56071 *./tests/data/a-pcm_s24daud.302
+10371830 ./tests/data/a-pcm_s24daud.302
+fff1dc03aa2750031203a7d72b832fad *./tests/data/pcm.rotozoom.out.wav
+stddev: 9416.45 PSNR: 16.84 bytes:  6911840/  1058444

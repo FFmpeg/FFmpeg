@@ -212,6 +212,7 @@ CODEC_TESTS = $(addprefix regtest-,             \
         adpcm_swf                               \
         flac                                    \
         wma                                     \
+        pcm                                     \
     )
 
 LAVF_TESTS = $(addprefix regtest-,              \
