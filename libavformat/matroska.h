@@ -133,7 +133,13 @@
 #define MATROSKA_ID_CUECLUSTERPOSITION 0xF1
 
 /* IDs in the tags master */
-/* TODO */
+#define MATROSKA_ID_TAG                 0x7373
+#define MATROSKA_ID_SIMPLETAG           0x67C8
+#define MATROSKA_ID_TAGNAME             0x45A3
+#define MATROSKA_ID_TAGSTRING           0x4487
+#define MATROSKA_ID_TAGLANG             0x447A
+#define MATROSKA_ID_TAGDEFAULT          0x44B4
+#define MATROSKA_ID_TAGTARGETS          0x63C0
 
 /* IDs in the seekhead master */
 #define MATROSKA_ID_SEEKENTRY  0x4DBB

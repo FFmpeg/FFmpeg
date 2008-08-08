@@ -164,6 +164,12 @@ typedef struct {
 } MatroskaIndex;
 
 typedef struct {
+    char *name;
+    char *string;
+    EbmlList sub;
+} MatroskaTag;
+
+typedef struct {
     uint64_t id;
     uint64_t pos;
 } MatroskaSeekhead;
@@ -188,6 +194,7 @@ typedef struct {
     EbmlList attachments;
     EbmlList chapters;
     EbmlList index;
+    EbmlList tags;
     EbmlList seekhead;
 
     /* byte position of the segment inside the stream */
@@ -390,7 +397,25 @@ static EbmlSyntax matroska_index[] = {
     { 0 }
 };
 
+static EbmlSyntax matroska_simpletag[] = {
+    { MATROSKA_ID_TAGNAME,            EBML_UTF8, 0, offsetof(MatroskaTag,name) },
+    { MATROSKA_ID_TAGSTRING,          EBML_UTF8, 0, offsetof(MatroskaTag,string) },
+    { MATROSKA_ID_SIMPLETAG,          EBML_NEST, sizeof(MatroskaTag), offsetof(MatroskaTag,sub), {.n=matroska_simpletag} },
+    { MATROSKA_ID_TAGLANG,            EBML_NONE },
+    { MATROSKA_ID_TAGDEFAULT,         EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
+static EbmlSyntax matroska_tag[] = {
+    { MATROSKA_ID_SIMPLETAG,          EBML_NEST, sizeof(MatroskaTag), 0, {.n=matroska_simpletag} },
+    { MATROSKA_ID_TAGTARGETS,         EBML_NONE },
+    { EBML_ID_VOID,                   EBML_NONE },
+    { 0 }
+};
+
 static EbmlSyntax matroska_tags[] = {
+    { MATROSKA_ID_TAG,                EBML_NEST, 0, offsetof(MatroskaDemuxContext,tags), {.n=matroska_tag} },
     { EBML_ID_VOID,                   EBML_NONE },
     { 0 }
 };
@@ -446,6 +471,25 @@ static EbmlSyntax matroska_cluster[] = {
 static EbmlSyntax matroska_clusters[] = {
     { MATROSKA_ID_CLUSTER,        EBML_NEST, 0, 0, {.n=matroska_cluster} },
     { 0 }
+};
+
+#define SIZE_OFF(x) sizeof(((AVFormatContext*)0)->x),offsetof(AVFormatContext,x)
+const struct {
+    const char name[16];
+    int   size;
+    int   offset;
+} metadata[] = {
+    { "TITLE",           SIZE_OFF(title)      },
+    { "ARTIST",          SIZE_OFF(author)     },
+    { "WRITTEN_BY",      SIZE_OFF(author)     },
+    { "LEAD_PERFORMER",  SIZE_OFF(author)     },
+    { "COPYRIGHT",       SIZE_OFF(copyright)  },
+    { "COMMENT",         SIZE_OFF(comment)    },
+    { "ALBUM",           SIZE_OFF(album)      },
+    { "DATE_WRITTEN",    SIZE_OFF(year)       },
+    { "DATE_RELEASED",   SIZE_OFF(year)       },
+    { "PART_NUMBER",     SIZE_OFF(track)      },
+    { "GENRE",           SIZE_OFF(genre)      },
 };
 
 /*
@@ -891,6 +935,27 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     return -1;
 }
 
+static void matroska_convert_tags(AVFormatContext *s, EbmlList *list)
+{
+    MatroskaTag *tags = list->elem;
+    int i, j;
+
+    for (i=0; i < list->nb_elem; i++) {
+        for (j=0; j < ARRAY_SIZE(metadata); j++){
+            if (!strcmp(tags[i].name, metadata[j].name)) {
+                int *ptr = (int *)((char *)s + metadata[j].offset);
+                if (*ptr)  continue;
+                if (metadata[j].size > sizeof(int))
+                    av_strlcpy((char *)ptr, tags[i].string, metadata[j].size);
+                else
+                    *ptr = atoi(tags[i].string);
+            }
+        }
+        if (tags[i].sub.nb_elem)
+            matroska_convert_tags(s, &tags[i].sub);
+    }
+}
+
 static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 {
     EbmlList *seekhead_list = &matroska->seekhead;
@@ -1002,6 +1067,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (matroska->title)
         strncpy(matroska->ctx->title, matroska->title,
                 sizeof(matroska->ctx->title)-1);
+    matroska_convert_tags(s, &matroska->tags);
 
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
