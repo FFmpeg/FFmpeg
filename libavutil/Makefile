@@ -21,6 +21,7 @@ OBJS = adler32.o \
        sha1.o \
        string.o \
        tree.o \
+       utils.o \
 
 HEADERS = adler32.h \
           avstring.h \
