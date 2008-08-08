@@ -20,6 +20,12 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "avdevice.h"
+
+unsigned avdevice_version(void)
+{
+    return LIBAVDEVICE_VERSION_INT;
+}
 
 #define REGISTER_MUXER(X,x) { \
           extern AVOutputFormat x##_muxer; \

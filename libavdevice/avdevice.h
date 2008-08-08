@@ -20,7 +20,7 @@
 #define FFMPEG_AVDEVICE_H
 
 #define LIBAVDEVICE_VERSION_MAJOR 52
-#define LIBAVDEVICE_VERSION_MINOR  0
+#define LIBAVDEVICE_VERSION_MINOR  1
 #define LIBAVDEVICE_VERSION_MICRO  0
 
 #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
@@ -30,6 +30,11 @@
                                            LIBAVDEVICE_VERSION_MINOR, \
                                            LIBAVDEVICE_VERSION_MICRO)
 #define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
+
+/**
+ * Returns the LIBAVDEVICE_VERSION_INT constant.
+ */
+unsigned avdevice_version(void);
 
 /**
  * Initialize libavdevice and register all the input and output devices.
