@@ -33,6 +33,11 @@
  * various utility functions for use within FFmpeg
  */
 
+unsigned avformat_version(void)
+{
+    return LIBAVFORMAT_VERSION_INT;
+}
+
 static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
 static void av_frac_add(AVFrac *f, int64_t incr);
 
