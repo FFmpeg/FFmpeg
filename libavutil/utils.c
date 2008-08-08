@@ -25,5 +25,5 @@
 
 unsigned avutil_version(void)
 {
-  return LIBAVUTIL_VERSION_INT;
+    return LIBAVUTIL_VERSION_INT;
 }
