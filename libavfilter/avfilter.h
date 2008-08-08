@@ -23,7 +23,7 @@
 #define FFMPEG_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  0
-#define LIBAVFILTER_VERSION_MINOR  0
+#define LIBAVFILTER_VERSION_MINOR  1
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -36,6 +36,11 @@
 
 #include <stddef.h>
 #include "libavcodec/avcodec.h"
+
+/**
+ * Returns the LIBAVFILTER_VERSION_INT constant.
+ */
+unsigned avfilter_version(void);
 
 typedef struct AVFilterContext AVFilterContext;
 typedef struct AVFilterLink    AVFilterLink;

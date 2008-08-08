@@ -22,6 +22,10 @@
 #include "libavcodec/imgconvert.h"
 #include "avfilter.h"
 
+unsigned avfilter_version(void) {
+    return LIBAVFILTER_VERSION_INT;
+}
+
 /** list of registered filters */
 struct FilterList
 {
