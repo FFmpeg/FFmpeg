@@ -186,15 +186,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
             int list;
             for(list=0; list<h->list_count; list++){
                 if(USES_LIST(mb_type,list)){
-                    uint32_t *src = (uint32_t*)s->current_picture.motion_val[list][h->mb2b_xy[mb_xy]];
-                    uint32_t *dst = (uint32_t*)h->mv_cache[list][scan8[0]];
                     int8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
-                    for(i=0; i<4; i++, dst+=8, src+=h->b_stride){
-                        dst[0] = src[0];
-                        dst[1] = src[1];
-                        dst[2] = src[2];
-                        dst[3] = src[3];
-                    }
                     *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
                     *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = pack16to32(ref[0],ref[1])*0x0101;
                     ref += h->b8_stride;
