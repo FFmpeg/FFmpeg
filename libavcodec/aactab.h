@@ -30,6 +30,7 @@
 #ifndef FFMPEG_AACTAB_H
 #define FFMPEG_AACTAB_H
 
+#include "libavutil/mem.h"
 #include "aac.h"
 
 #include <stdint.h>
@@ -45,6 +46,7 @@ extern const int8_t *ff_aac_codebook_vectors[];
 
 #ifdef CONFIG_HARDCODED_TABLES
 extern const float ff_aac_ivquant_tab[IVQUANT_SIZE];
+extern const float ff_aac_pow2sf_tab[316];
 #endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* FFMPEG_AACTAB_H */
