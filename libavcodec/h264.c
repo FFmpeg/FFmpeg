@@ -184,9 +184,6 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
 
         if(FRAME_MBAFF && !IS_INTRA(mb_type)){
             int list;
-            int v = *(uint16_t*)&h->non_zero_count[mb_xy][14];
-            for(i=0; i<16; i++)
-                h->non_zero_count_cache[scan8[i]] = (v>>i)&1;
             for(list=0; list<h->list_count; list++){
                 if(USES_LIST(mb_type,list)){
                     uint32_t *src = (uint32_t*)s->current_picture.motion_val[list][h->mb2b_xy[mb_xy]];
@@ -656,14 +653,6 @@ static inline void write_back_non_zero_count(H264Context *h){
     h->non_zero_count[mb_xy][12]=h->non_zero_count_cache[1+8*5];
     h->non_zero_count[mb_xy][11]=h->non_zero_count_cache[2+8*5];
     h->non_zero_count[mb_xy][10]=h->non_zero_count_cache[2+8*4];
-
-    if(FRAME_MBAFF){
-        // store all luma nnzs, for deblocking
-        int v = 0, i;
-        for(i=0; i<16; i++)
-            v += (!!h->non_zero_count_cache[scan8[i]]) << i;
-        *(uint16_t*)&h->non_zero_count[mb_xy][14] = v;
-    }
 }
 
 /**
@@ -2270,30 +2259,63 @@ static int frame_start(H264Context *h){
 static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int simple){
     MpegEncContext * const s = &h->s;
     int i;
+    int step    = 1;
+    int offset  = 1;
+    int uvoffset= 1;
+    int top_idx = 1;
+    int skiplast= 0;
 
     src_y  -=   linesize;
     src_cb -= uvlinesize;
     src_cr -= uvlinesize;
 
-    // There are two lines saved, the line above the the top macroblock of a pair,
-    // and the line above the bottom macroblock
-    h->left_border[0]= h->top_borders[0][s->mb_x][15];
-    for(i=1; i<17; i++){
-        h->left_border[i]= src_y[15+i*  linesize];
+    if(!simple && FRAME_MBAFF){
+        if(s->mb_y&1){
+            offset  = MB_MBAFF ? 1 : 17;
+            uvoffset= MB_MBAFF ? 1 : 9;
+            if(!MB_MBAFF){
+                *(uint64_t*)(h->top_borders[0][s->mb_x]+ 0)= *(uint64_t*)(src_y +  15*linesize);
+                *(uint64_t*)(h->top_borders[0][s->mb_x]+ 8)= *(uint64_t*)(src_y +8+15*linesize);
+                if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                    *(uint64_t*)(h->top_borders[0][s->mb_x]+16)= *(uint64_t*)(src_cb+7*uvlinesize);
+                    *(uint64_t*)(h->top_borders[0][s->mb_x]+24)= *(uint64_t*)(src_cr+7*uvlinesize);
+                }
+            }
+        }else{
+            if(!MB_MBAFF){
+                h->left_border[0]= h->top_borders[0][s->mb_x][15];
+                if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                    h->left_border[34   ]= h->top_borders[0][s->mb_x][16+7  ];
+                    h->left_border[34+18]= h->top_borders[0][s->mb_x][16+8+7];
+                }
+                skiplast= 1;
+            }
+            offset  =
+            uvoffset=
+            top_idx = MB_MBAFF ? 0 : 1;
+        }
+        step= MB_MBAFF ? 2 : 1;
     }
 
-    *(uint64_t*)(h->top_borders[0][s->mb_x]+0)= *(uint64_t*)(src_y +  16*linesize);
-    *(uint64_t*)(h->top_borders[0][s->mb_x]+8)= *(uint64_t*)(src_y +8+16*linesize);
+    // There are two lines saved, the line above the the top macroblock of a pair,
+    // and the line above the bottom macroblock
+    h->left_border[offset]= h->top_borders[top_idx][s->mb_x][15];
+    for(i=1; i<17 - skiplast; i++){
+        h->left_border[offset+i*step]= src_y[15+i*  linesize];
+    }
+
+    *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+0)= *(uint64_t*)(src_y +  16*linesize);
+    *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+8)= *(uint64_t*)(src_y +8+16*linesize);
 
     if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-        h->left_border[17  ]= h->top_borders[0][s->mb_x][16+7];
-        h->left_border[17+9]= h->top_borders[0][s->mb_x][24+7];
-        for(i=1; i<9; i++){
-            h->left_border[i+17  ]= src_cb[7+i*uvlinesize];
-            h->left_border[i+17+9]= src_cr[7+i*uvlinesize];
+        h->left_border[uvoffset+34   ]= h->top_borders[top_idx][s->mb_x][16+7];
+        h->left_border[uvoffset+34+18]= h->top_borders[top_idx][s->mb_x][24+7];
+        for(i=1; i<9 - skiplast; i++){
+            h->left_border[uvoffset+34   +i*step]= src_cb[7+i*uvlinesize];
+            h->left_border[uvoffset+34+18+i*step]= src_cr[7+i*uvlinesize];
         }
-        *(uint64_t*)(h->top_borders[0][s->mb_x]+16)= *(uint64_t*)(src_cb+8*uvlinesize);
-        *(uint64_t*)(h->top_borders[0][s->mb_x]+24)= *(uint64_t*)(src_cr+8*uvlinesize);
+        *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+16)= *(uint64_t*)(src_cb+8*uvlinesize);
+        *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+24)= *(uint64_t*)(src_cr+8*uvlinesize);
     }
 }
 
@@ -2304,6 +2326,22 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     int deblock_left;
     int deblock_top;
     int mb_xy;
+    int step    = 1;
+    int offset  = 1;
+    int uvoffset= 1;
+    int top_idx = 1;
+
+    if(!simple && FRAME_MBAFF){
+        if(s->mb_y&1){
+            offset  = MB_MBAFF ? 1 : 17;
+            uvoffset= MB_MBAFF ? 1 : 9;
+        }else{
+            offset  =
+            uvoffset=
+            top_idx = MB_MBAFF ? 0 : 1;
+        }
+        step= MB_MBAFF ? 2 : 1;
+    }
 
     if(h->deblocking_filter == 2) {
         mb_xy = h->mb_xy;
@@ -2325,118 +2363,32 @@ if(xchg)\
 b= t;
 
     if(deblock_left){
-        for(i = !deblock_top; i<17; i++){
-            XCHG(h->left_border[i     ], src_y [i*  linesize], temp8, xchg);
+        for(i = !deblock_top; i<16; i++){
+            XCHG(h->left_border[offset+i*step], src_y [i*  linesize], temp8, xchg);
         }
+        XCHG(h->left_border[offset+i*step], src_y [i*  linesize], temp8, 1);
     }
 
     if(deblock_top){
-        XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+0), *(uint64_t*)(src_y +1), temp64, xchg);
-        XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+8), *(uint64_t*)(src_y +9), temp64, 1);
+        XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+0), *(uint64_t*)(src_y +1), temp64, xchg);
+        XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+8), *(uint64_t*)(src_y +9), temp64, 1);
         if(s->mb_x+1 < s->mb_width){
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x+1]), *(uint64_t*)(src_y +17), temp64, 1);
+            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x+1]), *(uint64_t*)(src_y +17), temp64, 1);
         }
     }
 
     if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_left){
-            for(i = !deblock_top; i<9; i++){
-                XCHG(h->left_border[i+17  ], src_cb[i*uvlinesize], temp8, xchg);
-                XCHG(h->left_border[i+17+9], src_cr[i*uvlinesize], temp8, xchg);
+            for(i = !deblock_top; i<8; i++){
+                XCHG(h->left_border[uvoffset+34   +i*step], src_cb[i*uvlinesize], temp8, xchg);
+                XCHG(h->left_border[uvoffset+34+18+i*step], src_cr[i*uvlinesize], temp8, xchg);
             }
+            XCHG(h->left_border[uvoffset+34   +i*step], src_cb[i*uvlinesize], temp8, 1);
+            XCHG(h->left_border[uvoffset+34+18+i*step], src_cr[i*uvlinesize], temp8, 1);
         }
         if(deblock_top){
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+16), *(uint64_t*)(src_cb+1), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+24), *(uint64_t*)(src_cr+1), temp64, 1);
-        }
-    }
-}
-
-static inline void backup_pair_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize){
-    MpegEncContext * const s = &h->s;
-    int i;
-
-    src_y  -= 2 *   linesize;
-    src_cb -= 2 * uvlinesize;
-    src_cr -= 2 * uvlinesize;
-
-    // There are two lines saved, the line above the the top macroblock of a pair,
-    // and the line above the bottom macroblock
-    h->left_border[0]= h->top_borders[0][s->mb_x][15];
-    h->left_border[1]= h->top_borders[1][s->mb_x][15];
-    for(i=2; i<34; i++){
-        h->left_border[i]= src_y[15+i*  linesize];
-    }
-
-    *(uint64_t*)(h->top_borders[0][s->mb_x]+0)= *(uint64_t*)(src_y +  32*linesize);
-    *(uint64_t*)(h->top_borders[0][s->mb_x]+8)= *(uint64_t*)(src_y +8+32*linesize);
-    *(uint64_t*)(h->top_borders[1][s->mb_x]+0)= *(uint64_t*)(src_y +  33*linesize);
-    *(uint64_t*)(h->top_borders[1][s->mb_x]+8)= *(uint64_t*)(src_y +8+33*linesize);
-
-    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-        h->left_border[34     ]= h->top_borders[0][s->mb_x][16+7];
-        h->left_border[34+   1]= h->top_borders[1][s->mb_x][16+7];
-        h->left_border[34+18  ]= h->top_borders[0][s->mb_x][24+7];
-        h->left_border[34+18+1]= h->top_borders[1][s->mb_x][24+7];
-        for(i=2; i<18; i++){
-            h->left_border[i+34   ]= src_cb[7+i*uvlinesize];
-            h->left_border[i+34+18]= src_cr[7+i*uvlinesize];
-        }
-        *(uint64_t*)(h->top_borders[0][s->mb_x]+16)= *(uint64_t*)(src_cb+16*uvlinesize);
-        *(uint64_t*)(h->top_borders[0][s->mb_x]+24)= *(uint64_t*)(src_cr+16*uvlinesize);
-        *(uint64_t*)(h->top_borders[1][s->mb_x]+16)= *(uint64_t*)(src_cb+17*uvlinesize);
-        *(uint64_t*)(h->top_borders[1][s->mb_x]+24)= *(uint64_t*)(src_cr+17*uvlinesize);
-    }
-}
-
-static inline void xchg_pair_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int xchg){
-    MpegEncContext * const s = &h->s;
-    int temp8, i;
-    uint64_t temp64;
-    int deblock_left = (s->mb_x > 0);
-    int deblock_top  = (s->mb_y > 1);
-
-    tprintf(s->avctx, "xchg_pair_border: src_y:%p src_cb:%p src_cr:%p ls:%d uvls:%d\n", src_y, src_cb, src_cr, linesize, uvlinesize);
-
-    src_y  -= 2 *   linesize + 1;
-    src_cb -= 2 * uvlinesize + 1;
-    src_cr -= 2 * uvlinesize + 1;
-
-#define XCHG(a,b,t,xchg)\
-t= a;\
-if(xchg)\
-    a= b;\
-b= t;
-
-    if(deblock_left){
-        for(i = (!deblock_top)<<1; i<34; i++){
-            XCHG(h->left_border[i     ], src_y [i*  linesize], temp8, xchg);
-        }
-    }
-
-    if(deblock_top){
-        XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+0), *(uint64_t*)(src_y +1), temp64, xchg);
-        XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+8), *(uint64_t*)(src_y +9), temp64, 1);
-        XCHG(*(uint64_t*)(h->top_borders[1][s->mb_x]+0), *(uint64_t*)(src_y +1 +linesize), temp64, xchg);
-        XCHG(*(uint64_t*)(h->top_borders[1][s->mb_x]+8), *(uint64_t*)(src_y +9 +linesize), temp64, 1);
-        if(s->mb_x+1 < s->mb_width){
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x+1]), *(uint64_t*)(src_y +17), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[1][s->mb_x+1]), *(uint64_t*)(src_y +17 +linesize), temp64, 1);
-        }
-    }
-
-    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-        if(deblock_left){
-            for(i = (!deblock_top) << 1; i<18; i++){
-                XCHG(h->left_border[i+34   ], src_cb[i*uvlinesize], temp8, xchg);
-                XCHG(h->left_border[i+34+18], src_cr[i*uvlinesize], temp8, xchg);
-            }
-        }
-        if(deblock_top){
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+16), *(uint64_t*)(src_cb+1), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+24), *(uint64_t*)(src_cr+1), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[1][s->mb_x]+16), *(uint64_t*)(src_cb+1 +uvlinesize), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[1][s->mb_x]+24), *(uint64_t*)(src_cr+1 +uvlinesize), temp64, 1);
+            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+16), *(uint64_t*)(src_cb+1), temp64, 1);
+            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+24), *(uint64_t*)(src_cr+1), temp64, 1);
         }
     }
 }
@@ -2507,15 +2459,6 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         idct_add = s->dsp.h264_idct_add;
     }
 
-    if(!simple && FRAME_MBAFF && h->deblocking_filter && IS_INTRA(mb_type)
-       && (!bottom || !IS_INTRA(s->current_picture.mb_type[mb_xy-s->mb_stride]))){
-        int mbt_y = mb_y&~1;
-        uint8_t *top_y  = s->current_picture.data[0] + (mbt_y * 16* s->linesize  ) + mb_x * 16;
-        uint8_t *top_cb = s->current_picture.data[1] + (mbt_y * 8 * s->uvlinesize) + mb_x * 8;
-        uint8_t *top_cr = s->current_picture.data[2] + (mbt_y * 8 * s->uvlinesize) + mb_x * 8;
-        xchg_pair_border(h, top_y, top_cb, top_cr, s->linesize, s->uvlinesize, 1);
-    }
-
     if (!simple && IS_INTRA_PCM(mb_type)) {
         for (i=0; i<16; i++) {
             memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
@@ -2526,7 +2469,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         }
     } else {
         if(IS_INTRA(mb_type)){
-            if(h->deblocking_filter && (simple || !FRAME_MBAFF))
+            if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1, simple);
 
             if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
@@ -2589,7 +2532,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 }else
                     svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
             }
-            if(h->deblocking_filter && (simple || !FRAME_MBAFF))
+            if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
         }else if(is_h264){
             hl_motion(h, dest_y, dest_cb, dest_cr,
@@ -2658,44 +2601,13 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         }
     }
     if(h->deblocking_filter) {
+        backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
+        fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
+        h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
+        h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
         if (!simple && FRAME_MBAFF) {
-            //FIXME try deblocking one mb at a time?
-            // the reduction in load/storing mvs and such might outweigh the extra backup/xchg_border
-            const int mb_y = s->mb_y - 1;
-            uint8_t  *pair_dest_y, *pair_dest_cb, *pair_dest_cr;
-            const int mb_xy= mb_x + mb_y*s->mb_stride;
-            const int mb_type_top   = s->current_picture.mb_type[mb_xy];
-            const int mb_type_bottom= s->current_picture.mb_type[mb_xy+s->mb_stride];
-            if (!bottom) return;
-            pair_dest_y  = s->current_picture.data[0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
-            pair_dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
-            pair_dest_cr = s->current_picture.data[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
-
-            if(IS_INTRA(mb_type_top | mb_type_bottom))
-                xchg_pair_border(h, pair_dest_y, pair_dest_cb, pair_dest_cr, s->linesize, s->uvlinesize, 0);
-
-            backup_pair_border(h, pair_dest_y, pair_dest_cb, pair_dest_cr, s->linesize, s->uvlinesize);
-            // deblock a pair
-            // top
-            s->mb_y--; h->mb_xy -= s->mb_stride;
-            tprintf(h->s.avctx, "call mbaff filter_mb mb_x:%d mb_y:%d pair_dest_y = %p, dest_y = %p\n", mb_x, mb_y, pair_dest_y, dest_y);
-            fill_caches(h, mb_type_top, 1); //FIXME don't fill stuff which isn't used by filter_mb
-            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
-            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
-            filter_mb(h, mb_x, mb_y, pair_dest_y, pair_dest_cb, pair_dest_cr, linesize, uvlinesize);
-            // bottom
-            s->mb_y++; h->mb_xy += s->mb_stride;
-            tprintf(h->s.avctx, "call mbaff filter_mb\n");
-            fill_caches(h, mb_type_bottom, 1); //FIXME don't fill stuff which isn't used by filter_mb
-            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
-            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy+s->mb_stride]);
-            filter_mb(h, mb_x, mb_y+1, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
+            filter_mb     (h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         } else {
-            tprintf(h->s.avctx, "call filter_mb\n");
-            backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
-            fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
-            h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
-            h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
             filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         }
     }
