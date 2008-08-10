@@ -182,9 +182,12 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         left_type[0] = h->slice_table[left_xy[0] ] < 255 ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] < 255 ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-        if(FRAME_MBAFF && !IS_INTRA(mb_type)){
+        if(MB_MBAFF && !IS_INTRA(mb_type)){
             int list;
             for(list=0; list<h->list_count; list++){
+                //These values where changed for ease of performing MC, we need to change them back
+                //FIXME maybe we can make MC and loop filter use the same values or prevent
+                //the MC code from changing ref_cache and rather use a temporary array.
                 if(USES_LIST(mb_type,list)){
                     int8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
                     *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
@@ -192,9 +195,6 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                     ref += h->b8_stride;
                     *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
                     *(uint32_t*)&h->ref_cache[list][scan8[10]] = pack16to32(ref[0],ref[1])*0x0101;
-                }else{
-                    fill_rectangle(&h-> mv_cache[list][scan8[ 0]], 4, 4, 8, 0, 4);
-                    fill_rectangle(&h->ref_cache[list][scan8[ 0]], 4, 4, 8, (uint8_t)LIST_NOT_USED, 1);
                 }
             }
         }
