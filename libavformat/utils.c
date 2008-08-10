@@ -38,8 +38,55 @@ unsigned avformat_version(void)
     return LIBAVFORMAT_VERSION_INT;
 }
 
-static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
-static void av_frac_add(AVFrac *f, int64_t incr);
+/* fraction handling */
+
+/**
+ * f = val + (num / den) + 0.5.
+ *
+ * 'num' is normalized so that it is such as 0 <= num < den.
+ *
+ * @param f fractional number
+ * @param val integer value
+ * @param num must be >= 0
+ * @param den must be >= 1
+ */
+static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
+{
+    num += (den >> 1);
+    if (num >= den) {
+        val += num / den;
+        num = num % den;
+    }
+    f->val = val;
+    f->num = num;
+    f->den = den;
+}
+
+/**
+ * Fractional addition to f: f = f + (incr / f->den).
+ *
+ * @param f fractional number
+ * @param incr increment, can be positive or negative
+ */
+static void av_frac_add(AVFrac *f, int64_t incr)
+{
+    int64_t num, den;
+
+    num = f->num + incr;
+    den = f->den;
+    if (num < 0) {
+        f->val += num / den;
+        num = num % den;
+        if (num < 0) {
+            num += den;
+            f->val--;
+        }
+    } else if (num >= den) {
+        f->val += num / den;
+        num = num % den;
+    }
+    f->num = num;
+}
 
 /** head of registered input format linked list */
 AVInputFormat *first_iformat = NULL;
@@ -3170,54 +3217,4 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 
     if(gcd>1)
         av_log(NULL, AV_LOG_DEBUG, "st:%d removing common factor %d from timebase\n", s->index, gcd);
-}
-
-/* fraction handling */
-
-/**
- * f = val + (num / den) + 0.5.
- *
- * 'num' is normalized so that it is such as 0 <= num < den.
- *
- * @param f fractional number
- * @param val integer value
- * @param num must be >= 0
- * @param den must be >= 1
- */
-static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
-{
-    num += (den >> 1);
-    if (num >= den) {
-        val += num / den;
-        num = num % den;
-    }
-    f->val = val;
-    f->num = num;
-    f->den = den;
-}
-
-/**
- * Fractional addition to f: f = f + (incr / f->den).
- *
- * @param f fractional number
- * @param incr increment, can be positive or negative
- */
-static void av_frac_add(AVFrac *f, int64_t incr)
-{
-    int64_t num, den;
-
-    num = f->num + incr;
-    den = f->den;
-    if (num < 0) {
-        f->val += num / den;
-        num = num % den;
-        if (num < 0) {
-            num += den;
-            f->val--;
-        }
-    } else if (num >= den) {
-        f->val += num / den;
-        num = num % den;
-    }
-    f->num = num;
 }
