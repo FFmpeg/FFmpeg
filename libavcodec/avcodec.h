@@ -3011,6 +3011,18 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
  */
 int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
 
+/**
+ * Logs a generic warning message about a missing feature.
+ * @param[in] avc a pointer to an arbitrary struct of which the first field is
+ * a pointer to an AVClass struct
+ * @param[in] feature string containing the name of the missing feature
+ * @param[in] want_sample indicates if samples are wanted which exhibit this feature.
+ * If \p want_sample is non-zero, additional verbage will be added to the log
+ * message which tells the user how to report samples to the development
+ * mailing list.
+ */
+void av_log_missing_feature(void *avc, const char *feature, int want_sample);
+
 /* error handling */
 #if EINVAL > 0
 #define AVERROR(e) (-(e)) /**< Returns a negative error code from a POSIX error code, to return from library functions. */
