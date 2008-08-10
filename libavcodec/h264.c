@@ -391,7 +391,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 }
             }
 
-            if((for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred)) && !FRAME_MBAFF)
+            if(for_deblock || ((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred) && !FRAME_MBAFF))
                 continue;
 
             if(USES_LIST(topleft_type, list)){
