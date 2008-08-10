@@ -141,7 +141,8 @@ static int decode_frame(AVCodecContext *avctx,
     const uint32_t *buf32;
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
-    int i, is_chroma, planes;
+    int i, j, is_chroma, planes;
+    int R, G, B, Y, U, V;
 
 
     header = AV_RL32(buf);
@@ -323,9 +324,23 @@ static int decode_frame(AVCodecContext *avctx,
         for(i = 0; i < planes; i++){
             s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
             if(fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)), -f->linesize[0],
-                    avctx->width, avctx->height, buf + offs[i], offs[i + 1] - offs[i], 1, 3) < 0) {
+                    avctx->width, avctx->height, buf + offs[i], offs[i + 1] - offs[i], 0, 3) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
                 return -1;
+            }
+        }
+        // convert pseudo-YUV into real RGB
+        for(j = 0; j < avctx->height; j++){
+            for(i = 0; i < avctx->width; i++){
+                U = f->data[0][0 + i*3 + j*f->linesize[0]];
+                Y = f->data[0][1 + i*3 + j*f->linesize[0]];
+                V = f->data[0][2 + i*3 + j*f->linesize[0]];
+                R = Y + (int8_t)U;
+                G = Y;
+                B = Y + (int8_t)V;
+                f->data[0][0 + i*3 + j*f->linesize[0]] = R;
+                f->data[0][1 + i*3 + j*f->linesize[0]] = G;
+                f->data[0][2 + i*3 + j*f->linesize[0]] = B;
             }
         }
         break;
