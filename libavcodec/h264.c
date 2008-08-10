@@ -191,10 +191,10 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 if(USES_LIST(mb_type,list)){
                     int8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
                     *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
-                    *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = pack16to32(ref[0],ref[1])*0x0101;
+                    *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
                     ref += h->b8_stride;
                     *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
-                    *(uint32_t*)&h->ref_cache[list][scan8[10]] = pack16to32(ref[0],ref[1])*0x0101;
+                    *(uint32_t*)&h->ref_cache[list][scan8[10]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
                 }
             }
         }
