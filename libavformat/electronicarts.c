@@ -41,6 +41,7 @@
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')    /* TGV i-frame */
 #define fVGT_TAG MKTAG('f', 'V', 'G', 'T')    /* TGV p-frame */
+#define mTCD_TAG MKTAG('m', 'T', 'C', 'D')    /* MDEC */
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
 #define MPCh_TAG MKTAG('M', 'P', 'C', 'h')    /* MPEG2 */
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
@@ -54,6 +55,7 @@ typedef struct EaDemuxContext {
 
     enum CodecID video_codec;
     AVRational time_base;
+    int width, height;
     int video_stream_index;
 
     enum CodecID audio_codec;
@@ -245,6 +247,18 @@ static int process_audio_header_sead(AVFormatContext *s)
     return 1;
 }
 
+static int process_video_header_mdec(AVFormatContext *s)
+{
+    EaDemuxContext *ea = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    url_fskip(pb, 4);
+    ea->width  = get_le16(pb);
+    ea->height = get_le16(pb);
+    ea->time_base = (AVRational){1,15};
+    ea->video_codec = CODEC_ID_MDEC;
+    return 1;
+}
+
 static int process_video_header_vp6(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
@@ -313,6 +327,10 @@ static int process_ea_header(AVFormatContext *s) {
                 ea->time_base = (AVRational){0,0};
                 break;
 
+            case mTCD_TAG :
+                err = process_video_header_mdec(s);
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -367,6 +385,8 @@ static int ea_read_header(AVFormatContext *s,
         st->codec->codec_id = ea->video_codec;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->time_base = ea->time_base;
+        st->codec->width = ea->width;
+        st->codec->height = ea->height;
     }
 
     if (ea->audio_codec) {
@@ -462,6 +482,11 @@ static int ea_read_packet(AVFormatContext *s,
         case fVGT_TAG:
             url_fseek(pb, -8, SEEK_CUR);     // include chunk preamble
             chunk_size += 8;
+            goto get_video_packet;
+
+        case mTCD_TAG:
+            url_fseek(pb, 8, SEEK_CUR);  // skip ea dct header
+            chunk_size -= 8;
             goto get_video_packet;
 
         case MV0K_TAG:
