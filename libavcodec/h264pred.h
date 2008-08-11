@@ -60,6 +60,11 @@
 #define LEFT_DC_PRED8x8       4
 #define TOP_DC_PRED8x8        5
 #define DC_128_PRED8x8        6
+
+#define ALZHEIMER_DC_L0T_PRED8x8 7
+#define ALZHEIMER_DC_0LT_PRED8x8 8
+#define ALZHEIMER_DC_L00_PRED8x8 9
+#define ALZHEIMER_DC_0L0_PRED8x8 10
 //@}
 
 /**
@@ -68,7 +73,7 @@
 typedef struct H264PredContext{
     void (*pred4x4  [9+3+3])(uint8_t *src, uint8_t *topright, int stride);//FIXME move to dsp?
     void (*pred8x8l [9+3])(uint8_t *src, int topleft, int topright, int stride);
-    void (*pred8x8  [4+3])(uint8_t *src, int stride);
+    void (*pred8x8  [4+3+4])(uint8_t *src, int stride);
     void (*pred16x16[4+3])(uint8_t *src, int stride);
 }H264PredContext;
 

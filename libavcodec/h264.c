@@ -217,8 +217,27 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
             h->top_samples_available= 0x33FF;
             h->topright_samples_available= 0x26EA;
         }
-        for(i=0; i<2; i++){
-            if(!IS_INTRA(left_type[i]) && (left_type[i]==0 || h->pps.constrained_intra_pred)){
+        if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[0])){
+            if(IS_INTERLACED(mb_type)){
+                if(!IS_INTRA(left_type[0]) && (left_type[0]==0 || h->pps.constrained_intra_pred)){
+                    h->topleft_samples_available&= 0xDFFF;
+                    h->left_samples_available&= 0x5FFF;
+                }
+                if(!IS_INTRA(left_type[1]) && (left_type[1]==0 || h->pps.constrained_intra_pred)){
+                    h->topleft_samples_available&= 0xFF5F;
+                    h->left_samples_available&= 0xFF5F;
+                }
+            }else{
+                int left_typei = h->slice_table[left_xy[0] + s->mb_stride ] == h->slice_num
+                                ? s->current_picture.mb_type[left_xy[0] + s->mb_stride] : 0;
+                assert(left_xy[0] == left_xy[1]);
+                if(!(IS_INTRA(left_typei) && IS_INTRA(left_type[0])) && (left_typei==0 || h->pps.constrained_intra_pred)){
+                    h->topleft_samples_available&= 0xDF5F;
+                    h->left_samples_available&= 0x5F5F;
+                }
+            }
+        }else{
+            if(!IS_INTRA(left_type[0]) && (left_type[0]==0 || h->pps.constrained_intra_pred)){
                 h->topleft_samples_available&= 0xDF5F;
                 h->left_samples_available&= 0x5F5F;
             }
@@ -565,14 +584,17 @@ static inline int check_intra4x4_pred_mode(H264Context *h){
         }
     }
 
-    if(!(h->left_samples_available&0x8000)){
+    if((h->left_samples_available&0x8888)!=0x8888){
+        static const int mask[4]={0x8000,0x2000,0x80,0x20};
         for(i=0; i<4; i++){
+            if(!(h->left_samples_available&mask[i])){
             int status= left[ h->intra4x4_pred_mode_cache[scan8[0] + 8*i] ];
             if(status<0){
                 av_log(h->s.avctx, AV_LOG_ERROR, "left block unavailable for requested intra4x4 mode %d at %d %d\n", status, s->mb_x, s->mb_y);
                 return -1;
             } else if(status){
                 h->intra4x4_pred_mode_cache[scan8[0] + 8*i]= status;
+            }
             }
         }
     }
@@ -601,8 +623,11 @@ static inline int check_intra_pred_mode(H264Context *h, int mode){
         }
     }
 
-    if(!(h->left_samples_available&0x8000)){
+    if((h->left_samples_available&0x8080) != 0x8080){
         mode= left[ mode ];
+        if(h->left_samples_available&0x8080){ //mad cow disease mode, aka MBAFF + constrained_intra_pred
+            mode= ALZHEIMER_DC_L0T_PRED8x8 + (!(h->left_samples_available&0x8000)) + 2*(mode == DC_128_PRED8x8);
+        }
         if(mode<0){
             av_log(h->s.avctx, AV_LOG_ERROR, "left block unavailable for requested intra mode at %d %d\n", s->mb_x, s->mb_y);
             return -1;

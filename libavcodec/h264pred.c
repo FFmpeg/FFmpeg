@@ -690,6 +690,29 @@ static void pred8x8_dc_c(uint8_t *src, int stride){
     }
 }
 
+//the following 4 function should not be optimized!
+static void pred8x8_mad_cow_dc_l0t(uint8_t *src, int stride){
+    pred8x8_top_dc_c(src, stride);
+    pred4x4_dc_c(src, NULL, stride);
+}
+
+static void pred8x8_mad_cow_dc_0lt(uint8_t *src, int stride){
+    pred8x8_dc_c(src, stride);
+    pred4x4_top_dc_c(src, NULL, stride);
+}
+
+static void pred8x8_mad_cow_dc_l00(uint8_t *src, int stride){
+    pred8x8_left_dc_c(src, stride);
+    pred4x4_128_dc_c(src + 4*stride    , NULL, stride);
+    pred4x4_128_dc_c(src + 4*stride + 4, NULL, stride);
+}
+
+static void pred8x8_mad_cow_dc_0l0(uint8_t *src, int stride){
+    pred8x8_left_dc_c(src, stride);
+    pred4x4_128_dc_c(src    , NULL, stride);
+    pred4x4_128_dc_c(src + 4, NULL, stride);
+}
+
 static void pred8x8_dc_rv40_c(uint8_t *src, int stride){
     int i;
     int dc0=0;
@@ -1046,6 +1069,10 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
         h->pred8x8[DC_PRED8x8     ]= pred8x8_dc_c;
         h->pred8x8[LEFT_DC_PRED8x8]= pred8x8_left_dc_c;
         h->pred8x8[TOP_DC_PRED8x8 ]= pred8x8_top_dc_c;
+        h->pred8x8[ALZHEIMER_DC_L0T_PRED8x8 ]= pred8x8_mad_cow_dc_l0t;
+        h->pred8x8[ALZHEIMER_DC_0LT_PRED8x8 ]= pred8x8_mad_cow_dc_0lt;
+        h->pred8x8[ALZHEIMER_DC_L00_PRED8x8 ]= pred8x8_mad_cow_dc_l00;
+        h->pred8x8[ALZHEIMER_DC_0L0_PRED8x8 ]= pred8x8_mad_cow_dc_0l0;
     }else{
         h->pred8x8[DC_PRED8x8     ]= pred8x8_dc_rv40_c;
         h->pred8x8[LEFT_DC_PRED8x8]= pred8x8_left_dc_rv40_c;
