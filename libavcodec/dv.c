@@ -470,16 +470,10 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        if (s->sys->pix_fmt == PIX_FMT_YUV422P) {
-            y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + (mb_x>>1))<<log2_blocksize);
-            c_offset = ((mb_y * s->picture.linesize[1] + (mb_x >> 2))<<log2_blocksize);
-        } else { /* 4:1:1 or 4:2:0 */
-            y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
-            if (s->sys->pix_fmt == PIX_FMT_YUV411P)
-                c_offset = ((mb_y * s->picture.linesize[1] + (mb_x >> 2))<<log2_blocksize);
-            else /* 4:2:0 */
-                c_offset = (((mb_y >> 1) * s->picture.linesize[1] + (mb_x >> 1))<<log2_blocksize);
-        }
+        y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
+        c_offset = (((mb_y>>(s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+                     (mb_x>>((s->sys->pix_fmt == PIX_FMT_YUV411P)?2:1)))<<log2_blocksize);
+
         for(j = 0;j < 6; j++) {
             idct_put = s->idct_put[mb->dct_mode && log2_blocksize==3];
             if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
@@ -838,16 +832,9 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        if (s->sys->pix_fmt == PIX_FMT_YUV422P) {
-            y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 4);
-        } else { /* 4:1:1 */
-            y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 8);
-        }
-        if (s->sys->pix_fmt == PIX_FMT_YUV420P) {
-            c_offset = (((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8));
-        } else { /* 4:2:2 or 4:1:1 */
-            c_offset = ((mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8));
-        }
+        y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<3);
+        c_offset = (((mb_y>>(s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+                     (mb_x>>((s->sys->pix_fmt == PIX_FMT_YUV411P)?2:1)))<<3);
         do_edge_wrap = 0;
         qnos[mb_index] = 15; /* No quantization */
         ptr = dif + mb_index*80 + 4;
