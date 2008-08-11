@@ -204,7 +204,6 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
         left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
-    }
 
     if(IS_INTRA(mb_type)){
         int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
@@ -284,6 +283,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 }
             }
         }
+    }
     }
 
 
