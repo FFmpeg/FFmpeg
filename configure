@@ -445,6 +445,14 @@ int foo(void){ asm volatile($asm); }
 EOF
 }
 
+check_yasm(){
+    log check_yasm "$@"
+    echo "$1" > $TMPS
+    log_file $TMPS
+    shift 1
+    check_cmd $yasmexe $YASMFLAGS "$@" -o $TMPO $TMPS
+}
+
 check_ld(){
     log check_ld "$@"
     check_cc || return
@@ -781,6 +789,7 @@ HAVE_LIST="
     termios_h
     threads
     winsock2_h
+    yasm
 "
 
 CMDLINE_SELECT="
@@ -930,12 +939,14 @@ shlibdir_default="$libdir_default"
 
 # toolchain
 cc="gcc"
+yasmexe="yasm"
 ar="ar"
 nm="nm"
 ranlib="ranlib"
 strip="strip"
 asmalign_pot="unknown"
 ln_s="ln -sf"
+objformat="elf"
 
 # machine
 arch=`uname -m`
@@ -1091,6 +1102,7 @@ echo "# $0 $@" > $logfile
 set >> $logfile
 
 cc="${cross_prefix}${cc}"
+yasmexe="${cross_prefix}${yasmexe}"
 ar="${cross_prefix}${ar}"
 nm="${cross_prefix}${nm}"
 ranlib="${cross_prefix}${ranlib}"
@@ -1245,6 +1257,7 @@ case $target_os in
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
         FFSERVERLDFLAGS=-Wl,-bind_at_load
+        objformat="macho"
         ;;
     mingw32*)
         target_os=mingw32
@@ -1271,6 +1284,7 @@ case $target_os in
             install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
+        objformat="win32"
         ;;
     cygwin*)
         target_os=cygwin
@@ -1287,12 +1301,14 @@ case $target_os in
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SHFLAGS='-shared -Wl,--enable-auto-image-base'
+        objformat="win32"
         ;;
     *-dos|freedos|opendos)
         disable ffplay ffserver vhook
         disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         EXESUF=".exe"
+        objformat="win32"
         ;;
     linux)
         enable dv1394
@@ -1535,6 +1551,15 @@ EOF
     enabled mmx2  && check_asm mmx2  '"movss %xmm0, %xmm0"'
 
     check_asm bswap '"bswap %%eax" ::: "%eax"'
+
+    YASMFLAGS="-f $objformat -DARCH_$(toupper $arch)"
+    enabled     x86_64        && append YASMFLAGS "-m amd64"
+    enabled_all x86_64 shared && append YASMFLAGS "-DPIC"
+    case "$objformat" in
+        elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
+        *)                    append YASMFLAGS "-DPREFIX"  ;;
+    esac
+    check_yasm "pabsw xmm0, xmm0" && enable yasm
 fi
 
 # check for assembler specific support
@@ -2028,6 +2053,7 @@ echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
 echo "BINDIR=\$(DESTDIR)$bindir" >> config.mak
 echo "MANDIR=\$(DESTDIR)$mandir" >> config.mak
 echo "CC=$cc" >> config.mak
+echo "YASM=$yasmexe" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 echo "LN_S=$ln_s" >> config.mak
@@ -2040,6 +2066,7 @@ echo "VHOOKCFLAGS=$VHOOKCFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
+echo "YASMFLAGS=$YASMFLAGS" >> config.mak
 echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
 echo "VHOOKLIBS=$VHOOKLIBS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
