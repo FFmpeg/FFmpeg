@@ -142,7 +142,6 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
     int i, j, is_chroma, planes;
-    int R, G, B, Y, U, V;
 
 
     header = AV_RL32(buf);
@@ -332,15 +331,8 @@ static int decode_frame(AVCodecContext *avctx,
         // convert pseudo-YUV into real RGB
         for(j = 0; j < avctx->height; j++){
             for(i = 0; i < avctx->width; i++){
-                U = f->data[0][0 + i*3 + j*f->linesize[0]];
-                Y = f->data[0][1 + i*3 + j*f->linesize[0]];
-                V = f->data[0][2 + i*3 + j*f->linesize[0]];
-                R = Y + (int8_t)U;
-                G = Y;
-                B = Y + (int8_t)V;
-                f->data[0][0 + i*3 + j*f->linesize[0]] = R;
-                f->data[0][1 + i*3 + j*f->linesize[0]] = G;
-                f->data[0][2 + i*3 + j*f->linesize[0]] = B;
+                f->data[0][0 + i*3 + j*f->linesize[0]] += f->data[0][1 + i*3 + j*f->linesize[0]];
+                f->data[0][2 + i*3 + j*f->linesize[0]] += f->data[0][1 + i*3 + j*f->linesize[0]];
             }
         }
         break;
