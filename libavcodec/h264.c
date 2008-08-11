@@ -207,23 +207,24 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     }
 
     if(IS_INTRA(mb_type)){
+        int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
         h->topleft_samples_available=
         h->top_samples_available=
         h->left_samples_available= 0xFFFF;
         h->topright_samples_available= 0xEEEA;
 
-        if(!IS_INTRA(top_type) && (top_type==0 || h->pps.constrained_intra_pred)){
+        if(!(top_type & type_mask)){
             h->topleft_samples_available= 0xB3FF;
             h->top_samples_available= 0x33FF;
             h->topright_samples_available= 0x26EA;
         }
         if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[0])){
             if(IS_INTERLACED(mb_type)){
-                if(!IS_INTRA(left_type[0]) && (left_type[0]==0 || h->pps.constrained_intra_pred)){
+                if(!(left_type[0] & type_mask)){
                     h->topleft_samples_available&= 0xDFFF;
                     h->left_samples_available&= 0x5FFF;
                 }
-                if(!IS_INTRA(left_type[1]) && (left_type[1]==0 || h->pps.constrained_intra_pred)){
+                if(!(left_type[1] & type_mask)){
                     h->topleft_samples_available&= 0xFF5F;
                     h->left_samples_available&= 0xFF5F;
                 }
@@ -231,22 +232,22 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 int left_typei = h->slice_table[left_xy[0] + s->mb_stride ] == h->slice_num
                                 ? s->current_picture.mb_type[left_xy[0] + s->mb_stride] : 0;
                 assert(left_xy[0] == left_xy[1]);
-                if(!(IS_INTRA(left_typei) && IS_INTRA(left_type[0])) && (left_typei==0 || h->pps.constrained_intra_pred)){
+                if(!((left_typei & type_mask) && (left_type[0] & type_mask))){
                     h->topleft_samples_available&= 0xDF5F;
                     h->left_samples_available&= 0x5F5F;
                 }
             }
         }else{
-            if(!IS_INTRA(left_type[0]) && (left_type[0]==0 || h->pps.constrained_intra_pred)){
+            if(!(left_type[0] & type_mask)){
                 h->topleft_samples_available&= 0xDF5F;
                 h->left_samples_available&= 0x5F5F;
             }
         }
 
-        if(!IS_INTRA(topleft_type) && (topleft_type==0 || h->pps.constrained_intra_pred))
+        if(!(topleft_type & type_mask))
             h->topleft_samples_available&= 0x7FFF;
 
-        if(!IS_INTRA(topright_type) && (topright_type==0 || h->pps.constrained_intra_pred))
+        if(!(topright_type & type_mask))
             h->topright_samples_available&= 0xFBFF;
 
         if(IS_INTRA4x4(mb_type)){
@@ -257,7 +258,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 h->intra4x4_pred_mode_cache[7+8*0]= h->intra4x4_pred_mode[top_xy][3];
             }else{
                 int pred;
-                if(!top_type || (IS_INTER(top_type) && h->pps.constrained_intra_pred))
+                if(!(top_type & type_mask))
                     pred= -1;
                 else{
                     pred= 2;
@@ -273,7 +274,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                     h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[1+2*i]];
                 }else{
                     int pred;
-                    if(!left_type[i] || (IS_INTER(left_type[i]) && h->pps.constrained_intra_pred))
+                    if(!(left_type[i] & type_mask))
                         pred= -1;
                     else{
                         pred= 2;
