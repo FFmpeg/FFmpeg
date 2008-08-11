@@ -50,7 +50,7 @@ typedef struct DVVideoContext {
     uint8_t *buf;
 
     uint8_t dv_zigzag[2][64];
-    uint8_t dv_idct_shift[2][2][22][64];
+    uint32_t dv_idct_factor[2][2][22][64];
 
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
@@ -84,25 +84,22 @@ static struct dv_vlc_pair {
 
 static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
 {
-    int i, q, j;
+    int i, q, a;
 
     /* NOTE: max left shift is 6 */
     for(q = 0; q < 22; q++) {
         /* 88DCT */
-        for(i = 1; i < 64; i++) {
-            /* 88 table */
-            j = perm[i];
-            s->dv_idct_shift[0][0][q][j] =
-                dv_quant_shifts[q][dv_88_areas[i]] + 1;
-            s->dv_idct_shift[1][0][q][j] = s->dv_idct_shift[0][0][q][j] + 1;
-        }
+        i=1;
+        for(a = 0; a<4; a++) {
+            for(; i < dv_quant_areas[a]; i++) {
+                /* 88 table */
+                s->dv_idct_factor[0][0][q][i] = dv_iweight_88[i]<<(dv_quant_shifts[q][a] + 1);
+                s->dv_idct_factor[1][0][q][i] = s->dv_idct_factor[0][0][q][i]<<1;
 
-        /* 248DCT */
-        for(i = 1; i < 64; i++) {
-            /* 248 table */
-            s->dv_idct_shift[0][1][q][i] =
-                dv_quant_shifts[q][dv_248_areas[i]] + 1;
-            s->dv_idct_shift[1][1][q][i] = s->dv_idct_shift[0][1][q][i] + 1;
+                /* 248 table */
+                s->dv_idct_factor[0][1][q][i] = dv_iweight_248[i]<<(dv_quant_shifts[q][a] + 1);
+                s->dv_idct_factor[1][1][q][i] = s->dv_idct_factor[0][1][q][i]<<1;
+            }
         }
     }
 }
@@ -247,9 +244,8 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
 // #define printf(...) av_log(NULL, AV_LOG_ERROR, __VA_ARGS__)
 
 typedef struct BlockInfo {
-    const uint8_t *shift_table;
+    const uint32_t *factor_table;
     const uint8_t *scan_table;
-    const int *iweight_table;
     uint8_t pos; /* position in block */
     uint8_t dct_mode;
     uint8_t partial_bit_count;
@@ -281,11 +277,10 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
     int last_index = gb->size_in_bits;
     const uint8_t *scan_table = mb->scan_table;
-    const uint8_t *shift_table = mb->shift_table;
-    const int *iweight_table = mb->iweight_table;
+    const uint32_t *factor_table = mb->factor_table;
     int pos = mb->pos;
     int partial_bit_count = mb->partial_bit_count;
-    int level, pos1, run, vlc_len, index;
+    int level, run, vlc_len, index;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
@@ -330,13 +325,8 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
         if (pos >= 64)
             break;
 
-        pos1 = scan_table[pos];
-        level <<= shift_table[pos1];
-
-        /* unweigh, round, and shift down */
-        level = (level*iweight_table[pos] + (1 << (dv_iweight_bits-1))) >> dv_iweight_bits;
-
-        block[pos1] = level;
+        level = (level*factor_table[pos] + (1 << (dv_iweight_bits-1))) >> dv_iweight_bits;
+        block[scan_table[pos]] = level;
 
         UPDATE_CACHE(re, gb);
     }
@@ -402,9 +392,8 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             dct_mode = get_bits1(&gb);
             mb->dct_mode = dct_mode;
             mb->scan_table = s->dv_zigzag[dct_mode];
-            mb->iweight_table = dct_mode ? dv_iweight_248 : dv_iweight_88;
             class1 = get_bits(&gb, 2);
-            mb->shift_table = s->dv_idct_shift[class1 == 3][dct_mode]
+            mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
                 [quant + dv_quant_offset[class1]];
             dc = dc << 2;
             /* convert to unsigned because 128 is not added in the

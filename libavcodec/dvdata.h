@@ -286,28 +286,6 @@ static const uint8_t dv_vlc_level[409] = {
 };
 
 /* unquant tables (not used directly) */
-static const uint8_t dv_88_areas[64] = {
-    0,0,0,1,1,1,2,2,
-    0,0,1,1,1,2,2,2,
-    0,1,1,1,2,2,2,3,
-    1,1,1,2,2,2,3,3,
-    1,1,2,2,2,3,3,3,
-    1,2,2,2,3,3,3,3,
-    2,2,2,3,3,3,3,3,
-    2,2,3,3,3,3,3,3,
-};
-
-static const uint8_t dv_248_areas[64] = {
-    0,0,1,1,1,2,2,3,
-    0,0,1,1,2,2,2,3,
-    0,1,1,2,2,2,3,3,
-    0,1,1,2,2,2,3,3,
-    1,1,2,2,2,3,3,3,
-    1,1,2,2,2,3,3,3,
-    1,2,2,2,3,3,3,3,
-    1,2,2,3,3,3,3,3,
-};
-
 static const uint8_t dv_quant_shifts[22][4] = {
   { 3,3,4,4 },
   { 3,3,4,4 },
@@ -334,6 +312,7 @@ static const uint8_t dv_quant_shifts[22][4] = {
 };
 
 static const uint8_t dv_quant_offset[4] = { 6, 3, 0, 1 };
+static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
 
 /* NOTE: I prefer hardcoding the positioning of dv blocks, it is
    simpler :-) */
