@@ -35,6 +35,18 @@
 
 #include <stdint.h>
 
+/* NOTE:
+ * Tables in this file are used by the AAC decoder and will be used by the AAC
+ * encoder.
+ */
+
+/* @name number of scalefactor window bands for long and short transform windows respectively
+ * @{
+ */
+extern const uint8_t ff_aac_num_swb_1024[];
+extern const uint8_t ff_aac_num_swb_128 [];
+// @}
+
 extern const uint32_t ff_aac_scalefactor_code[121];
 extern const uint8_t  ff_aac_scalefactor_bits[121];
 

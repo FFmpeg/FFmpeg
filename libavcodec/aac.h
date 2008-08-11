@@ -43,6 +43,7 @@
         size);
 
 #define MAX_CHANNELS 64
+#define MAX_ELEM_ID 16
 
 #define IVQUANT_SIZE 1024
 
@@ -74,6 +75,17 @@ enum AudioObjectType {
     AOT_ER_HILN,               ///< N                       Error Resilient Harmonic and Individual Lines plus Noise
     AOT_ER_PARAM,              ///< N                       Error Resilient Parametric
     AOT_SSC,                   ///< N                       SinuSoidal Coding
+};
+
+enum RawDataBlockType {
+    TYPE_SCE,
+    TYPE_CPE,
+    TYPE_CCE,
+    TYPE_LFE,
+    TYPE_DSE,
+    TYPE_PCE,
+    TYPE_FIL,
+    TYPE_END,
 };
 
 enum ExtensionPayloadID {
@@ -111,6 +123,35 @@ enum ChannelPosition {
     AAC_CHANNEL_CC    = 5,
 };
 
+/**
+ * The point during decoding at which channel coupling is applied.
+ */
+enum CouplingPoint {
+    BEFORE_TNS,
+    BETWEEN_TNS_AND_IMDCT,
+    AFTER_IMDCT = 3,
+};
+
+/**
+ * Individual Channel Stream
+ */
+
+/**
+ * Dynamic Range Control - decoded from the bitstream but not processed further.
+ */
+typedef struct {
+    int pce_instance_tag;                           ///< Indicates with which program the DRC info is associated.
+    int dyn_rng_sgn[17];                            ///< DRC sign information; 0 - positive, 1 - negative
+    int dyn_rng_ctl[17];                            ///< DRC magnitude information
+    int exclude_mask[MAX_CHANNELS];                 ///< Channels to be excluded from DRC processing.
+    int band_incr;                                  ///< Number of DRC bands greater than 1 having DRC info.
+    int interpolation_scheme;                       ///< Indicates the interpolation scheme used in the SBR QMF domain.
+    int band_top[17];                               ///< Indicates the top of the i-th DRC band in units of 4 spectral lines.
+    int prog_ref_level;                             /**< A reference level for the long-term program audio level for all
+                                                     *   channels combined.
+                                                     */
+} DynamicRangeControl;
+
 typedef struct {
     int num_pulse;
     int start;
@@ -134,9 +175,15 @@ typedef struct {
     int is_saved;                 ///< Set if elements have stored overlap from previous frame.
     DynamicRangeControl che_drc;
 
+    /**
+     * @defgroup elements
+     * @{
+     */
     enum ChannelPosition che_pos[4][MAX_ELEM_ID]; /**< channel element channel mapping with the
                                                    *   first index as the first 4 raw data block types
                                                    */
+    ChannelElement * che[4][MAX_ELEM_ID];
+    /** @} */
 
     /**
      * @defgroup tables   Computed / set up during initialization.
@@ -145,6 +192,7 @@ typedef struct {
     MDCTContext mdct;
     MDCTContext mdct_small;
     DSPContext dsp;
+    int random_state;
     /** @} */
 
     /**

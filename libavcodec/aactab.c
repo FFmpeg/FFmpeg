@@ -32,6 +32,14 @@
 
 #include <stdint.h>
 
+const uint8_t ff_aac_num_swb_1024[] = {
+    41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40
+};
+
+const uint8_t ff_aac_num_swb_128[] = {
+    12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15
+};
+
 const uint32_t ff_aac_scalefactor_code[121] = {
     0x3ffe8, 0x3ffe6, 0x3ffe7, 0x3ffe5, 0x7fff5, 0x7fff1, 0x7ffed, 0x7fff6,
     0x7ffee, 0x7ffef, 0x7fff0, 0x7fffc, 0x7fffd, 0x7ffff, 0x7fffe, 0x7fff7,
@@ -796,6 +804,13 @@ const float ff_aac_ivquant_tab[IVQUANT_SIZE] = {
      4064.0312908,  4074.6805676,  4085.3368071,  4096.0000000,
 };
 
+/**
+ * Table of pow(2, (i - 200)/4.) used for different purposes depending on the
+ * range of indices to the table:
+ * [ 0, 255] scale factor decoding when using C dsp.float_to_int16
+ * [60, 315] scale factor decoding when using SIMD dsp.float_to_int16
+ * [45, 300] intensity stereo position decoding mapped in reverse order i.e. 0->300, 1->299, ..., 254->46, 255->45
+ */
 const float ff_aac_pow2sf_tab[316] = {
     8.88178420e-16, 1.05622810e-15, 1.25607397e-15, 1.49373210e-15,
     1.77635684e-15, 2.11245619e-15, 2.51214793e-15, 2.98746420e-15,
