@@ -1528,7 +1528,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         float *buf=residue;
         const float *win=vc->win[blockflag&previous_window];
 
-        vc->mdct[0].fft.imdct_half(&vc->mdct[blockflag], buf, floor);
+        ff_imdct_half(&vc->mdct[blockflag], buf, floor);
 
         if(blockflag == previous_window) {
             vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, blocksize/4);

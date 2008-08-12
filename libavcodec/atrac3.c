@@ -208,7 +208,7 @@ static void IMLT(float *pInput, float *pOutput, int odd_band)
             FFSWAP(float, pInput[i], pInput[255-i]);
     }
 
-    mdct_ctx.fft.imdct_calc(&mdct_ctx,pOutput,pInput);
+    ff_imdct_calc(&mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
     dsp.vector_fmul(pOutput,mdct_window,512);

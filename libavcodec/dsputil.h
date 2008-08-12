@@ -676,6 +676,15 @@ typedef struct MDCTContext {
     FFTContext fft;
 } MDCTContext;
 
+static inline void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input)
+{
+    s->fft.imdct_calc(s, output, input);
+}
+static inline void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input)
+{
+    s->fft.imdct_half(s, output, input);
+}
+
 /**
  * Generate a Kaiser-Bessel Derived Window.
  * @param   window  pointer to half window
@@ -692,8 +701,8 @@ void ff_kbd_window_init(float *window, float alpha, int n);
 void ff_sine_window_init(float *window, int n);
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
-void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);

@@ -106,7 +106,7 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
  * @param output N/2 samples
  * @param input N/2 samples
  */
-void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
     int k, n8, n4, n2, n, j;
     const uint16_t *revtab = s->fft.revtab;
@@ -150,14 +150,14 @@ void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * @param input N/2 samples
  * @param tmp N/2 samples
  */
-void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
     int k;
     int n = 1 << s->nbits;
     int n2 = n >> 1;
     int n4 = n >> 2;
 
-    ff_imdct_half(s, output+n4, input);
+    ff_imdct_half_c(s, output+n4, input);
 
     for(k = 0; k < n4; k++) {
         output[k] = -output[n2-k-1];

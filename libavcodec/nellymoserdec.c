@@ -119,7 +119,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         memset(&aptr[NELLY_FILL_LEN], 0,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
-        s->imdct_ctx.fft.imdct_calc(&s->imdct_ctx, s->imdct_out, aptr);
+        ff_imdct_calc(&s->imdct_ctx, s->imdct_out, aptr);
         /* XXX: overlapping and windowing should be part of a more
            generic imdct function */
         overlap_and_window(s, s->state, aptr, s->imdct_out);

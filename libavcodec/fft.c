@@ -87,8 +87,8 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
     s->fft_permute = ff_fft_permute_c;
     s->fft_calc = ff_fft_calc_c;
-    s->imdct_calc = ff_imdct_calc;
-    s->imdct_half = ff_imdct_half;
+    s->imdct_calc = ff_imdct_calc_c;
+    s->imdct_half = ff_imdct_half_c;
     s->exptab1 = NULL;
 
 #if defined HAVE_MMX && defined HAVE_YASM

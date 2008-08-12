@@ -688,7 +688,7 @@ next:
         n = s->block_len;
         n4 = s->block_len / 2;
         if(s->channel_coded[ch]){
-            s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize], s->output, s->coefs[ch]);
+            ff_imdct_calc(&s->mdct_ctx[bsize], s->output, s->coefs[ch]);
         }else
             memset(s->output, 0, sizeof(s->output));
 
