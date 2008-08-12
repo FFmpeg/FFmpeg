@@ -411,7 +411,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_U8:
         memcpy(samples, src, n);
         src += n;
-        samples += n/2;
+        samples = (short*)((uint8_t*)data + n);
         break;
     case CODEC_ID_PCM_ZORK:
         for(;n>0;n--) {
