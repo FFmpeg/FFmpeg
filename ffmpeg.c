@@ -1198,8 +1198,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
         if (ist->decoding_needed) {
             switch(ist->st->codec->codec_type) {
             case CODEC_TYPE_AUDIO:{
-                if(pkt)
-                    samples= av_fast_realloc(samples, &samples_size, FFMAX(pkt->size*sizeof(*samples), AVCODEC_MAX_AUDIO_FRAME_SIZE));
+                if(pkt && samples_size < FFMAX(pkt->size*sizeof(*samples), AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
+                    samples_size = FFMAX(pkt->size*sizeof(*samples), AVCODEC_MAX_AUDIO_FRAME_SIZE);
+                    av_free(samples);
+                    samples= av_malloc(samples_size);
+                }
                 data_size= samples_size;
                     /* XXX: could avoid copy if PCM 16 bits with same
                        endianness as CPU */
