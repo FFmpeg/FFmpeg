@@ -589,47 +589,6 @@ static void do_rematrixing(AC3DecodeContext *s)
 }
 
 /**
- * Perform the 256-point IMDCT
- */
-static void do_imdct_256(AC3DecodeContext *s, int chindex)
-{
-    int i, k;
-    DECLARE_ALIGNED_16(float, x[128]);
-    FFTComplex z[2][64];
-    float *o_ptr = s->tmp_output;
-
-    for(i=0; i<2; i++) {
-        /* de-interleave coefficients */
-        for(k=0; k<128; k++) {
-            x[k] = s->transform_coeffs[chindex][2*k+i];
-        }
-
-        /* run standard IMDCT */
-        ff_imdct_calc(&s->imdct_256, o_ptr, x);
-
-        /* reverse the post-rotation & reordering from standard IMDCT */
-        for(k=0; k<32; k++) {
-            z[i][32+k].re = -o_ptr[128+2*k];
-            z[i][32+k].im = -o_ptr[2*k];
-            z[i][31-k].re =  o_ptr[2*k+1];
-            z[i][31-k].im =  o_ptr[128+2*k+1];
-        }
-    }
-
-    /* apply AC-3 post-rotation & reordering */
-    for(k=0; k<64; k++) {
-        o_ptr[    2*k  ] = -z[0][   k].im;
-        o_ptr[    2*k+1] =  z[0][63-k].re;
-        o_ptr[128+2*k  ] = -z[0][   k].re;
-        o_ptr[128+2*k+1] =  z[0][63-k].im;
-        o_ptr[256+2*k  ] = -z[1][   k].re;
-        o_ptr[256+2*k+1] =  z[1][63-k].im;
-        o_ptr[384+2*k  ] =  z[1][   k].im;
-        o_ptr[384+2*k+1] = -z[1][63-k].re;
-    }
-}
-
-/**
  * Inverse MDCT Transform.
  * Convert frequency domain coefficients to time-domain audio samples.
  * reference: Section 7.9.4 Transformation Equations
@@ -640,18 +599,20 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
 
     for (ch=1; ch<=channels; ch++) {
         if (s->block_switch[ch]) {
-            do_imdct_256(s, ch);
+            int i;
+            float *x = s->tmp_output+128;
+            for(i=0; i<128; i++)
+                x[i] = s->transform_coeffs[ch][2*i];
+            ff_imdct_half(&s->imdct_256, s->tmp_output, x);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            for(i=0; i<128; i++)
+                x[i] = s->transform_coeffs[ch][2*i+1];
+            ff_imdct_half(&s->imdct_256, s->delay[ch-1], x);
         } else {
-            ff_imdct_calc(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
+            ff_imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            memcpy(s->delay[ch-1], s->tmp_output+128, 128*sizeof(float));
         }
-        /* For the first half of the block, apply the window, add the delay
-           from the previous block, and send to output */
-        s->dsp.vector_fmul_add_add(s->output[ch-1], s->tmp_output,
-                                     s->window, s->delay[ch-1], 0, 256, 1);
-        /* For the second half of the block, apply the window and store the
-           samples to delay, to be combined with the next block */
-        s->dsp.vector_fmul_reverse(s->delay[ch-1], s->tmp_output+256,
-                                   s->window, 256);
     }
 }
 
@@ -686,7 +647,7 @@ static void ac3_downmix(AC3DecodeContext *s,
  */
 static void ac3_upmix_delay(AC3DecodeContext *s)
 {
-    int channel_data_size = sizeof(s->delay[0]);
+    int channel_data_size = 128*sizeof(float);
     switch(s->channel_mode) {
         case AC3_CHMODE_DUALMONO:
         case AC3_CHMODE_STEREO:
@@ -1050,6 +1011,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
         if(!s->downmixed) {
             s->downmixed = 1;
+            // FIXME delay[] is half the size of the other downmixes
             ac3_downmix(s, s->delay, 0);
         }
 
