@@ -181,6 +181,7 @@ static int process_audio_header_elements(AVFormatContext *s)
         }
         switch (revision2) {
         case  8: ea->audio_codec = CODEC_ID_PCM_S16LE_PLANAR; break;
+        case 10: ea->audio_codec = CODEC_ID_ADPCM_EA_R2; break;
         case -1: break;
         default:
             av_log(s, AV_LOG_ERROR, "unsupported stream type; revision2=%i\n", revision2);
