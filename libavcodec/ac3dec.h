@@ -99,7 +99,6 @@ typedef struct {
     int channels;                               ///< number of total channels
     int lfe_ch;                                 ///< index of LFE channel
     float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
-    float downmix_coeff_adjust[2];              ///< adjustment needed for each output channel when downmixing
     int downmixed;                              ///< indicates if coeffs are currently downmixed
     int output_mode;                            ///< output channel configuration
     int out_channels;                           ///< number of output channels

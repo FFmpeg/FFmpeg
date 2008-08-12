@@ -321,6 +321,7 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
     int i;
     float cmix = gain_levels[center_levels[s->center_mix_level]];
     float smix = gain_levels[surround_levels[s->surround_mix_level]];
+    float norm0, norm1;
 
     for(i=0; i<s->fbw_channels; i++) {
         s->downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
@@ -338,14 +339,23 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
         s->downmix_coeffs[nf][0] = s->downmix_coeffs[nf+1][1] = smix;
     }
 
-    /* calculate adjustment needed for each channel to avoid clipping */
-    s->downmix_coeff_adjust[0] = s->downmix_coeff_adjust[1] = 0.0f;
+    /* renormalize */
+    norm0 = norm1 = 0.0;
     for(i=0; i<s->fbw_channels; i++) {
-        s->downmix_coeff_adjust[0] += s->downmix_coeffs[i][0];
-        s->downmix_coeff_adjust[1] += s->downmix_coeffs[i][1];
+        norm0 += s->downmix_coeffs[i][0];
+        norm1 += s->downmix_coeffs[i][1];
     }
-    s->downmix_coeff_adjust[0] = 1.0f / s->downmix_coeff_adjust[0];
-    s->downmix_coeff_adjust[1] = 1.0f / s->downmix_coeff_adjust[1];
+    norm0 = 1.0f / norm0;
+    norm1 = 1.0f / norm1;
+    for(i=0; i<s->fbw_channels; i++) {
+        s->downmix_coeffs[i][0] *= norm0;
+        s->downmix_coeffs[i][1] *= norm1;
+    }
+
+    if(s->output_mode == AC3_CHMODE_MONO) {
+        for(i=0; i<s->fbw_channels; i++)
+            s->downmix_coeffs[i][0] = (s->downmix_coeffs[i][0] + s->downmix_coeffs[i][1]) * LEVEL_MINUS_3DB;
+    }
 }
 
 /**
@@ -619,25 +629,28 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
 /**
  * Downmix the output to mono or stereo.
  */
-static void ac3_downmix(AC3DecodeContext *s,
-                        float samples[AC3_MAX_CHANNELS][256], int ch_offset)
+static av_noinline void ac3_downmix(AC3DecodeContext *s,
+                                    float samples[AC3_MAX_CHANNELS][256])
 {
     int i, j;
     float v0, v1;
 
-    for(i=0; i<256; i++) {
-        v0 = v1 = 0.0f;
-        for(j=0; j<s->fbw_channels; j++) {
-            v0 += samples[j+ch_offset][i] * s->downmix_coeffs[j][0];
-            v1 += samples[j+ch_offset][i] * s->downmix_coeffs[j][1];
+    if(s->output_mode == AC3_CHMODE_STEREO) {
+        for(i=0; i<256; i++) {
+            v0 = v1 = 0.0f;
+            for(j=0; j<s->fbw_channels; j++) {
+                v0 += samples[j][i] * s->downmix_coeffs[j][0];
+                v1 += samples[j][i] * s->downmix_coeffs[j][1];
+            }
+            samples[0][i] = v0;
+            samples[1][i] = v1;
         }
-        v0 *= s->downmix_coeff_adjust[0];
-        v1 *= s->downmix_coeff_adjust[1];
-        if(s->output_mode == AC3_CHMODE_MONO) {
-            samples[ch_offset][i] = (v0 + v1) * LEVEL_MINUS_3DB;
-        } else if(s->output_mode == AC3_CHMODE_STEREO) {
-            samples[  ch_offset][i] = v0;
-            samples[1+ch_offset][i] = v1;
+    } else if(s->output_mode == AC3_CHMODE_MONO) {
+        for(i=0; i<256; i++) {
+            v0 = 0.0f;
+            for(j=0; j<s->fbw_channels; j++)
+                v0 += samples[j][i] * s->downmix_coeffs[j][0];
+            samples[0][i] = v0;
         }
     }
 }
@@ -1002,17 +1015,17 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->channels);
 
         if(downmix_output) {
-            ac3_downmix(s, s->output, 0);
+            ac3_downmix(s, s->output);
         }
     } else {
         if(downmix_output) {
-            ac3_downmix(s, s->transform_coeffs, 1);
+            ac3_downmix(s, s->transform_coeffs+1);
         }
 
         if(!s->downmixed) {
             s->downmixed = 1;
             // FIXME delay[] is half the size of the other downmixes
-            ac3_downmix(s, s->delay, 0);
+            ac3_downmix(s, s->delay);
         }
 
         do_imdct(s, s->out_channels);
