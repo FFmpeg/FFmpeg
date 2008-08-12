@@ -639,6 +639,8 @@ typedef struct FFTContext {
     uint16_t *revtab;
     FFTComplex *exptab;
     FFTComplex *exptab1; /* only used by SSE code */
+    FFTComplex *tmp_buf;
+    void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
     void (*imdct_calc)(struct MDCTContext *s, FFTSample *output,
                        const FFTSample *input, FFTSample *tmp);
@@ -647,13 +649,18 @@ typedef struct FFTContext {
 } FFTContext;
 
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
-void ff_fft_permute(FFTContext *s, FFTComplex *z);
+void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
+void ff_fft_permute_sse(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 
+static inline void ff_fft_permute(FFTContext *s, FFTComplex *z)
+{
+    s->fft_permute(s, z);
+}
 static inline void ff_fft_calc(FFTContext *s, FFTComplex *z)
 {
     s->fft_calc(s, z);
