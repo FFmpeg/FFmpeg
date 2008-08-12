@@ -92,10 +92,10 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
 /* complex multiplication: p = a * b */
 #define CMUL(pre, pim, are, aim, bre, bim) \
 {\
-    double _are = (are);\
-    double _aim = (aim);\
-    double _bre = (bre);\
-    double _bim = (bim);\
+    FFTSample _are = (are);\
+    FFTSample _aim = (aim);\
+    FFTSample _bre = (bre);\
+    FFTSample _bim = (bim);\
     (pre) = _are * _bre - _aim * _bim;\
     (pim) = _are * _bim + _aim * _bre;\
 }
