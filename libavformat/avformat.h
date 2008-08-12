@@ -390,14 +390,17 @@ typedef struct AVStream {
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
-#define MAX_REORDER_DELAY 4
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+#if LIBAVFORMAT_VERSION_INT < (53<<16)
+    int64_t unused[4+1];
+#endif
 
     char *filename; /**< source filename of the stream */
 
     int disposition; /**< AV_DISPOSITION_* bitfield */
 
     AVProbeData probe_data;
+#define MAX_REORDER_DELAY 16
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
