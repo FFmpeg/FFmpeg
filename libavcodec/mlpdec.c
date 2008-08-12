@@ -139,6 +139,20 @@ typedef struct SubStream {
 
 } SubStream;
 
+#define FIR 0
+#define IIR 1
+
+/** filter data */
+typedef struct {
+    //! number of taps in filter
+    uint8_t     order;
+    //! Right shift to apply to output of filter.
+    uint8_t     shift;
+
+    int32_t     coeff[MAX_FILTER_ORDER];
+    int32_t     state[MAX_FILTER_ORDER];
+} FilterParams;
+
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
 
@@ -158,18 +172,7 @@ typedef struct MLPDecodeContext {
 
     SubStream   substream[MAX_SUBSTREAMS];
 
-    //@{
-    /** filter data */
-#define FIR 0
-#define IIR 1
-    //! number of taps in filter
-    uint8_t     filter_order[MAX_CHANNELS][NUM_FILTERS];
-    //! Right shift to apply to output of filter.
-    uint8_t     filter_shift[MAX_CHANNELS][NUM_FILTERS];
-
-    int32_t     filter_coeff[MAX_CHANNELS][NUM_FILTERS][MAX_FILTER_ORDER];
-    int32_t     filter_state[MAX_CHANNELS][NUM_FILTERS][MAX_FILTER_ORDER];
-    //@}
+    FilterParams filter_params[MAX_CHANNELS][NUM_FILTERS];
 
     //@{
     /** sample data coding information */
@@ -520,10 +523,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     memset(s->quant_step_size, 0, sizeof(s->quant_step_size));
 
     for (ch = s->min_channel; ch <= s->max_channel; ch++) {
-        m->filter_order[ch][FIR] = 0;
-        m->filter_order[ch][IIR] = 0;
-        m->filter_shift[ch][FIR] = 0;
-        m->filter_shift[ch][IIR] = 0;
+        m->filter_params[ch][FIR].order = 0;
+        m->filter_params[ch][IIR].order = 0;
+        m->filter_params[ch][FIR].shift = 0;
+        m->filter_params[ch][IIR].shift = 0;
 
         /* Default audio coding is 24-bit raw PCM. */
         m->huff_offset     [ch] = 0;
@@ -544,6 +547,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
                               unsigned int channel, unsigned int filter)
 {
+    FilterParams *fp = &m->filter_params[channel][filter];
     const char fchar = filter ? 'I' : 'F';
     int i, order;
 
@@ -557,12 +561,12 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
                fchar, order, MAX_FILTER_ORDER);
         return -1;
     }
-    m->filter_order[channel][filter] = order;
+    fp->order = order;
 
     if (order > 0) {
         int coeff_bits, coeff_shift;
 
-        m->filter_shift[channel][filter] = get_bits(gbp, 4);
+        fp->shift = get_bits(gbp, 4);
 
         coeff_bits  = get_bits(gbp, 5);
         coeff_shift = get_bits(gbp, 3);
@@ -580,7 +584,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
         }
 
         for (i = 0; i < order; i++)
-            m->filter_coeff[channel][filter][i] =
+            fp->coeff[i] =
                     get_sbits(gbp, coeff_bits) << coeff_shift;
 
         if (get_bits1(gbp)) {
@@ -598,7 +602,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
             /* TODO: Check validity of state data. */
 
             for (i = 0; i < order; i++)
-                m->filter_state[channel][filter][i] =
+                fp->state[i] =
                     get_sbits(gbp, state_bits) << state_shift;
         }
     }
@@ -689,6 +693,9 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
 
     for (ch = s->min_channel; ch <= s->max_channel; ch++)
         if (get_bits1(gbp)) {
+            FilterParams *fir = &m->filter_params[ch][FIR];
+            FilterParams *iir = &m->filter_params[ch][IIR];
+
             if (s->param_presence_flags & PARAM_FIR)
                 if (get_bits1(gbp))
                     if (read_filter_params(m, gbp, ch, FIR) < 0)
@@ -699,8 +706,8 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
                     if (read_filter_params(m, gbp, ch, IIR) < 0)
                         return -1;
 
-            if (m->filter_order[ch][FIR] && m->filter_order[ch][IIR] &&
-                m->filter_shift[ch][FIR] != m->filter_shift[ch][IIR]) {
+            if (fir->order && iir->order &&
+                fir->shift != iir->shift) {
                 av_log(m->avctx, AV_LOG_ERROR,
                        "FIR and IIR filters must use the same precision.\n");
                 return -1;
@@ -710,8 +717,8 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
              * FIR filter is considered. If only the IIR filter is employed,
              * the FIR filter precision is set to that of the IIR filter, so
              * that the filtering code can use it. */
-            if (!m->filter_order[ch][FIR] && m->filter_order[ch][IIR])
-                m->filter_shift[ch][FIR] = m->filter_shift[ch][IIR];
+            if (!fir->order && iir->order)
+                fir->shift = iir->shift;
 
             if (s->param_presence_flags & PARAM_HUFFOFFSET)
                 if (get_bits1(gbp))
@@ -738,14 +745,16 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
 {
     SubStream *s = &m->substream[substr];
     int32_t filter_state_buffer[NUM_FILTERS][MAX_BLOCKSIZE + MAX_FILTER_ORDER];
-    unsigned int filter_shift = m->filter_shift[channel][FIR];
+    FilterParams *fp[NUM_FILTERS] = { &m->filter_params[channel][FIR],
+                                      &m->filter_params[channel][IIR], };
+    unsigned int filter_shift = fp[FIR]->shift;
     int32_t mask = MSB_MASK(s->quant_step_size[channel]);
     int index = MAX_BLOCKSIZE;
     int j, i;
 
     for (j = 0; j < NUM_FILTERS; j++) {
         memcpy(&   filter_state_buffer  [j][MAX_BLOCKSIZE],
-               &m->filter_state[channel][j][0],
+               &fp[j]->state[0],
                MAX_FILTER_ORDER * sizeof(int32_t));
     }
 
@@ -758,9 +767,9 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
         /* TODO: Move this code to DSPContext? */
 
         for (j = 0; j < NUM_FILTERS; j++)
-            for (order = 0; order < m->filter_order[channel][j]; order++)
+            for (order = 0; order < fp[j]->order; order++)
                 accum += (int64_t)filter_state_buffer[j][index + order] *
-                        m->filter_coeff[channel][j][order];
+                        fp[j]->coeff[order];
 
         accum  = accum >> filter_shift;
         result = (accum + residual) & mask;
@@ -774,7 +783,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     }
 
     for (j = 0; j < NUM_FILTERS; j++) {
-        memcpy(&m->filter_state[channel][j][0],
+        memcpy(&fp[j]->state[0],
                &   filter_state_buffer  [j][index],
                MAX_FILTER_ORDER * sizeof(int32_t));
     }
