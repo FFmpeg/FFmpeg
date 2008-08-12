@@ -201,7 +201,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     av_init_random(0, &s->dith_state);
 
     /* set bias values for float to int16 conversion */
-    if(s->dsp.float_to_int16 == ff_float_to_int16_c) {
+    if(s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         s->add_bias = 385.0f;
         s->mul_bias = 1.0f;
     } else {
@@ -604,13 +604,13 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i];
             ff_imdct_half(&s->imdct_256, s->tmp_output, x);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, s->add_bias, 128);
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i+1];
             ff_imdct_half(&s->imdct_256, s->delay[ch-1], x);
         } else {
             ff_imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, s->add_bias, 128);
             memcpy(s->delay[ch-1], s->tmp_output+128, 128*sizeof(float));
         }
     }
@@ -1018,14 +1018,6 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->out_channels);
     }
 
-    /* convert float to 16-bit integer */
-    for(ch=0; ch<s->out_channels; ch++) {
-        for(i=0; i<256; i++) {
-            s->output[ch][i] += s->add_bias;
-        }
-        s->dsp.float_to_int16(s->int_output[ch], s->output[ch], 256);
-    }
-
     return 0;
 }
 
@@ -1037,7 +1029,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 {
     AC3DecodeContext *s = avctx->priv_data;
     int16_t *out_samples = (int16_t *)data;
-    int i, blk, ch, err;
+    int blk, ch, err;
 
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     if (s->input_buffer) {
@@ -1127,14 +1119,14 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* decode the audio blocks */
     for (blk = 0; blk < s->num_blocks; blk++) {
+        const float *output[s->out_channels];
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
         }
-
-        /* interleave output samples */
-        for (i = 0; i < 256; i++)
-            for (ch = 0; ch < s->out_channels; ch++)
-                *(out_samples++) = s->int_output[ch][i];
+        for (ch = 0; ch < s->out_channels; ch++)
+            output[ch] = s->output[ch];
+        s->dsp.float_to_int16_interleave(out_samples, output, 256, s->out_channels);
+        out_samples += 256 * s->out_channels;
     }
     *data_size = s->num_blocks * 256 * avctx->channels * sizeof (int16_t);
     return s->frame_size;
