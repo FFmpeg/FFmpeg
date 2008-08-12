@@ -584,8 +584,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
         }
 
         for (i = 0; i < order; i++)
-            fp->coeff[i] =
-                    get_sbits(gbp, coeff_bits) << coeff_shift;
+            fp->coeff[i] = get_sbits(gbp, coeff_bits) << coeff_shift;
 
         if (get_bits1(gbp)) {
             int state_bits, state_shift;
@@ -602,8 +601,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
             /* TODO: Check validity of state data. */
 
             for (i = 0; i < order; i++)
-                fp->state[i] =
-                    get_sbits(gbp, state_bits) << state_shift;
+                fp->state[i] = get_sbits(gbp, state_bits) << state_shift;
         }
     }
 
@@ -753,8 +751,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     int j, i;
 
     for (j = 0; j < NUM_FILTERS; j++) {
-        memcpy(&   filter_state_buffer  [j][MAX_BLOCKSIZE],
-               &fp[j]->state[0],
+        memcpy(&filter_state_buffer[j][MAX_BLOCKSIZE], &fp[j]->state[0],
                MAX_FILTER_ORDER * sizeof(int32_t));
     }
 
@@ -769,7 +766,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
         for (j = 0; j < NUM_FILTERS; j++)
             for (order = 0; order < fp[j]->order; order++)
                 accum += (int64_t)filter_state_buffer[j][index + order] *
-                        fp[j]->coeff[order];
+                                  fp[j]->coeff[order];
 
         accum  = accum >> filter_shift;
         result = (accum + residual) & mask;
@@ -783,8 +780,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     }
 
     for (j = 0; j < NUM_FILTERS; j++) {
-        memcpy(&fp[j]->state[0],
-               &   filter_state_buffer  [j][index],
+        memcpy(&fp[j]->state[0], &filter_state_buffer[j][index],
                MAX_FILTER_ORDER * sizeof(int32_t));
     }
 }
