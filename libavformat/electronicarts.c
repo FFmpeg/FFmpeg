@@ -306,7 +306,7 @@ static int process_ea_header(AVFormatContext *s) {
                 blockid = get_le32(pb);
                 if (blockid == GSTR_TAG) {
                     url_fskip(pb, 4);
-                } else if (blockid != PT00_TAG) {
+                } else if ((blockid & 0xFFFF)!=PT00_TAG) {
                     av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
                     return 0;
                 }
