@@ -31,6 +31,9 @@
 #define SEAD_TAG MKTAG('S', 'E', 'A', 'D')    /* Sxxx header */
 #define SNDC_TAG MKTAG('S', 'N', 'D', 'C')    /* Sxxx data */
 #define SEND_TAG MKTAG('S', 'E', 'N', 'D')    /* Sxxx end */
+#define SHEN_TAG MKTAG('S', 'H', 'E', 'N')    /* SxEN header */
+#define SDEN_TAG MKTAG('S', 'D', 'E', 'N')    /* SxEN data */
+#define SEEN_TAG MKTAG('S', 'E', 'E', 'N')    /* SxEN end */
 #define ISNh_TAG MKTAG('1', 'S', 'N', 'h')    /* 1SNx header */
 #define EACS_TAG MKTAG('E', 'A', 'C', 'S')
 #define ISNd_TAG MKTAG('1', 'S', 'N', 'd')    /* 1SNx data */
@@ -304,6 +307,7 @@ static int process_ea_header(AVFormatContext *s) {
                 break;
 
             case SCHl_TAG :
+            case SHEN_TAG :
                 blockid = get_le32(pb);
                 if (blockid == GSTR_TAG) {
                     url_fskip(pb, 4);
@@ -361,6 +365,7 @@ static int ea_probe(AVProbeData *p)
     case ISNh_TAG:
     case SCHl_TAG:
     case SEAD_TAG:
+    case SHEN_TAG:
     case kVGT_TAG:
     case MADk_TAG:
     case MPCh_TAG:
@@ -439,6 +444,7 @@ static int ea_read_packet(AVFormatContext *s,
         case ISNd_TAG:
         case SCDl_TAG:
         case SNDC_TAG:
+        case SDEN_TAG:
             if (!ea->audio_codec) {
                 url_fskip(pb, chunk_size);
                 break;
@@ -476,6 +482,7 @@ static int ea_read_packet(AVFormatContext *s,
         case ISNe_TAG:
         case SCEl_TAG:
         case SEND_TAG:
+        case SEEN_TAG:
             ret = AVERROR(EIO);
             packet_read = 1;
             break;
