@@ -895,7 +895,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
-    if(pkt->pts != AV_NOPTS_VALUE){
+    if(pkt->pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY){
         st->pts_buffer[0]= pkt->pts;
         for(i=1; i<delay+1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
             st->pts_buffer[i]= (i-delay-1) * pkt->duration;
@@ -2524,7 +2524,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     }
 
     //calculate dts from pts
-    if(pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE){
+    if(pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY){
         st->pts_buffer[0]= pkt->pts;
         for(i=1; i<delay+1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
             st->pts_buffer[i]= (i-delay-1) * pkt->duration;
