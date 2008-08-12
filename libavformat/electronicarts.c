@@ -331,6 +331,10 @@ static int process_ea_header(AVFormatContext *s) {
                 err = process_video_header_mdec(s);
                 break;
 
+            case MPCh_TAG:
+                ea->video_codec = CODEC_ID_MPEG2VIDEO;
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -490,6 +494,7 @@ static int ea_read_packet(AVFormatContext *s,
             goto get_video_packet;
 
         case MV0K_TAG:
+        case MPCh_TAG:
             key = PKT_FLAG_KEY;
         case MV0F_TAG:
 get_video_packet:
