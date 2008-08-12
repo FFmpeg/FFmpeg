@@ -642,10 +642,8 @@ typedef struct FFTContext {
     FFTComplex *tmp_buf;
     void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
-    void (*imdct_calc)(struct MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp);
-    void (*imdct_half)(struct MDCTContext *s, FFTSample *output,
-                       const FFTSample *input);
+    void (*imdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
+    void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
 } FFTContext;
 
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
@@ -694,20 +692,15 @@ void ff_kbd_window_init(float *window, float alpha, int n);
 void ff_sine_window_init(float *window, int n);
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
-void ff_imdct_calc(MDCTContext *s, FFTSample *output,
-                const FFTSample *input, FFTSample *tmp);
+void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp);
+void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
-                        const FFTSample *input, FFTSample *tmp);
+void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp);
+void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_mdct_calc(MDCTContext *s, FFTSample *out,
-               const FFTSample *input, FFTSample *tmp);
+void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input);
 void ff_mdct_end(MDCTContext *s);
 
 #define WRAPPER8_16(name8, name16)\

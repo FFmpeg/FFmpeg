@@ -142,8 +142,7 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
     asm volatile("femms");
 }
 
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
-                        const FFTSample *input, FFTSample *tmp)
+void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
     long n = 1 << s->nbits;

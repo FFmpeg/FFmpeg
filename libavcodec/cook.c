@@ -112,7 +112,6 @@ typedef struct cook {
 
     /* transform data */
     MDCTContext         mdct_ctx;
-    DECLARE_ALIGNED_16(FFTSample, mdct_tmp[1024]);  /* temporary storage for imlt */
     float*              mlt_window;
 
     /* gain buffers */
@@ -734,8 +733,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     int i;
 
     /* Inverse modified discrete cosine transform */
-    q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, q->mono_mdct_output,
-                               inbuffer, q->mdct_tmp);
+    q->mdct_ctx.fft.imdct_calc(&q->mdct_ctx, q->mono_mdct_output, inbuffer);
 
     q->imlt_window (q, buffer1, gains_ptr, previous_buffer);
 

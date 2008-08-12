@@ -150,8 +150,7 @@ void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * @param input N/2 samples
  * @param tmp N/2 samples
  */
-void ff_imdct_calc(MDCTContext *s, FFTSample *output,
-                   const FFTSample *input, FFTSample *tmp)
+void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
     int k;
     int n = 1 << s->nbits;
@@ -172,11 +171,10 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
  * @param out N/2 samples
  * @param tmp temporary storage of N/2 samples
  */
-void ff_mdct_calc(MDCTContext *s, FFTSample *out,
-                  const FFTSample *input, FFTSample *tmp)
+void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input)
 {
     int i, j, n, n8, n4, n2, n3;
-    FFTSample re, im, re1, im1;
+    FFTSample re, im;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;

@@ -166,7 +166,6 @@ typedef struct {
     DECLARE_ALIGNED_16(float, delay[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]);             ///< delay - added to the next block
     DECLARE_ALIGNED_16(float, window[AC3_BLOCK_SIZE]);                              ///< window coefficients
     DECLARE_ALIGNED_16(float, tmp_output[AC3_BLOCK_SIZE*2]);                        ///< temporary storage for output before windowing
-    DECLARE_ALIGNED_16(float, tmp_imdct[AC3_BLOCK_SIZE]);                           ///< temporary storage for imdct transform
     DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]);            ///< output after imdct transform and windowing
     DECLARE_ALIGNED_16(short, int_output[AC3_MAX_CHANNELS-1][AC3_BLOCK_SIZE]);      ///< final 16-bit integer output
 ///@}

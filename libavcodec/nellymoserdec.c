@@ -50,7 +50,6 @@ typedef struct NellyMoserDecodeContext {
     float           scale_bias;
     DSPContext      dsp;
     MDCTContext     imdct_ctx;
-    DECLARE_ALIGNED_16(float,imdct_tmp[NELLY_BUF_LEN]);
     DECLARE_ALIGNED_16(float,imdct_out[NELLY_BUF_LEN * 2]);
 } NellyMoserDecodeContext;
 
@@ -120,8 +119,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         memset(&aptr[NELLY_FILL_LEN], 0,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
-        s->imdct_ctx.fft.imdct_calc(&s->imdct_ctx, s->imdct_out,
-                                    aptr, s->imdct_tmp);
+        s->imdct_ctx.fft.imdct_calc(&s->imdct_ctx, s->imdct_out, aptr);
         /* XXX: overlapping and windowing should be part of a more
            generic imdct function */
         overlap_and_window(s, s->state, aptr, s->imdct_out);

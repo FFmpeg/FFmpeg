@@ -171,8 +171,7 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
     );
 }
 
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp)
+void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
     long n = 1 << s->nbits;

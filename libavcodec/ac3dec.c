@@ -605,7 +605,7 @@ static void do_imdct_256(AC3DecodeContext *s, int chindex)
         }
 
         /* run standard IMDCT */
-        s->imdct_256.fft.imdct_calc(&s->imdct_256, o_ptr, x, s->tmp_imdct);
+        s->imdct_256.fft.imdct_calc(&s->imdct_256, o_ptr, x);
 
         /* reverse the post-rotation & reordering from standard IMDCT */
         for(k=0; k<32; k++) {
@@ -643,7 +643,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             do_imdct_256(s, ch);
         } else {
             s->imdct_512.fft.imdct_calc(&s->imdct_512, s->tmp_output,
-                                        s->transform_coeffs[ch], s->tmp_imdct);
+                                        s->transform_coeffs[ch]);
         }
         /* For the first half of the block, apply the window, add the delay
            from the previous block, and send to output */

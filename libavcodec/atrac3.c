@@ -108,7 +108,6 @@ typedef struct {
     float               outSamples[2048];
     uint8_t*            decoded_bytes_buffer;
     float               tempBuf[1070];
-    DECLARE_ALIGNED_16(float,mdct_tmp[512]);
     //@}
     //@{
     /** extradata */
@@ -189,10 +188,9 @@ static void iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float
  * @param pInput    float input
  * @param pOutput   float output
  * @param odd_band  1 if the band is an odd band
- * @param mdct_tmp  aligned temporary buffer for the mdct
  */
 
-static void IMLT(float *pInput, float *pOutput, int odd_band, float* mdct_tmp)
+static void IMLT(float *pInput, float *pOutput, int odd_band)
 {
     int     i;
 
@@ -210,7 +208,7 @@ static void IMLT(float *pInput, float *pOutput, int odd_band, float* mdct_tmp)
             FFSWAP(float, pInput[i], pInput[255-i]);
     }
 
-    mdct_ctx.fft.imdct_calc(&mdct_ctx,pOutput,pInput,mdct_tmp);
+    mdct_ctx.fft.imdct_calc(&mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
     dsp.vector_fmul(pOutput,mdct_window,512);
@@ -757,7 +755,7 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
     for (band=0; band<4; band++) {
         /* Perform the IMDCT step without overlapping. */
         if (band <= numBands) {
-            IMLT(&(pSnd->spectrum[band*256]), pSnd->IMDCT_buf, band&1,q->mdct_tmp);
+            IMLT(&(pSnd->spectrum[band*256]), pSnd->IMDCT_buf, band&1);
         } else
             memset(pSnd->IMDCT_buf, 0, 512 * sizeof(float));
 
