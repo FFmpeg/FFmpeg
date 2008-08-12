@@ -164,15 +164,14 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
         } while (nblocks != 0);
         av_freep(&s->exptab);
 
-    /* compute bit reverse table */
-
-    for(i=0;i<n;i++) {
-        m=0;
-        for(j=0;j<nbits;j++) {
-            m |= ((i >> j) & 1) << (nbits-j-1);
+        /* compute bit reverse table */
+        for(i=0;i<n;i++) {
+            m=0;
+            for(j=0;j<nbits;j++) {
+                m |= ((i >> j) & 1) << (nbits-j-1);
+            }
+            s->revtab[i]=m;
         }
-        s->revtab[i]=m;
-    }
     }
 
     return 0;
