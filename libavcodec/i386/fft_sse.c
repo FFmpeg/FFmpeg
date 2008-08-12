@@ -1,6 +1,6 @@
 /*
  * FFT/MDCT transform with SSE optimizations
- * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2008 Loren Merritt
  *
  * This file is part of FFmpeg.
  *
@@ -21,9 +21,6 @@
 
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
-
-static const int p1m1p1m1[4] __attribute__((aligned(16))) =
-    { 0, 1 << 31, 0, 1 << 31 };
 
 static const int m1m1m1m1[4] __attribute__((aligned(16))) =
     { 1 << 31, 1 << 31, 1 << 31, 1 << 31 };
@@ -73,212 +70,134 @@ void ff_fft_permute_sse(FFTContext *s, FFTComplex *z)
     memcpy(z, s->tmp_buf, n*sizeof(FFTComplex));
 }
 
-static void imdct_sse(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
+void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
-    x86_reg k;
-    long n4, n2, n;
-    const uint16_t *revtab = s->fft.revtab;
+    av_unused x86_reg i, j, k, l;
+    long n = 1 << s->nbits;
+    long n2 = n >> 1;
+    long n4 = n >> 2;
+    long n8 = n >> 3;
+    const uint16_t *revtab = s->fft.revtab + n8;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
-    const FFTSample *in1, *in2;
-    FFTComplex *z = (FFTComplex *)tmp;
-
-    n = 1 << s->nbits;
-    n2 = n >> 1;
-    n4 = n >> 2;
-
-#ifdef ARCH_X86_64
-    asm volatile ("movaps %0, %%xmm8\n\t"::"m"(*p1m1p1m1));
-#define P1M1P1M1 "%%xmm8"
-#else
-#define P1M1P1M1 "%4"
-#endif
+    FFTComplex *z = (FFTComplex *)output;
 
     /* pre rotation */
-    in1 = input;
-    in2 = input + n2 - 4;
-
-    /* Complex multiplication */
-    for (k = 0; k < n4; k += 4) {
-        asm volatile (
-            "movaps          %0, %%xmm0 \n\t"   // xmm0 = r0 X  r1 X : in2
-            "movaps          %1, %%xmm3 \n\t"   // xmm3 = X  i1 X  i0: in1
-            "movaps    -16+1*%0, %%xmm4 \n\t"   // xmm4 = r0 X  r1 X : in2
-            "movaps     16+1*%1, %%xmm7 \n\t"   // xmm7 = X  i1 X  i0: in1
-            "movlps          %2, %%xmm1 \n\t"   // xmm1 = X  X  R1 R0: tcos
-            "movlps          %3, %%xmm2 \n\t"   // xmm2 = X  X  I1 I0: tsin
-            "movlps      8+1*%2, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
-            "movlps      8+1*%3, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
-            "shufps $95, %%xmm0, %%xmm0 \n\t"   // xmm0 = r1 r1 r0 r0
-            "shufps $160,%%xmm3, %%xmm3 \n\t"   // xmm3 = i1 i1 i0 i0
-            "shufps $95, %%xmm4, %%xmm4 \n\t"   // xmm4 = r1 r1 r0 r0
-            "shufps $160,%%xmm7, %%xmm7 \n\t"   // xmm7 = i1 i1 i0 i0
-            "unpcklps    %%xmm2, %%xmm1 \n\t"   // xmm1 = I1 R1 I0 R0
-            "unpcklps    %%xmm6, %%xmm5 \n\t"   // xmm5 = I1 R1 I0 R0
-            "movaps      %%xmm1, %%xmm2 \n\t"   // xmm2 = I1 R1 I0 R0
-            "movaps      %%xmm5, %%xmm6 \n\t"   // xmm6 = I1 R1 I0 R0
-            "xorps   "P1M1P1M1", %%xmm2 \n\t"   // xmm2 = -I1 R1 -I0 R0
-            "xorps   "P1M1P1M1", %%xmm6 \n\t"   // xmm6 = -I1 R1 -I0 R0
-            "mulps       %%xmm1, %%xmm0 \n\t"   // xmm0 = rI rR rI rR
-            "mulps       %%xmm5, %%xmm4 \n\t"   // xmm4 = rI rR rI rR
-            "shufps $177,%%xmm2, %%xmm2 \n\t"   // xmm2 = R1 -I1 R0 -I0
-            "shufps $177,%%xmm6, %%xmm6 \n\t"   // xmm6 = R1 -I1 R0 -I0
-            "mulps       %%xmm2, %%xmm3 \n\t"   // xmm3 = Ri -Ii Ri -Ii
-            "mulps       %%xmm6, %%xmm7 \n\t"   // xmm7 = Ri -Ii Ri -Ii
-            "addps       %%xmm3, %%xmm0 \n\t"   // xmm0 = result
-            "addps       %%xmm7, %%xmm4 \n\t"   // xmm4 = result
-            ::"m"(in2[-2*k]), "m"(in1[2*k]),
-              "m"(tcos[k]), "m"(tsin[k])
-#ifndef ARCH_X86_64
-              ,"m"(*p1m1p1m1)
+    for(k=n8-2; k>=0; k-=2) {
+        asm volatile(
+            "movaps     (%2,%1,2), %%xmm0 \n" // { z[k].re,    z[k].im,    z[k+1].re,  z[k+1].im  }
+            "movaps  -16(%2,%0,2), %%xmm1 \n" // { z[-k-2].re, z[-k-2].im, z[-k-1].re, z[-k-1].im }
+            "movaps        %%xmm0, %%xmm2 \n"
+            "shufps $0x88, %%xmm1, %%xmm0 \n" // { z[k].re,    z[k+1].re,  z[-k-2].re, z[-k-1].re }
+            "shufps $0x77, %%xmm2, %%xmm1 \n" // { z[-k-1].im, z[-k-2].im, z[k+1].im,  z[k].im    }
+            "movlps       (%3,%1), %%xmm4 \n"
+            "movlps       (%4,%1), %%xmm5 \n"
+            "movhps     -8(%3,%0), %%xmm4 \n" // { cos[k],     cos[k+1],   cos[-k-2],  cos[-k-1]  }
+            "movhps     -8(%4,%0), %%xmm5 \n" // { sin[k],     sin[k+1],   sin[-k-2],  sin[-k-1]  }
+            "movaps        %%xmm0, %%xmm2 \n"
+            "movaps        %%xmm1, %%xmm3 \n"
+            "mulps         %%xmm5, %%xmm0 \n" // re*sin
+            "mulps         %%xmm4, %%xmm1 \n" // im*cos
+            "mulps         %%xmm4, %%xmm2 \n" // re*cos
+            "mulps         %%xmm5, %%xmm3 \n" // im*sin
+            "subps         %%xmm0, %%xmm1 \n" // -> re
+            "addps         %%xmm3, %%xmm2 \n" // -> im
+            "movaps        %%xmm1, %%xmm0 \n"
+            "unpcklps      %%xmm2, %%xmm1 \n" // { z[k],    z[k+1]  }
+            "unpckhps      %%xmm2, %%xmm0 \n" // { z[-k-2], z[-k-1] }
+            ::"r"(-4*k), "r"(4*k),
+              "r"(input+n4), "r"(tcos+n8), "r"(tsin+n8)
+        );
+#ifdef ARCH_X86_64
+        // if we have enough regs, don't let gcc make the luts latency-bound
+        // but if not, latency is faster than spilling
+        asm("movlps %%xmm0, %0 \n"
+            "movhps %%xmm0, %1 \n"
+            "movlps %%xmm1, %2 \n"
+            "movhps %%xmm1, %3 \n"
+            :"=m"(z[revtab[-k-2]]),
+             "=m"(z[revtab[-k-1]]),
+             "=m"(z[revtab[ k  ]]),
+             "=m"(z[revtab[ k+1]])
+        );
+#else
+        asm("movlps %%xmm0, %0" :"=m"(z[revtab[-k-2]]));
+        asm("movhps %%xmm0, %0" :"=m"(z[revtab[-k-1]]));
+        asm("movlps %%xmm1, %0" :"=m"(z[revtab[ k  ]]));
+        asm("movhps %%xmm1, %0" :"=m"(z[revtab[ k+1]]));
 #endif
-        );
-        /* Should be in the same block, hack for gcc2.95 & gcc3 */
-        asm (
-            "movlps      %%xmm0, %0     \n\t"
-            "movhps      %%xmm0, %1     \n\t"
-            "movlps      %%xmm4, %2     \n\t"
-            "movhps      %%xmm4, %3     \n\t"
-            :"=m"(z[revtab[k]]), "=m"(z[revtab[k + 1]]),
-             "=m"(z[revtab[k + 2]]), "=m"(z[revtab[k + 3]])
-        );
     }
 
-    ff_fft_calc_sse(&s->fft, z);
+    ff_fft_dispatch_sse(z, s->fft.nbits);
 
-#ifndef ARCH_X86_64
-#undef P1M1P1M1
-#define P1M1P1M1 "%3"
-#endif
+    /* post rotation + reinterleave + reorder */
 
-    /* post rotation + reordering */
-    for (k = 0; k < n4; k += 4) {
-        asm (
-            "movaps          %0, %%xmm0 \n\t"   // xmm0 = i1 r1 i0 r0: z
-            "movaps     16+1*%0, %%xmm4 \n\t"   // xmm4 = i1 r1 i0 r0: z
-            "movlps          %1, %%xmm1 \n\t"   // xmm1 = X  X  R1 R0: tcos
-            "movlps      8+1*%1, %%xmm5 \n\t"   // xmm5 = X  X  R1 R0: tcos
-            "movaps      %%xmm0, %%xmm3 \n\t"   // xmm3 = i1 r1 i0 r0
-            "movaps      %%xmm4, %%xmm7 \n\t"   // xmm7 = i1 r1 i0 r0
-            "movlps          %2, %%xmm2 \n\t"   // xmm2 = X  X  I1 I0: tsin
-            "movlps      8+1*%2, %%xmm6 \n\t"   // xmm6 = X  X  I1 I0: tsin
-            "shufps $160,%%xmm0, %%xmm0 \n\t"   // xmm0 = r1 r1 r0 r0
-            "shufps $245,%%xmm3, %%xmm3 \n\t"   // xmm3 = i1 i1 i0 i0
-            "shufps $160,%%xmm4, %%xmm4 \n\t"   // xmm4 = r1 r1 r0 r0
-            "shufps $245,%%xmm7, %%xmm7 \n\t"   // xmm7 = i1 i1 i0 i0
-            "unpcklps    %%xmm2, %%xmm1 \n\t"   // xmm1 = I1 R1 I0 R0
-            "unpcklps    %%xmm6, %%xmm5 \n\t"   // xmm5 = I1 R1 I0 R0
-            "movaps      %%xmm1, %%xmm2 \n\t"   // xmm2 = I1 R1 I0 R0
-            "movaps      %%xmm5, %%xmm6 \n\t"   // xmm6 = I1 R1 I0 R0
-            "xorps   "P1M1P1M1", %%xmm2 \n\t"   // xmm2 = -I1 R1 -I0 R0
-            "mulps       %%xmm1, %%xmm0 \n\t"   // xmm0 = rI rR rI rR
-            "xorps   "P1M1P1M1", %%xmm6 \n\t"   // xmm6 = -I1 R1 -I0 R0
-            "mulps       %%xmm5, %%xmm4 \n\t"   // xmm4 = rI rR rI rR
-            "shufps $177,%%xmm2, %%xmm2 \n\t"   // xmm2 = R1 -I1 R0 -I0
-            "shufps $177,%%xmm6, %%xmm6 \n\t"   // xmm6 = R1 -I1 R0 -I0
-            "mulps       %%xmm2, %%xmm3 \n\t"   // xmm3 = Ri -Ii Ri -Ii
-            "mulps       %%xmm6, %%xmm7 \n\t"   // xmm7 = Ri -Ii Ri -Ii
-            "addps       %%xmm3, %%xmm0 \n\t"   // xmm0 = result
-            "addps       %%xmm7, %%xmm4 \n\t"   // xmm4 = result
-            "movaps      %%xmm0, %0     \n\t"
-            "movaps      %%xmm4, 16+1*%0\n\t"
-            :"+m"(z[k])
-            :"m"(tcos[k]), "m"(tsin[k])
-#ifndef ARCH_X86_64
-             ,"m"(*p1m1p1m1)
-#endif
-        );
-    }
+#define CMUL(j,xmm0,xmm1)\
+        "movaps   (%2,"#j",2), %%xmm6 \n"\
+        "movaps 16(%2,"#j",2), "#xmm0"\n"\
+        "movaps        %%xmm6, "#xmm1"\n"\
+        "movaps        "#xmm0",%%xmm7 \n"\
+        "mulps      (%3,"#j"), %%xmm6 \n"\
+        "mulps      (%4,"#j"), "#xmm0"\n"\
+        "mulps      (%4,"#j"), "#xmm1"\n"\
+        "mulps      (%3,"#j"), %%xmm7 \n"\
+        "subps         %%xmm6, "#xmm0"\n"\
+        "addps         %%xmm7, "#xmm1"\n"
+
+    j = -n2;
+    k = n2-16;
+    asm volatile(
+        "1: \n"
+        CMUL(%0, %%xmm0, %%xmm1)
+        CMUL(%1, %%xmm4, %%xmm5)
+        "shufps    $0x1b, %%xmm1, %%xmm1 \n"
+        "shufps    $0x1b, %%xmm5, %%xmm5 \n"
+        "movaps   %%xmm4, %%xmm6 \n"
+        "unpckhps %%xmm1, %%xmm4 \n"
+        "unpcklps %%xmm1, %%xmm6 \n"
+        "movaps   %%xmm0, %%xmm2 \n"
+        "unpcklps %%xmm5, %%xmm0 \n"
+        "unpckhps %%xmm5, %%xmm2 \n"
+        "movaps   %%xmm6,   (%2,%1,2) \n"
+        "movaps   %%xmm4, 16(%2,%1,2) \n"
+        "movaps   %%xmm0,   (%2,%0,2) \n"
+        "movaps   %%xmm2, 16(%2,%0,2) \n"
+        "sub $16, %1 \n"
+        "add $16, %0 \n"
+        "jl 1b \n"
+        :"+&r"(j), "+&r"(k)
+        :"r"(z+n8), "r"(tcos+n8), "r"(tsin+n8)
+        :"memory"
+    );
 }
 
 void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output,
                        const FFTSample *input, FFTSample *tmp)
 {
-    x86_reg k;
-    long n8, n2, n;
-    FFTComplex *z = (FFTComplex *)tmp;
-
-    n = 1 << s->nbits;
-    n2 = n >> 1;
-    n8 = n >> 3;
-
-    imdct_sse(s, input, tmp);
-
-    /*
-       Mnemonics:
-       0 = z[k].re
-       1 = z[k].im
-       2 = z[k + 1].re
-       3 = z[k + 1].im
-       4 = z[-k - 2].re
-       5 = z[-k - 2].im
-       6 = z[-k - 1].re
-       7 = z[-k - 1].im
-    */
-    k = 16-n;
-    asm volatile("movaps %0, %%xmm7 \n\t"::"m"(*m1m1m1m1));
-    asm volatile(
-        "1: \n\t"
-        "movaps  -16(%4,%0), %%xmm1 \n\t"   // xmm1 = 4 5 6 7 = z[-2-k]
-        "neg %0 \n\t"
-        "movaps     (%4,%0), %%xmm0 \n\t"   // xmm0 = 0 1 2 3 = z[k]
-        "xorps       %%xmm7, %%xmm0 \n\t"   // xmm0 = -0 -1 -2 -3
-        "movaps      %%xmm0, %%xmm2 \n\t"   // xmm2 = -0 -1 -2 -3
-        "shufps $141,%%xmm1, %%xmm0 \n\t"   // xmm0 = -1 -3 4 6
-        "shufps $216,%%xmm1, %%xmm2 \n\t"   // xmm2 = -0 -2 5 7
-        "shufps $156,%%xmm0, %%xmm0 \n\t"   // xmm0 = -1 6 -3 4 !
-        "shufps $156,%%xmm2, %%xmm2 \n\t"   // xmm2 = -0 7 -2 5 !
-        "movaps      %%xmm0, (%1,%0) \n\t"  // output[2*k]
-        "movaps      %%xmm2, (%2,%0) \n\t"  // output[n2+2*k]
-        "neg %0 \n\t"
-        "shufps $27, %%xmm0, %%xmm0 \n\t"   // xmm0 = 4 -3 6 -1
-        "xorps       %%xmm7, %%xmm0 \n\t"   // xmm0 = -4 3 -6 1 !
-        "shufps $27, %%xmm2, %%xmm2 \n\t"   // xmm2 = 5 -2 7 -0 !
-        "movaps      %%xmm0, -16(%2,%0) \n\t" // output[n2-4-2*k]
-        "movaps      %%xmm2, -16(%3,%0) \n\t" // output[n-4-2*k]
-        "add $16, %0 \n\t"
-        "jle 1b \n\t"
-        :"+r"(k)
-        :"r"(output), "r"(output+n2), "r"(output+n), "r"(z+n8)
-        :"memory"
-    );
-}
-
-void ff_imdct_half_sse(MDCTContext *s, FFTSample *output,
-                       const FFTSample *input, FFTSample *tmp)
-{
     x86_reg j, k;
-    long n8, n4, n;
-    FFTComplex *z = (FFTComplex *)tmp;
+    long n = 1 << s->nbits;
+    long n4 = n >> 2;
 
-    n = 1 << s->nbits;
-    n4 = n >> 2;
-    n8 = n >> 3;
-
-    imdct_sse(s, input, tmp);
+    ff_imdct_half_sse(s, output+n4, input);
 
     j = -n;
     k = n-16;
-    asm volatile("movaps %0, %%xmm7 \n\t"::"m"(*m1m1m1m1));
     asm volatile(
-        "1: \n\t"
-        "movaps     (%3,%1), %%xmm0 \n\t"
-        "movaps     (%3,%0), %%xmm1 \n\t"
-        "xorps       %%xmm7, %%xmm0 \n\t"
-        "movaps      %%xmm0, %%xmm2 \n\t"
-        "shufps $141,%%xmm1, %%xmm0 \n\t"
-        "shufps $216,%%xmm1, %%xmm2 \n\t"
-        "shufps $54, %%xmm0, %%xmm0 \n\t"
-        "shufps $156,%%xmm2, %%xmm2 \n\t"
-        "xorps       %%xmm7, %%xmm0 \n\t"
-        "movaps      %%xmm2, (%2,%1) \n\t"
-        "movaps      %%xmm0, (%2,%0) \n\t"
-        "sub $16, %1 \n\t"
-        "add $16, %0 \n\t"
-        "jl 1b \n\t"
+        "movaps %4, %%xmm7 \n"
+        "1: \n"
+        "movaps       (%2,%1), %%xmm0 \n"
+        "movaps       (%3,%0), %%xmm1 \n"
+        "shufps $0x1b, %%xmm0, %%xmm0 \n"
+        "shufps $0x1b, %%xmm1, %%xmm1 \n"
+        "xorps         %%xmm7, %%xmm0 \n"
+        "movaps        %%xmm1, (%3,%1) \n"
+        "movaps        %%xmm0, (%2,%0) \n"
+        "sub $16, %1 \n"
+        "add $16, %0 \n"
+        "jl 1b \n"
         :"+r"(j), "+r"(k)
-        :"r"(output+n4), "r"(z+n8)
-        :"memory"
+        :"r"(output+n4), "r"(output+n4*3),
+         "m"(*m1m1m1m1)
     );
 }
 

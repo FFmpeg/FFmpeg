@@ -1,7 +1,6 @@
 /*
  * FFT/MDCT transform with Extended 3DNow! optimizations
- * Copyright (c) 2006 Zuxy MENG Jie, Loren Merritt
- * Based on fft_sse.c copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2006-2008 Zuxy MENG Jie, Loren Merritt
  *
  * This file is part of FFmpeg.
  *
@@ -23,16 +22,23 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 
+DECLARE_ALIGNED_8(static const int, m1m1[2]) = { 1<<31, 1<<31 };
+
 #ifdef EMULATE_3DNOWEXT
+#define PSWAPD(s,d)\
+    "movq "#s","#d"\n"\
+    "psrlq $32,"#d"\n"\
+    "punpckldq "#s","#d"\n"
 #define ff_fft_calc_3dn2 ff_fft_calc_3dn
 #define ff_fft_dispatch_3dn2 ff_fft_dispatch_3dn
 #define ff_fft_dispatch_interleave_3dn2 ff_fft_dispatch_interleave_3dn
 #define ff_imdct_calc_3dn2 ff_imdct_calc_3dn
 #define ff_imdct_half_3dn2 ff_imdct_half_3dn
+#else
+#define PSWAPD(s,d) "pswapd "#s","#d"\n"
 #endif
 
 void ff_fft_dispatch_3dn2(FFTComplex *z, int nbits);
-void ff_fft_dispatch_interleave_3dn2(FFTComplex *z, int nbits);
 
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
 {
@@ -45,35 +51,45 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
             FFSWAP(FFTSample, z[i].im, z[i+1].re);
 }
 
-static void imdct_3dn2(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
+void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
-    long n4, n2, n;
-    x86_reg k;
+    x86_reg j, k;
+    long n = 1 << s->nbits;
+    long n2 = n >> 1;
+    long n4 = n >> 2;
+    long n8 = n >> 3;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
     const FFTSample *in1, *in2;
-    FFTComplex *z = (FFTComplex *)tmp;
-
-    n = 1 << s->nbits;
-    n2 = n >> 1;
-    n4 = n >> 2;
+    FFTComplex *z = (FFTComplex *)output;
 
     /* pre rotation */
     in1 = input;
     in2 = input + n2 - 1;
+#ifdef EMULATE_3DNOWEXT
+    asm volatile("movd %0, %%mm7" ::"r"(1<<31));
+#endif
     for(k = 0; k < n4; k++) {
         // FIXME a single block is faster, but gcc 2.95 and 3.4.x on 32bit can't compile it
         asm volatile(
-            "movd       %0, %%mm0 \n\t"
-            "movd       %2, %%mm1 \n\t"
-            "punpckldq  %1, %%mm0 \n\t"
-            "punpckldq  %3, %%mm1 \n\t"
-            "movq    %%mm0, %%mm2 \n\t"
-            "pfmul   %%mm1, %%mm0 \n\t"
-            "pswapd  %%mm1, %%mm1 \n\t"
-            "pfmul   %%mm1, %%mm2 \n\t"
-            "pfpnacc %%mm2, %%mm0 \n\t"
+            "movd         %0, %%mm0 \n"
+            "movd         %2, %%mm1 \n"
+            "punpckldq    %1, %%mm0 \n"
+            "punpckldq    %3, %%mm1 \n"
+            "movq      %%mm0, %%mm2 \n"
+            PSWAPD(    %%mm1, %%mm3 )
+            "pfmul     %%mm1, %%mm0 \n"
+            "pfmul     %%mm3, %%mm2 \n"
+#ifdef EMULATE_3DNOWEXT
+            "movq      %%mm0, %%mm1 \n"
+            "punpckhdq %%mm2, %%mm0 \n"
+            "punpckldq %%mm2, %%mm1 \n"
+            "pxor      %%mm7, %%mm0 \n"
+            "pfadd     %%mm1, %%mm0 \n"
+#else
+            "pfpnacc   %%mm2, %%mm0 \n"
+#endif
             ::"m"(in2[-2*k]), "m"(in1[2*k]),
               "m"(tcos[k]), "m"(tsin[k])
         );
@@ -83,101 +99,74 @@ static void imdct_3dn2(MDCTContext *s, const FFTSample *input, FFTSample *tmp)
         );
     }
 
-    ff_fft_calc_3dn2(&s->fft, z);
+    ff_fft_dispatch_3dn2(z, s->fft.nbits);
 
-    /* post rotation + reordering */
-    for(k = 0; k < n4; k++) {
-        asm volatile(
-            "movq       %0, %%mm0 \n\t"
-            "movd       %1, %%mm1 \n\t"
-            "punpckldq  %2, %%mm1 \n\t"
-            "movq    %%mm0, %%mm2 \n\t"
-            "pfmul   %%mm1, %%mm0 \n\t"
-            "pswapd  %%mm1, %%mm1 \n\t"
-            "pfmul   %%mm1, %%mm2 \n\t"
-            "pfpnacc %%mm2, %%mm0 \n\t"
-            "movq    %%mm0, %0    \n\t"
-            :"+m"(z[k])
-            :"m"(tcos[k]), "m"(tsin[k])
-        );
-    }
-}
+#define CMUL(j,mm0,mm1)\
+        "movq  (%2,"#j",2), %%mm6 \n"\
+        "movq 8(%2,"#j",2), "#mm0"\n"\
+        "movq        %%mm6, "#mm1"\n"\
+        "movq        "#mm0",%%mm7 \n"\
+        "pfmul   (%3,"#j"), %%mm6 \n"\
+        "pfmul   (%4,"#j"), "#mm0"\n"\
+        "pfmul   (%4,"#j"), "#mm1"\n"\
+        "pfmul   (%3,"#j"), %%mm7 \n"\
+        "pfsub       %%mm6, "#mm0"\n"\
+        "pfadd       %%mm7, "#mm1"\n"
 
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
-                        const FFTSample *input, FFTSample *tmp)
-{
-    x86_reg k;
-    long n8, n2, n;
-    FFTComplex *z = (FFTComplex *)tmp;
-
-    n = 1 << s->nbits;
-    n2 = n >> 1;
-    n8 = n >> 3;
-
-    imdct_3dn2(s, input, tmp);
-
-    k = n-8;
-    asm volatile("movd %0, %%mm7" ::"r"(1<<31));
+    /* post rotation */
+    j = -n2;
+    k = n2-8;
     asm volatile(
-        "1: \n\t"
-        "movq    (%4,%0), %%mm0 \n\t" // z[n8+k]
-        "neg %0 \n\t"
-        "pswapd -8(%4,%0), %%mm1 \n\t" // z[n8-1-k]
-        "movq      %%mm0, %%mm2 \n\t"
-        "pxor      %%mm7, %%mm2 \n\t"
-        "punpckldq %%mm1, %%mm2 \n\t"
-        "pswapd    %%mm2, %%mm3 \n\t"
-        "punpckhdq %%mm1, %%mm0 \n\t"
-        "pswapd    %%mm0, %%mm4 \n\t"
-        "pxor      %%mm7, %%mm0 \n\t"
-        "pxor      %%mm7, %%mm4 \n\t"
-        "movq      %%mm3, -8(%3,%0) \n\t" // output[n-2-2*k] = { z[n8-1-k].im, -z[n8+k].re }
-        "movq      %%mm4, -8(%2,%0) \n\t" // output[n2-2-2*k]= { -z[n8-1-k].re, z[n8+k].im }
-        "neg %0 \n\t"
-        "movq      %%mm0, (%1,%0) \n\t"   // output[2*k]     = { -z[n8+k].im, z[n8-1-k].re }
-        "movq      %%mm2, (%2,%0) \n\t"   // output[n2+2*k]  = { -z[n8+k].re, z[n8-1-k].im }
-        "sub $8, %0 \n\t"
-        "jge 1b \n\t"
-        :"+r"(k)
-        :"r"(output), "r"(output+n2), "r"(output+n), "r"(z+n8)
+        "1: \n"
+        CMUL(%0, %%mm0, %%mm1)
+        CMUL(%1, %%mm2, %%mm3)
+        "movd   %%mm0,  (%2,%0,2) \n"
+        "movd   %%mm1,12(%2,%1,2) \n"
+        "movd   %%mm2,  (%2,%1,2) \n"
+        "movd   %%mm3,12(%2,%0,2) \n"
+        "psrlq  $32,   %%mm0 \n"
+        "psrlq  $32,   %%mm1 \n"
+        "psrlq  $32,   %%mm2 \n"
+        "psrlq  $32,   %%mm3 \n"
+        "movd   %%mm0, 8(%2,%0,2) \n"
+        "movd   %%mm1, 4(%2,%1,2) \n"
+        "movd   %%mm2, 8(%2,%1,2) \n"
+        "movd   %%mm3, 4(%2,%0,2) \n"
+        "sub $8, %1 \n"
+        "add $8, %0 \n"
+        "jl 1b \n"
+        :"+r"(j), "+r"(k)
+        :"r"(z+n8), "r"(tcos+n8), "r"(tsin+n8)
         :"memory"
     );
     asm volatile("femms");
 }
 
-void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output,
+void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
                         const FFTSample *input, FFTSample *tmp)
 {
     x86_reg j, k;
-    long n8, n4, n;
-    FFTComplex *z = (FFTComplex *)tmp;
+    long n = 1 << s->nbits;
+    long n4 = n >> 2;
 
-    n = 1 << s->nbits;
-    n4 = n >> 2;
-    n8 = n >> 3;
-
-    imdct_3dn2(s, input, tmp);
+    ff_imdct_half_3dn2(s, output+n4, input);
 
     j = -n;
     k = n-8;
-    asm volatile("movd %0, %%mm7" ::"r"(1<<31));
     asm volatile(
-        "1: \n\t"
-        "movq    (%3,%1), %%mm0 \n\t" // z[n8+k]
-        "pswapd  (%3,%0), %%mm1 \n\t" // z[n8-1-k]
-        "movq      %%mm0, %%mm2 \n\t"
-        "punpckldq %%mm1, %%mm0 \n\t"
-        "punpckhdq %%mm2, %%mm1 \n\t"
-        "pxor      %%mm7, %%mm0 \n\t"
-        "pxor      %%mm7, %%mm1 \n\t"
-        "movq      %%mm0, (%2,%1) \n\t" // output[n4+2*k]   = { -z[n8+k].re, z[n8-1-k].im }
-        "movq      %%mm1, (%2,%0) \n\t" // output[n4-2-2*k] = { -z[n8-1-k].re, z[n8+k].im }
-        "sub $8, %1 \n\t"
-        "add $8, %0 \n\t"
-        "jl 1b \n\t"
+        "movq %4, %%mm7 \n"
+        "1: \n"
+        PSWAPD((%2,%1), %%mm0)
+        PSWAPD((%3,%0), %%mm1)
+        "pxor    %%mm7, %%mm0 \n"
+        "movq    %%mm1, (%3,%1) \n"
+        "movq    %%mm0, (%2,%0) \n"
+        "sub $8, %1 \n"
+        "add $8, %0 \n"
+        "jl 1b \n"
         :"+r"(j), "+r"(k)
-        :"r"(output+n4), "r"(z+n8)
-        :"memory"
+        :"r"(output+n4), "r"(output+n4*3),
+         "m"(*m1m1)
     );
     asm volatile("femms");
 }

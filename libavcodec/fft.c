@@ -106,6 +106,8 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
         s->fft_calc = ff_fft_calc_3dn2;
     } else if (has_vectors & MM_3DNOW) {
         /* 3DNow! for K6-2/3 */
+        s->imdct_calc = ff_imdct_calc_3dn;
+        s->imdct_half = ff_imdct_half_3dn;
         s->fft_calc = ff_fft_calc_3dn;
     }
 #elif defined HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
