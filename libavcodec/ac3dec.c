@@ -632,27 +632,25 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
 /**
  * Downmix the output to mono or stereo.
  */
-static av_noinline void ac3_downmix(AC3DecodeContext *s,
-                                    float samples[AC3_MAX_CHANNELS][256])
+void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len)
 {
     int i, j;
     float v0, v1;
-
-    if(s->output_mode == AC3_CHMODE_STEREO) {
-        for(i=0; i<256; i++) {
+    if(out_ch == 2) {
+        for(i=0; i<len; i++) {
             v0 = v1 = 0.0f;
-            for(j=0; j<s->fbw_channels; j++) {
-                v0 += samples[j][i] * s->downmix_coeffs[j][0];
-                v1 += samples[j][i] * s->downmix_coeffs[j][1];
+            for(j=0; j<in_ch; j++) {
+                v0 += samples[j][i] * matrix[j][0];
+                v1 += samples[j][i] * matrix[j][1];
             }
             samples[0][i] = v0;
             samples[1][i] = v1;
         }
-    } else if(s->output_mode == AC3_CHMODE_MONO) {
-        for(i=0; i<256; i++) {
+    } else if(out_ch == 1) {
+        for(i=0; i<len; i++) {
             v0 = 0.0f;
-            for(j=0; j<s->fbw_channels; j++)
-                v0 += samples[j][i] * s->downmix_coeffs[j][0];
+            for(j=0; j<in_ch; j++)
+                v0 += samples[j][i] * matrix[j][0];
             samples[0][i] = v0;
         }
     }
@@ -1018,17 +1016,16 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->channels);
 
         if(downmix_output) {
-            ac3_downmix(s, s->output);
+            s->dsp.ac3_downmix(s->output, s->downmix_coeffs, s->out_channels, s->fbw_channels, 256);
         }
     } else {
         if(downmix_output) {
-            ac3_downmix(s, s->transform_coeffs+1);
+            s->dsp.ac3_downmix(s->transform_coeffs+1, s->downmix_coeffs, s->out_channels, s->fbw_channels, 256);
         }
 
         if(downmix_output && !s->downmixed) {
             s->downmixed = 1;
-            // FIXME delay[] is half the size of the other downmixes
-            ac3_downmix(s, s->delay);
+            s->dsp.ac3_downmix(s->delay, s->downmix_coeffs, s->out_channels, s->fbw_channels, 128);
         }
 
         do_imdct(s, s->out_channels);

@@ -1842,6 +1842,105 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
     }
 }
 
+#define IF1(x) x
+#define IF0(x)
+
+#define MIX5(mono,stereo)\
+    asm volatile(\
+        "movss          0(%2), %%xmm5 \n"\
+        "movss          8(%2), %%xmm6 \n"\
+        "movss         24(%2), %%xmm7 \n"\
+        "shufps    $0, %%xmm5, %%xmm5 \n"\
+        "shufps    $0, %%xmm6, %%xmm6 \n"\
+        "shufps    $0, %%xmm7, %%xmm7 \n"\
+        "1: \n"\
+        "movaps       (%0,%1), %%xmm0 \n"\
+        "movaps  0x400(%0,%1), %%xmm1 \n"\
+        "movaps  0x800(%0,%1), %%xmm2 \n"\
+        "movaps  0xc00(%0,%1), %%xmm3 \n"\
+        "movaps 0x1000(%0,%1), %%xmm4 \n"\
+        "mulps         %%xmm5, %%xmm0 \n"\
+        "mulps         %%xmm6, %%xmm1 \n"\
+        "mulps         %%xmm5, %%xmm2 \n"\
+        "mulps         %%xmm7, %%xmm3 \n"\
+        "mulps         %%xmm7, %%xmm4 \n"\
+ stereo("addps         %%xmm1, %%xmm0 \n")\
+        "addps         %%xmm1, %%xmm2 \n"\
+        "addps         %%xmm3, %%xmm0 \n"\
+        "addps         %%xmm4, %%xmm2 \n"\
+   mono("addps         %%xmm2, %%xmm0 \n")\
+        "movaps  %%xmm0,      (%0,%1) \n"\
+ stereo("movaps  %%xmm2, 0x400(%0,%1) \n")\
+        "add $16, %0 \n"\
+        "jl 1b \n"\
+        :"+&r"(i)\
+        :"r"(samples[0]+len), "r"(matrix)\
+        :"memory"\
+    );
+
+#define MIX_MISC(stereo)\
+    asm volatile(\
+        "1: \n"\
+        "movaps  (%3,%0), %%xmm0 \n"\
+ stereo("movaps   %%xmm0, %%xmm1 \n")\
+        "mulps    %%xmm6, %%xmm0 \n"\
+ stereo("mulps    %%xmm7, %%xmm1 \n")\
+        "lea 1024(%3,%0), %1 \n"\
+        "mov %5, %2 \n"\
+        "2: \n"\
+        "movaps   (%1),   %%xmm2 \n"\
+ stereo("movaps   %%xmm2, %%xmm3 \n")\
+        "mulps   (%4,%2), %%xmm2 \n"\
+ stereo("mulps 16(%4,%2), %%xmm3 \n")\
+        "addps    %%xmm2, %%xmm0 \n"\
+ stereo("addps    %%xmm3, %%xmm1 \n")\
+        "add $1024, %1 \n"\
+        "add $32, %2 \n"\
+        "jl 2b \n"\
+        "movaps   %%xmm0,     (%3,%0) \n"\
+ stereo("movaps   %%xmm1, 1024(%3,%0) \n")\
+        "add $16, %0 \n"\
+        "jl 1b \n"\
+        :"+&r"(i), "=&r"(j), "=&r"(k)\
+        :"r"(samples[0]+len), "r"(matrix_simd+in_ch), "g"((intptr_t)-32*(in_ch-1))\
+        :"memory"\
+    );
+
+static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len)
+{
+    int (*matrix_cmp)[2] = (int(*)[2])matrix;
+    intptr_t i,j,k;
+
+    i = -len*sizeof(float);
+    if(in_ch == 5 && out_ch == 2 && !(matrix_cmp[0][1]|matrix_cmp[2][0]|matrix_cmp[3][1]|matrix_cmp[4][0]|(matrix_cmp[1][0]^matrix_cmp[1][1])|(matrix_cmp[0][0]^matrix_cmp[2][1]))) {
+        MIX5(IF0,IF1);
+    } else if(in_ch == 5 && out_ch == 1 && matrix_cmp[0][0]==matrix_cmp[2][0] && matrix_cmp[3][0]==matrix_cmp[4][0]) {
+        MIX5(IF1,IF0);
+    } else {
+        DECLARE_ALIGNED_16(float, matrix_simd[in_ch][2][4]);
+        j = 2*in_ch*sizeof(float);
+        asm volatile(
+            "1: \n"
+            "sub $8, %0 \n"
+            "movss     (%2,%0), %%xmm6 \n"
+            "movss    4(%2,%0), %%xmm7 \n"
+            "shufps $0, %%xmm6, %%xmm6 \n"
+            "shufps $0, %%xmm7, %%xmm7 \n"
+            "movaps %%xmm6,   (%1,%0,4) \n"
+            "movaps %%xmm7, 16(%1,%0,4) \n"
+            "jg 1b \n"
+            :"+&r"(j)
+            :"r"(matrix_simd), "r"(matrix)
+            :"memory"
+        );
+        if(out_ch == 2) {
+            MIX_MISC(IF1);
+        } else {
+            MIX_MISC(IF0);
+        }
+    }
+}
+
 static void vector_fmul_3dnow(float *dst, const float *src, int len){
     x86_reg i = (len-4)*4;
     asm volatile(
@@ -2682,6 +2781,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         if(mm_flags & MM_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
+            c->ac3_downmix = ac3_downmix_sse;
             c->vector_fmul = vector_fmul_sse;
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add_add = vector_fmul_add_add_sse;

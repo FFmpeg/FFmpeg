@@ -360,6 +360,7 @@ typedef struct DSPContext {
 
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
+    void (*ac3_downmix)(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len);
     /* no alignment needed */
     void (*flac_compute_autocorr)(const int32_t *data, int len, int lag, double *autoc);
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
