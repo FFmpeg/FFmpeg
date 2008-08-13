@@ -974,6 +974,7 @@ enable stripping
 vhook="default"
 
 # build settings
+add_cflags '-D_ISOC9X_SOURCE'
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 VHOOKSHFLAGS='$(SHFLAGS)'
 FFSERVERLDFLAGS=-Wl,-E
@@ -1689,7 +1690,6 @@ check_lib math.h sin -lm
 # test for C99 functions in math.h
 for func in llrint lrint lrintf round roundf; do
     check_exec <<EOF && enable $func || disable $func
-#define _ISOC9X_SOURCE  1
 #include <math.h>
 int main(void) { return ($func(3.999f) > 0)?0:1; }
 EOF

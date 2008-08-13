@@ -19,7 +19,7 @@ endif
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 CFLAGS := -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-          -D_ISOC9X_SOURCE -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
+          -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
@@ -116,4 +116,4 @@ $(eval $(RULES))
 
 tests: $(TESTS)
 
--include $(DEPS)
+#-include $(DEPS)
