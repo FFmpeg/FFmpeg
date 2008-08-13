@@ -26,7 +26,6 @@ typedef struct RCVContext {
 
 static int vc1test_write_header(AVFormatContext *s)
 {
-    RCVContext *ctx = s->priv_data;
     AVCodecContext *avc = s->streams[0]->codec;
     ByteIOContext *pb = s->pb;
 
