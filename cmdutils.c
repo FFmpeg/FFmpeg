@@ -196,18 +196,30 @@ void print_error(const char *filename, int err)
     }
 }
 
+#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent) \
+    version= libname##_version(); \
+    fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", indent? "  " : "", #libname, \
+            LIB##LIBNAME##_VERSION_MAJOR, LIB##LIBNAME##_VERSION_MINOR, LIB##LIBNAME##_VERSION_MICRO, \
+            version >> 16, version >> 8 & 0xff, version & 0xff);
+
+void print_all_lib_versions(FILE* outstream, int indent)
+{
+    unsigned int version;
+    PRINT_LIB_VERSION(outstream, avutil, AVUTIL, indent);
+    PRINT_LIB_VERSION(outstream, avcodec, AVCODEC, indent);
+    PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
+    PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
+#if ENABLE_AVFILTER
+    PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
+#endif
+}
+
 void show_banner(void)
 {
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2008 Fabrice Bellard, et al.\n",
             program_name, program_birth_year);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
-    fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
-    fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
-    fprintf(stderr, "  libavdevice version: " AV_STRINGIFY(LIBAVDEVICE_VERSION) "\n");
-#if ENABLE_AVFILTER
-    fprintf(stderr, "  libavfilter version: " AV_STRINGIFY(LIBAVFILTER_VERSION) "\n");
-#endif
+    print_all_lib_versions(stderr, 1);
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
     fprintf(stderr, ", gcc: " __VERSION__ "\n");
@@ -217,13 +229,8 @@ void show_banner(void)
 }
 
 void show_version(void) {
-     /* TODO: add function interface to avutil and avformat avdevice*/
     printf("%s " FFMPEG_VERSION "\n", program_name);
-    printf("libavutil   %d\n"
-           "libavcodec  %d\n"
-           "libavformat %d\n"
-           "libavdevice %d\n",
-           LIBAVUTIL_BUILD, avcodec_version(), LIBAVFORMAT_BUILD, LIBAVDEVICE_BUILD);
+    print_all_lib_versions(stdout, 0);
 }
 
 void show_license(void)
