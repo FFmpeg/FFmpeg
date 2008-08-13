@@ -482,6 +482,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
     char language[4] = {0}; /* initialize to kill warnings */
     int has_hdmv_descr = 0;
+    int has_dirac_descr = 0;
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
@@ -589,6 +590,18 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 language[2] = get8(&p, desc_end);
                 language[3] = 0;
                 break;
+            case REGISTRATION_DESCRIPTOR: /*MPEG-2 Registration descriptor */
+                {
+                    uint8_t bytes[4];
+                    bytes[0] = get8(&p, desc_end);
+                    bytes[1] = get8(&p, desc_end);
+                    bytes[2] = get8(&p, desc_end);
+                    bytes[3] = get8(&p, desc_end);
+                    if(bytes[0] == 'd' && bytes[1] == 'r' &&
+                       bytes[2] == 'a' && bytes[3] == 'c')
+                        has_dirac_descr = 1;
+                    break;
+                }
             default:
                 break;
             }
@@ -610,12 +623,14 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         case STREAM_TYPE_VIDEO_MPEG4:
         case STREAM_TYPE_VIDEO_H264:
         case STREAM_TYPE_VIDEO_VC1:
+        case STREAM_TYPE_VIDEO_DIRAC:
         case STREAM_TYPE_AUDIO_AAC:
         case STREAM_TYPE_AUDIO_AC3:
         case STREAM_TYPE_AUDIO_DTS:
         case STREAM_TYPE_AUDIO_HDMV_DTS:
         case STREAM_TYPE_SUBTITLE_DVB:
-            if(stream_type == STREAM_TYPE_AUDIO_HDMV_DTS && !has_hdmv_descr)
+            if((stream_type == STREAM_TYPE_AUDIO_HDMV_DTS && !has_hdmv_descr)
+            || (stream_type == STREAM_TYPE_VIDEO_DIRAC    && !has_dirac_descr))
                 break;
             if(ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES){
                 pes= ts->pids[pid]->u.pes_filter.opaque;
@@ -943,6 +958,10 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
     case STREAM_TYPE_VIDEO_VC1:
         codec_type = CODEC_TYPE_VIDEO;
         codec_id = CODEC_ID_VC1;
+        break;
+    case STREAM_TYPE_VIDEO_DIRAC:
+        codec_type = CODEC_TYPE_VIDEO;
+        codec_id = CODEC_ID_DIRAC;
         break;
     case STREAM_TYPE_AUDIO_AAC:
         codec_type = CODEC_TYPE_AUDIO;

@@ -220,6 +220,9 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case CODEC_ID_H264:
             stream_type = STREAM_TYPE_VIDEO_H264;
             break;
+        case CODEC_ID_DIRAC:
+            stream_type = STREAM_TYPE_VIDEO_DIRAC;
+            break;
         case CODEC_ID_MP2:
         case CODEC_ID_MP3:
             stream_type = STREAM_TYPE_AUDIO_MPEG1;
@@ -265,6 +268,16 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 0x10; /* normal subtitles (0x20 = if hearing pb) */
                 put16(&q, 1); /* page id */
                 put16(&q, 1); /* ancillary page id */
+            }
+            break;
+        case CODEC_TYPE_VIDEO:
+            if (stream_type == STREAM_TYPE_VIDEO_DIRAC) {
+                *q++ = 0x05; /*MPEG-2 registration descriptor*/
+                *q++ = 4;
+                *q++ = 'd';
+                *q++ = 'r';
+                *q++ = 'a';
+                *q++ = 'c';
             }
             break;
         }
@@ -527,13 +540,17 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0;
         }
         if (is_start) {
+            int pes_extension = 0;
             /* write PES header */
             *q++ = 0x00;
             *q++ = 0x00;
             *q++ = 0x01;
             private_code = 0;
             if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-                *q++ = 0xe0;
+                if (st->codec->codec_id == CODEC_ID_DIRAC) {
+                    *q++ = 0xfd;
+                } else
+                    *q++ = 0xe0;
             } else if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
                        (st->codec->codec_id == CODEC_ID_MP2 ||
                         st->codec->codec_id == CODEC_ID_MP3)) {
@@ -554,6 +571,19 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 header_len += 5;
                 flags |= 0x40;
             }
+            if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
+                st->codec->codec_id == CODEC_ID_DIRAC) {
+                /* set PES_extension_flag */
+                pes_extension = 1;
+                flags |= 0x01;
+
+                /*
+                * One byte for PES2 extension flag +
+                * one byte for extension length +
+                * one byte for extension id
+                */
+                header_len += 3;
+            }
             len = payload_size + header_len + 3;
             if (private_code != 0)
                 len++;
@@ -573,6 +603,16 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             if (dts != AV_NOPTS_VALUE) {
                 write_pts(q, 1, dts);
                 q += 5;
+            }
+            if (pes_extension && st->codec->codec_id == CODEC_ID_DIRAC) {
+                flags = 0x01;  /* set PES_extension_flag_2 */
+                *q++ = flags;
+                *q++ = 0x80 | 0x01;  /* marker bit + extension length */
+                /*
+                * Set the stream id extension flag bit to 0 and
+                * write the extended stream id
+                */
+                *q++ = 0x00 | 0x60;
             }
             if (private_code != 0)
                 *q++ = private_code;
