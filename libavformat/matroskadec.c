@@ -1601,7 +1601,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
         res = ebml_parse(matroska, matroska_clusters, &cluster);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
-    for (i=0; !res && i<blocks_list->nb_elem; i++)
+    for (i=0; i<blocks_list->nb_elem; i++)
         if (blocks[i].bin.size > 0)
             res=matroska_parse_block(matroska,
                                      blocks[i].bin.data, blocks[i].bin.size,
