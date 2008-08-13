@@ -3948,6 +3948,12 @@ void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, c
     }
 }
 
+static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, int len){
+    int i;
+    for(i=0; i<len; i++)
+        dst[i] = src[i] * mul;
+}
+
 static av_always_inline int float_to_int16_one(const float *src){
     int_fast32_t tmp = *(const int32_t*)src;
     if(tmp & 0xf0000){
@@ -4489,6 +4495,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add_add = ff_vector_fmul_add_add_c;
     c->vector_fmul_window = ff_vector_fmul_window_c;
+    c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->float_to_int16 = ff_float_to_int16_c;
     c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
     c->add_int16 = add_int16_c;

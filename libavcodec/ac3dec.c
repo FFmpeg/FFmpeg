@@ -994,9 +994,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         } else {
             gain *= s->dynamic_range[0];
         }
-        for(i=0; i<256; i++) {
-            s->transform_coeffs[ch][i] = s->fixed_coeffs[ch][i] * gain;
-        }
+        s->dsp.int32_to_float_fmul_scalar(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
     }
 
     /* downmix and MDCT. order depends on whether block switching is used for

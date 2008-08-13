@@ -158,7 +158,7 @@ typedef struct {
     float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}
 
-    int fixed_coeffs[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///> fixed-point transform coefficients
+    DECLARE_ALIGNED_16(int, fixed_coeffs[AC3_MAX_CHANNELS][AC3_MAX_COEFS]);  ///> fixed-point transform coefficients
 
 ///@defgroup arrays aligned arrays
     DECLARE_ALIGNED_16(float, transform_coeffs[AC3_MAX_CHANNELS][AC3_MAX_COEFS]);   ///< transform coefficients

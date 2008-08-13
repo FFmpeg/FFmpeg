@@ -370,6 +370,8 @@ typedef struct DSPContext {
     void (*vector_fmul_add_add)(float *dst, const float *src0, const float *src1, const float *src2, int src3, int len, int step);
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vector_fmul_window)(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len);
+    /* assume len is a multiple of 8, and arrays are 16-byte aligned */
+    void (*int32_to_float_fmul_scalar)(float *dst, const int *src, float mul, int len);
 
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
      * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */

@@ -2192,6 +2192,50 @@ static void vector_fmul_window_sse(float *dst, const float *src0, const float *s
         ff_vector_fmul_window_c(dst, src0, src1, win, add_bias, len);
 }
 
+static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul, int len)
+{
+    x86_reg i = -4*len;
+    asm volatile(
+        "movss  %3, %%xmm4 \n"
+        "shufps $0, %%xmm4, %%xmm4 \n"
+        "1: \n"
+        "cvtpi2ps   (%2,%0), %%xmm0 \n"
+        "cvtpi2ps  8(%2,%0), %%xmm1 \n"
+        "cvtpi2ps 16(%2,%0), %%xmm2 \n"
+        "cvtpi2ps 24(%2,%0), %%xmm3 \n"
+        "movlhps  %%xmm1,    %%xmm0 \n"
+        "movlhps  %%xmm3,    %%xmm2 \n"
+        "mulps    %%xmm4,    %%xmm0 \n"
+        "mulps    %%xmm4,    %%xmm2 \n"
+        "movaps   %%xmm0,   (%1,%0) \n"
+        "movaps   %%xmm2, 16(%1,%0) \n"
+        "add $32, %0 \n"
+        "jl 1b \n"
+        :"+r"(i)
+        :"r"(dst+len), "r"(src+len), "xm"(mul)
+    );
+}
+
+static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, int len)
+{
+    x86_reg i = -4*len;
+    asm volatile(
+        "movss  %3, %%xmm4 \n"
+        "shufps $0, %%xmm4, %%xmm4 \n"
+        "1: \n"
+        "cvtdq2ps   (%2,%0), %%xmm0 \n"
+        "cvtdq2ps 16(%2,%0), %%xmm1 \n"
+        "mulps    %%xmm4,    %%xmm0 \n"
+        "mulps    %%xmm4,    %%xmm1 \n"
+        "movaps   %%xmm0,   (%1,%0) \n"
+        "movaps   %%xmm1, 16(%1,%0) \n"
+        "add $32, %0 \n"
+        "jl 1b \n"
+        :"+r"(i)
+        :"r"(dst+len), "r"(src+len), "xm"(mul)
+    );
+}
+
 static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     // not bit-exact: pf2id uses different rounding than C and SSE
     asm volatile(
@@ -2786,12 +2830,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
             c->vector_fmul_window = vector_fmul_window_sse;
+            c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
             c->float_to_int16 = float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
         }
         if(mm_flags & MM_3DNOW)
             c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse
         if(mm_flags & MM_SSE2){
+            c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
             c->add_int16 = add_int16_sse2;
