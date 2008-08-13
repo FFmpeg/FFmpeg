@@ -116,4 +116,4 @@ $(eval $(RULES))
 
 tests: $(TESTS)
 
-#-include $(DEPS)
+-include $(DEPS)
