@@ -26,6 +26,7 @@
 #define closesocket close
 #endif
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include "libavutil/random.h"
 #include "libavutil/avstring.h"

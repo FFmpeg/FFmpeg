@@ -37,6 +37,7 @@
 #include <asm/types.h>
 #include <linux/videodev2.h>
 #include <time.h>
+#include <strings.h>
 
 static const int desired_video_buffers = 256;
 

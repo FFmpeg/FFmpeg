@@ -28,6 +28,7 @@
 #include <sys/poll.h>
 #include <sys/time.h>
 #include <time.h>
+#include <strings.h>
 
 #include "libavformat/avformat.h"
 

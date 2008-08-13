@@ -24,6 +24,7 @@
 
 #include <sys/time.h>
 #include <unistd.h> /* for select() prototype */
+#include <strings.h>
 #include "network.h"
 #include "rtsp.h"
 

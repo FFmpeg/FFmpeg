@@ -24,6 +24,7 @@
 #include "riff.h"
 #include <sys/time.h>
 #include <time.h>
+#include <strings.h>
 
 #undef NDEBUG
 #include <assert.h>
