@@ -32,11 +32,11 @@
 /** Maximum number of matrices used in decoding; most streams have one matrix
  *  per output channel, but some rematrix a channel (usually 0) more than once.
  */
-
 #define MAX_MATRICES        15
 
 /** Maximum number of substreams that can be decoded. This could also be set
- *  higher, but I haven't seen any examples with more than two. */
+ *  higher, but I haven't seen any examples with more than two.
+ */
 #define MAX_SUBSTREAMS      2
 
 /** maximum sample frequency seen in files */
@@ -52,7 +52,8 @@
 
 /** The maximum number of taps in either the IIR or FIR filter;
  *  I believe MLP actually specifies the maximum order for IIR filters as four,
- *  and that the sum of the orders of both filters must be <= 8. */
+ *  and that the sum of the orders of both filters must be <= 8.
+*/
 #define MAX_FILTER_ORDER    8
 
 #define FIR 0
@@ -80,26 +81,26 @@ typedef struct {
 /** Tables defining the Huffman codes.
  *  There are three entropy coding methods used in MLP (four if you count
  *  "none" as a method). These use the same sequences for codes starting with
- *  00 or 01, but have different codes starting with 1. */
-
+ *  00 or 01, but have different codes starting with 1.
+ */
 extern const uint8_t ff_mlp_huffman_tables[3][18][2];
 
 /** MLP uses checksums that seem to be based on the standard CRC algorithm, but
  *  are not (in implementation terms, the table lookup and XOR are reversed).
  *  We can implement this behavior using a standard av_crc on all but the
- *  last element, then XOR that with the last element. */
-
+ *  last element, then XOR that with the last element.
+ */
 uint8_t  ff_mlp_checksum8 (const uint8_t *buf, unsigned int buf_size);
 uint16_t ff_mlp_checksum16(const uint8_t *buf, unsigned int buf_size);
 
 /** Calculate an 8-bit checksum over a restart header -- a non-multiple-of-8
- *  number of bits, starting two bits into the first byte of buf. */
-
+ *  number of bits, starting two bits into the first byte of buf.
+ */
 uint8_t ff_mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size);
 
 /** XOR together all the bytes of a buffer.
- *  Does this belong in dspcontext? */
-
+ *  Does this belong in dspcontext?
+ */
 uint8_t ff_mlp_calculate_parity(const uint8_t *buf, unsigned int buf_size);
 
 int ff_mlp_init_crc2D(AVCodecParserContext *s);
