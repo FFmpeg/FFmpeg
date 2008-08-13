@@ -1025,7 +1025,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             ac3_downmix(s, s->transform_coeffs+1);
         }
 
-        if(!s->downmixed) {
+        if(downmix_output && !s->downmixed) {
             s->downmixed = 1;
             // FIXME delay[] is half the size of the other downmixes
             ac3_downmix(s, s->delay);
