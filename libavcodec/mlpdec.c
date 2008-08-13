@@ -144,10 +144,8 @@ typedef struct SubStream {
 
 /** filter data */
 typedef struct {
-    //! number of taps in filter
-    uint8_t     order;
-    //! Right shift to apply to output of filter.
-    uint8_t     shift;
+    uint8_t     order; ///< number of taps in filter
+    uint8_t     shift; ///< Right shift to apply to output of filter.
 
     int32_t     coeff[MAX_FILTER_ORDER];
     int32_t     state[MAX_FILTER_ORDER];
@@ -157,14 +155,10 @@ typedef struct {
 typedef struct {
     FilterParams filter_params[NUM_FILTERS];
 
-    //! Offset to apply to residual values.
-    int16_t     huff_offset;
-    //! sign/rounding-corrected version of huff_offset
-    int32_t     sign_huff_offset;
-    //! Which VLC codebook to use to read residuals.
-    uint8_t     codebook;
-    //! Size of residual suffix not encoded using VLC.
-    uint8_t     huff_lsbs;
+    int16_t     huff_offset;      ///< Offset to apply to residual values.
+    int32_t     sign_huff_offset; ///< sign/rounding-corrected version of huff_offset
+    uint8_t     codebook;         ///< Which VLC codebook to use to read residuals.
+    uint8_t     huff_lsbs;        ///< Size of residual suffix not encoded using VLC.
 } ChannelParams;
 
 typedef struct MLPDecodeContext {
