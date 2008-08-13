@@ -77,14 +77,19 @@ static uint16_t mlp_checksum16(const uint8_t *buf, unsigned int buf_size)
 {
     uint16_t crc;
 
+    crc = av_crc(crc_2D, 0, buf, buf_size - 2);
+    crc ^= AV_RL16(buf + buf_size - 2);
+    return crc;
+}
+
+static int av_cold mlp_parse_init(AVCodecParserContext *s)
+{
     if (!crc_init) {
         av_crc_init(crc_2D, 0, 16, 0x002D, sizeof(crc_2D));
         crc_init = 1;
     }
 
-    crc = av_crc(crc_2D, 0, buf, buf_size - 2);
-    crc ^= AV_RL16(buf + buf_size - 2);
-    return crc;
+    return 0;
 }
 
 /** Read a major sync info header - contains high level information about
@@ -305,7 +310,7 @@ lost_sync:
 AVCodecParser mlp_parser = {
     { CODEC_ID_MLP },
     sizeof(MLPParseContext),
-    NULL,
+    mlp_parse_init,
     mlp_parse,
     NULL,
 };
