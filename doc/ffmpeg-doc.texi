@@ -429,6 +429,12 @@ Select the pass number (1 or 2). It is useful to do two pass
 encoding. The statistics of the video are recorded in the first
 pass and the video is generated at the exact requested bitrate
 in the second pass.
+On pass 1, you may just deactivate audio and set output to null,
+examples for Windows and Unix:
+@example
+ffmpeg -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y NUL
+ffmpeg -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y /dev/null
+@end example
 
 @item -passlogfile @var{file}
 Set two pass logfile name to @var{file}.
