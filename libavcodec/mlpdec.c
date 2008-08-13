@@ -153,6 +153,20 @@ typedef struct {
     int32_t     state[MAX_FILTER_ORDER];
 } FilterParams;
 
+/** sample data coding information */
+typedef struct {
+    FilterParams filter_params[NUM_FILTERS];
+
+    //! Offset to apply to residual values.
+    int16_t     huff_offset;
+    //! sign/rounding-corrected version of huff_offset
+    int32_t     sign_huff_offset;
+    //! Which VLC codebook to use to read residuals.
+    uint8_t     codebook;
+    //! Size of residual suffix not encoded using VLC.
+    uint8_t     huff_lsbs;
+} ChannelParams;
+
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
 
@@ -172,19 +186,7 @@ typedef struct MLPDecodeContext {
 
     SubStream   substream[MAX_SUBSTREAMS];
 
-    FilterParams filter_params[MAX_CHANNELS][NUM_FILTERS];
-
-    //@{
-    /** sample data coding information */
-    //! Offset to apply to residual values.
-    int16_t     huff_offset[MAX_CHANNELS];
-    //! sign/rounding-corrected version of huff_offset
-    int32_t     sign_huff_offset[MAX_CHANNELS];
-    //! Which VLC codebook to use to read residuals.
-    uint8_t     codebook[MAX_CHANNELS];
-    //! Size of residual suffix not encoded using VLC.
-    uint8_t     huff_lsbs[MAX_CHANNELS];
-    //@}
+    ChannelParams channel_params[MAX_CHANNELS];
 
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
@@ -278,12 +280,13 @@ static uint8_t mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size)
 static inline int32_t calculate_sign_huff(MLPDecodeContext *m,
                                           unsigned int substr, unsigned int ch)
 {
+    ChannelParams *cp = &m->channel_params[ch];
     SubStream *s = &m->substream[substr];
-    int lsb_bits = m->huff_lsbs[ch] - s->quant_step_size[ch];
-    int sign_shift = lsb_bits + (m->codebook[ch] ? 2 - m->codebook[ch] : -1);
-    int32_t sign_huff_offset = m->huff_offset[ch];
+    int lsb_bits = cp->huff_lsbs - s->quant_step_size[ch];
+    int sign_shift = lsb_bits + (cp->codebook ? 2 - cp->codebook : -1);
+    int32_t sign_huff_offset = cp->huff_offset;
 
-    if (m->codebook[ch] > 0)
+    if (cp->codebook > 0)
         sign_huff_offset -= 7 << lsb_bits;
 
     if (sign_shift >= 0)
@@ -306,9 +309,10 @@ static inline int read_huff_channels(MLPDecodeContext *m, GetBitContext *gbp,
             m->bypassed_lsbs[pos + s->blockpos][mat] = get_bits1(gbp);
 
     for (channel = s->min_channel; channel <= s->max_channel; channel++) {
-        int codebook = m->codebook[channel];
+        ChannelParams *cp = &m->channel_params[channel];
+        int codebook = cp->codebook;
         int quant_step_size = s->quant_step_size[channel];
-        int lsb_bits = m->huff_lsbs[channel] - quant_step_size;
+        int lsb_bits = cp->huff_lsbs - quant_step_size;
         int result = 0;
 
         if (codebook > 0)
@@ -321,7 +325,7 @@ static inline int read_huff_channels(MLPDecodeContext *m, GetBitContext *gbp,
         if (lsb_bits > 0)
             result = (result << lsb_bits) + get_bits(gbp, lsb_bits);
 
-        result  += m->sign_huff_offset[channel];
+        result  += cp->sign_huff_offset;
         result <<= quant_step_size;
 
         m->sample_buffer[pos + s->blockpos][channel] = result;
@@ -523,16 +527,17 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     memset(s->quant_step_size, 0, sizeof(s->quant_step_size));
 
     for (ch = s->min_channel; ch <= s->max_channel; ch++) {
-        m->filter_params[ch][FIR].order = 0;
-        m->filter_params[ch][IIR].order = 0;
-        m->filter_params[ch][FIR].shift = 0;
-        m->filter_params[ch][IIR].shift = 0;
+        ChannelParams *cp = &m->channel_params[ch];
+        cp->filter_params[FIR].order = 0;
+        cp->filter_params[IIR].order = 0;
+        cp->filter_params[FIR].shift = 0;
+        cp->filter_params[IIR].shift = 0;
 
         /* Default audio coding is 24-bit raw PCM. */
-        m->huff_offset     [ch] = 0;
-        m->sign_huff_offset[ch] = (-1) << 23;
-        m->codebook        [ch] = 0;
-        m->huff_lsbs       [ch] = 24;
+        cp->huff_offset      = 0;
+        cp->sign_huff_offset = (-1) << 23;
+        cp->codebook         = 0;
+        cp->huff_lsbs        = 24;
     }
 
     if (substr == m->max_decoded_substream) {
@@ -547,7 +552,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
                               unsigned int channel, unsigned int filter)
 {
-    FilterParams *fp = &m->filter_params[channel][filter];
+    FilterParams *fp = &m->channel_params[channel].filter_params[filter];
     const char fchar = filter ? 'I' : 'F';
     int i, order;
 
@@ -683,16 +688,19 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
     if (s->param_presence_flags & PARAM_QUANTSTEP)
         if (get_bits1(gbp))
             for (ch = 0; ch <= s->max_channel; ch++) {
+                ChannelParams *cp = &m->channel_params[ch];
+
                 s->quant_step_size[ch] = get_bits(gbp, 4);
                 /* TODO: validate */
 
-                m->sign_huff_offset[ch] = calculate_sign_huff(m, substr, ch);
+                cp->sign_huff_offset = calculate_sign_huff(m, substr, ch);
             }
 
     for (ch = s->min_channel; ch <= s->max_channel; ch++)
         if (get_bits1(gbp)) {
-            FilterParams *fir = &m->filter_params[ch][FIR];
-            FilterParams *iir = &m->filter_params[ch][IIR];
+            ChannelParams *cp = &m->channel_params[ch];
+            FilterParams *fir = &cp->filter_params[FIR];
+            FilterParams *iir = &cp->filter_params[IIR];
 
             if (s->param_presence_flags & PARAM_FIR)
                 if (get_bits1(gbp))
@@ -720,12 +728,12 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
 
             if (s->param_presence_flags & PARAM_HUFFOFFSET)
                 if (get_bits1(gbp))
-                    m->huff_offset[ch] = get_sbits(gbp, 15);
+                    cp->huff_offset = get_sbits(gbp, 15);
 
-            m->codebook [ch] = get_bits(gbp, 2);
-            m->huff_lsbs[ch] = get_bits(gbp, 5);
+            cp->codebook  = get_bits(gbp, 2);
+            cp->huff_lsbs = get_bits(gbp, 5);
 
-            m->sign_huff_offset[ch] = calculate_sign_huff(m, substr, ch);
+            cp->sign_huff_offset = calculate_sign_huff(m, substr, ch);
 
             /* TODO: validate */
         }
@@ -743,8 +751,8 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
 {
     SubStream *s = &m->substream[substr];
     int32_t filter_state_buffer[NUM_FILTERS][MAX_BLOCKSIZE + MAX_FILTER_ORDER];
-    FilterParams *fp[NUM_FILTERS] = { &m->filter_params[channel][FIR],
-                                      &m->filter_params[channel][IIR], };
+    FilterParams *fp[NUM_FILTERS] = { &m->channel_params[channel].filter_params[FIR],
+                                      &m->channel_params[channel].filter_params[IIR], };
     unsigned int filter_shift = fp[FIR]->shift;
     int32_t mask = MSB_MASK(s->quant_step_size[channel]);
     int index = MAX_BLOCKSIZE;
