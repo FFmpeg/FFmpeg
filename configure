@@ -1952,6 +1952,7 @@ if test "$build_suffix" != ""; then
 fi
 echo "big-endian                ${bigendian-no}"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
+    echo "yasm                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
     echo "CMOV enabled              ${cmov-no}"
     echo "CMOV is fast              ${fast_cmov-no}"
