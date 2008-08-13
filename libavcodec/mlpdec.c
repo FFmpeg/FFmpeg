@@ -32,35 +32,7 @@
 #include "libavutil/crc.h"
 #include "parser.h"
 #include "mlp_parser.h"
-
-/** Maximum number of channels that can be decoded. */
-#define MAX_CHANNELS        16
-
-/** Maximum number of matrices used in decoding; most streams have one matrix
- *  per output channel, but some rematrix a channel (usually 0) more than once.
- */
-
-#define MAX_MATRICES        15
-
-/** Maximum number of substreams that can be decoded. This could also be set
- *  higher, but I haven't seen any examples with more than two. */
-#define MAX_SUBSTREAMS      2
-
-/** maximum sample frequency seen in files */
-#define MAX_SAMPLERATE      192000
-
-/** maximum number of audio samples within one access unit */
-#define MAX_BLOCKSIZE       (40 * (MAX_SAMPLERATE / 48000))
-/** next power of two greater than MAX_BLOCKSIZE */
-#define MAX_BLOCKSIZE_POW2  (64 * (MAX_SAMPLERATE / 48000))
-
-/** number of allowed filters */
-#define NUM_FILTERS         2
-
-/** The maximum number of taps in either the IIR or FIR filter;
- *  I believe MLP actually specifies the maximum order for IIR filters as four,
- *  and that the sum of the orders of both filters must be <= 8. */
-#define MAX_FILTER_ORDER    8
+#include "mlp.h"
 
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
 #define VLC_BITS            9
@@ -139,28 +111,6 @@ typedef struct SubStream {
 
 } SubStream;
 
-#define FIR 0
-#define IIR 1
-
-/** filter data */
-typedef struct {
-    uint8_t     order; ///< number of taps in filter
-    uint8_t     shift; ///< Right shift to apply to output of filter.
-
-    int32_t     coeff[MAX_FILTER_ORDER];
-    int32_t     state[MAX_FILTER_ORDER];
-} FilterParams;
-
-/** sample data coding information */
-typedef struct {
-    FilterParams filter_params[NUM_FILTERS];
-
-    int16_t     huff_offset;      ///< Offset to apply to residual values.
-    int32_t     sign_huff_offset; ///< sign/rounding-corrected version of huff_offset
-    uint8_t     codebook;         ///< Which VLC codebook to use to read residuals.
-    uint8_t     huff_lsbs;        ///< Size of residual suffix not encoded using VLC.
-} ChannelParams;
-
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
 
@@ -187,88 +137,23 @@ typedef struct MLPDecodeContext {
     int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS+2];
 } MLPDecodeContext;
 
-/** Tables defining the Huffman codes.
- *  There are three entropy coding methods used in MLP (four if you count
- *  "none" as a method). These use the same sequences for codes starting with
- *  00 or 01, but have different codes starting with 1. */
-
-static const uint8_t huffman_tables[3][18][2] = {
-    {    /* Huffman table 0, -7 - +10 */
-        {0x01, 9}, {0x01, 8}, {0x01, 7}, {0x01, 6}, {0x01, 5}, {0x01, 4}, {0x01, 3},
-        {0x04, 3}, {0x05, 3}, {0x06, 3}, {0x07, 3},
-        {0x03, 3}, {0x05, 4}, {0x09, 5}, {0x11, 6}, {0x21, 7}, {0x41, 8}, {0x81, 9},
-    }, { /* Huffman table 1, -7 - +8 */
-        {0x01, 9}, {0x01, 8}, {0x01, 7}, {0x01, 6}, {0x01, 5}, {0x01, 4}, {0x01, 3},
-        {0x02, 2}, {0x03, 2},
-        {0x03, 3}, {0x05, 4}, {0x09, 5}, {0x11, 6}, {0x21, 7}, {0x41, 8}, {0x81, 9},
-    }, { /* Huffman table 2, -7 - +7 */
-        {0x01, 9}, {0x01, 8}, {0x01, 7}, {0x01, 6}, {0x01, 5}, {0x01, 4}, {0x01, 3},
-        {0x01, 1},
-        {0x03, 3}, {0x05, 4}, {0x09, 5}, {0x11, 6}, {0x21, 7}, {0x41, 8}, {0x81, 9},
-    }
-};
-
 static VLC huff_vlc[3];
-
-static int crc_init = 0;
-static AVCRC crc_63[1024];
-static AVCRC crc_1D[1024];
-
 
 /** Initialize static data, constant between all invocations of the codec. */
 
 static av_cold void init_static()
 {
     INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
-                &huffman_tables[0][0][1], 2, 1,
-                &huffman_tables[0][0][0], 2, 1, 512);
+                &ff_mlp_huffman_tables[0][0][1], 2, 1,
+                &ff_mlp_huffman_tables[0][0][0], 2, 1, 512);
     INIT_VLC_STATIC(&huff_vlc[1], VLC_BITS, 16,
-                &huffman_tables[1][0][1], 2, 1,
-                &huffman_tables[1][0][0], 2, 1, 512);
+                &ff_mlp_huffman_tables[1][0][1], 2, 1,
+                &ff_mlp_huffman_tables[1][0][0], 2, 1, 512);
     INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
-                &huffman_tables[2][0][1], 2, 1,
-                &huffman_tables[2][0][0], 2, 1, 512);
+                &ff_mlp_huffman_tables[2][0][1], 2, 1,
+                &ff_mlp_huffman_tables[2][0][0], 2, 1, 512);
 
-    if (!crc_init) {
-        av_crc_init(crc_63, 0,  8,   0x63, sizeof(crc_63));
-        av_crc_init(crc_1D, 0,  8,   0x1D, sizeof(crc_1D));
-        crc_init = 1;
-    }
-}
-
-
-/** MLP uses checksums that seem to be based on the standard CRC algorithm, but
- *  are not (in implementation terms, the table lookup and XOR are reversed).
- *  We can implement this behavior using a standard av_crc on all but the
- *  last element, then XOR that with the last element. */
-
-static uint8_t mlp_checksum8(const uint8_t *buf, unsigned int buf_size)
-{
-    uint8_t checksum = av_crc(crc_63, 0x3c, buf, buf_size - 1); // crc_63[0xa2] == 0x3c
-    checksum ^= buf[buf_size-1];
-    return checksum;
-}
-
-/** Calculate an 8-bit checksum over a restart header -- a non-multiple-of-8
- *  number of bits, starting two bits into the first byte of buf. */
-
-static uint8_t mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size)
-{
-    int i;
-    int num_bytes = (bit_size + 2) / 8;
-
-    int crc = crc_1D[buf[0] & 0x3f];
-    crc = av_crc(crc_1D, crc, buf + 1, num_bytes - 2);
-    crc ^= buf[num_bytes - 1];
-
-    for (i = 0; i < ((bit_size + 2) & 7); i++) {
-        crc <<= 1;
-        if (crc & 0x100)
-            crc ^= 0x11D;
-        crc ^= (buf[num_bytes] >> (7 - i)) & 1;
-    }
-
-    return crc;
+    ff_mlp_init_crc();
 }
 
 static inline int32_t calculate_sign_huff(MLPDecodeContext *m,
@@ -506,7 +391,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         }
     }
 
-    checksum = mlp_restart_checksum(buf, get_bits_count(gbp) - start_count);
+    checksum = ff_mlp_restart_checksum(buf, get_bits_count(gbp) - start_count);
 
     if (checksum != get_bits(gbp, 8))
         av_log(m->avctx, AV_LOG_ERROR, "restart header checksum error\n");
@@ -975,26 +860,6 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
 }
 
 
-/** XOR together all the bytes of a buffer.
- *  Does this belong in dspcontext? */
-
-static uint8_t calculate_parity(const uint8_t *buf, unsigned int buf_size)
-{
-    uint32_t scratch = 0;
-    const uint8_t *buf_end = buf + buf_size;
-
-    for (; buf < buf_end - 3; buf += 4)
-        scratch ^= *((const uint32_t*)buf);
-
-    scratch ^= scratch >> 16;
-    scratch ^= scratch >> 8;
-
-    for (; buf < buf_end; buf++)
-        scratch ^= *buf;
-
-    return scratch;
-}
-
 /** Read an access unit from the stream.
  *  Returns < 0 on error, 0 if not enough data is present in the input stream
  *  otherwise returns the number of bytes consumed. */
@@ -1078,8 +943,8 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         substream_start = end;
     }
 
-    parity_bits  = calculate_parity(buf, 4);
-    parity_bits ^= calculate_parity(buf + header_size, substr_header_size);
+    parity_bits  = ff_mlp_calculate_parity(buf, 4);
+    parity_bits ^= ff_mlp_calculate_parity(buf + header_size, substr_header_size);
 
     if ((((parity_bits >> 4) ^ parity_bits) & 0xF) != 0xF) {
         av_log(avctx, AV_LOG_ERROR, "Parity check failed.\n");
@@ -1145,12 +1010,12 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             substream_parity_present[substr]) {
             uint8_t parity, checksum;
 
-            parity = calculate_parity(buf, substream_data_len[substr] - 2);
+            parity = ff_mlp_calculate_parity(buf, substream_data_len[substr] - 2);
             if ((parity ^ get_bits(&gb, 8)) != 0xa9)
                 av_log(m->avctx, AV_LOG_ERROR,
                        "Substream %d parity check failed.\n", substr);
 
-            checksum = mlp_checksum8(buf, substream_data_len[substr] - 2);
+            checksum = ff_mlp_checksum8(buf, substream_data_len[substr] - 2);
             if (checksum != get_bits(&gb, 8))
                 av_log(m->avctx, AV_LOG_ERROR, "Substream %d checksum failed.\n",
                        substr);

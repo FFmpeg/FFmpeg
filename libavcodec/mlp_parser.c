@@ -30,6 +30,7 @@
 #include "bitstream.h"
 #include "parser.h"
 #include "mlp_parser.h"
+#include "mlp.h"
 
 static const uint8_t mlp_quants[16] = {
     16, 20, 24, 0, 0, 0, 0, 0,
@@ -64,34 +65,6 @@ static int truehd_channels(int chanmap)
     return channels;
 }
 
-static int crc_init = 0;
-static AVCRC crc_2D[1024];
-
-/** MLP uses checksums that seem to be based on the standard CRC algorithm, but
- *  are not (in implementation terms, the table lookup and XOR are reversed).
- *  We can implement this behavior using a standard av_crc on all but the
- *  last element, then XOR that with the last element.
- */
-
-static uint16_t mlp_checksum16(const uint8_t *buf, unsigned int buf_size)
-{
-    uint16_t crc;
-
-    crc = av_crc(crc_2D, 0, buf, buf_size - 2);
-    crc ^= AV_RL16(buf + buf_size - 2);
-    return crc;
-}
-
-static int av_cold mlp_parse_init(AVCodecParserContext *s)
-{
-    if (!crc_init) {
-        av_crc_init(crc_2D, 0, 16, 0x002D, sizeof(crc_2D));
-        crc_init = 1;
-    }
-
-    return 0;
-}
-
 /** Read a major sync info header - contains high level information about
  *  the stream - sample rate, channel arrangement etc. Most of this
  *  information is not actually necessary for decoding, only for playback.
@@ -110,7 +83,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
         return -1;
     }
 
-    checksum = mlp_checksum16(gb->buffer, 26);
+    checksum = ff_mlp_checksum16(gb->buffer, 26);
     if (checksum != AV_RL16(gb->buffer+26)) {
         av_log(log, AV_LOG_ERROR, "major sync info header checksum error\n");
         return -1;
@@ -310,7 +283,7 @@ lost_sync:
 AVCodecParser mlp_parser = {
     { CODEC_ID_MLP },
     sizeof(MLPParseContext),
-    mlp_parse_init,
+    ff_mlp_init_crc2D,
     mlp_parse,
     NULL,
 };
