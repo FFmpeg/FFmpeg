@@ -2297,9 +2297,54 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
     );
 }
 
+#ifdef HAVE_7REGS
+#define FLOAT_TO_INT16_INTERLEAVE6(cpu, cvtps2pi, pswapd) \
+static void float_to_int16_interleave6_##cpu(int16_t *dst, const float **src, int len){\
+    const float *src0 = src[0];\
+    asm volatile(\
+        "1: \n"\
+        cvtps2pi" (%2),    %%mm0 \n"\
+        cvtps2pi" (%2,%3), %%mm1 \n"\
+        cvtps2pi" (%2,%4), %%mm2 \n"\
+        cvtps2pi" (%2,%5), %%mm3 \n"\
+        cvtps2pi" (%2,%6), %%mm4 \n"\
+        cvtps2pi" (%2,%7), %%mm5 \n"\
+        "packssdw   %%mm3, %%mm0 \n"\
+        "packssdw   %%mm4, %%mm1 \n"\
+        "packssdw   %%mm5, %%mm2 \n"\
+        pswapd"     %%mm0, %%mm3 \n"\
+        "punpcklwd  %%mm1, %%mm0 \n"\
+        "punpckhwd  %%mm2, %%mm1 \n"\
+        "punpcklwd  %%mm3, %%mm2 \n"\
+        pswapd"     %%mm0, %%mm3 \n"\
+        "punpckldq  %%mm2, %%mm0 \n"\
+        "punpckhdq  %%mm1, %%mm2 \n"\
+        "punpckldq  %%mm3, %%mm1 \n"\
+        "movq       %%mm0,   (%1) \n"\
+        "movq       %%mm2, 16(%1) \n"\
+        "movq       %%mm1,  8(%1) \n"\
+        "add  $8, %2 \n"\
+        "add $24, %1 \n"\
+        "sub  $2, %0 \n"\
+        "jg 1b \n"\
+        "emms \n"\
+        :"+g"(len), "+r"(dst), "+r"(src0)\
+        :"r"(4*(src[1]-src0)), "r"(4*(src[2]-src0)),\
+         "r"(4*(src[3]-src0)), "r"(4*(src[4]-src0)),\
+         "r"(4*(src[5]-src0))\
+    );\
+}
+FLOAT_TO_INT16_INTERLEAVE6(sse, "cvtps2pi", "pshufw $0x4e,")
+FLOAT_TO_INT16_INTERLEAVE6(3dnow, "pf2id", "pswapd")
+#else
+#define float_to_int16_interleave6_sse(a,b,c) float_to_int16_interleave_misc_sse(a,b,c,6)
+#define float_to_int16_interleave6_3dnow(a,b,c) float_to_int16_interleave_misc_3dnow(a,b,c,6)
+#endif
+#define float_to_int16_interleave6_sse2 float_to_int16_interleave6_sse
+
 #define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
-static av_noinline void float_to_int16_interleave2_##cpu(int16_t *dst, const float **src, long len, int channels){\
+static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const float **src, long len, int channels){\
     DECLARE_ALIGNED_16(int16_t, tmp[len]);\
     int i,j,c;\
     for(c=0; c<channels; c++){\
@@ -2312,9 +2357,7 @@ static av_noinline void float_to_int16_interleave2_##cpu(int16_t *dst, const flo
 static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, long len, int channels){\
     if(channels==1)\
         float_to_int16_##cpu(dst, src[0], len);\
-    else if(channels>2)\
-        float_to_int16_interleave2_##cpu(dst, src, len, channels);\
-    else{\
+    else if(channels==2){\
         const float *src0 = src[0];\
         const float *src1 = src[1];\
         asm volatile(\
@@ -2326,7 +2369,10 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
             body\
             :"+r"(len), "+r"(dst), "+r"(src0), "+r"(src1)\
         );\
-    }\
+    }else if(channels==6){\
+        float_to_int16_interleave6_##cpu(dst, src, len);\
+    }else\
+        float_to_int16_interleave_misc_##cpu(dst, src, len, channels);\
 }
 
 FLOAT_TO_INT16_INTERLEAVE(3dnow,
