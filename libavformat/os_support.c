@@ -68,7 +68,7 @@ int resolve_host(struct in_addr *sin_addr, const char *hostname)
         hp = gethostbyname(hostname);
         if (!hp)
             return -1;
-        memcpy(sin_addr, hp->h_addr, sizeof(struct in_addr));
+        memcpy(sin_addr, hp->h_addr_list[0], sizeof(struct in_addr));
     }
     return 0;
 }
