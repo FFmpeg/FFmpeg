@@ -1641,8 +1641,10 @@ check_header byteswap.h
 check_header conio.h
 check_header dlfcn.h
 check_header malloc.h
+check_header poll.h
 check_header sys/mman.h
 check_header sys/resource.h
+check_header sys/select.h
 check_header termios.h
 
 if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
@@ -1651,13 +1653,6 @@ fi
 
 enabled  zlib && check_lib  zlib.h      zlibVersion -lz   || disable  zlib
 enabled bzlib && check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
-
-# ffserver uses poll(),
-# if it's not found we can emulate it using select().
-if enabled ffserver; then
-    check_header poll.h
-    check_header sys/select.h
-fi
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
