@@ -2212,7 +2212,7 @@ static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul
         "add $32, %0 \n"
         "jl 1b \n"
         :"+r"(i)
-        :"r"(dst+len), "r"(src+len), "xm"(mul)
+        :"r"(dst+len), "r"(src+len), "m"(mul)
     );
 }
 
@@ -2232,7 +2232,7 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
         "add $32, %0 \n"
         "jl 1b \n"
         :"+r"(i)
-        :"r"(dst+len), "r"(src+len), "xm"(mul)
+        :"r"(dst+len), "r"(src+len), "m"(mul)
     );
 }
 
