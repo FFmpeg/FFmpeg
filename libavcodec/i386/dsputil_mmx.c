@@ -2297,50 +2297,16 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
     );
 }
 
-#ifdef HAVE_7REGS
-#define FLOAT_TO_INT16_INTERLEAVE6(cpu, cvtps2pi, pswapd) \
-static void float_to_int16_interleave6_##cpu(int16_t *dst, const float **src, int len){\
-    const float *src0 = src[0];\
-    asm volatile(\
-        "1: \n"\
-        cvtps2pi" (%2),    %%mm0 \n"\
-        cvtps2pi" (%2,%3), %%mm1 \n"\
-        cvtps2pi" (%2,%4), %%mm2 \n"\
-        cvtps2pi" (%2,%5), %%mm3 \n"\
-        cvtps2pi" (%2,%6), %%mm4 \n"\
-        cvtps2pi" (%2,%7), %%mm5 \n"\
-        "packssdw   %%mm3, %%mm0 \n"\
-        "packssdw   %%mm4, %%mm1 \n"\
-        "packssdw   %%mm5, %%mm2 \n"\
-        pswapd"     %%mm0, %%mm3 \n"\
-        "punpcklwd  %%mm1, %%mm0 \n"\
-        "punpckhwd  %%mm2, %%mm1 \n"\
-        "punpcklwd  %%mm3, %%mm2 \n"\
-        pswapd"     %%mm0, %%mm3 \n"\
-        "punpckldq  %%mm2, %%mm0 \n"\
-        "punpckhdq  %%mm1, %%mm2 \n"\
-        "punpckldq  %%mm3, %%mm1 \n"\
-        "movq       %%mm0,   (%1) \n"\
-        "movq       %%mm2, 16(%1) \n"\
-        "movq       %%mm1,  8(%1) \n"\
-        "add  $8, %2 \n"\
-        "add $24, %1 \n"\
-        "sub  $2, %0 \n"\
-        "jg 1b \n"\
-        "emms \n"\
-        :"+g"(len), "+r"(dst), "+r"(src0)\
-        :"r"(4*(src[1]-src0)), "r"(4*(src[2]-src0)),\
-         "r"(4*(src[3]-src0)), "r"(4*(src[4]-src0)),\
-         "r"(4*(src[5]-src0))\
-    );\
-}
-FLOAT_TO_INT16_INTERLEAVE6(sse, "cvtps2pi", "pshufw $0x4e,")
-FLOAT_TO_INT16_INTERLEAVE6(3dnow, "pf2id", "pswapd")
+#ifdef HAVE_YASM
+void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
+void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
+void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
 #else
-#define float_to_int16_interleave6_sse(a,b,c) float_to_int16_interleave_misc_sse(a,b,c,6)
-#define float_to_int16_interleave6_3dnow(a,b,c) float_to_int16_interleave_misc_3dnow(a,b,c,6)
+#define ff_float_to_int16_interleave6_sse(a,b,c)   float_to_int16_interleave_misc_sse(a,b,c,6)
+#define ff_float_to_int16_interleave6_3dnow(a,b,c) float_to_int16_interleave_misc_3dnow(a,b,c,6)
+#define ff_float_to_int16_interleave6_3dn2(a,b,c)  float_to_int16_interleave_misc_3dnow(a,b,c,6)
 #endif
-#define float_to_int16_interleave6_sse2 float_to_int16_interleave6_sse
+#define ff_float_to_int16_interleave6_sse2 ff_float_to_int16_interleave6_sse
 
 #define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
@@ -2370,7 +2336,7 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
             :"+r"(len), "+r"(dst), "+r"(src0), "+r"(src1)\
         );\
     }else if(channels==6){\
-        float_to_int16_interleave6_##cpu(dst, src, len);\
+        ff_float_to_int16_interleave6_##cpu(dst, src, len);\
     }else\
         float_to_int16_interleave_misc_##cpu(dst, src, len, channels);\
 }
@@ -2422,6 +2388,13 @@ FLOAT_TO_INT16_INTERLEAVE(sse2,
     "add $16, %0                \n"
     "js 1b                      \n"
 )
+
+static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long len, int channels){
+    if(channels==6)
+        ff_float_to_int16_interleave6_3dn2(dst, src, len);
+    else
+        float_to_int16_interleave_3dnow(dst, src, len, channels);
+}
 
 
 extern void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
@@ -2868,6 +2841,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(mm_flags & MM_3DNOWEXT){
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
             c->vector_fmul_window = vector_fmul_window_3dnow2;
+            if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
+                c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
+            }
         }
         if(mm_flags & MM_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;

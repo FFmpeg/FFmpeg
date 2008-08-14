@@ -393,6 +393,7 @@ OBJS-$(HAVE_YASM)                      += i386/fft_mmx.o \
                                           i386/fft_sse.o \
                                           i386/fft_3dn.o \
                                           i386/fft_3dn2.o \
+                                          i386/dsputil_yasm.o \
 
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 
