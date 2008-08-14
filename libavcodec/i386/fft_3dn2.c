@@ -39,6 +39,7 @@ DECLARE_ALIGNED_8(static const int, m1m1[2]) = { 1<<31, 1<<31 };
 #endif
 
 void ff_fft_dispatch_3dn2(FFTComplex *z, int nbits);
+void ff_fft_dispatch_interleave_3dn2(FFTComplex *z, int nbits);
 
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
 {
