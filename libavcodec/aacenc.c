@@ -119,34 +119,6 @@ static const uint8_t *swb_size_128[] = {
     swb_size_128_16, swb_size_128_16, swb_size_128_8
 };
 
-#define CB_UNSIGNED 0x01    ///< coefficients are coded as absolute values
-#define CB_PAIRS    0x02    ///< coefficients are grouped into pairs before coding (quads by default)
-#define CB_ESCAPE   0x04    ///< codebook allows escapes
-
-/** spectral coefficients codebook information */
-static const struct {
-    int16_t maxval;         ///< maximum possible value
-     int8_t cb_num;         ///< codebook number
-    uint8_t flags;          ///< codebook features
-} aac_cb_info[] = {
-    {    0, -1, CB_UNSIGNED }, // zero codebook
-    {    1,  0, 0 },
-    {    1,  1, 0 },
-    {    2,  2, CB_UNSIGNED },
-    {    2,  3, CB_UNSIGNED },
-    {    4,  4, CB_PAIRS },
-    {    4,  5, CB_PAIRS },
-    {    7,  6, CB_PAIRS | CB_UNSIGNED },
-    {    7,  7, CB_PAIRS | CB_UNSIGNED },
-    {   12,  8, CB_PAIRS | CB_UNSIGNED },
-    {   12,  9, CB_PAIRS | CB_UNSIGNED },
-    { 8191, 10, CB_PAIRS | CB_UNSIGNED | CB_ESCAPE },
-    {   -1, -1, 0 }, // reserved
-    {   -1, -1, 0 }, // perceptual noise substitution
-    {   -1, -1, 0 }, // intensity out-of-phase
-    {   -1, -1, 0 }, // intensity in-phase
-};
-
 /** default channel configurations */
 static const uint8_t aac_chan_configs[6][5] = {
  {1, ID_SCE},                         // 1 channel  - single channel element
@@ -156,29 +128,6 @@ static const uint8_t aac_chan_configs[6][5] = {
  {3, ID_SCE, ID_CPE, ID_CPE},         // 5 channels - front center + stereo + back stereo
  {4, ID_SCE, ID_CPE, ID_CPE, ID_LFE}, // 6 channels - front center + stereo + back stereo + LFE
 };
-
-/**
- * AAC encoder context
- */
-typedef struct {
-    PutBitContext pb;
-    MDCTContext mdct1024;                        ///< long (1024 samples) frame transform context
-    MDCTContext mdct128;                         ///< short (128 samples) frame transform context
-    DSPContext  dsp;
-    DECLARE_ALIGNED_16(FFTSample, output[2048]); ///< temporary buffer for MDCT input coefficients
-    DECLARE_ALIGNED_16(FFTSample, tmp[1024]);    ///< temporary buffer used by MDCT
-    int16_t* samples;                            ///< saved preprocessed input
-
-    int samplerate_index;                        ///< MPEG-4 samplerate index
-    const uint8_t *swb_sizes1024;                ///< scalefactor band sizes for long frame
-    int swb_num1024;                             ///< number of scalefactor bands for long frame
-    const uint8_t *swb_sizes128;                 ///< scalefactor band sizes for short frame
-    int swb_num128;                              ///< number of scalefactor bands for short frame
-
-    ChannelElement *cpe;                         ///< channel elements
-    AACPsyContext psy;                           ///< psychoacoustic model context
-    int last_frame;
-} AACEncContext;
 
 /**
  * Make AAC audio config object.
@@ -227,11 +176,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->mdct1024, 11, 0);
     ff_mdct_init(&s->mdct128,   8, 0);
-    // window init
-    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
-    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
-    ff_sine_window_init(ff_aac_sine_long_1024, 1024);
-    ff_sine_window_init(ff_aac_sine_short_128, 128);
 
     s->samples = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
     s->cpe = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
