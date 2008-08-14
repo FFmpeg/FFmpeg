@@ -32,7 +32,9 @@
 #include "network.h"
 #include "os_support.h"
 #include <fcntl.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
 #define RTP_RX_BUF_SIZE  (128 * 1024)
