@@ -110,8 +110,7 @@ uint8_t ff_mlp_calculate_parity(const uint8_t *buf, unsigned int buf_size)
     for (; buf < buf_end - 3; buf += 4)
         scratch ^= *((const uint32_t*)buf);
 
-    scratch ^= scratch >> 16;
-    scratch ^= scratch >> 8;
+    scratch = xor_32_to_8(scratch);
 
     for (; buf < buf_end; buf++)
         scratch ^= *buf;

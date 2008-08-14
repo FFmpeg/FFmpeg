@@ -107,4 +107,12 @@ int ff_mlp_init_crc2D(AVCodecParserContext *s);
 
 void ff_mlp_init_crc();
 
+/** XOR four bytes into one. */
+static inline uint8_t xor_32_to_8(uint32_t value)
+{
+    value ^= value >> 16;
+    value ^= value >>  8;
+    return value;
+}
+
 #endif /* FFMPEG_MLP_H */

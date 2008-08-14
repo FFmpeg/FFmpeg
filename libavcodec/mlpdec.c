@@ -364,10 +364,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     lossless_check = get_bits(gbp, 8);
     if (substr == m->max_decoded_substream
         && s->lossless_check_data != 0xffffffff) {
-        tmp = s->lossless_check_data;
-        tmp ^= tmp >> 16;
-        tmp ^= tmp >> 8;
-        tmp &= 0xff;
+        tmp = xor_32_to_8(s->lossless_check_data);
         if (tmp != lossless_check)
             av_log(m->avctx, AV_LOG_WARNING,
                    "Lossless check failed - expected %02x, calculated %02x.\n",
