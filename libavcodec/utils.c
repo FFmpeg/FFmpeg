@@ -25,6 +25,9 @@
  * utils.
  */
 
+/* needed for mkstemp() */
+#define _XOPEN_SOURCE 500
+
 #include "libavutil/integer.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
@@ -32,6 +35,7 @@
 #include "opt.h"
 #include "imgconvert.h"
 #include "audioconvert.h"
+#include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>

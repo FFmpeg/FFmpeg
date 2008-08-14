@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* needed for usleep() */
+#define _XOPEN_SOURCE 500
+
 #include "config.h"
 #include <ctype.h>
 #include <string.h>
@@ -27,6 +30,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
+#include <unistd.h>
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -45,7 +49,6 @@
 #endif
 
 #if defined(HAVE_TERMIOS_H)
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>

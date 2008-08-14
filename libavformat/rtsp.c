@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* needed by inet_aton() */
+#define _SVID_SOURCE
+
 #include "libavutil/avstring.h"
 #include "avformat.h"
 
