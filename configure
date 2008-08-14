@@ -1125,6 +1125,9 @@ TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
+check_cflags -fasm
+check_cflags -std=c99
+
 case "$arch" in
     i386|i486|i586|i686|i86pc|BePC)
         arch="x86_32"
