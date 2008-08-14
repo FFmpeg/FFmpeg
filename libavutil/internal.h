@@ -102,11 +102,6 @@
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
 
-#ifdef CONFIG_FASTMEMCPY
-#    include "libvo/fastmemcpy.h"
-#    define memcpy(a,b,c) fast_memcpy(a,b,c)
-#endif
-
 // Use rip-relative addressing if compiling PIC code on x86-64.
 #if defined(ARCH_X86_64) && defined(PIC)
 #    define LOCAL_MANGLE(a) #a "(%%rip)"
