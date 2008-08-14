@@ -56,6 +56,9 @@
 */
 #define MAX_FILTER_ORDER    8
 
+/** Code that signals end of a stream. */
+#define END_OF_STREAM       0xd234d234
+
 #define FIR 0
 #define IIR 1
 
