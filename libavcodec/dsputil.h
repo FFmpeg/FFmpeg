@@ -702,6 +702,12 @@ void ff_kbd_window_init(float *window, float alpha, int n);
  * @param   n       size of half window
  */
 void ff_sine_window_init(float *window, int n);
+extern float ff_sine_128 [ 128];
+extern float ff_sine_256 [ 256];
+extern float ff_sine_512 [ 512];
+extern float ff_sine_1024[1024];
+extern float ff_sine_2048[2048];
+extern float *ff_sine_windows[5];
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
 void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
