@@ -668,6 +668,11 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     }
 
+    if (st->codec->codec_id == CODEC_ID_DIRAC) {
+        /* for Dirac, a single PES packet must be generated */
+        mpegts_write_pes(s, st, buf, size, pkt->pts, pkt->dts);
+        return 0;
+    }
     max_payload_size = DEFAULT_PES_PAYLOAD_SIZE;
     while (size > 0) {
         len = max_payload_size - ts_st->payload_index;
