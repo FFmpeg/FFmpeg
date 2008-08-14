@@ -974,7 +974,7 @@ enable stripping
 vhook="default"
 
 # build settings
-add_cflags '-D_ISOC99_SOURCE '
+add_cflags -D_ISOC99_SOURCE
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 VHOOKSHFLAGS='$(SHFLAGS)'
 FFSERVERLDFLAGS=-Wl,-E
