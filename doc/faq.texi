@@ -251,6 +251,10 @@ title, loop filter
 CAVLC
 @item example command line
 ffmpeg -i input -acodec libfaac -ab 128kb -vcodec libx264 -b 1200kb -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
+@item higher resolution for newer PSP firmwares, width<=480, height<=272
+-vcodec libx264 -level 21 -coder 1 -f psp
+@item example command line
+ffmpeg -i input -acodec libfaac -ab 128kb -ac 2 -ar 48000 -vcodec libx264 -level 21 -b 640kb -coder 1 -f psp -flags +loop -trellis 2 -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -g 250 -s 480x272 output.mp4
 @end table
 
 @section Which are good parameters for encoding high quality MPEG-4?
