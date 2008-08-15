@@ -27,8 +27,8 @@
 #include "avformat.h"
 #include "raw.h"
 
-#ifdef CONFIG_MUXERS
 /* simple formats */
+#ifdef CONFIG_FLAC_MUXER
 static int flac_write_header(struct AVFormatContext *s)
 {
     static const uint8_t header[8] = {
@@ -42,8 +42,9 @@ static int flac_write_header(struct AVFormatContext *s)
     }
     return 0;
 }
+#endif
 
-
+#ifdef CONFIG_ROQ_MUXER
 static int roq_write_header(struct AVFormatContext *s)
 {
     static const uint8_t header[] = {
@@ -55,12 +56,16 @@ static int roq_write_header(struct AVFormatContext *s)
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_NULL_MUXER
 static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     return 0;
 }
+#endif
 
+#ifdef CONFIG_MUXERS
 static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     put_buffer(s->pb, pkt->data, pkt->size);
