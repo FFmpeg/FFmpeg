@@ -67,7 +67,7 @@ static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     put_flush_packet(s->pb);
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif
 
 /* raw input */
 static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -541,7 +541,7 @@ AVOutputFormat ac3_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat dirac_demuxer = {
     "dirac",
@@ -621,7 +621,7 @@ AVOutputFormat flac_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat gsm_demuxer = {
     "gsm",
@@ -660,7 +660,7 @@ AVOutputFormat h261_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat h263_demuxer = {
     "h263",
@@ -687,7 +687,7 @@ AVOutputFormat h263_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat h264_demuxer = {
     "h264",
@@ -714,7 +714,7 @@ AVOutputFormat h264_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat ingenient_demuxer = {
     "ingenient",
@@ -753,7 +753,7 @@ AVOutputFormat m4v_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat mjpeg_demuxer = {
     "mjpeg",
@@ -780,7 +780,7 @@ AVOutputFormat mjpeg_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat mlp_demuxer = {
     "mlp",
@@ -807,7 +807,7 @@ AVOutputFormat mpeg1video_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 #ifdef CONFIG_MUXERS
 AVOutputFormat mpeg2video_muxer = {
@@ -822,7 +822,7 @@ AVOutputFormat mpeg2video_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat mpegvideo_demuxer = {
     "mpegvideo",
@@ -852,7 +852,7 @@ AVOutputFormat null_muxer = {
     null_write_packet,
     .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE | AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 AVInputFormat rawvideo_demuxer = {
     "rawvideo",
@@ -879,7 +879,7 @@ AVOutputFormat rawvideo_muxer = {
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
 };
-#endif //CONFIG_MUXERS
+#endif
 
 #ifdef CONFIG_ROQ_MUXER
 AVOutputFormat roq_muxer =
@@ -894,7 +894,7 @@ AVOutputFormat roq_muxer =
     roq_write_header,
     raw_write_packet,
 };
-#endif //CONFIG_ROQ_MUXER
+#endif
 
 AVInputFormat shorten_demuxer = {
     "shn",
